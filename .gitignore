@@ -1,39 +1,27 @@
-/._frontend
-/._src-tauri
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 /docs
-/前端参考
-._*
-/node_modules
-/frontend/node_modules
-docs/施工记录.md
-docs/CHANGELOG.md
-CHANGELOG.md
-# macOS 自动生成文件
+node_modules
+dist
+dist-ssr
+dist-electron
+release
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-**/.DS_Store
-*.swp
-
-# 构建产物
-/frontend/dist
-/src-tauri/target
-/src-tauri/permissions
-
-# 包管理&缓存
-pnp.mjs
-.pnp.cjs
-.pnp.js
-.pnp.loader.mjs
-.pnp.loader.cjs
-.pnp.loader.js
-.yarn/**
-.npm/**
-.pnpm-store/**
-
-# IDE 配置
-.idea/
-.vscode/
-.turbo/
-
-#施工文件
-CONSTRUCTION.md
-CHANGELOG.md
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+/前端参考
