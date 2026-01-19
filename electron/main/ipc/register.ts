@@ -19,6 +19,8 @@ import {
 	createAgentToolCallHandlers,
 } from "./handlers/agent";
 import { createConfigHandlers } from "./handlers/config";
+import { createActivityHandlers } from "./handlers/activity";
+import { createCardHandlers } from "./handlers/cards";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
 import { createMcpHandlers } from "./handlers/mcp";
@@ -63,6 +65,8 @@ export function registerIpcHandlers({
 	const mcpHandlers = createMcpHandlers(db);
 	const syncHandlers = createSyncHandlers(db);
 	const importExportHandlers = createImportExportHandlers(db, logger);
+	const cardHandlers = createCardHandlers(db);
+	const activityHandlers = createActivityHandlers(db);
 
 	// Agent Runtime handlers
 	const agentSessionHandlers = createAgentSessionHandlers(db);
@@ -190,6 +194,15 @@ export function registerIpcHandlers({
 	// Dashboard
 	// ==================
 	ipcMain.handle("dashboard_stats", outputHandlers.dashboard_stats);
+	ipcMain.handle("get_daily_activity", activityHandlers.get_daily_activity);
+
+	// ==================
+	// Cards
+	// ==================
+	ipcMain.handle("list_cards", cardHandlers.list_cards);
+	ipcMain.handle("get_card", cardHandlers.get_card);
+	ipcMain.handle("delete_card", cardHandlers.delete_card);
+	ipcMain.handle("get_card_image_path", cardHandlers.get_card_image_path);
 
 	// ==================
 	// MCP Servers

@@ -1,0 +1,644 @@
+import {
+	ChevronDown,
+	ChevronRight,
+	ExternalLink,
+	Eye,
+	EyeOff,
+	Loader2,
+	Plus,
+	RefreshCw,
+	Search,
+	Settings,
+	Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { checkProviderApiKey, invokeLlm } from "../../../lib/api";
+import { useSettingsStore } from "../../../lib/settingsStore";
+import { ProviderType } from "../../../types";
+import {
+	CheckButton,
+	type CheckStatus,
+	getModelBadges,
+	Modal,
+	ModelBadge,
+	ModelDiscoveryModal,
+	Toggle,
+} from "../components";
+import { PROVIDER_TEMPLATES } from "../constants";
+import {
+	formatGroupName,
+	getTemplateForProvider,
+	groupModels,
+	openUrl,
+} from "../utils";
+
+export function ModelSettings() {
+	const { providers, settingsStore } = useSettingsStore();
+
+	// 基础状态
+	const [selectedId, setSelectedId] = useState<string>("");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showApiKey, setShowApiKey] = useState(false);
+	const [checkStatus, setCheckStatus] = useState<CheckStatus>("idle");
+	const [isManaging, setIsManaging] = useState(false);
+	const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+	const [testingModel, setTestingModel] = useState<string | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	// 弹窗状态
+	const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
+	const [isAddModelOpen, setIsAddModelOpen] = useState(false);
+	const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
+	const [providerName, setProviderName] = useState("");
+	const [providerType, setProviderType] = useState<ProviderType>(
+		ProviderType.OpenAi,
+	);
+	const [isCreating, setIsCreating] = useState(false);
+	const [newModelId, setNewModelId] = useState("");
+
+	// 派生状态
+	const selected = providers.find((p) => p.id === selectedId);
+	const template = selected ? getTemplateForProvider(selected) : undefined;
+	const filtered = providers.filter((p) =>
+		p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+	);
+	const modelGroups = selected ? groupModels(selected.models) : {};
+
+	// 初始化选中
+	useEffect(() => {
+		if (providers.length > 0 && !selectedId) {
+			setSelectedId(providers[0].id);
+		}
+	}, [providers, selectedId]);
+
+	// 展开所有分组
+	useEffect(() => {
+		if (selected) {
+			setExpandedGroups(new Set(Object.keys(groupModels(selected.models))));
+		}
+	}, [selected?.id]);
+
+	// 切换服务商启用
+	const handleToggle = useCallback(
+		(id: string) => {
+			const p = providers.find((x) => x.id === id);
+			if (p) settingsStore.updateProvider(id, { isEnabled: !p.isEnabled });
+		},
+		[providers, settingsStore],
+	);
+
+	// 检测 API
+	const handleCheck = useCallback(async () => {
+		if (!selected) return;
+		setCheckStatus("checking");
+		try {
+			const result = await checkProviderApiKey(selected.id);
+			setCheckStatus(result.valid ? "success" : "error");
+		} catch {
+			setCheckStatus("error");
+		}
+		setTimeout(() => setCheckStatus("idle"), 3000);
+	}, [selected]);
+
+	// 删除服务商
+	const handleDelete = useCallback(async () => {
+		if (!selected || !confirm(`确定要删除服务商 "${selected.name}" 吗？`))
+			return;
+		setIsDeleting(true);
+		try {
+			await settingsStore.deleteProvider(selected.id);
+			const rest = providers.filter((p) => p.id !== selected.id);
+			setSelectedId(rest[0]?.id || "");
+		} catch (e) {
+			alert(`删除失败: ${e}`);
+		} finally {
+			setIsDeleting(false);
+		}
+	}, [selected, providers, settingsStore]);
+
+	// 添加模型
+	const handleAddModel = useCallback(() => {
+		if (!selected || !newModelId.trim()) return;
+		settingsStore.addModel(selected.id, newModelId.trim());
+		setNewModelId("");
+		setIsAddModelOpen(false);
+	}, [selected, newModelId, settingsStore]);
+
+	// 删除模型
+	const handleRemoveModel = useCallback(
+		(model: string) => {
+			if (selected) settingsStore.removeModel(selected.id, model);
+		},
+		[selected, settingsStore],
+	);
+
+	// 测试模型
+	const handleTestModel = useCallback(
+		async (model: string) => {
+			if (!selected) return;
+			setTestingModel(model);
+			try {
+				const result = await invokeLlm({
+					model,
+					prompt: 'Say "OK" to confirm.',
+					temperature: 0.1,
+				});
+				alert(
+					result.content ? `✅ 模型 ${model} 连接成功！` : "⚠️ 返回了空响应",
+				);
+			} catch (e) {
+				alert(`❌ 测试失败: ${e}`);
+			} finally {
+				setTestingModel(null);
+			}
+		},
+		[selected],
+	);
+
+	// 创建服务商
+	const handleCreate = useCallback(async () => {
+		if (!providerName.trim()) return;
+		setIsCreating(true);
+		try {
+			const tpl = PROVIDER_TEMPLATES.find(
+				(t) => t.providerType === providerType,
+			);
+			const created = await settingsStore.createProvider({
+				template: tpl,
+				name: providerName.trim(),
+				providerType,
+				models: tpl?.defaultModels || [],
+				apiBase: tpl?.defaultApiBase,
+				isEnabled: true,
+			});
+			setIsAddProviderOpen(false);
+			setProviderName("");
+			if (created?.id) setSelectedId(created.id);
+		} catch (e) {
+			alert(`创建失败: ${e}`);
+		} finally {
+			setIsCreating(false);
+		}
+	}, [providerName, providerType, settingsStore]);
+
+	// 切换分组展开
+	const toggleGroup = useCallback((group: string) => {
+		setExpandedGroups((prev) => {
+			const next = new Set(prev);
+			next.has(group) ? next.delete(group) : next.add(group);
+			return next;
+		});
+	}, []);
+
+	return (
+		<div className="flex h-full">
+			{/* 左侧：服务商列表 */}
+			<div className="w-60 border-r border-zinc-200/80 bg-zinc-50/50 flex flex-col">
+				<div className="p-4">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+						<input
+							type="text"
+							placeholder="搜索模型平台..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200/80 rounded-xl text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all"
+						/>
+					</div>
+				</div>
+
+				<div className="flex-1 overflow-y-auto px-3 space-y-1">
+					{filtered.map((provider) => (
+						<div
+							key={provider.id}
+							onClick={() => setSelectedId(provider.id)}
+							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+								selectedId === provider.id
+									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
+									: "hover:bg-white/60"
+							}`}
+						>
+							<div
+								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color}`}
+							>
+								{provider.icon && <provider.icon className="w-4 h-4" />}
+							</div>
+							<span className="flex-1 text-sm font-medium text-zinc-800 truncate">
+								{provider.name}
+							</span>
+						</div>
+					))}
+				</div>
+
+				<div className="p-4 border-t border-zinc-200/80">
+					<button
+						onClick={() => setIsAddProviderOpen(true)}
+						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-all shadow-sm"
+					>
+						<Plus className="w-4 h-4" />
+						添加服务商
+					</button>
+				</div>
+			</div>
+
+			{/* 右侧：配置详情 */}
+			<div className="flex-1 overflow-y-auto bg-white">
+				{selected ? (
+					<div className="p-8 max-w-2xl">
+						{/* 标题栏 */}
+						<div className="flex items-center justify-between mb-10 pr-10">
+							<div className="flex items-center gap-3">
+								<div
+									className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm ${selected.color}`}
+								>
+									{selected.icon && <selected.icon className="w-5 h-5" />}
+								</div>
+								<h2 className="text-xl font-semibold text-zinc-900">
+									{selected.name}
+								</h2>
+								{template?.homeUrl && (
+									<button
+										onClick={() => openUrl(template.homeUrl!)}
+										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+									>
+										<ExternalLink className="w-4 h-4" />
+									</button>
+								)}
+							</div>
+							<Toggle
+								checked={selected.isEnabled}
+								onChange={() => handleToggle(selected.id)}
+							/>
+						</div>
+
+						{/* API 密钥 */}
+						<div className="mb-8">
+							<div className="flex items-center justify-between mb-3">
+								<label className="text-sm font-medium text-zinc-700">
+									API 密钥
+								</label>
+								<button
+									onClick={() => setShowApiKey(!showApiKey)}
+									className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+								>
+									{showApiKey ? (
+										<EyeOff className="w-4 h-4" />
+									) : (
+										<Eye className="w-4 h-4" />
+									)}
+								</button>
+							</div>
+							<div className="flex gap-3">
+								<input
+									type={showApiKey ? "text" : "password"}
+									value={selected.apiKey || ""}
+									onChange={(e) =>
+										settingsStore.updateProvider(selected.id, {
+											apiKey: e.target.value,
+										})
+									}
+									placeholder="sk-..."
+									className="flex-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+								/>
+								<CheckButton status={checkStatus} onClick={handleCheck} />
+							</div>
+							{template?.docsUrl && (
+								<button
+									onClick={() => openUrl(template.docsUrl!)}
+									className="mt-3 text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+								>
+									点击这里获取密钥 →
+								</button>
+							)}
+						</div>
+
+						{/* API 地址 */}
+						<div className="mb-8">
+							<div className="flex items-center gap-2 mb-3">
+								<label className="text-sm font-medium text-zinc-700">
+									API 地址
+								</label>
+								<span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-md">
+									可选
+								</span>
+							</div>
+							<input
+								type="text"
+								value={selected.apiBase || ""}
+								onChange={(e) =>
+									settingsStore.updateProvider(selected.id, {
+										apiBase: e.target.value,
+									})
+								}
+								placeholder={
+									template?.defaultApiBase || "https://api.openai.com/v1"
+								}
+								className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+							/>
+							{selected.apiBase && (
+								<p className="mt-2 text-xs text-zinc-400">
+									预览：{selected.apiBase}/chat/completions
+								</p>
+							)}
+						</div>
+
+						{/* 模型区域 */}
+						<div className="mb-8">
+							<div className="flex items-center justify-between mb-4">
+								<div className="flex items-center gap-3">
+									<span className="text-sm font-medium text-zinc-700">
+										模型
+									</span>
+									<span className="text-xs text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
+										({selected.models.length})
+									</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<button
+										onClick={() => setIsManaging(!isManaging)}
+										className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${isManaging ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
+									>
+										{isManaging ? "完成" : "管理"}
+									</button>
+									<button
+										onClick={() => setIsDiscoveryOpen(true)}
+										className="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all flex items-center gap-1"
+										title="从服务商自动获取模型列表"
+									>
+										<RefreshCw className="w-3.5 h-3.5" />
+										同步
+									</button>
+									<button
+										onClick={() => setIsAddModelOpen(true)}
+										className="px-3 py-1.5 text-sm font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 rounded-lg transition-all flex items-center gap-1"
+									>
+										<Plus className="w-3.5 h-3.5" />
+										添加
+									</button>
+								</div>
+							</div>
+
+							{Object.keys(modelGroups).length > 0 ? (
+								<div className="space-y-3">
+									{Object.entries(modelGroups).map(([groupName, models]) => (
+										<div
+											key={groupName}
+											className="border border-zinc-200/80 rounded-2xl overflow-hidden bg-zinc-50/30"
+										>
+											<div
+												className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-100/50 transition-colors"
+												onClick={() => toggleGroup(groupName)}
+											>
+												<div className="flex items-center gap-2">
+													{expandedGroups.has(groupName) ? (
+														<ChevronDown className="w-4 h-4 text-zinc-400" />
+													) : (
+														<ChevronRight className="w-4 h-4 text-zinc-400" />
+													)}
+													<span className="text-sm font-medium text-zinc-700">
+														{formatGroupName(groupName)}
+													</span>
+													<span className="text-xs text-zinc-400">
+														({models.length})
+													</span>
+												</div>
+											</div>
+											{expandedGroups.has(groupName) && (
+												<div className="border-t border-zinc-200/60">
+													{models.map((model, idx) => (
+														<div
+															key={model}
+															className={`flex items-center justify-between px-4 py-3 group hover:bg-white transition-colors ${idx !== models.length - 1 ? "border-b border-zinc-100" : ""}`}
+														>
+															<div className="flex items-center gap-3">
+																<div
+																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm ${selected.color}`}
+																>
+																	{selected.icon && (
+																		<selected.icon className="w-3.5 h-3.5" />
+																	)}
+																</div>
+																<span className="text-sm text-zinc-800 font-medium">
+																	{model}
+																</span>
+																<div className="flex gap-1">
+																	{getModelBadges(model).map((b) => (
+																		<ModelBadge key={b} type={b} />
+																	))}
+																</div>
+															</div>
+															<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+																<button
+																	onClick={() => handleTestModel(model)}
+																	disabled={testingModel === model}
+																	className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+																	title="测试连接"
+																>
+																	{testingModel === model ? (
+																		<Loader2 className="w-4 h-4 animate-spin" />
+																	) : (
+																		<Settings className="w-4 h-4" />
+																	)}
+																</button>
+																{isManaging && (
+																	<button
+																		onClick={() => handleRemoveModel(model)}
+																		className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+																		title="删除"
+																	>
+																		<Trash2 className="w-4 h-4" />
+																	</button>
+																)}
+															</div>
+														</div>
+													))}
+												</div>
+											)}
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="text-center py-12 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50">
+									<p className="text-sm text-zinc-400">暂无模型</p>
+									<button
+										onClick={() => setIsAddModelOpen(true)}
+										className="mt-3 text-sm text-blue-600 hover:text-blue-700"
+									>
+										添加第一个模型
+									</button>
+								</div>
+							)}
+
+							{template && (
+								<p className="mt-4 text-xs text-zinc-400">
+									查看{" "}
+									<button
+										onClick={() =>
+											template.docsUrl && openUrl(template.docsUrl)
+										}
+										className="text-blue-600 hover:underline"
+									>
+										{selected.name} 文档
+									</button>{" "}
+									和{" "}
+									<button
+										onClick={() =>
+											template.homeUrl && openUrl(template.homeUrl)
+										}
+										className="text-blue-600 hover:underline"
+									>
+										模型列表
+									</button>{" "}
+									获取更多详情
+								</p>
+							)}
+						</div>
+
+						{/* 删除 */}
+						<div className="pt-8 border-t border-zinc-200/80">
+							<button
+								onClick={handleDelete}
+								disabled={isDeleting}
+								className="text-sm text-red-500 hover:text-red-600 flex items-center gap-2 px-4 py-2 -ml-4 rounded-lg hover:bg-red-50 transition-colors"
+							>
+								<Trash2 className="w-4 h-4" />
+								{isDeleting ? "删除中..." : "删除此服务商"}
+							</button>
+						</div>
+					</div>
+				) : (
+					<div className="h-full flex items-center justify-center">
+						<div className="text-center">
+							<div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-100 flex items-center justify-center">
+								<Settings className="w-8 h-8 text-zinc-300" />
+							</div>
+							<p className="text-zinc-500">选择一个服务商进行配置</p>
+						</div>
+					</div>
+				)}
+			</div>
+
+			{/* 添加服务商弹窗 */}
+			<Modal
+				isOpen={isAddProviderOpen}
+				onClose={() => setIsAddProviderOpen(false)}
+				title="添加提供商"
+			>
+				<div className="flex justify-center mb-8">
+					<div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-3xl font-bold text-zinc-400 shadow-inner">
+						{providerName?.[0]?.toUpperCase() || "P"}
+					</div>
+				</div>
+				<div className="space-y-5">
+					<div>
+						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+							提供商名称
+						</label>
+						<input
+							type="text"
+							value={providerName}
+							onChange={(e) => setProviderName(e.target.value)}
+							placeholder="例如 OpenAI"
+							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+						/>
+					</div>
+					<div>
+						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+							提供商类型
+						</label>
+						<select
+							value={providerType}
+							onChange={(e) => setProviderType(e.target.value as ProviderType)}
+							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+						>
+							{Object.values(ProviderType).map((t) => (
+								<option key={t} value={t}>
+									{t}
+								</option>
+							))}
+						</select>
+					</div>
+				</div>
+				<div className="flex justify-end gap-3 mt-8">
+					<button
+						onClick={() => setIsAddProviderOpen(false)}
+						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+					>
+						取消
+					</button>
+					<button
+						onClick={handleCreate}
+						disabled={isCreating || !providerName.trim()}
+						className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+					>
+						{isCreating ? "创建中..." : "确定"}
+					</button>
+				</div>
+			</Modal>
+
+			{/* 添加模型弹窗 */}
+			<Modal
+				isOpen={isAddModelOpen}
+				onClose={() => setIsAddModelOpen(false)}
+				title="添加模型"
+			>
+				<div className="space-y-5">
+					<div>
+						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+							模型 ID <span className="text-red-500">*</span>
+						</label>
+						<input
+							type="text"
+							value={newModelId}
+							onChange={(e) => setNewModelId(e.target.value)}
+							placeholder="例如 gpt-4o-mini"
+							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+						/>
+						<p className="mt-2 text-xs text-zinc-400">
+							请输入模型的完整 ID，如 gpt-4o、claude-3-5-sonnet-20241022
+						</p>
+					</div>
+				</div>
+				<div className="flex justify-end gap-3 mt-8">
+					<button
+						onClick={() => {
+							setIsAddModelOpen(false);
+							setNewModelId("");
+						}}
+						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+					>
+						取消
+					</button>
+					<button
+						onClick={handleAddModel}
+						disabled={!newModelId.trim()}
+						className="px-5 py-2.5 text-sm font-medium bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+					>
+						添加模型
+					</button>
+				</div>
+			</Modal>
+
+			{/* 自动获取模型弹窗 */}
+			{selected && (
+				<ModelDiscoveryModal
+					isOpen={isDiscoveryOpen}
+					onClose={() => setIsDiscoveryOpen(false)}
+					provider={selected}
+					onAddModels={async (models) => {
+						const currentModels = new Set(selected.models);
+						const modelsToAdd = models.filter((m) => !currentModels.has(m));
+
+						if (modelsToAdd.length > 0) {
+							const updatedModels = [...selected.models, ...modelsToAdd];
+							await settingsStore.updateProvider(selected.id, {
+								models: updatedModels,
+							});
+						}
+						setIsDiscoveryOpen(false);
+					}}
+				/>
+			)}
+		</div>
+	);
+}

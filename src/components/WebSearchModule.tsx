@@ -1,0 +1,593 @@
+// 网络搜索模块 - 类似 NotebookLM 的搜索体验
+
+import {
+	ArrowRight,
+	Check,
+	ChevronDown,
+	ExternalLink,
+	Eye,
+	Globe,
+	Loader2,
+	Plus,
+	Search,
+	X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchUrlContent } from "../lib/api";
+import {
+	type BrowserSearchResult,
+	fetchPageContent,
+	openBrowserWindow,
+	type PageContent,
+	smartBrowserSearch,
+} from "../lib/config";
+import { workspaceStore } from "../lib/workspaceStore";
+
+interface WebSearchModuleProps {
+	onAddSource?: (sourceId: string) => void;
+	className?: string;
+}
+
+type SearchEngine = "duckduckgo" | "bing" | "google" | "baidu";
+
+const ENGINES: { id: SearchEngine; name: string; icon: string }[] = [
+	{ id: "duckduckgo", name: "DuckDuckGo", icon: "🦆" },
+	{ id: "bing", name: "Bing", icon: "🔍" },
+	{ id: "google", name: "Google", icon: "🌐" },
+	{ id: "baidu", name: "百度", icon: "🔎" },
+];
+
+export default function WebSearchModule({
+	onAddSource,
+	className = "",
+}: WebSearchModuleProps) {
+	const [query, setQuery] = useState("");
+	const [isSearching, setIsSearching] = useState(false);
+	const [results, setResults] = useState<BrowserSearchResult[]>([]);
+	const [selectedEngine, setSelectedEngine] = useState<SearchEngine>("bing");
+	const [showEngineDropdown, setShowEngineDropdown] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [addingUrls, setAddingUrls] = useState<Set<string>>(new Set());
+	const [addedUrls, setAddedUrls] = useState<Set<string>>(new Set());
+
+	// 预览模态框状态
+	const [previewResult, setPreviewResult] =
+		useState<BrowserSearchResult | null>(null);
+	const [previewContent, setPreviewContent] = useState<PageContent | null>(
+		null,
+	);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [previewError, setPreviewError] = useState<string | null>(null);
+	const [isMacPlatform, setIsMacPlatform] = useState(false);
+
+	const inputRef = useRef<HTMLInputElement>(null);
+	const engineDropdownRef = useRef<HTMLDivElement>(null);
+
+	// 自动聚焦输入框
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
+
+	// 点击外部关闭下拉菜单
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (
+				engineDropdownRef.current &&
+				!engineDropdownRef.current.contains(e.target as Node)
+			) {
+				setShowEngineDropdown(false);
+			}
+		};
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
+
+	// 获取当前平台（基于 navigator）
+	useEffect(() => {
+		if (typeof navigator !== "undefined") {
+			setIsMacPlatform(/mac/i.test(navigator.platform || navigator.userAgent));
+		}
+	}, []);
+
+	const useReadingMode = !isMacPlatform;
+
+	const handleSearch = async () => {
+		if (!query.trim() || isSearching) return;
+
+		setIsSearching(true);
+		setError(null);
+		setResults([]);
+
+		try {
+			console.log("[WebSearchModule] 搜索:", query, "引擎:", selectedEngine);
+
+			// 统一使用浏览器模式（不需要 API Key）
+			const searchResults = await smartBrowserSearch({
+				query: query.trim(),
+				engine: selectedEngine,
+				use_playwright: true,
+				limit: 10,
+			});
+
+			console.log("[WebSearchModule] 结果:", searchResults.length, "条");
+			setResults(searchResults);
+		} catch (e) {
+			console.error("[WebSearchModule] 搜索失败:", e);
+			const errorMsg = e instanceof Error ? e.message : String(e);
+			setError(errorMsg);
+		} finally {
+			setIsSearching(false);
+		}
+	};
+
+	// 打开预览（根据平台选择模式）
+	const handlePreview = useCallback(
+		async (result: BrowserSearchResult) => {
+			setPreviewResult(result);
+			setPreviewContent(null);
+			setPreviewError(null);
+
+			if (!useReadingMode) {
+				setIsLoadingPreview(false);
+				return;
+			}
+
+			setIsLoadingPreview(true);
+			try {
+				console.log("[WebSearchModule] 获取预览内容:", result.url);
+				const content = await fetchPageContent(result.url);
+				console.log("[WebSearchModule] 预览内容获取成功:", content.title);
+				setPreviewContent(content);
+			} catch (e) {
+				console.error("[WebSearchModule] 获取预览内容失败:", e);
+				setPreviewError(e instanceof Error ? e.message : "无法加载页面内容");
+			} finally {
+				setIsLoadingPreview(false);
+			}
+		},
+		[useReadingMode],
+	);
+
+	// 关闭预览模态框
+	const closePreview = useCallback(() => {
+		setPreviewResult(null);
+		setPreviewContent(null);
+		setPreviewError(null);
+	}, []);
+
+	// 在外部浏览器中打开
+	const handleOpenExternal = useCallback(async (url: string) => {
+		try {
+			await openBrowserWindow(url);
+		} catch (e) {
+			// 如果 Tauri 窗口失败，回退到系统浏览器
+			window.open(url, "_blank");
+		}
+	}, []);
+
+	// 从预览添加为资料
+	const handleAddFromPreview = async () => {
+		if (
+			!previewResult ||
+			addingUrls.has(previewResult.url) ||
+			addedUrls.has(previewResult.url)
+		)
+			return;
+
+		setAddingUrls((prev) => new Set(prev).add(previewResult.url));
+
+		try {
+			console.log("[WebSearchModule] 添加资料:", previewResult.url);
+			const project_id =
+				workspaceStore.getState().currentProjectId || undefined;
+			const currentFolderId = workspaceStore.getState().currentFolderId;
+			const folder_id =
+				currentFolderId && currentFolderId !== "__unassigned__"
+					? currentFolderId
+					: undefined;
+			const source = await fetchUrlContent({
+				url: previewResult.url,
+				project_id,
+				folder_id,
+			});
+			console.log("[WebSearchModule] 资料已添加:", source.id);
+
+			setAddedUrls((prev) => new Set(prev).add(previewResult.url));
+			onAddSource?.(source.id);
+			closePreview();
+		} catch (e) {
+			console.error("[WebSearchModule] 添加资料失败:", e);
+			setError(e instanceof Error ? e.message : "添加失败");
+		} finally {
+			setAddingUrls((prev) => {
+				const next = new Set(prev);
+				next.delete(previewResult?.url || "");
+				return next;
+			});
+		}
+	};
+
+	const handleAddAsSource = async (result: BrowserSearchResult) => {
+		if (addingUrls.has(result.url) || addedUrls.has(result.url)) return;
+
+		setAddingUrls((prev) => new Set(prev).add(result.url));
+
+		try {
+			console.log("[WebSearchModule] 添加资料:", result.url);
+			const project_id =
+				workspaceStore.getState().currentProjectId || undefined;
+			const currentFolderId = workspaceStore.getState().currentFolderId;
+			const folder_id =
+				currentFolderId && currentFolderId !== "__unassigned__"
+					? currentFolderId
+					: undefined;
+			const source = await fetchUrlContent({
+				url: result.url,
+				project_id,
+				folder_id,
+			});
+			console.log("[WebSearchModule] 资料已添加:", source.id);
+
+			setAddedUrls((prev) => new Set(prev).add(result.url));
+			onAddSource?.(source.id);
+		} catch (e) {
+			console.error("[WebSearchModule] 添加资料失败:", e);
+			setError(e instanceof Error ? e.message : "添加失败");
+		} finally {
+			setAddingUrls((prev) => {
+				const next = new Set(prev);
+				next.delete(result.url);
+				return next;
+			});
+		}
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			handleSearch();
+		}
+	};
+
+	const currentEngine = ENGINES.find((e) => e.id === selectedEngine)!;
+
+	return (
+		<div className={`flex flex-col h-full ${className}`}>
+			{/* 搜索输入区域 - 紧凑设计 */}
+			<div className="space-y-2 mb-3">
+				{/* 搜索框 */}
+				<div className="relative flex items-center gap-2 px-3 py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-xl transition-all focus-within:bg-white dark:focus-within:bg-zinc-800 focus-within:shadow-sm focus-within:ring-1 focus-within:ring-zinc-200 dark:focus-within:ring-zinc-700">
+					<Search className="w-4 h-4 text-zinc-400 shrink-0" />
+					<input
+						ref={inputRef}
+						type="text"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						onKeyDown={handleKeyDown}
+						placeholder="搜索网络内容..."
+						className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+					/>
+					{query && (
+						<button
+							onClick={() => setQuery("")}
+							className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors"
+						>
+							<X className="w-3.5 h-3.5" />
+						</button>
+					)}
+					{/* 搜索按钮内嵌 */}
+					<button
+						onClick={handleSearch}
+						disabled={!query.trim() || isSearching}
+						className={`p-1.5 rounded-lg transition-all ${
+							query.trim() && !isSearching
+								? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90"
+								: "bg-zinc-300/50 dark:bg-zinc-700/50 text-zinc-400 cursor-not-allowed"
+						}`}
+					>
+						{isSearching ? (
+							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+						) : (
+							<ArrowRight className="w-3.5 h-3.5" />
+						)}
+					</button>
+				</div>
+
+				{/* 选项栏 - 简化为单行 */}
+				<div className="flex items-center gap-1.5">
+					{/* 搜索引擎选择 */}
+					<div className="relative" ref={engineDropdownRef}>
+						<button
+							onClick={() => setShowEngineDropdown(!showEngineDropdown)}
+							className="flex items-center gap-1 px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-xs text-zinc-500 dark:text-zinc-400 transition-colors"
+						>
+							<Globe className="w-3 h-3" />
+							<span>{currentEngine.name}</span>
+							<ChevronDown className="w-2.5 h-2.5" />
+						</button>
+
+						{showEngineDropdown && (
+							<div className="absolute top-full left-0 mt-1 w-36 bg-white dark:bg-zinc-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-[100]">
+								{ENGINES.map((engine) => (
+									<button
+										key={engine.id}
+										onClick={() => {
+											setSelectedEngine(engine.id);
+											setShowEngineDropdown(false);
+										}}
+										className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
+											selectedEngine === engine.id
+												? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+												: "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+										}`}
+									>
+										<span>{engine.icon}</span>
+										<span>{engine.name}</span>
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+
+			{/* 错误提示 */}
+			{error && (
+				<div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs mb-2">
+					{error}
+				</div>
+			)}
+
+			{/* 搜索结果 */}
+			{results.length > 0 && (
+				<div className="flex-1 overflow-hidden flex flex-col min-h-0">
+					<div className="flex items-center justify-between py-1.5 text-[11px] text-zinc-400 shrink-0">
+						<span>找到 {results.length} 个结果</span>
+					</div>
+
+					<div className="flex-1 overflow-y-auto scrollbar-hide space-y-1">
+						{results.map((result, idx) => {
+							const isAdding = addingUrls.has(result.url);
+							const isAdded = addedUrls.has(result.url);
+
+							return (
+								<div
+									key={idx}
+									className={`p-2.5 rounded-lg transition-all group ${
+										isAdded
+											? "bg-green-50 dark:bg-green-900/10 ring-1 ring-green-200 dark:ring-green-800"
+											: "hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
+									}`}
+								>
+									<div className="flex items-start gap-2">
+										{/* 预览按钮 */}
+										<button
+											onClick={() => handlePreview(result)}
+											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+											title="预览内容"
+										>
+											<Eye className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-500" />
+										</button>
+
+										{/* 添加按钮 */}
+										<button
+											onClick={() => handleAddAsSource(result)}
+											disabled={isAdding || isAdded}
+											className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 transition-colors ${
+												isAdded
+													? "bg-green-500 text-white cursor-default"
+													: isAdding
+														? "bg-zinc-200 dark:bg-zinc-700 cursor-wait"
+														: "bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30"
+											}`}
+											title={isAdded ? "已添加" : "添加为资料"}
+										>
+											{isAdding ? (
+												<Loader2 className="w-3 h-3 animate-spin text-zinc-400" />
+											) : isAdded ? (
+												<Check className="w-3 h-3" />
+											) : (
+												<Plus className="w-3 h-3 text-zinc-400 hover:text-green-500" />
+											)}
+										</button>
+
+										{/* 内容 */}
+										<div className="flex-1 min-w-0">
+											<h4 className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1 leading-tight">
+												{result.title}
+											</h4>
+											<p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1">
+												{result.snippet}
+											</p>
+										</div>
+
+										{/* 外链按钮 */}
+										<a
+											href={result.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											onClick={(e) => e.stopPropagation()}
+											className="shrink-0 p-1 text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity"
+											title="在浏览器中打开"
+										>
+											<ExternalLink className="w-3 h-3" />
+										</a>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			)}
+
+			{/* 空状态 / 初始状态 */}
+			{!isSearching && results.length === 0 && (
+				<div className="flex-1 flex items-center justify-center">
+					<div className="text-center py-8">
+						<div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+							<Search className="w-5 h-5 text-zinc-400" />
+						</div>
+						<p className="text-xs text-zinc-400">
+							{query ? "未找到相关结果" : "输入关键词搜索网络内容"}
+						</p>
+					</div>
+				</div>
+			)}
+
+			{/* 预览模态框 - 根据平台切换模式 */}
+			{previewResult && (
+				<div
+					className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+					onClick={closePreview}
+				>
+					<div
+						className="w-[90vw] h-[85vh] max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+						onClick={(e) => e.stopPropagation()}
+					>
+						{/* 模态框头部 */}
+						<div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80">
+							<div className="flex items-center gap-3 min-w-0 flex-1">
+								<div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center shrink-0">
+									<Globe className="w-4 h-4 text-zinc-500" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<h3 className="text-base font-medium text-zinc-800 dark:text-zinc-200 truncate">
+										{previewContent?.title || previewResult.title}
+									</h3>
+									<p className="text-xs text-zinc-400 truncate mt-0.5">
+										{previewResult.url}
+									</p>
+								</div>
+							</div>
+							<button
+								onClick={closePreview}
+								className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						{/* 阅读模式（Windows 等） vs iframe（macOS） */}
+						{useReadingMode ? (
+							<div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-900">
+								{isLoadingPreview ? (
+									<div className="flex flex-col items-center justify-center h满 gap-3">
+										<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+										<p className="text-sm text-zinc-500">正在加载页面内容...</p>
+									</div>
+								) : previewError ? (
+									<div className="flex flex-col items-center justify-center h满 gap-4 px-8">
+										<div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+											<X className="w-8 h-8 text-red-400" />
+										</div>
+										<div className="text-center">
+											<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+												无法加载页面内容
+											</p>
+											<p className="text-xs text-zinc-500 max-w-md">
+												{previewError}
+											</p>
+										</div>
+										<button
+											onClick={() => handleOpenExternal(previewResult.url)}
+											className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 transition-colors"
+										>
+											<ExternalLink className="w-4 h-4" />
+											<span>在浏览器中打开</span>
+										</button>
+									</div>
+								) : previewContent ? (
+									<article className="max-w-3xl mx-auto px-8 py-8">
+										{previewContent.description && (
+											<p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
+												{previewContent.description}
+											</p>
+										)}
+										<div
+											className="prose prose-zinc dark:prose-invert prose-sm max-w-none
+                        prose-headings:font-medium prose-headings:text-zinc-800 dark:prose-headings:text-zinc-200
+                        prose-p:text-zinc-600 dark:prose-p:text-zinc-400 prose-p:leading-relaxed
+                        prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-zinc-700 dark:prose-strong:text-zinc-300
+                        prose-code:text-zinc-700 dark:prose-code:text-zinc-300 prose-code:bg-zinc-100 dark:prose-code:bg-zinc-800 prose-code:px-1 prose-code:rounded
+                        prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-800
+                        prose-blockquote:border-zinc-300 dark:prose-blockquote:border-zinc-700
+                        prose-li:text-zinc-600 dark:prose-li:text-zinc-400"
+											style={{ whiteSpace: "pre-wrap" }}
+										>
+											{previewContent.content}
+										</div>
+									</article>
+								) : (
+									<div className="flex items-center justify-center h满">
+										<p className="text-sm text-zinc-400">暂无内容</p>
+									</div>
+								)}
+							</div>
+						) : (
+							<div className="flex-1 bg-white dark:bg-zinc-900">
+								<iframe
+									src={previewResult.url}
+									className="w-full h-full border-0"
+									sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+									title={previewResult.title}
+								/>
+							</div>
+						)}
+
+						{/* 模态框底部 */}
+						<div className="flex items-center justify-between px-5 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80">
+							<button
+								onClick={() => handleOpenExternal(previewResult.url)}
+								className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+							>
+								<ExternalLink className="w-4 h-4" />
+								<span>在浏览器中打开</span>
+							</button>
+
+							<div className="flex items-center gap-3">
+								<button
+									onClick={closePreview}
+									className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								>
+									取消
+								</button>
+								<button
+									onClick={handleAddFromPreview}
+									disabled={
+										addingUrls.has(previewResult.url) ||
+										addedUrls.has(previewResult.url)
+									}
+									className={`flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg transition-all ${
+										addedUrls.has(previewResult.url)
+											? "bg-green-500 text-white cursor-default"
+											: addingUrls.has(previewResult.url)
+												? "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 cursor-not-allowed"
+												: "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90"
+									}`}
+								>
+									{addingUrls.has(previewResult.url) ? (
+										<>
+											<Loader2 className="w-4 h-4 animate-spin" />
+											<span>添加中...</span>
+										</>
+									) : addedUrls.has(previewResult.url) ? (
+										<>
+											<Check className="w-4 h-4" />
+											<span>已添加</span>
+										</>
+									) : (
+										<>
+											<Plus className="w-4 h-4" />
+											<span>添加为资料</span>
+										</>
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}

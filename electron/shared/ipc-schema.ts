@@ -180,8 +180,57 @@ export type IPCSchema = {
 	};
 
 	// ==================
-	// Providers 命令
+	// Dashboard / Stats
 	// ==================
+	get_daily_activity: {
+		input: { days: number };
+		output: Array<{ date: string; count: number }>;
+	};
+
+	// ==================
+	// Cards（分享卡片）
+	// ==================
+	list_cards: {
+		input: Record<string, never>;
+		output: Array<{
+			id: string;
+			title: string;
+			text: string;
+			image_path: string;
+			source_url?: string;
+			theme_id?: string;
+			font_id?: string;
+			aspect_ratio?: string;
+			created_at: number;
+			updated_at: number;
+		}>;
+	};
+	get_card: {
+		input: { id: string };
+		output: {
+			id: string;
+			title: string;
+			text: string;
+			image_path: string;
+			source_url?: string;
+			theme_id?: string;
+			font_id?: string;
+			aspect_ratio?: string;
+			created_at: number;
+			updated_at: number;
+		};
+	};
+	delete_card: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	get_card_image_path: {
+		input: { image_path: string };
+		output: { path: string };
+	};
+
+	// ==================
+	// Providers 命令
 	list_providers: {
 		input: Record<string, never>;
 		output: Provider[];

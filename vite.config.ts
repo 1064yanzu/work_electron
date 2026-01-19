@@ -1,5 +1,4 @@
 import path from "node:path";
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import electron from "vite-plugin-electron/simple";
@@ -14,6 +13,7 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			external: [
+				"@anthropic-ai/claude-agent-sdk",
 				"@libsql/client",
 				"@libsql/darwin-arm64",
 				"@libsql/linux-x64",
@@ -21,9 +21,11 @@ export default defineConfig({
 			],
 		},
 	},
+	optimizeDeps: {
+		exclude: ["@anthropic-ai/claude-agent-sdk"],
+	},
 	plugins: [
 		react(),
-		tailwindcss(),
 		electron({
 			main: {
 				// Shortcut of `build.lib.entry`.

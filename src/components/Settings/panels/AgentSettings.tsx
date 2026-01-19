@@ -1,0 +1,791 @@
+import {
+	Bot,
+	ChevronDown,
+	Clock,
+	Database,
+	Loader2,
+	RotateCcw,
+	Shield,
+	ShieldAlert,
+	ShieldCheck,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useAgentChatSettingsStore } from "../../../lib/agent/chatSettingsStore";
+import { usePermissionStore } from "../../../lib/agent/permissionStore";
+import {
+	DEFAULT_PERMISSION_POLICY,
+	getToolRiskLevels,
+	type PermissionMode,
+	resetToolRiskLevels,
+	setToolRiskLevel,
+	TOOL_NAMES,
+	type ToolRiskLevel,
+	type ToolType,
+} from "../../../lib/agent/types";
+import {
+	type KbEmbeddingStats,
+	kbEmbeddingsRebuild,
+	kbGetEmbeddingStats,
+} from "../../../lib/api";
+import { getConfig, setConfig } from "../../../lib/config";
+import { useSettingsStore } from "../../../lib/settingsStore";
+import { Toggle } from "../components";
+
+const RISK_LEVEL_CONFIG: Record<
+	ToolRiskLevel,
+	{ label: string; icon: React.ElementType; color: string }
+> = {
+	L0: { label: "低风险", icon: ShieldCheck, color: "text-emerald-600" },
+	L1: { label: "中风险", icon: Shield, color: "text-amber-600" },
+	L2: { label: "高风险", icon: ShieldAlert, color: "text-red-600" },
+};
+
+const PERMISSION_MODE_OPTIONS: { value: PermissionMode; label: string }[] = [
+	{ value: "auto_approve", label: "自动批准" },
+	{ value: "ask", label: "每次询问" },
+	{ value: "deny", label: "默认拒绝" },
+];
+
+const RETRIEVAL_MODE_OPTIONS = [
+	{ value: "fts" as const, label: "FTS/LIKE", desc: "传统全文检索，稳定可靠" },
+	{
+		value: "vector" as const,
+		label: "向量检索",
+		desc: "语义相似度匹配，需配置模型",
+	},
+	{
+		value: "hybrid" as const,
+		label: "混合模式",
+		desc: "向量优先，FTS 补充（推荐）",
+	},
+];
+
+export function AgentSettings() {
+	const { policy, updatePolicy, clearSessionRemembered } = usePermissionStore();
+	const { providers } = useSettingsStore();
+	const { settings: chatSettings, agentChatSettingsStore } =
+		useAgentChatSettingsStore();
+	const [toolRiskLevels, setToolRiskLevelsState] = useState<
+		Record<ToolType, ToolRiskLevel>
+	>(() => getToolRiskLevels());
+
+	// 组件挂载时加载风险等级
+	useEffect(() => {
+		setToolRiskLevelsState(getToolRiskLevels());
+	}, []);
+
+	const allModels = useMemo(
+		() =>
+			providers
+				.filter((p) => p.isEnabled)
+				.flatMap((p) => p.models.map((m) => ({ id: m, provider: p.name }))),
+		[providers],
+	);
+
+	const [kbRetrievalMode, setKbRetrievalMode] = useState<
+		"fts" | "vector" | "hybrid"
+	>("fts");
+	const [kbEmbeddingModel, setKbEmbeddingModel] = useState<string>("");
+	const [kbStats, setKbStats] = useState<KbEmbeddingStats | null>(null);
+	const [isRebuilding, setIsRebuilding] = useState(false);
+	const [autoHint, setAutoHint] = useState<string>("");
+	const [kbEmbeddingFallbackConcurrency, setKbEmbeddingFallbackConcurrency] =
+		useState<number>(4);
+	const [kbVectorMinScore, setKbVectorMinScore] = useState<number>(0.2);
+	const [kbEmbeddingMaxChars, setKbEmbeddingMaxChars] = useState<number>(480);
+	const [replayLimitDraft, setReplayLimitDraft] = useState<string>(
+		String(chatSettings.replayLimit),
+	);
+
+	useEffect(() => {
+		setReplayLimitDraft(String(chatSettings.replayLimit));
+	}, [chatSettings.replayLimit]);
+
+	useEffect(() => {
+		const load = async () => {
+			try {
+				const mode = await getConfig("kb.retrieval_mode");
+				const model = await getConfig("kb.embedding_model");
+				const fallbackConc = await getConfig(
+					"kb.embedding_fallback_concurrency",
+				);
+				const minScore = await getConfig("kb.vector_min_score");
+				const maxChars = await getConfig("kb.embedding_max_chars");
+
+				const m =
+					mode === "fts" || mode === "vector" || mode === "hybrid"
+						? mode
+						: "fts";
+				const em = typeof model === "string" ? model : "";
+				const fc =
+					typeof fallbackConc === "number"
+						? fallbackConc
+						: typeof fallbackConc === "string"
+							? parseInt(fallbackConc) || 4
+							: 4;
+				const ms =
+					typeof minScore === "number"
+						? minScore
+						: typeof minScore === "string"
+							? parseFloat(minScore) || 0.2
+							: 0.2;
+				const mc =
+					typeof maxChars === "number"
+						? maxChars
+						: typeof maxChars === "string"
+							? parseInt(maxChars) || 480
+							: 480;
+
+				setKbRetrievalMode(m);
+				setKbEmbeddingModel(em);
+				setKbEmbeddingFallbackConcurrency(fc);
+				setKbVectorMinScore(Math.max(0, Math.min(1, ms)));
+				setKbEmbeddingMaxChars(Math.max(32, Math.min(4096, mc)));
+				if ((m === "vector" || m === "hybrid") && em) {
+					setAutoHint("已开启自动补齐：后台会逐步生成缺失的向量索引");
+				}
+			} catch {
+				/* ignore */
+			}
+			try {
+				setKbStats(await kbGetEmbeddingStats());
+			} catch {
+				/* ignore */
+			}
+		};
+		load();
+	}, []);
+
+	const handleKbModeChange = async (mode: "fts" | "vector" | "hybrid") => {
+		setKbRetrievalMode(mode);
+		try {
+			await setConfig("kb.retrieval_mode", mode);
+		} catch {
+			/* ignore */
+		}
+		try {
+			setKbStats(await kbGetEmbeddingStats());
+		} catch {
+			/* ignore */
+		}
+		if ((mode === "vector" || mode === "hybrid") && kbEmbeddingModel) {
+			setAutoHint("已开启自动补齐：后台会逐步生成缺失的向量索引");
+		} else {
+			setAutoHint("");
+		}
+	};
+
+	const handleKbEmbeddingModelChange = async (model: string) => {
+		setKbEmbeddingModel(model);
+		try {
+			await setConfig("kb.embedding_model", model);
+			setKbStats(await kbGetEmbeddingStats());
+		} catch {
+			/* ignore */
+		}
+		if (
+			model &&
+			(kbRetrievalMode === "vector" || kbRetrievalMode === "hybrid")
+		) {
+			setAutoHint("已开启自动补齐：后台会逐步生成缺失的向量索引");
+		} else {
+			setAutoHint("");
+		}
+	};
+
+	const handleKbRebuild = async () => {
+		if (!kbEmbeddingModel) {
+			alert("请先选择 Embedding 模型");
+			return;
+		}
+		setIsRebuilding(true);
+		try {
+			const rebuilt = await kbEmbeddingsRebuild({
+				embedding_model: kbEmbeddingModel,
+				force: false,
+				batch_size: 32,
+			});
+			setKbStats(await kbGetEmbeddingStats());
+			alert(`✅ 已生成/更新 ${rebuilt} 条分块向量索引`);
+		} catch (e) {
+			alert(`❌ 重建失败: ${e}`);
+		} finally {
+			setIsRebuilding(false);
+		}
+	};
+
+	const handleKbFallbackConcurrencyChange = async (val: number) => {
+		const v = Math.max(1, Math.min(16, val));
+		setKbEmbeddingFallbackConcurrency(v);
+		try {
+			await setConfig("kb.embedding_fallback_concurrency", v);
+		} catch {
+			/* ignore */
+		}
+	};
+
+	const handleKbVectorMinScoreChange = async (val: number) => {
+		const v = Math.max(0, Math.min(1, val));
+		setKbVectorMinScore(v);
+		try {
+			await setConfig("kb.vector_min_score", v);
+		} catch {
+			/* ignore */
+		}
+	};
+
+	const handleKbEmbeddingMaxCharsChange = async (val: number) => {
+		const v = Math.max(32, Math.min(4096, val));
+		setKbEmbeddingMaxChars(v);
+		try {
+			await setConfig("kb.embedding_max_chars", v);
+		} catch {
+			/* ignore */
+		}
+	};
+
+	const handleLevelPolicyChange = (
+		level: ToolRiskLevel,
+		mode: PermissionMode,
+	) => {
+		updatePolicy({ levelPolicies: { ...policy.levelPolicies, [level]: mode } });
+	};
+
+	const handleTimeoutChange = (seconds: number) => {
+		updatePolicy({ timeoutSeconds: Math.max(5, Math.min(120, seconds)) });
+	};
+
+	const handleResetToDefault = () => {
+		updatePolicy(DEFAULT_PERMISSION_POLICY);
+		clearSessionRemembered();
+		resetToolRiskLevels();
+		setToolRiskLevelsState(getToolRiskLevels());
+	};
+
+	const handleToolRiskLevelChange = (
+		toolType: ToolType,
+		riskLevel: ToolRiskLevel,
+	) => {
+		setToolRiskLevel(toolType, riskLevel);
+		// 立即更新状态，确保 UI 响应
+		setToolRiskLevelsState((prev) => ({
+			...prev,
+			[toolType]: riskLevel,
+		}));
+	};
+
+	const commitReplayLimit = async () => {
+		const next =
+			replayLimitDraft.trim() === "" ? 0 : parseInt(replayLimitDraft, 10);
+		await agentChatSettingsStore.setReplayLimit(
+			Number.isFinite(next) ? next : 0,
+		);
+	};
+
+	return (
+		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
+			<div className="max-w-2xl space-y-8">
+				<div className="border-b border-border pb-4 mb-8">
+					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
+						<Bot className="w-5 h-5" />
+						Agent 设置
+					</h3>
+					<p className="text-sm text-text-secondary mt-1">
+						配置 Agent 工具权限与资料库检索策略
+					</p>
+				</div>
+
+				{/* 工具权限策略 */}
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary flex items-center gap-2">
+						<Shield className="w-4 h-4" />
+						工具权限策略
+					</h4>
+					<p className="text-xs text-text-muted -mt-2">
+						按风险等级配置工具调用的默认权限。低风险（L0）为纯读取操作，中风险（L1）涉及网络请求，高风险（L2）可能修改系统状态。
+					</p>
+					<div className="space-y-3">
+						{(["L0", "L1", "L2"] as ToolRiskLevel[]).map((level) => {
+							const cfg = RISK_LEVEL_CONFIG[level];
+							const Icon = cfg.icon;
+							return (
+								<div
+									key={level}
+									className="flex items-center justify-between gap-4"
+								>
+									<div className="flex items-center gap-2 min-w-[100px]">
+										<Icon className={`w-4 h-4 ${cfg.color}`} />
+										<span className="text-sm text-text-primary">
+											{cfg.label}
+										</span>
+									</div>
+									<div className="relative flex-1 max-w-[200px]">
+										<select
+											value={policy.levelPolicies[level]}
+											onChange={(e) =>
+												handleLevelPolicyChange(
+													level,
+													e.target.value as PermissionMode,
+												)
+											}
+											className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+										>
+											{PERMISSION_MODE_OPTIONS.map((opt) => (
+												<option key={opt.value} value={opt.value}>
+													{opt.label}
+												</option>
+											))}
+										</select>
+										<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+
+				{/* 会话持久化与回放 */}
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary flex items-center gap-2">
+						<Database className="w-4 h-4" />
+						会话持久化与回放
+					</h4>
+					<p className="text-xs text-text-muted -mt-2">
+						控制聊天消息是否写入后端 Agent
+						Runtime（agent_messages），以及是否在切换会话时从后端回放。
+					</p>
+
+					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+							<div>
+								<div className="text-sm font-medium text-text-primary">
+									启用回放
+								</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									切换到绑定了 Agent Session
+									的会话时，从后端消息记录回放到聊天窗口
+								</div>
+							</div>
+							<Toggle
+								checked={chatSettings.replayEnabled}
+								onChange={() =>
+									void agentChatSettingsStore.setReplayEnabled(
+										!chatSettings.replayEnabled,
+									)
+								}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+							<div>
+								<div className="text-sm font-medium text-text-primary">
+									启用消息落库
+								</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									将 user/assistant 消息写入
+									agent_messages（后端不可用会自动降级）
+								</div>
+							</div>
+							<Toggle
+								checked={chatSettings.persistEnabled}
+								onChange={() =>
+									void agentChatSettingsStore.setPersistEnabled(
+										!chatSettings.persistEnabled,
+									)
+								}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+							<div>
+								<div className="text-sm font-medium text-text-primary">
+									落库 Trace 事件
+								</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									将工具调用/任务等 trace 事件也写入
+									agent_messages（用于更完整回放）
+								</div>
+							</div>
+							<Toggle
+								checked={chatSettings.persistTraceEnabled}
+								onChange={() =>
+									void agentChatSettingsStore.setPersistTraceEnabled(
+										!chatSettings.persistTraceEnabled,
+									)
+								}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+							<div>
+								<div className="text-sm font-medium">Blocks 优先渲染</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									当消息包含 blocks
+									时优先按结构化方式渲染（回放更一致，可随时关闭回退旧渲染）
+								</div>
+							</div>
+							<Toggle
+								checked={chatSettings.blocksFirstEnabled}
+								onChange={() =>
+									void agentChatSettingsStore.setBlocksFirstEnabled(
+										!chatSettings.blocksFirstEnabled,
+									)
+								}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between py-3">
+							<div>
+								<div className="text-sm font-medium">就地展示思考/工具调用</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									在对话正文中按时间线插入“思考/工具卡片/任务列表”，不再集中显示“Agent
+									运行过程”面板
+								</div>
+							</div>
+							<Toggle
+								checked={chatSettings.inlineTraceEnabled}
+								onChange={() =>
+									void agentChatSettingsStore.setInlineTraceEnabled(
+										!chatSettings.inlineTraceEnabled,
+									)
+								}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+							<div>
+								<div className="text-sm font-medium text-text-primary">
+									回放条数限制
+								</div>
+								<div className="text-xs text-text-muted mt-0.5">
+									仅回放最近 N 条消息；设置为 0 表示不限制
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<input
+									type="number"
+									min={0}
+									max={5000}
+									value={replayLimitDraft}
+									onChange={(e) => setReplayLimitDraft(e.target.value)}
+									onBlur={() => void commitReplayLimit()}
+									className="w-24 px-3 py-2 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								/>
+								<span className="text-xs text-text-muted">条</span>
+							</div>
+						</div>
+
+						<div className="flex items-center justify-between gap-4 pt-2">
+							<div>
+								<div className="text-sm font-medium text-text-primary">
+									重置为默认
+								</div>
+								<div className="text-xs text-text-muted">
+									恢复回放/落库相关开关与限制为默认值
+								</div>
+							</div>
+							<button
+								onClick={() => void agentChatSettingsStore.resetToDefaults()}
+								className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-primary hover:border-primary transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+							>
+								<RotateCcw className="w-4 h-4 shrink-0" />
+								重置
+							</button>
+						</div>
+					</div>
+				</div>
+
+				{/* 内置工具列表 */}
+				<div className="space-y-4">
+					<div className="flex items-center justify-between">
+						<h4 className="font-medium text-text-primary">内置工具风险等级</h4>
+						<p className="text-xs text-text-muted">
+							调整每个工具的风险等级，影响权限策略的默认行为
+						</p>
+					</div>
+					<div className="border border-border rounded-xl overflow-hidden">
+						<table className="w-full text-sm">
+							<thead className="bg-zinc-50">
+								<tr>
+									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+										工具名称
+									</th>
+									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+										风险等级
+									</th>
+									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+										当前策略
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{(Object.keys(TOOL_NAMES) as ToolType[]).map((toolType) => {
+									const riskLevel = toolRiskLevels[toolType] || "L0";
+									const currentMode = policy.levelPolicies[riskLevel];
+									const modeLabel = PERMISSION_MODE_OPTIONS.find(
+										(o) => o.value === currentMode,
+									)?.label;
+									return (
+										<tr
+											key={toolType}
+											className="border-t border-border hover:bg-zinc-50/50"
+										>
+											<td className="px-4 py-2.5 text-text-primary">
+												{TOOL_NAMES[toolType]}
+											</td>
+											<td className="px-4 py-2.5">
+												<div className="relative inline-block">
+													<select
+														value={riskLevel}
+														onChange={(e) =>
+															handleToolRiskLevelChange(
+																toolType,
+																e.target.value as ToolRiskLevel,
+															)
+														}
+														className="appearance-none px-3 py-1.5 pr-8 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+													>
+														{(["L0", "L1", "L2"] as ToolRiskLevel[]).map(
+															(level) => {
+																const levelCfg = RISK_LEVEL_CONFIG[level];
+																return (
+																	<option key={level} value={level}>
+																		{level} - {levelCfg.label}
+																	</option>
+																);
+															},
+														)}
+													</select>
+													<ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+												</div>
+											</td>
+											<td className="px-4 py-2.5 text-text-secondary">
+												{modeLabel}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				{/* 权限请求超时 */}
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary flex items-center gap-2">
+						<Clock className="w-4 h-4" />
+						权限请求超时
+					</h4>
+					<div className="flex items-center gap-3">
+						<div className="relative w-28">
+							<input
+								type="number"
+								min={5}
+								max={120}
+								value={policy.timeoutSeconds}
+								onChange={(e) =>
+									handleTimeoutChange(parseInt(e.target.value) || 30)
+								}
+								className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+							/>
+						</div>
+						<span className="text-sm text-text-secondary">
+							秒（超时后自动拒绝）
+						</span>
+					</div>
+				</div>
+
+				{/* 资料库检索 */}
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary flex items-center gap-2">
+						<Database className="w-4 h-4" />
+						资料库检索
+					</h4>
+					<div className="space-y-3">
+						<div>
+							<label className="text-sm text-text-secondary mb-1.5 block">
+								检索模式
+							</label>
+							<div className="grid grid-cols-3 gap-3">
+								{RETRIEVAL_MODE_OPTIONS.map((opt) => (
+									<button
+										key={opt.value}
+										onClick={() => handleKbModeChange(opt.value)}
+										className={`p-3 rounded-xl text-left transition-colors ${
+											kbRetrievalMode === opt.value
+												? "border-2 border-primary bg-primary/5"
+												: "border border-border hover:border-primary/50"
+										}`}
+									>
+										<div
+											className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}
+										>
+											{opt.label}
+										</div>
+										<div className="text-xs text-text-muted mt-0.5">
+											{opt.desc}
+										</div>
+									</button>
+								))}
+							</div>
+						</div>
+
+						<div>
+							<label className="text-sm text-text-secondary mb-1.5 block">
+								Embedding 输入最大长度
+							</label>
+							<div className="flex items-center gap-3">
+								<div className="relative w-28">
+									<input
+										type="number"
+										min={32}
+										max={4096}
+										step={16}
+										value={kbEmbeddingMaxChars}
+										onChange={(e) =>
+											handleKbEmbeddingMaxCharsChange(
+												parseInt(e.target.value) || 480,
+											)
+										}
+										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									/>
+								</div>
+								<span className="text-xs text-text-muted">
+									为规避部分服务商的 512 tokens 限制，向量化时会先截断内容（默认
+									480 字符）。
+								</span>
+							</div>
+						</div>
+
+						<div>
+							<label className="text-sm text-text-secondary mb-1.5 block">
+								向量命中阈值
+							</label>
+							<div className="flex items-center gap-3">
+								<div className="relative w-28">
+									<input
+										type="number"
+										min={0}
+										max={1}
+										step={0.01}
+										value={kbVectorMinScore}
+										onChange={(e) =>
+											handleKbVectorMinScoreChange(
+												parseFloat(e.target.value) || 0.2,
+											)
+										}
+										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									/>
+								</div>
+								<span className="text-xs text-text-muted">
+									仅保留相似度≥阈值的向量命中；不足时会自动回退到 FTS/LIKE
+									兜底（建议 0.15-0.35）。
+								</span>
+							</div>
+						</div>
+
+						<div>
+							<label className="text-sm text-text-secondary mb-1.5 block">
+								Embedding 模型
+							</label>
+							<div className="relative">
+								<select
+									value={kbEmbeddingModel}
+									onChange={(e) => handleKbEmbeddingModelChange(e.target.value)}
+									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+								>
+									<option value="">未选择（将回退到 FTS/LIKE）</option>
+									{allModels.map((m) => (
+										<option key={`${m.provider}-${m.id}`} value={m.id}>
+											{m.id} ({m.provider})
+										</option>
+									))}
+								</select>
+								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+							</div>
+							<p className="text-xs text-text-muted mt-1.5">
+								用于将资料库分块转换为向量。
+								<strong>必须选择服务商支持的 embedding 专用模型</strong>，如
+								OpenAI 的 text-embedding-3-small。
+							</p>
+						</div>
+
+						<div>
+							<label className="text-sm text-text-secondary mb-1.5 block">
+								索引补齐并发（兼容模式）
+							</label>
+							<div className="flex items-center gap-3">
+								<div className="relative w-28">
+									<input
+										type="number"
+										min={1}
+										max={16}
+										value={kbEmbeddingFallbackConcurrency}
+										onChange={(e) =>
+											handleKbFallbackConcurrencyChange(
+												parseInt(e.target.value) || 4,
+											)
+										}
+										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									/>
+								</div>
+								<span className="text-xs text-text-muted">
+									当服务商不支持批量 embeddings
+									时，自动降级为逐条请求并按此并发数执行（1-16）。
+								</span>
+							</div>
+						</div>
+
+						<div className="flex items-center justify-between pt-2">
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
+								<div className="text-sm text-text-secondary break-words">
+									{kbStats
+										? `分块总数 ${kbStats.total_chunks}，已向量化 ${kbStats.embedded_chunks}，缺失 ${kbStats.missing_chunks}`
+										: "暂未获取向量索引统计"}
+									{autoHint && (
+										<div className="text-xs text-text-muted mt-1">
+											{autoHint}
+										</div>
+									)}
+								</div>
+								<button
+									onClick={handleKbRebuild}
+									disabled={isRebuilding || !kbEmbeddingModel}
+									className="min-w-[100px] px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-primary hover:text-primary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 self-start sm:self-auto whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+								>
+									{isRebuilding ? (
+										<>
+											<Loader2 className="w-4 h-4 animate-spin shrink-0" />
+											<span>生成中...</span>
+										</>
+									) : (
+										<span>立即补齐</span>
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* 重置 */}
+				<div className="pt-4 border-t border-border">
+					<div className="flex items-center justify-between">
+						<div>
+							<div className="font-medium text-text-primary">重置设置</div>
+							<div className="text-xs text-text-muted">
+								恢复所有 Agent 设置为默认值
+							</div>
+						</div>
+						<button
+							onClick={handleResetToDefault}
+							className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-white hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+						>
+							<RotateCcw className="w-4 h-4 shrink-0" />
+							重置
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}

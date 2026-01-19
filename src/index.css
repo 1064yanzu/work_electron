@@ -1,215 +1,109 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-	/* 颜色系统 - Design Tokens */
-	--color-background: var(--background);
-	--color-surface: var(--surface);
-
-	--color-panel-input: var(--panel-input);
-	--color-panel-process: var(--panel-process);
-	--color-panel-output: var(--panel-output);
-
-	--color-border: var(--border);
-	--color-input: var(--input);
-
-	--color-primary: var(--primary);
-	--color-primary-foreground: var(--primary-foreground);
-	--color-primary-hover: var(--primary-hover);
-
-	--color-secondary: var(--secondary);
-	--color-secondary-foreground: var(--secondary-foreground);
-
-	--color-muted: var(--muted);
-	--color-muted-foreground: var(--muted-foreground);
-
-	--color-accent: var(--accent);
-	--color-accent-foreground: var(--accent-foreground);
-
-	--color-destructive: var(--destructive);
-	--color-destructive-foreground: var(--destructive-foreground);
-
-	--color-popover: var(--popover);
-	--color-popover-foreground: var(--popover-foreground);
-
-	--color-card: var(--card);
-	--color-card-foreground: var(--card-foreground);
-
-	--color-ring: var(--ring);
-
-	--color-text-primary: var(--text-primary);
-	--color-text-secondary: var(--text-secondary);
-	--color-text-muted: var(--text-muted);
-	--color-foreground: var(--foreground);
-
-	--color-success: var(--success);
-	--color-error: var(--error);
-	--color-warning: var(--warning);
-	--color-info: var(--info);
-
-	/* 字体系统 */
-	--font-sans:
-		"Inter", "ui-sans-serif", "system-ui", "sans-serif", "Apple Color Emoji",
-		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-	--font-serif: "Merriweather", "Georgia", serif;
-	--font-mono:
-		"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-
-	/* 间距系统扩展 (Tailwind 默认已足够丰富，此处可追加特定值) */
-
-	/* 圆角系统 */
-	--radius-none: 0px;
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
-	/* DEFAULT */
-	--radius-lg: var(--radius);
-	--radius-xl: 16px;
-	--radius-2xl: 20px;
-	--radius-3xl: 24px;
-	--radius-full: 9999px;
-
-	/* 阴影系统 - 使用 tailwind 默认的 shadow-* 即可，或在此自定义 */
-}
-
-/* 基础样式层 */
 @layer base {
 	:root {
-		/* 亮色模式 (Light Mode) */
-		--background: #fdfdfc;
-		--surface: #f4f3f2;
-
-		--panel-input: #faf9f8;
-		--panel-process: #f5f4f3;
-		--panel-output: #ffffff;
-
-		--border: #e6e4e2;
-		--input: #f0efef;
-
-		--primary: #d96c46;
-		--primary-foreground: #ffffff;
-		--primary-hover: #c75e3b;
-
-		--secondary: #f4f3f2;
-		/* surface */
-		--secondary-foreground: #333333;
-
-		--muted: #f0efef;
-		/* input bg or lighter */
-		--muted-foreground: #999999;
-
-		--accent: #faf9f8;
-		/* panel-input */
-		--accent-foreground: #333333;
-
-		--destructive: #ef4444;
-		/* error */
-		--destructive-foreground: #ffffff;
-
-		--popover: #ffffff;
-		--popover-foreground: #333333;
-
-		--card: #ffffff;
-		--card-foreground: #333333;
-
-		--ring: #d96c46;
-		/* primary */
-
-		--text-primary: #333333;
-		--text-secondary: #666666;
-		--text-muted: #999999;
-
-		--success: #10b981;
-		--error: #ef4444;
-		--warning: #f59e0b;
-		--info: #3b82f6;
-
-		--radius: 0.5rem;
+		--background: 0 0% 100%;
+		--foreground: 222.2 84% 4.9%;
 	}
 
 	.dark {
-		/* 暗色模式 (Dark Mode) */
-		--background: #0a0a0a;
-		--surface: #1e1e1e;
-
-		--panel-input: #1a1a1a;
-		--panel-process: #1e1e1e;
-		--panel-output: #222222;
-
-		--border: rgba(255, 255, 255, 0.05);
-		--input: #27272a;
-
-		--primary: #e07b52;
-		--primary-foreground: #ffffff;
-		--primary-hover: #d96c46;
-
-		--secondary: #27272a;
-		--secondary-foreground: #f9f9f8;
-
-		--muted: #27272a;
-		--muted-foreground: #666666;
-
-		--accent: #1e1e1e;
-		--accent-foreground: #f9f9f8;
-
-		--destructive: #f87171;
-		--destructive-foreground: #1a1a1a;
-
-		--popover: #1e1e1e;
-		--popover-foreground: #f9f9f8;
-
-		--card: #1e1e1e;
-		--card-foreground: #f9f9f8;
-
-		--ring: #e07b52;
-	}
-
-	* {
-		@apply border-border;
-	}
-
-	html {
-		height: 100%;
+		--background: 222.2 84% 4.9%;
+		--foreground: 210 40% 98%;
 	}
 
 	body {
-		@apply bg-background text-text-primary antialiased font-sans;
-		font-feature-settings:
-			"rlig" 1,
-			"calt" 1;
-		height: 100%;
-		margin: 0;
-		overflow: hidden;
-		/* 防止出现双滚动条 */
+		@apply bg-background text-text-primary font-sans antialiased h-screen overflow-hidden;
 	}
 
-	#root {
-		height: 100%;
-		width: 100%;
+	.dark body {
+		@apply bg-gray-900 text-gray-100;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-serif font-medium text-text-primary;
+	}
+
+	.dark h1,
+	.dark h2,
+	.dark h3,
+	.dark h4,
+	.dark h5,
+	.dark h6 {
+		@apply text-gray-100;
 	}
 }
 
-/* 工具类扩展 */
-@utility scrollbar-hide {
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	@apply bg-border rounded-full hover:bg-text-muted transition-colors;
+}
+
+/* 编辑器 textarea 样式重置 */
+textarea:focus,
+textarea:focus-visible,
+input:focus,
+input:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* 隐藏滚动条但保持可滚动 */
+.scrollbar-hide {
 	-ms-overflow-style: none;
 	scrollbar-width: none;
-
-	&::-webkit-scrollbar {
-		display: none;
-	}
+}
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
 }
 
-/* 如果需要自定义滚动条样式 */
-@layer utilities {
-	.custom-scrollbar::-webkit-scrollbar {
-		width: 8px;
-		height: 8px;
-	}
+/* 文档查看器样式 */
+.document-viewer {
+	@apply flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700;
+}
 
-	.custom-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
+.document-placeholder {
+	@apply flex flex-col items-center gap-3 text-center;
+}
 
-	.custom-scrollbar::-webkit-scrollbar-thumb {
-		@apply bg-border rounded-full hover:bg-text-muted transition-colors;
-	}
+.document-icon {
+	@apply text-5xl;
+}
+
+.document-name {
+	@apply text-lg font-medium text-zinc-800 dark:text-zinc-200;
+}
+
+.document-hint {
+	@apply text-sm text-zinc-500 dark:text-zinc-400;
+}
+
+.document-open-btn {
+	@apply mt-6 px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity no-underline;
+}
+
+/* 图片抽取结果样式 */
+.image-extraction-result {
+	@apply mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700;
+}
+
+.image-extraction-result figure {
+	@apply my-0;
+}
+
+.image-extraction-result img {
+	@apply rounded-xl shadow-lg max-w-full;
 }

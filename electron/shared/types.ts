@@ -40,6 +40,24 @@ export type ProviderType =
 	| "dify"
 	| "custom";
 
+export type Card = {
+	id: string;
+	title: string;
+	text: string;
+	image_path: string;
+	source_url?: string;
+	theme_id?: string;
+	font_id?: string;
+	aspect_ratio?: string;
+	created_at: number;
+	updated_at: number;
+};
+
+export type DailyActivity = {
+	date: string;
+	count: number;
+};
+
 /** 工作流节点类型 */
 export type WorkflowNodeType = "llm" | "skill" | "mcp" | "manual";
 
