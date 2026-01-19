@@ -5,6 +5,9 @@ export type ClipPayload = {
 	html?: string;
 	text?: string;
 	createdAt?: number;
+	projectId?: string;
+	folderId?: string;
+	tags?: string[];
 	source?: "browser_extension" | "manual" | "unknown";
 };
 

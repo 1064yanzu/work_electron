@@ -3,14 +3,41 @@ import type { ClipPayload, StoredClip } from "../clip/types";
 import type { DbContext } from "../db/client";
 import { chunkTextByLength } from "./chunking";
 import { htmlToText } from "./htmlToText";
+import { extractArticleFromHtml } from "./extractArticleFromHtml";
+import { sanitizeHtml } from "./sanitizeHtml";
 
-function resolveClipText(payload: ClipPayload) {
-	if (payload.text && payload.text.trim().length > 0) return payload.text;
-	if (payload.selectedText && payload.selectedText.trim().length > 0)
-		return payload.selectedText;
-	if (payload.html && payload.html.trim().length > 0)
-		return htmlToText(payload.html);
-	return "";
+function resolveClipContent(payload: ClipPayload): {
+	text: string;
+	html: string | null;
+} {
+	if (payload.selectedText && payload.selectedText.trim().length > 0) {
+		return { text: payload.selectedText.trim(), html: null };
+	}
+
+	if (payload.html && payload.html.trim().length > 0 && payload.url) {
+		const extracted = extractArticleFromHtml({
+			html: payload.html,
+			url: payload.url,
+			titleHint: payload.title,
+		});
+		const text =
+			extracted.text.trim().length > 0
+				? extracted.text.trim()
+				: htmlToText(extracted.html ?? payload.html);
+		const html = extracted.html ?? sanitizeHtml(payload.html);
+		return { text, html };
+	}
+
+	if (payload.text && payload.text.trim().length > 0) {
+		return { text: payload.text.trim(), html: null };
+	}
+
+	if (payload.html && payload.html.trim().length > 0) {
+		const safeHtml = sanitizeHtml(payload.html);
+		return { text: htmlToText(safeHtml), html: safeHtml };
+	}
+
+	return { text: "", html: null };
 }
 
 function resolveTitle(payload: ClipPayload, text: string) {
@@ -23,34 +50,59 @@ function resolveTitle(payload: ClipPayload, text: string) {
 
 export async function ingestClipToDb(db: DbContext, clip: StoredClip) {
 	const now = Date.now();
-	const text = resolveClipText(clip.payload);
-	if (!text) return { ok: false as const, reason: "empty_text" as const };
+	const resolved = resolveClipContent(clip.payload);
+	const text = resolved.text;
 
 	const sourceId = clip.id;
 	const noteId = randomUUID();
 	const title = resolveTitle(clip.payload, text);
 	const kind = clip.payload.url ? "web" : "text";
 	const url = clip.payload.url ?? null;
+	const createdAt =
+		typeof clip.payload.createdAt === "number"
+			? clip.payload.createdAt
+			: clip.receivedAt;
+	const tagsJson = JSON.stringify(clip.payload.tags ?? []);
+	const projectId = clip.payload.projectId ?? null;
+	const folderId = clip.payload.folderId ?? null;
+	const sourceType =
+		clip.payload.source === "manual" ? "manual" : "browser_clip";
+	const contentHtml = resolved.html;
 
 	await db.client.execute({
 		sql: `
-      INSERT INTO sources (id, title, kind, url, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO sources (id, title, kind, tags, url, project_id, folder_id, source_type, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title=excluded.title,
         kind=excluded.kind,
+        tags=excluded.tags,
         url=excluded.url,
+        project_id=excluded.project_id,
+        folder_id=excluded.folder_id,
+        source_type=excluded.source_type,
         updated_at=excluded.updated_at
     `,
-		args: [sourceId, title, kind, url, now, now],
+		args: [
+			sourceId,
+			title,
+			kind,
+			tagsJson,
+			url,
+			projectId,
+			folderId,
+			sourceType,
+			createdAt,
+			now,
+		],
 	});
 
 	await db.client.execute({
 		sql: `
-      INSERT INTO notes (id, source_id, content, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO notes (id, source_id, content, content_html, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `,
-		args: [noteId, sourceId, text, now, now],
+		args: [noteId, sourceId, text, contentHtml, createdAt, now],
 	});
 
 	const chunks = chunkTextByLength(text, 800);

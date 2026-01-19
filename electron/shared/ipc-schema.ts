@@ -85,6 +85,39 @@ export type IPCSchema = {
 	};
 
 	// ==================
+	// FS Safe / Temp File
+	// ==================
+	read_file_safe: {
+		input: { path: string; encoding?: "utf-8" | "base64" };
+		output: { content: string; encoding: string; size: number };
+	};
+	write_file_safe: {
+		input: {
+			path: string;
+			content: string;
+			encoding?: "utf-8" | "base64";
+			create_dirs?: boolean;
+		};
+		output: { success: boolean };
+	};
+	list_files_safe: {
+		input: { path: string; recursive?: boolean };
+		output: Array<{
+			path: string;
+			name: string;
+			is_file: boolean;
+			is_dir: boolean;
+			size?: number;
+		}>;
+	};
+	save_temp_file: {
+		input: {
+			payload: { content: string; extension?: string; prefix?: string };
+		};
+		output: { path: string; size: number };
+	};
+
+	// ==================
 	// Projects 命令
 	// ==================
 	list_projects: {

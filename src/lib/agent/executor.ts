@@ -10,6 +10,7 @@
 
 import { settingsStore } from "../settingsStore";
 import { skillsStore } from "../skillsStore";
+import { invoke } from "../tauriCompat";
 import { type AgentMessage, ClaudeAgentService } from "./claudeAgentService";
 import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
@@ -121,11 +122,27 @@ class AgentExecutor {
 			}
 		}
 
-		// Add attached file paths
+		// Add attached file contents (read from temp files)
 		if (options?.attachedFiles?.length) {
 			enhancedPrompt += "\n\n## 用户附加的文件\n";
 			for (const file of options.attachedFiles) {
-				enhancedPrompt += `- ${file.title}: ${file.path}\n`;
+				try {
+					// 读取文件内容
+					const fileContent = await invoke<{ content: string }>("read_file_safe", {
+						payload: { path: file.path },
+					});
+					enhancedPrompt += `### ${file.title}\n${fileContent.content}\n\n`;
+					console.log(
+						`[AgentExecutor] Loaded attached file: ${file.title} (${fileContent.content.length} bytes)`,
+					);
+				} catch (e) {
+					console.warn(
+						`[AgentExecutor] Failed to read attached file: ${file.path}`,
+						e,
+					);
+					// 如果读取失败，至少保留文件路径信息
+					enhancedPrompt += `### ${file.title}\n[文件读取失败: ${file.path}]\n\n`;
+				}
 			}
 		}
 

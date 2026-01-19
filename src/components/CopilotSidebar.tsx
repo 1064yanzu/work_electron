@@ -91,40 +91,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-			kind: "update";
-			displayContent: string;
+		kind: "update";
+		displayContent: string;
+		suggestedContent: string;
+		fileUpdate: {
+			fileName: string;
+			type: "update";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
+			originalContent: string;
 			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
+			prompt: string;
+		};
+	}
 	| {
-			kind: "create";
-			displayContent: string;
+		kind: "create";
+		displayContent: string;
+		title: string;
+		summary: string;
+		content: string;
+		fileUpdate: {
+			fileName: string;
+			type: "create";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
 			title: string;
 			summary: string;
 			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
+			prompt: string;
+		};
+	} {
 	const updateMatch = full.match(/:::update-doc([\s\S]*?):::/);
 	if (updateMatch) {
 		const suggestedContent = (updateMatch[1] || "").trim();
@@ -767,6 +767,18 @@ export default function CopilotSidebar() {
 		const session = chatStore.activeSession;
 		if (!session) return;
 
+		const currentContexts = workspaceStore.getState().contexts;
+		const attachedFileTitles = currentContexts
+			.filter((c) => c.type === "file")
+			.map((c) => c.title)
+			.filter(Boolean);
+		const attachmentFooter =
+			attachedFileTitles.length > 0
+				? `\n\n[附加文件]\n${attachedFileTitles.map((t) => `- ${t}`).join("\n")}`
+				: "";
+		const userTextForChat =
+			(command ? `[${command.name}] ${content}` : content) + attachmentFooter;
+
 		if (chatMode === "agent") {
 			// 绑定/创建后端 Agent Session（用于持久化与回放）
 			let boundAgentSessionId: string | undefined = session.agentSessionId;
@@ -791,7 +803,7 @@ export default function CopilotSidebar() {
 			let userMessage: ChatMessageType;
 			if (!options?.skipUserMessage) {
 				// 正常情况：创建新的用户消息
-				userMessage = createMessage("user", content);
+				userMessage = createMessage("user", userTextForChat);
 				chatStore.addMessage(session.id, userMessage);
 				if (
 					chatSettings.persistEnabled &&
@@ -820,6 +832,8 @@ export default function CopilotSidebar() {
 				}
 				userMessage = existingUserMsg;
 			}
+			// 消息发送后立即清除附件输入框，让用户知道附件已被处理
+			workspaceStore.clearContexts();
 			chatStore.setStatus("streaming");
 
 			let detachAgentEvent: (() => void) | null = null;
@@ -1037,6 +1051,12 @@ export default function CopilotSidebar() {
 									title: ctx.title,
 									path: fileResult.path,
 								});
+								attachedContexts.push({
+									title: ctx.title,
+									content:
+										content.slice(0, 2000) +
+										`\n\n[完整内容已保存为文件: ${fileResult.path}]`,
+								});
 								console.log(
 									"[CopilotSidebar] 文档已保存为临时文件:",
 									fileResult.path,
@@ -1057,6 +1077,33 @@ export default function CopilotSidebar() {
 								content,
 							});
 						}
+					}
+				}
+
+				// 将附件信息更新到用户消息的 metadata 中（以便在 UI 中显示）
+				if (attachedFiles.length > 0 || attachedContexts.length > 0) {
+					const attachedFilesForUI = [
+						// 从 attachedFiles 中提取（这些是保存为临时文件的大文档）
+						...attachedFiles.map((f) => ({
+							title: f.title,
+							path: f.path,
+							type: "document" as const,
+						})),
+						// 从 attachedContexts 中提取（这些是小型上下文）
+						...attachedContexts.filter(c => !attachedFiles.find(f => f.title === c.title)).map((c) => ({
+							title: c.title,
+							path: "",
+							type: "document" as const,
+						})),
+					];
+
+					if (attachedFilesForUI.length > 0) {
+						chatStore.updateMessage(session.id, userMessage.id, {
+							metadata: {
+								...userMessage.metadata,
+								attachedFiles: attachedFilesForUI,
+							},
+						});
 					}
 				}
 
@@ -1212,16 +1259,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1270,8 +1317,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1315,8 +1362,7 @@ export default function CopilotSidebar() {
 					}
 				}
 				chatStore.setStatus("idle");
-				// 任务完成后清除附件
-				workspaceStore.clearContexts();
+				// 附件已在消息发送后立即清除（第835行）
 			} catch (error) {
 				const errorMessage =
 					error instanceof Error ? error.message : "未知错误";
@@ -1339,8 +1385,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1369,9 +1415,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -1431,10 +1477,7 @@ export default function CopilotSidebar() {
 
 		// 添加用户消息（只有在非重新生成时）
 		if (!options?.skipUserMessage) {
-			const userMessage = createMessage(
-				"user",
-				command ? `[${command.name}] ${content}` : content,
-			);
+			const userMessage = createMessage("user", userTextForChat);
 			chatStore.addMessage(session.id, userMessage);
 		}
 
@@ -1464,12 +1507,12 @@ export default function CopilotSidebar() {
 
 		const contextTexts = [
 			...recentMessages,
-			...workspaceStore.getContextText(),
+			...workspaceStore.getContextPromptText(),
 		];
 
 		await invokeLlmWithCallback({
 			model: activeModel,
-			prompt: content,
+			prompt: userTextForChat,
 			systemPrompt,
 			context: contextTexts,
 			onChunk: (chunk: string) => {
@@ -2163,21 +2206,19 @@ export default function CopilotSidebar() {
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
 							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							对话
 						</button>
 						<button
 							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "agent"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							Agent
 						</button>

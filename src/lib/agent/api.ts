@@ -40,12 +40,12 @@ export interface ToolCallRecord {
 	mcp_server_id?: string | null;
 	args_json?: Record<string, unknown> | null;
 	status:
-		| "queued"
-		| "running"
-		| "succeeded"
-		| "failed"
-		| "canceled"
-		| "awaiting_permission";
+	| "queued"
+	| "running"
+	| "succeeded"
+	| "failed"
+	| "canceled"
+	| "awaiting_permission";
 	result_json?: unknown;
 	error?: string | null;
 	created_at: string;
@@ -60,12 +60,12 @@ export interface AgentNodeRecord {
 	kind: "llm_plan" | "tool_call" | "synthesis" | "custom";
 	name: string;
 	status:
-		| "queued"
-		| "running"
-		| "succeeded"
-		| "failed"
-		| "canceled"
-		| "blocked";
+	| "queued"
+	| "running"
+	| "succeeded"
+	| "failed"
+	| "canceled"
+	| "blocked";
 	depends_on: string[];
 	input_json?: unknown;
 	output_json?: unknown;
@@ -207,7 +207,7 @@ export async function getAgentTask(id: string): Promise<AgentTaskRecord> {
 export async function listAgentTasks(
 	sessionId: string,
 ): Promise<AgentTaskRecord[]> {
-	return await safeInvoke("agent_list_tasks", { sessionId });
+	return await safeInvoke("agent_list_tasks", { session_id: sessionId });
 }
 
 export async function updateAgentTask(
@@ -241,7 +241,7 @@ export async function createAgentNode(payload: {
 export async function listAgentNodes(
 	taskId: string,
 ): Promise<AgentNodeRecord[]> {
-	return await safeInvoke("agent_list_nodes", { taskId });
+	return await safeInvoke("agent_list_nodes", { task_id: taskId });
 }
 
 export async function updateAgentNode(payload: {
@@ -281,7 +281,7 @@ export async function updateToolCall(
 }
 
 export async function listToolCalls(taskId: string): Promise<ToolCallRecord[]> {
-	return await safeInvoke("agent_list_tool_calls", { taskId });
+	return await safeInvoke("agent_list_tool_calls", { task_id: taskId });
 }
 
 // ==================== 权限 API ====================
@@ -337,7 +337,7 @@ export async function createArtifact(
 }
 
 export async function listArtifacts(taskId: string): Promise<ArtifactRecord[]> {
-	return await safeInvoke("agent_list_artifacts", { taskId });
+	return await safeInvoke("agent_list_artifacts", { task_id: taskId });
 }
 
 // ==================== 消息 API ====================
@@ -355,7 +355,7 @@ export async function createAgentMessage(payload: {
 export async function listAgentMessages(
 	sessionId: string,
 ): Promise<AgentMessageRecord[]> {
-	return await safeInvoke("agent_list_messages", { sessionId });
+	return await safeInvoke("agent_list_messages", { session_id: sessionId });
 }
 
 export async function updateAgentMessage(payload: {
@@ -382,7 +382,10 @@ export async function listAuditLogs(
 	sessionId: string,
 	limit?: number,
 ): Promise<AuditLogRecord[]> {
-	return await safeInvoke("agent_list_audit_logs", { sessionId, limit });
+	return await safeInvoke("agent_list_audit_logs", {
+		session_id: sessionId,
+		limit,
+	});
 }
 
 // ==================== 检索 API ====================

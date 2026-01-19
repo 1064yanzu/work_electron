@@ -193,6 +193,23 @@ export function createMcpHandlers(db: DbContext) {
 		return { success: true };
 	};
 
+	// 检查MCP环境配置
+	const mcpCheckEnv = async (
+		_event: IpcMainInvokeEvent,
+		_input: Record<string, never>,
+	): Promise<{
+		nodeInstalled: boolean;
+		uvxInstalled: boolean;
+		npxInstalled: boolean;
+	}> => {
+		// 简单返回环境检查状态（可以后续扩展实际检查逻辑）
+		return {
+			nodeInstalled: true, // Node.js 在 Electron 环境中肯定存在
+			uvxInstalled: false, // 需要实际检查
+			npxInstalled: true, // 通常和 Node.js 一起安装
+		};
+	};
+
 	return {
 		list_mcp_servers: listMcpServers,
 		get_mcp_server: getMcpServer,
@@ -200,5 +217,6 @@ export function createMcpHandlers(db: DbContext) {
 		update_mcp_server: updateMcpServer,
 		delete_mcp_server: deleteMcpServer,
 		toggle_mcp_server: toggleMcpServer,
+		mcp_check_env: mcpCheckEnv,
 	};
 }

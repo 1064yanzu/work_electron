@@ -24,6 +24,7 @@ import {
 	type ToolCall,
 	type ToolType,
 } from "../../lib/agent/types";
+import { cn } from "../../lib/utils";
 import { InlineImage } from "../ui/InlineImage";
 import { SkillCard } from "./SkillCard";
 import TaskSteps from "./TaskSteps";
@@ -58,6 +59,55 @@ function ToolStatusIcon({ status }: { status: ToolCall["status"] }) {
 function formatDurationMs(ms?: number) {
 	if (!ms || ms <= 0) return "";
 	return `${(ms / 1000).toFixed(1)}s`;
+}
+
+// 命令语法高亮组件
+function CommandHighlight({ command }: { command: string }) {
+	// 简单的语法高亮逻辑
+	const parts = command.split(/(\s+)/); // 按空格分割，保留空格
+
+	return (
+		<div className="font-mono text-sm">
+			{parts.map((part, idx) => {
+				const trimmed = part.trim();
+				if (!trimmed) return <span key={idx}>{part}</span>;
+
+				// 命令名（第一个词）
+				if (idx === 0) {
+					return (
+						<span key={idx} className="text-blue-600 dark:text-blue-400 font-semibold">
+							{part}
+						</span>
+					);
+				}
+
+				// 选项（以 - 或 -- 开头）
+				if (trimmed.startsWith("-")) {
+					return (
+						<span key={idx} className="text-rose-600 dark:text-rose-400">
+							{part}
+						</span>
+					);
+				}
+
+				// 操作符（&&, ||, |, >, <）
+				if (["&&", "||", "|", ">", "<", ">>"].includes(trimmed)) {
+					return (
+						<span key={idx} className="text-purple-600 dark:text-purple-400 font-semibold">
+							{part}
+						</span>
+					);
+				}
+
+				// 其他参数
+				return (
+					<span key={idx} className="text-zinc-700 dark:text-zinc-300">
+						{part}
+					</span>
+				);
+			})}
+		</div>
+	);
 }
 
 function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
@@ -102,7 +152,26 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 	const duration = formatDurationMs(toolCall.duration);
 	const progress = toolCall.metadata?.progress as number | undefined;
 	const progressMessage = toolCall.metadata?.message as string | undefined;
-	const [isExpanded, setIsExpanded] = React.useState(false);
+
+	// 智能折叠逻辑：
+	// - 正在运行时展开
+	// - 完成时折叠
+	// - 错误时展开
+	const shouldAutoExpand =
+		toolCall.status === "running" ||
+		toolCall.status === "error";
+
+	const [isExpanded, setIsExpanded] = React.useState(shouldAutoExpand);
+
+	// 监听状态变化，自动调整折叠状态
+	React.useEffect(() => {
+		if (toolCall.status === "running" || toolCall.status === "error") {
+			setIsExpanded(true);
+		} else if (toolCall.status === "completed") {
+			// 完成后自动折叠
+			setIsExpanded(false);
+		}
+	}, [toolCall.status]);
 
 	// 判断是否有详细内容需要展开
 	const hasDetails =
@@ -195,6 +264,93 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 		}
 	}
 
+	// code_execute 特殊展示：命令行卡片
+	if (toolCall.type === "code_execute") {
+		const command = (toolCall.input as any)?.command || "";
+		const output = (toolCall.output as any)?.output || "";
+		const exitCode = (toolCall.output as any)?.exit_code;
+
+		return (
+			<div
+				className={cn(
+					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
+					toolCall.status === "running"
+						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-violet-200/50 dark:ring-violet-800/30 shadow-sm"
+						: toolCall.status === "error" || exitCode !== 0
+							? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-rose-200/50 dark:ring-rose-800/30 shadow-sm"
+							: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10",
+				)}
+			>
+				<button
+					onClick={() => setIsExpanded((v) => !v)}
+					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-white/90 dark:hover:bg-zinc-900/70 transition-colors"
+				>
+					<div className={cn(
+						"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
+						toolCall.status === "running"
+							? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
+							: toolCall.status === "error" || exitCode !== 0
+								? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
+								: "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30",
+					)}>
+						<Wrench className={cn(
+							"w-3.5 h-3.5 transition-colors",
+							toolCall.status === "running"
+								? "text-violet-600 dark:text-violet-400"
+								: toolCall.status === "error" || exitCode !== 0
+									? "text-rose-600 dark:text-rose-400"
+									: "text-emerald-600 dark:text-emerald-400",
+						)} />
+					</div>
+					<div className="min-w-0 flex-1">
+						<div className="flex items-center gap-2 mb-1.5">
+							<span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+								命令行
+							</span>
+							<ToolStatusIcon status={toolCall.status} />
+							{duration ? (
+								<div className="text-[11px] font-medium text-zinc-400">{duration}</div>
+							) : null}
+							<div className="ml-auto">
+								{isExpanded ? (
+									<ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+								) : (
+									<ChevronRight className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+								)}
+							</div>
+						</div>
+						{/* 命令语法高亮 */}
+						{command && <CommandHighlight command={command} />}
+					</div>
+				</button>
+
+				{/* 展开后显示完整输出 */}
+				{isExpanded && output && (
+					<div className="px-3 pb-3 border-t border-zinc-200/50 dark:border-zinc-700/50">
+						<div className="mt-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50">
+							<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-2 flex items-center justify-between">
+								<span>输出</span>
+								{exitCode !== undefined && (
+									<span className={cn(
+										"px-1.5 py-0.5 rounded text-[10px] font-mono",
+										exitCode === 0
+											? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+											: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
+									)}>
+										exit {exitCode}
+									</span>
+								)}
+							</div>
+							<pre className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+								{output}
+							</pre>
+						</div>
+					</div>
+				)}
+			</div>
+		);
+	}
+
 	// skill_call 工具调用显示完整技能卡片
 	if (toolCall.type === "skill_call") {
 		const skillExecution = toolCall.metadata?.skillExecution;
@@ -208,30 +364,62 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 	}
 
 	return (
-		<div className="rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+		<div
+			className={cn(
+				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
+				// 根据状态设置边框和背景
+				toolCall.status === "running"
+					? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-violet-200/50 dark:ring-violet-800/30 shadow-sm"
+					: toolCall.status === "error"
+						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-rose-200/50 dark:ring-rose-800/30 shadow-sm"
+						: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10",
+			)}
+		>
 			<button
 				onClick={() => hasDetails && setIsExpanded((v) => !v)}
-				className="w-full px-3 py-2 flex items-start gap-2 text-left hover:bg-white/80 dark:hover:bg-zinc-900/60 transition-colors"
+				className={cn(
+					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
+					hasDetails && "cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					!hasDetails && "cursor-default",
+				)}
 				disabled={!hasDetails}
 			>
-				<div className="mt-0.5 p-1.5 rounded-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-					<Icon className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
+				<div className={cn(
+					"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
+					toolCall.status === "running"
+						? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
+						: toolCall.status === "error"
+							? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
+							: toolCall.status === "completed"
+								? "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30"
+								: "bg-white dark:bg-zinc-900 ring-black/5 dark:ring-white/10",
+				)}>
+					<Icon className={cn(
+						"w-3.5 h-3.5 transition-colors",
+						toolCall.status === "running"
+							? "text-violet-600 dark:text-violet-400"
+							: toolCall.status === "error"
+								? "text-rose-600 dark:text-rose-400"
+								: toolCall.status === "completed"
+									? "text-emerald-600 dark:text-emerald-400"
+									: "text-zinc-600 dark:text-zinc-300",
+					)} />
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<div className="text-xs font-medium text-zinc-800 dark:text-zinc-100 truncate">
+						<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
 							{toolCall.name}
 						</div>
 						<ToolStatusIcon status={toolCall.status} />
 						{duration ? (
-							<div className="text-[11px] text-zinc-400">{duration}</div>
+							<div className="text-[11px] font-medium text-zinc-400">{duration}</div>
 						) : null}
 						{hasDetails ? (
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+									<ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+									<ChevronRight className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
 								)}
 							</div>
 						) : null}

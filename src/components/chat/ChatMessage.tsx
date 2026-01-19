@@ -8,6 +8,7 @@ import AgentTraceInline from "../agent/AgentTraceInline";
 import ToolCallInline from "../agent/ToolCallInline";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { AgentBlocksInline } from "./AgentBlocksInline";
+import { AttachmentList } from "./AttachmentCard";
 import { FileChangeCard as FileChangeCardComponent } from "./FileChangeCard";
 import { ProcessingCard as ProcessingCardComponent } from "./ProcessingCard";
 import { TokenDisplay } from "./TokenDisplay";
@@ -169,8 +170,13 @@ export function ChatMessage({
 			{/* 彻底移除头像，根据角色采用完全不同的布局策略 */}
 
 			{isUser ? (
-				/* 用户消息：右侧悬浮胶囊 (纯粹的指令感) */
-				<div className="flex justify-end pl-12">
+				/* 用户消息：右侧悬浮布局，附件显示在上方 */
+				<div className="flex flex-col items-end pl-12 gap-2">
+					{/* 附件卡片列表 */}
+					{message.metadata?.attachedFiles && message.metadata.attachedFiles.length > 0 && (
+						<AttachmentList files={message.metadata.attachedFiles} />
+					)}
+					{/* 消息气泡 */}
 					<div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-zinc-700 dark:selection:bg-zinc-300 select-text">
 						<div className="whitespace-pre-wrap break-words">
 							{message.content}
@@ -233,15 +239,15 @@ export function ChatMessage({
 
 								{(!message.metadata?.fileUpdates ||
 									message.metadata.fileUpdates.length === 0) &&
-								Array.isArray(message.metadata?.blocks)
+									Array.isArray(message.metadata?.blocks)
 									? message.metadata.blocks.map((b, idx) =>
-											b.type === "file_update" ? (
-												<FileChangeCard
-													key={`block-file-update-${idx}`}
-													update={b.update}
-												/>
-											) : null,
-										)
+										b.type === "file_update" ? (
+											<FileChangeCard
+												key={`block-file-update-${idx}`}
+												update={b.update}
+											/>
+										) : null,
+									)
 									: null}
 							</>
 						) : null}
@@ -252,7 +258,7 @@ export function ChatMessage({
 					</div>
 
 					{!canRenderAssistantByBlocks &&
-					message.metadata?.trace?.type === "agent_task" ? (
+						message.metadata?.trace?.type === "agent_task" ? (
 						<AgentTraceInline taskId={message.metadata.trace.taskId} />
 					) : null}
 
@@ -281,11 +287,10 @@ export function ChatMessage({
 											<button
 												onClick={() => handleApplyCodeBlock(idx)}
 												disabled={appliedBlocks.has(idx)}
-												className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
-													appliedBlocks.has(idx)
-														? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-														: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-												}`}
+												className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${appliedBlocks.has(idx)
+													? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+													: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+													}`}
 												title="应用代码到编辑器"
 											>
 												{appliedBlocks.has(idx) ? (

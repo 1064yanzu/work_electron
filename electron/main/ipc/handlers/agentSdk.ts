@@ -1,6 +1,72 @@
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { createRequire } from "node:module";
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
+import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
+
+function getHomeSkillsRootDir() {
+	const home = app.getPath("home");
+	return path.join(home, ".claude", "skills");
+}
+
+async function ensureDir(dir: string) {
+	await fsp.mkdir(dir, { recursive: true });
+}
+
+/**
+ * Claude Agent SDK 的 Skill tool 会扫描 cwd/.claude/skills（project settings）等目录。
+ * 我们当前的技能库在 ~/.claude/skills（home）。为避免 SDK 执行 Skill 时提示“不可用”，
+ * 在每次启动 agent 前，把 home skills 增量同步到 cwd/.claude/skills。
+ */
+async function syncSkillsToCwd(cwd: string, stderr: (msg: string) => void) {
+	const srcRoot = getHomeSkillsRootDir();
+	const destRoot = path.join(cwd, ".claude", "skills");
+
+	try {
+		await ensureDir(destRoot);
+	} catch (e) {
+		stderr(
+			`[agent_sdk_start] Failed to ensure project skills dir: ${destRoot}. ${e instanceof Error ? e.message : String(e)}`,
+		);
+		return;
+	}
+
+	let entries: Array<import("node:fs").Dirent> = [];
+	try {
+		entries = await fsp.readdir(srcRoot, { withFileTypes: true });
+	} catch {
+		// 没有 home skills 目录就不做同步
+		return;
+	}
+
+	for (const ent of entries) {
+		if (!ent.isDirectory()) continue;
+		const srcDir = path.join(srcRoot, ent.name);
+		const destDir = path.join(destRoot, ent.name);
+		try {
+			await fsp.access(destDir);
+			// 已存在则不覆盖，避免破坏 project 侧自定义
+			continue;
+		} catch {
+			// dest 不存在 -> copy
+		}
+
+		try {
+			await fsp.cp(srcDir, destDir, {
+				recursive: true,
+				dereference: true,
+				errorOnExist: false,
+			});
+		} catch (e) {
+			stderr(
+				`[agent_sdk_start] Failed to sync skill '${ent.name}' to project skills dir. ${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+	}
+}
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -103,6 +169,7 @@ export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
 	anthropicBaseUrl: string;
 }) {
+	const require = createRequire(import.meta.url);
 	const agent_sdk_start = async (
 		_event: IpcMainInvokeEvent,
 		input: AgentSdkStartInput,
@@ -118,8 +185,18 @@ export function createAgentSdkHandlers(options: {
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 
+				let pathToClaudeCodeExecutable: string | undefined;
+				try {
+					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
+					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
+				} catch {}
+
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
+
+				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
+				await syncSkillsToCwd(cwd, stderr);
+
 				const allowed = Array.isArray(input.allowed_tools)
 					? input.allowed_tools
 					: [];
@@ -136,6 +213,7 @@ export function createAgentSdkHandlers(options: {
 						cwd,
 						model: String(input.model ?? ""),
 						permissionMode: permissionMode as any,
+						pathToClaudeCodeExecutable,
 						tools:
 							allowed.length > 0
 								? allowed

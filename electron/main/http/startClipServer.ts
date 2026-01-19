@@ -21,9 +21,26 @@ export async function startClipServer({
 	app.use(express.json({ limit: "10mb" }));
 
 	app.get("/health", (_req: Request, res: Response) =>
-		res.json({ ok: true, service: "clip", ts: Date.now() }),
+		res.json({ status: "ok", service: "clip_server", port }),
 	);
-	app.use("/api", createClipRouter({ logger, db }));
+
+	app.use("/api", createClipRouter({ logger, db, port }));
+
+	app.use(
+		(
+			err: unknown,
+			_req: Request,
+			res: Response,
+			_next: (err: unknown) => void,
+		) => {
+			const anyErr = err as { type?: string; message?: string };
+			if (anyErr?.type === "entity.too.large") {
+				res.status(413).type("text/plain").send("request body too big");
+				return;
+			}
+			res.status(400).json({ error: anyErr?.message || "Bad Request" });
+		},
+	);
 
 	const server = await new Promise<import("node:http").Server>((resolve) => {
 		const s = app.listen(port, host, () => resolve(s));

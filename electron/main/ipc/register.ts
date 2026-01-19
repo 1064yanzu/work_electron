@@ -26,7 +26,9 @@ import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
 import { createAgentSdkHandlers } from "./handlers/agentSdk";
 import { createFsSafeHandlers } from "./handlers/fsSafe";
+import { createTempFileHandlers } from "./handlers/tempFiles";
 import { createKbEmbeddingHandlers } from "./handlers/kbEmbeddings";
+import { createDataStatsHandlers } from "./handlers/dataStats";
 import { createMcpHandlers } from "./handlers/mcp";
 import { createNoteHandlers } from "./handlers/notes";
 import { createOutputHandlers } from "./handlers/outputs";
@@ -77,7 +79,9 @@ export function registerIpcHandlers({
 	const webContentHandlers = createWebContentHandlers();
 	const skillsHandlers = createSkillsHandlers(db);
 	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
+	const dataStatsHandlers = createDataStatsHandlers(db);
 	const fsSafeHandlers = createFsSafeHandlers();
+	const tempFileHandlers = createTempFileHandlers();
 	const agentSdkHandlers = createAgentSdkHandlers({
 		getMainWindow: () => mainWindowRef,
 		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
@@ -114,11 +118,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("open_browser_window", webContentHandlers.open_browser_window);
 	ipcMain.handle("fetch_page_content", webContentHandlers.fetch_page_content);
 	ipcMain.handle("browser_search", browserSearchHandlers.browser_search);
-
 	ipcMain.handle("read_file_safe", fsSafeHandlers.read_file_safe);
 	ipcMain.handle("write_file_safe", fsSafeHandlers.write_file_safe);
 	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
-
+	ipcMain.handle("save_temp_file", tempFileHandlers.save_temp_file);
 	// ==================
 	// Projects
 	// ==================
@@ -252,6 +255,14 @@ export function registerIpcHandlers({
 	ipcMain.handle("update_mcp_server", mcpHandlers.update_mcp_server);
 	ipcMain.handle("delete_mcp_server", mcpHandlers.delete_mcp_server);
 	ipcMain.handle("toggle_mcp_server", mcpHandlers.toggle_mcp_server);
+	ipcMain.handle("mcp_check_env", mcpHandlers.mcp_check_env);
+
+	// ==================
+	// Data Stats & Management
+	// ==================
+	ipcMain.handle("get_data_stats", dataStatsHandlers.get_data_stats);
+	ipcMain.handle("get_data_directory", dataStatsHandlers.get_data_directory);
+	ipcMain.handle("get_database_path", dataStatsHandlers.get_database_path);
 
 	// ==================
 	// Sync & Backup

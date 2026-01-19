@@ -516,6 +516,13 @@ class WorkspaceStore {
 		return this.state.contexts.map((c) => c.content).filter(Boolean);
 	}
 
+	getContextPromptText(): string[] {
+		return this.state.contexts
+			.filter((c) => Boolean(c.content))
+			.map((c) => `[${c.type}] ${c.title}\n${c.content}`)
+			.filter(Boolean);
+	}
+
 	// === 多标签文档管理 ===
 
 	// 打开文档（添加到标签栏）
