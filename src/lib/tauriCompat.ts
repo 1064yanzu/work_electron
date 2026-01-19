@@ -20,7 +20,8 @@ export async function invoke<T>(
 		if ("payload" in a) {
 			const p = a.payload;
 			if (p === undefined) return {};
-			if (p !== null && typeof p === "object") return p as Record<string, unknown>;
+			if (p !== null && typeof p === "object")
+				return p as Record<string, unknown>;
 		}
 
 		if (command === "delete_provider") {
@@ -28,7 +29,8 @@ export async function invoke<T>(
 		}
 
 		if (command === "check_provider_api_key") {
-			if (typeof a.providerId === "string") return { provider_id: a.providerId };
+			if (typeof a.providerId === "string")
+				return { provider_id: a.providerId };
 		}
 
 		if (command === "record_project_visit") {
@@ -47,7 +49,10 @@ export async function invoke<T>(
 		return a;
 	})();
 
-	return window.electronAPI.invoke(command as never, input as never) as Promise<T>;
+	return window.electronAPI.invoke(
+		command as never,
+		input as never,
+	) as Promise<T>;
 }
 
 export function convertFileSrc(filePath: string) {

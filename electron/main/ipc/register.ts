@@ -20,6 +20,7 @@ import {
 } from "./handlers/agent";
 import { createConfigHandlers } from "./handlers/config";
 import { createActivityHandlers } from "./handlers/activity";
+import { createBrowserSearchHandlers } from "./handlers/browserSearch";
 import { createCardHandlers } from "./handlers/cards";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
@@ -30,6 +31,7 @@ import { createProjectHandlers } from "./handlers/projects";
 import { createProviderHandlers } from "./handlers/providers";
 import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
+import { createWebContentHandlers } from "./handlers/webContent";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -67,6 +69,8 @@ export function registerIpcHandlers({
 	const importExportHandlers = createImportExportHandlers(db, logger);
 	const cardHandlers = createCardHandlers(db);
 	const activityHandlers = createActivityHandlers(db);
+	const browserSearchHandlers = createBrowserSearchHandlers();
+	const webContentHandlers = createWebContentHandlers();
 
 	// Agent Runtime handlers
 	const agentSessionHandlers = createAgentSessionHandlers(db);
@@ -95,6 +99,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("http_get_status", (async () => {
 		return httpStatus;
 	}) satisfies IpcHandler<"http_get_status">);
+
+	ipcMain.handle("open_browser_window", webContentHandlers.open_browser_window);
+	ipcMain.handle("fetch_page_content", webContentHandlers.fetch_page_content);
+	ipcMain.handle("browser_search", browserSearchHandlers.browser_search);
 
 	// ==================
 	// Projects

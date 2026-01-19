@@ -95,4 +95,3 @@ export async function seedCoreProviders(db: DbContext) {
 
 	return { success: true, count };
 }
-

@@ -136,6 +136,102 @@ export async function setSearchStrategy(
 	await setConfig("search.strategy", strategy);
 }
 
+export type WebSearchTuning = {
+	maxResults: number;
+	excludeDomains: string[];
+	searchWithTime: boolean;
+	perDomainLimit: number;
+};
+
+const DEFAULT_WEBSEARCH_TUNING: WebSearchTuning = {
+	maxResults: 10,
+	excludeDomains: [],
+	searchWithTime: false,
+	perDomainLimit: 3,
+};
+
+let cachedWebSearchTuning: WebSearchTuning = DEFAULT_WEBSEARCH_TUNING;
+let cachedWebSearchTuningLoaded = false;
+
+function normalizeDomainInput(value: unknown): string[] {
+	const raw: string[] = Array.isArray(value)
+		? value.map((x) => String(x))
+		: typeof value === "string"
+			? value.split(/[\n,，]/g)
+			: [];
+
+	return raw
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean)
+		.map((s) => s.replace(/^https?:\/\//i, "").replace(/\/.*$/, ""))
+		.map((s) => s.replace(/^\.+/, ""))
+		.filter(Boolean);
+}
+
+export async function getWebSearchTuning(
+	forceRefresh = false,
+): Promise<WebSearchTuning> {
+	if (cachedWebSearchTuningLoaded && !forceRefresh)
+		return cachedWebSearchTuning;
+
+	try {
+		const [maxResultsRaw, excludeRaw, withTimeRaw, perDomainRaw] =
+			await Promise.all([
+				getConfig("search.maxResults"),
+				getConfig("search.excludeDomains"),
+				getConfig("search.searchWithTime"),
+				getConfig("search.perDomainLimit"),
+			]);
+
+		const maxResults =
+			typeof maxResultsRaw === "number" && Number.isFinite(maxResultsRaw)
+				? Math.max(1, Math.min(50, Math.floor(maxResultsRaw)))
+				: DEFAULT_WEBSEARCH_TUNING.maxResults;
+		const excludeDomains = normalizeDomainInput(excludeRaw);
+		const searchWithTime = Boolean(withTimeRaw);
+		const perDomainLimit =
+			typeof perDomainRaw === "number" && Number.isFinite(perDomainRaw)
+				? Math.max(1, Math.min(10, Math.floor(perDomainRaw)))
+				: DEFAULT_WEBSEARCH_TUNING.perDomainLimit;
+
+		cachedWebSearchTuning = {
+			maxResults,
+			excludeDomains,
+			searchWithTime,
+			perDomainLimit,
+		};
+		cachedWebSearchTuningLoaded = true;
+		return cachedWebSearchTuning;
+	} catch {
+		cachedWebSearchTuningLoaded = true;
+		return cachedWebSearchTuning;
+	}
+}
+
+export async function setWebSearchTuning(
+	patch: Partial<WebSearchTuning>,
+): Promise<void> {
+	const next: WebSearchTuning = {
+		...(await getWebSearchTuning()),
+		...patch,
+	};
+
+	cachedWebSearchTuning = {
+		maxResults: Math.max(1, Math.min(50, Math.floor(next.maxResults))),
+		excludeDomains: normalizeDomainInput(next.excludeDomains),
+		searchWithTime: Boolean(next.searchWithTime),
+		perDomainLimit: Math.max(1, Math.min(10, Math.floor(next.perDomainLimit))),
+	};
+	cachedWebSearchTuningLoaded = true;
+
+	await Promise.all([
+		setConfig("search.maxResults", cachedWebSearchTuning.maxResults),
+		setConfig("search.excludeDomains", cachedWebSearchTuning.excludeDomains),
+		setConfig("search.searchWithTime", cachedWebSearchTuning.searchWithTime),
+		setConfig("search.perDomainLimit", cachedWebSearchTuning.perDomainLimit),
+	]);
+}
+
 function recordSearchHealth(
 	kind: "local" | "mcp",
 	ok: boolean,
@@ -225,6 +321,7 @@ export interface BrowserSearchRequest {
 	query: string;
 	engine: string;
 	use_playwright: boolean;
+	limit?: number;
 }
 
 export interface BrowserSearchResult {
@@ -445,12 +542,59 @@ async function tryMcpTavily(query: string, limit: number) {
 export async function smartBrowserSearch(
 	request: BrowserSearchRequest & { limit?: number; strategy?: SearchStrategy },
 ): Promise<BrowserSearchResult[]> {
+	const tuning = await getWebSearchTuning();
 	const limit =
-		typeof request.limit === "number" && request.limit > 0 ? request.limit : 10;
+		typeof request.limit === "number" && request.limit > 0
+			? request.limit
+			: tuning.maxResults;
 	const strategy = request.strategy || (await getSearchStrategy());
 
-	const runLocal = () => tryLocalSearch(request, limit);
-	const runMcp = () => tryMcpTavily(request.query, limit);
+	const query = tuning.searchWithTime
+		? `${new Date().toLocaleDateString("zh-CN")} ${request.query}`
+		: request.query;
+	const requestWithTuning: BrowserSearchRequest = {
+		...request,
+		query,
+		limit: limit * 3,
+	};
+
+	const applyPolicies = (results: BrowserSearchResult[]) => {
+		const out: BrowserSearchResult[] = [];
+		const perDomain = new Map<string, number>();
+		const seen = new Set<string>();
+		for (const r of results) {
+			const url = String(r?.url || "").trim();
+			if (!url.startsWith("http")) continue;
+			if (seen.has(url)) continue;
+
+			let hostname = "";
+			try {
+				hostname = new URL(url).hostname.toLowerCase();
+			} catch {
+				continue;
+			}
+
+			if (
+				tuning.excludeDomains.some(
+					(d) => hostname === d || hostname.endsWith(`.${d}`),
+				)
+			) {
+				continue;
+			}
+			const count = perDomain.get(hostname) ?? 0;
+			if (count >= tuning.perDomainLimit) continue;
+			perDomain.set(hostname, count + 1);
+			seen.add(url);
+			out.push({ ...r, url });
+			if (out.length >= limit) break;
+		}
+		return out;
+	};
+
+	const runLocal = async () =>
+		applyPolicies(await tryLocalSearch(requestWithTuning, limit * 3));
+	const runMcp = async () =>
+		applyPolicies(await tryMcpTavily(query, limit * 3));
 
 	const wrapError = (primary: unknown, secondary?: unknown) => {
 		const p = primary instanceof Error ? primary.message : String(primary);
@@ -480,8 +624,7 @@ export async function smartBrowserSearch(
 
 	if (strategy === "local_first") {
 		try {
-			const local = await runLocal();
-			return local;
+			return await runLocal();
 		} catch (localErr) {
 			try {
 				return await runMcp();
@@ -493,8 +636,7 @@ export async function smartBrowserSearch(
 
 	// mcp_first
 	try {
-		const mcp = await runMcp();
-		return mcp;
+		return await runMcp();
 	} catch (mcpErr) {
 		try {
 			return await runLocal();

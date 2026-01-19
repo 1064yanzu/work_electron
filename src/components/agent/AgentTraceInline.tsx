@@ -124,7 +124,9 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 		}
 
 		if (toolCall.type === "web_search") {
-			const results = (toolCall.output as any)?.results || [];
+			const payload = toolCall.output as any;
+			const results =
+				payload?.results || (Array.isArray(payload) ? payload : []);
 			return `找到 ${results.length} 条结果`;
 		}
 

@@ -16,7 +16,10 @@ function formatDateKey(tsMs: number) {
 }
 
 export function createActivityHandlers(db: DbContext) {
-	const getDailyActivity: Handler<"get_daily_activity"> = async (_event, input) => {
+	const getDailyActivity: Handler<"get_daily_activity"> = async (
+		_event,
+		input,
+	) => {
 		const days = Math.max(1, Math.min(3650, Math.floor(input.days || 1)));
 		const now = Date.now();
 		const start = now - (days - 1) * 24 * 60 * 60 * 1000;
@@ -62,4 +65,3 @@ export function createActivityHandlers(db: DbContext) {
 
 	return { get_daily_activity: getDailyActivity };
 }
-

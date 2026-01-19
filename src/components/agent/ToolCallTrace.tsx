@@ -193,8 +193,14 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 	if (type === "web_search") {
 		let results: any[] = [];
 		try {
-			if (typeof output === "string") results = JSON.parse(output);
-			else if (Array.isArray(output)) results = output;
+			const normalize = (payload: any) => {
+				if (Array.isArray(payload)) return payload;
+				if (Array.isArray(payload?.results)) return payload.results;
+				if (Array.isArray(payload?.data?.results)) return payload.data.results;
+				return [];
+			};
+			if (typeof output === "string") results = normalize(JSON.parse(output));
+			else results = normalize(output);
 		} catch {}
 
 		if (results.length > 0) {
@@ -214,9 +220,9 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 									{item.title || item.url}
 								</span>
 							</div>
-							{item.content && (
+							{(item.content || item.snippet) && (
 								<p className="text-[10px] text-zinc-500 line-clamp-2">
-									{item.content}
+									{item.content || item.snippet}
 								</p>
 							)}
 						</a>

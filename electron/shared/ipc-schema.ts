@@ -53,6 +53,36 @@ export type IPCSchema = {
 			anthropicProxy: { port: number; baseUrl: string };
 		};
 	};
+	open_browser_window: {
+		input: { url: string };
+		output: { success: boolean };
+	};
+	fetch_page_content: {
+		input: { url: string };
+		output: {
+			url: string;
+			title: string;
+			content: string;
+			description?: string;
+			favicon?: string;
+		};
+	};
+	browser_search: {
+		input: {
+			request: {
+				query: string;
+				engine: string;
+				use_playwright: boolean;
+				limit?: number;
+			};
+		};
+		output: Array<{
+			title: string;
+			snippet: string;
+			url: string;
+			screenshot?: string;
+		}>;
+	};
 
 	// ==================
 	// Projects 命令

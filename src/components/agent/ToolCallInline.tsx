@@ -270,12 +270,18 @@ function SearchResultView({ output }: { output: any }) {
 // 结构化结果：网络检索
 function WebSearchResultView({ output }: { output: any }) {
 	const results = useMemo(() => {
+		const normalize = (payload: any) => {
+			if (Array.isArray(payload)) return payload;
+			if (Array.isArray(payload?.results)) return payload.results;
+			if (Array.isArray(payload?.data?.results)) return payload.data.results;
+			return [];
+		};
 		try {
 			if (typeof output === "string") {
 				const parsed = JSON.parse(output);
-				return Array.isArray(parsed) ? parsed : [];
+				return normalize(parsed);
 			}
-			return Array.isArray(output) ? output : [];
+			return normalize(output);
 		} catch {
 			return [];
 		}
@@ -306,9 +312,9 @@ function WebSearchResultView({ output }: { output: any }) {
 							{item.title || item.url}
 						</span>
 					</div>
-					{item.content && (
+					{(item.content || item.snippet) && (
 						<p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 pl-5">
-							{item.content}
+							{item.content || item.snippet}
 						</p>
 					)}
 				</a>

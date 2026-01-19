@@ -73,4 +73,3 @@ export function createCardHandlers(db: DbContext) {
 		get_card_image_path: getCardImagePath,
 	};
 }
-
