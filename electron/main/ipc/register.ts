@@ -24,11 +24,15 @@ import { createBrowserSearchHandlers } from "./handlers/browserSearch";
 import { createCardHandlers } from "./handlers/cards";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
+import { createAgentSdkHandlers } from "./handlers/agentSdk";
+import { createFsSafeHandlers } from "./handlers/fsSafe";
+import { createKbEmbeddingHandlers } from "./handlers/kbEmbeddings";
 import { createMcpHandlers } from "./handlers/mcp";
 import { createNoteHandlers } from "./handlers/notes";
 import { createOutputHandlers } from "./handlers/outputs";
 import { createProjectHandlers } from "./handlers/projects";
 import { createProviderHandlers } from "./handlers/providers";
+import { createSkillsHandlers } from "./handlers/skills";
 import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
 import { createWebContentHandlers } from "./handlers/webContent";
@@ -71,6 +75,13 @@ export function registerIpcHandlers({
 	const activityHandlers = createActivityHandlers(db);
 	const browserSearchHandlers = createBrowserSearchHandlers();
 	const webContentHandlers = createWebContentHandlers();
+	const skillsHandlers = createSkillsHandlers(db);
+	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
+	const fsSafeHandlers = createFsSafeHandlers();
+	const agentSdkHandlers = createAgentSdkHandlers({
+		getMainWindow: () => mainWindowRef,
+		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
+	});
 
 	// Agent Runtime handlers
 	const agentSessionHandlers = createAgentSessionHandlers(db);
@@ -103,6 +114,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("open_browser_window", webContentHandlers.open_browser_window);
 	ipcMain.handle("fetch_page_content", webContentHandlers.fetch_page_content);
 	ipcMain.handle("browser_search", browserSearchHandlers.browser_search);
+
+	ipcMain.handle("read_file_safe", fsSafeHandlers.read_file_safe);
+	ipcMain.handle("write_file_safe", fsSafeHandlers.write_file_safe);
+	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
 
 	// ==================
 	// Projects
@@ -155,6 +170,22 @@ export function registerIpcHandlers({
 	}) satisfies IpcHandler<"kb_search_chunks">);
 
 	ipcMain.handle("kb_chunk_rebuild", noteHandlers.kb_chunk_rebuild);
+	ipcMain.handle(
+		"kb_get_embedding_stats",
+		kbEmbeddingHandlers.kb_get_embedding_stats,
+	);
+	ipcMain.handle(
+		"kb_embeddings_rebuild",
+		kbEmbeddingHandlers.kb_embeddings_rebuild,
+	);
+
+	// ==================
+	// Agent Skills
+	// ==================
+	ipcMain.handle("list_skills", skillsHandlers.list_skills);
+	ipcMain.handle("import_skill", skillsHandlers.import_skill);
+	ipcMain.handle("delete_skill", skillsHandlers.delete_skill);
+	ipcMain.handle("set_skill_enabled", skillsHandlers.set_skill_enabled);
 
 	// ==================
 	// Providers
@@ -289,6 +320,12 @@ export function registerIpcHandlers({
 		"agent_update_tool_call",
 		agentToolCallHandlers.agent_update_tool_call,
 	);
+
+	// ==================
+	// Claude Agent SDK Runner
+	// ==================
+	ipcMain.handle("agent_sdk_start", agentSdkHandlers.agent_sdk_start);
+	ipcMain.handle("agent_sdk_abort", agentSdkHandlers.agent_sdk_abort);
 
 	// ==================
 	// Agent Messages & Artifacts & Audit

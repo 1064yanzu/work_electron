@@ -119,6 +119,42 @@ function buildContextMessage(context?: string[]): string | null {
 	return `以下是相关上下文信息：\n\n${context.join("\n\n---\n\n")}`;
 }
 
+function normalizeApiKeys(raw?: string): string[] {
+	if (!raw) return [];
+	return raw
+		.split(/[\n,，]/g)
+		.map((key) => key.trim())
+		.filter(Boolean);
+}
+
+export async function resolveProviderApiKey(
+	db: DbContext,
+	providerId: string,
+	raw?: string,
+): Promise<string | undefined> {
+	const keys = normalizeApiKeys(raw);
+	if (keys.length === 0) return undefined;
+	if (keys.length === 1) return keys[0];
+
+	const key = `provider.api_key_index.${providerId}`;
+	const rows = await db.client.execute({
+		sql: `SELECT value FROM app_config WHERE key = ?`,
+		args: [key],
+	});
+	const lastIndexRaw = rows.rows[0]?.value;
+	const lastIndex = Number.isFinite(Number(lastIndexRaw))
+		? Number(lastIndexRaw)
+		: -1;
+	const nextIndex = (lastIndex + 1) % keys.length;
+	const timestamp = Date.now();
+	await db.client.execute({
+		sql: `INSERT INTO app_config (key, value, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+		args: [key, String(nextIndex), timestamp],
+	});
+	return keys[nextIndex];
+}
+
 /**
  * 调用 OpenAI 兼容 API
  */
@@ -126,6 +162,7 @@ async function callOpenAICompatible(
 	provider: Provider,
 	model: string,
 	prompt: string,
+	apiKey: string | undefined,
 	context?: string[],
 	temperature?: number,
 ): Promise<LlmCallResult> {
@@ -147,7 +184,7 @@ async function callOpenAICompatible(
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${provider.api_key}`,
+			Authorization: `Bearer ${apiKey ?? ""}`,
 		},
 		body: JSON.stringify({
 			model,
@@ -183,6 +220,7 @@ async function callAnthropic(
 	provider: Provider,
 	model: string,
 	prompt: string,
+	apiKey: string | undefined,
 	context?: string[],
 	temperature?: number,
 ): Promise<LlmCallResult> {
@@ -200,7 +238,7 @@ async function callAnthropic(
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			"x-api-key": provider.api_key || "",
+			"x-api-key": apiKey || "",
 			"anthropic-version": "2023-06-01",
 		},
 		body: JSON.stringify({
@@ -306,6 +344,12 @@ export async function invokeLlm(
 		);
 	}
 
+	const resolvedApiKey = await resolveProviderApiKey(
+		db,
+		provider.id,
+		provider.api_key,
+	);
+
 	// 根据 provider_type 分流
 	switch (provider.provider_type) {
 		case "anthropic":
@@ -313,6 +357,7 @@ export async function invokeLlm(
 				provider,
 				model,
 				options.prompt,
+				resolvedApiKey,
 				options.context,
 				options.temperature,
 			);
@@ -329,6 +374,7 @@ export async function invokeLlm(
 				provider,
 				model,
 				options.prompt,
+				resolvedApiKey,
 				options.context,
 				options.temperature,
 			);

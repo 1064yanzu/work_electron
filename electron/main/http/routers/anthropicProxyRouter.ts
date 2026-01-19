@@ -5,7 +5,8 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
 import type { DbContext } from "../../db/client";
-import type { Logger } from "../../logging/types";
+import { type Logger } from "../../logging/types";
+import { resolveProviderApiKey } from "../../llm/invoke";
 
 // 内存文件存储（重启丢失）
 const fileStore = new Map<
@@ -235,6 +236,7 @@ export function createAnthropicProxyRouter(options?: {
 				`SELECT * FROM providers WHERE is_enabled = 1`,
 			);
 			let provider: {
+				id: string;
 				provider_type: string;
 				api_key?: string;
 				api_base?: string;
@@ -244,6 +246,7 @@ export function createAnthropicProxyRouter(options?: {
 				const models = JSON.parse((row.models as string) || "[]") as string[];
 				if (models.includes(model)) {
 					provider = {
+						id: row.id as string,
 						provider_type: row.provider_type as string,
 						api_key: row.api_key as string | undefined,
 						api_base: row.api_base as string | undefined,
@@ -262,7 +265,16 @@ export function createAnthropicProxyRouter(options?: {
 			}
 
 			// 3. 构建请求并调用
-			const result = await callProvider(provider, model, anthropicReq);
+			const resolvedApiKey = await resolveProviderApiKey(
+				db,
+				provider.id,
+				provider.api_key,
+			);
+			const result = await callProvider(
+				{ ...provider, api_key: resolvedApiKey },
+				model,
+				anthropicReq,
+			);
 
 			// 4. 返回响应（非流式）
 			if (anthropicReq.stream) {

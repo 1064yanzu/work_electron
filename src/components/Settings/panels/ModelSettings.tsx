@@ -39,6 +39,8 @@ export function ModelSettings() {
 	const [selectedId, setSelectedId] = useState<string>("");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showApiKey, setShowApiKey] = useState(false);
+	const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+	const [apiKeyDraft, setApiKeyDraft] = useState("");
 	const [checkStatus, setCheckStatus] = useState<CheckStatus>("idle");
 	const [isManaging, setIsManaging] = useState(false);
 	const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -99,6 +101,36 @@ export function ModelSettings() {
 		}
 		setTimeout(() => setCheckStatus("idle"), 3000);
 	}, [selected]);
+
+	const normalizeApiKeys = useCallback((value: string) => {
+		const items = value
+			.split(/[\n,，]/g)
+			.map((key) => key.trim())
+			.filter(Boolean);
+		const seen = new Set<string>();
+		const ordered: string[] = [];
+		for (const item of items) {
+			if (seen.has(item)) continue;
+			seen.add(item);
+			ordered.push(item);
+		}
+		return ordered;
+	}, []);
+
+	const handleOpenApiKeyModal = useCallback(() => {
+		if (!selected) return;
+		setApiKeyDraft(normalizeApiKeys(selected.apiKey || "").join("\n"));
+		setIsApiKeyModalOpen(true);
+	}, [normalizeApiKeys, selected]);
+
+	const handleSaveApiKeyModal = useCallback(() => {
+		if (!selected) return;
+		const keys = normalizeApiKeys(apiKeyDraft);
+		settingsStore.updateProvider(selected.id, {
+			apiKey: keys.join(","),
+		});
+		setIsApiKeyModalOpen(false);
+	}, [apiKeyDraft, normalizeApiKeys, selected, settingsStore]);
 
 	// 删除服务商
 	const handleDelete = useCallback(async () => {
@@ -277,16 +309,24 @@ export function ModelSettings() {
 								<label className="text-sm font-medium text-zinc-700">
 									API 密钥
 								</label>
-								<button
-									onClick={() => setShowApiKey(!showApiKey)}
-									className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
-								>
-									{showApiKey ? (
-										<EyeOff className="w-4 h-4" />
-									) : (
-										<Eye className="w-4 h-4" />
-									)}
-								</button>
+								<div className="flex items-center gap-2">
+									<button
+										onClick={handleOpenApiKeyModal}
+										className="px-2.5 py-1 text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+									>
+										管理
+									</button>
+									<button
+										onClick={() => setShowApiKey(!showApiKey)}
+										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+									>
+										{showApiKey ? (
+											<EyeOff className="w-4 h-4" />
+										) : (
+											<Eye className="w-4 h-4" />
+										)}
+									</button>
+								</div>
 							</div>
 							<div className="flex gap-3">
 								<input
@@ -302,6 +342,9 @@ export function ModelSettings() {
 								/>
 								<CheckButton status={checkStatus} onClick={handleCheck} />
 							</div>
+							<p className="mt-2 text-xs text-zinc-400">
+								支持多个密钥，用逗号或换行分隔
+							</p>
 							{template?.docsUrl && (
 								<button
 									onClick={() => openUrl(template.docsUrl!)}
@@ -572,6 +615,45 @@ export function ModelSettings() {
 						className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
 					>
 						{isCreating ? "创建中..." : "确定"}
+					</button>
+				</div>
+			</Modal>
+
+			{/* 添加模型弹窗 */}
+			<Modal
+				isOpen={isApiKeyModalOpen}
+				onClose={() => setIsApiKeyModalOpen(false)}
+				title="管理 API 密钥"
+			>
+				<div className="space-y-5">
+					<div>
+						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+							密钥列表
+						</label>
+						<textarea
+							value={apiKeyDraft}
+							onChange={(e) => setApiKeyDraft(e.target.value)}
+							placeholder="每行一个密钥"
+							rows={6}
+							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all resize-none"
+						/>
+						<p className="mt-2 text-xs text-zinc-400">
+							支持逗号或换行分隔，系统会自动去重
+						</p>
+					</div>
+				</div>
+				<div className="flex justify-end gap-3 mt-8">
+					<button
+						onClick={() => setIsApiKeyModalOpen(false)}
+						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+					>
+						取消
+					</button>
+					<button
+						onClick={handleSaveApiKeyModal}
+						className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+					>
+						保存
 					</button>
 				</div>
 			</Modal>

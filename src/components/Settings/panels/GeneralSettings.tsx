@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import {
 	describeSearchHealth,
 	getConfig,
+	getSearchMcpProvider,
 	getSearchStrategy,
+	type SearchMcpProvider,
 	type SearchStrategy,
 	setConfig,
+	setSearchMcpProvider,
 	setSearchStrategy,
 } from "../../../lib/config";
 import { useSettingsStore } from "../../../lib/settingsStore";
@@ -19,6 +22,8 @@ export function GeneralSettings() {
 	const [imageExtractionModel, setImageExtractionModel] = useState<string>("");
 	const [searchStrategy, setSearchStrategyState] =
 		useState<SearchStrategy>("local_first");
+	const [searchMcpProvider, setSearchMcpProviderState] =
+		useState<SearchMcpProvider>("auto");
 	const [searchHealth, setSearchHealth] = useState<string>("");
 	const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
@@ -48,6 +53,8 @@ export function GeneralSettings() {
 
 			const strategy = await getSearchStrategy();
 			setSearchStrategyState(strategy);
+			const mcpProvider = await getSearchMcpProvider();
+			setSearchMcpProviderState(mcpProvider);
 			setSearchHealth(describeSearchHealth());
 		} catch (error) {
 			console.error("加载设置失败:", error);
@@ -97,6 +104,16 @@ export function GeneralSettings() {
 			setSearchHealth(describeSearchHealth());
 		} catch (error) {
 			console.error("保存搜索策略失败:", error);
+		}
+	};
+
+	const handleSearchMcpProviderChange = async (value: SearchMcpProvider) => {
+		setSearchMcpProviderState(value);
+		try {
+			await setSearchMcpProvider(value);
+			setSearchHealth(describeSearchHealth());
+		} catch (error) {
+			console.error("保存 MCP 搜索提供商失败:", error);
 		}
 	};
 
@@ -230,6 +247,22 @@ export function GeneralSettings() {
 							</option>
 							<option value="local_only">仅本地（不联网）</option>
 							<option value="mcp_only">仅 MCP</option>
+						</select>
+						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+					</div>
+					<div className="relative">
+						<select
+							value={searchMcpProvider}
+							onChange={(e) =>
+								handleSearchMcpProviderChange(
+									e.target.value as SearchMcpProvider,
+								)
+							}
+							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+						>
+							<option value="auto">自动（优先 Tavily，无则 Exa MCP）</option>
+							<option value="tavily">Tavily (MCP)</option>
+							<option value="exa_mcp">Exa MCP（免费）</option>
 						</select>
 						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
 					</div>

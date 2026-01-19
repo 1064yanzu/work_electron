@@ -6,8 +6,8 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build && electron-builder",
-		"lint": "biome check .",
-		"format": "biome format . --write",
+		"lint": "biome check src electron vite.config.ts package.json tsconfig*.json",
+		"format": "biome format src electron vite.config.ts package.json tsconfig*.json --write",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"preview": "vite preview"
 	},

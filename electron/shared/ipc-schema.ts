@@ -208,6 +208,54 @@ export type IPCSchema = {
 		input: { note_id: string };
 		output: { success: boolean; chunk_count: number };
 	};
+	kb_get_embedding_stats: {
+		input: Record<string, never>;
+		output: {
+			embedding_model: string | null;
+			total_chunks: number;
+			embedded_chunks: number;
+			missing_chunks: number;
+		};
+	};
+	kb_embeddings_rebuild: {
+		input: {
+			embedding_model: string;
+			note_id?: string;
+			force?: boolean;
+			batch_size?: number;
+		};
+		output: number;
+	};
+
+	// ==================
+	// Agent Skills
+	// ==================
+	list_skills: {
+		input: Record<string, never>;
+		output: Array<{
+			name: string;
+			description: string;
+			location: string;
+			enabled: boolean;
+		}>;
+	};
+	import_skill: {
+		input: { sourcePath: string };
+		output: {
+			name: string;
+			description: string;
+			location: string;
+			enabled: boolean;
+		};
+	};
+	delete_skill: {
+		input: { skillName: string };
+		output: { success: boolean };
+	};
+	set_skill_enabled: {
+		input: { skillName: string; enabled: boolean };
+		output: { success: boolean };
+	};
 
 	// ==================
 	// Dashboard / Stats
@@ -347,6 +395,25 @@ export type IPCSchema = {
 	agent_list_messages: {
 		input: { session_id: string; task_id?: string; limit?: number };
 		output: AgentMessage[];
+	};
+
+	// ==================
+	// Claude Agent SDK Runner
+	// ==================
+	agent_sdk_start: {
+		input: {
+			prompt: string;
+			model: string;
+			cwd?: string;
+			permission_mode?: string;
+			allowed_tools?: string[];
+			system_prompt?: string;
+		};
+		output: string;
+	};
+	agent_sdk_abort: {
+		input: { runId: string };
+		output: { success: boolean };
 	};
 
 	// ==================

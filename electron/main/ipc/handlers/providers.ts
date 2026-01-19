@@ -6,6 +6,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Provider, ProviderType } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
+import { resolveProviderApiKey } from "../../llm/invoke";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -208,17 +209,46 @@ export function createProviderHandlers(db: DbContext) {
 			args: [input.provider_id],
 		});
 		if (rows.rows.length === 0) {
-			return { valid: false, error: "Provider not found" };
+			return { valid: false, error: "Provider 未找到" };
 		}
 
 		const provider = parseProvider(rows.rows[0] as Record<string, unknown>);
 
-		if (!provider.api_key) {
-			return { valid: false, error: "API key not configured" };
+		const apiKey = await resolveProviderApiKey(
+			db,
+			provider.id,
+			provider.api_key,
+		);
+		if (!apiKey) {
+			return { valid: false, error: "未配置可用 API Key" };
 		}
 
-		// TODO: 实际的 API 校验逻辑
-		// 目前返回简单校验结果
+		const apiBase = provider.api_base?.trim();
+		if (!apiBase) {
+			return { valid: false, error: "未配置 API Base" };
+		}
+		const base = apiBase.replace(/\/$/, "");
+		const url =
+			provider.provider_type === "anthropic"
+				? `${base}/v1/models`
+				: `${base}/models`;
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+		};
+		if (provider.provider_type === "anthropic") {
+			headers["x-api-key"] = apiKey;
+			headers["anthropic-version"] = "2023-06-01";
+		} else {
+			headers.Authorization = `Bearer ${apiKey}`;
+		}
+		const response = await fetch(url, { method: "GET", headers });
+		if (!response.ok) {
+			const errorText = await response.text();
+			return {
+				valid: false,
+				error: `API 验证失败 ${response.status}: ${errorText}`,
+			};
+		}
 		return { valid: true };
 	};
 
