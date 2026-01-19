@@ -441,6 +441,7 @@ export type IPCSchema = {
 			permission_mode?: string;
 			allowed_tools?: string[];
 			system_prompt?: string;
+			skills?: string[]; // 可用技能名称列表
 		};
 		output: string;
 	};

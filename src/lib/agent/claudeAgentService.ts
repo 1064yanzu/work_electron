@@ -70,6 +70,7 @@ const DEFAULT_TOOLS = [
 
 // Import settings store to respect user's model selection
 import { settingsStore } from "../settingsStore";
+import { skillsStore } from "../skillsStore";
 
 /**
  * Claude Agent Service
@@ -181,8 +182,27 @@ export class ClaudeAgentService {
 							lastToolUseError =
 								toolErrors[toolErrors.length - 1] ?? lastToolUseError;
 
-							if (toolUseErrorCount >= 3) {
-								const err = lastToolUseError || "Tool call failed repeatedly";
+							// Log each tool error for debugging
+							console.error(
+								`[ClaudeAgentService] Tool use error (${toolUseErrorCount}/10):`,
+								{
+									errorCount: toolErrors.length,
+									totalErrors: toolUseErrorCount,
+									errors: toolErrors,
+									lastError: lastToolUseError,
+								},
+							);
+
+							// Increased threshold from 3 to 10
+							if (toolUseErrorCount >= 10) {
+								const err = lastToolUseError || "Tool call failed repeatedly (10+ errors)";
+								console.error(
+									"[ClaudeAgentService] Aborting due to repeated tool errors:",
+									{
+										totalErrors: toolUseErrorCount,
+										lastError: err,
+									},
+								);
 								void invoke("agent_sdk_abort", { runId });
 								onComplete?.({ success: false, summary: err });
 								if (unlisten) unlisten();

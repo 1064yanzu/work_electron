@@ -24,6 +24,8 @@ interface AgentExecutorConfig {
 
 /**
  * Build skills context from enabled skills for system prompt
+ * This provides detailed skill information since SDK's built-in Skill tool
+ * cannot automatically discover our skills directory
  */
 function buildSkillsContext(): string {
 	const enabledSkills = skillsStore.getEnabledSkills();
@@ -32,16 +34,24 @@ function buildSkillsContext(): string {
 		return "";
 	}
 
-	let context = "\n\n## 可用技能 (Skills)\n\n";
-	context += "以下是当前启用的技能，你可以根据用户需求使用它们：\n\n";
+	let context = "\n\n## 可用技能 (Available Skills)\n\n";
+	context += "你可以使用 Skill 工具来调用以下已启用的技能。\n\n";
+	context += "**调用方式**: 使用 Skill 工具，参数 `skill` 设置为技能名称。\n\n";
+	context += "**可用技能列表**:\n\n";
 
 	for (const skill of enabledSkills) {
-		context += `### ${skill.name}\n`;
-		if (skill.description) {
-			context += `${skill.description}\n`;
-		}
-		context += "\n";
+		context += `- **${skill.name}**: ${skill.description || "无描述"}\n`;
 	}
+
+	context += "\n**示例调用**:\n";
+	context += "```json\n";
+	context += `{ \"skill\": \"${enabledSkills[0]?.name || "skill-name"}\", \"args\": \"optional arguments\" }\n`;
+	context += "```\n\n";
+
+	context += "**重要提示**: \n";
+	context += "- 当用户请求使用某个技能时,使用 Skill 工具调用它\n";
+	context += "- 技能名称必须完全匹配上述列表中的名称\n";
+	context += `- 当前可用技能: ${enabledSkills.map(s => s.name).join(", ")}\n`;
 
 	return context;
 }
@@ -156,9 +166,28 @@ class AgentExecutor {
 		let toolStepCounter = 0;
 		let lastToolCallId: string | null = null;
 
+		// 构建增强版用户 prompt - 当有附件时,让模型明确知道有哪些文件
+		let enhancedUserPrompt = query;
+		if (options?.attachedFiles?.length || options?.attachedContexts?.length) {
+			const fileList: string[] = [];
+			if (options?.attachedFiles?.length) {
+				for (const file of options.attachedFiles) {
+					fileList.push(`- ${file.title} (文件路径: ${file.path})`);
+				}
+			}
+			if (options?.attachedContexts?.length) {
+				for (const ctx of options.attachedContexts) {
+					fileList.push(`- ${ctx.title}`);
+				}
+			}
+			if (fileList.length > 0) {
+				enhancedUserPrompt += `\n\n【用户附加的文件/资料】\n${fileList.join('\n')}\n\n这些文件的完整内容已在系统提示中提供。如果用户要求处理这些文件(如上传到 NotebookLM),请使用 Skill 工具并将文件路径作为参数传递。`;
+			}
+		}
+
 		try {
 			await this.sdkService.execute({
-				prompt: query,
+				prompt: enhancedUserPrompt,
 				systemPrompt: enhancedPrompt || undefined,
 				abortController: this.abortController,
 

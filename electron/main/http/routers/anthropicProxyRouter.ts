@@ -24,15 +24,15 @@ const fileStore = new Map<
 interface AnthropicMessage {
 	role: string;
 	content:
-		| string
-		| Array<{
-				type: string;
-				text?: string;
-				id?: string;
-				name?: string;
-				input?: unknown;
-				tool_use_id?: string;
-		  }>;
+	| string
+	| Array<{
+		type: string;
+		text?: string;
+		id?: string;
+		name?: string;
+		input?: unknown;
+		tool_use_id?: string;
+	}>;
 }
 
 interface AnthropicRequest {
@@ -274,6 +274,7 @@ export function createAnthropicProxyRouter(options?: {
 				{ ...provider, api_key: resolvedApiKey },
 				model,
 				anthropicReq,
+				logger,
 			);
 
 			// 4. 返回响应（非流式）
@@ -308,6 +309,7 @@ async function callProvider(
 	provider: { provider_type: string; api_key?: string; api_base?: string },
 	model: string,
 	anthropicReq: AnthropicRequest,
+	logger?: Logger,
 ): Promise<AnthropicResponse> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -341,21 +343,68 @@ async function callProvider(
 	// OpenAI 兼容调用
 	headers.Authorization = `Bearer ${provider.api_key}`;
 
+	// Log tool conversion for debugging
+	if (anthropicReq.tools?.length) {
+		logger?.info({
+			msg: "anthropic proxy: converting tools to OpenAI format",
+			toolCount: anthropicReq.tools.length,
+			toolNames: anthropicReq.tools.map((t) => t.name),
+		});
+
+		// Log each tool's schema for debugging
+		for (const tool of anthropicReq.tools) {
+			logger?.info({
+				msg: "anthropic proxy: tool schema",
+				name: tool.name,
+				description: tool.description,
+				hasInputSchema: !!tool.input_schema,
+				inputSchema: tool.input_schema,
+			});
+		}
+	}
+
 	const openaiReq = {
 		model,
 		messages: openaiMessages,
 		temperature: anthropicReq.temperature ?? 0.7,
 		max_tokens: anthropicReq.max_tokens ?? 4096,
-		tools: anthropicReq.tools?.map((t) => ({
-			type: "function" as const,
-			function: {
-				name: t.name,
-				description: t.description,
-				parameters: t.input_schema || { type: "object" },
-			},
-		})),
+		tools: anthropicReq.tools?.map((t) => {
+			// Ensure input_schema is a valid JSON Schema for OpenAI
+			// If no schema is provided, create a proper default with properties
+			const inputSchema = t.input_schema || {
+				type: "object",
+				properties: {},
+				additionalProperties: true,
+			};
+
+			// Validate schema has required JSON Schema fields
+			const validatedSchema = {
+				type: "object",
+				...inputSchema,
+				// Ensure properties exists (required by OpenAI)
+				properties: (inputSchema as any).properties || {},
+			};
+
+			return {
+				type: "function" as const,
+				function: {
+					name: t.name,
+					description: t.description,
+					parameters: validatedSchema,
+				},
+			};
+		}),
 		tool_choice: anthropicReq.tools?.length ? "auto" : undefined,
 	};
+
+	// Log final OpenAI request
+	logger?.info({
+		msg: "anthropic proxy: sending to provider",
+		model: openaiReq.model,
+		messageCount: openaiReq.messages.length,
+		hasTools: !!openaiReq.tools,
+		toolCount: openaiReq.tools?.length || 0,
+	});
 
 	const response = await fetch(`${baseUrl}/chat/completions`, {
 		method: "POST",
@@ -365,10 +414,25 @@ async function callProvider(
 
 	if (!response.ok) {
 		const errorText = await response.text();
+		logger?.error({
+			msg: "anthropic proxy: OpenAI API error",
+			status: response.status,
+			error: errorText,
+		});
 		throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
 	}
 
 	const openaiResp = (await response.json()) as OpenAIResponse;
+
+	// Log response for debugging
+	logger?.info({
+		msg: "anthropic proxy: received OpenAI response",
+		choiceCount: openaiResp.choices?.length || 0,
+		finishReason: openaiResp.choices?.[0]?.finish_reason,
+		hasContent: !!openaiResp.choices?.[0]?.message?.content,
+		hasToolCalls: !!openaiResp.choices?.[0]?.message?.tool_calls?.length,
+		toolCallCount: openaiResp.choices?.[0]?.message?.tool_calls?.length || 0,
+	});
 
 	// 转换回 Anthropic 格式
 	return translateToAnthropic(messageId, model, openaiResp);
@@ -521,9 +585,9 @@ function translateToAnthropic(
 		stop_reason: stopReason,
 		usage: openaiResp.usage
 			? {
-					input_tokens: openaiResp.usage.prompt_tokens,
-					output_tokens: openaiResp.usage.completion_tokens,
-				}
+				input_tokens: openaiResp.usage.prompt_tokens,
+				output_tokens: openaiResp.usage.completion_tokens,
+			}
 			: { input_tokens: 0, output_tokens: 0 },
 	};
 }

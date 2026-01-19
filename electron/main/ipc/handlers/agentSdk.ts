@@ -182,6 +182,7 @@ export function createAgentSdkHandlers(options: {
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
 				const stderr = (data: string) => {
+					console.log('[agent_sdk_start] stderr:', data);
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 
@@ -189,10 +190,32 @@ export function createAgentSdkHandlers(options: {
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch {}
+				} catch { }
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
+
+				console.log('[agent_sdk_start] Starting with params:', {
+					runId,
+					cwd,
+					model: input.model,
+					pathToClaudeCodeExecutable,
+					allowed_tools: input.allowed_tools,
+					has_system_prompt: !!input.system_prompt,
+				});
+
+				// 检查 skills 目录
+				const skillsDir = path.join(cwd, '.claude', 'skills');
+				try {
+					const skillEntries = await fsp.readdir(skillsDir, { withFileTypes: true });
+					const skillNames = skillEntries
+						.filter(e => e.isDirectory() && !e.name.startsWith('.'))
+						.map(e => e.name);
+					console.log('[agent_sdk_start] Skills directory:', skillsDir);
+					console.log('[agent_sdk_start] Found skills:', skillNames);
+				} catch (e) {
+					console.log('[agent_sdk_start] Skills directory not accessible:', skillsDir, e);
+				}
 
 				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
 				await syncSkillsToCwd(cwd, stderr);
@@ -202,9 +225,12 @@ export function createAgentSdkHandlers(options: {
 					: [];
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-					input.permission_mode.trim()
+						input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
+
+				// 注意: SDK Options 不直接支持 skills 参数
+				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -214,6 +240,9 @@ export function createAgentSdkHandlers(options: {
 						model: String(input.model ?? ""),
 						permissionMode: permissionMode as any,
 						pathToClaudeCodeExecutable,
+						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
+						// 必须包含 "user" 和 "project" 才能加载 ~/.claude/skills 和 .claude/skills
+						settingSources: ["user", "project"] as any,
 						tools:
 							allowed.length > 0
 								? allowed
@@ -225,27 +254,30 @@ export function createAgentSdkHandlers(options: {
 						},
 						stderr,
 						includePartialMessages: true,
-						systemPrompt: input.system_prompt,
+						// systemPrompt: 如果用户提供了自定义 prompt,使用 preset + append 模式
+						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
+						systemPrompt: input.system_prompt
+							? { type: "preset" as const, preset: "claude_code" as const, append: input.system_prompt }
+							: { type: "preset" as const, preset: "claude_code" as const },
 						canUseTool: async (
 							toolName: string,
-							_toolInput: any,
+							toolInput: any,
 							extra: any,
 						) => {
 							if (abortController.signal.aborted || extra?.signal?.aborted) {
 								return {
 									behavior: "deny",
 									message: "aborted",
-									interrupt: true,
 								};
 							}
 							if (allowed.length > 0 && !allowed.includes(toolName)) {
 								return {
 									behavior: "deny",
 									message: `Tool disabled: ${toolName}`,
-									interrupt: false,
 								};
 							}
-							return { behavior: "allow" };
+							// 按照官方文档格式,返回 allow 时需要传递 updatedInput
+							return { behavior: "allow", updatedInput: toolInput };
 						},
 					},
 				});
