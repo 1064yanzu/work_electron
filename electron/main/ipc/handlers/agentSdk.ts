@@ -182,7 +182,7 @@ export function createAgentSdkHandlers(options: {
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
 				const stderr = (data: string) => {
-					console.log('[agent_sdk_start] stderr:', data);
+					console.log("[agent_sdk_start] stderr:", data);
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 
@@ -190,12 +190,12 @@ export function createAgentSdkHandlers(options: {
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch { }
+				} catch {}
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
 
-				console.log('[agent_sdk_start] Starting with params:', {
+				console.log("[agent_sdk_start] Starting with params:", {
 					runId,
 					cwd,
 					model: input.model,
@@ -205,16 +205,22 @@ export function createAgentSdkHandlers(options: {
 				});
 
 				// 检查 skills 目录
-				const skillsDir = path.join(cwd, '.claude', 'skills');
+				const skillsDir = path.join(cwd, ".claude", "skills");
 				try {
-					const skillEntries = await fsp.readdir(skillsDir, { withFileTypes: true });
+					const skillEntries = await fsp.readdir(skillsDir, {
+						withFileTypes: true,
+					});
 					const skillNames = skillEntries
-						.filter(e => e.isDirectory() && !e.name.startsWith('.'))
-						.map(e => e.name);
-					console.log('[agent_sdk_start] Skills directory:', skillsDir);
-					console.log('[agent_sdk_start] Found skills:', skillNames);
+						.filter((e) => e.isDirectory() && !e.name.startsWith("."))
+						.map((e) => e.name);
+					console.log("[agent_sdk_start] Skills directory:", skillsDir);
+					console.log("[agent_sdk_start] Found skills:", skillNames);
 				} catch (e) {
-					console.log('[agent_sdk_start] Skills directory not accessible:', skillsDir, e);
+					console.log(
+						"[agent_sdk_start] Skills directory not accessible:",
+						skillsDir,
+						e,
+					);
 				}
 
 				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
@@ -225,7 +231,7 @@ export function createAgentSdkHandlers(options: {
 					: [];
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-						input.permission_mode.trim()
+					input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
 
@@ -257,7 +263,11 @@ export function createAgentSdkHandlers(options: {
 						// systemPrompt: 如果用户提供了自定义 prompt,使用 preset + append 模式
 						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
 						systemPrompt: input.system_prompt
-							? { type: "preset" as const, preset: "claude_code" as const, append: input.system_prompt }
+							? {
+									type: "preset" as const,
+									preset: "claude_code" as const,
+									append: input.system_prompt,
+								}
 							: { type: "preset" as const, preset: "claude_code" as const },
 						canUseTool: async (
 							toolName: string,

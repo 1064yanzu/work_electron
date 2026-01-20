@@ -9,6 +9,7 @@ type SaveTempFileInput = {
 		content: string;
 		extension?: string;
 		prefix?: string;
+		encoding?: "utf-8" | "base64";
 	};
 };
 
@@ -38,6 +39,7 @@ export function createTempFileHandlers() {
 		input: SaveTempFileInput,
 	): Promise<SaveTempFileOutput> => {
 		const content = String(input?.payload?.content ?? "");
+		const encoding = input?.payload?.encoding === "base64" ? "base64" : "utf-8";
 		const ext = sanitizeExtension(String(input?.payload?.extension ?? "txt"));
 		const prefix = sanitizePrefix(String(input?.payload?.prefix ?? "tmp"));
 
@@ -47,7 +49,10 @@ export function createTempFileHandlers() {
 		const fileName = `${prefix}-${randomUUID()}.${ext}`;
 		const filePath = path.join(baseDir, fileName);
 
-		const buf = Buffer.from(content, "utf-8");
+		const buf =
+			encoding === "base64"
+				? Buffer.from(content, "base64")
+				: Buffer.from(content, "utf-8");
 		await fs.writeFile(filePath, buf);
 
 		return { path: filePath, size: buf.byteLength };

@@ -327,6 +327,23 @@ class AgentStore {
 		}
 	}
 
+	setTaskMetadata(patch: Record<string, unknown>) {
+		this.setState((state) => {
+			if (!state.currentTask) return state;
+			return {
+				...state,
+				currentTask: {
+					...state.currentTask,
+					metadata: {
+						...(state.currentTask.metadata || {}),
+						...patch,
+					},
+					updatedAt: Date.now(),
+				},
+			};
+		});
+	}
+
 	// 追加部分思考内容（流式输出用）
 	appendThinking(chunk: string) {
 		this.setState((state) => {

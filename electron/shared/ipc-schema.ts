@@ -110,11 +110,28 @@ export type IPCSchema = {
 			size?: number;
 		}>;
 	};
+	mkdir_safe: {
+		input: { path: string; recursive?: boolean };
+		output: { success: boolean };
+	};
+	copy_file_safe: {
+		input: { src: string; dest: string; create_dirs?: boolean };
+		output: { success: boolean };
+	};
 	save_temp_file: {
 		input: {
-			payload: { content: string; extension?: string; prefix?: string };
+			payload: {
+				content: string;
+				extension?: string;
+				prefix?: string;
+				encoding?: "utf-8" | "base64";
+			};
 		};
 		output: { path: string; size: number };
+	};
+	agent_get_sandbox_dir: {
+		input: { taskId: string };
+		output: { path: string };
 	};
 
 	// ==================

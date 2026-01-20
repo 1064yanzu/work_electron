@@ -8,10 +8,8 @@ import {
 	Globe,
 	Image as ImageIcon,
 	Mic,
-	Quote,
 	Send,
 	Type,
-	X,
 } from "lucide-react";
 import {
 	type KeyboardEvent,
@@ -20,7 +18,12 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { listCards, listOutputAssets, listSources } from "../../lib/api";
+import {
+	listCards,
+	listOutputAssets,
+	listSources,
+	saveTempFile,
+} from "../../lib/api";
 import { useWorkspaceStore } from "../../lib/workspaceStore";
 import {
 	type Card,
@@ -28,6 +31,7 @@ import {
 	type Source,
 	SourceType,
 } from "../../types";
+import { AttachmentCard } from "./AttachmentCard";
 import { type SlashCommand, SlashCommandMenu } from "./SlashCommand";
 
 interface ChatInputProps {
@@ -63,6 +67,7 @@ export function ChatInput({
 	const {
 		docCache,
 		addSelectionToContext,
+		addFileToContext,
 		contexts,
 		removeContext,
 		addSourceToContext,
@@ -208,9 +213,80 @@ export function ChatInput({
 		if (!file) return;
 
 		try {
-			const text = await file.text();
-			addSelectionToContext(text, file.name);
-			console.log("已添加文件上下文:", file.name);
+			const inferExtension = (name: string) => {
+				const ext = name.split(".").pop()?.trim().toLowerCase();
+				if (!ext || ext === name.toLowerCase()) return "txt";
+				return ext;
+			};
+
+			const inferPrefix = (name: string) => {
+				const base = name.split(/[/\\]/).pop() || name;
+				const stem = base.includes(".")
+					? base.slice(0, base.lastIndexOf("."))
+					: base;
+				return stem.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32) || "file";
+			};
+
+			const isLikelyTextFile = (f: File) => {
+				if (f.type?.startsWith("text/")) return true;
+				const name = f.name.toLowerCase();
+				return (
+					name.endsWith(".md") ||
+					name.endsWith(".markdown") ||
+					name.endsWith(".txt") ||
+					name.endsWith(".json") ||
+					name.endsWith(".csv") ||
+					name.endsWith(".ts") ||
+					name.endsWith(".tsx") ||
+					name.endsWith(".js") ||
+					name.endsWith(".jsx") ||
+					name.endsWith(".py") ||
+					name.endsWith(".java") ||
+					name.endsWith(".go") ||
+					name.endsWith(".rs") ||
+					name.endsWith(".xml") ||
+					name.endsWith(".yml") ||
+					name.endsWith(".yaml") ||
+					name.endsWith(".toml") ||
+					name.endsWith(".ini") ||
+					name.endsWith(".log")
+				);
+			};
+
+			const arrayBufferToBase64 = (buf: ArrayBuffer) => {
+				let binary = "";
+				const bytes = new Uint8Array(buf);
+				const chunkSize = 0x8000;
+				for (let i = 0; i < bytes.length; i += chunkSize) {
+					binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+				}
+				return btoa(binary);
+			};
+
+			const ext = inferExtension(file.name);
+			const prefix = inferPrefix(file.name);
+
+			const isText = isLikelyTextFile(file);
+			const contentForSave = isText
+				? await file.text()
+				: arrayBufferToBase64(await file.arrayBuffer());
+
+			const temp = await saveTempFile({
+				content: contentForSave,
+				extension: ext,
+				prefix,
+				encoding: isText ? "utf-8" : "base64",
+			});
+
+			addFileToContext({
+				title: file.name,
+				content: isText ? contentForSave : "",
+				filePath: temp.path,
+				size: file.size,
+				mimeType: file.type || undefined,
+			});
+
+			console.log("已添加文件上下文:", file.name, temp.path);
 			// 清空 input 以便允许重复选择同名文件
 			e.target.value = "";
 		} catch (err) {
@@ -318,30 +394,39 @@ export function ChatInput({
 
 			{/* 主输入区域 */}
 			<div className="bg-white dark:bg-zinc-800 rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 ring-1 ring-black/5 dark:ring-white/5 focus-within:border-zinc-300 dark:focus-within:border-zinc-600 focus-within:ring-4 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-800 transition-all overflow-hidden shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.15)]">
-				{/* 上下文 Tags 区域 - 模仿图2的高级展示 */}
-				{contexts.length > 0 && (
-					<div className="flex flex-wrap gap-2 px-4 pt-3 pb-1">
-						{contexts.map((ctx) => (
-							<div
-								key={ctx.id}
-								className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 bg-zinc-100 dark:bg-zinc-700/50 text-zinc-700 dark:text-zinc-200 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 group transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700"
-							>
-								{ctx.type === "file" || ctx.sourceId ? (
-									<FileText className="w-3 h-3 text-zinc-500" />
-								) : (
-									<Quote className="w-3 h-3 text-zinc-500" />
-								)}
-								<span className="max-w-[120px] truncate">{ctx.title}</span>
-								<button
-									onClick={() => removeContext(ctx.id)}
-									className="p-0.5 rounded-md hover:bg-zinc-300/50 dark:hover:bg-zinc-600/50 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-								>
-									<X className="w-3 h-3" />
-								</button>
-							</div>
-						))}
+				{/* 上下文附件条 - Claude 风格 */}
+				{contexts.length > 0 ? (
+					<div className="px-4 pt-3 pb-2">
+						<div className="flex items-center gap-2 overflow-x-auto">
+							{contexts.map((ctx) => (
+								<div key={ctx.id} className="shrink-0">
+									<AttachmentCard
+										variant="chip"
+										file={{
+											title: ctx.title,
+											path: ctx.filePath || "",
+											type: ctx.type === "source" ? "document" : "file",
+											size: ctx.size,
+											origin:
+												ctx.type === "source"
+													? "source"
+													: ctx.type === "selection"
+														? "selection"
+														: "file",
+											status:
+												ctx.content &&
+												ctx.content.trim().length > 0 &&
+												!ctx.filePath
+													? "preparing"
+													: "ready",
+										}}
+										onRemove={() => removeContext(ctx.id)}
+									/>
+								</div>
+							))}
+						</div>
 					</div>
-				)}
+				) : null}
 
 				{/* 激活的命令标签 - 保持原有逻辑 */}
 				{activeCommand && (

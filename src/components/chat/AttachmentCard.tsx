@@ -1,108 +1,178 @@
 // 文件附件卡片组件
 // 在用户消息中显示附加的文件，参考现代AI IDE的设计风格
 
-import { File, FileArchive, FileText } from "lucide-react";
+import { File, FileArchive, FileImage, FileText, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface AttachedFile {
-    title: string;
-    path: string;
-    type?: "file" | "document";
-    size?: number;
+	title: string;
+	path: string;
+	type?: "file" | "document";
+	size?: number;
+	origin?: "file" | "source" | "selection";
+	status?: "ready" | "preparing";
 }
 
 interface AttachmentCardProps {
-    file: AttachedFile;
+	file: AttachedFile;
+	onRemove?: () => void;
+	variant?: "card" | "chip";
 }
 
 // 获取文件图标
 function getFileIcon(filename: string) {
-    const ext = filename.split(".").pop()?.toLowerCase();
+	const ext = filename.split(".").pop()?.toLowerCase();
 
-    // 压缩文件
-    if (["rar", "zip", "7z", "tar", "gz"].includes(ext || "")) {
-        return <FileArchive className="w-4 h-4 text-amber-500" />;
-    }
+	// 压缩文件
+	if (["rar", "zip", "7z", "tar", "gz"].includes(ext || "")) {
+		return <FileArchive className="w-4 h-4 text-amber-500" />;
+	}
 
-    // 文档类型
-    if (["doc", "docx", "pdf", "txt", "md", "rtf"].includes(ext || "")) {
-        return <FileText className="w-4 h-4 text-blue-500" />;
-    }
+	// 文档类型
+	if (["doc", "docx", "pdf", "txt", "md", "rtf"].includes(ext || "")) {
+		return <FileText className="w-4 h-4 text-blue-500" />;
+	}
 
-    // 默认文件图标
-    return <File className="w-4 h-4 text-zinc-400" />;
+	// 图片
+	if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext || "")) {
+		return <FileImage className="w-4 h-4 text-emerald-500" />;
+	}
+
+	// 默认文件图标
+	return <File className="w-4 h-4 text-zinc-400" />;
+}
+
+function formatBytes(bytes?: number): string | null {
+	if (!bytes || bytes <= 0) return null;
+	const units = ["B", "KB", "MB", "GB"] as const;
+	let value = bytes;
+	let idx = 0;
+	while (value >= 1024 && idx < units.length - 1) {
+		value /= 1024;
+		idx++;
+	}
+	const digits = idx === 0 ? 0 : value < 10 ? 1 : 0;
+	return `${value.toFixed(digits)} ${units[idx]}`;
 }
 
 // 获取文件类型标签
 function getFileTypeLabel(filename: string): string {
-    const ext = filename.split(".").pop()?.toLowerCase();
+	const ext = filename.split(".").pop()?.toLowerCase();
 
-    if (["rar", "zip", "7z", "tar", "gz"].includes(ext || "")) {
-        return "文件";
-    }
+	if (["rar", "zip", "7z", "tar", "gz"].includes(ext || "")) {
+		return "文件";
+	}
 
-    if (["doc", "docx"].includes(ext || "")) {
-        return "文档";
-    }
+	if (["doc", "docx"].includes(ext || "")) {
+		return "文档";
+	}
 
-    if (ext === "pdf") {
-        return "PDF";
-    }
+	if (ext === "pdf") {
+		return "PDF";
+	}
 
-    if (["txt", "md"].includes(ext || "")) {
-        return "文本";
-    }
+	if (["txt", "md"].includes(ext || "")) {
+		return "文本";
+	}
 
-    return "文件";
+	if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext || "")) {
+		return "图片";
+	}
+
+	return "文件";
+}
+
+function getOriginLabel(
+	origin?: AttachedFile["origin"],
+	type?: AttachedFile["type"],
+) {
+	if (origin === "source") return "资料库";
+	if (origin === "selection") return "片段";
+	if (type === "document") return "文档";
+	return "文件";
 }
 
 // 单个附件卡片
-export function AttachmentCard({ file }: AttachmentCardProps) {
-    const icon = getFileIcon(file.title);
-    const typeLabel = getFileTypeLabel(file.title);
+export function AttachmentCard({
+	file,
+	onRemove,
+	variant = "card",
+}: AttachmentCardProps) {
+	const icon = getFileIcon(file.title);
+	const typeLabel = getFileTypeLabel(file.title);
+	const originLabel = getOriginLabel(file.origin, file.type);
+	const sizeLabel = formatBytes(file.size);
+	const meta = [
+		originLabel,
+		file.status === "preparing" ? "准备中" : typeLabel,
+		sizeLabel,
+	]
+		.filter(Boolean)
+		.join(" · ");
 
-    return (
-        <div
-            className={cn(
-                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl",
-                "bg-white dark:bg-zinc-800",
-                "border border-zinc-200 dark:border-zinc-700",
-                "hover:border-zinc-300 dark:hover:border-zinc-600",
-                "transition-colors duration-200",
-                "cursor-default shadow-sm",
-            )}
-        >
-            {/* 图标容器 */}
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-700">
-                {icon}
-            </div>
+	return (
+		<div
+			className={cn(
+				"flex items-center gap-2.5 rounded-xl",
+				"bg-white dark:bg-zinc-800",
+				"border border-zinc-200 dark:border-zinc-700",
+				"hover:border-zinc-300 dark:hover:border-zinc-600",
+				"transition-colors duration-200",
+				"cursor-default shadow-sm",
+				variant === "chip" ? "px-3 py-2" : "px-3 py-2.5",
+			)}
+			title={file.path || file.title}
+		>
+			{/* 图标容器 */}
+			<div
+				className={cn(
+					"flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-700",
+					variant === "chip" ? "w-7 h-7" : "w-8 h-8",
+				)}
+			>
+				{icon}
+			</div>
 
-            {/* 文件信息 */}
-            <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
-                    {file.title}
-                </div>
-                <div className="text-xs text-zinc-400">
-                    {typeLabel}
-                </div>
-            </div>
-        </div>
-    );
+			{/* 文件信息 */}
+			<div className="min-w-0 flex-1">
+				<div
+					className={cn(
+						"font-medium text-zinc-800 dark:text-zinc-100 truncate",
+						variant === "chip" ? "text-[13px]" : "text-sm",
+					)}
+				>
+					{file.title}
+				</div>
+				<div className="text-xs text-zinc-400">{meta}</div>
+			</div>
+
+			{onRemove ? (
+				<button
+					type="button"
+					onClick={onRemove}
+					className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+					title="移除"
+				>
+					<X className="w-4 h-4" />
+				</button>
+			) : null}
+		</div>
+	);
 }
 
 // 附件列表组件
 interface AttachmentListProps {
-    files: AttachedFile[];
+	files: AttachedFile[];
 }
 
 export function AttachmentList({ files }: AttachmentListProps) {
-    if (!files || files.length === 0) return null;
+	if (!files || files.length === 0) return null;
 
-    return (
-        <div className="flex flex-col gap-2 mb-2">
-            {files.map((file, index) => (
-                <AttachmentCard key={`${file.path}-${index}`} file={file} />
-            ))}
-        </div>
-    );
+	return (
+		<div className="flex flex-col gap-2 mb-2">
+			{files.map((file, index) => (
+				<AttachmentCard key={`${file.path}-${index}`} file={file} />
+			))}
+		</div>
+	);
 }

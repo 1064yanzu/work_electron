@@ -8,6 +8,32 @@ import {
 	type ToolDefinition,
 	type ToolResult,
 } from "../types";
+import { agentStore } from "../store";
+
+function isAbsolutePath(p: string): boolean {
+	if (p.startsWith("/")) return true;
+	return /^[a-zA-Z]:[\\/]/.test(p);
+}
+
+function resolvePathInSandbox(inputPath: string): {
+	path: string;
+	sandboxDir?: string;
+} {
+	const sandboxDir = (agentStore.getState().currentTask?.metadata as any)
+		?.sandboxDir as string | undefined;
+	const raw = String(inputPath || "").trim();
+	if (!sandboxDir || raw.length === 0) return { path: raw, sandboxDir };
+
+	if (isAbsolutePath(raw)) {
+		if (!raw.startsWith(`${sandboxDir}/`) && raw !== sandboxDir) {
+			throw new Error(`路径不在沙盒目录内: ${sandboxDir}`);
+		}
+		return { path: raw, sandboxDir };
+	}
+
+	const relative = raw.replace(/^(\.\/|\.\\|\/|\\)+/, "");
+	return { path: `${sandboxDir}/${relative}`, sandboxDir };
+}
 
 // 读取文件工具
 export const fileReadTool: ToolDefinition = {
@@ -42,6 +68,7 @@ export const fileReadTool: ToolDefinition = {
 
 		try {
 			context.onProgress?.(10, "正在读取文件...");
+			const resolved = resolvePathInSandbox(path);
 
 			const result = await safeInvoke<{
 				content: string;
@@ -49,7 +76,7 @@ export const fileReadTool: ToolDefinition = {
 				size: number;
 			}>("read_file_safe", {
 				payload: {
-					path,
+					path: resolved.path,
 					encoding,
 				},
 			});
@@ -58,7 +85,7 @@ export const fileReadTool: ToolDefinition = {
 
 			const artifact = createArtifact(
 				"file",
-				`文件: ${path}`,
+				`文件: ${resolved.path}`,
 				result.content,
 				undefined,
 			);
@@ -69,7 +96,7 @@ export const fileReadTool: ToolDefinition = {
 					content: result.content,
 					encoding: result.encoding,
 					size: result.size,
-					path,
+					path: resolved.path,
 				},
 				artifacts: [artifact],
 			};
@@ -85,6 +112,7 @@ export const fileReadTool: ToolDefinition = {
 			if (looksLikeDir) {
 				try {
 					context.onProgress?.(20, "检测到目录路径，尝试列出文件...");
+					const resolved = resolvePathInSandbox(path);
 					const files = await safeInvoke<
 						Array<{
 							path: string;
@@ -95,7 +123,7 @@ export const fileReadTool: ToolDefinition = {
 						}>
 					>("list_files_safe", {
 						payload: {
-							path,
+							path: resolved.path,
 							recursive,
 						},
 					});
@@ -111,7 +139,7 @@ export const fileReadTool: ToolDefinition = {
 
 					const artifact = createArtifact(
 						"text",
-						`文件列表: ${path}`,
+						`文件列表: ${resolved.path}`,
 						fileList,
 						undefined,
 					);
@@ -121,7 +149,7 @@ export const fileReadTool: ToolDefinition = {
 						data: {
 							files,
 							count: files.length,
-							path,
+							path: resolved.path,
 							recursive,
 						},
 						artifacts: [artifact],
@@ -185,10 +213,11 @@ export const fileWriteTool: ToolDefinition = {
 
 		try {
 			context.onProgress?.(10, "正在写入文件...");
+			const resolved = resolvePathInSandbox(path);
 
 			await safeInvoke("write_file_safe", {
 				payload: {
-					path,
+					path: resolved.path,
 					content,
 					encoding,
 					create_dirs,
@@ -200,7 +229,7 @@ export const fileWriteTool: ToolDefinition = {
 			return {
 				success: true,
 				data: {
-					path,
+					path: resolved.path,
 					size: content.length,
 				},
 			};
@@ -245,6 +274,7 @@ export const fileListTool: ToolDefinition = {
 
 		try {
 			context.onProgress?.(10, "正在列出文件...");
+			const resolved = resolvePathInSandbox(path);
 
 			const files = await safeInvoke<
 				Array<{
@@ -256,7 +286,7 @@ export const fileListTool: ToolDefinition = {
 				}>
 			>("list_files_safe", {
 				payload: {
-					path,
+					path: resolved.path,
 					recursive,
 				},
 			});
@@ -272,7 +302,7 @@ export const fileListTool: ToolDefinition = {
 
 			const artifact = createArtifact(
 				"text",
-				`文件列表: ${path}`,
+				`文件列表: ${resolved.path}`,
 				fileList,
 				undefined,
 			);
@@ -282,7 +312,7 @@ export const fileListTool: ToolDefinition = {
 				data: {
 					files,
 					count: files.length,
-					path,
+					path: resolved.path,
 				},
 				artifacts: [artifact],
 			};

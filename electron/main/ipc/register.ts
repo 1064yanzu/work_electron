@@ -25,6 +25,7 @@ import { createCardHandlers } from "./handlers/cards";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
 import { createAgentSdkHandlers } from "./handlers/agentSdk";
+import { createAgentSandboxHandlers } from "./handlers/agentSandbox";
 import { createFsSafeHandlers } from "./handlers/fsSafe";
 import { createTempFileHandlers } from "./handlers/tempFiles";
 import { createKbEmbeddingHandlers } from "./handlers/kbEmbeddings";
@@ -82,6 +83,7 @@ export function registerIpcHandlers({
 	const dataStatsHandlers = createDataStatsHandlers(db);
 	const fsSafeHandlers = createFsSafeHandlers();
 	const tempFileHandlers = createTempFileHandlers();
+	const agentSandboxHandlers = createAgentSandboxHandlers();
 	const agentSdkHandlers = createAgentSdkHandlers({
 		getMainWindow: () => mainWindowRef,
 		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
@@ -121,7 +123,13 @@ export function registerIpcHandlers({
 	ipcMain.handle("read_file_safe", fsSafeHandlers.read_file_safe);
 	ipcMain.handle("write_file_safe", fsSafeHandlers.write_file_safe);
 	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
+	ipcMain.handle("mkdir_safe", fsSafeHandlers.mkdir_safe);
+	ipcMain.handle("copy_file_safe", fsSafeHandlers.copy_file_safe);
 	ipcMain.handle("save_temp_file", tempFileHandlers.save_temp_file);
+	ipcMain.handle(
+		"agent_get_sandbox_dir",
+		agentSandboxHandlers.agent_get_sandbox_dir,
+	);
 	// ==================
 	// Projects
 	// ==================

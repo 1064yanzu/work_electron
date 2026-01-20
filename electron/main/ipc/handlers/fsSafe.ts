@@ -22,6 +22,12 @@ type ListFilesOutput = Array<{
 	size?: number;
 }>;
 
+type MkdirInput = { path: string; recursive?: boolean };
+type MkdirOutput = { success: boolean };
+
+type CopyFileInput = { src: string; dest: string; create_dirs?: boolean };
+type CopyFileOutput = { success: boolean };
+
 function requireAbsolute(p: string) {
 	if (!path.isAbsolute(p)) throw new Error("路径必须是绝对路径");
 	if (p.includes("\0")) throw new Error("路径非法");
@@ -105,5 +111,38 @@ export function createFsSafeHandlers() {
 		return recursive ? listDirRecursive(dirPath) : listDirOnce(dirPath);
 	};
 
-	return { read_file_safe, write_file_safe, list_files_safe };
+	const mkdir_safe = async (
+		_event: IpcMainInvokeEvent,
+		input: MkdirInput,
+	): Promise<MkdirOutput> => {
+		const dirPath = String(input.path ?? "").trim();
+		requireAbsolute(dirPath);
+		const recursive = input.recursive !== false;
+		await fs.mkdir(dirPath, { recursive });
+		return { success: true };
+	};
+
+	const copy_file_safe = async (
+		_event: IpcMainInvokeEvent,
+		input: CopyFileInput,
+	): Promise<CopyFileOutput> => {
+		const src = String(input.src ?? "").trim();
+		const dest = String(input.dest ?? "").trim();
+		requireAbsolute(src);
+		requireAbsolute(dest);
+		const createDirs = Boolean(input.create_dirs);
+		if (createDirs) {
+			await fs.mkdir(path.dirname(dest), { recursive: true });
+		}
+		await fs.copyFile(src, dest);
+		return { success: true };
+	};
+
+	return {
+		read_file_safe,
+		write_file_safe,
+		list_files_safe,
+		mkdir_safe,
+		copy_file_safe,
+	};
 }

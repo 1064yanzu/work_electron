@@ -75,7 +75,10 @@ function CommandHighlight({ command }: { command: string }) {
 				// 命令名（第一个词）
 				if (idx === 0) {
 					return (
-						<span key={idx} className="text-blue-600 dark:text-blue-400 font-semibold">
+						<span
+							key={idx}
+							className="text-blue-600 dark:text-blue-400 font-semibold"
+						>
 							{part}
 						</span>
 					);
@@ -93,7 +96,10 @@ function CommandHighlight({ command }: { command: string }) {
 				// 操作符（&&, ||, |, >, <）
 				if (["&&", "||", "|", ">", "<", ">>"].includes(trimmed)) {
 					return (
-						<span key={idx} className="text-purple-600 dark:text-purple-400 font-semibold">
+						<span
+							key={idx}
+							className="text-purple-600 dark:text-purple-400 font-semibold"
+						>
 							{part}
 						</span>
 					);
@@ -158,8 +164,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 	// - 完成时折叠
 	// - 错误时展开
 	const shouldAutoExpand =
-		toolCall.status === "running" ||
-		toolCall.status === "error";
+		toolCall.status === "running" || toolCall.status === "error";
 
 	const [isExpanded, setIsExpanded] = React.useState(shouldAutoExpand);
 
@@ -285,22 +290,26 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 					onClick={() => setIsExpanded((v) => !v)}
 					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-white/90 dark:hover:bg-zinc-900/70 transition-colors"
 				>
-					<div className={cn(
-						"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
-						toolCall.status === "running"
-							? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
-							: toolCall.status === "error" || exitCode !== 0
-								? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
-								: "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30",
-					)}>
-						<Wrench className={cn(
-							"w-3.5 h-3.5 transition-colors",
+					<div
+						className={cn(
+							"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
 							toolCall.status === "running"
-								? "text-violet-600 dark:text-violet-400"
+								? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
 								: toolCall.status === "error" || exitCode !== 0
-									? "text-rose-600 dark:text-rose-400"
-									: "text-emerald-600 dark:text-emerald-400",
-						)} />
+									? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
+									: "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30",
+						)}
+					>
+						<Wrench
+							className={cn(
+								"w-3.5 h-3.5 transition-colors",
+								toolCall.status === "running"
+									? "text-violet-600 dark:text-violet-400"
+									: toolCall.status === "error" || exitCode !== 0
+										? "text-rose-600 dark:text-rose-400"
+										: "text-emerald-600 dark:text-emerald-400",
+							)}
+						/>
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 mb-1.5">
@@ -309,7 +318,9 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 							</span>
 							<ToolStatusIcon status={toolCall.status} />
 							{duration ? (
-								<div className="text-[11px] font-medium text-zinc-400">{duration}</div>
+								<div className="text-[11px] font-medium text-zinc-400">
+									{duration}
+								</div>
 							) : null}
 							<div className="ml-auto">
 								{isExpanded ? (
@@ -331,12 +342,14 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 							<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-2 flex items-center justify-between">
 								<span>输出</span>
 								{exitCode !== undefined && (
-									<span className={cn(
-										"px-1.5 py-0.5 rounded text-[10px] font-mono",
-										exitCode === 0
-											? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-											: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
-									)}>
+									<span
+										className={cn(
+											"px-1.5 py-0.5 rounded text-[10px] font-mono",
+											exitCode === 0
+												? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+												: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400",
+										)}
+									>
 										exit {exitCode}
 									</span>
 								)}
@@ -379,31 +392,36 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				onClick={() => hasDetails && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					hasDetails && "cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					hasDetails &&
+						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
 			>
-				<div className={cn(
-					"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
-					toolCall.status === "running"
-						? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
-						: toolCall.status === "error"
-							? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
-							: toolCall.status === "completed"
-								? "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30"
-								: "bg-white dark:bg-zinc-900 ring-black/5 dark:ring-white/10",
-				)}>
-					<Icon className={cn(
-						"w-3.5 h-3.5 transition-colors",
+				<div
+					className={cn(
+						"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
 						toolCall.status === "running"
-							? "text-violet-600 dark:text-violet-400"
+							? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
 							: toolCall.status === "error"
-								? "text-rose-600 dark:text-rose-400"
+								? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
 								: toolCall.status === "completed"
-									? "text-emerald-600 dark:text-emerald-400"
-									: "text-zinc-600 dark:text-zinc-300",
-					)} />
+									? "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30"
+									: "bg-white dark:bg-zinc-900 ring-black/5 dark:ring-white/10",
+					)}
+				>
+					<Icon
+						className={cn(
+							"w-3.5 h-3.5 transition-colors",
+							toolCall.status === "running"
+								? "text-violet-600 dark:text-violet-400"
+								: toolCall.status === "error"
+									? "text-rose-600 dark:text-rose-400"
+									: toolCall.status === "completed"
+										? "text-emerald-600 dark:text-emerald-400"
+										: "text-zinc-600 dark:text-zinc-300",
+						)}
+					/>
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
@@ -412,7 +430,9 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 						</div>
 						<ToolStatusIcon status={toolCall.status} />
 						{duration ? (
-							<div className="text-[11px] font-medium text-zinc-400">{duration}</div>
+							<div className="text-[11px] font-medium text-zinc-400">
+								{duration}
+							</div>
 						) : null}
 						{hasDetails ? (
 							<div className="ml-auto">
@@ -465,22 +485,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 			{/* 展开的详细内容 */}
 			{isExpanded && toolCall.output && (
 				<div className="px-3 pb-3 border-t border-zinc-200/50 dark:border-zinc-700/50">
-					{toolCall.type === "code_execute" ? (
-						<div className="mt-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30">
-							<div className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-								执行结果
-							</div>
-							<pre className="text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
-								{(toolCall.output as any)?.output || "无输出"}
-							</pre>
-							{(toolCall.output as any)?.duration_ms ? (
-								<div className="text-[10px] text-zinc-400 mt-1">
-									执行时间:{" "}
-									{((toolCall.output as any).duration_ms / 1000).toFixed(2)} 秒
-								</div>
-							) : null}
-						</div>
-					) : toolCall.type === "kb_search_chunks" ? (
+					{toolCall.type === "kb_search_chunks" ? (
 						<div className="mt-2 space-y-2">
 							{((toolCall.output as any)?.hits || []).map(
 								(hit: any, idx: number) => (

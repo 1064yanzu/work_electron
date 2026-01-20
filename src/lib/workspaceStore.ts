@@ -9,6 +9,9 @@ export interface ContextItem {
 	title: string;
 	content: string;
 	sourceId?: string;
+	filePath?: string;
+	size?: number;
+	mimeType?: string;
 }
 
 // 研究步骤
@@ -190,6 +193,61 @@ class WorkspaceStore {
 		this.emit();
 	}
 
+	private deriveFileParams(title: string) {
+		const basename = String(title || "document.txt")
+			.split(/[/\\]/)
+			.pop() as string;
+		const dotIdx = basename.lastIndexOf(".");
+		const extension =
+			dotIdx > 0 ? basename.slice(dotIdx + 1).toLowerCase() : "txt";
+		const prefixRaw = dotIdx > 0 ? basename.slice(0, dotIdx) : basename;
+		const prefix =
+			prefixRaw.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32) || "doc";
+		return { extension, prefix };
+	}
+
+	async ensureContextHasFile(contextId: string): Promise<void> {
+		const ctx = this.state.contexts.find((c) => c.id === contextId);
+		if (!ctx) return;
+		if (typeof ctx.filePath === "string" && ctx.filePath) return;
+		if (!ctx.content || ctx.content.trim().length === 0) return;
+
+		try {
+			const { saveTempFile } = await import("./api");
+			const { extension, prefix } = this.deriveFileParams(ctx.title);
+			const result = await saveTempFile({
+				content: ctx.content,
+				extension,
+				prefix,
+				encoding: "utf-8",
+			});
+			this.setState((state) => ({
+				...state,
+				contexts: state.contexts.map((c) =>
+					c.id === contextId
+						? {
+								...c,
+								filePath: result.path,
+								size: result.size,
+								mimeType: "text/plain",
+							}
+						: c,
+				),
+			}));
+		} catch (err) {
+			console.error("[workspaceStore] 生成上下文文件失败:", err);
+		}
+	}
+
+	async ensureAllContextsHaveFiles(): Promise<void> {
+		const snapshot = [...this.state.contexts];
+		for (const ctx of snapshot) {
+			if (ctx.content && ctx.content.trim().length > 0 && !ctx.filePath) {
+				await this.ensureContextHasFile(ctx.id);
+			}
+		}
+	}
+
 	// 添加资料到上下文
 	addSourceToContext(source: Source) {
 		// 先添加占位
@@ -232,6 +290,7 @@ class WorkspaceStore {
 					ctx.sourceId === sourceId ? { ...ctx, content } : ctx,
 				),
 			}));
+			void this.ensureContextHasFile(`source-${sourceId}`);
 			console.log(
 				"[workspaceStore] 已加载资料内容:",
 				sourceId,
@@ -263,6 +322,33 @@ class WorkspaceStore {
 					type: "selection",
 					title: title || "选中文本",
 					content: text,
+				},
+			],
+		}));
+		void this.ensureContextHasFile(id);
+	}
+
+	// 添加本地文件到上下文
+	addFileToContext(input: {
+		title: string;
+		content: string;
+		filePath: string;
+		size?: number;
+		mimeType?: string;
+	}) {
+		const id = `file-${Date.now()}`;
+		this.setState((state) => ({
+			...state,
+			contexts: [
+				...state.contexts,
+				{
+					id,
+					type: "file",
+					title: input.title,
+					content: input.content,
+					filePath: input.filePath,
+					size: input.size,
+					mimeType: input.mimeType,
 				},
 			],
 		}));
@@ -907,6 +993,7 @@ export function useWorkspaceStore() {
 			workspaceStore.removeSourceFromContext.bind(workspaceStore),
 		addSelectionToContext:
 			workspaceStore.addSelectionToContext.bind(workspaceStore),
+		addFileToContext: workspaceStore.addFileToContext.bind(workspaceStore),
 		removeContext: workspaceStore.removeContext.bind(workspaceStore),
 		clearContexts: workspaceStore.clearContexts.bind(workspaceStore),
 		setEditorContent: workspaceStore.setEditorContent.bind(workspaceStore),

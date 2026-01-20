@@ -441,10 +441,12 @@ export default function ToolCallInline({
 	taskId,
 	toolCallId,
 	initialData,
+	density = "default",
 }: {
 	taskId: string;
 	toolCallId: string;
 	initialData?: ToolCall;
+	density?: "default" | "compact";
 }) {
 	const { currentTask, taskHistory } = useAgentStore();
 	// 默认展开状态：如果是 Error 或者 Running，或者是 Terminal 类型，则默认展开
@@ -462,7 +464,7 @@ export default function ToolCallInline({
 	// 监听状态变化以自动展开
 	React.useEffect(() => {
 		if (toolCall) {
-			if (toolCall.status === "error" || toolCall.status === "running") {
+			if (toolCall.status === "error") {
 				setOpen(true);
 			}
 			// 终端类型的工具调用，通常用户想直接看到输出，所以完成后也保持展开（或者是默认展开状态）
@@ -494,11 +496,22 @@ export default function ToolCallInline({
 			return (toolCall.input as any)?.query;
 		if (toolCall.type === "fetch_url") return (toolCall.input as any)?.url;
 
+		if (
+			String(toolCall.type || "").startsWith("skill") ||
+			String(toolCall.name || "").toLowerCase() === "skill"
+		) {
+			const skillName = (toolCall.input as any)?.skill;
+			const args = (toolCall.input as any)?.args;
+			if (typeof skillName === "string" && typeof args === "string")
+				return `${skillName}: ${args}`;
+			if (typeof skillName === "string") return skillName;
+		}
+
 		// 如果是命令行
 		if (
 			toolCall.name === "bash" ||
 			(toolCall.type as string) === "bash" ||
-			(toolCall.type as string) === "skill"
+			String(toolCall.type || "").startsWith("skill")
 		) {
 			return (
 				(toolCall.input as any)?.command ||
@@ -515,12 +528,12 @@ export default function ToolCallInline({
 		toolCall.name?.toLowerCase() === "bash" ||
 		toolCall.name?.toLowerCase().includes("terminal") ||
 		(toolCall.type as string) === "bash" ||
-		(toolCall.type as string) === "skill";
+		String(toolCall.type || "").startsWith("skill");
 
 	return (
 		<div
 			className={cn(
-				"group/card relative rounded-2xl transition-all duration-300 ease-out mb-3",
+				"group/card relative transition-all duration-300 ease-out",
 				"bg-white dark:bg-zinc-900/40",
 				"border border-zinc-200/60 dark:border-zinc-800/60",
 				"hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm",
@@ -528,27 +541,42 @@ export default function ToolCallInline({
 					"border-rose-200 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-900/10",
 				open &&
 					"shadow-md ring-1 ring-black/5 dark:ring-white/5 border-transparent",
+				density === "compact" ? "rounded-xl" : "rounded-2xl mb-3",
 			)}
 		>
 			{/* 头部摘要区 */}
 			<button
 				onClick={() => setOpen((v) => !v)}
-				className="w-full flex items-start gap-3 p-3 text-left outline-none"
+				className={cn(
+					"w-full flex items-start gap-3 text-left outline-none",
+					density === "compact" ? "p-2.5" : "p-3",
+				)}
 			>
 				{/* 图标容器 - 增加高级感 */}
 				<div
 					className={cn(
-						"relative flex items-center justify-center w-8 h-8 rounded-xl border transition-all duration-300 mt-0.5",
+						"relative flex items-center justify-center rounded-xl border transition-all duration-300 mt-0.5",
 						"bg-gradient-to-br shadow-sm",
 						config.gradient,
+						density === "compact" ? "w-7 h-7" : "w-8 h-8",
 					)}
 				>
-					<Icon className={cn("w-4 h-4", config.iconColor)} />
+					<Icon
+						className={cn(
+							density === "compact" ? "w-3.5 h-3.5" : "w-4 h-4",
+							config.iconColor,
+						)}
+					/>
 				</div>
 
 				<div className="min-w-0 flex-1 flex flex-col gap-1">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 truncate tracking-tight">
+						<span
+							className={cn(
+								"font-semibold text-zinc-700 dark:text-zinc-200 truncate tracking-tight",
+								density === "compact" ? "text-[13px]" : "text-sm",
+							)}
+						>
 							{config.label}
 						</span>
 						<StatusBadge status={toolCall.status} />

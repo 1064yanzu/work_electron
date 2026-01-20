@@ -11,34 +11,35 @@ export type ChatMessageBlock =
 	| { type: "text"; text: string }
 	| { type: "image"; title?: string; path: string }
 	| {
-		type: "thought";
-		title: string;
-		content: string;
-		phase?: string;
-		durationMs?: number;
-	}
+			type: "thought";
+			title: string;
+			content: string;
+			phase?: string;
+			durationMs?: number;
+	  }
 	| { type: "task_list"; taskId: string }
 	| { type: "agent_task"; taskId: string }
 	| {
-		type: "tool_call";
-		taskId: string;
-		toolCallId: string;
-		name?: string;
-		status?: "pending" | "running" | "completed" | "error" | "cancelled";
-		input?: any;
-		output?: any;
-		error?: string;
-	}
+			type: "tool_call";
+			taskId: string;
+			toolCallId: string;
+			toolType?: string;
+			name?: string;
+			status?: "pending" | "running" | "completed" | "error" | "cancelled";
+			input?: any;
+			output?: any;
+			error?: string;
+	  }
 	| { type: "file_update"; update: FileUpdate }
 	| {
-		type: "skill_execution";
-		skillName: string;
-		skillPath: string;
-		status: string;
-		steps: any[];
-		loadedFiles: any[];
-		detectedScene?: string;
-	};
+			type: "skill_execution";
+			skillName: string;
+			skillPath: string;
+			status: string;
+			steps: any[];
+			loadedFiles: any[];
+			detectedScene?: string;
+	  };
 
 export interface ChatMessage {
 	id: string;
@@ -63,15 +64,15 @@ export interface ChatMessage {
 			size?: number; // 文件大小
 		}>;
 		trace?:
-		| {
-			type: "agent_task";
-			taskId: string;
-		}
-		| {
-			type: "tool_call";
-			taskId: string;
-			toolCallId: string;
-		};
+			| {
+					type: "agent_task";
+					taskId: string;
+			  }
+			| {
+					type: "tool_call";
+					taskId: string;
+					toolCallId: string;
+			  };
 		// Token 消耗统计
 		tokenUsage?: {
 			promptTokens: number;

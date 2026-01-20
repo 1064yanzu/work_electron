@@ -5,7 +5,9 @@ import { ThoughtInline } from "../agent/ThoughtInline";
 import { InlineImage } from "../ui/InlineImage";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { FileUpdatesGroup } from "./FileUpdatesGroup";
-import { type ToolCallRef, ToolCallsGroup } from "./ToolCallsGroup";
+import ToolCallInline from "../agent/ToolCallInline";
+import { ToolCallsStack } from "./ToolCallsStack";
+import type { ToolCall } from "../../lib/agent/types";
 
 export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 	const nodes: ReactNode[] = [];
@@ -80,16 +82,8 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 		}
 
 		if (b.type === "tool_call") {
-			const calls: ToolCallRef[] = [
-				{
-					taskId: b.taskId,
-					toolCallId: b.toolCallId,
-					name: b.name,
-					status: b.status,
-					input: b.input,
-					output: b.output,
-					error: b.error,
-				},
+			const calls: Array<Extract<ChatMessageBlock, { type: "tool_call" }>> = [
+				b,
 			];
 			while (i + 1 < blocks.length && blocks[i + 1]?.type === "tool_call") {
 				i++;
@@ -98,18 +92,33 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 					{ type: "tool_call" }
 				>;
 				if (next.type === "tool_call") {
-					calls.push({
-						taskId: next.taskId,
-						toolCallId: next.toolCallId,
-						name: next.name,
-						status: next.status,
-						input: next.input,
-						output: next.output,
-						error: next.error,
-					});
+					calls.push(next);
 				}
 			}
-			nodes.push(<ToolCallsGroup key={`tool-calls-${i}`} calls={calls} />);
+			if (calls.length === 1) {
+				const c = calls[0]!;
+				const fallbackData: ToolCall | undefined = c.toolCallId
+					? {
+							id: c.toolCallId,
+							type: (c.toolType as any) || ("custom" as any),
+							name: c.name || (c.toolType as string) || "Tool",
+							status: (c.status as any) || "pending",
+							input: c.input || {},
+							output: c.output,
+							error: c.error,
+						}
+					: undefined;
+				nodes.push(
+					<ToolCallInline
+						key={`tool-call-${c.taskId}-${c.toolCallId}`}
+						taskId={c.taskId}
+						toolCallId={c.toolCallId}
+						initialData={fallbackData}
+					/>,
+				);
+			} else {
+				nodes.push(<ToolCallsStack key={`tool-calls-${i}`} calls={calls} />);
+			}
 			continue;
 		}
 

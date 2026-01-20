@@ -10,10 +10,34 @@
 
 import { settingsStore } from "../settingsStore";
 import { skillsStore } from "../skillsStore";
-import { invoke } from "../tauriCompat";
+import { safeInvoke } from "../tauriBridge";
 import { type AgentMessage, ClaudeAgentService } from "./claudeAgentService";
 import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
+import { getAgentSandboxDir } from "../api";
+
+function sanitizeFilename(name: string): string {
+	const base = String(name || "file").trim();
+	const normalized = base.replace(/[/\\]/g, "_").replace(/\0/g, "");
+	const safe = normalized.replace(/[^a-zA-Z0-9._-]/g, "_");
+	return safe.length > 0 ? safe : "file";
+}
+
+function ensureExtension(name: string, ext: string): string {
+	const e = ext.startsWith(".") ? ext : `.${ext}`;
+	if (name.toLowerCase().endsWith(e.toLowerCase())) return name;
+	return `${name}${e}`;
+}
+
+function getBasename(p: string): string {
+	const s = String(p || "");
+	const parts = s.split(/[/\\]/).filter(Boolean);
+	return parts.length > 0 ? (parts[parts.length - 1] as string) : s;
+}
+
+function stripTrailingSlash(p: string): string {
+	return String(p || "").replace(/[\\/]+$/, "");
+}
 
 // Agent 执行配置
 interface AgentExecutorConfig {
@@ -51,7 +75,7 @@ function buildSkillsContext(): string {
 	context += "**重要提示**: \n";
 	context += "- 当用户请求使用某个技能时,使用 Skill 工具调用它\n";
 	context += "- 技能名称必须完全匹配上述列表中的名称\n";
-	context += `- 当前可用技能: ${enabledSkills.map(s => s.name).join(", ")}\n`;
+	context += `- 当前可用技能: ${enabledSkills.map((s) => s.name).join(", ")}\n`;
 
 	return context;
 }
@@ -82,7 +106,15 @@ class AgentExecutor {
 			fallbackSearchQuery?: string | null;
 			activeDocContent?: string | null;
 			attachedContexts?: Array<{ title: string; content: string }>;
-			attachedFiles?: Array<{ title: string; path: string }>;
+			attachedFiles?: Array<{
+				title: string;
+				path: string;
+				type?: "file" | "document";
+				mimeType?: string;
+				size?: number;
+				isBinary?: boolean;
+			}>;
+			workingDirectory?: string;
 			onChunk?: (chunk: string) => void;
 		},
 	): Promise<void> {
@@ -99,7 +131,7 @@ class AgentExecutor {
 		);
 
 		// Start task in UI store
-		agentStore.startTask("custom", query);
+		const task = agentStore.startTask("custom", query);
 
 		// Build initial steps for UI
 		const analysisStep: AgentTaskStep = {
@@ -111,6 +143,177 @@ class AgentExecutor {
 		agentStore.setTaskSteps([analysisStep]);
 
 		this.abortController = new AbortController();
+		options = options || {};
+
+		let sandboxDir = options?.workingDirectory;
+		if (!sandboxDir) {
+			try {
+				const res = await getAgentSandboxDir(task.id);
+				sandboxDir = res.path;
+			} catch {}
+		}
+		if (sandboxDir) {
+			agentStore.setTaskMetadata({ sandboxDir });
+		}
+
+		if (sandboxDir && options?.attachedContexts?.length) {
+			const seen = new Map<string, number>();
+			options.attachedFiles = options.attachedFiles || [];
+			for (const ctx of options.attachedContexts) {
+				const baseTitle = ctx.title || "document";
+				const safeBase = ensureExtension(sanitizeFilename(baseTitle), ".md");
+				const count = (seen.get(safeBase) ?? 0) + 1;
+				seen.set(safeBase, count);
+				const dot = safeBase.lastIndexOf(".");
+				const stem = dot > 0 ? safeBase.slice(0, dot) : safeBase;
+				const ext = dot > 0 ? safeBase.slice(dot) : "";
+				const name = count === 1 ? safeBase : `${stem}-${count}${ext}`;
+				const dest = `${sandboxDir}/${name}`;
+				try {
+					await safeInvoke<{ success: boolean }>("write_file_safe", {
+						payload: {
+							path: dest,
+							content: ctx.content,
+							encoding: "utf-8",
+							create_dirs: true,
+						},
+					});
+					options.attachedFiles.push({
+						title: ctx.title,
+						path: dest,
+						type: "document",
+						mimeType: "text/markdown",
+						size: ctx.content.length,
+						isBinary: false,
+					});
+				} catch {}
+			}
+			options.attachedContexts = [];
+		}
+
+		if (sandboxDir && options?.attachedFiles?.length) {
+			const seen = new Map<string, number>();
+			for (const file of options.attachedFiles) {
+				const srcPath = String(file.path || "").trim();
+				const baseFromPath = getBasename(stripTrailingSlash(srcPath));
+				const safeBase = sanitizeFilename(baseFromPath || file.title || "file");
+				const count = (seen.get(safeBase) ?? 0) + 1;
+				seen.set(safeBase, count);
+				const dot = safeBase.lastIndexOf(".");
+				const stem = dot > 0 ? safeBase.slice(0, dot) : safeBase;
+				const ext = dot > 0 ? safeBase.slice(dot) : "";
+				const name = count === 1 ? safeBase : `${stem}-${count}${ext}`;
+				const dest = `${sandboxDir}/${name}`;
+				if (
+					typeof file.path === "string" &&
+					file.path.startsWith(`${sandboxDir}/`)
+				) {
+					continue;
+				}
+				try {
+					try {
+						const entries = await safeInvoke<
+							Array<{
+								path: string;
+								name: string;
+								is_file: boolean;
+								is_dir: boolean;
+								size?: number;
+							}>
+						>("list_files_safe", {
+							payload: {
+								path: srcPath,
+								recursive: true,
+							},
+						});
+
+						const dirRoot = stripTrailingSlash(srcPath);
+						const folderName = sanitizeFilename(
+							baseFromPath || file.title || "dir",
+						);
+						for (const e of entries) {
+							if (!e.is_file) continue;
+							const rel = String(e.path).startsWith(dirRoot)
+								? String(e.path)
+										.slice(dirRoot.length)
+										.replace(/^[/\\]+/, "")
+								: getBasename(e.path);
+							const out = `${sandboxDir}/${folderName}/${rel}`;
+							try {
+								await safeInvoke<{ success: boolean }>("copy_file_safe", {
+									src: e.path,
+									dest: out,
+									create_dirs: true,
+								});
+							} catch {}
+						}
+						file.path = `${sandboxDir}/${folderName}`;
+						file.type = file.type || "file";
+					} catch {
+						await safeInvoke<{ success: boolean }>("copy_file_safe", {
+							src: srcPath,
+							dest,
+							create_dirs: true,
+						});
+						file.path = dest;
+					}
+				} catch {}
+			}
+		}
+
+		if (sandboxDir) {
+			try {
+				const files = await safeInvoke<
+					Array<{
+						path: string;
+						name: string;
+						is_file: boolean;
+						is_dir: boolean;
+						size?: number;
+					}>
+				>("list_files_safe", {
+					payload: {
+						path: sandboxDir,
+						recursive: true,
+					},
+				});
+
+				const fileRows = files
+					.filter((f) => f.is_file)
+					.map((f) => {
+						const size = typeof f.size === "number" ? ` (${f.size} bytes)` : "";
+						return `- ${f.path}${size}`;
+					});
+
+				const manifest =
+					`# Sandbox Attachments\n\n` +
+					`工作目录：${sandboxDir}\n\n` +
+					`以下为本次任务在沙盒中的所有文件（包含隐藏文件）。\n\n` +
+					(fileRows.length > 0 ? fileRows.join("\n") : "- (no files)\n");
+
+				const manifestPath = `${sandboxDir}/ATTACHMENTS.md`;
+				await safeInvoke<{ success: boolean }>("write_file_safe", {
+					payload: {
+						path: manifestPath,
+						content: manifest,
+						encoding: "utf-8",
+						create_dirs: true,
+					},
+				});
+
+				options.attachedFiles = options.attachedFiles || [];
+				if (!options.attachedFiles.some((f) => f.path === manifestPath)) {
+					options.attachedFiles.unshift({
+						title: "ATTACHMENTS.md",
+						path: manifestPath,
+						type: "document",
+						mimeType: "text/markdown",
+						size: manifest.length,
+						isBinary: false,
+					});
+				}
+			} catch {}
+		}
 
 		// Build enhanced system prompt with context and skills
 		let enhancedPrompt = systemPrompt || "";
@@ -124,35 +327,26 @@ class AgentExecutor {
 				"\n\n## 对话历史\n" + options.conversationContext.join("\n");
 		}
 
-		// Add attached contexts
-		if (options?.attachedContexts?.length) {
-			enhancedPrompt += "\n\n## 用户附加资料\n";
-			for (const ctx of options.attachedContexts) {
-				enhancedPrompt += `### ${ctx.title}\n${ctx.content}\n\n`;
-			}
+		if (sandboxDir) {
+			enhancedPrompt += `\n\n## 工作目录\n当前任务的工作目录（沙盒）为：${sandboxDir}\n请优先在该目录中读写与列举文件，避免访问其他路径。`;
 		}
 
-		// Add attached file contents (read from temp files)
+		// Add attached file references (paths only; no content injection)
 		if (options?.attachedFiles?.length) {
-			enhancedPrompt += "\n\n## 用户附加的文件\n";
+			enhancedPrompt +=
+				"\n\n## 用户附加的文件\n" +
+				"以下是用户附加的文件路径列表。请不要假设你已读到文件内容。\n" +
+				"- 若需要阅读文本文件内容，请使用 Read 工具读取对应路径。\n" +
+				"- 若用户要求上传/处理文件（例如上传到 NotebookLM），请直接把文件路径作为参数传给对应 Skill 工具。\n\n";
 			for (const file of options.attachedFiles) {
-				try {
-					// 读取文件内容
-					const fileContent = await invoke<{ content: string }>("read_file_safe", {
-						payload: { path: file.path },
-					});
-					enhancedPrompt += `### ${file.title}\n${fileContent.content}\n\n`;
-					console.log(
-						`[AgentExecutor] Loaded attached file: ${file.title} (${fileContent.content.length} bytes)`,
-					);
-				} catch (e) {
-					console.warn(
-						`[AgentExecutor] Failed to read attached file: ${file.path}`,
-						e,
-					);
-					// 如果读取失败，至少保留文件路径信息
-					enhancedPrompt += `### ${file.title}\n[文件读取失败: ${file.path}]\n\n`;
-				}
+				const metaParts = [
+					file.type ? `type=${file.type}` : null,
+					file.mimeType ? `mime=${file.mimeType}` : null,
+					typeof file.size === "number" ? `size=${file.size}` : null,
+					file.isBinary ? "binary" : null,
+				].filter(Boolean);
+				const meta = metaParts.length ? ` (${metaParts.join(", ")})` : "";
+				enhancedPrompt += `- ${file.title}: ${file.path}${meta}\n`;
 			}
 		}
 
@@ -172,7 +366,11 @@ class AgentExecutor {
 			const fileList: string[] = [];
 			if (options?.attachedFiles?.length) {
 				for (const file of options.attachedFiles) {
-					fileList.push(`- ${file.title} (文件路径: ${file.path})`);
+					fileList.push(
+						`- ${file.title} (文件路径: ${file.path})${
+							file.type ? ` [${file.type}]` : ""
+						}`,
+					);
 				}
 			}
 			if (options?.attachedContexts?.length) {
@@ -181,7 +379,7 @@ class AgentExecutor {
 				}
 			}
 			if (fileList.length > 0) {
-				enhancedUserPrompt += `\n\n【用户附加的文件/资料】\n${fileList.join('\n')}\n\n这些文件的完整内容已在系统提示中提供。如果用户要求处理这些文件(如上传到 NotebookLM),请使用 Skill 工具并将文件路径作为参数传递。`;
+				enhancedUserPrompt += `\n\n【用户附加的文件/资料】\n${fileList.join("\n")}\n\n注意：这些文件以“路径”形式提供。若需要查看内容，请使用 Read 工具读取文件；若需要上传/处理文件，请将文件路径作为参数传递给对应 Skill 工具。`;
 			}
 		}
 
@@ -189,6 +387,7 @@ class AgentExecutor {
 			await this.sdkService.execute({
 				prompt: enhancedUserPrompt,
 				systemPrompt: enhancedPrompt || undefined,
+				workingDirectory: sandboxDir,
 				abortController: this.abortController,
 
 				onChunk: (text) => {

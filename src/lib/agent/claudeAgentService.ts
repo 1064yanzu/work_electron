@@ -70,7 +70,6 @@ const DEFAULT_TOOLS = [
 
 // Import settings store to respect user's model selection
 import { settingsStore } from "../settingsStore";
-import { skillsStore } from "../skillsStore";
 
 /**
  * Claude Agent Service
@@ -151,17 +150,8 @@ export class ClaudeAgentService {
 
 				if (payload.type === "sdk_message" && payload.message) {
 					// 我们主要依赖 'transformed' 事件来驱动 UI 更新 (onChunk, onMessage for tools)
-					// 这里仍然保留 convertMessage 是为了可能的 legacy 支持，但不再调用 onChunk 防止重复。
-					// 仅保留错误检测逻辑。
-
-					const converted = this.convertMessage(payload.message);
-					if (converted) {
-						// executor.ts 会忽略 'assistant' 类型的 onMessage，所以这里调用可能是安全的，
-						// 但为了保险，我们也只在非 assistant 类型或者是 tool_call 时才调用
-						if (converted.type !== "assistant") {
-							onMessage?.(converted);
-						}
-					}
+					// 为避免 tool_call/tool_result 被重复上报导致 UI 卡片重复渲染，这里不再从 sdk_message 分发到 onMessage/onChunk。
+					// sdk_message 仅用于错误检测与调试；真正驱动 UI 的事件来自 'transformed'。
 
 					// Claude Code can get stuck retrying invalid tool inputs (e.g. Skill tool).
 					// Detect repeated tool validation errors and abort with the last error string.
@@ -195,7 +185,9 @@ export class ClaudeAgentService {
 
 							// Increased threshold from 3 to 10
 							if (toolUseErrorCount >= 10) {
-								const err = lastToolUseError || "Tool call failed repeatedly (10+ errors)";
+								const err =
+									lastToolUseError ||
+									"Tool call failed repeatedly (10+ errors)";
 								console.error(
 									"[ClaudeAgentService] Aborting due to repeated tool errors:",
 									{
@@ -351,146 +343,6 @@ export class ClaudeAgentService {
 		} finally {
 			abortController.signal.removeEventListener("abort", abortHandler);
 			if (unlisten) unlisten();
-		}
-	}
-
-	/**
-	 * Convert SDK message to our internal format
-	 * Uses defensive typing since SDK message structure may vary
-	 */
-	private convertMessage(message: SDKMessage): AgentMessage | null {
-		// Handle different message types using defensive checks
-		const msgType = message.type;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const msg = message as any;
-
-		switch (msgType) {
-			case "stream_event": {
-				const ev = msg.event;
-				const evType = ev?.type;
-				if (
-					evType === "content_block_delta" &&
-					ev?.delta?.type === "text_delta"
-				) {
-					const text = typeof ev.delta.text === "string" ? ev.delta.text : "";
-					if (!text) return null;
-					return { type: "assistant", content: text };
-				}
-				if (
-					evType === "content_block_start" &&
-					ev?.content_block?.type === "tool_use"
-				) {
-					const toolName =
-						typeof ev.content_block.name === "string"
-							? ev.content_block.name
-							: undefined;
-					const toolInput =
-						ev.content_block.input && typeof ev.content_block.input === "object"
-							? (ev.content_block.input as Record<string, unknown>)
-							: undefined;
-					if (!toolName) return null;
-					return {
-						type: "tool_call",
-						content: `Calling ${toolName}`,
-						toolName,
-						toolInput,
-						status: "running",
-					};
-				}
-				return null;
-			}
-
-			case "assistant": {
-				// SDK assistant messages may have different structures
-				// Try to extract text content safely
-				let textContent = "";
-				let toolName: string | undefined;
-				let toolInput: Record<string, unknown> | undefined;
-
-				// SDKAssistantMessage.message is a BetaMessage (Anthropic Messages API shape)
-				const betaMessage = msg.message;
-				if (betaMessage && typeof betaMessage === "object") {
-					if (typeof betaMessage.content === "string") {
-						textContent += betaMessage.content;
-					} else if (Array.isArray(betaMessage.content)) {
-						for (const block of betaMessage.content) {
-							if (block?.type === "text" && typeof block.text === "string") {
-								textContent += block.text;
-							}
-							if (block?.type === "tool_use") {
-								toolName = block.name;
-								toolInput = block.input;
-							}
-						}
-					}
-				}
-
-				// Check for content array (Claude API format)
-				if (Array.isArray(msg.content)) {
-					for (const block of msg.content) {
-						if (block.type === "text" && typeof block.text === "string") {
-							textContent += block.text;
-						}
-						if (block.type === "tool_use") {
-							toolName = block.name;
-							toolInput = block.input;
-						}
-					}
-				}
-
-				// If we found a tool call, return that
-				if (toolName) {
-					return {
-						type: "tool_call",
-						content: `Calling ${toolName}`,
-						toolName,
-						toolInput,
-						status: "running",
-					};
-				}
-
-				// Return text content if we have any
-				if (textContent) {
-					return {
-						type: "assistant",
-						content: textContent,
-					};
-				}
-
-				return null;
-			}
-
-			case "result": {
-				const resultMsg = message as SDKResultMessage;
-				// SDKResultError puts details in `errors: string[]`
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const anyResult = resultMsg as any;
-				const errorText = Array.isArray(anyResult?.errors)
-					? anyResult.errors.join("\n")
-					: "";
-				return {
-					type: "result",
-					content:
-						resultMsg.subtype === "success"
-							? "Task completed successfully"
-							: errorText || `Task ${resultMsg.subtype}`,
-					status:
-						resultMsg.subtype === "success" && !anyResult?.is_error
-							? "completed"
-							: "error",
-				};
-			}
-
-			case "system": {
-				return {
-					type: "system",
-					content: msg.subtype || "System message",
-				};
-			}
-
-			default:
-				// Unknown message type, skip
-				return null;
 		}
 	}
 

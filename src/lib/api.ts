@@ -6,6 +6,7 @@ export interface SaveTempFilePayload {
 	content: string;
 	extension?: string; // 文件扩展名，如 "txt", "md", "json"
 	prefix?: string; // 文件名前缀
+	encoding?: "utf-8" | "base64";
 }
 
 export interface TempFileResult {
@@ -17,6 +18,12 @@ export async function saveTempFile(
 	payload: SaveTempFilePayload,
 ): Promise<TempFileResult> {
 	return safeInvoke<TempFileResult>("save_temp_file", { payload });
+}
+
+export async function getAgentSandboxDir(
+	taskId: string,
+): Promise<{ path: string }> {
+	return safeInvoke<{ path: string }>("agent_get_sandbox_dir", { taskId });
 }
 
 import type {

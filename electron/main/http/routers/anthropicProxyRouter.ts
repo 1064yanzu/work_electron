@@ -24,15 +24,15 @@ const fileStore = new Map<
 interface AnthropicMessage {
 	role: string;
 	content:
-	| string
-	| Array<{
-		type: string;
-		text?: string;
-		id?: string;
-		name?: string;
-		input?: unknown;
-		tool_use_id?: string;
-	}>;
+		| string
+		| Array<{
+				type: string;
+				text?: string;
+				id?: string;
+				name?: string;
+				input?: unknown;
+				tool_use_id?: string;
+		  }>;
 }
 
 interface AnthropicRequest {
@@ -585,9 +585,9 @@ function translateToAnthropic(
 		stop_reason: stopReason,
 		usage: openaiResp.usage
 			? {
-				input_tokens: openaiResp.usage.prompt_tokens,
-				output_tokens: openaiResp.usage.completion_tokens,
-			}
+					input_tokens: openaiResp.usage.prompt_tokens,
+					output_tokens: openaiResp.usage.completion_tokens,
+				}
 			: { input_tokens: 0, output_tokens: 0 },
 	};
 }
