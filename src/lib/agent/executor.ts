@@ -16,11 +16,20 @@ import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
 import { getAgentSandboxDir } from "../api";
 
+const ILLEGAL_FILENAME_CHARS_RE = /[<>:"/\\|?*\u0000-\u001F]/g;
+
 function sanitizeFilename(name: string): string {
-	const base = String(name || "file").trim();
-	const normalized = base.replace(/[/\\]/g, "_").replace(/\0/g, "");
-	const safe = normalized.replace(/[^a-zA-Z0-9._-]/g, "_");
-	return safe.length > 0 ? safe : "file";
+	const base = String(name || "file")
+		.normalize("NFC")
+		.trim();
+	const normalized = base.replace(ILLEGAL_FILENAME_CHARS_RE, "_");
+	const collapsed = normalized.replace(/\s+/g, " ").trim();
+	const withoutTrailingDotsOrSpaces = collapsed.replace(/[. ]+$/g, "").trim();
+	const safe =
+		withoutTrailingDotsOrSpaces === "." || withoutTrailingDotsOrSpaces === ".."
+			? "file"
+			: withoutTrailingDotsOrSpaces;
+	return safe.length > 0 ? safe.slice(0, 180) : "file";
 }
 
 function ensureExtension(name: string, ext: string): string {
@@ -37,6 +46,57 @@ function getBasename(p: string): string {
 
 function stripTrailingSlash(p: string): string {
 	return String(p || "").replace(/[\\/]+$/, "");
+}
+
+function splitExtension(name: string): { stem: string; ext: string } {
+	const s = String(name || "").trim();
+	const base = getBasename(s);
+	const dot = base.lastIndexOf(".");
+	if (dot <= 0) return { stem: base, ext: "" };
+	return { stem: base.slice(0, dot), ext: base.slice(dot) };
+}
+
+function extFromMime(mimeType?: string): string {
+	const mt = String(mimeType || "")
+		.toLowerCase()
+		.trim();
+	if (!mt) return "";
+	if (mt === "text/markdown") return ".md";
+	if (mt.startsWith("text/")) return ".txt";
+	if (mt === "application/json") return ".json";
+	if (mt === "application/pdf") return ".pdf";
+	return "";
+}
+
+function chooseSandboxFileName(input: {
+	title: string;
+	sourcePath: string;
+	mimeType?: string;
+}): string {
+	const titleBase = getBasename(input.title);
+	const { stem: titleStem, ext: titleExt } = splitExtension(titleBase);
+	const { ext: pathExt } = splitExtension(
+		getBasename(stripTrailingSlash(input.sourcePath)),
+	);
+	const ext = titleExt || pathExt || extFromMime(input.mimeType);
+	const stemRaw = titleExt ? titleStem : titleBase;
+	const safeStem = sanitizeFilename(stemRaw);
+	return ext ? ensureExtension(safeStem, ext) : safeStem;
+}
+
+function extractDescriptionTriggers(description: unknown): string[] {
+	if (typeof description !== "string") return [];
+	const out: string[] = [];
+	const matches = description.matchAll(/（([^）]{2,64})）|\(([^)]{2,64})\)/g);
+	for (const m of matches) {
+		const raw = (m[1] || m[2] || "").trim();
+		if (!raw) continue;
+		for (const p of raw.split(/[\/|、，,;；\s]+/g)) {
+			const t = p.trim();
+			if (t.length >= 2 && t.length <= 24) out.push(t);
+		}
+	}
+	return Array.from(new Set(out)).slice(0, 8);
 }
 
 // Agent 执行配置
@@ -61,10 +121,18 @@ function buildSkillsContext(): string {
 	let context = "\n\n## 可用技能 (Available Skills)\n\n";
 	context += "你可以使用 Skill 工具来调用以下已启用的技能。\n\n";
 	context += "**调用方式**: 使用 Skill 工具，参数 `skill` 设置为技能名称。\n\n";
+	context += "**使用原则（通用）**:\n";
+	context +=
+		"- 只要用户目标与任一技能明显匹配（点名技能/命中触发词/要求完成技能能做的外部动作），优先调用 Skill 工具执行。\n";
+	context += "- 不要用纯文本“模拟已调用技能”的结果替代真实调用。\n\n";
 	context += "**可用技能列表**:\n\n";
 
 	for (const skill of enabledSkills) {
-		context += `- **${skill.name}**: ${skill.description || "无描述"}\n`;
+		const triggers = extractDescriptionTriggers(skill.description);
+		const triggerText = triggers.length
+			? `（触发词: ${triggers.join(" / ")}）`
+			: "";
+		context += `- **${skill.name}**: ${skill.description || "无描述"}${triggerText}\n`;
 	}
 
 	context += "\n**示例调用**:\n";
@@ -161,7 +229,11 @@ class AgentExecutor {
 			options.attachedFiles = options.attachedFiles || [];
 			for (const ctx of options.attachedContexts) {
 				const baseTitle = ctx.title || "document";
-				const safeBase = ensureExtension(sanitizeFilename(baseTitle), ".md");
+				const safeBase = chooseSandboxFileName({
+					title: baseTitle,
+					sourcePath: baseTitle,
+					mimeType: "text/markdown",
+				});
 				const count = (seen.get(safeBase) ?? 0) + 1;
 				seen.set(safeBase, count);
 				const dot = safeBase.lastIndexOf(".");
@@ -196,7 +268,11 @@ class AgentExecutor {
 			for (const file of options.attachedFiles) {
 				const srcPath = String(file.path || "").trim();
 				const baseFromPath = getBasename(stripTrailingSlash(srcPath));
-				const safeBase = sanitizeFilename(baseFromPath || file.title || "file");
+				const safeBase = chooseSandboxFileName({
+					title: file.title || baseFromPath || "file",
+					sourcePath: srcPath,
+					mimeType: file.mimeType,
+				});
 				const count = (seen.get(safeBase) ?? 0) + 1;
 				seen.set(safeBase, count);
 				const dot = safeBase.lastIndexOf(".");
@@ -245,7 +321,7 @@ class AgentExecutor {
 
 						const dirRoot = stripTrailingSlash(srcPath);
 						const folderName = sanitizeFilename(
-							baseFromPath || file.title || "dir",
+							file.title || baseFromPath || "dir",
 						);
 						for (const e of entries) {
 							if (!e.is_file) continue;
