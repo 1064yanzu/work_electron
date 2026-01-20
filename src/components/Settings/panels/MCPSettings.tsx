@@ -179,10 +179,18 @@ export function MCPSettings() {
 				`✅ MCP 服务器 "${server.name}" 可用（tools: ${result.tool_count}）`,
 			);
 		} catch (error) {
-			setServers(
-				servers.map((s) => (s.id === id ? { ...s, status: "error" } : s)),
-			);
-			alert(`❌ 测试失败: ${error}`);
+			const msg = error instanceof Error ? error.message : String(error);
+			if (msg.includes("暂不支持")) {
+				setServers(
+					servers.map((s) => (s.id === id ? { ...s, status: "stopped" } : s)),
+				);
+				alert(`ℹ️ ${msg}`);
+			} else {
+				setServers(
+					servers.map((s) => (s.id === id ? { ...s, status: "error" } : s)),
+				);
+				alert(`❌ 测试失败: ${msg}`);
+			}
 		}
 
 		// 3秒后重置状态

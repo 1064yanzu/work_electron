@@ -64,6 +64,7 @@ interface CompactSession {
 	ua: number; // updatedAt
 	m?: string; // model
 	asid?: string; // agentSessionId
+	ssid?: string; // sdkSessionId
 }
 
 /** 精简存储的状态 */
@@ -333,6 +334,7 @@ function compactSession(session: ChatSession): CompactSession {
 
 	if (session.model) compact.m = session.model;
 	if (session.agentSessionId) compact.asid = session.agentSessionId;
+	if (session.sdkSessionId) compact.ssid = session.sdkSessionId;
 
 	return compact;
 }
@@ -349,6 +351,7 @@ function expandSession(compact: CompactSession): ChatSession {
 		updatedAt: compact.ua,
 		model: compact.m,
 		agentSessionId: compact.asid,
+		sdkSessionId: compact.ssid,
 	};
 }
 

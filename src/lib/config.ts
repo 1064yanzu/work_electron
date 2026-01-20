@@ -302,19 +302,36 @@ export async function listMcpServers(): Promise<MCPServer[]> {
 }
 
 export async function addMcpServer(server: MCPServer): Promise<void> {
-	return invoke("add_mcp_server", { server });
+	await invoke("create_mcp_server", {
+		name: server.name,
+		command: server.command,
+		args: server.args,
+		env: server.env ?? {},
+		enabled: server.enabled,
+	});
 }
 
 export async function updateMcpServer(server: MCPServer): Promise<void> {
-	return invoke("update_mcp_server", { server });
+	await invoke("update_mcp_server", {
+		id: server.id,
+		name: server.name,
+		command: server.command,
+		args: server.args,
+		env: server.env ?? {},
+		enabled: server.enabled,
+	});
 }
 
 export async function deleteMcpServer(id: string): Promise<void> {
-	return invoke("delete_mcp_server", { id });
+	await invoke("delete_mcp_server", { id });
 }
 
-export async function testMcpServer(server: MCPServer): Promise<McpTestResult> {
-	return invoke("mcp_test_server", { server });
+export async function testMcpServer(
+	_server: MCPServer,
+): Promise<McpTestResult> {
+	throw new Error(
+		"当前版本暂不支持在设置页直接测试 MCP（请在 Agent 对话中实际调用工具验证）。",
+	);
 }
 
 export async function mcpCheckEnv(): Promise<EnvCheckResult> {

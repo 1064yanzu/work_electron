@@ -90,6 +90,8 @@ export interface ChatSession {
 	updatedAt: number;
 	model?: string;
 	agentSessionId?: string;
+	/** Claude Agent SDK session id for SDK-native context management/compaction */
+	sdkSessionId?: string;
 }
 
 export interface ChatContext {
@@ -145,5 +147,6 @@ export function createSession(title?: string): ChatSession {
 		createdAt: now,
 		updatedAt: now,
 		agentSessionId: undefined,
+		sdkSessionId: undefined,
 	};
 }

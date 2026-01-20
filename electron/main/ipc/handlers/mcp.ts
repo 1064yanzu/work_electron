@@ -2,10 +2,67 @@
  * MCP Server 管理 IPC Handlers
  */
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
 
 const now = () => Date.now();
+
+const execFileAsync = promisify(execFile);
+
+async function resolveUserPathFromShell(
+	shell: string | null,
+): Promise<string | null> {
+	const s = (shell || "").trim();
+	if (!s) return null;
+
+	const attempts: string[][] = [
+		["-ilc", "echo -n $PATH"],
+		["-lc", "echo -n $PATH"],
+		["-c", "echo -n $PATH"],
+	];
+
+	for (const args of attempts) {
+		try {
+			const { stdout } = await execFileAsync(s, args, {
+				env: process.env,
+				timeout: 2000,
+				maxBuffer: 1024 * 1024,
+			});
+			const out = String(stdout || "").trim();
+			if (out && out.includes(":")) return out;
+		} catch {
+			// ignore and fallback
+		}
+	}
+
+	return null;
+}
+
+async function readVersion(
+	cmd: string,
+	args: string[],
+	envPath: string | undefined,
+) {
+	try {
+		const { stdout } = await execFileAsync(cmd, args, {
+			env: {
+				...process.env,
+				...(envPath ? { PATH: envPath } : null),
+			},
+			timeout: 2000,
+			maxBuffer: 1024 * 1024,
+		});
+		const line = String(stdout || "")
+			.trim()
+			.split("\n")[0]
+			?.trim();
+		return line || null;
+	} catch {
+		return null;
+	}
+}
 
 interface McpServer {
 	id: string;
@@ -198,15 +255,25 @@ export function createMcpHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
 	): Promise<{
-		nodeInstalled: boolean;
-		uvxInstalled: boolean;
-		npxInstalled: boolean;
+		node_version: string | null;
+		npx_version: string | null;
+		path: string;
+		shell: string | null;
+		valid: boolean;
 	}> => {
-		// 简单返回环境检查状态（可以后续扩展实际检查逻辑）
+		const shell =
+			typeof process.env.SHELL === "string" ? process.env.SHELL : null;
+		const pathFromShell = await resolveUserPathFromShell(shell);
+		const envPath = pathFromShell || process.env.PATH || "";
+
+		const node_version = await readVersion("node", ["-v"], envPath);
+		const npx_version = await readVersion("npx", ["-v"], envPath);
 		return {
-			nodeInstalled: true, // Node.js 在 Electron 环境中肯定存在
-			uvxInstalled: false, // 需要实际检查
-			npxInstalled: true, // 通常和 Node.js 一起安装
+			node_version,
+			npx_version,
+			path: envPath,
+			shell,
+			valid: Boolean(node_version && npx_version),
 		};
 	};
 

@@ -19,7 +19,6 @@ import {
 	agentExecutor,
 	agentPersistence,
 	agentStore,
-	initializeAgent,
 	resumePersistentSession,
 	startPersistentSession,
 	useAgentStore,
@@ -30,8 +29,7 @@ import {
 	persistChatMessageToAgentSession,
 } from "../lib/agent/chatBridge";
 import { useAgentChatSettingsStore } from "../lib/agent/chatSettingsStore";
-import type { ThinkingStep } from "../lib/agent/core/intelligentAgent";
-import { usePermissionStore } from "../lib/agent/permissionStore";
+import { usePermissionStore } from "../lib/agent";
 import {
 	createMessage,
 	invokeLlm,
@@ -47,7 +45,7 @@ import { EVENTS, events } from "../lib/events";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
-import { PermissionList, ThinkingProcessCompact } from "./agent";
+import { PermissionList } from "./agent";
 import {
 	ChatHistory,
 	ChatInput,
@@ -85,6 +83,7 @@ function parseDocProtocolFinal(
 	full: string,
 	options: {
 		activeDocContent?: string;
+		hasActiveDoc?: boolean;
 		prompt: string;
 	},
 ):
@@ -127,6 +126,44 @@ function parseDocProtocolFinal(
 	const updateMatch = full.match(/:::update-doc([\s\S]*?):::/);
 	if (updateMatch) {
 		const suggestedContent = (updateMatch[1] || "").trim();
+		if (!options.hasActiveDoc) {
+			const docContent = suggestedContent;
+			const changes = diffLines("", docContent);
+			let additions = 0;
+			let deletions = 0;
+			changes.forEach((part) => {
+				if (part.added) additions += part.count || 0;
+				if (part.removed) deletions += part.count || 0;
+			});
+
+			const title = options.prompt?.trim()
+				? options.prompt.trim().slice(0, 80)
+				: "新文档";
+			const summary = docContent.replace(/\s+/g, " ").trim().slice(0, 120);
+
+			return {
+				kind: "create",
+				displayContent: full.replace(
+					updateMatch[0],
+					"\n<<<AI_CREATE_DONE>>>\n",
+				),
+				title,
+				summary,
+				content: docContent,
+				fileUpdate: {
+					fileName: title,
+					type: "create",
+					additions,
+					deletions,
+				},
+				eventPayload: {
+					title,
+					summary,
+					content: docContent,
+					prompt: options.prompt,
+				},
+			};
+		}
 		const originalContent = options.activeDocContent ?? "";
 		const changes = diffLines(originalContent, suggestedContent);
 		let additions = 0;
@@ -348,31 +385,6 @@ export default function CopilotSidebar() {
 	} = useAgentStore();
 	const { pendingRequests, respondToPermission } = usePermissionStore();
 
-	// 智能Agent思考步骤
-	const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
-
-	// 监听智能Agent思考事件
-	useEffect(() => {
-		const unsubscribe = events.on(
-			"agent:thinking_step",
-			(data: { step: ThinkingStep; allSteps: ThinkingStep[] }) => {
-				setThinkingSteps(data.allSteps);
-			},
-		);
-		return () => unsubscribe();
-	}, []);
-
-	// Agent任务结束时清空思考步骤
-	useEffect(() => {
-		if (!isAgentExecuting) {
-			// 延迟清空，让用户看到最终状态
-			const timer = setTimeout(() => {
-				setThinkingSteps([]);
-			}, 3000);
-			return () => clearTimeout(timer);
-		}
-	}, [isAgentExecuting]);
-
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
 	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 	const [abortController, setAbortController] =
@@ -404,11 +416,6 @@ export default function CopilotSidebar() {
 			scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	}, [pendingRequests.size]);
-
-	// 初始化 Agent 系统
-	useEffect(() => {
-		initializeAgent();
-	}, []);
 
 	// 监听添加上下文事件
 	useEffect(() => {
@@ -680,6 +687,7 @@ export default function CopilotSidebar() {
 
 			const protocol = parseDocProtocolFinal(rawResultText, {
 				activeDocContent: workspaceStore.getActiveDocContent() || "",
+				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 				prompt: query.slice(0, 50),
 			});
 
@@ -706,6 +714,7 @@ export default function CopilotSidebar() {
 			const rawErrorText = `⚠️ 研究任务失败: ${error instanceof Error ? error.message : "未知错误"}`;
 			const protocol = parseDocProtocolFinal(rawErrorText, {
 				activeDocContent: workspaceStore.getActiveDocContent() || "",
+				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 				prompt: query.slice(0, 50),
 			});
 
@@ -882,11 +891,18 @@ export default function CopilotSidebar() {
 					.join("");
 
 			const buildSkillBlocks = () => {
-				const blocks: ChatMessageBlock[] = streamBlocks.filter((b, idx) => {
-					if (b.type !== "text") return true;
-					if (idx === currentTextBlockIndex) return true;
-					return Boolean(b.text && b.text.trim());
-				});
+				// 只渲染一个文本块（聚合后的全文），避免多段 text block 在 UI 里重复显示相同内容。
+				const blocks: ChatMessageBlock[] = streamBlocks.filter(
+					(b) => b.type !== "text",
+				);
+
+				// 如果任务步骤（TodoWrite）已生成，用专门的 task_list 卡片承接
+				if (currentTaskId) {
+					const steps = agentStore.getState().currentTask?.steps || [];
+					if (steps.length > 0) {
+						blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
+					}
+				}
 
 				const currentSkill = agentStore.getState().currentSkill;
 				if (currentSkill) {
@@ -900,6 +916,48 @@ export default function CopilotSidebar() {
 						detectedScene: currentSkill.detectedScene,
 					} as any);
 				}
+
+				const text = getStreamText();
+				if (text && text.trim()) {
+					blocks.push({ type: "text", text } as any);
+				}
+				return blocks;
+			};
+
+			const buildFinalBlocks = (
+				finalText: string,
+				protocol: ReturnType<typeof parseDocProtocolFinal>,
+			): ChatMessageBlock[] => {
+				const blocks: ChatMessageBlock[] = [];
+
+				// Keep the tool trace blocks (tool_call, images, etc.) but avoid carrying raw streamed text
+				// that may include protocol markers; we replace it with a single final text block.
+				for (const b of streamBlocks) {
+					if (b.type === "text") continue;
+					blocks.push(b);
+				}
+
+				if (protocol.kind === "create" || protocol.kind === "update") {
+					blocks.push({ type: "file_update", update: protocol.fileUpdate } as any);
+				}
+
+				const currentSkill = agentStore.getState().currentSkill;
+				if (currentSkill) {
+					blocks.push({
+						type: "skill_execution",
+						skillName: currentSkill.skillName,
+						skillPath: currentSkill.skillPath,
+						status: currentSkill.status,
+						steps: currentSkill.steps,
+						loadedFiles: currentSkill.loadedFiles,
+						detectedScene: currentSkill.detectedScene,
+					} as any);
+				}
+
+				if (finalText && finalText.trim()) {
+					blocks.push({ type: "text", text: finalText } as any);
+				}
+
 				return blocks;
 			};
 
@@ -984,6 +1042,39 @@ export default function CopilotSidebar() {
 					isBinary?: boolean;
 				}> = [];
 
+				// 预先拿到 agent 沙盒目录：让“资料库内容 -> 临时文件”直接落到沙盒中，
+				// 避免先写到系统 temp 再复制导致路径不在 cwd，从而触发 SDK 的 File does not exist。
+				const sandboxKeyForFiles = boundAgentSessionId || session.id;
+				let sandboxDirForFiles: string | null = null;
+				try {
+					const { getAgentSandboxDir } = await import("../lib/api");
+					const res = await getAgentSandboxDir(sandboxKeyForFiles);
+					if (res?.path) sandboxDirForFiles = String(res.path);
+				} catch {}
+
+				const ILLEGAL_FILENAME_CHARS_RE = /[<>:"/\\|?*\u0000-\u001F]/g;
+				const sanitizeFileName = (name: string): string => {
+					const base = String(name || "document")
+						.normalize("NFC")
+						.trim();
+					const normalized = base.replace(ILLEGAL_FILENAME_CHARS_RE, "_");
+					const collapsed = normalized.replace(/\s+/g, " ").trim();
+					const withoutTrailingDotsOrSpaces = collapsed
+						.replace(/[. ]+$/g, "")
+						.trim();
+					const safe =
+						withoutTrailingDotsOrSpaces === "." ||
+						withoutTrailingDotsOrSpaces === ".."
+							? "document"
+							: withoutTrailingDotsOrSpaces;
+					return safe.length > 0 ? safe.slice(0, 180) : "document";
+				};
+
+				const ensureMdExt = (name: string) =>
+					name.toLowerCase().endsWith(".md") ? name : `${name}.md`;
+
+				const seenSandboxNames = new Map<string, number>();
+
 				for (const ctx of contexts) {
 					let content = ctx.content;
 					let filePath = ctx.filePath;
@@ -1012,34 +1103,54 @@ export default function CopilotSidebar() {
 						(!filePath || fileSize === 0 || fileSize === undefined)
 					) {
 						try {
-							const { saveTempFile } = await import("../lib/api");
-							// 从标题推断文件扩展名和前缀
-							const basename = String(ctx.title || "document.txt")
-								.split(/[/\\]/)
-								.pop() as string;
-							const dotIdx = basename.lastIndexOf(".");
-							const extension =
-								dotIdx > 0 ? basename.slice(dotIdx + 1).toLowerCase() : "md";
-							const prefix =
-								(dotIdx > 0 ? basename.slice(0, dotIdx) : basename)
-									.replace(/[^a-zA-Z0-9_-]/g, "_")
-									.slice(0, 32) || "doc";
+							if (sandboxDirForFiles) {
+								const { safeInvoke } = await import("../lib/tauriBridge");
+								const dir = String(sandboxDirForFiles).replace(/[\\/]+$/g, "");
+								const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
+								const count = (seenSandboxNames.get(base) ?? 0) + 1;
+								seenSandboxNames.set(base, count);
+								const dot = base.lastIndexOf(".");
+								const stem = dot > 0 ? base.slice(0, dot) : base;
+								const ext = dot > 0 ? base.slice(dot) : "";
+								const name = count === 1 ? base : `${stem}-${count}${ext}`;
+								const dest = `${dir}/${name}`;
 
-							const tempResult = await saveTempFile({
-								content,
-								extension,
-								prefix,
-								encoding: "utf-8",
-							});
-							filePath = tempResult.path;
-							fileSize = tempResult.size;
-							console.log(
-								"[CopilotSidebar] 创建临时文件:",
-								ctx.title,
-								filePath,
-								tempResult.size,
-								"bytes",
-							);
+								await safeInvoke<{ success: boolean }>("write_file_safe", {
+									payload: {
+										path: dest,
+										content,
+										encoding: "utf-8",
+										create_dirs: true,
+									},
+								});
+								filePath = dest;
+								fileSize = content.length;
+								console.log(
+									"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
+									ctx.title,
+									filePath,
+									fileSize,
+									"bytes",
+								);
+							} else {
+								const { saveTempFile } = await import("../lib/api");
+								// 兼容：无法获取沙盒目录时，退化为系统 temp 文件
+								const tempResult = await saveTempFile({
+									content,
+									extension: "md",
+									prefix: "doc",
+									encoding: "utf-8",
+								});
+								filePath = tempResult.path;
+								fileSize = tempResult.size;
+								console.log(
+									"[CopilotSidebar] 创建临时文件:",
+									ctx.title,
+									filePath,
+									tempResult.size,
+									"bytes",
+								);
+							}
 						} catch (err) {
 							console.error("[CopilotSidebar] 创建临时文件失败:", err);
 						}
@@ -1194,19 +1305,27 @@ export default function CopilotSidebar() {
 					scheduleStreamingUpdate();
 				};
 
-				await agentExecutor.executeCustomTask(
+				const agentRun = await agentExecutor.executeCustomTask(
 					content,
 					systemPrompt,
 					undefined,
 					{
 						conversationContext,
 						fallbackSearchQuery,
+						hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 						activeDocContent: workspaceStore.getActiveDocContent() || "",
 						attachedContexts,
 						attachedFiles, // 传递文件路径
+						sandboxKey: boundAgentSessionId || session.id,
+						resumeSessionId: session.sdkSessionId,
+						persistSession: true,
 						onChunk, // 流式输出回调
 					},
 				);
+
+				if (agentRun?.sdkSessionId) {
+					chatStore.setSessionSdkSessionId(session.id, agentRun.sdkSessionId);
+				}
 
 				// 如果有流式消息，更新最终内容并标记为完成
 				if (streamingMsgId) {
@@ -1232,9 +1351,31 @@ export default function CopilotSidebar() {
 					finalState.currentTask?.result || "任务已完成，但未能生成结果";
 				const protocol = parseDocProtocolFinal(rawResult, {
 					activeDocContent: workspaceStore.getActiveDocContent() || "",
+					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 					prompt: command?.name || content.slice(0, 50),
 				});
 				const result = protocol.displayContent;
+
+				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
+				// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
+				if (streamingMsgId) {
+					chatStore.updateMessage(session.id, streamingMsgId, {
+						content: result,
+						isStreaming: false,
+						metadata: {
+							blocks: buildFinalBlocks(result, protocol),
+							...(protocol.kind === "create" || protocol.kind === "update"
+								? { fileUpdates: [protocol.fileUpdate] }
+								: null),
+						},
+					});
+
+					if (protocol.kind === "update") {
+						events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
+					} else if (protocol.kind === "create") {
+						events.emit(EVENTS.AI_DOC_CREATE_END, protocol.eventPayload);
+					}
+				}
 
 				// 任务完成后尝试把最终摘要写回后端 task
 				try {
@@ -2162,17 +2303,6 @@ export default function CopilotSidebar() {
 								</div>
 							</div>
 						)}
-						{/* 智能Agent思考过程展示 */}
-						{(isAgentExecuting || thinkingSteps.length > 0) &&
-							chatMode === "agent" &&
-							!chatSettings.inlineTraceEnabled && (
-								<div className="mb-4">
-									<ThinkingProcessCompact
-										steps={thinkingSteps}
-										isActive={isAgentExecuting}
-									/>
-								</div>
-							)}
 						<div ref={messagesEndRef} />
 					</>
 				)}

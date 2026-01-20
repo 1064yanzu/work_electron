@@ -1,16 +1,18 @@
 /**
  * Tool Permission Card Component
  *
- * 工具权限审批卡片，显示工具调用详情并提供允许/拒绝操作。
- * 参考 Cherry Studio 的 ToolPermissionRequestCard 设计。
+ * 工具权限审批卡片,显示工具调用详情并提供允许/拒绝操作。
+ * 采用简洁的设计风格,与 SkillCard 保持一致。
  */
 
+import { ChevronDown, ChevronRight, Shield } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	type ToolPermissionRequest,
 	toolPermissionStore,
 } from "../../lib/agent/toolPermissionStore";
+import { cn } from "../../lib/utils";
 
 interface ToolPermissionCardProps {
 	request: ToolPermissionRequest;
@@ -86,158 +88,107 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 		request.status === "submitting-allow" ||
 		request.status === "submitting-deny";
 
+	const isUrgent = remainingTime <= 10;
+
 	return (
-		<div className="tool-permission-card">
-			<div className="tool-permission-header">
-				<div className="tool-info">
-					<span className="tool-icon">🔧</span>
-					<span className="tool-name">{request.toolName}</span>
-					<span className="tool-description">
-						{getToolDescription(request.toolName)}
-					</span>
+		<div
+			className={cn(
+				"rounded-xl overflow-hidden transition-all duration-300 shadow-sm",
+				"bg-white/80 dark:bg-zinc-900/60",
+				isUrgent
+					? "ring-2 ring-amber-200/50 dark:ring-amber-800/30"
+					: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
+			)}
+		>
+			{/* 头部 */}
+			<div className="flex items-center justify-between px-3 py-2.5">
+				<div className="flex items-center gap-2.5 min-w-0 flex-1">
+					<div
+						className={cn(
+							"p-1.5 rounded-lg transition-all duration-200",
+							isUrgent
+								? "bg-amber-50 dark:bg-amber-900/20"
+								: "bg-blue-50 dark:bg-blue-900/20",
+						)}
+					>
+						<Shield
+							className={cn(
+								"w-4 h-4 transition-colors",
+								isUrgent
+									? "text-amber-600 dark:text-amber-400"
+									: "text-blue-600 dark:text-blue-400",
+							)}
+						/>
+					</div>
+					<div className="min-w-0 flex-1">
+						<div className="flex items-center gap-2">
+							<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+								{request.toolName}
+							</span>
+							<span className="text-[11px] text-zinc-400">
+								{getToolDescription(request.toolName)}
+							</span>
+						</div>
+					</div>
 				</div>
 				<div
-					className="countdown"
-					style={{ color: remainingTime <= 10 ? "#ef4444" : "#6b7280" }}
+					className={cn(
+						"text-sm font-medium tabular-nums",
+						isUrgent ? "text-amber-600 dark:text-amber-400" : "text-zinc-500",
+					)}
 				>
 					{remainingTime}s
 				</div>
 			</div>
 
-			<div className="tool-permission-body">
-				<div className="input-preview" onClick={() => setExpanded(!expanded)}>
-					<span className="expand-icon">{expanded ? "▼" : "▶"}</span>
-					<span className="preview-label">参数预览</span>
-				</div>
-				{expanded && <pre className="input-content">{inputPreview}</pre>}
+			{/* 参数预览 */}
+			<div className="px-3 pb-2">
+				<button
+					onClick={() => setExpanded(!expanded)}
+					className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+				>
+					{expanded ? (
+						<ChevronDown className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+					) : (
+						<ChevronRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+					)}
+					<span className="text-xs text-zinc-500 dark:text-zinc-400">
+						参数预览
+					</span>
+				</button>
+				{expanded && (
+					<pre className="mt-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 text-[11px] text-zinc-600 dark:text-zinc-400 overflow-x-auto max-h-60 overflow-y-auto border border-zinc-200/50 dark:border-zinc-700/50">
+						{inputPreview}
+					</pre>
+				)}
 			</div>
 
-			<div className="tool-permission-actions">
+			{/* 操作按钮 */}
+			<div className="flex gap-2 px-3 pb-3 border-t border-zinc-200/30 dark:border-zinc-700/30 pt-2">
 				<button
-					className="btn-deny"
 					onClick={() => onDeny(request.id)}
 					disabled={isSubmitting}
+					className={cn(
+						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+						"bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
+						"hover:bg-zinc-200 dark:hover:bg-zinc-700",
+						"disabled:opacity-50 disabled:cursor-not-allowed",
+					)}
 				>
 					{request.status === "submitting-deny" ? "拒绝中..." : "拒绝"}
 				</button>
 				<button
-					className="btn-allow"
 					onClick={() => onAllow(request.id)}
 					disabled={isSubmitting}
+					className={cn(
+						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+						"bg-blue-500 hover:bg-blue-600 text-white",
+						"disabled:opacity-50 disabled:cursor-not-allowed",
+					)}
 				>
 					{request.status === "submitting-allow" ? "允许中..." : "允许"}
 				</button>
 			</div>
-
-			<style>{`
-                .tool-permission-card {
-                    background: var(--bg-secondary, #f9fafb);
-                    border: 1px solid var(--border-color, #e5e7eb);
-                    border-radius: 8px;
-                    padding: 12px;
-                    margin: 8px 0;
-                }
-
-                .tool-permission-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 8px;
-                }
-
-                .tool-info {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .tool-icon {
-                    font-size: 16px;
-                }
-
-                .tool-name {
-                    font-weight: 600;
-                    color: var(--text-primary, #111827);
-                }
-
-                .tool-description {
-                    color: var(--text-secondary, #6b7280);
-                    font-size: 12px;
-                }
-
-                .countdown {
-                    font-size: 14px;
-                    font-weight: 500;
-                }
-
-                .tool-permission-body {
-                    margin-bottom: 12px;
-                }
-
-                .input-preview {
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    color: var(--text-secondary, #6b7280);
-                    font-size: 12px;
-                }
-
-                .expand-icon {
-                    font-size: 10px;
-                }
-
-                .input-content {
-                    background: var(--bg-tertiary, #f3f4f6);
-                    padding: 8px;
-                    border-radius: 4px;
-                    margin-top: 8px;
-                    font-size: 11px;
-                    overflow-x: auto;
-                    max-height: 200px;
-                    overflow-y: auto;
-                }
-
-                .tool-permission-actions {
-                    display: flex;
-                    gap: 8px;
-                    justify-content: flex-end;
-                }
-
-                .btn-allow, .btn-deny {
-                    padding: 6px 16px;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .btn-allow {
-                    background: var(--primary-color, #3b82f6);
-                    color: white;
-                    border: none;
-                }
-
-                .btn-allow:hover:not(:disabled) {
-                    background: var(--primary-hover, #2563eb);
-                }
-
-                .btn-deny {
-                    background: transparent;
-                    color: var(--text-secondary, #6b7280);
-                    border: 1px solid var(--border-color, #e5e7eb);
-                }
-
-                .btn-deny:hover:not(:disabled) {
-                    background: var(--bg-tertiary, #f3f4f6);
-                }
-
-                .btn-allow:disabled, .btn-deny:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-            `}</style>
 		</div>
 	);
 };
@@ -269,7 +220,7 @@ export const ToolPermissionList: React.FC = () => {
 	};
 
 	return (
-		<div className="tool-permission-list">
+		<div className="space-y-2">
 			{requests.map((request) => (
 				<ToolPermissionCard
 					key={request.id}

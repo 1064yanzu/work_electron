@@ -146,6 +146,7 @@ export class AgentEventHandler {
 				case "tool_call_start":
 					this.callbacks.onMessage?.({
 						type: "tool_call",
+						toolCallId: event.id,
 						content: `Calling ${event.name}...`,
 						toolName: event.name,
 						toolInput: event.input,
@@ -156,6 +157,7 @@ export class AgentEventHandler {
 				case "tool_call_end":
 					this.callbacks.onMessage?.({
 						type: "tool_result",
+						toolCallId: event.id,
 						content:
 							typeof event.output === "string"
 								? event.output

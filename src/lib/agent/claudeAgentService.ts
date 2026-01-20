@@ -22,6 +22,7 @@ import { AgentStreamState, type UIEvent } from "./streamState";
 export interface AgentMessage {
 	type: "assistant" | "tool_call" | "tool_result" | "system" | "result";
 	content: string;
+	toolCallId?: string;
 	toolName?: string;
 	toolInput?: Record<string, unknown>;
 	toolOutput?: unknown;
@@ -41,6 +42,15 @@ export interface ClaudeAgentExecutionOptions {
 	/** Working directory for file operations */
 	workingDirectory?: string;
 
+	/** Resume an existing Claude Agent SDK session (enables SDK context management across turns) */
+	resumeSessionId?: string;
+
+	/** Whether the SDK should persist sessions to disk (defaults to true in SDK) */
+	persistSession?: boolean;
+
+	/** Enabled skills list (used for skill routing and subagents) */
+	skills?: string[];
+
 	/** Callback for streaming text chunks */
 	onChunk?: (text: string) => void;
 
@@ -48,10 +58,20 @@ export interface ClaudeAgentExecutionOptions {
 	onMessage?: (message: AgentMessage) => void;
 
 	/** Callback when execution completes */
-	onComplete?: (result: { success: boolean; summary?: string }) => void;
+	onComplete?: (result: {
+		success: boolean;
+		summary?: string;
+		sessionId?: string;
+	}) => void;
 
 	/** Callback for todo list updates */
-	onTodoUpdate?: (todos: Array<{ content: string; status: "pending" | "in_progress" | "completed"; activeForm?: string }>) => void;
+	onTodoUpdate?: (
+		todos: Array<{
+			content: string;
+			status: "pending" | "in_progress" | "completed";
+			activeForm?: string;
+		}>,
+	) => void;
 
 	/** Abort controller for cancellation */
 	abortController?: AbortController;
@@ -68,6 +88,8 @@ const DEFAULT_TOOLS = [
 	"Grep",
 	"Bash",
 	"Skill", // Enable skills support
+	"Task", // Enable subagents
+	"TodoWrite",
 	"WebSearch",
 	"WebFetch",
 ] as const;
@@ -90,6 +112,9 @@ export class ClaudeAgentService {
 			prompt,
 			systemPrompt,
 			workingDirectory,
+			resumeSessionId,
+			persistSession,
+			skills,
 			onChunk,
 			onMessage,
 			onComplete,
@@ -102,9 +127,11 @@ export class ClaudeAgentService {
 
 		let unlisten: (() => void) | null = null;
 		let runId: string | null = null;
+		let sessionId: string | null = null;
 		let settle: ((err?: Error) => void) | null = null;
 		let toolUseErrorCount = 0;
 		let lastToolUseError: string | null = null;
+		const toolNamesById = new Map<string, string>();
 		const streamState = new AgentStreamState();
 		const bufferedEvents: Array<{
 			runId: string;
@@ -201,7 +228,11 @@ export class ClaudeAgentService {
 									},
 								);
 								void invoke("agent_sdk_abort", { runId });
-								onComplete?.({ success: false, summary: err });
+								onComplete?.({
+									success: false,
+									summary: err,
+									sessionId: sessionId ?? undefined,
+								});
 								if (unlisten) unlisten();
 								unlisten = null;
 								settle?.(new Error(err));
@@ -228,16 +259,31 @@ export class ClaudeAgentService {
 
 					// 处理各种事件类型
 					for (const event of events) {
+						if (event.type === "session_init") {
+							sessionId = event.sessionId;
+							continue;
+						}
+						if (event.type === "system_notice") {
+							onMessage?.({
+								type: "system",
+								content: event.content,
+								status: event.level === "error" ? "error" : "running",
+							});
+							continue;
+						}
 						if (event.type === "text_delta") {
 							// 只处理增量文本，忽略完整 text 事件避免重复
 							onChunk?.(event.content);
 						} else if (event.type === "tool_call_start") {
+							toolNamesById.set(event.id, event.name);
 							// 检查是否是 TodoWrite 工具
 							if (event.name === "TodoWrite" && event.input && onTodoUpdate) {
 								const todos = (event.input as any).todos;
 								if (Array.isArray(todos)) {
 									onTodoUpdate(todos);
 								}
+								// TodoWrite 是任务列表更新，不作为普通 tool_call 渲染，避免误显示为“已创建文件”等。
+								continue;
 							}
 							// 构建工具调用描述，包含工具名称和参数
 							const inputStr =
@@ -250,14 +296,22 @@ export class ClaudeAgentService {
 
 							onMessage?.({
 								type: "tool_call",
+								toolCallId: event.id,
 								content: description,
 								toolName: event.name,
 								toolInput: event.input,
 								status: "running",
 							});
 						} else if (event.type === "tool_call_end") {
+							// TodoWrite 的结果对 UI 没有必要展示为 tool_result（任务列表已经更新）
+							if (toolNamesById.get(event.id) === "TodoWrite") {
+								toolNamesById.delete(event.id);
+								continue;
+							}
+							toolNamesById.delete(event.id);
 							onMessage?.({
 								type: "tool_result",
+								toolCallId: event.id,
 								content:
 									typeof event.output === "string"
 										? event.output
@@ -280,6 +334,12 @@ export class ClaudeAgentService {
 				if (payload.type === "done") {
 					const subtype = payload.result?.subtype;
 					const resultAny = payload.result as any;
+					if (
+						typeof resultAny?.session_id === "string" &&
+						resultAny.session_id
+					) {
+						sessionId = resultAny.session_id;
+					}
 					const sdkErrors =
 						Array.isArray(resultAny?.errors) && resultAny.errors.length > 0
 							? resultAny.errors.join("\n")
@@ -297,6 +357,7 @@ export class ClaudeAgentService {
 					onComplete?.({
 						success: ok,
 						summary: ok ? resultText || "Task completed" : failureSummary,
+						sessionId: sessionId ?? undefined,
 					});
 					if (unlisten) unlisten();
 					unlisten = null;
@@ -311,7 +372,11 @@ export class ClaudeAgentService {
 						content: `Error: ${err}`,
 						status: "error",
 					});
-					onComplete?.({ success: false, summary: err });
+					onComplete?.({
+						success: false,
+						summary: err,
+						sessionId: sessionId ?? undefined,
+					});
 					if (unlisten) unlisten();
 					unlisten = null;
 					settle?.(new Error(err));
@@ -323,8 +388,8 @@ export class ClaudeAgentService {
 				handleEvent(event.payload as any);
 			});
 
-			// 获取 MCP 配置
-			const mcpServers = getMcpConfigForSdk();
+			// 获取 MCP 配置（来自设置页 DB 配置）
+			const mcpServers = await getMcpConfigForSdk();
 			console.log("[ClaudeAgentService] MCP servers:", Object.keys(mcpServers));
 
 			runId = await invoke<string>("agent_sdk_start", {
@@ -332,9 +397,12 @@ export class ClaudeAgentService {
 					prompt,
 					model,
 					cwd: workingDirectory,
+					resume_session_id: resumeSessionId,
+					persist_session: persistSession,
 					permission_mode: "acceptEdits",
 					allowed_tools: [...DEFAULT_TOOLS],
 					system_prompt: systemPrompt,
+					skills,
 					mcp_servers: mcpServers, // 传递 MCP 配置给 SDK
 				},
 			});
@@ -356,7 +424,11 @@ export class ClaudeAgentService {
 				status: "error",
 			});
 
-			onComplete?.({ success: false, summary: errorMessage });
+			onComplete?.({
+				success: false,
+				summary: errorMessage,
+				sessionId: sessionId ?? undefined,
+			});
 		} finally {
 			abortController.signal.removeEventListener("abort", abortHandler);
 			if (unlisten) unlisten();

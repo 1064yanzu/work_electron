@@ -84,68 +84,11 @@ function chooseSandboxFileName(input: {
 	return ext ? ensureExtension(safeStem, ext) : safeStem;
 }
 
-function extractDescriptionTriggers(description: unknown): string[] {
-	if (typeof description !== "string") return [];
-	const out: string[] = [];
-	const matches = description.matchAll(/（([^）]{2,64})）|\(([^)]{2,64})\)/g);
-	for (const m of matches) {
-		const raw = (m[1] || m[2] || "").trim();
-		if (!raw) continue;
-		for (const p of raw.split(/[\/|、，,;；\s]+/g)) {
-			const t = p.trim();
-			if (t.length >= 2 && t.length <= 24) out.push(t);
-		}
-	}
-	return Array.from(new Set(out)).slice(0, 8);
-}
-
 // Agent 执行配置
 interface AgentExecutorConfig {
 	maxToolCalls?: number;
 	timeout?: number;
 	autoExecute?: boolean;
-}
-
-/**
- * Build skills context from enabled skills for system prompt
- * This provides detailed skill information since SDK's built-in Skill tool
- * cannot automatically discover our skills directory
- */
-function buildSkillsContext(): string {
-	const enabledSkills = skillsStore.getEnabledSkills();
-
-	if (enabledSkills.length === 0) {
-		return "";
-	}
-
-	let context = "\n\n## 可用技能 (Available Skills)\n\n";
-	context += "你可以使用 Skill 工具来调用以下已启用的技能。\n\n";
-	context += "**调用方式**: 使用 Skill 工具，参数 `skill` 设置为技能名称。\n\n";
-	context += "**使用原则（通用）**:\n";
-	context +=
-		"- 只要用户目标与任一技能明显匹配（点名技能/命中触发词/要求完成技能能做的外部动作），优先调用 Skill 工具执行。\n";
-	context += "- 不要用纯文本“模拟已调用技能”的结果替代真实调用。\n\n";
-	context += "**可用技能列表**:\n\n";
-
-	for (const skill of enabledSkills) {
-		const triggers = extractDescriptionTriggers(skill.description);
-		const triggerText = triggers.length
-			? `（触发词: ${triggers.join(" / ")}）`
-			: "";
-		context += `- **${skill.name}**: ${skill.description || "无描述"}${triggerText}\n`;
-	}
-
-	context += "\n**示例调用**:\n";
-	context += "```json\n";
-	context += `{ \"skill\": \"${enabledSkills[0]?.name || "skill-name"}\", \"args\": \"optional arguments\" }\n`;
-	context += "```\n\n";
-
-	context += "**重要提示**: \n";
-	context += "- 当用户请求使用某个技能时,使用 Skill 工具调用它\n";
-	context += "- 技能名称必须完全匹配上述列表中的名称\n";
-	context += `- 当前可用技能: ${enabledSkills.map((s) => s.name).join(", ")}\n`;
-
-	return context;
 }
 
 /**
@@ -173,6 +116,7 @@ class AgentExecutor {
 			conversationContext?: string[];
 			fallbackSearchQuery?: string | null;
 			activeDocContent?: string | null;
+			hasActiveDoc?: boolean;
 			attachedContexts?: Array<{ title: string; content: string }>;
 			attachedFiles?: Array<{
 				title: string;
@@ -183,9 +127,15 @@ class AgentExecutor {
 				isBinary?: boolean;
 			}>;
 			workingDirectory?: string;
+			/** Reuse the same sandbox dir across turns by providing a stable key */
+			sandboxKey?: string;
+			/** Resume an existing SDK session to enable SDK context management/compaction */
+			resumeSessionId?: string;
+			/** Whether to persist SDK sessions to disk (defaults to true in SDK) */
+			persistSession?: boolean;
 			onChunk?: (chunk: string) => void;
 		},
-	): Promise<void> {
+	): Promise<{ sdkSessionId?: string; sandboxDir?: string }> {
 		// Ensure skills store is initialized
 		await skillsStore.init();
 
@@ -216,7 +166,11 @@ class AgentExecutor {
 		let sandboxDir = options?.workingDirectory;
 		if (!sandboxDir) {
 			try {
-				const res = await getAgentSandboxDir(task.id);
+				const sandboxKey =
+					typeof options?.sandboxKey === "string" && options.sandboxKey.trim()
+						? options.sandboxKey.trim()
+						: task.id;
+				const res = await getAgentSandboxDir(sandboxKey);
 				sandboxDir = res.path;
 			} catch {}
 		}
@@ -354,14 +308,11 @@ class AgentExecutor {
 			}
 		}
 
-		// Build enhanced system prompt with context and skills
+		// Build enhanced system prompt with minimal context (avoid embedding large source text here).
 		let enhancedPrompt = systemPrompt || "";
 
-		// Add skills context
-		enhancedPrompt += buildSkillsContext();
-
 		// Add conversation context if available
-		if (options?.conversationContext?.length) {
+		if (!options?.resumeSessionId && options?.conversationContext?.length) {
 			enhancedPrompt +=
 				"\n\n## 对话历史\n" + options.conversationContext.join("\n");
 		}
@@ -375,7 +326,7 @@ class AgentExecutor {
 			enhancedPrompt +=
 				"\n\n## 用户附加的文件\n" +
 				"以下是用户附加的文件路径列表。请不要假设你已读到文件内容。\n" +
-				"- 若需要阅读文本文件内容，请使用 Read 工具读取对应路径。\n" +
+				"- 若需要阅读文本文件内容，请使用 Read/Glob/Grep 工具读取/检索对应路径。\n" +
 				"- 若用户要求上传/处理文件（例如上传到 NotebookLM），请直接把文件路径作为参数传给对应 Skill 工具。\n\n";
 			for (const file of options.attachedFiles) {
 				const metaParts = [
@@ -385,17 +336,29 @@ class AgentExecutor {
 					file.isBinary ? "binary" : null,
 				].filter(Boolean);
 				const meta = metaParts.length ? ` (${metaParts.join(", ")})` : "";
-				enhancedPrompt += `- ${file.title}: ${file.path}${meta}\n`;
+				const baseName = getBasename(stripTrailingSlash(file.path));
+				enhancedPrompt += `- ${file.title}: ${file.path}${meta}${baseName ? ` (basename=${baseName})` : ""}\n`;
 			}
 		}
 
+		// Document protocol guidance for the editor integration.
+		const hasActiveDoc = Boolean(options?.hasActiveDoc);
+		enhancedPrompt +=
+			"\n\n## 文档输出协议\n" +
+			(hasActiveDoc
+				? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
+				: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
+
 		// Add active document context
 		if (options?.activeDocContent) {
-			enhancedPrompt +=
-				"\n\n## 当前编辑器文档\n```\n" + options.activeDocContent + "\n```";
+			const content = String(options.activeDocContent || "");
+			if (content.trim()) {
+				enhancedPrompt += "\n\n## 当前编辑器文档\n```\n" + content + "\n```";
+			}
 		}
 
 		let finalResult = "";
+		let sdkSessionId: string | undefined;
 		let toolStepCounter = 0;
 		let lastToolCallId: string | null = null;
 
@@ -427,6 +390,9 @@ class AgentExecutor {
 				prompt: enhancedUserPrompt,
 				systemPrompt: enhancedPrompt || undefined,
 				workingDirectory: sandboxDir,
+				resumeSessionId: options?.resumeSessionId,
+				persistSession: options?.persistSession,
+				skills: enabledSkills.map((s) => s.name),
 				abortController: this.abortController,
 
 				onChunk: (text) => {
@@ -439,7 +405,11 @@ class AgentExecutor {
 					switch (message.type) {
 						case "tool_call": {
 							toolStepCounter++;
-							const toolCallId = `sdk-tool-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+							const toolCallIdBase =
+								typeof message.toolCallId === "string" && message.toolCallId.trim()
+									? message.toolCallId.trim()
+									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+							const toolCallId = `sdk-tool-${toolCallIdBase}`;
 
 							// 构建工具描述，包含参数信息
 							let description =
@@ -463,6 +433,7 @@ class AgentExecutor {
 								name: string,
 							): import("./types").ToolType => {
 								const lower = name?.toLowerCase() || "";
+								if (lower === "todowrite") return "custom";
 								if (
 									lower === "bash" ||
 									lower.includes("terminal") ||
@@ -518,9 +489,13 @@ class AgentExecutor {
 						}
 
 						case "tool_result": {
-							// 更新最新的工具调用状态
-							if (lastToolCallId) {
-								agentStore.updateToolCall(lastToolCallId, {
+							const resolvedToolCallId =
+								typeof message.toolCallId === "string" && message.toolCallId.trim()
+									? `sdk-tool-${message.toolCallId.trim()}`
+									: lastToolCallId;
+							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）
+							if (resolvedToolCallId) {
+								agentStore.updateToolCall(resolvedToolCallId, {
 									output: message.toolOutput,
 									status: message.status === "error" ? "error" : "completed",
 									completedAt: Date.now(),
@@ -581,6 +556,10 @@ class AgentExecutor {
 				},
 
 				onComplete: (result) => {
+					sdkSessionId = result.sessionId;
+					if (sdkSessionId) {
+						agentStore.setTaskMetadata({ sdkSessionId });
+					}
 					if (result.success) {
 						// Mark analysis step as complete
 						agentStore.updateTaskStepByKind("analysis", "completed");
@@ -596,9 +575,12 @@ class AgentExecutor {
 			const errorMessage = error instanceof Error ? error.message : "执行失败";
 			console.error("[AgentExecutor SDK] Error:", errorMessage);
 			agentStore.failTask(errorMessage);
+			return { sdkSessionId, sandboxDir };
 		} finally {
 			this.abortController = null;
 		}
+
+		return { sdkSessionId, sandboxDir };
 	}
 
 	/**
@@ -607,7 +589,7 @@ class AgentExecutor {
 	async executeResearchTask(
 		query: string,
 		config: AgentExecutorConfig = {},
-	): Promise<void> {
+	): Promise<{ sdkSessionId?: string; sandboxDir?: string }> {
 		// Research task is just a custom task with research-focused prompt
 		const researchPrompt = `你是一个研究助手。请对以下主题进行深入研究：
 

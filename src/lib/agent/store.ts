@@ -488,6 +488,9 @@ class AgentStore {
 	addToolCall(toolCall: ToolCall) {
 		this.setState((state) => {
 			if (!state.currentTask) return state;
+			if (state.currentTask.toolCalls.some((tc) => tc.id === toolCall.id)) {
+				return state;
+			}
 
 			const updatedTask: AgentTask = {
 				...state.currentTask,

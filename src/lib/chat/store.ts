@@ -288,6 +288,15 @@ class ChatStore {
 		}));
 	}
 
+	setSessionSdkSessionId(sessionId: string, sdkSessionId: string | undefined) {
+		this.setState((state) => ({
+			...state,
+			sessions: state.sessions.map((s) =>
+				s.id === sessionId ? { ...s, sdkSessionId, updatedAt: Date.now() } : s,
+			),
+		}));
+	}
+
 	// 设置状态
 	setStatus(status: ChatState["status"], error?: string) {
 		this.setState((state) => ({
@@ -362,6 +371,7 @@ export function useChatStore() {
 		updateSessionTitle: chatStore.updateSessionTitle.bind(chatStore),
 		setSessionAgentSessionId:
 			chatStore.setSessionAgentSessionId.bind(chatStore),
+		setSessionSdkSessionId: chatStore.setSessionSdkSessionId.bind(chatStore),
 		setStatus: chatStore.setStatus.bind(chatStore),
 		clearAllSessions: chatStore.clearAllSessions.bind(chatStore),
 		deleteMessage: chatStore.deleteMessage.bind(chatStore),

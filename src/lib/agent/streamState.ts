@@ -46,6 +46,12 @@ export interface TurnCompleteEvent {
 	messageId?: string;
 }
 
+export interface SystemNoticeEvent {
+	type: "system_notice";
+	level?: "info" | "warning" | "error";
+	content: string;
+}
+
 export type UIEvent =
 	| TextEvent
 	| ToolCallStartEvent
@@ -53,6 +59,7 @@ export type UIEvent =
 	| ResultEvent
 	| SessionInitEvent
 	| TurnCompleteEvent
+	| SystemNoticeEvent
 	| { type: "unknown"; originalType: string; data: unknown };
 
 /**

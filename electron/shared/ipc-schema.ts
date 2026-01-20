@@ -456,6 +456,15 @@ export type IPCSchema = {
 			prompt: string;
 			model: string;
 			cwd?: string;
+			/** Claude Agent SDK session id to resume (enables SDK context management/compaction across turns) */
+			resume_session_id?: string;
+			/** Whether to persist SDK sessions to disk (defaults to true in SDK) */
+			persist_session?: boolean;
+			/** MCP server configs passed through to SDK `mcpServers` */
+			mcp_servers?: Record<
+				string,
+				{ command: string; args?: string[]; env?: Record<string, string> }
+			>;
 			permission_mode?: string;
 			allowed_tools?: string[];
 			system_prompt?: string;
@@ -561,4 +570,3 @@ export type IPCSchema = {
 };
 
 export type IPCChannel = keyof IPCSchema;
-

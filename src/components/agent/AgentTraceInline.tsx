@@ -232,24 +232,24 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 		const skillData = (toolCall.output as any)?.data || toolCall.output;
 		if (skillData?.skillName || skillData?.instructions) {
 			return (
-				<div className="mb-2 rounded-xl bg-purple-50/50 dark:bg-purple-900/10 ring-1 ring-purple-200/50 dark:ring-purple-800/30 overflow-hidden">
+				<div className="mb-2 rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 overflow-hidden">
 					<div className="flex items-center gap-2 px-3 py-2">
-						<div className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-							<Zap className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+						<div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+							<Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center gap-2">
-								<span className="text-xs font-medium text-purple-800 dark:text-purple-200">
+								<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
 									技能已激活: {skillData.skillName}
 								</span>
 								{toolCall.status === "completed" && (
-									<span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+									<span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
 										就绪
 									</span>
 								)}
 							</div>
 							{skillData.description && (
-								<div className="text-[11px] text-purple-600/70 dark:text-purple-400/70 truncate">
+								<div className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate">
 									{skillData.description}
 								</div>
 							)}
@@ -258,7 +258,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 					{/* 指令预览 */}
 					{skillData.instructions && (
 						<div className="px-3 pb-2">
-							<div className="text-[10px] text-purple-500 dark:text-purple-400/80 line-clamp-2">
+							<div className="text-[10px] text-zinc-400 dark:text-zinc-500 line-clamp-2">
 								已加载 {Math.round(skillData.instructions.length / 1000)}KB
 								技能指令
 							</div>
@@ -280,10 +280,10 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				className={cn(
 					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 					toolCall.status === "running"
-						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-violet-200/50 dark:ring-violet-800/30 shadow-sm"
+						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
-							? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-rose-200/50 dark:ring-rose-800/30 shadow-sm"
-							: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10",
+							? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+							: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 				)}
 			>
 				<button
@@ -292,21 +292,21 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				>
 					<div
 						className={cn(
-							"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
+							"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
 							toolCall.status === "running"
-								? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
+								? "bg-blue-50 dark:bg-blue-900/20"
 								: toolCall.status === "error" || exitCode !== 0
-									? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
-									: "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30",
+									? "bg-red-50 dark:bg-red-900/20"
+									: "bg-emerald-50 dark:bg-emerald-900/20",
 						)}
 					>
 						<Wrench
 							className={cn(
 								"w-3.5 h-3.5 transition-colors",
 								toolCall.status === "running"
-									? "text-violet-600 dark:text-violet-400"
+									? "text-blue-600 dark:text-blue-400"
 									: toolCall.status === "error" || exitCode !== 0
-										? "text-rose-600 dark:text-rose-400"
+										? "text-red-600 dark:text-red-400"
 										: "text-emerald-600 dark:text-emerald-400",
 							)}
 						/>
@@ -382,10 +382,10 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 				// 根据状态设置边框和背景
 				toolCall.status === "running"
-					? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-violet-200/50 dark:ring-violet-800/30 shadow-sm"
+					? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 					: toolCall.status === "error"
-						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-rose-200/50 dark:ring-rose-800/30 shadow-sm"
-						: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10",
+						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+						: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 			)}
 		>
 			<button
@@ -393,33 +393,33 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
 					hasDetails &&
-						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
 			>
 				<div
 					className={cn(
-						"mt-0.5 p-1.5 rounded-lg ring-1 transition-all duration-200",
+						"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
 						toolCall.status === "running"
-							? "bg-violet-50 dark:bg-violet-900/20 ring-violet-200/50 dark:ring-violet-800/30"
+							? "bg-blue-50 dark:bg-blue-900/20"
 							: toolCall.status === "error"
-								? "bg-rose-50 dark:bg-rose-900/20 ring-rose-200/50 dark:ring-rose-800/30"
+								? "bg-red-50 dark:bg-red-900/20"
 								: toolCall.status === "completed"
-									? "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-200/50 dark:ring-emerald-800/30"
-									: "bg-white dark:bg-zinc-900 ring-black/5 dark:ring-white/10",
+									? "bg-emerald-50 dark:bg-emerald-900/20"
+									: "bg-zinc-50 dark:bg-zinc-800/50",
 					)}
 				>
 					<Icon
 						className={cn(
 							"w-3.5 h-3.5 transition-colors",
 							toolCall.status === "running"
-								? "text-violet-600 dark:text-violet-400"
+								? "text-blue-600 dark:text-blue-400"
 								: toolCall.status === "error"
-									? "text-rose-600 dark:text-rose-400"
+									? "text-red-600 dark:text-red-400"
 									: toolCall.status === "completed"
 										? "text-emerald-600 dark:text-emerald-400"
-										: "text-zinc-600 dark:text-zinc-300",
+										: "text-zinc-500",
 						)}
 					/>
 				</div>
