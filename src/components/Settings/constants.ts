@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+	Archive,
 	BarChart3,
 	Brain,
 	Cpu,
@@ -25,6 +26,7 @@ export const SETTINGS_MENU = [
 	{ id: "mcp", label: "MCP 配置", icon: Plug },
 	{ id: "general", label: "常规设置", icon: SettingsIcon },
 	{ id: "data", label: "数据与同步", icon: Database },
+	{ id: "artifacts", label: "产物管理", icon: Archive },
 ];
 
 export interface ProviderTemplate {

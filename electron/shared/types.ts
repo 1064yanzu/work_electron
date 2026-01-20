@@ -338,3 +338,54 @@ export interface DashboardStats {
 	projects_count: number;
 	outputs_count: number;
 }
+
+// ==================
+// Agent 产物类型
+// ==================
+
+/** 产物文件类型 */
+export type ArtifactFileType =
+	| "image"
+	| "pdf"
+	| "text"
+	| "code"
+	| "html"
+	| "video"
+	| "audio"
+	| "archive"
+	| "document"
+	| "spreadsheet"
+	| "presentation"
+	| "other";
+
+/** 产物元数据 */
+export interface ArtifactMetadata {
+	id: string;
+	session_id: string;
+	file_name: string;
+	file_path: string;
+	file_type: ArtifactFileType;
+	file_size: number;
+	mime_type: string;
+	tool_call_id?: string;
+	description?: string;
+	created_at: number;
+	expires_at?: number;
+}
+
+/** 产物设置 */
+export interface ArtifactSettings {
+	storage_path: string;
+	auto_cleanup: boolean;
+	retention_days: number;
+	max_per_session: number;
+	max_total_size: number;
+}
+
+/** 清理结果 */
+export interface ArtifactCleanupResult {
+	deleted_count: number;
+	freed_bytes: number;
+	errors: string[];
+}
+

@@ -388,6 +388,26 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
 );
 
 -- =====================
+-- Agent 产物表
+-- =====================
+CREATE TABLE IF NOT EXISTS artifacts (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  mime_type TEXT NOT NULL,
+  tool_call_id TEXT,
+  description TEXT,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_artifacts_session ON artifacts(session_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_artifacts_expires ON artifacts(expires_at);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');

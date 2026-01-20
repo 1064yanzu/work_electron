@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AgentSettings } from "./panels/AgentSettings";
+import { ArtifactSettings } from "./panels/ArtifactSettings";
 import { DashboardSettings } from "./panels/DashboardSettings";
 import { DataSettings } from "./panels/DataSettings";
 import { GeneralSettings } from "./panels/GeneralSettings";
@@ -37,6 +38,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				return <GeneralSettings />;
 			case "data":
 				return <DataSettings />;
+			case "artifacts":
+				return <ArtifactSettings />;
 			default:
 				return (
 					<div className="flex-1 flex items-center justify-center text-text-muted">

@@ -5,7 +5,7 @@ import {
 	getDailyActivity,
 	getDashboardStats,
 } from "../../../lib/api";
-import { chatStore } from "../../../lib/chat/store";
+import { useChatStore } from "../../../lib/chat/store";
 import type { DashboardStats } from "../../../types";
 import { ActivityHeatmap } from "../../ActivityHeatmap";
 
@@ -29,7 +29,8 @@ function formatTokenCount(count: number): string {
  * 计算所有会话的 token 使用统计（分时段）
  */
 function useTokenStats() {
-	const sessions = chatStore.getState().sessions;
+	// 使用响应式订阅，而不是一次性获取
+	const { sessions } = useChatStore();
 
 	return useMemo(() => {
 		const now = Date.now();
@@ -51,25 +52,25 @@ function useTokenStats() {
 						msg.metadata.tokenUsage;
 
 					// 总计
-					stats.all.total += totalTokens;
-					stats.all.prompt += promptTokens;
-					stats.all.completion += completionTokens;
+					stats.all.total += totalTokens || 0;
+					stats.all.prompt += promptTokens || 0;
+					stats.all.completion += completionTokens || 0;
 
 					// 按时间段统计
 					if (msg.timestamp >= oneDayAgo) {
-						stats.today.total += totalTokens;
-						stats.today.prompt += promptTokens;
-						stats.today.completion += completionTokens;
+						stats.today.total += totalTokens || 0;
+						stats.today.prompt += promptTokens || 0;
+						stats.today.completion += completionTokens || 0;
 					}
 					if (msg.timestamp >= oneWeekAgo) {
-						stats.week.total += totalTokens;
-						stats.week.prompt += promptTokens;
-						stats.week.completion += completionTokens;
+						stats.week.total += totalTokens || 0;
+						stats.week.prompt += promptTokens || 0;
+						stats.week.completion += completionTokens || 0;
 					}
 					if (msg.timestamp >= oneMonthAgo) {
-						stats.month.total += totalTokens;
-						stats.month.prompt += promptTokens;
-						stats.month.completion += completionTokens;
+						stats.month.total += totalTokens || 0;
+						stats.month.prompt += promptTokens || 0;
+						stats.month.completion += completionTokens || 0;
 					}
 				}
 			});
@@ -172,7 +173,7 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 					</div>
 					<div className="flex items-baseline gap-2">
 						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
-							{stats.sources.toLocaleString()}
+							{(stats.sources_count ?? 0).toLocaleString()}
 						</span>
 						<span className="text-xs text-zinc-400">个文件</span>
 					</div>
@@ -195,7 +196,7 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 					</div>
 					<div className="flex items-baseline gap-2">
 						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
-							{stats.notes.toLocaleString()}
+							{(stats.notes_count ?? 0).toLocaleString()}
 						</span>
 						<span className="text-xs text-zinc-400">篇</span>
 					</div>
@@ -218,7 +219,7 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 					</div>
 					<div className="flex items-baseline gap-2">
 						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
-							{stats.outputs.toLocaleString()}
+							{(stats.outputs_count ?? 0).toLocaleString()}
 						</span>
 						<span className="text-xs text-zinc-400">文章</span>
 					</div>
@@ -255,11 +256,10 @@ function TokenUsagePanel({
 						<button
 							key={p}
 							onClick={() => setPeriod(p)}
-							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-								period === p
-									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-							}`}
+							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${period === p
+								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+								}`}
 						>
 							{p === "today" && "今日"}
 							{p === "week" && "本周"}

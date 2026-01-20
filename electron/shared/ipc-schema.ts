@@ -7,6 +7,9 @@ import type {
 	AgentMessage,
 	AgentSession,
 	AppConfig,
+	ArtifactCleanupResult,
+	ArtifactMetadata,
+	ArtifactSettings,
 	CreateFolderPayload,
 	CreateNotePayload,
 	CreateOutputPayload,
@@ -504,6 +507,58 @@ export type IPCSchema = {
 		input: Record<string, never>;
 		output: DashboardStats;
 	};
+
+	// ==================
+	// Agent 产物命令
+	// ==================
+	artifact_save: {
+		input: {
+			session_id: string;
+			file_name: string;
+			content: string;
+			encoding?: "utf-8" | "base64";
+			tool_call_id?: string;
+			description?: string;
+		};
+		output: ArtifactMetadata;
+	};
+	artifact_list: {
+		input: { session_id?: string; limit?: number };
+		output: ArtifactMetadata[];
+	};
+	artifact_get: {
+		input: { id: string };
+		output: ArtifactMetadata | null;
+	};
+	artifact_delete: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	artifact_reveal: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	artifact_download: {
+		input: { id: string; dest_path?: string };
+		output: { path: string };
+	};
+	artifact_import_to_library: {
+		input: { id: string; folder_id?: string };
+		output: Source;
+	};
+	artifact_cleanup: {
+		input: { force?: boolean };
+		output: ArtifactCleanupResult;
+	};
+	artifact_get_settings: {
+		input: Record<string, never>;
+		output: ArtifactSettings;
+	};
+	artifact_update_settings: {
+		input: Partial<ArtifactSettings>;
+		output: ArtifactSettings;
+	};
 };
 
 export type IPCChannel = keyof IPCSchema;
+

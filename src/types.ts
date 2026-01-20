@@ -149,10 +149,10 @@ export interface OutputAsset {
 }
 
 export interface DashboardStats {
-	sources: number;
-	notes: number;
-	workflows: number;
-	outputs: number;
+	sources_count: number;
+	notes_count: number;
+	projects_count: number;
+	outputs_count: number;
 }
 
 // Command Payloads

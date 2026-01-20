@@ -477,22 +477,20 @@ export function DataSettings() {
 					<nav className="space-y-1">
 						<button
 							onClick={() => setActiveSection("storage")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-								activeSection === "storage"
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "storage"
 									? "bg-primary/10 text-primary"
 									: "text-zinc-600 hover:bg-zinc-100"
-							}`}
+								}`}
 						>
 							<HardDrive className="w-4 h-4" />
 							数据目录
 						</button>
 						<button
 							onClick={() => setActiveSection("webdav")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-								activeSection === "webdav"
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "webdav"
 									? "bg-primary/10 text-primary"
 									: "text-zinc-600 hover:bg-zinc-100"
-							}`}
+								}`}
 						>
 							<Cloud className="w-4 h-4" />
 							WebDAV
@@ -512,7 +510,7 @@ export function DataSettings() {
 										<div className="grid grid-cols-3 gap-4">
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
-													{dataStats.sources_count + dataStats.notes_count}
+													{(dataStats.sources_count ?? 0) + (dataStats.notes_count ?? 0)}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">
 													资料与笔记
@@ -520,7 +518,7 @@ export function DataSettings() {
 											</div>
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
-													{dataStats.outputs_count}
+													{dataStats.outputs_count ?? 0}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">
 													输出文稿
@@ -529,7 +527,7 @@ export function DataSettings() {
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
 													{formatSize(
-														dataStats.database_size + dataStats.media_size,
+														(dataStats.database_size ?? 0) + (dataStats.media_size ?? 0),
 													)}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">总占用</div>

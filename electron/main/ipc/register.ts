@@ -39,6 +39,7 @@ import { createSkillsHandlers } from "./handlers/skills";
 import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
 import { createWebContentHandlers } from "./handlers/webContent";
+import { createArtifactHandlers } from "./handlers/artifacts";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -97,6 +98,9 @@ export function registerIpcHandlers({
 	const agentToolCallHandlers = createAgentToolCallHandlers(db);
 	const agentMessageHandlers = createAgentMessageHandlers(db);
 	const agentMemoryHandlers = createAgentMemoryHandlers(db);
+
+	// Artifact handlers
+	const artifactHandlers = createArtifactHandlers(db);
 
 	// ==================
 	// 系统命令
@@ -403,5 +407,28 @@ export function registerIpcHandlers({
 		agentMemoryHandlers.update_agent_memory_access_time,
 	);
 
-	logger.info({ msg: "IPC handlers registered", count: 85 });
+	// ==================
+	// Artifacts (产物管理)
+	// ==================
+	ipcMain.handle("artifact_save", artifactHandlers.artifact_save);
+	ipcMain.handle("artifact_list", artifactHandlers.artifact_list);
+	ipcMain.handle("artifact_get", artifactHandlers.artifact_get);
+	ipcMain.handle("artifact_delete", artifactHandlers.artifact_delete);
+	ipcMain.handle("artifact_reveal", artifactHandlers.artifact_reveal);
+	ipcMain.handle("artifact_download", artifactHandlers.artifact_download);
+	ipcMain.handle(
+		"artifact_import_to_library",
+		artifactHandlers.artifact_import_to_library,
+	);
+	ipcMain.handle("artifact_cleanup", artifactHandlers.artifact_cleanup);
+	ipcMain.handle(
+		"artifact_get_settings",
+		artifactHandlers.artifact_get_settings,
+	);
+	ipcMain.handle(
+		"artifact_update_settings",
+		artifactHandlers.artifact_update_settings,
+	);
+
+	logger.info({ msg: "IPC handlers registered", count: 95 });
 }
