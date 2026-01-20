@@ -227,6 +227,22 @@ class AgentExecutor {
 							},
 						});
 
+						const singleFile =
+							entries.length === 1 &&
+							entries[0]?.is_file &&
+							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
+								stripTrailingSlash(srcPath);
+
+						if (singleFile) {
+							await safeInvoke<{ success: boolean }>("copy_file_safe", {
+								src: srcPath,
+								dest,
+								create_dirs: true,
+							});
+							file.path = dest;
+							continue;
+						}
+
 						const dirRoot = stripTrailingSlash(srcPath);
 						const folderName = sanitizeFilename(
 							baseFromPath || file.title || "dir",
@@ -238,7 +254,8 @@ class AgentExecutor {
 										.slice(dirRoot.length)
 										.replace(/^[/\\]+/, "")
 								: getBasename(e.path);
-							const out = `${sandboxDir}/${folderName}/${rel}`;
+							const finalRel = rel || getBasename(e.path);
+							const out = `${sandboxDir}/${folderName}/${finalRel}`;
 							try {
 								await safeInvoke<{ success: boolean }>("copy_file_safe", {
 									src: e.path,
@@ -259,60 +276,6 @@ class AgentExecutor {
 					}
 				} catch {}
 			}
-		}
-
-		if (sandboxDir) {
-			try {
-				const files = await safeInvoke<
-					Array<{
-						path: string;
-						name: string;
-						is_file: boolean;
-						is_dir: boolean;
-						size?: number;
-					}>
-				>("list_files_safe", {
-					payload: {
-						path: sandboxDir,
-						recursive: true,
-					},
-				});
-
-				const fileRows = files
-					.filter((f) => f.is_file)
-					.map((f) => {
-						const size = typeof f.size === "number" ? ` (${f.size} bytes)` : "";
-						return `- ${f.path}${size}`;
-					});
-
-				const manifest =
-					`# Sandbox Attachments\n\n` +
-					`工作目录：${sandboxDir}\n\n` +
-					`以下为本次任务在沙盒中的所有文件（包含隐藏文件）。\n\n` +
-					(fileRows.length > 0 ? fileRows.join("\n") : "- (no files)\n");
-
-				const manifestPath = `${sandboxDir}/ATTACHMENTS.md`;
-				await safeInvoke<{ success: boolean }>("write_file_safe", {
-					payload: {
-						path: manifestPath,
-						content: manifest,
-						encoding: "utf-8",
-						create_dirs: true,
-					},
-				});
-
-				options.attachedFiles = options.attachedFiles || [];
-				if (!options.attachedFiles.some((f) => f.path === manifestPath)) {
-					options.attachedFiles.unshift({
-						title: "ATTACHMENTS.md",
-						path: manifestPath,
-						type: "document",
-						mimeType: "text/markdown",
-						size: manifest.length,
-						isBinary: false,
-					});
-				}
-			} catch {}
 		}
 
 		// Build enhanced system prompt with context and skills

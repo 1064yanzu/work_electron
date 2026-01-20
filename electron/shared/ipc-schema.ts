@@ -120,12 +120,10 @@ export type IPCSchema = {
 	};
 	save_temp_file: {
 		input: {
-			payload: {
-				content: string;
-				extension?: string;
-				prefix?: string;
-				encoding?: "utf-8" | "base64";
-			};
+			content: string;
+			extension?: string;
+			prefix?: string;
+			encoding?: "utf-8" | "base64";
 		};
 		output: { path: string; size: number };
 	};

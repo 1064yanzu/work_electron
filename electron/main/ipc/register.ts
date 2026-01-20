@@ -87,6 +87,7 @@ export function registerIpcHandlers({
 	const agentSdkHandlers = createAgentSdkHandlers({
 		getMainWindow: () => mainWindowRef,
 		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
+		logger,
 	});
 
 	// Agent Runtime handlers

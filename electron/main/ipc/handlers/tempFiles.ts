@@ -5,8 +5,12 @@ import type { IpcMainInvokeEvent } from "electron";
 import { app } from "electron";
 
 type SaveTempFileInput = {
-	payload: {
-		content: string;
+	content?: string;
+	extension?: string;
+	prefix?: string;
+	encoding?: "utf-8" | "base64";
+	payload?: {
+		content?: string;
 		extension?: string;
 		prefix?: string;
 		encoding?: "utf-8" | "base64";
@@ -38,10 +42,18 @@ export function createTempFileHandlers() {
 		_event: IpcMainInvokeEvent,
 		input: SaveTempFileInput,
 	): Promise<SaveTempFileOutput> => {
-		const content = String(input?.payload?.content ?? "");
-		const encoding = input?.payload?.encoding === "base64" ? "base64" : "utf-8";
-		const ext = sanitizeExtension(String(input?.payload?.extension ?? "txt"));
-		const prefix = sanitizePrefix(String(input?.payload?.prefix ?? "tmp"));
+		const p =
+			input && typeof input === "object" && input.payload
+				? input.payload
+				: input;
+
+		const content = String(p?.content ?? "");
+		if (!content) {
+			throw new Error("content 不能为空");
+		}
+		const encoding = p?.encoding === "base64" ? "base64" : "utf-8";
+		const ext = sanitizeExtension(String(p?.extension ?? "txt"));
+		const prefix = sanitizePrefix(String(p?.prefix ?? "tmp"));
 
 		const baseDir = path.join(app.getPath("temp"), "ipo-workbench");
 		await fs.mkdir(baseDir, { recursive: true });

@@ -103,12 +103,25 @@ export function createFsSafeHandlers() {
 		_event: IpcMainInvokeEvent,
 		input: ListFilesInput,
 	): Promise<ListFilesOutput> => {
-		const dirPath = String(input.path ?? "").trim();
-		requireAbsolute(dirPath);
+		const targetPath = String(input.path ?? "").trim();
+		requireAbsolute(targetPath);
 		const recursive = Boolean(input.recursive);
-		const st = await fs.stat(dirPath);
-		if (!st.isDirectory()) throw new Error("路径不是目录");
-		return recursive ? listDirRecursive(dirPath) : listDirOnce(dirPath);
+		const st = await fs.stat(targetPath);
+
+		if (!st.isDirectory()) {
+			const name = path.basename(targetPath);
+			return [
+				{
+					path: targetPath,
+					name,
+					is_file: st.isFile(),
+					is_dir: st.isDirectory(),
+					size: st.isFile() ? st.size : undefined,
+				},
+			];
+		}
+
+		return recursive ? listDirRecursive(targetPath) : listDirOnce(targetPath);
 	};
 
 	const mkdir_safe = async (

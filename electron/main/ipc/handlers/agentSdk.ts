@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
+import type { Logger } from "../../logging/types";
 
 function getHomeSkillsRootDir() {
 	const home = app.getPath("home");
@@ -168,8 +169,10 @@ function toUIEvents(message: any): any[] {
 export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
 	anthropicBaseUrl: string;
+	logger: Logger;
 }) {
 	const require = createRequire(import.meta.url);
+	const logger = options.logger;
 	const agent_sdk_start = async (
 		_event: IpcMainInvokeEvent,
 		input: AgentSdkStartInput,
@@ -182,7 +185,13 @@ export function createAgentSdkHandlers(options: {
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
 				const stderr = (data: string) => {
-					console.log("[agent_sdk_start] stderr:", data);
+					logger.info({
+						msg: "agent_sdk stderr",
+						scope: "agent",
+						runId,
+						data:
+							typeof data === "string" ? data.slice(0, 20000) : String(data),
+					});
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 
@@ -195,7 +204,9 @@ export function createAgentSdkHandlers(options: {
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
 
-				console.log("[agent_sdk_start] Starting with params:", {
+				logger.info({
+					msg: "agent_sdk start",
+					scope: "agent",
 					runId,
 					cwd,
 					model: input.model,
@@ -213,14 +224,21 @@ export function createAgentSdkHandlers(options: {
 					const skillNames = skillEntries
 						.filter((e) => e.isDirectory() && !e.name.startsWith("."))
 						.map((e) => e.name);
-					console.log("[agent_sdk_start] Skills directory:", skillsDir);
-					console.log("[agent_sdk_start] Found skills:", skillNames);
-				} catch (e) {
-					console.log(
-						"[agent_sdk_start] Skills directory not accessible:",
+					logger.info({
+						msg: "agent_sdk skills directory",
+						scope: "agent",
+						runId,
 						skillsDir,
-						e,
-					);
+						skillNames,
+					});
+				} catch (e) {
+					logger.info({
+						msg: "agent_sdk skills directory not accessible",
+						scope: "agent",
+						runId,
+						skillsDir,
+						error: e instanceof Error ? e.message : String(e),
+					});
 				}
 
 				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
@@ -312,6 +330,12 @@ export function createAgentSdkHandlers(options: {
 				}
 			} catch (e) {
 				const error = e instanceof Error ? e.message : String(e);
+				logger.error({
+					msg: "agent_sdk runner error",
+					scope: "agent",
+					runId,
+					error,
+				});
 				emit(options.getMainWindow, { runId, type: "error", error });
 			} finally {
 				running.delete(runId);

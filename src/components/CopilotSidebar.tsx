@@ -986,6 +986,8 @@ export default function CopilotSidebar() {
 
 				for (const ctx of contexts) {
 					let content = ctx.content;
+					let filePath = ctx.filePath;
+					let fileSize = ctx.size;
 
 					// 如果资料内容为空，尝试加载
 					if (!content && ctx.sourceId) {
@@ -1003,22 +1005,62 @@ export default function CopilotSidebar() {
 						}
 					}
 
-					if (ctx.filePath) {
+					// 如果有内容但没有文件路径，或者文件大小为0（竞态导致的空文件），创建临时文件
+					if (
+						content &&
+						content.trim().length > 0 &&
+						(!filePath || fileSize === 0 || fileSize === undefined)
+					) {
+						try {
+							const { saveTempFile } = await import("../lib/api");
+							// 从标题推断文件扩展名和前缀
+							const basename = String(ctx.title || "document.txt")
+								.split(/[/\\]/)
+								.pop() as string;
+							const dotIdx = basename.lastIndexOf(".");
+							const extension =
+								dotIdx > 0 ? basename.slice(dotIdx + 1).toLowerCase() : "md";
+							const prefix =
+								(dotIdx > 0 ? basename.slice(0, dotIdx) : basename)
+									.replace(/[^a-zA-Z0-9_-]/g, "_")
+									.slice(0, 32) || "doc";
+
+							const tempResult = await saveTempFile({
+								content,
+								extension,
+								prefix,
+								encoding: "utf-8",
+							});
+							filePath = tempResult.path;
+							fileSize = tempResult.size;
+							console.log(
+								"[CopilotSidebar] 创建临时文件:",
+								ctx.title,
+								filePath,
+								tempResult.size,
+								"bytes",
+							);
+						} catch (err) {
+							console.error("[CopilotSidebar] 创建临时文件失败:", err);
+						}
+					}
+
+					if (filePath) {
 						const isText =
 							(typeof ctx.mimeType === "string" &&
 								ctx.mimeType.startsWith("text/")) ||
 							(content && content.trim().length > 0);
 						attachedFiles.push({
 							title: ctx.title,
-							path: ctx.filePath,
+							path: filePath,
 							type: ctx.type === "source" ? "document" : "file",
 							mimeType: ctx.mimeType,
-							size: ctx.size,
+							size: fileSize,
 							isBinary: !isText,
 						});
 					}
 
-					if (!ctx.filePath && content && content.trim()) {
+					if (!filePath && content && content.trim()) {
 						attachedContexts.push({ title: ctx.title, content });
 					}
 				}
