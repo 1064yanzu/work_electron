@@ -89,40 +89,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-			kind: "update";
-			displayContent: string;
+		kind: "update";
+		displayContent: string;
+		suggestedContent: string;
+		fileUpdate: {
+			fileName: string;
+			type: "update";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
+			originalContent: string;
 			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
+			prompt: string;
+		};
+	}
 	| {
-			kind: "create";
-			displayContent: string;
+		kind: "create";
+		displayContent: string;
+		title: string;
+		summary: string;
+		content: string;
+		fileUpdate: {
+			fileName: string;
+			type: "create";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
 			title: string;
 			summary: string;
 			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
+			prompt: string;
+		};
+	} {
 	const updateMatch = full.match(/:::update-doc([\s\S]*?):::/);
 	if (updateMatch) {
 		const suggestedContent = (updateMatch[1] || "").trim();
@@ -992,7 +992,8 @@ export default function CopilotSidebar() {
 
 			const scheduleStreamingUpdate = () => {
 				const now = Date.now();
-				if (now - lastUpdateTime >= 100) {
+				// 降低节流阈值以获得更平滑的打字机效果 (100ms -> 32ms, approx 30fps)
+				if (now - lastUpdateTime >= 32) {
 					updateStreamingMessage();
 					lastUpdateTime = now;
 					return;
@@ -1006,7 +1007,7 @@ export default function CopilotSidebar() {
 								lastUpdateTime = Date.now();
 							}
 						},
-						100 - (now - lastUpdateTime),
+						32 - (now - lastUpdateTime),
 					);
 				}
 			};
@@ -1050,21 +1051,27 @@ export default function CopilotSidebar() {
 					const { getAgentSandboxDir } = await import("../lib/api");
 					const res = await getAgentSandboxDir(sandboxKeyForFiles);
 					if (res?.path) sandboxDirForFiles = String(res.path);
-				} catch {}
+					console.log("[CopilotSidebar] sandboxDir获取:", { sandboxKeyForFiles, sandboxDirForFiles });
+				} catch (e) {
+					console.error("[CopilotSidebar] 获取沙盒目录失败:", e);
+				}
 
-				const ILLEGAL_FILENAME_CHARS_RE = /[<>:"/\\|?*\u0000-\u001F]/g;
+				// Include both ASCII and full-width Chinese punctuation that may cause SDK tool issues
+				const ILLEGAL_FILENAME_CHARS_RE = /[<>:"/\\|?*\u0000-\u001F？！""''：；【】（）《》、，。]/g;
 				const sanitizeFileName = (name: string): string => {
 					const base = String(name || "document")
 						.normalize("NFC")
 						.trim();
 					const normalized = base.replace(ILLEGAL_FILENAME_CHARS_RE, "_");
 					const collapsed = normalized.replace(/\s+/g, " ").trim();
-					const withoutTrailingDotsOrSpaces = collapsed
-						.replace(/[. ]+$/g, "")
+					// Collapse multiple underscores into one
+					const cleanUnderscores = collapsed.replace(/_+/g, "_");
+					const withoutTrailingDotsOrSpaces = cleanUnderscores
+						.replace(/[. _]+$/g, "")
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-						withoutTrailingDotsOrSpaces === ".."
+							withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1079,6 +1086,16 @@ export default function CopilotSidebar() {
 					let content = ctx.content;
 					let filePath = ctx.filePath;
 					let fileSize = ctx.size;
+
+					// 【调试】打印每个上下文的详细信息
+					console.log("[CopilotSidebar] 处理上下文:", {
+						title: ctx.title,
+						hasFilePath: !!filePath,
+						filePath,
+						hasContent: !!content,
+						contentLength: content?.length || 0,
+						fileSize
+					});
 
 					// 如果资料内容为空，尝试加载
 					if (!content && ctx.sourceId) {
@@ -1096,61 +1113,60 @@ export default function CopilotSidebar() {
 						}
 					}
 
-					// 如果有内容但没有文件路径，或者文件大小为0（竞态导致的空文件），创建临时文件
-					if (
-						content &&
-						content.trim().length > 0 &&
-						(!filePath || fileSize === 0 || fileSize === undefined)
-					) {
+					// 【修复】如果有沙盒目录和内容，始终写入沙盒以确保文件存在于 SDK 的 cwd 中
+					// 原来的逻辑只在 filePath 不存在时才写入，但旧的 filePath 可能指向过期路径
+					if (sandboxDirForFiles && content && content.trim().length > 0) {
 						try {
-							if (sandboxDirForFiles) {
-								const { safeInvoke } = await import("../lib/tauriBridge");
-								const dir = String(sandboxDirForFiles).replace(/[\\/]+$/g, "");
-								const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
-								const count = (seenSandboxNames.get(base) ?? 0) + 1;
-								seenSandboxNames.set(base, count);
-								const dot = base.lastIndexOf(".");
-								const stem = dot > 0 ? base.slice(0, dot) : base;
-								const ext = dot > 0 ? base.slice(dot) : "";
-								const name = count === 1 ? base : `${stem}-${count}${ext}`;
-								const dest = `${dir}/${name}`;
+							const { safeInvoke } = await import("../lib/tauriBridge");
+							const dir = String(sandboxDirForFiles).replace(/[/\\]+$/g, "");
+							const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
+							const count = (seenSandboxNames.get(base) ?? 0) + 1;
+							seenSandboxNames.set(base, count);
+							const dot = base.lastIndexOf(".");
+							const stem = dot > 0 ? base.slice(0, dot) : base;
+							const ext = dot > 0 ? base.slice(dot) : "";
+							const name = count === 1 ? base : `${stem}-${count}${ext}`;
+							const dest = `${dir}/${name}`;
 
-								await safeInvoke<{ success: boolean }>("write_file_safe", {
-									payload: {
-										path: dest,
-										content,
-										encoding: "utf-8",
-										create_dirs: true,
-									},
-								});
-								filePath = dest;
-								fileSize = content.length;
-								console.log(
-									"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
-									ctx.title,
-									filePath,
-									fileSize,
-									"bytes",
-								);
-							} else {
-								const { saveTempFile } = await import("../lib/api");
-								// 兼容：无法获取沙盒目录时，退化为系统 temp 文件
-								const tempResult = await saveTempFile({
+							await safeInvoke<{ success: boolean }>("write_file_safe", {
+								payload: {
+									path: dest,
 									content,
-									extension: "md",
-									prefix: "doc",
 									encoding: "utf-8",
-								});
-								filePath = tempResult.path;
-								fileSize = tempResult.size;
-								console.log(
-									"[CopilotSidebar] 创建临时文件:",
-									ctx.title,
-									filePath,
-									tempResult.size,
-									"bytes",
-								);
-							}
+									create_dirs: true,
+								},
+							});
+							filePath = dest;
+							fileSize = content.length;
+							console.log(
+								"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
+								ctx.title,
+								filePath,
+								fileSize,
+								"bytes",
+							);
+						} catch (err) {
+							console.error("[CopilotSidebar] 写入沙盒文件失败:", err);
+						}
+					} else if (content && content.trim().length > 0 && (!filePath || fileSize === 0 || fileSize === undefined)) {
+						// 无沙盒目录时的兼容逻辑：使用临时文件
+						try {
+							const { saveTempFile } = await import("../lib/api");
+							const tempResult = await saveTempFile({
+								content,
+								extension: "md",
+								prefix: "doc",
+								encoding: "utf-8",
+							});
+							filePath = tempResult.path;
+							fileSize = tempResult.size;
+							console.log(
+								"[CopilotSidebar] 创建临时文件:",
+								ctx.title,
+								filePath,
+								tempResult.size,
+								"bytes",
+							);
 						} catch (err) {
 							console.error("[CopilotSidebar] 创建临时文件失败:", err);
 						}
@@ -1410,16 +1426,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1468,8 +1484,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1536,8 +1552,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1566,9 +1582,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2346,21 +2362,19 @@ export default function CopilotSidebar() {
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
 							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							对话
 						</button>
 						<button
 							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "agent"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							Agent
 						</button>

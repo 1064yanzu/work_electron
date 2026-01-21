@@ -45,7 +45,7 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 			try {
 				const st = await fs.stat(full);
 				size = st.size;
-			} catch {}
+			} catch { }
 		}
 		out.push({ path: full, name: ent.name, is_file, is_dir, size });
 	}
@@ -96,6 +96,7 @@ export function createFsSafeHandlers() {
 				? Buffer.from(String(input.content ?? ""), "base64")
 				: Buffer.from(String(input.content ?? ""), "utf-8");
 		await fs.writeFile(filePath, buf);
+		console.log(`[write_file_safe] Written ${buf.length} bytes to: ${filePath}`);
 		return { success: true };
 	};
 

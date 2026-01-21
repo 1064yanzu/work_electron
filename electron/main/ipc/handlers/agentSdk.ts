@@ -128,6 +128,17 @@ async function resolveToolFilePath(opts: {
 	if (!raw) return null;
 
 	const cwdResolved = path.resolve(opts.cwd);
+
+	// 【修复】首先检查：如果路径是绝对路径且文件存在，直接返回
+	// 这解决了模型提供完整沙盒路径时的问题
+	if (path.isAbsolute(raw)) {
+		const absoluteExists = await pathExists(raw);
+		console.log(`[resolveToolFilePath] Absolute path check: raw='${raw}', exists=${absoluteExists}`);
+		if (absoluteExists) {
+			return raw;
+		}
+	}
+
 	const isWithinCwd = (p: string) => {
 		const resolved = path.resolve(p);
 		return (
@@ -136,15 +147,27 @@ async function resolveToolFilePath(opts: {
 		);
 	};
 
-	// Prefer sandboxed paths within cwd. Even if an absolute host path exists,
-	// the SDK tool environment may not have access to it.
+	// 尝试作为相对于 cwd 的路径解析
 	const asAbsolute = path.isAbsolute(raw) ? raw : path.resolve(opts.cwd, raw);
-	if (isWithinCwd(asAbsolute) && (await pathExists(asAbsolute))) return asAbsolute;
+	const exists = await pathExists(asAbsolute);
+	const withinCwd = isWithinCwd(asAbsolute);
+	console.log(`[resolveToolFilePath] Relative check: raw='${raw}', cwd='${cwdResolved}', asAbsolute='${asAbsolute}', exists=${exists}, withinCwd=${withinCwd}`);
 
-	// If user/LLM provided a title or loose name, try fuzzy match inside cwd.
+	if (exists && withinCwd) return asAbsolute;
+
+	// 模糊匹配：如果用户提供了文件名而非路径
 	const found = await findFileByLooseName({ rootDir: opts.cwd, query: raw });
-	if (found && isWithinCwd(found) && (await pathExists(found))) return found;
+	console.log(`[resolveToolFilePath] Fuzzy search result: '${found}'`);
+	if (found && (await pathExists(found))) return found;
 
+	// 【修复】最后尝试：如果解析后的路径存在（即使不在 cwd 内），也允许
+	// 这处理 sandboxDir 与 cwd 不匹配的边缘情况
+	if (exists) {
+		console.log(`[resolveToolFilePath] Fallback: allowing existing path outside cwd: '${asAbsolute}'`);
+		return asAbsolute;
+	}
+
+	console.log(`[resolveToolFilePath] FAILED: Could not resolve path '${raw}' in cwd='${cwdResolved}'`);
 	return null;
 }
 
@@ -320,8 +343,12 @@ async function resolveUserPathFromShell(
 			});
 			const out = String(stdout || "").trim();
 			if (out && out.includes(":")) return out;
-		} catch {
-			// ignore
+		} catch (e: unknown) {
+			const err = e as { code?: string };
+			// Ignore common errors
+			if (err.code !== "ENOENT") {
+				// console.debug('Shell resolution error:', e);
+			}
 		}
 	}
 	return null;
@@ -593,7 +620,7 @@ export function createAgentSdkHandlers(options: {
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch {}
+				} catch { }
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
@@ -612,6 +639,9 @@ export function createAgentSdkHandlers(options: {
 					allowed_tools: input.allowed_tools,
 					has_system_prompt: !!input.system_prompt,
 				});
+
+				// 【调试】打印 cwd 到控制台
+				console.log(`[agent_sdk] Starting with cwd='${cwd}'`);
 
 				// 检查 skills 目录
 				const skillsDir = path.join(cwd, ".claude", "skills");
@@ -649,7 +679,7 @@ export function createAgentSdkHandlers(options: {
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
 				const resumeSessionId =
 					typeof (input as any).resume_session_id === "string" &&
-					(input as any).resume_session_id.trim()
+						(input as any).resume_session_id.trim()
 						? (input as any).resume_session_id.trim()
 						: undefined;
 				const persistSession =
@@ -658,17 +688,20 @@ export function createAgentSdkHandlers(options: {
 						: undefined;
 				const mcpServers =
 					(input as any).mcp_servers &&
-					typeof (input as any).mcp_servers === "object"
+						typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
 						: undefined;
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-					input.permission_mode.trim()
+						input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
 
 				// 注意: SDK Options 不直接支持 skills 参数
 				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
+
+				// 【调试】确认 canUseTool 被传入 options
+				console.log(`[agent_sdk] About to call sdk.query with cwd='${cwd}', hasCanUseTool=true`);
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -697,10 +730,80 @@ export function createAgentSdkHandlers(options: {
 							},
 						},
 						hooks: {
+							// PreToolUse 钩子：在工具执行前拦截并修复文件路径
+							PreToolUse: [
+								{
+									hooks: [
+										async (hookInput: any, _toolUseID: string | undefined, _opts: any) => {
+											if (hookInput.hook_event_name !== "PreToolUse") {
+												return { continue: true };
+											}
+											const toolName = (hookInput as any).tool_name || "";
+											const toolInput = (hookInput as any).tool_input || {};
+
+											console.log(`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`);
+
+											// 处理文件读取工具
+											const toolLower = String(toolName).toLowerCase();
+											if (["read", "glob", "grep", "write", "edit"].includes(toolLower)) {
+												const key = typeof toolInput.file_path === "string" ? "file_path"
+													: typeof toolInput.path === "string" ? "path"
+														: typeof toolInput.file === "string" ? "file"
+															: null;
+
+												if (key) {
+													const rawPath = String(toolInput[key] || "").trim();
+													if (rawPath) {
+														console.log(`[PreToolUse] Resolving path: '${rawPath}' in cwd='${cwd}'`);
+														const resolved = await resolveToolFilePath({ cwd, rawPath });
+														if (resolved && resolved !== rawPath) {
+															console.log(`[PreToolUse] ✓ Rewritten: '${rawPath}' -> '${resolved}'`);
+															return {
+																continue: true,
+																hookSpecificOutput: {
+																	hookEventName: "PreToolUse" as const,
+																	permissionDecision: "allow" as const,
+																	updatedInput: {
+																		...toolInput,
+																		[key]: resolved,
+																		file_path: resolved,
+																	},
+																},
+															};
+														}
+														if (!resolved) {
+															console.log(`[PreToolUse] ✗ Failed to resolve: '${rawPath}'`);
+														}
+													}
+												}
+											}
+
+											// 处理 Bash 命令
+											if (toolLower === "bash" && typeof toolInput.command === "string") {
+												const cmd = String(toolInput.command || "");
+												const rewritten = await rewriteBashCommandForMissingFile({ cwd, command: cmd });
+												if (rewritten && rewritten !== cmd) {
+													console.log(`[PreToolUse] ✓ Bash rewritten: '${cmd}' -> '${rewritten}'`);
+													return {
+														continue: true,
+														hookSpecificOutput: {
+															hookEventName: "PreToolUse" as const,
+															permissionDecision: "allow" as const,
+															updatedInput: { ...toolInput, command: rewritten },
+														},
+													};
+												}
+											}
+
+											return { continue: true };
+										},
+									],
+								},
+							],
 							UserPromptSubmit: [
 								{
 									hooks: [
-										async (hookInput) => {
+										async (hookInput: any) => {
 											const promptText =
 												hookInput.hook_event_name === "UserPromptSubmit"
 													? String((hookInput as any).prompt ?? "")
@@ -722,7 +825,7 @@ export function createAgentSdkHandlers(options: {
 												}
 
 												additions.push(
-													"为减少上下文污染：请用 Task 工具把“读资料/提炼要点”委派给 reader 子代理，把“写作成文”委派给 writer 子代理，然后你只输出最终结果。",
+													"为减少上下文污染：请用 Task 工具把\"读资料/提炼要点\"委派给 reader 子代理，把\"写作成文\"委派给 writer 子代理，然后你只输出最终结果。",
 												);
 											}
 
@@ -755,20 +858,27 @@ export function createAgentSdkHandlers(options: {
 						},
 						stderr,
 						includePartialMessages: true,
+						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
+						stream: true,
 						// systemPrompt: 如果用户提供了自定义 prompt,使用 preset + append 模式
 						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
 						systemPrompt: input.system_prompt
 							? {
-									type: "preset" as const,
-									preset: "claude_code" as const,
-									append: input.system_prompt,
-								}
+								type: "preset" as const,
+								preset: "claude_code" as const,
+								append: input.system_prompt,
+							}
 							: { type: "preset" as const, preset: "claude_code" as const },
 						canUseTool: async (
 							toolName: string,
 							toolInput: any,
 							extra: any,
 						) => {
+							// 【调试】记录每个工具调用 - 非常醒目的日志
+							console.log(`\n★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★`);
+							console.log(`★ [canUseTool CALLED] Tool='${toolName}', AgentID='${(extra as any)?.agentID || 'main'}'`);
+							console.log(`★ Input: ${JSON.stringify(toolInput || {}).slice(0, 200)}`);
+							console.log(`★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n`);
 							if (abortController.signal.aborted || extra?.signal?.aborted) {
 								return {
 									behavior: "deny",
@@ -807,6 +917,7 @@ export function createAgentSdkHandlers(options: {
 								if (key) {
 									const rawPath = String(inputAny[key] || "").trim();
 									if (rawPath) {
+										console.log(`[agent_sdk] Tool ${toolName}: attempting to resolve path '${rawPath}' in cwd='${cwd}'`);
 										const resolved = await resolveToolFilePath({
 											cwd,
 											rawPath,
@@ -882,10 +993,12 @@ export function createAgentSdkHandlers(options: {
 							// 按照官方文档格式,返回 allow 时需要传递 updatedInput
 							return { behavior: "allow", updatedInput: toolInput };
 						},
-					},
+					} as any, // Cast to any to allow stream property
 				});
 
 				for await (const msg of q) {
+					// Debug log for streaming issues
+					console.log("[agentSdk] msg:", (msg as any).type, JSON.stringify(msg).slice(0, 100));
 					emit(options.getMainWindow, {
 						runId,
 						type: "sdk_message",
