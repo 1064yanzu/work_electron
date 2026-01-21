@@ -34,6 +34,9 @@ function normalizeForLooseMatch(input: string): string {
 			.replace(/\s+/g, " ")
 			// Make punctuation/illegal filename chars comparable to our sandbox filename strategy.
 			.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+			// Normalize quote variants ("护岛" vs “护岛”) so basenames can be fuzzy-matched.
+			.replace(/[“”„‟＂]/g, "_")
+			.replace(/[‘’‚‛]/g, "_")
 			// Common Chinese punctuation variants
 			.replace(/[？]/g, "_")
 			.replace(/[：]/g, ":")
@@ -43,7 +46,7 @@ function normalizeForLooseMatch(input: string): string {
 function stripWrappingQuotes(raw: string): string {
 	const s = String(raw || "").trim();
 	if (
-		(s.startsWith("\"") && s.endsWith("\"")) ||
+		(s.startsWith('"') && s.endsWith('"')) ||
 		(s.startsWith("'") && s.endsWith("'"))
 	) {
 		return s.slice(1, -1).trim();
@@ -129,13 +132,66 @@ async function resolveToolFilePath(opts: {
 
 	const cwdResolved = path.resolve(opts.cwd);
 
+	const unescapeCommon = (p: string): string =>
+		String(p || "")
+			// Convert escaped quotes like \" to "
+			.replace(/\\(["'])/g, "$1")
+			.trim();
+
+	const mapHomeSkillsToCwd = (p: string): string | null => {
+		const norm = String(p || "");
+		const marker = `${path.sep}.claude${path.sep}skills${path.sep}`;
+		const idx = norm.indexOf(marker);
+		if (idx < 0) return null;
+		const tail = norm.slice(idx + marker.length);
+		if (!tail) return null;
+		return path.join(opts.cwd, ".claude", "skills", tail);
+	};
+
 	// 【修复】首先检查：如果路径是绝对路径且文件存在，直接返回
 	// 这解决了模型提供完整沙盒路径时的问题
-	if (path.isAbsolute(raw)) {
-		const absoluteExists = await pathExists(raw);
-		console.log(`[resolveToolFilePath] Absolute path check: raw='${raw}', exists=${absoluteExists}`);
+	const rawClean = unescapeCommon(raw);
+	if (path.isAbsolute(rawClean)) {
+		const absoluteExists = await pathExists(rawClean);
+		console.log(
+			`[resolveToolFilePath] Absolute path check: raw='${rawClean}', exists=${absoluteExists}`,
+		);
 		if (absoluteExists) {
-			return raw;
+			const resolved = path.resolve(rawClean);
+			const withinCwd =
+				resolved === cwdResolved ||
+				resolved.startsWith(`${cwdResolved}${path.sep}`);
+			if (withinCwd) return rawClean;
+
+			// If model tries to read from ~/.claude/skills, rewrite to cwd/.claude/skills where we sync skills.
+			const mapped = mapHomeSkillsToCwd(rawClean);
+			if (mapped && (await pathExists(mapped))) {
+				console.log(
+					`[resolveToolFilePath] Rewriting home skills path to cwd: '${rawClean}' -> '${mapped}'`,
+				);
+				return mapped;
+			}
+
+			// Disallow paths outside cwd to avoid SDK tool sandbox errors.
+			console.log(
+				`[resolveToolFilePath] Absolute path exists but outside cwd; rejecting: raw='${rawClean}', cwd='${cwdResolved}'`,
+			);
+			return null;
+		}
+
+		// Absolute path doesn't exist; often the basename is correct but the path/quotes are wrong.
+		const base = path.basename(rawClean);
+		if (base && base !== rawClean) {
+			const foundByBase = await findFileByLooseName({
+				rootDir: opts.cwd,
+				query: base,
+			});
+			if (foundByBase && (await pathExists(foundByBase))) {
+				console.log(
+					`[resolveToolFilePath] Absolute path missing; resolved by basename: raw='${rawClean}' -> '${foundByBase}'`,
+				);
+				return foundByBase;
+			}
 		}
 	}
 
@@ -151,7 +207,9 @@ async function resolveToolFilePath(opts: {
 	const asAbsolute = path.isAbsolute(raw) ? raw : path.resolve(opts.cwd, raw);
 	const exists = await pathExists(asAbsolute);
 	const withinCwd = isWithinCwd(asAbsolute);
-	console.log(`[resolveToolFilePath] Relative check: raw='${raw}', cwd='${cwdResolved}', asAbsolute='${asAbsolute}', exists=${exists}, withinCwd=${withinCwd}`);
+	console.log(
+		`[resolveToolFilePath] Relative check: raw='${raw}', cwd='${cwdResolved}', asAbsolute='${asAbsolute}', exists=${exists}, withinCwd=${withinCwd}`,
+	);
 
 	if (exists && withinCwd) return asAbsolute;
 
@@ -160,14 +218,19 @@ async function resolveToolFilePath(opts: {
 	console.log(`[resolveToolFilePath] Fuzzy search result: '${found}'`);
 	if (found && (await pathExists(found))) return found;
 
-	// 【修复】最后尝试：如果解析后的路径存在（即使不在 cwd 内），也允许
-	// 这处理 sandboxDir 与 cwd 不匹配的边缘情况
-	if (exists) {
-		console.log(`[resolveToolFilePath] Fallback: allowing existing path outside cwd: '${asAbsolute}'`);
-		return asAbsolute;
+	// If the model passed an absolute-ish string that doesn't exist, try matching by basename.
+	const rawBase = path.basename(raw);
+	if (rawBase && rawBase !== raw) {
+		const foundByBase = await findFileByLooseName({
+			rootDir: opts.cwd,
+			query: rawBase,
+		});
+		if (foundByBase && (await pathExists(foundByBase))) return foundByBase;
 	}
 
-	console.log(`[resolveToolFilePath] FAILED: Could not resolve path '${raw}' in cwd='${cwdResolved}'`);
+	console.log(
+		`[resolveToolFilePath] FAILED: Could not resolve path '${raw}' in cwd='${cwdResolved}'`,
+	);
 	return null;
 }
 
@@ -175,7 +238,7 @@ function tokenizeShellLike(input: string): string[] {
 	const s = String(input || "");
 	const tokens: string[] = [];
 	let buf = "";
-	let quote: "'" | "\"" | null = null;
+	let quote: "'" | '"' | null = null;
 	for (let i = 0; i < s.length; i++) {
 		const ch = s[i] as string;
 		if (quote) {
@@ -186,7 +249,7 @@ function tokenizeShellLike(input: string): string[] {
 			}
 			continue;
 		}
-		if (ch === "'" || ch === "\"") {
+		if (ch === "'" || ch === '"') {
 			quote = ch;
 			continue;
 		}
@@ -208,9 +271,7 @@ function needsQuoting(token: string): boolean {
 }
 
 function joinShellTokens(tokens: string[]): string {
-	return tokens
-		.map((t) => (needsQuoting(t) ? JSON.stringify(t) : t))
-		.join(" ");
+	return tokens.map((t) => (needsQuoting(t) ? JSON.stringify(t) : t)).join(" ");
 }
 
 function looksLikeGlob(p: string): boolean {
@@ -240,7 +301,10 @@ async function rewriteBashCommandForMissingFile(opts: {
 	const candidate = stripWrappingQuotes(candidateRaw);
 	if (!candidate) return null;
 
-	const resolved = await resolveToolFilePath({ cwd: opts.cwd, rawPath: candidate });
+	const resolved = await resolveToolFilePath({
+		cwd: opts.cwd,
+		rawPath: candidate,
+	});
 	if (!resolved || resolved === candidate) return null;
 
 	const updated = [...tokens];
@@ -302,7 +366,10 @@ async function rewritePathsDeep(opts: {
 		let changed = false;
 		for (const [k, v] of Object.entries(obj)) {
 			if (typeof v === "string" && shouldTreatAsPathKey(k)) {
-				const resolved = await resolveToolFilePath({ cwd: opts.cwd, rawPath: v });
+				const resolved = await resolveToolFilePath({
+					cwd: opts.cwd,
+					rawPath: v,
+				});
 				if (resolved && resolved !== v) {
 					out[k] = resolved;
 					changed = true;
@@ -534,35 +601,38 @@ function toUIEvents(message: any): any[] {
 		}
 	}
 
+	// Handle stream events (either wrapped in 'stream_event' or raw)
+	let ev = message;
 	if (message.type === "stream_event") {
-		const ev = message.event;
-		if (
-			ev?.type === "content_block_delta" &&
-			ev?.delta?.type === "text_delta" &&
-			typeof ev.delta.text === "string"
-		) {
-			events.push({ type: "text_delta", content: ev.delta.text });
-		}
-		if (
-			ev?.type === "content_block_start" &&
-			ev?.content_block?.type === "tool_use"
-		) {
-			events.push({
-				type: "tool_call_start",
-				id: String(ev.content_block.id),
-				name: String(ev.content_block.name),
-				input:
-					ev.content_block.input && typeof ev.content_block.input === "object"
-						? ev.content_block.input
-						: {},
-			});
-		}
-		if (ev?.type === "message_start" && ev?.message?.id) {
-			events.push({
-				type: "session_init",
-				sessionId: String(ev.message.id),
-			});
-		}
+		ev = message.event;
+	}
+
+	if (
+		ev?.type === "content_block_delta" &&
+		ev?.delta?.type === "text_delta" &&
+		typeof ev.delta.text === "string"
+	) {
+		events.push({ type: "text_delta", content: ev.delta.text });
+	}
+	if (
+		ev?.type === "content_block_start" &&
+		ev?.content_block?.type === "tool_use"
+	) {
+		events.push({
+			type: "tool_call_start",
+			id: String(ev.content_block.id),
+			name: String(ev.content_block.name),
+			input:
+				ev.content_block.input && typeof ev.content_block.input === "object"
+					? ev.content_block.input
+					: {},
+		});
+	}
+	if (ev?.type === "message_start" && ev?.message?.id) {
+		events.push({
+			type: "session_init",
+			sessionId: String(ev.message.id),
+		});
 	}
 
 	if (message.type === "result") {
@@ -615,12 +685,44 @@ export function createAgentSdkHandlers(options: {
 					});
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
+				const toolNameById = new Map<string, string>();
+				const toolUseIdByIndex = new Map<number, string>();
+				const toolInputJsonById = new Map<string, string>();
+				const logToolUseError = (payload: any) => {
+					try {
+						const blocks = Array.isArray(payload?.message?.content)
+							? payload.message.content
+							: [];
+						for (const b of blocks) {
+							if (b?.type !== "tool_result") continue;
+							const toolUseId = String(b?.tool_use_id || "");
+							const content = typeof b?.content === "string" ? b.content : "";
+							if (!content.includes("<tool_use_error>")) continue;
+							const toolName = toolUseId
+								? toolNameById.get(toolUseId)
+								: undefined;
+							const inputJson = toolUseId
+								? toolInputJsonById.get(toolUseId)
+								: undefined;
+							const inputPreview = inputJson
+								? inputJson.length > 800
+									? `${inputJson.slice(0, 800)}…`
+									: inputJson
+								: "";
+							stderr(
+								`[agent_sdk] <tool_use_error> tool_use_id=${toolUseId || "unknown"} tool=${toolName || "unknown"}\n` +
+									(inputPreview ? `input=${inputPreview}\n` : "") +
+									content.slice(0, 2000),
+							);
+						}
+					} catch {}
+				};
 
 				let pathToClaudeCodeExecutable: string | undefined;
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch { }
+				} catch {}
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
@@ -679,7 +781,7 @@ export function createAgentSdkHandlers(options: {
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
 				const resumeSessionId =
 					typeof (input as any).resume_session_id === "string" &&
-						(input as any).resume_session_id.trim()
+					(input as any).resume_session_id.trim()
 						? (input as any).resume_session_id.trim()
 						: undefined;
 				const persistSession =
@@ -688,12 +790,12 @@ export function createAgentSdkHandlers(options: {
 						: undefined;
 				const mcpServers =
 					(input as any).mcp_servers &&
-						typeof (input as any).mcp_servers === "object"
+					typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
 						: undefined;
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-						input.permission_mode.trim()
+					input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
 
@@ -701,7 +803,9 @@ export function createAgentSdkHandlers(options: {
 				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
 
 				// 【调试】确认 canUseTool 被传入 options
-				console.log(`[agent_sdk] About to call sdk.query with cwd='${cwd}', hasCanUseTool=true`);
+				console.log(
+					`[agent_sdk] About to call sdk.query with cwd='${cwd}', hasCanUseTool=true`,
+				);
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -734,30 +838,51 @@ export function createAgentSdkHandlers(options: {
 							PreToolUse: [
 								{
 									hooks: [
-										async (hookInput: any, _toolUseID: string | undefined, _opts: any) => {
+										async (
+											hookInput: any,
+											_toolUseID: string | undefined,
+											_opts: any,
+										) => {
 											if (hookInput.hook_event_name !== "PreToolUse") {
 												return { continue: true };
 											}
 											const toolName = (hookInput as any).tool_name || "";
 											const toolInput = (hookInput as any).tool_input || {};
 
-											console.log(`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`);
+											console.log(
+												`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`,
+											);
 
 											// 处理文件读取工具
 											const toolLower = String(toolName).toLowerCase();
-											if (["read", "glob", "grep", "write", "edit"].includes(toolLower)) {
-												const key = typeof toolInput.file_path === "string" ? "file_path"
-													: typeof toolInput.path === "string" ? "path"
-														: typeof toolInput.file === "string" ? "file"
-															: null;
+											if (
+												["read", "glob", "grep", "write", "edit"].includes(
+													toolLower,
+												)
+											) {
+												const key =
+													typeof toolInput.file_path === "string"
+														? "file_path"
+														: typeof toolInput.path === "string"
+															? "path"
+															: typeof toolInput.file === "string"
+																? "file"
+																: null;
 
 												if (key) {
 													const rawPath = String(toolInput[key] || "").trim();
 													if (rawPath) {
-														console.log(`[PreToolUse] Resolving path: '${rawPath}' in cwd='${cwd}'`);
-														const resolved = await resolveToolFilePath({ cwd, rawPath });
+														console.log(
+															`[PreToolUse] Resolving path: '${rawPath}' in cwd='${cwd}'`,
+														);
+														const resolved = await resolveToolFilePath({
+															cwd,
+															rawPath,
+														});
 														if (resolved && resolved !== rawPath) {
-															console.log(`[PreToolUse] ✓ Rewritten: '${rawPath}' -> '${resolved}'`);
+															console.log(
+																`[PreToolUse] ✓ Rewritten: '${rawPath}' -> '${resolved}'`,
+															);
 															return {
 																continue: true,
 																hookSpecificOutput: {
@@ -772,24 +897,38 @@ export function createAgentSdkHandlers(options: {
 															};
 														}
 														if (!resolved) {
-															console.log(`[PreToolUse] ✗ Failed to resolve: '${rawPath}'`);
+															console.log(
+																`[PreToolUse] ✗ Failed to resolve: '${rawPath}'`,
+															);
 														}
 													}
 												}
 											}
 
 											// 处理 Bash 命令
-											if (toolLower === "bash" && typeof toolInput.command === "string") {
+											if (
+												toolLower === "bash" &&
+												typeof toolInput.command === "string"
+											) {
 												const cmd = String(toolInput.command || "");
-												const rewritten = await rewriteBashCommandForMissingFile({ cwd, command: cmd });
+												const rewritten =
+													await rewriteBashCommandForMissingFile({
+														cwd,
+														command: cmd,
+													});
 												if (rewritten && rewritten !== cmd) {
-													console.log(`[PreToolUse] ✓ Bash rewritten: '${cmd}' -> '${rewritten}'`);
+													console.log(
+														`[PreToolUse] ✓ Bash rewritten: '${cmd}' -> '${rewritten}'`,
+													);
 													return {
 														continue: true,
 														hookSpecificOutput: {
 															hookEventName: "PreToolUse" as const,
 															permissionDecision: "allow" as const,
-															updatedInput: { ...toolInput, command: rewritten },
+															updatedInput: {
+																...toolInput,
+																command: rewritten,
+															},
 														},
 													};
 												}
@@ -825,7 +964,7 @@ export function createAgentSdkHandlers(options: {
 												}
 
 												additions.push(
-													"为减少上下文污染：请用 Task 工具把\"读资料/提炼要点\"委派给 reader 子代理，把\"写作成文\"委派给 writer 子代理，然后你只输出最终结果。",
+													'为减少上下文污染：请用 Task 工具把"读资料/提炼要点"委派给 reader 子代理，把"写作成文"委派给 writer 子代理，然后你只输出最终结果。',
 												);
 											}
 
@@ -864,10 +1003,10 @@ export function createAgentSdkHandlers(options: {
 						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
 						systemPrompt: input.system_prompt
 							? {
-								type: "preset" as const,
-								preset: "claude_code" as const,
-								append: input.system_prompt,
-							}
+									type: "preset" as const,
+									preset: "claude_code" as const,
+									append: input.system_prompt,
+								}
 							: { type: "preset" as const, preset: "claude_code" as const },
 						canUseTool: async (
 							toolName: string,
@@ -875,10 +1014,18 @@ export function createAgentSdkHandlers(options: {
 							extra: any,
 						) => {
 							// 【调试】记录每个工具调用 - 非常醒目的日志
-							console.log(`\n★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★`);
-							console.log(`★ [canUseTool CALLED] Tool='${toolName}', AgentID='${(extra as any)?.agentID || 'main'}'`);
-							console.log(`★ Input: ${JSON.stringify(toolInput || {}).slice(0, 200)}`);
-							console.log(`★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n`);
+							console.log(
+								`\n★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★`,
+							);
+							console.log(
+								`★ [canUseTool CALLED] Tool='${toolName}', AgentID='${(extra as any)?.agentID || "main"}'`,
+							);
+							console.log(
+								`★ Input: ${JSON.stringify(toolInput || {}).slice(0, 200)}`,
+							);
+							console.log(
+								`★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n`,
+							);
 							if (abortController.signal.aborted || extra?.signal?.aborted) {
 								return {
 									behavior: "deny",
@@ -917,7 +1064,9 @@ export function createAgentSdkHandlers(options: {
 								if (key) {
 									const rawPath = String(inputAny[key] || "").trim();
 									if (rawPath) {
-										console.log(`[agent_sdk] Tool ${toolName}: attempting to resolve path '${rawPath}' in cwd='${cwd}'`);
+										console.log(
+											`[agent_sdk] Tool ${toolName}: attempting to resolve path '${rawPath}' in cwd='${cwd}'`,
+										);
 										const resolved = await resolveToolFilePath({
 											cwd,
 											rawPath,
@@ -980,9 +1129,14 @@ export function createAgentSdkHandlers(options: {
 								toolInput &&
 								typeof toolInput === "object"
 							) {
-								const rewritten = await rewritePathsDeep({ cwd, value: toolInput });
+								const rewritten = await rewritePathsDeep({
+									cwd,
+									value: toolInput,
+								});
 								if (rewritten !== toolInput) {
-									stderr("[agent_sdk] Auto-rewrote Skill input paths within cwd");
+									stderr(
+										"[agent_sdk] Auto-rewrote Skill input paths within cwd",
+									);
 									return {
 										behavior: "allow",
 										updatedInput: rewritten as any,
@@ -997,8 +1151,77 @@ export function createAgentSdkHandlers(options: {
 				});
 
 				for await (const msg of q) {
-					// Debug log for streaming issues
-					console.log("[agentSdk] msg:", (msg as any).type, JSON.stringify(msg).slice(0, 100));
+					// Avoid logging every stream delta; it can freeze the app.
+					const msgAny = msg as any;
+					const debug = process.env.AGENT_SDK_DEBUG === "1";
+					if (debug) {
+						const t = String(msgAny?.type || "");
+						const isTextDelta =
+							t === "stream_event" &&
+							msgAny?.event?.type === "content_block_delta" &&
+							msgAny?.event?.delta?.type === "text_delta";
+						if (!isTextDelta) {
+							const subtype =
+								t === "stream_event"
+									? String(msgAny?.event?.type || "")
+									: String(msgAny?.subtype || "");
+							console.log("[agentSdk] msg:", t, subtype);
+						}
+					}
+					if (
+						msgAny?.type === "stream_event" &&
+						msgAny?.event?.type === "content_block_start" &&
+						msgAny?.event?.content_block?.type === "tool_use"
+					) {
+						const id = String(msgAny.event.content_block.id || "");
+						const name = String(msgAny.event.content_block.name || "");
+						if (id) toolNameById.set(id, name);
+						const idx = Number(msgAny.event.index);
+						if (id && Number.isFinite(idx)) toolUseIdByIndex.set(idx, id);
+						// Some upstreams may include input inline; capture if present.
+						if (id && msgAny.event.content_block.input) {
+							try {
+								toolInputJsonById.set(
+									id,
+									JSON.stringify(msgAny.event.content_block.input ?? {}),
+								);
+							} catch {}
+						}
+					}
+					if (
+						msgAny?.type === "stream_event" &&
+						msgAny?.event?.type === "content_block_delta" &&
+						msgAny?.event?.delta?.type === "input_json_delta" &&
+						typeof msgAny.event.delta.partial_json === "string"
+					) {
+						const idx = Number(msgAny.event.index);
+						const id = Number.isFinite(idx)
+							? toolUseIdByIndex.get(idx)
+							: undefined;
+						if (id) {
+							const prev = toolInputJsonById.get(id) || "";
+							toolInputJsonById.set(id, prev + msgAny.event.delta.partial_json);
+						}
+					}
+					if (msgAny?.type === "assistant" && msgAny?.message) {
+						const blocks = Array.isArray(msgAny.message.content)
+							? msgAny.message.content
+							: [];
+						for (const b of blocks) {
+							if (b?.type !== "tool_use") continue;
+							const id = String(b?.id || "");
+							const name = String(b?.name || "");
+							if (id && name) toolNameById.set(id, name);
+							if (id && b?.input) {
+								try {
+									toolInputJsonById.set(id, JSON.stringify(b.input ?? {}));
+								} catch {}
+							}
+						}
+					}
+					if (msgAny?.type === "user" && msgAny?.message) {
+						logToolUseError(msgAny);
+					}
 					emit(options.getMainWindow, {
 						runId,
 						type: "sdk_message",

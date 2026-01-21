@@ -4,6 +4,7 @@
  */
 import type { Request, Response } from "express";
 import { Router } from "express";
+import { Readable } from "node:stream";
 import type { DbContext } from "../../db/client";
 import { type Logger } from "../../logging/types";
 import { resolveProviderApiKey } from "../../llm/invoke";
@@ -270,24 +271,30 @@ export function createAnthropicProxyRouter(options?: {
 				provider.id,
 				provider.api_key,
 			);
+
+			if (anthropicReq.stream) {
+				// SSE 流式响应（真实流式转发/翻译）
+				res.setHeader("Content-Type", "text/event-stream");
+				res.setHeader("Cache-Control", "no-cache");
+				res.setHeader("Connection", "keep-alive");
+				await callProviderStream(
+					{ ...provider, api_key: resolvedApiKey },
+					model,
+					anthropicReq,
+					res,
+					logger,
+				);
+				return;
+			}
+
+			// 4. 返回响应（非流式）
 			const result = await callProvider(
 				{ ...provider, api_key: resolvedApiKey },
 				model,
 				anthropicReq,
 				logger,
 			);
-
-			// 4. 返回响应（非流式）
-			if (anthropicReq.stream) {
-				// SSE 流式响应
-				res.setHeader("Content-Type", "text/event-stream");
-				res.setHeader("Cache-Control", "no-cache");
-				res.setHeader("Connection", "keep-alive");
-
-				sendSSEResponse(res, result);
-			} else {
-				res.json(result);
-			}
+			res.json(result);
 		} catch (error) {
 			logger?.error({ msg: "anthropic proxy error", error: String(error) });
 			res.status(500).json({
@@ -438,6 +445,423 @@ async function callProvider(
 	return translateToAnthropic(messageId, model, openaiResp);
 }
 
+function writeSseEvent(res: Response, event: string, data: unknown) {
+	res.write(`event: ${event}\n`);
+	res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function emitToolUseBlock(
+	res: Response,
+	opts: { index: number; id: string; name: string; input: unknown },
+) {
+	// Emit tool_use with input carried via input_json_delta (SDK expects this shape).
+	writeSseEvent(res, "content_block_start", {
+		type: "content_block_start",
+		index: opts.index,
+		content_block: {
+			type: "tool_use",
+			id: opts.id,
+			name: opts.name,
+			input: {},
+		},
+	});
+
+	writeSseEvent(res, "content_block_delta", {
+		type: "content_block_delta",
+		index: opts.index,
+		delta: {
+			type: "input_json_delta",
+			partial_json: JSON.stringify(opts.input ?? {}),
+		},
+	});
+
+	writeSseEvent(res, "content_block_stop", {
+		type: "content_block_stop",
+		index: opts.index,
+	});
+}
+
+async function readSseStream(
+	body: ReadableStream<Uint8Array>,
+	onData: (data: string) => void | Promise<void>,
+) {
+	const reader = body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	while (true) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		buffer += decoder.decode(value, { stream: true });
+		while (true) {
+			const idx = buffer.indexOf("\n\n");
+			if (idx === -1) break;
+			const raw = buffer.slice(0, idx);
+			buffer = buffer.slice(idx + 2);
+			const lines = raw.split(/\r?\n/);
+			const dataLines = lines
+				.filter((l) => l.startsWith("data:"))
+				.map((l) => l.slice("data:".length).trimStart());
+			const data = dataLines.join("\n").trim();
+			if (data) await onData(data);
+		}
+	}
+	const tail = buffer.trim();
+	if (tail) {
+		const lines = tail.split(/\r?\n/);
+		const dataLines = lines
+			.filter((l) => l.startsWith("data:"))
+			.map((l) => l.slice("data:".length).trimStart());
+		const data = dataLines.join("\n").trim();
+		if (data) await onData(data);
+	}
+}
+
+async function callProviderStream(
+	provider: { provider_type: string; api_key?: string; api_base?: string },
+	model: string,
+	anthropicReq: AnthropicRequest,
+	res: Response,
+	logger?: Logger,
+): Promise<void> {
+	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+
+	// Direct Anthropic: proxy SSE as-is
+	if (provider.provider_type === "anthropic") {
+		const baseUrl = provider.api_base || "https://api.anthropic.com";
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			"x-api-key": provider.api_key || "",
+			"anthropic-version": "2023-06-01",
+		};
+
+		const upstream = await fetch(`${baseUrl}/v1/messages`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ ...anthropicReq, model, stream: true }),
+		});
+
+		if (!upstream.ok) {
+			const errorText = await upstream.text();
+			logger?.error({
+				msg: "anthropic proxy: upstream anthropic stream error",
+				status: upstream.status,
+				error: errorText,
+			});
+			writeSseEvent(res, "error", {
+				type: "error",
+				error: { type: "api_error", message: errorText || "Upstream error" },
+			});
+			res.end();
+			return;
+		}
+		if (!upstream.body) {
+			writeSseEvent(res, "error", {
+				type: "error",
+				error: { type: "api_error", message: "No upstream body" },
+			});
+			res.end();
+			return;
+		}
+
+		// Pipe bytes through (SSE format already correct)
+		const nodeStream = Readable.fromWeb(upstream.body as any);
+		await new Promise<void>((resolve, reject) => {
+			nodeStream.on("error", reject);
+			res.on("close", resolve);
+			nodeStream.on("end", resolve);
+			nodeStream.pipe(res, { end: true });
+		});
+		return;
+	}
+
+	// OpenAI-compatible: stream chat completions and translate to Anthropic SSE
+	const openaiMessages = translateToOpenAI(anthropicReq);
+	const baseUrl = provider.api_base || "https://api.openai.com/v1";
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${provider.api_key || ""}`,
+	};
+
+	const openaiReq = {
+		model,
+		messages: openaiMessages,
+		temperature: anthropicReq.temperature ?? 0.7,
+		max_tokens: anthropicReq.max_tokens ?? 4096,
+		tools: anthropicReq.tools?.map((t) => {
+			const inputSchema = t.input_schema || {
+				type: "object",
+				properties: {},
+				additionalProperties: true,
+			};
+			const validatedSchema = {
+				type: "object",
+				...inputSchema,
+				properties: (inputSchema as any).properties || {},
+			};
+			return {
+				type: "function" as const,
+				function: {
+					name: t.name,
+					description: t.description,
+					parameters: validatedSchema,
+				},
+			};
+		}),
+		tool_choice: anthropicReq.tools?.length ? "auto" : undefined,
+		stream: true,
+		stream_options: { include_usage: true },
+	};
+
+	logger?.info({
+		msg: "anthropic proxy: streaming via openai-compatible provider",
+		model,
+		messageCount: openaiMessages.length,
+		hasTools: !!openaiReq.tools,
+		toolCount: openaiReq.tools?.length || 0,
+	});
+
+	const upstream = await fetch(`${baseUrl}/chat/completions`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify(openaiReq),
+	});
+
+	if (!upstream.ok) {
+		const errorText = await upstream.text();
+		logger?.error({
+			msg: "anthropic proxy: openai stream error",
+			status: upstream.status,
+			error: errorText,
+		});
+		writeSseEvent(res, "error", {
+			type: "error",
+			error: { type: "api_error", message: errorText || "Upstream error" },
+		});
+		res.end();
+		return;
+	}
+	if (!upstream.body) {
+		writeSseEvent(res, "error", {
+			type: "error",
+			error: { type: "api_error", message: "No upstream body" },
+		});
+		res.end();
+		return;
+	}
+
+	const contentType = String(upstream.headers.get("content-type") || "");
+	if (!contentType.includes("text/event-stream")) {
+		// Provider doesn't actually stream; fallback to non-stream and emit a single delta.
+		let openaiResp: OpenAIResponse | null = null;
+		try {
+			openaiResp = (await upstream.json()) as OpenAIResponse;
+		} catch (e) {
+			writeSseEvent(res, "error", {
+				type: "error",
+				error: {
+					type: "api_error",
+					message: `Upstream did not return SSE and JSON parse failed: ${e instanceof Error ? e.message : String(e)}`,
+				},
+			});
+			res.end();
+			return;
+		}
+
+		const message = translateToAnthropic(messageId, model, openaiResp);
+
+		writeSseEvent(res, "message_start", {
+			type: "message_start",
+			message: {
+				id: message.id,
+				type: "message",
+				role: "assistant",
+				content: [],
+				model: message.model,
+				usage: { input_tokens: message.usage.input_tokens, output_tokens: 0 },
+			},
+		});
+
+		message.content.forEach((block, index) => {
+			writeSseEvent(res, "content_block_start", {
+				type: "content_block_start",
+				index,
+				content_block:
+					block.type === "text" ? { type: "text", text: "" } : block,
+			});
+			if (block.type === "text") {
+				writeSseEvent(res, "content_block_delta", {
+					type: "content_block_delta",
+					index,
+					delta: { type: "text_delta", text: block.text },
+				});
+			} else if (block.type === "tool_use") {
+				writeSseEvent(res, "content_block_delta", {
+					type: "content_block_delta",
+					index,
+					delta: {
+						type: "input_json_delta",
+						partial_json: JSON.stringify(block.input ?? {}),
+					},
+				});
+			}
+			writeSseEvent(res, "content_block_stop", {
+				type: "content_block_stop",
+				index,
+			});
+		});
+
+		writeSseEvent(res, "message_delta", {
+			type: "message_delta",
+			delta: { stop_reason: message.stop_reason },
+			usage: { output_tokens: message.usage.output_tokens },
+		});
+		writeSseEvent(res, "message_stop", { type: "message_stop" });
+		res.end();
+		return;
+	}
+
+	// message_start
+	writeSseEvent(res, "message_start", {
+		type: "message_start",
+		message: {
+			id: messageId,
+			type: "message",
+			role: "assistant",
+			content: [],
+			model,
+			usage: { input_tokens: 0, output_tokens: 0 },
+		},
+	});
+
+	let nextBlockIndex = 0;
+	let textBlockIndex: number | null = null;
+	let lastUsage:
+		| {
+				prompt_tokens?: number;
+				completion_tokens?: number;
+				total_tokens?: number;
+		  }
+		| undefined;
+	const toolCalls = new Map<
+		number,
+		{ id?: string; name?: string; args: string }
+	>();
+	const doneErr = new Error("__OPENAI_STREAM_DONE__");
+
+	const stopTextBlockIfNeeded = () => {
+		if (textBlockIndex === null) return;
+		writeSseEvent(res, "content_block_stop", {
+			type: "content_block_stop",
+			index: textBlockIndex,
+		});
+		textBlockIndex = null;
+	};
+
+	try {
+		await readSseStream(upstream.body, async (data) => {
+			if (res.writableEnded) throw doneErr;
+			if (data === "[DONE]") return;
+			let parsed: any = null;
+			try {
+				parsed = JSON.parse(data);
+			} catch {
+				return;
+			}
+			if (parsed?.usage) lastUsage = parsed.usage;
+
+			const choice = parsed?.choices?.[0];
+			const delta = choice?.delta || {};
+			const finishReason = choice?.finish_reason as string | null | undefined;
+
+			if (typeof delta?.content === "string" && delta.content.length > 0) {
+				if (textBlockIndex === null) {
+					textBlockIndex = nextBlockIndex++;
+					writeSseEvent(res, "content_block_start", {
+						type: "content_block_start",
+						index: textBlockIndex,
+						content_block: { type: "text", text: "" },
+					});
+				}
+				writeSseEvent(res, "content_block_delta", {
+					type: "content_block_delta",
+					index: textBlockIndex,
+					delta: { type: "text_delta", text: delta.content },
+				});
+			}
+
+			if (Array.isArray(delta?.tool_calls)) {
+				for (const tc of delta.tool_calls) {
+					const idx = typeof tc?.index === "number" ? tc.index : 0;
+					const existing = toolCalls.get(idx) || { args: "" };
+					if (typeof tc?.id === "string" && tc.id) existing.id = tc.id;
+					if (typeof tc?.function?.name === "string" && tc.function.name)
+						existing.name = tc.function.name;
+					if (
+						typeof tc?.function?.arguments === "string" &&
+						tc.function.arguments
+					) {
+						existing.args += tc.function.arguments;
+					}
+					toolCalls.set(idx, existing);
+				}
+			}
+
+			if (!finishReason) return;
+
+			if (finishReason === "tool_calls") {
+				stopTextBlockIfNeeded();
+
+				// Emit tool_use blocks
+				const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
+				for (const [_i, tc] of sorted) {
+					const toolIndex = nextBlockIndex++;
+					let input: unknown = {};
+					const rawArgs = String(tc.args || "").trim();
+					if (rawArgs) {
+						try {
+							input = JSON.parse(rawArgs);
+						} catch {
+							input = { _raw: rawArgs };
+						}
+					}
+					emitToolUseBlock(res, {
+						index: toolIndex,
+						id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+						name: tc.name || "Tool",
+						input,
+					});
+				}
+
+				writeSseEvent(res, "message_delta", {
+					type: "message_delta",
+					delta: { stop_reason: "tool_use" },
+					usage: { output_tokens: Number(lastUsage?.completion_tokens || 0) },
+				});
+				writeSseEvent(res, "message_stop", { type: "message_stop" });
+				res.end();
+				throw doneErr;
+			}
+
+			if (finishReason === "stop" || finishReason === "length") {
+				stopTextBlockIfNeeded();
+				writeSseEvent(res, "message_delta", {
+					type: "message_delta",
+					delta: {
+						stop_reason: finishReason === "length" ? "max_tokens" : "end_turn",
+					},
+					usage: { output_tokens: Number(lastUsage?.completion_tokens || 0) },
+				});
+				writeSseEvent(res, "message_stop", { type: "message_stop" });
+				res.end();
+				throw doneErr;
+			}
+		});
+	} catch (e) {
+		if (e === doneErr) return;
+		throw e;
+	}
+}
+
 interface OpenAIResponse {
 	choices: Array<{
 		message: {
@@ -458,6 +882,18 @@ interface OpenAIResponse {
 	};
 }
 
+type OpenAIToolCall = {
+	id: string;
+	type: "function";
+	function: { name: string; arguments: string };
+};
+
+type OpenAIChatMessage =
+	| { role: "system"; content: string }
+	| { role: "user"; content: string }
+	| { role: "assistant"; content: string | null; tool_calls?: OpenAIToolCall[] }
+	| { role: "tool"; content: string; tool_call_id: string };
+
 interface AnthropicResponse {
 	id: string;
 	type: "message";
@@ -476,12 +912,8 @@ interface AnthropicResponse {
  */
 function translateToOpenAI(
 	anthropicReq: AnthropicRequest,
-): Array<{ role: string; content: string; tool_call_id?: string }> {
-	const messages: Array<{
-		role: string;
-		content: string;
-		tool_call_id?: string;
-	}> = [];
+): OpenAIChatMessage[] {
+	const messages: OpenAIChatMessage[] = [];
 
 	// System message
 	if (anthropicReq.system) {
@@ -502,28 +934,62 @@ function translateToOpenAI(
 	// Messages
 	for (const msg of anthropicReq.messages) {
 		if (typeof msg.content === "string") {
-			messages.push({ role: msg.role, content: msg.content });
+			if (msg.role === "user" || msg.role === "assistant") {
+				messages.push({ role: msg.role, content: msg.content });
+			}
 		} else {
 			// 处理 content blocks
 			const textParts: string[] = [];
+			const toolCalls: OpenAIToolCall[] = [];
 			for (const block of msg.content) {
 				if (block.type === "text" && block.text) {
 					textParts.push(block.text);
+				} else if (block.type === "tool_use" && msg.role === "assistant") {
+					const id = typeof block.id === "string" ? block.id : "";
+					const name = typeof block.name === "string" ? block.name : "";
+					const args = JSON.stringify(block.input ?? {});
+					if (id && name) {
+						toolCalls.push({
+							id,
+							type: "function",
+							function: { name, arguments: args },
+						});
+					}
 				} else if (block.type === "tool_result" && block.tool_use_id) {
 					// tool_result 转为 tool role
+					const raw = (block as { content?: unknown }).content;
 					const resultContent =
-						typeof block === "object" && "content" in block
-							? String((block as { content?: unknown }).content ?? "")
-							: "";
+						typeof raw === "string"
+							? raw
+							: Array.isArray(raw)
+								? raw
+										.map((x) => (typeof x === "string" ? x : JSON.stringify(x)))
+										.join("\n")
+								: raw
+									? JSON.stringify(raw)
+									: "";
 					messages.push({
 						role: "tool",
 						content: resultContent,
-						tool_call_id: block.tool_use_id,
+						tool_call_id: String(block.tool_use_id),
 					});
 				}
 			}
-			if (textParts.length > 0) {
-				messages.push({ role: msg.role, content: textParts.join("\n") });
+
+			const text = textParts.join("\n").trim();
+			if (msg.role === "assistant") {
+				if (toolCalls.length > 0) {
+					messages.push({
+						role: "assistant",
+						content: text.length > 0 ? text : null,
+						tool_calls: toolCalls,
+					});
+				} else if (text.length > 0) {
+					messages.push({ role: "assistant", content: text });
+				}
+			} else if (msg.role === "user") {
+				// User may include tool_result blocks + additional text.
+				if (text.length > 0) messages.push({ role: "user", content: text });
 			}
 		}
 	}
@@ -592,83 +1058,4 @@ function translateToAnthropic(
 	};
 }
 
-/**
- * 发送 SSE 流式响应
- */
-function sendSSEResponse(res: Response, message: AnthropicResponse) {
-	// message_start
-	res.write(`event: message_start\n`);
-	res.write(
-		`data: ${JSON.stringify({
-			type: "message_start",
-			message: {
-				id: message.id,
-				type: "message",
-				role: "assistant",
-				content: [],
-				model: message.model,
-				usage: { input_tokens: message.usage.input_tokens, output_tokens: 0 },
-			},
-		})}\n\n`,
-	);
-
-	// content blocks
-	message.content.forEach((block, index) => {
-		// content_block_start
-		res.write(`event: content_block_start\n`);
-		res.write(
-			`data: ${JSON.stringify({
-				type: "content_block_start",
-				index,
-				content_block:
-					block.type === "text" ? { type: "text", text: "" } : block,
-			})}\n\n`,
-		);
-
-		// content_block_delta
-		if (block.type === "text") {
-			res.write(`event: content_block_delta\n`);
-			res.write(
-				`data: ${JSON.stringify({
-					type: "content_block_delta",
-					index,
-					delta: { type: "text_delta", text: block.text },
-				})}\n\n`,
-			);
-		} else if (block.type === "tool_use") {
-			res.write(`event: content_block_delta\n`);
-			res.write(
-				`data: ${JSON.stringify({
-					type: "content_block_delta",
-					index,
-					delta: {
-						type: "input_json_delta",
-						partial_json: JSON.stringify(block.input),
-					},
-				})}\n\n`,
-			);
-		}
-
-		// content_block_stop
-		res.write(`event: content_block_stop\n`);
-		res.write(
-			`data: ${JSON.stringify({ type: "content_block_stop", index })}\n\n`,
-		);
-	});
-
-	// message_delta
-	res.write(`event: message_delta\n`);
-	res.write(
-		`data: ${JSON.stringify({
-			type: "message_delta",
-			delta: { stop_reason: message.stop_reason },
-			usage: { output_tokens: message.usage.output_tokens },
-		})}\n\n`,
-	);
-
-	// message_stop
-	res.write(`event: message_stop\n`);
-	res.write(`data: ${JSON.stringify({ type: "message_stop" })}\n\n`);
-
-	res.end();
-}
+// (previous fake streaming helper removed; we now stream/translate incrementally)

@@ -89,40 +89,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-		kind: "update";
-		displayContent: string;
-		suggestedContent: string;
-		fileUpdate: {
-			fileName: string;
-			type: "update";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
-			originalContent: string;
+			kind: "update";
+			displayContent: string;
 			suggestedContent: string;
-			prompt: string;
-		};
-	}
+			fileUpdate: {
+				fileName: string;
+				type: "update";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				originalContent: string;
+				suggestedContent: string;
+				prompt: string;
+			};
+	  }
 	| {
-		kind: "create";
-		displayContent: string;
-		title: string;
-		summary: string;
-		content: string;
-		fileUpdate: {
-			fileName: string;
-			type: "create";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
+			kind: "create";
+			displayContent: string;
 			title: string;
 			summary: string;
 			content: string;
-			prompt: string;
-		};
-	} {
+			fileUpdate: {
+				fileName: string;
+				type: "create";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				title: string;
+				summary: string;
+				content: string;
+				prompt: string;
+			};
+	  } {
 	const updateMatch = full.match(/:::update-doc([\s\S]*?):::/);
 	if (updateMatch) {
 		const suggestedContent = (updateMatch[1] || "").trim();
@@ -872,6 +872,8 @@ export default function CopilotSidebar() {
 
 			// 任务列表暂时不展示（根据反馈移除）
 
+			let lastSkillExecutionBlock: ChatMessageBlock | null = null;
+
 			const streamBlocks: ChatMessageBlock[] = [
 				{ type: "text", text: "" } as Extract<
 					ChatMessageBlock,
@@ -880,6 +882,44 @@ export default function CopilotSidebar() {
 			];
 			let currentTextBlockIndex = 0;
 			const toolCallBlockIndex = new Map<string, number>();
+
+			const summarizeToolInputForUser = (input: any): string => {
+				if (!input || typeof input !== "object") return "";
+				const pick = (key: string) => {
+					const v = (input as any)[key];
+					if (typeof v === "string" && v.trim()) return v.trim();
+					if (typeof v === "number" && Number.isFinite(v)) return String(v);
+					return "";
+				};
+
+				const query = pick("query") || pick("q");
+				const url = pick("url");
+				const path = pick("path") || pick("file_path") || pick("filePath");
+				const pattern = pick("pattern") || pick("glob");
+				const command = pick("command");
+
+				const parts = [
+					query ? `query=${query}` : "",
+					url ? `url=${url}` : "",
+					path ? `path=${path}` : "",
+					pattern ? `pattern=${pattern}` : "",
+					command ? `command=${command}` : "",
+				].filter(Boolean);
+
+				return parts.slice(0, 2).join("，");
+			};
+
+			const appendRuntimeHint = (hint: string) => {
+				const last = streamBlocks[streamBlocks.length - 1];
+				if (!last || last.type !== "text") {
+					streamBlocks.push({ type: "text", text: "" } as any);
+					currentTextBlockIndex = streamBlocks.length - 1;
+				}
+				const textBlock = streamBlocks[currentTextBlockIndex];
+				if (!textBlock || textBlock.type !== "text") return;
+				const prefix = textBlock.text.trim().length > 0 ? "\n\n" : "";
+				textBlock.text += `${prefix}> ${hint}`;
+			};
 
 			const getStreamText = () =>
 				streamBlocks
@@ -890,23 +930,41 @@ export default function CopilotSidebar() {
 					.map((b) => b.text || "")
 					.join("");
 
-			const buildSkillBlocks = () => {
-				// 只渲染一个文本块（聚合后的全文），避免多段 text block 在 UI 里重复显示相同内容。
-				const blocks: ChatMessageBlock[] = streamBlocks.filter(
-					(b) => b.type !== "text",
+			const stripDocProtocolSections = (text: string) =>
+				String(text || "")
+					.replace(/:::update-doc[\s\S]*?:::/g, "")
+					.replace(/:::create-doc[\s\S]*?:::/g, "");
+
+			const stripAiFileUpdateMarkers = (text: string) =>
+				String(text || "").replace(
+					/(<<<AI_UPDATE_PENDING>>>|<<<AI_CREATE_PENDING>>>|<<<AI_UPDATE_DONE>>>|<<<AI_CREATE_DONE>>>)/g,
+					"",
 				);
+
+			const normalizeRuntimeText = (text: string) =>
+				stripAiFileUpdateMarkers(stripDocProtocolSections(text)).replace(
+					/\n{3,}/g,
+					"\n\n",
+				);
+
+			const buildSkillBlocks = () => {
+				const blocks: ChatMessageBlock[] = [...streamBlocks];
 
 				// 如果任务步骤（TodoWrite）已生成，用专门的 task_list 卡片承接
 				if (currentTaskId) {
-					const steps = agentStore.getState().currentTask?.steps || [];
-					if (steps.length > 0) {
+					const task = agentStore.getState().currentTask;
+					const todos = task?.metadata
+						? (task.metadata as any).todos
+						: undefined;
+					const hasTodos = Array.isArray(todos) && todos.length > 0;
+					if (hasTodos) {
 						blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
 					}
 				}
 
 				const currentSkill = agentStore.getState().currentSkill;
 				if (currentSkill) {
-					blocks.push({
+					const skillBlock = {
 						type: "skill_execution",
 						skillName: currentSkill.skillName,
 						skillPath: currentSkill.skillPath,
@@ -914,13 +972,11 @@ export default function CopilotSidebar() {
 						steps: currentSkill.steps,
 						loadedFiles: currentSkill.loadedFiles,
 						detectedScene: currentSkill.detectedScene,
-					} as any);
+					} as any;
+					lastSkillExecutionBlock = skillBlock;
+					blocks.push(skillBlock);
 				}
 
-				const text = getStreamText();
-				if (text && text.trim()) {
-					blocks.push({ type: "text", text } as any);
-				}
 				return blocks;
 			};
 
@@ -928,22 +984,34 @@ export default function CopilotSidebar() {
 				finalText: string,
 				protocol: ReturnType<typeof parseDocProtocolFinal>,
 			): ChatMessageBlock[] => {
-				const blocks: ChatMessageBlock[] = [];
+				const blocks: ChatMessageBlock[] = streamBlocks.map((b) => {
+					if (b.type !== "text") return b;
+					return { type: "text", text: normalizeRuntimeText(b.text) } as const;
+				});
 
-				// Keep the tool trace blocks (tool_call, images, etc.) but avoid carrying raw streamed text
-				// that may include protocol markers; we replace it with a single final text block.
-				for (const b of streamBlocks) {
-					if (b.type === "text") continue;
-					blocks.push(b);
+				// Keep Todo list card after completion
+				if (currentTaskId) {
+					const task = agentStore.getState().currentTask;
+					const todos = task?.metadata
+						? (task.metadata as any).todos
+						: undefined;
+					const hasTodos = Array.isArray(todos) && todos.length > 0;
+					if (hasTodos) {
+						blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
+					}
 				}
 
 				if (protocol.kind === "create" || protocol.kind === "update") {
-					blocks.push({ type: "file_update", update: protocol.fileUpdate } as any);
+					blocks.push({
+						type: "file_update",
+						update: protocol.fileUpdate,
+					} as any);
 				}
 
+				// Prefer last seen skill block to avoid it disappearing after completion
 				const currentSkill = agentStore.getState().currentSkill;
 				if (currentSkill) {
-					blocks.push({
+					lastSkillExecutionBlock = {
 						type: "skill_execution",
 						skillName: currentSkill.skillName,
 						skillPath: currentSkill.skillPath,
@@ -951,11 +1019,20 @@ export default function CopilotSidebar() {
 						steps: currentSkill.steps,
 						loadedFiles: currentSkill.loadedFiles,
 						detectedScene: currentSkill.detectedScene,
-					} as any);
+					} as any;
 				}
+				if (lastSkillExecutionBlock) blocks.push(lastSkillExecutionBlock);
 
-				if (finalText && finalText.trim()) {
-					blocks.push({ type: "text", text: finalText } as any);
+				const normalizedFinal = normalizeRuntimeText(finalText);
+				const existingText = blocks
+					.filter(
+						(b): b is Extract<ChatMessageBlock, { type: "text" }> =>
+							b.type === "text",
+					)
+					.map((b) => b.text || "")
+					.join("");
+				if (normalizedFinal.trim() && normalizedFinal.trim() !== existingText.trim()) {
+					blocks.push({ type: "text", text: normalizedFinal } as any);
 				}
 
 				return blocks;
@@ -1051,13 +1128,17 @@ export default function CopilotSidebar() {
 					const { getAgentSandboxDir } = await import("../lib/api");
 					const res = await getAgentSandboxDir(sandboxKeyForFiles);
 					if (res?.path) sandboxDirForFiles = String(res.path);
-					console.log("[CopilotSidebar] sandboxDir获取:", { sandboxKeyForFiles, sandboxDirForFiles });
+					console.log("[CopilotSidebar] sandboxDir获取:", {
+						sandboxKeyForFiles,
+						sandboxDirForFiles,
+					});
 				} catch (e) {
 					console.error("[CopilotSidebar] 获取沙盒目录失败:", e);
 				}
 
 				// Include both ASCII and full-width Chinese punctuation that may cause SDK tool issues
-				const ILLEGAL_FILENAME_CHARS_RE = /[<>:"/\\|?*\u0000-\u001F？！""''：；【】（）《》、，。]/g;
+				const ILLEGAL_FILENAME_CHARS_RE =
+					/[<>:"/\\|?*\u0000-\u001F？！""''“”‘’：；【】（）《》、，。]/g;
 				const sanitizeFileName = (name: string): string => {
 					const base = String(name || "document")
 						.normalize("NFC")
@@ -1071,7 +1152,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-							withoutTrailingDotsOrSpaces === ".."
+						withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1094,7 +1175,7 @@ export default function CopilotSidebar() {
 						filePath,
 						hasContent: !!content,
 						contentLength: content?.length || 0,
-						fileSize
+						fileSize,
 					});
 
 					// 如果资料内容为空，尝试加载
@@ -1119,7 +1200,9 @@ export default function CopilotSidebar() {
 						try {
 							const { safeInvoke } = await import("../lib/tauriBridge");
 							const dir = String(sandboxDirForFiles).replace(/[/\\]+$/g, "");
-							const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
+							const base = ensureMdExt(
+								sanitizeFileName(ctx.title || "document"),
+							);
 							const count = (seenSandboxNames.get(base) ?? 0) + 1;
 							seenSandboxNames.set(base, count);
 							const dot = base.lastIndexOf(".");
@@ -1148,7 +1231,11 @@ export default function CopilotSidebar() {
 						} catch (err) {
 							console.error("[CopilotSidebar] 写入沙盒文件失败:", err);
 						}
-					} else if (content && content.trim().length > 0 && (!filePath || fileSize === 0 || fileSize === undefined)) {
+					} else if (
+						content &&
+						content.trim().length > 0 &&
+						(!filePath || fileSize === 0 || fileSize === undefined)
+					) {
 						// 无沙盒目录时的兼容逻辑：使用临时文件
 						try {
 							const { saveTempFile } = await import("../lib/api");
@@ -1259,6 +1346,12 @@ export default function CopilotSidebar() {
 						if (!toolCallId || insertedToolCallIds.has(toolCallId)) return;
 						insertedToolCallIds.add(toolCallId);
 
+						const toolName = event.toolCall?.name || "工具";
+						const toolArgs = summarizeToolInputForUser(event.toolCall?.input);
+						appendRuntimeHint(
+							toolArgs ? `正在运行：${toolName}（${toolArgs}）` : `正在运行：${toolName}`,
+						);
+
 						const toolCallBlock: Extract<
 							ChatMessageBlock,
 							{ type: "tool_call" }
@@ -1363,14 +1456,13 @@ export default function CopilotSidebar() {
 					throw new Error(taskError);
 				}
 
-				const rawResult =
-					finalState.currentTask?.result || "任务已完成，但未能生成结果";
+				const rawResult = getStreamText() || "任务已完成，但未能生成结果";
 				const protocol = parseDocProtocolFinal(rawResult, {
 					activeDocContent: workspaceStore.getActiveDocContent() || "",
 					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 					prompt: command?.name || content.slice(0, 50),
 				});
-				const result = protocol.displayContent;
+				const result = normalizeRuntimeText(protocol.displayContent);
 
 				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
 				// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
@@ -1426,16 +1518,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
+								{
+									type: "skill_execution" as const,
+									skillName: finalSkillState.skillName,
+									skillPath: finalSkillState.skillPath,
+									status: finalSkillState.status,
+									steps: finalSkillState.steps,
+									loadedFiles: finalSkillState.loadedFiles,
+									detectedScene: finalSkillState.detectedScene,
+								},
+							]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1484,8 +1576,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+									(update: any) => ({ type: "file_update" as const, update }),
+								)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1552,8 +1644,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-							(update: any) => ({ type: "file_update" as const, update }),
-						)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1582,9 +1674,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-								type: "file_update" as const,
-								update,
-							}))
+									type: "file_update" as const,
+									update,
+								}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2362,19 +2454,21 @@ export default function CopilotSidebar() {
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
 							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "chat"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							对话
 						</button>
 						<button
 							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "agent"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							Agent
 						</button>

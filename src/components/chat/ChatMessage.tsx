@@ -264,7 +264,7 @@ export function ChatMessage({
 						{/* AI 内容渲染区 */}
 						<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
 							{canRenderAssistantByBlocks ? (
-								<AgentBlocksInline blocks={message.metadata!.blocks!.filter(b => !(b.type === "text" && b.text.trim() === message.content.trim()))} />
+								<AgentBlocksInline blocks={message.metadata!.blocks!} />
 							) : (
 								message.content
 									.split(
@@ -332,8 +332,8 @@ export function ChatMessage({
 							)}
 						</div>
 
-						{!canRenderAssistantByBlocks &&
-							message.metadata?.trace?.type === "agent_task" ? (
+						{/* 始终渲染 Trace 如果存在 */}
+						{message.metadata?.trace?.type === "agent_task" ? (
 							<AgentTraceInline taskId={message.metadata.trace.taskId} />
 						) : null}
 

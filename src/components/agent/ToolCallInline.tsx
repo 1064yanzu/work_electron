@@ -1,6 +1,6 @@
 /**
  * ToolCallInline - Claude 官方风格思维链展示
- * 
+ *
  * 像素级复刻 Claude 客户端设计:
  * 1. 极简行式布局，无卡片边框
  * 2. 图标 + 描述文字，文件名用 pill 标签
@@ -26,6 +26,7 @@ import React, { useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
+import TerminalBlock from "./TerminalBlock";
 
 // 提取文件名
 function getFileName(filePath: string): string {
@@ -39,6 +40,18 @@ function getFilePath(filePath: string): string {
 	const parts = filePath.split("/");
 	if (parts.length <= 2) return filePath;
 	return parts.slice(-2).join("/");
+}
+
+// 检查是否为终端/Bash 工具调用
+function isBashToolCall(toolCall: ToolCall): boolean {
+	const name = toolCall.name?.toLowerCase() || "";
+	const type = toolCall.type;
+	return (
+		name === "bash" ||
+		name.includes("terminal") ||
+		name.includes("shell") ||
+		type === "code_execute"
+	);
 }
 
 // 从工具调用中提取描述信息
@@ -56,7 +69,9 @@ function getReadableDescription(toolCall: ToolCall): {
 
 	// 读取文件
 	if (name.includes("read") || type === "file_read") {
-		const filePath = String(input?.file_path || input?.path || input?.file || "");
+		const filePath = String(
+			input?.file_path || input?.path || input?.file || "",
+		);
 		return {
 			icon: Search,
 			prefix: "Read",
@@ -67,8 +82,10 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 文件查看
-	if (name.includes("view") || type === "file_view") {
-		const filePath = String(input?.file_path || input?.path || input?.file || "");
+	if (name.includes("view")) {
+		const filePath = String(
+			input?.file_path || input?.path || input?.file || "",
+		);
 		const startLine = input?.start_line || input?.startLine;
 		const endLine = input?.end_line || input?.endLine;
 		const lineRange = startLine && endLine ? `L${startLine}-${endLine}` : "";
@@ -83,7 +100,9 @@ function getReadableDescription(toolCall: ToolCall): {
 
 	// 写入/创建文件
 	if (name.includes("write") || type === "file_write") {
-		const filePath = String(input?.file_path || input?.path || input?.file || "");
+		const filePath = String(
+			input?.file_path || input?.path || input?.file || "",
+		);
 		return {
 			icon: FileText,
 			prefix: "已创建",
@@ -94,8 +113,15 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 编辑文件
-	if (name.includes("edit") || name.includes("patch") || type === "doc_update" || type === "doc_patch") {
-		const filePath = String(input?.file_path || input?.path || input?.file || "");
+	if (
+		name.includes("edit") ||
+		name.includes("patch") ||
+		type === "doc_update" ||
+		type === "doc_patch"
+	) {
+		const filePath = String(
+			input?.file_path || input?.path || input?.file || "",
+		);
 		return {
 			icon: Edit3,
 			prefix: "已修改",
@@ -106,7 +132,12 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 搜索 (Grep/Glob)
-	if (name.includes("grep") || name.includes("glob") || name.includes("search") || type === "web_search") {
+	if (
+		name.includes("grep") ||
+		name.includes("glob") ||
+		name.includes("search") ||
+		type === "web_search"
+	) {
 		const query = String(input?.query || input?.q || input?.pattern || "");
 		const results = toolCall.output;
 		let resultCount = "";
@@ -135,12 +166,16 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 获取网页
-	if (name.includes("fetch") || type === "fetch_url" || name.includes("browse")) {
+	if (
+		name.includes("fetch") ||
+		type === "fetch_url" ||
+		name.includes("browse")
+	) {
 		const url = String(input?.url || "");
 		let hostname = "";
 		try {
 			hostname = new URL(url).hostname;
-		} catch { }
+		} catch {}
 		return {
 			icon: Globe,
 			prefix: "获取",
@@ -150,7 +185,12 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 执行命令
-	if (name === "bash" || name.includes("terminal") || name.includes("shell") || type === "code_execute") {
+	if (
+		name === "bash" ||
+		name.includes("terminal") ||
+		name.includes("shell") ||
+		type === "code_execute"
+	) {
 		const cmd = String(input?.command || input?.cmd || input?.code || "");
 		const shortCmd = cmd.length > 50 ? cmd.slice(0, 50) + "..." : cmd;
 		return {
@@ -162,7 +202,7 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 思考
-	if (name.includes("think") || type === "thinking") {
+	if (name.includes("think")) {
 		return {
 			icon: Brain,
 			prefix: "Thought for",
@@ -171,8 +211,14 @@ function getReadableDescription(toolCall: ToolCall): {
 	}
 
 	// 技能调用
-	if (name.includes("skill") || type === "skill_call" || type === "skill_invoke") {
-		const skillName = String(input?.skill || input?.skillName || input?.name || toolCall.name || "");
+	if (
+		name.includes("skill") ||
+		type === "skill_call" ||
+		type === "skill_invoke"
+	) {
+		const skillName = String(
+			input?.skill || input?.skillName || input?.name || toolCall.name || "",
+		);
 		return {
 			icon: Sparkles,
 			prefix: "调用技能",
@@ -225,11 +271,43 @@ export default function ToolCallInline({
 
 	if (!toolCall) return null;
 
-	const { icon: Icon, prefix, fileName, filePath, suffix, detail } = getReadableDescription(toolCall);
+	const {
+		icon: Icon,
+		prefix,
+		fileName,
+		filePath,
+		suffix,
+		detail,
+	} = getReadableDescription(toolCall);
 	const isRunning = toolCall.status === "running";
-	const isCompleted = toolCall.status === "completed";
 	const isError = toolCall.status === "error";
-	const hasDetails = !!(toolCall.output || toolCall.error || detail || (toolCall.input && Object.keys(toolCall.input).length > 0));
+	const hasDetails = !!(
+		toolCall.output ||
+		toolCall.error ||
+		detail ||
+		(toolCall.input && Object.keys(toolCall.input).length > 0)
+	);
+
+	// 对于 Bash 工具调用，使用 Mac 风格终端显示
+	if (isBashToolCall(toolCall)) {
+		const input = toolCall.input as Record<string, unknown> | undefined;
+		const command = String(input?.command || input?.cmd || input?.code || "");
+		const description = String(input?.description || "Terminal");
+
+		return (
+			<div className="py-2">
+				<TerminalBlock
+					command={command}
+					output={
+						typeof toolCall.output === "string" ? toolCall.output : undefined
+					}
+					error={toolCall.error}
+					status={toolCall.status}
+					description={description}
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<div className="py-1">
@@ -240,7 +318,9 @@ export default function ToolCallInline({
 				disabled={!hasDetails}
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors",
-					hasDetails ? "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30 -mx-2 px-2 py-1 rounded" : "cursor-default py-0.5",
+					hasDetails
+						? "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30 -mx-2 px-2 py-1 rounded"
+						: "cursor-default py-0.5",
 				)}
 			>
 				{/* 折叠箭头 */}
@@ -268,10 +348,14 @@ export default function ToolCallInline({
 				</span>
 
 				{/* 描述文字 */}
-				<span className={cn(
-					"text-sm flex items-center gap-1.5 flex-wrap",
-					isError ? "text-red-600 dark:text-red-400" : "text-zinc-600 dark:text-zinc-300",
-				)}>
+				<span
+					className={cn(
+						"text-sm flex items-center gap-1.5 flex-wrap",
+						isError
+							? "text-red-600 dark:text-red-400"
+							: "text-zinc-600 dark:text-zinc-300",
+					)}
+				>
 					<span className="font-medium">{prefix}</span>
 					{fileName && (
 						<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300">
@@ -283,7 +367,9 @@ export default function ToolCallInline({
 						<span className="text-zinc-500 dark:text-zinc-400">{suffix}</span>
 					)}
 					{filePath && !fileName && (
-						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate max-w-[200px]">{filePath}</span>
+						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate max-w-[200px]">
+							{filePath}
+						</span>
 					)}
 				</span>
 
@@ -311,7 +397,9 @@ export default function ToolCallInline({
 											</pre>
 										) : (
 											<span className="text-zinc-600 dark:text-zinc-300">
-												{typeof value === "object" ? JSON.stringify(value) : String(value)}
+												{typeof value === "object"
+													? JSON.stringify(value)
+													: String(value)}
 											</span>
 										)}
 									</div>
@@ -332,7 +420,8 @@ export default function ToolCallInline({
 						<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
 							<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
 								{typeof toolCall.output === "string"
-									? toolCall.output.slice(0, 500) + (toolCall.output.length > 500 ? "..." : "")
+									? toolCall.output.slice(0, 500) +
+										(toolCall.output.length > 500 ? "..." : "")
 									: JSON.stringify(toolCall.output, null, 2).slice(0, 500)}
 							</pre>
 						</div>

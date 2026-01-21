@@ -1,22 +1,21 @@
 /**
  * TaskListInline - 任务列表组件
- * 
- * 像素级复刻参考图样式:
- * - 头部: "Created Todo List X tasks" + 展开箭头
- * - 卡片: 白色背景, 圆角, 细边框
- * - 任务项: 红色圆圈 + 数字编号
+ *
+ * UI 参考用户给的截图（0/3 已完成 + 列表项勾选样式）
  */
 
 import {
-	Check,
 	ChevronDown,
-	ChevronRight,
-	X,
+	ChevronUp,
+	CheckCircle2,
+	Circle,
+	ListTodo,
+	XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useAgentStore } from "../../lib/agent/store";
-import type { AgentTask, AgentTaskStep } from "../../lib/agent/types";
+import type { AgentTask } from "../../lib/agent/types";
 
 function findTaskById(
 	taskId: string,
@@ -28,45 +27,31 @@ function findTaskById(
 	return t || null;
 }
 
-function StatusIcon({
-	status,
-	index,
-}: { status: AgentTaskStep["status"]; index: number }) {
-	const num = index + 1;
+type TodoItem = {
+	content: string;
+	status: "pending" | "in_progress" | "completed";
+	activeForm?: string;
+};
 
-	// 进行中/待办: 红色实心圆 + 白色数字 (参考图样式)
-	if (status === "running" || status === "pending") {
-		return (
-			<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500 text-xs font-bold text-white flex-shrink-0">
-				{num}
-			</span>
-		);
-	}
-
-	// 已完成: 绿色勾
-	if (status === "completed") {
-		return (
-			<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 flex-shrink-0">
-				<Check className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-			</span>
-		);
-	}
-
-	// 错误: 红色X
-	if (status === "error") {
-		return (
-			<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500 flex-shrink-0">
-				<X className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-			</span>
-		);
-	}
-
-	// 默认
+function isTodoItemArray(value: unknown): value is TodoItem[] {
 	return (
-		<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-zinc-300 dark:bg-zinc-600 text-xs font-bold text-white flex-shrink-0">
-			{num}
-		</span>
+		Array.isArray(value) &&
+		value.every(
+			(x) =>
+				typeof x === "object" &&
+				x !== null &&
+				typeof (x as any).content === "string" &&
+				typeof (x as any).status === "string",
+		)
 	);
+}
+
+function statusToUi(status: TodoItem["status"] | "error" | "cancelled") {
+	if (status === "completed") return "completed";
+	if (status === "in_progress") return "running";
+	if (status === "pending") return "pending";
+	if (status === "cancelled") return "cancelled";
+	return "error";
 }
 
 export function TaskListInline({ taskId }: { taskId: string }) {
@@ -77,52 +62,102 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 		() => findTaskById(taskId, currentTask, taskHistory),
 		[taskId, currentTask, taskHistory],
 	);
-	const steps = task?.steps || [];
+	const todos = useMemo(() => {
+		const raw = task?.metadata ? (task.metadata as any).todos : undefined;
+		if (isTodoItemArray(raw)) return raw;
+		return null;
+	}, [task]);
+	const items = todos
+		? todos
+		: (task?.steps || [])
+				.filter((s) => s.kind !== "analysis")
+				.map((s) => ({
+					content: s.title,
+					status:
+						s.status === "completed"
+							? ("completed" as const)
+							: s.status === "running"
+								? ("in_progress" as const)
+								: ("pending" as const),
+				}));
 
 	if (!task) return null;
-	if (!steps || steps.length === 0) return null;
+	if (!items || items.length === 0) return null;
+
+	const completedCount = items.filter((t) => t.status === "completed").length;
+	const totalCount = items.length;
+	const allDone = totalCount > 0 && completedCount === totalCount;
 
 	return (
-		<div className="my-3 select-none">
-			{/* 头部 */}
-			<button
-				type="button"
-				onClick={() => setExpanded((v) => !v)}
-				className="inline-flex items-center gap-1.5 mb-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
-			>
-				<span className="text-sm">Created Todo List</span>
-				<span className="text-sm text-zinc-400 dark:text-zinc-500">
-					{steps.length} tasks
-				</span>
-				{expanded ? (
-					<ChevronDown className="w-4 h-4 ml-0.5" />
-				) : (
-					<ChevronRight className="w-4 h-4 ml-0.5" />
-				)}
-			</button>
-
-			{/* 任务卡片 */}
-			{expanded && (
-				<div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-					<div className="flex flex-col gap-5">
-						{steps.map((step, idx) => (
-							<div key={step.id} className="flex items-start gap-3">
-								<StatusIcon status={step.status} index={idx} />
-								<div className="flex-1 min-w-0 pt-0.5">
-									<div className="text-[15px] leading-relaxed text-zinc-800 dark:text-zinc-100">
-										{step.title}
-									</div>
-									{step.description && (
-										<div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-											{step.description}
-										</div>
-									)}
-								</div>
-							</div>
-						))}
+		<div className="my-3">
+			<div className="rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-zinc-200/80 dark:ring-zinc-800 shadow-sm overflow-hidden">
+				<button
+					type="button"
+					onClick={() => setExpanded((v) => !v)}
+					className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+				>
+					<div className="flex items-center gap-2 min-w-0">
+						<ListTodo className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+						<div className="text-sm font-medium text-zinc-700 dark:text-zinc-200 truncate">
+							<span className="tabular-nums">
+								{completedCount}/{totalCount}
+							</span>{" "}
+							已完成
+						</div>
 					</div>
-				</div>
-			)}
+					<div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
+						{expanded ? (
+							<ChevronUp className="w-4 h-4" />
+						) : (
+							<ChevronDown className="w-4 h-4" />
+						)}
+					</div>
+				</button>
+
+				{expanded ? (
+					<div className="px-4 pb-3 pt-1 border-t border-zinc-200/70 dark:border-zinc-800">
+						<div className="flex flex-col gap-2">
+							{items.map((t, idx) => {
+								const uiStatus = statusToUi(t.status);
+								const done = uiStatus === "completed";
+								const error = uiStatus === "error";
+								return (
+									<div
+										key={`${idx}-${t.content}`}
+										className="flex items-start gap-2.5 py-1"
+									>
+										<div className="pt-0.5 flex-shrink-0">
+											{error ? (
+												<XCircle className="w-5 h-5 text-red-500" />
+											) : done ? (
+												<CheckCircle2 className="w-5 h-5 text-emerald-500" />
+											) : (
+												<Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+											)}
+										</div>
+										<div
+											className={[
+												"flex-1 min-w-0 text-sm leading-6",
+												done
+													? "text-zinc-400 dark:text-zinc-500 line-through"
+													: "text-zinc-800 dark:text-zinc-100",
+											].join(" ")}
+										>
+											{t.content}
+										</div>
+									</div>
+								);
+							})}
+						</div>
+
+						{allDone ? (
+							<div className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+								任务已全部完成
+							</div>
+						) : null}
+					</div>
+				) : null}
+			</div>
 		</div>
 	);
 }

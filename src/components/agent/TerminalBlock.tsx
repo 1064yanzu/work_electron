@@ -1,0 +1,102 @@
+/**
+ * TerminalBlock - Mac 风格终端组件
+ * 
+ * 用于展示 Bash/Shell 命令执行，采用 macOS 终端风格:
+ * - 标题栏带红黄绿按钮
+ * - 深色背景，等宽字体
+ * - 命令 + 输出/错误展示
+ */
+
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { cn } from "../../lib/utils";
+
+interface TerminalBlockProps {
+    command: string;
+    output?: string;
+    error?: string;
+    status: "pending" | "running" | "completed" | "error" | "cancelled";
+    description?: string;
+    className?: string;
+}
+
+export default function TerminalBlock({
+    command,
+    output,
+    error,
+    status,
+    description,
+    className,
+}: TerminalBlockProps) {
+    const isRunning = status === "running";
+    const isError = status === "error";
+    const isCompleted = status === "completed";
+
+    return (
+        <div
+            className={cn(
+                "rounded-lg overflow-hidden shadow-lg border border-zinc-700/50",
+                "bg-[#1e1e1e] dark:bg-[#0d0d0d]",
+                className,
+            )}
+        >
+            {/* Mac 风格标题栏 */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-[#2d2d2d] dark:bg-[#1a1a1a] border-b border-zinc-700/50">
+                {/* 红黄绿按钮 */}
+                <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-inner" />
+                    <span className="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner" />
+                    <span className="w-3 h-3 rounded-full bg-[#28c840] shadow-inner" />
+                </div>
+
+                {/* 标题 */}
+                <div className="flex-1 text-center">
+                    <span className="text-xs text-zinc-400 font-medium">
+                        {description || "Terminal"}
+                    </span>
+                </div>
+
+                {/* 状态指示器 */}
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {isRunning && (
+                        <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                    )}
+                    {isCompleted && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                    )}
+                    {isError && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                </div>
+            </div>
+
+            {/* 终端内容区 */}
+            <div className="p-3 font-mono text-sm">
+                {/* 命令行 */}
+                <div className="flex items-start gap-2">
+                    <span className="text-green-400 select-none flex-shrink-0">$</span>
+                    <span className="text-zinc-100 break-all">{command}</span>
+                </div>
+
+                {/* 输出 */}
+                {output && (
+                    <div className="mt-2 text-zinc-300 text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[200px] overflow-y-auto">
+                        {output.length > 1000 ? output.slice(0, 1000) + "\n..." : output}
+                    </div>
+                )}
+
+                {/* 错误输出 */}
+                {error && (
+                    <div className="mt-2 text-red-400 text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[150px] overflow-y-auto">
+                        {error}
+                    </div>
+                )}
+
+                {/* 运行中提示 */}
+                {isRunning && !output && !error && (
+                    <div className="mt-2 flex items-center gap-2 text-zinc-500 text-xs">
+                        <span className="inline-block w-2 h-2 bg-zinc-500 rounded-full animate-pulse" />
+                        <span>执行中...</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

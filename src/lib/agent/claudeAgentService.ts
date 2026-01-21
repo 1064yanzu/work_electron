@@ -131,6 +131,8 @@ export class ClaudeAgentService {
 		let settle: ((err?: Error) => void) | null = null;
 		let toolUseErrorCount = 0;
 		let lastToolUseError: string | null = null;
+		let lastToolUseId: string | null = null;
+		const debug = import.meta.env?.VITE_AGENT_DEBUG === "1";
 		const toolNamesById = new Map<string, string>();
 		const streamState = new AgentStreamState();
 		const bufferedEvents: Array<{
@@ -161,24 +163,28 @@ export class ClaudeAgentService {
 				result?: SDKResultMessage;
 				error?: string;
 			}) => {
-				console.log("[ClaudeAgentService] handleEvent called:", {
-					payloadRunId: payload.runId,
-					currentRunId: runId,
-					type: payload.type,
-					hasMessage: !!payload.message,
-				});
+				if (debug) {
+					console.log("[ClaudeAgentService] handleEvent:", {
+						payloadRunId: payload.runId,
+						currentRunId: runId,
+						type: payload.type,
+					});
+				}
 				if (!runId) {
-					console.log(
-						"[ClaudeAgentService] runId not set yet, buffering event",
-					);
+					if (debug) {
+						console.log(
+							"[ClaudeAgentService] runId not set yet, buffering event",
+						);
+					}
 					bufferedEvents.push(payload);
 					return;
 				}
 				if (payload.runId !== runId) {
-					console.log("[ClaudeAgentService] runId mismatch, ignoring event");
+					if (debug) console.log("[ClaudeAgentService] runId mismatch, ignore");
 					return;
 				}
-				console.log("[ClaudeAgentService] Processing event:", payload.type);
+				if (debug)
+					console.log("[ClaudeAgentService] Processing:", payload.type);
 
 				if (payload.type === "sdk_message" && payload.message) {
 					// 我们主要依赖 'transformed' 事件来驱动 UI 更新 (onChunk, onMessage for tools)
@@ -192,50 +198,83 @@ export class ClaudeAgentService {
 						const blocks = Array.isArray(msgAny?.message?.content)
 							? msgAny.message.content
 							: [];
-						const toolErrors = blocks
-							.filter((b: any) => b?.type === "tool_result")
-							.map((b: any) =>
-								typeof b?.content === "string" ? b.content : "",
-							)
-							.filter((s: string) => s.includes("<tool_use_error>"));
+						const toolErrorBlocks = blocks.filter(
+							(b: any) =>
+								b?.type === "tool_result" &&
+								typeof b?.content === "string" &&
+								String(b.content).includes("<tool_use_error>"),
+						);
+						const toolErrors = toolErrorBlocks.map((b: any) =>
+							typeof b?.content === "string" ? b.content : "",
+						);
 
 						if (toolErrors.length > 0) {
 							toolUseErrorCount += toolErrors.length;
 							lastToolUseError =
 								toolErrors[toolErrors.length - 1] ?? lastToolUseError;
+							lastToolUseId =
+								String(
+									toolErrorBlocks[toolErrorBlocks.length - 1]?.tool_use_id ||
+										"",
+								) || lastToolUseId;
 
-							// Log each tool error for debugging
-							console.error(
-								`[ClaudeAgentService] Tool use error (${toolUseErrorCount}/10):`,
-								{
-									errorCount: toolErrors.length,
-									totalErrors: toolUseErrorCount,
-									errors: toolErrors,
-									lastError: lastToolUseError,
-								},
-							);
+							if (debug) {
+								console.error(
+									`[ClaudeAgentService] Tool use error (${toolUseErrorCount}/10):`,
+									{
+										errorCount: toolErrors.length,
+										totalErrors: toolUseErrorCount,
+										lastError: lastToolUseError,
+										lastToolUseId,
+									},
+								);
+							}
 
 							// Increased threshold from 3 to 10
 							if (toolUseErrorCount >= 10) {
-								const err =
+								const errRaw =
 									lastToolUseError ||
 									"Tool call failed repeatedly (10+ errors)";
+								const errText = String(errRaw)
+									.replace(/<tool_use_error>/g, "")
+									.replace(/<\/tool_use_error>/g, "")
+									.trim();
+								const toolName = lastToolUseId
+									? toolNamesById.get(lastToolUseId)
+									: undefined;
+								const guidance = [
+									"工具调用多次失败，为避免无限重试，我已停止本次任务。",
+									toolName || lastToolUseId
+										? `最后一次失败的工具：${toolName || "unknown"}（tool_use_id=${lastToolUseId || "unknown"}）`
+										: null,
+									errText ? `错误信息：${errText}` : null,
+									"建议：请先用 Glob 列出沙盒目录下的实际文件名，再用 Read 读取；或确认引用的文件路径是否在当前沙盒目录内。",
+									"你也可以把上面失败的工具卡片展开，查看当时发送的参数。",
+								]
+									.filter(Boolean)
+									.join("\n");
 								console.error(
 									"[ClaudeAgentService] Aborting due to repeated tool errors:",
 									{
 										totalErrors: toolUseErrorCount,
-										lastError: err,
+										lastError: errText,
+										lastToolUseId,
 									},
 								);
 								void invoke("agent_sdk_abort", { runId });
+								onMessage?.({
+									type: "system",
+									content: guidance,
+									status: "error",
+								});
 								onComplete?.({
 									success: false,
-									summary: err,
+									summary: guidance,
 									sessionId: sessionId ?? undefined,
 								});
 								if (unlisten) unlisten();
 								unlisten = null;
-								settle?.(new Error(err));
+								settle?.(new Error(guidance));
 								return;
 							}
 						}
