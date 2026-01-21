@@ -1150,6 +1150,7 @@ export function createAgentSdkHandlers(options: {
 					} as any, // Cast to any to allow stream property
 				});
 
+				let sawResult = false;
 				for await (const msg of q) {
 					// Avoid logging every stream delta; it can freeze the app.
 					const msgAny = msg as any;
@@ -1236,8 +1237,21 @@ export function createAgentSdkHandlers(options: {
 						});
 					}
 					if ((msg as any)?.type === "result") {
+						sawResult = true;
 						emit(options.getMainWindow, { runId, type: "done", result: msg });
 					}
+				}
+				if (!sawResult) {
+					emit(options.getMainWindow, {
+						runId,
+						type: "done",
+						result: {
+							type: "result",
+							subtype: "success",
+							is_error: false,
+							result: "",
+						},
+					});
 				}
 			} catch (e) {
 				const error = e instanceof Error ? e.message : String(e);

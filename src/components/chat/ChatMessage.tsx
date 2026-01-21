@@ -13,6 +13,7 @@ import { AttachmentList } from "./AttachmentCard";
 import { FileChangeCard as FileChangeCardComponent } from "./FileChangeCard";
 import { ProcessingCard as ProcessingCardComponent } from "./ProcessingCard";
 import { TokenDisplay } from "./TokenDisplay";
+import { WebPreviewCard } from "./WebPreviewCard";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
@@ -42,6 +43,69 @@ function extractCodeBlocks(
 		});
 	}
 	return blocks;
+}
+
+function extractWebPreviewFromCodeBlocks(
+	blocks: Array<{ language: string; code: string }>,
+):
+	| {
+			kind: "html";
+			html: string;
+			css?: string;
+			js?: string;
+	  }
+	| {
+			kind: "react";
+			jsx: string;
+			css?: string;
+	  }
+	| null {
+	let html = "";
+	let jsx = "";
+	let css = "";
+	let js = "";
+
+	for (const b of blocks) {
+		const lang = String(b.language || "").trim().toLowerCase();
+		const code = String(b.code || "");
+		if (!html && (lang === "html" || lang === "htm")) html = code;
+		else if (!jsx && (lang === "jsx" || lang === "tsx")) jsx = code;
+		else if (!css && lang === "css") css = code;
+		else if (
+			!js &&
+			(lang === "js" ||
+				lang === "javascript" ||
+				lang === "mjs" ||
+				lang === "cjs")
+		)
+			js = code;
+	}
+
+	if (!html) {
+		const fallback = blocks.find((b) => /<\s*div[\s>]|<\s*html[\s>]|<!doctype/i.test(b.code));
+		if (fallback) {
+			const looksLikeHtml = /<\s*html[\s>]|<!doctype/i.test(fallback.code);
+			if (looksLikeHtml) html = fallback.code;
+			else if (!jsx) jsx = fallback.code;
+		}
+	}
+
+	if (html && html.trim()) {
+		return {
+			kind: "html",
+			html,
+			css: css.trim() ? css : undefined,
+			js: js.trim() ? js : undefined,
+		};
+	}
+	if (jsx && jsx.trim()) {
+		return {
+			kind: "react",
+			jsx,
+			css: css.trim() ? css : undefined,
+		};
+	}
+	return null;
 }
 
 export function ChatMessage({
@@ -127,6 +191,13 @@ export function ChatMessage({
 	const codeBlocks = useMemo(
 		() => extractCodeBlocks(message.content),
 		[message.content],
+	);
+	const webPreview = useMemo(
+		() =>
+			message.role === "assistant" && !message.isStreaming
+				? extractWebPreviewFromCodeBlocks(codeBlocks)
+				: null,
+		[message.role, message.isStreaming, codeBlocks],
 	);
 
 	const handleCopy = async () => {
@@ -340,6 +411,16 @@ export function ChatMessage({
 						{/* Actions for assistant messages - 底部工具栏 */}
 						{!isStreaming && message.content && (
 							<div className="flex flex-col gap-2 mt-3">
+								{webPreview && (
+									<WebPreviewCard
+										kind={webPreview.kind}
+										title={webPreview.kind === "react" ? "React 预览" : "前端预览"}
+										html={webPreview.kind === "html" ? webPreview.html : undefined}
+										jsx={webPreview.kind === "react" ? webPreview.jsx : undefined}
+										css={webPreview.css}
+										js={webPreview.kind === "html" ? webPreview.js : undefined}
+									/>
+								)}
 								{/* 代码块操作 */}
 								{codeBlocks.length > 0 && (
 									<div className="flex flex-wrap gap-2">

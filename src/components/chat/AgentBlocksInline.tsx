@@ -8,9 +8,64 @@ import { FileUpdatesGroup } from "./FileUpdatesGroup";
 import ToolCallInline from "../agent/ToolCallInline";
 import { ToolCallsStack } from "./ToolCallsStack";
 import type { ToolCall } from "../../lib/agent/types";
+import { ProcessingCard } from "./ProcessingCard";
 
 export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 	const nodes: ReactNode[] = [];
+
+	const replaceProtocolWithMarker = (
+		raw: string,
+		marker: ":::update-doc" | ":::create-doc",
+		placeholder: "<<<AI_UPDATE_PENDING>>>" | "<<<AI_CREATE_PENDING>>>",
+	): string => {
+		let s = String(raw || "");
+		while (true) {
+			const start = s.indexOf(marker);
+			if (start < 0) break;
+			const after = s.slice(start + marker.length);
+			const endRel = after.indexOf(":::");
+			const end = endRel >= 0 ? start + marker.length + endRel + 3 : s.length;
+			s = `${s.slice(0, start)}\n${placeholder}\n${s.slice(end)}`;
+		}
+		return s;
+	};
+
+	const renderText = (text: string, keyBase: string) => {
+		const withUpdate = replaceProtocolWithMarker(
+			text,
+			":::update-doc",
+			"<<<AI_UPDATE_PENDING>>>",
+		);
+		const withCreate = replaceProtocolWithMarker(
+			withUpdate,
+			":::create-doc",
+			"<<<AI_CREATE_PENDING>>>",
+		);
+
+		const parts = withCreate.split(
+			/(<<<AI_UPDATE_PENDING>>>|<<<AI_CREATE_PENDING>>>)/,
+		);
+
+		return parts
+			.map((part, idx) => {
+				if (!part || !part.trim()) return null;
+				if (part === "<<<AI_UPDATE_PENDING>>>") {
+					return <ProcessingCard key={`${keyBase}-p-${idx}`} type="update" />;
+				}
+				if (part === "<<<AI_CREATE_PENDING>>>") {
+					return <ProcessingCard key={`${keyBase}-p-${idx}`} type="create" />;
+				}
+				return (
+					<div
+						key={`${keyBase}-md-${idx}`}
+						className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
+					>
+						<MarkdownRenderer content={part} />
+					</div>
+				);
+			})
+			.filter(Boolean);
+	};
 
 	for (let i = 0; i < blocks.length; i++) {
 		const b = blocks[i];
@@ -51,9 +106,7 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 					key={i}
 					className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden"
 				>
-					<div className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5">
-						<MarkdownRenderer content={b.text} />
-					</div>
+					{renderText(b.text, `text-${i}`)}
 				</div>,
 			);
 			continue;

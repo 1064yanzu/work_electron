@@ -4,15 +4,18 @@ import { diffLines } from "diff";
 import {
 	BookOpen,
 	Bot,
+	Check,
+	ChevronDown,
 	History,
 	Loader2,
 	Plus,
 	Search,
 	Sparkles,
 	StopCircle,
+	X,
 	Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DragItem, useMouseDropZone } from "../hooks/useMouseDrag";
 // webSearch 和 fetchUrlContent 现在由 Agent 工具调用
 import {
@@ -45,6 +48,8 @@ import { EVENTS, events } from "../lib/events";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
+import { createOutputAsset } from "../lib/api";
+import { OutputType } from "../types";
 import { PermissionList } from "./agent";
 import {
 	ChatHistory,
@@ -406,6 +411,18 @@ export default function CopilotSidebar() {
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+	const [pendingCreateProposals, setPendingCreateProposals] = useState<
+		Array<{
+			id: string;
+			title: string;
+			summary: string;
+			content: string;
+			prompt: string;
+			createdAt: number;
+		}>
+	>([]);
+	const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
+	const [isProposalMenuOpen, setIsProposalMenuOpen] = useState(false);
 	const restoredAgentSessionIdsRef = useRef<Set<string>>(new Set());
 	const replayedAgentSessionIdsRef = useRef<Set<string>>(new Set());
 
@@ -425,6 +442,56 @@ export default function CopilotSidebar() {
 
 	// 显示拖拽提示（当有拖拽进行中且鼠标在此区域）
 	const showDropIndicator = isMouseDragging;
+
+	const queueCreateProposal = useCallback(
+		(payload: { title: string; summary: string; content: string; prompt: string }) => {
+			const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+			const item = {
+				id,
+				title: payload.title || "新文档",
+				summary: payload.summary || "",
+				content: payload.content || "",
+				prompt: payload.prompt || "",
+				createdAt: Date.now(),
+			};
+			setPendingCreateProposals((prev) => [item, ...prev]);
+			setActiveProposalId((prev) => prev || id);
+		},
+		[],
+	);
+
+	const removeCreateProposal = useCallback((id: string) => {
+		setPendingCreateProposals((prev) => {
+			const next = prev.filter((p) => p.id !== id);
+			setActiveProposalId((current) => {
+				if (current !== id) return current;
+				return next[0]?.id || null;
+			});
+			return next;
+		});
+	}, []);
+
+	const activeCreateProposal = useMemo(() => {
+		if (!activeProposalId) return null;
+		return pendingCreateProposals.find((p) => p.id === activeProposalId) || null;
+	}, [pendingCreateProposals, activeProposalId]);
+
+	const acceptActiveCreateProposal = useCallback(async () => {
+		const p = activeCreateProposal;
+		if (!p) return;
+		try {
+			const created = await createOutputAsset({
+				title: p.title || "新文档",
+				content: p.content || "",
+				output_type: OutputType.Article,
+				related_notes: [],
+			});
+			workspaceStore.openDoc(created.id, created.title, created.content);
+			removeCreateProposal(p.id);
+		} catch (e) {
+			console.error("[CopilotSidebar] 创建文档失败:", e);
+		}
+	}, [activeCreateProposal, removeCreateProposal]);
 
 	// 如果出现权限请求，尽量让用户第一时间看到
 	useEffect(() => {
@@ -721,7 +788,7 @@ export default function CopilotSidebar() {
 			if (protocol.kind === "update") {
 				events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
 			} else if (protocol.kind === "create") {
-				events.emit(EVENTS.AI_DOC_CREATE_END, protocol.eventPayload);
+				queueCreateProposal(protocol.eventPayload);
 			}
 			chatStore.setStatus("idle");
 			setAbortController(null);
@@ -750,7 +817,7 @@ export default function CopilotSidebar() {
 			if (protocol.kind === "update") {
 				events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
 			} else if (protocol.kind === "create") {
-				events.emit(EVENTS.AI_DOC_CREATE_END, protocol.eventPayload);
+				queueCreateProposal(protocol.eventPayload);
 			}
 			chatStore.setStatus(
 				"error",
@@ -862,6 +929,14 @@ export default function CopilotSidebar() {
 			let currentTaskId: string | null = null;
 			let streamingMsgId: string | null = null;
 			const insertedToolCallIds = new Set<string>();
+			let docProtocolMode: "none" | "create" | "update" = "none";
+			let forcedFinalized = false;
+			let lastActivityAt = Date.now();
+			let watchdogTimer: number | null = null;
+
+			const touchActivity = () => {
+				lastActivityAt = Date.now();
+			};
 
 			const persistTraceMessageIfNeeded = (message: ChatMessageType) => {
 				if (
@@ -1070,6 +1145,73 @@ export default function CopilotSidebar() {
 			ensureStreamingMessage();
 
 			try {
+				const clearWatchdog = () => {
+					if (watchdogTimer !== null) {
+						clearInterval(watchdogTimer);
+						watchdogTimer = null;
+					}
+				};
+
+				const finalizeFromRawText = (rawText: string, source: string) => {
+					if (forcedFinalized) return;
+					forcedFinalized = true;
+
+					const protocol = parseDocProtocolFinal(rawText, {
+						activeDocContent: workspaceStore.getActiveDocContent() || "",
+						hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+						prompt: command?.name || content.slice(0, 50),
+					});
+					const result = normalizeRuntimeText(protocol.displayContent);
+
+					if (streamingMsgId) {
+						chatStore.updateMessage(session.id, streamingMsgId, {
+							content: result,
+							isStreaming: false,
+							metadata: {
+								blocks: buildFinalBlocks(result, protocol),
+								...(protocol.kind === "create" || protocol.kind === "update"
+									? { fileUpdates: [protocol.fileUpdate] }
+									: null),
+							},
+						});
+					}
+
+					if (protocol.kind === "update") {
+						events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
+					} else if (protocol.kind === "create") {
+						queueCreateProposal(protocol.eventPayload);
+					}
+
+					chatStore.setStatus("idle");
+					try {
+						agentExecutor.cancel();
+					} catch {}
+
+					if (detachAgentEvent) {
+						detachAgentEvent();
+						detachAgentEvent = null;
+					}
+					console.warn("[CopilotSidebar] Forced finalize agent message", {
+						source,
+					});
+				};
+
+				watchdogTimer = window.setInterval(() => {
+					if (forcedFinalized) return;
+					if (!streamingMsgId) return;
+					const now = Date.now();
+					if (now - lastActivityAt < 6000) return;
+					const hasRunningTools = streamBlocks.some(
+						(b) =>
+							b.type === "tool_call" &&
+							(b.status === "running" || b.status === "pending"),
+					);
+					if (hasRunningTools) return;
+					const raw = getStreamText();
+					if (!raw.trim()) return;
+					finalizeFromRawText(raw, "watchdog_inactivity");
+				}, 1000);
+
 				let systemPrompt = await getChatSystemPrompt(
 					workspaceStore.getActiveDocContent() || "",
 				);
@@ -1299,6 +1441,7 @@ export default function CopilotSidebar() {
 				workspaceStore.clearContexts();
 
 				detachAgentEvent = agentStore.onEvent((event) => {
+					touchActivity();
 					if (event.type === "task_started") {
 						currentTaskId = event.task.id;
 						if (!chatSettings.inlineTraceEnabled) {
@@ -1375,6 +1518,7 @@ export default function CopilotSidebar() {
 				});
 
 				const onChunk = (chunk: string) => {
+					touchActivity();
 					const last = streamBlocks[streamBlocks.length - 1];
 					if (!last || last.type !== "text") {
 						streamBlocks.push({ type: "text", text: "" } as any);
@@ -1383,6 +1527,25 @@ export default function CopilotSidebar() {
 					const textBlock = streamBlocks[currentTextBlockIndex];
 					if (!textBlock || textBlock.type !== "text") return;
 					textBlock.text += chunk;
+					const snapshot = getStreamText();
+					if (docProtocolMode === "none") {
+						if (snapshot.includes(":::update-doc")) {
+							docProtocolMode = "update";
+							events.emit(EVENTS.AI_DOC_UPDATE_START, {});
+						} else if (snapshot.includes(":::create-doc")) {
+							docProtocolMode = "create";
+							events.emit(EVENTS.AI_DOC_CREATE_START, {});
+						}
+					}
+					if (docProtocolMode === "update") {
+						const startIdx = snapshot.indexOf(":::update-doc");
+						if (startIdx >= 0) {
+							const after = snapshot.slice(startIdx + ":::update-doc".length);
+							const endRel = after.indexOf(":::");
+							const partial = (endRel >= 0 ? after.slice(0, endRel) : after).trim();
+							events.emit(EVENTS.AI_DOC_UPDATE_STREAM, partial);
+						}
+					}
 					scheduleStreamingUpdate();
 				};
 
@@ -1407,6 +1570,9 @@ export default function CopilotSidebar() {
 				if (agentRun?.sdkSessionId) {
 					chatStore.setSessionSdkSessionId(session.id, agentRun.sdkSessionId);
 				}
+
+				clearWatchdog();
+				if (forcedFinalized) return;
 
 				// 如果有流式消息，更新最终内容并标记为完成
 				if (streamingMsgId) {
@@ -1461,7 +1627,7 @@ export default function CopilotSidebar() {
 					if (protocol.kind === "update") {
 						events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
 					} else if (protocol.kind === "create") {
-						events.emit(EVENTS.AI_DOC_CREATE_END, protocol.eventPayload);
+						queueCreateProposal(protocol.eventPayload);
 					}
 				}
 
@@ -1581,7 +1747,7 @@ export default function CopilotSidebar() {
 					if (protocol.kind === "update") {
 						events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
 					} else if (protocol.kind === "create") {
-						events.emit(EVENTS.AI_DOC_CREATE_END, protocol.eventPayload);
+						queueCreateProposal(protocol.eventPayload);
 					}
 					if (
 						chatSettings.persistEnabled &&
@@ -1603,6 +1769,11 @@ export default function CopilotSidebar() {
 				chatStore.setStatus("idle");
 				// 附件已在消息发送后立即清除（第835行）
 			} catch (error) {
+				if (watchdogTimer !== null) {
+					clearInterval(watchdogTimer);
+					watchdogTimer = null;
+				}
+				if (forcedFinalized) return;
 				const errorMessage =
 					error instanceof Error ? error.message : "未知错误";
 				const taskId = currentTaskId || null;
@@ -1695,10 +1866,15 @@ export default function CopilotSidebar() {
 				}
 				chatStore.setStatus("error", errorMessage);
 			} finally {
+				if (watchdogTimer !== null) {
+					clearInterval(watchdogTimer);
+					watchdogTimer = null;
+				}
 				if (detachAgentEvent) {
 					detachAgentEvent();
 					detachAgentEvent = null;
 				}
+				setAbortController(null);
 				setAbortController(null);
 			}
 
@@ -1874,7 +2050,7 @@ export default function CopilotSidebar() {
 									},
 								});
 
-								events.emit(EVENTS.AI_DOC_CREATE_END, {
+								queueCreateProposal({
 									title,
 									summary,
 									content: docContent,
@@ -2045,7 +2221,7 @@ export default function CopilotSidebar() {
 								},
 							});
 
-							events.emit(EVENTS.AI_DOC_CREATE_END, {
+							queueCreateProposal({
 								title,
 								summary,
 								content: docContent,
@@ -2428,6 +2604,101 @@ export default function CopilotSidebar() {
 							<StopCircle className="w-4 h-4" />
 							停止响应
 						</button>
+					</div>
+				)}
+
+				{pendingCreateProposals.length > 0 && activeCreateProposal && (
+					<div className="mb-2 relative">
+						<div className="flex items-center justify-between gap-2 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm shadow-sm px-3 py-2">
+							<button
+								type="button"
+								onClick={() => setIsProposalMenuOpen((v) => !v)}
+								className="flex items-center gap-2 min-w-0 flex-1 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl px-2 py-1 transition-colors"
+							>
+								<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/15 to-purple-500/15 dark:from-indigo-400/15 dark:to-purple-400/15 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/5 shrink-0">
+									<div className="w-2 h-2 rounded-full bg-indigo-500/70" />
+								</div>
+								<div className="min-w-0 flex-1 text-left">
+									<div className="flex items-center gap-2 min-w-0">
+										<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+											{pendingCreateProposals.length} 个文件待审查
+										</span>
+										<span className="text-[11px] text-zinc-400 truncate">
+											{activeCreateProposal.title}
+										</span>
+									</div>
+									{activeCreateProposal.summary ? (
+										<div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+											{activeCreateProposal.summary}
+										</div>
+									) : null}
+								</div>
+								<ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
+							</button>
+
+							<div className="flex items-center gap-1">
+								<button
+									type="button"
+									onClick={() => removeCreateProposal(activeCreateProposal.id)}
+									className="h-9 w-9 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+									title="忽略"
+								>
+									<X className="w-4 h-4" />
+								</button>
+								<button
+									type="button"
+									onClick={() => void acceptActiveCreateProposal()}
+									className="h-9 px-3 rounded-xl flex items-center gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors shadow-sm"
+									title="创建并打开"
+								>
+									<Check className="w-4 h-4" />
+									<span className="text-sm font-medium">保留</span>
+								</button>
+							</div>
+						</div>
+
+						{isProposalMenuOpen && (
+							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white/95 dark:bg-zinc-900/95 backdrop-blur shadow-xl overflow-hidden">
+								<div className="max-h-56 overflow-auto">
+									{pendingCreateProposals.map((p) => (
+										<button
+											type="button"
+											key={p.id}
+											onClick={() => {
+												setActiveProposalId(p.id);
+												setIsProposalMenuOpen(false);
+											}}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
+												p.id === activeCreateProposal.id
+													? "bg-zinc-50 dark:bg-zinc-800/40"
+													: ""
+											}`}
+										>
+											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
+												{p.title || "新文档"}
+											</div>
+											{p.summary ? (
+												<div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+													{p.summary}
+												</div>
+											) : null}
+										</button>
+									))}
+								</div>
+								<div className="px-4 py-2 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between">
+									<div className="text-[11px] text-zinc-400">
+										点击选择要处理的文档
+									</div>
+									<button
+										type="button"
+										onClick={() => setIsProposalMenuOpen(false)}
+										className="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+									>
+										关闭
+									</button>
+								</div>
+							</div>
+						)}
 					</div>
 				)}
 
