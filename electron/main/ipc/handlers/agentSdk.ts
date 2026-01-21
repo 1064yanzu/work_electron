@@ -543,13 +543,26 @@ function emit(getMainWindow: GetMainWindow, payload: AgentSdkEventPayload) {
 	win.webContents.send("agent-sdk-event", payload);
 }
 
+function isUuidString(value: unknown): value is string {
+	if (typeof value !== "string") return false;
+	const v = value.trim();
+	if (!v) return false;
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+		v,
+	);
+}
+
 function toUIEvents(message: any): any[] {
 	const events: any[] = [];
 	if (!message || typeof message !== "object") return events;
 
 	// SDK system messages (session init, status, compaction boundary, etc.)
 	if (message.type === "system") {
-		if (message.subtype === "init" && message.session_id) {
+		if (
+			message.subtype === "init" &&
+			message.session_id &&
+			isUuidString(String(message.session_id))
+		) {
 			events.push({
 				type: "session_init",
 				sessionId: String(message.session_id),
@@ -628,17 +641,14 @@ function toUIEvents(message: any): any[] {
 					: {},
 		});
 	}
-	if (ev?.type === "message_start" && ev?.message?.id) {
-		events.push({
-			type: "session_init",
-			sessionId: String(ev.message.id),
-		});
-	}
 
 	if (message.type === "result") {
 		const isError =
 			Boolean((message as any).is_error) || message.subtype !== "success";
-		if ((message as any).session_id) {
+		if (
+			typeof (message as any).session_id === "string" &&
+			isUuidString((message as any).session_id)
+		) {
 			events.push({
 				type: "session_init",
 				sessionId: String((message as any).session_id),
@@ -779,11 +789,13 @@ export function createAgentSdkHandlers(options: {
 					: [];
 				const enabledSkills = normalizeStringArray((input as any).skills);
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
-				const resumeSessionId =
-					typeof (input as any).resume_session_id === "string" &&
-					(input as any).resume_session_id.trim()
+				const resumeSessionIdRaw =
+					typeof (input as any).resume_session_id === "string"
 						? (input as any).resume_session_id.trim()
-						: undefined;
+						: "";
+				const resumeSessionId = isUuidString(resumeSessionIdRaw)
+					? resumeSessionIdRaw
+					: undefined;
 				const persistSession =
 					typeof (input as any).persist_session === "boolean"
 						? (input as any).persist_session

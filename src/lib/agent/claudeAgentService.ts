@@ -13,6 +13,7 @@ import type {
 } from "@anthropic-ai/claude-agent-sdk";
 import { invoke } from "../tauriCompat";
 import { listen } from "../tauriEventCompat";
+import { isUuid } from "../uuid";
 import { getMcpConfigForSdk } from "./mcpConfig";
 import { AgentStreamState, type UIEvent } from "./streamState";
 
@@ -304,7 +305,9 @@ export class ClaudeAgentService {
 					// 处理各种事件类型
 					for (const event of events) {
 						if (event.type === "session_init") {
-							sessionId = event.sessionId;
+							if (isUuid(event.sessionId)) {
+								sessionId = event.sessionId;
+							}
 							continue;
 						}
 						if (event.type === "system_notice") {
@@ -380,7 +383,7 @@ export class ClaudeAgentService {
 					const resultAny = payload.result as any;
 					if (
 						typeof resultAny?.session_id === "string" &&
-						resultAny.session_id
+						isUuid(resultAny.session_id)
 					) {
 						sessionId = resultAny.session_id;
 					}
@@ -465,7 +468,7 @@ export class ClaudeAgentService {
 					prompt,
 					model,
 					cwd: workingDirectory,
-					resume_session_id: resumeSessionId,
+					resume_session_id: isUuid(resumeSessionId) ? resumeSessionId : undefined,
 					persist_session: persistSession,
 					permission_mode: "acceptEdits",
 					allowed_tools: [...DEFAULT_TOOLS],

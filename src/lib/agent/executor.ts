@@ -367,6 +367,15 @@ class AgentExecutor {
 		let sdkSessionId: string | undefined;
 		let toolStepCounter = 0;
 		let lastToolCallId: string | null = null;
+		let shouldRetryWithoutResume = false;
+
+		const isResumeFailure = (text: string) => {
+			const t = String(text || "");
+			return (
+				t.includes("--resume requires a valid session ID") ||
+				t.includes("No conversation found with session ID")
+			);
+		};
 
 		// 构建增强版用户 prompt - 当有附件时,让模型明确知道有哪些文件
 		let enhancedUserPrompt = query;
@@ -391,17 +400,17 @@ class AgentExecutor {
 			}
 		}
 
-		try {
+		const runOnce = async (resumeSessionId?: string) => {
+			shouldRetryWithoutResume = false;
 			await this.sdkService.execute({
 				prompt: enhancedUserPrompt,
 				systemPrompt: enhancedPrompt || undefined,
 				workingDirectory: sandboxDir,
-				resumeSessionId: options?.resumeSessionId,
+				resumeSessionId,
 				persistSession: options?.persistSession,
 				skills: enabledSkills.map((s) => s.name),
-				abortController: this.abortController,
+				abortController: this.abortController ?? undefined,
 				onTodoUpdate: (todos) => {
-					// Persist todos onto the task so UI cards can render after completion.
 					agentStore.setTaskMetadata({ todos });
 				},
 
@@ -582,12 +591,39 @@ class AgentExecutor {
 							finalResult || result.summary || "Task completed",
 						);
 					} else {
+						if (
+							resumeSessionId &&
+							isResumeFailure(result.summary || "") &&
+							!shouldRetryWithoutResume
+						) {
+							shouldRetryWithoutResume = true;
+							return;
+						}
 						agentStore.failTask(result.summary || "Task failed");
 					}
 				},
 			});
+		};
+
+		try {
+			await runOnce(options?.resumeSessionId);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : "执行失败";
+			if (options?.resumeSessionId && shouldRetryWithoutResume) {
+				try {
+					finalResult = "";
+					toolStepCounter = 0;
+					lastToolCallId = null;
+					await runOnce(undefined);
+					return { sdkSessionId, sandboxDir };
+				} catch (e) {
+					const second =
+						e instanceof Error ? e.message : "执行失败";
+					console.error("[AgentExecutor SDK] Error:", second);
+					agentStore.failTask(second);
+					return { sdkSessionId, sandboxDir };
+				}
+			}
 			console.error("[AgentExecutor SDK] Error:", errorMessage);
 			agentStore.failTask(errorMessage);
 			return { sdkSessionId, sandboxDir };

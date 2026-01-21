@@ -48,6 +48,7 @@ import { EVENTS, events } from "../lib/events";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
+import { isUuid } from "../lib/uuid";
 import { createOutputAsset } from "../lib/api";
 import { OutputType } from "../types";
 import { PermissionList } from "./agent";
@@ -1200,7 +1201,21 @@ export default function CopilotSidebar() {
 					if (forcedFinalized) return;
 					if (!streamingMsgId) return;
 					const now = Date.now();
-					if (now - lastActivityAt < 6000) return;
+					if (now - lastActivityAt < 20000) return;
+
+					const live = agentStore.getState();
+					const liveTaskStatus = live.currentTask?.status;
+					if (
+						live.isExecuting ||
+						live.isWaitingForLLM ||
+						liveTaskStatus === "planning" ||
+						liveTaskStatus === "executing" ||
+						(live.currentSkill &&
+							live.currentSkill.status !== "completed" &&
+							live.currentSkill.status !== "error")
+					) {
+						return;
+					}
 					const hasRunningTools = streamBlocks.some(
 						(b) =>
 							b.type === "tool_call" &&
@@ -1561,7 +1576,12 @@ export default function CopilotSidebar() {
 						attachedContexts,
 						attachedFiles, // 传递文件路径
 						sandboxKey: boundAgentSessionId || session.id,
-						resumeSessionId: session.sdkSessionId,
+						resumeSessionId: (() => {
+							if (!session.sdkSessionId) return undefined;
+							if (isUuid(session.sdkSessionId)) return session.sdkSessionId;
+							chatStore.setSessionSdkSessionId(session.id, undefined);
+							return undefined;
+						})(),
 						persistSession: true,
 						onChunk, // 流式输出回调
 					},
