@@ -267,9 +267,21 @@ CREATE TABLE IF NOT EXISTS agent_sessions (
   title TEXT,
   status TEXT DEFAULT 'active',
   config_json TEXT,
+  -- SDK session management
+  sdk_session_id TEXT,
+  model TEXT DEFAULT 'claude-sonnet-4-5',
+  -- Token usage tracking
+  total_prompt_tokens INTEGER DEFAULT 0,
+  total_completion_tokens INTEGER DEFAULT 0,
+  total_tokens INTEGER DEFAULT 0,
+  -- Context compression
+  last_compact_at INTEGER,
+  pre_compact_tokens INTEGER,
+  -- Timestamps
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
 
 CREATE TABLE IF NOT EXISTS agent_tasks (
   id TEXT PRIMARY KEY,

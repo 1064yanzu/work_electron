@@ -30,6 +30,7 @@ import {
 import { getConfig, setConfig } from "../../../lib/config";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { Toggle } from "../components";
+import { AgentModelScenarioSettings } from "../components/AgentModelScenarioSettings";
 
 const RISK_LEVEL_CONFIG: Record<
 	ToolRiskLevel,
@@ -291,9 +292,12 @@ export function AgentSettings() {
 						Agent 设置
 					</h3>
 					<p className="text-sm text-text-secondary mt-1">
-						配置 Agent 工具权限与资料库检索策略
+						配置 Agent 模型场景、工具权限与资料库检索策略
 					</p>
 				</div>
+
+				{/* 模型场景配置 */}
+				<AgentModelScenarioSettings />
 
 				{/* 工具权限策略 */}
 				<div className="space-y-4">
@@ -611,11 +615,10 @@ export function AgentSettings() {
 									<button
 										key={opt.value}
 										onClick={() => handleKbModeChange(opt.value)}
-										className={`p-3 rounded-xl text-left transition-colors ${
-											kbRetrievalMode === opt.value
+										className={`p-3 rounded-xl text-left transition-colors ${kbRetrievalMode === opt.value
 												? "border-2 border-primary bg-primary/5"
 												: "border border-border hover:border-primary/50"
-										}`}
+											}`}
 									>
 										<div
 											className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}

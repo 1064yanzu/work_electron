@@ -205,6 +205,13 @@ export function createAgentSessionHandlers(db: DbContext) {
 			title?: string;
 			status?: string;
 			config_json?: unknown;
+			sdk_session_id?: string;
+			model?: string;
+			total_prompt_tokens?: number;
+			total_completion_tokens?: number;
+			total_tokens?: number;
+			last_compact_at?: number;
+			pre_compact_tokens?: number;
 		},
 	): Promise<AgentSession> => {
 		const updates: string[] = [];
@@ -221,6 +228,34 @@ export function createAgentSessionHandlers(db: DbContext) {
 		if (input.config_json !== undefined) {
 			updates.push("config_json = ?");
 			args.push(JSON.stringify(input.config_json));
+		}
+		if (input.sdk_session_id !== undefined) {
+			updates.push("sdk_session_id = ?");
+			args.push(input.sdk_session_id);
+		}
+		if (input.model !== undefined) {
+			updates.push("model = ?");
+			args.push(input.model);
+		}
+		if (input.total_prompt_tokens !== undefined) {
+			updates.push("total_prompt_tokens = ?");
+			args.push(input.total_prompt_tokens);
+		}
+		if (input.total_completion_tokens !== undefined) {
+			updates.push("total_completion_tokens = ?");
+			args.push(input.total_completion_tokens);
+		}
+		if (input.total_tokens !== undefined) {
+			updates.push("total_tokens = ?");
+			args.push(input.total_tokens);
+		}
+		if (input.last_compact_at !== undefined) {
+			updates.push("last_compact_at = ?");
+			args.push(input.last_compact_at);
+		}
+		if (input.pre_compact_tokens !== undefined) {
+			updates.push("pre_compact_tokens = ?");
+			args.push(input.pre_compact_tokens);
 		}
 
 		updates.push("updated_at = ?");

@@ -15,6 +15,7 @@ import { type AgentMessage, ClaudeAgentService } from "./claudeAgentService";
 import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
 import { getAgentSandboxDir } from "../api";
+import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -142,11 +143,19 @@ class AgentExecutor {
 			onChunk?: (chunk: string) => void;
 		},
 	): Promise<{ sdkSessionId?: string; sandboxDir?: string }> {
-		// Ensure skills store is initialized
+		// Ensure skills & model stores are initialized
 		await skillsStore.init();
+		await agentModelSettingsStore.init();
 
-		const activeModel = settingsStore.getActiveModel();
-		console.log("[AgentExecutor SDK] Active model:", activeModel);
+		// Smart Model Selection
+		const modelConfig = agentModelSettingsStore.getModelForTask(query);
+		const activeModel = modelConfig?.modelId || settingsStore.getActiveModel() || 'claude-sonnet-4-5';
+
+		if (modelConfig?.scenario && modelConfig.scenario !== 'default') {
+			console.log(`[AgentExecutor SDK] Smart Scenario: ${modelConfig.scenario} -> ${activeModel}`);
+		} else {
+			console.log("[AgentExecutor SDK] Active model:", activeModel);
+		}
 
 		const enabledSkills = skillsStore.getEnabledSkills();
 		console.log(
@@ -178,7 +187,7 @@ class AgentExecutor {
 						: task.id;
 				const res = await getAgentSandboxDir(sandboxKey);
 				sandboxDir = res.path;
-			} catch {}
+			} catch { }
 		}
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
@@ -218,7 +227,7 @@ class AgentExecutor {
 						size: ctx.content.length,
 						isBinary: false,
 					});
-				} catch {}
+				} catch { }
 			}
 			options.attachedContexts = [];
 		}
@@ -267,7 +276,7 @@ class AgentExecutor {
 							entries.length === 1 &&
 							entries[0]?.is_file &&
 							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
-								stripTrailingSlash(srcPath);
+							stripTrailingSlash(srcPath);
 
 						if (singleFile) {
 							await safeInvoke<{ success: boolean }>("copy_file_safe", {
@@ -287,8 +296,8 @@ class AgentExecutor {
 							if (!e.is_file) continue;
 							const rel = String(e.path).startsWith(dirRoot)
 								? String(e.path)
-										.slice(dirRoot.length)
-										.replace(/^[/\\]+/, "")
+									.slice(dirRoot.length)
+									.replace(/^[/\\]+/, "")
 								: getBasename(e.path);
 							const finalRel = rel || getBasename(e.path);
 							const out = `${sandboxDir}/${folderName}/${finalRel}`;
@@ -298,7 +307,7 @@ class AgentExecutor {
 									dest: out,
 									create_dirs: true,
 								});
-							} catch {}
+							} catch { }
 						}
 						file.path = `${sandboxDir}/${folderName}`;
 						file.type = file.type || "file";
@@ -310,7 +319,7 @@ class AgentExecutor {
 						});
 						file.path = dest;
 					}
-				} catch {}
+				} catch { }
 			}
 		}
 
@@ -384,8 +393,7 @@ class AgentExecutor {
 			if (options?.attachedFiles?.length) {
 				for (const file of options.attachedFiles) {
 					fileList.push(
-						`- ${file.title} (文件路径: ${file.path})${
-							file.type ? ` [${file.type}]` : ""
+						`- ${file.title} (文件路径: ${file.path})${file.type ? ` [${file.type}]` : ""
 						}`,
 					);
 				}
@@ -408,6 +416,7 @@ class AgentExecutor {
 				workingDirectory: sandboxDir,
 				resumeSessionId,
 				persistSession: options?.persistSession,
+				model: activeModel,
 				skills: enabledSkills.map((s) => s.name),
 				abortController: this.abortController ?? undefined,
 				onTodoUpdate: (todos) => {
@@ -426,7 +435,7 @@ class AgentExecutor {
 							toolStepCounter++;
 							const toolCallIdBase =
 								typeof message.toolCallId === "string" &&
-								message.toolCallId.trim()
+									message.toolCallId.trim()
 									? message.toolCallId.trim()
 									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 							const toolCallId = `sdk-tool-${toolCallIdBase}`;
@@ -511,7 +520,7 @@ class AgentExecutor {
 						case "tool_result": {
 							const resolvedToolCallId =
 								typeof message.toolCallId === "string" &&
-								message.toolCallId.trim()
+									message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: lastToolCallId;
 							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）
@@ -576,7 +585,7 @@ class AgentExecutor {
 					}
 				},
 
-				onComplete: (result) => {
+				onComplete: async (result) => {
 					sdkSessionId = result.sessionId;
 					if (sdkSessionId) {
 						agentStore.setTaskMetadata({ sdkSessionId });
@@ -584,6 +593,38 @@ class AgentExecutor {
 					if (result.usage) {
 						agentStore.setTaskMetadata({ tokenUsage: result.usage });
 					}
+
+					// Save SDK session data to database
+					if (task?.id && (result.sessionId || result.usage || activeModel)) {
+						try {
+							const updateData: {
+								id: string;
+								sdk_session_id?: string;
+								model?: string;
+								total_prompt_tokens?: number;
+								total_completion_tokens?: number;
+								total_tokens?: number;
+							} = { id: task.id };
+
+							if (result.sessionId) {
+								updateData.sdk_session_id = result.sessionId;
+							}
+							if (activeModel) {
+								updateData.model = activeModel;
+							}
+							if (result.usage) {
+								updateData.total_prompt_tokens = result.usage.promptTokens;
+								updateData.total_completion_tokens = result.usage.completionTokens;
+								updateData.total_tokens = result.usage.totalTokens;
+							}
+
+							await safeInvoke('agent_update_session', updateData);
+							console.log('[AgentExecutor] Saved session data:', updateData);
+						} catch (err) {
+							console.error('[AgentExecutor] Failed to save session data:', err);
+						}
+					}
+
 					if (result.success) {
 						// Mark analysis step as complete
 						agentStore.updateTaskStepByKind("analysis", "completed");

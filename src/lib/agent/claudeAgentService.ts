@@ -49,6 +49,9 @@ export interface ClaudeAgentExecutionOptions {
 	/** Whether the SDK should persist sessions to disk (defaults to true in SDK) */
 	persistSession?: boolean;
 
+	/** Model to use for this execution (e.g., 'claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5') */
+	model?: string;
+
 	/** Enabled skills list (used for skill routing and subagents) */
 	skills?: string[];
 
@@ -120,6 +123,7 @@ export class ClaudeAgentService {
 			workingDirectory,
 			resumeSessionId,
 			persistSession,
+			model: userModel,
 			skills,
 			onChunk,
 			onMessage,
@@ -128,8 +132,9 @@ export class ClaudeAgentService {
 			abortController = new AbortController(),
 		} = options;
 
-		const model = settingsStore.getActiveModel() || "gpt-4o";
-		console.log("[ClaudeAgentService] Active model for SDK:", model);
+		// Use user-specified model, or fall back to settings, or default
+		const model = userModel || settingsStore.getActiveModel() || "claude-sonnet-4-5";
+		console.log("[ClaudeAgentService] Using model for SDK:", model);
 
 		let unlisten: (() => void) | null = null;
 		let runId: string | null = null;
@@ -221,7 +226,7 @@ export class ClaudeAgentService {
 							lastToolUseId =
 								String(
 									toolErrorBlocks[toolErrorBlocks.length - 1]?.tool_use_id ||
-										"",
+									"",
 								) || lastToolUseId;
 
 							if (debug) {
@@ -419,10 +424,10 @@ export class ClaudeAgentService {
 					const usage =
 						promptTokens !== null && completionTokens !== null
 							? {
-									promptTokens,
-									completionTokens,
-									totalTokens: promptTokens + completionTokens,
-								}
+								promptTokens,
+								completionTokens,
+								totalTokens: promptTokens + completionTokens,
+							}
 							: undefined;
 					onComplete?.({
 						success: ok,
