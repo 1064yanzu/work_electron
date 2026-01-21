@@ -572,6 +572,9 @@ class AgentExecutor {
 					if (sdkSessionId) {
 						agentStore.setTaskMetadata({ sdkSessionId });
 					}
+					if (result.usage) {
+						agentStore.setTaskMetadata({ tokenUsage: result.usage });
+					}
 					if (result.success) {
 						// Mark analysis step as complete
 						agentStore.updateTaskStepByKind("analysis", "completed");

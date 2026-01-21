@@ -62,6 +62,11 @@ export interface ClaudeAgentExecutionOptions {
 		success: boolean;
 		summary?: string;
 		sessionId?: string;
+		usage?: {
+			promptTokens: number;
+			completionTokens: number;
+			totalTokens: number;
+		};
 	}) => void;
 
 	/** Callback for todo list updates */
@@ -393,10 +398,34 @@ export class ClaudeAgentService {
 						resultText ||
 						subtype ||
 						"Task finished";
+					const usageAny = resultAny?.usage;
+					const toFiniteNumber = (v: unknown): number | null => {
+						const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+						return Number.isFinite(n) ? n : null;
+					};
+					const promptTokens =
+						toFiniteNumber(usageAny?.prompt_tokens) ??
+						toFiniteNumber(usageAny?.input_tokens) ??
+						toFiniteNumber(usageAny?.inputTokens) ??
+						null;
+					const completionTokens =
+						toFiniteNumber(usageAny?.completion_tokens) ??
+						toFiniteNumber(usageAny?.output_tokens) ??
+						toFiniteNumber(usageAny?.outputTokens) ??
+						null;
+					const usage =
+						promptTokens !== null && completionTokens !== null
+							? {
+									promptTokens,
+									completionTokens,
+									totalTokens: promptTokens + completionTokens,
+								}
+							: undefined;
 					onComplete?.({
 						success: ok,
 						summary: ok ? resultText || "Task completed" : failureSummary,
 						sessionId: sessionId ?? undefined,
+						usage,
 					});
 					if (unlisten) unlisten();
 					unlisten = null;

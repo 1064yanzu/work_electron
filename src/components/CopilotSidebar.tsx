@@ -123,9 +123,28 @@ function parseDocProtocolFinal(
 				prompt: string;
 			};
 	  } {
-	const updateMatch = full.match(/:::update-doc([\s\S]*?):::/);
-	if (updateMatch) {
-		const suggestedContent = (updateMatch[1] || "").trim();
+	const extractProtocolSection = (
+		raw: string,
+		marker: ":::update-doc" | ":::create-doc",
+	):
+		| {
+				fullMatchText: string;
+				sectionText: string;
+		  }
+		| null => {
+		const startIdx = raw.indexOf(marker);
+		if (startIdx < 0) return null;
+		const after = raw.slice(startIdx + marker.length);
+		const endRel = after.indexOf(":::");
+		const endIdx = endRel >= 0 ? startIdx + marker.length + endRel + 3 : raw.length;
+		const sectionText = (endRel >= 0 ? after.slice(0, endRel) : after).trim();
+		const fullMatchText = raw.slice(startIdx, endIdx);
+		return { fullMatchText, sectionText };
+	};
+
+	const updateSection = extractProtocolSection(full, ":::update-doc");
+	if (updateSection) {
+		const suggestedContent = updateSection.sectionText;
 		if (!options.hasActiveDoc) {
 			const docContent = suggestedContent;
 			const changes = diffLines("", docContent);
@@ -143,10 +162,7 @@ function parseDocProtocolFinal(
 
 			return {
 				kind: "create",
-				displayContent: full.replace(
-					updateMatch[0],
-					"\n<<<AI_CREATE_DONE>>>\n",
-				),
+				displayContent: full.replace(updateSection.fullMatchText, "\n<<<AI_CREATE_DONE>>>\n"),
 				title,
 				summary,
 				content: docContent,
@@ -175,7 +191,7 @@ function parseDocProtocolFinal(
 
 		return {
 			kind: "update",
-			displayContent: full.replace(updateMatch[0], "\n<<<AI_UPDATE_DONE>>>\n"),
+			displayContent: full.replace(updateSection.fullMatchText, "\n<<<AI_UPDATE_DONE>>>\n"),
 			suggestedContent,
 			fileUpdate: {
 				fileName: "当前文档",
@@ -191,9 +207,9 @@ function parseDocProtocolFinal(
 		};
 	}
 
-	const createMatch = full.match(/:::create-doc([\s\S]*?):::/);
-	if (createMatch) {
-		const docContentBuffer = (createMatch[1] || "").trim();
+	const createSection = extractProtocolSection(full, ":::create-doc");
+	if (createSection) {
+		const docContentBuffer = createSection.sectionText;
 		const lines = docContentBuffer.split("\n");
 		let title = "新文档";
 		let summary = "";
@@ -222,7 +238,7 @@ function parseDocProtocolFinal(
 
 		return {
 			kind: "create",
-			displayContent: full.replace(createMatch[0], "\n<<<AI_CREATE_DONE>>>\n"),
+			displayContent: full.replace(createSection.fullMatchText, "\n<<<AI_CREATE_DONE>>>\n"),
 			title,
 			summary,
 			content: docContent,
@@ -883,44 +899,6 @@ export default function CopilotSidebar() {
 			let currentTextBlockIndex = 0;
 			const toolCallBlockIndex = new Map<string, number>();
 
-			const summarizeToolInputForUser = (input: any): string => {
-				if (!input || typeof input !== "object") return "";
-				const pick = (key: string) => {
-					const v = (input as any)[key];
-					if (typeof v === "string" && v.trim()) return v.trim();
-					if (typeof v === "number" && Number.isFinite(v)) return String(v);
-					return "";
-				};
-
-				const query = pick("query") || pick("q");
-				const url = pick("url");
-				const path = pick("path") || pick("file_path") || pick("filePath");
-				const pattern = pick("pattern") || pick("glob");
-				const command = pick("command");
-
-				const parts = [
-					query ? `query=${query}` : "",
-					url ? `url=${url}` : "",
-					path ? `path=${path}` : "",
-					pattern ? `pattern=${pattern}` : "",
-					command ? `command=${command}` : "",
-				].filter(Boolean);
-
-				return parts.slice(0, 2).join("，");
-			};
-
-			const appendRuntimeHint = (hint: string) => {
-				const last = streamBlocks[streamBlocks.length - 1];
-				if (!last || last.type !== "text") {
-					streamBlocks.push({ type: "text", text: "" } as any);
-					currentTextBlockIndex = streamBlocks.length - 1;
-				}
-				const textBlock = streamBlocks[currentTextBlockIndex];
-				if (!textBlock || textBlock.type !== "text") return;
-				const prefix = textBlock.text.trim().length > 0 ? "\n\n" : "";
-				textBlock.text += `${prefix}> ${hint}`;
-			};
-
 			const getStreamText = () =>
 				streamBlocks
 					.filter(
@@ -1346,12 +1324,6 @@ export default function CopilotSidebar() {
 						if (!toolCallId || insertedToolCallIds.has(toolCallId)) return;
 						insertedToolCallIds.add(toolCallId);
 
-						const toolName = event.toolCall?.name || "工具";
-						const toolArgs = summarizeToolInputForUser(event.toolCall?.input);
-						appendRuntimeHint(
-							toolArgs ? `正在运行：${toolName}（${toolArgs}）` : `正在运行：${toolName}`,
-						);
-
 						const toolCallBlock: Extract<
 							ChatMessageBlock,
 							{ type: "tool_call" }
@@ -1449,6 +1421,13 @@ export default function CopilotSidebar() {
 				}
 
 				const finalState = agentStore.getState();
+				const tokenUsage = (finalState.currentTask?.metadata as any)?.tokenUsage as
+					| {
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+					  }
+					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
 				if (finalState.currentTask?.status === "error") {
@@ -1475,6 +1454,7 @@ export default function CopilotSidebar() {
 							...(protocol.kind === "create" || protocol.kind === "update"
 								? { fileUpdates: [protocol.fileUpdate] }
 								: null),
+							...(tokenUsage ? { tokenUsage } : null),
 						},
 					});
 
@@ -1719,6 +1699,7 @@ export default function CopilotSidebar() {
 					detachAgentEvent();
 					detachAgentEvent = null;
 				}
+				setAbortController(null);
 			}
 
 			return;
