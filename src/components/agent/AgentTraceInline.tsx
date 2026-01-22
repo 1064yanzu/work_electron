@@ -18,7 +18,7 @@ import {
 	Database,
 	Archive,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import {
 	TOOL_ICONS,
@@ -27,7 +27,9 @@ import {
 	type ToolType,
 } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
+import { safeInvoke } from "../../lib/tauriBridge";
 import { InlineImage } from "../ui/InlineImage";
+import { WebPreviewCard } from "../chat/WebPreviewCard";
 import { SkillCard } from "./SkillCard";
 import { SubagentCard } from "./SubagentCard";
 import TaskSteps from "./TaskSteps";
@@ -120,38 +122,139 @@ function CommandHighlight({ command }: { command: string }) {
 }
 
 function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
+	const [showPreview, setShowPreview] = useState(false);
+	const [fileContent, setFileContent] = useState<string | null>(null);
+	const [loadingContent, setLoadingContent] = useState(false);
+
+	// 判断文件类型
+	const fileName = artifact.url?.split('/').pop() || artifact.title;
+	const ext = fileName.split('.').pop()?.toLowerCase() || '';
+	const isHtmlFile = ext === 'html' || ext === 'htm';
+	const isCodeFile = ['js', 'jsx', 'ts', 'tsx', 'css', 'json', 'md', 'py', 'rs', 'go'].includes(ext);
+	const isPdfFile = ext === 'pdf';
+	const isPreviewable = isHtmlFile || isCodeFile || artifact.type === 'code' || artifact.content;
+
 	const Icon =
 		artifact.type === "url"
 			? Globe
 			: artifact.type === "text"
 				? BookOpen
-				: Sparkles;
+				: artifact.type === "code" || isCodeFile
+					? Zap
+					: Sparkles;
+
+	// 加载文件内容用于预览
+	const loadContentForPreview = async () => {
+		if (artifact.content) {
+			setFileContent(artifact.content);
+			setShowPreview(true);
+			return;
+		}
+		if (artifact.url && (isHtmlFile || isCodeFile)) {
+			setLoadingContent(true);
+			try {
+				const content = await safeInvoke<string>('read_file', { path: artifact.url });
+				if (content) {
+					setFileContent(content);
+					setShowPreview(true);
+				}
+			} catch (e) {
+				console.error('[ArtifactRow] Failed to load file:', e);
+			}
+			setLoadingContent(false);
+		}
+	};
+
+	const togglePreview = () => {
+		if (showPreview) {
+			setShowPreview(false);
+		} else {
+			loadContentForPreview();
+		}
+	};
 
 	return (
-		<div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10">
-			<div className="mt-0.5 p-1.5 rounded-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-				<Icon className="w-3.5 h-3.5 text-zinc-500" />
-			</div>
-			<div className="min-w-0 flex-1">
-				<div className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
-					{artifact.title}
+		<div className="rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+			{/* 头部信息 */}
+			<div
+				className={cn(
+					"flex items-start gap-2 px-3 py-2",
+					isPreviewable && "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+				)}
+				onClick={isPreviewable ? togglePreview : undefined}
+			>
+				<div className="mt-0.5 p-1.5 rounded-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
+					{loadingContent ? (
+						<Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin" />
+					) : (
+						<Icon className="w-3.5 h-3.5 text-zinc-500" />
+					)}
 				</div>
-				{artifact.url ? (
-					<div className="text-[11px] text-zinc-400 truncate">
-						{artifact.url}
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2">
+						<div className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
+							{artifact.title}
+						</div>
+						{isPreviewable && (
+							<div className="flex items-center gap-1 text-[10px] text-zinc-400">
+								{showPreview ? (
+									<><ChevronDown className="w-3 h-3" />收起</>
+								) : (
+									<><ChevronRight className="w-3 h-3" />预览</>
+								)}
+							</div>
+						)}
 					</div>
-				) : artifact.content ? (
-					<div className="text-[11px] text-zinc-400 line-clamp-2 whitespace-pre-wrap">
-						{artifact.content}
-					</div>
-				) : null}
-
-				{artifact.type === "image" && artifact.url ? (
-					<div className="mt-2">
-						<InlineImage path={artifact.url} title={artifact.title} />
-					</div>
-				) : null}
+					{artifact.url ? (
+						<div className="text-[11px] text-zinc-400 truncate">
+							{artifact.url}
+						</div>
+					) : artifact.content && !showPreview ? (
+						<div className="text-[11px] text-zinc-400 line-clamp-2 whitespace-pre-wrap">
+							{artifact.content.slice(0, 100)}{artifact.content.length > 100 ? '...' : ''}
+						</div>
+					) : null}
+				</div>
 			</div>
+
+			{/* 图片预览 */}
+			{artifact.type === "image" && artifact.url && (
+				<div className="px-3 pb-2">
+					<InlineImage path={artifact.url} title={artifact.title} />
+				</div>
+			)}
+
+			{/* HTML 预览 */}
+			{showPreview && isHtmlFile && fileContent && (
+				<div className="border-t border-zinc-100 dark:border-zinc-800">
+					<WebPreviewCard
+						kind="html"
+						html={fileContent}
+						title={fileName}
+					/>
+				</div>
+			)}
+
+			{/* 代码/文本预览 */}
+			{showPreview && !isHtmlFile && (fileContent || artifact.content) && (
+				<div className="border-t border-zinc-100 dark:border-zinc-800 max-h-60 overflow-y-auto">
+					<pre className="px-3 py-2 text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words font-mono">
+						{(fileContent || artifact.content || '').slice(0, 3000)}
+						{((fileContent || artifact.content || '').length > 3000) && '\n... (内容过长已截断)'}
+					</pre>
+				</div>
+			)}
+
+			{/* PDF 预览 */}
+			{isPdfFile && artifact.url && showPreview && (
+				<div className="border-t border-zinc-100 dark:border-zinc-800 h-80">
+					<iframe
+						src={`file://${artifact.url}`}
+						title="PDF Preview"
+						className="w-full h-full"
+					/>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -381,7 +484,13 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 
 	// Task 工具调用（子代理）显示高级卡片
 	if (toolCall.name === 'Task') {
+		console.log('[AgentTraceInline] Rendering SubagentCard for Task:', { toolCallId: toolCall.id, name: toolCall.name });
 		return <SubagentCard toolCall={toolCall} />;
+	}
+
+	// 🔍 调试：如果工具名称接近 'Task' 但不完全匹配，打印出来
+	if (toolCall.name.toLowerCase().includes('task')) {
+		console.warn('[AgentTraceInline] Tool name contains "task" but does not match exactly:', { name: toolCall.name, toolCallId: toolCall.id });
 	}
 
 	return (

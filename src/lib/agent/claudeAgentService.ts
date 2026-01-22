@@ -422,11 +422,13 @@ export class ClaudeAgentService {
 								status: event.isError ? "error" : "completed",
 							});
 						} else if (event.type === "result") {
-							onMessage?.({
-								type: "result",
-								content: event.result || "",
-								status: event.isError ? "error" : "completed",
-							});
+							// 不再作为可见消息显示 result 事件，避免任务完成后出现重复文本
+							// result 事件仅用于标记任务完成，其内容已通过 text_delta 显示过
+							// onMessage?.({
+							// 	type: "result",
+							// 	content: event.result || "",
+							// 	status: event.isError ? "error" : "completed",
+							// });
 						}
 						// 忽略 'text' 事件，因为 'text_delta' 已经处理了增量内容
 					}

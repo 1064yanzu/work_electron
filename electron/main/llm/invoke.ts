@@ -491,7 +491,7 @@ async function callAnthropicStream(opts: {
 }
 
 /**
- * 调用 Ollama API
+ * 调用 Ollama API（内部使用流式并聚合结果）
  */
 async function callOllama(
 	provider: Provider,
@@ -500,29 +500,17 @@ async function callOllama(
 	_context?: string[],
 	_temperature?: number,
 ): Promise<LlmCallResult> {
-	const baseUrl = provider.api_base || "http://localhost:11434";
-	const url = `${baseUrl}/api/chat`;
-
-	const response = await fetch(url, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			model,
-			messages: [{ role: "user", content: prompt }],
-			stream: false,
-		}),
+	// 使用流式调用内部实现，确保一致性
+	let content = "";
+	await callOllamaStream({
+		provider,
+		model,
+		prompt,
+		onChunk: (text) => {
+			content += text;
+		},
 	});
-
-	if (!response.ok) {
-		const error = await response.text();
-		throw new Error(`Ollama call failed: ${response.status} - ${error}`);
-	}
-
-	const data = (await response.json()) as {
-		message: { content: string };
-	};
-
-	return { content: data.message?.content || "" };
+	return { content };
 }
 
 async function callOllamaStream(opts: {
