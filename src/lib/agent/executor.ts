@@ -147,15 +147,23 @@ class AgentExecutor {
 		await skillsStore.init();
 		await agentModelSettingsStore.init();
 
-		// Smart Model Selection
-		const modelConfig = agentModelSettingsStore.getModelForTask(query);
-		const activeModel = modelConfig?.modelId || settingsStore.getActiveModel() || 'claude-sonnet-4-5';
+		// Model selection priority:
+		// 1) User-selected active model (UI dropdown)
+		// 2) Smart scenario suggestion (only if no user-selected model)
+		// 3) Fallback default
+		const userSelectedModel = settingsStore.getActiveModel();
+		const modelConfig = userSelectedModel
+			? null
+			: agentModelSettingsStore.getModelForTask(query);
+		const activeModel =
+			userSelectedModel || modelConfig?.modelId || "claude-sonnet-4-5";
 
-		if (modelConfig?.scenario && modelConfig.scenario !== 'default') {
-			console.log(`[AgentExecutor SDK] Smart Scenario: ${modelConfig.scenario} -> ${activeModel}`);
-		} else {
-			console.log("[AgentExecutor SDK] Active model:", activeModel);
-		}
+		console.log("[AgentExecutor SDK] Model selection:", {
+			userSelectedModel: userSelectedModel || null,
+			smartScenario: modelConfig?.scenario || null,
+			smartModel: modelConfig?.modelId || null,
+			activeModel,
+		});
 
 		const enabledSkills = skillsStore.getEnabledSkills();
 		console.log(
@@ -187,7 +195,7 @@ class AgentExecutor {
 						: task.id;
 				const res = await getAgentSandboxDir(sandboxKey);
 				sandboxDir = res.path;
-			} catch { }
+			} catch {}
 		}
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
@@ -227,7 +235,7 @@ class AgentExecutor {
 						size: ctx.content.length,
 						isBinary: false,
 					});
-				} catch { }
+				} catch {}
 			}
 			options.attachedContexts = [];
 		}
@@ -276,7 +284,7 @@ class AgentExecutor {
 							entries.length === 1 &&
 							entries[0]?.is_file &&
 							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
-							stripTrailingSlash(srcPath);
+								stripTrailingSlash(srcPath);
 
 						if (singleFile) {
 							await safeInvoke<{ success: boolean }>("copy_file_safe", {
@@ -296,8 +304,8 @@ class AgentExecutor {
 							if (!e.is_file) continue;
 							const rel = String(e.path).startsWith(dirRoot)
 								? String(e.path)
-									.slice(dirRoot.length)
-									.replace(/^[/\\]+/, "")
+										.slice(dirRoot.length)
+										.replace(/^[/\\]+/, "")
 								: getBasename(e.path);
 							const finalRel = rel || getBasename(e.path);
 							const out = `${sandboxDir}/${folderName}/${finalRel}`;
@@ -307,7 +315,7 @@ class AgentExecutor {
 									dest: out,
 									create_dirs: true,
 								});
-							} catch { }
+							} catch {}
 						}
 						file.path = `${sandboxDir}/${folderName}`;
 						file.type = file.type || "file";
@@ -319,7 +327,7 @@ class AgentExecutor {
 						});
 						file.path = dest;
 					}
-				} catch { }
+				} catch {}
 			}
 		}
 
@@ -393,7 +401,8 @@ class AgentExecutor {
 			if (options?.attachedFiles?.length) {
 				for (const file of options.attachedFiles) {
 					fileList.push(
-						`- ${file.title} (文件路径: ${file.path})${file.type ? ` [${file.type}]` : ""
+						`- ${file.title} (文件路径: ${file.path})${
+							file.type ? ` [${file.type}]` : ""
 						}`,
 					);
 				}
@@ -435,7 +444,7 @@ class AgentExecutor {
 							toolStepCounter++;
 							const toolCallIdBase =
 								typeof message.toolCallId === "string" &&
-									message.toolCallId.trim()
+								message.toolCallId.trim()
 									? message.toolCallId.trim()
 									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 							const toolCallId = `sdk-tool-${toolCallIdBase}`;
@@ -520,7 +529,7 @@ class AgentExecutor {
 						case "tool_result": {
 							const resolvedToolCallId =
 								typeof message.toolCallId === "string" &&
-									message.toolCallId.trim()
+								message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: lastToolCallId;
 							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）
@@ -614,14 +623,18 @@ class AgentExecutor {
 							}
 							if (result.usage) {
 								updateData.total_prompt_tokens = result.usage.promptTokens;
-								updateData.total_completion_tokens = result.usage.completionTokens;
+								updateData.total_completion_tokens =
+									result.usage.completionTokens;
 								updateData.total_tokens = result.usage.totalTokens;
 							}
 
 							// await safeInvoke('agent_update_session', updateData);
-							console.log('[AgentExecutor] Saved session data:', updateData);
+							console.log("[AgentExecutor] Saved session data:", updateData);
 						} catch (err) {
-							console.error('[AgentExecutor] Failed to save session data:', err);
+							console.error(
+								"[AgentExecutor] Failed to save session data:",
+								err,
+							);
 						}
 					}
 
@@ -658,8 +671,7 @@ class AgentExecutor {
 					await runOnce(undefined);
 					return { sdkSessionId, sandboxDir };
 				} catch (e) {
-					const second =
-						e instanceof Error ? e.message : "执行失败";
+					const second = e instanceof Error ? e.message : "执行失败";
 					console.error("[AgentExecutor SDK] Error:", second);
 					agentStore.failTask(second);
 					return { sdkSessionId, sandboxDir };

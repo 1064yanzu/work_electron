@@ -26,6 +26,8 @@ import React, { useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
+import { type ArtifactFileType } from "./ArtifactCard";
+import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
 
 // 提取文件名
@@ -40,6 +42,66 @@ function getFilePath(filePath: string): string {
 	const parts = filePath.split("/");
 	if (parts.length <= 2) return filePath;
 	return parts.slice(-2).join("/");
+}
+
+function inferArtifactFileType(filePath: string): ArtifactFileType {
+	const lower = filePath.toLowerCase();
+	const ext = lower.includes(".") ? lower.split(".").pop() || "" : "";
+	if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
+		return "image";
+	if (["htm", "html"].includes(ext)) return "html";
+	if (["pdf"].includes(ext)) return "pdf";
+	if (
+		[
+			"js",
+			"jsx",
+			"ts",
+			"tsx",
+			"css",
+			"scss",
+			"less",
+			"json",
+			"md",
+			"yml",
+			"yaml",
+			"toml",
+			"xml",
+			"sql",
+			"sh",
+			"bash",
+			"py",
+			"java",
+			"kt",
+			"go",
+			"rs",
+			"c",
+			"cc",
+			"cpp",
+			"h",
+			"hpp",
+		].includes(ext)
+	) {
+		return "code";
+	}
+	if (ext) return "text";
+	return "other";
+}
+
+async function statFileSize(filePath: string): Promise<number> {
+	try {
+		const entries = await (window as any).electronAPI?.invoke(
+			"list_files_safe",
+			{
+				path: filePath,
+				recursive: false,
+			},
+		);
+		const first = Array.isArray(entries) ? entries[0] : null;
+		const size = first && typeof first.size === "number" ? first.size : 0;
+		return Number.isFinite(size) ? size : 0;
+	} catch {
+		return 0;
+	}
 }
 
 // 检查是否为终端/Bash 工具调用
@@ -254,6 +316,12 @@ export default function ToolCallInline({
 }) {
 	const { currentTask, taskHistory } = useAgentStore();
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [previewFile, setPreviewFile] = useState<{
+		fileName: string;
+		filePath: string;
+		fileType: ArtifactFileType;
+		fileSize: number;
+	} | null>(null);
 
 	const storeTask =
 		currentTask?.id === taskId
@@ -287,6 +355,39 @@ export default function ToolCallInline({
 		detail ||
 		(toolCall.input && Object.keys(toolCall.input).length > 0)
 	);
+
+	const openFilePreview = async () => {
+		const input = toolCall.input as Record<string, unknown> | undefined;
+		const filePathFull = String(
+			input?.file_path || input?.path || input?.file || "",
+		).trim();
+		if (!filePathFull) return;
+		const fileType = inferArtifactFileType(filePathFull);
+		const fileSize = await statFileSize(filePathFull);
+		setPreviewFile({
+			fileName: getFileName(filePathFull),
+			filePath: filePathFull,
+			fileType,
+			fileSize,
+		});
+	};
+
+	const canPreviewFile = (() => {
+		const name = toolCall.name?.toLowerCase() || "";
+		const type = toolCall.type;
+		if (
+			name.includes("write") ||
+			name.includes("edit") ||
+			name.includes("patch") ||
+			type === "file_write" ||
+			type === "doc_update" ||
+			type === "doc_patch"
+		) {
+			const input = toolCall.input as Record<string, unknown> | undefined;
+			return Boolean(input?.file_path || input?.path || input?.file);
+		}
+		return false;
+	})();
 
 	// 对于 Bash 工具调用，使用 Mac 风格终端显示
 	if (isBashToolCall(toolCall)) {
@@ -358,10 +459,25 @@ export default function ToolCallInline({
 				>
 					<span className="font-medium">{prefix}</span>
 					{fileName && (
-						<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300">
+						<button
+							type="button"
+							onClick={(e) => {
+								if (!canPreviewFile) return;
+								e.preventDefault();
+								e.stopPropagation();
+								void openFilePreview();
+							}}
+							className={cn(
+								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300",
+								canPreviewFile
+									? "hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 cursor-pointer"
+									: "cursor-default",
+							)}
+							title={canPreviewFile ? "点击预览" : undefined}
+						>
 							<Icon className="w-3 h-3 text-sky-500" />
 							{fileName}
-						</span>
+						</button>
 					)}
 					{suffix && !fileName && (
 						<span className="text-zinc-500 dark:text-zinc-400">{suffix}</span>
@@ -384,6 +500,23 @@ export default function ToolCallInline({
 			{/* 展开的详情 */}
 			{isExpanded && hasDetails && (
 				<div className="ml-8 mt-1 text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
+					{canPreviewFile && (
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									void openFilePreview();
+								}}
+								className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60"
+							>
+								<Eye className="w-3.5 h-3.5" />
+								预览文件
+							</button>
+						</div>
+					)}
+
 					{/* 输入参数 */}
 					{toolCall.input && Object.keys(toolCall.input).length > 0 && (
 						<div className="space-y-1">
@@ -427,6 +560,17 @@ export default function ToolCallInline({
 						</div>
 					)}
 				</div>
+			)}
+
+			{previewFile && (
+				<ArtifactPreviewModal
+					isOpen={!!previewFile}
+					onClose={() => setPreviewFile(null)}
+					fileName={previewFile.fileName}
+					filePath={previewFile.filePath}
+					fileType={previewFile.fileType}
+					fileSize={previewFile.fileSize}
+				/>
 			)}
 		</div>
 	);

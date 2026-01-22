@@ -96,54 +96,53 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-		kind: "update";
-		displayContent: string;
-		suggestedContent: string;
-		fileUpdate: {
-			fileName: string;
-			type: "update";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
-			originalContent: string;
+			kind: "update";
+			displayContent: string;
 			suggestedContent: string;
-			prompt: string;
-		};
-	}
+			fileUpdate: {
+				fileName: string;
+				type: "update";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				originalContent: string;
+				suggestedContent: string;
+				prompt: string;
+			};
+	  }
 	| {
-		kind: "create";
-		displayContent: string;
-		title: string;
-		summary: string;
-		content: string;
-		fileUpdate: {
-			fileName: string;
-			type: "create";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
+			kind: "create";
+			displayContent: string;
 			title: string;
 			summary: string;
 			content: string;
-			prompt: string;
-		};
-	} {
+			fileUpdate: {
+				fileName: string;
+				type: "create";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				title: string;
+				summary: string;
+				content: string;
+				prompt: string;
+			};
+	  } {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
-	):
-		| {
-			fullMatchText: string;
-			sectionText: string;
-		}
-		| null => {
+	): {
+		fullMatchText: string;
+		sectionText: string;
+	} | null => {
 		const startIdx = raw.indexOf(marker);
 		if (startIdx < 0) return null;
 		const after = raw.slice(startIdx + marker.length);
 		const endRel = after.indexOf(":::");
-		const endIdx = endRel >= 0 ? startIdx + marker.length + endRel + 3 : raw.length;
+		const endIdx =
+			endRel >= 0 ? startIdx + marker.length + endRel + 3 : raw.length;
 		const sectionText = (endRel >= 0 ? after.slice(0, endRel) : after).trim();
 		const fullMatchText = raw.slice(startIdx, endIdx);
 		return { fullMatchText, sectionText };
@@ -169,7 +168,10 @@ function parseDocProtocolFinal(
 
 			return {
 				kind: "create",
-				displayContent: full.replace(updateSection.fullMatchText, "\n<<<AI_CREATE_DONE>>>\n"),
+				displayContent: full.replace(
+					updateSection.fullMatchText,
+					"\n<<<AI_CREATE_DONE>>>\n",
+				),
 				title,
 				summary,
 				content: docContent,
@@ -198,7 +200,10 @@ function parseDocProtocolFinal(
 
 		return {
 			kind: "update",
-			displayContent: full.replace(updateSection.fullMatchText, "\n<<<AI_UPDATE_DONE>>>\n"),
+			displayContent: full.replace(
+				updateSection.fullMatchText,
+				"\n<<<AI_UPDATE_DONE>>>\n",
+			),
 			suggestedContent,
 			fileUpdate: {
 				fileName: "当前文档",
@@ -245,7 +250,10 @@ function parseDocProtocolFinal(
 
 		return {
 			kind: "create",
-			displayContent: full.replace(createSection.fullMatchText, "\n<<<AI_CREATE_DONE>>>\n"),
+			displayContent: full.replace(
+				createSection.fullMatchText,
+				"\n<<<AI_CREATE_DONE>>>\n",
+			),
 			title,
 			summary,
 			content: docContent,
@@ -446,7 +454,12 @@ export default function CopilotSidebar() {
 	const showDropIndicator = isMouseDragging;
 
 	const queueCreateProposal = useCallback(
-		(payload: { title: string; summary: string; content: string; prompt: string }) => {
+		(payload: {
+			title: string;
+			summary: string;
+			content: string;
+			prompt: string;
+		}) => {
 			const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 			const item = {
 				id,
@@ -475,7 +488,9 @@ export default function CopilotSidebar() {
 
 	const activeCreateProposal = useMemo(() => {
 		if (!activeProposalId) return null;
-		return pendingCreateProposals.find((p) => p.id === activeProposalId) || null;
+		return (
+			pendingCreateProposals.find((p) => p.id === activeProposalId) || null
+		);
 	}, [pendingCreateProposals, activeProposalId]);
 
 	const acceptActiveCreateProposal = useCallback(async () => {
@@ -940,29 +955,6 @@ export default function CopilotSidebar() {
 				lastActivityAt = Date.now();
 			};
 
-			const persistTraceMessageIfNeeded = (message: ChatMessageType) => {
-				if (
-					!(
-						chatSettings.persistEnabled &&
-						chatSettings.persistTraceEnabled &&
-						boundAgentSessionId &&
-						!boundAgentSessionId.startsWith("local-")
-					)
-				) {
-					return;
-				}
-				void persistChatMessageToAgentSession(
-					boundAgentSessionId,
-					message,
-				).then((record) => {
-					if (record?.id) {
-						chatStore.updateMessage(session.id, message.id, {
-							metadata: { agentMessageId: record.id },
-						});
-					}
-				});
-			};
-
 			// 任务列表暂时不展示（根据反馈移除）
 
 			let lastSkillExecutionBlock: ChatMessageBlock | null = null;
@@ -1086,7 +1078,10 @@ export default function CopilotSidebar() {
 					)
 					.map((b) => b.text || "")
 					.join("");
-				if (normalizedFinal.trim() && normalizedFinal.trim() !== existingText.trim()) {
+				if (
+					normalizedFinal.trim() &&
+					normalizedFinal.trim() !== existingText.trim()
+				) {
 					blocks.push({ type: "text", text: normalizedFinal } as any);
 				}
 
@@ -1187,7 +1182,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch { }
+					} catch {}
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1288,7 +1283,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-							withoutTrailingDotsOrSpaces === ".."
+						withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1460,18 +1455,14 @@ export default function CopilotSidebar() {
 					touchActivity();
 					if (event.type === "task_started") {
 						currentTaskId = event.task.id;
-						if (!chatSettings.inlineTraceEnabled) {
-							const traceMsg = createMessage("trace", "", {
+						// Always attach trace metadata to the streaming assistant message so
+						// artifacts/tooling can be previewed from the message itself.
+						if (streamingMsgId) {
+							chatStore.updateMessage(session.id, streamingMsgId, {
 								metadata: {
 									trace: { type: "agent_task", taskId: event.task.id },
 								},
 							});
-							traceMsg.metadata = {
-								...traceMsg.metadata,
-								blocks: encodeChatMessageToAgentContentJson(traceMsg).blocks,
-							};
-							chatStore.addMessage(session.id, traceMsg);
-							persistTraceMessageIfNeeded(traceMsg);
 						}
 						return;
 					}
@@ -1558,7 +1549,9 @@ export default function CopilotSidebar() {
 						if (startIdx >= 0) {
 							const after = snapshot.slice(startIdx + ":::update-doc".length);
 							const endRel = after.indexOf(":::");
-							const partial = (endRel >= 0 ? after.slice(0, endRel) : after).trim();
+							const partial = (
+								endRel >= 0 ? after.slice(0, endRel) : after
+							).trim();
 							events.emit(EVENTS.AI_DOC_UPDATE_STREAM, partial);
 						}
 					}
@@ -1608,12 +1601,13 @@ export default function CopilotSidebar() {
 				}
 
 				const finalState = agentStore.getState();
-				const tokenUsage = (finalState.currentTask?.metadata as any)?.tokenUsage as
+				const tokenUsage = (finalState.currentTask?.metadata as any)
+					?.tokenUsage as
 					| {
-						promptTokens: number;
-						completionTokens: number;
-						totalTokens: number;
-					}
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+					  }
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1685,16 +1679,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
+								{
+									type: "skill_execution" as const,
+									skillName: finalSkillState.skillName,
+									skillPath: finalSkillState.skillPath,
+									status: finalSkillState.status,
+									steps: finalSkillState.steps,
+									loadedFiles: finalSkillState.loadedFiles,
+									detectedScene: finalSkillState.detectedScene,
+								},
+							]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1743,8 +1737,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+									(update: any) => ({ type: "file_update" as const, update }),
+								)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1816,8 +1810,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-							(update: any) => ({ type: "file_update" as const, update }),
-						)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1846,9 +1840,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-								type: "file_update" as const,
-								update,
-							}))
+									type: "file_update" as const,
+									update,
+								}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2653,7 +2647,10 @@ export default function CopilotSidebar() {
 									<div className="text-xs text-zinc-600 dark:text-zinc-400 truncate mt-0.5">
 										{activeCreateProposal.title}
 										{activeCreateProposal.summary && (
-											<span className="text-zinc-400 dark:text-zinc-500"> · {activeCreateProposal.summary}</span>
+											<span className="text-zinc-400 dark:text-zinc-500">
+												{" "}
+												· {activeCreateProposal.summary}
+											</span>
 										)}
 									</div>
 								</div>
@@ -2692,10 +2689,11 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
-												? "bg-zinc-50 dark:bg-zinc-800/40"
-												: ""
-												}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
+												p.id === activeCreateProposal.id
+													? "bg-zinc-50 dark:bg-zinc-800/40"
+													: ""
+											}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2729,19 +2727,21 @@ export default function CopilotSidebar() {
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
 							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "chat"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							对话
 						</button>
 						<button
 							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "agent"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							Agent
 						</button>

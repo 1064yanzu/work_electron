@@ -121,6 +121,22 @@ function isAgentRelated(obj: Record<string, unknown>): boolean {
 	);
 }
 
+function isHttpRelated(obj: Record<string, unknown>): boolean {
+	const scope =
+		typeof obj.scope === "string"
+			? obj.scope
+			: typeof obj.category === "string"
+				? obj.category
+				: "";
+	if (scope.toLowerCase().includes("http")) return true;
+
+	const event = typeof obj.event === "string" ? obj.event : "";
+	if (event.toLowerCase().startsWith("http_")) return true;
+
+	const msg = typeof obj.msg === "string" ? obj.msg : "";
+	return msg.toLowerCase().includes("http");
+}
+
 /**
  * 创建日志实例
  * - 同时输出到控制台和文件
@@ -132,6 +148,9 @@ export function createLogger(): Logger {
 	try {
 		fs.mkdirSync(logDir, { recursive: true });
 	} catch {}
+
+	const hourlyDirPattern = path.join(logDir, "%DATE%");
+	const hourlyDatePattern = "YYYY-MM-DD/HH";
 
 	const consoleLevel = normalizeLogLevel(
 		process.env.LOG_CONSOLE_LEVEL,
@@ -166,24 +185,38 @@ export function createLogger(): Logger {
 
 	// 日志文件轮转配置
 	const fileTransport = new DailyRotateFile({
-		dirname: logDir,
-		filename: "app-%DATE%.log",
-		datePattern: "YYYY-MM-DD",
+		dirname: hourlyDirPattern,
+		filename: "app.log",
+		datePattern: hourlyDatePattern,
 		maxSize: "20m",
 		maxFiles: "14d",
 		level: fileLevel,
 		format: fileFormat,
+		auditFile: path.join(logDir, ".app-audit.json"),
 	});
 
 	// Agent SDK 专用日志文件
 	const agentLogTransport = new DailyRotateFile({
-		dirname: logDir,
-		filename: "agent-sdk-%DATE%.log",
-		datePattern: "YYYY-MM-DD",
+		dirname: hourlyDirPattern,
+		filename: "agent-sdk.log",
+		datePattern: hourlyDatePattern,
 		maxSize: "20m",
 		maxFiles: "14d",
 		level: fileLevel,
 		format: fileFormat,
+		auditFile: path.join(logDir, ".agent-sdk-audit.json"),
+	});
+
+	// HTTP 请求专用日志文件
+	const httpLogTransport = new DailyRotateFile({
+		dirname: hourlyDirPattern,
+		filename: "http.log",
+		datePattern: hourlyDatePattern,
+		maxSize: "50m",
+		maxFiles: "14d",
+		level: fileLevel,
+		format: fileFormat,
+		auditFile: path.join(logDir, ".http-audit.json"),
 	});
 
 	const appLogger = winston.createLogger({
@@ -203,10 +236,19 @@ export function createLogger(): Logger {
 		transports: [agentLogTransport],
 	});
 
+	const httpLogger = winston.createLogger({
+		level: fileLevel,
+		transports: [httpLogTransport],
+	});
+
 	return {
 		info: (obj) => {
 			if (isAgentRelated(obj)) {
 				agentLogger.info({ ...obj, scope: obj.scope ?? "agent" });
+				return;
+			}
+			if (isHttpRelated(obj)) {
+				httpLogger.info({ ...obj, scope: obj.scope ?? "http" });
 				return;
 			}
 			appLogger.info(obj);
@@ -216,11 +258,17 @@ export function createLogger(): Logger {
 			if (isAgentRelated(obj)) {
 				agentLogger.warn({ ...obj, scope: obj.scope ?? "agent" });
 			}
+			if (isHttpRelated(obj)) {
+				httpLogger.warn({ ...obj, scope: obj.scope ?? "http" });
+			}
 		},
 		error: (obj) => {
 			appLogger.error(obj);
 			if (isAgentRelated(obj)) {
 				agentLogger.error({ ...obj, scope: obj.scope ?? "agent" });
+			}
+			if (isHttpRelated(obj)) {
+				httpLogger.error({ ...obj, scope: obj.scope ?? "http" });
 			}
 		},
 	};

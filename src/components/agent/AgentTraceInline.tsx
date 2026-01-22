@@ -126,13 +126,43 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 	const [fileContent, setFileContent] = useState<string | null>(null);
 	const [loadingContent, setLoadingContent] = useState(false);
 
+	const toFileUrl = (p: string): string => {
+		const raw = String(p || "").trim();
+		if (!raw) return "";
+		if (raw.startsWith("file://")) return raw;
+		const normalized = raw.replace(/\\/g, "/");
+		const isWindowsDrive = /^[a-zA-Z]:\//.test(normalized);
+		const encoded = encodeURI(normalized);
+		return `${isWindowsDrive ? "file:///" : "file://"}${encoded}`;
+	};
+
 	// 判断文件类型
-	const fileName = artifact.url?.split('/').pop() || artifact.title;
-	const ext = fileName.split('.').pop()?.toLowerCase() || '';
-	const isHtmlFile = ext === 'html' || ext === 'htm';
-	const isCodeFile = ['js', 'jsx', 'ts', 'tsx', 'css', 'json', 'md', 'py', 'rs', 'go'].includes(ext);
-	const isPdfFile = ext === 'pdf';
-	const isPreviewable = isHtmlFile || isCodeFile || artifact.type === 'code' || artifact.content;
+	const fileName = artifact.url?.split("/").pop() || artifact.title;
+	const ext = fileName.split(".").pop()?.toLowerCase() || "";
+	const isHtmlFile = ext === "html" || ext === "htm";
+	const isCodeFile = [
+		"js",
+		"jsx",
+		"ts",
+		"tsx",
+		"css",
+		"json",
+		"md",
+		"py",
+		"rs",
+		"go",
+	].includes(ext);
+	const isPdfFile = ext === "pdf";
+	const isVideoFile = ["mp4", "webm", "avi", "mov", "mkv"].includes(ext);
+	const isAudioFile = ["mp3", "wav", "ogg", "flac", "aac", "m4a"].includes(ext);
+	const isPreviewable =
+		isHtmlFile ||
+		isCodeFile ||
+		isPdfFile ||
+		isVideoFile ||
+		isAudioFile ||
+		artifact.type === "code" ||
+		artifact.content;
 
 	const Icon =
 		artifact.type === "url"
@@ -153,13 +183,15 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 		if (artifact.url && (isHtmlFile || isCodeFile)) {
 			setLoadingContent(true);
 			try {
-				const content = await safeInvoke<string>('read_file', { path: artifact.url });
+				const content = await safeInvoke<string>("read_file", {
+					path: artifact.url,
+				});
 				if (content) {
 					setFileContent(content);
 					setShowPreview(true);
 				}
 			} catch (e) {
-				console.error('[ArtifactRow] Failed to load file:', e);
+				console.error("[ArtifactRow] Failed to load file:", e);
 			}
 			setLoadingContent(false);
 		}
@@ -179,7 +211,8 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 			<div
 				className={cn(
 					"flex items-start gap-2 px-3 py-2",
-					isPreviewable && "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+					isPreviewable &&
+						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
 				)}
 				onClick={isPreviewable ? togglePreview : undefined}
 			>
@@ -198,9 +231,15 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 						{isPreviewable && (
 							<div className="flex items-center gap-1 text-[10px] text-zinc-400">
 								{showPreview ? (
-									<><ChevronDown className="w-3 h-3" />收起</>
+									<>
+										<ChevronDown className="w-3 h-3" />
+										收起
+									</>
 								) : (
-									<><ChevronRight className="w-3 h-3" />预览</>
+									<>
+										<ChevronRight className="w-3 h-3" />
+										预览
+									</>
 								)}
 							</div>
 						)}
@@ -211,7 +250,8 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 						</div>
 					) : artifact.content && !showPreview ? (
 						<div className="text-[11px] text-zinc-400 line-clamp-2 whitespace-pre-wrap">
-							{artifact.content.slice(0, 100)}{artifact.content.length > 100 ? '...' : ''}
+							{artifact.content.slice(0, 100)}
+							{artifact.content.length > 100 ? "..." : ""}
 						</div>
 					) : null}
 				</div>
@@ -227,11 +267,7 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 			{/* HTML 预览 */}
 			{showPreview && isHtmlFile && fileContent && (
 				<div className="border-t border-zinc-100 dark:border-zinc-800">
-					<WebPreviewCard
-						kind="html"
-						html={fileContent}
-						title={fileName}
-					/>
+					<WebPreviewCard kind="html" html={fileContent} title={fileName} />
 				</div>
 			)}
 
@@ -239,8 +275,9 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 			{showPreview && !isHtmlFile && (fileContent || artifact.content) && (
 				<div className="border-t border-zinc-100 dark:border-zinc-800 max-h-60 overflow-y-auto">
 					<pre className="px-3 py-2 text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words font-mono">
-						{(fileContent || artifact.content || '').slice(0, 3000)}
-						{((fileContent || artifact.content || '').length > 3000) && '\n... (内容过长已截断)'}
+						{(fileContent || artifact.content || "").slice(0, 3000)}
+						{(fileContent || artifact.content || "").length > 3000 &&
+							"\n... (内容过长已截断)"}
 					</pre>
 				</div>
 			)}
@@ -249,10 +286,28 @@ function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
 			{isPdfFile && artifact.url && showPreview && (
 				<div className="border-t border-zinc-100 dark:border-zinc-800 h-80">
 					<iframe
-						src={`file://${artifact.url}`}
+						src={toFileUrl(artifact.url)}
 						title="PDF Preview"
 						className="w-full h-full"
 					/>
+				</div>
+			)}
+
+			{/* 视频预览 */}
+			{isVideoFile && artifact.url && showPreview && (
+				<div className="border-t border-zinc-100 dark:border-zinc-800">
+					<video
+						controls
+						src={toFileUrl(artifact.url)}
+						className="w-full max-h-[360px] bg-black"
+					/>
+				</div>
+			)}
+
+			{/* 音频预览 */}
+			{isAudioFile && artifact.url && showPreview && (
+				<div className="border-t border-zinc-100 dark:border-zinc-800 p-3">
+					<audio controls src={toFileUrl(artifact.url)} className="w-full" />
 				</div>
 			)}
 		</div>
@@ -483,14 +538,20 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 	}
 
 	// Task 工具调用（子代理）显示高级卡片
-	if (toolCall.name === 'Task') {
-		console.log('[AgentTraceInline] Rendering SubagentCard for Task:', { toolCallId: toolCall.id, name: toolCall.name });
+	if (toolCall.name === "Task") {
+		console.log("[AgentTraceInline] Rendering SubagentCard for Task:", {
+			toolCallId: toolCall.id,
+			name: toolCall.name,
+		});
 		return <SubagentCard toolCall={toolCall} />;
 	}
 
 	// 🔍 调试：如果工具名称接近 'Task' 但不完全匹配，打印出来
-	if (toolCall.name.toLowerCase().includes('task')) {
-		console.warn('[AgentTraceInline] Tool name contains "task" but does not match exactly:', { name: toolCall.name, toolCallId: toolCall.id });
+	if (toolCall.name.toLowerCase().includes("task")) {
+		console.warn(
+			'[AgentTraceInline] Tool name contains "task" but does not match exactly:',
+			{ name: toolCall.name, toolCallId: toolCall.id },
+		);
 	}
 
 	return (
@@ -510,7 +571,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
 					hasDetails &&
-					"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
@@ -544,7 +605,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 					<div className="flex items-center gap-2">
 						<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
 							{toolCall.name}
-							{toolCall.name === 'Task' && toolCall.status === 'running' && (
+							{toolCall.name === "Task" && toolCall.status === "running" && (
 								<span className="ml-2 text-[10px] font-normal text-purple-500 animate-pulse">
 									子代理正在思考...
 								</span>
@@ -667,7 +728,7 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 	const { currentTask, taskHistory, isExecuting, pauseTask, resumeTask } =
 		useAgentStore();
-	const [open, setOpen] = React.useState(true);
+	const [open, setOpen] = React.useState(false);
 	const [thinkingOpen, setThinkingOpen] = React.useState(false);
 	const [artifactPreview, setArtifactPreview] = React.useState<string | null>(
 		null,
@@ -700,6 +761,10 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 		? isExecuting && currentTask?.id === taskId
 		: isExecuting;
 
+	React.useEffect(() => {
+		if (task.status === "error") setOpen(true);
+	}, [task.status]);
+
 	return (
 		<div className="mt-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 			<button
@@ -721,7 +786,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 							) : null}
 						</div>
 						<div className="text-[11px] text-zinc-400 truncate">
-							工具 {task.toolCalls.length} · 资料 {task.artifacts.length}
+							工具 {task.toolCalls.length} · 产物 {task.artifacts.length}
 						</div>
 					</div>
 				</div>
@@ -817,7 +882,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 						return nonKbArtifacts.length > 0 ? (
 							<div className="space-y-2">
 								<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 px-1">
-									其他资料 ({nonKbArtifacts.length})
+									产物预览 ({nonKbArtifacts.length})
 								</div>
 								{nonKbArtifacts.slice(0, 6).map((a) => (
 									<div key={a.id}>
@@ -863,7 +928,11 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 	);
 }
 
-function ContextControl({ task }: { task: import("../../lib/agent/types").AgentTask }) {
+function ContextControl({
+	task,
+}: {
+	task: import("../../lib/agent/types").AgentTask;
+}) {
 	const { tokenUsage, sdkSessionId } = (task.metadata || {}) as {
 		tokenUsage?: { totalTokens: number };
 		sdkSessionId?: string;
@@ -882,7 +951,7 @@ function ContextControl({ task }: { task: import("../../lib/agent/types").AgentT
 				"/compact",
 				undefined,
 				{ autoExecute: true },
-				{ resumeSessionId: sdkSessionId }
+				{ resumeSessionId: sdkSessionId },
 			);
 			setCompactResult("压缩完成");
 		} catch (e) {
@@ -895,7 +964,10 @@ function ContextControl({ task }: { task: import("../../lib/agent/types").AgentT
 
 	if (!tokenUsage && !sdkSessionId) return null;
 
-	const percent = Math.min(100, ((tokenUsage?.totalTokens || 0) / 200000) * 100);
+	const percent = Math.min(
+		100,
+		((tokenUsage?.totalTokens || 0) / 200000) * 100,
+	);
 	const isHigh = percent > 50;
 
 	return (
@@ -928,10 +1000,11 @@ function ContextControl({ task }: { task: import("../../lib/agent/types").AgentT
 					<button
 						onClick={handleCompact}
 						disabled={isCompacting || !sdkSessionId}
-						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${isCompacting
-							? "bg-zinc-100 text-zinc-400 cursor-wait"
-							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
-							}`}
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+							isCompacting
+								? "bg-zinc-100 text-zinc-400 cursor-wait"
+								: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+						}`}
 						title="执行 /compact 命令压缩历史"
 					>
 						{isCompacting ? (

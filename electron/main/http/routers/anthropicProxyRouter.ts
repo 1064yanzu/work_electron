@@ -7,7 +7,148 @@ import { Router } from "express";
 import { Readable } from "node:stream";
 import type { DbContext } from "../../db/client";
 import { type Logger } from "../../logging/types";
+import { loggedFetch } from "../utils/loggedFetch";
 import { resolveProviderApiKey } from "../../llm/invoke";
+
+type AgentModelSettingsLike = {
+	defaultModelId?: unknown;
+	scenarioConfigs?: unknown;
+};
+
+type ScenarioModelConfigLike = {
+	scenario?: unknown;
+	customName?: unknown;
+	modelId?: unknown;
+	providerId?: unknown;
+	enabled?: unknown;
+};
+
+const IPO_SUBAGENT_MARKER_RE =
+	/<ipo-subagent\b[^>]*scenario="([^"]+)"[^>]*\/>/i;
+
+function coerceString(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const s = value.trim();
+	return s ? s : null;
+}
+
+function collectAnthropicRequestText(req: AnthropicRequest): string {
+	const chunks: string[] = [];
+	const sys = (req as any)?.system;
+	if (typeof sys === "string" && sys.trim()) chunks.push(sys);
+	if (Array.isArray(sys)) {
+		for (const b of sys) {
+			if (b && typeof b === "object" && (b as any).type === "text") {
+				const t = coerceString((b as any).text);
+				if (t) chunks.push(t);
+			}
+		}
+	}
+
+	const messages = Array.isArray(req.messages) ? req.messages : [];
+	for (const m of messages) {
+		const content = (m as any)?.content;
+		if (typeof content === "string") {
+			const t = coerceString(content);
+			if (t) chunks.push(t);
+			continue;
+		}
+		if (!Array.isArray(content)) continue;
+		for (const block of content) {
+			if (!block || typeof block !== "object") continue;
+			if ((block as any).type !== "text") continue;
+			const t = coerceString((block as any).text);
+			if (t) chunks.push(t);
+		}
+	}
+
+	return chunks.join("\n");
+}
+
+function extractIpoSubagentScenario(req: AnthropicRequest): string | null {
+	const haystack = collectAnthropicRequestText(req);
+	const match = haystack.match(IPO_SUBAGENT_MARKER_RE);
+	const scenario = match?.[1] ? String(match[1]).trim() : "";
+	return scenario ? scenario : null;
+}
+
+function pickScenarioModelId(
+	settings: AgentModelSettingsLike | null,
+	scenario: string,
+): string | null {
+	if (!settings) return null;
+	const configs = Array.isArray(settings.scenarioConfigs)
+		? (settings.scenarioConfigs as ScenarioModelConfigLike[])
+		: [];
+	for (const c of configs) {
+		if (!c || typeof c !== "object") continue;
+		const enabled = (c as any).enabled;
+		if (enabled === false) continue;
+		if (String((c as any).scenario || "") !== scenario) continue;
+		const modelId = coerceString((c as any).modelId);
+		if (modelId) return modelId;
+	}
+	const fallback = coerceString(settings.defaultModelId);
+	return fallback || null;
+}
+
+let cachedAgentModelSettings: { loadedAt: number; settings: any } | null = null;
+const AGENT_MODEL_SETTINGS_CACHE_TTL_MS = 5_000;
+
+async function loadAgentModelSettings(db: DbContext): Promise<any | null> {
+	const now = Date.now();
+	if (
+		cachedAgentModelSettings &&
+		now - cachedAgentModelSettings.loadedAt < AGENT_MODEL_SETTINGS_CACHE_TTL_MS
+	) {
+		return cachedAgentModelSettings.settings;
+	}
+
+	const rows = await db.client.execute({
+		sql: `SELECT value FROM app_config WHERE key = ?`,
+		args: ["agent.model_settings"],
+	});
+	const raw = rows.rows.length > 0 ? (rows.rows[0].value as unknown) : null;
+
+	let parsed: any = null;
+	try {
+		if (typeof raw === "string") parsed = JSON.parse(raw);
+		else if (raw && typeof raw === "object") parsed = raw;
+	} catch {
+		parsed = null;
+	}
+
+	cachedAgentModelSettings = { loadedAt: now, settings: parsed };
+	return parsed;
+}
+
+async function resolveSubagentScenarioModel(opts: {
+	db: DbContext;
+	anthropicReq: AnthropicRequest;
+	currentModel: string;
+	logger?: Logger;
+	requestId?: string;
+}): Promise<string | null> {
+	const scenario = extractIpoSubagentScenario(opts.anthropicReq);
+	if (!scenario) return null;
+
+	const settings = (await loadAgentModelSettings(
+		opts.db,
+	)) as AgentModelSettingsLike;
+	const desiredModel = pickScenarioModelId(settings, scenario);
+	if (!desiredModel) return null;
+	if (desiredModel === opts.currentModel) return null;
+
+	opts.logger?.info({
+		msg: "anthropic proxy: subagent scenario model override",
+		requestId: opts.requestId,
+		scenario,
+		currentModel: opts.currentModel,
+		overrideModel: desiredModel,
+	});
+
+	return desiredModel;
+}
 
 // 内存文件存储（重启丢失）
 const fileStore = new Map<
@@ -203,6 +344,11 @@ export function createAnthropicProxyRouter(options?: {
 	// 核心：消息 API
 	router.post("/messages", async (req: Request, res: Response) => {
 		const anthropicReq = req.body as AnthropicRequest;
+		const requestId =
+			(typeof (req as any).requestId === "string" && (req as any).requestId) ||
+			(typeof req.headers["x-request-id"] === "string" &&
+				req.headers["x-request-id"]) ||
+			undefined;
 
 		if (!db) {
 			return res.status(501).json({
@@ -230,6 +376,19 @@ export function createAnthropicProxyRouter(options?: {
 					activeRows.rows.length > 0
 						? (activeRows.rows[0].value as string)
 						: "gpt-4o";
+			}
+
+			// 1.5 子代理模型策略：通过 subagent prompt 标记映射到用户设置页的场景模型
+			// 主模型始终以请求里携带的 model 为准（即用户在输入框选择的模型）。
+			const subagentOverride = await resolveSubagentScenarioModel({
+				db,
+				anthropicReq,
+				currentModel: model,
+				logger,
+				requestId,
+			});
+			if (subagentOverride) {
+				model = subagentOverride;
 			}
 
 			// 2. 查找 Provider
@@ -283,6 +442,7 @@ export function createAnthropicProxyRouter(options?: {
 					anthropicReq,
 					res,
 					logger,
+					requestId,
 				);
 				return;
 			}
@@ -293,6 +453,7 @@ export function createAnthropicProxyRouter(options?: {
 				model,
 				anthropicReq,
 				logger,
+				requestId,
 			);
 			res.json(result);
 		} catch (error) {
@@ -317,6 +478,7 @@ async function callProvider(
 	model: string,
 	anthropicReq: AnthropicRequest,
 	logger?: Logger,
+	requestId?: string,
 ): Promise<AnthropicResponse> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -334,14 +496,34 @@ async function callProvider(
 		headers["x-api-key"] = provider.api_key || "";
 		headers["anthropic-version"] = "2023-06-01";
 
-		const response = await fetch(`${baseUrl}/v1/messages`, {
-			method: "POST",
-			headers,
-			body: JSON.stringify(anthropicReq),
-		});
+		const response = await loggedFetch(
+			`${baseUrl}/v1/messages`,
+			{
+				method: "POST",
+				headers,
+				// Even when the client asked for non-streaming, we still stream upstream
+				// and then aggregate to a single JSON response to keep provider-side
+				// requests streaming-friendly (smaller buffers, better latency).
+				body: JSON.stringify({ ...anthropicReq, model, stream: true }),
+			},
+			{
+				logger,
+				requestId,
+				service: "anthropic-proxy:upstream",
+				readResponseBody: false,
+			},
+		);
 
 		if (!response.ok) {
 			throw new Error(`Anthropic API error: ${response.status}`);
+		}
+
+		const contentType = String(response.headers.get("content-type") || "");
+		if (contentType.includes("text/event-stream") && response.body) {
+			return await readAnthropicMessageStreamAsJson(response.body, {
+				fallbackId: messageId,
+				fallbackModel: model,
+			});
 		}
 
 		return (await response.json()) as AnthropicResponse;
@@ -402,6 +584,9 @@ async function callProvider(
 			};
 		}),
 		tool_choice: anthropicReq.tools?.length ? "auto" : undefined,
+		// Force streaming upstream; we will aggregate to JSON for the caller.
+		stream: true,
+		stream_options: { include_usage: true },
 	};
 
 	// Log final OpenAI request
@@ -413,11 +598,20 @@ async function callProvider(
 		toolCount: openaiReq.tools?.length || 0,
 	});
 
-	const response = await fetch(`${baseUrl}/chat/completions`, {
-		method: "POST",
-		headers,
-		body: JSON.stringify(openaiReq),
-	});
+	const response = await loggedFetch(
+		`${baseUrl}/chat/completions`,
+		{
+			method: "POST",
+			headers,
+			body: JSON.stringify(openaiReq),
+		},
+		{
+			logger,
+			requestId,
+			service: "anthropic-proxy:upstream",
+			readResponseBody: false,
+		},
+	);
 
 	if (!response.ok) {
 		const errorText = await response.text();
@@ -429,7 +623,11 @@ async function callProvider(
 		throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
 	}
 
-	const openaiResp = (await response.json()) as OpenAIResponse;
+	const contentType = String(response.headers.get("content-type") || "");
+	const openaiResp =
+		contentType.includes("text/event-stream") && response.body
+			? await readOpenAIChatCompletionsStreamAsJson(response.body)
+			: ((await response.json()) as OpenAIResponse);
 
 	// Log response for debugging
 	logger?.info({
@@ -516,12 +714,249 @@ async function readSseStream(
 	}
 }
 
+async function readOpenAIChatCompletionsStreamAsJson(
+	body: ReadableStream<Uint8Array>,
+): Promise<OpenAIResponse> {
+	let role: "assistant" | "user" | "system" | "tool" = "assistant";
+	let content = "";
+	let finishReason = "stop";
+	let usage:
+		| {
+				prompt_tokens: number;
+				completion_tokens: number;
+				total_tokens: number;
+		  }
+		| undefined;
+
+	const toolCalls = new Map<
+		number,
+		{ id?: string; name?: string; args: string }
+	>();
+	let legacyFunctionCall: { name?: string; args: string } | null = null;
+
+	await readSseStream(body, async (data) => {
+		if (data === "[DONE]") return;
+		let parsed: any = null;
+		try {
+			parsed = JSON.parse(data);
+		} catch {
+			return;
+		}
+
+		if (parsed?.usage) usage = parsed.usage;
+
+		const choice = parsed?.choices?.[0];
+		if (!choice) return;
+		if (choice.finish_reason) finishReason = String(choice.finish_reason);
+
+		const delta = choice.delta || {};
+		if (typeof delta.role === "string") {
+			const r = delta.role as any;
+			if (r === "assistant" || r === "user" || r === "system" || r === "tool") {
+				role = r;
+			}
+		}
+		if (typeof delta.content === "string") content += delta.content;
+
+		if (Array.isArray(delta.tool_calls)) {
+			for (const tc of delta.tool_calls) {
+				const idx = typeof tc?.index === "number" ? tc.index : 0;
+				const existing = toolCalls.get(idx) || { args: "" };
+				if (typeof tc?.id === "string" && tc.id) existing.id = tc.id;
+				if (typeof tc?.function?.name === "string" && tc.function.name)
+					existing.name = tc.function.name;
+				if (
+					typeof tc?.function?.arguments === "string" &&
+					tc.function.arguments
+				) {
+					existing.args += tc.function.arguments;
+				}
+				toolCalls.set(idx, existing);
+			}
+		}
+
+		// Legacy function_call format (some OpenAI-compatible providers still emit this).
+		if (delta.function_call && typeof delta.function_call === "object") {
+			if (!legacyFunctionCall) legacyFunctionCall = { args: "" };
+			if (
+				typeof delta.function_call.name === "string" &&
+				delta.function_call.name
+			)
+				legacyFunctionCall.name = delta.function_call.name;
+			if (
+				typeof delta.function_call.arguments === "string" &&
+				delta.function_call.arguments
+			) {
+				legacyFunctionCall.args += delta.function_call.arguments;
+			}
+		}
+	});
+
+	const tool_calls: OpenAIToolCall[] = Array.from(toolCalls.entries())
+		.sort(([a], [b]) => a - b)
+		.map(([, v], i) => ({
+			id: v.id || `call_${i}`,
+			type: "function" as const,
+			function: { name: v.name || "unknown", arguments: v.args || "{}" },
+		}));
+
+	let function_call: OpenAIResponse["choices"][0]["message"]["function_call"] =
+		undefined;
+	const legacy = legacyFunctionCall as { name?: string; args: string } | null;
+	if (tool_calls.length === 0 && legacy) {
+		function_call = {
+			name: legacy.name || "unknown",
+			arguments: legacy.args || "{}",
+		};
+	}
+
+	return {
+		choices: [
+			{
+				message: {
+					role,
+					content: content.length > 0 ? content : null,
+					tool_calls: tool_calls.length > 0 ? tool_calls : undefined,
+					function_call,
+				},
+				finish_reason: finishReason,
+			},
+		],
+		usage,
+	};
+}
+
+async function readAnthropicMessageStreamAsJson(
+	body: ReadableStream<Uint8Array>,
+	opts: { fallbackId: string; fallbackModel: string },
+): Promise<AnthropicResponse> {
+	let id = opts.fallbackId;
+	let model = opts.fallbackModel;
+	let stopReason: AnthropicResponse["stop_reason"] = "end_turn";
+	let inputTokens = 0;
+	let outputTokens = 0;
+
+	const textByIndex = new Map<number, string>();
+	const toolByIndex = new Map<
+		number,
+		{ id: string; name: string; inputJson: string }
+	>();
+	const content: AnthropicResponse["content"] = [];
+
+	const flushIndex = (index: number) => {
+		if (toolByIndex.has(index)) {
+			const tool = toolByIndex.get(index)!;
+			let input: unknown = {};
+			try {
+				input = JSON.parse(tool.inputJson || "{}");
+			} catch {
+				input = tool.inputJson ? { _raw: tool.inputJson } : {};
+			}
+			content.push({ type: "tool_use", id: tool.id, name: tool.name, input });
+			toolByIndex.delete(index);
+			return;
+		}
+		if (textByIndex.has(index)) {
+			content.push({ type: "text", text: textByIndex.get(index) || "" });
+			textByIndex.delete(index);
+		}
+	};
+
+	await readSseStream(body, async (data) => {
+		let evt: any = null;
+		try {
+			evt = JSON.parse(data);
+		} catch {
+			return;
+		}
+		const t = String(evt?.type || "");
+		if (t === "message_start" && evt?.message) {
+			if (typeof evt.message.id === "string") id = evt.message.id;
+			if (typeof evt.message.model === "string") model = evt.message.model;
+			const usage0 = evt.message.usage;
+			if (usage0 && typeof usage0.input_tokens === "number")
+				inputTokens = usage0.input_tokens;
+			return;
+		}
+		if (t === "content_block_start") {
+			const idx = Number(evt.index);
+			if (!Number.isFinite(idx)) return;
+			const block = evt.content_block || {};
+			if (block.type === "text") {
+				textByIndex.set(idx, "");
+				return;
+			}
+			if (block.type === "tool_use") {
+				toolByIndex.set(idx, {
+					id: String(block.id || ""),
+					name: String(block.name || ""),
+					inputJson: "",
+				});
+			}
+			return;
+		}
+		if (t === "content_block_delta") {
+			const idx = Number(evt.index);
+			if (!Number.isFinite(idx)) return;
+			const delta = evt.delta || {};
+			if (delta.type === "text_delta" && typeof delta.text === "string") {
+				textByIndex.set(idx, (textByIndex.get(idx) || "") + delta.text);
+				return;
+			}
+			if (
+				delta.type === "input_json_delta" &&
+				typeof delta.partial_json === "string"
+			) {
+				const tool = toolByIndex.get(idx);
+				if (!tool) return;
+				tool.inputJson += delta.partial_json;
+				toolByIndex.set(idx, tool);
+				return;
+			}
+			return;
+		}
+		if (t === "content_block_stop") {
+			const idx = Number(evt.index);
+			if (!Number.isFinite(idx)) return;
+			flushIndex(idx);
+			return;
+		}
+		if (t === "message_delta") {
+			const sr = evt?.delta?.stop_reason;
+			if (sr === "end_turn" || sr === "tool_use" || sr === "max_tokens") {
+				stopReason = sr;
+			}
+			const usageN = evt?.usage;
+			if (usageN && typeof usageN.output_tokens === "number")
+				outputTokens = usageN.output_tokens;
+			return;
+		}
+	});
+
+	// Flush any remaining blocks in index order.
+	const remainingIndexes = Array.from(
+		new Set([...textByIndex.keys(), ...toolByIndex.keys()]),
+	).sort((a, b) => a - b);
+	for (const idx of remainingIndexes) flushIndex(idx);
+
+	return {
+		id,
+		type: "message",
+		role: "assistant",
+		content,
+		model,
+		stop_reason: stopReason,
+		usage: { input_tokens: inputTokens, output_tokens: outputTokens },
+	};
+}
+
 async function callProviderStream(
 	provider: { provider_type: string; api_key?: string; api_base?: string },
 	model: string,
 	anthropicReq: AnthropicRequest,
 	res: Response,
 	logger?: Logger,
+	requestId?: string,
 ): Promise<void> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -534,11 +969,20 @@ async function callProviderStream(
 			"anthropic-version": "2023-06-01",
 		};
 
-		const upstream = await fetch(`${baseUrl}/v1/messages`, {
-			method: "POST",
-			headers,
-			body: JSON.stringify({ ...anthropicReq, model, stream: true }),
-		});
+		const upstream = await loggedFetch(
+			`${baseUrl}/v1/messages`,
+			{
+				method: "POST",
+				headers,
+				body: JSON.stringify({ ...anthropicReq, model, stream: true }),
+			},
+			{
+				logger,
+				requestId,
+				service: "anthropic-proxy:upstream-stream",
+				readResponseBody: false,
+			},
+		);
 
 		if (!upstream.ok) {
 			const errorText = await upstream.text();
@@ -620,11 +1064,20 @@ async function callProviderStream(
 		toolCount: openaiReq.tools?.length || 0,
 	});
 
-	const upstream = await fetch(`${baseUrl}/chat/completions`, {
-		method: "POST",
-		headers,
-		body: JSON.stringify(openaiReq),
-	});
+	const upstream = await loggedFetch(
+		`${baseUrl}/chat/completions`,
+		{
+			method: "POST",
+			headers,
+			body: JSON.stringify(openaiReq),
+		},
+		{
+			logger,
+			requestId,
+			service: "anthropic-proxy:upstream-stream",
+			readResponseBody: false,
+		},
+	);
 
 	if (!upstream.ok) {
 		const errorText = await upstream.text();
@@ -872,6 +1325,8 @@ interface OpenAIResponse {
 				type: string;
 				function: { name: string; arguments: string };
 			}>;
+			// Legacy single function call format.
+			function_call?: { name: string; arguments: string };
 		};
 		finish_reason: string;
 	}>;
@@ -1029,6 +1484,27 @@ function translateToAnthropic(
 				input,
 			});
 		}
+	}
+	// Legacy function_call
+	else if ((choice.message as any).function_call) {
+		const fc = (choice.message as any).function_call as {
+			name?: string;
+			arguments?: string;
+		};
+		const name = typeof fc?.name === "string" ? fc.name : "unknown";
+		const rawArgs = typeof fc?.arguments === "string" ? fc.arguments : "{}";
+		let input: unknown = {};
+		try {
+			input = JSON.parse(rawArgs);
+		} catch {
+			input = { _raw: rawArgs };
+		}
+		content.push({
+			type: "tool_use",
+			id: `call_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`,
+			name,
+			input,
+		});
 	}
 
 	// 停止原因

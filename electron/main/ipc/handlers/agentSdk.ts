@@ -123,6 +123,51 @@ async function findFileByLooseName(opts: {
 	return candidates[0]?.path ?? null;
 }
 
+async function guessDefaultReadableFilePath(
+	cwd: string,
+): Promise<string | null> {
+	let entries: Array<import("node:fs").Dirent> = [];
+	try {
+		entries = await fsp.readdir(cwd, { withFileTypes: true });
+	} catch {
+		return null;
+	}
+
+	const files = entries
+		.filter((e) => e.isFile() && !e.name.startsWith("."))
+		.slice(0, 500)
+		.map((e) => path.join(cwd, e.name));
+
+	if (files.length === 0) return null;
+	if (files.length === 1) return files[0];
+
+	const preferredExt = new Set([
+		"md",
+		"markdown",
+		"txt",
+		"json",
+		"csv",
+		"html",
+		"htm",
+	]);
+
+	const scored: Array<{ score: number; mtimeMs: number; p: string }> = [];
+	for (const p of files) {
+		let st: import("node:fs").Stats | null = null;
+		try {
+			st = await fsp.stat(p);
+		} catch {
+			continue;
+		}
+		const ext = path.extname(p).replace(/^\./, "").toLowerCase();
+		const score = preferredExt.has(ext) ? 10 : 0;
+		scored.push({ score, mtimeMs: st.mtimeMs, p });
+	}
+
+	scored.sort((a, b) => b.score - a.score || b.mtimeMs - a.mtimeMs);
+	return scored[0]?.p || null;
+}
+
 async function resolveToolFilePath(opts: {
 	cwd: string;
 	rawPath: string;
@@ -832,15 +877,13 @@ export function createAgentSdkHandlers(options: {
 							reader: {
 								description:
 									"Reads provided files and extracts key facts/summaries.",
-								prompt:
-									"Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.",
+								prompt: `Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.\n\n<ipo-subagent name="reader" scenario="fast_search" />`,
 								tools: ["Read", "Glob", "Grep"],
 							},
 							writer: {
 								description:
 									"Writes polished content (Xiaohongshu/marketing/copywriting) based on provided facts.",
-								prompt:
-									"Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.",
+								prompt: `Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.\n\n<ipo-subagent name="writer" scenario="writing" />`,
 								tools: ["Skill", "Read", "Glob", "Grep"],
 								skills: enabledSkills.length > 0 ? enabledSkills : undefined,
 							},
@@ -1073,6 +1116,18 @@ export function createAgentSdkHandlers(options: {
 											: typeof inputAny.file === "string"
 												? "file"
 												: null;
+								if (!key && toolLower === "read") {
+									const guessed = await guessDefaultReadableFilePath(cwd);
+									if (guessed) {
+										stderr(
+											`[agent_sdk] Auto-filled Read file_path='${guessed}' (missing in tool input)`,
+										);
+										return {
+											behavior: "allow",
+											updatedInput: { ...inputAny, file_path: guessed },
+										};
+									}
+								}
 								if (key) {
 									const rawPath = String(inputAny[key] || "").trim();
 									if (rawPath) {

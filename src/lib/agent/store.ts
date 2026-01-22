@@ -516,11 +516,122 @@ class AgentStore {
 		this.setState((state) => {
 			if (!state.currentTask) return state;
 
+			const prevToolCall = state.currentTask.toolCalls.find(
+				(tc) => tc.id === toolCallId,
+			);
+			const nextToolCall = prevToolCall
+				? ({ ...prevToolCall, ...updates } as ToolCall)
+				: null;
+
+			let nextArtifacts = state.currentTask.artifacts;
+			let addedArtifact: ToolArtifact | null = null;
+
+			const shouldCaptureFileArtifact =
+				updates.status === "completed" &&
+				prevToolCall?.status !== "completed" &&
+				!!nextToolCall;
+
+			if (shouldCaptureFileArtifact && nextToolCall) {
+				const toolNameLower = String(nextToolCall.name || "").toLowerCase();
+				const isFileWriteTool =
+					nextToolCall.type === "file_write" ||
+					toolNameLower === "write" ||
+					toolNameLower === "edit" ||
+					toolNameLower.includes("write") ||
+					toolNameLower.includes("edit") ||
+					toolNameLower.includes("patch");
+
+				if (isFileWriteTool) {
+					const input = nextToolCall.input || {};
+					const filePath = String(
+						(input as any).file_path ||
+							(input as any).path ||
+							(input as any).file ||
+							"",
+					).trim();
+
+					if (filePath) {
+						const baseName =
+							filePath.split(/[/\\]/).filter(Boolean).pop() || filePath;
+						const ext = baseName.includes(".")
+							? baseName.split(".").pop()?.toLowerCase() || ""
+							: "";
+						const imageExt = new Set([
+							"png",
+							"jpg",
+							"jpeg",
+							"gif",
+							"webp",
+							"svg",
+							"bmp",
+							"ico",
+						]);
+						const codeExt = new Set([
+							"js",
+							"jsx",
+							"ts",
+							"tsx",
+							"css",
+							"scss",
+							"less",
+							"json",
+							"md",
+							"markdown",
+							"yml",
+							"yaml",
+							"toml",
+							"xml",
+							"sql",
+							"sh",
+							"bash",
+							"zsh",
+							"py",
+							"java",
+							"kt",
+							"go",
+							"rs",
+							"c",
+							"cc",
+							"cpp",
+							"h",
+							"hpp",
+							"html",
+							"htm",
+						]);
+
+						const artifactType: ToolArtifact["type"] = imageExt.has(ext)
+							? "image"
+							: codeExt.has(ext)
+								? "code"
+								: "file";
+
+						const alreadyCollected = state.currentTask.artifacts.some(
+							(a) =>
+								a?.metadata?.toolCallId === toolCallId &&
+								a?.url === filePath &&
+								a?.type === artifactType,
+						);
+
+						if (!alreadyCollected) {
+							addedArtifact = {
+								id: `artifact-${toolCallId}`,
+								type: artifactType,
+								title: baseName,
+								url: filePath,
+								metadata: { toolCallId },
+							};
+							nextArtifacts = [...state.currentTask.artifacts, addedArtifact];
+						}
+					}
+				}
+			}
+
 			const updatedTask: AgentTask = {
 				...state.currentTask,
 				toolCalls: state.currentTask.toolCalls.map((tc) =>
 					tc.id === toolCallId ? { ...tc, ...updates } : tc,
 				),
+				artifacts: nextArtifacts,
 				updatedAt: Date.now(),
 			};
 
@@ -537,6 +648,14 @@ class AgentStore {
 					taskId: updatedTask.id,
 					toolCallId,
 					error: updates.error || "未知错误",
+				});
+			}
+
+			if (addedArtifact) {
+				this.emitEvent({
+					type: "artifact_added",
+					taskId: updatedTask.id,
+					artifact: addedArtifact,
 				});
 			}
 

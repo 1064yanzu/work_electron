@@ -4,6 +4,7 @@ import express from "express";
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
 import { findAvailablePort } from "./ports";
+import { createHttpRequestLogger } from "./middleware/httpRequestLogger";
 import { createClipRouter } from "./routers/clipRouter";
 
 export async function startClipServer({
@@ -19,6 +20,7 @@ export async function startClipServer({
 	const app = express();
 	app.use(cors());
 	app.use(express.json({ limit: "10mb" }));
+	app.use(createHttpRequestLogger({ logger, service: "clip" }));
 
 	app.get("/health", (_req: Request, res: Response) =>
 		res.json({ status: "ok", service: "clip_server", port }),

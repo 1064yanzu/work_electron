@@ -4,6 +4,7 @@ import express from "express";
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
 import { findAvailablePort } from "./ports";
+import { createHttpRequestLogger } from "./middleware/httpRequestLogger";
 import { createAnthropicProxyRouter } from "./routers/anthropicProxyRouter";
 
 export async function startAnthropicProxyServer({
@@ -19,6 +20,7 @@ export async function startAnthropicProxyServer({
 	const app = express();
 	app.use(cors({ origin: "*", methods: "*", allowedHeaders: "*" }));
 	app.use(express.json({ limit: "10mb" }));
+	app.use(createHttpRequestLogger({ logger, service: "anthropic-proxy" }));
 
 	app.get("/health", (_req: Request, res: Response) =>
 		res.json({ ok: true, service: "anthropic-proxy", ts: Date.now() }),
