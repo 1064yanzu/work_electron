@@ -198,9 +198,58 @@ export class ClaudeAgentService {
 					console.log("[ClaudeAgentService] Processing:", payload.type);
 
 				if (payload.type === "sdk_message" && payload.message) {
-					// 我们主要依赖 'transformed' 事件来驱动 UI 更新 (onChunk, onMessage for tools)
-					// 为避免 tool_call/tool_result 被重复上报导致 UI 卡片重复渲染，这里不再从 sdk_message 分发到 onMessage/onChunk。
-					// sdk_message 仅用于错误检测与调试；真正驱动 UI 的事件来自 'transformed'。
+					// 核心目标：捕获子代理的内部活动（通过 parent_tool_use_id 关联到 Task 工具）
+					// 并将其转化为 tool_progress 事件，从而在前端 SubagentCard 中展示
+					const msgAny = payload.message as any;
+
+					// 检查是否有关联的父级工具调用（即子代理所属的 Task）
+					const parentToolUseId = msgAny?.parent_tool_use_id;
+					if (parentToolUseId) {
+						// 尝试查找 SDK 的 tool_use_id 对应的内部工具 ID
+						// 注意：这里需要一个反向映射，或者我们在 tool_call_start 时记录了 sdk_tool_use_id
+						// 目前 toolNamesById 存储的是 sdk_tool_use_id -> toolName
+						// 我们直接使用 sdk_tool_use_id (即 parentToolUseId) 作为关联键，因为 AgentStore 里已规范化 ID
+						// 但前端 AgentStore 使用的 ID 是 `sdk-tool-${sdkId}`
+
+						const internalToolCallId = `sdk-tool-${parentToolUseId}`;
+
+						// 提取子代理的活动内容
+						if (msgAny.type === "assistant" && Array.isArray(msgAny.message?.content)) {
+							for (const block of msgAny.message.content) {
+								if (block.type === "text" && typeof block.text === "string" && block.text.trim()) {
+									// 子代理的思考/回复
+									onMessage?.({
+										type: "tool_progress",
+										taskId: "", // context 中没有 taskId，前端需根据 toolCallId 匹配
+										toolCallId: internalToolCallId,
+										progress: -1, // -1 表示非进度条更新，而是活动流更新
+										message: JSON.stringify({
+											type: "thinking", // 复用 AgentThinkingStep 类型
+											phase: "executing",
+											content: block.text,
+											timestamp: Date.now(),
+										}),
+									} as any);
+								} else if (block.type === "tool_use") {
+									// 子代理调用工具
+									const toolName = block.name;
+									const inputDetails = Object.keys(block.input || {}).join(", ");
+									onMessage?.({
+										type: "tool_progress",
+										taskId: "",
+										toolCallId: internalToolCallId,
+										progress: -1,
+										message: JSON.stringify({
+											type: "executing", // 借用 phase 类型，或者在前端解析时处理
+											phase: "executing",
+											content: `调用工具: ${toolName}(${inputDetails})`,
+											timestamp: Date.now(),
+										}),
+									} as any);
+								}
+							}
+						}
+					}
 
 					// Claude Code can get stuck retrying invalid tool inputs (e.g. Skill tool).
 					// Detect repeated tool validation errors and abort with the last error string.
@@ -282,6 +331,7 @@ export class ClaudeAgentService {
 									success: false,
 									summary: guidance,
 									sessionId: sessionId ?? undefined,
+									usage: undefined
 								});
 								if (unlisten) unlisten();
 								unlisten = null;

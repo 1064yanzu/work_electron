@@ -618,7 +618,7 @@ class AgentExecutor {
 								updateData.total_tokens = result.usage.totalTokens;
 							}
 
-							// await safeInvoke('agent_update_session', updateData);
+							await safeInvoke('agent_update_session', updateData);
 							console.log('[AgentExecutor] Saved session data:', updateData);
 						} catch (err) {
 							console.error('[AgentExecutor] Failed to save session data:', err);

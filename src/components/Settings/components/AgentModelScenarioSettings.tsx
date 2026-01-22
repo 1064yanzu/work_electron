@@ -22,6 +22,8 @@ import {
     Box,
     Check,
     X,
+    Database,
+    Archive,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -442,8 +444,8 @@ export function AgentModelScenarioSettings() {
             </div>
 
             {/* Global Settings Group */}
-            <div className="grid grid-cols-1 gap-4">
-                {/* Simplified layout for Default Model & Smart Switch */}
+            <div className="space-y-4">
+                {/* Default Model & Smart Switch */}
                 <div className="bg-white rounded-xl border border-zinc-200/60 shadow-sm p-1 grid grid-cols-2 divide-x divide-zinc-100">
                     <div className="p-4 flex flex-col justify-between">
                         <div className="mb-2">
@@ -485,6 +487,73 @@ export function AgentModelScenarioSettings() {
                         </span>
                     </div>
                 </div>
+
+                {/* Context & Memory Settings - NEW */}
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                                <Archive className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <span className="font-semibold text-zinc-900 block text-sm">上下文与记忆管理</span>
+                                <span className="text-xs text-zinc-500">自动压缩历史对话，防止 Token 溢出</span>
+                            </div>
+                        </div>
+                        <div
+                            className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${settings.contextCompression?.enabled ? 'bg-blue-600' : 'bg-zinc-200'}`}
+                            onClick={() => store.updateContextCompression({ enabled: !settings.contextCompression?.enabled })}
+                        >
+                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${settings.contextCompression?.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    </div>
+
+                    {/* Expandable settings if enabled */}
+                    {settings.contextCompression?.enabled && (
+                        <div className="grid grid-cols-2 gap-6 pt-4 mt-4 border-t border-zinc-100 animate-in slide-in-from-top-2 fade-in">
+                            {/* Threshold */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-medium text-zinc-500">压缩阈值</label>
+                                    <span className="text-xs font-mono font-medium text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded">
+                                        {(settings.contextCompression.threshold / 1000).toFixed(0)}k
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-zinc-400">4k</span>
+                                    <input
+                                        type="range"
+                                        min="4000"
+                                        max="100000"
+                                        step="1000"
+                                        value={settings.contextCompression.threshold}
+                                        onChange={(e) => store.updateContextCompression({ threshold: parseInt(e.target.value) })}
+                                        className="flex-1 h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700"
+                                    />
+                                    <span className="text-[10px] text-zinc-400">100k</span>
+                                </div>
+                            </div>
+                            {/* Strategy */}
+                            <div>
+                                <label className="text-xs font-medium text-zinc-500 mb-2 block">压缩策略</label>
+                                <div className="flex p-0.5 bg-zinc-100 rounded-lg">
+                                    <button
+                                        onClick={() => store.updateContextCompression({ strategy: 'summary' })}
+                                        className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-all ${settings.contextCompression.strategy === 'summary' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
+                                    >
+                                        智能摘要
+                                    </button>
+                                    <button
+                                        onClick={() => store.updateContextCompression({ strategy: 'selection' })}
+                                        className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-all ${settings.contextCompression.strategy === 'selection' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
+                                    >
+                                        关键筛选
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </Card>
             </div>
 
             {/* Scenarios List Section */}
@@ -512,13 +581,19 @@ export function AgentModelScenarioSettings() {
                             </p>
                         </div>
                     ) : (
-                        settings.scenarioConfigs.map((config) => {
+                        settings.scenarioConfigs.map((config, index) => {
                             const Icon = SCENARIO_ICONS[config.scenario] || Box;
+                            const modelInfo = getModelDisplay(config.modelId, config.providerId);
+                            const style = getProviderStyle(config.providerId);
+
+                            // Z-index staging for dropdowns to appear over subsequent items
+                            const zIndex = 50 - index;
 
                             return (
                                 <div
                                     key={config.scenario === 'custom' ? `custom-${config.customName}` : config.scenario}
-                                    className={`group flex items-center justify-between p-4 bg-white rounded-xl border transition-all duration-200 ${config.enabled ? 'border-zinc-200/80 shadow-sm hover:border-indigo-300/50 hover:shadow-md' : 'border-zinc-100 bg-zinc-50/50 opacity-70'}`}
+                                    style={{ zIndex }}
+                                    className={`group relative flex items-center justify-between p-4 bg-white rounded-xl border transition-all duration-200 ${config.enabled ? 'border-zinc-200/80 shadow-sm hover:border-indigo-300/50 hover:shadow-md' : 'border-zinc-100 bg-zinc-50/50 opacity-70'}`}
                                 >
                                     <div className="flex items-center gap-4 flex-1 min-w-0 mr-4">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${config.enabled ? 'bg-indigo-50 text-indigo-600' : 'bg-zinc-200 text-zinc-400'}`}>

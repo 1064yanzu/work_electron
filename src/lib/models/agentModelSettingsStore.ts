@@ -126,6 +126,21 @@ export const agentModelSettingsStore = {
         await this.save();
     },
 
+    async updateContextCompression(settings: Partial<NonNullable<AgentModelSettings['contextCompression']>>): Promise<void> {
+        state = {
+            ...state,
+            contextCompression: {
+                enabled: false,
+                threshold: 30000,
+                strategy: 'summary',
+                ...(state.contextCompression || {}),
+                ...settings
+            }
+        };
+        emitChange();
+        await this.save();
+    },
+
     getModelForScenario(scenario: AgentScenario, customName?: string): { modelId: string; providerId: string } | null {
         return getModelForScenario(state, scenario, customName);
     },

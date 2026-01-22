@@ -547,6 +547,51 @@ class AgentStore {
 		});
 	}
 
+	// 更新工具进度（用于 Subagent 流）
+	updateToolProgress(toolCallId: string, message: string, progress?: number) {
+		this.setState((state) => {
+			if (!state.currentTask) return state;
+
+			try {
+				const activity = JSON.parse(message) as AgentThinkingStep;
+				if (!activity.timestamp) activity.timestamp = Date.now();
+
+				// 更新 toolCall 的 subagentActivities
+				const updatedTask: AgentTask = {
+					...state.currentTask,
+					toolCalls: state.currentTask.toolCalls.map((tc) => {
+						if (tc.id === toolCallId) {
+							const activities = tc.subagentActivities || [];
+							// 避免重复与保持顺序
+							return {
+								...tc,
+								subagentActivities: [...activities, activity],
+							};
+						}
+						return tc;
+					}),
+					updatedAt: Date.now(),
+				};
+
+				this.emitEvent({
+					type: "tool_progress",
+					taskId: updatedTask.id,
+					toolCallId,
+					progress: progress || -1,
+					message,
+				});
+
+				return {
+					...state,
+					currentTask: updatedTask,
+				};
+			} catch (e) {
+				console.error("Failed to parse subagent activity:", e);
+				return state;
+			}
+		});
+	}
+
 	// ============ Artifact 管理 ============
 
 	// 添加 Artifact

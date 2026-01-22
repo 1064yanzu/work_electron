@@ -15,6 +15,8 @@ import {
 	Wrench,
 	XCircle,
 	Zap,
+	Database,
+	Archive,
 } from "lucide-react";
 import React from "react";
 import { useAgentStore } from "../../lib/agent/store";
@@ -27,6 +29,7 @@ import {
 import { cn } from "../../lib/utils";
 import { InlineImage } from "../ui/InlineImage";
 import { SkillCard } from "./SkillCard";
+import { SubagentCard } from "./SubagentCard";
 import TaskSteps from "./TaskSteps";
 
 const ToolIconMap: Record<string, React.ElementType> = {
@@ -376,6 +379,11 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 		}
 	}
 
+	// Task 工具调用（子代理）显示高级卡片
+	if (toolCall.name === 'Task') {
+		return <SubagentCard toolCall={toolCall} />;
+	}
+
 	return (
 		<div
 			className={cn(
@@ -427,6 +435,11 @@ function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
 					<div className="flex items-center gap-2">
 						<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
 							{toolCall.name}
+							{toolCall.name === 'Task' && toolCall.status === 'running' && (
+								<span className="ml-2 text-[10px] font-normal text-purple-500 animate-pulse">
+									子代理正在思考...
+								</span>
+							)}
 						</div>
 						<ToolStatusIcon status={toolCall.status} />
 						{duration ? (
@@ -732,8 +745,95 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 							{task.error}
 						</div>
 					) : null}
+
+					{/* Context Control & Status */}
+					<ContextControl task={task} />
 				</div>
 			) : null}
+		</div>
+	);
+}
+
+function ContextControl({ task }: { task: import("../../lib/agent/types").AgentTask }) {
+	const { tokenUsage, sdkSessionId } = (task.metadata || {}) as {
+		tokenUsage?: { totalTokens: number };
+		sdkSessionId?: string;
+	};
+	const [isCompacting, setIsCompacting] = React.useState(false);
+	const [compactResult, setCompactResult] = React.useState<string | null>(null);
+
+	const handleCompact = async () => {
+		if (!sdkSessionId || isCompacting) return;
+		setIsCompacting(true);
+		setCompactResult(null);
+		try {
+			// Import dynamically to avoid circular dependency issues if any
+			const { agentExecutor } = await import("../../lib/agent/executor");
+			await agentExecutor.executeCustomTask(
+				"/compact",
+				undefined,
+				{ autoExecute: true },
+				{ resumeSessionId: sdkSessionId }
+			);
+			setCompactResult("压缩完成");
+		} catch (e) {
+			setCompactResult("压缩失败");
+		} finally {
+			setIsCompacting(false);
+			setTimeout(() => setCompactResult(null), 3000);
+		}
+	};
+
+	if (!tokenUsage && !sdkSessionId) return null;
+
+	const percent = Math.min(100, ((tokenUsage?.totalTokens || 0) / 200000) * 100);
+	const isHigh = percent > 50;
+
+	return (
+		<div className="border-t border-zinc-100 dark:border-zinc-700/50 pt-2 mt-2">
+			<div className="flex items-center justify-between px-1">
+				<div className="flex items-center gap-2">
+					<div className="p-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+						<Database className="w-3 h-3" />
+					</div>
+					<div className="flex flex-col">
+						<span className="text-[10px] uppercase font-medium text-zinc-400 leading-none mb-0.5">
+							Context
+						</span>
+						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-none">
+							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
+						</span>
+					</div>
+				</div>
+
+				<div className="flex items-center gap-2">
+					{/* Usage Bar */}
+					<div className="w-24 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+						<div
+							className={`h-full rounded-full transition-all duration-500 ${isHigh ? "bg-amber-400" : "bg-emerald-400"}`}
+							style={{ width: `${percent}%` }}
+						/>
+					</div>
+
+					{/* Compress Button */}
+					<button
+						onClick={handleCompact}
+						disabled={isCompacting || !sdkSessionId}
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${isCompacting
+							? "bg-zinc-100 text-zinc-400 cursor-wait"
+							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+							}`}
+						title="执行 /compact 命令压缩历史"
+					>
+						{isCompacting ? (
+							<Loader2 className="w-3 h-3 animate-spin" />
+						) : (
+							<Archive className="w-3 h-3" />
+						)}
+						{compactResult || "压缩"}
+					</button>
+				</div>
+			</div>
 		</div>
 	);
 }

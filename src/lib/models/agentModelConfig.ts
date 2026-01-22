@@ -80,6 +80,14 @@ export interface AgentModelSettings {
     scenarioConfigs: ScenarioModelConfig[];
     /** 是否启用智能场景切换(让AI根据任务自动选择场景) */
     enableSmartScenarioSwitch: boolean;
+    /** 上下文压缩配置 */
+    contextCompression?: {
+        enabled: boolean;
+        /** 触发压缩的Token阈值 (默认 20000) */
+        threshold: number;
+        /** 压缩策略: 'summary' (摘要) | 'selection' (筛选关键信息) */
+        strategy: 'summary' | 'selection';
+    };
 }
 
 /**
@@ -90,6 +98,11 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
     defaultProviderId: '',
     scenarioConfigs: [],
     enableSmartScenarioSwitch: false,
+    contextCompression: {
+        enabled: false,
+        threshold: 30000,
+        strategy: 'summary'
+    }
 };
 
 /**
