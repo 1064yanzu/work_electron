@@ -25,7 +25,15 @@ export async function startAnthropicProxyServer({
 	app.get("/health", (_req: Request, res: Response) =>
 		res.json({ ok: true, service: "anthropic-proxy", ts: Date.now() }),
 	);
+
+	// SDK 遥测端点：接受但不处理遥测数据，防止 SDK 因 404 而崩溃
+	app.post("/api/event_logging/batch", (_req: Request, res: Response) => {
+		// 直接返回成功，不记录遥测数据
+		res.json({ success: true });
+	});
+
 	app.use("/v1", createAnthropicProxyRouter({ db, logger }));
+
 
 	const server = await new Promise<import("node:http").Server>((resolve) => {
 		const s = app.listen(port, host, () => resolve(s));

@@ -25,6 +25,8 @@ import {
 	Toggle,
 } from "../components";
 import { PROVIDER_TEMPLATES } from "../constants";
+import { getModelIcon } from "../modelIcons";
+import { getProviderIcon } from "../providerIcons";
 import {
 	formatGroupName,
 	getTemplateForProvider,
@@ -244,16 +246,23 @@ export function ModelSettings() {
 						<div
 							key={provider.id}
 							onClick={() => setSelectedId(provider.id)}
-							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
-								selectedId === provider.id
+							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${selectedId === provider.id
 									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
 									: "hover:bg-white/60"
-							}`}
+								}`}
 						>
 							<div
-								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color}`}
+								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color} overflow-hidden`}
 							>
-								{provider.icon && <provider.icon className="w-4 h-4" />}
+								{getProviderIcon(provider.templateId) ? (
+									<img
+										src={getProviderIcon(provider.templateId)}
+										alt={provider.name}
+										className="w-full h-full object-cover"
+									/>
+								) : (
+									provider.icon && <provider.icon className="w-5 h-5" />
+								)}
 							</div>
 							<span className="flex-1 text-sm font-medium text-zinc-800 truncate">
 								{provider.name}
@@ -281,9 +290,17 @@ export function ModelSettings() {
 						<div className="flex items-center justify-between mb-10 pr-10">
 							<div className="flex items-center gap-3">
 								<div
-									className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm ${selected.color}`}
+									className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm ${selected.color} overflow-hidden`}
 								>
-									{selected.icon && <selected.icon className="w-5 h-5" />}
+									{getProviderIcon(selected.templateId) ? (
+										<img
+											src={getProviderIcon(selected.templateId)}
+											alt={selected.name}
+											className="w-full h-full object-cover"
+										/>
+									) : (
+										selected.icon && <selected.icon className="w-6 h-6" />
+									)}
 								</div>
 								<h2 className="text-xl font-semibold text-zinc-900">
 									{selected.name}
@@ -455,10 +472,22 @@ export function ModelSettings() {
 														>
 															<div className="flex items-center gap-3">
 																<div
-																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm ${selected.color}`}
+																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm bg-white border border-zinc-200 overflow-hidden`}
 																>
-																	{selected.icon && (
-																		<selected.icon className="w-3.5 h-3.5" />
+																	{getModelIcon(model) ? (
+																		<img
+																			src={getModelIcon(model)}
+																			alt={model}
+																			className="w-5 h-5 object-contain"
+																		/>
+																	) : (
+																		<div
+																			className={`w-full h-full flex items-center justify-center ${selected.color}`}
+																		>
+																			{selected.icon && (
+																				<selected.icon className="w-3.5 h-3.5 text-white" />
+																			)}
+																		</div>
 																	)}
 																</div>
 																<span className="text-sm text-zinc-800 font-medium">

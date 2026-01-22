@@ -16,7 +16,8 @@ import {
 	type DiscoveredModel,
 	fetchModelsFromProvider,
 } from "../../../lib/model-discovery";
-import type { Provider } from "../constants";
+import { type Provider } from "../constants";
+import { getModelIcon } from "../modelIcons";
 
 interface ModelDiscoveryModalProps {
 	isOpen: boolean;
@@ -287,13 +288,12 @@ export function ModelDiscoveryModal({
 																<div
 																	className={`
                                   w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0
-                                  ${
-																		isExisting
+                                  ${isExisting
 																			? "bg-zinc-100 border-zinc-200 text-zinc-400"
 																			: isSelected
 																				? "bg-blue-500 border-blue-500 text-white shadow-sm shadow-blue-200"
 																				: "border-zinc-300 text-transparent group-hover:border-zinc-400 bg-white"
-																	}
+																		}
                                 `}
 																>
 																	<Check
@@ -302,16 +302,23 @@ export function ModelDiscoveryModal({
 																	/>
 																</div>
 
-																<div className="min-w-0 flex-1">
-																	<div className="flex items-center gap-2 flex-wrap">
+																<div className="min-w-0 flex-1 flex items-center gap-3">
+																	{getModelIcon(model.id) ? (
+																		<img
+																			src={getModelIcon(model.id)}
+																			alt={model.id}
+																			className="w-5 h-5 object-contain shrink-0"
+																		/>
+																	) : null}
+																	<div className="flex items-center gap-2 flex-wrap min-w-0">
 																		<span
 																			className={`text-sm font-medium truncate ${isSelected && !isExisting ? "text-blue-700" : "text-zinc-700"}`}
 																		>
 																			{model.id}
 																		</span>
 																		{isExisting && (
-																			<span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-400 rounded border border-zinc-200 flex items-center gap-1">
-																				<Check className="w-2.5 h-2.5" /> 已添加
+																			<span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-400 rounded border border-zinc-200 flex items-center gap-1 shrink-0">
+																				<Check className="w-2.5 h-2.5" />已添加
 																			</span>
 																		)}
 																	</div>
@@ -323,11 +330,10 @@ export function ModelDiscoveryModal({
 																<div
 																	className={`
                                   w-8 h-8 flex items-center justify-center rounded-full transition-all ml-2
-                                  ${
-																		isSelected
+                                  ${isSelected
 																			? "text-blue-500 bg-blue-50"
 																			: "text-zinc-300 group-hover:text-zinc-400 bg-transparent group-hover:bg-zinc-100"
-																	}
+																		}
                                 `}
 																>
 																	{isSelected ? (

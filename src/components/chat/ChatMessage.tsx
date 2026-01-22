@@ -1,10 +1,18 @@
 // 单条聊天消息组件
-import { Check, Code, Copy, Edit3, FileCode, FileText, RefreshCw, Trash2 } from "lucide-react";
+import {
+	Check,
+	Code,
+	Copy,
+	Edit3,
+	FileCode,
+	FileText,
+	RefreshCw,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { EVENTS, events } from "../../lib/events";
 import { workspaceStore } from "../../lib/workspaceStore";
-import AgentTraceInline from "../agent/AgentTraceInline";
 import ToolCallInline from "../agent/ToolCallInline";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
@@ -66,7 +74,9 @@ function extractWebPreviewFromCodeBlocks(
 	let js = "";
 
 	for (const b of blocks) {
-		const lang = String(b.language || "").trim().toLowerCase();
+		const lang = String(b.language || "")
+			.trim()
+			.toLowerCase();
 		const code = String(b.code || "");
 		if (!html && (lang === "html" || lang === "htm")) html = code;
 		else if (!jsx && (lang === "jsx" || lang === "tsx")) jsx = code;
@@ -82,7 +92,9 @@ function extractWebPreviewFromCodeBlocks(
 	}
 
 	if (!html) {
-		const fallback = blocks.find((b) => /<\s*div[\s>]|<\s*html[\s>]|<!doctype/i.test(b.code));
+		const fallback = blocks.find((b) =>
+			/<\s*div[\s>]|<\s*html[\s>]|<!doctype/i.test(b.code),
+		);
 		if (fallback) {
 			const looksLikeHtml = /<\s*html[\s>]|<!doctype/i.test(fallback.code);
 			if (looksLikeHtml) html = fallback.code;
@@ -117,7 +129,10 @@ export function ChatMessage({
 }: ChatMessageProps) {
 	const [copied, setCopied] = useState(false);
 	const [appliedBlocks, setAppliedBlocks] = useState<Set<number>>(new Set());
-	const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+	} | null>(null);
 	const isUser = message.role === "user";
 	const isStreaming = message.isStreaming;
 
@@ -158,13 +173,12 @@ export function ChatMessage({
 		message.role === "trace" &&
 		message.metadata?.trace?.type === "agent_task"
 	) {
+		// 不再显示“Agent 运行过程”面板；仅在存在 blocks 时渲染可读的卡片流。
+		if (!Array.isArray(message.metadata?.blocks)) return null;
+
 		return (
 			<div className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
-				{Array.isArray(message.metadata?.blocks) ? (
-					<AgentBlocksInline blocks={message.metadata.blocks} />
-				) : (
-					<AgentTraceInline taskId={message.metadata.trace.taskId} />
-				)}
+				<AgentBlocksInline blocks={message.metadata.blocks} />
 			</div>
 		);
 	}
@@ -276,7 +290,7 @@ export function ChatMessage({
 			onClick: handleCopyAsMarkdown,
 		});
 
-		items.push({ label: "", separator: true, onClick: () => { } });
+		items.push({ label: "", separator: true, onClick: () => {} });
 
 		if (!isUser && onRegenerate) {
 			items.push({
@@ -385,15 +399,15 @@ export function ChatMessage({
 
 									{(!message.metadata?.fileUpdates ||
 										message.metadata.fileUpdates.length === 0) &&
-										Array.isArray(message.metadata?.blocks)
+									Array.isArray(message.metadata?.blocks)
 										? message.metadata.blocks.map((b, idx) =>
-											b.type === "file_update" ? (
-												<FileChangeCard
-													key={`block-file-update-${idx}`}
-													update={b.update}
-												/>
-											) : null,
-										)
+												b.type === "file_update" ? (
+													<FileChangeCard
+														key={`block-file-update-${idx}`}
+														update={b.update}
+													/>
+												) : null,
+											)
 										: null}
 								</>
 							) : null}
@@ -403,20 +417,21 @@ export function ChatMessage({
 							)}
 						</div>
 
-						{/* 始终渲染 Trace 如果存在 */}
-						{message.metadata?.trace?.type === "agent_task" ? (
-							<AgentTraceInline taskId={message.metadata.trace.taskId} />
-						) : null}
-
 						{/* Actions for assistant messages - 底部工具栏 */}
 						{!isStreaming && message.content && (
 							<div className="flex flex-col gap-2 mt-3">
 								{webPreview && (
 									<WebPreviewCard
 										kind={webPreview.kind}
-										title={webPreview.kind === "react" ? "React 预览" : "前端预览"}
-										html={webPreview.kind === "html" ? webPreview.html : undefined}
-										jsx={webPreview.kind === "react" ? webPreview.jsx : undefined}
+										title={
+											webPreview.kind === "react" ? "React 预览" : "前端预览"
+										}
+										html={
+											webPreview.kind === "html" ? webPreview.html : undefined
+										}
+										jsx={
+											webPreview.kind === "react" ? webPreview.jsx : undefined
+										}
 										css={webPreview.css}
 										js={webPreview.kind === "html" ? webPreview.js : undefined}
 									/>
@@ -443,10 +458,11 @@ export function ChatMessage({
 												<button
 													onClick={() => handleApplyCodeBlock(idx)}
 													disabled={appliedBlocks.has(idx)}
-													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${appliedBlocks.has(idx)
-														? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-														: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-														}`}
+													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
+														appliedBlocks.has(idx)
+															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+															: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+													}`}
 													title="应用代码到编辑器"
 												>
 													{appliedBlocks.has(idx) ? (

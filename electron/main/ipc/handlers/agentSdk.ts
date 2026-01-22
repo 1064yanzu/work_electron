@@ -258,6 +258,20 @@ async function resolveToolFilePath(opts: {
 
 	if (exists && withinCwd) return asAbsolute;
 
+	// 【修复】对于 Write 工具创建新文件：即使文件不存在，只要路径在 cwd 内且是合法路径，就允许
+	// 这样 Write 工具就可以创建新文件了
+	if (!exists && withinCwd) {
+		// 确保父目录存在或可以创建
+		const parentDir = path.dirname(asAbsolute);
+		const parentExists = await pathExists(parentDir);
+		if (parentExists || parentDir === cwdResolved) {
+			console.log(
+				`[resolveToolFilePath] New file path (for Write): raw='${raw}' -> '${asAbsolute}'`,
+			);
+			return asAbsolute;
+		}
+	}
+
 	// 模糊匹配：如果用户提供了文件名而非路径
 	const found = await findFileByLooseName({ rootDir: opts.cwd, query: raw });
 	console.log(`[resolveToolFilePath] Fuzzy search result: '${found}'`);
@@ -1049,6 +1063,8 @@ export function createAgentSdkHandlers(options: {
 							...(resolvedPath ? { PATH: resolvedPath } : null),
 							ANTHROPIC_BASE_URL: options.anthropicBaseUrl,
 							ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "sk-noop",
+							// 禁用遥测数据上报，避免"1P event logging failed"错误
+							ANTHROPIC_DISABLE_TELEMETRY: "1",
 						},
 						stderr,
 						includePartialMessages: true,

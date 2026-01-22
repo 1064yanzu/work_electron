@@ -92,6 +92,41 @@ function pickScenarioModelId(
 	return fallback || null;
 }
 
+function estimateTokensFromText(text: string): number {
+	const s = String(text || "");
+	if (!s.trim()) return 0;
+	// Rough heuristic:
+	// - CJK characters are often close to 1 token each
+	// - Other characters average ~4 chars/token
+	const cjkMatches = s.match(/[\u4E00-\u9FFF]/g);
+	const cjkCount = cjkMatches ? cjkMatches.length : 0;
+	const otherCount = Math.max(0, s.length - cjkCount);
+	return cjkCount + Math.ceil(otherCount / 4);
+}
+
+function estimateAnthropicInputTokens(req: Partial<AnthropicRequest>): number {
+	const pieces: string[] = [];
+	const text = collectAnthropicRequestText(req as AnthropicRequest);
+	if (text) pieces.push(text);
+	if (Array.isArray(req.tools)) {
+		for (const t of req.tools) {
+			if (!t) continue;
+			if (typeof (t as any).name === "string")
+				pieces.push(String((t as any).name));
+			if (typeof (t as any).description === "string")
+				pieces.push(String((t as any).description));
+			if ((t as any).input_schema) {
+				try {
+					pieces.push(JSON.stringify((t as any).input_schema));
+				} catch {
+					// ignore
+				}
+			}
+		}
+	}
+	return estimateTokensFromText(pieces.join("\n"));
+}
+
 let cachedAgentModelSettings: { loadedAt: number; settings: any } | null = null;
 const AGENT_MODEL_SETTINGS_CACHE_TTL_MS = 5_000;
 
@@ -255,8 +290,14 @@ export function createAnthropicProxyRouter(options?: {
 	});
 
 	// Token 计数（占位）
-	router.post("/messages/count_tokens", (_req: Request, res: Response) => {
-		res.json({ input_tokens: 0 });
+	router.post("/messages/count_tokens", (req: Request, res: Response) => {
+		try {
+			const payload = (req.body || {}) as Partial<AnthropicRequest>;
+			const inputTokens = estimateAnthropicInputTokens(payload);
+			res.json({ input_tokens: inputTokens });
+		} catch {
+			res.json({ input_tokens: 0 });
+		}
 	});
 
 	// Files API
@@ -1174,6 +1215,7 @@ async function callProviderStream(
 	}
 
 	// message_start
+	const estimatedInputTokens = estimateAnthropicInputTokens(anthropicReq);
 	writeSseEvent(res, "message_start", {
 		type: "message_start",
 		message: {
@@ -1182,7 +1224,7 @@ async function callProviderStream(
 			role: "assistant",
 			content: [],
 			model,
-			usage: { input_tokens: 0, output_tokens: 0 },
+			usage: { input_tokens: estimatedInputTokens, output_tokens: 0 },
 		},
 	});
 
@@ -1195,11 +1237,14 @@ async function callProviderStream(
 				total_tokens?: number;
 		  }
 		| undefined;
+	let pendingStopReason: "tool_use" | "end_turn" | "max_tokens" | null = null;
+	let emittedToolUse = false;
 	const toolCalls = new Map<
 		number,
 		{ id?: string; name?: string; args: string }
 	>();
 	const doneErr = new Error("__OPENAI_STREAM_DONE__");
+	let finalized = false;
 
 	const stopTextBlockIfNeeded = () => {
 		if (textBlockIndex === null) return;
@@ -1210,10 +1255,38 @@ async function callProviderStream(
 		textBlockIndex = null;
 	};
 
+	const finalize = () => {
+		if (finalized || res.writableEnded) return;
+		finalized = true;
+
+		stopTextBlockIfNeeded();
+		const stopReason = pendingStopReason || "end_turn";
+
+		const usageAny = lastUsage as any;
+		const completionTokens =
+			typeof usageAny?.completion_tokens === "number"
+				? usageAny.completion_tokens
+				: typeof usageAny?.output_tokens === "number"
+					? usageAny.output_tokens
+					: 0;
+
+		writeSseEvent(res, "message_delta", {
+			type: "message_delta",
+			delta: { stop_reason: stopReason },
+			usage: { output_tokens: completionTokens },
+		});
+		writeSseEvent(res, "message_stop", { type: "message_stop" });
+		res.end();
+	};
+
+	let streamError: unknown = null;
 	try {
 		await readSseStream(upstream.body, async (data) => {
 			if (res.writableEnded) throw doneErr;
-			if (data === "[DONE]") return;
+			if (data === "[DONE]") {
+				finalize();
+				throw doneErr;
+			}
 			let parsed: any = null;
 			try {
 				parsed = JSON.parse(data);
@@ -1265,54 +1338,55 @@ async function callProviderStream(
 				stopTextBlockIfNeeded();
 
 				// Emit tool_use blocks
-				const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
-				for (const [_i, tc] of sorted) {
-					const toolIndex = nextBlockIndex++;
-					let input: unknown = {};
-					const rawArgs = String(tc.args || "").trim();
-					if (rawArgs) {
-						try {
-							input = JSON.parse(rawArgs);
-						} catch {
-							input = { _raw: rawArgs };
+				if (!emittedToolUse) {
+					emittedToolUse = true;
+					const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
+					for (const [_i, tc] of sorted) {
+						const toolIndex = nextBlockIndex++;
+						let input: unknown = {};
+						const rawArgs = String(tc.args || "").trim();
+						if (rawArgs) {
+							try {
+								input = JSON.parse(rawArgs);
+							} catch {
+								input = { _raw: rawArgs };
+							}
 						}
+						emitToolUseBlock(res, {
+							index: toolIndex,
+							id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+							name: tc.name || "Tool",
+							input,
+						});
 					}
-					emitToolUseBlock(res, {
-						index: toolIndex,
-						id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-						name: tc.name || "Tool",
-						input,
-					});
 				}
-
-				writeSseEvent(res, "message_delta", {
-					type: "message_delta",
-					delta: { stop_reason: "tool_use" },
-					usage: { output_tokens: Number(lastUsage?.completion_tokens || 0) },
-				});
-				writeSseEvent(res, "message_stop", { type: "message_stop" });
-				res.end();
-				throw doneErr;
+				pendingStopReason = "tool_use";
+				return;
 			}
 
 			if (finishReason === "stop" || finishReason === "length") {
 				stopTextBlockIfNeeded();
-				writeSseEvent(res, "message_delta", {
-					type: "message_delta",
-					delta: {
-						stop_reason: finishReason === "length" ? "max_tokens" : "end_turn",
-					},
-					usage: { output_tokens: Number(lastUsage?.completion_tokens || 0) },
-				});
-				writeSseEvent(res, "message_stop", { type: "message_stop" });
-				res.end();
-				throw doneErr;
+				pendingStopReason =
+					finishReason === "length" ? "max_tokens" : "end_turn";
+				return;
 			}
 		});
 	} catch (e) {
-		if (e === doneErr) return;
-		throw e;
+		if (e !== doneErr) streamError = e;
 	}
+
+	if (streamError) {
+		const msg =
+			streamError instanceof Error ? streamError.message : String(streamError);
+		writeSseEvent(res, "error", {
+			type: "error",
+			error: { type: "api_error", message: msg || "Upstream stream error" },
+		});
+		res.end();
+		return;
+	}
+
+	finalize();
 }
 
 interface OpenAIResponse {

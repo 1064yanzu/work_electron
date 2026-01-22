@@ -266,6 +266,17 @@ export const settingsStore = {
 		return initPromise;
 	},
 
+	/**
+	 * 强制重新加载配置（用于热重载场景）
+	 */
+	async reload() {
+		console.log("[settingsStore] 强制重新加载配置...");
+		isInitialized = false;
+		initPromise = null;
+		await this.init();
+		console.log("[settingsStore] 重新加载完成");
+	},
+
 	getProviders: () => currentProviders,
 
 	async updateProvider(id: string, updates: Partial<UIProvider>) {
@@ -383,19 +394,41 @@ export function useSettingsStore() {
 	const [isLoading, setIsLoading] = useState(!isInitialized);
 
 	useEffect(() => {
-		// Initialize on first mount
-		if (!isInitialized) {
-			settingsStore.init().then(() => {
-				setProviders(settingsStore.getProviders());
-				setActiveModel(settingsStore.getActiveModel());
-				setIsLoading(false);
-			});
+		let mounted = true;
+
+		// 【修复热重载】开发模式下强制重新加载配置
+		// 即使 isInitialized 为 true，也检查数据是否为空（热重载标志）
+		const needsReload =
+			!isInitialized || settingsStore.getProviders().length === 0;
+
+		if (needsReload) {
+			const loadData = async () => {
+				try {
+					await settingsStore.reload();
+					if (mounted) {
+						setProviders(settingsStore.getProviders());
+						setActiveModel(settingsStore.getActiveModel());
+						setIsLoading(false);
+					}
+				} catch (error) {
+					console.error("[useSettingsStore] 加载配置失败:", error);
+					if (mounted) setIsLoading(false);
+				}
+			};
+			loadData();
 		}
 
-		return settingsStore.subscribe(() => {
-			setProviders(settingsStore.getProviders());
-			setActiveModel(settingsStore.getActiveModel());
+		const unsubscribe = settingsStore.subscribe(() => {
+			if (mounted) {
+				setProviders(settingsStore.getProviders());
+				setActiveModel(settingsStore.getActiveModel());
+			}
 		});
+
+		return () => {
+			mounted = false;
+			unsubscribe();
+		};
 	}, []);
 
 	return { providers, activeModel, settingsStore, isLoading };

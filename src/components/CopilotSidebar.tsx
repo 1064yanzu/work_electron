@@ -1455,15 +1455,6 @@ export default function CopilotSidebar() {
 					touchActivity();
 					if (event.type === "task_started") {
 						currentTaskId = event.task.id;
-						// Always attach trace metadata to the streaming assistant message so
-						// artifacts/tooling can be previewed from the message itself.
-						if (streamingMsgId) {
-							chatStore.updateMessage(session.id, streamingMsgId, {
-								metadata: {
-									trace: { type: "agent_task", taskId: event.task.id },
-								},
-							});
-						}
 						return;
 					}
 

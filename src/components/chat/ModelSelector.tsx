@@ -1,5 +1,6 @@
 // 模型选择器组件
 import { Check, Sparkles } from "lucide-react";
+import { getModelIcon } from "../Settings/modelIcons";
 
 interface Model {
 	id: string;
@@ -57,15 +58,21 @@ export function ModelSelector({
 										onClose();
 									}}
 									className={`
-                    w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
-                    ${
-											activeModel === model.id
-												? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-												: "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                    ${activeModel === model.id
+											? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+											: "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
 										}
                   `}
 								>
-									<span className="truncate">
+									{getModelIcon(model.id) ? (
+										<img
+											src={getModelIcon(model.id)}
+											alt={model.id}
+											className="w-5 h-5 object-contain shrink-0"
+										/>
+									) : null}
+									<span className="truncate flex-1 text-left">
 										{model.id.split("/").pop() || model.id}
 									</span>
 									{activeModel === model.id && (
