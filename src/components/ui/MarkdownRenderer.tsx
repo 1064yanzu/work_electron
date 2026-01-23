@@ -2,15 +2,18 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { isTauriUnavailableError, safeInvoke } from "../../lib/tauriBridge";
 import MermaidRenderer from "./MermaidRenderer";
+import { WebPreviewCard } from "../chat/WebPreviewCard";
 
 interface MarkdownRendererProps {
 	content: string;
 	className?: string;
+	isStreaming?: boolean;
 }
 
 export function MarkdownRenderer({
 	content,
 	className = "",
+	isStreaming = false,
 }: MarkdownRendererProps) {
 	return (
 		<div
@@ -36,16 +39,45 @@ export function MarkdownRenderer({
 						}
 
 						const language = match[1].toLowerCase();
+						const code = String(children).replace(/\n$/, "");
+
+						// 检测可预览的代码块 - 渲染预览卡片替代代码块
+						if (language === "html" || language === "htm") {
+							return (
+								<div className="my-3">
+									<WebPreviewCard
+										kind="html"
+										html={code}
+										title="前端预览"
+										isStreaming={isStreaming}
+									/>
+								</div>
+							);
+						}
+
+						if (language === "jsx" || language === "tsx" || language === "react") {
+							return (
+								<div className="my-3">
+									<WebPreviewCard
+										kind="react"
+										jsx={code}
+										title="React 预览"
+										isStreaming={isStreaming}
+									/>
+								</div>
+							);
+						}
 
 						if (language === "mermaid" || language === "drawio") {
 							return (
 								<MermaidRenderer
-									chart={String(children).replace(/\n$/, "")}
+									chart={code}
 									className="my-6"
 								/>
 							);
 						}
 
+						// 普通代码块
 						return (
 							<div className="relative group my-3">
 								<div className="absolute top-2 right-2 text-xs text-zinc-400 font-mono">

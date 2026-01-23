@@ -57,16 +57,16 @@ function extractWebPreviewFromCodeBlocks(
 	blocks: Array<{ language: string; code: string }>,
 ):
 	| {
-			kind: "html";
-			html: string;
-			css?: string;
-			js?: string;
-	  }
+		kind: "html";
+		html: string;
+		css?: string;
+		js?: string;
+	}
 	| {
-			kind: "react";
-			jsx: string;
-			css?: string;
-	  }
+		kind: "react";
+		jsx: string;
+		css?: string;
+	}
 	| null {
 	let html = "";
 	let jsx = "";
@@ -201,17 +201,28 @@ export function ChatMessage({
 		);
 	}
 
-	// 提取代码块
+	// 提取代码块(流式和完成状态都提取)
 	const codeBlocks = useMemo(
 		() => extractCodeBlocks(message.content),
 		[message.content],
 	);
-	const webPreview = useMemo(
+
+	// 流式状态的预览
+	const streamingWebPreview = useMemo(
 		() =>
-			message.role === "assistant" && !message.isStreaming
+			message.role === "assistant" && isStreaming && codeBlocks.length > 0
 				? extractWebPreviewFromCodeBlocks(codeBlocks)
 				: null,
-		[message.role, message.isStreaming, codeBlocks],
+		[message.role, isStreaming, codeBlocks],
+	);
+
+	// 完成状态的预览
+	const webPreview = useMemo(
+		() =>
+			message.role === "assistant" && !isStreaming
+				? extractWebPreviewFromCodeBlocks(codeBlocks)
+				: null,
+		[message.role, isStreaming, codeBlocks],
 	);
 
 	const handleCopy = async () => {
@@ -290,7 +301,7 @@ export function ChatMessage({
 			onClick: handleCopyAsMarkdown,
 		});
 
-		items.push({ label: "", separator: true, onClick: () => {} });
+		items.push({ label: "", separator: true, onClick: () => { } });
 
 		if (!isUser && onRegenerate) {
 			items.push({
@@ -346,73 +357,98 @@ export function ChatMessage({
 				) : (
 					/* AI 消息：全宽文档流 (纯粹的内容感) */
 					<div className="w-full pr-2">
+						{/* 流式预览卡片 - 在内容之前显示 */}
+						{streamingWebPreview && (
+							<div className="mb-3">
+								<WebPreviewCard
+									kind={streamingWebPreview.kind}
+									title={
+										streamingWebPreview.kind === "react" ? "React 预览" : "前端预览"
+									}
+									html={
+										streamingWebPreview.kind === "html" ? streamingWebPreview.html : undefined
+									}
+									jsx={
+										streamingWebPreview.kind === "react" ? streamingWebPreview.jsx : undefined
+									}
+									css={streamingWebPreview.css}
+									js={streamingWebPreview.kind === "html" ? streamingWebPreview.js : undefined}
+									isStreaming={true}
+								/>
+							</div>
+						)}
+
 						{/* AI 内容渲染区 */}
 						<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
 							{canRenderAssistantByBlocks ? (
 								<AgentBlocksInline blocks={message.metadata!.blocks!} />
 							) : (
-								message.content
-									.split(
-										/(<<<AI_UPDATE_PENDING>>>|<<<AI_CREATE_PENDING>>>|<<<AI_UPDATE_DONE>>>|<<<AI_CREATE_DONE>>>)/,
-									)
-									.map((part, idx) => {
-										if (part === "<<<AI_UPDATE_PENDING>>>")
-											return <ProcessingCard key={idx} type="update" />;
-										if (part === "<<<AI_CREATE_PENDING>>>")
-											return <ProcessingCard key={idx} type="create" />;
-										if (part === "<<<AI_UPDATE_DONE>>>") {
-											const update = message.metadata?.fileUpdates?.find(
-												(u) => u.type === "update",
+								<>
+									{/* 渲染 Markdown 内容,代码块会被预览卡片替换 */}
+									{message.content
+										.split(
+											/(<<<<AI_UPDATE_PENDING>>>>|<<<<AI_CREATE_PENDING>>>>|<<<<AI_UPDATE_DONE>>>>|<<<<AI_CREATE_DONE>>>>)/,
+										)
+										.map((part, idx) => {
+											if (part === "<<<<AI_UPDATE_PENDING>>>>")
+												return <ProcessingCard key={idx} type="update" />;
+											if (part === "<<<<AI_CREATE_PENDING>>>>")
+												return <ProcessingCard key={idx} type="create" />;
+											if (part === "<<<<AI_UPDATE_DONE>>>>") {
+												const update = message.metadata?.fileUpdates?.find(
+													(u) => u.type === "update",
+												);
+												if (update)
+													return <FileChangeCard key={idx} update={update} />;
+												return null;
+											}
+											if (part === "<<<<AI_CREATE_DONE>>>>") {
+												const update = message.metadata?.fileUpdates?.find(
+													(u) => u.type === "create",
+												);
+												if (update)
+													return <FileChangeCard key={idx} update={update} />;
+												return null;
+											}
+											if (!part || !part.trim()) return null;
+											return (
+												<div
+													key={idx}
+													className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
+												>
+													<MarkdownRenderer content={part} isStreaming={isStreaming} />
+												</div>
 											);
-											if (update)
-												return <FileChangeCard key={idx} update={update} />;
-											return null;
-										}
-										if (part === "<<<AI_CREATE_DONE>>>") {
-											const update = message.metadata?.fileUpdates?.find(
-												(u) => u.type === "create",
-											);
-											if (update)
-												return <FileChangeCard key={idx} update={update} />;
-											return null;
-										}
-										if (!part || !part.trim()) return null;
-										return (
-											<div
-												key={idx}
-												className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
-											>
-												<MarkdownRenderer content={part} />
-											</div>
-										);
-									})
+										})
+									}
+								</>
 							)}
 
 							{!canRenderAssistantByBlocks ? (
 								<>
 									{/* 兼容旧消息 */}
-									{!message.content.includes("<<<AI_UPDATE_DONE>>>") &&
-										!message.content.includes("<<<AI_CREATE_DONE>>>") &&
+									{!message.content.includes("<<<<AI_UPDATE_DONE>>>>") &&
+										!message.content.includes("<<<<AI_CREATE_DONE>>>>") &&
 										message.metadata?.fileUpdates?.map((update, idx) => (
 											<FileChangeCard key={`update-${idx}`} update={update} />
 										))}
 
 									{(!message.metadata?.fileUpdates ||
 										message.metadata.fileUpdates.length === 0) &&
-									Array.isArray(message.metadata?.blocks)
+										Array.isArray(message.metadata?.blocks)
 										? message.metadata.blocks.map((b, idx) =>
-												b.type === "file_update" ? (
-													<FileChangeCard
-														key={`block-file-update-${idx}`}
-														update={b.update}
-													/>
-												) : null,
-											)
+											b.type === "file_update" ? (
+												<FileChangeCard
+													key={`block-file-update-${idx}`}
+													update={b.update}
+												/>
+											) : null,
+										)
 										: null}
 								</>
 							) : null}
 
-							{isStreaming && !message.content.includes("<<<") && (
+							{isStreaming && !message.content.includes("<<<<") && (
 								<span className="inline-block w-1.5 h-4 ml-1 bg-zinc-400 animate-pulse rounded-full align-middle" />
 							)}
 						</div>
@@ -420,22 +456,6 @@ export function ChatMessage({
 						{/* Actions for assistant messages - 底部工具栏 */}
 						{!isStreaming && message.content && (
 							<div className="flex flex-col gap-2 mt-3">
-								{webPreview && (
-									<WebPreviewCard
-										kind={webPreview.kind}
-										title={
-											webPreview.kind === "react" ? "React 预览" : "前端预览"
-										}
-										html={
-											webPreview.kind === "html" ? webPreview.html : undefined
-										}
-										jsx={
-											webPreview.kind === "react" ? webPreview.jsx : undefined
-										}
-										css={webPreview.css}
-										js={webPreview.kind === "html" ? webPreview.js : undefined}
-									/>
-								)}
 								{/* 代码块操作 */}
 								{codeBlocks.length > 0 && (
 									<div className="flex flex-wrap gap-2">
@@ -458,11 +478,10 @@ export function ChatMessage({
 												<button
 													onClick={() => handleApplyCodeBlock(idx)}
 													disabled={appliedBlocks.has(idx)}
-													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
-														appliedBlocks.has(idx)
-															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-															: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-													}`}
+													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${appliedBlocks.has(idx)
+														? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+														: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+														}`}
 													title="应用代码到编辑器"
 												>
 													{appliedBlocks.has(idx) ? (
