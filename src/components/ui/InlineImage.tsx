@@ -5,6 +5,15 @@ import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
 import { ImageLightbox } from "./ImageLightbox";
 
 function guessDownloadName(title: string | undefined, path: string) {
+	if (path.startsWith("data:")) {
+		const ext = path.substring(5, path.indexOf(";")).split("/")[1] || "png";
+		if (title && title.trim()) {
+			const base = title.replace(/[\\/:*?"<>|]/g, "_");
+			return base.endsWith(`.${ext}`) ? base : `${base}.${ext}`;
+		}
+		return `generated-image-${Date.now()}.${ext}`;
+	}
+
 	const file = path.split("/").pop() || "image.png";
 	if (!title || !title.trim()) return file;
 	// 保留扩展名
@@ -35,13 +44,23 @@ export function InlineImage({
 
 	useEffect(() => {
 		let cancelled = false;
+		console.log('[InlineImage] Loading image:', path.substring(0, 100));
 		(async () => {
 			try {
-				const url = await getImageDataUrl(path);
+				let url: string;
+				if (path.startsWith("data:")) {
+					console.log('[InlineImage] Using Data URL directly');
+					url = path;
+				} else {
+					console.log('[InlineImage] Reading from file system');
+					url = await getImageDataUrl(path);
+				}
 				if (cancelled) return;
+				console.log('[InlineImage] Image loaded successfully');
 				setDataUrl(url);
 			} catch (e) {
 				if (cancelled) return;
+				console.error('[InlineImage] Error loading image:', e);
 				setError(e instanceof Error ? e.message : String(e));
 			}
 		})();

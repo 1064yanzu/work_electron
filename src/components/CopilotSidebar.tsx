@@ -96,40 +96,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-			kind: "update";
-			displayContent: string;
+		kind: "update";
+		displayContent: string;
+		suggestedContent: string;
+		fileUpdate: {
+			fileName: string;
+			type: "update";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
+			originalContent: string;
 			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
+			prompt: string;
+		};
+	}
 	| {
-			kind: "create";
-			displayContent: string;
+		kind: "create";
+		displayContent: string;
+		title: string;
+		summary: string;
+		content: string;
+		fileUpdate: {
+			fileName: string;
+			type: "create";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
 			title: string;
 			summary: string;
 			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
+			prompt: string;
+		};
+	} {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
@@ -1182,7 +1182,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch {}
+					} catch { }
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1283,7 +1283,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-						withoutTrailingDotsOrSpaces === ".."
+							withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1595,10 +1595,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-					  }
+						promptTokens: number;
+						completionTokens: number;
+						totalTokens: number;
+					}
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1607,7 +1607,24 @@ export default function CopilotSidebar() {
 					throw new Error(taskError);
 				}
 
-				const rawResult = getStreamText() || "任务已完成，但未能生成结果";
+				// 检查是否有图片生成
+				const toolCalls = finalState.currentTask?.toolCalls || [];
+				const hasImages = toolCalls.some((tc) => {
+					const output = tc.output as any;
+					const paths = Array.isArray(output?.image_paths)
+						? (output.image_paths as string[])
+						: [];
+					return paths.some((p) => typeof p === "string" && p.trim().length > 0);
+				});
+
+				// 如果有图片生成但没有文本，使用空白或简短提示；否则使用默认失败消息
+				const rawText = getStreamText();
+				console.log('[DEBUG] Image check:', { hasImages, rawText, toolCalls: finalState.currentTask?.toolCalls });
+				const rawResult =
+					rawText ||
+					(hasImages ? "" : "任务已完成，但未能生成结果");
+				console.log('[DEBUG] rawResult:', rawResult);
+
 				const protocol = parseDocProtocolFinal(rawResult, {
 					activeDocContent: workspaceStore.getActiveDocContent() || "",
 					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
@@ -1618,6 +1635,7 @@ export default function CopilotSidebar() {
 				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
 				// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
 				if (streamingMsgId) {
+					console.log('[DEBUG] Updating message:', { result, protocol, blocks: buildFinalBlocks(result, protocol) });
 					chatStore.updateMessage(session.id, streamingMsgId, {
 						content: result,
 						isStreaming: false,
@@ -1670,16 +1688,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1728,8 +1746,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1801,8 +1819,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1831,9 +1849,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2680,11 +2698,10 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
-											}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
+												? "bg-zinc-50 dark:bg-zinc-800/40"
+												: ""
+												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2718,21 +2735,19 @@ export default function CopilotSidebar() {
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
 							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							对话
 						</button>
 						<button
 							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "agent"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							Agent
 						</button>

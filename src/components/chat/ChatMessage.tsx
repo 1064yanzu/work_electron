@@ -217,14 +217,6 @@ export function ChatMessage({
 	);
 
 	// 完成状态的预览
-	const webPreview = useMemo(
-		() =>
-			message.role === "assistant" && !isStreaming
-				? extractWebPreviewFromCodeBlocks(codeBlocks)
-				: null,
-		[message.role, isStreaming, codeBlocks],
-	);
-
 	const handleCopy = async () => {
 		await navigator.clipboard.writeText(message.content);
 		setCopied(true);

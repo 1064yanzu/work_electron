@@ -1,8 +1,35 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { InlineImage } from "./InlineImage";
 import { isTauriUnavailableError, safeInvoke } from "../../lib/tauriBridge";
 import MermaidRenderer from "./MermaidRenderer";
 import { WebPreviewCard } from "../chat/WebPreviewCard";
+
+function isAllowedImageDataUrl(url: string) {
+	const value = url.trim().toLowerCase();
+	if (!value.startsWith("data:image/")) return false;
+	// Block SVG data URLs to avoid script injection vectors.
+	if (value.startsWith("data:image/svg")) return false;
+	return true;
+}
+
+function isWindowsAbsolutePath(value: string) {
+	return /^[a-zA-Z]:[\\/]/.test(value.trim());
+}
+
+function fileUrlToPath(value: string) {
+	try {
+		const u = new URL(value);
+		if (u.protocol !== "file:") return value;
+		// `file:///Users/a.png` -> `/Users/a.png`
+		// `file:///C:/a.png` -> `/C:/a.png` (trim the leading slash)
+		let p = decodeURIComponent(u.pathname);
+		if (/^\/[a-zA-Z]:\//.test(p)) p = p.slice(1);
+		return p;
+	} catch {
+		return value;
+	}
+}
 
 interface MarkdownRendererProps {
 	content: string;
@@ -21,6 +48,18 @@ export function MarkdownRenderer({
 		>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm]}
+				urlTransform={(url, key, _node) => {
+					// `react-markdown` sanitizes URLs by default and strips `data:`/`file:`,
+					// which prevents rendering model-returned base64 images like:
+					// `![alt](data:image/png;base64,...)`
+					if (key === "src") {
+						const trimmed = String(url || "").trim();
+						if (isAllowedImageDataUrl(trimmed)) return trimmed;
+						if (trimmed.startsWith("file:")) return fileUrlToPath(trimmed);
+						if (isWindowsAbsolutePath(trimmed)) return trimmed;
+					}
+					return defaultUrlTransform(url);
+				}}
 				components={{
 					// 自定义代码块样式
 					code({ className, children, ...props }) {
@@ -163,6 +202,17 @@ export function MarkdownRenderer({
 							>
 								{children}
 							</a>
+						);
+					},
+					// 自定义图片
+					img({ src, alt, title }) {
+						if (!src) return null;
+						return (
+							<InlineImage
+								path={src}
+								title={String(title || alt || "生成的图片")}
+								className="my-3"
+							/>
 						);
 					},
 					// 自定义引用块

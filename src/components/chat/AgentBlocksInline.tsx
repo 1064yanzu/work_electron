@@ -67,6 +67,7 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 			.filter(Boolean);
 	};
 
+	console.log('[AgentBlocksInline] Rendering blocks:', blocks.length);
 	for (let i = 0; i < blocks.length; i++) {
 		const b = blocks[i];
 
@@ -97,6 +98,7 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 		}
 
 		if (b.type === "text") {
+			console.log('[AgentBlocksInline] Text block:', { index: i, hasText: !!b.text, textLength: b.text?.length, textPreview: b.text?.substring(0, 150) });
 			if (!b.text || !b.text.trim()) {
 				nodes.push(null);
 				continue;
@@ -152,14 +154,14 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 				const c = calls[0]!;
 				const fallbackData: ToolCall | undefined = c.toolCallId
 					? {
-							id: c.toolCallId,
-							type: (c.toolType as any) || ("custom" as any),
-							name: c.name || (c.toolType as string) || "Tool",
-							status: (c.status as any) || "pending",
-							input: c.input || {},
-							output: c.output,
-							error: c.error,
-						}
+						id: c.toolCallId,
+						type: (c.toolType as any) || ("custom" as any),
+						name: c.name || (c.toolType as string) || "Tool",
+						status: (c.status as any) || "pending",
+						input: c.input || {},
+						output: c.output,
+						error: c.error,
+					}
 					: undefined;
 				nodes.push(
 					<ToolCallInline
