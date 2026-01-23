@@ -98,7 +98,6 @@ const DEFAULT_TOOLS = [
 	"Bash",
 	"Skill", // Enable skills support
 	"Task", // Enable subagents
-	"TodoWrite",
 	"WebSearch",
 	"WebFetch",
 ] as const;
@@ -133,7 +132,8 @@ export class ClaudeAgentService {
 		} = options;
 
 		// Use user-specified model, or fall back to settings, or default
-		const model = userModel || settingsStore.getActiveModel() || "claude-sonnet-4-5";
+		const model =
+			userModel || settingsStore.getActiveModel() || "claude-sonnet-4-5";
 		console.log("[ClaudeAgentService] Using model for SDK:", model);
 
 		let unlisten: (() => void) | null = null;
@@ -214,9 +214,16 @@ export class ClaudeAgentService {
 						const internalToolCallId = `sdk-tool-${parentToolUseId}`;
 
 						// 提取子代理的活动内容
-						if (msgAny.type === "assistant" && Array.isArray(msgAny.message?.content)) {
+						if (
+							msgAny.type === "assistant" &&
+							Array.isArray(msgAny.message?.content)
+						) {
 							for (const block of msgAny.message.content) {
-								if (block.type === "text" && typeof block.text === "string" && block.text.trim()) {
+								if (
+									block.type === "text" &&
+									typeof block.text === "string" &&
+									block.text.trim()
+								) {
 									// 子代理的思考/回复
 									onMessage?.({
 										type: "tool_progress",
@@ -233,7 +240,9 @@ export class ClaudeAgentService {
 								} else if (block.type === "tool_use") {
 									// 子代理调用工具
 									const toolName = block.name;
-									const inputDetails = Object.keys(block.input || {}).join(", ");
+									const inputDetails = Object.keys(block.input || {}).join(
+										", ",
+									);
 									onMessage?.({
 										type: "tool_progress",
 										taskId: "",
@@ -275,7 +284,7 @@ export class ClaudeAgentService {
 							lastToolUseId =
 								String(
 									toolErrorBlocks[toolErrorBlocks.length - 1]?.tool_use_id ||
-									"",
+										"",
 								) || lastToolUseId;
 
 							if (debug) {
@@ -331,7 +340,7 @@ export class ClaudeAgentService {
 									success: false,
 									summary: guidance,
 									sessionId: sessionId ?? undefined,
-									usage: undefined
+									usage: undefined,
 								});
 								if (unlisten) unlisten();
 								unlisten = null;
@@ -460,7 +469,12 @@ export class ClaudeAgentService {
 						"Task finished";
 					const usageAny = resultAny?.usage;
 					const toFiniteNumber = (v: unknown): number | null => {
-						const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+						const n =
+							typeof v === "number"
+								? v
+								: typeof v === "string"
+									? Number(v)
+									: NaN;
 						return Number.isFinite(n) ? n : null;
 					};
 					const promptTokens =
@@ -476,10 +490,10 @@ export class ClaudeAgentService {
 					const usage =
 						promptTokens !== null && completionTokens !== null
 							? {
-								promptTokens,
-								completionTokens,
-								totalTokens: promptTokens + completionTokens,
-							}
+									promptTokens,
+									completionTokens,
+									totalTokens: promptTokens + completionTokens,
+								}
 							: undefined;
 					onComplete?.({
 						success: ok,
@@ -525,7 +539,9 @@ export class ClaudeAgentService {
 					prompt,
 					model,
 					cwd: workingDirectory,
-					resume_session_id: isUuid(resumeSessionId) ? resumeSessionId : undefined,
+					resume_session_id: isUuid(resumeSessionId)
+						? resumeSessionId
+						: undefined,
 					persist_session: persistSession,
 					permission_mode: "acceptEdits",
 					allowed_tools: [...DEFAULT_TOOLS],

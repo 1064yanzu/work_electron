@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
+import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 
 const execFileAsync = promisify(execFile);
@@ -730,9 +731,232 @@ export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
 	anthropicBaseUrl: string;
 	logger: Logger;
+	db: DbContext;
 }) {
 	const require = createRequire(import.meta.url);
 	const logger = options.logger;
+
+	type AgentModelSettingsLike = {
+		scenarioConfigs?: unknown;
+	};
+	type ScenarioModelConfigLike = {
+		scenario?: unknown;
+		customName?: unknown;
+		enabled?: unknown;
+	};
+
+	let cachedAgentModelSettings: { loadedAt: number; settings: any } | null =
+		null;
+	const AGENT_MODEL_SETTINGS_CACHE_TTL_MS = 5_000;
+
+	async function loadAgentModelSettingsFromDb(): Promise<any | null> {
+		const now = Date.now();
+		if (
+			cachedAgentModelSettings &&
+			now - cachedAgentModelSettings.loadedAt <
+				AGENT_MODEL_SETTINGS_CACHE_TTL_MS
+		) {
+			return cachedAgentModelSettings.settings;
+		}
+
+		try {
+			const rows = await options.db.client.execute({
+				sql: `SELECT value FROM app_config WHERE key = ?`,
+				args: ["agent.model_settings"],
+			});
+			const raw = rows.rows.length > 0 ? (rows.rows[0].value as unknown) : null;
+
+			let parsed: any = null;
+			try {
+				if (typeof raw === "string") parsed = JSON.parse(raw);
+				else if (raw && typeof raw === "object") parsed = raw;
+			} catch {
+				parsed = null;
+			}
+
+			cachedAgentModelSettings = { loadedAt: now, settings: parsed };
+			return parsed;
+		} catch {
+			cachedAgentModelSettings = { loadedAt: now, settings: null };
+			return null;
+		}
+	}
+
+	function coerceString(value: unknown): string | null {
+		if (typeof value !== "string") return null;
+		const s = value.trim();
+		return s ? s : null;
+	}
+
+	function normalizeAgentKey(key: string): string {
+		// Keep names stable and readable; avoid newlines/tabs.
+		return String(key || "")
+			.normalize("NFC")
+			.trim()
+			.replace(/\s+/g, " ");
+	}
+
+	function scenarioLabel(scenario: string, customName?: string | null): string {
+		if (scenario === "fast_search") return "快速搜索";
+		if (scenario === "code_review") return "代码审查";
+		if (scenario === "deep_analysis") return "深度分析";
+		if (scenario === "writing") return "写作润色";
+		if (scenario === "translation") return "翻译";
+		if (scenario === "data_processing") return "数据处理";
+		if (scenario === "debugging") return "调试排错";
+		if (scenario === "custom")
+			return customName ? `自定义：${customName}` : "自定义";
+		return scenario || "unknown";
+	}
+
+	function toolsForScenario(
+		scenario: string,
+		opts?: { includeSkills?: boolean },
+	): string[] {
+		const includeSkills = opts?.includeSkills === true;
+		switch (scenario) {
+			case "fast_search":
+				return ["Read", "Glob", "Grep"];
+			case "code_review":
+				return ["Read", "Grep", "Glob", "Bash"];
+			case "deep_analysis":
+				return ["Read", "Edit", "Write", "Bash", "Grep", "Glob"];
+			case "debugging":
+				return ["Read", "Edit", "Bash", "Grep", "Glob"];
+			case "writing":
+				return includeSkills
+					? ["Skill", "Read", "Glob", "Grep", "Write"]
+					: ["Read", "Write"];
+			case "translation":
+				return ["Read", "Write"];
+			case "data_processing":
+				return ["Read", "Write", "Bash"];
+			default:
+				// Custom / unknown: allow common tools; include Skill to unlock special capabilities.
+				return includeSkills
+					? ["Skill", "Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+					: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
+		}
+	}
+
+	function promptForScenarioAgent(opts: {
+		agentKey: string;
+		scenario: string;
+		customName?: string | null;
+		includeSkills: boolean;
+	}): string {
+		const label = scenarioLabel(opts.scenario, opts.customName);
+		const scenarioMarker =
+			opts.scenario === "custom" && opts.customName
+				? opts.customName
+				: opts.scenario;
+		const skillHint = opts.includeSkills
+			? "You may use Skill tool when helpful.\n"
+			: "";
+
+		return [
+			`You are a specialized subagent for: ${label}.`,
+			"Return only the final useful output. Be concise; do not include chain-of-thought.",
+			"Do NOT copy the full conversation history. Use only the context provided in the Task prompt.",
+			"This output will be injected back into the main conversation; keep it short and avoid irrelevant details.",
+			skillHint.trimEnd(),
+			"",
+			`<ipo-subagent name="${opts.agentKey}" scenario="${scenarioMarker}" />`,
+		]
+			.filter(Boolean)
+			.join("\n");
+	}
+
+	function buildDynamicScenarioAgents(opts: {
+		settings: AgentModelSettingsLike | null;
+		enabledSkills: string[];
+	}): Record<string, any> {
+		const agents: Record<string, any> = {};
+		const configs = Array.isArray(opts.settings?.scenarioConfigs)
+			? (opts.settings?.scenarioConfigs as ScenarioModelConfigLike[])
+			: [];
+
+		for (const c of configs) {
+			if (!c || typeof c !== "object") continue;
+			if ((c as any).enabled === false) continue;
+
+			const scenario = coerceString((c as any).scenario) || "";
+			if (!scenario) continue;
+			const customName = coerceString((c as any).customName);
+
+			const agentKey =
+				scenario === "custom"
+					? normalizeAgentKey(customName || "custom")
+					: normalizeAgentKey(scenario);
+			if (!agentKey) continue;
+
+			const includeSkills = scenario === "writing" || scenario === "custom";
+
+			agents[agentKey] = {
+				description: scenarioLabel(scenario, customName),
+				prompt: promptForScenarioAgent({
+					agentKey,
+					scenario,
+					customName,
+					includeSkills,
+				}),
+				tools: toolsForScenario(scenario, { includeSkills }),
+				disallowedTools: ["Task"],
+				skills:
+					includeSkills && opts.enabledSkills.length > 0
+						? opts.enabledSkills
+						: undefined,
+			};
+		}
+
+		return agents;
+	}
+
+	function buildSubagentPolicyAppend(opts: {
+		settings: AgentModelSettingsLike | null;
+		enabledSkills: string[];
+	}): string {
+		const configs = Array.isArray(opts.settings?.scenarioConfigs)
+			? (opts.settings?.scenarioConfigs as ScenarioModelConfigLike[])
+			: [];
+		const enabled = configs.filter(
+			(c) => c && typeof c === "object" && (c as any).enabled !== false,
+		);
+
+		if (enabled.length === 0) return "";
+
+		const lines: string[] = [];
+		lines.push("## 子代理(通过 Task 工具调用)");
+		lines.push(
+			"当你需要某个专门能力/场景时，用 Task 工具把任务委派给对应子代理（subagent_type）。",
+		);
+		lines.push(
+			"重要：如果当前模型自己就能完成（例如具备画图能力），直接完成；如果不具备（例如只能输出纯文本但用户要求生成图片），再委派给合适的子代理。",
+		);
+		lines.push(
+			"为避免上下文污染：调用子代理时只传递最少必要信息，不要粘贴整段对话历史。",
+		);
+		lines.push("可用子代理：");
+
+		for (const c of enabled.slice(0, 30)) {
+			const scenario = coerceString((c as any).scenario) || "";
+			const customName = coerceString((c as any).customName);
+			const agentKey =
+				scenario === "custom"
+					? normalizeAgentKey(customName || "custom")
+					: normalizeAgentKey(scenario);
+			const label = scenarioLabel(scenario, customName);
+			if (!agentKey) continue;
+			lines.push(`- ${agentKey}: ${label}`);
+		}
+
+		if (enabled.length > 30) {
+			lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
+		}
+
+		return lines.join("\n");
+	}
+
 	const agent_sdk_start = async (
 		_event: IpcMainInvokeEvent,
 		input: AgentSdkStartInput,
@@ -848,6 +1072,16 @@ export function createAgentSdkHandlers(options: {
 					: [];
 				const enabledSkills = normalizeStringArray((input as any).skills);
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
+				const agentModelSettings =
+					(await loadAgentModelSettingsFromDb()) as AgentModelSettingsLike | null;
+				const scenarioAgents = buildDynamicScenarioAgents({
+					settings: agentModelSettings,
+					enabledSkills,
+				});
+				const subagentPolicyAppend = buildSubagentPolicyAppend({
+					settings: agentModelSettings,
+					enabledSkills,
+				});
 				const resumeSessionIdRaw =
 					typeof (input as any).resume_session_id === "string"
 						? (input as any).resume_session_id.trim()
@@ -888,17 +1122,20 @@ export function createAgentSdkHandlers(options: {
 						persistSession,
 						mcpServers,
 						agents: {
+							...scenarioAgents,
 							reader: {
 								description:
 									"Reads provided files and extracts key facts/summaries.",
 								prompt: `Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.\n\n<ipo-subagent name="reader" scenario="fast_search" />`,
 								tools: ["Read", "Glob", "Grep"],
+								disallowedTools: ["Task"],
 							},
 							writer: {
 								description:
 									"Writes polished content (Xiaohongshu/marketing/copywriting) based on provided facts.",
 								prompt: `Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.\n\n<ipo-subagent name="writer" scenario="writing" />`,
 								tools: ["Skill", "Read", "Glob", "Grep"],
+								disallowedTools: ["Task"],
 								skills: enabledSkills.length > 0 ? enabledSkills : undefined,
 							},
 						},
@@ -1072,13 +1309,13 @@ export function createAgentSdkHandlers(options: {
 						stream: true,
 						// systemPrompt: 如果用户提供了自定义 prompt,使用 preset + append 模式
 						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
-						systemPrompt: input.system_prompt
-							? {
-									type: "preset" as const,
-									preset: "claude_code" as const,
-									append: input.system_prompt,
-								}
-							: { type: "preset" as const, preset: "claude_code" as const },
+						systemPrompt: {
+							type: "preset" as const,
+							preset: "claude_code" as const,
+							append: [input.system_prompt, subagentPolicyAppend]
+								.filter((s) => typeof s === "string" && s.trim())
+								.join("\n\n"),
+						},
 						canUseTool: async (
 							toolName: string,
 							toolInput: any,

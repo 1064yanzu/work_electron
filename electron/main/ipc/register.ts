@@ -89,6 +89,7 @@ export function registerIpcHandlers({
 		getMainWindow: () => mainWindowRef,
 		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
 		logger,
+		db,
 	});
 
 	// Agent Runtime handlers

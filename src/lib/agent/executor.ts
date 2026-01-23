@@ -133,6 +133,8 @@ class AgentExecutor {
 				size?: number;
 				isBinary?: boolean;
 			}>;
+			/** Chat window/session ID for log grouping. */
+			conversationSessionId?: string;
 			workingDirectory?: string;
 			/** Reuse the same sandbox dir across turns by providing a stable key */
 			sandboxKey?: string;
@@ -148,18 +150,26 @@ class AgentExecutor {
 		await agentModelSettingsStore.init();
 
 		// Model selection priority:
-		// 1) User-selected active model (UI dropdown)
-		// 2) Smart scenario suggestion (only if no user-selected model)
+		// 1) Smart scenario suggestion (when enabled and not default)
+		// 2) User-selected active model (UI dropdown)
 		// 3) Fallback default
 		const userSelectedModel = settingsStore.getActiveModel();
-		const modelConfig = userSelectedModel
-			? null
-			: agentModelSettingsStore.getModelForTask(query);
+		const smartEnabled =
+			agentModelSettingsStore.getSettings().enableSmartScenarioSwitch === true;
+		const modelConfig = agentModelSettingsStore.getModelForTask(query);
+		const shouldOverrideUserModel =
+			smartEnabled &&
+			!!modelConfig?.modelId &&
+			modelConfig.scenario !== "default";
 		const activeModel =
-			userSelectedModel || modelConfig?.modelId || "claude-sonnet-4-5";
+			(shouldOverrideUserModel ? modelConfig?.modelId : null) ||
+			userSelectedModel ||
+			modelConfig?.modelId ||
+			"claude-sonnet-4-5";
 
 		console.log("[AgentExecutor SDK] Model selection:", {
 			userSelectedModel: userSelectedModel || null,
+			smartEnabled,
 			smartScenario: modelConfig?.scenario || null,
 			smartModel: modelConfig?.modelId || null,
 			activeModel,
@@ -380,6 +390,14 @@ class AgentExecutor {
 			}
 		}
 
+		// Internal marker for proxy-side log grouping (does not affect user-visible UI).
+		if (
+			typeof options?.conversationSessionId === "string" &&
+			options.conversationSessionId.trim()
+		) {
+			enhancedPrompt += `\n\n<ipo-conversation id="${options.conversationSessionId.trim()}" />`;
+		}
+
 		let finalResult = "";
 		let sdkSessionId: string | undefined;
 		let toolStepCounter = 0;
@@ -428,9 +446,6 @@ class AgentExecutor {
 				model: activeModel,
 				skills: enabledSkills.map((s) => s.name),
 				abortController: this.abortController ?? undefined,
-				onTodoUpdate: (todos) => {
-					agentStore.setTaskMetadata({ todos });
-				},
 
 				onChunk: (text) => {
 					finalResult += text;

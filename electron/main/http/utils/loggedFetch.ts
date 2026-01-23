@@ -1,9 +1,14 @@
 import { performance } from "node:perf_hooks";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { app } from "electron";
 import type { Logger } from "../../logging/types";
 
 type LoggedFetchOptions = {
 	logger?: Logger;
 	requestId?: string;
+	conversationId?: string;
 	service: string;
 	readResponseBody?: boolean;
 };
@@ -64,12 +69,104 @@ function truncateUtf8(input: string, maxBytes: number) {
 	};
 }
 
+function formatTwo(n: number): string {
+	return n < 10 ? `0${n}` : String(n);
+}
+
+function formatMinuteKey(ts: number): string {
+	const d = new Date(ts);
+	const yyyy = d.getFullYear();
+	const mm = formatTwo(d.getMonth() + 1);
+	const dd = formatTwo(d.getDate());
+	const hh = formatTwo(d.getHours());
+	const min = formatTwo(d.getMinutes());
+	return `${yyyy}-${mm}-${dd}/${hh}-${min}`;
+}
+
+function getLogDirectory(): string {
+	if (app.isPackaged) {
+		const userDataPath = app.getPath("userData");
+		return path.join(userDataPath, "logs");
+	}
+	return path.join(process.cwd(), "logs");
+}
+
+const conversationMinuteById = new Map<string, string>();
+const conversationSeqById = new Map<string, number>();
+
+function sanitizePathComponent(raw: string): string {
+	return String(raw || "")
+		.trim()
+		.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+		.slice(0, 120);
+}
+
+const SENSITIVE_HEADER_RE =
+	/(^|[_-])(api[_-]?key|token|authorization|cookie|password|secret)([_-]|$)/i;
+
+function redactHeaders(
+	headers: Record<string, string>,
+): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const [k, v] of Object.entries(headers)) {
+		out[k] = SENSITIVE_HEADER_RE.test(k) ? "***" : v;
+	}
+	return out;
+}
+
+async function appendConversationHttpLog(entry: {
+	conversationId: string;
+	ts: number;
+	seq: number;
+	service: string;
+	requestId?: string;
+	method: string;
+	url: string;
+	request: {
+		headers: Record<string, string>;
+		body: string;
+		bodyBytes: number;
+		bodyTruncated: boolean;
+	};
+	response?: {
+		status: number;
+		ok: boolean;
+		headers: Record<string, string>;
+		body: string;
+		bodyBytes: number;
+		bodyTruncated: boolean;
+	};
+	error?: string;
+	durationMs: number;
+}) {
+	const baseDir = path.join(getLogDirectory(), "conversations");
+	const minuteKey =
+		conversationMinuteById.get(entry.conversationId) ||
+		formatMinuteKey(entry.ts);
+	if (!conversationMinuteById.has(entry.conversationId)) {
+		conversationMinuteById.set(entry.conversationId, minuteKey);
+	}
+
+	const safeConversationId = sanitizePathComponent(entry.conversationId);
+	const dir = path.join(baseDir, minuteKey, safeConversationId);
+
+	try {
+		if (!fs.existsSync(dir)) {
+			await fsp.mkdir(dir, { recursive: true });
+		}
+		const filePath = path.join(dir, "http.jsonl");
+		await fsp.appendFile(filePath, `${JSON.stringify(entry)}\n`, "utf8");
+	} catch {
+		// ignore logging failures
+	}
+}
+
 export async function loggedFetch(
 	input: RequestInfo | URL,
 	init: RequestInit | undefined,
 	options: LoggedFetchOptions,
 ): Promise<Response> {
-	const { logger, requestId, service } = options;
+	const { logger, requestId, service, conversationId } = options;
 	const readResponseBody = options.readResponseBody ?? true;
 	const maxReqBytes = parsePositiveIntEnv(
 		"LOG_HTTP_OUTBOUND_REQUEST_MAX_BYTES",
@@ -95,6 +192,14 @@ export async function loggedFetch(
 	const reqBodyText = safeBodyToString(init?.body);
 	const reqBody = truncateUtf8(reqBodyText, maxReqBytes);
 
+	const conversationLogSeq = (() => {
+		if (!conversationId) return null;
+		const prev = conversationSeqById.get(conversationId) ?? 0;
+		const next = prev + 1;
+		conversationSeqById.set(conversationId, next);
+		return next;
+	})();
+
 	let response: Response;
 	try {
 		response = await fetch(input as any, init);
@@ -115,6 +220,26 @@ export async function loggedFetch(
 			error: error instanceof Error ? error.message : String(error),
 			durationMs: Math.round((performance.now() - startedAt) * 1000) / 1000,
 		});
+
+		if (conversationId && conversationLogSeq) {
+			void appendConversationHttpLog({
+				conversationId,
+				ts: Date.now(),
+				seq: conversationLogSeq,
+				service,
+				requestId,
+				method,
+				url,
+				request: {
+					headers: redactHeaders(headersToObject(reqHeaders)),
+					body: reqBody.text,
+					bodyBytes: reqBody.bytes,
+					bodyTruncated: reqBody.truncated,
+				},
+				error: error instanceof Error ? error.message : String(error),
+				durationMs: Math.round((performance.now() - startedAt) * 1000) / 1000,
+			});
+		}
 		throw error;
 	}
 
@@ -140,6 +265,7 @@ export async function loggedFetch(
 		event: "http_outbound",
 		service,
 		requestId,
+		conversationId,
 		method,
 		url,
 		request: {
@@ -158,6 +284,33 @@ export async function loggedFetch(
 		},
 		durationMs: Math.round((performance.now() - startedAt) * 1000) / 1000,
 	});
+
+	if (conversationId && conversationLogSeq) {
+		void appendConversationHttpLog({
+			conversationId,
+			ts: Date.now(),
+			seq: conversationLogSeq,
+			service,
+			requestId,
+			method,
+			url,
+			request: {
+				headers: redactHeaders(headersToObject(reqHeaders)),
+				body: reqBody.text,
+				bodyBytes: reqBody.bytes,
+				bodyTruncated: reqBody.truncated,
+			},
+			response: {
+				status: response.status,
+				ok: response.ok,
+				headers: redactHeaders(headersToObject(response.headers)),
+				body: responseBodyText,
+				bodyBytes: responseBodyBytes,
+				bodyTruncated: responseBodyTruncated,
+			},
+			durationMs: Math.round((performance.now() - startedAt) * 1000) / 1000,
+		});
+	}
 
 	return response;
 }

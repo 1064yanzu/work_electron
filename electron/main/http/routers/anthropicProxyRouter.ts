@@ -25,6 +25,9 @@ type ScenarioModelConfigLike = {
 
 const IPO_SUBAGENT_MARKER_RE =
 	/<ipo-subagent\b[^>]*scenario="([^"]+)"[^>]*\/>/i;
+const IPO_CONVERSATION_MARKER_RE =
+	/<ipo-conversation\b[^>]*id="([^"]+)"[^>]*\/>/i;
+const IPO_MARKERS_STRIP_RE = /<ipo-(?:subagent|conversation)\b[^>]*\/>/gi;
 
 function coerceString(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -32,8 +35,48 @@ function coerceString(value: unknown): string | null {
 	return s ? s : null;
 }
 
-function collectAnthropicRequestText(req: AnthropicRequest): string {
+function collectStringsFromUnknown(
+	value: unknown,
+	out: string[],
+	opts?: { depth?: number; maxDepth?: number; maxItems?: number },
+) {
+	const depth = opts?.depth ?? 0;
+	const maxDepth = opts?.maxDepth ?? 6;
+	const maxItems = opts?.maxItems ?? 200;
+	if (out.length >= maxItems) return;
+	if (depth > maxDepth) return;
+
+	if (typeof value === "string") {
+		const s = value.trim();
+		if (s) out.push(s);
+		return;
+	}
+	if (!value || typeof value !== "object") return;
+
+	if (Array.isArray(value)) {
+		for (const v of value) {
+			if (out.length >= maxItems) return;
+			collectStringsFromUnknown(v, out, {
+				depth: depth + 1,
+				maxDepth,
+				maxItems,
+			});
+		}
+		return;
+	}
+
+	for (const v of Object.values(value as Record<string, unknown>)) {
+		if (out.length >= maxItems) return;
+		collectStringsFromUnknown(v, out, { depth: depth + 1, maxDepth, maxItems });
+	}
+}
+
+function collectAnthropicRequestText(
+	req: AnthropicRequest,
+	opts?: { tailMessages?: number; includeToolUseInputs?: boolean },
+): string {
 	const chunks: string[] = [];
+	const includeToolUseInputs = opts?.includeToolUseInputs === true;
 	const sys = (req as any)?.system;
 	if (typeof sys === "string" && sys.trim()) chunks.push(sys);
 	if (Array.isArray(sys)) {
@@ -45,7 +88,15 @@ function collectAnthropicRequestText(req: AnthropicRequest): string {
 		}
 	}
 
-	const messages = Array.isArray(req.messages) ? req.messages : [];
+	const messagesAll = Array.isArray(req.messages) ? req.messages : [];
+	const tail =
+		typeof opts?.tailMessages === "number" && opts.tailMessages > 0
+			? Math.floor(opts.tailMessages)
+			: 0;
+	const messages =
+		tail > 0 && messagesAll.length > tail
+			? messagesAll.slice(-tail)
+			: messagesAll;
 	for (const m of messages) {
 		const content = (m as any)?.content;
 		if (typeof content === "string") {
@@ -56,9 +107,24 @@ function collectAnthropicRequestText(req: AnthropicRequest): string {
 		if (!Array.isArray(content)) continue;
 		for (const block of content) {
 			if (!block || typeof block !== "object") continue;
-			if ((block as any).type !== "text") continue;
-			const t = coerceString((block as any).text);
-			if (t) chunks.push(t);
+			const type = String((block as any).type || "");
+			if (type === "text") {
+				const t = coerceString((block as any).text);
+				if (t) chunks.push(t);
+				continue;
+			}
+			// 子代理场景标记通常会出现在工具调用（如 Task）的 input/prompt 内，
+			// 因此这里也收集 tool_use block 的 input 中的字符串，供场景解析使用。
+			if (includeToolUseInputs && type === "tool_use") {
+				const name = coerceString((block as any).name);
+				if (name) chunks.push(name);
+				if ((block as any).input) {
+					collectStringsFromUnknown((block as any).input, chunks, {
+						maxDepth: 6,
+						maxItems: 300,
+					});
+				}
+			}
 		}
 	}
 
@@ -66,10 +132,85 @@ function collectAnthropicRequestText(req: AnthropicRequest): string {
 }
 
 function extractIpoSubagentScenario(req: AnthropicRequest): string | null {
-	const haystack = collectAnthropicRequestText(req);
+	// 只看 system + 最近几条消息，避免历史消息里的标记“泄漏”导致后续请求被错误覆盖模型。
+	const haystack = collectAnthropicRequestText(req, {
+		tailMessages: 3,
+		includeToolUseInputs: true,
+	});
 	const match = haystack.match(IPO_SUBAGENT_MARKER_RE);
 	const scenario = match?.[1] ? String(match[1]).trim() : "";
 	return scenario ? scenario : null;
+}
+
+function extractIpoConversationId(req: AnthropicRequest): string | null {
+	const haystack = collectAnthropicRequestText(req, { tailMessages: 3 });
+	const match = haystack.match(IPO_CONVERSATION_MARKER_RE);
+	const id = match?.[1] ? String(match[1]).trim() : "";
+	return id ? id : null;
+}
+
+function stripIpoMarkersFromString(input: string): string {
+	// Remove internal routing/log markers so they don't pollute upstream context.
+	return String(input || "").replaceAll(IPO_MARKERS_STRIP_RE, "");
+}
+
+function stripIpoMarkersFromUnknown(value: unknown): unknown {
+	if (typeof value === "string") return stripIpoMarkersFromString(value);
+	if (!value || typeof value !== "object") return value;
+	if (Array.isArray(value))
+		return value.map((v) => stripIpoMarkersFromUnknown(v));
+	const out: Record<string, unknown> = {};
+	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+		out[k] = stripIpoMarkersFromUnknown(v);
+	}
+	return out;
+}
+
+function stripIpoMarkersFromAnthropicRequest(
+	req: AnthropicRequest,
+): AnthropicRequest {
+	const next: AnthropicRequest = {
+		...req,
+		messages: Array.isArray(req.messages) ? [...req.messages] : [],
+	};
+
+	const sys = (req as any)?.system;
+	if (typeof sys === "string") {
+		(next as any).system = stripIpoMarkersFromString(sys);
+	} else if (Array.isArray(sys)) {
+		(next as any).system = sys.map((b: any) => {
+			if (
+				b &&
+				typeof b === "object" &&
+				b.type === "text" &&
+				typeof b.text === "string"
+			) {
+				return { ...b, text: stripIpoMarkersFromString(b.text) };
+			}
+			return b;
+		});
+	}
+
+	next.messages = (Array.isArray(req.messages) ? req.messages : []).map((m) => {
+		const content = (m as any)?.content;
+		if (typeof content === "string") {
+			return { ...m, content: stripIpoMarkersFromString(content) } as any;
+		}
+		if (!Array.isArray(content)) return m;
+		const cleaned = content.map((block: any) => {
+			if (!block || typeof block !== "object") return block;
+			if (block.type === "text" && typeof block.text === "string") {
+				return { ...block, text: stripIpoMarkersFromString(block.text) };
+			}
+			if (block.type === "tool_use" && block.input) {
+				return { ...block, input: stripIpoMarkersFromUnknown(block.input) };
+			}
+			return block;
+		});
+		return { ...m, content: cleaned } as any;
+	});
+
+	return next;
 }
 
 function pickScenarioModelId(
@@ -77,6 +218,10 @@ function pickScenarioModelId(
 	scenario: string,
 ): string | null {
 	if (!settings) return null;
+	const requestedScenario = scenario.trim();
+	const requestedCustomName = requestedScenario.startsWith("custom:")
+		? requestedScenario.slice("custom:".length).trim()
+		: requestedScenario;
 	const configs = Array.isArray(settings.scenarioConfigs)
 		? (settings.scenarioConfigs as ScenarioModelConfigLike[])
 		: [];
@@ -84,7 +229,18 @@ function pickScenarioModelId(
 		if (!c || typeof c !== "object") continue;
 		const enabled = (c as any).enabled;
 		if (enabled === false) continue;
-		if (String((c as any).scenario || "") !== scenario) continue;
+
+		const configuredScenario = String((c as any).scenario || "").trim();
+		const configuredCustomName = coerceString((c as any).customName);
+
+		const scenarioMatched =
+			configuredScenario === requestedScenario ||
+			// 允许通过 customName 直接引用自定义场景（用于 <ipo-subagent scenario="xxx" />）
+			(configuredScenario === "custom" &&
+				configuredCustomName &&
+				configuredCustomName === requestedCustomName);
+
+		if (!scenarioMatched) continue;
 		const modelId = coerceString((c as any).modelId);
 		if (modelId) return modelId;
 	}
@@ -390,6 +546,11 @@ export function createAnthropicProxyRouter(options?: {
 			(typeof req.headers["x-request-id"] === "string" &&
 				req.headers["x-request-id"]) ||
 			undefined;
+		const conversationId =
+			(typeof req.headers["x-conversation-id"] === "string" &&
+				req.headers["x-conversation-id"].trim()) ||
+			extractIpoConversationId(anthropicReq) ||
+			undefined;
 
 		if (!db) {
 			return res.status(501).json({
@@ -405,6 +566,9 @@ export function createAnthropicProxyRouter(options?: {
 				msg: "anthropic proxy request",
 				model: anthropicReq.model,
 			});
+
+			// 0. 清理内部标记，避免把路由/日志 marker 传给上游 Provider 造成上下文污染
+			const cleanedReq = stripIpoMarkersFromAnthropicRequest(anthropicReq);
 
 			// 1. 确定模型
 			let model = anthropicReq.model;
@@ -480,10 +644,11 @@ export function createAnthropicProxyRouter(options?: {
 				await callProviderStream(
 					{ ...provider, api_key: resolvedApiKey },
 					model,
-					anthropicReq,
+					cleanedReq,
 					res,
 					logger,
 					requestId,
+					conversationId,
 				);
 				return;
 			}
@@ -492,9 +657,10 @@ export function createAnthropicProxyRouter(options?: {
 			const result = await callProvider(
 				{ ...provider, api_key: resolvedApiKey },
 				model,
-				anthropicReq,
+				cleanedReq,
 				logger,
 				requestId,
+				conversationId,
 			);
 			res.json(result);
 		} catch (error) {
@@ -520,6 +686,7 @@ async function callProvider(
 	anthropicReq: AnthropicRequest,
 	logger?: Logger,
 	requestId?: string,
+	conversationId?: string,
 ): Promise<AnthropicResponse> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -550,6 +717,7 @@ async function callProvider(
 			{
 				logger,
 				requestId,
+				conversationId,
 				service: "anthropic-proxy:upstream",
 				readResponseBody: false,
 			},
@@ -649,6 +817,7 @@ async function callProvider(
 		{
 			logger,
 			requestId,
+			conversationId,
 			service: "anthropic-proxy:upstream",
 			readResponseBody: false,
 		},
@@ -998,6 +1167,7 @@ async function callProviderStream(
 	res: Response,
 	logger?: Logger,
 	requestId?: string,
+	conversationId?: string,
 ): Promise<void> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -1020,6 +1190,7 @@ async function callProviderStream(
 			{
 				logger,
 				requestId,
+				conversationId,
 				service: "anthropic-proxy:upstream-stream",
 				readResponseBody: false,
 			},
@@ -1115,6 +1286,7 @@ async function callProviderStream(
 		{
 			logger,
 			requestId,
+			conversationId,
 			service: "anthropic-proxy:upstream-stream",
 			readResponseBody: false,
 		},
