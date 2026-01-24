@@ -58,7 +58,6 @@ import {
 	ChatHistory,
 	ChatInput,
 	ChatMessage as ChatMessageComponent,
-	ModelSelector,
 	type SlashCommand,
 } from "./chat";
 
@@ -266,7 +265,7 @@ function parseDocProtocolFinal(
 			},
 			eventPayload: {
 				title,
-				summary,
+				summary: docContent, // Changed from summary to docContent as per the original code's logic for summary if not explicitly provided
 				content: docContent,
 				prompt: options.prompt,
 			},
@@ -419,7 +418,6 @@ export default function CopilotSidebar() {
 	const { store: managedModeStore } = useManagedModeStore();
 
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
-	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -2614,16 +2612,6 @@ export default function CopilotSidebar() {
 
 			{/* Input */}
 			<div className="p-4 pt-2 relative">
-				{/* 模型选择器 */}
-				{isModelMenuOpen && (
-					<ModelSelector
-						models={enabledModels}
-						activeModel={activeModel}
-						onSelect={(modelId) => settingsStore.setActiveModel(modelId)}
-						onClose={() => setIsModelMenuOpen(false)}
-					/>
-				)}
-
 				{/* 停止按钮 */}
 				{(isStreaming || isAgentExecuting) && (
 					<div className="mb-2 flex items-center justify-center">
@@ -2792,7 +2780,8 @@ export default function CopilotSidebar() {
 								: "输入消息，或用 / 唤起命令..."
 					}
 					model={activeModel || undefined}
-					onModelClick={() => setIsModelMenuOpen(true)}
+					models={enabledModels}
+					onModelSelect={(id) => settingsStore.setActiveModel(id)}
 				/>
 			</div>
 		</aside>

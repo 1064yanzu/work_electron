@@ -1,5 +1,5 @@
 // 工作区状态管理 - 三栏互通的核心
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import type { Source } from "../types";
 
 // 上下文项
@@ -41,12 +41,12 @@ export interface ResearchTask {
 	id: string;
 	query: string;
 	status:
-		| "idle"
-		| "searching"
-		| "fetching"
-		| "analyzing"
-		| "completed"
-		| "error";
+	| "idle"
+	| "searching"
+	| "fetching"
+	| "analyzing"
+	| "completed"
+	| "error";
 	steps: ResearchStep[];
 	sources: ResearchSource[];
 	summary?: string;
@@ -105,12 +105,12 @@ interface WorkspaceState {
 	activeMainView: "editor" | "browser";
 	// 左边栏视图模式
 	leftSidebarView:
-		| "sources"
-		| "research"
-		| "detail"
-		| "agent"
-		| "cards"
-		| "websearch";
+	| "sources"
+	| "research"
+	| "detail"
+	| "agent"
+	| "cards"
+	| "websearch";
 	// 当前研究任务
 	currentResearch: ResearchTask | null;
 	// 历史研究任务
@@ -226,11 +226,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-								...c,
-								filePath: result.path,
-								size: result.size,
-								mimeType: "text/plain",
-							}
+							...c,
+							filePath: result.path,
+							size: result.size,
+							mimeType: "text/plain",
+						}
 						: c,
 				),
 			}));
@@ -1040,3 +1040,25 @@ export function useWorkspaceStore() {
 		getActiveTab: workspaceStore.getActiveTab.bind(workspaceStore),
 	};
 }
+
+// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
+export function useWorkspaceStoreSelector<T>(
+	selector: (state: WorkspaceState) => T,
+): T {
+	const selectorRef = useRef(selector);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(
+		() => selectorRef.current(workspaceStore.getState()),
+		[],
+	);
+
+	return useSyncExternalStore(
+		workspaceStore.subscribe,
+		getSnapshot,
+		getSnapshot,
+	);
+}
+
+// 导出类型
+export type { WorkspaceState };

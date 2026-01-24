@@ -754,7 +754,7 @@ export function createAgentSdkHandlers(options: {
 		if (
 			cachedAgentModelSettings &&
 			now - cachedAgentModelSettings.loadedAt <
-				AGENT_MODEL_SETTINGS_CACHE_TTL_MS
+			AGENT_MODEL_SETTINGS_CACHE_TTL_MS
 		) {
 			return cachedAgentModelSettings.settings;
 		}
@@ -1004,18 +1004,18 @@ export function createAgentSdkHandlers(options: {
 								: "";
 							stderr(
 								`[agent_sdk] <tool_use_error> tool_use_id=${toolUseId || "unknown"} tool=${toolName || "unknown"}\n` +
-									(inputPreview ? `input=${inputPreview}\n` : "") +
-									content.slice(0, 2000),
+								(inputPreview ? `input=${inputPreview}\n` : "") +
+								content.slice(0, 2000),
 							);
 						}
-					} catch {}
+					} catch { }
 				};
 
 				let pathToClaudeCodeExecutable: string | undefined;
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch {}
+				} catch { }
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
@@ -1095,12 +1095,12 @@ export function createAgentSdkHandlers(options: {
 						: undefined;
 				const mcpServers =
 					(input as any).mcp_servers &&
-					typeof (input as any).mcp_servers === "object"
+						typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
 						: undefined;
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-					input.permission_mode.trim()
+						input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
 
@@ -1471,6 +1471,9 @@ export function createAgentSdkHandlers(options: {
 				});
 
 				let sawResult = false;
+				// Accumulate token usage from SDK stream events
+				let accumulatedInputTokens = 0;
+				let accumulatedOutputTokens = 0;
 				for await (const msg of q) {
 					// Avoid logging every stream delta; it can freeze the app.
 					const msgAny = msg as any;
@@ -1506,7 +1509,7 @@ export function createAgentSdkHandlers(options: {
 									id,
 									JSON.stringify(msgAny.event.content_block.input ?? {}),
 								);
-							} catch {}
+							} catch { }
 						}
 					}
 					if (
@@ -1524,6 +1527,27 @@ export function createAgentSdkHandlers(options: {
 							toolInputJsonById.set(id, prev + msgAny.event.delta.partial_json);
 						}
 					}
+					// Extract token usage from stream events (message_start contains input_tokens, message_delta contains output_tokens)
+					if (
+						msgAny?.type === "stream_event" &&
+						msgAny?.event?.type === "message_start" &&
+						msgAny?.event?.message?.usage
+					) {
+						const usage = msgAny.event.message.usage;
+						if (typeof usage.input_tokens === "number") {
+							accumulatedInputTokens += usage.input_tokens;
+						}
+					}
+					if (
+						msgAny?.type === "stream_event" &&
+						msgAny?.event?.type === "message_delta" &&
+						msgAny?.event?.usage
+					) {
+						const usage = msgAny.event.usage;
+						if (typeof usage.output_tokens === "number") {
+							accumulatedOutputTokens += usage.output_tokens;
+						}
+					}
 					if (msgAny?.type === "assistant" && msgAny?.message) {
 						const blocks = Array.isArray(msgAny.message.content)
 							? msgAny.message.content
@@ -1536,7 +1560,7 @@ export function createAgentSdkHandlers(options: {
 							if (id && b?.input) {
 								try {
 									toolInputJsonById.set(id, JSON.stringify(b.input ?? {}));
-								} catch {}
+								} catch { }
 							}
 						}
 					}
@@ -1558,7 +1582,18 @@ export function createAgentSdkHandlers(options: {
 					}
 					if ((msg as any)?.type === "result") {
 						sawResult = true;
-						emit(options.getMainWindow, { runId, type: "done", result: msg });
+						// Attach accumulated usage to the result
+						const resultWithUsage = {
+							...(msg as any),
+							usage:
+								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
+									? {
+										input_tokens: accumulatedInputTokens,
+										output_tokens: accumulatedOutputTokens,
+									}
+									: (msg as any)?.usage,
+						};
+						emit(options.getMainWindow, { runId, type: "done", result: resultWithUsage });
 					}
 				}
 				if (!sawResult) {
@@ -1570,6 +1605,13 @@ export function createAgentSdkHandlers(options: {
 							subtype: "success",
 							is_error: false,
 							result: "",
+							usage:
+								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
+									? {
+										input_tokens: accumulatedInputTokens,
+										output_tokens: accumulatedOutputTokens,
+									}
+									: undefined,
 						},
 					});
 				}

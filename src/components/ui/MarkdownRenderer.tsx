@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InlineImage } from "./InlineImage";
@@ -37,17 +38,20 @@ interface MarkdownRendererProps {
 	isStreaming?: boolean;
 }
 
-export function MarkdownRenderer({
+export const MarkdownRenderer = memo(function MarkdownRenderer({
 	content,
 	className = "",
 	isStreaming = false,
 }: MarkdownRendererProps) {
+	// 缓存 remarkPlugins 避免每次渲染创建新数组
+	const remarkPlugins = useMemo(() => [remarkGfm], []);
+
 	return (
 		<div
 			className={`prose prose-zinc dark:prose-invert max-w-none ${className}`}
 		>
 			<ReactMarkdown
-				remarkPlugins={[remarkGfm]}
+				remarkPlugins={remarkPlugins}
 				urlTransform={(url, key, _node) => {
 					// `react-markdown` sanitizes URLs by default and strips `data:`/`file:`,
 					// which prevents rendering model-returned base64 images like:
@@ -257,4 +261,4 @@ export function MarkdownRenderer({
 			</ReactMarkdown>
 		</div>
 	);
-}
+});

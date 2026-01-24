@@ -35,6 +35,11 @@ function normalizePathInput(p: string): string {
 	if (!raw) return "";
 	if (raw.includes("\0")) throw new Error("路径非法");
 
+	// 拒绝 http/https URL（不能当作本地文件路径处理）
+	if (raw.startsWith("http://") || raw.startsWith("https://")) {
+		throw new Error(`不支持远程 URL 路径: ${raw.substring(0, 100)}...`);
+	}
+
 	// Support "file://..." (common when UI passes file URLs).
 	if (raw.startsWith("file://")) {
 		try {
@@ -77,7 +82,7 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 			try {
 				const st = await fs.stat(full);
 				size = st.size;
-			} catch {}
+			} catch { }
 		}
 		out.push({ path: full, name: ent.name, is_file, is_dir, size });
 	}

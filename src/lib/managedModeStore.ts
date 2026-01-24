@@ -4,7 +4,7 @@
  * 管理托管模式的开关状态、沙盒文件列表、以及 UI 状态
  */
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { safeInvoke } from "./tauriBridge";
 
 // ==================== 类型定义 ====================
@@ -613,4 +613,23 @@ export function useManagedModeStore() {
 		...state,
 		store: managedModeStore,
 	};
+}
+
+// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
+export function useManagedModeStoreSelector<T>(
+	selector: (state: ManagedModeState) => T,
+): T {
+	const selectorRef = useRef(selector);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(
+		() => selectorRef.current(managedModeStore.getState()),
+		[],
+	);
+
+	return useSyncExternalStore(
+		managedModeStore.subscribe,
+		getSnapshot,
+		getSnapshot,
+	);
 }

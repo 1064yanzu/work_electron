@@ -1,9 +1,10 @@
 import { Download, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
 import { ImageLightbox } from "./ImageLightbox";
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
+import { managedModeStore } from "../../lib/managedModeStore";
 import { safeInvoke } from "../../lib/tauriBridge";
 
 function guessDownloadName(title: string | undefined, path: string) {
@@ -24,7 +25,7 @@ function guessDownloadName(title: string | undefined, path: string) {
 	return base.endsWith(ext) ? base : `${base}${ext}`;
 }
 
-export function InlineImage({
+export const InlineImage = memo(function InlineImage({
 	path,
 	title,
 	className,
@@ -39,7 +40,8 @@ export function InlineImage({
 	const [error, setError] = useState<string | null>(null);
 	const [open, setOpen] = useState(false);
 	const savedRef = useRef(false);
-	const { currentTask } = useAgentStore();
+	// 使用 selector 只订阅 currentTask，减少不必要的重渲染
+	const currentTask = useAgentStoreSelector(state => state.currentTask);
 
 	const downloadName = useMemo(
 		() => guessDownloadName(title, path),
@@ -80,8 +82,6 @@ export function InlineImage({
 					},
 				});
 
-				console.log("[InlineImage] Auto-saved base64 image to:", filePath);
-
 				// 同时保存到产物数据库
 				try {
 					const sessionId = sandboxDir.split("/").pop() || `session_${Date.now()}`;
@@ -92,17 +92,15 @@ export function InlineImage({
 						encoding: "base64",
 						description: `Generated image: ${title || fileName}`,
 					});
-					console.log("[InlineImage] Image artifact saved to database");
 				} catch (dbErr) {
 					console.warn("[InlineImage] Failed to save image to database:", dbErr);
 				}
 
-				// 触发沙盒文件列表刷新
+				// 触发沙箱文件列表刷新（使用静态导入的 store）
 				try {
-					const { managedModeStore } = await import("../../lib/managedModeStore");
 					await managedModeStore.scanSandboxDir(sandboxDir);
 				} catch (e) {
-					console.warn("[InlineImage] Failed to refresh sandbox:", e);
+					// 静默失败
 				}
 			} catch (err) {
 				console.error("[InlineImage] Failed to auto-save base64 image:", err);
@@ -112,23 +110,18 @@ export function InlineImage({
 
 	useEffect(() => {
 		let cancelled = false;
-		console.log('[InlineImage] Loading image:', path.substring(0, 100));
 		(async () => {
 			try {
 				let url: string;
 				if (path.startsWith("data:")) {
-					console.log('[InlineImage] Using Data URL directly');
 					url = path;
 				} else {
-					console.log('[InlineImage] Reading from file system');
 					url = await getImageDataUrl(path);
 				}
 				if (cancelled) return;
-				console.log('[InlineImage] Image loaded successfully');
 				setDataUrl(url);
 			} catch (e) {
 				if (cancelled) return;
-				console.error('[InlineImage] Error loading image:', e);
 				setError(e instanceof Error ? e.message : String(e));
 			}
 		})();
@@ -189,4 +182,4 @@ export function InlineImage({
 			/>
 		</div>
 	);
-}
+});

@@ -1,7 +1,7 @@
 // Agent 状态管理
 // 管理 Agent 任务、工具调用历史等
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import type { SkillExecution } from "./SkillExecutor";
 import {
 	type AgentEvent,
@@ -545,9 +545,9 @@ class AgentStore {
 					const input = nextToolCall.input || {};
 					const filePath = String(
 						(input as any).file_path ||
-							(input as any).path ||
-							(input as any).file ||
-							"",
+						(input as any).path ||
+						(input as any).file ||
+						"",
 					).trim();
 
 					if (filePath) {
@@ -1078,3 +1078,24 @@ export function useAgentStore() {
 		setWaitingForLLM: agentStore.setWaitingForLLM.bind(agentStore),
 	};
 }
+
+// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
+export function useAgentStoreSelector<T>(selector: (state: AgentState) => T): T {
+	// 使用 useRef 缓存 selector 结果，避免每次渲染都创建新的 getSnapshot
+	const selectorRef = useRef(selector);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(
+		() => selectorRef.current(agentStore.getState()),
+		[],
+	);
+
+	return useSyncExternalStore(
+		agentStore.subscribe,
+		getSnapshot,
+		getSnapshot,
+	);
+}
+
+// 导出类型供外部使用
+export type { AgentState };

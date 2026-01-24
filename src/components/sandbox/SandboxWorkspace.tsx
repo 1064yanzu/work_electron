@@ -22,7 +22,7 @@ import {
     Image as ImageIcon,
     RefreshCw,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import {
     formatFileSize,
@@ -47,7 +47,7 @@ interface FileCategoryGroupProps {
     onSelectFile: (fileId: string) => void;
 }
 
-function FileCategoryGroup({
+const FileCategoryGroup = memo(function FileCategoryGroup({
     files,
     title,
     isExpanded,
@@ -111,15 +111,19 @@ function FileCategoryGroup({
             )}
         </div>
     );
-}
+});
+
+// 缓存文件类型图标组件
+const FileTypeIcons = {
+    code: <FileCode className="w-3.5 h-3.5" />,
+    images: <ImageIcon className="w-3.5 h-3.5" />,
+    data: <Database className="w-3.5 h-3.5" />,
+    docs: <FileText className="w-3.5 h-3.5" />,
+    other: <FileText className="w-3.5 h-3.5" />,
+} as const;
 
 function getFileTypeIcon(file: SandboxFile) {
-    const className = "w-3.5 h-3.5";
-    if (file.category === "code") return <FileCode className={className} />;
-    if (file.category === "images") return <ImageIcon className={className} />;
-    if (file.category === "data") return <Database className={className} />;
-    if (file.category === "docs") return <FileText className={className} />;
-    return <FileText className={className} />;
+    return FileTypeIcons[file.category] || FileTypeIcons.other;
 }
 
 // ==================== 文件预览组件 ====================
@@ -131,7 +135,7 @@ interface FilePreviewProps {
     onLoadContent: (fileId: string) => Promise<void>;
 }
 
-function FilePreview({ file, previewMode, onSetPreviewMode, onLoadContent }: FilePreviewProps) {
+const FilePreview = memo(function FilePreview({ file, previewMode, onSetPreviewMode, onLoadContent }: FilePreviewProps) {
     // 懒加载文件内容
     useEffect(() => {
         if (file && file.content === undefined) {
@@ -287,7 +291,7 @@ function FilePreview({ file, previewMode, onSetPreviewMode, onLoadContent }: Fil
             {renderContent()}
         </div>
     );
-}
+});
 
 // ==================== 产物预览组件（预览视角） ====================
 
@@ -295,7 +299,7 @@ interface ArtifactPreviewProps {
     file: SandboxFile | null;
 }
 
-function ArtifactPreview({ file }: ArtifactPreviewProps) {
+const ArtifactPreview = memo(function ArtifactPreview({ file }: ArtifactPreviewProps) {
     if (!file) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-900">
@@ -350,7 +354,7 @@ function ArtifactPreview({ file }: ArtifactPreviewProps) {
             </div>
         </div>
     );
-}
+});
 
 // ==================== 主组件 ====================
 

@@ -12,12 +12,19 @@ import mermaid from "mermaid";
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
-mermaid.initialize({
-	startOnLoad: false,
-	theme: "default",
-	securityLevel: "loose",
-	fontFamily: "ui-sans-serif, system-ui, sans-serif",
-});
+// 懒初始化标记，确保 mermaid 只初始化一次
+let mermaidInitialized = false;
+function ensureMermaidInit() {
+	if (mermaidInitialized) return;
+	mermaidInitialized = true;
+	mermaid.initialize({
+		startOnLoad: false,
+		theme: "default",
+		securityLevel: "loose",
+		fontFamily: "ui-sans-serif, system-ui, sans-serif",
+	});
+}
+
 
 interface MermaidRendererProps {
 	chart: string;
@@ -44,6 +51,9 @@ const MermaidRenderer = memo(function MermaidRenderer({
 
 		const renderChart = async () => {
 			if (!chart || !containerRef.current) return;
+
+			// 确保 mermaid 已初始化
+			ensureMermaidInit();
 
 			try {
 				setError(null);
