@@ -4,6 +4,11 @@
  */
 import type { BrowserWindow } from "electron";
 import type { DbContext } from "../db/client";
+import {
+	getOpenAICompatibleAuthHeaders,
+	normalizeAnthropicBaseUrl,
+	normalizeOpenAICompatibleBaseUrl,
+} from "./providerHttp";
 
 const DEFAULT_MODEL = "gpt-4o";
 
@@ -56,10 +61,7 @@ interface LlmCallResult {
 	};
 }
 
-function sendStreamChunk(
-	mainWindow: BrowserWindow,
-	chunk: StreamChunk,
-): void {
+function sendStreamChunk(mainWindow: BrowserWindow, chunk: StreamChunk): void {
 	mainWindow.webContents.send("llm-stream-chunk", chunk);
 }
 
@@ -224,7 +226,10 @@ async function callOpenAICompatible(
 	context?: string[],
 	temperature?: number,
 ): Promise<LlmCallResult> {
-	const baseUrl = provider.api_base || "https://api.openai.com/v1";
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
+	);
 	const url = `${baseUrl}/chat/completions`;
 
 	const messages: Array<{ role: string; content: string }> = [];
@@ -247,7 +252,7 @@ async function callOpenAICompatible(
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${apiKey ?? ""}`,
+				...getOpenAICompatibleAuthHeaders(provider, apiKey),
 			},
 			body: JSON.stringify({
 				model,
@@ -267,7 +272,9 @@ async function callOpenAICompatible(
 	}
 
 	if (!response || !response.ok) {
-		throw new Error(`LLM call failed: unknown - ${lastErrorText || "no response"}`);
+		throw new Error(
+			`LLM call failed: unknown - ${lastErrorText || "no response"}`,
+		);
 	}
 
 	const data = (await response.json()) as {
@@ -294,7 +301,10 @@ async function callOpenAICompatibleStream(opts: {
 	temperature?: number;
 	onChunk: (text: string) => void;
 }): Promise<{ usage?: StreamChunk["usage"] }> {
-	const baseUrl = opts.provider.api_base || "https://api.openai.com/v1";
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		opts.provider,
+		"https://api.openai.com",
+	);
 	const url = `${baseUrl}/chat/completions`;
 
 	const messages: Array<{ role: string; content: string }> = [];
@@ -310,7 +320,7 @@ async function callOpenAICompatibleStream(opts: {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${opts.apiKey ?? ""}`,
+				...getOpenAICompatibleAuthHeaders(opts.provider, opts.apiKey),
 			},
 			body: JSON.stringify({
 				model: opts.model,
@@ -369,7 +379,10 @@ async function callAnthropic(
 	context?: string[],
 	temperature?: number,
 ): Promise<LlmCallResult> {
-	const baseUrl = provider.api_base || "https://api.anthropic.com";
+	const baseUrl = normalizeAnthropicBaseUrl(
+		provider.api_base,
+		"https://api.anthropic.com",
+	);
 	const url = `${baseUrl}/v1/messages`;
 
 	// 构建用户消息（包含上下文）
@@ -433,7 +446,10 @@ async function callAnthropicStream(opts: {
 	temperature?: number;
 	onChunk: (text: string) => void;
 }): Promise<{ usage?: StreamChunk["usage"] }> {
-	const baseUrl = opts.provider.api_base || "https://api.anthropic.com";
+	const baseUrl = normalizeAnthropicBaseUrl(
+		opts.provider.api_base,
+		"https://api.anthropic.com",
+	);
 	const url = `${baseUrl}/v1/messages`;
 
 	let userContent = opts.prompt;
@@ -458,7 +474,9 @@ async function callAnthropicStream(opts: {
 
 	if (!response.ok) {
 		const error = await response.text();
-		throw new Error(`Anthropic call failed (stream): ${response.status} - ${error}`);
+		throw new Error(
+			`Anthropic call failed (stream): ${response.status} - ${error}`,
+		);
 	}
 	if (!response.body) throw new Error("No response body for streaming");
 
@@ -534,7 +552,9 @@ async function callOllamaStream(opts: {
 
 	if (!response.ok) {
 		const error = await response.text();
-		throw new Error(`Ollama call failed (stream): ${response.status} - ${error}`);
+		throw new Error(
+			`Ollama call failed (stream): ${response.status} - ${error}`,
+		);
 	}
 	if (!response.body) throw new Error("No response body for streaming");
 
@@ -549,7 +569,9 @@ async function callOllamaStream(opts: {
 			try {
 				const json = JSON.parse(line) as any;
 				const part =
-					typeof json?.message?.content === "string" ? json.message.content : "";
+					typeof json?.message?.content === "string"
+						? json.message.content
+						: "";
 				if (part) opts.onChunk(part);
 			} catch {
 				// ignore

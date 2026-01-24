@@ -2,6 +2,10 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import { resolveProviderApiKey } from "../../llm/invoke";
+import {
+	getOpenAICompatibleAuthHeaders,
+	normalizeOpenAICompatibleBaseUrl,
+} from "../../llm/providerHttp";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -29,6 +33,8 @@ async function findProviderForModel(
 	provider_type: string;
 	api_key?: string;
 	api_base?: string;
+	template_id?: string;
+	metadata?: Record<string, unknown>;
 } | null> {
 	const providerRows = await db.client.execute(
 		`SELECT * FROM providers WHERE is_enabled = 1`,
@@ -41,11 +47,22 @@ async function findProviderForModel(
 			continue;
 		}
 		if (!models.includes(model)) continue;
+		let metadata: Record<string, unknown> = {};
+		try {
+			metadata = JSON.parse(String(row.metadata ?? "{}")) as Record<
+				string,
+				unknown
+			>;
+		} catch {
+			metadata = {};
+		}
 		return {
 			id: String(row.id),
 			provider_type: String(row.provider_type),
 			api_key: row.api_key ? String(row.api_key) : undefined,
 			api_base: row.api_base ? String(row.api_base) : undefined,
+			template_id: row.template_id ? String(row.template_id) : undefined,
+			metadata,
 		};
 	}
 	return null;
@@ -58,6 +75,8 @@ async function callEmbeddings(
 		provider_type: string;
 		api_key?: string;
 		api_base?: string;
+		template_id?: string;
+		metadata?: Record<string, unknown>;
 	},
 	model: string,
 	inputs: string[],
@@ -66,15 +85,15 @@ async function callEmbeddings(
 		throw new Error("当前 Provider 不支持 embeddings（anthropic）");
 	}
 	const apiKey = await resolveProviderApiKey(db, provider.id, provider.api_key);
-	const baseUrl = (provider.api_base || "https://api.openai.com/v1").replace(
-		/\/+$/,
-		"",
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
 	);
 	const resp = await fetch(`${baseUrl}/embeddings`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${apiKey ?? ""}`,
+			...getOpenAICompatibleAuthHeaders(provider, apiKey),
 		},
 		body: JSON.stringify({ model, input: inputs }),
 	});

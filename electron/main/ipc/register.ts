@@ -3,7 +3,7 @@
  * 整合所有 handlers 并注册到 ipcMain
  */
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
-import { app, ipcMain } from "electron";
+import { app, ipcMain, shell } from "electron";
 import type { IPCSchema } from "../../shared/ipc-schema";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
@@ -118,6 +118,25 @@ export function registerIpcHandlers({
 	ipcMain.handle("health_ping", (async (_event, input) => {
 		return { ts: input.ts };
 	}) satisfies IpcHandler<"health_ping">);
+
+	ipcMain.handle("open_external_url", (async (_event, input) => {
+		try {
+			const raw = String(input?.url || "").trim();
+			if (!raw) return { success: false, error: "EMPTY_URL" };
+			const u = new URL(raw);
+			const allowed = new Set(["http:", "https:", "mailto:"]);
+			if (!allowed.has(u.protocol)) {
+				return { success: false, error: `UNSUPPORTED_PROTOCOL:${u.protocol}` };
+			}
+			await shell.openExternal(u.toString());
+			return { success: true };
+		} catch (e) {
+			return {
+				success: false,
+				error: e instanceof Error ? e.message : String(e),
+			};
+		}
+	}) satisfies IpcHandler<"open_external_url">);
 
 	ipcMain.handle("http_get_status", (async () => {
 		return httpStatus;

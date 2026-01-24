@@ -63,10 +63,46 @@ export function ModelSettings() {
 	// 派生状态
 	const selected = providers.find((p) => p.id === selectedId);
 	const template = selected ? getTemplateForProvider(selected) : undefined;
+	const apiKeyUrl = template?.apiKeyUrl || template?.docsUrl;
+	const docsUrl = template?.docsUrl;
+	const modelsUrl = template?.modelsUrl;
 	const filtered = providers.filter((p) =>
 		p.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 	const modelGroups = selected ? groupModels(selected.models) : {};
+	const apiPreviewUrl = (() => {
+		if (!selected?.apiBase) return "";
+		const stripTrailingSlash = (s: string) =>
+			String(s || "").replace(/\/+$/, "");
+		const rawBase = stripTrailingSlash(selected.apiBase);
+
+		if (selected.providerType === ProviderType.Anthropic) {
+			const base = rawBase.endsWith("/v1")
+				? rawBase.slice(0, -"/v1".length)
+				: rawBase;
+			return `${base}/v1/messages`;
+		}
+
+		const templateId = selected.templateId || selected.metadata?.templateId;
+		const base = (() => {
+			if (templateId === "gemini") {
+				return rawBase.includes("/v1beta/openai")
+					? rawBase
+					: `${rawBase}/v1beta/openai`;
+			}
+			if (
+				templateId === "perplexity" ||
+				templateId === "github" ||
+				templateId === "zhipu"
+			) {
+				return rawBase;
+			}
+			if (/\/v\d+(?:beta\d*)?(?:\/|$)/i.test(rawBase)) return rawBase;
+			return `${rawBase}/v1`;
+		})();
+
+		return `${base}/chat/completions`;
+	})();
 
 	// 初始化选中
 	useEffect(() => {
@@ -246,10 +282,11 @@ export function ModelSettings() {
 						<div
 							key={provider.id}
 							onClick={() => setSelectedId(provider.id)}
-							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${selectedId === provider.id
+							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+								selectedId === provider.id
 									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
 									: "hover:bg-white/60"
-								}`}
+							}`}
 						>
 							<div
 								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color} overflow-hidden`}
@@ -362,9 +399,9 @@ export function ModelSettings() {
 							<p className="mt-2 text-xs text-zinc-400">
 								支持多个密钥，用逗号或换行分隔
 							</p>
-							{template?.docsUrl && (
+							{apiKeyUrl && (
 								<button
-									onClick={() => openUrl(template.docsUrl!)}
+									onClick={() => openUrl(apiKeyUrl)}
 									className="mt-3 text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
 								>
 									点击这里获取密钥 →
@@ -395,9 +432,9 @@ export function ModelSettings() {
 								}
 								className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
 							/>
-							{selected.apiBase && (
+							{selected.apiBase && apiPreviewUrl && (
 								<p className="mt-2 text-xs text-zinc-400">
-									预览：{selected.apiBase}/chat/completions
+									预览：{apiPreviewUrl}
 								</p>
 							)}
 						</div>
@@ -541,26 +578,28 @@ export function ModelSettings() {
 								</div>
 							)}
 
-							{template && (
+							{template && (docsUrl || modelsUrl) && (
 								<p className="mt-4 text-xs text-zinc-400">
-									查看{" "}
-									<button
-										onClick={() =>
-											template.docsUrl && openUrl(template.docsUrl)
-										}
-										className="text-blue-600 hover:underline"
-									>
-										{selected.name} 文档
-									</button>{" "}
-									和{" "}
-									<button
-										onClick={() =>
-											template.homeUrl && openUrl(template.homeUrl)
-										}
-										className="text-blue-600 hover:underline"
-									>
-										模型列表
-									</button>{" "}
+									{docsUrl && (
+										<>
+											查看{" "}
+											<button
+												onClick={() => openUrl(docsUrl)}
+												className="text-blue-600 hover:underline"
+											>
+												{selected.name} 文档
+											</button>
+										</>
+									)}
+									{docsUrl && modelsUrl ? " 和 " : ""}
+									{modelsUrl && (
+										<button
+											onClick={() => openUrl(modelsUrl)}
+											className="text-blue-600 hover:underline"
+										>
+											模型列表
+										</button>
+									)}{" "}
 									获取更多详情
 								</p>
 							)}

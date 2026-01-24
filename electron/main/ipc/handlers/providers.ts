@@ -7,6 +7,11 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Provider, ProviderType } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
 import { resolveProviderApiKey } from "../../llm/invoke";
+import {
+	getOpenAICompatibleAuthHeaders,
+	normalizeAnthropicBaseUrl,
+	normalizeOpenAICompatibleBaseUrl,
+} from "../../llm/providerHttp";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -22,201 +27,204 @@ const CORE_PROVIDER_TEMPLATES: Array<{
 	api_base: string;
 	models: string[];
 }> = [
-		{
-			template_id: "openai",
-			name: "OpenAI",
-			provider_type: "openai",
-			is_enabled: true,
-			api_base: "https://api.openai.com/v1",
-			models: ["gpt-5", "gpt-5-mini", "gpt-4.1", "o3-mini", "gpt-4o"],
-		},
-		{
-			template_id: "anthropic",
-			name: "Claude (Anthropic)",
-			provider_type: "anthropic",
-			is_enabled: false,
-			api_base: "https://api.anthropic.com",
-			models: [
-				"claude-sonnet-4-5",
-				"claude-opus-4-5",
-				"claude-3.7-sonnet",
-				"claude-3.5-sonnet",
-				"claude-3-haiku",
-			],
-		},
-		{
-			template_id: "gemini",
-			name: "Google Gemini",
-			provider_type: "custom",
-			is_enabled: false,
-			api_base: "https://generativelanguage.googleapis.com/v1beta/openai",
-			models: [
-				"gemini-2.5-flash",
-				"gemini-2.0-flash-exp",
-				"gemini-1.5-pro",
-				"gemini-1.5-flash",
-			],
-		},
-		{
-			template_id: "deepseek",
-			name: "DeepSeek",
-			provider_type: "deepseek",
-			is_enabled: false,
-			api_base: "https://api.deepseek.com",
-			models: ["deepseek-chat", "deepseek-reasoner", "deepseek-r1"],
-		},
-		{
-			template_id: "zhipu",
-			name: "智谱 AI",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://open.bigmodel.cn/api/paas/v4/",
-			models: ["glm-4-plus", "glm-4-0520", "glm-4-flash", "glm-4-air"],
-		},
-		{
-			template_id: "moonshot",
-			name: "月之暗面",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.moonshot.cn",
-			models: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
-		},
-		{
-			template_id: "silicon",
-			name: "Silicon Flow",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.siliconflow.cn",
-			models: [
-				"deepseek-ai/DeepSeek-V3",
-				"Qwen/Qwen2.5-72B-Instruct",
-				"meta-llama/Llama-3.3-70B-Instruct",
-			],
-		},
-		{
-			template_id: "aihubmix",
-			name: "AiHubMix",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://aihubmix.com",
-			models: [],
-		},
-		{
-			template_id: "openrouter",
-			name: "OpenRouter",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://openrouter.ai/api/v1/",
-			models: [],
-		},
-		{
-			template_id: "together",
-			name: "Together AI",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.together.xyz",
-			models: [
-				"meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
-				"meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
-			],
-		},
-		{
-			template_id: "groq",
-			name: "Groq",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.groq.com/openai",
-			models: [
-				"llama-3.3-70b-versatile",
-				"llama-3.1-70b-versatile",
-				"mixtral-8x7b-32768",
-			],
-		},
-		{
-			template_id: "fireworks",
-			name: "Fireworks AI",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.fireworks.ai/inference",
-			models: ["accounts/fireworks/models/llama-v3p3-70b-instruct"],
-		},
-		{
-			template_id: "mistral",
-			name: "Mistral AI",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.mistral.ai",
-			models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest"],
-		},
-		{
-			template_id: "ollama",
-			name: "Ollama",
-			provider_type: "custom",
-			is_enabled: false,
-			api_base: "http://localhost:11434",
-			models: [],
-		},
-		{
-			template_id: "lmstudio",
-			name: "LM Studio",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "http://localhost:1234",
-			models: [],
-		},
-		{
-			template_id: "newapi",
-			name: "New API",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "http://localhost:3000",
-			models: [],
-		},
-		{
-			template_id: "github",
-			name: "GitHub Models",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://models.github.ai/inference",
-			models: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"],
-		},
-		{
-			template_id: "perplexity",
-			name: "Perplexity",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.perplexity.ai/",
-			models: [
-				"llama-3.1-sonar-large-128k-online",
-				"llama-3.1-sonar-small-128k-online",
-			],
-		},
-		{
-			template_id: "cerebras",
-			name: "Cerebras AI",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.cerebras.ai/v1",
-			models: ["llama3.1-8b", "llama3.1-70b"],
-		},
-		{
-			template_id: "hyperbolic",
-			name: "Hyperbolic",
-			provider_type: "openai",
-			is_enabled: false,
-			api_base: "https://api.hyperbolic.xyz",
-			models: ["meta-llama/Meta-Llama-3.1-70B-Instruct"],
-		},
-		{
-			template_id: "dify",
-			name: "Dify",
-			provider_type: "dify",
-			is_enabled: false,
-			api_base: "https://api.dify.ai/v1",
-			models: [],
-		},
-	];
-
+	{
+		template_id: "openai",
+		name: "OpenAI",
+		provider_type: "openai",
+		is_enabled: true,
+		api_base: "https://api.openai.com",
+		models: ["gpt-5", "gpt-5-mini", "gpt-4.1", "o3-mini", "gpt-4o"],
+	},
+	{
+		template_id: "anthropic",
+		name: "Claude (Anthropic)",
+		provider_type: "anthropic",
+		is_enabled: false,
+		api_base: "https://api.anthropic.com",
+		models: [
+			"claude-sonnet-4-5",
+			"claude-opus-4-5",
+			"claude-3.7-sonnet",
+			"claude-3.5-sonnet",
+			"claude-3-haiku",
+		],
+	},
+	{
+		template_id: "gemini",
+		name: "Google Gemini",
+		provider_type: "custom",
+		is_enabled: false,
+		api_base: "https://generativelanguage.googleapis.com",
+		models: [
+			"gemini-2.5-flash",
+			"gemini-2.0-flash-exp",
+			"gemini-1.5-pro",
+			"gemini-1.5-flash",
+		],
+	},
+	{
+		template_id: "deepseek",
+		name: "DeepSeek",
+		provider_type: "deepseek",
+		is_enabled: false,
+		api_base: "https://api.deepseek.com",
+		models: ["deepseek-chat", "deepseek-reasoner", "deepseek-r1"],
+	},
+	{
+		template_id: "zhipu",
+		name: "智谱 AI",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://open.bigmodel.cn/api/paas/v4/",
+		models: ["glm-4-plus", "glm-4-0520", "glm-4-flash", "glm-4-air"],
+	},
+	{
+		template_id: "moonshot",
+		name: "月之暗面",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.moonshot.cn",
+		models: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
+	},
+	{
+		template_id: "silicon",
+		name: "Silicon Flow",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.siliconflow.cn",
+		models: [
+			"deepseek-ai/DeepSeek-V3",
+			"Qwen/Qwen2.5-72B-Instruct",
+			"meta-llama/Llama-3.3-70B-Instruct",
+		],
+	},
+	{
+		template_id: "aihubmix",
+		name: "AiHubMix",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://aihubmix.com",
+		models: [],
+	},
+	{
+		template_id: "openrouter",
+		name: "OpenRouter",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://openrouter.ai/api/v1/",
+		models: [],
+	},
+	{
+		template_id: "together",
+		name: "Together AI",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.together.xyz",
+		models: [
+			"meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+			"meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+		],
+	},
+	{
+		template_id: "groq",
+		name: "Groq",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.groq.com/openai",
+		models: [
+			"llama-3.3-70b-versatile",
+			"llama-3.1-70b-versatile",
+			"mixtral-8x7b-32768",
+		],
+	},
+	{
+		template_id: "fireworks",
+		name: "Fireworks AI",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.fireworks.ai/inference",
+		models: ["accounts/fireworks/models/llama-v3p3-70b-instruct"],
+	},
+	{
+		template_id: "mistral",
+		name: "Mistral AI",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.mistral.ai",
+		models: [
+			"mistral-large-latest",
+			"mistral-medium-latest",
+			"mistral-small-latest",
+		],
+	},
+	{
+		template_id: "ollama",
+		name: "Ollama",
+		provider_type: "custom",
+		is_enabled: false,
+		api_base: "http://localhost:11434",
+		models: [],
+	},
+	{
+		template_id: "lmstudio",
+		name: "LM Studio",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "http://localhost:1234",
+		models: [],
+	},
+	{
+		template_id: "newapi",
+		name: "New API",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "http://localhost:3000",
+		models: [],
+	},
+	{
+		template_id: "github",
+		name: "GitHub Models",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://models.github.ai/inference",
+		models: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"],
+	},
+	{
+		template_id: "perplexity",
+		name: "Perplexity",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.perplexity.ai/",
+		models: [
+			"llama-3.1-sonar-large-128k-online",
+			"llama-3.1-sonar-small-128k-online",
+		],
+	},
+	{
+		template_id: "cerebras",
+		name: "Cerebras AI",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.cerebras.ai/v1",
+		models: ["llama3.1-8b", "llama3.1-70b"],
+	},
+	{
+		template_id: "hyperbolic",
+		name: "Hyperbolic",
+		provider_type: "openai",
+		is_enabled: false,
+		api_base: "https://api.hyperbolic.xyz",
+		models: ["meta-llama/Meta-Llama-3.1-70B-Instruct"],
+	},
+	{
+		template_id: "dify",
+		name: "Dify",
+		provider_type: "dify",
+		is_enabled: false,
+		api_base: "https://api.dify.ai/v1",
+		models: [],
+	},
+];
 
 function parseProvider(row: Record<string, unknown>): Provider {
 	let models: string[] = [];
@@ -370,20 +378,28 @@ export function createProviderHandlers(db: DbContext) {
 		if (!apiBase) {
 			return { valid: false, error: "未配置 API Base" };
 		}
-		const base = apiBase.replace(/\/$/, "");
-		const url =
-			provider.provider_type === "anthropic"
-				? `${base}/v1/models`
-				: `${base}/models`;
+
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 		};
-		if (provider.provider_type === "anthropic") {
-			headers["x-api-key"] = apiKey;
-			headers["anthropic-version"] = "2023-06-01";
-		} else {
-			headers.Authorization = `Bearer ${apiKey}`;
-		}
+		const url = (() => {
+			if (provider.provider_type === "anthropic") {
+				const base = normalizeAnthropicBaseUrl(
+					apiBase,
+					"https://api.anthropic.com",
+				);
+				headers["x-api-key"] = apiKey;
+				headers["anthropic-version"] = "2023-06-01";
+				return `${base}/v1/models`;
+			}
+			const base = normalizeOpenAICompatibleBaseUrl(
+				provider,
+				"https://api.openai.com",
+			);
+			Object.assign(headers, getOpenAICompatibleAuthHeaders(provider, apiKey));
+			return `${base}/models`;
+		})();
+
 		const response = await fetch(url, { method: "GET", headers });
 		if (!response.ok) {
 			const errorText = await response.text();

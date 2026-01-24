@@ -14,7 +14,10 @@ export interface FetchModelsResult {
 
 /**
  * 从服务商 API 获取模型列表
- * 主要支持 OpenAI 兼容格式的接口 (GET /v1/models)
+ * 主要支持：
+ * - OpenAI 兼容格式：GET {base}/models（base 可能需要补齐 /v1）
+ * - Anthropic：GET {base}/v1/models
+ * - Gemini（OpenAI-compat）：GET {base}/models（base 需要补齐 /v1beta/openai）
  */
 export async function fetchModelsFromProvider(
 	provider: Provider,
@@ -23,30 +26,65 @@ export async function fetchModelsFromProvider(
 		return { models: [], error: "未配置 API Base URL" };
 	}
 
-	// 移除末尾的斜杠
-	const baseUrl = provider.apiBase.replace(/\/$/, "");
-	const url = `${baseUrl}/models`;
+	const stripTrailingSlash = (s: string) => String(s || "").replace(/\/+$/, "");
+	const baseRaw = stripTrailingSlash(provider.apiBase);
 
-	// 如果 baseUrl 不包含 /v1 且不是特殊的 endpoint，尝试添加 /v1
-	// 这里做一个简单的启发式处理，但通常用户填写的 apiBase 应该包含版本号如果需要的话
-	// 不过很多用户只会填 https://api.openai.com，所以如果失败可以重试
+	const getPrimaryApiKey = (raw?: string) => {
+		const parts = String(raw || "")
+			.split(/[\n,，]/g)
+			.map((k) => k.trim())
+			.filter(Boolean);
+		return parts[0];
+	};
+
+	const apiKey = getPrimaryApiKey(provider.apiKey);
+
+	const normalizeAnthropicBase = (raw: string) => {
+		const base = stripTrailingSlash(raw);
+		return base.endsWith("/v1") ? base.slice(0, -"/v1".length) : base;
+	};
+
+	const normalizeOpenAICompatBase = () => {
+		const templateId = provider.templateId || provider.metadata?.templateId;
+		// Gemini OpenAI-compat is hosted under /v1beta/openai
+		if (templateId === "gemini") {
+			if (baseRaw.includes("/v1beta/openai")) return baseRaw;
+			return `${baseRaw}/v1beta/openai`;
+		}
+		// Some OpenAI-compatible providers do not use /v1.
+		if (
+			templateId === "perplexity" ||
+			templateId === "github" ||
+			templateId === "zhipu"
+		) {
+			return baseRaw;
+		}
+		// If user already provided a version segment, keep it.
+		if (/\/v\d+(?:beta\d*)?(?:\/|$)/i.test(baseRaw)) return baseRaw;
+		// Common OpenAI-compat providers expect /v1.
+		return `${baseRaw}/v1`;
+	};
+
+	const url =
+		provider.providerType === "anthropic"
+			? `${normalizeAnthropicBase(baseRaw)}/v1/models`
+			: `${normalizeOpenAICompatBase()}/models`;
 
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 	};
 
-	if (provider.apiKey) {
-		headers["Authorization"] = `Bearer ${provider.apiKey}`;
-	}
-
 	// 特殊处理：Anthropic 需要 x-api-key
 	if (provider.providerType === "anthropic") {
-		headers["x-api-key"] = provider.apiKey || "";
+		headers["x-api-key"] = apiKey || "";
 		headers["anthropic-version"] = "2023-06-01";
-		delete headers["Authorization"];
-		// Anthropic 官方 API 目前没有标准的 list models 接口，通常是硬编码的。
-		// 但如果是通过中转（OpenAI 兼容），则走下面的流程。
-		// 如果是官方 endpoint，这个请求可能会失败。
+	} else if (apiKey) {
+		const templateId = provider.templateId || provider.metadata?.templateId;
+		if (templateId === "gemini") {
+			headers["x-goog-api-key"] = apiKey;
+		} else {
+			headers["Authorization"] = `Bearer ${apiKey}`;
+		}
 	}
 
 	try {

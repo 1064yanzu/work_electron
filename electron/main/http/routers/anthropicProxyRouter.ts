@@ -9,9 +9,15 @@ import type { DbContext } from "../../db/client";
 import { type Logger } from "../../logging/types";
 import { loggedFetch } from "../utils/loggedFetch";
 import { resolveProviderApiKey } from "../../llm/invoke";
+import {
+	getOpenAICompatibleAuthHeaders,
+	normalizeAnthropicBaseUrl,
+	normalizeOpenAICompatibleBaseUrl,
+} from "../../llm/providerHttp";
 
 type AgentModelSettingsLike = {
 	defaultModelId?: unknown;
+	defaultProviderId?: unknown;
 	scenarioConfigs?: unknown;
 };
 
@@ -213,10 +219,10 @@ function stripIpoMarkersFromAnthropicRequest(
 	return next;
 }
 
-function pickScenarioModelId(
+function pickScenarioModelChoice(
 	settings: AgentModelSettingsLike | null,
 	scenario: string,
-): string | null {
+): { modelId: string; providerId?: string } | null {
 	if (!settings) return null;
 	const requestedScenario = scenario.trim();
 	const requestedCustomName = requestedScenario.startsWith("custom:")
@@ -242,10 +248,15 @@ function pickScenarioModelId(
 
 		if (!scenarioMatched) continue;
 		const modelId = coerceString((c as any).modelId);
-		if (modelId) return modelId;
+		if (!modelId) continue;
+		const providerId = coerceString((c as any).providerId) || undefined;
+		return { modelId, providerId };
 	}
-	const fallback = coerceString(settings.defaultModelId);
-	return fallback || null;
+	const fallbackModelId = coerceString(settings.defaultModelId);
+	if (!fallbackModelId) return null;
+	const fallbackProviderId =
+		coerceString(settings.defaultProviderId) || undefined;
+	return { modelId: fallbackModelId, providerId: fallbackProviderId };
 }
 
 function estimateTokensFromText(text: string): number {
@@ -319,26 +330,27 @@ async function resolveSubagentScenarioModel(opts: {
 	currentModel: string;
 	logger?: Logger;
 	requestId?: string;
-}): Promise<string | null> {
+}): Promise<{ modelId: string; providerId?: string } | null> {
 	const scenario = extractIpoSubagentScenario(opts.anthropicReq);
 	if (!scenario) return null;
 
 	const settings = (await loadAgentModelSettings(
 		opts.db,
 	)) as AgentModelSettingsLike;
-	const desiredModel = pickScenarioModelId(settings, scenario);
-	if (!desiredModel) return null;
-	if (desiredModel === opts.currentModel) return null;
+	const choice = pickScenarioModelChoice(settings, scenario);
+	if (!choice?.modelId) return null;
+	if (choice.modelId === opts.currentModel) return null;
 
 	opts.logger?.info({
 		msg: "anthropic proxy: subagent scenario model override",
 		requestId: opts.requestId,
 		scenario,
 		currentModel: opts.currentModel,
-		overrideModel: desiredModel,
+		overrideModel: choice.modelId,
+		overrideProviderId: choice.providerId,
 	});
 
-	return desiredModel;
+	return choice;
 }
 
 // 内存文件存储（重启丢失）
@@ -585,15 +597,15 @@ export function createAnthropicProxyRouter(options?: {
 
 			// 1.5 子代理模型策略：通过 subagent prompt 标记映射到用户设置页的场景模型
 			// 主模型始终以请求里携带的 model 为准（即用户在输入框选择的模型）。
-			const subagentOverride = await resolveSubagentScenarioModel({
+			const subagentChoice = await resolveSubagentScenarioModel({
 				db,
 				anthropicReq,
 				currentModel: model,
 				logger,
 				requestId,
 			});
-			if (subagentOverride) {
-				model = subagentOverride;
+			if (subagentChoice?.modelId) {
+				model = subagentChoice.modelId;
 			}
 
 			// 2. 查找 Provider
@@ -607,16 +619,39 @@ export function createAnthropicProxyRouter(options?: {
 				api_base?: string;
 			} | null = null;
 
-			for (const row of providerRows.rows) {
-				const models = JSON.parse((row.models as string) || "[]") as string[];
-				if (models.includes(model)) {
+			if (subagentChoice?.providerId) {
+				const forced = providerRows.rows.find(
+					(r) => String((r as any).id) === subagentChoice.providerId,
+				) as any;
+				if (forced) {
 					provider = {
-						id: row.id as string,
-						provider_type: row.provider_type as string,
-						api_key: row.api_key as string | undefined,
-						api_base: row.api_base as string | undefined,
+						id: String(forced.id),
+						provider_type: String(forced.provider_type),
+						api_key: forced.api_key ? String(forced.api_key) : undefined,
+						api_base: forced.api_base ? String(forced.api_base) : undefined,
 					};
-					break;
+				} else {
+					logger?.warn({
+						msg: "anthropic proxy: scenario provider override not found/enabled; falling back to model-based resolution",
+						requestId,
+						overrideProviderId: subagentChoice.providerId,
+						model,
+					});
+				}
+			}
+
+			if (!provider) {
+				for (const row of providerRows.rows) {
+					const models = JSON.parse((row.models as string) || "[]") as string[];
+					if (models.includes(model)) {
+						provider = {
+							id: row.id as string,
+							provider_type: row.provider_type as string,
+							api_key: row.api_key as string | undefined,
+							api_base: row.api_base as string | undefined,
+						};
+						break;
+					}
 				}
 			}
 
@@ -690,17 +725,16 @@ async function callProvider(
 ): Promise<AnthropicResponse> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
-	// 转换 Anthropic 请求为 OpenAI 格式
-	const openaiMessages = translateToOpenAI(anthropicReq);
-
-	// 调用 OpenAI 兼容 API
-	const baseUrl = provider.api_base || "https://api.openai.com/v1";
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 	};
 
 	if (provider.provider_type === "anthropic") {
 		// 直接转发到 Anthropic
+		const baseUrl = normalizeAnthropicBaseUrl(
+			provider.api_base,
+			"https://api.anthropic.com",
+		);
 		headers["x-api-key"] = provider.api_key || "";
 		headers["anthropic-version"] = "2023-06-01";
 
@@ -709,10 +743,8 @@ async function callProvider(
 			{
 				method: "POST",
 				headers,
-				// Even when the client asked for non-streaming, we still stream upstream
-				// and then aggregate to a single JSON response to keep provider-side
-				// requests streaming-friendly (smaller buffers, better latency).
-				body: JSON.stringify({ ...anthropicReq, model, stream: true }),
+				// Non-streaming request: forward as-is to keep Anthropic response shape intact.
+				body: JSON.stringify({ ...anthropicReq, model, stream: false }),
 			},
 			{
 				logger,
@@ -727,19 +759,21 @@ async function callProvider(
 			throw new Error(`Anthropic API error: ${response.status}`);
 		}
 
-		const contentType = String(response.headers.get("content-type") || "");
-		if (contentType.includes("text/event-stream") && response.body) {
-			return await readAnthropicMessageStreamAsJson(response.body, {
-				fallbackId: messageId,
-				fallbackModel: model,
-			});
-		}
-
 		return (await response.json()) as AnthropicResponse;
 	}
 
 	// OpenAI 兼容调用
-	headers.Authorization = `Bearer ${provider.api_key}`;
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
+	);
+	Object.assign(
+		headers,
+		getOpenAICompatibleAuthHeaders(provider, provider.api_key),
+	);
+
+	// 转换 Anthropic 请求为 OpenAI 格式
+	const openaiMessages = translateToOpenAI(anthropicReq);
 
 	// Log tool conversion for debugging
 	if (anthropicReq.tools?.length) {
@@ -1036,7 +1070,7 @@ async function readOpenAIChatCompletionsStreamAsJson(
 	};
 }
 
-async function readAnthropicMessageStreamAsJson(
+export async function readAnthropicMessageStreamAsJson(
 	body: ReadableStream<Uint8Array>,
 	opts: { fallbackId: string; fallbackModel: string },
 ): Promise<AnthropicResponse> {
@@ -1173,7 +1207,10 @@ async function callProviderStream(
 
 	// Direct Anthropic: proxy SSE as-is
 	if (provider.provider_type === "anthropic") {
-		const baseUrl = provider.api_base || "https://api.anthropic.com";
+		const baseUrl = normalizeAnthropicBaseUrl(
+			provider.api_base,
+			"https://api.anthropic.com",
+		);
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 			"x-api-key": provider.api_key || "",
@@ -1232,11 +1269,17 @@ async function callProviderStream(
 
 	// OpenAI-compatible: stream chat completions and translate to Anthropic SSE
 	const openaiMessages = translateToOpenAI(anthropicReq);
-	const baseUrl = provider.api_base || "https://api.openai.com/v1";
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
-		Authorization: `Bearer ${provider.api_key || ""}`,
 	};
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
+	);
+	Object.assign(
+		headers,
+		getOpenAICompatibleAuthHeaders(provider, provider.api_key),
+	);
 
 	const openaiReq = {
 		model,

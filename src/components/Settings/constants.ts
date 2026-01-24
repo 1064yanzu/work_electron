@@ -38,8 +38,10 @@ export interface ProviderTemplate {
 	defaultEnabled: boolean;
 	defaultApiBase?: string;
 	defaultModels: string[];
-	docsUrl?: string; // 官方文档/API 密钥获取链接
 	homeUrl?: string; // 官网首页
+	apiKeyUrl?: string; // API Key 获取链接
+	docsUrl?: string; // 官方文档
+	modelsUrl?: string; // 模型列表/模型文档
 }
 
 export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
@@ -51,10 +53,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Sparkles,
 		color: "bg-[#10A37F]",
 		defaultEnabled: true,
-		defaultApiBase: "https://api.openai.com/v1",
+		defaultApiBase: "https://api.openai.com",
 		defaultModels: ["gpt-5", "gpt-5-mini", "gpt-4.1", "o3-mini", "gpt-4o"],
-		docsUrl: "https://platform.openai.com/api-keys",
-		homeUrl: "https://openai.com",
+		homeUrl: "https://openai.com/",
+		apiKeyUrl: "https://platform.openai.com/api-keys",
+		docsUrl: "https://platform.openai.com/docs",
+		modelsUrl: "https://platform.openai.com/docs/models",
 	},
 	{
 		templateId: "anthropic",
@@ -71,8 +75,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 			"claude-3.5-sonnet",
 			"claude-3-haiku",
 		],
-		docsUrl: "https://console.anthropic.com/settings/keys",
-		homeUrl: "https://anthropic.com",
+		homeUrl: "https://anthropic.com/",
+		apiKeyUrl: "https://console.anthropic.com/settings/keys",
+		docsUrl: "https://docs.anthropic.com/en/docs",
+		modelsUrl: "https://docs.anthropic.com/en/docs/about-claude/models",
 	},
 	{
 		templateId: "gemini",
@@ -81,15 +87,17 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Sparkles,
 		color: "bg-[#4285F4]",
 		defaultEnabled: false,
-		defaultApiBase: "https://generativelanguage.googleapis.com/v1beta/openai",
+		defaultApiBase: "https://generativelanguage.googleapis.com",
 		defaultModels: [
 			"gemini-2.5-flash",
 			"gemini-2.0-flash-exp",
 			"gemini-1.5-pro",
 			"gemini-1.5-flash",
 		],
-		docsUrl: "https://aistudio.google.com/apikey",
-		homeUrl: "https://ai.google.dev",
+		homeUrl: "https://gemini.google.com/",
+		apiKeyUrl: "https://aistudio.google.com/app/apikey",
+		docsUrl: "https://ai.google.dev/gemini-api/docs",
+		modelsUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
 	},
 	{
 		templateId: "deepseek",
@@ -100,8 +108,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.deepseek.com",
 		defaultModels: ["deepseek-chat", "deepseek-reasoner", "deepseek-r1"],
-		docsUrl: "https://platform.deepseek.com/api_keys",
-		homeUrl: "https://deepseek.com",
+		homeUrl: "https://deepseek.com/",
+		apiKeyUrl: "https://platform.deepseek.com/api_keys",
+		docsUrl: "https://platform.deepseek.com/api-docs/",
+		modelsUrl: "https://platform.deepseek.com/api-docs/",
 	},
 	{
 		templateId: "groq",
@@ -110,10 +120,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Sparkles,
 		color: "bg-[#F55036]",
 		defaultEnabled: false,
-		defaultApiBase: "https://api.groq.com/openai/v1",
+		defaultApiBase: "https://api.groq.com/openai",
 		defaultModels: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
-		docsUrl: "https://console.groq.com/keys",
-		homeUrl: "https://groq.com",
+		homeUrl: "https://groq.com/",
+		apiKeyUrl: "https://console.groq.com/keys",
+		docsUrl: "https://console.groq.com/docs/quickstart",
+		modelsUrl: "https://console.groq.com/docs/models",
 	},
 	{
 		templateId: "mistral",
@@ -124,8 +136,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.mistral.ai",
 		defaultModels: ["mistral-large-latest", "mistral-medium-latest"],
-		docsUrl: "https://console.mistral.ai/api-keys/",
 		homeUrl: "https://mistral.ai",
+		apiKeyUrl: "https://console.mistral.ai/api-keys/",
+		docsUrl: "https://docs.mistral.ai",
+		modelsUrl: "https://docs.mistral.ai/getting-started/models/models_overview",
 	},
 	{
 		templateId: "together",
@@ -136,8 +150,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.together.xyz",
 		defaultModels: ["meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"],
-		docsUrl: "https://api.together.xyz/settings/api-keys",
-		homeUrl: "https://together.ai",
+		homeUrl: "https://www.together.ai/",
+		apiKeyUrl: "https://api.together.ai/settings/api-keys",
+		docsUrl: "https://docs.together.ai/docs/introduction",
+		modelsUrl: "https://docs.together.ai/docs/chat-models",
 	},
 	{
 		templateId: "openrouter",
@@ -148,8 +164,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://openrouter.ai/api/v1/",
 		defaultModels: [],
-		docsUrl: "https://openrouter.ai/keys",
-		homeUrl: "https://openrouter.ai",
+		homeUrl: "https://openrouter.ai/",
+		apiKeyUrl: "https://openrouter.ai/settings/keys",
+		docsUrl: "https://openrouter.ai/docs/quick-start",
+		modelsUrl: "https://openrouter.ai/models",
 	},
 	{
 		templateId: "fireworks",
@@ -160,8 +178,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.fireworks.ai/inference",
 		defaultModels: ["accounts/fireworks/models/llama-v3p3-70b-instruct"],
-		docsUrl: "https://fireworks.ai/api-keys",
-		homeUrl: "https://fireworks.ai",
+		homeUrl: "https://fireworks.ai/",
+		apiKeyUrl: "https://fireworks.ai/account/api-keys",
+		docsUrl: "https://docs.fireworks.ai/getting-started/introduction",
+		modelsUrl: "https://fireworks.ai/dashboard/models",
 	},
 	{
 		templateId: "perplexity",
@@ -172,8 +192,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.perplexity.ai/",
 		defaultModels: ["llama-3.1-sonar-large-128k-online"],
-		docsUrl: "https://www.perplexity.ai/settings/api",
-		homeUrl: "https://perplexity.ai",
+		homeUrl: "https://perplexity.ai/",
+		apiKeyUrl: "https://www.perplexity.ai/settings/api",
+		docsUrl: "https://docs.perplexity.ai/home",
+		modelsUrl: "https://docs.perplexity.ai/guides/model-cards",
 	},
 	{
 		templateId: "cerebras",
@@ -184,8 +206,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.cerebras.ai/v1",
 		defaultModels: ["llama3.1-70b"],
-		docsUrl: "https://cloud.cerebras.ai/",
-		homeUrl: "https://cerebras.ai",
+		homeUrl: "https://www.cerebras.ai",
+		apiKeyUrl: "https://cloud.cerebras.ai",
+		docsUrl: "https://inference-docs.cerebras.ai/introduction",
+		modelsUrl: "https://inference-docs.cerebras.ai/models/overview",
 	},
 	{
 		templateId: "hyperbolic",
@@ -196,8 +220,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://api.hyperbolic.xyz",
 		defaultModels: ["meta-llama/Meta-Llama-3.1-70B-Instruct"],
-		docsUrl: "https://app.hyperbolic.xyz/settings",
-		homeUrl: "https://hyperbolic.xyz",
+		homeUrl: "https://app.hyperbolic.xyz",
+		apiKeyUrl: "https://app.hyperbolic.xyz/settings",
+		docsUrl: "https://docs.hyperbolic.xyz",
+		modelsUrl: "https://app.hyperbolic.xyz/models",
 	},
 	// 本地部署
 	{
@@ -210,7 +236,8 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultApiBase: "http://localhost:11434",
 		defaultModels: ["llama3.3", "qwen2.5", "deepseek-r1"],
 		docsUrl: "https://ollama.com/library",
-		homeUrl: "https://ollama.com",
+		homeUrl: "https://ollama.com/",
+		modelsUrl: "https://ollama.com/library",
 	},
 	{
 		templateId: "lmstudio",
@@ -222,7 +249,8 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultApiBase: "http://localhost:1234",
 		defaultModels: [],
 		docsUrl: "https://lmstudio.ai/docs",
-		homeUrl: "https://lmstudio.ai",
+		homeUrl: "https://lmstudio.ai/",
+		modelsUrl: "https://lmstudio.ai/models",
 	},
 	{
 		templateId: "newapi",
@@ -245,8 +273,11 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://models.github.ai/inference",
 		defaultModels: ["gpt-4o", "gpt-4o-mini"],
-		docsUrl: "https://github.com/settings/tokens",
 		homeUrl: "https://github.com/marketplace/models",
+		apiKeyUrl: "https://github.com/settings/tokens",
+		docsUrl:
+			"https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token",
+		modelsUrl: "https://github.com/marketplace/models",
 	},
 	// 国内代理/聚合
 	{
@@ -256,10 +287,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Cpu,
 		color: "bg-[#5B6EF8]",
 		defaultEnabled: false,
-		defaultApiBase: "https://api.siliconflow.cn/v1",
+		defaultApiBase: "https://api.siliconflow.cn",
 		defaultModels: ["Qwen/Qwen2.5-72B-Instruct", "deepseek-ai/DeepSeek-V3"],
-		docsUrl: "https://cloud.siliconflow.cn/account/ak",
-		homeUrl: "https://siliconflow.cn",
+		homeUrl: "https://www.siliconflow.cn",
+		apiKeyUrl: "https://cloud.siliconflow.cn/i/d1nTBKXU",
+		docsUrl: "https://docs.siliconflow.cn/",
+		modelsUrl: "https://cloud.siliconflow.cn/models",
 	},
 	{
 		templateId: "aihubmix",
@@ -270,8 +303,10 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		defaultEnabled: false,
 		defaultApiBase: "https://aihubmix.com",
 		defaultModels: [],
+		apiKeyUrl: "https://aihubmix.com",
 		docsUrl: "https://doc.aihubmix.com/",
 		homeUrl: "https://aihubmix.com",
+		modelsUrl: "https://aihubmix.com/models",
 	},
 	{
 		templateId: "zhipu",
@@ -280,10 +315,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Brain,
 		color: "bg-[#3B5998]",
 		defaultEnabled: false,
-		defaultApiBase: "https://open.bigmodel.cn/api/paas/v4",
-		defaultModels: ["glm-4-plus", "glm-4-flash"],
-		docsUrl: "https://open.bigmodel.cn/usercenter/apikeys",
-		homeUrl: "https://open.bigmodel.cn",
+		defaultApiBase: "https://open.bigmodel.cn/api/paas/v4/",
+		defaultModels: ["glm-4-plus", "glm-4-0520", "glm-4-flash", "glm-4-air"],
+		homeUrl: "https://open.bigmodel.cn/",
+		apiKeyUrl: "https://open.bigmodel.cn/usercenter/apikeys",
+		docsUrl: "https://docs.bigmodel.cn/",
+		modelsUrl: "https://open.bigmodel.cn/modelcenter/square",
 	},
 	{
 		templateId: "moonshot",
@@ -292,10 +329,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 		icon: Globe,
 		color: "bg-[#000000]",
 		defaultEnabled: false,
-		defaultApiBase: "https://api.moonshot.cn/v1",
+		defaultApiBase: "https://api.moonshot.cn",
 		defaultModels: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
-		docsUrl: "https://platform.moonshot.cn/console/api-keys",
-		homeUrl: "https://moonshot.cn",
+		homeUrl: "https://www.moonshot.cn/",
+		apiKeyUrl: "https://platform.moonshot.cn/console/api-keys",
+		docsUrl: "https://platform.moonshot.cn/docs/",
+		modelsUrl:
+			"https://platform.moonshot.cn/docs/intro#%E6%A8%A1%E5%9E%8B%E5%88%97%E8%A1%A8",
 	},
 	// 工作流/Agent
 	{

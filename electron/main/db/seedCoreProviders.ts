@@ -14,7 +14,7 @@ const CORE_PROVIDER_TEMPLATES: Array<{
 		name: "OpenAI",
 		provider_type: "openai",
 		is_enabled: true,
-		api_base: "https://api.openai.com/v1",
+		api_base: "https://api.openai.com",
 		models: ["gpt-5", "gpt-5-mini", "gpt-4.1", "o3-mini", "gpt-4o"],
 	},
 	{
@@ -36,7 +36,7 @@ const CORE_PROVIDER_TEMPLATES: Array<{
 		name: "Google Gemini",
 		provider_type: "custom",
 		is_enabled: false,
-		api_base: "https://generativelanguage.googleapis.com/v1beta/openai",
+		api_base: "https://generativelanguage.googleapis.com",
 		models: [
 			"gemini-2.5-flash",
 			"gemini-2.0-flash-exp",

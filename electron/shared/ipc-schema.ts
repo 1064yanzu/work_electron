@@ -382,6 +382,14 @@ export type IPCSchema = {
 	};
 
 	// ==================
+	// System / Shell
+	// ==================
+	open_external_url: {
+		input: { url: string };
+		output: { success: boolean; error?: string };
+	};
+
+	// ==================
 	// Config 命令
 	// ==================
 	get_config: {

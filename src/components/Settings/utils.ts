@@ -8,6 +8,17 @@ import {
  * 打开外部链接
  */
 export const openUrl = (url: string) => {
+	// Prefer opening via OS default browser in desktop (Electron).
+	if (
+		typeof window !== "undefined" &&
+		typeof window.electronAPI?.invoke === "function"
+	) {
+		window.electronAPI
+			.invoke("open_external_url", { url })
+			.catch(() => window.open(url, "_blank", "noopener,noreferrer"));
+		return;
+	}
+
 	window.open(url, "_blank", "noopener,noreferrer");
 };
 
