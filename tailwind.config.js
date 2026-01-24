@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
         serif: ['"Merriweather"', '"Georgia"', 'serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
@@ -18,13 +18,13 @@ export default {
         surface: '#F4F3F2', // Slightly darker warm gray
         border: '#E6E4E2',
         input: '#F0EFEF',
-        
+
         primary: {
           DEFAULT: '#D96C46', // Warm terracotta/orange accent (Claude-ish)
           foreground: '#FFFFFF',
           hover: '#C75E3B'
         },
-        
+
         text: {
           primary: '#333333', // Soft black
           secondary: '#666666', // Medium gray

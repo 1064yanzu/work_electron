@@ -1657,6 +1657,9 @@ export default function CopilotSidebar() {
 								? { fileUpdates: [protocol.fileUpdate] }
 								: null),
 							...(tokenUsage ? { tokenUsage } : null),
+							// 保存 taskId 和 sandboxDir 到消息，用于历史记录恢复
+							taskId: finalState.currentTask?.id,
+							sandboxDir: (finalState.currentTask?.metadata as any)?.sandboxDir,
 						},
 					});
 

@@ -1,8 +1,10 @@
 import { Download, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
 import { ImageLightbox } from "./ImageLightbox";
+import { useAgentStore } from "../../lib/agent/store";
+import { safeInvoke } from "../../lib/tauriBridge";
 
 function guessDownloadName(title: string | undefined, path: string) {
 	if (path.startsWith("data:")) {
@@ -36,11 +38,77 @@ export function InlineImage({
 	const [dataUrl, setDataUrl] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [open, setOpen] = useState(false);
+	const savedRef = useRef(false);
+	const { currentTask } = useAgentStore();
 
 	const downloadName = useMemo(
 		() => guessDownloadName(title, path),
 		[title, path],
 	);
+
+	// 获取 sandboxDir
+	const sandboxDir = useMemo(() => {
+		return (currentTask?.metadata as any)?.sandboxDir as string | undefined;
+	}, [currentTask]);
+
+	// 自动保存 base64 图片到沙盒目录
+	useEffect(() => {
+		if (!path.startsWith("data:")) return; // 只处理 base64 图片
+		if (!sandboxDir) return;
+		if (savedRef.current) return; // 已保存过
+
+		savedRef.current = true;
+
+		(async () => {
+			try {
+				// 解析 base64 数据
+				const match = path.match(/^data:image\/(\w+);base64,(.+)$/);
+				if (!match) return;
+
+				const ext = match[1] === "jpeg" ? "jpg" : match[1];
+				const base64Data = match[2];
+				const fileName = downloadName || `image_${Date.now()}.${ext}`;
+				const filePath = `${sandboxDir}/${fileName}`;
+
+				// 写入文件到沙盒
+				await safeInvoke<{ success: boolean }>("write_file_safe", {
+					payload: {
+						path: filePath,
+						content: base64Data,
+						encoding: "base64",
+						create_dirs: true,
+					},
+				});
+
+				console.log("[InlineImage] Auto-saved base64 image to:", filePath);
+
+				// 同时保存到产物数据库
+				try {
+					const sessionId = sandboxDir.split("/").pop() || `session_${Date.now()}`;
+					await safeInvoke("artifact_save", {
+						session_id: sessionId,
+						file_name: fileName,
+						content: base64Data,
+						encoding: "base64",
+						description: `Generated image: ${title || fileName}`,
+					});
+					console.log("[InlineImage] Image artifact saved to database");
+				} catch (dbErr) {
+					console.warn("[InlineImage] Failed to save image to database:", dbErr);
+				}
+
+				// 触发沙盒文件列表刷新
+				try {
+					const { managedModeStore } = await import("../../lib/managedModeStore");
+					await managedModeStore.scanSandboxDir(sandboxDir);
+				} catch (e) {
+					console.warn("[InlineImage] Failed to refresh sandbox:", e);
+				}
+			} catch (err) {
+				console.error("[InlineImage] Failed to auto-save base64 image:", err);
+			}
+		})();
+	}, [path, sandboxDir, downloadName, title]);
 
 	useEffect(() => {
 		let cancelled = false;

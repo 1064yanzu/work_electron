@@ -1,6 +1,8 @@
 import { Eye, Code, X, Maximize2, Download } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useAgentStore } from "../../lib/agent/store";
+import { useManagedModeStore } from "../../lib/managedModeStore";
 
 // -----------------------------------------------------------------------------
 // 0. 工具函数
@@ -292,6 +294,12 @@ export function WebPreviewCard({
 }) {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMode, setModalMode] = useState<"preview" | "code">("preview");
+	const savedHashRef = useRef<string | null>(null);
+
+	// 获取沙盒目录
+	const { currentTask } = useAgentStore();
+	const { store } = useManagedModeStore();
+	const sandboxDir = currentTask?.metadata?.sandboxDir as string | undefined;
 
 	// 下载功能
 	const handleDownload = () => {
@@ -300,6 +308,27 @@ export function WebPreviewCard({
 		const filename = `${title.replace(/\s+/g, "_") || "code_snippet"}.${ext}`;
 		downloadFile(content, filename);
 	};
+
+	// 自动保存产物到沙盒目录（去重：基于内容 hash）
+	useEffect(() => {
+		if (isStreaming) return; // 流式阶段不保存
+		if (!sandboxDir) return; // 没有沙盒目录不保存
+
+		const content = kind === "html" ? html || "" : jsx || "";
+		if (!content.trim()) return;
+
+		// 简单 hash 去重
+		const hash = `${kind}-${content.length}-${content.slice(0, 100)}`;
+		if (savedHashRef.current === hash) return;
+		savedHashRef.current = hash;
+
+		// 异步保存
+		store.saveArtifact(sandboxDir, content, kind, title).then((filePath) => {
+			if (filePath) {
+				console.log("[WebPreviewCard] Auto-saved artifact to:", filePath);
+			}
+		});
+	}, [isStreaming, sandboxDir, kind, html, jsx, title, store]);
 
 	// 构建预览文档 (复用原有逻辑)
 	const srcDoc = useMemo(() => {

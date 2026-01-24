@@ -5,6 +5,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { safeInvoke } from "./tauriBridge";
 
 // ==================== 类型定义 ====================
 
@@ -44,13 +45,13 @@ export interface SandboxFileTree {
 export interface ManagedModeState {
 	/** 是否启用托管模式 */
 	isActive: boolean;
-	
+
 	/** 沙盒文件列表 */
 	files: SandboxFile[];
-	
+
 	/** 当前选中的文件 ID */
 	selectedFileId: string | null;
-	
+
 	/** UI 状态 */
 	ui: {
 		/** 展开的文件夹 ID 列表 */
@@ -80,41 +81,41 @@ const initialState: ManagedModeState = {
 /** 根据文件扩展名推断分类 */
 export function categorizeFile(filename: string): FileCategory {
 	const ext = filename.toLowerCase().split(".").pop() || "";
-	
+
 	// 文档类
 	if (["md", "markdown", "txt", "pdf", "docx", "doc", "rtf"].includes(ext)) {
 		return "docs";
 	}
-	
+
 	// 代码类
 	if (["tsx", "ts", "jsx", "js", "css", "scss", "html", "vue", "py", "go", "rs", "java", "c", "cpp", "h", "hpp", "swift", "kt", "rb", "php", "sh", "bash", "zsh", "fish", "ps1", "sql"].includes(ext)) {
 		return "code";
 	}
-	
+
 	// 图片类
 	if (["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "tiff"].includes(ext)) {
 		return "images";
 	}
-	
+
 	// 数据类
 	if (["json", "csv", "xml", "yaml", "yml", "toml", "ini", "xlsx", "xls"].includes(ext)) {
 		return "data";
 	}
-	
+
 	return "other";
 }
 
 /** 根据文件扩展名获取 MIME 类型 */
 export function getMimeType(filename: string): string {
 	const ext = filename.toLowerCase().split(".").pop() || "";
-	
+
 	const mimeMap: Record<string, string> = {
 		// 文档
 		md: "text/markdown",
 		txt: "text/plain",
 		pdf: "application/pdf",
 		docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-		
+
 		// 代码
 		tsx: "text/typescript-jsx",
 		ts: "text/typescript",
@@ -123,7 +124,7 @@ export function getMimeType(filename: string): string {
 		css: "text/css",
 		html: "text/html",
 		json: "application/json",
-		
+
 		// 图片
 		png: "image/png",
 		jpg: "image/jpeg",
@@ -131,23 +132,23 @@ export function getMimeType(filename: string): string {
 		gif: "image/gif",
 		svg: "image/svg+xml",
 		webp: "image/webp",
-		
+
 		// 数据
 		csv: "text/csv",
 		xml: "application/xml",
 		yaml: "text/yaml",
 		yml: "text/yaml",
 	};
-	
+
 	return mimeMap[ext] || "application/octet-stream";
 }
 
 /** 获取文件图标 */
 export function getFileIcon(file: SandboxFile): string {
 	if (file.type === "folder") return "📁";
-	
+
 	const ext = file.extension.toLowerCase();
-	
+
 	const iconMap: Record<string, string> = {
 		// 文档
 		md: "📄",
@@ -155,7 +156,7 @@ export function getFileIcon(file: SandboxFile): string {
 		pdf: "📕",
 		docx: "📘",
 		doc: "📘",
-		
+
 		// 代码
 		tsx: "⚛️",
 		ts: "📘",
@@ -167,14 +168,14 @@ export function getFileIcon(file: SandboxFile): string {
 		py: "🐍",
 		rs: "🦀",
 		go: "🐹",
-		
+
 		// 图片
 		png: "🖼️",
 		jpg: "🖼️",
 		jpeg: "🖼️",
 		svg: "🎨",
 		gif: "🎞️",
-		
+
 		// 数据
 		json: "⚙️",
 		csv: "📊",
@@ -182,7 +183,7 @@ export function getFileIcon(file: SandboxFile): string {
 		yaml: "📋",
 		yml: "📋",
 	};
-	
+
 	return iconMap[ext] || "📄";
 }
 
@@ -195,19 +196,19 @@ export function groupFilesByCategory(files: SandboxFile[]): SandboxFileTree {
 		data: [],
 		other: [],
 	};
-	
+
 	for (const file of files) {
 		if (file.type === "folder") continue; // 暂时跳过文件夹
-		
+
 		const category = file.category || categorizeFile(file.name);
 		tree[category].push(file);
 	}
-	
+
 	// 按名称排序
 	for (const category of Object.keys(tree) as FileCategory[]) {
 		tree[category].sort((a, b) => a.name.localeCompare(b.name));
 	}
-	
+
 	return tree;
 }
 
@@ -223,27 +224,27 @@ export function formatFileSize(bytes: number): string {
 class ManagedModeStore {
 	private state: ManagedModeState = initialState;
 	private listeners: Set<() => void> = new Set();
-	
+
 	getState = () => this.state;
-	
+
 	subscribe = (listener: () => void) => {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	};
-	
+
 	private emit() {
 		for (const listener of this.listeners) {
 			listener();
 		}
 	}
-	
+
 	private setState(updater: (state: ManagedModeState) => ManagedModeState) {
 		this.state = updater(this.state);
 		this.emit();
 	}
-	
+
 	// ========== 模式控制 ==========
-	
+
 	/** 启用托管模式 */
 	enableManagedMode() {
 		this.setState((s) => ({
@@ -251,7 +252,7 @@ class ManagedModeStore {
 			isActive: true,
 		}));
 	}
-	
+
 	/** 禁用托管模式 */
 	disableManagedMode() {
 		this.setState((s) => ({
@@ -260,7 +261,7 @@ class ManagedModeStore {
 			selectedFileId: null,
 		}));
 	}
-	
+
 	/** 切换托管模式 */
 	toggleManagedMode() {
 		if (this.state.isActive) {
@@ -269,26 +270,26 @@ class ManagedModeStore {
 			this.enableManagedMode();
 		}
 	}
-	
+
 	// ========== 文件管理 ==========
-	
+
 	/** 添加文件到沙盒 */
 	addFile(file: Omit<SandboxFile, "id" | "category" | "isNew">) {
 		const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 		const category = categorizeFile(file.name);
-		
+
 		const newFile: SandboxFile = {
 			...file,
 			id,
 			category,
 			isNew: true,
 		};
-		
+
 		this.setState((s) => ({
 			...s,
 			files: [...s.files, newFile],
 		}));
-		
+
 		// 3秒后移除 isNew 标记
 		setTimeout(() => {
 			this.setState((s) => ({
@@ -298,10 +299,10 @@ class ManagedModeStore {
 				),
 			}));
 		}, 3000);
-		
+
 		return id;
 	}
-	
+
 	/** 更新文件内容 */
 	updateFile(fileId: string, updates: Partial<SandboxFile>) {
 		this.setState((s) => ({
@@ -311,7 +312,7 @@ class ManagedModeStore {
 			),
 		}));
 	}
-	
+
 	/** 删除文件 */
 	removeFile(fileId: string) {
 		this.setState((s) => ({
@@ -320,7 +321,7 @@ class ManagedModeStore {
 			selectedFileId: s.selectedFileId === fileId ? null : s.selectedFileId,
 		}));
 	}
-	
+
 	/** 清空所有文件 */
 	clearFiles() {
 		this.setState((s) => ({
@@ -329,7 +330,7 @@ class ManagedModeStore {
 			selectedFileId: null,
 		}));
 	}
-	
+
 	/** 批量设置文件 */
 	setFiles(files: SandboxFile[]) {
 		this.setState((s) => ({
@@ -337,9 +338,9 @@ class ManagedModeStore {
 			files,
 		}));
 	}
-	
+
 	// ========== 选择和 UI ==========
-	
+
 	/** 选择文件 */
 	selectFile(fileId: string | null) {
 		this.setState((s) => ({
@@ -347,12 +348,12 @@ class ManagedModeStore {
 			selectedFileId: fileId,
 		}));
 	}
-	
+
 	/** 获取当前选中的文件 */
 	getSelectedFile(): SandboxFile | null {
 		return this.state.files.find((f) => f.id === this.state.selectedFileId) || null;
 	}
-	
+
 	/** 切换文件夹展开状态 */
 	toggleFolderExpanded(folderId: string) {
 		this.setState((s) => {
@@ -368,7 +369,7 @@ class ManagedModeStore {
 			};
 		});
 	}
-	
+
 	/** 设置搜索关键词 */
 	setSearchQuery(query: string) {
 		this.setState((s) => ({
@@ -376,7 +377,7 @@ class ManagedModeStore {
 			ui: { ...s.ui, searchQuery: query },
 		}));
 	}
-	
+
 	/** 设置预览模式 */
 	setPreviewMode(mode: "preview" | "source") {
 		this.setState((s) => ({
@@ -384,35 +385,215 @@ class ManagedModeStore {
 			ui: { ...s.ui, previewMode: mode },
 		}));
 	}
-	
+
 	// ========== 便捷查询 ==========
-	
+
 	/** 获取分组后的文件树 */
 	getFileTree(): SandboxFileTree {
 		return groupFilesByCategory(this.state.files);
 	}
-	
+
 	/** 根据搜索词过滤文件 */
 	getFilteredFiles(): SandboxFile[] {
 		const query = this.state.ui.searchQuery.toLowerCase().trim();
 		if (!query) return this.state.files;
-		
+
 		return this.state.files.filter(
 			(f) =>
 				f.name.toLowerCase().includes(query) ||
 				f.path.toLowerCase().includes(query)
 		);
 	}
-	
+
 	/** 获取文件总数 */
 	getFileCount(): number {
 		return this.state.files.filter((f) => f.type === "file").length;
 	}
-	
+
 	/** 重置状态 */
 	reset() {
 		this.state = initialState;
 		this.emit();
+	}
+
+	/** 扫描沙盒目录并同步文件列表（不读取文件内容，提高性能） */
+	async scanSandboxDir(sandboxDir: string) {
+		if (!sandboxDir) return;
+
+		try {
+			// 获取目录下的所有文件
+			const entries = await safeInvoke<
+				Array<{
+					path: string;
+					name: string;
+					is_file: boolean;
+					is_dir: boolean;
+					size?: number;
+					modified_at?: number;
+				}>
+			>("list_files_safe", {
+				payload: {
+					path: sandboxDir,
+					recursive: false, // 只扫描一级目录，避免扫描太深
+				},
+			});
+
+			if (!entries || !Array.isArray(entries)) return;
+
+			// 获取现有文件路径集合，用于检测新文件
+			const existingPaths = new Set(this.state.files.map((f) => f.path));
+
+			// 转换为 SandboxFile 格式（不读取内容，提高性能）
+			const newFiles: SandboxFile[] = [];
+
+			for (const entry of entries) {
+				if (!entry.is_file) continue; // 跳过目录
+
+				// 确保文件路径以 sandboxDir 开头（过滤非法文件）
+				if (!entry.path.startsWith(sandboxDir)) continue;
+
+				const name = entry.name || entry.path.split("/").pop() || "file";
+				const ext = name.includes(".") ? name.split(".").pop() || "" : "";
+				const category = categorizeFile(name);
+				const mimeType = getMimeType(name);
+				const isNew = !existingPaths.has(entry.path);
+
+				// 不在扫描时读取内容，改为选择文件时再读取（懒加载）
+				newFiles.push({
+					id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+					name,
+					path: entry.path,
+					type: "file",
+					extension: ext,
+					size: entry.size || 0,
+					content: undefined, // 不读取内容
+					mimeType,
+					createdAt: entry.modified_at || Date.now(),
+					modifiedAt: entry.modified_at || Date.now(),
+					isNew,
+					category,
+				});
+			}
+
+			// 更新状态
+			this.setState((s) => ({
+				...s,
+				files: newFiles,
+			}));
+
+			// 3秒后移除所有 isNew 标记
+			setTimeout(() => {
+				this.setState((s) => ({
+					...s,
+					files: s.files.map((f) => ({ ...f, isNew: false })),
+				}));
+			}, 3000);
+		} catch (error) {
+			console.error("[ManagedModeStore] Failed to scan sandbox dir:", error);
+		}
+	}
+
+	/** 懒加载文件内容 */
+	async loadFileContent(fileId: string): Promise<string | undefined> {
+		const file = this.state.files.find((f) => f.id === fileId);
+		if (!file) return undefined;
+
+		// 如果已经加载过，直接返回
+		if (file.content !== undefined) return file.content;
+
+		try {
+			const result = await safeInvoke<{
+				content: string;
+				encoding: string;
+			}>("read_file_safe", {
+				payload: { path: file.path },
+			});
+
+			if (result?.content) {
+				// 更新文件内容到 store
+				this.setState((s) => ({
+					...s,
+					files: s.files.map((f) =>
+						f.id === fileId ? { ...f, content: result.content } : f
+					),
+				}));
+				return result.content;
+			}
+		} catch (error) {
+			console.error("[ManagedModeStore] Failed to load file content:", error);
+		}
+		return undefined;
+	}
+
+	/** 设置沙盒目录并开始监听 */
+	setSandboxDir(sandboxDir: string | null) {
+		if (sandboxDir) {
+			// 立即扫描一次
+			this.scanSandboxDir(sandboxDir);
+		}
+	}
+
+	/** 保存产物到沙盒目录 */
+	async saveArtifact(
+		sandboxDir: string,
+		content: string,
+		type: "html" | "react" | "other",
+		title?: string
+	): Promise<string | null> {
+		if (!sandboxDir || !content) return null;
+
+		try {
+			// 生成文件名
+			const timestamp = Date.now();
+			const ext = type === "html" ? "html" : type === "react" ? "jsx" : "txt";
+			const baseName = title
+				? title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "_").slice(0, 30)
+				: `artifact_${timestamp}`;
+			const fileName = `${baseName}.${ext}`;
+			const filePath = `${sandboxDir}/${fileName}`;
+
+			// 写入文件到沙盒
+			await safeInvoke<{ success: boolean }>("write_file_safe", {
+				payload: {
+					path: filePath,
+					content: content,
+					encoding: "utf-8",
+					create_dirs: true,
+				},
+			});
+
+			console.log("[ManagedModeStore] Artifact saved to:", filePath);
+
+			// 同时保存到数据库（用于产物管理统计）
+			try {
+				// 从 sandboxDir 提取 session_id（格式：xxx/agent-sandboxes/{session_id}）
+				const sessionId = sandboxDir.split("/").pop() || `session_${timestamp}`;
+				await safeInvoke("artifact_save", {
+					session_id: sessionId,
+					file_name: fileName,
+					content: content,
+					encoding: "utf-8",
+					description: `${type} artifact: ${title || fileName}`,
+				});
+				console.log("[ManagedModeStore] Artifact saved to database");
+			} catch (dbError) {
+				console.warn("[ManagedModeStore] Failed to save artifact to database:", dbError);
+			}
+
+			// 刷新文件列表
+			await this.scanSandboxDir(sandboxDir);
+
+			// 自动选中新文件
+			const newFile = this.state.files.find((f) => f.path === filePath);
+			if (newFile) {
+				this.selectFile(newFile.id);
+			}
+
+			return filePath;
+		} catch (error) {
+			console.error("[ManagedModeStore] Failed to save artifact:", error);
+			return null;
+		}
 	}
 }
 
@@ -427,7 +608,7 @@ export function useManagedModeStore() {
 		managedModeStore.subscribe,
 		managedModeStore.getState
 	);
-	
+
 	return {
 		...state,
 		store: managedModeStore,
