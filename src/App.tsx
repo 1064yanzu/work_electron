@@ -6,15 +6,19 @@ import Dashboard from "./components/Dashboard";
 import EditorCanvas from "./components/EditorCanvas";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import ResourceSidebar from "./components/ResourceSidebar";
+import { SandboxWorkspace } from "./components/sandbox";
 import { SettingsModal } from "./components/Settings/SettingsModal";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
+import { useManagedModeStore } from "./lib/managedModeStore";
 import { themeManager } from "./lib/theme";
 import { useWorkspaceStore, workspaceStore } from "./lib/workspaceStore";
+
 
 export default function App() {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const { activeMainView } = useWorkspaceStore();
+	const { isActive: isManagedMode, store: managedModeStore } = useManagedModeStore();
 
 	// 使用解耦的导航 Hook
 	const {
@@ -73,13 +77,17 @@ export default function App() {
 
 						<ResizeHandle />
 
-						{/* Center Panel: Editor Canvas OR Browser */}
+						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) */}
 						<Panel
 							defaultSize={55}
 							minSize={30}
 							className="flex flex-col bg-white dark:bg-[#1E1E1E] rounded-[16px] shadow-sm border border-black/[0.02] dark:border-white/[0.02] overflow-hidden relative transition-all"
 						>
-							{activeMainView === "browser" ? (
+							{isManagedMode ? (
+								<SandboxWorkspace
+									onExitManagedMode={() => managedModeStore.disableManagedMode()}
+								/>
+							) : activeMainView === "browser" ? (
 								<BrowserPanel />
 							) : (
 								<EditorCanvas

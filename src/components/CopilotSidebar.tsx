@@ -46,6 +46,7 @@ import type {
 } from "../lib/chat/types";
 import { getConfig } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
+import { useManagedModeStore } from "../lib/managedModeStore";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
@@ -96,40 +97,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-			kind: "update";
-			displayContent: string;
+		kind: "update";
+		displayContent: string;
+		suggestedContent: string;
+		fileUpdate: {
+			fileName: string;
+			type: "update";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
+			originalContent: string;
 			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
+			prompt: string;
+		};
+	}
 	| {
-			kind: "create";
-			displayContent: string;
+		kind: "create";
+		displayContent: string;
+		title: string;
+		summary: string;
+		content: string;
+		fileUpdate: {
+			fileName: string;
+			type: "create";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
 			title: string;
 			summary: string;
 			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
+			prompt: string;
+		};
+	} {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
@@ -415,6 +416,7 @@ export default function CopilotSidebar() {
 		isWaitingForLLM,
 	} = useAgentStore();
 	const { pendingRequests, respondToPermission } = usePermissionStore();
+	const { store: managedModeStore } = useManagedModeStore();
 
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
 	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
@@ -1182,7 +1184,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch {}
+					} catch { }
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1283,7 +1285,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-						withoutTrailingDotsOrSpaces === ".."
+							withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1596,10 +1598,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-					  }
+						promptTokens: number;
+						completionTokens: number;
+						totalTokens: number;
+					}
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1698,16 +1700,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1756,8 +1758,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1829,8 +1831,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1859,9 +1861,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2708,11 +2710,10 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
-											}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
+												? "bg-zinc-50 dark:bg-zinc-800/40"
+												: ""
+												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2745,29 +2746,33 @@ export default function CopilotSidebar() {
 				<div className="mb-2 flex items-center justify-between">
 					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
 						<button
-							onClick={() => setChatMode("chat")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							onClick={() => {
+								setChatMode("chat");
+								managedModeStore.disableManagedMode();
+							}}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
 							对话
 						</button>
 						<button
-							onClick={() => setChatMode("agent")}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "agent"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							onClick={() => {
+								setChatMode("agent");
+								managedModeStore.enableManagedMode();
+							}}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
+								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+								}`}
 						>
-							Agent
+							托管
 						</button>
 					</div>
 
 					<div className="text-[11px] text-zinc-400">
-						{chatMode === "agent" ? "工具调用" : "普通对话"}
+						{chatMode === "agent" ? "托管模式" : "普通对话"}
 					</div>
 				</div>
 
