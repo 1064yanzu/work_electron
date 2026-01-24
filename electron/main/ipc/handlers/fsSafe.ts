@@ -50,12 +50,19 @@ function normalizePathInput(p: string): string {
 		return path.join(os.homedir(), raw.slice(2));
 	}
 
+	// Resolve relative paths to absolute
+	if (!path.isAbsolute(raw)) {
+		return path.resolve(raw);
+	}
+
 	return raw;
 }
 
 function requireAbsolute(p: string) {
 	const normalized = normalizePathInput(p);
-	if (!path.isAbsolute(normalized)) throw new Error("路径必须是绝对路径");
+	if (!path.isAbsolute(normalized)) {
+		throw new Error(`路径必须是绝对路径: ${p} -> ${normalized}`);
+	}
 }
 
 async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
