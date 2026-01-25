@@ -32,7 +32,64 @@ import {
 } from "../../lib/managedModeStore";
 import { useAgentStore } from "../../lib/agent/store";
 import { cn } from "../../lib/utils";
-import { convertFileSrc } from "../../lib/tauriCompat";
+import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
+import { useChatStore } from "../../lib/chat/store";
+import { Loader2 } from "lucide-react";
+
+// ==================== 图片预览组件 ====================
+
+const SandboxImagePreview = memo(function SandboxImagePreview({ filePath, fileName, fileSize }: { filePath: string; fileName: string; fileSize: number }) {
+    const [dataUrl, setDataUrl] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        setDataUrl(null);
+        setError(null);
+
+        getImageDataUrl(filePath)
+            .then(url => {
+                if (!cancelled) setDataUrl(url);
+            })
+            .catch(err => {
+                if (!cancelled) setError(err.message || "加载失败");
+            });
+
+        return () => { cancelled = true; };
+    }, [filePath]);
+
+    if (error) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
+                <div className="text-sm text-red-500">图片加载失败: {error}</div>
+            </div>
+        );
+    }
+
+    if (!dataUrl) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
+                <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                <p className="mt-2 text-sm text-zinc-400">加载中...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
+            <div className="bg-white dark:bg-zinc-800 p-2 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <img
+                    src={dataUrl}
+                    alt={fileName}
+                    className="max-w-full max-h-[60vh] object-contain rounded"
+                />
+            </div>
+            <p className="mt-3 text-xs text-zinc-500 font-mono">
+                {formatFileSize(fileSize)}
+            </p>
+        </div>
+    );
+});
 
 // ==================== 视角类型 ====================
 type ViewMode = "files" | "preview";
@@ -181,18 +238,7 @@ const FilePreview = memo(function FilePreview({ file, previewMode, onSetPreviewM
         // 图片预览
         if (file.category === "images") {
             return (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
-                    <div className="bg-white dark:bg-zinc-800 p-2 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700">
-                        <img
-                            src={convertFileSrc(file.path)}
-                            alt={file.name}
-                            className="max-w-full max-h-[60vh] object-contain rounded"
-                        />
-                    </div>
-                    <p className="mt-3 text-xs text-zinc-500 font-mono">
-                        {formatFileSize(file.size)}
-                    </p>
-                </div>
+                <SandboxImagePreview filePath={file.path} fileName={file.name} fileSize={file.size} />
             );
         }
 
@@ -319,19 +365,7 @@ const ArtifactPreview = memo(function ArtifactPreview({ file }: ArtifactPreviewP
     // 图片预览
     if (file.category === "images") {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
-                <div className="bg-white dark:bg-zinc-800 p-3 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700">
-                    <img
-                        src={convertFileSrc(file.path)}
-                        alt={file.name}
-                        className="max-w-full max-h-[65vh] object-contain rounded-lg"
-                    />
-                </div>
-                <div className="mt-4 text-center">
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{file.name}</p>
-                    <p className="text-xs text-zinc-400 mt-1">{formatFileSize(file.size)}</p>
-                </div>
-            </div>
+            <SandboxImagePreview filePath={file.path} fileName={file.name} fileSize={file.size} />
         );
     }
 
@@ -424,6 +458,10 @@ export default function SandboxWorkspace({
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // 引入 chatStore 来监听会话切换
+    const { activeSessionId, sessions } = useChatStore();
+    const activeSession = sessions.find(s => s.id === activeSessionId);
+
     // 获取沙盒目录：优先从 currentTask 获取，否则从 taskHistory 或 chatStore 消息中获取
     const sandboxDir = useMemo(() => {
         // 1. 优先使用 currentTask 的 sandboxDir
@@ -436,28 +474,19 @@ export default function SandboxWorkspace({
             if (sandbox) return sandbox;
         }
 
-        // 3. 从 chatStore 当前会话的消息中查找（用于历史记录恢复）
-        try {
-            const { useChatStore } = require("../../lib/chat/store");
-            const chatState = useChatStore.getState();
-            const activeSession = chatState.sessions.find(
-                (s: any) => s.id === chatState.activeSessionId
-            );
-            if (activeSession) {
-                // 倒序查找最近有 sandboxDir 的消息
-                for (let i = activeSession.messages.length - 1; i >= 0; i--) {
-                    const msg = activeSession.messages[i];
-                    if (msg.metadata?.sandboxDir) {
-                        return msg.metadata.sandboxDir;
-                    }
+        // 3. 从当前会话的消息中查找（用于历史记录恢复）
+        if (activeSession) {
+            // 倒序查找最近有 sandboxDir 的消息
+            for (let i = activeSession.messages.length - 1; i >= 0; i--) {
+                const msg = activeSession.messages[i];
+                if (msg.metadata?.sandboxDir) {
+                    return msg.metadata.sandboxDir as string;
                 }
             }
-        } catch (e) {
-            console.warn("[SandboxWorkspace] Failed to get sandboxDir from chatStore:", e);
         }
 
         return undefined;
-    }, [currentTask, taskHistory]);
+    }, [currentTask, taskHistory, activeSession]);
 
     // 刷新文件列表
     const refreshFiles = useCallback(async () => {
