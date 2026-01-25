@@ -9,6 +9,8 @@ import {
 	FileText,
 	History,
 	Loader2,
+	MessageSquare,
+	MoreHorizontal,
 	Plus,
 	Search,
 	Sparkles,
@@ -47,6 +49,7 @@ import type {
 import { getConfig } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { useManagedModeStore } from "../lib/managedModeStore";
+import { useMessageQueueStore } from "../lib/messageQueueStore";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
@@ -54,6 +57,7 @@ import { isUuid } from "../lib/uuid";
 import { createOutputAsset } from "../lib/api";
 import { OutputType } from "../types";
 import { PermissionList } from "./agent";
+import { PromptLibraryModal } from "./PromptLibraryModal";
 import {
 	ChatHistory,
 	ChatInput,
@@ -433,8 +437,15 @@ export default function CopilotSidebar() {
 	>([]);
 	const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
 	const [isProposalMenuOpen, setIsProposalMenuOpen] = useState(false);
+	const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 	const restoredAgentSessionIdsRef = useRef<Set<string>>(new Set());
 	const replayedAgentSessionIdsRef = useRef<Set<string>>(new Set());
+
+	// 消息队列（队列功能框架已建立，具体消费逻辑待后续完善）
+	const { queueLength } = useMessageQueueStore();
+	// 注：当 Agent 执行完成时，未来可在 useEffect 中自动 dequeue 处理队列消息
+	void queueLength;
 
 	// 鼠标拖拽 drop zone (替代 HTML5 拖拽，因为 Tauri 不支持)
 	const handleMouseDrop = useCallback((item: DragItem) => {
@@ -852,9 +863,18 @@ export default function CopilotSidebar() {
 	// 处理发送消息
 	const handleSendMessage = async (
 		content: string,
-		command?: SlashCommand,
-		options?: { skipUserMessage?: boolean },
+		submitOptions?: {
+			command?: SlashCommand;
+			chips?: Array<{ type: string; command: SlashCommand }>;
+			forcedSkillId?: string;
+			skipUserMessage?: boolean; // 用于重新生成时跳过添加用户消息
+		},
 	) => {
+		// 从 submitOptions 提取参数
+		const command = submitOptions?.command;
+		const forcedSkillId = submitOptions?.forcedSkillId;
+		const skipUserMessage = submitOptions?.skipUserMessage;
+
 		if (!activeModel) {
 			alert("请先在设置中配置并选择一个模型");
 			return;
@@ -884,8 +904,11 @@ export default function CopilotSidebar() {
 			attachedFileTitles.length > 0
 				? `\n\n[附加文件]\n${attachedFileTitles.map((t) => `- ${t}`).join("\n")}`
 				: "";
+
+		// 添加强制 skill 信息到消息
+		const skillInfo = forcedSkillId ? `\n[强制技能: ${forcedSkillId}]` : "";
 		const userTextForChat =
-			(command ? `[${command.name}] ${content}` : content) + attachmentFooter;
+			(command ? `[${command.name}] ${content}` : content) + attachmentFooter + skillInfo;
 
 		if (chatMode === "agent") {
 			// 绑定/创建后端 Agent Session（用于持久化与回放）
@@ -909,7 +932,7 @@ export default function CopilotSidebar() {
 
 			// 创建或获取用户消息
 			let userMessage: ChatMessageType;
-			if (!options?.skipUserMessage) {
+			if (!skipUserMessage) {
 				// 正常情况：创建新的用户消息
 				userMessage = createMessage("user", userTextForChat);
 				chatStore.addMessage(session.id, userMessage);
@@ -1569,6 +1592,7 @@ export default function CopilotSidebar() {
 							return undefined;
 						})(),
 						persistSession: true,
+						forcedSkillName: forcedSkillId, // 传递强制 skill 名称
 						onChunk, // 流式输出回调
 					},
 				);
@@ -1929,7 +1953,7 @@ export default function CopilotSidebar() {
 		}
 
 		// 添加用户消息（只有在非重新生成时）
-		if (!options?.skipUserMessage) {
+		if (!skipUserMessage) {
 			const userMessage = createMessage("user", userTextForChat);
 			chatStore.addMessage(session.id, userMessage);
 		}
@@ -2383,7 +2407,7 @@ export default function CopilotSidebar() {
 			chatStore.deleteMessage(session.id, messageId);
 
 			// 重新生成，传递 skipUserMessage 避免重复添加用户消息
-			handleSendMessage(userMessageContent, undefined, {
+			handleSendMessage(userMessageContent, {
 				skipUserMessage: true,
 			});
 		},
@@ -2473,6 +2497,38 @@ export default function CopilotSidebar() {
 					>
 						<History className="w-4.5 h-4.5" />
 					</button>
+					{/* 三点更多菜单 */}
+					<div className="relative">
+						<button
+							onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+							className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
+							title="更多"
+						>
+							<MoreHorizontal className="w-4.5 h-4.5" />
+						</button>
+						{isMoreMenuOpen && (
+							<>
+								{/* 点击外部关闭 */}
+								<div
+									className="fixed inset-0 z-40"
+									onClick={() => setIsMoreMenuOpen(false)}
+								/>
+								{/* 下拉菜单 */}
+								<div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+									<button
+										onClick={() => {
+											setIsPromptLibraryOpen(true);
+											setIsMoreMenuOpen(false);
+										}}
+										className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+									>
+										<MessageSquare className="w-4 h-4" />
+										<span>提示词仓库</span>
+									</button>
+								</div>
+							</>
+						)}
+					</div>
 				</div>
 			</div>
 
@@ -2782,8 +2838,16 @@ export default function CopilotSidebar() {
 					model={activeModel || undefined}
 					models={enabledModels}
 					onModelSelect={(id) => settingsStore.setActiveModel(id)}
+					onOpenPromptLibrary={() => setIsPromptLibraryOpen(true)}
+					isAgentExecuting={isAgentExecuting}
 				/>
 			</div>
+
+			{/* 提示词仓库弹窗 */}
+			<PromptLibraryModal
+				isOpen={isPromptLibraryOpen}
+				onClose={() => setIsPromptLibraryOpen(false)}
+			/>
 		</aside>
 	);
 }

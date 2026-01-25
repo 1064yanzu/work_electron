@@ -142,6 +142,8 @@ class AgentExecutor {
 			resumeSessionId?: string;
 			/** Whether to persist SDK sessions to disk (defaults to true in SDK) */
 			persistSession?: boolean;
+			/** 强制使用的 Agent Skill 名称 */
+			forcedSkillName?: string;
 			onChunk?: (chunk: string) => void;
 		},
 	): Promise<{ sdkSessionId?: string; sandboxDir?: string }> {
@@ -181,6 +183,12 @@ class AgentExecutor {
 			enabledSkills.map((s) => s.name),
 		);
 
+		// 强制执行指定 skill
+		const forcedSkillName = options?.forcedSkillName;
+		if (forcedSkillName) {
+			console.log("[AgentExecutor SDK] Forced skill:", forcedSkillName);
+		}
+
 		// Start task in UI store
 		const task = agentStore.startTask("custom", query);
 
@@ -205,7 +213,7 @@ class AgentExecutor {
 						: task.id;
 				const res = await getAgentSandboxDir(sandboxKey);
 				sandboxDir = res.path;
-			} catch {}
+			} catch { }
 		}
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
@@ -245,7 +253,7 @@ class AgentExecutor {
 						size: ctx.content.length,
 						isBinary: false,
 					});
-				} catch {}
+				} catch { }
 			}
 			options.attachedContexts = [];
 		}
@@ -294,7 +302,7 @@ class AgentExecutor {
 							entries.length === 1 &&
 							entries[0]?.is_file &&
 							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
-								stripTrailingSlash(srcPath);
+							stripTrailingSlash(srcPath);
 
 						if (singleFile) {
 							await safeInvoke<{ success: boolean }>("copy_file_safe", {
@@ -314,8 +322,8 @@ class AgentExecutor {
 							if (!e.is_file) continue;
 							const rel = String(e.path).startsWith(dirRoot)
 								? String(e.path)
-										.slice(dirRoot.length)
-										.replace(/^[/\\]+/, "")
+									.slice(dirRoot.length)
+									.replace(/^[/\\]+/, "")
 								: getBasename(e.path);
 							const finalRel = rel || getBasename(e.path);
 							const out = `${sandboxDir}/${folderName}/${finalRel}`;
@@ -325,7 +333,7 @@ class AgentExecutor {
 									dest: out,
 									create_dirs: true,
 								});
-							} catch {}
+							} catch { }
 						}
 						file.path = `${sandboxDir}/${folderName}`;
 						file.type = file.type || "file";
@@ -337,7 +345,7 @@ class AgentExecutor {
 						});
 						file.path = dest;
 					}
-				} catch {}
+				} catch { }
 			}
 		}
 
@@ -348,6 +356,16 @@ class AgentExecutor {
 		if (!options?.resumeSessionId && options?.conversationContext?.length) {
 			enhancedPrompt +=
 				"\n\n## 对话历史\n" + options.conversationContext.join("\n");
+		}
+
+		// 强制执行指定 skill 的指令
+		if (forcedSkillName) {
+			enhancedPrompt +=
+				`\n\n## ⚠️ 强制技能要求\n` +
+				`用户已明确要求你**必须使用 "${forcedSkillName}" 技能**来完成此任务。\n` +
+				`- 你**必须**调用 "${forcedSkillName}" 相关的工具来完成任务\n` +
+				`- 不要尝试其他方式完成任务，请严格遵循该技能的工作流程\n` +
+				`- 如果该技能需要特定输入（如文件路径），请直接使用用户提供的信息`;
 		}
 
 		if (sandboxDir) {
@@ -419,8 +437,7 @@ class AgentExecutor {
 			if (options?.attachedFiles?.length) {
 				for (const file of options.attachedFiles) {
 					fileList.push(
-						`- ${file.title} (文件路径: ${file.path})${
-							file.type ? ` [${file.type}]` : ""
+						`- ${file.title} (文件路径: ${file.path})${file.type ? ` [${file.type}]` : ""
 						}`,
 					);
 				}
@@ -459,7 +476,7 @@ class AgentExecutor {
 							toolStepCounter++;
 							const toolCallIdBase =
 								typeof message.toolCallId === "string" &&
-								message.toolCallId.trim()
+									message.toolCallId.trim()
 									? message.toolCallId.trim()
 									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 							const toolCallId = `sdk-tool-${toolCallIdBase}`;
@@ -544,7 +561,7 @@ class AgentExecutor {
 						case "tool_result": {
 							const resolvedToolCallId =
 								typeof message.toolCallId === "string" &&
-								message.toolCallId.trim()
+									message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: lastToolCallId;
 							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）

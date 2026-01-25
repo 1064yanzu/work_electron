@@ -33,16 +33,27 @@ import {
 } from "../../types";
 import { AttachmentCard } from "./AttachmentCard";
 import { Model, ModelSelector } from "./ModelSelector";
-import { type SlashCommand, SlashCommandMenu } from "./SlashCommand";
+import { type SlashCommand } from "./SlashCommand";
+import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
+import { SlashMenuContainer } from "./SlashMenuContainer";
+
+// 提交选项
+export interface SubmitOptions {
+	command?: SlashCommand;
+	chips?: SelectedChip[];
+	forcedSkillId?: string; // 强制使用的 skill ID
+}
 
 interface ChatInputProps {
-	onSubmit: (message: string, command?: SlashCommand) => void;
+	onSubmit: (message: string, options?: SubmitOptions) => void;
 	onAddContext?: () => void;
 	disabled?: boolean;
 	placeholder?: string;
 	model?: string;
 	models?: Model[];
 	onModelSelect?: (modelId: string) => void;
+	onOpenPromptLibrary?: () => void;
+	isAgentExecuting?: boolean;
 }
 
 export function ChatInput({
@@ -52,12 +63,15 @@ export function ChatInput({
 	model,
 	models = [],
 	onModelSelect,
+	onOpenPromptLibrary,
 }: ChatInputProps) {
 	const [value, setValue] = useState("");
 	const [showSlashMenu, setShowSlashMenu] = useState(false);
 	const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
 	const [slashFilter, setSlashFilter] = useState("");
-	const [activeCommand, setActiveCommand] = useState<SlashCommand | null>(null);
+
+	// 已选择的命令卡片
+	const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
 
 	// 数据源状态
 	const [sources, setSources] = useState<Source[]>([]);
@@ -321,10 +335,18 @@ export function ChatInput({
 	const handleSubmit = () => {
 		const trimmed = value.trim();
 		if (trimmed && !disabled) {
-			// 如果有激活的命令，附带命令信息
-			onSubmit(trimmed, activeCommand || undefined);
+			// 查找强制使用的 Agent Skill
+			const agentSkillChip = selectedChips.find(c => c.type === "agent_skill");
+			const forcedSkillId = agentSkillChip?.skillName; // 使用存储的 skillName
+
+			// 提交带有 chips 和强制 skill 信息
+			onSubmit(trimmed, {
+				chips: selectedChips.length > 0 ? selectedChips : undefined,
+				forcedSkillId,
+			});
+
 			setValue("");
-			setActiveCommand(null);
+			setSelectedChips([]);
 		}
 	};
 
@@ -359,22 +381,68 @@ export function ChatInput({
 			return;
 		}
 
-		// 否则作为普通 Slash Command 激活
-		setActiveCommand(command);
+		// 检测是否为 Agent Skill（强制执行）
+		const isAgentSkill = command.id.startsWith("agent-skill-");
+		const forceSkillMatch = command.prompt?.match(/^\[FORCE_SKILL:(.+)\]$/);
+		const forcedSkillName = forceSkillMatch ? forceSkillMatch[1] : undefined;
 
-		// 如果命令有预设提示词，填充到输入框
-		if (command.prompt) {
-			setValue(command.prompt);
-		} else {
+		// 判断类型
+		let chipType: SelectedChip["type"] = "skill";
+		if (isAgentSkill || forcedSkillName) {
+			chipType = "agent_skill";
+		} else if (command.category === "context" || command.prompt) {
+			chipType = "prompt";
+		} else if (command.category === "data") {
+			chipType = "data";
+		} else if (command.category === "skill") {
+			chipType = "skill";
+		}
+
+		// 创建新的 chip
+		const newChip: SelectedChip = {
+			id: `chip-${Date.now()}-${command.id}`,
+			type: chipType,
+			command,
+			isExpanded: false,
+			content: chipType === "agent_skill" ? undefined : command.prompt,
+			skillName: forcedSkillName, // 存储强制 skill 名称
+		};
+
+		// 如果是 agent_skill 类型，替换已有的（只能有一个强制 skill）
+		if (chipType === "agent_skill") {
+			setSelectedChips(prev => [
+				...prev.filter(c => c.type !== "agent_skill"),
+				newChip,
+			]);
+			setValue(""); // Agent Skill 不填充内容
+		} else if (chipType === "skill") {
+			setSelectedChips(prev => [
+				...prev.filter(c => c.type !== "skill"),
+				newChip,
+			]);
 			setValue("");
+		} else {
+			setSelectedChips(prev => [...prev, newChip]);
+			// 如果是提示词，填充到输入框
+			if (command.prompt && chipType === "prompt") {
+				setValue(command.prompt);
+			} else {
+				setValue("");
+			}
 		}
 
 		// 聚焦输入框
 		textareaRef.current?.focus();
 	};
 
-	const clearActiveCommand = () => {
-		setActiveCommand(null);
+	const handleRemoveChip = (chipId: string) => {
+		setSelectedChips(prev => prev.filter(c => c.id !== chipId));
+	};
+
+	const handleToggleChipExpand = (chipId: string) => {
+		setSelectedChips(prev =>
+			prev.map(c => c.id === chipId ? { ...c, isExpanded: !c.isExpanded } : c)
+		);
 	};
 
 	return (
@@ -386,14 +454,14 @@ export function ChatInput({
 				onChange={handleFileSelect}
 			/>
 
-			{/* 斜杠命令菜单 */}
-			<SlashCommandMenu
+			{/* 斜杠命令菜单 - 二级菜单模式 */}
+			<SlashMenuContainer
 				isOpen={showSlashMenu}
 				onClose={() => setShowSlashMenu(false)}
 				onSelect={handleSelectCommand}
 				filter={slashFilter}
-				commands={dynamicCommands}
-				hideDefaultCommands={true} // 只显示上下文相关命令
+				dynamicCommands={dynamicCommands}
+				onOpenPromptLibrary={onOpenPromptLibrary}
 			/>
 
 			{/* 主输入区域 */}
@@ -432,23 +500,12 @@ export function ChatInput({
 					</div>
 				) : null}
 
-				{/* 激活的命令标签 - 保持原有逻辑 */}
-				{activeCommand && (
-					<div className="flex items-center gap-2 px-4 py-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-700/50 rounded-t-3xl">
-						<div className="flex items-center gap-2 px-2.5 py-1 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
-							<activeCommand.icon className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-							<span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
-								{activeCommand.name}
-							</span>
-						</div>
-						<button
-							onClick={clearActiveCommand}
-							className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors w-5 h-5 flex items-center justify-center rounded-full hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
-						>
-							✕
-						</button>
-					</div>
-				)}
+				{/* 已选择的命令卡片 - 新 Chips 系统 */}
+				<SlashCommandChipList
+					chips={selectedChips}
+					onRemove={handleRemoveChip}
+					onToggleExpand={handleToggleChipExpand}
+				/>
 
 				{/* 输入框 */}
 				<div className="relative">
