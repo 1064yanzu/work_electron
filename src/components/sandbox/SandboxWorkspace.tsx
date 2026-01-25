@@ -32,6 +32,7 @@ import {
 } from "../../lib/managedModeStore";
 import { useAgentStore } from "../../lib/agent/store";
 import { cn } from "../../lib/utils";
+import { convertFileSrc } from "../../lib/tauriCompat";
 
 // ==================== 视角类型 ====================
 type ViewMode = "files" | "preview";
@@ -183,7 +184,7 @@ const FilePreview = memo(function FilePreview({ file, previewMode, onSetPreviewM
                 <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
                     <div className="bg-white dark:bg-zinc-800 p-2 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700">
                         <img
-                            src={file.path}
+                            src={convertFileSrc(file.path)}
                             alt={file.name}
                             className="max-w-full max-h-[60vh] object-contain rounded"
                         />
@@ -315,6 +316,25 @@ const ArtifactPreview = memo(function ArtifactPreview({ file }: ArtifactPreviewP
         );
     }
 
+    // 图片预览
+    if (file.category === "images") {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900">
+                <div className="bg-white dark:bg-zinc-800 p-3 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+                    <img
+                        src={convertFileSrc(file.path)}
+                        alt={file.name}
+                        className="max-w-full max-h-[65vh] object-contain rounded-lg"
+                    />
+                </div>
+                <div className="mt-4 text-center">
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{file.name}</p>
+                    <p className="text-xs text-zinc-400 mt-1">{formatFileSize(file.size)}</p>
+                </div>
+            </div>
+        );
+    }
+
     // HTML/React 产物预览
     if (file.extension === "html" || file.extension === "tsx" || file.extension === "jsx") {
         return (
@@ -337,6 +357,38 @@ const ArtifactPreview = memo(function ArtifactPreview({ file }: ArtifactPreviewP
                         sandbox="allow-scripts"
                     />
                 </div>
+            </div>
+        );
+    }
+
+    // Markdown 预览
+    if (file.extension === "md") {
+        return (
+            <div className="flex-1 overflow-auto bg-white dark:bg-zinc-900 px-8 py-6">
+                <div className="max-w-3xl mx-auto prose dark:prose-invert prose-zinc">
+                    <pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        {file.content}
+                    </pre>
+                </div>
+            </div>
+        );
+    }
+
+    // 代码/文本预览 (通用)
+    if (file.category === "code" || file.category === "data" || file.category === "docs") {
+        return (
+            <div className="flex-1 overflow-auto bg-zinc-900 dark:bg-black">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-800 dark:bg-zinc-900 sticky top-0">
+                    <div className="flex gap-1.5">
+                        <span className="w-3 h-3 rounded-full bg-red-500/70" />
+                        <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                        <span className="w-3 h-3 rounded-full bg-green-500/70" />
+                    </div>
+                    <span className="text-xs text-zinc-500 font-mono ml-2">{file.name}</span>
+                </div>
+                <pre className="p-4 text-[13px] font-mono text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
+                    {file.content || ""}
+                </pre>
             </div>
         );
     }
