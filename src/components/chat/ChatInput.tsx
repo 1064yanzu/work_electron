@@ -334,13 +334,26 @@ export function ChatInput({
 
 	const handleSubmit = () => {
 		const trimmed = value.trim();
-		if (trimmed && !disabled) {
+
+		// 收集提示词 Chips 的内容
+		const promptContent = selectedChips
+			.filter(c => c.type === "prompt" && c.content)
+			.map(c => c.content)
+			.join("\n\n");
+
+		// 最终要发送的消息：提示词内容 + 用户输入
+		let finalMessage = trimmed;
+		if (promptContent) {
+			finalMessage = finalMessage ? `${promptContent}\n\n${finalMessage}` : promptContent;
+		}
+
+		if (finalMessage && !disabled) {
 			// 查找强制使用的 Agent Skill
 			const agentSkillChip = selectedChips.find(c => c.type === "agent_skill");
 			const forcedSkillId = agentSkillChip?.skillName; // 使用存储的 skillName
 
 			// 提交带有 chips 和强制 skill 信息
-			onSubmit(trimmed, {
+			onSubmit(finalMessage, {
 				chips: selectedChips.length > 0 ? selectedChips : undefined,
 				forcedSkillId,
 			});
@@ -422,10 +435,18 @@ export function ChatInput({
 			]);
 			setValue("");
 		} else {
+			// 对于提示词类型：保留 chip，并填充输入框
+			// 或者是其他类型（如 data），也保留 chip
 			setSelectedChips(prev => [...prev, newChip]);
+
 			// 如果是提示词，填充到输入框
 			if (command.prompt && chipType === "prompt") {
-				setValue(command.prompt);
+				// 修改：只保留 Chip，不填充输入框（作为占位符/引用存在）
+				setValue("");
+				// 聚焦输入框，方便用户继续输入
+				setTimeout(() => {
+					textareaRef.current?.focus();
+				}, 0);
 			} else {
 				setValue("");
 			}
@@ -442,6 +463,12 @@ export function ChatInput({
 	const handleToggleChipExpand = (chipId: string) => {
 		setSelectedChips(prev =>
 			prev.map(c => c.id === chipId ? { ...c, isExpanded: !c.isExpanded } : c)
+		);
+	};
+
+	const handleUpdateChip = (chipId: string, content: string) => {
+		setSelectedChips(prev =>
+			prev.map(c => c.id === chipId ? { ...c, content } : c)
 		);
 	};
 
@@ -505,6 +532,7 @@ export function ChatInput({
 					chips={selectedChips}
 					onRemove={handleRemoveChip}
 					onToggleExpand={handleToggleChipExpand}
+					onUpdate={handleUpdateChip}
 				/>
 
 				{/* 输入框 */}

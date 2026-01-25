@@ -1,13 +1,9 @@
-// 斜杠命令一级菜单组件 - Claude 风格高级质感
-// 展示命令类型选择（文件、文件夹、提示词、技能、操作）
-
 import {
     ChevronRight,
     FileText,
     Folder,
     MessageSquare,
     Sparkles,
-    Wand2,
     Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -30,7 +26,7 @@ export const slashCategories: SlashCategory[] = [
         description: "选择文件添加到上下文",
         icon: FileText,
         shortcut: "f",
-        gradient: "from-blue-500/10 to-cyan-500/10",
+        gradient: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
         iconColor: "text-blue-500",
     },
     {
@@ -39,7 +35,7 @@ export const slashCategories: SlashCategory[] = [
         description: "选择整个文件夹",
         icon: Folder,
         shortcut: "d",
-        gradient: "from-amber-500/10 to-orange-500/10",
+        gradient: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
         iconColor: "text-amber-500",
     },
     {
@@ -48,26 +44,17 @@ export const slashCategories: SlashCategory[] = [
         description: "插入自定义提示词",
         icon: MessageSquare,
         shortcut: "p",
-        gradient: "from-violet-500/10 to-purple-500/10",
-        iconColor: "text-violet-500",
-    },
-    {
-        id: "skill",
-        name: "技能",
-        description: "调用 AI 技能",
-        icon: Wand2,
-        shortcut: "s",
-        gradient: "from-emerald-500/10 to-teal-500/10",
-        iconColor: "text-emerald-500",
+        gradient: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
+        iconColor: "text-orange-500",
     },
     {
         id: "agent_skill",
         name: "Agent 技能",
-        description: "强制使用 Agent 技能",
+        description: "调用 Agent 技能",
         icon: Sparkles,
-        shortcut: "g",
-        gradient: "from-fuchsia-500/10 to-pink-500/10",
-        iconColor: "text-fuchsia-500",
+        shortcut: "s",
+        gradient: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
+        iconColor: "text-violet-500",
     },
     {
         id: "action",
@@ -75,7 +62,7 @@ export const slashCategories: SlashCategory[] = [
         description: "执行快捷操作",
         icon: Zap,
         shortcut: "a",
-        gradient: "from-rose-500/10 to-pink-500/10",
+        gradient: "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
         iconColor: "text-rose-500",
     },
 ];

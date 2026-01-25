@@ -211,19 +211,6 @@ export function SlashMenuContainer({
                 return groups;
             }
 
-            case "skill": {
-                // 技能类命令
-                const skillCommands = defaultCommands.filter((cmd) => cmd.category === "skill");
-                return [
-                    {
-                        id: "skills",
-                        name: "✨ AI 技能",
-                        commands: skillCommands,
-                        isCollapsible: false,
-                    },
-                ];
-            }
-
             case "agent_skill": {
                 // Agent 技能（来自设置页面的 Skills）
                 const agentSkillCommands: SlashCommand[] = enabledSkills.map(skill => ({
@@ -340,23 +327,23 @@ export function SlashMenuContainer({
                 </div>
             </div>
 
-            {/* 添加提示词按钮（仅在提示词类别显示） */}
+            {/* 添加提示词按钮（仅在提示词类别显示）- 高级中性风格 */}
             {showAddPromptButton && onOpenPromptLibrary && (
                 <button
                     onClick={() => {
                         onOpenPromptLibrary();
                         onClose();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm border-b border-zinc-100 dark:border-zinc-800 bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-900/10 dark:to-purple-900/10 hover:from-violet-100/50 hover:to-purple-100/50 dark:hover:from-violet-900/20 dark:hover:to-purple-900/20 transition-all"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group"
                 >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-sm">
-                        <Plus className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200">
+                        <Plus className="w-4 h-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
                     </div>
                     <div>
-                        <span className="font-medium text-violet-700 dark:text-violet-300">
+                        <span className="font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
                             添加提示词
                         </span>
-                        <p className="text-xs text-violet-500/70 dark:text-violet-400/70">
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
                             管理自定义提示词库
                         </p>
                     </div>
