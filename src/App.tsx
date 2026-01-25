@@ -70,7 +70,7 @@ export default function App() {
 							defaultSize={20}
 							minSize={15}
 							maxSize={50}
-							className="flex flex-col bg-white dark:bg-[#1E1E1E] rounded-[16px] shadow-sm border border-black/[0.02] dark:border-white/[0.02] overflow-hidden transition-all"
+							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-all"
 						>
 							<ResourceSidebar onOpenSettings={() => setIsSettingsOpen(true)} />
 						</Panel>
@@ -81,7 +81,7 @@ export default function App() {
 						<Panel
 							defaultSize={55}
 							minSize={30}
-							className="flex flex-col bg-white dark:bg-[#1E1E1E] rounded-[16px] shadow-sm border border-black/[0.02] dark:border-white/[0.02] overflow-hidden relative transition-all"
+							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-all"
 						>
 							{isManagedMode ? (
 								<SandboxWorkspace
@@ -108,7 +108,7 @@ export default function App() {
 							defaultSize={25}
 							minSize={20}
 							maxSize={50}
-							className="flex flex-col bg-white dark:bg-[#1E1E1E] rounded-[16px] shadow-sm border border-black/[0.02] dark:border-white/[0.02] overflow-hidden transition-all"
+							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-all"
 						>
 							<CopilotSidebar />
 						</Panel>

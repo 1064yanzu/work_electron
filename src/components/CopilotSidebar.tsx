@@ -2,7 +2,6 @@
 
 import { diffLines } from "diff";
 import {
-	BookOpen,
 	Bot,
 	Check,
 	ChevronDown,
@@ -12,11 +11,9 @@ import {
 	MessageSquare,
 	MoreHorizontal,
 	Plus,
-	Search,
 	Sparkles,
 	StopCircle,
 	X,
-	Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DragItem, useMouseDropZone } from "../hooks/useMouseDrag";
@@ -64,6 +61,7 @@ import {
 	ChatMessage as ChatMessageComponent,
 	type SlashCommand,
 } from "./chat";
+import { WelcomeScreen } from "./chat/WelcomeScreen";
 
 // AI 写作标记
 const WRITE_START_MARKER = "<<<WRITE>>>";
@@ -369,41 +367,7 @@ function guessFallbackSearchQuery(messages: ChatMessageType[]): string | null {
 }
 
 // 快捷操作按钮
-interface QuickAction {
-	id: string;
-	label: string;
-	icon: React.ComponentType<{ className?: string }>;
-	prompt: string;
-	isResearch?: boolean;
-}
 
-const quickActions: QuickAction[] = [
-	{
-		id: "research",
-		label: "深度研究",
-		icon: Search,
-		prompt: "请帮我深度研究以下主题：",
-		isResearch: true,
-	},
-	{
-		id: "summarize",
-		label: "总结资料",
-		icon: BookOpen,
-		prompt: "请帮我总结当前上下文中的资料要点",
-	},
-	{
-		id: "write",
-		label: "帮我写作",
-		icon: Sparkles,
-		prompt: "请帮我撰写一篇关于以下主题的文章：",
-	},
-	{
-		id: "brainstorm",
-		label: "头脑风暴",
-		icon: Zap,
-		prompt: "请帮我进行头脑风暴，主题是：",
-	},
-];
 
 export default function CopilotSidebar() {
 	const { providers, activeModel, settingsStore } = useSettingsStore();
@@ -2352,18 +2316,7 @@ export default function CopilotSidebar() {
 		});
 	};
 
-	// 处理快捷操作
-	const handleQuickAction = (action: QuickAction) => {
-		if (action.isResearch) {
-			// 显示输入框让用户输入研究主题
-			const topic = prompt("请输入要研究的主题：");
-			if (topic) {
-				performDeepResearch(topic);
-			}
-		} else {
-			handleSendMessage(action.prompt, undefined);
-		}
-	};
+
 
 	// 新建对话
 	const handleNewSession = () => {
@@ -2555,57 +2508,33 @@ export default function CopilotSidebar() {
 				className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide"
 			>
 				{messages.length === 0 ? (
-					<div className="flex flex-col h-full">
-						{/* 欢迎区域 */}
-						<div className="flex flex-col items-center text-center py-8">
-							<div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
-								<Bot className="w-8 h-8 text-zinc-500" />
-							</div>
-							<h3 className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-								有什么可以帮您的？
-							</h3>
-							<p className="text-sm text-zinc-400 max-w-[200px]">
-								我可以帮您深度研究、分析资料、撰写内容
-							</p>
-						</div>
+					<div className="h-full relative">
+						<WelcomeScreen />
 
-						{/* 快捷操作 */}
-						<div className="mt-auto space-y-2">
-							<p className="text-xs font-medium text-zinc-400 uppercase tracking-wider px-1">
-								快捷操作
-							</p>
-							<div className="grid grid-cols-2 gap-2">
-								{quickActions.map((action) => (
-									<button
-										key={action.id}
-										onClick={() => handleQuickAction(action)}
-										disabled={isStreaming || isAgentExecuting}
-										className="flex items-center gap-2 p-3 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-left transition-colors group disabled:opacity-50"
-									>
-										<div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors shadow-sm">
-											<action.icon className="w-4 h-4" />
-										</div>
-										<span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 transition-colors">
-											{action.label}
-										</span>
-									</button>
-								))}
-							</div>
-						</div>
-
-						{/* 研究进度提示 */}
+						{/* 研究进度提示 (浮动在底部) */}
 						{currentResearch && currentResearch.status !== "completed" && (
-							<div className="mt-4 p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
-								<div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-									<Loader2 className="w-4 h-4 animate-spin" />
-									<span>正在进行深度研究...</span>
+							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-2.5">
+										<div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
+											<Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+										</div>
+										<div className="flex flex-col">
+											<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+												正在进行深度研究...
+											</span>
+											<span className="text-xs text-zinc-400 dark:text-zinc-500">
+												AI 正在分析相关资料
+											</span>
+										</div>
+									</div>
+									<button
+										onClick={() => workspaceStore.setLeftSidebarView("research")}
+										className="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
+									>
+										查看进度
+									</button>
 								</div>
-								<button
-									onClick={() => workspaceStore.setLeftSidebarView("research")}
-									className="mt-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-								>
-									查看研究进度 →
-								</button>
 							</div>
 						)}
 					</div>
