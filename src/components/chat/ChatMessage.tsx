@@ -9,7 +9,7 @@ import {
 	RefreshCw,
 	Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { EVENTS, events } from "../../lib/events";
 import { workspaceStore } from "../../lib/workspaceStore";
@@ -57,16 +57,16 @@ function extractWebPreviewFromCodeBlocks(
 	blocks: Array<{ language: string; code: string }>,
 ):
 	| {
-		kind: "html";
-		html: string;
-		css?: string;
-		js?: string;
-	}
+			kind: "html";
+			html: string;
+			css?: string;
+			js?: string;
+	  }
 	| {
-		kind: "react";
-		jsx: string;
-		css?: string;
-	}
+			kind: "react";
+			jsx: string;
+			css?: string;
+	  }
 	| null {
 	let html = "";
 	let jsx = "";
@@ -120,7 +120,7 @@ function extractWebPreviewFromCodeBlocks(
 	return null;
 }
 
-export function ChatMessage({
+function ChatMessageImpl({
 	message,
 	preferBlocks = true,
 	onRegenerate,
@@ -293,7 +293,7 @@ export function ChatMessage({
 			onClick: handleCopyAsMarkdown,
 		});
 
-		items.push({ label: "", separator: true, onClick: () => { } });
+		items.push({ label: "", separator: true, onClick: () => {} });
 
 		if (!isUser && onRegenerate) {
 			items.push({
@@ -355,16 +355,26 @@ export function ChatMessage({
 								<WebPreviewCard
 									kind={streamingWebPreview.kind}
 									title={
-										streamingWebPreview.kind === "react" ? "React 预览" : "前端预览"
+										streamingWebPreview.kind === "react"
+											? "React 预览"
+											: "前端预览"
 									}
 									html={
-										streamingWebPreview.kind === "html" ? streamingWebPreview.html : undefined
+										streamingWebPreview.kind === "html"
+											? streamingWebPreview.html
+											: undefined
 									}
 									jsx={
-										streamingWebPreview.kind === "react" ? streamingWebPreview.jsx : undefined
+										streamingWebPreview.kind === "react"
+											? streamingWebPreview.jsx
+											: undefined
 									}
 									css={streamingWebPreview.css}
-									js={streamingWebPreview.kind === "html" ? streamingWebPreview.js : undefined}
+									js={
+										streamingWebPreview.kind === "html"
+											? streamingWebPreview.js
+											: undefined
+									}
 									isStreaming={true}
 								/>
 							</div>
@@ -408,11 +418,13 @@ export function ChatMessage({
 													key={idx}
 													className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
 												>
-													<MarkdownRenderer content={part} isStreaming={isStreaming} />
+													<MarkdownRenderer
+														content={part}
+														isStreaming={isStreaming}
+													/>
 												</div>
 											);
-										})
-									}
+										})}
 								</>
 							)}
 
@@ -427,15 +439,15 @@ export function ChatMessage({
 
 									{(!message.metadata?.fileUpdates ||
 										message.metadata.fileUpdates.length === 0) &&
-										Array.isArray(message.metadata?.blocks)
+									Array.isArray(message.metadata?.blocks)
 										? message.metadata.blocks.map((b, idx) =>
-											b.type === "file_update" ? (
-												<FileChangeCard
-													key={`block-file-update-${idx}`}
-													update={b.update}
-												/>
-											) : null,
-										)
+												b.type === "file_update" ? (
+													<FileChangeCard
+														key={`block-file-update-${idx}`}
+														update={b.update}
+													/>
+												) : null,
+											)
 										: null}
 								</>
 							) : null}
@@ -470,10 +482,11 @@ export function ChatMessage({
 												<button
 													onClick={() => handleApplyCodeBlock(idx)}
 													disabled={appliedBlocks.has(idx)}
-													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${appliedBlocks.has(idx)
-														? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-														: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-														}`}
+													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
+														appliedBlocks.has(idx)
+															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+															: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+													}`}
 													title="应用代码到编辑器"
 												>
 													{appliedBlocks.has(idx) ? (
@@ -549,3 +562,13 @@ export function ChatMessage({
 		</>
 	);
 }
+
+export const ChatMessage = memo(ChatMessageImpl, (prev, next) => {
+	return (
+		prev.message === next.message &&
+		prev.preferBlocks === next.preferBlocks &&
+		prev.onRegenerate === next.onRegenerate &&
+		prev.onEdit === next.onEdit &&
+		prev.onDelete === next.onDelete
+	);
+});
