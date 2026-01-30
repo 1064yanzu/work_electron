@@ -608,6 +608,43 @@ export default function CopilotSidebar() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [chatStore.activeSessionId]);
 
+	// 中间栏运行图 -> 右侧栏定位：滚动到对应 ToolCall
+	useEffect(() => {
+		const escapeSelector = (value: string) => {
+			try {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const anyCss = (window as any)?.CSS;
+				if (anyCss && typeof anyCss.escape === "function") return anyCss.escape(value);
+			} catch { }
+			return value.replace(/["\\]/g, "\\$&");
+		};
+
+		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, (payload) => {
+			if (payload?.source === "sidebar") return;
+			const toolCallId =
+				typeof payload?.toolCallId === "string" ? payload.toolCallId : "";
+			if (!toolCallId) return;
+			const container = scrollContainerRef.current;
+			if (!container) return;
+			const selector = `[data-agent-tool-call-id="${escapeSelector(toolCallId)}"]`;
+			const el = container.querySelector(selector) as HTMLElement | null;
+			if (!el) return;
+
+			el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+			// Subtle focus flash (avoid Tailwind dynamic class issues)
+			const prevShadow = el.style.boxShadow;
+			const prevRadius = el.style.borderRadius;
+			el.style.borderRadius = prevRadius || "16px";
+			el.style.boxShadow =
+				"0 0 0 2px rgba(99,102,241,0.45), 0 18px 60px -35px rgba(99,102,241,0.45)";
+			window.setTimeout(() => {
+				el.style.boxShadow = prevShadow;
+				el.style.borderRadius = prevRadius;
+			}, 1200);
+		});
+	}, []);
+
 	// 获取可用模型
 	const enabledModels = providers
 		.filter((provider) => provider.isEnabled)
@@ -1442,6 +1479,20 @@ export default function CopilotSidebar() {
 					touchActivity();
 					if (event.type === "task_started") {
 						currentTaskId = event.task.id;
+						// 让托管模式在运行中也能“跟着会话走”：一旦拿到 taskId / sandboxDir，立刻写入流式消息 metadata
+						ensureStreamingMessage();
+						if (streamingMsgId) {
+							const sandboxDir = (event.task?.metadata as any)?.sandboxDir as
+								| string
+								| undefined;
+							chatStore.updateMessage(session.id, streamingMsgId, {
+								metadata: {
+									blocks: buildSkillBlocks(),
+									taskId: currentTaskId,
+									sandboxDir,
+								},
+							});
+						}
 						return;
 					}
 

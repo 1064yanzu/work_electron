@@ -42,6 +42,15 @@ function safeBodyToString(body: RequestInit["body"]): string {
 }
 
 function truncateUtf8(input: string, maxBytes: number) {
+	// 处理 undefined 或 null 的情况
+	if (input === undefined || input === null) {
+		return {
+			text: "",
+			truncated: false,
+			bytes: 0,
+		};
+	}
+
 	if (maxBytes <= 0) {
 		return {
 			text: input,

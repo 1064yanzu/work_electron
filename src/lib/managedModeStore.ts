@@ -58,6 +58,8 @@ export interface ManagedModeState {
 		expandedFolders: Set<string>;
 		/** 搜索关键词 */
 		searchQuery: string;
+		/** 中间栏视图：运行图 / 文件 / 预览 */
+		centerView: "graph" | "files" | "preview";
 		/** 预览视图模式：preview 渲染预览, source 源码 */
 		previewMode: "preview" | "source";
 	};
@@ -72,6 +74,7 @@ const initialState: ManagedModeState = {
 	ui: {
 		expandedFolders: new Set(["docs", "code", "images", "data", "other"]),
 		searchQuery: "",
+		centerView: "graph",
 		previewMode: "preview",
 	},
 };
@@ -250,6 +253,7 @@ class ManagedModeStore {
 		this.setState((s) => ({
 			...s,
 			isActive: true,
+			ui: { ...s.ui, centerView: "graph" },
 		}));
 	}
 
@@ -349,9 +353,30 @@ class ManagedModeStore {
 		}));
 	}
 
+	/** 通过路径选择文件（用于从运行图/产物跳转） */
+	selectFileByPath(filePath: string | null): string | null {
+		const p = typeof filePath === "string" ? filePath.trim() : "";
+		if (!p) {
+			this.selectFile(null);
+			return null;
+		}
+		const file = this.state.files.find((f) => f.type === "file" && f.path === p);
+		if (!file) return null;
+		this.selectFile(file.id);
+		return file.id;
+	}
+
 	/** 获取当前选中的文件 */
 	getSelectedFile(): SandboxFile | null {
 		return this.state.files.find((f) => f.id === this.state.selectedFileId) || null;
+	}
+
+	/** 设置中间栏视图 */
+	setCenterView(view: ManagedModeState["ui"]["centerView"]) {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, centerView: view },
+		}));
 	}
 
 	/** 切换文件夹展开状态 */

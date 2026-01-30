@@ -21,7 +21,7 @@ import { AgentStreamState, type UIEvent } from "./streamState";
  * Message types that our UI understands
  */
 export interface AgentMessage {
-	type: "assistant" | "tool_call" | "tool_result" | "system" | "result";
+	type: "assistant" | "tool_call" | "tool_result" | "tool_input_update" | "system" | "result";
 	content: string;
 	toolCallId?: string;
 	toolName?: string;
@@ -29,6 +29,7 @@ export interface AgentMessage {
 	toolOutput?: unknown;
 	status?: "running" | "completed" | "error";
 }
+
 
 /**
  * Execution options for the Claude Agent
@@ -284,7 +285,7 @@ export class ClaudeAgentService {
 							lastToolUseId =
 								String(
 									toolErrorBlocks[toolErrorBlocks.length - 1]?.tool_use_id ||
-										"",
+									"",
 								) || lastToolUseId;
 
 							if (debug) {
@@ -438,8 +439,17 @@ export class ClaudeAgentService {
 							// 	content: event.result || "",
 							// 	status: event.isError ? "error" : "completed",
 							// });
+						} else if (event.type === "tool_input_complete") {
+							// 工具输入流式传输完成，发送更新消息以更新工具调用的 input 字段
+							onMessage?.({
+								type: "tool_input_update",
+								toolCallId: event.id,
+								content: "",
+								toolInput: event.input,
+							} as any);
 						}
 						// 忽略 'text' 事件，因为 'text_delta' 已经处理了增量内容
+
 					}
 					return;
 				}
@@ -490,10 +500,10 @@ export class ClaudeAgentService {
 					const usage =
 						promptTokens !== null && completionTokens !== null
 							? {
-									promptTokens,
-									completionTokens,
-									totalTokens: promptTokens + completionTokens,
-								}
+								promptTokens,
+								completionTokens,
+								totalTokens: promptTokens + completionTokens,
+							}
 							: undefined;
 					onComplete?.({
 						success: ok,

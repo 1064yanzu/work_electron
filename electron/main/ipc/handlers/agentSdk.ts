@@ -695,12 +695,21 @@ function toUIEvents(message: any): any[] {
 			type: "tool_call_start",
 			id: String(ev.content_block.id),
 			name: String(ev.content_block.name),
+			index: typeof ev.index === "number" ? ev.index : undefined,
 			input:
 				ev.content_block.input && typeof ev.content_block.input === "object"
 					? ev.content_block.input
 					: {},
 		});
 	}
+	// 当 content_block_stop 事件触发时，工具输入流式传输已完成
+	if (ev?.type === "content_block_stop" && typeof ev?.index === "number") {
+		events.push({
+			type: "tool_block_stop",
+			index: ev.index,
+		});
+	}
+
 
 	if (message.type === "result") {
 		const isError =
@@ -955,6 +964,34 @@ export function createAgentSdkHandlers(options: {
 		}
 
 		return lines.join("\n");
+	}
+
+	/**
+	 * 构建精简版系统提示词
+	 * 极致压缩：只保留最核心的规则和工具名称
+	 */
+	function buildCustomSystemPrompt(opts: {
+		cwd: string;
+		model: string;
+		appendContent: string;
+	}): string {
+		const today = new Date().toISOString().slice(0, 10);
+
+		return `You are Claude, an AI assistant. Always respond in Chinese.
+
+## Tools
+Read, Write, Edit, Glob, Grep, Bash, Task, Skill, WebFetch, WebSearch
+
+## Rules
+- Use Read before Edit; use Read/Glob/Grep instead of Bash cat/find/grep
+- Parallel tool calls when independent; use absolute paths
+- Task: delegate to subagent_type; pass minimal context
+- <system-reminder> tags in messages contain system-injected info
+
+## Environment
+cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}
+
+${opts.appendContent}`.trim();
 	}
 
 	const agent_sdk_start = async (
@@ -1307,15 +1344,15 @@ export function createAgentSdkHandlers(options: {
 						includePartialMessages: true,
 						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
 						stream: true,
-						// systemPrompt: 如果用户提供了自定义 prompt,使用 preset + append 模式
-						// 这样既保留 Claude Code 默认能力,又能添加自定义指令
-						systemPrompt: {
-							type: "preset" as const,
-							preset: "claude_code" as const,
-							append: [input.system_prompt, subagentPolicyAppend]
+						// 使用精简版系统提示词，移除 Claude Code preset 中不需要的内容
+						// 保留工具使用说明、Skill 调用、子代理配置等核心功能
+						systemPrompt: buildCustomSystemPrompt({
+							cwd,
+							model: String(input.model ?? ""),
+							appendContent: [input.system_prompt, subagentPolicyAppend]
 								.filter((s) => typeof s === "string" && s.trim())
 								.join("\n\n"),
-						},
+						}),
 						canUseTool: async (
 							toolName: string,
 							toolInput: any,
@@ -1579,6 +1616,31 @@ export function createAgentSdkHandlers(options: {
 							type: "transformed",
 							events: uiEvents,
 						});
+						// 检查是否有 tool_block_stop 事件，如果有则发送完整的工具输入
+						for (const ev of uiEvents) {
+							if (ev.type === "tool_block_stop" && typeof ev.index === "number") {
+								const toolId = toolUseIdByIndex.get(ev.index);
+								if (toolId) {
+									const inputJsonStr = toolInputJsonById.get(toolId);
+									if (inputJsonStr) {
+										let parsedInput: Record<string, unknown> = {};
+										try {
+											parsedInput = JSON.parse(inputJsonStr);
+										} catch { }
+										// 发送 tool_input_complete 事件
+										emit(options.getMainWindow, {
+											runId,
+											type: "transformed",
+											events: [{
+												type: "tool_input_complete",
+												id: toolId,
+												input: parsedInput,
+											}],
+										});
+									}
+								}
+							}
+						}
 					}
 					if ((msg as any)?.type === "result") {
 						sawResult = true;

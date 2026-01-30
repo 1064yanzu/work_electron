@@ -28,13 +28,24 @@ function normalizeHeaders(
 
 function safeJsonStringify(value: unknown): string {
 	try {
-		return JSON.stringify(value);
+		const result = JSON.stringify(value);
+		// JSON.stringify(undefined) 返回 undefined,需要转换为字符串
+		return result === undefined ? "undefined" : result;
 	} catch {
 		return '"[unserializable]"';
 	}
 }
 
 function truncateUtf8(input: string, maxBytes: number) {
+	// 处理 undefined 或 null 的情况
+	if (input === undefined || input === null) {
+		return {
+			text: "",
+			truncated: false,
+			bytes: 0,
+		};
+	}
+
 	if (maxBytes <= 0) {
 		return {
 			text: input,
@@ -117,9 +128,9 @@ export function createHttpRequestLogger(
 			const remaining =
 				maxResBytes > 0
 					? Math.max(
-							0,
-							maxResBytes - Buffer.byteLength(responseBodyText, "utf8"),
-						)
+						0,
+						maxResBytes - Buffer.byteLength(responseBodyText, "utf8"),
+					)
 					: buf.length;
 			const slice = maxResBytes > 0 ? buf.subarray(0, remaining) : buf;
 			responseBodyText += slice.toString("utf8");

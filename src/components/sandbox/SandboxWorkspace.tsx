@@ -14,6 +14,7 @@ import {
     Copy,
     Download,
     Eye,
+    Sparkles,
     FileCode,
     FileText,
     Database,
@@ -31,10 +32,12 @@ import {
     type SandboxFile,
 } from "../../lib/managedModeStore";
 import { useAgentStore } from "../../lib/agent/store";
+import type { AgentTaskStatus, ToolCall } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
 import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
 import { useChatStore } from "../../lib/chat/store";
 import { Loader2 } from "lucide-react";
+import { ExecutionGraph, type ExecutionGraphSource } from "./ExecutionGraph";
 
 // ==================== 图片预览组件 ====================
 
@@ -90,9 +93,6 @@ const SandboxImagePreview = memo(function SandboxImagePreview({ filePath, fileNa
         </div>
     );
 });
-
-// ==================== 视角类型 ====================
-type ViewMode = "files" | "preview";
 
 // ==================== 文件树组件 ====================
 
@@ -452,9 +452,8 @@ export default function SandboxWorkspace({
     onExitManagedMode,
 }: SandboxWorkspaceProps) {
     const { files, selectedFileId, ui, store } = useManagedModeStore();
-    const { currentTask, taskHistory } = useAgentStore();
+    const { currentTask, taskHistory, isExecuting } = useAgentStore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [viewMode, setViewMode] = useState<ViewMode>("files");
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -462,31 +461,143 @@ export default function SandboxWorkspace({
     const { activeSessionId, sessions } = useChatStore();
     const activeSession = sessions.find(s => s.id === activeSessionId);
 
-    // 获取沙盒目录：优先从 currentTask 获取，否则从 taskHistory 或 chatStore 消息中获取
-    const sandboxDir = useMemo(() => {
-        // 1. 优先使用 currentTask 的 sandboxDir
-        const currentSandbox = currentTask?.metadata?.sandboxDir as string | undefined;
-        if (currentSandbox) return currentSandbox;
+    // ===== 会话绑定：画布/文件/预览都跟随 activeSession =====
 
-        // 2. 从 taskHistory 中找最近有 sandboxDir 的任务
-        for (const task of taskHistory) {
-            const sandbox = task.metadata?.sandboxDir as string | undefined;
-            if (sandbox) return sandbox;
-        }
+    const sessionTaskId = useMemo(() => {
+        if (!activeSession) return null;
 
-        // 3. 从当前会话的消息中查找（用于历史记录恢复）
-        if (activeSession) {
-            // 倒序查找最近有 sandboxDir 的消息
-            for (let i = activeSession.messages.length - 1; i >= 0; i--) {
-                const msg = activeSession.messages[i];
-                if (msg.metadata?.sandboxDir) {
-                    return msg.metadata.sandboxDir as string;
+        for (let i = activeSession.messages.length - 1; i >= 0; i--) {
+            const msg = activeSession.messages[i];
+            const metadata = msg.metadata;
+            if (typeof metadata?.taskId === "string" && metadata.taskId) return metadata.taskId;
+            const trace = metadata?.trace;
+            if (trace?.type === "agent_task") return trace.taskId;
+            if (trace?.type === "tool_call") return trace.taskId;
+            if (Array.isArray(metadata?.blocks)) {
+                for (let j = metadata.blocks.length - 1; j >= 0; j--) {
+                    const b = metadata.blocks[j] as any;
+                    if (b?.type === "agent_task" || b?.type === "task_list") return b.taskId;
+                    if (b?.type === "tool_call") return b.taskId;
                 }
             }
         }
 
+        return null;
+    }, [activeSession]);
+
+    const sessionSandboxDir = useMemo(() => {
+        if (!activeSession) return undefined;
+        for (let i = activeSession.messages.length - 1; i >= 0; i--) {
+            const msg = activeSession.messages[i];
+            if (msg.metadata?.sandboxDir) return msg.metadata.sandboxDir as string;
+        }
         return undefined;
-    }, [currentTask, taskHistory, activeSession]);
+    }, [activeSession]);
+
+    const boundTask = useMemo(() => {
+        if (!sessionTaskId) return null;
+        if (currentTask?.id === sessionTaskId) return currentTask;
+        return taskHistory.find(t => t.id === sessionTaskId) || null;
+    }, [currentTask, sessionTaskId, taskHistory]);
+
+    const sandboxDir = useMemo(() => {
+        const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
+        return fromTask || sessionSandboxDir;
+    }, [boundTask, sessionSandboxDir]);
+
+    const graphSource = useMemo<ExecutionGraphSource | null>(() => {
+        if (boundTask) {
+            return {
+                id: boundTask.id,
+                title: boundTask.title || "托管任务",
+                subtitle: boundTask.query,
+                status: boundTask.status,
+                toolCalls: boundTask.toolCalls || [],
+                artifacts: boundTask.artifacts || [],
+            };
+        }
+
+        if (!activeSession) return null;
+        if (!sessionTaskId) return null;
+
+        // 历史会话恢复：从 blocks 中拼一个最小可用的数据源
+        const normalizeToolCallStatus = (v: unknown): ToolCall["status"] => {
+            switch (v) {
+                case "pending":
+                case "running":
+                case "completed":
+                case "error":
+                case "cancelled":
+                    return v;
+                default:
+                    return "completed";
+            }
+        };
+
+        const order: string[] = [];
+        const seen = new Set<string>();
+        type ToolCallBlockLike = {
+            toolCallId?: string;
+            toolType?: string;
+            name?: string;
+            status?: unknown;
+            input?: unknown;
+            output?: unknown;
+            error?: unknown;
+        };
+        const toolCallById = new Map<string, ToolCallBlockLike>();
+
+        for (const msg of activeSession.messages) {
+            const blocks = msg.metadata?.blocks;
+            if (!Array.isArray(blocks)) continue;
+            for (const b of blocks as any[]) {
+                if (b?.type !== "tool_call") continue;
+                if (b.taskId !== sessionTaskId) continue;
+                const id = String(b.toolCallId || "").trim();
+                if (!id) continue;
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    order.push(id);
+                }
+                const prev = toolCallById.get(id) || {};
+                toolCallById.set(id, { ...prev, ...b } as ToolCallBlockLike);
+            }
+        }
+
+        const toolCalls: ToolCall[] = order.map((id) => {
+            const b = toolCallById.get(id) || {};
+            const inputRaw = (b as any).input;
+            const input =
+                inputRaw && typeof inputRaw === "object"
+                    ? (inputRaw as Record<string, any>)
+                    : ({} as Record<string, any>);
+            return {
+                id,
+                type: "custom",
+                name: String((b as any).name || (b as any).toolType || "Tool"),
+                input,
+                output: (b as any).output,
+                error: typeof (b as any).error === "string" ? (b as any).error : undefined,
+                status: normalizeToolCallStatus((b as any).status),
+                metadata: { toolType: (b as any).toolType },
+            };
+        });
+
+        const hasRunning = toolCalls.some((t) => t.status === "running" || t.status === "pending");
+        const hasError = toolCalls.some((t) => t.status === "error");
+        const allCompleted = toolCalls.length > 0 && toolCalls.every((t) => t.status === "completed");
+        const status: AgentTaskStatus =
+            hasRunning ? "executing" : hasError ? "error" : allCompleted ? "completed" : "waiting";
+
+        return {
+            id: sessionTaskId,
+            title: activeSession.title || "托管任务",
+            subtitle: activeSession.messages.slice().reverse().find(m => m.role === "user")?.content,
+            status,
+            toolCalls,
+            artifacts: [],
+        };
+    }, [activeSession, boundTask, sessionTaskId]);
 
     // 刷新文件列表
     const refreshFiles = useCallback(async () => {
@@ -499,17 +610,37 @@ export default function SandboxWorkspace({
         }
     }, [sandboxDir, store]);
 
-    // 挂载时扫描沙盒目录，并设置定时刷新
-    useEffect(() => {
-        if (sandboxDir) {
-            // 立即扫描一次
-            store.scanSandboxDir(sandboxDir);
+    const isLiveBoundTask =
+        Boolean(isExecuting && boundTask && currentTask && boundTask.id === currentTask.id);
 
-            // 每 5 秒刷新一次（在 Agent 执行期间）
-            refreshTimerRef.current = setInterval(() => {
-                store.scanSandboxDir(sandboxDir);
-            }, 5000);
+    // 会话切换时，清理旧的文件/选择，避免“串会话”
+    useEffect(() => {
+        if (refreshTimerRef.current) {
+            clearInterval(refreshTimerRef.current);
+            refreshTimerRef.current = null;
         }
+        store.selectFile(null);
+        store.clearFiles();
+    }, [activeSessionId, store]);
+
+    // 扫描沙盒目录：历史会话只扫一次；执行中会话定时刷新
+    useEffect(() => {
+        if (refreshTimerRef.current) {
+            clearInterval(refreshTimerRef.current);
+            refreshTimerRef.current = null;
+        }
+
+        if (!sandboxDir) {
+            store.clearFiles();
+            return;
+        }
+
+        store.scanSandboxDir(sandboxDir);
+
+        if (!isLiveBoundTask) return;
+        refreshTimerRef.current = setInterval(() => {
+            store.scanSandboxDir(sandboxDir);
+        }, 5000);
 
         return () => {
             if (refreshTimerRef.current) {
@@ -517,7 +648,7 @@ export default function SandboxWorkspace({
                 refreshTimerRef.current = null;
             }
         };
-    }, [sandboxDir, store]);
+    }, [isLiveBoundTask, sandboxDir, store]);
 
     // 分组文件
     const fileTree = useMemo(() => groupFilesByCategory(files), [files]);
@@ -553,6 +684,27 @@ export default function SandboxWorkspace({
     ];
 
     const totalFiles = files.filter((f) => f.type === "file").length;
+    const headerTitle =
+        ui.centerView === "graph"
+            ? "运行图"
+            : ui.centerView === "preview"
+                ? "产物预览"
+                : "沙盒文件";
+    const headerMeta =
+        ui.centerView === "graph"
+            ? graphSource
+                ? `工具 ${graphSource.toolCalls.length} · 产物 ${graphSource.artifacts.length}`
+                : `文件 ${totalFiles}`
+            : `${totalFiles} 个文件`;
+
+    const openArtifactInPreview = useCallback(
+        async (filePath: string) => {
+            const fileId = store.selectFileByPath(filePath);
+            store.setCenterView("preview");
+            if (fileId) await store.loadFileContent(fileId);
+        },
+        [store],
+    );
 
     return (
         <div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">
@@ -563,10 +715,23 @@ export default function SandboxWorkspace({
                     <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
                         <button
                             type="button"
-                            onClick={() => setViewMode("preview")}
+                            onClick={() => store.setCenterView("graph")}
                             className={cn(
                                 "p-1.5 rounded-md transition-colors",
-                                viewMode === "preview"
+                                ui.centerView === "graph"
+                                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
+                            )}
+                            title="运行图"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => store.setCenterView("preview")}
+                            className={cn(
+                                "p-1.5 rounded-md transition-colors",
+                                ui.centerView === "preview"
                                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
                                     : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                             )}
@@ -576,10 +741,10 @@ export default function SandboxWorkspace({
                         </button>
                         <button
                             type="button"
-                            onClick={() => setViewMode("files")}
+                            onClick={() => store.setCenterView("files")}
                             className={cn(
                                 "p-1.5 rounded-md transition-colors",
-                                viewMode === "files"
+                                ui.centerView === "files"
                                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
                                     : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                             )}
@@ -592,9 +757,9 @@ export default function SandboxWorkspace({
                     <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700" />
 
                     <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        沙盒产物
+                        {headerTitle}
                         <span className="ml-2 text-xs text-zinc-400 font-normal">
-                            {totalFiles} 个文件
+                            {headerMeta}
                         </span>
                     </h2>
                 </div>
@@ -623,77 +788,81 @@ export default function SandboxWorkspace({
                 </div>
             </div>
 
-            {/* 主体区域 - 可调整比例 */}
-            <PanelGroup direction="horizontal" className="flex-1">
-                {/* 左侧文件树面板 */}
-                <Panel defaultSize={25} minSize={15} maxSize={40}>
-                    <div className="h-full flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                        {/* 搜索框 */}
-                        <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
-                                <input
-                                    type="text"
-                                    placeholder="搜索文件..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-8 pr-3 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-zinc-600 transition-all placeholder:text-zinc-400"
-                                />
-                            </div>
-                        </div>
-
-                        {/* 文件树 */}
-                        <div className="flex-1 overflow-y-auto py-2">
-                            {totalFiles === 0 ? (
-                                <div className="px-4 py-8 text-center">
-                                    <p className="text-sm text-zinc-400 mb-1">暂无文件</p>
-                                    <p className="text-xs text-zinc-300">等待 AI 生成...</p>
-                                </div>
-                            ) : (
-                                categories.map((cat) => (
-                                    <FileCategoryGroup
-                                        key={cat.key}
-                                        files={filteredTree[cat.key]}
-                                        title={cat.title}
-                                        isExpanded={ui.expandedFolders.has(cat.key)}
-                                        onToggle={() => store.toggleFolderExpanded(cat.key)}
-                                        selectedFileId={selectedFileId}
-                                        onSelectFile={(id) => store.selectFile(id)}
+            {ui.centerView === "graph" ? (
+                <ExecutionGraph source={graphSource} onOpenArtifact={openArtifactInPreview} />
+            ) : (
+                /* 主体区域 - 可调整比例 */
+                <PanelGroup direction="horizontal" className="flex-1">
+                    {/* 左侧文件树面板 */}
+                    <Panel defaultSize={25} minSize={15} maxSize={40}>
+                        <div className="h-full flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                            {/* 搜索框 */}
+                            <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
+                                <div className="relative">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="搜索文件..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-zinc-600 transition-all placeholder:text-zinc-400"
                                     />
-                                ))
+                                </div>
+                            </div>
+
+                            {/* 文件树 */}
+                            <div className="flex-1 overflow-y-auto py-2">
+                                {totalFiles === 0 ? (
+                                    <div className="px-4 py-8 text-center">
+                                        <p className="text-sm text-zinc-400 mb-1">暂无文件</p>
+                                        <p className="text-xs text-zinc-300">等待 AI 生成...</p>
+                                    </div>
+                                ) : (
+                                    categories.map((cat) => (
+                                        <FileCategoryGroup
+                                            key={cat.key}
+                                            files={filteredTree[cat.key]}
+                                            title={cat.title}
+                                            isExpanded={ui.expandedFolders.has(cat.key)}
+                                            onToggle={() => store.toggleFolderExpanded(cat.key)}
+                                            selectedFileId={selectedFileId}
+                                            onSelectFile={(id) => store.selectFile(id)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+
+                            {/* 底部 */}
+                            {totalFiles > 0 && (
+                                <div className="p-3 border-t border-zinc-100 dark:border-zinc-800">
+                                    <button className="w-full py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors">
+                                        全部下载
+                                    </button>
+                                </div>
                             )}
                         </div>
+                    </Panel>
 
-                        {/* 底部 */}
-                        {totalFiles > 0 && (
-                            <div className="p-3 border-t border-zinc-100 dark:border-zinc-800">
-                                <button className="w-full py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors">
-                                    全部下载
-                                </button>
-                            </div>
+                    {/* 可拖拽分隔条 */}
+                    <PanelResizeHandle className="w-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
+
+                    {/* 右侧内容面板 */}
+                    <Panel defaultSize={75} minSize={40}>
+                        {ui.centerView === "files" ? (
+                            <FilePreview
+                                file={selectedFile}
+                                previewMode={ui.previewMode}
+                                onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
+                                onLoadContent={async (fileId) => {
+                                    await store.loadFileContent(fileId);
+                                }}
+                            />
+                        ) : (
+                            <ArtifactPreview file={selectedFile} />
                         )}
-                    </div>
-                </Panel>
-
-                {/* 可拖拽分隔条 */}
-                <PanelResizeHandle className="w-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
-
-                {/* 右侧内容面板 */}
-                <Panel defaultSize={75} minSize={40}>
-                    {viewMode === "files" ? (
-                        <FilePreview
-                            file={selectedFile}
-                            previewMode={ui.previewMode}
-                            onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
-                            onLoadContent={async (fileId) => {
-                                await store.loadFileContent(fileId);
-                            }}
-                        />
-                    ) : (
-                        <ArtifactPreview file={selectedFile} />
-                    )}
-                </Panel>
-            </PanelGroup>
+                    </Panel>
+                </PanelGroup>
+            )}
         </div>
     );
 }

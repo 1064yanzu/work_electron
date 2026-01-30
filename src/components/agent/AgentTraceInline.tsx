@@ -19,7 +19,8 @@ import {
 	Archive,
 } from "lucide-react";
 import React, { memo, useState } from "react";
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStore, useAgentStoreSelector } from "../../lib/agent/store";
+
 import {
 	TOOL_ICONS,
 	type ToolArtifact,
@@ -726,8 +727,13 @@ const ToolCallRow = memo(function ToolCallRow({ toolCall }: { toolCall: ToolCall
 });
 
 export default function AgentTraceInline({ taskId }: { taskId?: string }) {
-	const { currentTask, taskHistory, isExecuting, pauseTask, resumeTask } =
-		useAgentStore();
+	// 使用选择器分开订阅，避免任何状态变化都触发重渲染
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
+	const taskHistory = useAgentStoreSelector((s) => s.taskHistory);
+	const isExecuting = useAgentStoreSelector((s) => s.isExecuting);
+	// pauseTask 和 resumeTask 是方法，不需要选择器
+	const { pauseTask, resumeTask } = useAgentStore();
+
 	const [open, setOpen] = React.useState(false);
 	const [thinkingOpen, setThinkingOpen] = React.useState(false);
 	const [artifactPreview, setArtifactPreview] = React.useState<string | null>(

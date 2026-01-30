@@ -152,29 +152,36 @@ class AgentExecutor {
 		await agentModelSettingsStore.init();
 
 		// Model selection priority:
-		// 1) Smart scenario suggestion (when enabled and not default)
-		// 2) User-selected active model (UI dropdown)
-		// 3) Fallback default
+		// 1) User-selected active model (UI dropdown) - highest priority
+		// 2) Smart scenario suggestion (when enabled and user hasn't selected)
+		// 3) Agent settings default model
+		// 4) Hardcoded fallback
 		const userSelectedModel = settingsStore.getActiveModel();
 		const smartEnabled =
 			agentModelSettingsStore.getSettings().enableSmartScenarioSwitch === true;
 		const modelConfig = agentModelSettingsStore.getModelForTask(query);
-		const shouldOverrideUserModel =
+
+		// Only use smart scenario override when user hasn't explicitly selected a model
+		const shouldUseSmartScenario =
+			!userSelectedModel &&
 			smartEnabled &&
 			!!modelConfig?.modelId &&
 			modelConfig.scenario !== "default";
+
+		// Priority: User selection > Smart scenario > Agent default > Hardcoded fallback
 		const activeModel =
-			(shouldOverrideUserModel ? modelConfig?.modelId : null) ||
 			userSelectedModel ||
+			(shouldUseSmartScenario ? modelConfig?.modelId : null) ||
 			modelConfig?.modelId ||
 			"claude-sonnet-4-5";
 
 		console.log("[AgentExecutor SDK] Model selection:", {
 			userSelectedModel: userSelectedModel || null,
 			smartEnabled,
+			shouldUseSmartScenario,
 			smartScenario: modelConfig?.scenario || null,
 			smartModel: modelConfig?.modelId || null,
-			activeModel,
+			finalActiveModel: activeModel,
 		});
 
 		const enabledSkills = skillsStore.getEnabledSkills();
@@ -611,7 +618,23 @@ class AgentExecutor {
 							// Text content - already handled by onChunk
 							break;
 
+						case "tool_input_update": {
+							// 更新工具调用的 input 字段（工具输入流式传输完成）
+							const resolvedId =
+								typeof message.toolCallId === "string" &&
+									message.toolCallId.trim()
+									? `sdk-tool-${message.toolCallId.trim()}`
+									: null;
+							if (resolvedId && message.toolInput) {
+								agentStore.updateToolCall(resolvedId, {
+									input: message.toolInput,
+								});
+							}
+							break;
+						}
+
 						case "result":
+
 							if (message.status === "completed") {
 								agentStore.updateTaskStepByKind("analysis", "completed");
 							}

@@ -1,43 +1,83 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "com.ipo.workbench",
   "asar": true,
-  "productName": "YourAppName",
+  "productName": "IPO Workbench",
+  "electronLanguages": [
+    "zh-CN",
+    "en-US",
+    "zh_CN",
+    "en"
+  ],
   "directories": {
-    "output": "release/${version}"
+    "output": "release/${version}",
+    "buildResources": "build"
   },
   "files": [
     "dist",
-    "dist-electron"
+    "dist-electron",
+    "package.json",
+    "!**/{.vscode,.git,.github,.DS_Store}",
+    "!**/{README.md,CHANGELOG.md,*.log}",
+    "!**/{tsconfig*.json,.eslintrc.cjs,biome.json}",
+    "!**/*.{map,ts,tsx,md}"
+  ],
+  "asarUnpack": [
+    "**/*.{node,dll,dylib,so}",
+    "node_modules/@anthropic-ai/claude-agent-sdk/**/*",
+    "node_modules/@libsql/**"
   ],
   "mac": {
     "target": [
-      "dmg"
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "arm64"]
+      }
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "${productName}-${version}-${arch}-Mac.${ext}",
+    "category": "public.app-category.developer-tools"
+  },
+  "dmg": {
+    "writeUpdateInfo": false,
+    "title": "${productName} ${version}"
   },
   "win": {
     "target": [
       {
         "target": "nsis",
-        "arch": [
-          "x64"
-        ]
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
       }
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+    "artifactName": "${productName}-${version}-${arch}-Windows.${ext}"
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
+    "allowElevation": true,
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "deleteAppDataOnUninstall": false,
+    "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
   },
   "linux": {
     "target": [
-      "AppImage"
+      "AppImage",
+      "deb"
     ],
-    "artifactName": "${productName}-Linux-${version}.${ext}"
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "category": "Development"
   }
 }

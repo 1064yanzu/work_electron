@@ -15,6 +15,7 @@ export interface ToolCallStartEvent {
 	type: "tool_call_start";
 	id: string;
 	name: string;
+	index?: number;
 	input: Record<string, unknown>;
 }
 
@@ -24,6 +25,17 @@ export interface ToolCallEndEvent {
 	output: unknown;
 	isError: boolean;
 	duration?: number;
+}
+
+export interface ToolBlockStopEvent {
+	type: "tool_block_stop";
+	index: number;
+}
+
+export interface ToolInputCompleteEvent {
+	type: "tool_input_complete";
+	id: string;
+	input: Record<string, unknown>;
 }
 
 export interface ResultEvent {
@@ -56,6 +68,8 @@ export type UIEvent =
 	| TextEvent
 	| ToolCallStartEvent
 	| ToolCallEndEvent
+	| ToolBlockStopEvent
+	| ToolInputCompleteEvent
 	| ResultEvent
 	| SessionInitEvent
 	| TurnCompleteEvent

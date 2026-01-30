@@ -38,6 +38,19 @@ interface MarkdownRendererProps {
 	isStreaming?: boolean;
 }
 
+/**
+ * 预处理 Markdown 内容：修复模型可能输出的格式问题
+ * 例如：![alt]\n(url) -> ![alt](url)
+ */
+function preprocessMarkdown(content: string): string {
+	// 修复被换行分开的图片语法: ![alt]\n(url) 或 ![alt]\n\n(url)
+	// 匹配: ![任意文字] 后跟换行再跟 (url)
+	return content.replace(
+		/!\[([^\]]*)\]\s*\n+\s*\(([^)]+)\)/g,
+		"![$1]($2)"
+	);
+}
+
 export const MarkdownRenderer = memo(function MarkdownRenderer({
 	content,
 	className = "",
@@ -45,6 +58,9 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 }: MarkdownRendererProps) {
 	// 缓存 remarkPlugins 避免每次渲染创建新数组
 	const remarkPlugins = useMemo(() => [remarkGfm], []);
+
+	// 预处理内容：修复模型可能输出的换行分开的图片语法
+	const processedContent = useMemo(() => preprocessMarkdown(content), [content]);
 
 	return (
 		<div
@@ -257,7 +273,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					},
 				}}
 			>
-				{content}
+				{processedContent}
 			</ReactMarkdown>
 		</div>
 	);

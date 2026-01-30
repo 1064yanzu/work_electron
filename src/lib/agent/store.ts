@@ -66,6 +66,10 @@ class AgentStore {
 	private state: AgentState = initialState;
 	private listeners: Set<() => void> = new Set();
 	private eventListeners: Set<(event: AgentEvent) => void> = new Set();
+	// 节流相关状态
+	private emitScheduled = false;
+	private lastEmitTime = 0;
+	private readonly THROTTLE_MS = 16; // 约 60fps
 
 	getState = () => this.state;
 
@@ -88,9 +92,29 @@ class AgentStore {
 		this.eventListeners.forEach((l) => l(event));
 	}
 
+	// 节流版本的 emit，避免高频更新导致 UI 卡顿
+	private scheduleEmit() {
+		const now = Date.now();
+		// 如果距离上次 emit 已超过节流阈值，立即执行
+		if (now - this.lastEmitTime >= this.THROTTLE_MS) {
+			this.emit();
+			this.lastEmitTime = now;
+			return;
+		}
+		// 否则调度延迟执行
+		if (!this.emitScheduled) {
+			this.emitScheduled = true;
+			setTimeout(() => {
+				this.emitScheduled = false;
+				this.emit();
+				this.lastEmitTime = Date.now();
+			}, this.THROTTLE_MS - (now - this.lastEmitTime));
+		}
+	}
+
 	private setState(updater: (state: AgentState) => AgentState) {
 		this.state = updater(this.state);
-		this.emit();
+		this.scheduleEmit();
 	}
 
 	hydrateTasks(tasks: AgentTask[]) {

@@ -58,4 +58,7 @@ export const EVENTS = {
 	AI_DOC_UPDATE_END: "AI_DOC_UPDATE_END", // AI 完成文档修改
 	AI_DOC_CREATE_START: "AI_DOC_CREATE_START", // AI 开始创建新文档
 	AI_DOC_CREATE_END: "AI_DOC_CREATE_END", // AI 完成新文档创建提案
+
+	// Agent 跨面板联动
+	AGENT_FOCUS_TOOL_CALL: "AGENT_FOCUS_TOOL_CALL", // 在右侧定位某次工具调用 / 中间运行图聚焦
 };

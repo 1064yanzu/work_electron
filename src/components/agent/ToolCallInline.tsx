@@ -25,6 +25,7 @@ import {
 import React, { useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
+import { EVENTS, events } from "../../lib/events";
 import { cn } from "../../lib/utils";
 import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
@@ -396,7 +397,16 @@ export default function ToolCallInline({
 		const description = String(input?.description || "Terminal");
 
 		return (
-			<div className="py-2">
+			<div
+				className="py-2"
+				data-agent-tool-call-id={toolCallId}
+				onClick={() =>
+					events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
+						toolCallId,
+						source: "sidebar",
+					})
+				}
+			>
 				<TerminalBlock
 					command={command}
 					output={
@@ -411,11 +421,17 @@ export default function ToolCallInline({
 	}
 
 	return (
-		<div className="py-1">
+		<div className="py-1" data-agent-tool-call-id={toolCallId}>
 			{/* 主行 */}
 			<button
 				type="button"
-				onClick={() => hasDetails && setIsExpanded((v) => !v)}
+				onClick={() => {
+					events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
+						toolCallId,
+						source: "sidebar",
+					});
+					if (hasDetails) setIsExpanded((v) => !v);
+				}}
 				disabled={!hasDetails}
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors",
