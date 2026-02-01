@@ -369,15 +369,15 @@ const fileStore = new Map<
 interface AnthropicMessage {
 	role: string;
 	content:
-		| string
-		| Array<{
-				type: string;
-				text?: string;
-				id?: string;
-				name?: string;
-				input?: unknown;
-				tool_use_id?: string;
-		  }>;
+	| string
+	| Array<{
+		type: string;
+		text?: string;
+		id?: string;
+		name?: string;
+		input?: unknown;
+		tool_use_id?: string;
+	}>;
 }
 
 interface AnthropicRequest {
@@ -966,10 +966,10 @@ async function readOpenAIChatCompletionsStreamAsJson(
 	let finishReason = "stop";
 	let usage:
 		| {
-				prompt_tokens: number;
-				completion_tokens: number;
-				total_tokens: number;
-		  }
+			prompt_tokens: number;
+			completion_tokens: number;
+			total_tokens: number;
+		}
 		| undefined;
 
 	const toolCalls = new Map<
@@ -1447,10 +1447,10 @@ async function callProviderStream(
 	let textBlockIndex: number | null = null;
 	let lastUsage:
 		| {
-				prompt_tokens?: number;
-				completion_tokens?: number;
-				total_tokens?: number;
-		  }
+			prompt_tokens?: number;
+			completion_tokens?: number;
+			total_tokens?: number;
+		}
 		| undefined;
 	let pendingStopReason: "tool_use" | "end_turn" | "max_tokens" | null = null;
 	let emittedToolUse = false;
@@ -1549,6 +1549,14 @@ async function callProviderStream(
 
 			if (!finishReason) return;
 
+			// 【调试】打印 finishReason 值，帮助定位 error_during_execution 问题
+			logger?.info({
+				msg: "anthropic proxy: stream finish_reason received",
+				requestId,
+				finishReason,
+				hasToolCalls: toolCalls.size > 0,
+			});
+
 			if (finishReason === "tool_calls") {
 				stopTextBlockIfNeeded();
 
@@ -1581,6 +1589,34 @@ async function callProviderStream(
 
 			if (finishReason === "stop" || finishReason === "length") {
 				stopTextBlockIfNeeded();
+
+				// 【关键修复】某些模型（如 Gemini）即使有工具调用也返回 finish_reason="stop"
+				// 如果有未发送的工具调用，需要在这里发送它们
+				if (toolCalls.size > 0 && !emittedToolUse) {
+					emittedToolUse = true;
+					const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
+					for (const [_i, tc] of sorted) {
+						const toolIndex = nextBlockIndex++;
+						let input: unknown = {};
+						const rawArgs = String(tc.args || "").trim();
+						if (rawArgs) {
+							try {
+								input = JSON.parse(rawArgs);
+							} catch {
+								input = { _raw: rawArgs };
+							}
+						}
+						emitToolUseBlock(res, {
+							index: toolIndex,
+							id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+							name: tc.name || "Tool",
+							input,
+						});
+					}
+					pendingStopReason = "tool_use";
+					return;
+				}
+
 				pendingStopReason =
 					finishReason === "length" ? "max_tokens" : "end_turn";
 				return;
@@ -1707,8 +1743,8 @@ function translateToOpenAI(
 							? raw
 							: Array.isArray(raw)
 								? raw
-										.map((x) => (typeof x === "string" ? x : JSON.stringify(x)))
-										.join("\n")
+									.map((x) => (typeof x === "string" ? x : JSON.stringify(x)))
+									.join("\n")
 								: raw
 									? JSON.stringify(raw)
 									: "";
@@ -1816,9 +1852,9 @@ function translateToAnthropic(
 		stop_reason: stopReason,
 		usage: openaiResp.usage
 			? {
-					input_tokens: openaiResp.usage.prompt_tokens,
-					output_tokens: openaiResp.usage.completion_tokens,
-				}
+				input_tokens: openaiResp.usage.prompt_tokens,
+				output_tokens: openaiResp.usage.completion_tokens,
+			}
 			: { input_tokens: 0, output_tokens: 0 },
 	};
 }

@@ -97,7 +97,13 @@ const matchesTemplate = (
 	template: ProviderTemplate,
 ): boolean => {
 	const metaId = getProviderTemplateId(provider);
-	if (metaId) return metaId === template.templateId;
+	// 只有当 templateId 匹配 且 名称也匹配（或未自定义名称）时才算匹配
+	// 这样用户自定义名称的供应商（如"反代"）不会被误判为重复
+	if (metaId === template.templateId) {
+		// 如果名称被用户修改过，则不算作同一模板的实例
+		return provider.name === template.name;
+	}
+	// 没有 templateId 的情况，需要同时匹配 type 和 name
 	return (
 		provider.provider_type === template.providerType &&
 		provider.name === template.name

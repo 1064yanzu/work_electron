@@ -92,12 +92,13 @@ export default function Dashboard({
 		}
 	};
 
+	// overview（工作台）显示所有项目，recent（最近访问）显示有访问记录的项目
 	const displayProjects =
 		activeTab === "overview"
-			? recentProjects
+			? allProjects.filter((p) => !p.is_archived) // 工作台显示所有未归档项目
 			: activeTab === "recent"
-				? recentProjects.slice(0, 5)
-				: allProjects.filter((p) => p.is_archived);
+				? recentProjects // 最近访问显示有访问记录的项目
+				: allProjects.filter((p) => p.is_archived); // 归档页显示已归档项目
 
 	const filteredProjects = displayProjects.filter(
 		(p) =>
