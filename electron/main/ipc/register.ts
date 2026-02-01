@@ -41,6 +41,7 @@ import { createSyncHandlers } from "./handlers/sync";
 import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
+import { createLocalBackupHandlers } from "./handlers/localBackup";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -109,6 +110,9 @@ export function registerIpcHandlers({
 		db: () => db,
 		logger,
 	});
+
+	// Local Backup handlers (本地备份)
+	const localBackupHandlers = createLocalBackupHandlers(db);
 
 	// ==================
 	// 系统命令
@@ -303,6 +307,8 @@ export function registerIpcHandlers({
 	ipcMain.handle("get_data_stats", dataStatsHandlers.get_data_stats);
 	ipcMain.handle("get_data_directory", dataStatsHandlers.get_data_directory);
 	ipcMain.handle("get_database_path", dataStatsHandlers.get_database_path);
+	ipcMain.handle("clear_cache", dataStatsHandlers.clear_cache);
+	ipcMain.handle("clear_all_data", dataStatsHandlers.clear_all_data);
 
 	// ==================
 	// Sync & Backup
@@ -477,5 +483,29 @@ export function registerIpcHandlers({
 		artifactHandlers.artifact_update_settings,
 	);
 
-	logger.info({ msg: "IPC handlers registered", count: 95 });
+	// ==================
+	// Local Backup (本地备份)
+	// ==================
+	ipcMain.handle(
+		"list_local_backup_files",
+		localBackupHandlers.list_local_backup_files,
+	);
+	ipcMain.handle(
+		"delete_local_backup_file",
+		localBackupHandlers.delete_local_backup_file,
+	);
+	ipcMain.handle(
+		"backup_to_local_dir",
+		localBackupHandlers.backup_to_local_dir,
+	);
+	ipcMain.handle(
+		"restore_from_local_file",
+		localBackupHandlers.restore_from_local_file,
+	);
+	ipcMain.handle(
+		"select_backup_directory",
+		localBackupHandlers.select_backup_directory,
+	);
+
+	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

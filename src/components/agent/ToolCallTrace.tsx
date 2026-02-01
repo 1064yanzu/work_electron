@@ -152,7 +152,7 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 		try {
 			if (typeof output === "string") results = JSON.parse(output);
 			else if (Array.isArray(output)) results = output;
-		} catch {}
+		} catch { }
 
 		if (results.length > 0) {
 			return (
@@ -201,7 +201,7 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 			};
 			if (typeof output === "string") results = normalize(JSON.parse(output));
 			else results = normalize(output);
-		} catch {}
+		} catch { }
 
 		if (results.length > 0) {
 			return (
@@ -341,7 +341,7 @@ function ToolCallCard({
 					{isExpanded && (
 						<div className="px-3 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/50">
 							{toolCall.type === "skill_call" &&
-							toolCall.metadata?.skillExecution ? (
+								toolCall.metadata?.skillExecution ? (
 								<div className="mt-3">
 									<SkillCard skill={toolCall.metadata.skillExecution} />
 								</div>
@@ -441,7 +441,7 @@ export default function ToolCallTrace({
 			{/* 头部摘要 */}
 			<div className="flex-none p-4 border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-20">
 				<h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
-					Trace: {task.title || "Agent Task"}
+					追踪: {task.title || "代理任务"}
 				</h3>
 				<div className="flex items-center gap-2 text-xs text-zinc-500">
 					<Clock className="w-3.5 h-3.5" />
@@ -484,14 +484,14 @@ export default function ToolCallTrace({
 							<>
 								<CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
 								<span className="text-emerald-700 dark:text-emerald-300">
-									Task Completed
+									任务已完成
 								</span>
 							</>
 						) : (
 							<>
 								<XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
 								<span className="text-rose-700 dark:text-rose-300">
-									Task Failed
+									任务失败
 								</span>
 							</>
 						)}

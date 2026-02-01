@@ -1250,9 +1250,6 @@ export default function CopilotSidebar() {
 				let systemPrompt = await getChatSystemPrompt(
 					workspaceStore.getActiveDocContent() || "",
 				);
-				systemPrompt += `\n\n注意：当前是对话任务。即使文档为空，只要用户在询问信息/要求搜索，也应优先完成检索与回答；不要因为“空文档”而拒绝执行。`;
-				// 强制使用中文回复
-				systemPrompt += `\n\n【重要】请始终使用中文回复用户。所有的思考、分析、总结和输出都必须使用中文。`;
 				const conversationContext = buildAgentConversationContext(
 					[...session.messages, userMessage],
 					content,

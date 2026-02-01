@@ -358,61 +358,37 @@ class AgentExecutor {
 		}
 
 		// Build enhanced system prompt with minimal context (avoid embedding large source text here).
+		// IMPORTANT:
+		// - Keep "user-configured" systemPrompt content as-is.
+		// - Avoid duplicating large runtime context here (conversation/doc/files); prefer placing it in the user prompt.
 		let enhancedPrompt = systemPrompt || "";
 
-		// Add conversation context if available
-		if (!options?.resumeSessionId && options?.conversationContext?.length) {
-			enhancedPrompt +=
-				"\n\n## 对话历史\n" + options.conversationContext.join("\n");
-		}
+		const promptMentionsDoc =
+			/:::update-doc|:::create-doc|文档输出协议|当前编辑器|文档内容|正在编辑文档/i.test(
+				enhancedPrompt,
+			);
 
 		// 强制执行指定 skill 的指令
 		if (forcedSkillName) {
 			enhancedPrompt +=
-				`\n\n## ⚠️ 强制技能要求\n` +
-				`用户已明确要求你**必须使用 "${forcedSkillName}" 技能**来完成此任务。\n` +
-				`- 你**必须**调用 "${forcedSkillName}" 相关的工具来完成任务\n` +
-				`- 不要尝试其他方式完成任务，请严格遵循该技能的工作流程\n` +
-				`- 如果该技能需要特定输入（如文件路径），请直接使用用户提供的信息`;
+				`\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
 		}
 
-		if (sandboxDir) {
-			enhancedPrompt += `\n\n## 工作目录\n当前任务的工作目录（沙盒）为：${sandboxDir}\n请优先在该目录中读写与列举文件，避免访问其他路径。`;
-		}
-
-		// Add attached file references (paths only; no content injection)
-		if (options?.attachedFiles?.length) {
+		// Document protocol guidance for the editor integration (only if not already present in user-configured prompt).
+		if (!promptMentionsDoc) {
+			const hasActiveDoc = Boolean(options?.hasActiveDoc);
 			enhancedPrompt +=
-				"\n\n## 用户附加的文件\n" +
-				"以下是用户附加的文件路径列表。请不要假设你已读到文件内容。\n" +
-				"- 若需要阅读文本文件内容，请使用 Read/Glob/Grep 工具读取/检索对应路径。\n" +
-				"- 若用户要求上传/处理文件（例如上传到 NotebookLM），请直接把文件路径作为参数传给对应 Skill 工具。\n\n";
-			for (const file of options.attachedFiles) {
-				const metaParts = [
-					file.type ? `type=${file.type}` : null,
-					file.mimeType ? `mime=${file.mimeType}` : null,
-					typeof file.size === "number" ? `size=${file.size}` : null,
-					file.isBinary ? "binary" : null,
-				].filter(Boolean);
-				const meta = metaParts.length ? ` (${metaParts.join(", ")})` : "";
-				const baseName = getBasename(stripTrailingSlash(file.path));
-				enhancedPrompt += `- ${file.title}: ${file.path}${meta}${baseName ? ` (basename=${baseName})` : ""}\n`;
-			}
-		}
+				"\n\n## 文档输出协议\n" +
+				(hasActiveDoc
+					? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
+					: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
 
-		// Document protocol guidance for the editor integration.
-		const hasActiveDoc = Boolean(options?.hasActiveDoc);
-		enhancedPrompt +=
-			"\n\n## 文档输出协议\n" +
-			(hasActiveDoc
-				? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
-				: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
-
-		// Add active document context
-		if (options?.activeDocContent) {
-			const content = String(options.activeDocContent || "");
-			if (content.trim()) {
-				enhancedPrompt += "\n\n## 当前编辑器文档\n```\n" + content + "\n```";
+			// Add active document content only when the base prompt doesn't already carry doc context.
+			if (options?.activeDocContent) {
+				const content = String(options.activeDocContent || "");
+				if (content.trim()) {
+					enhancedPrompt += "\n\n## 当前编辑器文档\n```\n" + content + "\n```";
+				}
 			}
 		}
 
@@ -440,8 +416,25 @@ class AgentExecutor {
 			);
 		};
 
-		// 构建增强版用户 prompt - 当有附件时,让模型明确知道有哪些文件
+		// 构建增强版用户 prompt - 优先在 user prompt 注入运行时上下文（对话历史/附件），避免 system prompt 过长
 		let enhancedUserPrompt = query;
+
+		// Add conversation context if available (trimmed; user message scope, not system).
+		if (!options?.resumeSessionId && options?.conversationContext?.length) {
+			const lines = options.conversationContext
+				.map((s) => String(s || "").trim())
+				.filter(Boolean);
+			// Keep the tail to reduce prompt bloat
+			const maxLines = 16;
+			const tail = lines.length > maxLines ? lines.slice(-maxLines) : lines;
+			// Hard cap to avoid accidental huge injections
+			const maxChars = 4000;
+			let joined = tail.join("\n");
+			if (joined.length > maxChars) joined = joined.slice(-maxChars);
+			enhancedUserPrompt =
+				`【对话历史（节选）】\n${joined}\n\n` + enhancedUserPrompt;
+		}
+
 		if (options?.attachedFiles?.length || options?.attachedContexts?.length) {
 			const fileList: string[] = [];
 			if (options?.attachedFiles?.length) {
@@ -491,21 +484,36 @@ class AgentExecutor {
 									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 							const toolCallId = `sdk-tool-${toolCallIdBase}`;
 
-							// 构建工具描述，包含参数信息
+							const truncate = (s: string, max = 180) => {
+								const t = String(s || "").replace(/\s+/g, " ").trim();
+								return t.length > max ? `${t.slice(0, max)}…` : t;
+							};
+
+							// 构建工具描述，包含参数信息（避免把超长 command/content 直接塞进 UI）
 							let description =
 								message.content || `Calling ${message.toolName || "Tool"}...`;
-							if (
-								message.toolInput &&
-								Object.keys(message.toolInput).length > 0
-							) {
-								const inputDesc = Object.entries(message.toolInput)
-									.map(
-										([k, v]) =>
-											`${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`,
-									)
-									.slice(0, 3) // 最多显示3个参数
-									.join(", ");
-								description = inputDesc;
+							if (message.toolInput && Object.keys(message.toolInput).length > 0) {
+								const toolLower = String(message.toolName || "").toLowerCase();
+								if (toolLower === "bash") {
+									const cmd =
+										typeof (message.toolInput as any)?.command === "string"
+											? String((message.toolInput as any).command)
+											: "";
+									const desc =
+										typeof (message.toolInput as any)?.description === "string"
+											? String((message.toolInput as any).description)
+											: "";
+									description = desc ? truncate(desc, 160) : truncate(cmd, 160);
+								} else {
+									const inputDesc = Object.entries(message.toolInput)
+										.map(([k, v]) => {
+											if (typeof v === "string") return `${k}: ${truncate(v, 120)}`;
+											return `${k}: ${truncate(JSON.stringify(v), 120)}`;
+										})
+										.slice(0, 3) // 最多显示3个参数
+										.join(", ");
+									description = inputDesc || description;
+								}
 							}
 
 							// 推断工具类型

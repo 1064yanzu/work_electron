@@ -39,10 +39,22 @@ export async function runMigrations(ctx: DbContext) {
 	await safeAddColumn(ctx, "agent_sessions", "last_compact_at", "INTEGER");
 	await safeAddColumn(ctx, "agent_sessions", "pre_compact_tokens", "INTEGER");
 
+	// Migration: 添加项目隔离支持
+	await safeAddColumn(ctx, "agent_sessions", "project_id", "TEXT");
+	await safeAddColumn(ctx, "artifacts", "project_id", "TEXT");
+
 	// 添加索引(如果不存在会自动跳过因为用了 IF NOT EXISTS)
 	try {
 		await ctx.client.execute({
 			sql: `CREATE INDEX IF NOT EXISTS idx_agent_sessions_sdk_session ON agent_sessions(sdk_session_id)`,
+			args: [],
+		});
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_agent_sessions_project ON agent_sessions(project_id)`,
+			args: [],
+		});
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_artifacts_project ON artifacts(project_id)`,
 			args: [],
 		});
 	} catch {

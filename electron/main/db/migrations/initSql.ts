@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  color TEXT DEFAULT '#6366f1',
+  color TEXT DEFAULT '#64748b',
   icon TEXT DEFAULT 'folder',
   is_archived INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
@@ -228,7 +228,13 @@ CREATE TABLE IF NOT EXISTS sync_config (
   last_backup_at INTEGER,
   last_sync_at INTEGER,
   last_sync_status TEXT,
-  last_sync_error TEXT
+  last_sync_error TEXT,
+  -- 本地备份目录配置
+  local_backup_dir TEXT,
+  local_backup_auto_sync INTEGER DEFAULT 0,
+  local_backup_interval INTEGER DEFAULT 60,
+  local_backup_max_count INTEGER DEFAULT 10,
+  local_backup_last_sync_at INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS backup_history (

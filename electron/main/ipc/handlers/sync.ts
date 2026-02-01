@@ -25,6 +25,12 @@ interface SyncConfig {
 	last_sync_at?: number;
 	last_sync_status?: string;
 	last_sync_error?: string;
+	// 本地备份目录配置
+	local_backup_dir?: string;
+	local_backup_auto_sync: boolean;
+	local_backup_interval: number;
+	local_backup_max_count: number;
+	local_backup_last_sync_at?: number;
 }
 
 interface BackupHistory {
@@ -59,6 +65,10 @@ export function createSyncHandlers(db: DbContext) {
 				sync_on_startup: true,
 				sync_on_change: true,
 				compact_backup: false,
+				// 本地备份默认配置
+				local_backup_auto_sync: false,
+				local_backup_interval: 60,
+				local_backup_max_count: 10,
 			};
 		}
 		const row = rows.rows[0];
@@ -80,6 +90,12 @@ export function createSyncHandlers(db: DbContext) {
 			last_sync_at: row.last_sync_at as number | undefined,
 			last_sync_status: row.last_sync_status as string | undefined,
 			last_sync_error: row.last_sync_error as string | undefined,
+			// 本地备份字段
+			local_backup_dir: row.local_backup_dir as string | undefined,
+			local_backup_auto_sync: Boolean(row.local_backup_auto_sync),
+			local_backup_interval: (row.local_backup_interval as number) || 60,
+			local_backup_max_count: (row.local_backup_max_count as number) || 10,
+			local_backup_last_sync_at: row.local_backup_last_sync_at as number | undefined,
 		};
 	};
 
@@ -153,6 +169,27 @@ export function createSyncHandlers(db: DbContext) {
 		if (input.last_sync_error !== undefined) {
 			updates.push("last_sync_error = ?");
 			args.push(input.last_sync_error ?? null);
+		}
+		// 本地备份配置字段
+		if (input.local_backup_dir !== undefined) {
+			updates.push("local_backup_dir = ?");
+			args.push(input.local_backup_dir ?? null);
+		}
+		if (input.local_backup_auto_sync !== undefined) {
+			updates.push("local_backup_auto_sync = ?");
+			args.push(input.local_backup_auto_sync ? 1 : 0);
+		}
+		if (input.local_backup_interval !== undefined) {
+			updates.push("local_backup_interval = ?");
+			args.push(input.local_backup_interval);
+		}
+		if (input.local_backup_max_count !== undefined) {
+			updates.push("local_backup_max_count = ?");
+			args.push(input.local_backup_max_count);
+		}
+		if (input.local_backup_last_sync_at !== undefined) {
+			updates.push("local_backup_last_sync_at = ?");
+			args.push(input.local_backup_last_sync_at);
 		}
 
 		if (updates.length > 0) {

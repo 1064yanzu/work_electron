@@ -373,28 +373,43 @@ export default function Dashboard({
 										}}
 									>
 										<div>
-											<div className="flex items-start justify-between mb-4">
+											<div className="flex items-start justify-between mb-6">
 												<div
-													className="p-2 rounded-lg text-white transition-colors"
-													style={{ backgroundColor: project.color }}
+													className="relative flex items-center justify-center w-10 h-10 rounded-lg border border-black/5 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform group-hover:scale-110 duration-500 ease-out"
+													style={{
+														backgroundColor: `${project.color}08`, // 极淡的背景色
+													}}
 												>
-													<Folder className="w-4 h-4" />
+													<Folder
+														className="w-5 h-5 transition-colors duration-300"
+														style={{ color: project.color }}
+													/>
 												</div>
-												<span className="text-[10px] font-medium text-zinc-300 group-hover:text-zinc-400 uppercase tracking-wide transition-colors">
-													项目
-												</span>
+												<div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-1 group-hover:translate-x-0">
+													<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
+														OPEN
+													</span>
+													<svg className="w-3 h-3 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+													</svg>
+												</div>
 											</div>
-											<h4 className="font-serif text-lg text-zinc-900 dark:text-zinc-100 mb-2 line-clamp-1 group-hover:underline decoration-zinc-300 underline-offset-4 decoration-1">
+											<h4 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-50 mb-3 line-clamp-1 group-hover:text-primary transition-colors duration-300">
 												{project.name}
 											</h4>
-											<p className="text-sm text-zinc-400 leading-relaxed line-clamp-2 font-sans">
+											<p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 font-sans font-normal tracking-wide">
 												{project.description || "暂无描述"}
 											</p>
 										</div>
 
-										<div className="text-xs text-zinc-300 group-hover:text-zinc-400 transition-colors font-sans">
-											更新于{" "}
-											{new Date(project.updated_at).toLocaleDateString("zh-CN")}
+										<div className="flex items-center justify-between pt-4 mt-2 border-t border-zinc-50 dark:border-white/5">
+											<div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-sans tracking-wide">
+												{new Date(project.updated_at).toLocaleDateString("en-US", {
+													month: 'short',
+													day: 'numeric'
+												})}
+											</div>
+											<div className="h-1.5 w-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 group-hover:bg-green-500 transition-colors duration-500" />
 										</div>
 									</div>
 								))}

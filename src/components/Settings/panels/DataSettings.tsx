@@ -34,9 +34,14 @@ import {
 	setDatabasePath,
 	testWebdavConnection,
 	updateSyncConfig,
+	// 本地备份目录 API
+	selectBackupDirectory,
+	backupToLocalDir,
 } from "../../../lib/api";
 import { confirmDialog, saveFilePath } from "../../../lib/dialogCompat";
 import { Modal } from "../components";
+import { LocalBackupManagerModal } from "../components/LocalBackupManagerModal";
+import { FolderOpen } from "lucide-react";
 
 // 格式化文件大小
 function formatSize(bytes: number): string {
@@ -192,6 +197,10 @@ export function DataSettings() {
 	const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
 	const [isLoadingBackups, setIsLoadingBackups] = useState(false);
 	const [isDeletingBackup, setIsDeletingBackup] = useState<string | null>(null);
+
+	// 本地备份目录管理
+	const [isLocalBackupManagerOpen, setIsLocalBackupManagerOpen] = useState(false);
+	const [isBackingUpToLocal, setIsBackingUpToLocal] = useState(false);
 
 	// 加载数据
 	const loadData = useCallback(async () => {
@@ -478,8 +487,8 @@ export function DataSettings() {
 						<button
 							onClick={() => setActiveSection("storage")}
 							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "storage"
-									? "bg-primary/10 text-primary"
-									: "text-zinc-600 hover:bg-zinc-100"
+								? "bg-primary/10 text-primary"
+								: "text-zinc-600 hover:bg-zinc-100"
 								}`}
 						>
 							<HardDrive className="w-4 h-4" />
@@ -488,8 +497,8 @@ export function DataSettings() {
 						<button
 							onClick={() => setActiveSection("webdav")}
 							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "webdav"
-									? "bg-primary/10 text-primary"
-									: "text-zinc-600 hover:bg-zinc-100"
+								? "bg-primary/10 text-primary"
+								: "text-zinc-600 hover:bg-zinc-100"
 								}`}
 						>
 							<Cloud className="w-4 h-4" />
@@ -588,6 +597,113 @@ export function DataSettings() {
 												</button>
 											}
 										/>
+									</div>
+								</SectionCard>
+
+
+								{/* 本地备份目录 */}
+								<SectionCard>
+									<div className="p-5">
+										<SectionTitle>本地备份目录</SectionTitle>
+										<SettingRow
+											label="备份目录"
+											description={syncConfig.local_backup_dir || "未设置"}
+											action={
+												<button
+													onClick={async () => {
+														const result = await selectBackupDirectory();
+														if (result.path) {
+															saveConfig({ local_backup_dir: result.path });
+														}
+													}}
+													className="flex items-center gap-2 px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+												>
+													<FolderOpen className="w-3.5 h-3.5" />
+													选择目录
+												</button>
+											}
+										/>
+										{syncConfig.local_backup_dir && (
+											<>
+												<SettingRow
+													label="自动备份"
+													description="定期自动备份到本地目录"
+													action={
+														<Toggle
+															checked={syncConfig.local_backup_auto_sync ?? false}
+															onChange={(v) => saveConfig({ local_backup_auto_sync: v })}
+														/>
+													}
+												/>
+												<SettingRow
+													label="备份间隔"
+													action={
+														<select
+															value={syncConfig.local_backup_interval ?? 60}
+															onChange={(e) => saveConfig({ local_backup_interval: parseInt(e.target.value) })}
+															disabled={!syncConfig.local_backup_auto_sync}
+															className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
+														>
+															<option value={5}>5 分钟</option>
+															<option value={15}>15 分钟</option>
+															<option value={30}>30 分钟</option>
+															<option value={60}>1 小时</option>
+															<option value={180}>3 小时</option>
+														</select>
+													}
+												/>
+												<SettingRow
+													label="最大备份数"
+													description="超出后自动删除旧备份"
+													action={
+														<select
+															value={syncConfig.local_backup_max_count ?? 10}
+															onChange={(e) => saveConfig({ local_backup_max_count: parseInt(e.target.value) })}
+															className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
+														>
+															<option value={5}>5 份</option>
+															<option value={10}>10 份</option>
+															<option value={20}>20 份</option>
+															<option value={50}>50 份</option>
+														</select>
+													}
+												/>
+												<div className="flex gap-3 mt-4">
+													<button
+														onClick={async () => {
+															if (!syncConfig.local_backup_dir) return;
+															setIsBackingUpToLocal(true);
+															try {
+																const result = await backupToLocalDir(syncConfig.local_backup_dir);
+																alert(`✅ 备份成功！\n文件大小: ${formatSize(result.size)}`);
+																await loadData();
+															} catch (error) {
+																alert(`备份失败: ${error}`);
+															} finally {
+																setIsBackingUpToLocal(false);
+															}
+														}}
+														disabled={isBackingUpToLocal}
+														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+													>
+														{isBackingUpToLocal ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+														立即备份
+													</button>
+													<button
+														onClick={() => setIsLocalBackupManagerOpen(true)}
+														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors"
+													>
+														<HardDrive className="w-4 h-4" />
+														管理备份
+													</button>
+												</div>
+												{syncConfig.local_backup_last_sync_at && (
+													<div className="text-xs text-zinc-400 mt-3">
+														上次备份: {new Date(syncConfig.local_backup_last_sync_at).toLocaleString()}
+													</div>
+												)}
+											</>
+										)}
 									</div>
 								</SectionCard>
 
@@ -1112,6 +1228,16 @@ export function DataSettings() {
 					</button>
 				</div>
 			</Modal>
+
+			{/* 本地备份管理弹窗 */}
+			{syncConfig?.local_backup_dir && (
+				<LocalBackupManagerModal
+					isOpen={isLocalBackupManagerOpen}
+					onClose={() => setIsLocalBackupManagerOpen(false)}
+					backupDir={syncConfig.local_backup_dir}
+					onRestoreSuccess={loadData}
+				/>
+			)}
 		</div>
 	);
 }

@@ -11,6 +11,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type { ToolCall } from "../../lib/agent/types";
 import { cn } from "../../lib/utils"; // Assuming utils exist
+import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 
 interface SubagentCardProps {
 	toolCall: ToolCall;
@@ -202,12 +203,16 @@ export function SubagentCard({
 							<div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-700/50">
 								<div className="px-2 py-1.5 rounded bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
-										<Zap className="w-3 h-3" /> Result
+										<Zap className="w-3 h-3" /> 结果
 									</div>
-									<div className="whitespace-pre-wrap">
-										{typeof toolCall.output === "string"
-											? toolCall.output
-											: JSON.stringify(toolCall.output, null, 2)}
+									<div className="prose-sm max-w-none [&_.prose]:max-w-none">
+										{typeof toolCall.output === "string" ? (
+											<MarkdownRenderer content={toolCall.output} />
+										) : (
+											<pre className="text-[11px] whitespace-pre-wrap break-words">
+												{JSON.stringify(toolCall.output, null, 2)}
+											</pre>
+										)}
 									</div>
 								</div>
 							</div>

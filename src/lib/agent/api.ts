@@ -145,8 +145,11 @@ export interface NoteChunkSearchHit {
 
 export async function createAgentSession(
 	title?: string,
+	projectId?: string | null,
 ): Promise<AgentSession> {
-	return await safeInvoke("agent_create_session", { payload: { title } });
+	return await safeInvoke("agent_create_session", {
+		payload: { title, project_id: projectId }
+	});
 }
 
 export async function getAgentSession(id: string): Promise<AgentSession> {
@@ -161,8 +164,12 @@ export async function getAgentSession(id: string): Promise<AgentSession> {
 
 export async function listAgentSessions(
 	status?: AgentSession["status"],
+	projectId?: string | null,
 ): Promise<AgentSession[]> {
-	return await safeInvoke("agent_list_sessions", { status });
+	return await safeInvoke("agent_list_sessions", {
+		status,
+		project_id: projectId
+	});
 }
 
 export async function updateAgentSession(

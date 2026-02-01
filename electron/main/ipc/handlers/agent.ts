@@ -126,7 +126,7 @@ function parseJson<T>(str: string | null | undefined, fallback: T): T {
 export function createAgentSessionHandlers(db: DbContext) {
 	const createSession = async (
 		_event: IpcMainInvokeEvent,
-		input: { title?: string; config_json?: unknown },
+		input: { title?: string; config_json?: unknown; project_id?: string },
 	): Promise<AgentSession> => {
 		const id = randomUUID();
 		const timestamp = now();
@@ -135,9 +135,9 @@ export function createAgentSessionHandlers(db: DbContext) {
 			: null;
 
 		await db.client.execute({
-			sql: `INSERT INTO agent_sessions (id, title, status, config_json, created_at, updated_at)
-            VALUES (?, ?, 'active', ?, ?, ?)`,
-			args: [id, input.title ?? null, configStr, timestamp, timestamp],
+			sql: `INSERT INTO agent_sessions (id, project_id, title, status, config_json, created_at, updated_at)
+            VALUES (?, ?, ?, 'active', ?, ?, ?)`,
+			args: [id, input.project_id ?? null, input.title ?? null, configStr, timestamp, timestamp],
 		});
 
 		return {
@@ -172,14 +172,24 @@ export function createAgentSessionHandlers(db: DbContext) {
 
 	const listSessions = async (
 		_event: IpcMainInvokeEvent,
-		input: { status?: string; limit?: number },
+		input: { status?: string; limit?: number; project_id?: string },
 	): Promise<AgentSession[]> => {
-		let sql = `SELECT * FROM agent_sessions`;
+		let sql = `SELECT * FROM agent_sessions WHERE 1=1`;
 		const args: (string | number)[] = [];
 
 		if (input.status) {
-			sql += ` WHERE status = ?`;
+			sql += ` AND status = ?`;
 			args.push(input.status);
+		}
+		if (input.project_id !== undefined) {
+			if (input.project_id === null || input.project_id === '') {
+				// 查询不属于任何项目的会话（全局会话）
+				sql += ` AND project_id IS NULL`;
+			} else {
+				// 查询特定项目的会话
+				sql += ` AND project_id = ?`;
+				args.push(input.project_id);
+			}
 		}
 		sql += ` ORDER BY updated_at DESC`;
 		if (input.limit) {

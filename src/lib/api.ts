@@ -438,6 +438,12 @@ export interface SyncConfig {
 	last_sync_at: string | null;
 	last_sync_status: string | null;
 	last_sync_error: string | null;
+	// 本地备份目录配置
+	local_backup_dir: string | null;
+	local_backup_auto_sync: boolean;
+	local_backup_interval: number;
+	local_backup_max_count: number;
+	local_backup_last_sync_at: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -506,6 +512,50 @@ export async function listWebdavBackups(): Promise<string[]> {
 
 export async function getDataStats(): Promise<DataStats> {
 	return await safeInvoke("get_data_stats");
+}
+
+// ==================== 本地备份目录 ====================
+
+export interface LocalBackupFileInfo {
+	fileName: string;
+	modifiedTime: string;
+	size: number;
+}
+
+/** 列出本地备份文件 */
+export async function listLocalBackupFiles(
+	dir: string,
+): Promise<LocalBackupFileInfo[]> {
+	return await safeInvoke("list_local_backup_files", { dir });
+}
+
+/** 删除本地备份文件 */
+export async function deleteLocalBackupFile(
+	dir: string,
+	fileName: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("delete_local_backup_file", { dir, fileName });
+}
+
+/** 备份到本地目录 */
+export async function backupToLocalDir(
+	dir: string,
+	fileName?: string,
+): Promise<{ path: string; size: number }> {
+	return await safeInvoke("backup_to_local_dir", { dir, fileName });
+}
+
+/** 从本地备份恢复 */
+export async function restoreFromLocalFile(
+	dir: string,
+	fileName: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("restore_from_local_file", { dir, fileName });
+}
+
+/** 选择本地备份目录 */
+export async function selectBackupDirectory(): Promise<{ path: string | null }> {
+	return await safeInvoke("select_backup_directory");
 }
 
 export async function listBackupHistory(

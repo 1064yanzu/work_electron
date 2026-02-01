@@ -639,7 +639,7 @@ const ToolCallRow = memo(function ToolCallRow({ toolCall }: { toolCall: ToolCall
 		}
 	}
 
-	// Task 工具调用（子代理）显示高级卡片
+	// 子代理工具调用（子代理）显示高级卡片
 	if (toolCall.name === "Task") {
 		console.log("[AgentTraceInline] Rendering SubagentCard for Task:", {
 			toolCallId: toolCall.id,

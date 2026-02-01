@@ -3,6 +3,7 @@
 
 import * as api from "./api";
 import { agentStore } from "./store";
+import { workspaceStore } from "../workspaceStore";
 import type { AgentTask, ToolArtifact, ToolCall } from "./types";
 
 // ==================== 类型转换 ====================
@@ -69,10 +70,10 @@ function recordToTask(
 ): AgentTask {
 	const legacyFrontendTaskId =
 		record.budget_json &&
-		typeof (record.budget_json as Record<string, unknown>)
-			.legacy_frontend_task_id === "string"
+			typeof (record.budget_json as Record<string, unknown>)
+				.legacy_frontend_task_id === "string"
 			? ((record.budget_json as Record<string, unknown>)
-					.legacy_frontend_task_id as string)
+				.legacy_frontend_task_id as string)
 			: null;
 
 	return {
@@ -141,18 +142,18 @@ function recordToToolCall(record: api.ToolCallRecord): ToolCall {
 
 	const legacyId =
 		record.args_json &&
-		typeof (record.args_json as Record<string, unknown>)
-			._legacy_frontend_tool_call_id === "string"
+			typeof (record.args_json as Record<string, unknown>)
+				._legacy_frontend_tool_call_id === "string"
 			? ((record.args_json as Record<string, unknown>)
-					._legacy_frontend_tool_call_id as string)
+				._legacy_frontend_tool_call_id as string)
 			: null;
 
 	const legacyName =
 		record.args_json &&
-		typeof (record.args_json as Record<string, unknown>)
-			._legacy_frontend_tool_call_name === "string"
+			typeof (record.args_json as Record<string, unknown>)
+				._legacy_frontend_tool_call_name === "string"
 			? ((record.args_json as Record<string, unknown>)
-					._legacy_frontend_tool_call_name as string)
+				._legacy_frontend_tool_call_name as string)
 			: null;
 
 	return {
@@ -277,9 +278,11 @@ class AgentPersistence {
 	// 创建新会话
 	async createSession(title?: string): Promise<string> {
 		try {
-			const session = await api.createAgentSession(title);
+			// 从 workspaceStore 获取当前项目 ID
+			const projectId = workspaceStore.getState().currentProjectId || null;
+			const session = await api.createAgentSession(title, projectId);
 			this.currentSessionId = session.id;
-			console.log(`[AgentPersistence] 创建会话: ${session.id}`);
+			console.log(`[AgentPersistence] 创建会话: ${session.id}, 项目: ${projectId || '全局'}`);
 			return session.id;
 		} catch (error) {
 			console.error("[AgentPersistence] 创建会话失败:", error);
@@ -479,11 +482,13 @@ class AgentPersistence {
 		}
 	}
 
-	// 列出所有会话
+	// 列出所有会话（根据当前项目过滤）
 	async listSessions(limit?: number): Promise<api.AgentSession[]> {
 		try {
 			void limit;
-			return await api.listAgentSessions();
+			// 从 workspaceStore 获取当前项目 ID
+			const projectId = workspaceStore.getState().currentProjectId || null;
+			return await api.listAgentSessions(undefined, projectId);
 		} catch (error) {
 			console.error("[AgentPersistence] 列出会话失败:", error);
 			return [];

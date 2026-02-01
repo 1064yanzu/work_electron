@@ -597,6 +597,39 @@ export type IPCSchema = {
 		input: Partial<ArtifactSettings>;
 		output: ArtifactSettings;
 	};
+
+	// ==================
+	// 本地备份命令
+	// ==================
+	/** 列出指定目录下的备份文件 */
+	list_local_backup_files: {
+		input: { dir: string };
+		output: Array<{
+			fileName: string;
+			modifiedTime: string;
+			size: number;
+		}>;
+	};
+	/** 删除指定备份文件 */
+	delete_local_backup_file: {
+		input: { dir: string; fileName: string };
+		output: { success: boolean };
+	};
+	/** 备份到指定本地目录 */
+	backup_to_local_dir: {
+		input: { dir: string; fileName?: string };
+		output: { path: string; size: number };
+	};
+	/** 从本地备份文件恢复 */
+	restore_from_local_file: {
+		input: { dir: string; fileName: string };
+		output: { success: boolean };
+	};
+	/** 选择本地备份目录 */
+	select_backup_directory: {
+		input: Record<string, never>;
+		output: { path: string | null };
+	};
 };
 
 export type IPCChannel = keyof IPCSchema;
