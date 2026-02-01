@@ -420,6 +420,26 @@ CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_artifacts_expires ON artifacts(expires_at);
 
 -- =====================
+-- Agent 任务检查点表（断点续传）
+-- =====================
+CREATE TABLE IF NOT EXISTS agent_checkpoints (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  sdk_session_id TEXT,
+  sandbox_dir TEXT,
+  last_tool_call_id TEXT,
+  tool_calls_completed TEXT DEFAULT '[]',  -- JSON array of completed tool call IDs
+  accumulated_result TEXT DEFAULT '',       -- Accumulated text output
+  metadata TEXT DEFAULT '{}',               -- Task metadata (query, system prompt, etc.)
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_task ON agent_checkpoints(task_id);
+CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_session ON agent_checkpoints(session_id);
+CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_updated ON agent_checkpoints(updated_at DESC);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');

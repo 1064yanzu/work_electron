@@ -10,6 +10,10 @@ import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
+import {
+	isRetryableError,
+	DEFAULT_RETRY_CONFIG,
+} from "../../utils/retryUtils";
 
 const execFileAsync = promisify(execFile);
 const MAX_RESOLVE_SCAN_ENTRIES = 5000;
@@ -1679,13 +1683,25 @@ ${opts.appendContent}`.trim();
 				}
 			} catch (e) {
 				const error = e instanceof Error ? e.message : String(e);
+				const retryable = isRetryableError(error);
 				logger.error({
 					msg: "agent_sdk runner error",
 					scope: "agent",
 					runId,
 					error,
+					retryable,
 				});
-				emit(options.getMainWindow, { runId, type: "error", error });
+				// 发送错误事件，包含是否可重试的信息
+				emit(options.getMainWindow, {
+					runId,
+					type: "error",
+					error,
+					retryable,
+					retryConfig: retryable ? {
+						maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
+						baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
+					} : undefined,
+				} as any);
 			} finally {
 				running.delete(runId);
 			}

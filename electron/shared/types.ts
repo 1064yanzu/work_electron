@@ -389,3 +389,33 @@ export interface ArtifactCleanupResult {
 	errors: string[];
 }
 
+// ==================
+// Agent 任务检查点类型（断点续传）
+// ==================
+
+/** 任务检查点 - 用于断点续传 */
+export interface AgentCheckpoint {
+	id: string;
+	task_id: string;
+	session_id: string;
+	sdk_session_id?: string;
+	sandbox_dir?: string;
+	last_tool_call_id?: string;
+	tool_calls_completed: string[];
+	accumulated_result: string;
+	metadata: Record<string, unknown>;
+	created_at: number;
+	updated_at: number;
+}
+
+/** 创建/更新检查点的 payload */
+export interface SaveCheckpointPayload {
+	task_id: string;
+	session_id: string;
+	sdk_session_id?: string;
+	sandbox_dir?: string;
+	last_tool_call_id?: string;
+	tool_calls_completed?: string[];
+	accumulated_result?: string;
+	metadata?: Record<string, unknown>;
+}

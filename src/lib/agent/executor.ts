@@ -16,6 +16,7 @@ import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
 import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
+import { saveCheckpoint, deleteCheckpoint } from "./api";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -428,6 +429,8 @@ class AgentExecutor {
 		let toolStepCounter = 0;
 		let lastToolCallId: string | null = null;
 		let shouldRetryWithoutResume = false;
+		// 检查点相关：跟踪已完成的工具调用
+		const completedToolCalls: string[] = [];
 
 		const isResumeFailure = (text: string) => {
 			const t = String(text || "");
@@ -611,6 +614,48 @@ class AgentExecutor {
 									agentStore.setTaskSteps(updatedSteps);
 								}
 							}
+
+							// 检测工具输出中的base64图片并创建产物
+							try {
+								const outputForImg = typeof message.toolOutput === "string"
+									? message.toolOutput
+									: JSON.stringify(message.toolOutput || {});
+								const base64Regex = /data:image\/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)/g;
+								let imgMatch: RegExpExecArray | null;
+								let imgIndex = 0;
+								while ((imgMatch = base64Regex.exec(outputForImg)) !== null) {
+									if (imgMatch[2].length > 1000) {
+										const artifactId = `artifact-img-${Date.now()}-${imgIndex++}`;
+										agentStore.addArtifact({
+											id: artifactId,
+											type: "image",
+											title: `生成的图片 ${imgIndex}`,
+											url: imgMatch[0],
+										});
+									}
+								}
+							} catch {
+								// 静默失败
+							}
+
+							// 检查点：记录已完成的工具调用并保存
+							if (resolvedToolCallId && message.status !== "error") {
+								completedToolCalls.push(resolvedToolCallId);
+								// 异步保存检查点（不阻塞主流程）
+								saveCheckpoint({
+									task_id: task.id,
+									session_id: options?.conversationSessionId || task.id,
+									sdk_session_id: sdkSessionId,
+									sandbox_dir: sandboxDir,
+									last_tool_call_id: resolvedToolCallId,
+									tool_calls_completed: completedToolCalls,
+									accumulated_result: finalResult,
+									metadata: { query, systemPrompt, model: activeModel },
+								}).catch((err) => {
+									console.warn("[AgentExecutor] Failed to save checkpoint:", err);
+								});
+							}
+
 							break;
 						}
 
@@ -699,6 +744,10 @@ class AgentExecutor {
 						agentStore.completeTask(
 							finalResult || result.summary || "Task completed",
 						);
+						// 任务成功，删除检查点
+						deleteCheckpoint(task.id).catch((err) => {
+							console.warn("[AgentExecutor] Failed to delete checkpoint:", err);
+						});
 					} else {
 						if (
 							resumeSessionId &&
@@ -708,6 +757,24 @@ class AgentExecutor {
 							shouldRetryWithoutResume = true;
 							return;
 						}
+						// 任务失败，保存检查点以便断点续传
+						saveCheckpoint({
+							task_id: task.id,
+							session_id: options?.conversationSessionId || task.id,
+							sdk_session_id: sdkSessionId,
+							sandbox_dir: sandboxDir,
+							last_tool_call_id: lastToolCallId || undefined,
+							tool_calls_completed: completedToolCalls,
+							accumulated_result: finalResult,
+							metadata: {
+								query,
+								systemPrompt,
+								model: activeModel,
+								error: result.summary,
+							},
+						}).catch((err) => {
+							console.warn("[AgentExecutor] Failed to save checkpoint on failure:", err);
+						});
 						agentStore.failTask(result.summary || "Task failed");
 					}
 				},

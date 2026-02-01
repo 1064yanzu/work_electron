@@ -25,6 +25,13 @@ export function SubagentCard({
 }: SubagentCardProps) {
 	const [expanded, setExpanded] = useState(initialExpanded);
 	const activitiesRef = useRef<HTMLDivElement>(null);
+
+	// 提取子代理信息
+	const input = toolCall.input as Record<string, unknown> | undefined;
+	const subagentType = typeof input?.subagent_type === "string" ? input.subagent_type : undefined;
+	const subagentModel = typeof input?.model === "string" ? input.model : undefined;
+	const subagentDescription = typeof input?.description === "string" ? input.description : toolCall.description;
+
 	// Auto-scroll to bottom of activities
 	useEffect(() => {
 		if (expanded && activitiesRef.current) {
@@ -101,11 +108,16 @@ export function SubagentCard({
 				<div className="flex-1 min-w-0 flex flex-col gap-0.5">
 					<div className="flex items-center gap-2">
 						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
-							{toolCall.name} (Subagent)
+							子代理{subagentType ? `: ${subagentType}` : ""}
 						</span>
+						{subagentModel && (
+							<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 truncate max-w-[120px]">
+								{subagentModel}
+							</span>
+						)}
 						<div
 							className={cn(
-								"px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider",
+								"px-1.5 py-0.5 rounded text-[10px] font-medium",
 								isRunning
 									? "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300"
 									: isCompleted
@@ -113,7 +125,7 @@ export function SubagentCard({
 										: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
 							)}
 						>
-							{toolCall.status}
+							{isRunning ? "运行中" : isCompleted ? "已完成" : isError ? "错误" : toolCall.status}
 						</div>
 					</div>
 
@@ -123,11 +135,11 @@ export function SubagentCard({
 							<>
 								<Loader2 className="w-3 h-3 animate-spin text-purple-500" />
 								<span className="truncate text-purple-600 dark:text-purple-400 font-medium">
-									{lastActivity?.content || "Starting subagent..."}
+									{lastActivity?.content || "子代理正在启动..."}
 								</span>
 							</>
 						) : (
-							<span className="truncate">{toolCall.description}</span>
+							<span className="truncate">{subagentDescription}</span>
 						)}
 					</div>
 				</div>

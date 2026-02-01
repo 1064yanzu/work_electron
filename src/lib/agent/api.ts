@@ -40,12 +40,12 @@ export interface ToolCallRecord {
 	mcp_server_id?: string | null;
 	args_json?: Record<string, unknown> | null;
 	status:
-		| "queued"
-		| "running"
-		| "succeeded"
-		| "failed"
-		| "canceled"
-		| "awaiting_permission";
+	| "queued"
+	| "running"
+	| "succeeded"
+	| "failed"
+	| "canceled"
+	| "awaiting_permission";
 	result_json?: unknown;
 	error?: string | null;
 	created_at: string;
@@ -60,12 +60,12 @@ export interface AgentNodeRecord {
 	kind: "llm_plan" | "tool_call" | "synthesis" | "custom";
 	name: string;
 	status:
-		| "queued"
-		| "running"
-		| "succeeded"
-		| "failed"
-		| "canceled"
-		| "blocked";
+	| "queued"
+	| "running"
+	| "succeeded"
+	| "failed"
+	| "canceled"
+	| "blocked";
 	depends_on: string[];
 	input_json?: unknown;
 	output_json?: unknown;
@@ -513,4 +513,64 @@ export async function getAgentMemoryByKey(
 // 更新记忆访问时间
 export async function updateAgentMemoryAccessTime(id: string): Promise<void> {
 	return safeInvoke("update_agent_memory_access_time", { id });
+}
+
+// ==================== 任务检查点 API (断点续传) ====================
+
+// 检查点记录
+export interface CheckpointRecord {
+	id: string;
+	task_id: string;
+	session_id: string;
+	sdk_session_id?: string;
+	sandbox_dir?: string;
+	last_tool_call_id?: string;
+	tool_calls_completed: string[];
+	accumulated_result: string;
+	metadata: Record<string, unknown>;
+	created_at: number;
+	updated_at: number;
+}
+
+// 保存检查点
+export async function saveCheckpoint(payload: {
+	task_id: string;
+	session_id: string;
+	sdk_session_id?: string;
+	sandbox_dir?: string;
+	last_tool_call_id?: string;
+	tool_calls_completed?: string[];
+	accumulated_result?: string;
+	metadata?: Record<string, unknown>;
+}): Promise<CheckpointRecord> {
+	return safeInvoke<CheckpointRecord>("agent_checkpoint_save", payload);
+}
+
+// 获取检查点
+export async function getCheckpoint(
+	taskId: string,
+): Promise<CheckpointRecord | null> {
+	return safeInvoke<CheckpointRecord | null>("agent_checkpoint_get", {
+		task_id: taskId,
+	});
+}
+
+// 删除检查点
+export async function deleteCheckpoint(taskId: string): Promise<boolean> {
+	const result = await safeInvoke<{ success: boolean }>(
+		"agent_checkpoint_delete",
+		{ task_id: taskId },
+	);
+	return result.success;
+}
+
+// 清理过期检查点
+export async function cleanupCheckpoints(
+	days: number = 7,
+): Promise<number> {
+	const result = await safeInvoke<{ deleted_count: number }>(
+		"agent_checkpoint_cleanup",
+		{ days },
+	);
+	return result.deleted_count;
 }

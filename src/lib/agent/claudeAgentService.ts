@@ -155,6 +155,11 @@ export class ClaudeAgentService {
 			error?: string;
 		}> = [];
 
+		// 重试相关状态
+		let retryAttempt = 0;
+		const maxRetries = 3;
+		const baseDelayMs = 1000;
+
 		const finished = new Promise<void>((resolve, reject) => {
 			settle = (err?: Error) => (err ? reject(err) : resolve());
 		});
@@ -519,19 +524,93 @@ export class ClaudeAgentService {
 
 				if (payload.type === "error") {
 					const err = payload.error || "Unknown error";
+					const retryable = (payload as any).retryable === true;
+
+					// 检查是否应该重试
+					if (retryable && retryAttempt < maxRetries) {
+						retryAttempt++;
+						const delayMs = baseDelayMs * Math.pow(2, retryAttempt - 1);
+
+						// 通知用户正在重试
+						onMessage?.({
+							type: "system",
+							content: `⚠️ 请求失败 (${err})，正在重试 ${retryAttempt}/${maxRetries}...`,
+							status: "running",
+						});
+
+						console.log(`[ClaudeAgentService] Retrying in ${delayMs}ms (attempt ${retryAttempt}/${maxRetries})`);
+
+						// 延迟后重试
+						setTimeout(async () => {
+							if (abortController.signal.aborted) {
+								settle?.(new Error("Aborted during retry"));
+								return;
+							}
+
+							try {
+								// 清空缓冲区
+								bufferedEvents.length = 0;
+
+								// 重新获取 MCP 配置
+								const mcpServers = await getMcpConfigForSdk();
+
+								// 重新启动 SDK
+								runId = await invoke<string>("agent_sdk_start", {
+									payload: {
+										prompt,
+										model,
+										cwd: workingDirectory,
+										resume_session_id: isUuid(resumeSessionId) ? resumeSessionId : undefined,
+										persist_session: persistSession,
+										permission_mode: "acceptEdits",
+										allowed_tools: [...DEFAULT_TOOLS],
+										system_prompt: systemPrompt,
+										skills,
+										mcp_servers: mcpServers,
+									},
+								});
+
+								// 重放缓冲事件
+								for (const e of bufferedEvents) {
+									handleEvent(e);
+								}
+							} catch (retryError) {
+								const retryErrMsg = retryError instanceof Error ? retryError.message : String(retryError);
+								onMessage?.({
+									type: "system",
+									content: `Error: ${retryErrMsg}`,
+									status: "error",
+								});
+								onComplete?.({
+									success: false,
+									summary: retryErrMsg,
+									sessionId: sessionId ?? undefined,
+								});
+								settle?.(new Error(retryErrMsg));
+							}
+						}, delayMs);
+
+						return; // 不立即 settle，等待重试
+					}
+
+					// 不可重试或已达到最大重试次数
+					const finalError = retryAttempt > 0
+						? `${err} (已重试 ${retryAttempt} 次)`
+						: err;
+
 					onMessage?.({
 						type: "system",
-						content: `Error: ${err}`,
+						content: `Error: ${finalError}`,
 						status: "error",
 					});
 					onComplete?.({
 						success: false,
-						summary: err,
+						summary: finalError,
 						sessionId: sessionId ?? undefined,
 					});
 					if (unlisten) unlisten();
 					unlisten = null;
-					settle?.(new Error(err));
+					settle?.(new Error(finalError));
 				}
 			};
 

@@ -40,6 +40,7 @@ import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
 import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
+import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -102,6 +103,12 @@ export function registerIpcHandlers({
 
 	// Artifact handlers
 	const artifactHandlers = createArtifactHandlers(db);
+
+	// Checkpoint handlers (断点续传)
+	const checkpointHandlers = createAgentCheckpointHandlers({
+		db: () => db,
+		logger,
+	});
 
 	// ==================
 	// 系统命令
@@ -370,6 +377,26 @@ export function registerIpcHandlers({
 	// ==================
 	ipcMain.handle("agent_sdk_start", agentSdkHandlers.agent_sdk_start);
 	ipcMain.handle("agent_sdk_abort", agentSdkHandlers.agent_sdk_abort);
+
+	// ==================
+	// Agent Checkpoints (断点续传)
+	// ==================
+	ipcMain.handle(
+		"agent_checkpoint_save",
+		checkpointHandlers.agent_checkpoint_save,
+	);
+	ipcMain.handle(
+		"agent_checkpoint_get",
+		checkpointHandlers.agent_checkpoint_get,
+	);
+	ipcMain.handle(
+		"agent_checkpoint_delete",
+		checkpointHandlers.agent_checkpoint_delete,
+	);
+	ipcMain.handle(
+		"agent_checkpoint_cleanup",
+		checkpointHandlers.agent_checkpoint_cleanup,
+	);
 
 	// ==================
 	// Agent Messages & Artifacts & Audit

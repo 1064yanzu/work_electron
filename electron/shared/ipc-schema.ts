@@ -4,6 +4,7 @@
  */
 
 import type {
+	AgentCheckpoint,
 	AgentMessage,
 	AgentSession,
 	AppConfig,
@@ -23,6 +24,7 @@ import type {
 	OutputAsset,
 	Project,
 	Provider,
+	SaveCheckpointPayload,
 	Source,
 	UpdateFolderPayload,
 	UpdateNotePayload,
@@ -483,6 +485,26 @@ export type IPCSchema = {
 	agent_sdk_abort: {
 		input: { runId: string };
 		output: { success: boolean };
+	};
+
+	// ==================
+	// Agent 检查点命令（断点续传）
+	// ==================
+	agent_checkpoint_save: {
+		input: SaveCheckpointPayload;
+		output: AgentCheckpoint;
+	};
+	agent_checkpoint_get: {
+		input: { task_id: string };
+		output: AgentCheckpoint | null;
+	};
+	agent_checkpoint_delete: {
+		input: { task_id: string };
+		output: { success: boolean };
+	};
+	agent_checkpoint_cleanup: {
+		input: { days?: number }; // 默认清理 7 天前的检查点
+		output: { deleted_count: number };
 	};
 
 	// ==================

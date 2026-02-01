@@ -238,7 +238,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		let hostname = "";
 		try {
 			hostname = new URL(url).hostname;
-		} catch {}
+		} catch { }
 		return {
 			icon: Globe,
 			prefix: "获取",
@@ -467,13 +467,13 @@ export default function ToolCallInline({
 				{/* 描述文字 */}
 				<span
 					className={cn(
-						"text-sm flex items-center gap-1.5 flex-wrap",
+						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
 							? "text-red-600 dark:text-red-400"
 							: "text-zinc-600 dark:text-zinc-300",
 					)}
 				>
-					<span className="font-medium">{prefix}</span>
+					<span className="font-medium flex-shrink-0 whitespace-nowrap">{prefix}</span>
 					{fileName && (
 						<button
 							type="button"
@@ -484,22 +484,22 @@ export default function ToolCallInline({
 								void openFilePreview();
 							}}
 							className={cn(
-								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300",
+								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 max-w-[200px] min-w-0",
 								canPreviewFile
 									? "hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 cursor-pointer"
 									: "cursor-default",
 							)}
-							title={canPreviewFile ? "点击预览" : undefined}
+							title={canPreviewFile ? "点击预览" : fileName}
 						>
-							<Icon className="w-3 h-3 text-sky-500" />
-							{fileName}
+							<Icon className="w-3 h-3 text-sky-500 flex-shrink-0" />
+							<span className="truncate">{fileName}</span>
 						</button>
 					)}
 					{suffix && !fileName && (
-						<span className="text-zinc-500 dark:text-zinc-400">{suffix}</span>
+						<span className="text-zinc-500 dark:text-zinc-400 truncate">{suffix}</span>
 					)}
 					{filePath && !fileName && (
-						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate max-w-[200px]">
+						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate">
 							{filePath}
 						</span>
 					)}
@@ -570,7 +570,7 @@ export default function ToolCallInline({
 							<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
 								{typeof toolCall.output === "string"
 									? toolCall.output.slice(0, 500) +
-										(toolCall.output.length > 500 ? "..." : "")
+									(toolCall.output.length > 500 ? "..." : "")
 									: JSON.stringify(toolCall.output, null, 2).slice(0, 500)}
 							</pre>
 						</div>

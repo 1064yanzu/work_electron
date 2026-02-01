@@ -10,6 +10,7 @@ import {
 	Loader2,
 	Pause,
 	Play,
+	RotateCcw,
 	Search,
 	Sparkles,
 	Wrench,
@@ -34,6 +35,106 @@ import { WebPreviewCard } from "../chat/WebPreviewCard";
 import { SkillCard } from "./SkillCard";
 import { SubagentCard } from "./SubagentCard";
 import TaskSteps from "./TaskSteps";
+import { getCheckpoint, deleteCheckpoint } from "../../lib/agent/api";
+
+/**
+ * 恢复任务按钮组件
+ * 从检查点恢复失败的任务执行
+ */
+function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
+	const [isLoading, setIsLoading] = useState(false);
+	const [hasCheckpoint, setHasCheckpoint] = useState<boolean | null>(null);
+	const [error, setError] = useState<string | null>(null);
+
+	// 检查是否有检查点
+	React.useEffect(() => {
+		const checkForCheckpoint = async () => {
+			try {
+				const checkpoint = await getCheckpoint(taskId);
+				setHasCheckpoint(!!checkpoint);
+			} catch {
+				setHasCheckpoint(false);
+			}
+		};
+		checkForCheckpoint();
+	}, [taskId]);
+
+	const handleResume = async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const checkpoint = await getCheckpoint(taskId);
+			if (!checkpoint) {
+				setError("未找到检查点");
+				return;
+			}
+
+			// 动态导入避免循环依赖
+			const { agentExecutor } = await import("../../lib/agent/executor");
+
+			// 使用检查点数据恢复执行
+			const metadata = checkpoint.metadata as {
+				query?: string;
+				systemPrompt?: string;
+				model?: string;
+			};
+
+			await agentExecutor.executeCustomTask(
+				metadata.query || "继续之前的任务",
+				metadata.systemPrompt,
+				{},
+				{
+					resumeSessionId: checkpoint.sdk_session_id,
+					workingDirectory: checkpoint.sandbox_dir,
+				},
+			);
+
+			// 成功后删除检查点
+			await deleteCheckpoint(taskId);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "恢复失败");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// 没有检查点或正在检查时不显示
+	if (hasCheckpoint === null || hasCheckpoint === false) {
+		return null;
+	}
+
+	return (
+		<div className="flex flex-col gap-2">
+			<button
+				onClick={handleResume}
+				disabled={isLoading}
+				className={cn(
+					"flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all",
+					isLoading
+						? "bg-zinc-100 text-zinc-400 cursor-wait dark:bg-zinc-800"
+						: "bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow",
+				)}
+			>
+				{isLoading ? (
+					<>
+						<Loader2 className="w-3.5 h-3.5 animate-spin" />
+						恢复中...
+					</>
+				) : (
+					<>
+						<RotateCcw className="w-3.5 h-3.5" />
+						从断点继续
+					</>
+				)}
+			</button>
+			{error && (
+				<div className="text-[11px] text-red-500 dark:text-red-400 text-center">
+					{error}
+				</div>
+			)}
+		</div>
+	);
+}
 
 const ToolIconMap: Record<string, React.ElementType> = {
 	Search,
@@ -925,6 +1026,11 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 							{task.error}
 						</div>
 					) : null}
+
+					{/* 断点续传：任务失败时显示继续按钮 */}
+					{task.status === "error" && (
+						<ResumeFromCheckpointButton taskId={task.id} />
+					)}
 
 					{/* Context Control & Status */}
 					<ContextControl task={task} />

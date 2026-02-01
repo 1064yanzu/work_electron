@@ -30,6 +30,13 @@ export interface AgentSdkEventPayload {
 	events?: unknown[];
 	result?: unknown;
 	error?: string;
+	/** 错误是否可重试 */
+	retryable?: boolean;
+	/** 重试配置（仅当 retryable 为 true 时存在） */
+	retryConfig?: {
+		maxRetries: number;
+		baseDelayMs: number;
+	};
 }
 
 /**
