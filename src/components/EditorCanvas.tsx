@@ -16,6 +16,7 @@ import {
 	FileText,
 	Heading1,
 	Home,
+	Image,
 	Italic,
 	LayoutGrid,
 	LayoutList,
@@ -36,6 +37,7 @@ import { useAISuggestion } from "../hooks/useAISuggestion";
 import {
 	createOutputAsset,
 	deleteOutputAsset,
+	generateImageForText,
 	listOutputAssets,
 	updateOutputAsset,
 } from "../lib/api";
@@ -48,6 +50,7 @@ import DocCreationProposal from "./DocCreationProposal";
 import DocumentTabs from "./DocumentTabs";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
+import { ContextMenu, type ContextMenuItem } from "./ui/ContextMenu";
 import { MarkdownRenderer } from "./ui/MarkdownRenderer";
 
 interface EditorCanvasProps {
@@ -80,6 +83,13 @@ export default function EditorCanvas({
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 	const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+	// 右键菜单状态
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		selectedText: string;
+	} | null>(null);
+	const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
 	// AI 建议管理
 	const {
@@ -216,10 +226,10 @@ export default function EditorCanvas({
 				);
 				const filtered = projectId
 					? data.filter((d) => {
-							if (d.project_id === projectId) return true;
-							// 兼容历史数据：旧文档还没有 project_id，也暂时展示出来
-							return d.project_id == null;
-						})
+						if (d.project_id === projectId) return true;
+						// 兼容历史数据：旧文档还没有 project_id，也暂时展示出来
+						return d.project_id == null;
+					})
 					: data;
 				console.log(
 					"[EditorCanvas] filtered for project:",
@@ -362,22 +372,22 @@ export default function EditorCanvas({
 				prev.map((o) =>
 					o.id === updated.id
 						? {
-								...o,
-								content: currentContent,
-								version: updated.version,
-								updated_at: updated.updated_at,
-							}
+							...o,
+							content: currentContent,
+							version: updated.version,
+							updated_at: updated.updated_at,
+						}
 						: o,
 				),
 			);
 			setSelectedOutput((prev) =>
 				prev && prev.id === updated.id
 					? {
-							...prev,
-							content: currentContent,
-							version: updated.version,
-							updated_at: updated.updated_at,
-						}
+						...prev,
+						content: currentContent,
+						version: updated.version,
+						updated_at: updated.updated_at,
+					}
 					: prev,
 			);
 			// 更新 docCache 内容并标记为已保存（dirty = false）
@@ -886,6 +896,95 @@ export default function EditorCanvas({
 		[editorContent],
 	);
 
+	// 右键菜单处理
+	const handleTextareaContextMenu = useCallback(
+		(e: React.MouseEvent<HTMLTextAreaElement>) => {
+			const textarea = e.currentTarget;
+			const selectedText = textarea.value.substring(
+				textarea.selectionStart,
+				textarea.selectionEnd,
+			);
+			if (selectedText.trim()) {
+				e.preventDefault();
+				setContextMenu({
+					x: e.clientX,
+					y: e.clientY,
+					selectedText: selectedText.trim(),
+				});
+			}
+		},
+		[],
+	);
+
+	// AI 生成配图
+	const handleGenerateImage = useCallback(async () => {
+		if (!contextMenu?.selectedText) return;
+
+		setIsGeneratingImage(true);
+		setContextMenu(null);
+
+		try {
+			// 使用配置服务生成图像
+			const result = await generateImageForText({
+				text: contextMenu.selectedText,
+			});
+
+			if (result.images.length > 0) {
+				const imageUrl = result.images[0].url || result.images[0].base64;
+				if (imageUrl) {
+					// 在选中文字后插入图片 Markdown
+					const textarea = textareaRef.current;
+					if (textarea) {
+						const end = textarea.selectionEnd;
+						const text = editorContent;
+						const before = text.substring(0, end);
+						const after = text.substring(end);
+						const imageMarkdown = result.images[0].base64
+							? `\n\n![AI 配图](data:image/png;base64,${result.images[0].base64})\n`
+							: `\n\n![AI 配图](${imageUrl})\n`;
+						const newContent = before + imageMarkdown + after;
+						setEditorContent(newContent);
+					}
+				}
+			}
+		} catch (error) {
+			console.error("生成配图失败:", error);
+			// TODO: 添加 toast 通知显示错误消息
+		} finally {
+			setIsGeneratingImage(false);
+		}
+	}, [contextMenu, editorContent]);
+
+	// 右键菜单项
+	const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+		const items: ContextMenuItem[] = [];
+
+		if (contextMenu?.selectedText) {
+			items.push({
+				label: isGeneratingImage ? "生成中..." : "AI 生成配图",
+				icon: isGeneratingImage ? (
+					<Loader2 className="w-4 h-4 animate-spin" />
+				) : (
+					<Image className="w-4 h-4" />
+				),
+				onClick: handleGenerateImage,
+				disabled: isGeneratingImage,
+			});
+			items.push({
+				label: "复制选中文字",
+				icon: <Copy className="w-4 h-4" />,
+				onClick: () => {
+					if (contextMenu?.selectedText) {
+						navigator.clipboard.writeText(contextMenu.selectedText);
+						setContextMenu(null);
+					}
+				},
+			});
+		}
+
+		return items;
+	}, [contextMenu, isGeneratingImage, handleGenerateImage]);
+
 	// 新文档处理
 	const handleNewDoc = useCallback(async () => {
 		try {
@@ -1067,11 +1166,10 @@ export default function EditorCanvas({
 								return !prev;
 							});
 						}}
-						className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-							isManaging
-								? "border-black bg-black text-white dark:border-white dark:bg-white/10 dark:text-white"
-								: "border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-300"
-						}`}
+						className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${isManaging
+							? "border-black bg-black text-white dark:border-white dark:bg-white/10 dark:text-white"
+							: "border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-300"
+							}`}
 					>
 						{isManaging ? "完成" : "管理"}
 					</button>
@@ -1346,7 +1444,7 @@ export default function EditorCanvas({
 			{hasPendingSuggestion &&
 				pendingSuggestion &&
 				(pendingSuggestion.type === "diff" &&
-				pendingSuggestion.originalContent ? (
+					pendingSuggestion.originalContent ? (
 					<DiffView
 						original={pendingSuggestion.originalContent}
 						modified={pendingSuggestion.content}
@@ -1459,33 +1557,30 @@ export default function EditorCanvas({
 					<div className="flex items-center bg-zinc-100/50 dark:bg-zinc-800/50 rounded-md p-0.5">
 						<button
 							onClick={() => setEditorMode("edit")}
-							className={`p-1 rounded transition-all ${
-								editorMode === "edit"
-									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-							}`}
+							className={`p-1 rounded transition-all ${editorMode === "edit"
+								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+								}`}
 							title="编辑"
 						>
 							<Edit3 className="w-3.5 h-3.5" />
 						</button>
 						<button
 							onClick={() => setEditorMode("split")}
-							className={`p-1 rounded transition-all ${
-								editorMode === "split"
-									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-							}`}
+							className={`p-1 rounded transition-all ${editorMode === "split"
+								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+								}`}
 							title="分屏"
 						>
 							<Columns className="w-3.5 h-3.5" />
 						</button>
 						<button
 							onClick={() => setEditorMode("preview")}
-							className={`p-1 rounded transition-all ${
-								editorMode === "preview"
-									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-							}`}
+							className={`p-1 rounded transition-all ${editorMode === "preview"
+								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+								: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+								}`}
 							title="预览"
 						>
 							<Eye className="w-3.5 h-3.5" />
@@ -1497,11 +1592,10 @@ export default function EditorCanvas({
 					<button
 						onClick={handleManualSave}
 						disabled={!selectedOutput || isSaving || !hasUnsavedChanges}
-						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-							hasUnsavedChanges
-								? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200"
-								: "border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-						} ${isSaving ? "pointer-events-none" : ""}`}
+						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${hasUnsavedChanges
+							? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200"
+							: "border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+							} ${isSaving ? "pointer-events-none" : ""}`}
 						title={
 							isSaving
 								? "正在保存到本地数据库"
@@ -1650,6 +1744,7 @@ export default function EditorCanvas({
 									value={editorContent}
 									onChange={(e) => setEditorContent(e.target.value)}
 									onScroll={handleTextareaScroll}
+									onContextMenu={handleTextareaContextMenu}
 									className="w-full min-h-[calc(100vh-200px)] resize-none border-none outline-none focus:ring-0 focus:outline-none p-0 bg-transparent text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 selection:bg-amber-100 dark:selection:bg-amber-900/30 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 caret-zinc-700 dark:caret-zinc-300 font-mono"
 									placeholder="开始写作 Markdown..."
 									style={{ boxShadow: "none" }}
@@ -1727,6 +1822,7 @@ export default function EditorCanvas({
 									ref={textareaRef}
 									value={editorContent}
 									onChange={(e) => setEditorContent(e.target.value)}
+									onContextMenu={handleTextareaContextMenu}
 									className="w-full min-h-[calc(100vh-200px)] resize-none border-none outline-none focus:ring-0 focus:outline-none p-0 bg-transparent text-base leading-relaxed text-zinc-600 dark:text-zinc-400 selection:bg-amber-100 dark:selection:bg-amber-900/30 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 caret-zinc-700 dark:caret-zinc-300"
 									placeholder="开始写作..."
 									style={{ boxShadow: "none" }}
@@ -1776,6 +1872,16 @@ export default function EditorCanvas({
 				renderEmptyState()
 			) : (
 				renderEditor()
+			)}
+
+			{/* 右键菜单 */}
+			{contextMenu && contextMenuItems.length > 0 && (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
 			)}
 		</main>
 	);

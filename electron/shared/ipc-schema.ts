@@ -518,6 +518,78 @@ export type IPCSchema = {
 		input: InvokeLlmPayload;
 		output: { started: boolean };
 	};
+	invoke_image_generation: {
+		input: {
+			model: string;
+			prompt: string;
+			n?: number;
+			size?: string;
+			quality?: string;
+			style?: string;
+			// 高级参数
+			negativePrompt?: string;
+			seed?: number;
+			numInferenceSteps?: number;
+			guidanceScale?: number;
+			promptEnhancement?: boolean;
+		};
+		output: {
+			images: Array<{
+				url?: string;
+				base64?: string;
+				revised_prompt?: string;
+			}>;
+			model: string;
+		};
+	};
+
+	// ==================
+	// 生图配置管理
+	// ==================
+	get_image_gen_config: {
+		input: {};
+		output: {
+			providerId: string;
+			model: string;
+			defaultSize: string;
+			promptTemplate: string;
+			negativePrompt?: string;
+			quality?: string;
+			style?: string;
+		};
+	};
+	set_image_gen_config: {
+		input: {
+			providerId?: string;
+			model?: string;
+			defaultSize?: string;
+			promptTemplate?: string;
+			negativePrompt?: string;
+			quality?: string;
+			style?: string;
+		};
+		output: { success: boolean };
+	};
+	generate_image_for_text: {
+		input: {
+			text: string;
+			overrides?: {
+				providerId?: string;
+				model?: string;
+				defaultSize?: string;
+				promptTemplate?: string;
+				negativePrompt?: string;
+			};
+		};
+		output: {
+			images: Array<{
+				url?: string;
+				base64?: string;
+				revised_prompt?: string;
+			}>;
+			model: string;
+		};
+	};
 
 	// ==================
 	// Output Assets 命令

@@ -1,6 +1,6 @@
-import { Image, MessageSquare, Zap } from "lucide-react";
+import { Image, MessageSquare, Paintbrush, Zap } from "lucide-react";
 
-export type BadgeType = "vision" | "function" | "reasoning";
+export type BadgeType = "vision" | "function" | "reasoning" | "image-gen";
 
 interface ModelBadgeProps {
 	type: BadgeType;
@@ -27,6 +27,13 @@ const badgeConfig = {
 		text: "text-blue-600",
 		border: "border-blue-200",
 		title: "推理能力",
+	},
+	"image-gen": {
+		icon: Paintbrush,
+		bg: "bg-purple-50",
+		text: "text-purple-600",
+		border: "border-purple-200",
+		title: "图像生成",
 	},
 };
 
@@ -61,6 +68,21 @@ export function getModelBadges(model: string): BadgeType[] {
 	// 推理能力
 	if (l.includes("o1") || l.includes("reasoner") || l.includes("r1")) {
 		badges.push("reasoning");
+	}
+	// 图像生成能力
+	if (
+		l.includes("dall-e") ||
+		l.includes("dalle") ||
+		l.includes("flux") ||
+		l.includes("stable-diffusion") ||
+		l.includes("sd-") ||
+		l.includes("sdxl") ||
+		l.includes("midjourney") ||
+		l.includes("cogview") ||
+		l.includes("wanx") ||
+		l.includes("imagen")
+	) {
+		badges.push("image-gen");
 	}
 	// 函数调用
 	if (l.includes("gpt-4") || l.includes("claude") || l.includes("gemini")) {

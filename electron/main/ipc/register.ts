@@ -8,7 +8,7 @@ import type { IPCSchema } from "../../shared/ipc-schema";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
 import { searchChunks } from "../kb/searchChunks";
-import { invokeLlm, invokeLlmStream } from "../llm/invoke";
+import { invokeLlm, invokeLlmStream, invokeImageGeneration } from "../llm/invoke";
 import type { Logger } from "../logging/types";
 import {
 	createAgentMemoryHandlers,
@@ -42,6 +42,7 @@ import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
 import { createLocalBackupHandlers } from "./handlers/localBackup";
+import { createImageGenHandlers } from "./handlers/imageGen";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -113,6 +114,9 @@ export function registerIpcHandlers({
 
 	// Local Backup handlers (本地备份)
 	const localBackupHandlers = createLocalBackupHandlers(db);
+
+	// Image Generation handlers (生图配置)
+	const imageGenHandlers = createImageGenHandlers(db);
 
 	// ==================
 	// 系统命令
@@ -267,6 +271,27 @@ export function registerIpcHandlers({
 		logger.info({ msg: "invoke_llm_stream called", model: input.model });
 		return invokeLlmStream(db, mainWindowRef, input);
 	}) satisfies IpcHandler<"invoke_llm_stream">);
+
+	ipcMain.handle("invoke_image_generation", (async (_event, input) => {
+		logger.info({ msg: "invoke_image_generation called", model: input.model });
+		return invokeImageGeneration(db, input);
+	}) satisfies IpcHandler<"invoke_image_generation">);
+
+	// ==================
+	// 生图配置
+	// ==================
+	ipcMain.handle(
+		"get_image_gen_config",
+		imageGenHandlers.get_image_gen_config,
+	);
+	ipcMain.handle(
+		"set_image_gen_config",
+		imageGenHandlers.set_image_gen_config,
+	);
+	ipcMain.handle(
+		"generate_image_for_text",
+		imageGenHandlers.generate_image_for_text,
+	);
 
 	// ==================
 	// Output Assets

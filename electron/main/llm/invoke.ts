@@ -429,10 +429,10 @@ async function callAnthropic(
 		content: textContent,
 		usage: data.usage
 			? {
-					prompt_tokens: data.usage.input_tokens,
-					completion_tokens: data.usage.output_tokens,
-					total_tokens: data.usage.input_tokens + data.usage.output_tokens,
-				}
+				prompt_tokens: data.usage.input_tokens,
+				completion_tokens: data.usage.output_tokens,
+				total_tokens: data.usage.input_tokens + data.usage.output_tokens,
+			}
 			: undefined,
 	};
 }
@@ -759,3 +759,131 @@ export async function invokeLlmStream(
 
 	return { started: true };
 }
+
+// ==================== 图像生成 API ====================
+
+export interface ImageGenerationOptions {
+	model: string;
+	prompt: string;
+	n?: number; // 生成数量，默认 1
+	size?: string; // 尺寸，如 "1024x1024"
+	quality?: string; // "standard" | "hd"
+	style?: string; // "vivid" | "natural"
+	// 高级参数（参考 Cherry Studio）
+	negativePrompt?: string; // 负向提示词
+	seed?: number; // 随机种子
+	numInferenceSteps?: number; // 推理步数
+	guidanceScale?: number; // 引导比例 (CFG Scale)
+	promptEnhancement?: boolean; // 提示词增强
+}
+
+export interface ImageGenerationResult {
+	images: Array<{
+		url?: string;
+		base64?: string;
+		revised_prompt?: string;
+	}>;
+	model: string;
+}
+
+/**
+ * 调用 OpenAI 兼容的图像生成 API
+ */
+async function callOpenAIImageGeneration(
+	provider: Provider,
+	options: ImageGenerationOptions,
+	apiKey: string | undefined,
+): Promise<ImageGenerationResult> {
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
+	);
+	const url = `${baseUrl}/images/generations`;
+
+	const transientStatus = new Set([429, 500, 502, 503, 504, 524]);
+	let response: Response | null = null;
+	let lastErrorText = "";
+
+	for (let attempt = 0; attempt < 3; attempt++) {
+		response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...getOpenAICompatibleAuthHeaders(provider, apiKey),
+			},
+			body: JSON.stringify({
+				model: options.model,
+				prompt: options.prompt,
+				n: options.n ?? 1,
+				size: options.size ?? "1024x1024",
+				quality: options.quality,
+				style: options.style,
+				response_format: "url",
+				// 高级参数（供应商支持情况各异）
+				negative_prompt: options.negativePrompt,
+				seed: options.seed,
+				num_inference_steps: options.numInferenceSteps,
+				guidance_scale: options.guidanceScale,
+				prompt_enhancement: options.promptEnhancement,
+			}),
+		});
+
+		if (response.ok) break;
+		lastErrorText = await response.text();
+		if (transientStatus.has(response.status) && attempt < 2) {
+			await sleep(500 * (attempt + 1) * (attempt + 1));
+			continue;
+		}
+		throw new Error(
+			`Image generation failed: ${response.status} - ${lastErrorText}`,
+		);
+	}
+
+	if (!response || !response.ok) {
+		throw new Error(
+			`Image generation failed: unknown - ${lastErrorText || "no response"}`,
+		);
+	}
+
+	const data = (await response.json()) as {
+		data: Array<{
+			url?: string;
+			b64_json?: string;
+			revised_prompt?: string;
+		}>;
+	};
+
+	return {
+		images: data.data.map((item) => ({
+			url: item.url,
+			base64: item.b64_json,
+			revised_prompt: item.revised_prompt,
+		})),
+		model: options.model,
+	};
+}
+
+/**
+ * 图像生成调用入口
+ */
+export async function invokeImageGeneration(
+	db: DbContext,
+	options: ImageGenerationOptions,
+): Promise<ImageGenerationResult> {
+	const provider = await findProviderForModel(db, options.model);
+	if (!provider) {
+		throw new Error(
+			`No enabled provider found for image generation model: ${options.model}`,
+		);
+	}
+
+	const resolvedApiKey = await resolveProviderApiKey(
+		db,
+		provider.id,
+		provider.api_key,
+	);
+
+	// 目前仅支持 OpenAI 兼容的图像生成 API
+	return callOpenAIImageGeneration(provider, options, resolvedApiKey);
+}
+

@@ -4,6 +4,7 @@ import { ArtifactSettings } from "./panels/ArtifactSettings";
 import { DashboardSettings } from "./panels/DashboardSettings";
 import { DataSettings } from "./panels/DataSettings";
 import { GeneralSettings } from "./panels/GeneralSettings";
+import { ImageGenSettings } from "./panels/ImageGenSettings";
 import { MCPSettings } from "./panels/MCPSettings";
 import { ModelSettings } from "./panels/ModelSettings";
 import { PromptSettings } from "./panels/PromptSettings";
@@ -28,6 +29,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				return <ModelSettings />;
 			case "prompts":
 				return <PromptSettings />;
+			case "imagegen":
+				return <ImageGenSettings />;
 			case "agent":
 				return <AgentSettings />;
 			case "skills":
