@@ -896,7 +896,7 @@ export default function EditorCanvas({
 		[editorContent],
 	);
 
-	// 右键菜单处理
+	// 右键菜单处理 - textarea
 	const handleTextareaContextMenu = useCallback(
 		(e: React.MouseEvent<HTMLTextAreaElement>) => {
 			const textarea = e.currentTarget;
@@ -916,40 +916,84 @@ export default function EditorCanvas({
 		[],
 	);
 
+	// 右键菜单处理 - 预览区（使用 window.getSelection）
+	const handlePreviewContextMenu = useCallback(
+		(e: React.MouseEvent) => {
+			const selection = window.getSelection();
+			const selectedText = selection?.toString().trim() || "";
+			if (selectedText) {
+				e.preventDefault();
+				setContextMenu({
+					x: e.clientX,
+					y: e.clientY,
+					selectedText,
+				});
+			}
+		},
+		[],
+	);
+
 	// AI 生成配图
 	const handleGenerateImage = useCallback(async () => {
 		if (!contextMenu?.selectedText) return;
 
+		const selectedText = contextMenu.selectedText;
 		setIsGeneratingImage(true);
 		setContextMenu(null);
+
+		// 生成唯一占位符 ID
+		const placeholderId = `img-placeholder-${Date.now()}`;
+		const placeholderMarkdown = `\n\n![生成中...](loading:${placeholderId})\n`;
+
+		// 先插入占位符：在选中文字后面插入
+		// 查找选中文字在内容中的位置
+		const textIndex = editorContent.indexOf(selectedText);
+		let newContentWithPlaceholder = editorContent;
+
+		if (textIndex !== -1) {
+			// 在选中文字后插入占位符
+			const insertPos = textIndex + selectedText.length;
+			newContentWithPlaceholder =
+				editorContent.substring(0, insertPos) +
+				placeholderMarkdown +
+				editorContent.substring(insertPos);
+		} else {
+			// 找不到精确匹配，追加到末尾
+			newContentWithPlaceholder = editorContent + placeholderMarkdown;
+		}
+
+		setEditorContent(newContentWithPlaceholder);
 
 		try {
 			// 使用配置服务生成图像
 			const result = await generateImageForText({
-				text: contextMenu.selectedText,
+				text: selectedText,
 			});
 
+			console.log("[EditorCanvas] 生图结果:", result);
+
 			if (result.images.length > 0) {
-				const imageUrl = result.images[0].url || result.images[0].base64;
-				if (imageUrl) {
-					// 在选中文字后插入图片 Markdown
-					const textarea = textareaRef.current;
-					if (textarea) {
-						const end = textarea.selectionEnd;
-						const text = editorContent;
-						const before = text.substring(0, end);
-						const after = text.substring(end);
-						const imageMarkdown = result.images[0].base64
-							? `\n\n![AI 配图](data:image/png;base64,${result.images[0].base64})\n`
-							: `\n\n![AI 配图](${imageUrl})\n`;
-						const newContent = before + imageMarkdown + after;
-						setEditorContent(newContent);
-					}
-				}
+				// 后端已统一解析各种格式，直接使用 imageUrl
+				const { imageUrl } = result.images[0];
+				const imageMarkdown = `\n\n![AI 配图](${imageUrl})\n`;
+
+				// 替换占位符
+				setEditorContent((prevContent) =>
+					prevContent.replace(placeholderMarkdown, imageMarkdown)
+				);
+			} else {
+				// 没有图片结果，移除占位符
+				console.warn("[EditorCanvas] 生图响应无图片");
+				setEditorContent((prevContent) =>
+					prevContent.replace(placeholderMarkdown, "")
+				);
 			}
 		} catch (error) {
 			console.error("生成配图失败:", error);
-			// TODO: 添加 toast 通知显示错误消息
+			// 移除占位符，显示错误提示
+			setEditorContent((prevContent) =>
+				prevContent.replace(placeholderMarkdown, `\n\n> ⚠️ 生图失败: ${error instanceof Error ? error.message : '未知错误'}\n`)
+			);
 		} finally {
 			setIsGeneratingImage(false);
 		}
@@ -1756,6 +1800,7 @@ export default function EditorCanvas({
 						<div
 							ref={previewContainerRef}
 							onScroll={handlePreviewScroll}
+							onContextMenu={handlePreviewContextMenu}
 							className="flex-1 overflow-y-auto scrollbar-hide bg-zinc-50/50 dark:bg-zinc-900/50"
 						>
 							<div className="max-w-2xl mx-auto px-6 py-6">
@@ -1811,7 +1856,7 @@ export default function EditorCanvas({
 
 							{/* 内容区 */}
 							{editorMode === "preview" ? (
-								<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-p:text-zinc-400">
+								<article onContextMenu={handlePreviewContextMenu} className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-p:text-zinc-400">
 									<MarkdownRenderer
 										content={editorContent}
 										className="text-base leading-relaxed"

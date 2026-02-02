@@ -277,6 +277,29 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			// 自定义图片
 			img({ src, alt, title }: { src?: string; alt?: string; title?: string }) {
 				if (!src) return null;
+
+				// 处理占位图：loading: 前缀表示正在生成中
+				if (src.startsWith("loading:")) {
+					return (
+						<div className="my-4 flex items-center justify-center">
+							<div className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
+								{/* 加载动画 */}
+								<div className="relative w-12 h-12">
+									<div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-700"></div>
+									<div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
+								</div>
+								<div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+									<span className="animate-pulse">🎨</span>
+									<span>{alt || "AI 配图生成中..."}</span>
+								</div>
+								<div className="text-xs text-zinc-400 dark:text-zinc-500">
+									请稍候，图片即将呈现
+								</div>
+							</div>
+						</div>
+					);
+				}
+
 				return (
 					<InlineImage
 						path={src}

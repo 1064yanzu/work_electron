@@ -28,6 +28,8 @@ interface ContextMenuProps {
     onClose: () => void;
 }
 
+import { createPortal } from "react-dom";
+
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -75,10 +77,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             }
         };
 
-        // 延迟添加监听,避免立即触发
+        // 延迟添加监听,避免右键事件传播导致立即触发
         const timer = setTimeout(() => {
             document.addEventListener("mousedown", handleClickOutside);
-        }, 0);
+        }, 100);
 
         return () => {
             clearTimeout(timer);
@@ -104,7 +106,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         onClose();
     };
 
-    return (
+    return createPortal(
         <div
             ref={menuRef}
             className={cn(
@@ -176,6 +178,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                     </button>
                 );
             })}
-        </div>
+        </div>,
+        document.body
     );
 }

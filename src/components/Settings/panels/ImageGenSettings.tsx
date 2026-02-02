@@ -1,5 +1,5 @@
 import { ChevronDown, Image, Loader2, Wand2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     getImageGenConfig,
     setImageGenConfig,
@@ -7,13 +7,34 @@ import {
 } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
 
-// 常用尺寸预设
-const SIZE_PRESETS = [
-    { value: "1024x1024", label: "1024×1024（方形）" },
-    { value: "1024x1536", label: "1024×1536（竖版）" },
-    { value: "1536x1024", label: "1536×1024（横版）" },
-    { value: "512x512", label: "512×512（小图）" },
+// 比例预设（参考 Cherry Studio）
+const ASPECT_RATIO_GROUPS = [
+    {
+        label: "方形",
+        options: [{ label: "1:1", value: "1:1" }],
+    },
+    {
+        label: "竖版",
+        options: [
+            { label: "2:3", value: "2:3" },
+            { label: "3:4", value: "3:4" },
+            { label: "9:16", value: "9:16" },
+        ],
+    },
+    {
+        label: "横版",
+        options: [
+            { label: "3:2", value: "3:2" },
+            { label: "4:3", value: "4:3" },
+            { label: "16:9", value: "16:9" },
+        ],
+    },
 ];
+
+// 默认提示词模版（更专业）
+const DEFAULT_PROMPT_TEMPLATE = `Create a high-quality, visually appealing illustration for the following content. Style: modern, professional, clean design with vibrant colors.
+
+Content: {text}`;
 
 export function ImageGenSettings() {
     const { providers } = useSettingsStore();
@@ -22,15 +43,47 @@ export function ImageGenSettings() {
     const [config, setConfig] = useState<ImageGenConfig>({
         providerId: "",
         model: "",
-        defaultSize: "1024x1024",
-        promptTemplate: "为以下内容生成一张精美的配图：{text}",
+        defaultSize: "1:1",
+        promptTemplate: DEFAULT_PROMPT_TEMPLATE,
         negativePrompt: "",
         quality: "standard",
         style: "natural",
     });
 
-    // 获取所有已启用的提供商
+    // 获取所有已启用且有 API Key 的提供商
     const enabledProviders = providers.filter((p) => p.isEnabled && p.apiKey);
+
+    // 当前选中的提供商
+    const selectedProvider = useMemo(
+        () => enabledProviders.find((p) => p.id === config.providerId),
+        [enabledProviders, config.providerId],
+    );
+
+    // 该提供商的可用模型（筛选生图模型）
+    const availableModels = useMemo(() => {
+        if (!selectedProvider) return [];
+
+        // 尝试匹配推荐的生图模型
+        const providerModels = selectedProvider.models || [];
+        const imageModels = providerModels.filter((m: string) => {
+            const lower = m.toLowerCase();
+            return (
+                lower.includes("dall") ||
+                lower.includes("flux") ||
+                lower.includes("stable") ||
+                lower.includes("sdxl") ||
+                lower.includes("midjourney") ||
+                lower.includes("imagen") ||
+                lower.includes("kolors") ||
+                lower.includes("playground") ||
+                lower.includes("kandinsky") ||
+                lower.includes("image")
+            );
+        });
+
+        // 如果没找到生图模型，显示全部模型
+        return imageModels.length > 0 ? imageModels : providerModels;
+    }, [selectedProvider]);
 
     useEffect(() => {
         loadConfig();
@@ -40,7 +93,9 @@ export function ImageGenSettings() {
         setIsLoading(true);
         try {
             const savedConfig = await getImageGenConfig();
-            setConfig((prev) => ({ ...prev, ...savedConfig }));
+            if (savedConfig) {
+                setConfig((prev) => ({ ...prev, ...savedConfig }));
+            }
         } catch (error) {
             console.error("加载生图配置失败:", error);
         } finally {
@@ -53,12 +108,20 @@ export function ImageGenSettings() {
         value: ImageGenConfig[K],
     ) => {
         const newConfig = { ...config, [key]: value };
+
+        // 切换提供商时清空模型选择
+        if (key === "providerId" && value !== config.providerId) {
+            newConfig.model = "";
+        }
+
         setConfig(newConfig);
 
         // 自动保存
         setIsSaving(true);
         try {
-            await setImageGenConfig({ [key]: value });
+            await setImageGenConfig(
+                key === "providerId" ? { providerId: value as string, model: "" } : { [key]: value },
+            );
         } catch (error) {
             console.error("保存配置失败:", error);
         } finally {
@@ -90,13 +153,12 @@ export function ImageGenSettings() {
                         )}
                     </h3>
                     <p className="text-sm text-text-secondary mt-1">
-                        配置 AI
-                        生成图像的模型和参数。设置后可在编辑器中选中文字右键「生成配图」。
+                        配置 AI 生成图像的模型和参数。设置后可在编辑器中选中文字右键「生成配图」。
                     </p>
                 </div>
 
                 {/* 提供商选择 */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <h4 className="font-medium text-text-primary">生图提供商</h4>
                     <div className="relative">
                         <select
@@ -114,47 +176,75 @@ export function ImageGenSettings() {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                     </div>
                     <p className="text-xs text-text-muted">
-                        选择已配置 API Key 的提供商。推荐使用 Silicon Flow、OpenAI 或其他支持生图
-                        API 的服务。
+                        推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。
                     </p>
                 </div>
 
-                {/* 模型选择 */}
-                <div className="space-y-4">
+                {/* 模型选择 - 下拉框 */}
+                <div className="space-y-3">
                     <h4 className="font-medium text-text-primary">生图模型</h4>
-                    <input
-                        type="text"
-                        value={config.model}
-                        onChange={(e) => handleChange("model", e.target.value)}
-                        placeholder="例如: dall-e-3, flux.1-schnell, stable-diffusion-xl"
-                        className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-                    />
-                    <p className="text-xs text-text-muted">
-                        输入提供商支持的生图模型 ID。常用模型：dall-e-3、flux.1-schnell、stable-diffusion-xl
-                    </p>
+                    {config.providerId && availableModels.length > 0 ? (
+                        <div className="relative">
+                            <select
+                                value={config.model}
+                                onChange={(e) => handleChange("model", e.target.value)}
+                                className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+                            >
+                                <option value="">选择模型...</option>
+                                {availableModels.map((model: string) => (
+                                    <option key={model} value={model}>
+                                        {model}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                        </div>
+                    ) : config.providerId ? (
+                        <>
+                            <input
+                                type="text"
+                                value={config.model}
+                                onChange={(e) => handleChange("model", e.target.value)}
+                                placeholder="输入生图模型 ID，如 dall-e-3, flux.1-schnell"
+                                className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+                            />
+                            <p className="text-xs text-text-muted">
+                                该提供商暂无预设模型，请手动输入支持的生图模型 ID。
+                            </p>
+                        </>
+                    ) : (
+                        <div className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-500">
+                            请先选择提供商
+                        </div>
+                    )}
                 </div>
 
-                {/* 图片尺寸 */}
-                <div className="space-y-4">
-                    <h4 className="font-medium text-text-primary">默认尺寸</h4>
-                    <div className="relative">
-                        <select
-                            value={config.defaultSize}
-                            onChange={(e) => handleChange("defaultSize", e.target.value)}
-                            className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-                        >
-                            {SIZE_PRESETS.map((size) => (
-                                <option key={size.value} value={size.value}>
-                                    {size.label}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                {/* 图片比例选择 */}
+                <div className="space-y-3">
+                    <h4 className="font-medium text-text-primary">图片比例</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {ASPECT_RATIO_GROUPS.map((group) => (
+                            <div key={group.label} className="flex items-center gap-1">
+                                <span className="text-xs text-zinc-400 mr-1">{group.label}:</span>
+                                {group.options.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => handleChange("defaultSize", option.value)}
+                                        className={`px-3 py-1.5 text-sm rounded-lg transition-all ${config.defaultSize === option.value
+                                            ? "bg-zinc-900 text-white"
+                                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                                            }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 {/* 提示词模板 */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <h4 className="font-medium text-text-primary flex items-center gap-2">
                         <Wand2 className="w-4 h-4" />
                         提示词模板
@@ -162,26 +252,34 @@ export function ImageGenSettings() {
                     <textarea
                         value={config.promptTemplate}
                         onChange={(e) => handleChange("promptTemplate", e.target.value)}
-                        rows={3}
+                        rows={4}
                         placeholder="使用 {text} 作为选中文字的占位符"
-                        className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none"
+                        className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none font-mono"
                     />
-                    <p className="text-xs text-text-muted">
-                        <code className="px-1.5 py-0.5 bg-zinc-100 rounded text-zinc-600">
-                            {"{text}"}
-                        </code>{" "}
-                        将替换为用户选中的文字。可以自定义模板来优化生成效果。
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-text-muted">
+                            <code className="px-1.5 py-0.5 bg-zinc-100 rounded text-zinc-600">
+                                {"{text}"}
+                            </code>{" "}
+                            将替换为选中的文字
+                        </p>
+                        <button
+                            onClick={() => handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)}
+                            className="text-xs text-primary hover:underline"
+                        >
+                            恢复默认
+                        </button>
+                    </div>
                 </div>
 
                 {/* 负向提示词 */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <h4 className="font-medium text-text-primary">负向提示词（可选）</h4>
                     <textarea
                         value={config.negativePrompt || ""}
                         onChange={(e) => handleChange("negativePrompt", e.target.value)}
                         rows={2}
-                        placeholder="例如: 低质量, 模糊, 变形, 水印"
+                        placeholder="low quality, blurry, distorted, watermark, text"
                         className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none"
                     />
                     <p className="text-xs text-text-muted">
@@ -238,8 +336,7 @@ export function ImageGenSettings() {
                 ) : (
                     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                         <p className="text-sm text-emerald-800">
-                            ✅ 配置完成！现在可以在编辑器中选中文字，右键选择「AI
-                            生成配图」。
+                            ✅ 配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
                         </p>
                     </div>
                 )}

@@ -583,9 +583,8 @@ export type IPCSchema = {
 		};
 		output: {
 			images: Array<{
-				url?: string;
-				base64?: string;
-				revised_prompt?: string;
+				imageUrl: string;
+				revisedPrompt?: string;
 			}>;
 			model: string;
 		};

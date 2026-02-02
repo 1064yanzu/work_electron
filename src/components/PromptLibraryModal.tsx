@@ -406,19 +406,21 @@ export function PromptLibraryModal({
 										autoFocus
 									/>
 								) : (
-									<button
-										onClick={() => setActiveFolderId(folder.id)}
+									<div
 										onDragOver={(e) => handleDragOver(e, folder.id)}
 										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDrop(e, folder.id)}
-										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
-											${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
-											${activeFolderId === folder.id
+										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group cursor-pointer
+										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
+										${activeFolderId === folder.id
 												? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
 												: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
 											}`}
 									>
-										<div className="flex items-center gap-2.5">
+										<div
+											onClick={() => setActiveFolderId(folder.id)}
+											className="flex items-center gap-2.5 flex-1"
+										>
 											{activeFolderId === folder.id ? (
 												<FolderOpen className={`w-4 h-4 ${FOLDER_COLORS[folder.color || "blue"]}`} />
 											) : (
@@ -438,15 +440,15 @@ export function PromptLibraryModal({
 												<MoreHorizontal className="w-3.5 h-3.5" />
 											</button>
 										</div>
-									</button>
+									</div>
 								)}
 
 								{/* Folder Context Menu */}
 								{folderMenuId === folder.id && (
 									<>
 										{/* Backdrop to close menu when clicking outside */}
-										<div 
-											className="fixed inset-0 z-[140]" 
+										<div
+											className="fixed inset-0 z-[140]"
 											onClick={(e) => {
 												e.stopPropagation();
 												setFolderMenuId(null);

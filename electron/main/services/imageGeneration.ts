@@ -21,24 +21,54 @@ export interface ImageGenConfig {
 // 配置存储的 key 前缀
 const CONFIG_KEY = "image_gen.config";
 
+// 默认提示词模版（英文，更专业）
+const DEFAULT_PROMPT_TEMPLATE = `Create a high-quality, visually appealing illustration for the following content. Style: modern, professional, clean design with vibrant colors.
+
+Content: {text}`;
+
 // 默认配置
 const DEFAULT_CONFIG: ImageGenConfig = {
 	providerId: "",
 	model: "",
-	defaultSize: "1024x1024",
-	promptTemplate: "为以下内容生成一张精美的配图：{text}",
+	defaultSize: "1:1", // 使用比例格式
+	promptTemplate: DEFAULT_PROMPT_TEMPLATE,
 	negativePrompt: "",
 	quality: "standard",
 	style: "natural",
 };
 
+// 比例到尺寸的映射
+const ASPECT_RATIO_TO_SIZE: Record<string, string> = {
+	"1:1": "1024x1024",
+	"2:3": "832x1216",
+	"3:4": "768x1024",
+	"9:16": "576x1024",
+	"3:2": "1216x832",
+	"4:3": "1024x768",
+	"16:9": "1024x576",
+};
+
+/**
+ * 将比例转换为实际尺寸
+ */
+function aspectRatioToSize(ratio: string): string {
+	// 如果已经是尺寸格式，直接返回
+	if (ratio.includes("x")) {
+		return ratio;
+	}
+	return ASPECT_RATIO_TO_SIZE[ratio] || "1024x1024";
+}
+
 // ==================== 生成结果接口 ====================
 
+/**
+ * 图片生成结果 - 标准化格式
+ * 前端只需使用 imageUrl，后端负责统一解析各种 API 响应格式
+ */
 export interface ImageGenerationResult {
 	images: Array<{
-		url?: string;
-		base64?: string;
-		revised_prompt?: string;
+		imageUrl: string; // 统一的图片 URL（可以是 http URL 或 data URL）
+		revisedPrompt?: string; // 修正后的提示词（部分模型支持）
 	}>;
 	model: string;
 }
@@ -227,12 +257,54 @@ async function callImageGenerationAPI(
 
 	return {
 		images: data.data.map((item) => ({
-			url: item.url,
-			base64: item.b64_json,
-			revised_prompt: item.revised_prompt,
-		})),
+			// 统一解析各种响应格式为 imageUrl
+			imageUrl: normalizeImageResponse(item),
+			revisedPrompt: item.revised_prompt,
+		})).filter(img => img.imageUrl), // 过滤掉没有有效 URL 的结果
 		model: options.model,
 	};
+}
+
+/**
+ * 统一解析各种 API 响应格式
+ * 支持：
+ * 1. url 字段包含 http(s) URL
+ * 2. url 字段包含 data URL (data:image/xxx;base64,...)
+ * 3. b64_json 字段包含纯 base64 字符串
+ */
+function normalizeImageResponse(item: { url?: string; b64_json?: string }): string {
+	// 优先使用 url 字段（可能是普通 URL 或 data URL）
+	if (item.url) {
+		return item.url;
+	}
+
+	// 如果有 b64_json，转换为 data URL
+	if (item.b64_json) {
+		// 尝试检测图片类型（默认 png）
+		const mimeType = detectImageMimeType(item.b64_json) || "image/png";
+		return `data:${mimeType};base64,${item.b64_json}`;
+	}
+
+	return "";
+}
+
+/**
+ * 从 base64 数据检测图片 MIME 类型
+ */
+function detectImageMimeType(base64: string): string | null {
+	// 取前几个字符来判断
+	const header = base64.slice(0, 20);
+
+	// JPEG: /9j/
+	if (header.startsWith("/9j/")) return "image/jpeg";
+	// PNG: iVBORw
+	if (header.startsWith("iVBORw")) return "image/png";
+	// GIF: R0lGOD
+	if (header.startsWith("R0lGOD")) return "image/gif";
+	// WebP: UklGR
+	if (header.startsWith("UklGR")) return "image/webp";
+
+	return null;
 }
 
 // ==================== 统一入口 ====================
@@ -278,7 +350,7 @@ export async function generateImage(
 	return await callImageGenerationAPI(provider, {
 		model: merged.model,
 		prompt,
-		size: merged.defaultSize,
+		size: aspectRatioToSize(merged.defaultSize),
 		quality: merged.quality,
 		style: merged.style,
 		negativePrompt: merged.negativePrompt,

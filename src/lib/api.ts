@@ -298,11 +298,14 @@ export interface ImageGenerationPayload {
 	promptEnhancement?: boolean;
 }
 
+/**
+ * 图片生成结果 - 标准化格式
+ * 后端已统一解析各种 API 响应格式
+ */
 export interface ImageGenerationResult {
 	images: Array<{
-		url?: string;
-		base64?: string;
-		revised_prompt?: string;
+		imageUrl: string; // 统一的图片 URL（http URL 或 data URL）
+		revisedPrompt?: string; // 修正后的提示词（部分模型支持）
 	}>;
 	model: string;
 }
