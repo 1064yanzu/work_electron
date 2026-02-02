@@ -709,7 +709,7 @@ const ToolCallRow = memo(function ToolCallRow({ toolCall }: { toolCall: ToolCall
 							{toolCall.name}
 							{toolCall.name === "Task" && toolCall.status === "running" && (
 								<span className="ml-2 text-[10px] font-normal text-purple-500 animate-pulse">
-									子代理正在思考...
+									子代理调用中...
 								</span>
 							)}
 						</div>

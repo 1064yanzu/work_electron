@@ -109,7 +109,7 @@ export function SubagentCard({
 				<div className="flex-1 min-w-0 flex flex-col gap-0.5">
 					<div className="flex items-center gap-2">
 						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
-							子代理{subagentType ? `: ${subagentType}` : ""}
+							子代理调用{subagentType ? ` · ${subagentType}` : ""}
 						</span>
 						{subagentModel && (
 							<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 truncate max-w-[120px]">
@@ -136,7 +136,7 @@ export function SubagentCard({
 							<>
 								<Loader2 className="w-3 h-3 animate-spin text-purple-500" />
 								<span className="truncate text-purple-600 dark:text-purple-400 font-medium">
-									{lastActivity?.content || "子代理正在启动..."}
+									{lastActivity?.content || "子代理调用启动中..."}
 								</span>
 							</>
 						) : (
@@ -164,12 +164,12 @@ export function SubagentCard({
 					>
 						{/* Parameters */}
 						<div className="px-2 py-1.5 mb-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-							Arguments: {JSON.stringify(toolCall.input)}
+							调用参数: {JSON.stringify(toolCall.input)}
 						</div>
 
 						{activities.length === 0 && isRunning && (
 							<div className="px-3 py-4 text-center text-zinc-400 italic">
-								Waiting for subagent trace...
+								等待子代理响应...
 							</div>
 						)}
 
@@ -223,7 +223,7 @@ export function SubagentCard({
 							<div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-700/50">
 								<div className="px-2 py-1.5 rounded bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
-										<AlertTriangle className="w-3 h-3" /> Error
+										<AlertTriangle className="w-3 h-3" /> 错误
 									</div>
 									<div className="whitespace-pre-wrap">{toolCall.error}</div>
 								</div>

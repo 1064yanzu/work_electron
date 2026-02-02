@@ -304,7 +304,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 				borderCls,
 				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
 				data.status === "running" &&
-					"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
+				"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
 			)}
 		>
 			<Handle type="target" position={Position.Left} className="opacity-0" />
@@ -332,7 +332,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-								{data.isSubagent ? data.subagentType || "子代理" : data.name}
+								{data.isSubagent ? data.subagentType || "子代理调用" : data.name}
 							</div>
 							<span
 								className={cn(
@@ -344,7 +344,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 							</span>
 						</div>
 						<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-							{data.description || (data.isSubagent ? "Task (Subagent)" : "")}
+							{data.description || (data.isSubagent ? "子代理调用中..." : "")}
 						</div>
 
 						{data.lastActivity ? (
@@ -637,7 +637,7 @@ function GraphInspector({
 	const copy = useCallback(async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
-		} catch {}
+		} catch { }
 	}, []);
 
 	return (
@@ -702,7 +702,7 @@ function GraphInspector({
 							</div>
 
 							{Array.isArray(selectedToolCall.subagentActivities) &&
-							selectedToolCall.subagentActivities.length > 0 ? (
+								selectedToolCall.subagentActivities.length > 0 ? (
 								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
 										子代理活动
@@ -773,8 +773,8 @@ function GraphInspector({
 										复制路径
 									</button>
 								</div>
-								) : null}
-							</>
+							) : null}
+						</>
 					) : isTaskSelected ? (
 						<div className="space-y-3">
 							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
@@ -868,7 +868,7 @@ function ExecutionGraphInner({
 					minZoom: 0.15,
 					maxZoom: 1.05,
 				});
-			} catch {}
+			} catch { }
 		}, 200);
 
 		return () => clearTimeout(t);
@@ -889,7 +889,7 @@ function ExecutionGraphInner({
 					minZoom: 0.2,
 					maxZoom: 1.1,
 				});
-			} catch {}
+			} catch { }
 		});
 	}, [fitView, toolCallById]);
 
@@ -986,17 +986,17 @@ function ExecutionGraphInner({
 				/>
 			</ReactFlow>
 
-				{selectedNodeId ? (
-					<GraphInspector
-						selectedNodeId={selectedNodeId}
-						source={source}
-						taskNodeId={graphBuild.taskNodeId || `task-${source.id}`}
-						toolCallById={toolCallById}
-						artifactByNodeId={artifactByNodeId}
-						onClose={() => setSelectedNodeId(null)}
-						onOpenArtifact={onOpenArtifact}
-					/>
-				) : null}
+			{selectedNodeId ? (
+				<GraphInspector
+					selectedNodeId={selectedNodeId}
+					source={source}
+					taskNodeId={graphBuild.taskNodeId || `task-${source.id}`}
+					toolCallById={toolCallById}
+					artifactByNodeId={artifactByNodeId}
+					onClose={() => setSelectedNodeId(null)}
+					onOpenArtifact={onOpenArtifact}
+				/>
+			) : null}
 		</div>
 	);
 }
