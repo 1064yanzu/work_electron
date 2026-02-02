@@ -43,6 +43,14 @@ export async function runMigrations(ctx: DbContext) {
 	await safeAddColumn(ctx, "agent_sessions", "project_id", "TEXT");
 	await safeAddColumn(ctx, "artifacts", "project_id", "TEXT");
 
+	// Migration: 添加设备信息字段到 sync_config
+	await safeAddColumn(ctx, "sync_config", "device_id", "TEXT");
+	await safeAddColumn(ctx, "sync_config", "device_name", "TEXT");
+
+	// Migration: 添加设备信息字段到 backup_history
+	await safeAddColumn(ctx, "backup_history", "device_id", "TEXT");
+	await safeAddColumn(ctx, "backup_history", "device_name", "TEXT");
+
 	// 添加索引(如果不存在会自动跳过因为用了 IF NOT EXISTS)
 	try {
 		await ctx.client.execute({
@@ -55,6 +63,11 @@ export async function runMigrations(ctx: DbContext) {
 		});
 		await ctx.client.execute({
 			sql: `CREATE INDEX IF NOT EXISTS idx_artifacts_project ON artifacts(project_id)`,
+			args: [],
+		});
+		// 在安全添加 device_id 列后创建索引
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_backup_history_device ON backup_history(device_id)`,
 			args: [],
 		});
 	} catch {

@@ -178,7 +178,7 @@ export function createLocalBackupHandlers(db: DbContext) {
 /**
  * 导出所有数据用于备份
  */
-async function exportAllDataForBackup(db: DbContext): Promise<object> {
+export async function exportAllDataForBackup(db: DbContext): Promise<object> {
     const [projects, folders, sources, notes, providers, configs] =
         await Promise.all([
             db.client.execute("SELECT * FROM projects"),

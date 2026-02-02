@@ -428,6 +428,15 @@ export interface SyncConfig {
 	webdav_username: string | null;
 	webdav_password: string | null;
 	webdav_path: string;
+	// WebDAV 高级配置
+	webdav_auto_sync: boolean;
+	webdav_sync_interval: number;
+	webdav_max_backups: number;
+	webdav_skip_backup_file: boolean;
+	webdav_disable_stream: boolean;
+	webdav_last_sync_at: number | null;
+	webdav_last_sync_error: string | null;
+	// 通用备份配置
 	auto_backup_enabled: boolean;
 	auto_backup_interval: number;
 	max_backup_count: number;
@@ -486,28 +495,46 @@ export async function updateSyncConfig(config: SyncConfig): Promise<void> {
 	return await safeInvoke("update_sync_config", { config });
 }
 
+export interface WebDavConfig {
+	webdavHost: string;
+	webdavUser?: string;
+	webdavPass?: string;
+	webdavPath?: string;
+	fileName?: string;
+	skipBackupFile?: boolean;
+	disableStream?: boolean;
+	encryptionPassword?: string; // 加密密码（可选）
+}
+
+export interface WebdavBackupFile {
+	fileName: string;
+	modifiedTime: string;
+	size: number;
+}
+
 export async function testWebdavConnection(
-	url: string,
-	username: string,
-	password: string,
-): Promise<WebDAVTestResult> {
-	return await safeInvoke("test_webdav_connection", {
-		url,
-		username,
-		password,
-	});
+	config: WebDavConfig,
+): Promise<boolean> {
+	return await safeInvoke("test_webdav_connection", { config });
 }
 
-export async function backupToWebdav(): Promise<string> {
-	return await safeInvoke("backup_to_webdav");
+export async function backupToWebdav(
+	data: string,
+	config: WebDavConfig,
+): Promise<any> {
+	return await safeInvoke("backup_to_webdav", { data, config });
 }
 
-export async function restoreFromWebdav(filename?: string): Promise<string> {
-	return await safeInvoke("restore_from_webdav", { filename });
+export async function restoreFromWebdav(
+	config: WebDavConfig,
+): Promise<string> {
+	return await safeInvoke("restore_from_webdav", { config });
 }
 
-export async function listWebdavBackups(): Promise<string[]> {
-	return await safeInvoke("list_webdav_backups");
+export async function listWebdavBackups(
+	config: WebDavConfig,
+): Promise<WebdavBackupFile[]> {
+	return await safeInvoke("list_webdav_backups", { config });
 }
 
 export async function getDataStats(): Promise<DataStats> {
@@ -580,8 +607,11 @@ export async function restoreFromLocal(filePath: string): Promise<void> {
 	return await safeInvoke("restore_from_local", { filePath });
 }
 
-export async function deleteWebdavBackup(filename: string): Promise<void> {
-	return await safeInvoke("delete_webdav_backup", { filename });
+export async function deleteWebdavBackup(
+	fileName: string,
+	config: WebDavConfig,
+): Promise<any> {
+	return await safeInvoke("delete_webdav_backup", { fileName, config });
 }
 
 // ==================== 产物管理 ====================

@@ -214,11 +214,23 @@ CREATE TABLE IF NOT EXISTS workflow_run_logs (
 CREATE TABLE IF NOT EXISTS sync_config (
   id TEXT PRIMARY KEY DEFAULT 'default',
   data_path TEXT,
+  -- 设备信息
+  device_id TEXT,
+  device_name TEXT,
   webdav_enabled INTEGER DEFAULT 0,
   webdav_url TEXT,
   webdav_username TEXT,
   webdav_password TEXT,
   webdav_path TEXT DEFAULT '/workbench-sync',
+  -- WebDAV 高级配置
+  webdav_auto_sync INTEGER DEFAULT 0,
+  webdav_sync_interval INTEGER DEFAULT 0,
+  webdav_max_backups INTEGER DEFAULT 0,
+  webdav_skip_backup_file INTEGER DEFAULT 0,
+  webdav_disable_stream INTEGER DEFAULT 0,
+  webdav_last_sync_at INTEGER,
+  webdav_last_sync_error TEXT,
+  -- 通用备份配置
   auto_backup_enabled INTEGER DEFAULT 0,
   auto_backup_interval INTEGER DEFAULT 30,
   max_backup_count INTEGER DEFAULT 10,
@@ -241,13 +253,20 @@ CREATE TABLE IF NOT EXISTS backup_history (
   id TEXT PRIMARY KEY,
   backup_type TEXT NOT NULL,
   backup_path TEXT,
+  file_name TEXT,
   file_size INTEGER,
   data_version TEXT,
+  device_id TEXT,
+  device_name TEXT,
+  is_encrypted INTEGER DEFAULT 0,
   is_compact INTEGER DEFAULT 0,
+  is_incremental INTEGER DEFAULT 0,
   status TEXT NOT NULL,
   error_message TEXT,
   created_at INTEGER NOT NULL
 );
+-- NOTE: idx_backup_history_device 索引在 migrate.ts 中安全创建，因为旧表可能没有 device_id 列
+CREATE INDEX IF NOT EXISTS idx_backup_history_created ON backup_history(created_at DESC);
 
 -- =====================
 -- 卡片分享

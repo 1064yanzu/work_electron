@@ -4,6 +4,10 @@
 import { randomUUID } from "node:crypto";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
+import { backupManager } from "../../services/BackupManager";
+import { autoSyncScheduler } from "../../services/AutoSyncScheduler";
+import { backupHistoryManager } from "../../services/BackupHistoryManager";
+import type { WebDavConfig } from "../../services/WebDavService";
 
 const now = () => Date.now();
 
@@ -15,6 +19,15 @@ interface SyncConfig {
 	webdav_username?: string;
 	webdav_password?: string;
 	webdav_path: string;
+	// WebDAV 高级配置
+	webdav_auto_sync: boolean;
+	webdav_sync_interval: number;
+	webdav_max_backups: number;
+	webdav_skip_backup_file: boolean;
+	webdav_disable_stream: boolean;
+	webdav_last_sync_at?: number;
+	webdav_last_sync_error?: string;
+	// 通用备份配置
 	auto_backup_enabled: boolean;
 	auto_backup_interval: number;
 	max_backup_count: number;
@@ -37,9 +50,14 @@ interface BackupHistory {
 	id: string;
 	backup_type: string;
 	backup_path?: string;
+	file_name?: string;
 	file_size?: number;
 	data_version?: string;
+	device_id?: string;
+	device_name?: string;
+	is_encrypted: boolean;
 	is_compact: boolean;
+	is_incremental: boolean;
 	status: string;
 	error_message?: string;
 	created_at: number;
@@ -59,6 +77,13 @@ export function createSyncHandlers(db: DbContext) {
 				id: "default",
 				webdav_enabled: false,
 				webdav_path: "/workbench-sync",
+				// WebDAV 高级配置默认值
+				webdav_auto_sync: false,
+				webdav_sync_interval: 0,
+				webdav_max_backups: 0,
+				webdav_skip_backup_file: false,
+				webdav_disable_stream: false,
+				// 通用备份默认配置
 				auto_backup_enabled: false,
 				auto_backup_interval: 30,
 				max_backup_count: 10,
@@ -80,6 +105,15 @@ export function createSyncHandlers(db: DbContext) {
 			webdav_username: row.webdav_username as string | undefined,
 			webdav_password: row.webdav_password as string | undefined,
 			webdav_path: (row.webdav_path as string) || "/workbench-sync",
+			// WebDAV 高级配置
+			webdav_auto_sync: Boolean(row.webdav_auto_sync),
+			webdav_sync_interval: (row.webdav_sync_interval as number) || 0,
+			webdav_max_backups: (row.webdav_max_backups as number) || 0,
+			webdav_skip_backup_file: Boolean(row.webdav_skip_backup_file),
+			webdav_disable_stream: Boolean(row.webdav_disable_stream),
+			webdav_last_sync_at: row.webdav_last_sync_at as number | undefined,
+			webdav_last_sync_error: row.webdav_last_sync_error as string | undefined,
+			// 通用备份配置
 			auto_backup_enabled: Boolean(row.auto_backup_enabled),
 			auto_backup_interval: (row.auto_backup_interval as number) || 30,
 			max_backup_count: (row.max_backup_count as number) || 10,
@@ -130,6 +164,36 @@ export function createSyncHandlers(db: DbContext) {
 			updates.push("webdav_path = ?");
 			args.push(input.webdav_path);
 		}
+		// WebDAV 高级配置
+		if (input.webdav_auto_sync !== undefined) {
+			updates.push("webdav_auto_sync = ?");
+			args.push(input.webdav_auto_sync ? 1 : 0);
+		}
+		if (input.webdav_sync_interval !== undefined) {
+			updates.push("webdav_sync_interval = ?");
+			args.push(input.webdav_sync_interval);
+		}
+		if (input.webdav_max_backups !== undefined) {
+			updates.push("webdav_max_backups = ?");
+			args.push(input.webdav_max_backups);
+		}
+		if (input.webdav_skip_backup_file !== undefined) {
+			updates.push("webdav_skip_backup_file = ?");
+			args.push(input.webdav_skip_backup_file ? 1 : 0);
+		}
+		if (input.webdav_disable_stream !== undefined) {
+			updates.push("webdav_disable_stream = ?");
+			args.push(input.webdav_disable_stream ? 1 : 0);
+		}
+		if (input.webdav_last_sync_at !== undefined) {
+			updates.push("webdav_last_sync_at = ?");
+			args.push(input.webdav_last_sync_at);
+		}
+		if (input.webdav_last_sync_error !== undefined) {
+			updates.push("webdav_last_sync_error = ?");
+			args.push(input.webdav_last_sync_error ?? null);
+		}
+		// 通用备份配置
 		if (input.auto_backup_enabled !== undefined) {
 			updates.push("auto_backup_enabled = ?");
 			args.push(input.auto_backup_enabled ? 1 : 0);
@@ -198,6 +262,14 @@ export function createSyncHandlers(db: DbContext) {
 				sql: `UPDATE sync_config SET ${updates.join(", ")} WHERE id = ?`,
 				args,
 			});
+
+			// 重启自动同步调度器以应用新配置
+			try {
+				await autoSyncScheduler.restart();
+				console.log("[SyncHandler] AutoSyncScheduler restarted after config update");
+			} catch (error) {
+				console.error("[SyncHandler] Failed to restart AutoSyncScheduler:", error);
+			}
 		}
 
 		return getSyncConfig({} as IpcMainInvokeEvent, {});
@@ -207,22 +279,8 @@ export function createSyncHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		input: { limit?: number },
 	): Promise<BackupHistory[]> => {
-		const limit = input.limit ?? 20;
-		const rows = await db.client.execute({
-			sql: `SELECT * FROM backup_history ORDER BY created_at DESC LIMIT ?`,
-			args: [limit],
-		});
-		return rows.rows.map((row) => ({
-			id: row.id as string,
-			backup_type: row.backup_type as string,
-			backup_path: row.backup_path as string | undefined,
-			file_size: row.file_size as number | undefined,
-			data_version: row.data_version as string | undefined,
-			is_compact: Boolean(row.is_compact),
-			status: row.status as string,
-			error_message: row.error_message as string | undefined,
-			created_at: row.created_at as number,
-		}));
+		const limit = input.limit ?? 50;
+		return await backupHistoryManager.getBackupHistory(limit);
 	};
 
 	const createBackupRecord = async (
@@ -241,15 +299,21 @@ export function createSyncHandlers(db: DbContext) {
 		const timestamp = now();
 
 		await db.client.execute({
-			sql: `INSERT INTO backup_history (id, backup_type, backup_path, file_size, data_version, is_compact, status, error_message, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			sql: `INSERT INTO backup_history (id, backup_type, backup_path, file_name, file_size, data_version,
+				device_id, device_name, is_encrypted, is_compact, is_incremental, status, error_message, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			args: [
 				id,
 				input.backup_type,
 				input.backup_path ?? null,
+				null, // file_name
 				input.file_size ?? null,
 				input.data_version ?? null,
+				null, // device_id
+				null, // device_name
+				0, // is_encrypted
 				(input.is_compact ?? false) ? 1 : 0,
+				0, // is_incremental
 				input.status,
 				input.error_message ?? null,
 				timestamp,
@@ -268,7 +332,9 @@ export function createSyncHandlers(db: DbContext) {
 			backup_path: input.backup_path,
 			file_size: input.file_size,
 			data_version: input.data_version,
+			is_encrypted: false,
 			is_compact: input.is_compact ?? false,
+			is_incremental: false,
 			status: input.status,
 			error_message: input.error_message,
 			created_at: timestamp,
@@ -304,11 +370,80 @@ export function createSyncHandlers(db: DbContext) {
 		return { deleted_count: deleteCount };
 	};
 
+	// WebDAV 备份操作
+	const backupToWebdav = async (
+		event: IpcMainInvokeEvent,
+		input: { data: string; config: WebDavConfig },
+	): Promise<any> => {
+		return await backupManager.backupToWebdav(event, input.data, input.config);
+	};
+
+	const restoreFromWebdav = async (
+		event: IpcMainInvokeEvent,
+		input: { config: WebDavConfig },
+	): Promise<string> => {
+		return await backupManager.restoreFromWebdav(event, input.config);
+	};
+
+	const listWebdavBackups = async (
+		event: IpcMainInvokeEvent,
+		input: { config: WebDavConfig },
+	): Promise<Array<{ fileName: string; modifiedTime: string; size: number }>> => {
+		return await backupManager.listWebdavFiles(event, input.config);
+	};
+
+	const deleteWebdavBackup = async (
+		event: IpcMainInvokeEvent,
+		input: { fileName: string; config: WebDavConfig },
+	): Promise<any> => {
+		return await backupManager.deleteWebdavFile(
+			event,
+			input.fileName,
+			input.config,
+		);
+	};
+
+	const testWebdavConnection = async (
+		event: IpcMainInvokeEvent,
+		input: { config: WebDavConfig },
+	): Promise<boolean> => {
+		return await backupManager.checkConnection(event, input.config);
+	};
+
+	// 获取指定设备的备份历史
+	const getDeviceBackupHistory = async (
+		_event: IpcMainInvokeEvent,
+		input: { deviceId: string; limit?: number },
+	): Promise<BackupHistory[]> => {
+		const limit = input.limit ?? 20;
+		return await backupHistoryManager.getDeviceBackupHistory(input.deviceId, limit);
+	};
+
+	// 清理 WebDAV 旧备份
+	const cleanupWebdavBackups = async (
+		_event: IpcMainInvokeEvent,
+		input: { config: WebDavConfig; maxBackups: number },
+	): Promise<{ deleted_count: number }> => {
+		const deletedCount = await backupHistoryManager.cleanupOldWebdavBackups(
+			input.config,
+			input.maxBackups,
+		);
+		return { deleted_count: deletedCount };
+	};
+
 	return {
 		get_sync_config: getSyncConfig,
 		update_sync_config: updateSyncConfig,
 		list_backup_history: listBackupHistory,
+		get_device_backup_history: getDeviceBackupHistory,
 		create_backup_record: createBackupRecord,
 		clean_old_backups: cleanOldBackups,
+		cleanup_webdav_backups: cleanupWebdavBackups,
+		// WebDAV 操作
+		backup_to_webdav: backupToWebdav,
+		restore_from_webdav: restoreFromWebdav,
+		list_webdav_backups: listWebdavBackups,
+		delete_webdav_backup: deleteWebdavBackup,
+		test_webdav_connection: testWebdavConnection,
 	};
 }

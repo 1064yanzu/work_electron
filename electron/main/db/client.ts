@@ -18,3 +18,13 @@ export function createDbContext(): DbContext {
 	const db = drizzle(client);
 	return { client, db, filePath };
 }
+
+// 单例实例
+let dbContextInstance: DbContext | null = null;
+
+export function getDbContext(): DbContext {
+	if (!dbContextInstance) {
+		dbContextInstance = createDbContext();
+	}
+	return dbContextInstance;
+}

@@ -318,6 +318,12 @@ export function registerIpcHandlers({
 	ipcMain.handle("list_backup_history", syncHandlers.list_backup_history);
 	ipcMain.handle("create_backup_record", syncHandlers.create_backup_record);
 	ipcMain.handle("clean_old_backups", syncHandlers.clean_old_backups);
+	// WebDAV 操作
+	ipcMain.handle("backup_to_webdav", syncHandlers.backup_to_webdav);
+	ipcMain.handle("restore_from_webdav", syncHandlers.restore_from_webdav);
+	ipcMain.handle("list_webdav_backups", syncHandlers.list_webdav_backups);
+	ipcMain.handle("delete_webdav_backup", syncHandlers.delete_webdav_backup);
+	ipcMain.handle("test_webdav_connection", syncHandlers.test_webdav_connection);
 
 	// ==================
 	// Import / Export
