@@ -49,6 +49,19 @@ function normalizePathInput(p: string): string {
 		}
 	}
 
+	// Support "asset://..." (legacy Tauri-like scheme; treat as local file path).
+	if (raw.startsWith("asset://")) {
+		try {
+			const u = new URL(raw);
+			let p = decodeURIComponent(u.pathname);
+			// `asset:///C:/a.png` -> `/C:/a.png` (trim the leading slash)
+			if (/^\/[a-zA-Z]:\//.test(p)) p = p.slice(1);
+			return p;
+		} catch {
+			// Fall through to other normalizations.
+		}
+	}
+
 	// Support "~" and "~/" (common in CLI contexts).
 	if (raw === "~") return os.homedir();
 	if (raw.startsWith("~/") || raw.startsWith("~\\")) {
@@ -82,7 +95,7 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 			try {
 				const st = await fs.stat(full);
 				size = st.size;
-			} catch { }
+			} catch {}
 		}
 		out.push({ path: full, name: ent.name, is_file, is_dir, size });
 	}

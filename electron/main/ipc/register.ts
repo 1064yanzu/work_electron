@@ -8,7 +8,11 @@ import type { IPCSchema } from "../../shared/ipc-schema";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
 import { searchChunks } from "../kb/searchChunks";
-import { invokeLlm, invokeLlmStream, invokeImageGeneration } from "../llm/invoke";
+import {
+	invokeLlm,
+	invokeLlmStream,
+	invokeImageGeneration,
+} from "../llm/invoke";
 import type { Logger } from "../logging/types";
 import {
 	createAgentMemoryHandlers,
@@ -21,11 +25,15 @@ import {
 import { createConfigHandlers } from "./handlers/config";
 import { createActivityHandlers } from "./handlers/activity";
 import { createBrowserSearchHandlers } from "./handlers/browserSearch";
+import { createExaMcpHandlers } from "./handlers/exaMcp";
 import { createCardHandlers } from "./handlers/cards";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
 import { createAgentSdkHandlers } from "./handlers/agentSdk";
 import { createAgentSandboxHandlers } from "./handlers/agentSandbox";
+import { createDocumentHandlers } from "./handlers/documents";
+import { createContentIngestHandlers } from "./handlers/contentIngest";
+import { createModelDiscoveryHandlers } from "./handlers/modelDiscovery";
 import { createFsSafeHandlers } from "./handlers/fsSafe";
 import { createTempFileHandlers } from "./handlers/tempFiles";
 import { createKbEmbeddingHandlers } from "./handlers/kbEmbeddings";
@@ -81,12 +89,16 @@ export function registerIpcHandlers({
 	const cardHandlers = createCardHandlers(db);
 	const activityHandlers = createActivityHandlers(db);
 	const browserSearchHandlers = createBrowserSearchHandlers();
+	const exaMcpHandlers = createExaMcpHandlers();
 	const webContentHandlers = createWebContentHandlers();
 	const skillsHandlers = createSkillsHandlers(db);
 	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
 	const dataStatsHandlers = createDataStatsHandlers(db);
 	const fsSafeHandlers = createFsSafeHandlers();
 	const tempFileHandlers = createTempFileHandlers();
+	const documentHandlers = createDocumentHandlers();
+	const contentIngestHandlers = createContentIngestHandlers(db);
+	const modelDiscoveryHandlers = createModelDiscoveryHandlers();
 	const agentSandboxHandlers = createAgentSandboxHandlers();
 	const agentSdkHandlers = createAgentSdkHandlers({
 		getMainWindow: () => mainWindowRef,
@@ -160,6 +172,16 @@ export function registerIpcHandlers({
 	ipcMain.handle("open_browser_window", webContentHandlers.open_browser_window);
 	ipcMain.handle("fetch_page_content", webContentHandlers.fetch_page_content);
 	ipcMain.handle("browser_search", browserSearchHandlers.browser_search);
+	ipcMain.handle("exa_mcp_search", exaMcpHandlers.exa_mcp_search);
+	ipcMain.handle("fetch_url_content", contentIngestHandlers.fetch_url_content);
+	ipcMain.handle(
+		"upload_file_content",
+		contentIngestHandlers.upload_file_content,
+	);
+	ipcMain.handle(
+		"import_local_files",
+		contentIngestHandlers.import_local_files,
+	);
 	ipcMain.handle("read_file_safe", fsSafeHandlers.read_file_safe);
 	ipcMain.handle("write_file_safe", fsSafeHandlers.write_file_safe);
 	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
@@ -170,6 +192,7 @@ export function registerIpcHandlers({
 		"agent_get_sandbox_dir",
 		agentSandboxHandlers.agent_get_sandbox_dir,
 	);
+	ipcMain.handle("convert_docx_to_html", documentHandlers.convert_docx_to_html);
 	// ==================
 	// Projects
 	// ==================
@@ -249,6 +272,10 @@ export function registerIpcHandlers({
 		providerHandlers.check_provider_api_key,
 	);
 	ipcMain.handle("reset_core_providers", providerHandlers.reset_core_providers);
+	ipcMain.handle(
+		"provider_fetch_models",
+		modelDiscoveryHandlers.provider_fetch_models,
+	);
 
 	// ==================
 	// Config
@@ -280,14 +307,8 @@ export function registerIpcHandlers({
 	// ==================
 	// 生图配置
 	// ==================
-	ipcMain.handle(
-		"get_image_gen_config",
-		imageGenHandlers.get_image_gen_config,
-	);
-	ipcMain.handle(
-		"set_image_gen_config",
-		imageGenHandlers.set_image_gen_config,
-	);
+	ipcMain.handle("get_image_gen_config", imageGenHandlers.get_image_gen_config);
+	ipcMain.handle("set_image_gen_config", imageGenHandlers.set_image_gen_config);
 	ipcMain.handle(
 		"generate_image_for_text",
 		imageGenHandlers.generate_image_for_text,

@@ -3,6 +3,9 @@
  * 统一管理生图配置和请求，支持多提供商
  */
 
+import { app } from "electron";
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { DbContext } from "../db/client";
 import type { Provider, ProviderType } from "../../shared/types";
 
@@ -255,12 +258,31 @@ async function callImageGenerationAPI(
 		}>;
 	};
 
+	// 处理每张图片：解析响应格式，保存到本地文件
+	const images: Array<{ imageUrl: string; revisedPrompt?: string }> = [];
+	for (const item of data.data) {
+		const rawUrl = normalizeImageResponse(item);
+		if (!rawUrl) continue;
+
+		try {
+			// 保存图片到本地文件，返回文件路径
+			const filePath = await saveImageToFile(rawUrl);
+			images.push({
+				imageUrl: filePath,
+				revisedPrompt: item.revised_prompt,
+			});
+		} catch (err) {
+			console.error("[imageGeneration] 保存图片失败:", err);
+			// 如果保存失败，回退使用原始 URL（base64 或 http）
+			images.push({
+				imageUrl: rawUrl,
+				revisedPrompt: item.revised_prompt,
+			});
+		}
+	}
+
 	return {
-		images: data.data.map((item) => ({
-			// 统一解析各种响应格式为 imageUrl
-			imageUrl: normalizeImageResponse(item),
-			revisedPrompt: item.revised_prompt,
-		})).filter(img => img.imageUrl), // 过滤掉没有有效 URL 的结果
+		images,
 		model: options.model,
 	};
 }
@@ -305,6 +327,91 @@ function detectImageMimeType(base64: string): string | null {
 	if (header.startsWith("UklGR")) return "image/webp";
 
 	return null;
+}
+
+/**
+ * 获取图片存储目录
+ */
+function getImageStorageDir(): string {
+	return path.join(app.getPath("userData"), "generated-images");
+}
+
+/**
+ * 生成唯一的图片文件名
+ */
+function generateImageFileName(ext: string): string {
+	const timestamp = Date.now();
+	const random = Math.random().toString(36).substring(2, 8);
+	return `img_${timestamp}_${random}.${ext}`;
+}
+
+/**
+ * 将图片保存到本地文件系统
+ * @param imageData base64 数据或 URL
+ * @returns 保存后的本地文件绝对路径
+ */
+async function saveImageToFile(imageData: string): Promise<string> {
+	const storageDir = getImageStorageDir();
+
+	// 确保目录存在
+	await fs.mkdir(storageDir, { recursive: true });
+
+	let base64Data: string;
+	let ext = "png";
+
+	// 如果是 data URL，解析出 base64 数据
+	if (imageData.startsWith("data:image/")) {
+		const match = imageData.match(/^data:image\/(\w+);base64,(.+)$/);
+		if (match) {
+			ext = match[1] === "jpeg" ? "jpg" : match[1];
+			base64Data = match[2];
+		} else {
+			throw new Error("无效的 data URL 格式");
+		}
+	} else if (imageData.startsWith("http://") || imageData.startsWith("https://")) {
+		// 如果是 HTTP URL，下载图片
+		const response = await fetch(imageData);
+		if (!response.ok) {
+			throw new Error(`下载图片失败: ${response.status}`);
+		}
+		const buffer = await response.arrayBuffer();
+		base64Data = Buffer.from(buffer).toString("base64");
+
+		// 尝试从 Content-Type 获取扩展名
+		const contentType = response.headers.get("content-type");
+		if (contentType?.includes("jpeg") || contentType?.includes("jpg")) {
+			ext = "jpg";
+		} else if (contentType?.includes("webp")) {
+			ext = "webp";
+		} else if (contentType?.includes("gif")) {
+			ext = "gif";
+		}
+		// 否则使用检测方法
+		const detected = detectImageMimeType(base64Data);
+		if (detected) {
+			ext = detected.split("/")[1];
+			if (ext === "jpeg") ext = "jpg";
+		}
+	} else {
+		// 纯 base64 字符串
+		base64Data = imageData;
+		const detected = detectImageMimeType(base64Data);
+		if (detected) {
+			ext = detected.split("/")[1];
+			if (ext === "jpeg") ext = "jpg";
+		}
+	}
+
+	const fileName = generateImageFileName(ext);
+	const filePath = path.join(storageDir, fileName);
+
+	// 写入文件
+	const buffer = Buffer.from(base64Data, "base64");
+	await fs.writeFile(filePath, buffer);
+
+	console.log(`[imageGeneration] 图片已保存: ${filePath} (${buffer.length} bytes)`);
+
+	return filePath;
 }
 
 // ==================== 统一入口 ====================

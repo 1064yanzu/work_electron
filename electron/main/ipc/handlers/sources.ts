@@ -203,8 +203,16 @@ export function createSourceHandlers(db: DbContext) {
 
 	const searchSources: Handler<"search_sources"> = async (_event, input) => {
 		const limit = Math.min(input.limit ?? 20, 100);
+		const rawQuery =
+			typeof input.query === "string" && input.query.trim()
+				? input.query.trim()
+				: typeof (input as any).keyword === "string"
+					? String((input as any).keyword).trim()
+					: "";
+		if (!rawQuery) return [];
+
 		let sql = `SELECT * FROM sources WHERE title LIKE ?`;
-		const args: (string | number)[] = [`%${input.query}%`];
+		const args: (string | number)[] = [`%${rawQuery}%`];
 
 		if (input.project_id) {
 			sql += ` AND (project_id = ? OR project_id IS NULL)`;

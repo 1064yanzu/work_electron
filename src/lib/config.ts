@@ -674,33 +674,40 @@ function parseExaMcpResponse(text: string): BrowserSearchResult[] {
 
 async function tryExaMcpSearch(query: string, limit: number) {
 	try {
-		const response = await fetch(EXA_MCP_API_HOST, {
-			method: "POST",
-			headers: {
-				accept: "application/json, text/event-stream",
-				"content-type": "application/json",
-			},
-			body: JSON.stringify({
-				jsonrpc: "2.0",
-				id: 1,
-				method: "tools/call",
-				params: {
-					name: "web_search_exa",
-					arguments: {
-						query,
-						type: "auto",
-						numResults: limit,
-						livecrawl: "fallback",
-					},
+		// 优先交给后端执行请求与解析（避免渲染进程 CORS/性能问题）
+		let normalized: BrowserSearchResult[] = [];
+		try {
+			normalized = await invoke("exa_mcp_search", { query, limit });
+		} catch {
+			// 回退：仍然在渲染进程请求（兼容未注册 handler / 非桌面环境）
+			const response = await fetch(EXA_MCP_API_HOST, {
+				method: "POST",
+				headers: {
+					accept: "application/json, text/event-stream",
+					"content-type": "application/json",
 				},
-			}),
-		});
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Exa MCP ${response.status}: ${errorText}`);
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 1,
+					method: "tools/call",
+					params: {
+						name: "web_search_exa",
+						arguments: {
+							query,
+							type: "auto",
+							numResults: limit,
+							livecrawl: "fallback",
+						},
+					},
+				}),
+			});
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`Exa MCP ${response.status}: ${errorText}`);
+			}
+			const text = await response.text();
+			normalized = parseExaMcpResponse(text);
 		}
-		const text = await response.text();
-		const normalized = parseExaMcpResponse(text);
 		const finalResults = normalized.filter(
 			(r) => r.url && r.url.startsWith("http"),
 		);

@@ -974,8 +974,9 @@ export default function EditorCanvas({
 
 			if (result.images.length > 0) {
 				// 后端已统一解析各种格式，直接使用 imageUrl
+				// 用 <> 包裹 URL 以支持路径中的空格等特殊字符
 				const { imageUrl } = result.images[0];
-				const imageMarkdown = `\n\n![AI 配图](${imageUrl})\n`;
+				const imageMarkdown = `\n\n![AI 配图](<${imageUrl}>)\n`;
 
 				// 替换占位符
 				setEditorContent((prevContent) =>

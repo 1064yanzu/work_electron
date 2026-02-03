@@ -1396,7 +1396,7 @@ export default function ResourceSidebar({
 
 	const handleOpenCardSource = (card: Card) => {
 		if (card.source_url) {
-			invoke("open_url", { url: card.source_url });
+			invoke("open_external_url", { url: card.source_url });
 		}
 	};
 
@@ -1790,7 +1790,7 @@ export default function ResourceSidebar({
 									{previewSource.url && (
 										<button
 											onClick={() =>
-												invoke("open_url", { url: previewSource.url })
+												invoke("open_external_url", { url: previewSource.url })
 											}
 											className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline cursor-pointer ml-auto"
 										>

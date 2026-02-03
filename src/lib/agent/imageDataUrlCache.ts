@@ -20,7 +20,10 @@ function guessImageMimeType(path: string): string {
 	return mimeTypes[ext] || "image/png";
 }
 
-export function getImageDataUrl(path: string): Promise<string> {
+export function getImageDataUrl(inputPath: string): Promise<string> {
+	// URL 解码路径，处理 react-markdown 可能的 URL 编码（如 %20 -> 空格）
+	const path = decodeURIComponent(inputPath);
+
 	const hit = cache.get(path);
 	if (hit) return hit.promise;
 

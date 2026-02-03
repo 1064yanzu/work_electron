@@ -12,6 +12,7 @@ import {
 import mammoth from "mammoth";
 import { useCallback, useEffect, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { safeInvoke } from "../../lib/tauriBridge";
 
 // 设置 PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -29,6 +30,60 @@ function PDFViewer({ src, className }: { src: string; className?: string }) {
 	const [scale, setScale] = useState<number>(1.0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
+	const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		let cancelled = false;
+		let createdUrl: string | null = null;
+		setPdfData(null);
+		setDownloadUrl((prev) => {
+			if (prev) URL.revokeObjectURL(prev);
+			return null;
+		});
+
+		const isRemote =
+			src.startsWith("http://") ||
+			src.startsWith("https://") ||
+			src.startsWith("data:") ||
+			src.startsWith("blob:");
+		if (isRemote) return;
+
+		(async () => {
+			try {
+				const result = await safeInvoke<{ content: string; encoding: string }>(
+					"read_file_safe",
+					{
+						payload: { path: src, encoding: "base64" },
+					},
+				);
+				if (cancelled) return;
+
+				const base64 = result?.content || "";
+				if (!base64) throw new Error("PDF 内容为空");
+
+				const binary = atob(base64);
+				const bytes = new Uint8Array(binary.length);
+				for (let i = 0; i < binary.length; i++) {
+					bytes[i] = binary.charCodeAt(i);
+				}
+
+				setPdfData(bytes);
+				const blob = new Blob([bytes], { type: "application/pdf" });
+				const url = URL.createObjectURL(blob);
+				createdUrl = url;
+				setDownloadUrl(url);
+			} catch (e) {
+				if (cancelled) return;
+				console.warn("[PDFViewer] Failed to load local pdf via backend:", e);
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+			if (createdUrl) URL.revokeObjectURL(createdUrl);
+		};
+	}, [src]);
 
 	const onDocumentLoadSuccess = useCallback(
 		({ numPages }: { numPages: number }) => {
@@ -109,7 +164,7 @@ function PDFViewer({ src, className }: { src: string; className?: string }) {
 						<ZoomIn className="w-4 h-4" />
 					</button>
 					<a
-						href={src}
+						href={downloadUrl || src}
 						download
 						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ml-2"
 						title="下载"
@@ -127,7 +182,7 @@ function PDFViewer({ src, className }: { src: string; className?: string }) {
 					</div>
 				)}
 				<Document
-					file={src}
+					file={pdfData ? { data: pdfData } : src}
 					onLoadSuccess={onDocumentLoadSuccess}
 					onLoadError={onDocumentLoadError}
 					loading={null}
@@ -158,11 +213,26 @@ function DOCXViewer({ src, className }: { src: string; className?: string }) {
 				setLoading(true);
 				setError(null);
 
-				// 从 asset:// URL 获取文件
-				const response = await fetch(src);
-				if (!response.ok) {
-					throw new Error("无法加载文档");
+				// 优先交给后端转换（避免前端大文件解析卡顿），失败则回退到前端转换
+				try {
+					const result = await safeInvoke<{ html: string }>(
+						"convert_docx_to_html",
+						{
+							payload: { path: src },
+						},
+					);
+					setHtmlContent(result.html || "");
+					return;
+				} catch (err) {
+					// 回退：前端转换（Web 环境/未注册 handler/路径不可读等）
+					console.warn(
+						"[DOCXViewer] Backend conversion failed, fallback:",
+						err,
+					);
 				}
+
+				const response = await fetch(src);
+				if (!response.ok) throw new Error("无法加载文档");
 
 				const arrayBuffer = await response.arrayBuffer();
 				const result = await mammoth.convertToHtml({ arrayBuffer });

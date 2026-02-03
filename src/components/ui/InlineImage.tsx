@@ -26,7 +26,7 @@ function guessDownloadName(title: string | undefined, path: string) {
 }
 
 export const InlineImage = memo(function InlineImage({
-	path,
+	path: rawPath,
 	title,
 	className,
 	maxHeightClassName = "max-h-60",
@@ -36,6 +36,15 @@ export const InlineImage = memo(function InlineImage({
 	className?: string;
 	maxHeightClassName?: string;
 }) {
+	// URL 解码路径，处理 react-markdown 可能的 URL 编码（如 %20 -> 空格）
+	const path = useMemo(() => {
+		try {
+			return decodeURIComponent(rawPath);
+		} catch {
+			return rawPath;
+		}
+	}, [rawPath]);
+
 	const [dataUrl, setDataUrl] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [open, setOpen] = useState(false);
@@ -130,24 +139,25 @@ export const InlineImage = memo(function InlineImage({
 		};
 	}, [path]);
 
+	// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 	if (error) {
 		return (
-			<div className="text-[11px] text-zinc-400">图片加载失败: {path}</div>
+			<span className="block text-[11px] text-zinc-400">图片加载失败: {path}</span>
 		);
 	}
 
 	if (!dataUrl) {
 		return (
-			<div className="flex items-center gap-2 text-[11px] text-zinc-500">
+			<span className="flex items-center gap-2 text-[11px] text-zinc-500">
 				<Loader2 className="w-3 h-3 animate-spin" />
 				加载图片...
-			</div>
+			</span>
 		);
 	}
 
 	return (
-		<div className={className ? className : ""}>
-			<div className="group relative">
+		<span className={`block ${className || ""}`}>
+			<span className="group relative block">
 				<button
 					type="button"
 					className="block w-full"
@@ -171,7 +181,7 @@ export const InlineImage = memo(function InlineImage({
 					<Download className="w-4 h-4" />
 					<span className="text-xs font-medium">下载</span>
 				</a>
-			</div>
+			</span>
 
 			<ImageLightbox
 				open={open}
@@ -180,6 +190,6 @@ export const InlineImage = memo(function InlineImage({
 				downloadName={downloadName}
 				onClose={() => setOpen(false)}
 			/>
-		</div>
+		</span>
 	);
 });

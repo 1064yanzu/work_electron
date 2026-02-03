@@ -1,4 +1,5 @@
 import type { Provider } from "../components/Settings/constants";
+import { isTauriUnavailableError, safeInvoke } from "./tauriBridge";
 
 export interface DiscoveredModel {
 	id: string;
@@ -24,6 +25,33 @@ export async function fetchModelsFromProvider(
 ): Promise<FetchModelsResult> {
 	if (!provider.apiBase) {
 		return { models: [], error: "未配置 API Base URL" };
+	}
+
+	// 优先交给后端请求（避免前端 CORS/代理差异，且避免在渲染进程处理敏感请求）
+	try {
+		const backendResult = await safeInvoke<FetchModelsResult>(
+			"provider_fetch_models",
+			{
+				payload: {
+					providerType: provider.providerType,
+					apiBase: provider.apiBase,
+					apiKey: provider.apiKey,
+					templateId: provider.templateId,
+					metadata: provider.metadata,
+				},
+			},
+		);
+		if (backendResult && Array.isArray(backendResult.models)) {
+			return backendResult;
+		}
+	} catch (err) {
+		// 桌面环境不可用/未注册 handler 时回退到前端请求
+		if (!isTauriUnavailableError(err)) {
+			console.warn(
+				"[ModelDiscovery] Backend provider_fetch_models failed:",
+				err,
+			);
+		}
 	}
 
 	const stripTrailingSlash = (s: string) => String(s || "").replace(/\/+$/, "");

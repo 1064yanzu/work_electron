@@ -220,6 +220,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 			className={cn(
 				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]",
 				"border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
+				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
 			)}
 		>
@@ -301,10 +302,11 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 			className={cn(
 				"min-w-[280px] max-w-[320px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
+				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				borderCls,
 				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
 				data.status === "running" &&
-				"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
+					"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
 			)}
 		>
 			<Handle type="target" position={Position.Left} className="opacity-0" />
@@ -332,7 +334,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-								{data.isSubagent ? data.subagentType || "子代理调用" : data.name}
+								{data.isSubagent
+									? data.subagentType || "子代理调用"
+									: data.name}
 							</div>
 							<span
 								className={cn(
@@ -384,6 +388,7 @@ const ArtifactNode = memo(function ArtifactNode(
 			className={cn(
 				"min-w-[220px] max-w-[280px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
+				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
 				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
 			)}
@@ -421,7 +426,9 @@ type ExecutionGraphBuild = {
 	taskNodeId: string | null;
 };
 
-function buildExecutionGraph(source: ExecutionGraphSource | null): ExecutionGraphBuild {
+function buildExecutionGraph(
+	source: ExecutionGraphSource | null,
+): ExecutionGraphBuild {
 	if (!source) return { nodes: [], edges: [], taskNodeId: null };
 
 	const toolCalls = Array.isArray(source.toolCalls) ? source.toolCalls : [];
@@ -453,8 +460,12 @@ function buildExecutionGraph(source: ExecutionGraphSource | null): ExecutionGrap
 	const ROOT_X = 40;
 	const ROOT_Y = 40;
 
-	const toolsCompleted = orderedToolCalls.filter((t) => t.status === "completed").length;
-	const toolsFailed = orderedToolCalls.filter((t) => t.status === "error").length;
+	const toolsCompleted = orderedToolCalls.filter(
+		(t) => t.status === "completed",
+	).length;
+	const toolsFailed = orderedToolCalls.filter(
+		(t) => t.status === "error",
+	).length;
 
 	const nodes: ExecutionGraphNode[] = [];
 	const edges: Edge[] = [];
@@ -510,7 +521,9 @@ function buildExecutionGraph(source: ExecutionGraphSource | null): ExecutionGrap
 				startedAt: tc.startedAt,
 				isSubagent: tc.name === "Task",
 				subagentType: subType || undefined,
-				lastActivity: lastActivity ? String(lastActivity).slice(0, 240) : undefined,
+				lastActivity: lastActivity
+					? String(lastActivity).slice(0, 240)
+					: undefined,
 			},
 		});
 
@@ -529,10 +542,16 @@ function buildExecutionGraph(source: ExecutionGraphSource | null): ExecutionGrap
 			type: "smoothstep",
 			animated: tc.status === "running",
 			style: {
-				stroke: isSub ? "#8b5cf6" : tc.status === "error" ? "#fb7185" : "#94a3b8",
+				stroke: isSub
+					? "rgba(139,92,246,0.85)"
+					: tc.status === "error"
+						? "rgba(251,113,133,0.85)"
+						: "rgba(148,163,184,0.75)",
 				strokeWidth: 2,
 				strokeDasharray: dashed ? "6 6" : undefined,
 				opacity: 0.85,
+				strokeLinecap: "round",
+				strokeLinejoin: "round",
 			},
 		});
 	}
@@ -586,10 +605,12 @@ function buildExecutionGraph(source: ExecutionGraphSource | null): ExecutionGrap
 					target: nodeId,
 					type: "smoothstep",
 					style: {
-						stroke: "#a1a1aa",
+						stroke: "rgba(161,161,170,0.75)",
 						strokeWidth: 1.5,
 						strokeDasharray: "2 6",
 						opacity: 0.8,
+						strokeLinecap: "round",
+						strokeLinejoin: "round",
 					},
 				});
 			}
@@ -637,7 +658,7 @@ function GraphInspector({
 	const copy = useCallback(async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
-		} catch { }
+		} catch {}
 	}, []);
 
 	return (
@@ -702,7 +723,7 @@ function GraphInspector({
 							</div>
 
 							{Array.isArray(selectedToolCall.subagentActivities) &&
-								selectedToolCall.subagentActivities.length > 0 ? (
+							selectedToolCall.subagentActivities.length > 0 ? (
 								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
 										子代理活动
@@ -868,7 +889,7 @@ function ExecutionGraphInner({
 					minZoom: 0.15,
 					maxZoom: 1.05,
 				});
-			} catch { }
+			} catch {}
 		}, 200);
 
 		return () => clearTimeout(t);
@@ -889,7 +910,7 @@ function ExecutionGraphInner({
 					minZoom: 0.2,
 					maxZoom: 1.1,
 				});
-			} catch { }
+			} catch {}
 		});
 	}, [fitView, toolCallById]);
 
@@ -930,7 +951,8 @@ function ExecutionGraphInner({
 	}
 
 	return (
-		<div className="flex-1 relative bg-zinc-50 dark:bg-zinc-900">
+		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.10),transparent_55%)]" />
 			{/* Top-right micro toolbar */}
 			<div className="absolute right-4 top-4 z-20 flex items-center gap-2 pointer-events-auto">
 				<button
@@ -961,17 +983,20 @@ function ExecutionGraphInner({
 				onNodeClick={onNodeClick}
 				onPaneClick={onPaneClick}
 				onMoveStart={() => setFollow(false)}
+				onlyRenderVisibleElements
+				nodesConnectable={false}
 				fitView
 				fitViewOptions={{ padding: 0.35, minZoom: 0.15, maxZoom: 1.05 }}
 				minZoom={0.1}
 				maxZoom={1.2}
+				className="relative z-10"
 				proOptions={{ hideAttribution: true }}
 			>
 				<Background
 					variant={BackgroundVariant.Dots}
-					gap={22}
+					gap={24}
 					size={1}
-					color="rgba(148,163,184,0.35)"
+					color="rgba(148,163,184,0.25)"
 				/>
 				<Controls
 					position="bottom-left"

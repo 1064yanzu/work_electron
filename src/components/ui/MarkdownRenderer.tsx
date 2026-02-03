@@ -89,11 +89,21 @@ interface MarkdownRendererProps {
 /**
  * 预处理 Markdown 内容：修复模型可能输出的格式问题
  * 例如：![alt]\n(url) -> ![alt](url)
+ * 还会处理包含空格的 URL，用 <> 包裹
  */
 function preprocessMarkdown(content: string): string {
-	// 修复被换行分开的图片语法: ![alt]\n(url) 或 ![alt]\n\n(url)
+	// 1. 修复被换行分开的图片语法: ![alt]\n(url) 或 ![alt]\n\n(url)
 	// 匹配: ![任意文字] 后跟换行再跟 (url)
-	return content.replace(/!\[([^\]]*)\]\s*\n+\s*\(([^)]+)\)/g, "![$1]($2)");
+	let result = content.replace(/!\[([^\]]*)\]\s*\n+\s*\(([^)]+)\)/g, "![$1]($2)");
+
+	// 2. 为包含空格但未用 <> 包裹的图片 URL 添加包裹
+	// 匹配: ![alt](url with spaces) 但排除已经用 <> 包裹的
+	result = result.replace(
+		/!\[([^\]]*)\]\((?!<)([^)]*\s[^)]*)\)/g,
+		"![$1](<$2>)"
+	);
+
+	return result;
 }
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({
@@ -117,9 +127,16 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 		// `![alt](data:image/png;base64,...)`
 		if (key === "src") {
 			const trimmed = String(url || "").trim();
+			// 占位图前缀 - 直接放行
+			if (trimmed.startsWith("loading:")) return trimmed;
+			// base64 data URL
 			if (isAllowedImageDataUrl(trimmed)) return trimmed;
+			// file:// URL
 			if (trimmed.startsWith("file:")) return fileUrlToPath(trimmed);
+			// Windows 绝对路径
 			if (isWindowsAbsolutePath(trimmed)) return trimmed;
+			// Unix 绝对路径 (macOS/Linux)
+			if (trimmed.startsWith("/")) return trimmed;
 		}
 		return defaultUrlTransform(url);
 	}, []);
@@ -255,10 +272,16 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 						className="text-blue-600 dark:text-blue-400 hover:underline"
 						onClick={async (e) => {
 							if (!resolvedHref) return;
-							// 在 Tauri WebView 里，window.open/target=_blank 往往不会生效，改用后端 open_url 走系统浏览器
+							// 在桌面 WebView 里，window.open/target=_blank 往往不会生效，改用后端 open_external_url 走系统浏览器
 							try {
 								e.preventDefault();
-								await safeInvoke("open_url", { url: resolvedHref });
+								const result = await safeInvoke<{
+									success: boolean;
+									error?: string;
+								}>("open_external_url", { url: resolvedHref });
+								if (!result?.success) {
+									throw new Error(result?.error || "OPEN_EXTERNAL_URL_FAILED");
+								}
 							} catch (err) {
 								if (isTauriUnavailableError(err)) {
 									// Web 环境回退
@@ -280,23 +303,24 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
 				// 处理占位图：loading: 前缀表示正在生成中
 				if (src.startsWith("loading:")) {
+					// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 					return (
-						<div className="my-4 flex items-center justify-center">
-							<div className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
+						<span className="block my-4 flex items-center justify-center">
+							<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
 								{/* 加载动画 */}
-								<div className="relative w-12 h-12">
-									<div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-700"></div>
-									<div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
-								</div>
-								<div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+								<span className="relative block w-12 h-12">
+									<span className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-700" />
+									<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
+								</span>
+								<span className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
 									<span className="animate-pulse">🎨</span>
 									<span>{alt || "AI 配图生成中..."}</span>
-								</div>
-								<div className="text-xs text-zinc-400 dark:text-zinc-500">
+								</span>
+								<span className="text-xs text-zinc-400 dark:text-zinc-500">
 									请稍候，图片即将呈现
-								</div>
-							</div>
-						</div>
+								</span>
+							</span>
+						</span>
 					);
 				}
 

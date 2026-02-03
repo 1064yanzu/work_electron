@@ -88,6 +88,54 @@ export type IPCSchema = {
 			screenshot?: string;
 		}>;
 	};
+	exa_mcp_search: {
+		input: { query: string; limit?: number };
+		output: Array<{
+			title: string;
+			snippet: string;
+			url: string;
+			screenshot?: string;
+		}>;
+	};
+
+	// ==================
+	// Content Ingest (抓取 / 导入)
+	// ==================
+	fetch_url_content: {
+		input: {
+			url: string;
+			title?: string;
+			tags?: string[];
+			project_id?: string;
+			folder_id?: string;
+			source_type?: Source["source_type"];
+			category?: Source["category"];
+		};
+		output: Source;
+	};
+	upload_file_content: {
+		input: {
+			title: string;
+			content: string;
+			file_type: string;
+			tags?: string[];
+			project_id?: string;
+			folder_id?: string;
+			source_type?: Source["source_type"];
+			category?: Source["category"];
+		};
+		output: Source;
+	};
+	import_local_files: {
+		input: {
+			paths: string[];
+			tags?: string[];
+			project_id?: string;
+			folder_id?: string;
+			source_type?: Source["source_type"];
+		};
+		output: Array<{ source: Source; note: Note }>;
+	};
 
 	// ==================
 	// FS Safe / Temp File
@@ -135,6 +183,14 @@ export type IPCSchema = {
 	agent_get_sandbox_dir: {
 		input: { taskId: string };
 		output: { path: string };
+	};
+
+	// ==================
+	// Documents
+	// ==================
+	convert_docx_to_html: {
+		input: { path: string };
+		output: { html: string };
 	};
 
 	// ==================
@@ -381,6 +437,28 @@ export type IPCSchema = {
 	reset_core_providers: {
 		input: Record<string, never>;
 		output: { success: boolean; count: number };
+	};
+	provider_fetch_models: {
+		input: {
+			providerType?: string;
+			provider_type?: string;
+			apiBase?: string;
+			api_base?: string;
+			apiKey?: string;
+			api_key?: string;
+			templateId?: string;
+			template_id?: string;
+			metadata?: Record<string, unknown>;
+		};
+		output: {
+			models: Array<{
+				id: string;
+				object?: string;
+				created?: number;
+				owned_by?: string;
+			}>;
+			error?: string;
+		};
 	};
 
 	// ==================

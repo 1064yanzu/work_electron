@@ -6,7 +6,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Note } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
-import { buildChunks } from "../../kb/chunking";
+import { rebuildNoteChunks } from "../../kb/rebuildNoteChunks";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -59,7 +59,12 @@ export function createNoteHandlers(db: DbContext) {
 		});
 
 		// 异步构建 chunks（简化版，同步执行）
-		await rebuildNoteChunks(db, id, input.source_id ?? null, input.content);
+		await rebuildNoteChunks({
+			db,
+			noteId: id,
+			sourceId: input.source_id ?? null,
+			content: input.content,
+		});
 
 		return {
 			id,
@@ -108,7 +113,12 @@ export function createNoteHandlers(db: DbContext) {
 				noteRows.rows.length > 0
 					? (noteRows.rows[0].source_id as string | null)
 					: null;
-			await rebuildNoteChunks(db, input.id, sourceId, newContent);
+			await rebuildNoteChunks({
+				db,
+				noteId: input.id,
+				sourceId,
+				content: newContent,
+			});
 		}
 
 		const rows = await db.client.execute({
@@ -141,7 +151,12 @@ export function createNoteHandlers(db: DbContext) {
 		const sourceId = note.source_id as string | null;
 		const content = note.content as string;
 
-		const count = await rebuildNoteChunks(db, input.note_id, sourceId, content);
+		const count = await rebuildNoteChunks({
+			db,
+			noteId: input.note_id,
+			sourceId,
+			content,
+		});
 		return { success: true, chunk_count: count };
 	};
 
@@ -152,37 +167,4 @@ export function createNoteHandlers(db: DbContext) {
 		delete_note: deleteNote,
 		kb_chunk_rebuild: kbChunkRebuild,
 	};
-}
-
-/**
- * 重建笔记分块
- */
-async function rebuildNoteChunks(
-	db: DbContext,
-	noteId: string,
-	sourceId: string | null,
-	content: string,
-): Promise<number> {
-	const now = Date.now();
-
-	// 删除旧 chunks
-	await db.client.execute({
-		sql: `DELETE FROM note_chunks WHERE note_id = ?`,
-		args: [noteId],
-	});
-
-	// 切分内容
-	const chunks = buildChunks(content.trim());
-
-	// 写入新 chunks
-	for (let i = 0; i < chunks.length; i++) {
-		const chunkId = randomUUID();
-		await db.client.execute({
-			sql: `INSERT INTO note_chunks (id, note_id, source_id, chunk_index, content, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			args: [chunkId, noteId, sourceId, i, chunks[i], now, now],
-		});
-	}
-
-	return chunks.length;
 }
