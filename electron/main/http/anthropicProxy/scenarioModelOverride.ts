@@ -33,6 +33,12 @@ function pickScenarioModelChoice(
 		? (settings.scenarioConfigs as ScenarioModelConfigLike[])
 		: [];
 
+	// 规范化字符串：去除末尾标点、转小写、去除多余空白
+	const normalize = (s: string): string => {
+		return s.trim().replace(/[.。!！?？,，;；:：]+$/, "").trim().toLowerCase();
+	};
+	const normalizedRequestedKey = normalize(requestedKey);
+
 	// 1) custom-N mapping: match N-th enabled custom scenario (stable by UI order).
 	const m = requestedKey.match(/^custom-(\d+)$/i);
 	if (m?.[1]) {
@@ -70,6 +76,7 @@ function pickScenarioModelChoice(
 	}
 
 	// 3) compatibility fallback: allow matching a custom scenario by its customName
+	// 使用规范化匹配，忽略末尾标点符号的差异
 	for (const c of configs) {
 		if (!c || typeof c !== "object") continue;
 		if ((c as any).enabled === false) continue;
@@ -77,7 +84,10 @@ function pickScenarioModelChoice(
 		if (configuredScenario !== "custom") continue;
 		const configuredCustomName = coerceString((c as any).customName);
 		if (!configuredCustomName) continue;
-		if (configuredCustomName !== requestedKey) continue;
+		
+		// 使用规范化比较，忽略末尾标点
+		const normalizedConfigName = normalize(configuredCustomName);
+		if (normalizedConfigName !== normalizedRequestedKey) continue;
 
 		const modelId = coerceString((c as any).modelId);
 		const providerId = coerceString((c as any).providerId);

@@ -16,6 +16,7 @@ import {
 	callProvider,
 	callProviderStream,
 } from "../anthropicProxy/providerCalls";
+import { resolveSubagentScenarioModel } from "../anthropicProxy/scenarioModelOverride";
 import { estimateAnthropicInputTokens } from "../anthropicProxy/tokenEstimation";
 import type { AnthropicRequest, ProviderConfig } from "../anthropicProxy/types";
 
@@ -277,6 +278,30 @@ export function createAnthropicProxyRouter(options?: {
 				res.setHeader("x-ipo-provider-override", routedModel.providerId);
 			}
 
+			// 1.6 后备策略：通过子代理场景描述识别并查找用户配置的模型
+			// 这是因为 SDK 的 AgentDefinition.model 只接受预定义值(sonnet/opus/haiku/inherit)
+			// 我们通过识别 "You are a specialized subagent for:" 来判断这是子代理请求
+			// 然后从用户的场景配置中查找对应的 providerId 和 modelId
+			if (!routedModel) {
+				const scenarioRouting = await resolveSubagentScenarioModel({
+					db,
+					anthropicReq,
+					currentModel: model,
+					logger,
+					requestId,
+				});
+				if (scenarioRouting) {
+					forcedProviderId = scenarioRouting.providerId;
+					model = scenarioRouting.modelId;
+					subagentKey = scenarioRouting.subagentKey;
+					res.setHeader("x-ipo-subagent", "1");
+					// URL 编码中文字符，避免 HTTP 头无效字符错误
+					res.setHeader("x-ipo-subagent-key", encodeURIComponent(scenarioRouting.subagentKey));
+					res.setHeader("x-ipo-model-override", scenarioRouting.modelId);
+					res.setHeader("x-ipo-provider-override", scenarioRouting.providerId);
+				}
+			}
+
 			logger?.info({
 				msg: "anthropic proxy request",
 				requestId,
@@ -285,8 +310,8 @@ export function createAnthropicProxyRouter(options?: {
 				effectiveModel: model || null,
 				subagentKey,
 				overrideModelId: routedModel?.modelId || null,
-				overrideProviderId: routedModel?.providerId || null,
-				modelRouting: Boolean(routedModel),
+				overrideProviderId: routedModel?.providerId || forcedProviderId || null,
+				modelRouting: Boolean(routedModel || subagentKey),
 				stream: anthropicReq.stream === true,
 			});
 

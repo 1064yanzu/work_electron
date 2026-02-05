@@ -978,6 +978,61 @@ export function createAgentSdkHandlers(options: {
 		return scenario || "unknown";
 	}
 
+	/**
+	 * 从子代理描述中自动提取触发关键词
+	 * 用于用户没有配置 triggerKeywords 时的备用匹配
+	 */
+	function extractTriggerKeywordsFromDescription(description: string): string[] {
+		const keywords: string[] = [];
+		const desc = description.toLowerCase();
+
+		// 画图/图像相关
+		const imagePatterns = [
+			"画图", "绘图", "绘制", "作图", "生成图", "创建图", "制作图",
+			"图片", "图像", "图画", "插图", "插画", "海报", "画面",
+			"generate image", "create image", "draw",
+		];
+		for (const p of imagePatterns) {
+			if (desc.includes(p.toLowerCase())) {
+				keywords.push(p);
+			}
+		}
+
+		// 视频相关
+		const videoPatterns = ["视频", "动画", "video", "animation"];
+		for (const p of videoPatterns) {
+			if (desc.includes(p.toLowerCase())) {
+				keywords.push(p);
+			}
+		}
+
+		// 搜索相关
+		const searchPatterns = ["搜索", "查找", "检索", "search", "find"];
+		for (const p of searchPatterns) {
+			if (desc.includes(p.toLowerCase())) {
+				keywords.push(p);
+			}
+		}
+
+		// 代码相关
+		const codePatterns = ["代码", "编程", "开发", "coding", "programming"];
+		for (const p of codePatterns) {
+			if (desc.includes(p.toLowerCase())) {
+				keywords.push(p);
+			}
+		}
+
+		// 翻译相关
+		const translatePatterns = ["翻译", "translate", "translation"];
+		for (const p of translatePatterns) {
+			if (desc.includes(p.toLowerCase())) {
+				keywords.push(p);
+			}
+		}
+
+		return keywords;
+	}
+
 	function matchScenarioAgentForPrompt(opts: {
 		settings: AgentModelSettingsLike | null;
 		promptText: string;
@@ -1005,9 +1060,17 @@ export function createAgentSdkHandlers(options: {
 			const agentKey = generateAgentKey(scenario, customName, indexForKey);
 			if (!agentKey) continue;
 
-			const triggerKeywords = Array.isArray((c as any).triggerKeywords)
+			// 获取用户配置的触发关键词
+			let triggerKeywords = Array.isArray((c as any).triggerKeywords)
 				? (c as any).triggerKeywords
 				: [];
+
+			// 如果用户没有配置关键词，从描述中自动提取
+			if (triggerKeywords.length === 0 && customName) {
+				const autoKeywords = extractTriggerKeywordsFromDescription(customName);
+				triggerKeywords = autoKeywords;
+			}
+
 			for (const kw of triggerKeywords) {
 				const k = String(kw || "").trim();
 				if (!k) continue;
@@ -1096,20 +1159,29 @@ export function createAgentSdkHandlers(options: {
 		scenario: string;
 		customName?: string | null;
 		includeSkills: boolean;
+		// 模型路由信息（嵌入到 prompt 中，由 proxy 解析）
+		providerId?: string | null;
+		modelId?: string | null;
 	}): string {
 		const label = scenarioLabel(opts.scenario, opts.customName);
 		const skillHint = opts.includeSkills
 			? "You may use Skill tool when helpful.\n"
 			: "";
 
+		// 构建路由标记（隐藏在 XML 注释中，proxy 会解析）
+		const routingMarker =
+			opts.providerId && opts.modelId
+				? `<!-- ipo-route:${opts.providerId}:${opts.modelId} -->\n`
+				: "";
+
 		return [
+			routingMarker,
 			`You are a specialized subagent for: ${label}.`,
 			"Return only the final useful output. Be concise; do not include chain-of-thought.",
 			"Do NOT copy the full conversation history. Use only the context provided in the Task prompt.",
 			"This output will be injected back into the main conversation; keep it short and avoid irrelevant details.",
 			skillHint.trimEnd(),
 			"",
-			// NOTE: model routing is handled via AgentDefinition.model (see encodeIpoRoutedModel).
 		]
 			.filter(Boolean)
 			.join("\n");
@@ -1155,6 +1227,16 @@ export function createAgentSdkHandlers(options: {
 			const modelId = coerceString((c as any).modelId);
 			const providerId = coerceString((c as any).providerId);
 
+			// 【调试】检查路由参数
+			logger.info({
+				msg: "agent_sdk buildDynamicScenarioAgents routing params",
+				scope: "agent",
+				agentKey,
+				modelId: modelId || null,
+				providerId: providerId || null,
+				hasRouting: !!(providerId && modelId),
+			});
+
 			agents[agentKey] = {
 				description,
 				prompt: promptForScenarioAgent({
@@ -1162,6 +1244,8 @@ export function createAgentSdkHandlers(options: {
 					scenario,
 					customName,
 					includeSkills,
+					providerId,
+					modelId,
 				}),
 				// SDK 只接受 model: 'sonnet' | 'opus' | 'haiku' | 'inherit' (文档第7167行)
 				// 自定义模型路由将在 anthropic proxy 层通过 agentKey (如 custom-1) 来识别和处理
@@ -1196,6 +1280,20 @@ export function createAgentSdkHandlers(options: {
 		});
 
 		return agents;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 保留备用
+	function _extractTriggerKeywords(description: string): string[] {
+		const keywords: string[] = [];
+		const patterns = [
+			/画图|绘图|绘制|生成图|创建图|制作图/,
+			/图片|图像|图画|插图|插画|海报/,
+		];
+		for (const pattern of patterns) {
+			const match = description.match(pattern);
+			if (match) keywords.push(match[0]);
+		}
+		return keywords;
 	}
 
 	function buildSubagentPolicyAppend(opts: {
@@ -1255,12 +1353,9 @@ export function createAgentSdkHandlers(options: {
 
 		lines.push("## 子代理(通过 Task 工具调用)");
 		lines.push("");
-		lines.push(
-			"当用户请求的任务与下列子代理的功能描述匹配时，**必须**使用 Task 工具委派给对应子代理，而不是自己直接处理。",
-		);
+		lines.push("**强制规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，你**必须第一时间**调用 Task 工具委派，**不要自己处理，不要先执行其他工具**。");
 		lines.push("");
-		lines.push("调用方式：Task({ subagent_type: \"<英文标识符>\", description: \"简述任务\", prompt: \"详细任务描述\" })");
-		lines.push("注意：subagent_type 必须使用下面列出的英文标识符（如 custom-1），不要使用中文描述。");
+		lines.push("调用方式：Task({ subagent_type: \"<英文标识符>\", description: \"简述任务\", prompt: \"完整任务描述+所需上下文\" })");
 		lines.push("");
 
 		const enabled = items.filter((x) => x.enabled);
@@ -1269,14 +1364,16 @@ export function createAgentSdkHandlers(options: {
 		if (enabled.length === 0) {
 			lines.push("当前：你已配置子代理场景，但都处于【禁用】状态。请到设置中启用后再使用。");
 		} else {
-			lines.push("已启用的子代理（你必须使用这些子代理完成对应任务）：");
+			lines.push("已启用的子代理：");
 			for (const x of enabled.slice(0, 30)) {
-				// 更清晰的格式：先说能干什么，再说用什么 key 调用
-				lines.push(`- **${x.description}** → 使用 subagent_type: "${x.agentKey}"`);
+				lines.push(`- 功能：**${x.description}** → 调用 Task({ subagent_type: "${x.agentKey}", ... })`);
 			}
 			if (enabled.length > 30) {
 				lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
 			}
+			lines.push("");
+			lines.push("**语义匹配示例**：如果子代理描述是\"画图\"，那么用户说\"绘制图像\"\"生成图片\"\"作图\"都应该匹配。");
+			lines.push("**禁止行为**：在需要调用子代理的任务中，先执行 Read/Glob/Bash 等工具是错误的！必须先调用 Task。");
 			lines.push("");
 			lines.push("（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）");
 		}
@@ -1797,7 +1894,7 @@ ${opts.appendContent}`.trim();
 											});
 											if (matchedScenarioAgent) {
 												additions.push(
-													`检测到命中你配置的场景「${matchedScenarioAgent.description}」（关键词：${matchedScenarioAgent.matchedKeyword}）。优先使用 Task 工具调用对应子代理：subagent_type="${matchedScenarioAgent.agentKey}"。`,
+													`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })，不要自己处理。`,
 												);
 											}
 

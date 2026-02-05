@@ -7,6 +7,12 @@ const IPO_CONVERSATION_MARKER_RE =
 const IPO_MARKERS_STRIP_RE =
 	/<ipo-(?:subagent|conversation)\b[^>]*\/?>|<\/ipo-(?:subagent|conversation)>/gi;
 
+// 路由标记：<!-- ipo-route:providerId:modelId -->
+const IPO_ROUTE_MARKER_RE =
+	/<!--\s*ipo-route:([^:]+):([^-]+)\s*-->/i;
+const IPO_ROUTE_MARKER_STRIP_RE =
+	/<!--\s*ipo-route:[^-]+:[^-]+\s*-->/gi;
+
 const IPO_SUBAGENT_FALLBACK_RE =
 	/\bIPO_SUBAGENT_SCENARIO\s*[:=]\s*([^\n\r]+)\s*/i;
 const IPO_SUBAGENT_PROMPT_FALLBACK_RE =
@@ -176,11 +182,50 @@ export function extractIpoConversationId(req: AnthropicRequest): string | null {
 	return id ? id : null;
 }
 
+/**
+ * 从请求中提取子代理路由标记 <!-- ipo-route:providerId:modelId -->
+ * 返回 { providerId, modelId } 或 null
+ */
+export function extractIpoRoutingMarker(
+	req: AnthropicRequest,
+): { providerId: string; modelId: string } | null {
+	// 1. 首先检查 system 字段
+	const sysOnly = collectAnthropicRequestText({ ...req, messages: [] } as any, {
+		tailMessages: 0,
+		includeToolUseInputs: false,
+	});
+
+	let match = sysOnly.match(IPO_ROUTE_MARKER_RE);
+	if (match && match[1] && match[2]) {
+		return {
+			providerId: match[1].trim(),
+			modelId: match[2].trim(),
+		};
+	}
+
+	// 2. 如果 system 中没有，检查整个请求（包括 messages）
+	const fullText = collectAnthropicRequestText(req, {
+		tailMessages: 5, // 检查最近的几条消息
+		includeToolUseInputs: false,
+	});
+
+	match = fullText.match(IPO_ROUTE_MARKER_RE);
+	if (match && match[1] && match[2]) {
+		return {
+			providerId: match[1].trim(),
+			modelId: match[2].trim(),
+		};
+	}
+
+	return null;
+}
+
 function stripIpoMarkersFromString(input: string): string {
 	// Remove internal routing/log markers so they don't pollute upstream context.
 	return String(input || "")
 		.replaceAll(IPO_MARKERS_STRIP_RE, "")
-		.replaceAll(IPO_SUBAGENT_FALLBACK_STRIP_RE, "");
+		.replaceAll(IPO_SUBAGENT_FALLBACK_STRIP_RE, "")
+		.replaceAll(IPO_ROUTE_MARKER_STRIP_RE, "");
 }
 
 function stripIpoMarkersFromUnknown(value: unknown): unknown {
