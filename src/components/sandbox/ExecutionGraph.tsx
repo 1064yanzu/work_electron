@@ -108,8 +108,10 @@ function safeJson(value: unknown): string {
 }
 
 function getSubagentType(toolCall: ToolCall): string | null {
-	if (toolCall.name !== "Task") return null;
 	const input = toolCall.input as any;
+	// The SDK subagent tool is typically exposed as "Task", but older/newer versions may emit "Agent".
+	// We detect by presence of the subagent_type field to keep the UI robust.
+	if (!input || typeof input !== "object") return null;
 	const candidate =
 		typeof input?.subagent_type === "string"
 			? input.subagent_type
@@ -120,7 +122,17 @@ function getSubagentType(toolCall: ToolCall): string | null {
 					: typeof input?.agentType === "string"
 						? input.agentType
 						: null;
-	return candidate ? String(candidate).trim() || null : null;
+	const subType = candidate ? String(candidate).trim() || null : null;
+	if (!subType) return null;
+
+	// Ensure this looks like a subagent invocation (Task/Agent tool shape).
+	const hasPrompt =
+		typeof input?.prompt === "string" && input.prompt.trim().length > 0;
+	const hasDesc =
+		typeof input?.description === "string" &&
+		input.description.trim().length > 0;
+	if (!hasPrompt && !hasDesc) return null;
+	return subType;
 }
 
 function statusPill(status: string): {
@@ -335,7 +347,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						<div className="flex items-center gap-2">
 							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
 								{data.isSubagent
-									? data.subagentType || "子代理调用"
+									? data.subagentType
+										? `子代理 · ${data.subagentType}`
+										: "子代理"
 									: data.name}
 							</div>
 							<span
@@ -497,7 +511,8 @@ function buildExecutionGraph(
 		const tc = orderedToolCalls[i]!;
 		const subType = getSubagentType(tc);
 		const lane = subType ? `subagent:${subType}` : "main";
-		const y = ROOT_Y + laneIndex.get(lane)! * Y_STEP;
+		const lanePos = laneIndex.get(lane) ?? 0;
+		const y = ROOT_Y + lanePos * Y_STEP;
 		const x = ROOT_X + (i + 1) * X_STEP;
 		toolXById.set(tc.id, x);
 		toolYById.set(tc.id, y);
@@ -519,7 +534,7 @@ function buildExecutionGraph(
 				description: tc.description,
 				durationMs: tc.duration,
 				startedAt: tc.startedAt,
-				isSubagent: tc.name === "Task",
+				isSubagent: Boolean(subType),
 				subagentType: subType || undefined,
 				lastActivity: lastActivity
 					? String(lastActivity).slice(0, 240)
@@ -533,7 +548,7 @@ function buildExecutionGraph(
 			sourceId === taskNodeId ? ROOT_Y : (toolYById.get(sourceId) ?? ROOT_Y);
 		const sameLane = sourceLaneY === y;
 		const dashed = !sameLane;
-		const isSub = tc.name === "Task";
+		const isSub = Boolean(subType);
 
 		edges.push({
 			id: `edge-${sourceId}-${tc.id}`,

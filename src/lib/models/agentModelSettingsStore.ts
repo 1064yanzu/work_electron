@@ -47,6 +47,16 @@ export const agentModelSettingsStore = {
 				}
 
 				state = { ...DEFAULT_AGENT_MODEL_SETTINGS, ...parsed };
+				// Normalize per-config defaults for backward compatibility.
+				state = {
+					...state,
+					scenarioConfigs: Array.isArray((state as any).scenarioConfigs)
+						? (state.scenarioConfigs as ScenarioModelConfig[]).map((c) => ({
+								...c,
+								enabled: c?.enabled !== false,
+						  }))
+						: [],
+				};
 			} catch {
 				state = { ...DEFAULT_AGENT_MODEL_SETTINGS };
 			} finally {
@@ -101,11 +111,18 @@ export const agentModelSettingsStore = {
 	async updateScenarioConfig(
 		scenario: AgentScenario,
 		updates: Partial<ScenarioModelConfig>,
+		customName?: string,
 	): Promise<void> {
 		state = {
 			...state,
 			scenarioConfigs: state.scenarioConfigs.map((c) =>
-				c.scenario === scenario ? { ...c, ...updates } : c,
+				scenario === "custom"
+					? c.scenario === "custom" && c.customName === customName
+						? { ...c, ...updates }
+						: c
+					: c.scenario === scenario
+						? { ...c, ...updates }
+						: c,
 			),
 		};
 		emitChange();

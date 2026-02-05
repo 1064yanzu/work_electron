@@ -9,11 +9,9 @@ import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
+import { encodeIpoRoutedModel } from "../../http/anthropicProxy/modelRouting";
 import type { Logger } from "../../logging/types";
-import {
-	isRetryableError,
-	DEFAULT_RETRY_CONFIG,
-} from "../../utils/retryUtils";
+import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
 
 const execFileAsync = promisify(execFile);
 const MAX_RESOLVE_SCAN_ENTRIES = 5000;
@@ -519,7 +517,15 @@ function pickWritingSkill(skills: string[]): string | null {
 
 function getHomeSkillsRootDir() {
 	const home = app.getPath("home");
-	return path.join(home, ".claude", "skills");
+	// Codex desktop stores skills under ~/.codex/skills.
+	// Claude Code stores skills under ~/.claude/skills.
+	// Prefer Codex skills if present.
+	const codexSkills = path.join(home, ".codex", "skills");
+	const claudeSkills = path.join(home, ".claude", "skills");
+	if (fs.existsSync(codexSkills)) return codexSkills;
+	if (fs.existsSync(claudeSkills)) return claudeSkills;
+	// Default to Codex location to make intent obvious.
+	return codexSkills;
 }
 
 async function ensureDir(dir: string) {
@@ -549,8 +555,13 @@ async function syncSkillsToCwd(cwd: string, stderr: (msg: string) => void) {
 		entries = await fsp.readdir(srcRoot, { withFileTypes: true });
 	} catch {
 		// 没有 home skills 目录就不做同步
+		stderr(`[agent_sdk_start] Home skills dir not found: ${srcRoot}`);
 		return;
 	}
+
+	stderr(
+		`[agent_sdk_start] Syncing skills: src=${srcRoot} -> dest=${destRoot} (dirs=${entries.filter((e) => e.isDirectory()).length})`,
+	);
 
 	for (const ent of entries) {
 		if (!ent.isDirectory()) continue;
@@ -575,6 +586,31 @@ async function syncSkillsToCwd(cwd: string, stderr: (msg: string) => void) {
 				`[agent_sdk_start] Failed to sync skill '${ent.name}' to project skills dir. ${e instanceof Error ? e.message : String(e)}`,
 			);
 		}
+	}
+}
+
+function uniqStrings(values: string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const v of values) {
+		const s = String(v || "").trim();
+		if (!s) continue;
+		if (seen.has(s)) continue;
+		seen.add(s);
+		out.push(s);
+	}
+	return out;
+}
+
+async function listProjectSkills(cwd: string): Promise<string[]> {
+	const dir = path.join(cwd, ".claude", "skills");
+	try {
+		const entries = await fsp.readdir(dir, { withFileTypes: true });
+		return entries
+			.filter((e) => e.isDirectory() && !e.name.startsWith("."))
+			.map((e) => e.name);
+	} catch {
+		return [];
 	}
 }
 
@@ -714,7 +750,6 @@ function toUIEvents(message: any): any[] {
 		});
 	}
 
-
 	if (message.type === "result") {
 		const isError =
 			Boolean((message as any).is_error) || message.subtype !== "success";
@@ -756,6 +791,9 @@ export function createAgentSdkHandlers(options: {
 		scenario?: unknown;
 		customName?: unknown;
 		enabled?: unknown;
+		modelId?: unknown;
+		providerId?: unknown;
+		description?: unknown;
 	};
 
 	let cachedAgentModelSettings: { loadedAt: number; settings: any } | null =
@@ -788,6 +826,22 @@ export function createAgentSdkHandlers(options: {
 			}
 
 			cachedAgentModelSettings = { loadedAt: now, settings: parsed };
+			// 【调试】记录加载的配置
+			logger.info({
+				msg: "agent_sdk loadAgentModelSettingsFromDb result",
+				scope: "agent",
+				hasSettings: !!parsed,
+				scenarioConfigsCount: Array.isArray(parsed?.scenarioConfigs) ? parsed.scenarioConfigs.length : 0,
+				scenarioConfigsPreview: Array.isArray(parsed?.scenarioConfigs)
+					? parsed.scenarioConfigs.slice(0, 3).map((c: any) => ({
+						scenario: c?.scenario,
+						customName: c?.customName,
+						enabled: c?.enabled,
+						modelId: c?.modelId,
+						providerId: c?.providerId,
+					}))
+					: [],
+			});
 			return parsed;
 		} catch {
 			cachedAgentModelSettings = { loadedAt: now, settings: null };
@@ -809,6 +863,108 @@ export function createAgentSdkHandlers(options: {
 			.replace(/\s+/g, " ");
 	}
 
+	function buildSubagentAliasMap(
+		agents: Record<string, { description?: unknown }>,
+	): Map<string, string> {
+		const map = new Map<string, string>();
+		const add = (alias: unknown, agentKey: string) => {
+			if (typeof alias !== "string") return;
+			const n = normalizeAgentKey(alias);
+			if (!n) return;
+			if (!map.has(n)) map.set(n, agentKey);
+		};
+
+		for (const [agentKey, def] of Object.entries(agents)) {
+			add(agentKey, agentKey);
+			add((def as any)?.description, agentKey);
+
+			// Common user/model inputs we want to tolerate.
+			const desc =
+				typeof (def as any)?.description === "string"
+					? (def as any).description
+					: "";
+			if (desc.startsWith("自定义："))
+				add(desc.slice("自定义：".length), agentKey);
+			add(`custom:${desc}`, agentKey);
+		}
+		return map;
+	}
+
+	function resolveSubagentType(
+		rawSubagentType: string,
+		agents: Record<string, unknown>,
+		aliasMap: Map<string, string>,
+	): string | null {
+		const raw = String(rawSubagentType || "");
+		const trimmed = raw.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, "");
+		const norm = normalizeAgentKey(trimmed);
+		if (!norm) return null;
+
+		// Exact key match (after normalization).
+		if (Object.prototype.hasOwnProperty.call(agents, norm)) return norm;
+		const dashToUnderscore = norm.replace(/-/g, "_");
+		if (
+			dashToUnderscore !== norm &&
+			Object.prototype.hasOwnProperty.call(agents, dashToUnderscore)
+		) {
+			return dashToUnderscore;
+		}
+		const underscoreToDash = norm.replace(/_/g, "-");
+		if (
+			underscoreToDash !== norm &&
+			Object.prototype.hasOwnProperty.call(agents, underscoreToDash)
+		) {
+			return underscoreToDash;
+		}
+		const lower = /^[\x00-\x7F]+$/.test(norm) ? norm.toLowerCase() : null;
+		if (lower && Object.prototype.hasOwnProperty.call(agents, lower))
+			return lower;
+
+		// Alias match (e.g. Chinese description / customName).
+		const direct = aliasMap.get(norm);
+		if (direct && Object.prototype.hasOwnProperty.call(agents, direct))
+			return direct;
+
+		// Prefix tolerance.
+		if (norm.startsWith("custom:")) {
+			const n2 = normalizeAgentKey(norm.slice("custom:".length));
+			const v2 = aliasMap.get(n2);
+			if (v2 && Object.prototype.hasOwnProperty.call(agents, v2)) return v2;
+		}
+		if (norm.startsWith("自定义：")) {
+			const n2 = normalizeAgentKey(norm.slice("自定义：".length));
+			const v2 = aliasMap.get(n2);
+			if (v2 && Object.prototype.hasOwnProperty.call(agents, v2)) return v2;
+		}
+
+		// Last-resort: if it doesn't look like a valid agent key, fall back to a built-in.
+		// This avoids hard failures like: Agent type 'xxx' not found.
+		const looksLikeKey = /^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/.test(norm);
+		if (!looksLikeKey) return "general-purpose";
+
+		return null;
+	}
+
+	/**
+	 * 为自定义场景生成 SDK 兼容的英文 agent key
+	 * SDK 不接受中文作为 agent key，需要生成英文标识符
+	 * @param scenario - 场景类型，如 "custom", "fast_search" 等
+	 * @param _customName - 自定义场景的中文名称（当前未使用，保留供将来扩展）
+	 * @param index - 自定义场景的索引，用于生成唯一 key
+	 */
+	function generateAgentKey(
+		scenario: string,
+		_customName: string | null,
+		index: number,
+	): string {
+		if (scenario === "custom") {
+			// 为自定义场景生成 "custom-1", "custom-2" 格式的英文 key
+			return `custom-${index + 1}`;
+		}
+		// 非自定义场景使用场景名（已经是英文）
+		return normalizeAgentKey(scenario);
+	}
+
 	function scenarioLabel(scenario: string, customName?: string | null): string {
 		if (scenario === "fast_search") return "快速搜索";
 		if (scenario === "code_review") return "代码审查";
@@ -822,6 +978,53 @@ export function createAgentSdkHandlers(options: {
 		return scenario || "unknown";
 	}
 
+	function matchScenarioAgentForPrompt(opts: {
+		settings: AgentModelSettingsLike | null;
+		promptText: string;
+	}): { agentKey: string; description: string; matchedKeyword: string } | null {
+		const promptText = String(opts.promptText || "");
+		const lower = promptText.toLowerCase();
+		const configs = Array.isArray(opts.settings?.scenarioConfigs)
+			? (opts.settings?.scenarioConfigs as ScenarioModelConfigLike[])
+			: [];
+
+		// Keep custom-N stable by config order (UI order), regardless of enabled/disabled state.
+		let customIndex = 0;
+		for (const c of configs) {
+			if (!c || typeof c !== "object") continue;
+			const scenario = coerceString((c as any).scenario) || "";
+			if (!scenario) continue;
+			const customName = coerceString((c as any).customName);
+
+			const indexForKey = customIndex;
+			if (scenario === "custom") customIndex++;
+
+			// Disabled configs should not be auto-matched.
+			if ((c as any).enabled === false) continue;
+
+			const agentKey = generateAgentKey(scenario, customName, indexForKey);
+			if (!agentKey) continue;
+
+			const triggerKeywords = Array.isArray((c as any).triggerKeywords)
+				? (c as any).triggerKeywords
+				: [];
+			for (const kw of triggerKeywords) {
+				const k = String(kw || "").trim();
+				if (!k) continue;
+				const kl = k.toLowerCase();
+				const hit = lower.includes(kl) || promptText.includes(k);
+				if (!hit) continue;
+
+				const description =
+					scenario === "custom" && customName
+						? customName
+						: scenarioLabel(scenario, customName);
+				return { agentKey, description, matchedKeyword: k };
+			}
+		}
+		return null;
+	}
+
 	function toolsForScenario(
 		scenario: string,
 		opts?: { includeSkills?: boolean },
@@ -829,26 +1032,62 @@ export function createAgentSdkHandlers(options: {
 		const includeSkills = opts?.includeSkills === true;
 		switch (scenario) {
 			case "fast_search":
-				return ["Read", "Glob", "Grep"];
+				return ["Read", "Glob", "Grep", "WebSearch", "WebFetch"];
 			case "code_review":
-				return ["Read", "Grep", "Glob", "Bash"];
+				return ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch"];
 			case "deep_analysis":
-				return ["Read", "Edit", "Write", "Bash", "Grep", "Glob"];
+				return [
+					"Read",
+					"Edit",
+					"Write",
+					"Bash",
+					"Grep",
+					"Glob",
+					"WebSearch",
+					"WebFetch",
+				];
 			case "debugging":
-				return ["Read", "Edit", "Bash", "Grep", "Glob"];
+				return [
+					"Read",
+					"Edit",
+					"Bash",
+					"Grep",
+					"Glob",
+					"WebSearch",
+					"WebFetch",
+				];
 			case "writing":
 				return includeSkills
-					? ["Skill", "Read", "Glob", "Grep", "Write"]
-					: ["Read", "Write"];
+					? ["Skill", "Read", "Glob", "Grep", "Write", "WebSearch", "WebFetch"]
+					: ["Read", "Write", "WebSearch", "WebFetch"];
 			case "translation":
-				return ["Read", "Write"];
+				return ["Read", "Write", "WebFetch"];
 			case "data_processing":
-				return ["Read", "Write", "Bash"];
+				return ["Read", "Write", "Bash", "WebSearch", "WebFetch"];
 			default:
 				// Custom / unknown: allow common tools; include Skill to unlock special capabilities.
 				return includeSkills
-					? ["Skill", "Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-					: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
+					? [
+						"Skill",
+						"Read",
+						"Write",
+						"Edit",
+						"Bash",
+						"Grep",
+						"Glob",
+						"WebSearch",
+						"WebFetch",
+					]
+					: [
+						"Read",
+						"Write",
+						"Edit",
+						"Bash",
+						"Grep",
+						"Glob",
+						"WebSearch",
+						"WebFetch",
+					];
 		}
 	}
 
@@ -859,10 +1098,6 @@ export function createAgentSdkHandlers(options: {
 		includeSkills: boolean;
 	}): string {
 		const label = scenarioLabel(opts.scenario, opts.customName);
-		const scenarioMarker =
-			opts.scenario === "custom" && opts.customName
-				? opts.customName
-				: opts.scenario;
 		const skillHint = opts.includeSkills
 			? "You may use Skill tool when helpful.\n"
 			: "";
@@ -874,7 +1109,7 @@ export function createAgentSdkHandlers(options: {
 			"This output will be injected back into the main conversation; keep it short and avoid irrelevant details.",
 			skillHint.trimEnd(),
 			"",
-			`<ipo-subagent name="${opts.agentKey}" scenario="${scenarioMarker}" />`,
+			// NOTE: model routing is handled via AgentDefinition.model (see encodeIpoRoutedModel).
 		]
 			.filter(Boolean)
 			.join("\n");
@@ -889,38 +1124,76 @@ export function createAgentSdkHandlers(options: {
 			? (opts.settings?.scenarioConfigs as ScenarioModelConfigLike[])
 			: [];
 
+		// Keep custom-N stable by config order (UI order), regardless of enabled/disabled state.
+		let customIndex = 0;
+
 		for (const c of configs) {
 			if (!c || typeof c !== "object") continue;
-			if ((c as any).enabled === false) continue;
-
 			const scenario = coerceString((c as any).scenario) || "";
 			if (!scenario) continue;
 			const customName = coerceString((c as any).customName);
 
-			const agentKey =
-				scenario === "custom"
-					? normalizeAgentKey(customName || "custom")
-					: normalizeAgentKey(scenario);
+			const indexForKey = customIndex;
+			if (scenario === "custom") customIndex++;
+
+			// Only enabled configs become runnable subagents.
+			if ((c as any).enabled === false) continue;
+
+			// 为自定义场景生成英文 key（SDK 不接受中文）
+			const agentKey = generateAgentKey(scenario, customName, indexForKey);
 			if (!agentKey) continue;
 
 			const includeSkills = scenario === "writing" || scenario === "custom";
+			const isCustom = scenario === "custom";
+
+			// 描述使用中文名称供主模型理解
+			const description =
+				scenario === "custom" && customName
+					? customName
+					: scenarioLabel(scenario, customName);
+
+			const modelId = coerceString((c as any).modelId);
+			const providerId = coerceString((c as any).providerId);
 
 			agents[agentKey] = {
-				description: scenarioLabel(scenario, customName),
+				description,
 				prompt: promptForScenarioAgent({
 					agentKey,
 					scenario,
 					customName,
 					includeSkills,
 				}),
-				tools: toolsForScenario(scenario, { includeSkills }),
-				disallowedTools: ["Task"],
+				// SDK 只接受 model: 'sonnet' | 'opus' | 'haiku' | 'inherit' (文档第7167行)
+				// 自定义模型路由将在 anthropic proxy 层通过 agentKey (如 custom-1) 来识别和处理
+				// 这里使用 undefined 让 agent 继承主模型，proxy 会根据 subagentKey 路由到正确的 provider+model
+				model: undefined,
+				// 自定义场景子代理：保持足够自由（继承主线程工具，允许 Task 嵌套）
+				...(isCustom
+					? {}
+					: {
+						tools: toolsForScenario(scenario, { includeSkills }),
+						disallowedTools: ["Task"],
+					}),
 				skills:
 					includeSkills && opts.enabledSkills.length > 0
 						? opts.enabledSkills
 						: undefined,
+				maxTurns: isCustom ? 30 : 20,
 			};
 		}
+
+		// 【调试】记录生成的子代理
+		logger.info({
+			msg: "agent_sdk buildDynamicScenarioAgents result",
+			scope: "agent",
+			agentKeysGenerated: Object.keys(agents),
+			agentsCount: Object.keys(agents).length,
+			agentsPreview: Object.entries(agents).slice(0, 5).map(([k, v]) => ({
+				agentKey: k,
+				description: (v as any)?.description,
+				modelEncoded: !!(v as any)?.model,
+			})),
+		});
 
 		return agents;
 	}
@@ -932,42 +1205,105 @@ export function createAgentSdkHandlers(options: {
 		const configs = Array.isArray(opts.settings?.scenarioConfigs)
 			? (opts.settings?.scenarioConfigs as ScenarioModelConfigLike[])
 			: [];
-		const enabled = configs.filter(
-			(c) => c && typeof c === "object" && (c as any).enabled !== false,
-		);
-
-		if (enabled.length === 0) return "";
 
 		const lines: string[] = [];
-		lines.push("## 子代理(通过 Task 工具调用)");
-		lines.push(
-			"当你需要某个专门能力/场景时，用 Task 工具把任务委派给对应子代理（subagent_type）。",
-		);
-		lines.push(
-			"重要：如果当前模型自己就能完成（例如具备画图能力），直接完成；如果不具备（例如只能输出纯文本但用户要求生成图片），再委派给合适的子代理。",
-		);
-		lines.push(
-			"为避免上下文污染：调用子代理时只传递最少必要信息，不要粘贴整段对话历史。",
-		);
-		lines.push("可用子代理：");
 
-		for (const c of enabled.slice(0, 30)) {
+		if (opts.enabledSkills.length > 0) {
+			lines.push("## Skills（可通过 Skill 工具调用）");
+			lines.push(
+				`已安装技能（skill 参数可用值）：${opts.enabledSkills.slice(0, 50).join(", ")}`,
+			);
+			if (opts.enabledSkills.length > 50) {
+				lines.push(`（还有 ${opts.enabledSkills.length - 50} 个已省略）`);
+			}
+		}
+
+		if (configs.length === 0) return lines.join("\n");
+
+		type ScenarioItem = {
+			agentKey: string;
+			description: string;
+			enabled: boolean;
+		};
+
+		// Keep custom-N stable by config order (UI order), regardless of enabled/disabled state.
+		let customIndex = 0;
+		const items: ScenarioItem[] = [];
+		for (const c of configs) {
+			if (!c || typeof c !== "object") continue;
 			const scenario = coerceString((c as any).scenario) || "";
+			if (!scenario) continue;
 			const customName = coerceString((c as any).customName);
-			const agentKey =
-				scenario === "custom"
-					? normalizeAgentKey(customName || "custom")
-					: normalizeAgentKey(scenario);
-			const label = scenarioLabel(scenario, customName);
+
+			const indexForKey = customIndex;
+			if (scenario === "custom") customIndex++;
+
+			const agentKey = generateAgentKey(scenario, customName, indexForKey);
 			if (!agentKey) continue;
-			lines.push(`- ${agentKey}: ${label}`);
+
+			const description =
+				scenario === "custom" && customName
+					? customName
+					: scenarioLabel(scenario, customName);
+
+			items.push({
+				agentKey,
+				description,
+				enabled: (c as any).enabled !== false,
+			});
 		}
 
-		if (enabled.length > 30) {
-			lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
+		lines.push("## 子代理(通过 Task 工具调用)");
+		lines.push("");
+		lines.push(
+			"当用户请求的任务与下列子代理的功能描述匹配时，**必须**使用 Task 工具委派给对应子代理，而不是自己直接处理。",
+		);
+		lines.push("");
+		lines.push("调用方式：Task({ subagent_type: \"<英文标识符>\", description: \"简述任务\", prompt: \"详细任务描述\" })");
+		lines.push("注意：subagent_type 必须使用下面列出的英文标识符（如 custom-1），不要使用中文描述。");
+		lines.push("");
+
+		const enabled = items.filter((x) => x.enabled);
+		const disabled = items.filter((x) => !x.enabled);
+
+		if (enabled.length === 0) {
+			lines.push("当前：你已配置子代理场景，但都处于【禁用】状态。请到设置中启用后再使用。");
+		} else {
+			lines.push("已启用的子代理（你必须使用这些子代理完成对应任务）：");
+			for (const x of enabled.slice(0, 30)) {
+				// 更清晰的格式：先说能干什么，再说用什么 key 调用
+				lines.push(`- **${x.description}** → 使用 subagent_type: "${x.agentKey}"`);
+			}
+			if (enabled.length > 30) {
+				lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
+			}
+			lines.push("");
+			lines.push("（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）");
 		}
 
-		return lines.join("\n");
+		if (disabled.length > 0) {
+			lines.push("");
+			lines.push("已配置但禁用（不会生成子代理，请先在设置中启用）：");
+			for (const x of disabled.slice(0, 30)) {
+				lines.push(`- ${x.agentKey}（禁用）→ ${x.description}`);
+			}
+			if (disabled.length > 30) {
+				lines.push(`- ...(还有 ${disabled.length - 30} 个已省略)`);
+			}
+		}
+
+		// 【调试】记录生成的子代理提示词
+		const result = lines.join("\n");
+		logger.info({
+			msg: "agent_sdk buildSubagentPolicyAppend result",
+			scope: "agent",
+			enabledSubagentsCount: enabled.length,
+			disabledSubagentsCount: disabled.length,
+			subagentItems: items.map(x => ({ agentKey: x.agentKey, description: x.description.slice(0, 50), enabled: x.enabled })),
+			promptPreview: result.slice(0, 500),
+		});
+
+		return result;
 	}
 
 	/**
@@ -1065,12 +1401,77 @@ ${opts.appendContent}`.trim();
 				const userPath = await resolveUserPathFromShell(userShell);
 				const resolvedPath = userPath || process.env.PATH;
 
+				// Force Claude Code to ignore the user's global Claude config (which may enable OAuth/first-party
+				// routing that bypasses ANTHROPIC_BASE_URL). Point config dir at the per-run sandbox so the CLI
+				// follows env-based Anthropic API settings deterministically.
+				const claudeConfigDir = cwd;
+
+				// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself for
+				// Anthropic Messages endpoints, and telemetry uses `${ANTHROPIC_BASE_URL}/api/event_logging/batch`.
+				// If we append "/v1" here, telemetry becomes "/v1/api/event_logging/batch" (noisy) and may trigger
+				// fallback behavior.
+				const anthropicBaseUrl =
+					typeof options.anthropicBaseUrl === "string"
+						? options.anthropicBaseUrl.replace(/\/v1\/?$/i, "")
+						: "http://127.0.0.1:8765";
+
+				// The CLI requires an Anthropic-looking API key to follow the normal Anthropic client path.
+				// This key is only used against our local proxy; it is never forwarded upstream as a real secret.
+				const anthropicApiKeyRaw =
+					typeof process.env.ANTHROPIC_API_KEY === "string"
+						? process.env.ANTHROPIC_API_KEY.trim()
+						: "";
+				const anthropicApiKey =
+					anthropicApiKeyRaw ||
+					"sk-ant-api03-dummy000000000000000000000000000000000000";
+
+				// Claude Code 对 ANTHROPIC_API_KEY 有“显式批准”机制：在非交互模式下，如果 key 未被批准，
+				// CLI 可能会继续走 firstParty 路径，从而绕过 ANTHROPIC_BASE_URL。
+				// 我们将 per-run sandbox 作为 CLAUDE_CONFIG_DIR，并在其中写入 settings.json 自动批准该 key，
+				// 以确保推理流量可稳定经过本地 Anthropic Proxy（从而触发子代理场景→模型替换逻辑）。
+				try {
+					const settingsPath = path.join(claudeConfigDir, "settings.json");
+					const approvedKey = anthropicApiKey.slice(-20);
+
+					let settingsObj: any = {};
+					if (fs.existsSync(settingsPath)) {
+						try {
+							const raw = fs.readFileSync(settingsPath, "utf8");
+							const parsed = JSON.parse(raw);
+							if (parsed && typeof parsed === "object") settingsObj = parsed;
+						} catch { }
+					}
+
+					if (!settingsObj.customApiKeyResponses)
+						settingsObj.customApiKeyResponses = {};
+					if (!Array.isArray(settingsObj.customApiKeyResponses.approved))
+						settingsObj.customApiKeyResponses.approved = [];
+					if (!Array.isArray(settingsObj.customApiKeyResponses.rejected))
+						settingsObj.customApiKeyResponses.rejected = [];
+
+					if (
+						!settingsObj.customApiKeyResponses.approved.includes(approvedKey)
+					) {
+						settingsObj.customApiKeyResponses.approved.push(approvedKey);
+					}
+
+					fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+					fs.writeFileSync(
+						settingsPath,
+						JSON.stringify(settingsObj, null, 2),
+						"utf8",
+					);
+				} catch { }
+
 				logger.info({
 					msg: "agent_sdk start",
 					scope: "agent",
 					runId,
 					cwd,
 					model: input.model,
+					anthropicBaseUrl,
+					anthropicApiKeyPresent: Boolean(anthropicApiKeyRaw),
+					claudeConfigDir,
 					pathToClaudeCodeExecutable,
 					allowed_tools: input.allowed_tools,
 					has_system_prompt: !!input.system_prompt,
@@ -1111,10 +1512,29 @@ ${opts.appendContent}`.trim();
 				const allowed = Array.isArray(input.allowed_tools)
 					? input.allowed_tools
 					: [];
-				const enabledSkills = normalizeStringArray((input as any).skills);
+				const skillsFromInput = normalizeStringArray((input as any).skills);
+				const skillsFromProject = await listProjectSkills(cwd);
+				const enabledSkills = uniqStrings([...skillsFromInput, ...skillsFromProject]);
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
 				const agentModelSettings =
 					(await loadAgentModelSettingsFromDb()) as AgentModelSettingsLike | null;
+				try {
+					const configs = Array.isArray((agentModelSettings as any)?.scenarioConfigs)
+						? ((agentModelSettings as any).scenarioConfigs as any[])
+						: [];
+					const enabledCount = configs.filter((c) => c && c.enabled !== false).length;
+					logger.info({
+						msg: "agent_sdk scenario+skills loaded",
+						scope: "agent",
+						runId,
+						scenarioConfigsTotal: configs.length,
+						scenarioConfigsEnabled: enabledCount,
+						projectSkillsCount: skillsFromProject.length,
+						inputSkillsCount: skillsFromInput.length,
+						enabledSkillsCount: enabledSkills.length,
+						enabledSkillsPreview: enabledSkills.slice(0, 20),
+					});
+				} catch { }
 				const scenarioAgents = buildDynamicScenarioAgents({
 					settings: agentModelSettings,
 					enabledSkills,
@@ -1153,6 +1573,52 @@ ${opts.appendContent}`.trim();
 					`[agent_sdk] About to call sdk.query with cwd='${cwd}', hasCanUseTool=true`,
 				);
 
+				const agentsConfig = {
+					...scenarioAgents,
+					reader: {
+						description:
+							"Reads provided files and extracts key facts/summaries.",
+						prompt:
+							"Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.",
+						model:
+							typeof (scenarioAgents as any)?.fast_search?.model === "string"
+								? String((scenarioAgents as any).fast_search.model)
+								: undefined,
+						tools: ["Read", "Glob", "Grep"],
+						disallowedTools: ["Task"],
+					},
+					writer: {
+						description:
+							"Writes polished content (Xiaohongshu/marketing/copywriting) based on provided facts.",
+						prompt:
+							"Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.",
+						model:
+							typeof (scenarioAgents as any)?.writing?.model === "string"
+								? String((scenarioAgents as any).writing.model)
+								: undefined,
+						tools: ["Skill", "Read", "Glob", "Grep"],
+						disallowedTools: ["Task"],
+						skills: enabledSkills.length > 0 ? enabledSkills : undefined,
+					},
+				};
+				const subagentAliasToKey = buildSubagentAliasMap(agentsConfig as any);
+
+				// 【调试】记录传递给 SDK 的 agents 配置
+				logger.info({
+					msg: "agent_sdk agentsConfig before sdk.query",
+					scope: "agent",
+					runId,
+					allowedToolsCount: allowed.length,
+					allowedToolsHasTask: allowed.includes("Task"),
+					agentKeys: Object.keys(agentsConfig),
+					agentsPreview: Object.entries(agentsConfig).map(([k, v]) => ({
+						key: k,
+						hasDescription: !!((v as any)?.description),
+						hasPrompt: !!((v as any)?.prompt),
+						model: (v as any)?.model?.slice?.(0, 50) ?? (v as any)?.model,
+					})),
+				});
+
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
 					options: {
@@ -1162,24 +1628,10 @@ ${opts.appendContent}`.trim();
 						resume: resumeSessionId,
 						persistSession,
 						mcpServers,
-						agents: {
-							...scenarioAgents,
-							reader: {
-								description:
-									"Reads provided files and extracts key facts/summaries.",
-								prompt: `Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.\n\n<ipo-subagent name="reader" scenario="fast_search" />`,
-								tools: ["Read", "Glob", "Grep"],
-								disallowedTools: ["Task"],
-							},
-							writer: {
-								description:
-									"Writes polished content (Xiaohongshu/marketing/copywriting) based on provided facts.",
-								prompt: `Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.\n\n<ipo-subagent name="writer" scenario="writing" />`,
-								tools: ["Skill", "Read", "Glob", "Grep"],
-								disallowedTools: ["Task"],
-								skills: enabledSkills.length > 0 ? enabledSkills : undefined,
-							},
-						},
+						// 必须传入 allowedTools 并包含 Task，否则自定义 agents 无法被调用
+						// 参考文档: "The Task tool must be included in allowedTools since Claude invokes subagents through the Task tool."
+						allowedTools: allowed.length > 0 ? allowed : undefined,
+						agents: agentsConfig as any,
 						hooks: {
 							// PreToolUse 钩子：在工具执行前拦截并修复文件路径
 							PreToolUse: [
@@ -1200,8 +1652,48 @@ ${opts.appendContent}`.trim();
 												`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`,
 											);
 
-											// 处理文件读取工具
 											const toolLower = String(toolName).toLowerCase();
+
+											// 处理 Task(subagent) 调用：兼容用户/模型用中文描述填写 subagent_type
+											if (
+												toolLower === "task" &&
+												toolInput &&
+												typeof toolInput === "object"
+											) {
+												const inputAny = toolInput as any;
+												const rawSubType =
+													typeof inputAny.subagent_type === "string"
+														? inputAny.subagent_type
+														: typeof inputAny.subagentType === "string"
+															? inputAny.subagentType
+															: null;
+												if (rawSubType) {
+													const resolved = resolveSubagentType(
+														rawSubType,
+														agentsConfig,
+														subagentAliasToKey,
+													);
+													if (resolved && resolved !== rawSubType) {
+														console.log(
+															`[PreToolUse] ✓ subagent_type rewritten: '${rawSubType}' -> '${resolved}'`,
+														);
+														return {
+															continue: true,
+															hookSpecificOutput: {
+																hookEventName: "PreToolUse" as const,
+																permissionDecision: "allow" as const,
+																updatedInput: {
+																	...toolInput,
+																	subagent_type: resolved,
+																	subagentType: resolved,
+																},
+															},
+														};
+													}
+												}
+											}
+
+											// 处理文件读取工具
 											if (
 												["read", "glob", "grep", "write", "edit"].includes(
 													toolLower,
@@ -1299,6 +1791,16 @@ ${opts.appendContent}`.trim();
 												"读取文件请优先使用 Read/Glob/Grep 等内置工具（不要依赖通配符 Bash）。",
 											);
 
+											const matchedScenarioAgent = matchScenarioAgentForPrompt({
+												settings: agentModelSettings,
+												promptText,
+											});
+											if (matchedScenarioAgent) {
+												additions.push(
+													`检测到命中你配置的场景「${matchedScenarioAgent.description}」（关键词：${matchedScenarioAgent.matchedKeyword}）。优先使用 Task 工具调用对应子代理：subagent_type="${matchedScenarioAgent.agentKey}"。`,
+												);
+											}
+
 											if (isLikelyWritingTask(promptText)) {
 												if (preferredWritingSkill) {
 													additions.push(
@@ -1336,14 +1838,36 @@ ${opts.appendContent}`.trim();
 							allowed.length > 0
 								? allowed
 								: { type: "preset", preset: "claude_code" },
-						env: {
-							...process.env,
-							...(resolvedPath ? { PATH: resolvedPath } : null),
-							ANTHROPIC_BASE_URL: options.anthropicBaseUrl,
-							ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "sk-noop",
-							// 禁用遥测数据上报，避免"1P event logging failed"错误
-							ANTHROPIC_DISABLE_TELEMETRY: "1",
-						},
+						env: (() => {
+							const env: Record<string, string> = {};
+							for (const [k, v] of Object.entries(process.env)) {
+								if (typeof v === "string") env[k] = v;
+							}
+
+							// Avoid inheriting user account/session routing that could bypass our proxy.
+							delete env.ANTHROPIC_AUTH_TOKEN;
+							delete env.CLAUDE_CODE_OAUTH_TOKEN;
+							delete env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR;
+							delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN;
+							delete env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
+							delete env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
+
+							if (resolvedPath) env.PATH = resolvedPath;
+
+							env.CLAUDE_CONFIG_DIR = claudeConfigDir;
+							// CRITICAL: do NOT append "/v1" here. The CLI constructs "/v1/messages" internally.
+							env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
+							env.ANTHROPIC_API_KEY = anthropicApiKey;
+							// Some CLI code paths look at this name instead.
+							env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
+
+							// Reduce background noise during debugging.
+							env.DISABLE_TELEMETRY = "1";
+							env.DISABLE_ERROR_REPORTING = "1";
+							env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+
+							return env;
+						})(),
 						stderr,
 						includePartialMessages: true,
 						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
@@ -1622,7 +2146,10 @@ ${opts.appendContent}`.trim();
 						});
 						// 检查是否有 tool_block_stop 事件，如果有则发送完整的工具输入
 						for (const ev of uiEvents) {
-							if (ev.type === "tool_block_stop" && typeof ev.index === "number") {
+							if (
+								ev.type === "tool_block_stop" &&
+								typeof ev.index === "number"
+							) {
 								const toolId = toolUseIdByIndex.get(ev.index);
 								if (toolId) {
 									const inputJsonStr = toolInputJsonById.get(toolId);
@@ -1635,11 +2162,13 @@ ${opts.appendContent}`.trim();
 										emit(options.getMainWindow, {
 											runId,
 											type: "transformed",
-											events: [{
-												type: "tool_input_complete",
-												id: toolId,
-												input: parsedInput,
-											}],
+											events: [
+												{
+													type: "tool_input_complete",
+													id: toolId,
+													input: parsedInput,
+												},
+											],
 										});
 									}
 								}
@@ -1659,7 +2188,11 @@ ${opts.appendContent}`.trim();
 									}
 									: (msg as any)?.usage,
 						};
-						emit(options.getMainWindow, { runId, type: "done", result: resultWithUsage });
+						emit(options.getMainWindow, {
+							runId,
+							type: "done",
+							result: resultWithUsage,
+						});
 					}
 				}
 				if (!sawResult) {
@@ -1697,10 +2230,12 @@ ${opts.appendContent}`.trim();
 					type: "error",
 					error,
 					retryable,
-					retryConfig: retryable ? {
-						maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
-						baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
-					} : undefined,
+					retryConfig: retryable
+						? {
+							maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
+							baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
+						}
+						: undefined,
 				} as any);
 			} finally {
 				running.delete(runId);

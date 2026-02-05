@@ -130,6 +130,23 @@ function getReadableDescription(toolCall: ToolCall): {
 	const name = toolCall.name?.toLowerCase() || "";
 	const type = toolCall.type;
 
+	// 子代理调用（Task）
+	if (toolCall.name === "Task" || name === "task") {
+		const subagentType = String(
+			(input as any)?.subagent_type ||
+				(input as any)?.agent_type ||
+				(input as any)?.subagentType ||
+				(input as any)?.agentType ||
+				"",
+		).trim();
+		return {
+			icon: Brain,
+			prefix: "子代理",
+			suffix: subagentType || toolCall.description,
+			detail: subagentType ? `subagent_type: ${subagentType}` : undefined,
+		};
+	}
+
 	// 读取文件
 	if (name.includes("read") || type === "file_read") {
 		const filePath = String(
@@ -238,7 +255,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		let hostname = "";
 		try {
 			hostname = new URL(url).hostname;
-		} catch { }
+		} catch {}
 		return {
 			icon: Globe,
 			prefix: "获取",
@@ -473,7 +490,9 @@ export default function ToolCallInline({
 							: "text-zinc-600 dark:text-zinc-300",
 					)}
 				>
-					<span className="font-medium flex-shrink-0 whitespace-nowrap">{prefix}</span>
+					<span className="font-medium flex-shrink-0 whitespace-nowrap">
+						{prefix}
+					</span>
 					{fileName && (
 						<button
 							type="button"
@@ -496,7 +515,9 @@ export default function ToolCallInline({
 						</button>
 					)}
 					{suffix && !fileName && (
-						<span className="text-zinc-500 dark:text-zinc-400 truncate">{suffix}</span>
+						<span className="text-zinc-500 dark:text-zinc-400 truncate">
+							{suffix}
+						</span>
 					)}
 					{filePath && !fileName && (
 						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate">
@@ -570,7 +591,7 @@ export default function ToolCallInline({
 							<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
 								{typeof toolCall.output === "string"
 									? toolCall.output.slice(0, 500) +
-									(toolCall.output.length > 500 ? "..." : "")
+										(toolCall.output.length > 500 ? "..." : "")
 									: JSON.stringify(toolCall.output, null, 2).slice(0, 500)}
 							</pre>
 						</div>

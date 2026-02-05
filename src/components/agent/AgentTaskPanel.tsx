@@ -3,6 +3,7 @@
 
 import {
 	ArrowLeft,
+	Brain,
 	Camera,
 	CheckCircle2,
 	ChevronRight,
@@ -86,7 +87,18 @@ function ToolCallCard({
 	isExpanded: boolean;
 	onToggle: () => void;
 }) {
-	const Icon = getToolIcon(toolCall.type);
+	const isSubagentCall = toolCall.name === "Task";
+	const input = toolCall.input as Record<string, unknown> | undefined;
+	const subagentType = isSubagentCall
+		? String(
+				(input as any)?.subagent_type ||
+					(input as any)?.agent_type ||
+					(input as any)?.subagentType ||
+					(input as any)?.agentType ||
+					"",
+			).trim() || undefined
+		: undefined;
+	const Icon = isSubagentCall ? Brain : getToolIcon(toolCall.type);
 	const statusColors = {
 		pending: "bg-zinc-50 dark:bg-zinc-800/50",
 		running: "bg-blue-50 dark:bg-blue-900/20",
@@ -109,7 +121,9 @@ function ToolCallCard({
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
 						<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-							{toolCall.name}
+							{isSubagentCall
+								? `子代理${subagentType ? ` · ${subagentType}` : ""}`
+								: toolCall.name}
 						</p>
 						<ToolStatusIcon status={toolCall.status} />
 					</div>

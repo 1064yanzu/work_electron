@@ -461,9 +461,11 @@ export function AgentModelScenarioSettings() {
 	};
 
 	const handleToggle = async (config: ScenarioModelConfig) => {
-		await store.updateScenarioConfig(config.scenario, {
-			enabled: !config.enabled,
-		});
+		await store.updateScenarioConfig(
+			config.scenario,
+			{ enabled: !config.enabled },
+			config.customName,
+		);
 	};
 
 	const handleScenarioModelChange = async (
@@ -472,10 +474,14 @@ export function AgentModelScenarioSettings() {
 	) => {
 		const model = allModels.find((m) => m.id === modelId);
 		if (model) {
-			await store.updateScenarioConfig(config.scenario, {
-				modelId,
-				providerId: model.providerId,
-			});
+			await store.updateScenarioConfig(
+				config.scenario,
+				{
+					modelId,
+					providerId: model.providerId,
+				},
+				config.customName,
+			);
 		}
 	};
 

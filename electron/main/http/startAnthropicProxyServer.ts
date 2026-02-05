@@ -31,9 +31,15 @@ export async function startAnthropicProxyServer({
 		// 直接返回成功，不记录遥测数据
 		res.json({ success: true });
 	});
+	// 兼容：某些 SDK/配置会在 ANTHROPIC_BASE_URL 后附加 /v1，导致请求走到 /v1/api/event_logging/batch
+	app.post("/v1/api/event_logging/batch", (_req: Request, res: Response) => {
+		res.json({ success: true });
+	});
 
-	app.use("/v1", createAnthropicProxyRouter({ db, logger }));
-
+	// 兼容：在根路径和 /v1 下都挂载路由，确保 SDK 无论是否追加 /v1 都能访问
+	const proxyRouter = createAnthropicProxyRouter({ db, logger });
+	app.use("/", proxyRouter);
+	app.use("/v1", proxyRouter);
 
 	const server = await new Promise<import("node:http").Server>((resolve) => {
 		const s = app.listen(port, host, () => resolve(s));
