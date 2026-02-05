@@ -31,9 +31,10 @@ import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
 import { InlineImage } from "../ui/InlineImage";
+import { agentStore } from "../../lib/agent/store";
 
 // 工具输出显示组件 - 处理 persisted-output 和 base64 图片
-function ToolOutputDisplay({ output }: { output: unknown }) {
+function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId?: string }) {
 	const [imagePath, setImagePath] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -110,14 +111,24 @@ function ToolOutputDisplay({ output }: { output: unknown }) {
 				}
 
 				// 保存 base64 为文件
+				const fileName = `subagent-image-${Date.now()}.jpg`;
 				const savedPath = await (window as any).electronAPI?.invoke("save_base64_image", {
 					base64Data,
-					fileName: `subagent-image-${Date.now()}.jpg`,
+					fileName,
 				});
 				if (cancelled) return;
 
 				if (savedPath) {
 					setImagePath(savedPath);
+
+					// 添加到 artifacts 列表
+					agentStore.addArtifact({
+						id: `artifact-image-${Date.now()}`,
+						type: "image",
+						title: "生成的图片",
+						url: savedPath,
+						metadata: { toolCallId, source: "subagent" },
+					});
 				} else {
 					setError("保存图片失败");
 				}
@@ -130,7 +141,7 @@ function ToolOutputDisplay({ output }: { output: unknown }) {
 		})();
 
 		return () => { cancelled = true; };
-	}, [persistedFilePath, hasPartialBase64]);
+	}, [persistedFilePath, hasPartialBase64, toolCallId]);
 
 	// 渲染图片
 	if (imagePath) {
@@ -725,7 +736,7 @@ export default function ToolCallInline({
 					)}
 
 					{/* 输出 */}
-					{toolCall.output && <ToolOutputDisplay output={toolCall.output} />}
+					{toolCall.output && <ToolOutputDisplay output={toolCall.output} toolCallId={toolCall.id} />}
 				</div>
 			)}
 
