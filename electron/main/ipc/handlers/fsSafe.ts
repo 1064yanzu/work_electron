@@ -95,7 +95,7 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 			try {
 				const st = await fs.stat(full);
 				size = st.size;
-			} catch {}
+			} catch { }
 		}
 		out.push({ path: full, name: ent.name, is_file, is_dir, size });
 	}
@@ -204,11 +204,58 @@ export function createFsSafeHandlers() {
 		return { success: true };
 	};
 
+	// 简化版读取 UTF-8 文件内容
+	const read_file_utf8 = async (
+		_event: IpcMainInvokeEvent,
+		input: { path: string },
+	): Promise<string> => {
+		const filePath = normalizePathInput(input.path);
+		requireAbsolute(filePath);
+		const content = await fs.readFile(filePath, "utf-8");
+		return content;
+	};
+
+	// 保存 base64 图片到文件
+	const save_base64_image = async (
+		_event: IpcMainInvokeEvent,
+		input: { base64Data: string; fileName?: string },
+	): Promise<string | null> => {
+		try {
+			const base64Data = String(input.base64Data || "");
+			if (!base64Data) return null;
+
+			// 解析 data URL
+			const match = base64Data.match(/^data:image\/([a-z]+);base64,(.+)$/i);
+			if (!match) return null;
+
+			const ext = match[1] || "jpg";
+			const rawBase64 = match[2];
+
+			// 生成保存路径
+			const fileName = input.fileName || `image-${Date.now()}.${ext}`;
+			const saveDir = path.join(os.homedir(), "Library", "Application Support", "ipo-workbench", "generated-images");
+			await fs.mkdir(saveDir, { recursive: true });
+			const savePath = path.join(saveDir, fileName);
+
+			// 保存文件
+			const buffer = Buffer.from(rawBase64, "base64");
+			await fs.writeFile(savePath, buffer);
+			console.log(`[save_base64_image] Saved ${buffer.length} bytes to: ${savePath}`);
+
+			return savePath;
+		} catch (err) {
+			console.error("[save_base64_image] Error:", err);
+			return null;
+		}
+	};
+
 	return {
 		read_file_safe,
 		write_file_safe,
 		list_files_safe,
 		mkdir_safe,
 		copy_file_safe,
+		read_file_utf8,
+		save_base64_image,
 	};
 }

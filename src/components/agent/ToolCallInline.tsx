@@ -22,7 +22,7 @@ import {
 	Terminal,
 	XCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { EVENTS, events } from "../../lib/events";
@@ -30,6 +30,145 @@ import { cn } from "../../lib/utils";
 import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
+import { InlineImage } from "../ui/InlineImage";
+
+// 工具输出显示组件 - 处理 persisted-output 和 base64 图片
+function ToolOutputDisplay({ output }: { output: unknown }) {
+	const [imagePath, setImagePath] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const outputStr = typeof output === "string"
+		? output
+		: JSON.stringify(output, null, 2);
+
+	// 检测 persisted-output 标签
+	const persistedMatch = outputStr.match(/<persisted-output>[\s\S]*?Full output saved to:\s*([^\n<]+)/);
+	const persistedFilePath = persistedMatch?.[1]?.trim();
+
+	// 检测预览中的 base64 图片标记（不完整的，需要读取文件）
+	const hasPartialBase64 = /data:image\/[a-z]+;base64,/.test(outputStr) && persistedFilePath;
+
+	useEffect(() => {
+		if (!persistedFilePath || !hasPartialBase64) return;
+
+		let cancelled = false;
+		setLoading(true);
+		setError(null);
+
+		(async () => {
+			try {
+				// 读取持久化文件
+				const fileContent = await (window as any).electronAPI?.invoke("read_file_utf8", {
+					path: persistedFilePath,
+				});
+				if (cancelled) return;
+
+				if (!fileContent) {
+					setError("无法读取文件");
+					return;
+				}
+
+				// 解析 JSON 并提取 base64 图片
+				let parsed: any;
+				try {
+					parsed = JSON.parse(fileContent);
+				} catch {
+					setError("文件格式错误");
+					return;
+				}
+
+				// 查找 base64 图片
+				let base64Data: string | null = null;
+				const findBase64 = (obj: any): string | null => {
+					if (typeof obj === "string") {
+						const match = obj.match(/(data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+)/);
+						if (match) return match[1];
+						// 也检查 markdown 格式
+						const mdMatch = obj.match(/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+)\)/);
+						if (mdMatch) return mdMatch[1];
+					}
+					if (Array.isArray(obj)) {
+						for (const item of obj) {
+							const found = findBase64(item);
+							if (found) return found;
+						}
+					}
+					if (obj && typeof obj === "object") {
+						for (const key of Object.keys(obj)) {
+							const found = findBase64(obj[key]);
+							if (found) return found;
+						}
+					}
+					return null;
+				};
+
+				base64Data = findBase64(parsed);
+				if (!base64Data) {
+					setError("未找到图片数据");
+					return;
+				}
+
+				// 保存 base64 为文件
+				const savedPath = await (window as any).electronAPI?.invoke("save_base64_image", {
+					base64Data,
+					fileName: `subagent-image-${Date.now()}.jpg`,
+				});
+				if (cancelled) return;
+
+				if (savedPath) {
+					setImagePath(savedPath);
+				} else {
+					setError("保存图片失败");
+				}
+			} catch (err) {
+				if (cancelled) return;
+				setError(String(err));
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [persistedFilePath, hasPartialBase64]);
+
+	// 渲染图片
+	if (imagePath) {
+		return (
+			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
+				<InlineImage path={imagePath} title="生成的图片" className="max-w-full" />
+			</div>
+		);
+	}
+
+	// 加载中
+	if (loading) {
+		return (
+			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded border border-zinc-100 dark:border-zinc-800/50 flex items-center gap-3">
+				<Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+				<span className="text-sm text-zinc-500">正在处理图片...</span>
+			</div>
+		);
+	}
+
+	// 错误
+	if (error && hasPartialBase64) {
+		return (
+			<div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50">
+				<span className="text-sm text-red-600 dark:text-red-400">{error}</span>
+			</div>
+		);
+	}
+
+	// 默认：显示截断的文本
+	return (
+		<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
+			<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
+				{outputStr.slice(0, 500) + (outputStr.length > 500 ? "..." : "")}
+			</pre>
+		</div>
+	);
+}
 
 // 提取文件名
 function getFileName(filePath: string): string {
@@ -134,10 +273,10 @@ function getReadableDescription(toolCall: ToolCall): {
 	if (toolCall.name === "Task" || name === "task") {
 		const subagentType = String(
 			(input as any)?.subagent_type ||
-				(input as any)?.agent_type ||
-				(input as any)?.subagentType ||
-				(input as any)?.agentType ||
-				"",
+			(input as any)?.agent_type ||
+			(input as any)?.subagentType ||
+			(input as any)?.agentType ||
+			"",
 		).trim();
 		return {
 			icon: Brain,
@@ -255,7 +394,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		let hostname = "";
 		try {
 			hostname = new URL(url).hostname;
-		} catch {}
+		} catch { }
 		return {
 			icon: Globe,
 			prefix: "获取",
@@ -586,16 +725,7 @@ export default function ToolCallInline({
 					)}
 
 					{/* 输出 */}
-					{toolCall.output && (
-						<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
-							<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
-								{typeof toolCall.output === "string"
-									? toolCall.output.slice(0, 500) +
-										(toolCall.output.length > 500 ? "..." : "")
-									: JSON.stringify(toolCall.output, null, 2).slice(0, 500)}
-							</pre>
-						</div>
-					)}
+					{toolCall.output && <ToolOutputDisplay output={toolCall.output} />}
 				</div>
 			)}
 

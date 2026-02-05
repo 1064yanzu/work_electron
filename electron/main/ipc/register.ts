@@ -187,6 +187,8 @@ export function registerIpcHandlers({
 	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
 	ipcMain.handle("mkdir_safe", fsSafeHandlers.mkdir_safe);
 	ipcMain.handle("copy_file_safe", fsSafeHandlers.copy_file_safe);
+	ipcMain.handle("read_file_utf8", fsSafeHandlers.read_file_utf8);
+	ipcMain.handle("save_base64_image", fsSafeHandlers.save_base64_image);
 	ipcMain.handle("save_temp_file", tempFileHandlers.save_temp_file);
 	ipcMain.handle(
 		"agent_get_sandbox_dir",
