@@ -10,6 +10,7 @@ export interface StreamOptions {
 interface StreamChunk {
 	content: string;
 	done: boolean;
+	channel?: "text" | "thought";
 }
 
 /**

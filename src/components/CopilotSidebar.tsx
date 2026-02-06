@@ -40,6 +40,10 @@ import {
 	invokeLlmWithCallback,
 	useChatStore,
 } from "../lib/chat";
+import {
+	filterThoughtBlocksForPersistence,
+	StreamBlocksBuilder,
+} from "../lib/chat/streamBlocksBuilder";
 import type {
 	ChatMessageBlock,
 	ChatMessage as ChatMessageType,
@@ -1014,24 +1018,11 @@ export default function CopilotSidebar() {
 			// 任务列表暂时不展示（根据反馈移除）
 
 			let lastSkillExecutionBlock: ChatMessageBlock | null = null;
+			const streamBuilder = new StreamBlocksBuilder({
+				thoughtMaxChars: 64 * 1024,
+			});
 
-			const streamBlocks: ChatMessageBlock[] = [
-				{ type: "text", text: "" } as Extract<
-					ChatMessageBlock,
-					{ type: "text" }
-				>,
-			];
-			let currentTextBlockIndex = 0;
-			const toolCallBlockIndex = new Map<string, number>();
-
-			const getStreamText = () =>
-				streamBlocks
-					.filter(
-						(b): b is Extract<ChatMessageBlock, { type: "text" }> =>
-							b.type === "text",
-					)
-					.map((b) => b.text || "")
-					.join("");
+			const getStreamText = () => streamBuilder.getText();
 
 			const stripDocProtocolSections = (text: string) =>
 				String(text || "")
@@ -1093,7 +1084,7 @@ export default function CopilotSidebar() {
 			};
 
 			const buildSkillBlocks = () => {
-				const blocks: ChatMessageBlock[] = [...streamBlocks];
+				const blocks: ChatMessageBlock[] = streamBuilder.getBlocks();
 
 				// 如果任务步骤（TodoWrite）已生成，用专门的 task_list 卡片承接
 				if (currentTaskId) {
@@ -1130,16 +1121,18 @@ export default function CopilotSidebar() {
 				protocol: ReturnType<typeof parseDocProtocolFinal>,
 			): ChatMessageBlock[] => {
 				const taskImagePaths = getTaskImageArtifactPaths();
-				const blocks: ChatMessageBlock[] = streamBlocks.map((b) => {
-					if (b.type !== "text") return b;
-					return {
-						type: "text",
-						text: replaceDataImageMarkdownWithPaths(
-							normalizeRuntimeText(b.text),
-							taskImagePaths,
-						),
-					} as const;
-				});
+				const blocks: ChatMessageBlock[] = streamBuilder
+					.getBlocks()
+					.map((b) => {
+						if (b.type !== "text") return b;
+						return {
+							type: "text",
+							text: replaceDataImageMarkdownWithPaths(
+								normalizeRuntimeText(b.text),
+								taskImagePaths,
+							),
+						} as const;
+					});
 
 				// Keep Todo list card after completion
 				if (currentTaskId) {
@@ -1302,8 +1295,10 @@ export default function CopilotSidebar() {
 				const finalizeFromRawText = (rawText: string, source: string) => {
 					if (forcedFinalized) return;
 					forcedFinalized = true;
+					streamBuilder.flushParser();
+					const finalRawText = rawText || getStreamText();
 
-					const protocol = parseDocProtocolFinal(rawText, {
+					const protocol = parseDocProtocolFinal(finalRawText, {
 						activeDocContent: workspaceStore.getActiveDocContent() || "",
 						hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 						prompt: command?.name || content.slice(0, 50),
@@ -1318,7 +1313,10 @@ export default function CopilotSidebar() {
 							content: result,
 							isStreaming: false,
 							metadata: {
-								blocks: buildFinalBlocks(result, protocol),
+								blocks: filterThoughtBlocksForPersistence(
+									buildFinalBlocks(result, protocol),
+									true,
+								),
 								...(protocol.kind === "create" || protocol.kind === "update"
 									? { fileUpdates: [protocol.fileUpdate] }
 									: null),
@@ -1365,11 +1363,13 @@ export default function CopilotSidebar() {
 					) {
 						return;
 					}
-					const hasRunningTools = streamBlocks.some(
-						(b) =>
-							b.type === "tool_call" &&
-							(b.status === "running" || b.status === "pending"),
-					);
+					const hasRunningTools = streamBuilder
+						.getBlocks()
+						.some(
+							(b) =>
+								b.type === "tool_call" &&
+								(b.status === "running" || b.status === "pending"),
+						);
 					if (hasRunningTools) return;
 					const raw = getStreamText();
 					if (!raw.trim()) return;
@@ -1647,38 +1647,25 @@ export default function CopilotSidebar() {
 							input: event.toolCall?.input,
 						};
 
-						const last = streamBlocks[streamBlocks.length - 1];
-						if (!last || last.type !== "text") {
-							streamBlocks.push({ type: "text", text: "" } as any);
-							currentTextBlockIndex = streamBlocks.length - 1;
-						}
-
-						streamBlocks.push(toolCallBlock);
-						toolCallBlockIndex.set(toolCallId, streamBlocks.length - 1);
-						streamBlocks.push({ type: "text", text: "" } as any);
-						currentTextBlockIndex = streamBlocks.length - 1;
+						streamBuilder.startToolCall(toolCallBlock);
 
 						updateStreamingMessage();
 						return;
 					}
 
 					if (event.type === "tool_completed" || event.type === "tool_error") {
-						const idx = toolCallBlockIndex.get(event.toolCallId);
-						if (typeof idx !== "number") return;
-						const b = streamBlocks[idx];
-						if (!b || b.type !== "tool_call") return;
 						if (event.type === "tool_completed") {
-							streamBlocks[idx] = {
+							streamBuilder.updateToolCall(event.toolCallId, (b) => ({
 								...b,
 								status: "completed",
 								output: event.result.data,
-							};
+							}));
 						} else {
-							streamBlocks[idx] = {
+							streamBuilder.updateToolCall(event.toolCallId, (b) => ({
 								...b,
 								status: "error",
 								error: event.error,
-							};
+							}));
 						}
 						updateStreamingMessage();
 					}
@@ -1686,14 +1673,7 @@ export default function CopilotSidebar() {
 
 				const onChunk = (chunk: string) => {
 					touchActivity();
-					const last = streamBlocks[streamBlocks.length - 1];
-					if (!last || last.type !== "text") {
-						streamBlocks.push({ type: "text", text: "" } as any);
-						currentTextBlockIndex = streamBlocks.length - 1;
-					}
-					const textBlock = streamBlocks[currentTextBlockIndex];
-					if (!textBlock || textBlock.type !== "text") return;
-					textBlock.text += chunk;
+					streamBuilder.appendTextChunk(chunk);
 					const snapshot = getStreamText();
 					if (docProtocolMode === "none") {
 						if (snapshot.includes(":::update-doc")) {
@@ -1741,6 +1721,11 @@ export default function CopilotSidebar() {
 						persistSession: true,
 						forcedSkillName: forcedSkillId, // 传递强制 skill 名称
 						onChunk, // 流式输出回调
+						onThoughtChunk: (chunk, meta) => {
+							touchActivity();
+							streamBuilder.appendThoughtChunk(chunk, meta);
+							scheduleStreamingUpdate();
+						},
 					},
 				);
 
@@ -1750,6 +1735,7 @@ export default function CopilotSidebar() {
 
 				clearWatchdog();
 				if (forcedFinalized) return;
+				streamBuilder.flushParser();
 
 				// 如果有流式消息，更新最终内容并标记为完成
 				if (streamingMsgId) {
@@ -1793,14 +1779,8 @@ export default function CopilotSidebar() {
 
 				// 如果有图片生成但没有文本，使用空白或简短提示；否则使用默认失败消息
 				const rawText = getStreamText();
-				console.log("[DEBUG] Image check:", {
-					hasImages,
-					rawText,
-					toolCalls: finalState.currentTask?.toolCalls,
-				});
 				const rawResult =
 					rawText || (hasImages ? "" : "任务已完成，但未能生成结果");
-				console.log("[DEBUG] rawResult:", rawResult);
 
 				const protocol = parseDocProtocolFinal(rawResult, {
 					activeDocContent: workspaceStore.getActiveDocContent() || "",
@@ -1815,16 +1795,12 @@ export default function CopilotSidebar() {
 				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
 				// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
 				if (streamingMsgId) {
-					console.log("[DEBUG] Updating message:", {
-						result,
-						protocol,
-						blocks: buildFinalBlocks(result, protocol),
-					});
+					const finalBlocks = buildFinalBlocks(result, protocol);
 					chatStore.updateMessage(session.id, streamingMsgId, {
 						content: result,
 						isStreaming: false,
 						metadata: {
-							blocks: buildFinalBlocks(result, protocol),
+							blocks: filterThoughtBlocksForPersistence(finalBlocks, true),
 							...(protocol.kind === "create" || protocol.kind === "update"
 								? { fileUpdates: [protocol.fileUpdate] }
 								: null),
@@ -2115,10 +2091,17 @@ export default function CopilotSidebar() {
 			chatStore.addMessage(session.id, userMessage);
 		}
 
+		const streamBuilder = new StreamBlocksBuilder({
+			thoughtMaxChars: 64 * 1024,
+		});
+
 		// 创建 AI 消息
 		const assistantMessage = createMessage("assistant", "", {
 			isStreaming: true,
 			model: activeModel,
+			metadata: {
+				blocks: streamBuilder.getBlocks(),
+			},
 		});
 		chatStore.addMessage(session.id, assistantMessage);
 		chatStore.setStatus("streaming");
@@ -2127,6 +2110,7 @@ export default function CopilotSidebar() {
 		const controller = new AbortController();
 		setAbortController(controller);
 
+		let accumulatedRawContent = "";
 		let accumulatedContent = "";
 		let isUpdatingDoc = false;
 		let isCreatingDoc = false;
@@ -2150,7 +2134,9 @@ export default function CopilotSidebar() {
 			systemPrompt,
 			context: contextTexts,
 			onChunk: (chunk: string) => {
-				accumulatedContent += chunk;
+				accumulatedRawContent += chunk;
+				streamBuilder.appendTextChunk(chunk);
+				accumulatedContent = streamBuilder.getText();
 
 				// 检测 AI 协议标记
 				if (!isUpdatingDoc && !isCreatingDoc) {
@@ -2332,10 +2318,25 @@ export default function CopilotSidebar() {
 
 				chatStore.updateMessage(session.id, assistantMessage.id, {
 					content: displayContent,
+					metadata: {
+						blocks: streamBuilder.getBlocks(),
+					},
+				});
+			},
+			onThoughtChunk: (chunk, meta) => {
+				streamBuilder.appendThoughtChunk(chunk, meta);
+				accumulatedContent = streamBuilder.getText();
+				chatStore.updateMessage(session.id, assistantMessage.id, {
+					content: accumulatedContent,
+					metadata: {
+						blocks: streamBuilder.getBlocks(),
+					},
 				});
 			},
 			onComplete: () => {
 				setAbortController(null);
+				streamBuilder.flushParser();
+				accumulatedContent = streamBuilder.getText();
 				// 兜底处理：如果流结束时仍在修改/创建文档状态（例如结束标记不完整）
 				if (isUpdatingDoc || isCreatingDoc) {
 					console.log(
@@ -2465,11 +2466,22 @@ export default function CopilotSidebar() {
 				chatStore.updateMessage(session.id, assistantMessage.id, {
 					content: finalContent,
 					isStreaming: false,
+					metadata: {
+						blocks: filterThoughtBlocksForPersistence(
+							[
+								{ type: "text", text: finalContent },
+								...streamBuilder
+									.getBlocks()
+									.filter((b) => b.type === "thought"),
+							],
+							true,
+						),
+					},
 				});
 				chatStore.setStatus("idle");
 
 				// 调试：打印 AI 完整响应
-				console.log("[CopilotSidebar] AI 完整响应:", accumulatedContent);
+				console.log("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
 
 				// 兼容旧的写入协议
 				const { writeContent } = parseWriteContent(accumulatedContent);
@@ -2487,9 +2499,22 @@ export default function CopilotSidebar() {
 			},
 			onError: (error: string) => {
 				setAbortController(null);
+				streamBuilder.flushParser();
+				const errorContent = `⚠️ 错误: ${error}`;
 				chatStore.updateMessage(session.id, assistantMessage.id, {
-					content: `⚠️ 错误: ${error}`,
+					content: errorContent,
 					isStreaming: false,
+					metadata: {
+						blocks: filterThoughtBlocksForPersistence(
+							[
+								{ type: "text", text: errorContent },
+								...streamBuilder
+									.getBlocks()
+									.filter((b) => b.type === "thought"),
+							],
+							true,
+						),
+					},
 				});
 				chatStore.setStatus("error", error);
 			},

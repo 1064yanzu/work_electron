@@ -866,10 +866,82 @@ function buildUiToolResultOutput(
 	};
 }
 
+const THOUGHT_FIELD_KEYS = new Set([
+	"thinking",
+	"reasoning",
+	"reasoning_content",
+	"reasoning_text",
+	"thought",
+]);
+
+function extractThoughtTextFromUnknown(
+	value: unknown,
+	maxChars = 64 * 1024,
+): string {
+	const out: string[] = [];
+	const seen = new Set<unknown>();
+
+	const visit = (v: unknown, depth: number, inThoughtField: boolean) => {
+		if (v === null || v === undefined) return;
+		if (depth > 10) return;
+		if (out.join("\n\n").length >= maxChars) return;
+
+		if (typeof v === "string") {
+			const text = v.trim();
+			if (!text) return;
+			if (inThoughtField) {
+				out.push(text);
+				return;
+			}
+			// 兼容模型把结构化结果包成 JSON 字符串返回
+			if (
+				/\"(thinking|reasoning|reasoning_content|reasoning_text|thought)\"/i.test(
+					text,
+				)
+			) {
+				try {
+					const parsed = JSON.parse(text);
+					visit(parsed, depth + 1, false);
+				} catch {
+					// ignore non-json strings
+				}
+			}
+			return;
+		}
+
+		if (Array.isArray(v)) {
+			for (const item of v) {
+				visit(item, depth + 1, inThoughtField);
+				if (out.join("\n\n").length >= maxChars) break;
+			}
+			return;
+		}
+
+		if (typeof v !== "object") return;
+		if (seen.has(v)) return;
+		seen.add(v);
+
+		for (const [key, nested] of Object.entries(v as Record<string, unknown>)) {
+			const k = key.toLowerCase().trim();
+			const nextInThought = inThoughtField || THOUGHT_FIELD_KEYS.has(k);
+			visit(nested, depth + 1, nextInThought);
+			if (out.join("\n\n").length >= maxChars) break;
+		}
+	};
+
+	visit(value, 0, false);
+	if (out.length === 0) return "";
+	const merged = out.join("\n\n").trim();
+	return merged.length <= maxChars
+		? merged
+		: `${merged.slice(0, maxChars)}\n\n[Thought truncated]`;
+}
+
 function toUIEvents(
 	message: any,
 	options?: {
 		rewriteToolResultOutput?: (toolUseId: string, output: unknown) => unknown;
+		contentBlockKindByIndex?: Map<number, string>;
 	},
 ): any[] {
 	const events: any[] = [];
@@ -975,6 +1047,15 @@ function toUIEvents(
 				const output = options?.rewriteToolResultOutput
 					? options.rewriteToolResultOutput(toolUseId, b.content)
 					: b.content;
+				const toolThought = extractThoughtTextFromUnknown(output);
+				if (toolThought) {
+					events.push({
+						type: "thought_delta",
+						content: toolThought,
+						source: "thinking",
+						title: "Thought",
+					});
+				}
 				events.push({
 					type: "tool_call_end",
 					id: toolUseId,
@@ -994,13 +1075,6 @@ function toUIEvents(
 	}
 
 	if (
-		ev?.type === "content_block_delta" &&
-		ev?.delta?.type === "text_delta" &&
-		typeof ev.delta.text === "string"
-	) {
-		events.push({ type: "text_delta", content: ev.delta.text });
-	}
-	if (
 		ev?.type === "content_block_start" &&
 		ev?.content_block?.type === "tool_use"
 	) {
@@ -1015,8 +1089,50 @@ function toUIEvents(
 					: {},
 		});
 	}
+	if (
+		ev?.type === "content_block_start" &&
+		typeof ev?.index === "number" &&
+		typeof ev?.content_block?.type === "string" &&
+		options?.contentBlockKindByIndex
+	) {
+		options.contentBlockKindByIndex.set(ev.index, ev.content_block.type);
+	}
+	if (ev?.type === "content_block_delta") {
+		if (
+			ev?.delta?.type === "thinking_delta" &&
+			typeof ev?.delta?.thinking === "string"
+		) {
+			events.push({
+				type: "thought_delta",
+				content: ev.delta.thinking,
+				source: "thinking",
+				title: "Thinking",
+				index: typeof ev.index === "number" ? ev.index : undefined,
+			});
+		}
+		if (
+			ev?.delta?.type === "text_delta" &&
+			typeof ev?.delta?.text === "string"
+		) {
+			const idx = typeof ev.index === "number" ? ev.index : -1;
+			const blockKind =
+				idx >= 0 ? options?.contentBlockKindByIndex?.get(idx) : undefined;
+			if (blockKind === "thinking" || blockKind === "reasoning") {
+				events.push({
+					type: "thought_delta",
+					content: ev.delta.text,
+					source: blockKind,
+					title: blockKind === "reasoning" ? "Reasoning" : "Thinking",
+					index: idx >= 0 ? idx : undefined,
+				});
+			} else {
+				events.push({ type: "text_delta", content: ev.delta.text });
+			}
+		}
+	}
 	// 当 content_block_stop 事件触发时，工具输入流式传输已完成
 	if (ev?.type === "content_block_stop" && typeof ev?.index === "number") {
+		options?.contentBlockKindByIndex?.delete(ev.index);
 		events.push({
 			type: "tool_block_stop",
 			index: ev.index,
@@ -1024,6 +1140,17 @@ function toUIEvents(
 	}
 
 	if (message.type === "result") {
+		const resultThought = extractThoughtTextFromUnknown(
+			(message as any).result,
+		);
+		if (resultThought) {
+			events.push({
+				type: "thought_delta",
+				content: resultThought,
+				source: "reasoning",
+				title: "Reasoning",
+			});
+		}
 		const isError =
 			Boolean((message as any).is_error) || message.subtype !== "success";
 		if (
@@ -1468,7 +1595,7 @@ export function createAgentSdkHandlers(options: {
 		return [
 			routingMarker,
 			`You are a specialized subagent for: ${label}.`,
-			"Return only the final useful output. Be concise; do not include chain-of-thought.",
+			"Return concise, useful output. If reasoning is produced, keep it structured and relevant.",
 			"Do NOT copy the full conversation history. Use only the context provided in the Task prompt.",
 			"This output will be injected back into the main conversation; keep it short and avoid irrelevant details.",
 			skillHint.trimEnd(),
@@ -2786,6 +2913,7 @@ ${opts.appendContent}`.trim();
 				// Accumulate token usage from SDK stream events
 				let accumulatedInputTokens = 0;
 				let accumulatedOutputTokens = 0;
+				const contentBlockKindByIndex = new Map<number, string>();
 				for await (const msg of q) {
 					// Avoid logging every stream delta; it can freeze the app.
 					const msgAny = msg as any;
@@ -2890,6 +3018,7 @@ ${opts.appendContent}`.trim();
 							if (!persistedPaths || persistedPaths.length === 0) return output;
 							return buildUiToolResultOutput(output, persistedPaths);
 						},
+						contentBlockKindByIndex,
 					});
 					if (uiEvents.length > 0) {
 						emit(options.getMainWindow, {

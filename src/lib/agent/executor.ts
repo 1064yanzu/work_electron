@@ -19,6 +19,7 @@ import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
 import { buildRuntimeUserPrompt } from "./context/userPrompt";
 import { managedModeStore } from "../managedModeStore";
+import { EVENTS, events } from "../events";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -483,6 +484,15 @@ class AgentExecutor {
 			/** 强制使用的 Agent Skill 名称 */
 			forcedSkillName?: string;
 			onChunk?: (chunk: string) => void;
+			onThoughtChunk?: (
+				chunk: string,
+				meta?: {
+					title?: string;
+					source?: string;
+					phase?: string;
+					durationMs?: number;
+				},
+			) => void;
 		},
 	): Promise<{ sdkSessionId?: string; sandboxDir?: string }> {
 		// Ensure skills & model stores are initialized
@@ -1012,17 +1022,16 @@ class AgentExecutor {
 									}
 								}
 
-								// 同步中间栏文件树并自动预览第一张新图
+								// 同步中间栏文件树；自动预览交由 SandboxWorkspace 统一仲裁
 								if (sandboxDir && imagePaths.length > 0) {
 									await managedModeStore.scanSandboxDir(sandboxDir);
 									const firstPath = String(imagePaths[0] || "").trim();
 									if (firstPath) {
-										const selectedId =
-											managedModeStore.selectFileByPath(firstPath);
-										if (selectedId) {
-											managedModeStore.setCenterView("preview");
-											managedModeStore.setPreviewMode("preview");
-										}
+										events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
+											toolCallId: resolvedToolCallId,
+											artifactUrl: firstPath,
+											autoPreview: true,
+										});
 									}
 								}
 							} catch {
@@ -1055,6 +1064,10 @@ class AgentExecutor {
 
 						case "assistant":
 							// Text content - already handled by onChunk
+							break;
+
+						case "thought_delta":
+							options?.onThoughtChunk?.(message.content, message.thoughtMeta);
 							break;
 
 						case "tool_input_update": {

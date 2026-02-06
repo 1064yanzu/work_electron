@@ -6,6 +6,7 @@ import { Download, FolderOpen, Library, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { ArtifactFileType } from "./ArtifactCard";
+import { ZoomableImageViewer } from "../ui/ZoomableImageViewer";
 
 export interface ArtifactPreviewModalProps {
 	isOpen: boolean;
@@ -62,13 +63,11 @@ function ToolbarButton({
 // 图片预览
 function ImagePreview({ filePath }: { filePath: string }) {
 	return (
-		<div className="flex items-center justify-center h-full p-8">
-			<img
-				src={`file://${filePath}`}
-				alt="预览"
-				className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-			/>
-		</div>
+		<ZoomableImageViewer
+			src={`file://${filePath}`}
+			alt="预览"
+			className="bg-zinc-50 dark:bg-zinc-950"
+		/>
 	);
 }
 

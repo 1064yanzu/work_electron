@@ -11,6 +11,14 @@ export interface TextEvent {
 	index?: number;
 }
 
+export interface ThoughtDeltaEvent {
+	type: "thought_delta";
+	content: string;
+	source?: string;
+	title?: string;
+	index?: number;
+}
+
 export interface ToolCallStartEvent {
 	type: "tool_call_start";
 	id: string;
@@ -122,6 +130,7 @@ export interface AuthStatusEvent {
 
 export type UIEvent =
 	| TextEvent
+	| ThoughtDeltaEvent
 	| ToolCallStartEvent
 	| ToolCallEndEvent
 	| ToolBlockStopEvent
@@ -168,6 +177,9 @@ export class AgentStreamState {
 
 				case "text_delta":
 					this.currentText += event.content;
+					break;
+
+				case "thought_delta":
 					break;
 
 				case "tool_call_start":

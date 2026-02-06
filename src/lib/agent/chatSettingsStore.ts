@@ -9,6 +9,7 @@ export type AgentChatSettings = {
 	replayLimit: number;
 	blocksFirstEnabled: boolean;
 	inlineTraceEnabled: boolean;
+	thoughtPersistenceEnabled: boolean;
 };
 
 const DEFAULT_SETTINGS: AgentChatSettings = {
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: AgentChatSettings = {
 	replayLimit: 200,
 	blocksFirstEnabled: true,
 	inlineTraceEnabled: true,
+	thoughtPersistenceEnabled: true,
 };
 
 const CONFIG_KEYS = {
@@ -27,6 +29,7 @@ const CONFIG_KEYS = {
 	replayLimit: "agent.chat.replay_limit",
 	blocksFirstEnabled: "agent.chat.blocks_first_enabled",
 	inlineTraceEnabled: "agent.chat.inline_trace_enabled",
+	thoughtPersistenceEnabled: "agent.chat.thought_persistence_enabled",
 } as const;
 
 const listeners = new Set<() => void>();
@@ -79,6 +82,9 @@ export const agentChatSettingsStore = {
 				const inlineTraceEnabled = await getConfig(
 					CONFIG_KEYS.inlineTraceEnabled,
 				);
+				const thoughtPersistenceEnabled = await getConfig(
+					CONFIG_KEYS.thoughtPersistenceEnabled,
+				);
 
 				state = {
 					replayEnabled: coerceBoolean(
@@ -108,6 +114,10 @@ export const agentChatSettingsStore = {
 						inlineTraceEnabled,
 						DEFAULT_SETTINGS.inlineTraceEnabled,
 					),
+					thoughtPersistenceEnabled: coerceBoolean(
+						thoughtPersistenceEnabled,
+						DEFAULT_SETTINGS.thoughtPersistenceEnabled,
+					),
 				};
 			} catch {
 				state = { ...DEFAULT_SETTINGS };
@@ -136,6 +146,16 @@ export const agentChatSettingsStore = {
 		emitChange();
 		try {
 			await setConfig(CONFIG_KEYS.inlineTraceEnabled, enabled);
+		} catch {
+			await this.refresh();
+		}
+	},
+
+	async setThoughtPersistenceEnabled(enabled: boolean): Promise<void> {
+		state = { ...state, thoughtPersistenceEnabled: enabled };
+		emitChange();
+		try {
+			await setConfig(CONFIG_KEYS.thoughtPersistenceEnabled, enabled);
 		} catch {
 			await this.refresh();
 		}
@@ -215,6 +235,10 @@ export const agentChatSettingsStore = {
 			await setConfig(
 				CONFIG_KEYS.inlineTraceEnabled,
 				DEFAULT_SETTINGS.inlineTraceEnabled,
+			);
+			await setConfig(
+				CONFIG_KEYS.thoughtPersistenceEnabled,
+				DEFAULT_SETTINGS.thoughtPersistenceEnabled,
 			);
 		} catch {
 			await this.refresh();

@@ -16,6 +16,7 @@ import { ExecutionGraph } from "./ExecutionGraph";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
+import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
 
 interface SandboxWorkspaceProps {
@@ -92,6 +93,14 @@ export default function SandboxWorkspace({
 		[sandboxDir, store],
 	);
 
+	const { markUserManualSelection, requestAutoPreview } =
+		useAutoImageArtifactPreview({
+			graphSource,
+			sandboxDir,
+			isExecuting,
+			openArtifactInPreview,
+		});
+
 	useEffect(() => {
 		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {
 			if (!payload?.autoPreview) return;
@@ -100,9 +109,9 @@ export default function SandboxWorkspace({
 					? payload.artifactUrl.trim()
 					: "";
 			if (!artifactUrl) return;
-			await openArtifactInPreview(artifactUrl);
+			requestAutoPreview(artifactUrl);
 		});
-	}, [openArtifactInPreview]);
+	}, [requestAutoPreview]);
 
 	useEffect(() => {
 		const handleShortcuts = (e: KeyboardEvent) => {
@@ -130,11 +139,12 @@ export default function SandboxWorkspace({
 	}, [store]);
 
 	const handleSelectFile = useCallback(
-		async (id: string) => {
+		async (id: string, source: "user" | "auto" = "user") => {
+			if (source === "user") markUserManualSelection();
 			store.selectFile(id);
 			await store.loadFileContent(id);
 		},
-		[store],
+		[markUserManualSelection, store],
 	);
 
 	const artifactFiles = useMemo(() => {
@@ -163,7 +173,10 @@ export default function SandboxWorkspace({
 			{ui.centerView === "graph" ? (
 				<ExecutionGraph
 					source={graphSource}
-					onOpenArtifact={openArtifactInPreview}
+					onOpenArtifact={async (filePath) => {
+						markUserManualSelection();
+						await openArtifactInPreview(filePath);
+					}}
 					filter={ui.graphFilter || "all"}
 					onFilterChange={(value) => store.setGraphFilter(value)}
 					searchQuery={ui.graphSearch || ""}
@@ -183,7 +196,7 @@ export default function SandboxWorkspace({
 							expandedFolders={ui.expandedFolders}
 							onToggleCategory={(key) => store.toggleFolderExpanded(key)}
 							selectedFileId={selectedFileId}
-							onSelectFile={(id) => void handleSelectFile(id)}
+							onSelectFile={(id) => void handleSelectFile(id, "user")}
 						/>
 					</Panel>
 
@@ -198,7 +211,7 @@ export default function SandboxWorkspace({
 							onLoadContent={async (fileId) => {
 								await store.loadFileContent(fileId);
 							}}
-							onSelectArtifact={(id) => void handleSelectFile(id)}
+							onSelectArtifact={(id) => void handleSelectFile(id, "user")}
 						/>
 					</Panel>
 				</PanelGroup>

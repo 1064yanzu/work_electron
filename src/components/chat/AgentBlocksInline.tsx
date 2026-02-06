@@ -131,6 +131,8 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 					content={b.content}
 					phase={b.phase}
 					durationMs={b.durationMs}
+					source={b.source}
+					truncated={b.truncated}
 				/>,
 			);
 			continue;

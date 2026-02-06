@@ -175,6 +175,9 @@ function shouldHideInternalSandboxFile(name: string): boolean {
 
 function normalizeComparablePath(input: string): string {
 	let value = String(input || "").trim();
+	value = value.replace(/^file:\/\//i, "");
+	value = value.replace(/^["'`<]+|["'`>]+$/g, "");
+	value = value.split("#")[0]?.split("?")[0] || value;
 	try {
 		value = decodeURIComponent(value);
 	} catch {}
@@ -462,12 +465,24 @@ class ManagedModeStore {
 			this.selectFile(null);
 			return null;
 		}
-		const file = this.state.files.find(
-			(f) => f.type === "file" && normalizeComparablePath(f.path) === p,
-		);
-		if (!file) return null;
-		this.selectFile(file.id);
-		return file.id;
+		const files = this.state.files.filter((f) => f.type === "file");
+		const exact = files.find((f) => normalizeComparablePath(f.path) === p);
+		if (exact) {
+			this.selectFile(exact.id);
+			return exact.id;
+		}
+
+		// 兜底：上游可能传入 file://、带 query/hash 或仅文件名
+		const targetName = p.split("/").filter(Boolean).pop() || "";
+		if (targetName) {
+			const byName = files.filter((f) => f.name === targetName);
+			if (byName.length === 1) {
+				this.selectFile(byName[0].id);
+				return byName[0].id;
+			}
+		}
+
+		return null;
 	}
 
 	/** 获取当前选中的文件 */
@@ -595,8 +610,10 @@ class ManagedModeStore {
 
 			if (!entries || !Array.isArray(entries)) return;
 
-			// 获取现有文件路径集合，用于检测新文件
-			const existingPaths = new Set(this.state.files.map((f) => f.path));
+			// 获取现有文件路径集合，用于检测新文件，并保留已有缓存内容
+			const previousFileByPath = new Map(
+				this.state.files.map((f) => [normalizeComparablePath(f.path), f]),
+			);
 
 			// 转换为 SandboxFile 格式（不读取内容，提高性能）
 			const newFiles: SandboxFile[] = [];
@@ -607,23 +624,26 @@ class ManagedModeStore {
 				// 确保文件路径以 sandboxDir 开头（过滤非法文件）
 				if (!entry.path.startsWith(sandboxDir)) continue;
 				if (shouldHideInternalSandboxPath(entry.path, sandboxDir)) continue;
+				const normalizedPath = normalizeComparablePath(entry.path);
+				const previous = previousFileByPath.get(normalizedPath);
 
 				const name = entry.name || entry.path.split("/").pop() || "file";
 				if (shouldHideInternalSandboxFile(name)) continue;
 				const ext = name.includes(".") ? name.split(".").pop() || "" : "";
 				const category = categorizeFile(name);
 				const mimeType = getMimeType(name);
-				const isNew = !existingPaths.has(entry.path);
+				const isNew = !previous;
 
 				// 不在扫描时读取内容，改为选择文件时再读取（懒加载）
 				newFiles.push({
-					id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+					id: `file:${normalizedPath}`,
 					name,
 					path: entry.path,
 					type: "file",
 					extension: ext,
 					size: entry.size || 0,
-					content: undefined, // 不读取内容
+					// 复用已读取内容，避免周期扫描后预览丢失
+					content: previous?.content,
 					mimeType,
 					createdAt: entry.modified_at || Date.now(),
 					modifiedAt: entry.modified_at || Date.now(),
@@ -633,9 +653,14 @@ class ManagedModeStore {
 			}
 
 			// 更新状态
+			const nextIds = new Set(newFiles.map((f) => f.id));
 			this.setState((s) => ({
 				...s,
 				files: newFiles,
+				selectedFileId:
+					s.selectedFileId && nextIds.has(s.selectedFileId)
+						? s.selectedFileId
+						: null,
 			}));
 
 			// 3秒后移除所有 isNew 标记

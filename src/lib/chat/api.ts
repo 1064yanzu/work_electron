@@ -5,6 +5,14 @@ import { listen, type UnlistenFn } from "../tauriEventCompat";
 export interface StreamChunk {
 	content: string;
 	done: boolean;
+	channel?: "text" | "thought";
+	thoughtMeta?: {
+		title?: string;
+		source?: string;
+		model?: string;
+		phase?: string;
+		durationMs?: number;
+	};
 	usage?: {
 		prompt_tokens: number;
 		completion_tokens: number;
@@ -25,6 +33,7 @@ export interface LlmCallOptions {
 	context?: string[];
 	temperature?: number;
 	onChunk?: (chunk: string) => void;
+	onThoughtChunk?: (chunk: string, meta?: StreamChunk["thoughtMeta"]) => void;
 	onComplete?: () => void;
 	onError?: (error: string) => void;
 	onUsage?: (usage: TokenUsage) => void; // Token 消耗回调
@@ -43,6 +52,7 @@ export async function invokeLlmWithCallback(
 		context = [],
 		temperature = 0.7,
 		onChunk,
+		onThoughtChunk,
 		onComplete,
 		onError,
 		onUsage,
@@ -87,7 +97,11 @@ export async function invokeLlmWithCallback(
 				}
 				unlisten?.();
 			} else if (chunk.content) {
-				onChunk?.(chunk.content);
+				if (chunk.channel === "thought") {
+					onThoughtChunk?.(chunk.content, chunk.thoughtMeta);
+				} else {
+					onChunk?.(chunk.content);
+				}
 			}
 		});
 

@@ -31,6 +31,8 @@ import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
 import { InlineImage } from "../ui/InlineImage";
+import { ToolCallDetailsPanel } from "./ToolCallDetailsPanel";
+import { ThoughtInline } from "./ThoughtInline";
 
 // 工具输出显示组件 - 处理 persisted-output 和 base64 图片
 function ToolOutputDisplay({
@@ -658,6 +660,27 @@ export default function ToolCallInline({
 		return false;
 	})();
 
+	const isThinkToolCall = (toolCall.name || "").toLowerCase().includes("think");
+	if (isThinkToolCall) {
+		const outputText =
+			typeof toolCall.output === "string"
+				? toolCall.output
+				: toolCall.output
+					? JSON.stringify(toolCall.output, null, 2)
+					: toolCall.error || "";
+		if (outputText.trim()) {
+			return (
+				<div className="py-1" data-agent-tool-call-id={toolCallId}>
+					<ThoughtInline
+						title={prefix || "Thought"}
+						content={outputText}
+						source="tool"
+					/>
+				</div>
+			);
+		}
+	}
+
 	// 对于 Bash 工具调用，使用 Mac 风格终端显示
 	if (isBashToolCall(toolCall)) {
 		const input = toolCall.input as Record<string, unknown> | undefined;
@@ -704,7 +727,7 @@ export default function ToolCallInline({
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors",
 					hasDetails
-						? "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30 -mx-2 px-2 py-1 rounded"
+						? "cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 -mx-2 px-2 py-1.5 rounded-lg"
 						: "cursor-default py-0.5",
 				)}
 			>
@@ -738,7 +761,7 @@ export default function ToolCallInline({
 						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
 							? "text-red-600 dark:text-red-400"
-							: "text-zinc-600 dark:text-zinc-300",
+							: "text-zinc-700 dark:text-zinc-200",
 					)}
 				>
 					<span className="font-medium flex-shrink-0 whitespace-nowrap">
@@ -787,63 +810,26 @@ export default function ToolCallInline({
 
 			{/* 展开的详情 */}
 			{isExpanded && hasDetails && (
-				<div className="ml-8 mt-1 text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
-					{canPreviewFile && (
-						<div className="flex items-center gap-2">
-							<button
-								type="button"
-								onClick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
+				<ToolCallDetailsPanel
+					canPreviewFile={canPreviewFile}
+					onPreviewFile={
+						canPreviewFile
+							? () => {
 									void openFilePreview();
-								}}
-								className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60"
-							>
-								<Eye className="w-3.5 h-3.5" />
-								预览文件
-							</button>
-						</div>
-					)}
-
-					{/* 输入参数 */}
-					{toolCall.input && Object.keys(toolCall.input).length > 0 && (
-						<div className="space-y-1">
-							{Object.entries(toolCall.input).map(([key, value]) => (
-								<div key={key}>
-									<span className="text-zinc-400">{key}:</span>
-									<div className="mt-0.5 pl-2 border-l border-zinc-200 dark:border-zinc-700">
-										{typeof value === "string" && value.length > 100 ? (
-											<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded text-[11px]">
-												{value}
-											</pre>
-										) : (
-											<span className="text-zinc-600 dark:text-zinc-300">
-												{typeof value === "object"
-													? JSON.stringify(value)
-													: String(value)}
-											</span>
-										)}
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-
-					{/* 错误 */}
-					{toolCall.error && (
-						<div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20 whitespace-pre-wrap">
-							{toolCall.error}
-						</div>
-					)}
-
-					{/* 输出 */}
-					{toolCall.output && (
-						<ToolOutputDisplay
-							output={toolCall.output}
-							toolCallId={toolCall.id}
-						/>
-					)}
-				</div>
+								}
+							: undefined
+					}
+					input={toolCall.input as Record<string, unknown> | undefined}
+					error={toolCall.error}
+					outputNode={
+						toolCall.output ? (
+							<ToolOutputDisplay
+								output={toolCall.output}
+								toolCallId={toolCall.id}
+							/>
+						) : undefined
+					}
+				/>
 			)}
 
 			{previewFile && (

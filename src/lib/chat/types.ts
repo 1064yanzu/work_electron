@@ -16,6 +16,9 @@ export type ChatMessageBlock =
 			content: string;
 			phase?: string;
 			durationMs?: number;
+			source?: string;
+			model?: string;
+			truncated?: boolean;
 	  }
 	| { type: "task_list"; taskId: string }
 	| { type: "agent_task"; taskId: string }
@@ -107,6 +110,14 @@ export interface ChatContext {
 export interface StreamChunk {
 	content: string;
 	done: boolean;
+	channel?: "text" | "thought";
+	thoughtMeta?: {
+		title?: string;
+		source?: string;
+		model?: string;
+		phase?: string;
+		durationMs?: number;
+	};
 }
 
 export type ChatStatus = "idle" | "streaming" | "error";

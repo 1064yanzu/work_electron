@@ -22,7 +22,16 @@ export const STORAGE_VERSION = 2;
 type CompactBlock =
 	| { t: "text"; c: string } // text content
 	| { t: "img"; p: string; l?: string } // image path, label
-	| { t: "th"; l: string; c: string; ph?: string; d?: number } // thought: label, content, phase, duration
+	| {
+			t: "th";
+			l: string;
+			c: string;
+			ph?: string;
+			d?: number;
+			s?: string;
+			m?: string;
+			tr?: boolean;
+	  } // thought: label, content, phase, duration
 	| { t: "tl"; id: string } // task_list
 	| { t: "at"; id: string } // agent_task
 	| { t: "tc"; id: string; tid: string; n?: string; s?: string } // tool_call: id, taskId, name, status
@@ -153,6 +162,9 @@ function compactBlock(block: ChatMessageBlock): CompactBlock {
 				c: block.content,
 				ph: block.phase,
 				d: block.durationMs,
+				s: block.source,
+				m: block.model,
+				tr: block.truncated,
 			};
 		case "task_list":
 			return { t: "tl", id: block.taskId };
@@ -204,6 +216,9 @@ function expandBlock(compact: CompactBlock): ChatMessageBlock {
 				content: compact.c,
 				phase: compact.ph,
 				durationMs: compact.d,
+				source: compact.s,
+				model: compact.m,
+				truncated: compact.tr,
 			};
 		case "tl":
 			return { type: "task_list", taskId: compact.id };

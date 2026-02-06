@@ -297,6 +297,14 @@ export interface InvokeLlmResult {
 export interface StreamChunk {
 	content: string;
 	done: boolean;
+	channel?: "text" | "thought";
+	thoughtMeta?: {
+		title?: string;
+		source?: string;
+		model?: string;
+		phase?: string;
+		durationMs?: number;
+	};
 	usage?: {
 		prompt_tokens: number;
 		completion_tokens: number;

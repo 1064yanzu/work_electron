@@ -31,6 +31,7 @@ export interface AgentMessage {
 		| "assistant"
 		| "tool_call"
 		| "tool_result"
+		| "thought_delta"
 		| "tool_progress"
 		| "tool_input_update"
 		| "system"
@@ -43,6 +44,12 @@ export interface AgentMessage {
 	toolOutput?: unknown;
 	progress?: number;
 	message?: string;
+	thoughtMeta?: {
+		title?: string;
+		source?: string;
+		phase?: string;
+		durationMs?: number;
+	};
 	status?: "running" | "completed" | "error";
 }
 
@@ -752,6 +759,16 @@ export class ClaudeAgentService {
 						if (event.type === "text_delta") {
 							// 只处理增量文本，忽略完整 text 事件避免重复
 							onChunk?.(event.content);
+						} else if (event.type === "thought_delta") {
+							onMessage?.({
+								type: "thought_delta",
+								content: event.content,
+								thoughtMeta: {
+									title: event.title,
+									source: event.source,
+								},
+								status: "running",
+							});
 						} else if (event.type === "tool_call_start") {
 							toolNamesById.set(event.id, event.name);
 							// 检查是否是 TodoWrite 工具

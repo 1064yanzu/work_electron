@@ -143,6 +143,18 @@ export class AgentEventHandler {
 					this.callbacks.onChunk?.(event.content);
 					break;
 
+				case "thought_delta":
+					this.callbacks.onMessage?.({
+						type: "thought_delta",
+						content: event.content,
+						thoughtMeta: {
+							title: event.title,
+							source: event.source,
+						},
+						status: "running",
+					});
+					break;
+
 				case "tool_call_start":
 					this.callbacks.onMessage?.({
 						type: "tool_call",

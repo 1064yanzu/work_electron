@@ -38,6 +38,14 @@ interface Provider {
 interface StreamChunk {
 	content: string;
 	done: boolean;
+	channel?: "text" | "thought";
+	thoughtMeta?: {
+		title?: string;
+		source?: string;
+		model?: string;
+		phase?: string;
+		durationMs?: number;
+	};
 	usage?: {
 		prompt_tokens: number;
 		completion_tokens: number;
@@ -114,6 +122,50 @@ function createSseParser(
 			}
 		}
 	};
+}
+
+function collectThoughtTextFromUnknown(value: unknown): string[] {
+	if (!value) return [];
+	if (typeof value === "string") return value.trim() ? [value] : [];
+	if (Array.isArray(value)) {
+		const out: string[] = [];
+		for (const item of value) out.push(...collectThoughtTextFromUnknown(item));
+		return out;
+	}
+	if (typeof value === "object") {
+		const obj = value as Record<string, unknown>;
+		const out: string[] = [];
+		for (const [key, nested] of Object.entries(obj)) {
+			if (
+				key === "text" ||
+				key === "content" ||
+				key === "reasoning" ||
+				key === "thinking"
+			) {
+				out.push(...collectThoughtTextFromUnknown(nested));
+				continue;
+			}
+		}
+		return out;
+	}
+	return [];
+}
+
+function extractThoughtDeltaFromOpenAIChunk(chunk: any): string {
+	const delta = chunk?.choices?.[0]?.delta;
+	if (!delta || typeof delta !== "object") return "";
+
+	const candidates: unknown[] = [
+		delta.reasoning_content,
+		delta.reasoning_text,
+		delta.reasoning,
+		delta.thinking,
+	];
+	const parts: string[] = [];
+	for (const candidate of candidates) {
+		parts.push(...collectThoughtTextFromUnknown(candidate));
+	}
+	return parts.join("");
 }
 
 /**
@@ -299,7 +351,11 @@ async function callOpenAICompatibleStream(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
-	onChunk: (text: string) => void;
+	onChunk: (
+		text: string,
+		channel?: "text" | "thought",
+		thoughtMeta?: StreamChunk["thoughtMeta"],
+	) => void;
 }): Promise<{ usage?: StreamChunk["usage"] }> {
 	const baseUrl = normalizeOpenAICompatibleBaseUrl(
 		opts.provider,
@@ -352,7 +408,15 @@ async function callOpenAICompatibleStream(opts: {
 				const json = JSON.parse(data) as any;
 				const delta = json?.choices?.[0]?.delta;
 				const text = typeof delta?.content === "string" ? delta.content : "";
-				if (text) opts.onChunk(text);
+				if (text) opts.onChunk(text, "text");
+				const thought = extractThoughtDeltaFromOpenAIChunk(json);
+				if (thought) {
+					opts.onChunk(thought, "thought", {
+						title: "Reasoning",
+						source: "reasoning_content",
+						model: opts.model,
+					});
+				}
 				if (json?.usage && typeof json.usage === "object") {
 					usage = json.usage as any;
 				}
@@ -444,7 +508,11 @@ async function callAnthropicStream(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
-	onChunk: (text: string) => void;
+	onChunk: (
+		text: string,
+		channel?: "text" | "thought",
+		thoughtMeta?: StreamChunk["thoughtMeta"],
+	) => void;
 }): Promise<{ usage?: StreamChunk["usage"] }> {
 	const baseUrl = normalizeAnthropicBaseUrl(
 		opts.provider.api_base,
@@ -481,14 +549,51 @@ async function callAnthropicStream(opts: {
 	if (!response.body) throw new Error("No response body for streaming");
 
 	let usage: StreamChunk["usage"] | undefined;
+	const blockKindByIndex = new Map<number, string>();
 	const parse = createSseParser((data) => {
 		try {
 			const json = JSON.parse(data) as any;
+			if (json?.type === "content_block_start") {
+				const idx = typeof json?.index === "number" ? json.index : -1;
+				if (idx >= 0) {
+					const blockType =
+						typeof json?.content_block?.type === "string"
+							? json.content_block.type
+							: "";
+					blockKindByIndex.set(idx, blockType);
+				}
+			}
 			if (json?.type === "content_block_delta") {
 				const delta = json?.delta;
-				if (delta?.type === "text_delta" && typeof delta?.text === "string") {
-					opts.onChunk(delta.text);
+				const idx = typeof json?.index === "number" ? json.index : -1;
+				const blockKind = idx >= 0 ? blockKindByIndex.get(idx) : "";
+				if (
+					delta?.type === "thinking_delta" &&
+					typeof delta?.thinking === "string"
+				) {
+					opts.onChunk(delta.thinking, "thought", {
+						title: "Thinking",
+						source: "thinking",
+						model: opts.model,
+					});
 				}
+				if (delta?.type === "text_delta" && typeof delta?.text === "string") {
+					if (blockKind === "thinking" || blockKind === "reasoning") {
+						opts.onChunk(delta.text, "thought", {
+							title: blockKind === "reasoning" ? "Reasoning" : "Thinking",
+							source: blockKind,
+							model: opts.model,
+						});
+					} else {
+						opts.onChunk(delta.text, "text");
+					}
+				}
+			}
+			if (
+				json?.type === "content_block_stop" &&
+				typeof json?.index === "number"
+			) {
+				blockKindByIndex.delete(json.index);
 			}
 			if (json?.type === "message_delta" && json?.usage) {
 				usage = {
@@ -686,8 +791,17 @@ export async function invokeLlmStream(
 			);
 
 			let usage: StreamChunk["usage"] | undefined;
-			const onChunk = (text: string) => {
-				sendStreamChunk(mainWindow, { content: text, done: false });
+			const onChunk = (
+				text: string,
+				channel: "text" | "thought" = "text",
+				thoughtMeta?: StreamChunk["thoughtMeta"],
+			) => {
+				sendStreamChunk(mainWindow, {
+					content: text,
+					done: false,
+					channel,
+					thoughtMeta,
+				});
 			};
 
 			try {

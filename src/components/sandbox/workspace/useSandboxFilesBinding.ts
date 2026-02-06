@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AgentTaskStatus, ToolCall } from "../../../lib/agent/types";
+import type {
+	AgentTaskStatus,
+	ToolArtifact,
+	ToolCall,
+} from "../../../lib/agent/types";
 import type { ExecutionGraphSource } from "../graph/types";
 
 interface UseSandboxFilesBindingArgs {
@@ -147,6 +151,24 @@ export function useSandboxFilesBinding({
 		const hasRunning = toolCalls.some(
 			(t) => t.status === "running" || t.status === "pending",
 		);
+		const artifacts: ToolArtifact[] = [];
+		const seenArtifacts = new Set<string>();
+		for (const msg of activeSession.messages) {
+			const blocks = msg.metadata?.blocks;
+			if (!Array.isArray(blocks)) continue;
+			for (const block of blocks as any[]) {
+				if (block?.type !== "image") continue;
+				const path = String(block?.path || "").trim();
+				if (!path || seenArtifacts.has(path)) continue;
+				seenArtifacts.add(path);
+				artifacts.push({
+					id: `artifact-msg-${path}`,
+					type: "image",
+					title: String(block?.title || "图片"),
+					url: path,
+				});
+			}
+		}
 		const hasError = toolCalls.some((t) => t.status === "error");
 		const allCompleted =
 			toolCalls.length > 0 && toolCalls.every((t) => t.status === "completed");
@@ -167,7 +189,7 @@ export function useSandboxFilesBinding({
 				.find((m: any) => m.role === "user")?.content,
 			status,
 			toolCalls,
-			artifacts: [],
+			artifacts,
 		};
 	}, [activeSession, boundTask, sessionTaskId]);
 
