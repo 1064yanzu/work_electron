@@ -1,4 +1,4 @@
-import { Check, Copy, Download, Eye, FileCode2 } from "lucide-react";
+import { Check, Copy, Download, Eye, FileCode2, Link2 } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
@@ -148,19 +148,22 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		previewMode === "preview" && !previewAvailable ? "source" : previewMode;
 	const isFallbackToSource =
 		previewMode === "preview" && effectiveMode === "source";
+	const canCopyContent = Boolean(file.content);
+	const canDownload = Boolean(file.content);
+	const fileExtensionLabel = file.extension.toUpperCase() || "FILE";
 
 	return (
 		<div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-900">
-			<div className="flex items-center justify-between px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+			<div className="flex items-center justify-between gap-2 flex-wrap px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
 				<div className="flex items-center gap-2 min-w-0">
 					<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate">
 						{file.name}
 					</span>
 					<span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-						{file.extension.toUpperCase() || "FILE"}
+						{fileExtensionLabel}
 					</span>
 				</div>
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-1 flex-wrap justify-end">
 					{isFallbackToSource ? (
 						<span className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
@@ -197,7 +200,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<button
 						type="button"
 						onClick={handleCopy}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+						disabled={!canCopyContent}
+						className={cn(
+							"p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors",
+							!canCopyContent &&
+								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-400",
+						)}
 						title="复制"
 					>
 						{copiedAction === "content" ? (
@@ -215,13 +223,18 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						{copiedAction === "path" ? (
 							<Check className="w-4 h-4" />
 						) : (
-							<FileCode2 className="w-4 h-4" />
+							<Link2 className="w-4 h-4" />
 						)}
 					</button>
 					<button
 						type="button"
 						onClick={handleDownload}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+						disabled={!canDownload}
+						className={cn(
+							"p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors",
+							!canDownload &&
+								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-400",
+						)}
 						title="下载"
 					>
 						<Download className="w-4 h-4" />

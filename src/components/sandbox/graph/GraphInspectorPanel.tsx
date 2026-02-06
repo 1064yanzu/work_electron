@@ -99,8 +99,10 @@ export function GraphInspectorPanel({
 	return (
 		<div
 			className={cn(
-				"absolute right-3 top-3 z-20 pointer-events-auto transition-all duration-200",
-				collapsed ? "w-[280px]" : "w-[420px] bottom-3",
+				"absolute right-3 top-[4.5rem] z-20 pointer-events-auto transition-all duration-200",
+				collapsed
+					? "w-[min(280px,calc(100%-1.5rem))]"
+					: "w-[min(420px,calc(100%-1.5rem))] bottom-3",
 			)}
 		>
 			<div className="h-full rounded-3xl bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">

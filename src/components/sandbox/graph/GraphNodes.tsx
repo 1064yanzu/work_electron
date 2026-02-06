@@ -29,7 +29,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 	return (
 		<div
 			className={cn(
-				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]",
+				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]",
 				"border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
@@ -150,7 +150,10 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 					</div>
 
 					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-300 ring-1 ring-black/5 dark:ring-white/10">
+								STEP {String(data.step).padStart(2, "0")}
+							</span>
 							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
 								{data.isSubagent
 									? data.subagentType
@@ -206,7 +209,7 @@ const ArtifactNode = memo(function ArtifactNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[220px] max-w-[280px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
+				"min-w-[220px] max-w-[280px] rounded-2xl border bg-white/90 dark:bg-zinc-950/65 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
@@ -220,6 +223,9 @@ const ArtifactNode = memo(function ArtifactNode(
 						<Icon className="w-4 h-4" />
 					</div>
 					<div className="min-w-0 flex-1">
+						<div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-300 ring-1 ring-black/5 dark:ring-white/10 mb-1">
+							ARTIFACT {String(data.step).padStart(2, "0")}
+						</div>
 						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
 							{data.title}
 						</div>

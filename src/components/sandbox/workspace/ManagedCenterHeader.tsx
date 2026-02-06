@@ -1,12 +1,12 @@
-import { Code, Eye, RefreshCw, Sparkles, X } from "lucide-react";
+import { Eye, RefreshCw, Sparkles, X } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
 interface ManagedCenterHeaderProps {
-	centerView: "graph" | "preview" | "files";
+	centerView: "graph" | "preview";
 	headerTitle: string;
 	headerMeta: string;
 	isRefreshing: boolean;
-	onSetCenterView: (view: "graph" | "preview" | "files") => void;
+	onSetCenterView: (view: "graph" | "preview") => void;
 	onRefresh: () => void;
 	onExit: () => void;
 }
@@ -23,12 +23,12 @@ export function ManagedCenterHeader({
 	return (
 		<div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm shrink-0">
 			<div className="flex items-center gap-3">
-				<div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
+				<div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-xl p-0.5">
 					<button
 						type="button"
 						onClick={() => onSetCenterView("graph")}
 						className={cn(
-							"p-1.5 rounded-md transition-colors",
+							"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
 							centerView === "graph"
 								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
 								: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
@@ -36,12 +36,13 @@ export function ManagedCenterHeader({
 						title="运行图 (Alt+1)"
 					>
 						<Sparkles className="w-4 h-4" />
+						运行图
 					</button>
 					<button
 						type="button"
 						onClick={() => onSetCenterView("preview")}
 						className={cn(
-							"p-1.5 rounded-md transition-colors",
+							"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
 							centerView === "preview"
 								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
 								: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
@@ -49,19 +50,7 @@ export function ManagedCenterHeader({
 						title="预览视角 (Alt+2)"
 					>
 						<Eye className="w-4 h-4" />
-					</button>
-					<button
-						type="button"
-						onClick={() => onSetCenterView("files")}
-						className={cn(
-							"p-1.5 rounded-md transition-colors",
-							centerView === "files"
-								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
-						)}
-						title="文件视角 (Alt+3)"
-					>
-						<Code className="w-4 h-4" />
+						预览
 					</button>
 				</div>
 
@@ -75,7 +64,7 @@ export function ManagedCenterHeader({
 						</span>
 					</h2>
 					<div className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
-						快捷键: Alt+1 运行图 · Alt+2 预览 · Alt+3 文件
+						快捷键: Alt+1 运行图 · Alt+2 预览
 					</div>
 				</div>
 			</div>

@@ -58,8 +58,8 @@ export interface ManagedModeState {
 		expandedFolders: Set<string>;
 		/** 搜索关键词 */
 		searchQuery: string;
-		/** 中间栏视图：运行图 / 文件 / 预览 */
-		centerView: "graph" | "files" | "preview";
+		/** 中间栏视图：运行图 / 预览 */
+		centerView: "graph" | "preview";
 		/** 预览视图模式：preview 渲染预览, source 源码 */
 		previewMode: "preview" | "source";
 		/** 运行图筛选 */

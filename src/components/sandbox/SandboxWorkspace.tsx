@@ -16,7 +16,6 @@ import { ExecutionGraph } from "./ExecutionGraph";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
-import { FilePreviewContent } from "./workspace/FilePreviewContent";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
 
 interface SandboxWorkspaceProps {
@@ -72,12 +71,7 @@ export default function SandboxWorkspace({
 	];
 
 	const totalFiles = files.filter((f) => f.type === "file").length;
-	const headerTitle =
-		ui.centerView === "graph"
-			? "运行图"
-			: ui.centerView === "preview"
-				? "产物预览"
-				: "沙盒文件";
+	const headerTitle = ui.centerView === "graph" ? "运行图" : "产物预览";
 	const headerMeta =
 		ui.centerView === "graph"
 			? graphSource
@@ -129,11 +123,6 @@ export default function SandboxWorkspace({
 			if (e.altKey && e.key === "2") {
 				e.preventDefault();
 				store.setCenterView("preview");
-				return;
-			}
-			if (e.altKey && e.key === "3") {
-				e.preventDefault();
-				store.setCenterView("files");
 			}
 		};
 		window.addEventListener("keydown", handleShortcuts);
@@ -201,27 +190,16 @@ export default function SandboxWorkspace({
 					<PanelResizeHandle className="w-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
 
 					<Panel defaultSize={75} minSize={40}>
-						{ui.centerView === "files" ? (
-							<FilePreviewContent
-								file={selectedFile}
-								previewMode={ui.previewMode}
-								onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
-								onLoadContent={async (fileId) => {
-									await store.loadFileContent(fileId);
-								}}
-							/>
-						) : (
-							<ManagedArtifactPreviewPanel
-								selectedFile={selectedFile}
-								artifactFiles={artifactFiles}
-								previewMode={ui.previewMode}
-								onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
-								onLoadContent={async (fileId) => {
-									await store.loadFileContent(fileId);
-								}}
-								onSelectArtifact={(id) => void handleSelectFile(id)}
-							/>
-						)}
+						<ManagedArtifactPreviewPanel
+							selectedFile={selectedFile}
+							artifactFiles={artifactFiles}
+							previewMode={ui.previewMode}
+							onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
+							onLoadContent={async (fileId) => {
+								await store.loadFileContent(fileId);
+							}}
+							onSelectArtifact={(id) => void handleSelectFile(id)}
+						/>
 					</Panel>
 				</PanelGroup>
 			)}

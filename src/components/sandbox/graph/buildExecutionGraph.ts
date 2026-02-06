@@ -96,6 +96,7 @@ export function buildExecutionGraph(
 			data: {
 				kind: "tool",
 				toolCallId: tc.id,
+				step: i + 1,
 				name: tc.name,
 				status: tc.status,
 				description: tc.description,
@@ -147,10 +148,12 @@ export function buildExecutionGraph(
 	}
 
 	const baseArtifactsY = ROOT_Y + laneKeys.length * Y_STEP + 90;
+	let artifactStep = 0;
 	for (const [toolCallId, list] of artifactsByTool.entries()) {
 		const yOffset = toolCallId === "__unbound__" ? 70 : 0;
 		for (let i = 0; i < list.length; i++) {
 			const a = list[i]!;
+			artifactStep += 1;
 			const parentToolId =
 				toolCallId !== "__unbound__"
 					? toolCallId
@@ -168,6 +171,7 @@ export function buildExecutionGraph(
 				data: {
 					kind: "artifact",
 					artifactId: a.id,
+					step: artifactStep,
 					title: a.title,
 					artifactType: a.type,
 					url: a.url,

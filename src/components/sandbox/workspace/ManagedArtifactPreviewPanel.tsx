@@ -1,8 +1,9 @@
 import { ChevronLeft, ChevronRight, History, Sparkles } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
-import { ArtifactPreviewContent } from "./ArtifactPreviewContent";
+import { FilePreviewContent } from "./FilePreviewContent";
+import { useArtifactNavigator } from "./useArtifactNavigator";
 
 interface ManagedArtifactPreviewPanelProps {
 	selectedFile: SandboxFile | null;
@@ -22,54 +23,23 @@ export const ManagedArtifactPreviewPanel = memo(
 		onLoadContent,
 		onSelectArtifact,
 	}: ManagedArtifactPreviewPanelProps) {
-		const [recentArtifactIds, setRecentArtifactIds] = useState<string[]>([]);
-
-		const artifactById = useMemo(() => {
-			const map = new Map<string, SandboxFile>();
-			for (const artifact of artifactFiles) map.set(artifact.id, artifact);
-			return map;
-		}, [artifactFiles]);
-
-		useEffect(() => {
-			if (!selectedFile) return;
-			if (!artifactById.has(selectedFile.id)) return;
-			setRecentArtifactIds((prev) => {
-				const next = [
-					selectedFile.id,
-					...prev.filter((id) => id !== selectedFile.id),
-				];
-				return next.slice(0, 6);
-			});
-		}, [selectedFile, artifactById]);
-
-		const recentArtifacts = useMemo(
-			() =>
-				recentArtifactIds
-					.map((id) => artifactById.get(id))
-					.filter(Boolean) as SandboxFile[],
-			[artifactById, recentArtifactIds],
-		);
-		const selectedArtifactIndex = useMemo(
-			() =>
-				selectedFile
-					? artifactFiles.findIndex(
-							(artifact) => artifact.id === selectedFile.id,
-						)
-					: -1,
-			[artifactFiles, selectedFile],
-		);
+		const {
+			recentArtifacts,
+			selectedArtifactIndex,
+			totalArtifacts,
+			selectNeighborId,
+		} = useArtifactNavigator({
+			artifactFiles,
+			selectedFile,
+		});
 
 		const jumpArtifact = useCallback(
 			(step: 1 | -1) => {
-				if (artifactFiles.length === 0) return;
-				const start = selectedArtifactIndex >= 0 ? selectedArtifactIndex : 0;
-				const next =
-					(start + step + artifactFiles.length) % artifactFiles.length;
-				const target = artifactFiles[next];
-				if (!target) return;
-				onSelectArtifact(target.id);
+				const targetId = selectNeighborId(step);
+				if (!targetId) return;
+				onSelectArtifact(targetId);
 			},
-			[artifactFiles, onSelectArtifact, selectedArtifactIndex],
+			[onSelectArtifact, selectNeighborId],
 		);
 
 		useEffect(() => {
@@ -90,31 +60,31 @@ export const ManagedArtifactPreviewPanel = memo(
 
 		return (
 			<div className="h-full flex flex-col bg-white dark:bg-zinc-900">
-				<div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-sm space-y-2">
+				<div className="px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5">
 					<div className="flex items-center justify-between">
 						<div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
 							<Sparkles className="w-3.5 h-3.5" />
-							产物带
+							产物导航
 						</div>
 						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400">
 							<button
 								type="button"
 								onClick={() => jumpArtifact(-1)}
-								disabled={artifactFiles.length === 0}
+								disabled={totalArtifacts === 0}
 								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
 								title="上一个产物 (Alt+[)"
 							>
 								<ChevronLeft className="w-3 h-3" />
 							</button>
 							<span className="tabular-nums px-1.5">
-								{artifactFiles.length === 0
+								{totalArtifacts === 0
 									? "0/0"
-									: `${selectedArtifactIndex + 1}/${artifactFiles.length}`}
+									: `${selectedArtifactIndex + 1}/${totalArtifacts}`}
 							</span>
 							<button
 								type="button"
 								onClick={() => jumpArtifact(1)}
-								disabled={artifactFiles.length === 0}
+								disabled={totalArtifacts === 0}
 								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
 								title="下一个产物 (Alt+])"
 							>
@@ -123,7 +93,7 @@ export const ManagedArtifactPreviewPanel = memo(
 						</div>
 					</div>
 					<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-						{artifactFiles.length === 0 ? (
+						{totalArtifacts === 0 ? (
 							<span className="text-xs text-zinc-400 px-2 py-1">暂无产物</span>
 						) : (
 							artifactFiles.map((artifact) => (
@@ -146,7 +116,7 @@ export const ManagedArtifactPreviewPanel = memo(
 					{recentArtifacts.length > 0 ? (
 						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
 							<History className="w-3 h-3" />
-							最近：
+							最近预览：
 							<div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
 								{recentArtifacts.map((artifact) => (
 									<button
@@ -164,11 +134,13 @@ export const ManagedArtifactPreviewPanel = memo(
 				</div>
 
 				<div className="flex-1 min-h-0">
-					<ArtifactPreviewContent
+					<FilePreviewContent
 						file={selectedFile}
 						previewMode={previewMode}
 						onSetPreviewMode={onSetPreviewMode}
 						onLoadContent={onLoadContent}
+						emptyTitle="暂无预览"
+						emptyDescription="从左侧文件树或上方产物导航选择文件"
 					/>
 				</div>
 			</div>

@@ -33,6 +33,7 @@ export type TaskNodeData = {
 export type ToolNodeData = {
 	kind: "tool";
 	toolCallId: string;
+	step: number;
 	name: string;
 	status: ToolCall["status"];
 	description?: string;
@@ -46,6 +47,7 @@ export type ToolNodeData = {
 export type ArtifactNodeData = {
 	kind: "artifact";
 	artifactId: string;
+	step: number;
 	title: string;
 	artifactType: ToolArtifact["type"];
 	url?: string;
