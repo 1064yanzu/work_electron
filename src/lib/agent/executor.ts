@@ -17,6 +17,7 @@ import type { AgentTaskStep } from "./types";
 import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
+import { buildRuntimeUserPrompt } from "./context/userPrompt";
 import { managedModeStore } from "../managedModeStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
@@ -752,50 +753,17 @@ class AgentExecutor {
 			);
 		};
 
-		// 构建增强版用户 prompt - 优先在 user prompt 注入运行时上下文（对话历史/附件），避免 system prompt 过长
-		let enhancedUserPrompt = query;
-
-		// Add conversation context if available (trimmed; user message scope, not system).
-		if (!options?.resumeSessionId && options?.conversationContext?.length) {
-			const lines = options.conversationContext
-				.map((s) => String(s || "").trim())
-				.filter(Boolean);
-			// Keep the tail to reduce prompt bloat
-			const maxLines = 16;
-			const tail = lines.length > maxLines ? lines.slice(-maxLines) : lines;
-			// Hard cap to avoid accidental huge injections
-			const maxChars = 4000;
-			let joined = tail.join("\n");
-			if (joined.length > maxChars) joined = joined.slice(-maxChars);
-			enhancedUserPrompt =
-				`【对话历史（节选）】\n${joined}\n\n` + enhancedUserPrompt;
-		}
-
-		if (options?.attachedFiles?.length || options?.attachedContexts?.length) {
-			const fileList: string[] = [];
-			if (options?.attachedFiles?.length) {
-				for (const file of options.attachedFiles) {
-					fileList.push(
-						`- ${file.title} (文件路径: ${file.path})${
-							file.type ? ` [${file.type}]` : ""
-						}`,
-					);
-				}
-			}
-			if (options?.attachedContexts?.length) {
-				for (const ctx of options.attachedContexts) {
-					fileList.push(`- ${ctx.title}`);
-				}
-			}
-			if (fileList.length > 0) {
-				enhancedUserPrompt += `\n\n【用户附加的文件/资料】\n${fileList.join("\n")}\n\n注意：这些文件以“路径”形式提供。若需要查看内容，请使用 Read 工具读取文件；若需要上传/处理文件，请将文件路径作为参数传递给对应 Skill 工具。`;
-			}
-		}
-
 		const runOnce = async (resumeSessionId?: string) => {
 			shouldRetryWithoutResume = false;
+			const userPromptForRun = buildRuntimeUserPrompt({
+				query,
+				resumeSessionId,
+				conversationContext: options?.conversationContext,
+				attachedFiles: options?.attachedFiles,
+				attachedContexts: options?.attachedContexts,
+			});
 			await this.sdkService.execute({
-				prompt: enhancedUserPrompt,
+				prompt: userPromptForRun,
 				systemPrompt: enhancedPrompt || undefined,
 				workingDirectory: sandboxDir,
 				resumeSessionId,
@@ -1104,6 +1072,29 @@ class AgentExecutor {
 							break;
 						}
 
+						case "tool_progress": {
+							const resolvedId =
+								typeof message.toolCallId === "string" &&
+								message.toolCallId.trim()
+									? `sdk-tool-${message.toolCallId.trim()}`
+									: null;
+							const progressMessage =
+								typeof message.message === "string" && message.message.trim()
+									? message.message
+									: typeof message.content === "string" &&
+											message.content.trim()
+										? message.content
+										: "";
+							if (resolvedId && progressMessage) {
+								agentStore.updateToolProgress(
+									resolvedId,
+									progressMessage,
+									message.progress,
+								);
+							}
+							break;
+						}
+
 						case "result":
 							if (message.status === "completed") {
 								agentStore.updateTaskStepByKind("analysis", "completed");
@@ -1270,6 +1261,37 @@ ${query}
 			this.abortController = null;
 		}
 		agentStore.cancelTask();
+	}
+
+	async setRuntimePermissionMode(mode: string): Promise<boolean> {
+		const result = await this.sdkService.control({
+			action: "set_permission_mode",
+			mode,
+		});
+		return result.success;
+	}
+
+	async setRuntimeModel(model: string): Promise<boolean> {
+		const result = await this.sdkService.control({
+			action: "set_model",
+			model,
+		});
+		return result.success;
+	}
+
+	async interruptRuntime(): Promise<boolean> {
+		const result = await this.sdkService.control({
+			action: "interrupt",
+		});
+		return result.success;
+	}
+
+	async getRuntimeMcpStatus(): Promise<unknown[] | null> {
+		const result = await this.sdkService.control({
+			action: "mcp_status",
+		});
+		if (!result.success || !Array.isArray(result.data)) return null;
+		return result.data as unknown[];
 	}
 
 	/**

@@ -64,6 +64,62 @@ export interface SystemNoticeEvent {
 	content: string;
 }
 
+export interface SessionStartEvent {
+	type: "session_start";
+	source?: string;
+	agentType?: string;
+	model?: string;
+}
+
+export interface SessionEndEvent {
+	type: "session_end";
+	reason?: string;
+}
+
+export interface SubagentStartEvent {
+	type: "subagent_start";
+	agentId?: string | null;
+	agentType?: string | null;
+}
+
+export interface SubagentStopEvent {
+	type: "subagent_stop";
+	agentId?: string | null;
+	agentType?: string | null;
+	transcriptPath?: string | null;
+}
+
+export interface TaskNotificationEvent {
+	type: "task_notification";
+	taskId?: string;
+	status?: "completed" | "failed" | "stopped" | string;
+	outputFile?: string;
+	summary?: string;
+	notificationType?: string | null;
+	title?: string | null;
+	message?: string | null;
+}
+
+export interface ToolUseSummaryEvent {
+	type: "tool_use_summary";
+	summary: string;
+	precedingToolUseIds: string[];
+}
+
+export interface FilesPersistedEvent {
+	type: "files_persisted";
+	files: Array<{ filename: string; file_id: string }>;
+	failed: Array<{ filename: string; error: string }>;
+	processedAt?: string;
+}
+
+export interface AuthStatusEvent {
+	type: "auth_status";
+	isAuthenticating: boolean;
+	output: string[];
+	error?: string;
+}
+
 export type UIEvent =
 	| TextEvent
 	| ToolCallStartEvent
@@ -74,6 +130,14 @@ export type UIEvent =
 	| SessionInitEvent
 	| TurnCompleteEvent
 	| SystemNoticeEvent
+	| SessionStartEvent
+	| SessionEndEvent
+	| SubagentStartEvent
+	| SubagentStopEvent
+	| TaskNotificationEvent
+	| ToolUseSummaryEvent
+	| FilesPersistedEvent
+	| AuthStatusEvent
 	| { type: "unknown"; originalType: string; data: unknown };
 
 /**
@@ -124,6 +188,16 @@ export class AgentStreamState {
 
 				case "turn_complete":
 					// 可以在这里做一轮对话完成后的处理
+					break;
+
+				case "session_start":
+				case "session_end":
+				case "subagent_start":
+				case "subagent_stop":
+				case "task_notification":
+				case "tool_use_summary":
+				case "files_persisted":
+				case "auth_status":
 					break;
 			}
 		}

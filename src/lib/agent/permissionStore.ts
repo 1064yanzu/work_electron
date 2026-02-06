@@ -18,8 +18,23 @@ import {
 interface PendingPermission {
 	request: PermissionRequest;
 	resolve: (result: PermissionResult) => void;
+	externalResolve?: (result: ExternalPermissionDecision) => void;
 	timeoutId?: ReturnType<typeof setTimeout>;
 }
+
+export type ExternalPermissionDecision =
+	| {
+			behavior: "allow";
+			updatedInput?: Record<string, unknown>;
+			updatedPermissions?: unknown[];
+	  }
+	| {
+			behavior: "deny";
+			message: string;
+			updatedInput?: Record<string, unknown>;
+			updatedPermissions?: unknown[];
+			interrupt?: boolean;
+	  };
 
 // 权限历史记录（用于审计）
 export interface PermissionHistoryEntry {
@@ -135,6 +150,89 @@ class PermissionStore {
 	}
 
 	// ============ 权限请求 ============
+
+	private mapSdkToolNameToToolType(toolName: string): ToolType {
+		const normalized = String(toolName || "").toLowerCase();
+		if (normalized === "read") return "file_read";
+		if (normalized === "write" || normalized === "edit") return "file_write";
+		if (normalized === "glob" || normalized === "grep") return "file_list";
+		if (normalized === "bash") return "code_execute";
+		if (normalized === "websearch" || normalized === "web_fetch")
+			return "web_search";
+		if (normalized === "webfetch") return "fetch_url";
+		if (normalized === "skill") return "skill_invoke";
+		if (normalized.startsWith("mcp__")) return "mcp_call";
+		return "custom";
+	}
+
+	async requestExternalPermission(input: {
+		requestId: string;
+		toolCallId: string;
+		toolName: string;
+		toolInput: Record<string, unknown>;
+	}): Promise<ExternalPermissionDecision> {
+		const { policy, sessionRemembered } = this.state;
+		const toolType = this.mapSdkToolNameToToolType(input.toolName);
+		const rememberedKey = `${toolType}:${input.toolName}`;
+		const remembered =
+			sessionRemembered.get(rememberedKey) || sessionRemembered.get(toolType);
+		const request = createPermissionRequest(
+			input.toolCallId,
+			input.toolName,
+			toolType,
+			input.toolInput,
+			policy,
+		);
+		request.id = input.requestId;
+
+		if (remembered) {
+			return remembered === "allowed"
+				? { behavior: "allow" }
+				: { behavior: "deny", message: "session_remembered_denied" };
+		}
+
+		const { needsPermission, autoDecision } = shouldRequestPermission(
+			toolType,
+			input.toolName,
+			policy,
+		);
+		if (!needsPermission && autoDecision) {
+			return autoDecision === "allowed"
+				? { behavior: "allow" }
+				: { behavior: "deny", message: "denied_by_policy" };
+		}
+
+		const timeoutSeconds = Math.max(1, Math.min(55, policy.timeoutSeconds));
+		return new Promise<ExternalPermissionDecision>((resolve) => {
+			const timeoutId = setTimeout(() => {
+				this.cleanupPermission(input.requestId);
+				resolve({
+					behavior: "deny",
+					message: `Permission request timed out after ${timeoutSeconds}s`,
+				});
+			}, timeoutSeconds * 1000);
+
+			const pending: PendingPermission = {
+				request: {
+					...request,
+					expiresAt: Date.now() + timeoutSeconds * 1000,
+				},
+				resolve: () => {},
+				externalResolve: resolve,
+				timeoutId,
+			};
+
+			this.setState((state) => {
+				const next = new Map(state.pendingRequests);
+				next.set(input.requestId, pending);
+				return { ...state, pendingRequests: next };
+			});
+			this.emitEvent({
+				type: "permission_requested",
+				request: pending.request,
+			});
+		});
+	}
 
 	async requestPermission(
 		toolCallId: string,
@@ -278,6 +376,26 @@ class PermissionStore {
 		}
 
 		this.emitEvent({ type: "permission_response", response });
+		if (pending.externalResolve) {
+			this.cleanupPermission(response.requestId);
+			this.addToHistory(pending.request, result);
+			this.emitEvent({ type: "permission_result", result });
+			if (response.decision === "allowed") {
+				pending.externalResolve({
+					behavior: "allow",
+					updatedInput: response.updatedInput,
+					updatedPermissions: response.updatedPermissions,
+				});
+			} else {
+				pending.externalResolve({
+					behavior: "deny",
+					message: response.message || response.reason || "User denied",
+					updatedInput: response.updatedInput,
+					updatedPermissions: response.updatedPermissions,
+				});
+			}
+			return;
+		}
 		pending.resolve(result);
 	}
 
@@ -365,6 +483,8 @@ export function usePermissionStore() {
 		removeToolOverride:
 			permissionStore.removeToolOverride.bind(permissionStore),
 		requestPermission: permissionStore.requestPermission.bind(permissionStore),
+		requestExternalPermission:
+			permissionStore.requestExternalPermission.bind(permissionStore),
 		respondToPermission:
 			permissionStore.respondToPermission.bind(permissionStore),
 		cancelPermission: permissionStore.cancelPermission.bind(permissionStore),
@@ -385,3 +505,5 @@ export const respondToToolPermission =
 	permissionStore.respondToPermission.bind(permissionStore);
 export const cancelToolPermission =
 	permissionStore.cancelPermission.bind(permissionStore);
+export const requestExternalToolPermission =
+	permissionStore.requestExternalPermission.bind(permissionStore);

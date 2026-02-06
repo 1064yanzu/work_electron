@@ -18,6 +18,31 @@ export interface AgentStartPayload {
 	permission_mode?: string;
 	allowed_tools?: string[];
 	system_prompt?: string;
+	additional_directories?: string[];
+	plugins?: Array<{ type: "local"; path: string }>;
+	sandbox?: Record<string, unknown>;
+	interactive_approval?: boolean;
+}
+
+export interface AgentInteractionRequestPayload {
+	requestId: string;
+	toolName: string;
+	toolInput: Record<string, unknown>;
+	toolUseId: string;
+	agentId?: string;
+	description?: string;
+	decisionReason?: string;
+	blockedPath?: string;
+	suggestions?: unknown[];
+	expiresAt: number;
+}
+
+export interface AgentInteractionDecision {
+	behavior: "allow" | "deny";
+	message?: string;
+	updatedInput?: Record<string, unknown>;
+	updatedPermissions?: unknown[];
+	interrupt?: boolean;
 }
 
 /**
@@ -25,11 +50,18 @@ export interface AgentStartPayload {
  */
 export interface AgentSdkEventPayload {
 	runId: string;
-	type: "sdk_message" | "transformed" | "stderr" | "done" | "error";
+	type:
+		| "sdk_message"
+		| "transformed"
+		| "stderr"
+		| "done"
+		| "error"
+		| "interaction_request";
 	message?: unknown;
 	events?: unknown[];
 	result?: unknown;
 	error?: string;
+	request?: AgentInteractionRequestPayload;
 	/** 错误是否可重试 */
 	retryable?: boolean;
 	/** 重试配置（仅当 retryable 为 true 时存在） */
@@ -96,6 +128,42 @@ export class AgentSdkClient {
 			await invoke("agent_sdk_abort", { runId: this.runId });
 			this.runId = null;
 		}
+	}
+
+	async resolveInteraction(
+		requestId: string,
+		decision: AgentInteractionDecision,
+	): Promise<void> {
+		if (!this.runId) return;
+		await invoke("agent_sdk_resolve_interaction", {
+			runId: this.runId,
+			requestId,
+			decision,
+		});
+	}
+
+	async control(input: {
+		action:
+			| "set_permission_mode"
+			| "set_model"
+			| "interrupt"
+			| "mcp_status"
+			| "mcp_reconnect"
+			| "mcp_toggle"
+			| "mcp_set_servers";
+		mode?: string;
+		model?: string;
+		serverName?: string;
+		enabled?: boolean;
+		servers?: Record<string, unknown>;
+	}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+		if (!this.runId) {
+			return { success: false, error: "No active SDK run" };
+		}
+		return invoke("agent_sdk_control", {
+			runId: this.runId,
+			...input,
+		});
 	}
 
 	/**

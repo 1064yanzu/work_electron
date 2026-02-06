@@ -557,12 +557,53 @@ export type IPCSchema = {
 			allowed_tools?: string[];
 			system_prompt?: string;
 			skills?: string[]; // 可用技能名称列表
+			/** Additional absolute directories exposed to SDK file tools */
+			additional_directories?: string[];
+			/** Local Claude plugins to load for this run */
+			plugins?: Array<{ type: "local"; path: string }>;
+			/** Optional sandbox settings passed through to SDK */
+			sandbox?: Record<string, unknown>;
+			/** Enable interactive approval broker in canUseTool (default: true) */
+			interactive_approval?: boolean;
 		};
 		output: string;
 	};
 	agent_sdk_abort: {
 		input: { runId: string };
 		output: { success: boolean };
+	};
+	agent_sdk_resolve_interaction: {
+		input: {
+			runId: string;
+			requestId: string;
+			decision: {
+				behavior: "allow" | "deny";
+				message?: string;
+				updatedInput?: Record<string, unknown>;
+				updatedPermissions?: unknown[];
+				interrupt?: boolean;
+			};
+		};
+		output: { success: boolean };
+	};
+	agent_sdk_control: {
+		input: {
+			runId: string;
+			action:
+				| "set_permission_mode"
+				| "set_model"
+				| "interrupt"
+				| "mcp_status"
+				| "mcp_reconnect"
+				| "mcp_toggle"
+				| "mcp_set_servers";
+			mode?: string;
+			model?: string;
+			serverName?: string;
+			enabled?: boolean;
+			servers?: Record<string, unknown>;
+		};
+		output: { success: boolean; data?: unknown; error?: string };
 	};
 
 	// ==================

@@ -97,10 +97,63 @@ export function AgentSettings() {
 	const [replayLimitDraft, setReplayLimitDraft] = useState<string>(
 		String(chatSettings.replayLimit),
 	);
+	const [sdkInteractiveApproval, setSdkInteractiveApproval] =
+		useState<boolean>(true);
+	const [sdkPermissionMode, setSdkPermissionMode] = useState<string>("default");
+	const [sdkCompatMode, setSdkCompatMode] = useState<boolean>(false);
+	const [sdkPluginPathsDraft, setSdkPluginPathsDraft] = useState<string>("");
+	const [sdkAdditionalDirsDraft, setSdkAdditionalDirsDraft] =
+		useState<string>("");
 
 	useEffect(() => {
 		setReplayLimitDraft(String(chatSettings.replayLimit));
 	}, [chatSettings.replayLimit]);
+
+	useEffect(() => {
+		const loadSdkSettings = async () => {
+			try {
+				const [
+					interactiveApproval,
+					permissionMode,
+					compatMode,
+					pluginPaths,
+					additionalDirs,
+				] = await Promise.all([
+					getConfig("agent.sdk.interactive_approval_enabled"),
+					getConfig("agent.sdk.default_permission_mode"),
+					getConfig("agent.sdk.compat_mode"),
+					getConfig("agent.sdk.plugin_paths"),
+					getConfig("agent.sdk.additional_directories"),
+				]);
+				setSdkInteractiveApproval(
+					typeof interactiveApproval === "boolean" ? interactiveApproval : true,
+				);
+				setSdkPermissionMode(
+					typeof permissionMode === "string" && permissionMode.trim()
+						? permissionMode
+						: "default",
+				);
+				setSdkCompatMode(compatMode === true);
+				setSdkPluginPathsDraft(
+					Array.isArray(pluginPaths)
+						? pluginPaths
+								.filter((item): item is string => typeof item === "string")
+								.join("\n")
+						: "",
+				);
+				setSdkAdditionalDirsDraft(
+					Array.isArray(additionalDirs)
+						? additionalDirs
+								.filter((item): item is string => typeof item === "string")
+								.join("\n")
+						: "",
+				);
+			} catch {
+				/* ignore */
+			}
+		};
+		loadSdkSettings();
+	}, []);
 
 	useEffect(() => {
 		const load = async () => {
@@ -283,6 +336,38 @@ export function AgentSettings() {
 		);
 	};
 
+	const parseLines = (value: string) =>
+		value
+			.split(/\n+/g)
+			.map((item) => item.trim())
+			.filter(Boolean);
+
+	const saveSdkInteractiveApproval = async (enabled: boolean) => {
+		setSdkInteractiveApproval(enabled);
+		await setConfig("agent.sdk.interactive_approval_enabled", enabled);
+	};
+
+	const saveSdkPermissionMode = async (mode: string) => {
+		setSdkPermissionMode(mode);
+		await setConfig("agent.sdk.default_permission_mode", mode);
+	};
+
+	const saveSdkCompatMode = async (enabled: boolean) => {
+		setSdkCompatMode(enabled);
+		await setConfig("agent.sdk.compat_mode", enabled);
+	};
+
+	const saveSdkPluginPaths = async () => {
+		await setConfig("agent.sdk.plugin_paths", parseLines(sdkPluginPathsDraft));
+	};
+
+	const saveSdkAdditionalDirs = async () => {
+		await setConfig(
+			"agent.sdk.additional_directories",
+			parseLines(sdkAdditionalDirsDraft),
+		);
+	};
+
 	return (
 		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
 			<div className="max-w-2xl space-y-8">
@@ -298,6 +383,85 @@ export function AgentSettings() {
 
 				{/* 模型场景配置 */}
 				<AgentModelScenarioSettings />
+
+				{/* Claude Agent SDK 运行时配置 */}
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary flex items-center gap-2">
+						<Bot className="w-4 h-4" />
+						Claude Agent SDK
+					</h4>
+					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								<div className="text-sm text-text-primary">交互审批</div>
+								<div className="text-xs text-text-muted">
+									默认开启。工具调用与 AskUserQuestion 通过 UI 确认。
+								</div>
+							</div>
+							<Toggle
+								checked={sdkInteractiveApproval}
+								onChange={() =>
+									void saveSdkInteractiveApproval(!sdkInteractiveApproval)
+								}
+							/>
+						</div>
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								<div className="text-sm text-text-primary">兼容模式</div>
+								<div className="text-xs text-text-muted">
+									开启后回退为旧路径（acceptEdits + 关闭交互审批）。
+								</div>
+							</div>
+							<Toggle
+								checked={sdkCompatMode}
+								onChange={() => void saveSdkCompatMode(!sdkCompatMode)}
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary">
+								默认 permission mode
+							</label>
+							<select
+								value={sdkPermissionMode}
+								onChange={(event) => saveSdkPermissionMode(event.target.value)}
+								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
+							>
+								<option value="default">default</option>
+								<option value="acceptEdits">acceptEdits</option>
+								<option value="dontAsk">dontAsk</option>
+								<option value="plan">plan</option>
+							</select>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary">
+								插件路径（每行一个）
+							</label>
+							<textarea
+								value={sdkPluginPathsDraft}
+								onChange={(event) => setSdkPluginPathsDraft(event.target.value)}
+								onBlur={saveSdkPluginPaths}
+								placeholder="/abs/path/to/plugin"
+								rows={3}
+								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary">
+								additionalDirectories（每行一个）
+							</label>
+							<textarea
+								value={sdkAdditionalDirsDraft}
+								onChange={(event) =>
+									setSdkAdditionalDirsDraft(event.target.value)
+								}
+								onBlur={saveSdkAdditionalDirs}
+								placeholder="/abs/path/to/extra/dir"
+								rows={3}
+								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+					</div>
+				</div>
 
 				{/* 工具权限策略 */}
 				<div className="space-y-4">

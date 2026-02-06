@@ -567,6 +567,9 @@ export interface PermissionResponse {
 	decision: "allowed" | "denied";
 	decidedBy: "user" | "policy" | "timeout" | "aborted";
 	reason?: string;
+	message?: string;
+	updatedInput?: Record<string, unknown>;
+	updatedPermissions?: unknown[];
 	rememberForSession?: boolean; // 本次会话记住选择
 	rememberForTool?: boolean; // 对该工具记住选择
 }

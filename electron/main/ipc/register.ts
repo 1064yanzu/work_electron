@@ -437,6 +437,11 @@ export function registerIpcHandlers({
 	// ==================
 	ipcMain.handle("agent_sdk_start", agentSdkHandlers.agent_sdk_start);
 	ipcMain.handle("agent_sdk_abort", agentSdkHandlers.agent_sdk_abort);
+	ipcMain.handle(
+		"agent_sdk_resolve_interaction",
+		agentSdkHandlers.agent_sdk_resolve_interaction,
+	);
+	ipcMain.handle("agent_sdk_control", agentSdkHandlers.agent_sdk_control);
 
 	// ==================
 	// Agent Checkpoints (断点续传)

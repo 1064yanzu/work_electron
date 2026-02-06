@@ -8,8 +8,8 @@ const IPO_MARKERS_STRIP_RE =
 	/<ipo-(?:subagent|conversation)\b[^>]*\/?>|<\/ipo-(?:subagent|conversation)>/gi;
 
 // 路由标记：<!-- ipo-route:providerId:modelId -->
-const IPO_ROUTE_MARKER_RE = /<!--\s*ipo-route:([^:]+):([^-]+)\s*-->/i;
-const IPO_ROUTE_MARKER_STRIP_RE = /<!--\s*ipo-route:[^-]+:[^-]+\s*-->/gi;
+const IPO_ROUTE_MARKER_RE = /<!--\s*ipo-route:([^:]+):([\s\S]*?)\s*-->/i;
+const IPO_ROUTE_MARKER_STRIP_RE = /<!--\s*ipo-route:[\s\S]*?-->/gi;
 
 const IPO_SUBAGENT_FALLBACK_RE =
 	/\bIPO_SUBAGENT_SCENARIO\s*[:=]\s*([^\n\r]+)\s*/i;

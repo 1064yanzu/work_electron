@@ -11,6 +11,11 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
+import { interactionBroker } from "./agentSdk/interactionBroker";
+import { createLifecycleHooks } from "./agentSdk/hooksFactory";
+import { runRegistry } from "./agentSdk/runRegistry";
+import { createSubagentLifecycleHooks } from "./agentSdk/subagentHooks";
+import { isSdkSessionId, normalizeSdkSessionId } from "./agentSdk/sessionId";
 
 const execFileAsync = promisify(execFile);
 const MAX_RESOLVE_SCAN_ENTRIES = 5000;
@@ -613,10 +618,111 @@ async function listProjectSkills(cwd: string): Promise<string[]> {
 	}
 }
 
+function expandHomePath(rawPath: string): string {
+	const v = String(rawPath || "").trim();
+	if (!v) return "";
+	if (v === "~") return app.getPath("home");
+	if (v.startsWith("~/")) return path.join(app.getPath("home"), v.slice(2));
+	return v;
+}
+
+async function resolveExistingDirectory(
+	rawPath: string,
+	cwd: string,
+): Promise<string | null> {
+	const expanded = expandHomePath(rawPath);
+	if (!expanded) return null;
+	const abs = path.isAbsolute(expanded)
+		? path.resolve(expanded)
+		: path.resolve(cwd, expanded);
+	try {
+		const stat = await fsp.stat(abs);
+		if (!stat.isDirectory()) return null;
+		return abs;
+	} catch {
+		return null;
+	}
+}
+
+async function normalizeAdditionalDirectories(
+	cwd: string,
+	input: unknown,
+): Promise<string[]> {
+	if (!Array.isArray(input)) return [];
+	const resolved = await Promise.all(
+		input.map((item) => resolveExistingDirectory(String(item || ""), cwd)),
+	);
+	return uniqStrings(resolved.filter((item): item is string => Boolean(item)));
+}
+
+async function collectProjectPluginPaths(cwd: string): Promise<string[]> {
+	const pluginRoot = path.join(cwd, ".claude", "plugins");
+	try {
+		const stat = await fsp.stat(pluginRoot);
+		if (!stat.isDirectory()) return [];
+	} catch {
+		return [];
+	}
+
+	try {
+		const entries = await fsp.readdir(pluginRoot, { withFileTypes: true });
+		const subdirs = entries
+			.filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+			.map((entry) => path.join(pluginRoot, entry.name));
+		if (subdirs.length > 0) return subdirs;
+		return [pluginRoot];
+	} catch {
+		return [pluginRoot];
+	}
+}
+
+async function normalizePlugins(
+	cwd: string,
+	input: unknown,
+): Promise<Array<{ type: "local"; path: string }>> {
+	const configured = Array.isArray(input) ? input : [];
+	const configuredPaths: string[] = [];
+	for (const item of configured) {
+		if (!item || typeof item !== "object") continue;
+		const typed = item as { type?: unknown; path?: unknown };
+		if (typed.type !== "local" || typeof typed.path !== "string") continue;
+		configuredPaths.push(typed.path);
+	}
+
+	const projectPaths = await collectProjectPluginPaths(cwd);
+	const merged = uniqStrings([...projectPaths, ...configuredPaths]);
+	const resolved = await Promise.all(
+		merged.map((p) => resolveExistingDirectory(p, cwd)),
+	);
+
+	return resolved
+		.filter((p): p is string => Boolean(p))
+		.map((p) => ({ type: "local" as const, path: p }));
+}
+
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
 type AgentSdkAbortInput = IPCSchema["agent_sdk_abort"]["input"];
 type AgentSdkAbortOutput = IPCSchema["agent_sdk_abort"]["output"];
+type AgentSdkResolveInteractionInput =
+	IPCSchema["agent_sdk_resolve_interaction"]["input"];
+type AgentSdkResolveInteractionOutput =
+	IPCSchema["agent_sdk_resolve_interaction"]["output"];
+type AgentSdkControlInput = IPCSchema["agent_sdk_control"]["input"];
+type AgentSdkControlOutput = IPCSchema["agent_sdk_control"]["output"];
+
+type AgentSdkInteractionRequestPayload = {
+	requestId: string;
+	toolName: string;
+	toolInput: Record<string, unknown>;
+	toolUseId: string;
+	agentId?: string;
+	description?: string;
+	decisionReason?: string;
+	blockedPath?: string;
+	suggestions?: unknown[];
+	expiresAt: number;
+};
 
 type AgentSdkEventPayload = {
 	runId: string;
@@ -625,30 +731,15 @@ type AgentSdkEventPayload = {
 	result?: unknown;
 	error?: string;
 	events?: unknown;
+	request?: AgentSdkInteractionRequestPayload;
 };
 
 type GetMainWindow = () => BrowserWindow | null;
-
-const running = new Map<
-	string,
-	{
-		abortController: AbortController;
-	}
->();
 
 function emit(getMainWindow: GetMainWindow, payload: AgentSdkEventPayload) {
 	const win = getMainWindow();
 	if (!win) return;
 	win.webContents.send("agent-sdk-event", payload);
-}
-
-function isUuidString(value: unknown): value is string {
-	if (typeof value !== "string") return false;
-	const v = value.trim();
-	if (!v) return false;
-	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-		v,
-	);
 }
 
 const DATA_IMAGE_URL_RE =
@@ -786,10 +877,37 @@ function toUIEvents(
 
 	// SDK system messages (session init, status, compaction boundary, etc.)
 	if (message.type === "system") {
+		if (message.subtype === "task_notification") {
+			events.push({
+				type: "task_notification",
+				taskId:
+					typeof message.task_id === "string" ? message.task_id : undefined,
+				status: typeof message.status === "string" ? message.status : undefined,
+				outputFile:
+					typeof message.output_file === "string"
+						? message.output_file
+						: undefined,
+				summary:
+					typeof message.summary === "string" ? message.summary : undefined,
+			});
+		}
+
+		if (message.subtype === "files_persisted") {
+			events.push({
+				type: "files_persisted",
+				files: Array.isArray(message.files) ? message.files : [],
+				failed: Array.isArray(message.failed) ? message.failed : [],
+				processedAt:
+					typeof message.processed_at === "string"
+						? message.processed_at
+						: undefined,
+			});
+		}
+
 		if (
 			message.subtype === "init" &&
 			message.session_id &&
-			isUuidString(String(message.session_id))
+			isSdkSessionId(String(message.session_id))
 		) {
 			events.push({
 				type: "session_init",
@@ -823,6 +941,29 @@ function toUIEvents(
 				content: `Claude Agent SDK 已压缩上下文（trigger=${String(trigger ?? "unknown")}, pre_tokens=${String(preTokens ?? "unknown")}）`,
 			});
 		}
+	}
+
+	if (message.type === "auth_status") {
+		events.push({
+			type: "auth_status",
+			isAuthenticating: Boolean(message.isAuthenticating),
+			output: Array.isArray(message.output)
+				? message.output.filter(
+						(v: unknown): v is string => typeof v === "string",
+					)
+				: [],
+			error: typeof message.error === "string" ? message.error : undefined,
+		});
+	}
+
+	if (message.type === "tool_use_summary") {
+		events.push({
+			type: "tool_use_summary",
+			summary: typeof message.summary === "string" ? message.summary : "",
+			precedingToolUseIds: Array.isArray(message.preceding_tool_use_ids)
+				? message.preceding_tool_use_ids
+				: [],
+		});
 	}
 
 	if (message.type === "assistant" || message.type === "user") {
@@ -887,7 +1028,7 @@ function toUIEvents(
 			Boolean((message as any).is_error) || message.subtype !== "success";
 		if (
 			typeof (message as any).session_id === "string" &&
-			isUuidString((message as any).session_id)
+			isSdkSessionId((message as any).session_id)
 		) {
 			events.push({
 				type: "session_init",
@@ -1596,7 +1737,7 @@ ${opts.appendContent}`.trim();
 	): Promise<AgentSdkStartOutput> => {
 		const runId = randomUUID();
 		const abortController = new AbortController();
-		running.set(runId, { abortController });
+		runRegistry.set(runId, { abortController });
 
 		(async () => {
 			try {
@@ -1610,6 +1751,13 @@ ${opts.appendContent}`.trim();
 							typeof data === "string" ? data.slice(0, 20000) : String(data),
 					});
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
+				};
+				const emitLifecycleEvent = (event: Record<string, unknown>) => {
+					emit(options.getMainWindow, {
+						runId,
+						type: "transformed",
+						events: [event],
+					});
 				};
 				const toolNameById = new Map<string, string>();
 				const toolUseIdByIndex = new Map<number, string>();
@@ -1765,6 +1913,19 @@ ${opts.appendContent}`.trim();
 					pathToClaudeCodeExecutable,
 					allowed_tools: input.allowed_tools,
 					has_system_prompt: !!input.system_prompt,
+					interactive_approval:
+						typeof input.interactive_approval === "boolean"
+							? input.interactive_approval
+							: true,
+					permission_mode: input.permission_mode,
+					additionalDirectoriesCount: Array.isArray(
+						(input as any).additional_directories,
+					)
+						? (input as any).additional_directories.length
+						: 0,
+					pluginsCount: Array.isArray((input as any).plugins)
+						? (input as any).plugins.length
+						: 0,
 				});
 
 				// 【调试】打印 cwd 到控制台
@@ -1799,9 +1960,18 @@ ${opts.appendContent}`.trim();
 				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
 				await syncSkillsToCwd(cwd, stderr);
 
-				const allowed = Array.isArray(input.allowed_tools)
+				const interactiveApproval =
+					typeof input.interactive_approval === "boolean"
+						? input.interactive_approval
+						: true;
+				const allowedRaw = Array.isArray(input.allowed_tools)
 					? input.allowed_tools
 					: [];
+				const allowed = uniqStrings(
+					interactiveApproval
+						? [...allowedRaw, "AskUserQuestion"]
+						: [...allowedRaw],
+				);
 				const skillsFromInput = normalizeStringArray((input as any).skills);
 				const skillsFromProject = await listProjectSkills(cwd);
 				const enabledSkills = uniqStrings([
@@ -1844,9 +2014,15 @@ ${opts.appendContent}`.trim();
 					typeof (input as any).resume_session_id === "string"
 						? (input as any).resume_session_id.trim()
 						: "";
-				const resumeSessionId = isUuidString(resumeSessionIdRaw)
-					? resumeSessionIdRaw
-					: undefined;
+				const resumeSessionId = normalizeSdkSessionId(resumeSessionIdRaw);
+				if (resumeSessionIdRaw && !resumeSessionId) {
+					logger.warn({
+						msg: "agent_sdk invalid resume_session_id dropped",
+						scope: "agent",
+						runId,
+						resumeSessionIdRaw,
+					});
+				}
 				const persistSession =
 					typeof (input as any).persist_session === "boolean"
 						? (input as any).persist_session
@@ -1856,11 +2032,32 @@ ${opts.appendContent}`.trim();
 					typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
 						: undefined;
+				const additionalDirectories = await normalizeAdditionalDirectories(
+					cwd,
+					(input as any).additional_directories,
+				);
+				const plugins = await normalizePlugins(cwd, (input as any).plugins);
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
 					input.permission_mode.trim()
 						? input.permission_mode.trim()
-						: "acceptEdits";
+						: "default";
+				const sandboxSettings =
+					(input as any).sandbox && typeof (input as any).sandbox === "object"
+						? ((input as any).sandbox as Record<string, unknown>)
+						: undefined;
+				const subagentLifecycleHooks = createSubagentLifecycleHooks({
+					logger,
+					runId,
+					stderr,
+					emitLifecycleEvent,
+				});
+				const lifecycleHooks = createLifecycleHooks({
+					logger,
+					runId,
+					stderr,
+					emitLifecycleEvent,
+				});
 
 				// 注意: SDK Options 不直接支持 skills 参数
 				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
@@ -1930,6 +2127,8 @@ ${opts.appendContent}`.trim();
 						allowedTools: allowed.length > 0 ? allowed : undefined,
 						agents: agentsConfig as any,
 						hooks: {
+							...lifecycleHooks,
+							...subagentLifecycleHooks,
 							// PreToolUse 钩子：在工具执行前拦截并修复文件路径
 							PreToolUse: [
 								{
@@ -2297,6 +2496,12 @@ ${opts.appendContent}`.trim();
 							],
 						},
 						permissionMode: permissionMode as any,
+						additionalDirectories:
+							additionalDirectories.length > 0
+								? additionalDirectories
+								: undefined,
+						plugins: plugins.length > 0 ? plugins : undefined,
+						sandbox: sandboxSettings as any,
 						pathToClaudeCodeExecutable,
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
 						// 必须包含 "user" 和 "project" 才能加载 ~/.claude/skills 和 .claude/skills
@@ -2379,6 +2584,11 @@ ${opts.appendContent}`.trim();
 								};
 							}
 
+							let rewrittenInput: Record<string, unknown> =
+								toolInput && typeof toolInput === "object"
+									? { ...(toolInput as Record<string, unknown>) }
+									: {};
+
 							// Repair common file-path mistakes for file tools (especially Read).
 							// The SDK tools expect a real file path, but the LLM sometimes passes a title.
 							// We try to resolve it within the task cwd to avoid repeated <tool_use_error>.
@@ -2392,7 +2602,7 @@ ${opts.appendContent}`.trim();
 								toolInput &&
 								typeof toolInput === "object"
 							) {
-								const inputAny = toolInput as any;
+								const inputAny = rewrittenInput as Record<string, unknown>;
 								const key =
 									typeof inputAny.file_path === "string"
 										? "file_path"
@@ -2407,10 +2617,7 @@ ${opts.appendContent}`.trim();
 										stderr(
 											`[agent_sdk] Auto-filled Read file_path='${guessed}' (missing in tool input)`,
 										);
-										return {
-											behavior: "allow",
-											updatedInput: { ...inputAny, file_path: guessed },
-										};
+										rewrittenInput = { ...inputAny, file_path: guessed };
 									}
 								}
 								if (key) {
@@ -2428,12 +2635,11 @@ ${opts.appendContent}`.trim();
 												`[agent_sdk] Auto-resolved ${toolName} input '${rawPath}' -> '${resolved}'`,
 											);
 											// Keep existing key shape, but also provide file_path for robustness.
-											const updatedInput = {
+											rewrittenInput = {
 												...inputAny,
 												[key]: resolved,
 												file_path: resolved,
 											};
-											return { behavior: "allow", updatedInput };
 										}
 										if (!resolved) {
 											stderr(
@@ -2455,9 +2661,9 @@ ${opts.appendContent}`.trim();
 								toolLower === "bash" &&
 								toolInput &&
 								typeof toolInput === "object" &&
-								typeof (toolInput as any).command === "string"
+								typeof (rewrittenInput as any).command === "string"
 							) {
-								const cmd = String((toolInput as any).command || "");
+								const cmd = String((rewrittenInput as any).command || "");
 								const rewritten = await rewriteBashCommandForMissingFile({
 									cwd,
 									command: cmd,
@@ -2466,9 +2672,9 @@ ${opts.appendContent}`.trim();
 									stderr(
 										`[agent_sdk] Auto-rewrote Bash command for missing file: '${cmd}' -> '${rewritten}'`,
 									);
-									return {
-										behavior: "allow",
-										updatedInput: { ...(toolInput as any), command: rewritten },
+									rewrittenInput = {
+										...(rewrittenInput as any),
+										command: rewritten,
 									};
 								}
 							}
@@ -2478,29 +2684,103 @@ ${opts.appendContent}`.trim();
 							// "<tool_use_error>File does not exist.</tool_use_error>" and get stuck retrying.
 							if (
 								toolLower === "skill" &&
-								toolInput &&
-								typeof toolInput === "object"
+								rewrittenInput &&
+								typeof rewrittenInput === "object"
 							) {
 								const rewritten = await rewritePathsDeep({
 									cwd,
-									value: toolInput,
+									value: rewrittenInput,
 								});
-								if (rewritten !== toolInput) {
+								if (rewritten !== rewrittenInput) {
 									stderr(
 										"[agent_sdk] Auto-rewrote Skill input paths within cwd",
 									);
-									return {
-										behavior: "allow",
-										updatedInput: rewritten as any,
-									};
+									rewrittenInput = rewritten as Record<string, unknown>;
 								}
 							}
 
-							// 按照官方文档格式,返回 allow 时需要传递 updatedInput
-							return { behavior: "allow", updatedInput: toolInput };
+							// AskUserQuestion 不支持在 subagent 内触发，直接拒绝并让主代理继续。
+							if (
+								toolName === "AskUserQuestion" &&
+								typeof extra?.agentID === "string" &&
+								extra.agentID.trim()
+							) {
+								return {
+									behavior: "deny",
+									message:
+										"AskUserQuestion is not supported inside subagents. Continue from the main agent.",
+								};
+							}
+
+							if (!interactiveApproval) {
+								if (toolName === "AskUserQuestion") {
+									return {
+										behavior: "deny",
+										message: "Interactive approval is disabled",
+									};
+								}
+								return { behavior: "allow", updatedInput: rewrittenInput };
+							}
+
+							const requestId = randomUUID();
+							const timeoutMs = 55_000;
+							const toolUseId =
+								typeof extra?.toolUseID === "string" ? extra.toolUseID : "";
+							const request: AgentSdkInteractionRequestPayload = {
+								requestId,
+								toolName,
+								toolInput: rewrittenInput,
+								toolUseId,
+								agentId:
+									typeof extra?.agentID === "string"
+										? extra.agentID
+										: undefined,
+								description:
+									typeof extra?.description === "string"
+										? extra.description
+										: undefined,
+								decisionReason:
+									typeof extra?.decisionReason === "string"
+										? extra.decisionReason
+										: undefined,
+								blockedPath:
+									typeof extra?.blockedPath === "string"
+										? extra.blockedPath
+										: undefined,
+								suggestions: Array.isArray(extra?.suggestions)
+									? extra.suggestions
+									: undefined,
+								expiresAt: Date.now() + timeoutMs,
+							};
+							emit(options.getMainWindow, {
+								runId,
+								type: "interaction_request",
+								request,
+							});
+
+							const decision = await interactionBroker.createRequest(
+								runId,
+								requestId,
+								timeoutMs,
+							);
+							if (decision.behavior === "allow") {
+								return {
+									behavior: "allow",
+									updatedInput: decision.updatedInput ?? rewrittenInput,
+									updatedPermissions: Array.isArray(decision.updatedPermissions)
+										? (decision.updatedPermissions as any)
+										: undefined,
+								};
+							}
+							return {
+								behavior: "deny",
+								message: decision.message || "User denied",
+								interrupt: decision.interrupt,
+							};
 						},
 					} as any, // Cast to any to allow stream property
 				});
+				runRegistry.updateQuery(runId, q as any);
 
 				let sawResult = false;
 				// Accumulate token usage from SDK stream events
@@ -2711,7 +2991,8 @@ ${opts.appendContent}`.trim();
 						: undefined,
 				} as any);
 			} finally {
-				running.delete(runId);
+				interactionBroker.clearRun(runId);
+				runRegistry.delete(runId);
 			}
 		})();
 
@@ -2722,13 +3003,130 @@ ${opts.appendContent}`.trim();
 		_event: IpcMainInvokeEvent,
 		input: AgentSdkAbortInput,
 	): Promise<AgentSdkAbortOutput> => {
-		const run = running.get(input.runId);
+		const run = runRegistry.get(input.runId);
 		if (run) {
 			run.abortController.abort();
-			running.delete(input.runId);
+			interactionBroker.clearRun(input.runId);
+			runRegistry.delete(input.runId);
 		}
 		return { success: true };
 	};
 
-	return { agent_sdk_start, agent_sdk_abort };
+	const agent_sdk_resolve_interaction = async (
+		_event: IpcMainInvokeEvent,
+		input: AgentSdkResolveInteractionInput,
+	): Promise<AgentSdkResolveInteractionOutput> => {
+		const resolved = interactionBroker.resolve(
+			input.runId,
+			input.requestId,
+			input.decision,
+		);
+		return { success: resolved };
+	};
+
+	const agent_sdk_control = async (
+		_event: IpcMainInvokeEvent,
+		input: AgentSdkControlInput,
+	): Promise<AgentSdkControlOutput> => {
+		const run = runRegistry.get(input.runId);
+		if (!run?.query) {
+			return {
+				success: false,
+				error: `Run not found: ${input.runId}`,
+			};
+		}
+
+		try {
+			switch (input.action) {
+				case "set_permission_mode":
+					if (
+						typeof input.mode !== "string" ||
+						!input.mode.trim() ||
+						typeof run.query.setPermissionMode !== "function"
+					) {
+						return { success: false, error: "Invalid mode" };
+					}
+					await run.query.setPermissionMode(input.mode.trim());
+					return { success: true };
+				case "set_model":
+					if (typeof run.query.setModel !== "function") {
+						return { success: false, error: "setModel not supported" };
+					}
+					await run.query.setModel(
+						typeof input.model === "string" ? input.model : undefined,
+					);
+					return { success: true };
+				case "interrupt":
+					if (typeof run.query.interrupt === "function") {
+						await run.query.interrupt();
+					} else {
+						run.abortController.abort();
+					}
+					return { success: true };
+				case "mcp_status":
+					if (typeof run.query.mcpServerStatus !== "function") {
+						return { success: false, error: "mcpServerStatus not supported" };
+					}
+					return {
+						success: true,
+						data: await run.query.mcpServerStatus(),
+					};
+				case "mcp_reconnect":
+					if (
+						typeof run.query.reconnectMcpServer !== "function" ||
+						typeof input.serverName !== "string" ||
+						!input.serverName.trim()
+					) {
+						return { success: false, error: "Invalid serverName" };
+					}
+					await run.query.reconnectMcpServer(input.serverName.trim());
+					return { success: true };
+				case "mcp_toggle":
+					if (
+						typeof run.query.toggleMcpServer !== "function" ||
+						typeof input.serverName !== "string" ||
+						!input.serverName.trim() ||
+						typeof input.enabled !== "boolean"
+					) {
+						return { success: false, error: "Invalid mcp_toggle input" };
+					}
+					await run.query.toggleMcpServer(
+						input.serverName.trim(),
+						input.enabled,
+					);
+					return { success: true };
+				case "mcp_set_servers":
+					if (
+						typeof run.query.setMcpServers !== "function" ||
+						!input.servers ||
+						typeof input.servers !== "object"
+					) {
+						return { success: false, error: "Invalid servers" };
+					}
+					return {
+						success: true,
+						data: await run.query.setMcpServers(
+							input.servers as Record<string, unknown>,
+						),
+					};
+				default:
+					return {
+						success: false,
+						error: `Unsupported action: ${String((input as any).action || "")}`,
+					};
+			}
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : String(error),
+			};
+		}
+	};
+
+	return {
+		agent_sdk_start,
+		agent_sdk_abort,
+		agent_sdk_resolve_interaction,
+		agent_sdk_control,
+	};
 }

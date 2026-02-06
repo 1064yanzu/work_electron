@@ -13,8 +13,14 @@ import type {
 } from "@anthropic-ai/claude-agent-sdk";
 import { invoke } from "../tauriCompat";
 import { listen } from "../tauriEventCompat";
-import { isUuid } from "../uuid";
+import { getConfig } from "../config";
+import { isSdkSessionId } from "./context/sessionId";
 import { getMcpConfigForSdk } from "./mcpConfig";
+import { askUserQuestionStore } from "./askUserQuestionStore";
+import {
+	type ExternalPermissionDecision,
+	permissionStore,
+} from "./permissionStore";
 import { AgentStreamState, type UIEvent } from "./streamState";
 
 /**
@@ -25,14 +31,18 @@ export interface AgentMessage {
 		| "assistant"
 		| "tool_call"
 		| "tool_result"
+		| "tool_progress"
 		| "tool_input_update"
 		| "system"
 		| "result";
 	content: string;
+	taskId?: string;
 	toolCallId?: string;
 	toolName?: string;
 	toolInput?: Record<string, unknown>;
 	toolOutput?: unknown;
+	progress?: number;
+	message?: string;
 	status?: "running" | "completed" | "error";
 }
 
@@ -60,6 +70,21 @@ export interface ClaudeAgentExecutionOptions {
 
 	/** Enabled skills list (used for skill routing and subagents) */
 	skills?: string[];
+
+	/** Additional absolute directories for SDK file access */
+	additionalDirectories?: string[];
+
+	/** Local plugins loaded into SDK runtime */
+	plugins?: Array<{ type: "local"; path: string }>;
+
+	/** Optional sandbox settings pass-through */
+	sandbox?: Record<string, unknown>;
+
+	/** Whether to enable canUseTool interactive approval broker */
+	interactiveApproval?: boolean;
+
+	/** SDK permission mode */
+	permissionMode?: string;
 
 	/** Callback for streaming text chunks */
 	onChunk?: (text: string) => void;
@@ -106,6 +131,7 @@ const DEFAULT_TOOLS = [
 	"Task", // Enable subagents
 	"WebSearch",
 	"WebFetch",
+	"AskUserQuestion",
 ] as const;
 
 // Import settings store to respect user's model selection
@@ -118,6 +144,32 @@ import { settingsStore } from "../settingsStore";
  * for executing agent queries with streaming support.
  */
 export class ClaudeAgentService {
+	private activeRunId: string | null = null;
+
+	async control(input: {
+		action:
+			| "set_permission_mode"
+			| "set_model"
+			| "interrupt"
+			| "mcp_status"
+			| "mcp_reconnect"
+			| "mcp_toggle"
+			| "mcp_set_servers";
+		mode?: string;
+		model?: string;
+		serverName?: string;
+		enabled?: boolean;
+		servers?: Record<string, unknown>;
+	}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+		if (!this.activeRunId) {
+			return { success: false, error: "No active run" };
+		}
+		return invoke("agent_sdk_control", {
+			runId: this.activeRunId,
+			...input,
+		});
+	}
+
 	/**
 	 * Execute an agent query with streaming results
 	 */
@@ -130,6 +182,11 @@ export class ClaudeAgentService {
 			persistSession,
 			model: userModel,
 			skills,
+			additionalDirectories,
+			plugins,
+			sandbox,
+			interactiveApproval,
+			permissionMode: explicitPermissionMode,
 			onChunk,
 			onMessage,
 			onComplete,
@@ -141,6 +198,74 @@ export class ClaudeAgentService {
 		const model =
 			userModel || settingsStore.getActiveModel() || "claude-sonnet-4-5";
 		console.log("[ClaudeAgentService] Using model for SDK:", model);
+		const [
+			configInteractiveApproval,
+			configPermissionMode,
+			configAdditionalDirs,
+			configPluginPaths,
+			configCompatMode,
+		] = await Promise.all([
+			getConfig("agent.sdk.interactive_approval_enabled").catch(() => null),
+			getConfig("agent.sdk.default_permission_mode").catch(() => null),
+			getConfig("agent.sdk.additional_directories").catch(() => null),
+			getConfig("agent.sdk.plugin_paths").catch(() => null),
+			getConfig("agent.sdk.compat_mode").catch(() => null),
+		]);
+		const parseStringArray = (value: unknown): string[] =>
+			Array.isArray(value)
+				? value.filter((v): v is string => typeof v === "string")
+				: [];
+		const sdkAdditionalDirectories = parseStringArray(configAdditionalDirs);
+		const sdkPluginsFromConfig = parseStringArray(configPluginPaths).map(
+			(pluginPath) => ({
+				type: "local" as const,
+				path: pluginPath,
+			}),
+		);
+		const resolvedInteractiveApproval =
+			typeof interactiveApproval === "boolean"
+				? interactiveApproval
+				: typeof configInteractiveApproval === "boolean"
+					? configInteractiveApproval
+					: true;
+		const resolvedPermissionMode =
+			typeof explicitPermissionMode === "string" &&
+			explicitPermissionMode.trim().length > 0
+				? explicitPermissionMode.trim()
+				: typeof configPermissionMode === "string" &&
+						configPermissionMode.trim().length > 0
+					? configPermissionMode.trim()
+					: "default";
+		const compatModeEnabled = configCompatMode === true;
+		const permissionModeForRun = compatModeEnabled
+			? "acceptEdits"
+			: resolvedPermissionMode;
+		const interactiveApprovalForRun = compatModeEnabled
+			? false
+			: resolvedInteractiveApproval;
+		const mergedAdditionalDirectories = Array.from(
+			new Set(
+				[
+					...sdkAdditionalDirectories,
+					...(Array.isArray(additionalDirectories)
+						? additionalDirectories
+						: []),
+				].filter((item) => typeof item === "string" && item.trim().length > 0),
+			),
+		);
+		const mergedPlugins = Array.from(
+			new Map(
+				[...sdkPluginsFromConfig, ...(Array.isArray(plugins) ? plugins : [])]
+					.filter(
+						(item): item is { type: "local"; path: string } =>
+							!!item &&
+							item.type === "local" &&
+							typeof item.path === "string" &&
+							item.path.trim().length > 0,
+					)
+					.map((item) => [item.path, item] as const),
+			).values(),
+		);
 
 		let unlisten: (() => void) | null = null;
 		let runId: string | null = null;
@@ -238,6 +363,7 @@ export class ClaudeAgentService {
 									// 子代理的思考/回复
 									onMessage?.({
 										type: "tool_progress",
+										content: block.text,
 										taskId: "", // context 中没有 taskId，前端需根据 toolCallId 匹配
 										toolCallId: internalToolCallId,
 										progress: -1, // -1 表示非进度条更新，而是活动流更新
@@ -247,25 +373,27 @@ export class ClaudeAgentService {
 											content: block.text,
 											timestamp: Date.now(),
 										}),
-									} as any);
+									});
 								} else if (block.type === "tool_use") {
 									// 子代理调用工具
 									const toolName = block.name;
 									const inputDetails = Object.keys(block.input || {}).join(
 										", ",
 									);
+									const toolUseMessage = `调用工具: ${toolName}(${inputDetails})`;
 									onMessage?.({
 										type: "tool_progress",
+										content: toolUseMessage,
 										taskId: "",
 										toolCallId: internalToolCallId,
 										progress: -1,
 										message: JSON.stringify({
 											type: "executing", // 借用 phase 类型，或者在前端解析时处理
 											phase: "executing",
-											content: `调用工具: ${toolName}(${inputDetails})`,
+											content: toolUseMessage,
 											timestamp: Date.now(),
 										}),
-									} as any);
+									});
 								}
 							}
 						}
@@ -372,6 +500,150 @@ export class ClaudeAgentService {
 					return;
 				}
 
+				if (
+					payload.type === "interaction_request" &&
+					(payload as any).request
+				) {
+					void (async () => {
+						const request = (payload as any).request as {
+							requestId?: unknown;
+							toolName?: unknown;
+							toolInput?: unknown;
+							toolUseId?: unknown;
+							runId?: unknown;
+							expiresAt?: unknown;
+						};
+						const requestId =
+							typeof request.requestId === "string" ? request.requestId : "";
+						const toolName =
+							typeof request.toolName === "string" ? request.toolName : "";
+						const toolInput =
+							request.toolInput && typeof request.toolInput === "object"
+								? (request.toolInput as Record<string, unknown>)
+								: {};
+						if (!requestId || !toolName || !runId) return;
+
+						try {
+							if (toolName === "AskUserQuestion") {
+								const normalizeQuestions = (
+									value: unknown,
+								): Array<{
+									question: string;
+									header: string;
+									options: Array<{ label: string; description: string }>;
+									multiSelect?: boolean;
+									id?: string;
+								}> => {
+									if (!Array.isArray(value)) return [];
+									const normalized: Array<{
+										question: string;
+										header: string;
+										options: Array<{ label: string; description: string }>;
+										multiSelect?: boolean;
+										id?: string;
+									}> = [];
+									for (const item of value) {
+										if (!item || typeof item !== "object") continue;
+										const typed = item as Record<string, unknown>;
+										const question =
+											typeof typed.question === "string" ? typed.question : "";
+										const header =
+											typeof typed.header === "string" ? typed.header : "";
+										if (!question || !header) continue;
+										const options: Array<{
+											label: string;
+											description: string;
+										}> = [];
+										if (Array.isArray(typed.options)) {
+											for (const opt of typed.options) {
+												if (!opt || typeof opt !== "object") continue;
+												const option = opt as Record<string, unknown>;
+												const label =
+													typeof option.label === "string" ? option.label : "";
+												const description =
+													typeof option.description === "string"
+														? option.description
+														: "";
+												if (!label) continue;
+												options.push({ label, description });
+											}
+										}
+										if (options.length < 2) continue;
+										normalized.push({
+											question,
+											header,
+											options,
+											multiSelect: typed.multiSelect === true || undefined,
+											id: typeof typed.id === "string" ? typed.id : undefined,
+										});
+									}
+									return normalized;
+								};
+
+								const expiresAt =
+									typeof request.expiresAt === "number"
+										? request.expiresAt
+										: Date.now() + 55_000;
+								const questions = normalizeQuestions(toolInput.questions);
+								if (questions.length === 0) {
+									await invoke("agent_sdk_resolve_interaction", {
+										runId,
+										requestId,
+										decision: {
+											behavior: "deny",
+											message: "Invalid AskUserQuestion payload",
+										},
+									});
+									return;
+								}
+
+								const decision = await askUserQuestionStore.request({
+									requestId,
+									runId,
+									questions,
+									expiresAt,
+								});
+								await invoke("agent_sdk_resolve_interaction", {
+									runId,
+									requestId,
+									decision,
+								});
+								return;
+							}
+
+							const decision: ExternalPermissionDecision =
+								await permissionStore.requestExternalPermission({
+									requestId,
+									toolCallId:
+										typeof request.toolUseId === "string"
+											? request.toolUseId
+											: requestId,
+									toolName,
+									toolInput,
+								});
+							await invoke("agent_sdk_resolve_interaction", {
+								runId,
+								requestId,
+								decision,
+							});
+						} catch (interactionError) {
+							const message =
+								interactionError instanceof Error
+									? interactionError.message
+									: String(interactionError);
+							await invoke("agent_sdk_resolve_interaction", {
+								runId,
+								requestId,
+								decision: {
+									behavior: "deny",
+									message,
+								},
+							});
+						}
+					})();
+					return;
+				}
+
 				// 处理转换后的 UI 事件
 				if (payload.type === "transformed" && (payload as any).events) {
 					const events = (payload as any).events as UIEvent[];
@@ -380,9 +652,41 @@ export class ClaudeAgentService {
 					// 处理各种事件类型
 					for (const event of events) {
 						if (event.type === "session_init") {
-							if (isUuid(event.sessionId)) {
+							if (isSdkSessionId(event.sessionId)) {
 								sessionId = event.sessionId;
 							}
+							continue;
+						}
+						if (event.type === "session_start") {
+							onMessage?.({
+								type: "system",
+								content: `会话开始（source=${String(event.source || "unknown")}）`,
+								status: "running",
+							});
+							continue;
+						}
+						if (event.type === "session_end") {
+							onMessage?.({
+								type: "system",
+								content: `会话结束（reason=${String(event.reason || "unknown")}）`,
+								status: "running",
+							});
+							continue;
+						}
+						if (event.type === "subagent_start") {
+							onMessage?.({
+								type: "system",
+								content: `子代理启动：${String(event.agentType || event.agentId || "unknown")}`,
+								status: "running",
+							});
+							continue;
+						}
+						if (event.type === "subagent_stop") {
+							onMessage?.({
+								type: "system",
+								content: `子代理结束：${String(event.agentType || event.agentId || "unknown")}`,
+								status: "running",
+							});
 							continue;
 						}
 						if (event.type === "system_notice") {
@@ -390,6 +694,58 @@ export class ClaudeAgentService {
 								type: "system",
 								content: event.content,
 								status: event.level === "error" ? "error" : "running",
+							});
+							continue;
+						}
+						if (event.type === "task_notification") {
+							const summary =
+								typeof event.summary === "string" && event.summary.trim()
+									? event.summary
+									: typeof event.message === "string" && event.message.trim()
+										? event.message
+										: "任务通知";
+							onMessage?.({
+								type: "system",
+								content: summary,
+								status:
+									event.status === "failed" || event.status === "stopped"
+										? "error"
+										: "running",
+							});
+							continue;
+						}
+						if (event.type === "tool_use_summary") {
+							onMessage?.({
+								type: "system",
+								content: event.summary || "",
+								status: "running",
+							});
+							continue;
+						}
+						if (event.type === "files_persisted") {
+							const fileCount = Array.isArray(event.files)
+								? event.files.length
+								: 0;
+							const failedCount = Array.isArray(event.failed)
+								? event.failed.length
+								: 0;
+							onMessage?.({
+								type: "system",
+								content: `文件持久化完成：成功 ${fileCount}，失败 ${failedCount}`,
+								status: failedCount > 0 ? "error" : "running",
+							});
+							continue;
+						}
+						if (event.type === "auth_status") {
+							const base = event.isAuthenticating
+								? "认证中…"
+								: event.error
+									? "认证失败"
+									: "认证状态更新";
+							onMessage?.({
+								type: "system",
+								content: event.error ? `${base}: ${event.error}` : base,
+								status: event.error ? "error" : "running",
 							});
 							continue;
 						}
@@ -468,7 +824,7 @@ export class ClaudeAgentService {
 					const resultAny = payload.result as any;
 					if (
 						typeof resultAny?.session_id === "string" &&
-						isUuid(resultAny.session_id)
+						isSdkSessionId(resultAny.session_id)
 					) {
 						sessionId = resultAny.session_id;
 					}
@@ -566,17 +922,26 @@ export class ClaudeAgentService {
 										prompt,
 										model,
 										cwd: workingDirectory,
-										resume_session_id: isUuid(resumeSessionId)
+										resume_session_id: isSdkSessionId(resumeSessionId)
 											? resumeSessionId
 											: undefined,
 										persist_session: persistSession,
-										permission_mode: "acceptEdits",
+										permission_mode: permissionModeForRun,
 										allowed_tools: [...DEFAULT_TOOLS],
 										system_prompt: systemPrompt,
 										skills,
 										mcp_servers: mcpServers,
+										additional_directories:
+											mergedAdditionalDirectories.length > 0
+												? mergedAdditionalDirectories
+												: undefined,
+										plugins:
+											mergedPlugins.length > 0 ? mergedPlugins : undefined,
+										sandbox: sandbox,
+										interactive_approval: interactiveApprovalForRun,
 									},
 								});
+								this.activeRunId = runId;
 
 								// 重放缓冲事件
 								for (const e of bufferedEvents) {
@@ -638,17 +1003,25 @@ export class ClaudeAgentService {
 					prompt,
 					model,
 					cwd: workingDirectory,
-					resume_session_id: isUuid(resumeSessionId)
+					resume_session_id: isSdkSessionId(resumeSessionId)
 						? resumeSessionId
 						: undefined,
 					persist_session: persistSession,
-					permission_mode: "acceptEdits",
+					permission_mode: permissionModeForRun,
 					allowed_tools: [...DEFAULT_TOOLS],
 					system_prompt: systemPrompt,
 					skills,
 					mcp_servers: mcpServers, // 传递 MCP 配置给 SDK
+					additional_directories:
+						mergedAdditionalDirectories.length > 0
+							? mergedAdditionalDirectories
+							: undefined,
+					plugins: mergedPlugins.length > 0 ? mergedPlugins : undefined,
+					sandbox: sandbox,
+					interactive_approval: interactiveApprovalForRun,
 				},
 			});
+			this.activeRunId = runId;
 
 			// Replay anything that arrived before we got the runId back (race on fast failures).
 			for (const e of bufferedEvents) {
@@ -675,6 +1048,7 @@ export class ClaudeAgentService {
 		} finally {
 			abortController.signal.removeEventListener("abort", abortHandler);
 			if (unlisten) unlisten();
+			this.activeRunId = null;
 		}
 	}
 

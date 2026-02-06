@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { agentExecutor } from "../../lib/agent/executor";
+import { settingsStore } from "../../lib/settingsStore";
 import { useAgentStore } from "../../lib/agent/store";
 import {
 	TOOL_ICONS,
@@ -234,6 +235,7 @@ export default function AgentTaskPanel({
 	const [expandedToolCall, setExpandedToolCall] = React.useState<string | null>(
 		null,
 	);
+	const [runtimeHint, setRuntimeHint] = React.useState<string>("");
 
 	// 没有任务时的空状态
 	if (!currentTask) {
@@ -311,13 +313,47 @@ export default function AgentTaskPanel({
 				{/* 控制按钮 */}
 				<div className="flex items-center gap-1">
 					{isExecuting ? (
-						<button
-							onClick={() => agentExecutor.cancel()}
-							className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-							title="取消任务"
-						>
-							<Square className="w-4 h-4" />
-						</button>
+						<>
+							<button
+								onClick={() => {
+									void agentExecutor.setRuntimePermissionMode("default");
+									setRuntimeHint("已切换为 default 审批模式");
+								}}
+								className="px-2 py-1 text-[11px] text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								title="运行时切换为 default 审批模式"
+							>
+								default
+							</button>
+							<button
+								onClick={() => {
+									void agentExecutor.setRuntimePermissionMode("acceptEdits");
+									setRuntimeHint("已切换为 acceptEdits 模式");
+								}}
+								className="px-2 py-1 text-[11px] text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								title="运行时切换为 acceptEdits 模式"
+							>
+								acceptEdits
+							</button>
+							<button
+								onClick={() => {
+									const model = settingsStore.getActiveModel();
+									if (!model) return;
+									void agentExecutor.setRuntimeModel(model);
+									setRuntimeHint(`已请求切换模型：${model}`);
+								}}
+								className="px-2 py-1 text-[11px] text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								title="运行时切换为当前模型"
+							>
+								模型
+							</button>
+							<button
+								onClick={() => agentExecutor.cancel()}
+								className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+								title="取消任务"
+							>
+								<Square className="w-4 h-4" />
+							</button>
+						</>
 					) : currentTask.status === "completed" ||
 						currentTask.status === "error" ? (
 						<button
@@ -332,6 +368,11 @@ export default function AgentTaskPanel({
 					) : null}
 				</div>
 			</div>
+			{isExecuting && runtimeHint ? (
+				<div className="px-4 py-1 text-[11px] text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
+					{runtimeHint}
+				</div>
+			) : null}
 
 			{/* Content */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">

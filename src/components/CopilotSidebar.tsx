@@ -33,6 +33,7 @@ import {
 } from "../lib/agent/chatBridge";
 import { useAgentChatSettingsStore } from "../lib/agent/chatSettingsStore";
 import { usePermissionStore } from "../lib/agent";
+import { useAskUserQuestionStore } from "../lib/agent/askUserQuestionStore";
 import {
 	createMessage,
 	invokeLlm,
@@ -50,10 +51,12 @@ import { useMessageQueueStore } from "../lib/messageQueueStore";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
-import { isUuid } from "../lib/uuid";
+import { buildConversationMessagesForAgentRun } from "../lib/agent/context/conversationMessages";
+import { isSdkSessionId } from "../lib/agent/context/sessionId";
 import { createOutputAsset } from "../lib/api";
 import { OutputType } from "../types";
 import { PermissionList } from "./agent";
+import { AskUserQuestionList } from "./agent/AskUserQuestionCard";
 import { PromptLibraryModal } from "./PromptLibraryModal";
 import {
 	ChatHistory,
@@ -382,6 +385,8 @@ export default function CopilotSidebar() {
 		isWaitingForLLM,
 	} = useAgentStore();
 	const { pendingRequests, respondToPermission } = usePermissionStore();
+	const { pending: pendingAskUserQuestions, resolve: resolveAskUserQuestion } =
+		useAskUserQuestionStore();
 	const { store: managedModeStore } = useManagedModeStore();
 
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
@@ -490,6 +495,31 @@ export default function CopilotSidebar() {
 			scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	}, [pendingRequests.size]);
+	useEffect(() => {
+		if (pendingAskUserQuestions.size > 0) {
+			scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+		}
+	}, [pendingAskUserQuestions.size]);
+
+	const handleAllowAskUserQuestion = useCallback(
+		(requestId: string, updatedInput: Record<string, unknown>) => {
+			resolveAskUserQuestion(requestId, {
+				behavior: "allow",
+				updatedInput,
+			});
+		},
+		[resolveAskUserQuestion],
+	);
+
+	const handleDenyAskUserQuestion = useCallback(
+		(requestId: string, message?: string) => {
+			resolveAskUserQuestion(requestId, {
+				behavior: "deny",
+				message: message || "User denied",
+			});
+		},
+		[resolveAskUserQuestion],
+	);
 
 	// 监听添加上下文事件
 	useEffect(() => {
@@ -1349,14 +1379,19 @@ export default function CopilotSidebar() {
 				let systemPrompt = await getChatSystemPrompt(
 					workspaceStore.getActiveDocContent() || "",
 				);
+				const conversationMessagesForAgent =
+					buildConversationMessagesForAgentRun({
+						sessionMessages: session.messages,
+						currentUserMessage: userMessage,
+						skipUserMessage,
+					});
 				const conversationContext = buildAgentConversationContext(
-					[...session.messages, userMessage],
+					conversationMessagesForAgent,
 					content,
 				);
-				const fallbackSearchQuery = guessFallbackSearchQuery([
-					...session.messages,
-					userMessage,
-				]);
+				const fallbackSearchQuery = guessFallbackSearchQuery(
+					conversationMessagesForAgent,
+				);
 				// 获取用户附加的上下文（文档、资料等）
 				// 如果有 sourceId 但 content 为空，尝试重新加载
 				await workspaceStore.ensureAllContextsHaveFiles();
@@ -1698,7 +1733,8 @@ export default function CopilotSidebar() {
 						sandboxKey: boundAgentSessionId || session.id,
 						resumeSessionId: (() => {
 							if (!session.sdkSessionId) return undefined;
-							if (isUuid(session.sdkSessionId)) return session.sdkSessionId;
+							if (isSdkSessionId(session.sdkSessionId))
+								return session.sdkSessionId;
 							chatStore.setSessionSdkSessionId(session.id, undefined);
 							return undefined;
 						})(),
@@ -2745,6 +2781,17 @@ export default function CopilotSidebar() {
 										</div>
 									</div>
 								</div>
+							</div>
+						)}
+						{pendingAskUserQuestions.size > 0 && (
+							<div className="px-4 pb-3 shrink-0">
+								<AskUserQuestionList
+									requests={Array.from(pendingAskUserQuestions.values()).map(
+										(item) => item.request,
+									)}
+									onAllow={handleAllowAskUserQuestion}
+									onDeny={handleDenyAskUserQuestion}
+								/>
 							</div>
 						)}
 						<div ref={messagesEndRef} />
