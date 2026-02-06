@@ -31,13 +31,13 @@ import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
 import { InlineImage } from "../ui/InlineImage";
-import { agentStore } from "../../lib/agent/store";
 
 // 工具输出显示组件 - 处理 persisted-output 和 base64 图片
 function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId?: string }) {
 	const [imagePath, setImagePath] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const agentStore = useAgentStore();
 
 	const outputStr = typeof output === "string"
 		? output
@@ -79,59 +79,134 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 					return;
 				}
 
-				// 查找 base64 图片
-				let base64Data: string | null = null;
-				const findBase64 = (obj: any): string | null => {
+				// 查找图片（优先查找文件路径，避免重复保存）
+				let imageData: string | null = null;
+				const extractImagePathFromText = (text: string): string | null => {
+					const value = String(text || "").trim();
+					if (!value) return null;
+					if (
+						value.startsWith("/") &&
+						/\.(png|jpg|jpeg|gif|webp|svg)\b/i.test(value)
+					) {
+						return value;
+					}
+					const absPathMatch = value.match(
+						/(\/Users\/[^,\n)]+?\.(?:png|jpg|jpeg|gif|webp|svg))/i,
+					);
+					if (absPathMatch?.[1]) return absPathMatch[1].trim();
+					return null;
+				};
+				const findImage = (obj: any): string | null => {
 					if (typeof obj === "string") {
-						const match = obj.match(/(data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+)/);
+						// 检查是否是文件路径
+						const pathCandidate = extractImagePathFromText(obj);
+						if (pathCandidate) {
+							return pathCandidate;
+						}
+						// 如果是 base64，也返回（备用方案）
+						const match = obj.match(/(data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)/);
 						if (match) return match[1];
 						// 也检查 markdown 格式
-						const mdMatch = obj.match(/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+)\)/);
+						const mdMatch = obj.match(/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)\)/);
 						if (mdMatch) return mdMatch[1];
 					}
 					if (Array.isArray(obj)) {
 						for (const item of obj) {
-							const found = findBase64(item);
+							const found = findImage(item);
 							if (found) return found;
 						}
 					}
 					if (obj && typeof obj === "object") {
 						for (const key of Object.keys(obj)) {
-							const found = findBase64(obj[key]);
+							const found = findImage(obj[key]);
 							if (found) return found;
 						}
 					}
 					return null;
 				};
 
-				base64Data = findBase64(parsed);
-				if (!base64Data) {
-					setError("未找到图片数据");
+				imageData = findImage(parsed);
+				if (!imageData) {
+					setError("未找到图片");
 					return;
 				}
 
-				// 保存 base64 为文件
-				const fileName = `subagent-image-${Date.now()}.jpg`;
-				const savedPath = await (window as any).electronAPI?.invoke("save_base64_image", {
-					base64Data,
-					fileName,
-				});
+				// 如果是文件路径，直接使用；如果是 base64，需要保存
+				let finalPath = imageData;
+				if (imageData.startsWith("data:image/")) {
+					// base64 格式：优先保存到当前任务 sandbox（中间栏可直接复用），否则回退全局目录
+					const sandboxDir = (agentStore.currentTask?.metadata as any)?.sandboxDir as
+						| string
+						| undefined;
+					const fileName = `subagent-image-${Date.now()}.jpg`;
+					let savedPath: string | null = null;
+					if (sandboxDir) {
+						const match = imageData.match(/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/i);
+						if (match?.[1]) {
+							const candidate = `${sandboxDir.replace(/[\\/]+$/, "")}/images/${fileName}`;
+							try {
+								await (window as any).electronAPI?.invoke("write_file_safe", {
+									payload: {
+										path: candidate,
+										content: match[1],
+										encoding: "base64",
+										create_dirs: true,
+									},
+								});
+								savedPath = candidate;
+							} catch {
+								savedPath = null;
+							}
+						}
+					}
+					if (!savedPath) {
+						savedPath = await (window as any).electronAPI?.invoke("save_base64_image", {
+							base64Data: imageData,
+							fileName,
+						});
+					}
+					if (cancelled) return;
+
+					if (!savedPath) {
+						setError("保存图片失败");
+						return;
+					}
+					finalPath = savedPath;
+				}
+
 				if (cancelled) return;
+				setImagePath(finalPath);
+				const fileName = finalPath.split('/').pop() || `image-${Date.now()}.jpg`;
+				console.log("[ToolOutputDisplay] Image path:", finalPath);
 
-				if (savedPath) {
-					setImagePath(savedPath);
-
-					// 添加到 artifacts 列表
+				// 添加到产物列表
+				console.log("[ToolOutputDisplay] Adding artifact to task:", {
+					finalPath,
+					fileName,
+					toolCallId,
+				});
+				const exists = (agentStore.currentTask?.artifacts || []).some(
+					(a) => a.type === "image" && String(a.url || "").trim() === finalPath,
+				);
+				if (!exists) {
 					agentStore.addArtifact({
 						id: `artifact-image-${Date.now()}`,
 						type: "image",
-						title: "生成的图片",
-						url: savedPath,
+						title: fileName,
+						url: finalPath,
 						metadata: { toolCallId, source: "subagent" },
 					});
-				} else {
-					setError("保存图片失败");
+					console.log("[ToolOutputDisplay] Artifact added successfully");
 				}
+
+				// 触发中间栏预览
+				setTimeout(() => {
+					events.emit("AGENT_FOCUS_TOOL_CALL", {
+						toolCallId,
+						artifactUrl: finalPath,
+						autoPreview: true,
+					});
+				}, 300);
 			} catch (err) {
 				if (cancelled) return;
 				setError(String(err));
@@ -143,11 +218,11 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 		return () => { cancelled = true; };
 	}, [persistedFilePath, hasPartialBase64, toolCallId]);
 
-	// 渲染图片
+	// 渲染图片（已添加到产物列表，会在中间栏自动预览）
 	if (imagePath) {
 		return (
 			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
-				<InlineImage path={imagePath} title="生成的图片" className="max-w-full" />
+				<InlineImage path={imagePath} title="生成的图片（已添加到产物列表）" className="max-w-full" />
 			</div>
 		);
 	}

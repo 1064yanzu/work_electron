@@ -7,6 +7,8 @@ import { useAgentStoreSelector } from "../../lib/agent/store";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { safeInvoke } from "../../lib/tauriBridge";
 
+const base64SaveCache = new Map<string, Promise<string | null>>();
+
 function guessDownloadName(title: string | undefined, path: string) {
 	if (path.startsWith("data:")) {
 		const ext = path.substring(5, path.indexOf(";")).split("/")[1] || "png";
@@ -28,11 +30,13 @@ function guessDownloadName(title: string | undefined, path: string) {
 export const InlineImage = memo(function InlineImage({
 	path: rawPath,
 	title,
+	sandboxDir: sandboxDirProp,
 	className,
 	maxHeightClassName = "max-h-60",
 }: {
 	path: string;
 	title?: string;
+	sandboxDir?: string;
 	className?: string;
 	maxHeightClassName?: string;
 }) {
@@ -59,8 +63,10 @@ export const InlineImage = memo(function InlineImage({
 
 	// 获取 sandboxDir
 	const sandboxDir = useMemo(() => {
+		const fromProp = String(sandboxDirProp || "").trim();
+		if (fromProp) return fromProp;
 		return (currentTask?.metadata as any)?.sandboxDir as string | undefined;
-	}, [currentTask]);
+	}, [currentTask, sandboxDirProp]);
 
 	// 自动保存 base64 图片到沙盒目录
 	useEffect(() => {
@@ -81,33 +87,50 @@ export const InlineImage = memo(function InlineImage({
 				const fileName = downloadName || `image_${Date.now()}.${ext}`;
 				const filePath = `${sandboxDir}/${fileName}`;
 
-				// 写入文件到沙盒
-				await safeInvoke<{ success: boolean }>("write_file_safe", {
-					payload: {
-						path: filePath,
-						content: base64Data,
-						encoding: "base64",
-						create_dirs: true,
-					},
-				});
+				const cacheKey = `${sandboxDir}::${path}`;
+				const existingTask = base64SaveCache.get(cacheKey);
+				const saveTask =
+					existingTask ||
+					(async () => {
+						await safeInvoke<{ success: boolean }>("write_file_safe", {
+							payload: {
+								path: filePath,
+								content: base64Data,
+								encoding: "base64",
+								create_dirs: true,
+							},
+						});
+						return filePath;
+					})();
+				if (!existingTask) base64SaveCache.set(cacheKey, saveTask);
+				const resolvedPath = await saveTask;
+				if (!resolvedPath) return;
 
-				// 同时保存到产物数据库
-				try {
-					const sessionId = sandboxDir.split("/").pop() || `session_${Date.now()}`;
-					await safeInvoke("artifact_save", {
-						session_id: sessionId,
-						file_name: fileName,
-						content: base64Data,
-						encoding: "base64",
-						description: `Generated image: ${title || fileName}`,
-					});
-				} catch (dbErr) {
-					console.warn("[InlineImage] Failed to save image to database:", dbErr);
+				// 同时保存到产物数据库（仅首个保存任务执行）
+				if (!existingTask) {
+					try {
+						const sessionId =
+							sandboxDir.split("/").pop() || `session_${Date.now()}`;
+						await safeInvoke("artifact_save", {
+							session_id: sessionId,
+							file_name: fileName,
+							content: base64Data,
+							encoding: "base64",
+							description: `Generated image: ${title || fileName}`,
+						});
+					} catch (dbErr) {
+						console.warn("[InlineImage] Failed to save image to database:", dbErr);
+					}
 				}
 
 				// 触发沙箱文件列表刷新（使用静态导入的 store）
 				try {
 					await managedModeStore.scanSandboxDir(sandboxDir);
+					const selectedId = managedModeStore.selectFileByPath(resolvedPath);
+					if (selectedId) {
+						managedModeStore.setCenterView("preview");
+						managedModeStore.setPreviewMode("preview");
+					}
 				} catch (e) {
 					// 静默失败
 				}

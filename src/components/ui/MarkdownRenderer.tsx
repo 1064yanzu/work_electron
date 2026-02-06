@@ -84,6 +84,7 @@ interface MarkdownRendererProps {
 	content: string;
 	className?: string;
 	isStreaming?: boolean;
+	sandboxDir?: string;
 }
 
 /**
@@ -110,6 +111,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 	content,
 	className = "",
 	isStreaming = false,
+	sandboxDir,
 }: MarkdownRendererProps) {
 	// 缓存 remarkPlugins 避免每次渲染创建新数组
 	const remarkPlugins = useMemo(() => [remarkGfm], []);
@@ -328,6 +330,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					<InlineImage
 						path={src}
 						title={String(title || alt || "生成的图片")}
+						sandboxDir={sandboxDir}
 						className="my-3"
 					/>
 				);
@@ -369,7 +372,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				return <hr className="my-6 border-zinc-200 dark:border-zinc-700" />;
 			},
 		};
-	}, [isStreaming]);
+	}, [isStreaming, sandboxDir]);
 
 	return (
 		<div

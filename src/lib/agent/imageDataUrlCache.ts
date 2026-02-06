@@ -21,8 +21,18 @@ function guessImageMimeType(path: string): string {
 }
 
 export function getImageDataUrl(inputPath: string): Promise<string> {
+	if (typeof inputPath === "string" && inputPath.startsWith("data:image/")) {
+		return Promise.resolve(inputPath);
+	}
+
 	// URL 解码路径，处理 react-markdown 可能的 URL 编码（如 %20 -> 空格）
-	const path = decodeURIComponent(inputPath);
+	const path = (() => {
+		try {
+			return decodeURIComponent(inputPath);
+		} catch {
+			return inputPath;
+		}
+	})();
 
 	const hit = cache.get(path);
 	if (hit) return hit.promise;

@@ -9,7 +9,6 @@ import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
-import { encodeIpoRoutedModel } from "../../http/anthropicProxy/modelRouting";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
 
@@ -652,7 +651,128 @@ function isUuidString(value: unknown): value is string {
 	);
 }
 
-function toUIEvents(message: any): any[] {
+const DATA_IMAGE_URL_RE = /data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
+const DATA_IMAGE_URL_LIMIT = 1;
+const DATA_IMAGE_URL_MAX_CHARS = 8_000_000;
+
+function extensionFromDataImageMime(raw: string): string {
+	const mime = String(raw || "").toLowerCase().trim();
+	if (!mime) return "png";
+	if (mime === "jpeg") return "jpg";
+	if (mime === "svg+xml") return "svg";
+	if (mime === "x-icon") return "ico";
+	return mime.replace(/[^a-z0-9]+/g, "") || "png";
+}
+
+function collectDataImageUrlsFromString(input: string, limit = DATA_IMAGE_URL_LIMIT): string[] {
+	const text = String(input || "");
+	if (!text || text.length > DATA_IMAGE_URL_MAX_CHARS) return [];
+	const found: string[] = [];
+	let match: RegExpExecArray | null = null;
+	DATA_IMAGE_URL_RE.lastIndex = 0;
+	while ((match = DATA_IMAGE_URL_RE.exec(text)) !== null) {
+		const whole = match[0];
+		if (!whole) continue;
+		found.push(whole);
+		if (found.length >= limit) break;
+	}
+	return found;
+}
+
+function collectDataImageUrlsFromUnknown(value: unknown, limit = DATA_IMAGE_URL_LIMIT): string[] {
+	const found = new Set<string>();
+	const seen = new Set<unknown>();
+
+	const visit = (v: unknown, depth: number) => {
+		if (v === null || v === undefined) return;
+		if (depth > 8 || found.size >= limit) return;
+
+		if (typeof v === "string") {
+			const items = collectDataImageUrlsFromString(v, limit - found.size);
+			for (const item of items) {
+				found.add(item);
+				if (found.size >= limit) break;
+			}
+			return;
+		}
+		if (Array.isArray(v)) {
+			for (const item of v) {
+				visit(item, depth + 1);
+				if (found.size >= limit) break;
+			}
+			return;
+		}
+		if (typeof v !== "object") return;
+		if (seen.has(v)) return;
+		seen.add(v);
+		for (const item of Object.values(v as Record<string, unknown>)) {
+			visit(item, depth + 1);
+			if (found.size >= limit) break;
+		}
+	};
+
+	visit(value, 0);
+	return [...found];
+}
+
+async function persistDataImageUrlToCwd(input: {
+	dataUrl: string;
+	cwd: string;
+	prefix?: string;
+}): Promise<string | null> {
+	const match = String(input.dataUrl || "").match(
+		/^data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/i,
+	);
+	if (!match) return null;
+	const ext = extensionFromDataImageMime(match[1] || "png");
+	const rawBase64 = match[2] || "";
+	if (!rawBase64) return null;
+	let bytes: Buffer;
+	try {
+		bytes = Buffer.from(rawBase64, "base64");
+	} catch {
+		return null;
+	}
+	if (!bytes || bytes.length === 0) return null;
+
+	const outDir = path.join(input.cwd, "images");
+	await fsp.mkdir(outDir, { recursive: true });
+	const fileName = `${input.prefix || "generated-image"}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
+	const outPath = path.join(outDir, fileName);
+	await fsp.writeFile(outPath, bytes);
+	return outPath;
+}
+
+function buildUiToolResultOutput(
+	original: unknown,
+	persistedPaths: string[],
+): unknown {
+	const imagePaths = uniqStrings(persistedPaths);
+	if (imagePaths.length === 0) return original;
+
+	if (original && typeof original === "object" && !Array.isArray(original)) {
+		const record = original as Record<string, unknown>;
+		const existing =
+			Array.isArray(record.image_paths)
+				? record.image_paths.filter((v): v is string => typeof v === "string")
+				: [];
+		return {
+			...record,
+			image_paths: uniqStrings([...existing, ...imagePaths]),
+		};
+	}
+
+	return {
+		image_paths: imagePaths,
+	};
+}
+
+function toUIEvents(
+	message: any,
+	options?: {
+		rewriteToolResultOutput?: (toolUseId: string, output: unknown) => unknown;
+	},
+): any[] {
 	const events: any[] = [];
 	if (!message || typeof message !== "object") return events;
 
@@ -702,10 +822,14 @@ function toUIEvents(message: any): any[] {
 		const blocks = Array.isArray(beta?.content) ? beta.content : [];
 		for (const b of blocks) {
 			if (b?.type === "tool_result" && b?.tool_use_id) {
+				const toolUseId = String(b.tool_use_id);
+				const output = options?.rewriteToolResultOutput
+					? options.rewriteToolResultOutput(toolUseId, b.content)
+					: b.content;
 				events.push({
 					type: "tool_call_end",
-					id: String(b.tool_use_id),
-					output: b.content,
+					id: toolUseId,
+					output,
 					isError:
 						Boolean(b.is_error) ||
 						String(b.content ?? "").includes("<tool_use_error>"),
@@ -1282,20 +1406,6 @@ export function createAgentSdkHandlers(options: {
 		return agents;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 保留备用
-	function _extractTriggerKeywords(description: string): string[] {
-		const keywords: string[] = [];
-		const patterns = [
-			/画图|绘图|绘制|生成图|创建图|制作图/,
-			/图片|图像|图画|插图|插画|海报/,
-		];
-		for (const pattern of patterns) {
-			const match = description.match(pattern);
-			if (match) keywords.push(match[0]);
-		}
-		return keywords;
-	}
-
 	function buildSubagentPolicyAppend(opts: {
 		settings: AgentModelSettingsLike | null;
 		enabledSkills: string[];
@@ -1353,7 +1463,7 @@ export function createAgentSdkHandlers(options: {
 
 		lines.push("## 子代理(通过 Task 工具调用)");
 		lines.push("");
-		lines.push("**强制规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，你**必须第一时间**调用 Task 工具委派，**不要自己处理，不要先执行其他工具**。");
+		lines.push("**委派规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，请**优先**调用 Task 工具委派；如需补充最小必要上下文，可先进行少量 Read/Glob/Grep。");
 		lines.push("");
 		lines.push("调用方式：Task({ subagent_type: \"<英文标识符>\", description: \"简述任务\", prompt: \"完整任务描述+所需上下文\" })");
 		lines.push("");
@@ -1373,7 +1483,8 @@ export function createAgentSdkHandlers(options: {
 			}
 			lines.push("");
 			lines.push("**语义匹配示例**：如果子代理描述是\"画图\"，那么用户说\"绘制图像\"\"生成图片\"\"作图\"都应该匹配。");
-			lines.push("**禁止行为**：在需要调用子代理的任务中，先执行 Read/Glob/Bash 等工具是错误的！必须先调用 Task。");
+			lines.push("**执行顺序**：在需要调用子代理的任务中，默认优先调用 Task；若确有必要，可先做最小化的信息读取或定位，再发起 Task。");
+			lines.push("**避免重复**：同一需求在拿到子代理结果前，不要重复调用同一个 Task；若子代理已返回 image_paths，请直接基于该结果结束回答。");
 			lines.push("");
 			lines.push("（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）");
 		}
@@ -1455,6 +1566,36 @@ ${opts.appendContent}`.trim();
 				const toolNameById = new Map<string, string>();
 				const toolUseIdByIndex = new Map<number, string>();
 				const toolInputJsonById = new Map<string, string>();
+				const taskCallSignatureByToolUseId = new Map<string, string>();
+				const taskCallStateBySignature = new Map<string, "running" | "completed">();
+				const taskImagePathsByToolUseId = new Map<string, string[]>();
+				const normalizeTaskSignaturePart = (v: unknown) =>
+					String(v || "")
+						.normalize("NFC")
+						.trim()
+						.toLowerCase()
+						.replace(/\s+/g, " ")
+						.slice(0, 1200);
+				const buildTaskCallSignature = (
+					toolInput: Record<string, unknown>,
+				): string => {
+					const subagent =
+						typeof toolInput.subagent_type === "string"
+							? toolInput.subagent_type
+							: typeof toolInput.subagentType === "string"
+								? toolInput.subagentType
+								: "";
+					const description =
+						typeof toolInput.description === "string"
+							? toolInput.description
+							: "";
+					const prompt = typeof toolInput.prompt === "string" ? toolInput.prompt : "";
+					return [
+						normalizeTaskSignaturePart(subagent),
+						normalizeTaskSignaturePart(description),
+						normalizeTaskSignaturePart(prompt),
+					].join("||");
+				};
 				const logToolUseError = (payload: any) => {
 					try {
 						const blocks = Array.isArray(payload?.message?.content)
@@ -1757,7 +1898,14 @@ ${opts.appendContent}`.trim();
 												toolInput &&
 												typeof toolInput === "object"
 											) {
-												const inputAny = toolInput as any;
+												const toolUseId = String(
+													(hookInput as any).tool_use_id || "",
+												).trim();
+												const inputAny = toolInput as Record<string, unknown>;
+												let normalizedInput: Record<string, unknown> = {
+													...inputAny,
+												};
+												let normalizedChanged = false;
 												const rawSubType =
 													typeof inputAny.subagent_type === "string"
 														? inputAny.subagent_type
@@ -1774,19 +1922,89 @@ ${opts.appendContent}`.trim();
 														console.log(
 															`[PreToolUse] ✓ subagent_type rewritten: '${rawSubType}' -> '${resolved}'`,
 														);
-														return {
-															continue: true,
-															hookSpecificOutput: {
-																hookEventName: "PreToolUse" as const,
-																permissionDecision: "allow" as const,
-																updatedInput: {
-																	...toolInput,
-																	subagent_type: resolved,
-																	subagentType: resolved,
-																},
-															},
+														normalizedInput = {
+															...normalizedInput,
+															subagent_type: resolved,
+															subagentType: resolved,
 														};
+														normalizedChanged = true;
 													}
+												}
+
+												// 若 Task prompt 中携带了明确文件路径，强制补充“先 Read 文件再作图/写作”的执行约束
+												const taskPrompt =
+													typeof normalizedInput.prompt === "string"
+														? normalizedInput.prompt
+														: "";
+												if (taskPrompt) {
+													const pathMatches =
+														taskPrompt.match(
+															/(?:\/Users\/[^\n"'`]+?\.[A-Za-z0-9]{1,8}|\/[^\n"'`]+?\.[A-Za-z0-9]{1,8})/g,
+														) || [];
+													const existingPaths: string[] = [];
+													for (const raw of pathMatches.slice(0, 8)) {
+														const candidate = String(raw || "")
+															.trim()
+															.replace(/[),，。；;:]+$/g, "");
+														if (!candidate || existingPaths.includes(candidate)) continue;
+														try {
+															if (fs.existsSync(candidate)) {
+																existingPaths.push(candidate);
+															}
+														} catch { }
+													}
+													const hasReadConstraint =
+														/先读取|先用Read|使用 Read|Read 工具|先用 read|read 工具/i.test(
+															taskPrompt,
+														);
+													if (existingPaths.length > 0 && !hasReadConstraint) {
+														const readHint =
+															`\n\n执行要求：你必须先使用 Read 工具读取以下文件后再继续，不得只根据标题猜测内容：\n` +
+															existingPaths.map((p) => `- ${p}`).join("\n");
+														normalizedInput = {
+															...normalizedInput,
+															prompt: `${taskPrompt}${readHint}`,
+														};
+														normalizedChanged = true;
+													}
+												}
+
+												const signature = buildTaskCallSignature(normalizedInput);
+												const state = signature
+													? taskCallStateBySignature.get(signature)
+													: undefined;
+												if (signature && state) {
+													return {
+														continue: true,
+														hookSpecificOutput: {
+															hookEventName: "PreToolUse" as const,
+															permissionDecision: "deny" as const,
+															permissionDecisionReason:
+																"检测到重复的 Task 调用（同一子代理 + 同一任务描述），请直接基于已有结果继续回答。",
+														},
+													};
+												}
+
+												if (signature) {
+													taskCallStateBySignature.set(signature, "running");
+													if (toolUseId) {
+														taskCallSignatureByToolUseId.set(
+															toolUseId,
+															signature,
+														);
+													}
+												}
+
+												// 如有输入规范化（subagent_type / prompt），回写 updatedInput
+												if (normalizedChanged) {
+													return {
+														continue: true,
+														hookSpecificOutput: {
+															hookEventName: "PreToolUse" as const,
+															permissionDecision: "allow" as const,
+															updatedInput: normalizedInput,
+														},
+													};
 												}
 											}
 
@@ -1875,6 +2093,93 @@ ${opts.appendContent}`.trim();
 									],
 								},
 							],
+							PostToolUse: [
+								{
+									hooks: [
+										async (hookInput: any) => {
+											if (hookInput.hook_event_name !== "PostToolUse") {
+												return { continue: true };
+											}
+											const toolName = String((hookInput as any).tool_name || "");
+											const toolLower = toolName.toLowerCase();
+											if (toolLower !== "task") return { continue: true };
+
+											const toolUseId = String(
+												(hookInput as any).tool_use_id || "",
+											).trim();
+											const signature = toolUseId
+												? taskCallSignatureByToolUseId.get(toolUseId)
+												: undefined;
+											if (signature) taskCallStateBySignature.set(signature, "completed");
+
+											const response = (hookInput as any).tool_response;
+											const dataUrls = collectDataImageUrlsFromUnknown(
+												response,
+												DATA_IMAGE_URL_LIMIT,
+											);
+											if (dataUrls.length === 0) return { continue: true };
+
+											const persistedPaths: string[] = [];
+											for (const dataUrl of dataUrls) {
+												try {
+													const saved = await persistDataImageUrlToCwd({
+														dataUrl,
+														cwd,
+														prefix: "subagent-image",
+													});
+													if (saved) persistedPaths.push(saved);
+												} catch (e) {
+													stderr(
+														`[PostToolUse] persist image failed: ${e instanceof Error ? e.message : String(e)}`,
+													);
+												}
+											}
+
+											const uniqPaths = uniqStrings(persistedPaths);
+											if (toolUseId && uniqPaths.length > 0) {
+												taskImagePathsByToolUseId.set(toolUseId, uniqPaths);
+											}
+											if (uniqPaths.length === 0) return { continue: true };
+
+											return {
+												continue: true,
+												hookSpecificOutput: {
+													hookEventName: "PostToolUse" as const,
+													additionalContext:
+														`子代理图片已保存到本地路径，请优先使用这些路径并结束回答（不要再次调用画图子代理）：image_paths=${JSON.stringify(uniqPaths)}`,
+												},
+											};
+										},
+									],
+								},
+							],
+							PostToolUseFailure: [
+								{
+									hooks: [
+										async (hookInput: any) => {
+											if (hookInput.hook_event_name !== "PostToolUseFailure") {
+												return { continue: true };
+											}
+											const toolName = String((hookInput as any).tool_name || "");
+											if (toolName.toLowerCase() !== "task") {
+												return { continue: true };
+											}
+											const toolUseId = String(
+												(hookInput as any).tool_use_id || "",
+											).trim();
+											if (!toolUseId) return { continue: true };
+											const signature =
+												taskCallSignatureByToolUseId.get(toolUseId);
+											if (signature) {
+												taskCallStateBySignature.delete(signature);
+												taskCallSignatureByToolUseId.delete(toolUseId);
+											}
+											taskImagePathsByToolUseId.delete(toolUseId);
+											return { continue: true };
+										},
+									],
+								},
+							],
 							UserPromptSubmit: [
 								{
 									hooks: [
@@ -1894,7 +2199,7 @@ ${opts.appendContent}`.trim();
 											});
 											if (matchedScenarioAgent) {
 												additions.push(
-													`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })，不要自己处理。`,
+													`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })；如需补充上下文，可先做最小必要的 Read/Glob/Grep。`,
 												);
 											}
 
@@ -2234,7 +2539,13 @@ ${opts.appendContent}`.trim();
 						type: "sdk_message",
 						message: msg,
 					});
-					const uiEvents = toUIEvents(msg as any);
+					const uiEvents = toUIEvents(msg as any, {
+						rewriteToolResultOutput: (toolUseId, output) => {
+							const persistedPaths = taskImagePathsByToolUseId.get(toolUseId);
+							if (!persistedPaths || persistedPaths.length === 0) return output;
+							return buildUiToolResultOutput(output, persistedPaths);
+						},
+					});
 					if (uiEvents.length > 0) {
 						emit(options.getMainWindow, {
 							runId,

@@ -38,6 +38,7 @@ import { getImageDataUrl } from "../../lib/agent/imageDataUrlCache";
 import { useChatStore } from "../../lib/chat/store";
 import { Loader2 } from "lucide-react";
 import { ExecutionGraph, type ExecutionGraphSource } from "./ExecutionGraph";
+import { EVENTS, events } from "../../lib/events";
 
 // ==================== 图片预览组件 ====================
 
@@ -752,12 +753,28 @@ export default function SandboxWorkspace({
 
 	const openArtifactInPreview = useCallback(
 		async (filePath: string) => {
-			const fileId = store.selectFileByPath(filePath);
+			let fileId = store.selectFileByPath(filePath);
+			if (!fileId && sandboxDir) {
+				await store.scanSandboxDir(sandboxDir);
+				fileId = store.selectFileByPath(filePath);
+			}
 			store.setCenterView("preview");
 			if (fileId) await store.loadFileContent(fileId);
 		},
-		[store],
+		[sandboxDir, store],
 	);
+
+	useEffect(() => {
+		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {
+			if (!payload?.autoPreview) return;
+			const artifactUrl =
+				typeof payload?.artifactUrl === "string"
+					? payload.artifactUrl.trim()
+					: "";
+			if (!artifactUrl) return;
+			await openArtifactInPreview(artifactUrl);
+		});
+	}, [openArtifactInPreview]);
 
 	return (
 		<div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">

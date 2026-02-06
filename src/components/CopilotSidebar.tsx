@@ -1018,6 +1018,45 @@ export default function CopilotSidebar() {
 					"\n\n",
 				);
 
+			const getTaskImageArtifactPaths = (): string[] => {
+				const task = agentStore.getState().currentTask;
+				const seen = new Set<string>();
+				const out: string[] = [];
+				for (const a of task?.artifacts || []) {
+					if (a.type !== "image" || typeof a.url !== "string") continue;
+					const p = String(a.url || "").trim();
+					if (
+						!p ||
+						p.startsWith("data:image/") ||
+						p.startsWith("http://") ||
+						p.startsWith("https://") ||
+						seen.has(p)
+					) {
+						continue;
+					}
+					seen.add(p);
+					out.push(p);
+				}
+				return out;
+			};
+
+			const replaceDataImageMarkdownWithPaths = (
+				text: string,
+				imagePaths: string[],
+			): string => {
+				const paths = imagePaths.filter((p) => typeof p === "string" && p.trim());
+				if (paths.length === 0) return text;
+				let idx = 0;
+				return String(text || "").replace(
+					/!\[([^\]]*)\]\(data:image\/[a-z0-9.+-]+;base64,[^)]+\)/gi,
+					(_m, alt: string) => {
+						const path = paths[Math.min(idx, paths.length - 1)] || paths[0] || "";
+						idx += 1;
+						return `![${String(alt || "image")}](${path})`;
+					},
+				);
+			};
+
 			const buildSkillBlocks = () => {
 				const blocks: ChatMessageBlock[] = [...streamBlocks];
 
@@ -1055,9 +1094,16 @@ export default function CopilotSidebar() {
 				finalText: string,
 				protocol: ReturnType<typeof parseDocProtocolFinal>,
 			): ChatMessageBlock[] => {
+				const taskImagePaths = getTaskImageArtifactPaths();
 				const blocks: ChatMessageBlock[] = streamBlocks.map((b) => {
 					if (b.type !== "text") return b;
-					return { type: "text", text: normalizeRuntimeText(b.text) } as const;
+					return {
+						type: "text",
+						text: replaceDataImageMarkdownWithPaths(
+							normalizeRuntimeText(b.text),
+							taskImagePaths,
+						),
+					} as const;
 				});
 
 				// Keep Todo list card after completion
@@ -1094,7 +1140,10 @@ export default function CopilotSidebar() {
 				}
 				if (lastSkillExecutionBlock) blocks.push(lastSkillExecutionBlock);
 
-				const normalizedFinal = normalizeRuntimeText(finalText);
+				const normalizedFinal = replaceDataImageMarkdownWithPaths(
+					normalizeRuntimeText(finalText),
+					taskImagePaths,
+				);
 				const existingText = blocks
 					.filter(
 						(b): b is Extract<ChatMessageBlock, { type: "text" }> =>
@@ -1107,6 +1156,50 @@ export default function CopilotSidebar() {
 					normalizedFinal.trim() !== existingText.trim()
 				) {
 					blocks.push({ type: "text", text: normalizedFinal } as any);
+				}
+
+				// 将任务里的图片产物回填到消息 blocks，确保图片消息与中间栏产物保持一致
+				const hasImageMarkdownInText =
+					/!\[[^\]]*]\((?!data:)[^)]+\.(png|jpg|jpeg|gif|webp|svg|bmp|ico|tif|tiff)(\?[^)]*)?\)/i.test(
+						normalizedFinal,
+					);
+				if (currentTaskId && !hasImageMarkdownInText) {
+					const task = agentStore.getState().currentTask;
+					const existingImagePaths = new Set(
+						blocks
+							.filter(
+								(
+									b,
+								): b is Extract<ChatMessageBlock, { type: "image" }> =>
+									b.type === "image",
+							)
+							.map((b) => String(b.path || "").trim()),
+					);
+					const imageBlocks =
+						task?.artifacts
+							?.filter(
+								(a) =>
+									a.type === "image" &&
+									typeof a.url === "string" &&
+									a.url.trim().length > 0 &&
+									!a.url.trim().startsWith("data:image/") &&
+									!a.url.trim().startsWith("http://") &&
+									!a.url.trim().startsWith("https://"),
+							)
+							.map((a) => ({
+								type: "image" as const,
+								path: String(a.url),
+								title: a.title || "图片",
+							}))
+							.filter((b) => {
+								const p = String(b.path || "").trim();
+								if (!p) return false;
+								if (existingImagePaths.has(p)) return false;
+								existingImagePaths.add(p);
+								return true;
+							}) || [];
+
+					blocks.push(...imageBlocks);
 				}
 
 				return blocks;
@@ -1182,7 +1275,10 @@ export default function CopilotSidebar() {
 						hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 						prompt: command?.name || content.slice(0, 50),
 					});
-					const result = normalizeRuntimeText(protocol.displayContent);
+					const result = replaceDataImageMarkdownWithPaths(
+						normalizeRuntimeText(protocol.displayContent),
+						getTaskImageArtifactPaths(),
+					);
 
 					if (streamingMsgId) {
 						chatStore.updateMessage(session.id, streamingMsgId, {
@@ -1672,7 +1768,10 @@ export default function CopilotSidebar() {
 					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 					prompt: command?.name || content.slice(0, 50),
 				});
-				const result = normalizeRuntimeText(protocol.displayContent);
+				const result = replaceDataImageMarkdownWithPaths(
+					normalizeRuntimeText(protocol.displayContent),
+					getTaskImageArtifactPaths(),
+				);
 
 				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
 				// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
@@ -1774,7 +1873,14 @@ export default function CopilotSidebar() {
 									? (output.image_paths as string[])
 									: [];
 								return paths
-									.filter((p) => typeof p === "string" && p.trim().length > 0)
+									.filter(
+										(p) =>
+											typeof p === "string" &&
+											p.trim().length > 0 &&
+											!p.trim().startsWith("data:image/") &&
+											!p.trim().startsWith("http://") &&
+											!p.trim().startsWith("https://"),
+									)
 									.map((p) => ({
 										type: "image" as const,
 										path: p,

@@ -108,6 +108,54 @@ export function categorizeFile(filename: string): FileCategory {
 	return "other";
 }
 
+function shouldHideInternalSandboxFile(name: string): boolean {
+	const n = String(name || "").trim();
+	if (!n) return true;
+
+	// 隐藏 SDK/运行时内部文件，减少“产物预览”噪音
+	if (n.startsWith(".")) return true;
+	if (/^settings\.js(\.|$)/i.test(n)) return true;
+	if (/^\.?claude(\.|-|_)/i.test(n)) return true;
+	return false;
+}
+
+function normalizeComparablePath(input: string): string {
+	let value = String(input || "").trim();
+	try {
+		value = decodeURIComponent(value);
+	} catch { }
+	return value.replace(/\\/g, "/").replace(/\/+/g, "/");
+}
+
+function shouldHideInternalSandboxPath(
+	fullPath: string,
+	sandboxDir: string,
+): boolean {
+	const normalizedFull = normalizeComparablePath(fullPath);
+	const normalizedRoot = normalizeComparablePath(sandboxDir).replace(/\/+$/, "");
+	const rel = normalizedFull.startsWith(`${normalizedRoot}/`)
+		? normalizedFull.slice(normalizedRoot.length + 1)
+		: normalizedFull;
+	const segments = rel.split("/").filter(Boolean);
+	if (segments.length === 0) return true;
+
+	// 任何隐藏目录都跳过
+	if (segments.some((seg) => seg.startsWith("."))) return true;
+
+	// 运行时内部目录
+	if (
+		segments.some(
+			(seg) =>
+				seg === "tool-results" ||
+				seg === "projects" ||
+				seg === "node_modules",
+		)
+	) {
+		return true;
+	}
+	return false;
+}
+
 /** 根据文件扩展名获取 MIME 类型 */
 export function getMimeType(filename: string): string {
 	const ext = filename.toLowerCase().split(".").pop() || "";
@@ -355,12 +403,15 @@ class ManagedModeStore {
 
 	/** 通过路径选择文件（用于从运行图/产物跳转） */
 	selectFileByPath(filePath: string | null): string | null {
-		const p = typeof filePath === "string" ? filePath.trim() : "";
+		const p = typeof filePath === "string" ? normalizeComparablePath(filePath) : "";
 		if (!p) {
 			this.selectFile(null);
 			return null;
 		}
-		const file = this.state.files.find((f) => f.type === "file" && f.path === p);
+		const file = this.state.files.find(
+			(f) =>
+				f.type === "file" && normalizeComparablePath(f.path) === p,
+		);
 		if (!file) return null;
 		this.selectFile(file.id);
 		return file.id;
@@ -459,7 +510,7 @@ class ManagedModeStore {
 			>("list_files_safe", {
 				payload: {
 					path: sandboxDir,
-					recursive: false, // 只扫描一级目录，避免扫描太深
+					recursive: true,
 				},
 			});
 
@@ -476,8 +527,10 @@ class ManagedModeStore {
 
 				// 确保文件路径以 sandboxDir 开头（过滤非法文件）
 				if (!entry.path.startsWith(sandboxDir)) continue;
+				if (shouldHideInternalSandboxPath(entry.path, sandboxDir)) continue;
 
 				const name = entry.name || entry.path.split("/").pop() || "file";
+				if (shouldHideInternalSandboxFile(name)) continue;
 				const ext = name.includes(".") ? name.split(".").pop() || "" : "";
 				const category = categorizeFile(name);
 				const mimeType = getMimeType(name);

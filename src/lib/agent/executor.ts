@@ -17,6 +17,7 @@ import type { AgentTaskStep } from "./types";
 import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
+import { managedModeStore } from "../managedModeStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -74,6 +75,320 @@ function extFromMime(mimeType?: string): string {
 	if (mt === "application/json") return ".json";
 	if (mt === "application/pdf") return ".pdf";
 	return "";
+}
+
+const IMAGE_FILE_EXTENSIONS = new Set([
+	"png",
+	"jpg",
+	"jpeg",
+	"gif",
+	"webp",
+	"svg",
+	"bmp",
+	"ico",
+	"tif",
+	"tiff",
+]);
+
+const DATA_IMAGE_URL_RE = /data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
+const DATA_IMAGE_URL_LIMIT = 1;
+
+function extensionFromDataImageMime(raw: string): string {
+	const mime = String(raw || "").toLowerCase().trim();
+	if (!mime) return "png";
+	if (mime === "jpeg") return "jpg";
+	if (mime === "svg+xml") return "svg";
+	return mime.replace(/[^a-z0-9]+/g, "") || "png";
+}
+
+function collectDataImageUrlsFromString(raw: string, limit = DATA_IMAGE_URL_LIMIT): string[] {
+	const text = String(raw || "");
+	if (!text || text.length > 8_000_000) return [];
+	const found: string[] = [];
+	DATA_IMAGE_URL_RE.lastIndex = 0;
+	let match: RegExpExecArray | null = null;
+	while ((match = DATA_IMAGE_URL_RE.exec(text)) !== null) {
+		if (!match[0]) continue;
+		found.push(match[0]);
+		if (found.length >= limit) break;
+	}
+	return found;
+}
+
+function collectDataImageUrlsFromUnknown(value: unknown, limit = DATA_IMAGE_URL_LIMIT): string[] {
+	const found = new Set<string>();
+	const seen = new Set<unknown>();
+
+	const visit = (v: unknown, depth: number) => {
+		if (v === null || v === undefined) return;
+		if (depth > 8 || found.size >= limit) return;
+		if (typeof v === "string") {
+			for (const item of collectDataImageUrlsFromString(v, limit - found.size)) {
+				found.add(item);
+				if (found.size >= limit) break;
+			}
+			return;
+		}
+		if (Array.isArray(v)) {
+			for (const item of v) {
+				visit(item, depth + 1);
+				if (found.size >= limit) break;
+			}
+			return;
+		}
+		if (typeof v !== "object") return;
+		if (seen.has(v)) return;
+		seen.add(v);
+		for (const item of Object.values(v as Record<string, unknown>)) {
+			visit(item, depth + 1);
+			if (found.size >= limit) break;
+		}
+	};
+
+	visit(value, 0);
+	return [...found];
+}
+
+async function persistDataImageUrlToSandbox(input: {
+	dataUrl: string;
+	sandboxDir?: string;
+	prefix?: string;
+}): Promise<string | null> {
+	const sandboxDir = String(input.sandboxDir || "").trim();
+	if (!sandboxDir) return null;
+	const match = String(input.dataUrl || "").match(
+		/^data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/i,
+	);
+	if (!match) return null;
+	const ext = extensionFromDataImageMime(match[1] || "png");
+	const base64Data = match[2] || "";
+	if (!base64Data) return null;
+
+	const fileName = `${input.prefix || "generated-image"}-${Date.now()}-${Math.random()
+		.toString(36)
+		.slice(2, 8)}.${ext}`;
+	const filePath = `${stripTrailingSlash(sandboxDir)}/images/${fileName}`;
+
+	await safeInvoke<{ success: boolean }>("write_file_safe", {
+		payload: {
+			path: filePath,
+			content: base64Data,
+			encoding: "base64",
+			create_dirs: true,
+		},
+	});
+	return filePath;
+}
+
+function uniqStrings(values: string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const value of values) {
+		const s = String(value || "").trim();
+		if (!s || seen.has(s)) continue;
+		seen.add(s);
+		out.push(s);
+	}
+	return out;
+}
+
+function mergeImagePathsIntoToolOutput(
+	toolOutput: unknown,
+	imagePaths: string[],
+): unknown {
+	const paths = uniqStrings(imagePaths);
+	if (paths.length === 0) return toolOutput;
+	if (toolOutput && typeof toolOutput === "object" && !Array.isArray(toolOutput)) {
+		const record = toolOutput as Record<string, unknown>;
+		const existing = Array.isArray(record.image_paths)
+			? record.image_paths.filter((v): v is string => typeof v === "string")
+			: [];
+		return {
+			...record,
+			image_paths: uniqStrings([...existing, ...paths]),
+		};
+	}
+	return {
+		image_paths: paths,
+	};
+}
+
+function stripWrapping(value: string): string {
+	let s = String(value || "").trim();
+	const pairs: Array<[string, string]> = [
+		['"', '"'],
+		["'", "'"],
+		["`", "`"],
+		["<", ">"],
+	];
+	let changed = true;
+	while (changed) {
+		changed = false;
+		for (const [l, r] of pairs) {
+			if (s.startsWith(l) && s.endsWith(r) && s.length >= 2) {
+				s = s.slice(1, -1).trim();
+				changed = true;
+			}
+		}
+	}
+	return s;
+}
+
+function hasImageFileExtension(value: string): boolean {
+	const s = String(value || "")
+		.trim()
+		.replace(/^file:\/\//i, "")
+		.split("#")[0]
+		.split("?")[0];
+	const base = getBasename(s);
+	const dot = base.lastIndexOf(".");
+	if (dot <= 0) return false;
+	const ext = base.slice(dot + 1).toLowerCase();
+	return IMAGE_FILE_EXTENSIONS.has(ext);
+}
+
+function isAbsolutePath(value: string): boolean {
+	const s = String(value || "").trim();
+	return s.startsWith("/") || /^[A-Za-z]:[\\/]/.test(s);
+}
+
+function normalizeImageFilePathCandidate(
+	raw: string,
+	sandboxDir?: string,
+): string | null {
+	let value = stripWrapping(raw).replace(/^file:\/\//i, "").trim();
+	try {
+		value = decodeURIComponent(value);
+	} catch { }
+	if (!value) return null;
+	if (value.startsWith("data:image/")) return null;
+	if (value.startsWith("http://") || value.startsWith("https://")) return null;
+	if (!hasImageFileExtension(value)) return null;
+
+	if (isAbsolutePath(value)) return value;
+	if (value.startsWith("~/")) return value;
+
+	if (sandboxDir) {
+		const base = stripTrailingSlash(sandboxDir);
+		const rel = value
+			.replace(/^\.\/+/, "")
+			.replace(/\\/g, "/")
+			.replace(/^\/+/, "");
+		return `${base}/${rel}`;
+	}
+
+	return value;
+}
+
+function extractImagePathsFromString(raw: string, sandboxDir?: string): string[] {
+	const value = String(raw || "");
+	if (!value.trim()) return [];
+
+	const found = new Set<string>();
+
+	const addCandidate = (candidate: string) => {
+		const normalized = normalizeImageFilePathCandidate(candidate, sandboxDir);
+		if (normalized) found.add(normalized);
+	};
+
+	// Markdown image syntax: ![alt](<path/to/file with spaces.png>)
+	for (const match of value.matchAll(
+		/!\[[^\]]*]\((?:<)?([^)\n>]+)(?:>)?\)/g,
+	)) {
+		const candidate = match?.[1];
+		if (candidate) addCandidate(candidate);
+	}
+
+	// Quoted absolute/relative paths (supports spaces)
+	for (const match of value.matchAll(/["'`]([^"'`\n]+\.[A-Za-z0-9]{2,6})["'`]/g)) {
+		const candidate = match?.[1];
+		if (candidate) addCandidate(candidate);
+	}
+
+	// Unquoted filesystem-like paths (no spaces)
+	for (const match of value.matchAll(
+		/(?:^|[\s(])((?:\/|\.{1,2}\/|~\/|[A-Za-z]:[\\/])[^"'\n()<>{}]*?\.[A-Za-z0-9]{2,6})(?=$|[\s),])/g,
+	)) {
+		const candidate = match?.[1];
+		if (candidate) addCandidate(candidate);
+	}
+
+	return [...found];
+}
+
+function collectImageFilePathsFromToolOutput(
+	output: unknown,
+	sandboxDir?: string,
+): string[] {
+	const found = new Set<string>();
+	const visited = new Set<unknown>();
+
+	const add = (candidate: string) => {
+		const normalized = normalizeImageFilePathCandidate(candidate, sandboxDir);
+		if (normalized) found.add(normalized);
+	};
+
+	const visit = (value: unknown, depth: number) => {
+		if (value === null || value === undefined) return;
+		if (depth > 8) return;
+
+		if (typeof value === "string") {
+			for (const candidate of extractImagePathsFromString(value, sandboxDir)) {
+				add(candidate);
+			}
+			const trimmed = value.trim();
+			if (
+				(trimmed.startsWith("{") || trimmed.startsWith("[")) &&
+				trimmed.length <= 200_000
+			) {
+				try {
+					visit(JSON.parse(trimmed), depth + 1);
+				} catch {}
+			}
+			return;
+		}
+
+		if (Array.isArray(value)) {
+			for (const item of value) visit(item, depth + 1);
+			return;
+		}
+
+		if (typeof value !== "object") return;
+		if (visited.has(value)) return;
+		visited.add(value);
+
+		const record = value as Record<string, unknown>;
+		for (const [key, v] of Object.entries(record)) {
+			const lowerKey = key.toLowerCase();
+
+			if (
+				typeof v === "string" &&
+				(lowerKey.includes("image") ||
+					lowerKey.includes("img") ||
+					lowerKey.endsWith("path") ||
+					lowerKey.endsWith("url") ||
+					lowerKey.includes("file"))
+			) {
+				add(v);
+			}
+
+			if (
+				Array.isArray(v) &&
+				(lowerKey.includes("image") ||
+					lowerKey.endsWith("paths") ||
+					lowerKey.includes("files"))
+			) {
+				for (const item of v) {
+					if (typeof item === "string") add(item);
+				}
+			}
+
+			visit(v, depth + 1);
+		}
+	};
+
+	visit(output, 0);
+	return [...found];
 }
 
 function chooseSandboxFileName(input: {
@@ -404,6 +719,7 @@ class AgentExecutor {
 		let sdkSessionId: string | undefined;
 		let toolStepCounter = 0;
 		let lastToolCallId: string | null = null;
+		const processedToolResultIds = new Set<string>();
 		let shouldRetryWithoutResume = false;
 		// 检查点相关：跟踪已完成的工具调用
 		const completedToolCalls: string[] = [];
@@ -472,7 +788,7 @@ class AgentExecutor {
 					options?.onChunk?.(text);
 				},
 
-				onMessage: (message: AgentMessage) => {
+				onMessage: async (message: AgentMessage) => {
 					// Update UI based on message type
 					switch (message.type) {
 						case "tool_call": {
@@ -582,10 +898,49 @@ class AgentExecutor {
 									message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: lastToolCallId;
+							if (resolvedToolCallId) {
+								if (processedToolResultIds.has(resolvedToolCallId)) {
+									break;
+								}
+								processedToolResultIds.add(resolvedToolCallId);
+							}
+							let normalizedToolOutput = message.toolOutput;
+
+							// 子代理/工具若返回 data:image;base64，先落盘到沙盒并改写为 image_paths，避免上下文和 UI 被 base64 污染
+							try {
+								const dataUrls = collectDataImageUrlsFromUnknown(
+									message.toolOutput,
+									DATA_IMAGE_URL_LIMIT,
+								);
+								if (dataUrls.length > 0 && sandboxDir) {
+									const savedPaths: string[] = [];
+									for (const dataUrl of dataUrls) {
+										try {
+											const saved = await persistDataImageUrlToSandbox({
+												dataUrl,
+												sandboxDir,
+												prefix: "subagent-image",
+											});
+											if (saved) savedPaths.push(saved);
+										} catch {
+											// 单条失败不影响其他图片
+										}
+									}
+									if (savedPaths.length > 0) {
+										normalizedToolOutput = mergeImagePathsIntoToolOutput(
+											message.toolOutput,
+											savedPaths,
+										);
+									}
+								}
+							} catch {
+								// 静默失败，回退使用原始工具输出
+							}
+
 							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）
 							if (resolvedToolCallId) {
 								agentStore.updateToolCall(resolvedToolCallId, {
-									output: message.toolOutput,
+									output: normalizedToolOutput,
 									status: message.status === "error" ? "error" : "completed",
 									completedAt: Date.now(),
 								});
@@ -601,9 +956,9 @@ class AgentExecutor {
 								) {
 									// 格式化输出内容
 									const outputStr =
-										typeof message.toolOutput === "string"
-											? message.toolOutput
-											: JSON.stringify(message.toolOutput, null, 2);
+										typeof normalizedToolOutput === "string"
+											? normalizedToolOutput
+											: JSON.stringify(normalizedToolOutput, null, 2);
 
 									// 追加结果到描述中（限制长度避免 UI 爆炸）
 									const truncatedOutput =
@@ -623,23 +978,57 @@ class AgentExecutor {
 								}
 							}
 
-							// 检测工具输出中的base64图片并创建产物
+							// 从工具输出中提取图片文件路径并创建产物（兼容子代理/自定义工具）
 							try {
-								const outputForImg = typeof message.toolOutput === "string"
-									? message.toolOutput
-									: JSON.stringify(message.toolOutput || {});
-								const base64Regex = /data:image\/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)/g;
-								let imgMatch: RegExpExecArray | null;
-								let imgIndex = 0;
-								while ((imgMatch = base64Regex.exec(outputForImg)) !== null) {
-									if (imgMatch[2].length > 1000) {
-										const artifactId = `artifact-img-${Date.now()}-${imgIndex++}`;
+								const imagePaths = collectImageFilePathsFromToolOutput(
+									normalizedToolOutput,
+									sandboxDir,
+								);
+								const existing = new Set(
+									(agentStore.getState().currentTask?.artifacts || [])
+										.filter((a) => a.type === "image")
+										.map((a) => String(a.url || "").trim()),
+								);
+								if (imagePaths.length > 0) {
+									for (const imagePath of imagePaths) {
+										const normalized = String(imagePath || "").trim();
+										if (!normalized || existing.has(normalized)) continue;
+										existing.add(normalized);
+
+										const cleanForName = normalized
+											.split("#")[0]
+											.split("?")[0];
+										const fileName =
+											getBasename(cleanForName) ||
+											`generated-image-${Date.now()}.png`;
+
 										agentStore.addArtifact({
-											id: artifactId,
+											id: `artifact-img-${Date.now()}-${Math.random()
+												.toString(36)
+												.slice(2, 7)}`,
 											type: "image",
-											title: `生成的图片 ${imgIndex}`,
-											url: imgMatch[0],
+											title: fileName,
+											url: normalized,
+											metadata: {
+												...(resolvedToolCallId
+													? { toolCallId: resolvedToolCallId }
+													: {}),
+												source: "tool_output",
+											},
 										});
+									}
+								}
+
+								// 同步中间栏文件树并自动预览第一张新图
+								if (sandboxDir && imagePaths.length > 0) {
+									await managedModeStore.scanSandboxDir(sandboxDir);
+									const firstPath = String(imagePaths[0] || "").trim();
+									if (firstPath) {
+										const selectedId = managedModeStore.selectFileByPath(firstPath);
+										if (selectedId) {
+											managedModeStore.setCenterView("preview");
+											managedModeStore.setPreviewMode("preview");
+										}
 									}
 								}
 							} catch {
