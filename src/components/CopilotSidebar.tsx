@@ -98,40 +98,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-		kind: "update";
-		displayContent: string;
-		suggestedContent: string;
-		fileUpdate: {
-			fileName: string;
-			type: "update";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
-			originalContent: string;
+			kind: "update";
+			displayContent: string;
 			suggestedContent: string;
-			prompt: string;
-		};
-	}
+			fileUpdate: {
+				fileName: string;
+				type: "update";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				originalContent: string;
+				suggestedContent: string;
+				prompt: string;
+			};
+	  }
 	| {
-		kind: "create";
-		displayContent: string;
-		title: string;
-		summary: string;
-		content: string;
-		fileUpdate: {
-			fileName: string;
-			type: "create";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
+			kind: "create";
+			displayContent: string;
 			title: string;
 			summary: string;
 			content: string;
-			prompt: string;
-		};
-	} {
+			fileUpdate: {
+				fileName: string;
+				type: "create";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				title: string;
+				summary: string;
+				content: string;
+				prompt: string;
+			};
+	  } {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
@@ -367,7 +367,6 @@ function guessFallbackSearchQuery(messages: ChatMessageType[]): string | null {
 }
 
 // 快捷操作按钮
-
 
 export default function CopilotSidebar() {
 	const { providers, activeModel, settingsStore } = useSettingsStore();
@@ -614,8 +613,9 @@ export default function CopilotSidebar() {
 			try {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const anyCss = (window as any)?.CSS;
-				if (anyCss && typeof anyCss.escape === "function") return anyCss.escape(value);
-			} catch { }
+				if (anyCss && typeof anyCss.escape === "function")
+					return anyCss.escape(value);
+			} catch {}
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -909,7 +909,9 @@ export default function CopilotSidebar() {
 		// 添加强制 skill 信息到消息
 		const skillInfo = forcedSkillId ? `\n[强制技能: ${forcedSkillId}]` : "";
 		const userTextForChat =
-			(command ? `[${command.name}] ${content}` : content) + attachmentFooter + skillInfo;
+			(command ? `[${command.name}] ${content}` : content) +
+			attachmentFooter +
+			skillInfo;
 
 		if (chatMode === "agent") {
 			// 绑定/创建后端 Agent Session（用于持久化与回放）
@@ -1044,13 +1046,16 @@ export default function CopilotSidebar() {
 				text: string,
 				imagePaths: string[],
 			): string => {
-				const paths = imagePaths.filter((p) => typeof p === "string" && p.trim());
+				const paths = imagePaths.filter(
+					(p) => typeof p === "string" && p.trim(),
+				);
 				if (paths.length === 0) return text;
 				let idx = 0;
 				return String(text || "").replace(
 					/!\[([^\]]*)\]\(data:image\/[a-z0-9.+-]+;base64,[^)]+\)/gi,
 					(_m, alt: string) => {
-						const path = paths[Math.min(idx, paths.length - 1)] || paths[0] || "";
+						const path =
+							paths[Math.min(idx, paths.length - 1)] || paths[0] || "";
 						idx += 1;
 						return `![${String(alt || "image")}](${path})`;
 					},
@@ -1168,9 +1173,7 @@ export default function CopilotSidebar() {
 					const existingImagePaths = new Set(
 						blocks
 							.filter(
-								(
-									b,
-								): b is Extract<ChatMessageBlock, { type: "image" }> =>
+								(b): b is Extract<ChatMessageBlock, { type: "image" }> =>
 									b.type === "image",
 							)
 							.map((b) => String(b.path || "").trim()),
@@ -1302,7 +1305,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch { }
+					} catch {}
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1400,7 +1403,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-							withoutTrailingDotsOrSpaces === ".."
+						withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1728,10 +1731,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-						promptTokens: number;
-						completionTokens: number;
-						totalTokens: number;
-					}
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+					  }
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1836,16 +1839,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
+								{
+									type: "skill_execution" as const,
+									skillName: finalSkillState.skillName,
+									skillPath: finalSkillState.skillPath,
+									status: finalSkillState.status,
+									steps: finalSkillState.steps,
+									loadedFiles: finalSkillState.loadedFiles,
+									detectedScene: finalSkillState.detectedScene,
+								},
+							]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1901,8 +1904,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+									(update: any) => ({ type: "file_update" as const, update }),
+								)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1974,8 +1977,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-							(update: any) => ({ type: "file_update" as const, update }),
-						)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -2004,9 +2007,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-								type: "file_update" as const,
-								update,
-							}))
+									type: "file_update" as const,
+									update,
+								}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2470,8 +2473,6 @@ export default function CopilotSidebar() {
 		});
 	};
 
-
-
 	// 新建对话
 	const handleNewSession = () => {
 		chatStore.createNewSession();
@@ -2683,7 +2684,9 @@ export default function CopilotSidebar() {
 										</div>
 									</div>
 									<button
-										onClick={() => workspaceStore.setLeftSidebarView("research")}
+										onClick={() =>
+											workspaceStore.setLeftSidebarView("research")
+										}
 										className="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
 									>
 										查看进度
@@ -2840,10 +2843,11 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
-												? "bg-zinc-50 dark:bg-zinc-800/40"
-												: ""
-												}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
+												p.id === activeCreateProposal.id
+													? "bg-zinc-50 dark:bg-zinc-800/40"
+													: ""
+											}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2880,10 +2884,11 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "chat"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "chat"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							对话
 						</button>
@@ -2892,10 +2897,11 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${chatMode === "agent"
-								? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-								}`}
+							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
+								chatMode === "agent"
+									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+							}`}
 						>
 							托管
 						</button>

@@ -296,7 +296,10 @@ export function createAnthropicProxyRouter(options?: {
 					subagentKey = scenarioRouting.subagentKey;
 					res.setHeader("x-ipo-subagent", "1");
 					// URL 编码中文字符，避免 HTTP 头无效字符错误
-					res.setHeader("x-ipo-subagent-key", encodeURIComponent(scenarioRouting.subagentKey));
+					res.setHeader(
+						"x-ipo-subagent-key",
+						encodeURIComponent(scenarioRouting.subagentKey),
+					);
 					res.setHeader("x-ipo-model-override", scenarioRouting.modelId);
 					res.setHeader("x-ipo-provider-override", scenarioRouting.providerId);
 				}

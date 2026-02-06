@@ -9,7 +9,7 @@ import type { DbContext } from "../../db/client";
 
 // 递归计算文件夹大小
 async function getFolderSize(folderPath: string): Promise<number> {
-	const fs = await import('node:fs/promises');
+	const fs = await import("node:fs/promises");
 	let totalSize = 0;
 
 	try {
@@ -96,14 +96,14 @@ export function createDataStatsHandlers(db: DbContext) {
 		}
 
 		// 计算文件大小
-		const fs = await import('node:fs/promises');
+		const fs = await import("node:fs/promises");
 		let databaseSize = 0;
 		let mediaSize = 0;
 		let cacheSize = 0;
 
 		try {
 			// 数据库大小
-			const dbPath = path.join(app.getPath('userData'), 'ipo-workbench.db');
+			const dbPath = path.join(app.getPath("userData"), "ipo-workbench.db");
 			const dbStat = await fs.stat(dbPath);
 			databaseSize = dbStat.size;
 		} catch {
@@ -112,7 +112,7 @@ export function createDataStatsHandlers(db: DbContext) {
 
 		try {
 			// 媒体文件大小（遍历 media 目录）
-			const mediaPath = path.join(app.getPath('userData'), 'media');
+			const mediaPath = path.join(app.getPath("userData"), "media");
 			mediaSize = await getFolderSize(mediaPath);
 		} catch {
 			// media 目录可能不存在
@@ -120,7 +120,7 @@ export function createDataStatsHandlers(db: DbContext) {
 
 		try {
 			// 缓存大小（遍历 cache 目录）
-			const cachePath = path.join(app.getPath('userData'), 'cache');
+			const cachePath = path.join(app.getPath("userData"), "cache");
 			cacheSize = await getFolderSize(cachePath);
 		} catch {
 			// cache 目录可能不存在
@@ -147,8 +147,8 @@ export function createDataStatsHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
 	): Promise<number> => {
-		const fs = await import('node:fs/promises');
-		const cachePath = path.join(app.getPath('userData'), 'cache');
+		const fs = await import("node:fs/promises");
+		const cachePath = path.join(app.getPath("userData"), "cache");
 
 		let totalSize = 0;
 		try {
@@ -160,7 +160,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			await fs.mkdir(cachePath, { recursive: true });
 		} catch (error) {
 			// 缓存目录可能不存在
-			console.warn('清除缓存失败:', error);
+			console.warn("清除缓存失败:", error);
 		}
 
 		return totalSize;
@@ -171,16 +171,29 @@ export function createDataStatsHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
 	): Promise<void> => {
-		const fs = await import('node:fs/promises');
+		const fs = await import("node:fs/promises");
 
 		try {
 			// 删除所有表的数据
 			const tables = [
-				'projects', 'folders', 'sources', 'notes', 'note_chunks',
-				'output_assets', 'providers', 'mcp_servers', 'skills',
-				'agent_sessions', 'agent_tasks', 'agent_nodes', 'agent_tool_calls',
-				'agent_messages', 'agent_audit_logs', 'artifacts',
-				'cards', 'activity_logs'
+				"projects",
+				"folders",
+				"sources",
+				"notes",
+				"note_chunks",
+				"output_assets",
+				"providers",
+				"mcp_servers",
+				"skills",
+				"agent_sessions",
+				"agent_tasks",
+				"agent_nodes",
+				"agent_tool_calls",
+				"agent_messages",
+				"agent_audit_logs",
+				"artifacts",
+				"cards",
+				"activity_logs",
 			];
 
 			for (const table of tables) {
@@ -192,7 +205,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			}
 
 			// 清除媒体文件
-			const mediaPath = path.join(app.getPath('userData'), 'media');
+			const mediaPath = path.join(app.getPath("userData"), "media");
 			try {
 				await fs.rm(mediaPath, { recursive: true, force: true });
 				await fs.mkdir(mediaPath, { recursive: true });
@@ -201,7 +214,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			}
 
 			// 清除缓存
-			const cachePath = path.join(app.getPath('userData'), 'cache');
+			const cachePath = path.join(app.getPath("userData"), "cache");
 			try {
 				await fs.rm(cachePath, { recursive: true, force: true });
 				await fs.mkdir(cachePath, { recursive: true });
@@ -209,7 +222,7 @@ export function createDataStatsHandlers(db: DbContext) {
 				// 忽略错误
 			}
 		} catch (error) {
-			console.error('清除数据失败:', error);
+			console.error("清除数据失败:", error);
 			throw error;
 		}
 	};

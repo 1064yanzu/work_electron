@@ -35,7 +35,11 @@ function pickScenarioModelChoice(
 
 	// 规范化字符串：去除末尾标点、转小写、去除多余空白
 	const normalize = (s: string): string => {
-		return s.trim().replace(/[.。!！?？,，;；:：]+$/, "").trim().toLowerCase();
+		return s
+			.trim()
+			.replace(/[.。!！?？,，;；:：]+$/, "")
+			.trim()
+			.toLowerCase();
 	};
 	const normalizedRequestedKey = normalize(requestedKey);
 
@@ -84,7 +88,7 @@ function pickScenarioModelChoice(
 		if (configuredScenario !== "custom") continue;
 		const configuredCustomName = coerceString((c as any).customName);
 		if (!configuredCustomName) continue;
-		
+
 		// 使用规范化比较，忽略末尾标点
 		const normalizedConfigName = normalize(configuredCustomName);
 		if (normalizedConfigName !== normalizedRequestedKey) continue;
@@ -143,7 +147,8 @@ function logScenarioChoiceMiss(opts: {
 			return String((c as any).scenario || "").trim() === "custom";
 		}) as any[];
 		const enabledCustom = allCustom.filter((c) => (c as any).enabled !== false);
-		const targetAll = Number.isFinite(idx) && idx > 0 ? allCustom[idx - 1] : null;
+		const targetAll =
+			Number.isFinite(idx) && idx > 0 ? allCustom[idx - 1] : null;
 		const targetEnabled =
 			Number.isFinite(idx) && idx > 0 ? enabledCustom[idx - 1] : null;
 

@@ -21,7 +21,13 @@ import { AgentStreamState, type UIEvent } from "./streamState";
  * Message types that our UI understands
  */
 export interface AgentMessage {
-	type: "assistant" | "tool_call" | "tool_result" | "tool_input_update" | "system" | "result";
+	type:
+		| "assistant"
+		| "tool_call"
+		| "tool_result"
+		| "tool_input_update"
+		| "system"
+		| "result";
 	content: string;
 	toolCallId?: string;
 	toolName?: string;
@@ -29,7 +35,6 @@ export interface AgentMessage {
 	toolOutput?: unknown;
 	status?: "running" | "completed" | "error";
 }
-
 
 /**
  * Execution options for the Claude Agent
@@ -290,7 +295,7 @@ export class ClaudeAgentService {
 							lastToolUseId =
 								String(
 									toolErrorBlocks[toolErrorBlocks.length - 1]?.tool_use_id ||
-									"",
+										"",
 								) || lastToolUseId;
 
 							if (debug) {
@@ -454,7 +459,6 @@ export class ClaudeAgentService {
 							} as any);
 						}
 						// 忽略 'text' 事件，因为 'text_delta' 已经处理了增量内容
-
 					}
 					return;
 				}
@@ -505,10 +509,10 @@ export class ClaudeAgentService {
 					const usage =
 						promptTokens !== null && completionTokens !== null
 							? {
-								promptTokens,
-								completionTokens,
-								totalTokens: promptTokens + completionTokens,
-							}
+									promptTokens,
+									completionTokens,
+									totalTokens: promptTokens + completionTokens,
+								}
 							: undefined;
 					onComplete?.({
 						success: ok,
@@ -538,7 +542,9 @@ export class ClaudeAgentService {
 							status: "running",
 						});
 
-						console.log(`[ClaudeAgentService] Retrying in ${delayMs}ms (attempt ${retryAttempt}/${maxRetries})`);
+						console.log(
+							`[ClaudeAgentService] Retrying in ${delayMs}ms (attempt ${retryAttempt}/${maxRetries})`,
+						);
 
 						// 延迟后重试
 						setTimeout(async () => {
@@ -560,7 +566,9 @@ export class ClaudeAgentService {
 										prompt,
 										model,
 										cwd: workingDirectory,
-										resume_session_id: isUuid(resumeSessionId) ? resumeSessionId : undefined,
+										resume_session_id: isUuid(resumeSessionId)
+											? resumeSessionId
+											: undefined,
 										persist_session: persistSession,
 										permission_mode: "acceptEdits",
 										allowed_tools: [...DEFAULT_TOOLS],
@@ -575,7 +583,10 @@ export class ClaudeAgentService {
 									handleEvent(e);
 								}
 							} catch (retryError) {
-								const retryErrMsg = retryError instanceof Error ? retryError.message : String(retryError);
+								const retryErrMsg =
+									retryError instanceof Error
+										? retryError.message
+										: String(retryError);
 								onMessage?.({
 									type: "system",
 									content: `Error: ${retryErrMsg}`,
@@ -594,9 +605,8 @@ export class ClaudeAgentService {
 					}
 
 					// 不可重试或已达到最大重试次数
-					const finalError = retryAttempt > 0
-						? `${err} (已重试 ${retryAttempt} 次)`
-						: err;
+					const finalError =
+						retryAttempt > 0 ? `${err} (已重试 ${retryAttempt} 次)` : err;
 
 					onMessage?.({
 						type: "system",

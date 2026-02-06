@@ -1,6 +1,6 @@
 /**
  * ToolCallsStack - 简洁的工具调用列表
- * 
+ *
  * 不再使用大卡片包装,直接渲染工具调用列表
  */
 
@@ -19,14 +19,14 @@ export function ToolCallsStack({
 			{calls.map((c) => {
 				const fallbackData: ToolCall | undefined = c.toolCallId
 					? {
-						id: c.toolCallId,
-						type: (c.toolType as any) || ("custom" as any),
-						name: c.name || (c.toolType as string) || "Tool",
-						status: (c.status as any) || "pending",
-						input: c.input || {},
-						output: c.output,
-						error: c.error,
-					}
+							id: c.toolCallId,
+							type: (c.toolType as any) || ("custom" as any),
+							name: c.name || (c.toolType as string) || "Tool",
+							status: (c.status as any) || "pending",
+							input: c.input || {},
+							output: c.output,
+							error: c.error,
+						}
 					: undefined;
 
 				return (

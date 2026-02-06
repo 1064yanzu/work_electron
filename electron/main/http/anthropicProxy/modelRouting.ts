@@ -45,4 +45,3 @@ export function decodeIpoRoutedModel(model: unknown): {
 
 	return { providerId, agentKey, modelId };
 }
-

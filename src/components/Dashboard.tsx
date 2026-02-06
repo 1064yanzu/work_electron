@@ -389,8 +389,18 @@ export default function Dashboard({
 													<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
 														OPEN
 													</span>
-													<svg className="w-3 h-3 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+													<svg
+														className="w-3 h-3 text-zinc-400"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke="currentColor"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M9 5l7 7-7 7"
+														/>
 													</svg>
 												</div>
 											</div>
@@ -404,10 +414,13 @@ export default function Dashboard({
 
 										<div className="flex items-center justify-between pt-4 mt-2 border-t border-zinc-50 dark:border-white/5">
 											<div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-sans tracking-wide">
-												{new Date(project.updated_at).toLocaleDateString("en-US", {
-													month: 'short',
-													day: 'numeric'
-												})}
+												{new Date(project.updated_at).toLocaleDateString(
+													"en-US",
+													{
+														month: "short",
+														day: "numeric",
+													},
+												)}
 											</div>
 											<div className="h-1.5 w-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 group-hover:bg-green-500 transition-colors duration-500" />
 										</div>

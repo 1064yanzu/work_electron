@@ -1,6 +1,6 @@
 /**
  * 托管模式状态管理 - Managed Mode Store
- * 
+ *
  * 管理托管模式的开关状态、沙盒文件列表、以及 UI 状态
  */
 
@@ -62,6 +62,12 @@ export interface ManagedModeState {
 		centerView: "graph" | "files" | "preview";
 		/** 预览视图模式：preview 渲染预览, source 源码 */
 		previewMode: "preview" | "source";
+		/** 运行图筛选 */
+		graphFilter?: "all" | "running" | "error" | "artifact";
+		/** 运行图搜索 */
+		graphSearch?: string;
+		/** 详情面板是否固定 */
+		pinnedInspector?: boolean;
 	};
 }
 
@@ -76,6 +82,9 @@ const initialState: ManagedModeState = {
 		searchQuery: "",
 		centerView: "graph",
 		previewMode: "preview",
+		graphFilter: "all",
+		graphSearch: "",
+		pinnedInspector: false,
 	},
 };
 
@@ -91,17 +100,62 @@ export function categorizeFile(filename: string): FileCategory {
 	}
 
 	// 代码类
-	if (["tsx", "ts", "jsx", "js", "css", "scss", "html", "vue", "py", "go", "rs", "java", "c", "cpp", "h", "hpp", "swift", "kt", "rb", "php", "sh", "bash", "zsh", "fish", "ps1", "sql"].includes(ext)) {
+	if (
+		[
+			"tsx",
+			"ts",
+			"jsx",
+			"js",
+			"css",
+			"scss",
+			"html",
+			"vue",
+			"py",
+			"go",
+			"rs",
+			"java",
+			"c",
+			"cpp",
+			"h",
+			"hpp",
+			"swift",
+			"kt",
+			"rb",
+			"php",
+			"sh",
+			"bash",
+			"zsh",
+			"fish",
+			"ps1",
+			"sql",
+		].includes(ext)
+	) {
 		return "code";
 	}
 
 	// 图片类
-	if (["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "tiff"].includes(ext)) {
+	if (
+		["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "tiff"].includes(
+			ext,
+		)
+	) {
 		return "images";
 	}
 
 	// 数据类
-	if (["json", "csv", "xml", "yaml", "yml", "toml", "ini", "xlsx", "xls"].includes(ext)) {
+	if (
+		[
+			"json",
+			"csv",
+			"xml",
+			"yaml",
+			"yml",
+			"toml",
+			"ini",
+			"xlsx",
+			"xls",
+		].includes(ext)
+	) {
 		return "data";
 	}
 
@@ -123,7 +177,7 @@ function normalizeComparablePath(input: string): string {
 	let value = String(input || "").trim();
 	try {
 		value = decodeURIComponent(value);
-	} catch { }
+	} catch {}
 	return value.replace(/\\/g, "/").replace(/\/+/g, "/");
 }
 
@@ -132,7 +186,10 @@ function shouldHideInternalSandboxPath(
 	sandboxDir: string,
 ): boolean {
 	const normalizedFull = normalizeComparablePath(fullPath);
-	const normalizedRoot = normalizeComparablePath(sandboxDir).replace(/\/+$/, "");
+	const normalizedRoot = normalizeComparablePath(sandboxDir).replace(
+		/\/+$/,
+		"",
+	);
 	const rel = normalizedFull.startsWith(`${normalizedRoot}/`)
 		? normalizedFull.slice(normalizedRoot.length + 1)
 		: normalizedFull;
@@ -146,9 +203,7 @@ function shouldHideInternalSandboxPath(
 	if (
 		segments.some(
 			(seg) =>
-				seg === "tool-results" ||
-				seg === "projects" ||
-				seg === "node_modules",
+				seg === "tool-results" || seg === "projects" || seg === "node_modules",
 		)
 	) {
 		return true;
@@ -346,9 +401,7 @@ class ManagedModeStore {
 		setTimeout(() => {
 			this.setState((s) => ({
 				...s,
-				files: s.files.map((f) =>
-					f.id === id ? { ...f, isNew: false } : f
-				),
+				files: s.files.map((f) => (f.id === id ? { ...f, isNew: false } : f)),
 			}));
 		}, 3000);
 
@@ -360,7 +413,7 @@ class ManagedModeStore {
 		this.setState((s) => ({
 			...s,
 			files: s.files.map((f) =>
-				f.id === fileId ? { ...f, ...updates, modifiedAt: Date.now() } : f
+				f.id === fileId ? { ...f, ...updates, modifiedAt: Date.now() } : f,
 			),
 		}));
 	}
@@ -403,14 +456,14 @@ class ManagedModeStore {
 
 	/** 通过路径选择文件（用于从运行图/产物跳转） */
 	selectFileByPath(filePath: string | null): string | null {
-		const p = typeof filePath === "string" ? normalizeComparablePath(filePath) : "";
+		const p =
+			typeof filePath === "string" ? normalizeComparablePath(filePath) : "";
 		if (!p) {
 			this.selectFile(null);
 			return null;
 		}
 		const file = this.state.files.find(
-			(f) =>
-				f.type === "file" && normalizeComparablePath(f.path) === p,
+			(f) => f.type === "file" && normalizeComparablePath(f.path) === p,
 		);
 		if (!file) return null;
 		this.selectFile(file.id);
@@ -419,7 +472,9 @@ class ManagedModeStore {
 
 	/** 获取当前选中的文件 */
 	getSelectedFile(): SandboxFile | null {
-		return this.state.files.find((f) => f.id === this.state.selectedFileId) || null;
+		return (
+			this.state.files.find((f) => f.id === this.state.selectedFileId) || null
+		);
 	}
 
 	/** 设置中间栏视图 */
@@ -462,6 +517,30 @@ class ManagedModeStore {
 		}));
 	}
 
+	/** 设置运行图筛选 */
+	setGraphFilter(filter: "all" | "running" | "error" | "artifact") {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, graphFilter: filter },
+		}));
+	}
+
+	/** 设置运行图搜索 */
+	setGraphSearch(query: string) {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, graphSearch: query },
+		}));
+	}
+
+	/** 设置详情面板固定状态 */
+	setPinnedInspector(pinned: boolean) {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, pinnedInspector: pinned },
+		}));
+	}
+
 	// ========== 便捷查询 ==========
 
 	/** 获取分组后的文件树 */
@@ -477,7 +556,7 @@ class ManagedModeStore {
 		return this.state.files.filter(
 			(f) =>
 				f.name.toLowerCase().includes(query) ||
-				f.path.toLowerCase().includes(query)
+				f.path.toLowerCase().includes(query),
 		);
 	}
 
@@ -592,7 +671,7 @@ class ManagedModeStore {
 				this.setState((s) => ({
 					...s,
 					files: s.files.map((f) =>
-						f.id === fileId ? { ...f, content: result.content } : f
+						f.id === fileId ? { ...f, content: result.content } : f,
 					),
 				}));
 				return result.content;
@@ -616,7 +695,7 @@ class ManagedModeStore {
 		sandboxDir: string,
 		content: string,
 		type: "html" | "react" | "other",
-		title?: string
+		title?: string,
 	): Promise<string | null> {
 		if (!sandboxDir || !content) return null;
 
@@ -655,7 +734,10 @@ class ManagedModeStore {
 				});
 				console.log("[ManagedModeStore] Artifact saved to database");
 			} catch (dbError) {
-				console.warn("[ManagedModeStore] Failed to save artifact to database:", dbError);
+				console.warn(
+					"[ManagedModeStore] Failed to save artifact to database:",
+					dbError,
+				);
 			}
 
 			// 刷新文件列表
@@ -684,7 +766,7 @@ export const managedModeStore = new ManagedModeStore();
 export function useManagedModeStore() {
 	const state = useSyncExternalStore(
 		managedModeStore.subscribe,
-		managedModeStore.getState
+		managedModeStore.getState,
 	);
 
 	return {

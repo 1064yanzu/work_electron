@@ -1,6 +1,6 @@
 /**
  * ToolCallsGroup - 简化的工具调用组
- * 
+ *
  * 直接渲染工具调用列表,不添加额外包装
  */
 
@@ -75,7 +75,7 @@ export function ToolCallsGroup({ calls }: { calls: ToolCallRef[] }) {
 				const resolvedCall = resolved.resolvedByKey.get(
 					`${c.taskId}:${c.toolCallId}`,
 				);
-				
+
 				if (resolvedCall) {
 					return (
 						<ToolCallInline

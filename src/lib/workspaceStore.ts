@@ -41,12 +41,12 @@ export interface ResearchTask {
 	id: string;
 	query: string;
 	status:
-	| "idle"
-	| "searching"
-	| "fetching"
-	| "analyzing"
-	| "completed"
-	| "error";
+		| "idle"
+		| "searching"
+		| "fetching"
+		| "analyzing"
+		| "completed"
+		| "error";
 	steps: ResearchStep[];
 	sources: ResearchSource[];
 	summary?: string;
@@ -105,12 +105,12 @@ interface WorkspaceState {
 	activeMainView: "editor" | "browser";
 	// 左边栏视图模式
 	leftSidebarView:
-	| "sources"
-	| "research"
-	| "detail"
-	| "agent"
-	| "cards"
-	| "websearch";
+		| "sources"
+		| "research"
+		| "detail"
+		| "agent"
+		| "cards"
+		| "websearch";
 	// 当前研究任务
 	currentResearch: ResearchTask | null;
 	// 历史研究任务
@@ -226,11 +226,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-							...c,
-							filePath: result.path,
-							size: result.size,
-							mimeType: "text/plain",
-						}
+								...c,
+								filePath: result.path,
+								size: result.size,
+								mimeType: "text/plain",
+							}
 						: c,
 				),
 			}));

@@ -152,7 +152,7 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 		try {
 			if (typeof output === "string") results = JSON.parse(output);
 			else if (Array.isArray(output)) results = output;
-		} catch { }
+		} catch {}
 
 		if (results.length > 0) {
 			return (
@@ -201,7 +201,7 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 			};
 			if (typeof output === "string") results = normalize(JSON.parse(output));
 			else results = normalize(output);
-		} catch { }
+		} catch {}
 
 		if (results.length > 0) {
 			return (
@@ -341,7 +341,7 @@ function ToolCallCard({
 					{isExpanded && (
 						<div className="px-3 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/50">
 							{toolCall.type === "skill_call" &&
-								toolCall.metadata?.skillExecution ? (
+							toolCall.metadata?.skillExecution ? (
 								<div className="mt-3">
 									<SkillCard skill={toolCall.metadata.skillExecution} />
 								</div>

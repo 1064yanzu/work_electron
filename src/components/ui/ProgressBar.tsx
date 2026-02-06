@@ -88,7 +88,9 @@ export const CircularProgress = ({
 	const offset = circumference - (progress / 100) * circumference;
 
 	return (
-		<div className={`relative inline-flex items-center justify-center ${className}`}>
+		<div
+			className={`relative inline-flex items-center justify-center ${className}`}
+		>
 			<svg width={size} height={size} className="transform -rotate-90">
 				{/* 背景圆环 */}
 				<circle

@@ -27,27 +27,27 @@ import hyperbolicIcon from "../../assets/images/providers/hyperbolic.png";
  * 将 provider 的 templateId 映射到图标文件路径
  */
 export const PROVIDER_ICON_MAP: Record<string, string> = {
-    openai: openaiIcon,
-    anthropic: anthropicIcon,
-    gemini: googleIcon,
-    google: googleIcon,
-    deepseek: deepseekIcon,
-    mistral: mistralIcon,
-    zhipu: zhipuIcon,
-    moonshot: moonshotIcon,
-    silicon: siliconIcon,
-    aihubmix: aihubmixIcon,
-    openrouter: openrouterIcon,
-    together: togetherIcon,
-    groq: groqIcon,
-    fireworks: fireworksIcon,
-    ollama: ollamaIcon,
-    lmstudio: lmstudioIcon,
-    newapi: newapiIcon,
-    github: githubIcon,
-    perplexity: perplexityIcon,
-    cerebras: cerebrasIcon,
-    hyperbolic: hyperbolicIcon,
+	openai: openaiIcon,
+	anthropic: anthropicIcon,
+	gemini: googleIcon,
+	google: googleIcon,
+	deepseek: deepseekIcon,
+	mistral: mistralIcon,
+	zhipu: zhipuIcon,
+	moonshot: moonshotIcon,
+	silicon: siliconIcon,
+	aihubmix: aihubmixIcon,
+	openrouter: openrouterIcon,
+	together: togetherIcon,
+	groq: groqIcon,
+	fireworks: fireworksIcon,
+	ollama: ollamaIcon,
+	lmstudio: lmstudioIcon,
+	newapi: newapiIcon,
+	github: githubIcon,
+	perplexity: perplexityIcon,
+	cerebras: cerebrasIcon,
+	hyperbolic: hyperbolicIcon,
 };
 
 /**
@@ -56,13 +56,13 @@ export const PROVIDER_ICON_MAP: Record<string, string> = {
  * @returns 图标文件路径，如果没有匹配则返回 undefined
  */
 export function getProviderIcon(templateId?: string): string | undefined {
-    if (!templateId) return undefined;
-    return PROVIDER_ICON_MAP[templateId.toLowerCase()];
+	if (!templateId) return undefined;
+	return PROVIDER_ICON_MAP[templateId.toLowerCase()];
 }
 
 /**
  * 检查 Provider 是否有自定义图标
  */
 export function hasProviderIcon(templateId?: string): boolean {
-    return !!getProviderIcon(templateId);
+	return !!getProviderIcon(templateId);
 }

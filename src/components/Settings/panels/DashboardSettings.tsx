@@ -256,10 +256,11 @@ function TokenUsagePanel({
 						<button
 							key={p}
 							onClick={() => setPeriod(p)}
-							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${period === p
-								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-								: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-								}`}
+							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+								period === p
+									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+							}`}
 						>
 							{p === "today" && "今日"}
 							{p === "week" && "本周"}

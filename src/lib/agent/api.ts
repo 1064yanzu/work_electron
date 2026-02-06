@@ -40,12 +40,12 @@ export interface ToolCallRecord {
 	mcp_server_id?: string | null;
 	args_json?: Record<string, unknown> | null;
 	status:
-	| "queued"
-	| "running"
-	| "succeeded"
-	| "failed"
-	| "canceled"
-	| "awaiting_permission";
+		| "queued"
+		| "running"
+		| "succeeded"
+		| "failed"
+		| "canceled"
+		| "awaiting_permission";
 	result_json?: unknown;
 	error?: string | null;
 	created_at: string;
@@ -60,12 +60,12 @@ export interface AgentNodeRecord {
 	kind: "llm_plan" | "tool_call" | "synthesis" | "custom";
 	name: string;
 	status:
-	| "queued"
-	| "running"
-	| "succeeded"
-	| "failed"
-	| "canceled"
-	| "blocked";
+		| "queued"
+		| "running"
+		| "succeeded"
+		| "failed"
+		| "canceled"
+		| "blocked";
 	depends_on: string[];
 	input_json?: unknown;
 	output_json?: unknown;
@@ -148,7 +148,7 @@ export async function createAgentSession(
 	projectId?: string | null,
 ): Promise<AgentSession> {
 	return await safeInvoke("agent_create_session", {
-		payload: { title, project_id: projectId }
+		payload: { title, project_id: projectId },
 	});
 }
 
@@ -168,7 +168,7 @@ export async function listAgentSessions(
 ): Promise<AgentSession[]> {
 	return await safeInvoke("agent_list_sessions", {
 		status,
-		project_id: projectId
+		project_id: projectId,
 	});
 }
 
@@ -572,9 +572,7 @@ export async function deleteCheckpoint(taskId: string): Promise<boolean> {
 }
 
 // 清理过期检查点
-export async function cleanupCheckpoints(
-	days: number = 7,
-): Promise<number> {
+export async function cleanupCheckpoints(days: number = 7): Promise<number> {
 	const result = await safeInvoke<{ deleted_count: number }>(
 		"agent_checkpoint_cleanup",
 		{ days },

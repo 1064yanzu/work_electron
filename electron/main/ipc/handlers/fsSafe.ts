@@ -95,7 +95,7 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 			try {
 				const st = await fs.stat(full);
 				size = st.size;
-			} catch { }
+			} catch {}
 		}
 		out.push({ path: full, name: ent.name, is_file, is_dir, size });
 	}
@@ -233,14 +233,22 @@ export function createFsSafeHandlers() {
 
 			// 生成保存路径
 			const fileName = input.fileName || `image-${Date.now()}.${ext}`;
-			const saveDir = path.join(os.homedir(), "Library", "Application Support", "ipo-workbench", "generated-images");
+			const saveDir = path.join(
+				os.homedir(),
+				"Library",
+				"Application Support",
+				"ipo-workbench",
+				"generated-images",
+			);
 			await fs.mkdir(saveDir, { recursive: true });
 			const savePath = path.join(saveDir, fileName);
 
 			// 保存文件
 			const buffer = Buffer.from(rawBase64, "base64");
 			await fs.writeFile(savePath, buffer);
-			console.log(`[save_base64_image] Saved ${buffer.length} bytes to: ${savePath}`);
+			console.log(
+				`[save_base64_image] Saved ${buffer.length} bytes to: ${savePath}`,
+			);
 
 			return savePath;
 		} catch (err) {

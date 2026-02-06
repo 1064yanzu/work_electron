@@ -1,0 +1,233 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { AgentTaskStatus, ToolCall } from "../../../lib/agent/types";
+import type { ExecutionGraphSource } from "../graph/types";
+
+interface UseSandboxFilesBindingArgs {
+	activeSessionId: string | null;
+	activeSession: any;
+	currentTask: any;
+	taskHistory: any[];
+	isExecuting: boolean;
+	store: any;
+}
+
+export function useSandboxFilesBinding({
+	activeSessionId,
+	activeSession,
+	currentTask,
+	taskHistory,
+	isExecuting,
+	store,
+}: UseSandboxFilesBindingArgs) {
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	const sessionTaskId = useMemo(() => {
+		if (!activeSession) return null;
+
+		for (let i = activeSession.messages.length - 1; i >= 0; i--) {
+			const msg = activeSession.messages[i];
+			const metadata = msg.metadata;
+			if (typeof metadata?.taskId === "string" && metadata.taskId)
+				return metadata.taskId;
+			const trace = metadata?.trace;
+			if (trace?.type === "agent_task") return trace.taskId;
+			if (trace?.type === "tool_call") return trace.taskId;
+			if (Array.isArray(metadata?.blocks)) {
+				for (let j = metadata.blocks.length - 1; j >= 0; j--) {
+					const b = metadata.blocks[j] as any;
+					if (b?.type === "agent_task" || b?.type === "task_list")
+						return b.taskId;
+					if (b?.type === "tool_call") return b.taskId;
+				}
+			}
+		}
+
+		return null;
+	}, [activeSession]);
+
+	const sessionSandboxDir = useMemo(() => {
+		if (!activeSession) return undefined;
+		for (let i = activeSession.messages.length - 1; i >= 0; i--) {
+			const msg = activeSession.messages[i];
+			if (msg.metadata?.sandboxDir) return msg.metadata.sandboxDir as string;
+		}
+		return undefined;
+	}, [activeSession]);
+
+	const boundTask = useMemo(() => {
+		if (!sessionTaskId) return null;
+		if (currentTask?.id === sessionTaskId) return currentTask;
+		return taskHistory.find((t) => t.id === sessionTaskId) || null;
+	}, [currentTask, sessionTaskId, taskHistory]);
+
+	const sandboxDir = useMemo(() => {
+		const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
+		return fromTask || sessionSandboxDir;
+	}, [boundTask, sessionSandboxDir]);
+
+	const graphSource = useMemo<ExecutionGraphSource | null>(() => {
+		if (boundTask) {
+			return {
+				id: boundTask.id,
+				title: boundTask.title || "托管任务",
+				subtitle: boundTask.query,
+				status: boundTask.status,
+				toolCalls: boundTask.toolCalls || [],
+				artifacts: boundTask.artifacts || [],
+			};
+		}
+
+		if (!activeSession) return null;
+		if (!sessionTaskId) return null;
+
+		const normalizeToolCallStatus = (v: unknown): ToolCall["status"] => {
+			switch (v) {
+				case "pending":
+				case "running":
+				case "completed":
+				case "error":
+				case "cancelled":
+					return v;
+				default:
+					return "completed";
+			}
+		};
+
+		const order: string[] = [];
+		const seen = new Set<string>();
+		type ToolCallBlockLike = {
+			toolCallId?: string;
+			toolType?: string;
+			name?: string;
+			status?: unknown;
+			input?: unknown;
+			output?: unknown;
+			error?: unknown;
+		};
+		const toolCallById = new Map<string, ToolCallBlockLike>();
+
+		for (const msg of activeSession.messages) {
+			const blocks = msg.metadata?.blocks;
+			if (!Array.isArray(blocks)) continue;
+			for (const b of blocks as any[]) {
+				if (b?.type !== "tool_call") continue;
+				if (b.taskId !== sessionTaskId) continue;
+				const id = String(b.toolCallId || "").trim();
+				if (!id) continue;
+				if (!seen.has(id)) {
+					seen.add(id);
+					order.push(id);
+				}
+				const prev = toolCallById.get(id) || {};
+				toolCallById.set(id, { ...prev, ...b } as ToolCallBlockLike);
+			}
+		}
+
+		const toolCalls: ToolCall[] = order.map((id) => {
+			const b = toolCallById.get(id) || {};
+			const inputRaw = (b as any).input;
+			const input =
+				inputRaw && typeof inputRaw === "object"
+					? (inputRaw as Record<string, any>)
+					: ({} as Record<string, any>);
+			return {
+				id,
+				type: "custom",
+				name: String((b as any).name || (b as any).toolType || "Tool"),
+				input,
+				output: (b as any).output,
+				error:
+					typeof (b as any).error === "string" ? (b as any).error : undefined,
+				status: normalizeToolCallStatus((b as any).status),
+				metadata: { toolType: (b as any).toolType },
+			};
+		});
+
+		const hasRunning = toolCalls.some(
+			(t) => t.status === "running" || t.status === "pending",
+		);
+		const hasError = toolCalls.some((t) => t.status === "error");
+		const allCompleted =
+			toolCalls.length > 0 && toolCalls.every((t) => t.status === "completed");
+		const status: AgentTaskStatus = hasRunning
+			? "executing"
+			: hasError
+				? "error"
+				: allCompleted
+					? "completed"
+					: "waiting";
+
+		return {
+			id: sessionTaskId,
+			title: activeSession.title || "托管任务",
+			subtitle: activeSession.messages
+				.slice()
+				.reverse()
+				.find((m: any) => m.role === "user")?.content,
+			status,
+			toolCalls,
+			artifacts: [],
+		};
+	}, [activeSession, boundTask, sessionTaskId]);
+
+	const refreshFiles = useCallback(async () => {
+		if (!sandboxDir) return;
+		setIsRefreshing(true);
+		try {
+			await store.scanSandboxDir(sandboxDir);
+		} finally {
+			setIsRefreshing(false);
+		}
+	}, [sandboxDir, store]);
+
+	const isLiveBoundTask = Boolean(
+		isExecuting && boundTask && currentTask && boundTask.id === currentTask.id,
+	);
+
+	useEffect(() => {
+		if (refreshTimerRef.current) {
+			clearInterval(refreshTimerRef.current);
+			refreshTimerRef.current = null;
+		}
+		store.selectFile(null);
+		store.clearFiles();
+		store.setSearchQuery("");
+		store.setGraphSearch("");
+		store.setGraphFilter("all");
+		store.setPinnedInspector(false);
+	}, [activeSessionId, store]);
+
+	useEffect(() => {
+		if (refreshTimerRef.current) {
+			clearInterval(refreshTimerRef.current);
+			refreshTimerRef.current = null;
+		}
+
+		if (!sandboxDir) {
+			store.clearFiles();
+			return;
+		}
+
+		store.scanSandboxDir(sandboxDir);
+
+		if (!isLiveBoundTask) return;
+		refreshTimerRef.current = setInterval(() => {
+			store.scanSandboxDir(sandboxDir);
+		}, 5000);
+
+		return () => {
+			if (refreshTimerRef.current) {
+				clearInterval(refreshTimerRef.current);
+				refreshTimerRef.current = null;
+			}
+		};
+	}, [isLiveBoundTask, sandboxDir, store]);
+
+	return {
+		sandboxDir,
+		graphSource,
+		isRefreshing,
+		refreshFiles,
+	};
+}

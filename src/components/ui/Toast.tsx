@@ -157,9 +157,7 @@ class ToastAPI {
 			closable: options.closable ?? true,
 		};
 
-		window.dispatchEvent(
-			new CustomEvent("show-toast", { detail: toast }),
-		);
+		window.dispatchEvent(new CustomEvent("show-toast", { detail: toast }));
 	}
 
 	success(message: string, duration = 3000) {

@@ -429,10 +429,10 @@ async function callAnthropic(
 		content: textContent,
 		usage: data.usage
 			? {
-				prompt_tokens: data.usage.input_tokens,
-				completion_tokens: data.usage.output_tokens,
-				total_tokens: data.usage.input_tokens + data.usage.output_tokens,
-			}
+					prompt_tokens: data.usage.input_tokens,
+					completion_tokens: data.usage.output_tokens,
+					total_tokens: data.usage.input_tokens + data.usage.output_tokens,
+				}
 			: undefined,
 	};
 }
@@ -886,4 +886,3 @@ export async function invokeImageGeneration(
 	// 目前仅支持 OpenAI 兼容的图像生成 API
 	return callOpenAIImageGeneration(provider, options, resolvedApiKey);
 }
-

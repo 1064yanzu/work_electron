@@ -24,7 +24,7 @@ function downloadFile(content: string, filename: string) {
 // -----------------------------------------------------------------------------
 function TerminalPreview({ code }: { code: string }) {
 	const lastLines = useMemo(() => {
-		return code.trim().split('\n').slice(-3).join('\n');
+		return code.trim().split("\n").slice(-3).join("\n");
 	}, [code]);
 
 	return (
@@ -67,11 +67,18 @@ function EntryCard({
 	onDownload: () => void;
 }) {
 	return (
-		<div className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-200 cursor-pointer" onClick={() => onOpen("preview")}>
+		<div
+			className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-200 cursor-pointer"
+			onClick={() => onOpen("preview")}
+		>
 			{/* 左侧信息 */}
 			<div className="flex items-center gap-3">
 				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200">
-					{kind === "react" ? <Code className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+					{kind === "react" ? (
+						<Code className="w-5 h-5" />
+					) : (
+						<Eye className="w-5 h-5" />
+					)}
 				</div>
 				<div>
 					<div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
@@ -190,10 +197,11 @@ function FullScreenModal({
 								onClick={() => setViewMode("code")}
 								className={`
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
-                                    ${viewMode === "code"
-										? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-										: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-									}
+                                    ${
+																			viewMode === "code"
+																				? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+																				: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+																		}
                                 `}
 							>
 								<Code className="w-3.5 h-3.5" />
@@ -204,10 +212,11 @@ function FullScreenModal({
 								onClick={() => setViewMode("preview")}
 								className={`
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
-                                    ${viewMode === "preview"
-										? "bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
-										: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-									}
+                                    ${
+																			viewMode === "preview"
+																				? "bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+																				: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+																		}
                                 `}
 							>
 								<Eye className="w-3.5 h-3.5" />
@@ -268,7 +277,7 @@ function FullScreenModal({
 				</div>
 			</div>
 		</div>,
-		document.body
+		document.body,
 	);
 }
 
@@ -347,19 +356,31 @@ export function WebPreviewCard({
 			const normalized = jsxPart;
 			const transformed = (() => {
 				let s = normalized;
-				s = s.replace(/^\s*export\s+default\s+function\s+([A-Za-z_$][\w$]*)/m, (_m, name) => {
-					return `function ${name}`;
-				});
-				s = s.replace(/^\s*export\s+default\s+class\s+([A-Za-z_$][\w$]*)/m, (_m, name) => {
-					return `class ${name}`;
-				});
+				s = s.replace(
+					/^\s*export\s+default\s+function\s+([A-Za-z_$][\w$]*)/m,
+					(_m, name) => {
+						return `function ${name}`;
+					},
+				);
+				s = s.replace(
+					/^\s*export\s+default\s+class\s+([A-Za-z_$][\w$]*)/m,
+					(_m, name) => {
+						return `class ${name}`;
+					},
+				);
 				s = s.replace(/^\s*export\s+default\s+/m, "window.__default = ");
 				s = s.replace(/^\s*export\s+(const|let|var)\s+/gm, "$1 ");
 				s = s.replace(/^\s*export\s+function\s+/gm, "function ");
 				s = s.replace(/^\s*export\s+class\s+/gm, "class ");
 				s = s.replace(/^\s*export\s*\{[\s\S]*?\}\s*;?\s*$/gm, "");
 				if (/window\.__default\s*=/.test(s)) return s;
-				if (/\bfunction\s+App\s*\(/.test(s) || /\bclass\s+App\b/.test(s) || /\bconst\s+App\s*=/.test(s) || /\blet\s+App\s*=/.test(s) || /\bvar\s+App\s*=/.test(s)) {
+				if (
+					/\bfunction\s+App\s*\(/.test(s) ||
+					/\bclass\s+App\b/.test(s) ||
+					/\bconst\s+App\s*=/.test(s) ||
+					/\blet\s+App\s*=/.test(s) ||
+					/\bvar\s+App\s*=/.test(s)
+				) {
 					return `${s}\nwindow.__default = typeof App !== "undefined" ? App : undefined;`;
 				}
 				return `${s}\nwindow.__default = typeof App !== "undefined" ? App : undefined;`;

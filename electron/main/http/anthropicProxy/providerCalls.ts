@@ -36,7 +36,9 @@ function sanitizeOpenAICompatibleToolName(name: unknown): string {
 	return clipped || "Tool";
 }
 
-function sanitizeOpenAICompatibleToolDescription(desc: unknown): string | undefined {
+function sanitizeOpenAICompatibleToolDescription(
+	desc: unknown,
+): string | undefined {
 	if (typeof desc !== "string") return undefined;
 	const trimmed = desc.trim();
 	if (!trimmed) return undefined;
@@ -70,7 +72,14 @@ function sanitizeOpenAICompatibleJsonSchema(
 	if (typeof value !== "object") return undefined;
 
 	// Drop meta keys that frequently break OpenAI-compatible providers.
-	const blockedKeys = new Set(["$schema", "$id", "id", "$ref", "$defs", "definitions"]);
+	const blockedKeys = new Set([
+		"$schema",
+		"$id",
+		"id",
+		"$ref",
+		"$defs",
+		"definitions",
+	]);
 
 	// Keep a conservative subset of JSON Schema keywords (still expressive enough for tools).
 	const allowedKeys = new Set([
@@ -122,7 +131,9 @@ function sanitizeOpenAICompatibleJsonSchema(
 				0,
 				OPENAI_COMPAT_SCHEMA_MAX_KEYS_PER_OBJECT,
 			)) {
-				props[pk] = sanitizeOpenAICompatibleJsonSchema(pv, { depth: depth + 1 });
+				props[pk] = sanitizeOpenAICompatibleJsonSchema(pv, {
+					depth: depth + 1,
+				});
 			}
 			out.properties = props;
 			continue;
@@ -134,7 +145,9 @@ function sanitizeOpenAICompatibleJsonSchema(
 	return out;
 }
 
-function toOpenAICompatibleTools(anthropicReq: AnthropicRequest): any[] | undefined {
+function toOpenAICompatibleTools(
+	anthropicReq: AnthropicRequest,
+): any[] | undefined {
 	if (!anthropicReq.tools?.length) return undefined;
 
 	return anthropicReq.tools.map((t) => {
@@ -152,13 +165,13 @@ function toOpenAICompatibleTools(anthropicReq: AnthropicRequest): any[] | undefi
 			...(sanitized && typeof sanitized === "object" ? sanitized : {}),
 			// Ensure properties exists (some providers require it).
 			properties:
-				(sanitized &&
-					typeof sanitized === "object" &&
-					(sanitized as any).properties &&
-					typeof (sanitized as any).properties === "object" &&
-					!Array.isArray((sanitized as any).properties)
+				sanitized &&
+				typeof sanitized === "object" &&
+				(sanitized as any).properties &&
+				typeof (sanitized as any).properties === "object" &&
+				!Array.isArray((sanitized as any).properties)
 					? (sanitized as any).properties
-					: {}),
+					: {},
 		};
 
 		return {
@@ -199,7 +212,8 @@ function flattenToolHistoryForOpenAICompatible(
 		if (m.role === "assistant" && Array.isArray((m as any).tool_calls)) {
 			for (const tc of (m as any).tool_calls) {
 				const id = typeof tc?.id === "string" ? tc.id : "";
-				const name = typeof tc?.function?.name === "string" ? tc.function.name : "";
+				const name =
+					typeof tc?.function?.name === "string" ? tc.function.name : "";
 				if (id && name) toolCallIdToName.set(id, name);
 			}
 			// Drop assistant tool_calls message from history to avoid invalid argument.
@@ -208,9 +222,12 @@ function flattenToolHistoryForOpenAICompatible(
 		}
 
 		if (m.role === "tool") {
-			const toolCallId = (m as any).tool_call_id ? String((m as any).tool_call_id) : "";
+			const toolCallId = (m as any).tool_call_id
+				? String((m as any).tool_call_id)
+				: "";
 			const toolName = toolCallIdToName.get(toolCallId) || "Tool";
-			const content = typeof (m as any).content === "string" ? (m as any).content : "";
+			const content =
+				typeof (m as any).content === "string" ? (m as any).content : "";
 			out.push({
 				role: "user",
 				content: `Tool result (${toolName}):\n${content}`.trim(),
@@ -675,7 +692,10 @@ export async function callProviderStream(
 						role: "assistant",
 						content: [],
 						model: message.model,
-						usage: { input_tokens: message.usage.input_tokens, output_tokens: 0 },
+						usage: {
+							input_tokens: message.usage.input_tokens,
+							output_tokens: 0,
+						},
 					},
 				});
 

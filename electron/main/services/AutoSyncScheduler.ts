@@ -5,7 +5,11 @@
 import { BackupManager } from "./BackupManager";
 import type { WebDavConfig } from "./WebDavService";
 import { getDbContext } from "../db/client";
-import { generateBackupFileName, generateDeviceId, getDeviceName } from "../utils/deviceId";
+import {
+	generateBackupFileName,
+	generateDeviceId,
+	getDeviceName,
+} from "../utils/deviceId";
 import { backupHistoryManager } from "./BackupHistoryManager";
 import { exportAllDataForBackup } from "../ipc/handlers/localBackup";
 
@@ -60,7 +64,11 @@ export class AutoSyncScheduler {
 			const config = await this.getSyncConfig();
 
 			// 启动时同步
-			if (config.sync_on_startup && config.webdav_enabled && config.webdav_auto_sync) {
+			if (
+				config.sync_on_startup &&
+				config.webdav_enabled &&
+				config.webdav_auto_sync
+			) {
 				console.log("[AutoSyncScheduler] Sync on startup enabled");
 				// 延迟 5 秒执行，避免应用启动时过载
 				setTimeout(() => {
@@ -117,7 +125,11 @@ export class AutoSyncScheduler {
 	async onDataChange(): Promise<void> {
 		const config = await this.getSyncConfig();
 
-		if (!config.sync_on_change || !config.webdav_enabled || !config.webdav_auto_sync) {
+		if (
+			!config.sync_on_change ||
+			!config.webdav_enabled ||
+			!config.webdav_auto_sync
+		) {
 			return;
 		}
 
@@ -131,7 +143,9 @@ export class AutoSyncScheduler {
 			this.performSync("change").catch(console.error);
 		}, this.DEBOUNCE_DELAY);
 
-		console.log("[AutoSyncScheduler] Data change detected, sync scheduled in 30s");
+		console.log(
+			"[AutoSyncScheduler] Data change detected, sync scheduled in 30s",
+		);
 	}
 
 	/**
@@ -185,15 +199,24 @@ export class AutoSyncScheduler {
 		const config = await this.getSyncConfig();
 
 		// 检查是否启用自动同步
-		if (!config.webdav_enabled || !config.webdav_auto_sync || config.webdav_sync_interval <= 0) {
+		if (
+			!config.webdav_enabled ||
+			!config.webdav_auto_sync ||
+			config.webdav_sync_interval <= 0
+		) {
 			console.log("[AutoSyncScheduler] Auto sync is disabled");
 			return;
 		}
 
 		// 计算同步间隔（分钟转毫秒）
-		const intervalMs = Math.max(config.webdav_sync_interval * 60 * 1000, this.MIN_SYNC_INTERVAL);
+		const intervalMs = Math.max(
+			config.webdav_sync_interval * 60 * 1000,
+			this.MIN_SYNC_INTERVAL,
+		);
 
-		console.log(`[AutoSyncScheduler] Scheduling sync every ${config.webdav_sync_interval} minutes`);
+		console.log(
+			`[AutoSyncScheduler] Scheduling sync every ${config.webdav_sync_interval} minutes`,
+		);
 
 		// 设置定时器
 		this.syncTimer = setInterval(() => {
@@ -204,7 +227,9 @@ export class AutoSyncScheduler {
 	/**
 	 * 执行同步
 	 */
-	private async performSync(trigger: "startup" | "scheduled" | "change" | "manual"): Promise<void> {
+	private async performSync(
+		trigger: "startup" | "scheduled" | "change" | "manual",
+	): Promise<void> {
 		// 防止重复同步
 		if (this.isSyncing) {
 			console.log("[AutoSyncScheduler] Sync already in progress, skipping");
@@ -213,7 +238,10 @@ export class AutoSyncScheduler {
 
 		// 检查最小同步间隔
 		const now = Date.now();
-		if (trigger !== "manual" && now - this.lastSyncTime < this.MIN_SYNC_INTERVAL) {
+		if (
+			trigger !== "manual" &&
+			now - this.lastSyncTime < this.MIN_SYNC_INTERVAL
+		) {
 			console.log("[AutoSyncScheduler] Sync too frequent, skipping");
 			return;
 		}
@@ -229,8 +257,9 @@ export class AutoSyncScheduler {
 			sql: "SELECT device_id, device_name FROM sync_config WHERE id = 'default'",
 			args: [],
 		});
-		const deviceId = deviceResult.rows[0]?.device_id as string || "unknown";
-		const deviceName = deviceResult.rows[0]?.device_name as string || "Unknown Device";
+		const deviceId = (deviceResult.rows[0]?.device_id as string) || "unknown";
+		const deviceName =
+			(deviceResult.rows[0]?.device_name as string) || "Unknown Device";
 		const fileName = await this.generateBackupFileNameWithDevice();
 
 		// 记录备份开始
@@ -249,7 +278,11 @@ export class AutoSyncScheduler {
 			const config = await this.getSyncConfig();
 
 			// 验证配置
-			if (!config.webdav_url || !config.webdav_username || !config.webdav_password) {
+			if (
+				!config.webdav_url ||
+				!config.webdav_username ||
+				!config.webdav_password
+			) {
 				throw new Error("WebDAV configuration incomplete");
 			}
 
@@ -269,7 +302,11 @@ export class AutoSyncScheduler {
 			const dataJson = JSON.stringify(exportData, null, 2);
 
 			// 执行备份
-			await this.backupManager.backupToWebdav({} as any, dataJson, webdavConfig);
+			await this.backupManager.backupToWebdav(
+				{} as any,
+				dataJson,
+				webdavConfig,
+			);
 
 			// 更新备份历史为成功
 			await backupHistoryManager.updateBackupStatus(backupRecordId, "success");
@@ -281,27 +318,40 @@ export class AutoSyncScheduler {
 			this.retryCount = 0; // 重置重试计数
 
 			const duration = Date.now() - startTime;
-			console.log(`[AutoSyncScheduler] Sync completed successfully in ${duration}ms (trigger: ${trigger})`);
+			console.log(
+				`[AutoSyncScheduler] Sync completed successfully in ${duration}ms (trigger: ${trigger})`,
+			);
 
 			// 执行自动清理
 			try {
 				if (config.webdav_max_backups > 0) {
-					const deletedCount = await backupHistoryManager.cleanupOldWebdavBackups(
-						webdavConfig,
-						config.webdav_max_backups,
+					const deletedCount =
+						await backupHistoryManager.cleanupOldWebdavBackups(
+							webdavConfig,
+							config.webdav_max_backups,
+						);
+					console.log(
+						`[AutoSyncScheduler] Cleaned up ${deletedCount} old backups`,
 					);
-					console.log(`[AutoSyncScheduler] Cleaned up ${deletedCount} old backups`);
 				}
 			} catch (cleanupError) {
 				console.error("[AutoSyncScheduler] Cleanup failed:", cleanupError);
 				// 清理失败不影响备份成功
 			}
 		} catch (error) {
-			console.error(`[AutoSyncScheduler] Sync failed (trigger: ${trigger}):`, error);
+			console.error(
+				`[AutoSyncScheduler] Sync failed (trigger: ${trigger}):`,
+				error,
+			);
 
 			// 更新备份历史为失败
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			await backupHistoryManager.updateBackupStatus(backupRecordId, "failed", errorMessage);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			await backupHistoryManager.updateBackupStatus(
+				backupRecordId,
+				"failed",
+				errorMessage,
+			);
 
 			// 更新同步状态（记录错误）
 			await this.updateSyncStatus(false, errorMessage);
@@ -310,7 +360,9 @@ export class AutoSyncScheduler {
 			if (this.shouldRetry(error) && this.retryCount < this.MAX_RETRIES) {
 				this.retryCount++;
 				const delay = Math.min(1000 * Math.pow(2, this.retryCount), 60000); // 指数退避，最多 60 秒
-				console.log(`[AutoSyncScheduler] Retrying in ${delay}ms (attempt ${this.retryCount}/${this.MAX_RETRIES})`);
+				console.log(
+					`[AutoSyncScheduler] Retrying in ${delay}ms (attempt ${this.retryCount}/${this.MAX_RETRIES})`,
+				);
 
 				setTimeout(() => {
 					this.performSync(trigger).catch(console.error);
@@ -349,7 +401,10 @@ export class AutoSyncScheduler {
 	/**
 	 * 更新同步状态到数据库
 	 */
-	private async updateSyncStatus(success: boolean, error: string | null): Promise<void> {
+	private async updateSyncStatus(
+		success: boolean,
+		error: string | null,
+	): Promise<void> {
 		const db = getDbContext();
 		const now = Date.now();
 
@@ -364,7 +419,9 @@ export class AutoSyncScheduler {
 			args: [now, error],
 		});
 
-		console.log(`[AutoSyncScheduler] Updated sync status: ${success ? "success" : "failed"}`);
+		console.log(
+			`[AutoSyncScheduler] Updated sync status: ${success ? "success" : "failed"}`,
+		);
 	}
 
 	/**
@@ -405,7 +462,9 @@ export class AutoSyncScheduler {
 				args: [deviceId, deviceName],
 			});
 
-			console.log(`[AutoSyncScheduler] Generated device ID: ${deviceId} (${deviceName})`);
+			console.log(
+				`[AutoSyncScheduler] Generated device ID: ${deviceId} (${deviceName})`,
+			);
 		} else if (!result.rows[0].device_id) {
 			// 配置存在但没有设备 ID，更新
 			const deviceId = generateDeviceId();
@@ -416,9 +475,13 @@ export class AutoSyncScheduler {
 				args: [deviceId, deviceName],
 			});
 
-			console.log(`[AutoSyncScheduler] Updated device ID: ${deviceId} (${deviceName})`);
+			console.log(
+				`[AutoSyncScheduler] Updated device ID: ${deviceId} (${deviceName})`,
+			);
 		} else {
-			console.log(`[AutoSyncScheduler] Using existing device ID: ${result.rows[0].device_id}`);
+			console.log(
+				`[AutoSyncScheduler] Using existing device ID: ${result.rows[0].device_id}`,
+			);
 		}
 	}
 

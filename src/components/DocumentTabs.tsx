@@ -82,7 +82,7 @@ export default function DocumentTabs({
 	}
 
 	return (
-		<div className="flex items-center bg-[#F7F7F5] dark:bg-[#0F0F10] border-b border-zinc-200/50 dark:border-zinc-800/50">
+		<div className="flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-b border-zinc-200/60 dark:border-zinc-800/60">
 			{/* 标签列表 */}
 			<div
 				ref={tabsRef}
@@ -98,13 +98,12 @@ export default function DocumentTabs({
 							data-doc-id={docId}
 							onClick={() => handleTabClick(docId)}
 							className={`
-                group flex items-center gap-2 px-4 py-2.5 cursor-pointer
-                border-r border-zinc-200/30 dark:border-zinc-800/30
-                transition-all duration-150 min-w-[120px] max-w-[200px]
+                group flex items-center gap-2 px-3.5 py-2 cursor-pointer
+                transition-all duration-150 min-w-[120px] max-w-[220px] mx-0.5 my-1 rounded-xl
                 ${
 									isActive
-										? "bg-white dark:bg-[#1E1E1E] text-zinc-800 dark:text-zinc-200"
-										: "bg-transparent text-zinc-500 dark:text-zinc-500 hover:bg-white/50 dark:hover:bg-zinc-800/50 hover:text-zinc-700 dark:hover:text-zinc-300"
+										? "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+										: "bg-transparent text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 hover:text-zinc-700 dark:hover:text-zinc-300"
 								}
               `}
 						>
@@ -125,7 +124,7 @@ export default function DocumentTabs({
 								{/* 关闭按钮：始终存在，悬停时显示 */}
 								<button
 									onClick={(e) => handleCloseClick(e, docId)}
-									className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all`}
+									className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all`}
 								>
 									<X className="w-3 h-3" />
 								</button>
@@ -139,7 +138,7 @@ export default function DocumentTabs({
 			{onNewDoc && (
 				<button
 					onClick={onNewDoc}
-					className="shrink-0 p-2 mx-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors"
+					className="shrink-0 p-2 mx-1 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/50 transition-colors"
 					title="新建文档 (Cmd+N)"
 				>
 					<Plus className="w-4 h-4" />

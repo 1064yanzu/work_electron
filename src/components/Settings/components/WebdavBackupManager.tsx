@@ -54,7 +54,10 @@ export function WebdavBackupManager({
 			toast.success(`获取到 ${files.length} 个备份文件`);
 		} catch (error) {
 			console.error("Failed to fetch backup files:", error);
-			toast.error("获取备份列表失败：" + (error instanceof Error ? error.message : "未知错误"));
+			toast.error(
+				"获取备份列表失败：" +
+					(error instanceof Error ? error.message : "未知错误"),
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -64,7 +67,7 @@ export function WebdavBackupManager({
 	const handleDelete = async (fileName: string) => {
 		const confirmed = await confirmDialog.danger(
 			`确定要删除备份文件吗？\n\n文件名：${fileName}\n\n此操作不可恢复。`,
-			"删除备份"
+			"删除备份",
 		);
 
 		if (!confirmed) return;
@@ -76,7 +79,9 @@ export function WebdavBackupManager({
 			await fetchBackupFiles();
 		} catch (error) {
 			console.error("Failed to delete backup:", error);
-			toast.error("删除失败：" + (error instanceof Error ? error.message : "未知错误"));
+			toast.error(
+				"删除失败：" + (error instanceof Error ? error.message : "未知错误"),
+			);
 		} finally {
 			setDeleting(null);
 		}
@@ -86,7 +91,7 @@ export function WebdavBackupManager({
 	const handleRestore = async (fileName: string) => {
 		const confirmed = await confirmDialog.warning(
 			`确定要从此备份恢复数据吗？\n\n文件名：${fileName}\n\n当前数据将被完全覆盖，请确保已做好备份。`,
-			"恢复数据"
+			"恢复数据",
 		);
 
 		if (!confirmed) return;
@@ -123,7 +128,9 @@ export function WebdavBackupManager({
 			}, 3000);
 		} catch (error) {
 			console.error("Failed to restore backup:", error);
-			toast.error("恢复失败：" + (error instanceof Error ? error.message : "未知错误"));
+			toast.error(
+				"恢复失败：" + (error instanceof Error ? error.message : "未知错误"),
+			);
 			setRestoreProgress(0);
 			setRestoreStage(undefined);
 		} finally {
@@ -154,10 +161,7 @@ export function WebdavBackupManager({
 							className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
 							title="刷新列表"
 						>
-							<RefreshCw
-								size={16}
-								className={loading ? "animate-spin" : ""}
-							/>
+							<RefreshCw size={16} className={loading ? "animate-spin" : ""} />
 						</button>
 						<button
 							type="button"

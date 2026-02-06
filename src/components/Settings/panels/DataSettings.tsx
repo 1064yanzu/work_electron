@@ -45,7 +45,11 @@ import { saveFilePath } from "../../../lib/dialogCompat";
 import { Modal } from "../components";
 import { LocalBackupManagerModal } from "../components/LocalBackupManagerModal";
 import { FolderOpen } from "lucide-react";
-import { WEBDAV_PROVIDERS, getProviderById, validateWebdavUrl } from "../../../lib/webdavProviders";
+import {
+	WEBDAV_PROVIDERS,
+	getProviderById,
+	validateWebdavUrl,
+} from "../../../lib/webdavProviders";
 import { toast } from "../../ui/Toast";
 import { confirmDialog as confirmUI } from "../../ui/ConfirmDialog";
 
@@ -194,7 +198,10 @@ export function DataSettings() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [webdavBackups, setWebdavBackups] = useState<WebdavBackupFile[]>([]);
 	const [selectedProvider, setSelectedProvider] = useState<string>("custom");
-	const [urlValidation, setUrlValidation] = useState<{ valid: boolean; message?: string }>({ valid: true });
+	const [urlValidation, setUrlValidation] = useState<{
+		valid: boolean;
+		message?: string;
+	}>({ valid: true });
 
 	// 生成 WebDavConfig
 	const getWebdavConfig = useCallback(
@@ -219,7 +226,8 @@ export function DataSettings() {
 	const [isDeletingBackup, setIsDeletingBackup] = useState<string | null>(null);
 
 	// 本地备份目录管理
-	const [isLocalBackupManagerOpen, setIsLocalBackupManagerOpen] = useState(false);
+	const [isLocalBackupManagerOpen, setIsLocalBackupManagerOpen] =
+		useState(false);
 	const [isBackingUpToLocal, setIsBackingUpToLocal] = useState(false);
 
 	// 加载数据
@@ -311,7 +319,9 @@ export function DataSettings() {
 			}
 		} catch (error) {
 			setConnectionStatus("error");
-			toast.error(`测试失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`测试失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsTestingConnection(false);
 		}
@@ -322,14 +332,18 @@ export function DataSettings() {
 		setIsSyncing(true);
 		try {
 			const data = await exportAllData();
-			const config = getWebdavConfig(`backup_${new Date().toISOString().replace(/[:.]/g, "-")}.zip`);
+			const config = getWebdavConfig(
+				`backup_${new Date().toISOString().replace(/[:.]/g, "-")}.zip`,
+			);
 			await backupToWebdav(data, config);
 			toast.success("备份成功！");
 			await loadData();
 			const backups = await listWebdavBackups(getWebdavConfig());
 			setWebdavBackups(backups);
 		} catch (error) {
-			toast.error(`备份失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`备份失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsSyncing(false);
 		}
@@ -342,7 +356,9 @@ export function DataSettings() {
 			toast.success(`备份已保存到：${path}`, 5000);
 			await loadData();
 		} catch (error) {
-			toast.error(`备份失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`备份失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 
@@ -359,7 +375,9 @@ export function DataSettings() {
 			URL.revokeObjectURL(url);
 			toast.success("数据导出成功！");
 		} catch (error) {
-			toast.error(`导出失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`导出失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 
@@ -391,7 +409,7 @@ export function DataSettings() {
 
 				const confirmed = await confirmUI.warning(
 					`确认导入数据吗？\n\n包含：${stats || "无数据"}\n\n导入会合并到现有数据中。`,
-					"导入数据"
+					"导入数据",
 				);
 
 				if (confirmed) {
@@ -400,7 +418,9 @@ export function DataSettings() {
 					setTimeout(() => window.location.reload(), 2000);
 				}
 			} catch (error) {
-				toast.error(`导入失败：${error instanceof Error ? error.message : String(error)}`);
+				toast.error(
+					`导入失败：${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		};
 		input.click();
@@ -410,7 +430,7 @@ export function DataSettings() {
 	const handleClearCache = async () => {
 		const confirmed = await confirmUI.warning(
 			"确定要清除缓存吗？\n\n这将删除所有分享卡片图片。",
-			"清除缓存"
+			"清除缓存",
 		);
 		if (!confirmed) return;
 
@@ -419,7 +439,9 @@ export function DataSettings() {
 			toast.success(`已清除 ${formatSize(size)} 缓存`);
 			await loadData();
 		} catch (error) {
-			toast.error(`清除失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`清除失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 
@@ -436,15 +458,20 @@ export function DataSettings() {
 
 			const confirmed = await confirmUI.warning(
 				`确定要将数据库迁移到以下位置吗？\n\n${newPath}\n\n迁移后应用将使用新位置的数据库。`,
-				"迁移数据库"
+				"迁移数据库",
 			);
 			if (!confirmed) return;
 
 			await setDatabasePath(newPath);
-			toast.success(`数据库已成功迁移到：${newPath}\n\n请重启应用以使用新数据库。`, 5000);
+			toast.success(
+				`数据库已成功迁移到：${newPath}\n\n请重启应用以使用新数据库。`,
+				5000,
+			);
 			await loadData();
 		} catch (error) {
-			toast.error(`迁移失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`迁移失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 
@@ -460,7 +487,9 @@ export function DataSettings() {
 			setWebdavBackups(backups);
 		} catch (error) {
 			console.error("加载备份列表失败:", error);
-			toast.error(`加载备份列表失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`加载备份列表失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsLoadingBackups(false);
 		}
@@ -470,7 +499,7 @@ export function DataSettings() {
 	const handleRestoreFromBackup = async (filename: string) => {
 		const confirmed = await confirmUI.danger(
 			`确定要从备份 "${filename}" 恢复数据吗？\n\n这将覆盖当前所有数据！\n\n此操作不可撤销。`,
-			"恢复数据"
+			"恢复数据",
 		);
 		if (!confirmed) return;
 
@@ -482,7 +511,9 @@ export function DataSettings() {
 			setIsBackupManagerOpen(false);
 			await loadData();
 		} catch (error) {
-			toast.error(`恢复失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`恢复失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsRestoring(false);
 		}
@@ -492,7 +523,7 @@ export function DataSettings() {
 	const handleDeleteBackup = async (filename: string) => {
 		const confirmed = await confirmUI.danger(
 			`确定要删除备份 "${filename}" 吗？\n\n此操作不可撤销！`,
-			"删除备份"
+			"删除备份",
 		);
 		if (!confirmed) return;
 
@@ -503,7 +534,9 @@ export function DataSettings() {
 			setWebdavBackups((prev) => prev.filter((f) => f.fileName !== filename));
 			toast.success("备份删除成功");
 		} catch (error) {
-			toast.error(`删除失败：${error instanceof Error ? error.message : String(error)}`);
+			toast.error(
+				`删除失败：${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsDeletingBackup(null);
 		}
@@ -525,20 +558,22 @@ export function DataSettings() {
 					<nav className="space-y-1">
 						<button
 							onClick={() => setActiveSection("storage")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "storage"
-								? "bg-primary/10 text-primary"
-								: "text-zinc-600 hover:bg-zinc-100"
-								}`}
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+								activeSection === "storage"
+									? "bg-primary/10 text-primary"
+									: "text-zinc-600 hover:bg-zinc-100"
+							}`}
 						>
 							<HardDrive className="w-4 h-4" />
 							数据目录
 						</button>
 						<button
 							onClick={() => setActiveSection("webdav")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "webdav"
-								? "bg-primary/10 text-primary"
-								: "text-zinc-600 hover:bg-zinc-100"
-								}`}
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+								activeSection === "webdav"
+									? "bg-primary/10 text-primary"
+									: "text-zinc-600 hover:bg-zinc-100"
+							}`}
 						>
 							<Cloud className="w-4 h-4" />
 							WebDAV
@@ -558,7 +593,8 @@ export function DataSettings() {
 										<div className="grid grid-cols-3 gap-4">
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
-													{(dataStats.sources_count ?? 0) + (dataStats.notes_count ?? 0)}
+													{(dataStats.sources_count ?? 0) +
+														(dataStats.notes_count ?? 0)}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">
 													资料与笔记
@@ -575,7 +611,8 @@ export function DataSettings() {
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
 													{formatSize(
-														(dataStats.database_size ?? 0) + (dataStats.media_size ?? 0),
+														(dataStats.database_size ?? 0) +
+															(dataStats.media_size ?? 0),
 													)}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">总占用</div>
@@ -639,7 +676,6 @@ export function DataSettings() {
 									</div>
 								</SectionCard>
 
-
 								{/* 本地备份目录 */}
 								<SectionCard>
 									<div className="p-5">
@@ -669,8 +705,12 @@ export function DataSettings() {
 													description="定期自动备份到本地目录"
 													action={
 														<Toggle
-															checked={syncConfig.local_backup_auto_sync ?? false}
-															onChange={(v) => saveConfig({ local_backup_auto_sync: v })}
+															checked={
+																syncConfig.local_backup_auto_sync ?? false
+															}
+															onChange={(v) =>
+																saveConfig({ local_backup_auto_sync: v })
+															}
 														/>
 													}
 												/>
@@ -679,7 +719,13 @@ export function DataSettings() {
 													action={
 														<select
 															value={syncConfig.local_backup_interval ?? 60}
-															onChange={(e) => saveConfig({ local_backup_interval: parseInt(e.target.value) })}
+															onChange={(e) =>
+																saveConfig({
+																	local_backup_interval: parseInt(
+																		e.target.value,
+																	),
+																})
+															}
 															disabled={!syncConfig.local_backup_auto_sync}
 															className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
 														>
@@ -697,7 +743,13 @@ export function DataSettings() {
 													action={
 														<select
 															value={syncConfig.local_backup_max_count ?? 10}
-															onChange={(e) => saveConfig({ local_backup_max_count: parseInt(e.target.value) })}
+															onChange={(e) =>
+																saveConfig({
+																	local_backup_max_count: parseInt(
+																		e.target.value,
+																	),
+																})
+															}
 															className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
 														>
 															<option value={5}>5 份</option>
@@ -713,8 +765,12 @@ export function DataSettings() {
 															if (!syncConfig.local_backup_dir) return;
 															setIsBackingUpToLocal(true);
 															try {
-																const result = await backupToLocalDir(syncConfig.local_backup_dir);
-																alert(`✅ 备份成功！\n文件大小: ${formatSize(result.size)}`);
+																const result = await backupToLocalDir(
+																	syncConfig.local_backup_dir,
+																);
+																alert(
+																	`✅ 备份成功！\n文件大小: ${formatSize(result.size)}`,
+																);
 																await loadData();
 															} catch (error) {
 																alert(`备份失败: ${error}`);
@@ -725,7 +781,11 @@ export function DataSettings() {
 														disabled={isBackingUpToLocal}
 														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
 													>
-														{isBackingUpToLocal ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+														{isBackingUpToLocal ? (
+															<RefreshCw className="w-4 h-4 animate-spin" />
+														) : (
+															<Download className="w-4 h-4" />
+														)}
 														立即备份
 													</button>
 													<button
@@ -738,7 +798,10 @@ export function DataSettings() {
 												</div>
 												{syncConfig.local_backup_last_sync_at && (
 													<div className="text-xs text-zinc-400 mt-3">
-														上次备份: {new Date(syncConfig.local_backup_last_sync_at).toLocaleString()}
+														上次备份:{" "}
+														{new Date(
+															syncConfig.local_backup_last_sync_at,
+														).toLocaleString()}
 													</div>
 												)}
 											</>
@@ -866,7 +929,9 @@ export function DataSettings() {
 														<option key={provider.id} value={provider.id}>
 															{provider.icon ? `${provider.icon} ` : ""}
 															{provider.nameZh}
-															{provider.requiresAppPassword ? " (需应用密码)" : ""}
+															{provider.requiresAppPassword
+																? " (需应用密码)"
+																: ""}
 														</option>
 													))}
 												</select>
@@ -876,18 +941,33 @@ export function DataSettings() {
 															<HelpCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
 															<div className="flex-1">
 																<p className="text-xs text-blue-900 leading-relaxed">
-																	{getProviderById(selectedProvider)?.description}
+																	{
+																		getProviderById(selectedProvider)
+																			?.description
+																	}
 																</p>
 																{getProviderById(selectedProvider)?.helpUrl && (
 																	<a
-																		href={getProviderById(selectedProvider)?.helpUrl}
+																		href={
+																			getProviderById(selectedProvider)?.helpUrl
+																		}
 																		target="_blank"
 																		rel="noopener noreferrer"
 																		className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
 																	>
 																		查看配置文档
-																		<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																			<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+																		<svg
+																			className="w-3 h-3"
+																			fill="none"
+																			stroke="currentColor"
+																			viewBox="0 0 24 24"
+																		>
+																			<path
+																				strokeLinecap="round"
+																				strokeLinejoin="round"
+																				strokeWidth={2}
+																				d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+																			/>
 																		</svg>
 																	</a>
 																)}
@@ -908,26 +988,39 @@ export function DataSettings() {
 													onChange={(e) => handleUrlChange(e.target.value)}
 													placeholder="https://dav.example.com/dav/"
 													disabled={!syncConfig.webdav_enabled}
-													className={`w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white disabled:opacity-50 transition-all ${!urlValidation.valid ? "ring-2 ring-red-200 bg-red-50/30" : ""
-														}`}
+													className={`w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white disabled:opacity-50 transition-all ${
+														!urlValidation.valid
+															? "ring-2 ring-red-200 bg-red-50/30"
+															: ""
+													}`}
 												/>
 												{urlValidation.message && (
 													<div
-														className={`mt-2 p-2.5 rounded-lg flex items-start gap-2 ${urlValidation.valid
+														className={`mt-2 p-2.5 rounded-lg flex items-start gap-2 ${
+															urlValidation.valid
 																? "bg-amber-50/50 border border-amber-100"
 																: "bg-red-50/50 border border-red-100"
-															}`}
+														}`}
 													>
-														<AlertCircle className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${urlValidation.valid ? "text-amber-600" : "text-red-600"
-															}`} />
-														<span className={`text-xs leading-relaxed ${urlValidation.valid ? "text-amber-900" : "text-red-900"
-															}`}>
+														<AlertCircle
+															className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${
+																urlValidation.valid
+																	? "text-amber-600"
+																	: "text-red-600"
+															}`}
+														/>
+														<span
+															className={`text-xs leading-relaxed ${
+																urlValidation.valid
+																	? "text-amber-900"
+																	: "text-red-900"
+															}`}
+														>
 															{urlValidation.message}
 														</span>
 													</div>
 												)}
 											</div>
-
 										</div>
 										<div className="grid grid-cols-2 gap-4">
 											<div>
@@ -1021,359 +1114,364 @@ export function DataSettings() {
 
 								{/* 备份设置 */}
 								<SectionCard
-							className={
-								!syncConfig.webdav_enabled
-									? "opacity-50 pointer-events-none"
-									: ""
-							}
-						>
-							<div className="p-5">
-								<SectionTitle>备份设置</SectionTitle>
+									className={
+										!syncConfig.webdav_enabled
+											? "opacity-50 pointer-events-none"
+											: ""
+									}
+								>
+									<div className="p-5">
+										<SectionTitle>备份设置</SectionTitle>
 
-								{/* 同步状态显示 */}
-								{syncConfig.webdav_auto_sync && (
-									<div className="flex items-center gap-2 text-xs bg-zinc-50 rounded-lg px-3 py-2 mb-4">
-										{isSyncing ? (
-											<>
-												<RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-												<span className="text-zinc-600">正在同步...</span>
-											</>
-										) : syncConfig.webdav_last_sync_error ? (
-											<>
-												<XCircle className="w-3.5 h-3.5 text-red-500" />
-												<span className="text-red-600">同步失败: {syncConfig.webdav_last_sync_error}</span>
-											</>
-										) : syncConfig.webdav_last_sync_at ? (
-											<>
-												<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-												<span className="text-zinc-500">
-													上次同步: {new Date(syncConfig.webdav_last_sync_at).toLocaleString("zh-CN")}
-												</span>
-											</>
-										) : (
-											<>
-												<Clock className="w-3.5 h-3.5 text-zinc-400" />
-												<span className="text-zinc-400">尚未同步</span>
-											</>
+										{/* 同步状态显示 */}
+										{syncConfig.webdav_auto_sync && (
+											<div className="flex items-center gap-2 text-xs bg-zinc-50 rounded-lg px-3 py-2 mb-4">
+												{isSyncing ? (
+													<>
+														<RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+														<span className="text-zinc-600">正在同步...</span>
+													</>
+												) : syncConfig.webdav_last_sync_error ? (
+													<>
+														<XCircle className="w-3.5 h-3.5 text-red-500" />
+														<span className="text-red-600">
+															同步失败: {syncConfig.webdav_last_sync_error}
+														</span>
+													</>
+												) : syncConfig.webdav_last_sync_at ? (
+													<>
+														<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+														<span className="text-zinc-500">
+															上次同步:{" "}
+															{new Date(
+																syncConfig.webdav_last_sync_at,
+															).toLocaleString("zh-CN")}
+														</span>
+													</>
+												) : (
+													<>
+														<Clock className="w-3.5 h-3.5 text-zinc-400" />
+														<span className="text-zinc-400">尚未同步</span>
+													</>
+												)}
+											</div>
+										)}
+
+										<SettingRow
+											label="自动备份"
+											description="定期自动备份数据到 WebDAV"
+											action={
+												<Toggle
+													checked={syncConfig.webdav_auto_sync ?? false}
+													onChange={(v) => saveConfig({ webdav_auto_sync: v })}
+													disabled={!syncConfig.webdav_enabled}
+												/>
+											}
+										/>
+										<SettingRow
+											label="备份间隔"
+											action={
+												<select
+													value={syncConfig.webdav_sync_interval ?? 0}
+													onChange={(e) =>
+														saveConfig({
+															webdav_sync_interval: parseInt(e.target.value),
+														})
+													}
+													disabled={
+														!syncConfig.webdav_enabled ||
+														!syncConfig.webdav_auto_sync
+													}
+													className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
+												>
+													<option value={0}>关闭</option>
+													<option value={1}>1 分钟</option>
+													<option value={5}>5 分钟</option>
+													<option value={15}>15 分钟</option>
+													<option value={30}>30 分钟</option>
+													<option value={60}>1 小时</option>
+													<option value={120}>2 小时</option>
+													<option value={360}>6 小时</option>
+													<option value={720}>12 小时</option>
+													<option value={1440}>24 小时</option>
+												</select>
+											}
+										/>
+										<SettingRow
+											label="最大备份数"
+											description="超出后自动删除旧备份"
+											action={
+												<select
+													value={syncConfig.webdav_max_backups ?? 0}
+													onChange={(e) =>
+														saveConfig({
+															webdav_max_backups: parseInt(e.target.value),
+														})
+													}
+													disabled={!syncConfig.webdav_enabled}
+													className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
+												>
+													<option value={0}>无限制</option>
+													<option value={1}>1 份</option>
+													<option value={3}>3 份</option>
+													<option value={5}>5 份</option>
+													<option value={10}>10 份</option>
+													<option value={20}>20 份</option>
+													<option value={50}>50 份</option>
+												</select>
+											}
+										/>
+										<SettingRow
+											label="精简备份"
+											description="仅备份设置和记录，不包含大文件"
+											action={
+												<Toggle
+													checked={syncConfig.webdav_skip_backup_file ?? false}
+													onChange={(v) =>
+														saveConfig({ webdav_skip_backup_file: v })
+													}
+													disabled={!syncConfig.webdav_enabled}
+												/>
+											}
+										/>
+									</div>
+								</SectionCard>
+
+								{/* 手动操作 */}
+								<SectionCard
+									className={
+										!syncConfig.webdav_enabled
+											? "opacity-50 pointer-events-none"
+											: ""
+									}
+								>
+									<div className="p-5">
+										<SectionTitle>数据备份与恢复</SectionTitle>
+										<div className="flex gap-3 mb-4">
+											<button
+												onClick={handleBackupToWebdav}
+												disabled={!syncConfig.webdav_enabled || isSyncing}
+												className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+											>
+												{isSyncing ? (
+													<RefreshCw className="w-4 h-4 animate-spin" />
+												) : (
+													<Upload className="w-4 h-4" />
+												)}
+												备份到 WebDAV
+											</button>
+											<button
+												onClick={handleOpenBackupManager}
+												disabled={
+													!syncConfig.webdav_url ||
+													!syncConfig.webdav_username ||
+													!syncConfig.webdav_password
+												}
+												className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+											>
+												<Download className="w-4 h-4" />从 WebDAV 恢复
+											</button>
+										</div>
+
+										{syncConfig.last_sync_at && (
+											<div className="text-xs text-zinc-400 mt-2">
+												上次同步:{" "}
+												{new Date(syncConfig.last_sync_at).toLocaleString()}
+											</div>
 										)}
 									</div>
-								)}
+								</SectionCard>
 
-								<SettingRow
-									label="自动备份"
-									description="定期自动备份数据到 WebDAV"
-									action={
-										<Toggle
-											checked={syncConfig.webdav_auto_sync ?? false}
-											onChange={(v) =>
-												saveConfig({ webdav_auto_sync: v })
-											}
-											disabled={!syncConfig.webdav_enabled}
-										/>
-									}
-								/>
-								<SettingRow
-									label="备份间隔"
-									action={
-										<select
-											value={syncConfig.webdav_sync_interval ?? 0}
-											onChange={(e) =>
-												saveConfig({
-													webdav_sync_interval: parseInt(e.target.value),
-												})
-											}
-											disabled={
-												!syncConfig.webdav_enabled ||
-												!syncConfig.webdav_auto_sync
-											}
-											className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
-										>
-											<option value={0}>关闭</option>
-											<option value={1}>1 分钟</option>
-											<option value={5}>5 分钟</option>
-											<option value={15}>15 分钟</option>
-											<option value={30}>30 分钟</option>
-											<option value={60}>1 小时</option>
-											<option value={120}>2 小时</option>
-											<option value={360}>6 小时</option>
-											<option value={720}>12 小时</option>
-											<option value={1440}>24 小时</option>
-										</select>
-									}
-								/>
-								<SettingRow
-									label="最大备份数"
-									description="超出后自动删除旧备份"
-									action={
-										<select
-											value={syncConfig.webdav_max_backups ?? 0}
-											onChange={(e) =>
-												saveConfig({
-													webdav_max_backups: parseInt(e.target.value),
-												})
-											}
-											disabled={!syncConfig.webdav_enabled}
-											className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
-										>
-											<option value={0}>无限制</option>
-											<option value={1}>1 份</option>
-											<option value={3}>3 份</option>
-											<option value={5}>5 份</option>
-											<option value={10}>10 份</option>
-											<option value={20}>20 份</option>
-											<option value={50}>50 份</option>
-										</select>
-									}
-								/>
-								<SettingRow
-									label="精简备份"
-									description="仅备份设置和记录，不包含大文件"
-									action={
-										<Toggle
-											checked={syncConfig.webdav_skip_backup_file ?? false}
-											onChange={(v) => saveConfig({ webdav_skip_backup_file: v })}
-											disabled={!syncConfig.webdav_enabled}
-										/>
-									}
-								/>
-							</div>
-						</SectionCard>
-
-						{/* 手动操作 */}
-						<SectionCard
-							className={
-								!syncConfig.webdav_enabled
-									? "opacity-50 pointer-events-none"
-									: ""
-							}
-						>
-							<div className="p-5">
-								<SectionTitle>数据备份与恢复</SectionTitle>
-								<div className="flex gap-3 mb-4">
-									<button
-										onClick={handleBackupToWebdav}
-										disabled={!syncConfig.webdav_enabled || isSyncing}
-										className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-									>
-										{isSyncing ? (
-											<RefreshCw className="w-4 h-4 animate-spin" />
-										) : (
-											<Upload className="w-4 h-4" />
-										)}
-										备份到 WebDAV
-									</button>
-									<button
-										onClick={handleOpenBackupManager}
-										disabled={
-											!syncConfig.webdav_url ||
-											!syncConfig.webdav_username ||
-											!syncConfig.webdav_password
-										}
-										className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-									>
-										<Download className="w-4 h-4" />从 WebDAV 恢复
-									</button>
-								</div>
-
-								{syncConfig.last_sync_at && (
-									<div className="text-xs text-zinc-400 mt-2">
-										上次同步:{" "}
-										{new Date(syncConfig.last_sync_at).toLocaleString()}
-									</div>
-								)}
-							</div>
-						</SectionCard>
-
-						{/* 多设备同步说明 */}
-						<div className="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700">
-							<div className="flex items-start gap-3">
-								<AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-								<div>
-									<div className="font-medium mb-1">多设备同步</div>
-									<div className="text-xs text-blue-600">
-										在多台设备上使用相同的 WebDAV 配置，即可实现数据同步。
-										建议在每次使用前先从 WebDAV 恢复最新数据，使用后再备份。
+								{/* 多设备同步说明 */}
+								<div className="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700">
+									<div className="flex items-start gap-3">
+										<AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+										<div>
+											<div className="font-medium mb-1">多设备同步</div>
+											<div className="text-xs text-blue-600">
+												在多台设备上使用相同的 WebDAV 配置，即可实现数据同步。
+												建议在每次使用前先从 WebDAV 恢复最新数据，使用后再备份。
+											</div>
+										</div>
 									</div>
 								</div>
-							</div>
-						</div>
-					</>
-				)}
+							</>
+						)}
+					</div>
+				</div>
 			</div>
-		</div>
-	</div>
 
-	{/* 危险操作确认弹窗 */}
-	<Modal
-		isOpen={isDangerOpen}
-		onClose={() => {
-			if (!isClearing) {
-				setIsDangerOpen(false);
-				setConfirmPhrase("");
-			}
-		}}
-		title="重置所有数据"
-	>
-		<div className="space-y-4">
-			<div className="flex items-center gap-3 text-red-600">
-				<ShieldAlert className="w-5 h-5" />
-				<p className="text-sm font-medium">此操作将永久删除以下内容：</p>
-			</div>
-			<ul className="text-sm text-red-600 bg-red-50 rounded-xl p-4 space-y-2">
-				<li>• 所有资料、笔记与同步配置</li>
-				<li>• 所有工作流与输出文稿</li>
-				<li>• 所有模型服务商配置</li>
-				<li>• 应用内的个性化设置</li>
-			</ul>
-			<div className="space-y-2">
-				<label className="text-xs text-zinc-500">
-					请输入{" "}
-					<span className="font-mono font-semibold text-red-600">
-						DELETE ALL
-					</span>{" "}
-					以确认
-				</label>
-				<input
-					type="text"
-					value={confirmPhrase}
-					onChange={(e) => setConfirmPhrase(e.target.value)}
-					placeholder="DELETE ALL"
-					className="w-full px-4 py-2.5 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-white text-sm"
-					disabled={isClearing}
-				/>
-			</div>
-			<div className="text-xs text-red-500">
-				⚠️ 操作无法撤销，建议先导出备份。
-			</div>
-		</div>
-		<div className="flex justify-end gap-3 mt-6">
-			<button
-				onClick={() => {
+			{/* 危险操作确认弹窗 */}
+			<Modal
+				isOpen={isDangerOpen}
+				onClose={() => {
 					if (!isClearing) {
 						setIsDangerOpen(false);
 						setConfirmPhrase("");
 					}
 				}}
-				className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
-				disabled={isClearing}
+				title="重置所有数据"
 			>
-				取消
-			</button>
-			<button
-				onClick={async () => {
-					if (confirmPhrase.trim().toUpperCase() !== "DELETE ALL") return;
-					setIsClearing(true);
-					try {
-						await clearAllData();
-						alert("✅ 所有数据已删除，页面即将刷新");
-						window.location.reload();
-					} catch (error) {
-						alert(`重置失败: ${error}`);
-						setIsClearing(false);
-					}
-				}}
-				disabled={
-					confirmPhrase.trim().toUpperCase() !== "DELETE ALL" || isClearing
-				}
-				className="px-4 py-2 text-sm font-medium rounded-xl text-white bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition-colors"
-			>
-				{isClearing ? "重置中…" : "确认重置"}
-			</button>
-		</div>
-	</Modal>
-
-	{/* 备份数据管理弹窗 */}
-	<Modal
-		isOpen={isBackupManagerOpen}
-		onClose={() => setIsBackupManagerOpen(false)}
-		title="备份数据管理"
-	>
-		<div className="space-y-4">
-			{/* 表头 */}
-			<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-100">
-				<div className="col-span-5">文件名</div>
-				<div className="col-span-4">修改时间</div>
-				<div className="col-span-3 text-right">操作</div>
-			</div>
-
-			{/* 备份列表 */}
-			<div className="max-h-80 overflow-y-auto space-y-1">
-				{isLoadingBackups ? (
-					<div className="flex items-center justify-center py-8">
-						<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+				<div className="space-y-4">
+					<div className="flex items-center gap-3 text-red-600">
+						<ShieldAlert className="w-5 h-5" />
+						<p className="text-sm font-medium">此操作将永久删除以下内容：</p>
 					</div>
-				) : webdavBackups.length === 0 ? (
-					<div className="text-center py-8 text-sm text-zinc-400">
-						暂无备份文件
+					<ul className="text-sm text-red-600 bg-red-50 rounded-xl p-4 space-y-2">
+						<li>• 所有资料、笔记与同步配置</li>
+						<li>• 所有工作流与输出文稿</li>
+						<li>• 所有模型服务商配置</li>
+						<li>• 应用内的个性化设置</li>
+					</ul>
+					<div className="space-y-2">
+						<label className="text-xs text-zinc-500">
+							请输入{" "}
+							<span className="font-mono font-semibold text-red-600">
+								DELETE ALL
+							</span>{" "}
+							以确认
+						</label>
+						<input
+							type="text"
+							value={confirmPhrase}
+							onChange={(e) => setConfirmPhrase(e.target.value)}
+							placeholder="DELETE ALL"
+							className="w-full px-4 py-2.5 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-white text-sm"
+							disabled={isClearing}
+						/>
 					</div>
-				) : (
-					webdavBackups.map((backup) => (
-						<div
-							key={backup.fileName}
-							className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg transition-colors"
-						>
-							<div
-								className="col-span-5 text-xs font-mono text-zinc-600 truncate"
-								title={backup.fileName}
-							>
-								{backup.fileName}
-							</div>
-							<div className="col-span-4 text-xs text-zinc-500">
-								{new Date(backup.modifiedTime).toLocaleString("zh-CN")}
-							</div>
-							<div className="col-span-3 flex items-center justify-end gap-2">
-								<button
-									onClick={() => handleRestoreFromBackup(backup.fileName)}
-									disabled={isRestoring}
-									className="px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
-								>
-									{isRestoring ? "恢复中..." : "恢复"}
-								</button>
-								<button
-									onClick={() => handleDeleteBackup(backup.fileName)}
-									disabled={isDeletingBackup === backup.fileName}
-									className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-									title="删除备份"
-								>
-									{isDeletingBackup === backup.fileName ? (
-										<RefreshCw className="w-3.5 h-3.5 animate-spin" />
-									) : (
-										<Trash2 className="w-3.5 h-3.5" />
-									)}
-								</button>
-							</div>
-						</div>
-					))
-				)}
-			</div>
-		</div>
+					<div className="text-xs text-red-500">
+						⚠️ 操作无法撤销，建议先导出备份。
+					</div>
+				</div>
+				<div className="flex justify-end gap-3 mt-6">
+					<button
+						onClick={() => {
+							if (!isClearing) {
+								setIsDangerOpen(false);
+								setConfirmPhrase("");
+							}
+						}}
+						className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						disabled={isClearing}
+					>
+						取消
+					</button>
+					<button
+						onClick={async () => {
+							if (confirmPhrase.trim().toUpperCase() !== "DELETE ALL") return;
+							setIsClearing(true);
+							try {
+								await clearAllData();
+								alert("✅ 所有数据已删除，页面即将刷新");
+								window.location.reload();
+							} catch (error) {
+								alert(`重置失败: ${error}`);
+								setIsClearing(false);
+							}
+						}}
+						disabled={
+							confirmPhrase.trim().toUpperCase() !== "DELETE ALL" || isClearing
+						}
+						className="px-4 py-2 text-sm font-medium rounded-xl text-white bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition-colors"
+					>
+						{isClearing ? "重置中…" : "确认重置"}
+					</button>
+				</div>
+			</Modal>
 
-		<div className="flex justify-between items-center mt-6 pt-4 border-t border-zinc-100">
-			<button
-				onClick={handleOpenBackupManager}
-				className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+			{/* 备份数据管理弹窗 */}
+			<Modal
+				isOpen={isBackupManagerOpen}
+				onClose={() => setIsBackupManagerOpen(false)}
+				title="备份数据管理"
 			>
-				<RefreshCw className="w-4 h-4" />
-				刷新
-			</button>
-			<button
-				onClick={() => setIsBackupManagerOpen(false)}
-				className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
-			>
-				关闭
-			</button>
-		</div>
-	</Modal>
+				<div className="space-y-4">
+					{/* 表头 */}
+					<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-100">
+						<div className="col-span-5">文件名</div>
+						<div className="col-span-4">修改时间</div>
+						<div className="col-span-3 text-right">操作</div>
+					</div>
 
-	{/* 本地备份管理弹窗 */}
-	{syncConfig?.local_backup_dir && (
-		<LocalBackupManagerModal
-			isOpen={isLocalBackupManagerOpen}
-			onClose={() => setIsLocalBackupManagerOpen(false)}
-			backupDir={syncConfig.local_backup_dir}
-			onRestoreSuccess={loadData}
-		/>
-	)}
-</div>
+					{/* 备份列表 */}
+					<div className="max-h-80 overflow-y-auto space-y-1">
+						{isLoadingBackups ? (
+							<div className="flex items-center justify-center py-8">
+								<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+							</div>
+						) : webdavBackups.length === 0 ? (
+							<div className="text-center py-8 text-sm text-zinc-400">
+								暂无备份文件
+							</div>
+						) : (
+							webdavBackups.map((backup) => (
+								<div
+									key={backup.fileName}
+									className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg transition-colors"
+								>
+									<div
+										className="col-span-5 text-xs font-mono text-zinc-600 truncate"
+										title={backup.fileName}
+									>
+										{backup.fileName}
+									</div>
+									<div className="col-span-4 text-xs text-zinc-500">
+										{new Date(backup.modifiedTime).toLocaleString("zh-CN")}
+									</div>
+									<div className="col-span-3 flex items-center justify-end gap-2">
+										<button
+											onClick={() => handleRestoreFromBackup(backup.fileName)}
+											disabled={isRestoring}
+											className="px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
+										>
+											{isRestoring ? "恢复中..." : "恢复"}
+										</button>
+										<button
+											onClick={() => handleDeleteBackup(backup.fileName)}
+											disabled={isDeletingBackup === backup.fileName}
+											className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+											title="删除备份"
+										>
+											{isDeletingBackup === backup.fileName ? (
+												<RefreshCw className="w-3.5 h-3.5 animate-spin" />
+											) : (
+												<Trash2 className="w-3.5 h-3.5" />
+											)}
+										</button>
+									</div>
+								</div>
+							))
+						)}
+					</div>
+				</div>
+
+				<div className="flex justify-between items-center mt-6 pt-4 border-t border-zinc-100">
+					<button
+						onClick={handleOpenBackupManager}
+						className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+					>
+						<RefreshCw className="w-4 h-4" />
+						刷新
+					</button>
+					<button
+						onClick={() => setIsBackupManagerOpen(false)}
+						className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+					>
+						关闭
+					</button>
+				</div>
+			</Modal>
+
+			{/* 本地备份管理弹窗 */}
+			{syncConfig?.local_backup_dir && (
+				<LocalBackupManagerModal
+					isOpen={isLocalBackupManagerOpen}
+					onClose={() => setIsLocalBackupManagerOpen(false)}
+					backupDir={syncConfig.local_backup_dir}
+					onRestoreSuccess={loadData}
+				/>
+			)}
+		</div>
 	);
 }

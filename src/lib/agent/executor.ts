@@ -90,18 +90,24 @@ const IMAGE_FILE_EXTENSIONS = new Set([
 	"tiff",
 ]);
 
-const DATA_IMAGE_URL_RE = /data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
+const DATA_IMAGE_URL_RE =
+	/data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
 const DATA_IMAGE_URL_LIMIT = 1;
 
 function extensionFromDataImageMime(raw: string): string {
-	const mime = String(raw || "").toLowerCase().trim();
+	const mime = String(raw || "")
+		.toLowerCase()
+		.trim();
 	if (!mime) return "png";
 	if (mime === "jpeg") return "jpg";
 	if (mime === "svg+xml") return "svg";
 	return mime.replace(/[^a-z0-9]+/g, "") || "png";
 }
 
-function collectDataImageUrlsFromString(raw: string, limit = DATA_IMAGE_URL_LIMIT): string[] {
+function collectDataImageUrlsFromString(
+	raw: string,
+	limit = DATA_IMAGE_URL_LIMIT,
+): string[] {
 	const text = String(raw || "");
 	if (!text || text.length > 8_000_000) return [];
 	const found: string[] = [];
@@ -115,7 +121,10 @@ function collectDataImageUrlsFromString(raw: string, limit = DATA_IMAGE_URL_LIMI
 	return found;
 }
 
-function collectDataImageUrlsFromUnknown(value: unknown, limit = DATA_IMAGE_URL_LIMIT): string[] {
+function collectDataImageUrlsFromUnknown(
+	value: unknown,
+	limit = DATA_IMAGE_URL_LIMIT,
+): string[] {
 	const found = new Set<string>();
 	const seen = new Set<unknown>();
 
@@ -123,7 +132,10 @@ function collectDataImageUrlsFromUnknown(value: unknown, limit = DATA_IMAGE_URL_
 		if (v === null || v === undefined) return;
 		if (depth > 8 || found.size >= limit) return;
 		if (typeof v === "string") {
-			for (const item of collectDataImageUrlsFromString(v, limit - found.size)) {
+			for (const item of collectDataImageUrlsFromString(
+				v,
+				limit - found.size,
+			)) {
 				found.add(item);
 				if (found.size >= limit) break;
 			}
@@ -198,7 +210,11 @@ function mergeImagePathsIntoToolOutput(
 ): unknown {
 	const paths = uniqStrings(imagePaths);
 	if (paths.length === 0) return toolOutput;
-	if (toolOutput && typeof toolOutput === "object" && !Array.isArray(toolOutput)) {
+	if (
+		toolOutput &&
+		typeof toolOutput === "object" &&
+		!Array.isArray(toolOutput)
+	) {
 		const record = toolOutput as Record<string, unknown>;
 		const existing = Array.isArray(record.image_paths)
 			? record.image_paths.filter((v): v is string => typeof v === "string")
@@ -256,10 +272,12 @@ function normalizeImageFilePathCandidate(
 	raw: string,
 	sandboxDir?: string,
 ): string | null {
-	let value = stripWrapping(raw).replace(/^file:\/\//i, "").trim();
+	let value = stripWrapping(raw)
+		.replace(/^file:\/\//i, "")
+		.trim();
 	try {
 		value = decodeURIComponent(value);
-	} catch { }
+	} catch {}
 	if (!value) return null;
 	if (value.startsWith("data:image/")) return null;
 	if (value.startsWith("http://") || value.startsWith("https://")) return null;
@@ -280,7 +298,10 @@ function normalizeImageFilePathCandidate(
 	return value;
 }
 
-function extractImagePathsFromString(raw: string, sandboxDir?: string): string[] {
+function extractImagePathsFromString(
+	raw: string,
+	sandboxDir?: string,
+): string[] {
 	const value = String(raw || "");
 	if (!value.trim()) return [];
 
@@ -292,15 +313,15 @@ function extractImagePathsFromString(raw: string, sandboxDir?: string): string[]
 	};
 
 	// Markdown image syntax: ![alt](<path/to/file with spaces.png>)
-	for (const match of value.matchAll(
-		/!\[[^\]]*]\((?:<)?([^)\n>]+)(?:>)?\)/g,
-	)) {
+	for (const match of value.matchAll(/!\[[^\]]*]\((?:<)?([^)\n>]+)(?:>)?\)/g)) {
 		const candidate = match?.[1];
 		if (candidate) addCandidate(candidate);
 	}
 
 	// Quoted absolute/relative paths (supports spaces)
-	for (const match of value.matchAll(/["'`]([^"'`\n]+\.[A-Za-z0-9]{2,6})["'`]/g)) {
+	for (const match of value.matchAll(
+		/["'`]([^"'`\n]+\.[A-Za-z0-9]{2,6})["'`]/g,
+	)) {
 		const candidate = match?.[1];
 		if (candidate) addCandidate(candidate);
 	}
@@ -536,7 +557,7 @@ class AgentExecutor {
 						: task.id;
 				const res = await getAgentSandboxDir(sandboxKey);
 				sandboxDir = res.path;
-			} catch { }
+			} catch {}
 		}
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
@@ -576,7 +597,7 @@ class AgentExecutor {
 						size: ctx.content.length,
 						isBinary: false,
 					});
-				} catch { }
+				} catch {}
 			}
 			options.attachedContexts = [];
 		}
@@ -625,7 +646,7 @@ class AgentExecutor {
 							entries.length === 1 &&
 							entries[0]?.is_file &&
 							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
-							stripTrailingSlash(srcPath);
+								stripTrailingSlash(srcPath);
 
 						if (singleFile) {
 							await safeInvoke<{ success: boolean }>("copy_file_safe", {
@@ -645,8 +666,8 @@ class AgentExecutor {
 							if (!e.is_file) continue;
 							const rel = String(e.path).startsWith(dirRoot)
 								? String(e.path)
-									.slice(dirRoot.length)
-									.replace(/^[/\\]+/, "")
+										.slice(dirRoot.length)
+										.replace(/^[/\\]+/, "")
 								: getBasename(e.path);
 							const finalRel = rel || getBasename(e.path);
 							const out = `${sandboxDir}/${folderName}/${finalRel}`;
@@ -656,7 +677,7 @@ class AgentExecutor {
 									dest: out,
 									create_dirs: true,
 								});
-							} catch { }
+							} catch {}
 						}
 						file.path = `${sandboxDir}/${folderName}`;
 						file.type = file.type || "file";
@@ -668,7 +689,7 @@ class AgentExecutor {
 						});
 						file.path = dest;
 					}
-				} catch { }
+				} catch {}
 			}
 		}
 
@@ -685,8 +706,7 @@ class AgentExecutor {
 
 		// 强制执行指定 skill 的指令
 		if (forcedSkillName) {
-			enhancedPrompt +=
-				`\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
+			enhancedPrompt += `\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
 		}
 
 		// Document protocol guidance for the editor integration (only if not already present in user-configured prompt).
@@ -756,7 +776,8 @@ class AgentExecutor {
 			if (options?.attachedFiles?.length) {
 				for (const file of options.attachedFiles) {
 					fileList.push(
-						`- ${file.title} (文件路径: ${file.path})${file.type ? ` [${file.type}]` : ""
+						`- ${file.title} (文件路径: ${file.path})${
+							file.type ? ` [${file.type}]` : ""
 						}`,
 					);
 				}
@@ -795,20 +816,25 @@ class AgentExecutor {
 							toolStepCounter++;
 							const toolCallIdBase =
 								typeof message.toolCallId === "string" &&
-									message.toolCallId.trim()
+								message.toolCallId.trim()
 									? message.toolCallId.trim()
 									: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 							const toolCallId = `sdk-tool-${toolCallIdBase}`;
 
 							const truncate = (s: string, max = 180) => {
-								const t = String(s || "").replace(/\s+/g, " ").trim();
+								const t = String(s || "")
+									.replace(/\s+/g, " ")
+									.trim();
 								return t.length > max ? `${t.slice(0, max)}…` : t;
 							};
 
 							// 构建工具描述，包含参数信息（避免把超长 command/content 直接塞进 UI）
 							let description =
 								message.content || `Calling ${message.toolName || "Tool"}...`;
-							if (message.toolInput && Object.keys(message.toolInput).length > 0) {
+							if (
+								message.toolInput &&
+								Object.keys(message.toolInput).length > 0
+							) {
 								const toolLower = String(message.toolName || "").toLowerCase();
 								if (toolLower === "bash") {
 									const cmd =
@@ -823,7 +849,8 @@ class AgentExecutor {
 								} else {
 									const inputDesc = Object.entries(message.toolInput)
 										.map(([k, v]) => {
-											if (typeof v === "string") return `${k}: ${truncate(v, 120)}`;
+											if (typeof v === "string")
+												return `${k}: ${truncate(v, 120)}`;
 											return `${k}: ${truncate(JSON.stringify(v), 120)}`;
 										})
 										.slice(0, 3) // 最多显示3个参数
@@ -895,7 +922,7 @@ class AgentExecutor {
 						case "tool_result": {
 							const resolvedToolCallId =
 								typeof message.toolCallId === "string" &&
-									message.toolCallId.trim()
+								message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: lastToolCallId;
 							if (resolvedToolCallId) {
@@ -995,9 +1022,7 @@ class AgentExecutor {
 										if (!normalized || existing.has(normalized)) continue;
 										existing.add(normalized);
 
-										const cleanForName = normalized
-											.split("#")[0]
-											.split("?")[0];
+										const cleanForName = normalized.split("#")[0].split("?")[0];
 										const fileName =
 											getBasename(cleanForName) ||
 											`generated-image-${Date.now()}.png`;
@@ -1024,7 +1049,8 @@ class AgentExecutor {
 									await managedModeStore.scanSandboxDir(sandboxDir);
 									const firstPath = String(imagePaths[0] || "").trim();
 									if (firstPath) {
-										const selectedId = managedModeStore.selectFileByPath(firstPath);
+										const selectedId =
+											managedModeStore.selectFileByPath(firstPath);
 										if (selectedId) {
 											managedModeStore.setCenterView("preview");
 											managedModeStore.setPreviewMode("preview");
@@ -1049,7 +1075,10 @@ class AgentExecutor {
 									accumulated_result: finalResult,
 									metadata: { query, systemPrompt, model: activeModel },
 								}).catch((err) => {
-									console.warn("[AgentExecutor] Failed to save checkpoint:", err);
+									console.warn(
+										"[AgentExecutor] Failed to save checkpoint:",
+										err,
+									);
 								});
 							}
 
@@ -1064,7 +1093,7 @@ class AgentExecutor {
 							// 更新工具调用的 input 字段（工具输入流式传输完成）
 							const resolvedId =
 								typeof message.toolCallId === "string" &&
-									message.toolCallId.trim()
+								message.toolCallId.trim()
 									? `sdk-tool-${message.toolCallId.trim()}`
 									: null;
 							if (resolvedId && message.toolInput) {
@@ -1076,7 +1105,6 @@ class AgentExecutor {
 						}
 
 						case "result":
-
 							if (message.status === "completed") {
 								agentStore.updateTaskStepByKind("analysis", "completed");
 							}
@@ -1170,7 +1198,10 @@ class AgentExecutor {
 								error: result.summary,
 							},
 						}).catch((err) => {
-							console.warn("[AgentExecutor] Failed to save checkpoint on failure:", err);
+							console.warn(
+								"[AgentExecutor] Failed to save checkpoint on failure:",
+								err,
+							);
 						});
 						agentStore.failTask(result.summary || "Task failed");
 					}

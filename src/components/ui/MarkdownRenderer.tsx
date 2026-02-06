@@ -95,13 +95,16 @@ interface MarkdownRendererProps {
 function preprocessMarkdown(content: string): string {
 	// 1. 修复被换行分开的图片语法: ![alt]\n(url) 或 ![alt]\n\n(url)
 	// 匹配: ![任意文字] 后跟换行再跟 (url)
-	let result = content.replace(/!\[([^\]]*)\]\s*\n+\s*\(([^)]+)\)/g, "![$1]($2)");
+	let result = content.replace(
+		/!\[([^\]]*)\]\s*\n+\s*\(([^)]+)\)/g,
+		"![$1]($2)",
+	);
 
 	// 2. 为包含空格但未用 <> 包裹的图片 URL 添加包裹
 	// 匹配: ![alt](url with spaces) 但排除已经用 <> 包裹的
 	result = result.replace(
 		/!\[([^\]]*)\]\((?!<)([^)]*\s[^)]*)\)/g,
-		"![$1](<$2>)"
+		"![$1](<$2>)",
 	);
 
 	return result;

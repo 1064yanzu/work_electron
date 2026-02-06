@@ -651,12 +651,15 @@ function isUuidString(value: unknown): value is string {
 	);
 }
 
-const DATA_IMAGE_URL_RE = /data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
+const DATA_IMAGE_URL_RE =
+	/data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi;
 const DATA_IMAGE_URL_LIMIT = 1;
 const DATA_IMAGE_URL_MAX_CHARS = 8_000_000;
 
 function extensionFromDataImageMime(raw: string): string {
-	const mime = String(raw || "").toLowerCase().trim();
+	const mime = String(raw || "")
+		.toLowerCase()
+		.trim();
 	if (!mime) return "png";
 	if (mime === "jpeg") return "jpg";
 	if (mime === "svg+xml") return "svg";
@@ -664,7 +667,10 @@ function extensionFromDataImageMime(raw: string): string {
 	return mime.replace(/[^a-z0-9]+/g, "") || "png";
 }
 
-function collectDataImageUrlsFromString(input: string, limit = DATA_IMAGE_URL_LIMIT): string[] {
+function collectDataImageUrlsFromString(
+	input: string,
+	limit = DATA_IMAGE_URL_LIMIT,
+): string[] {
 	const text = String(input || "");
 	if (!text || text.length > DATA_IMAGE_URL_MAX_CHARS) return [];
 	const found: string[] = [];
@@ -679,7 +685,10 @@ function collectDataImageUrlsFromString(input: string, limit = DATA_IMAGE_URL_LI
 	return found;
 }
 
-function collectDataImageUrlsFromUnknown(value: unknown, limit = DATA_IMAGE_URL_LIMIT): string[] {
+function collectDataImageUrlsFromUnknown(
+	value: unknown,
+	limit = DATA_IMAGE_URL_LIMIT,
+): string[] {
 	const found = new Set<string>();
 	const seen = new Set<unknown>();
 
@@ -752,10 +761,9 @@ function buildUiToolResultOutput(
 
 	if (original && typeof original === "object" && !Array.isArray(original)) {
 		const record = original as Record<string, unknown>;
-		const existing =
-			Array.isArray(record.image_paths)
-				? record.image_paths.filter((v): v is string => typeof v === "string")
-				: [];
+		const existing = Array.isArray(record.image_paths)
+			? record.image_paths.filter((v): v is string => typeof v === "string")
+			: [];
 		return {
 			...record,
 			image_paths: uniqStrings([...existing, ...imagePaths]),
@@ -929,7 +937,7 @@ export function createAgentSdkHandlers(options: {
 		if (
 			cachedAgentModelSettings &&
 			now - cachedAgentModelSettings.loadedAt <
-			AGENT_MODEL_SETTINGS_CACHE_TTL_MS
+				AGENT_MODEL_SETTINGS_CACHE_TTL_MS
 		) {
 			return cachedAgentModelSettings.settings;
 		}
@@ -955,15 +963,17 @@ export function createAgentSdkHandlers(options: {
 				msg: "agent_sdk loadAgentModelSettingsFromDb result",
 				scope: "agent",
 				hasSettings: !!parsed,
-				scenarioConfigsCount: Array.isArray(parsed?.scenarioConfigs) ? parsed.scenarioConfigs.length : 0,
+				scenarioConfigsCount: Array.isArray(parsed?.scenarioConfigs)
+					? parsed.scenarioConfigs.length
+					: 0,
 				scenarioConfigsPreview: Array.isArray(parsed?.scenarioConfigs)
 					? parsed.scenarioConfigs.slice(0, 3).map((c: any) => ({
-						scenario: c?.scenario,
-						customName: c?.customName,
-						enabled: c?.enabled,
-						modelId: c?.modelId,
-						providerId: c?.providerId,
-					}))
+							scenario: c?.scenario,
+							customName: c?.customName,
+							enabled: c?.enabled,
+							modelId: c?.modelId,
+							providerId: c?.providerId,
+						}))
 					: [],
 			});
 			return parsed;
@@ -1106,15 +1116,31 @@ export function createAgentSdkHandlers(options: {
 	 * 从子代理描述中自动提取触发关键词
 	 * 用于用户没有配置 triggerKeywords 时的备用匹配
 	 */
-	function extractTriggerKeywordsFromDescription(description: string): string[] {
+	function extractTriggerKeywordsFromDescription(
+		description: string,
+	): string[] {
 		const keywords: string[] = [];
 		const desc = description.toLowerCase();
 
 		// 画图/图像相关
 		const imagePatterns = [
-			"画图", "绘图", "绘制", "作图", "生成图", "创建图", "制作图",
-			"图片", "图像", "图画", "插图", "插画", "海报", "画面",
-			"generate image", "create image", "draw",
+			"画图",
+			"绘图",
+			"绘制",
+			"作图",
+			"生成图",
+			"创建图",
+			"制作图",
+			"图片",
+			"图像",
+			"图画",
+			"插图",
+			"插画",
+			"海报",
+			"画面",
+			"generate image",
+			"create image",
+			"draw",
 		];
 		for (const p of imagePatterns) {
 			if (desc.includes(p.toLowerCase())) {
@@ -1255,26 +1281,26 @@ export function createAgentSdkHandlers(options: {
 				// Custom / unknown: allow common tools; include Skill to unlock special capabilities.
 				return includeSkills
 					? [
-						"Skill",
-						"Read",
-						"Write",
-						"Edit",
-						"Bash",
-						"Grep",
-						"Glob",
-						"WebSearch",
-						"WebFetch",
-					]
+							"Skill",
+							"Read",
+							"Write",
+							"Edit",
+							"Bash",
+							"Grep",
+							"Glob",
+							"WebSearch",
+							"WebFetch",
+						]
 					: [
-						"Read",
-						"Write",
-						"Edit",
-						"Bash",
-						"Grep",
-						"Glob",
-						"WebSearch",
-						"WebFetch",
-					];
+							"Read",
+							"Write",
+							"Edit",
+							"Bash",
+							"Grep",
+							"Glob",
+							"WebSearch",
+							"WebFetch",
+						];
 		}
 	}
 
@@ -1379,9 +1405,9 @@ export function createAgentSdkHandlers(options: {
 				...(isCustom
 					? {}
 					: {
-						tools: toolsForScenario(scenario, { includeSkills }),
-						disallowedTools: ["Task"],
-					}),
+							tools: toolsForScenario(scenario, { includeSkills }),
+							disallowedTools: ["Task"],
+						}),
 				skills:
 					includeSkills && opts.enabledSkills.length > 0
 						? opts.enabledSkills
@@ -1396,11 +1422,13 @@ export function createAgentSdkHandlers(options: {
 			scope: "agent",
 			agentKeysGenerated: Object.keys(agents),
 			agentsCount: Object.keys(agents).length,
-			agentsPreview: Object.entries(agents).slice(0, 5).map(([k, v]) => ({
-				agentKey: k,
-				description: (v as any)?.description,
-				modelEncoded: !!(v as any)?.model,
-			})),
+			agentsPreview: Object.entries(agents)
+				.slice(0, 5)
+				.map(([k, v]) => ({
+					agentKey: k,
+					description: (v as any)?.description,
+					modelEncoded: !!(v as any)?.model,
+				})),
 		});
 
 		return agents;
@@ -1463,30 +1491,46 @@ export function createAgentSdkHandlers(options: {
 
 		lines.push("## 子代理(通过 Task 工具调用)");
 		lines.push("");
-		lines.push("**委派规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，请**优先**调用 Task 工具委派；如需补充最小必要上下文，可先进行少量 Read/Glob/Grep。");
+		lines.push(
+			"**委派规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，请**优先**调用 Task 工具委派；如需补充最小必要上下文，可先进行少量 Read/Glob/Grep。",
+		);
 		lines.push("");
-		lines.push("调用方式：Task({ subagent_type: \"<英文标识符>\", description: \"简述任务\", prompt: \"完整任务描述+所需上下文\" })");
+		lines.push(
+			'调用方式：Task({ subagent_type: "<英文标识符>", description: "简述任务", prompt: "完整任务描述+所需上下文" })',
+		);
 		lines.push("");
 
 		const enabled = items.filter((x) => x.enabled);
 		const disabled = items.filter((x) => !x.enabled);
 
 		if (enabled.length === 0) {
-			lines.push("当前：你已配置子代理场景，但都处于【禁用】状态。请到设置中启用后再使用。");
+			lines.push(
+				"当前：你已配置子代理场景，但都处于【禁用】状态。请到设置中启用后再使用。",
+			);
 		} else {
 			lines.push("已启用的子代理：");
 			for (const x of enabled.slice(0, 30)) {
-				lines.push(`- 功能：**${x.description}** → 调用 Task({ subagent_type: "${x.agentKey}", ... })`);
+				lines.push(
+					`- 功能：**${x.description}** → 调用 Task({ subagent_type: "${x.agentKey}", ... })`,
+				);
 			}
 			if (enabled.length > 30) {
 				lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
 			}
 			lines.push("");
-			lines.push("**语义匹配示例**：如果子代理描述是\"画图\"，那么用户说\"绘制图像\"\"生成图片\"\"作图\"都应该匹配。");
-			lines.push("**执行顺序**：在需要调用子代理的任务中，默认优先调用 Task；若确有必要，可先做最小化的信息读取或定位，再发起 Task。");
-			lines.push("**避免重复**：同一需求在拿到子代理结果前，不要重复调用同一个 Task；若子代理已返回 image_paths，请直接基于该结果结束回答。");
+			lines.push(
+				'**语义匹配示例**：如果子代理描述是"画图"，那么用户说"绘制图像""生成图片""作图"都应该匹配。',
+			);
+			lines.push(
+				"**执行顺序**：在需要调用子代理的任务中，默认优先调用 Task；若确有必要，可先做最小化的信息读取或定位，再发起 Task。",
+			);
+			lines.push(
+				"**避免重复**：同一需求在拿到子代理结果前，不要重复调用同一个 Task；若子代理已返回 image_paths，请直接基于该结果结束回答。",
+			);
 			lines.push("");
-			lines.push("（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）");
+			lines.push(
+				"（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）",
+			);
 		}
 
 		if (disabled.length > 0) {
@@ -1507,7 +1551,11 @@ export function createAgentSdkHandlers(options: {
 			scope: "agent",
 			enabledSubagentsCount: enabled.length,
 			disabledSubagentsCount: disabled.length,
-			subagentItems: items.map(x => ({ agentKey: x.agentKey, description: x.description.slice(0, 50), enabled: x.enabled })),
+			subagentItems: items.map((x) => ({
+				agentKey: x.agentKey,
+				description: x.description.slice(0, 50),
+				enabled: x.enabled,
+			})),
 			promptPreview: result.slice(0, 500),
 		});
 
@@ -1567,7 +1615,10 @@ ${opts.appendContent}`.trim();
 				const toolUseIdByIndex = new Map<number, string>();
 				const toolInputJsonById = new Map<string, string>();
 				const taskCallSignatureByToolUseId = new Map<string, string>();
-				const taskCallStateBySignature = new Map<string, "running" | "completed">();
+				const taskCallStateBySignature = new Map<
+					string,
+					"running" | "completed"
+				>();
 				const taskImagePathsByToolUseId = new Map<string, string[]>();
 				const normalizeTaskSignaturePart = (v: unknown) =>
 					String(v || "")
@@ -1589,7 +1640,8 @@ ${opts.appendContent}`.trim();
 						typeof toolInput.description === "string"
 							? toolInput.description
 							: "";
-					const prompt = typeof toolInput.prompt === "string" ? toolInput.prompt : "";
+					const prompt =
+						typeof toolInput.prompt === "string" ? toolInput.prompt : "";
 					return [
 						normalizeTaskSignaturePart(subagent),
 						normalizeTaskSignaturePart(description),
@@ -1619,18 +1671,18 @@ ${opts.appendContent}`.trim();
 								: "";
 							stderr(
 								`[agent_sdk] <tool_use_error> tool_use_id=${toolUseId || "unknown"} tool=${toolName || "unknown"}\n` +
-								(inputPreview ? `input=${inputPreview}\n` : "") +
-								content.slice(0, 2000),
+									(inputPreview ? `input=${inputPreview}\n` : "") +
+									content.slice(0, 2000),
 							);
 						}
-					} catch { }
+					} catch {}
 				};
 
 				let pathToClaudeCodeExecutable: string | undefined;
 				try {
 					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
 					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch { }
+				} catch {}
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
@@ -1677,7 +1729,7 @@ ${opts.appendContent}`.trim();
 							const raw = fs.readFileSync(settingsPath, "utf8");
 							const parsed = JSON.parse(raw);
 							if (parsed && typeof parsed === "object") settingsObj = parsed;
-						} catch { }
+						} catch {}
 					}
 
 					if (!settingsObj.customApiKeyResponses)
@@ -1699,7 +1751,7 @@ ${opts.appendContent}`.trim();
 						JSON.stringify(settingsObj, null, 2),
 						"utf8",
 					);
-				} catch { }
+				} catch {}
 
 				logger.info({
 					msg: "agent_sdk start",
@@ -1752,15 +1804,22 @@ ${opts.appendContent}`.trim();
 					: [];
 				const skillsFromInput = normalizeStringArray((input as any).skills);
 				const skillsFromProject = await listProjectSkills(cwd);
-				const enabledSkills = uniqStrings([...skillsFromInput, ...skillsFromProject]);
+				const enabledSkills = uniqStrings([
+					...skillsFromInput,
+					...skillsFromProject,
+				]);
 				const preferredWritingSkill = pickWritingSkill(enabledSkills);
 				const agentModelSettings =
 					(await loadAgentModelSettingsFromDb()) as AgentModelSettingsLike | null;
 				try {
-					const configs = Array.isArray((agentModelSettings as any)?.scenarioConfigs)
+					const configs = Array.isArray(
+						(agentModelSettings as any)?.scenarioConfigs,
+					)
 						? ((agentModelSettings as any).scenarioConfigs as any[])
 						: [];
-					const enabledCount = configs.filter((c) => c && c.enabled !== false).length;
+					const enabledCount = configs.filter(
+						(c) => c && c.enabled !== false,
+					).length;
 					logger.info({
 						msg: "agent_sdk scenario+skills loaded",
 						scope: "agent",
@@ -1772,7 +1831,7 @@ ${opts.appendContent}`.trim();
 						enabledSkillsCount: enabledSkills.length,
 						enabledSkillsPreview: enabledSkills.slice(0, 20),
 					});
-				} catch { }
+				} catch {}
 				const scenarioAgents = buildDynamicScenarioAgents({
 					settings: agentModelSettings,
 					enabledSkills,
@@ -1794,12 +1853,12 @@ ${opts.appendContent}`.trim();
 						: undefined;
 				const mcpServers =
 					(input as any).mcp_servers &&
-						typeof (input as any).mcp_servers === "object"
+					typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
 						: undefined;
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
-						input.permission_mode.trim()
+					input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "acceptEdits";
 
@@ -1851,8 +1910,8 @@ ${opts.appendContent}`.trim();
 					agentKeys: Object.keys(agentsConfig),
 					agentsPreview: Object.entries(agentsConfig).map(([k, v]) => ({
 						key: k,
-						hasDescription: !!((v as any)?.description),
-						hasPrompt: !!((v as any)?.prompt),
+						hasDescription: !!(v as any)?.description,
+						hasPrompt: !!(v as any)?.prompt,
 						model: (v as any)?.model?.slice?.(0, 50) ?? (v as any)?.model,
 					})),
 				});
@@ -1946,12 +2005,13 @@ ${opts.appendContent}`.trim();
 														const candidate = String(raw || "")
 															.trim()
 															.replace(/[),，。；;:]+$/g, "");
-														if (!candidate || existingPaths.includes(candidate)) continue;
+														if (!candidate || existingPaths.includes(candidate))
+															continue;
 														try {
 															if (fs.existsSync(candidate)) {
 																existingPaths.push(candidate);
 															}
-														} catch { }
+														} catch {}
 													}
 													const hasReadConstraint =
 														/先读取|先用Read|使用 Read|Read 工具|先用 read|read 工具/i.test(
@@ -1969,7 +2029,8 @@ ${opts.appendContent}`.trim();
 													}
 												}
 
-												const signature = buildTaskCallSignature(normalizedInput);
+												const signature =
+													buildTaskCallSignature(normalizedInput);
 												const state = signature
 													? taskCallStateBySignature.get(signature)
 													: undefined;
@@ -2100,7 +2161,9 @@ ${opts.appendContent}`.trim();
 											if (hookInput.hook_event_name !== "PostToolUse") {
 												return { continue: true };
 											}
-											const toolName = String((hookInput as any).tool_name || "");
+											const toolName = String(
+												(hookInput as any).tool_name || "",
+											);
 											const toolLower = toolName.toLowerCase();
 											if (toolLower !== "task") return { continue: true };
 
@@ -2110,7 +2173,8 @@ ${opts.appendContent}`.trim();
 											const signature = toolUseId
 												? taskCallSignatureByToolUseId.get(toolUseId)
 												: undefined;
-											if (signature) taskCallStateBySignature.set(signature, "completed");
+											if (signature)
+												taskCallStateBySignature.set(signature, "completed");
 
 											const response = (hookInput as any).tool_response;
 											const dataUrls = collectDataImageUrlsFromUnknown(
@@ -2145,8 +2209,7 @@ ${opts.appendContent}`.trim();
 												continue: true,
 												hookSpecificOutput: {
 													hookEventName: "PostToolUse" as const,
-													additionalContext:
-														`子代理图片已保存到本地路径，请优先使用这些路径并结束回答（不要再次调用画图子代理）：image_paths=${JSON.stringify(uniqPaths)}`,
+													additionalContext: `子代理图片已保存到本地路径，请优先使用这些路径并结束回答（不要再次调用画图子代理）：image_paths=${JSON.stringify(uniqPaths)}`,
 												},
 											};
 										},
@@ -2160,7 +2223,9 @@ ${opts.appendContent}`.trim();
 											if (hookInput.hook_event_name !== "PostToolUseFailure") {
 												return { continue: true };
 											}
-											const toolName = String((hookInput as any).tool_name || "");
+											const toolName = String(
+												(hookInput as any).tool_name || "",
+											);
 											if (toolName.toLowerCase() !== "task") {
 												return { continue: true };
 											}
@@ -2476,7 +2541,7 @@ ${opts.appendContent}`.trim();
 									id,
 									JSON.stringify(msgAny.event.content_block.input ?? {}),
 								);
-							} catch { }
+							} catch {}
 						}
 					}
 					if (
@@ -2527,7 +2592,7 @@ ${opts.appendContent}`.trim();
 							if (id && b?.input) {
 								try {
 									toolInputJsonById.set(id, JSON.stringify(b.input ?? {}));
-								} catch { }
+								} catch {}
 							}
 						}
 					}
@@ -2565,7 +2630,7 @@ ${opts.appendContent}`.trim();
 										let parsedInput: Record<string, unknown> = {};
 										try {
 											parsedInput = JSON.parse(inputJsonStr);
-										} catch { }
+										} catch {}
 										// 发送 tool_input_complete 事件
 										emit(options.getMainWindow, {
 											runId,
@@ -2591,9 +2656,9 @@ ${opts.appendContent}`.trim();
 							usage:
 								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
 									? {
-										input_tokens: accumulatedInputTokens,
-										output_tokens: accumulatedOutputTokens,
-									}
+											input_tokens: accumulatedInputTokens,
+											output_tokens: accumulatedOutputTokens,
+										}
 									: (msg as any)?.usage,
 						};
 						emit(options.getMainWindow, {
@@ -2615,9 +2680,9 @@ ${opts.appendContent}`.trim();
 							usage:
 								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
 									? {
-										input_tokens: accumulatedInputTokens,
-										output_tokens: accumulatedOutputTokens,
-									}
+											input_tokens: accumulatedInputTokens,
+											output_tokens: accumulatedOutputTokens,
+										}
 									: undefined,
 						},
 					});
@@ -2640,9 +2705,9 @@ ${opts.appendContent}`.trim();
 					retryable,
 					retryConfig: retryable
 						? {
-							maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
-							baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
-						}
+								maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
+								baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
+							}
 						: undefined,
 				} as any);
 			} finally {

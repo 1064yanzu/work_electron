@@ -422,7 +422,8 @@ function ChatMessageImpl({
 														content={part}
 														isStreaming={isStreaming}
 														sandboxDir={
-															typeof (message.metadata as any)?.sandboxDir === "string"
+															typeof (message.metadata as any)?.sandboxDir ===
+															"string"
 																? (message.metadata as any).sandboxDir
 																: undefined
 														}

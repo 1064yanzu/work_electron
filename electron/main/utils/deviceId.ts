@@ -99,5 +99,7 @@ export function generateBackupFileName(deviceId: string): string {
  * 检查是否为新格式的备份文件名（包含设备 ID）
  */
 export function isMultiDeviceBackupFileName(fileName: string): boolean {
-	return /^backup_[^_]+_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.zip$/.test(fileName);
+	return /^backup_[^_]+_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.zip$/.test(
+		fileName,
+	);
 }

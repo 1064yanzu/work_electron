@@ -1,6 +1,6 @@
 /**
  * Collapsible Step Card Component
- * 
+ *
  * 通用的可折叠步骤卡片组件,用于展示 Agent 执行过程中的步骤。
  * 设计灵感来自 Claude 风格的思维链展示。
  */
@@ -123,7 +123,8 @@ export function CollapsibleStepCard({
 				onClick={() => canToggle && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					canToggle && "cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					canToggle &&
+						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!canToggle && "cursor-default",
 				)}
 				disabled={!canToggle}
@@ -136,7 +137,9 @@ export function CollapsibleStepCard({
 							colors.iconBg,
 						)}
 					>
-						<Icon className={cn("w-4 h-4 transition-colors", colors.iconColor)} />
+						<Icon
+							className={cn("w-4 h-4 transition-colors", colors.iconColor)}
+						/>
 					</div>
 				)}
 
@@ -147,7 +150,9 @@ export function CollapsibleStepCard({
 						<div
 							className={cn(
 								"text-sm font-medium transition-colors",
-								status === "pending" ? "text-zinc-400 dark:text-zinc-500" : colors.text,
+								status === "pending"
+									? "text-zinc-400 dark:text-zinc-500"
+									: colors.text,
 							)}
 						>
 							{title}

@@ -88,10 +88,11 @@ function PromptCard({
 				draggable
 				onDragStart={(e) => onDragStart(e, prompt.id)}
 				className={`group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-200 border cursor-grab active:cursor-grabbing
-                    ${isSelected
-						? "bg-zinc-50 border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700"
-						: "bg-white border-transparent hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700"
-					}`}
+                    ${
+											isSelected
+												? "bg-zinc-50 border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700"
+												: "bg-white border-transparent hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700"
+										}`}
 				onClick={onSelect}
 				onMouseEnter={() => setIsHovered(true)}
 				onMouseLeave={() => setIsHovered(false)}
@@ -109,14 +110,32 @@ function PromptCard({
 					</p>
 				</div>
 
-				<div className={`flex items-center gap-1 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"}`}>
-					<button onClick={handleCopy} className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors" title="复制">
-						{hasCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+				<div
+					className={`flex items-center gap-1 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"}`}
+				>
+					<button
+						onClick={handleCopy}
+						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors"
+						title="复制"
+					>
+						{hasCopied ? (
+							<Check className="w-3.5 h-3.5 text-green-500" />
+						) : (
+							<Copy className="w-3.5 h-3.5" />
+						)}
 					</button>
-					<button onClick={onEdit} className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors" title="编辑">
+					<button
+						onClick={onEdit}
+						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors"
+						title="编辑"
+					>
 						<Edit3 className="w-3.5 h-3.5" />
 					</button>
-					<button onClick={onDelete} className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors" title="删除">
+					<button
+						onClick={onDelete}
+						className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+						title="删除"
+					>
 						<Trash2 className="w-3.5 h-3.5" />
 					</button>
 				</div>
@@ -130,10 +149,11 @@ function PromptCard({
 			draggable
 			onDragStart={(e) => onDragStart(e, prompt.id)}
 			className={`group relative flex flex-col p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
-                ${isSelected
-					? "bg-white dark:bg-zinc-800 ring-2 ring-zinc-900 dark:ring-zinc-100 shadow-md"
-					: "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
-				}`}
+                ${
+									isSelected
+										? "bg-white dark:bg-zinc-800 ring-2 ring-zinc-900 dark:ring-zinc-100 shadow-md"
+										: "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
+								}`}
 			onClick={onSelect}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
@@ -144,13 +164,29 @@ function PromptCard({
 				</div>
 				{(isHovered || isSelected) && (
 					<div className="flex gap-1 animate-in fade-in duration-200">
-						<button onClick={handleCopy} className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors" title="复制">
-							{hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+						<button
+							onClick={handleCopy}
+							className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+							title="复制"
+						>
+							{hasCopied ? (
+								<Check className="w-4 h-4 text-green-500" />
+							) : (
+								<Copy className="w-4 h-4" />
+							)}
 						</button>
-						<button onClick={onEdit} className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors" title="编辑">
+						<button
+							onClick={onEdit}
+							className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+							title="编辑"
+						>
 							<Edit3 className="w-4 h-4" />
 						</button>
-						<button onClick={onDelete} className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="删除">
+						<button
+							onClick={onDelete}
+							className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+							title="删除"
+						>
 							<Trash2 className="w-4 h-4" />
 						</button>
 					</div>
@@ -198,7 +234,8 @@ export function PromptLibraryModal({
 	const [activeFolderId, setActiveFolderId] = useState<string | null>(null); // null = 全部, "uncategorized" = 未分类
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
-	const [editingPrompt, setEditingPrompt] = useState<Partial<CustomPrompt> | null>(null);
+	const [editingPrompt, setEditingPrompt] =
+		useState<Partial<CustomPrompt> | null>(null);
 
 	// Folder management
 	const [isAddingFolder, setIsAddingFolder] = useState(false);
@@ -216,17 +253,18 @@ export function PromptLibraryModal({
 		let result = prompts;
 
 		if (activeFolderId === "uncategorized") {
-			result = result.filter(p => !p.folderId);
+			result = result.filter((p) => !p.folderId);
 		} else if (activeFolderId !== null) {
-			result = result.filter(p => p.folderId === activeFolderId);
+			result = result.filter((p) => p.folderId === activeFolderId);
 		}
 
 		if (searchQuery.trim()) {
 			const q = searchQuery.toLowerCase();
 			result = result.filter(
-				p => p.name.toLowerCase().includes(q) ||
+				(p) =>
+					p.name.toLowerCase().includes(q) ||
 					p.shortDescription.toLowerCase().includes(q) ||
-					p.content.toLowerCase().includes(q)
+					p.content.toLowerCase().includes(q),
 			);
 		}
 		return result;
@@ -235,8 +273,10 @@ export function PromptLibraryModal({
 	// Folder prompt counts
 	const folderCounts = useMemo(() => {
 		const counts: Record<string, number> = { uncategorized: 0 };
-		folders.forEach(f => { counts[f.id] = 0; });
-		prompts.forEach(p => {
+		folders.forEach((f) => {
+			counts[f.id] = 0;
+		});
+		prompts.forEach((p) => {
 			if (p.folderId && counts[p.folderId] !== undefined) {
 				counts[p.folderId]++;
 			} else {
@@ -248,13 +288,20 @@ export function PromptLibraryModal({
 
 	// Handlers
 	const handleStartEdit = (prompt?: CustomPrompt) => {
-		setEditingPrompt(prompt ? { ...prompt } : {
-			name: "",
-			shortDescription: "",
-			content: "",
-			folderId: activeFolderId === "uncategorized" ? undefined : (activeFolderId || undefined),
-			icon: "📝",
-		});
+		setEditingPrompt(
+			prompt
+				? { ...prompt }
+				: {
+						name: "",
+						shortDescription: "",
+						content: "",
+						folderId:
+							activeFolderId === "uncategorized"
+								? undefined
+								: activeFolderId || undefined,
+						icon: "📝",
+					},
+		);
 		setIsEditing(true);
 	};
 
@@ -264,7 +311,9 @@ export function PromptLibraryModal({
 		if (editingPrompt.id) {
 			updatePrompt(editingPrompt.id, editingPrompt);
 		} else {
-			addPrompt(editingPrompt as Omit<CustomPrompt, "id" | "createdAt" | "updatedAt">);
+			addPrompt(
+				editingPrompt as Omit<CustomPrompt, "id" | "createdAt" | "updatedAt">,
+			);
 		}
 		setIsEditing(false);
 		setEditingPrompt(null);
@@ -319,17 +368,20 @@ export function PromptLibraryModal({
 		setDragOverFolderId(null);
 	};
 
-	const handleImport = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (event) => {
-			const res = importPrompts(event.target?.result as string);
-			if (res.success) alert(`已导入 ${res.count} 条提示词`);
-		};
-		reader.readAsText(file);
-		e.target.value = "";
-	}, [importPrompts]);
+	const handleImport = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = (event) => {
+				const res = importPrompts(event.target?.result as string);
+				if (res.success) alert(`已导入 ${res.count} 条提示词`);
+			};
+			reader.readAsText(file);
+			e.target.value = "";
+		},
+		[importPrompts],
+	);
 
 	const handleExport = () => {
 		const blob = new Blob([exportPrompts()], { type: "application/json" });
@@ -353,7 +405,6 @@ export function PromptLibraryModal({
 			onClick={handleBackdropClick}
 		>
 			<div className="w-[1000px] h-[700px] bg-[#FAFAFA] dark:bg-[#121212] rounded-3xl shadow-2xl border border-white/50 dark:border-zinc-800 flex overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
-
 				{/* Sidebar (Folder Navigation) */}
 				<div className="w-64 bg-zinc-50/50 dark:bg-zinc-900/50 border-r border-zinc-200/50 dark:border-zinc-800 flex flex-col p-4 backdrop-blur-xl">
 					<div className="flex items-center gap-3 px-2 mb-6 mt-2">
@@ -366,7 +417,9 @@ export function PromptLibraryModal({
 					</div>
 
 					<div className="px-2 mb-2">
-						<div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">文件夹</div>
+						<div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">
+							文件夹
+						</div>
 					</div>
 
 					<div className="space-y-1 flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -376,20 +429,23 @@ export function PromptLibraryModal({
 							onDragOver={(e) => handleDragOver(e, null)}
 							onDragLeave={handleDragLeave}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
-								${activeFolderId === null
-									? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-									: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+								${
+									activeFolderId === null
+										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
-								<LayoutGrid className={`w-4 h-4 ${activeFolderId === null ? "text-zinc-900 dark:text-zinc-100" : "opacity-70"}`} />
+								<LayoutGrid
+									className={`w-4 h-4 ${activeFolderId === null ? "text-zinc-900 dark:text-zinc-100" : "opacity-70"}`}
+								/>
 								<span>全部</span>
 							</div>
 							<span className="text-xs text-zinc-400">{prompts.length}</span>
 						</button>
 
 						{/* 文件夹列表 */}
-						{folders.map(folder => (
+						{folders.map((folder) => (
 							<div key={folder.id} className="relative">
 								{editingFolderId === folder.id ? (
 									<input
@@ -412,28 +468,39 @@ export function PromptLibraryModal({
 										onDrop={(e) => handleDrop(e, folder.id)}
 										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group cursor-pointer
 										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
-										${activeFolderId === folder.id
+										${
+											activeFolderId === folder.id
 												? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
 												: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
-											}`}
+										}`}
 									>
 										<div
 											onClick={() => setActiveFolderId(folder.id)}
 											className="flex items-center gap-2.5 flex-1"
 										>
 											{activeFolderId === folder.id ? (
-												<FolderOpen className={`w-4 h-4 ${FOLDER_COLORS[folder.color || "blue"]}`} />
+												<FolderOpen
+													className={`w-4 h-4 ${FOLDER_COLORS[folder.color || "blue"]}`}
+												/>
 											) : (
-												<Folder className={`w-4 h-4 opacity-70 group-hover:opacity-100 ${FOLDER_COLORS[folder.color || "blue"]}`} />
+												<Folder
+													className={`w-4 h-4 opacity-70 group-hover:opacity-100 ${FOLDER_COLORS[folder.color || "blue"]}`}
+												/>
 											)}
-											<span className="truncate max-w-[100px]">{folder.name}</span>
+											<span className="truncate max-w-[100px]">
+												{folder.name}
+											</span>
 										</div>
 										<div className="flex items-center gap-1">
-											<span className="text-xs text-zinc-400">{folderCounts[folder.id] || 0}</span>
+											<span className="text-xs text-zinc-400">
+												{folderCounts[folder.id] || 0}
+											</span>
 											<button
 												onClick={(e) => {
 													e.stopPropagation();
-													setFolderMenuId(folderMenuId === folder.id ? null : folder.id);
+													setFolderMenuId(
+														folderMenuId === folder.id ? null : folder.id,
+													);
 												}}
 												className="p-1 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-all"
 											>
@@ -502,16 +569,19 @@ export function PromptLibraryModal({
 							onDrop={(e) => handleDrop(e, undefined)}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
 								${dragOverFolderId === "uncategorized" ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
-								${activeFolderId === "uncategorized"
-									? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-									: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+								${
+									activeFolderId === "uncategorized"
+										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
 								<Archive className="w-4 h-4 opacity-70" />
 								<span>未分类</span>
 							</div>
-							<span className="text-xs text-zinc-400">{folderCounts.uncategorized}</span>
+							<span className="text-xs text-zinc-400">
+								{folderCounts.uncategorized}
+							</span>
 						</button>
 
 						{/* New Folder Input */}
@@ -522,7 +592,9 @@ export function PromptLibraryModal({
 									type="text"
 									value={newFolderName}
 									onChange={(e) => setNewFolderName(e.target.value)}
-									onBlur={() => { if (!newFolderName.trim()) setIsAddingFolder(false); }}
+									onBlur={() => {
+										if (!newFolderName.trim()) setIsAddingFolder(false);
+									}}
 									onKeyDown={(e) => {
 										if (e.key === "Enter") handleCreateFolder();
 										if (e.key === "Escape") setIsAddingFolder(false);
@@ -589,14 +661,32 @@ export function PromptLibraryModal({
 						<div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
 
 						<div className="flex items-center gap-1">
-							<input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-							<button onClick={() => fileInputRef.current?.click()} className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" title="导入">
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept=".json"
+								className="hidden"
+								onChange={handleImport}
+							/>
+							<button
+								onClick={() => fileInputRef.current?.click()}
+								className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
+								title="导入"
+							>
 								<Upload className="w-4.5 h-4.5" />
 							</button>
-							<button onClick={handleExport} className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" title="导出">
+							<button
+								onClick={handleExport}
+								className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
+								title="导出"
+							>
 								<Download className="w-4.5 h-4.5" />
 							</button>
-							<button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" title="关闭">
+							<button
+								onClick={onClose}
+								className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
+								title="关闭"
+							>
 								<X className="w-4.5 h-4.5" />
 							</button>
 						</div>
@@ -609,7 +699,9 @@ export function PromptLibraryModal({
 								<div className="w-20 h-20 rounded-3xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-6 ring-1 ring-zinc-100 dark:ring-zinc-800">
 									<Archive className="w-8 h-8 text-zinc-300" />
 								</div>
-								<h3 className="text-zinc-900 dark:text-zinc-100 font-medium text-lg mb-2">暂无提示词</h3>
+								<h3 className="text-zinc-900 dark:text-zinc-100 font-medium text-lg mb-2">
+									暂无提示词
+								</h3>
 								<p className="text-zinc-500 dark:text-zinc-400 max-w-xs text-sm">
 									{activeFolderId === null
 										? "创建一个新的提示词来开始使用。"
@@ -625,8 +717,14 @@ export function PromptLibraryModal({
 								</button>
 							</div>
 						) : (
-							<div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "flex flex-col gap-3"}>
-								{filteredPrompts.map(prompt => (
+							<div
+								className={
+									viewMode === "grid"
+										? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+										: "flex flex-col gap-3"
+								}
+							>
+								{filteredPrompts.map((prompt) => (
 									<PromptCard
 										key={prompt.id}
 										prompt={prompt}
@@ -646,7 +744,8 @@ export function PromptLibraryModal({
 										}}
 										onDelete={(e) => {
 											e.stopPropagation();
-											if (confirm(`确定删除"${prompt.name}"吗？`)) deletePrompt(prompt.id);
+											if (confirm(`确定删除"${prompt.name}"吗？`))
+												deletePrompt(prompt.id);
 										}}
 									/>
 								))}
@@ -670,7 +769,10 @@ export function PromptLibraryModal({
 									</span>
 								</div>
 								<div className="flex items-center gap-3">
-									<button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+									<button
+										onClick={() => setIsEditing(false)}
+										className="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+									>
 										取消
 									</button>
 									<button
@@ -687,22 +789,34 @@ export function PromptLibraryModal({
 								<div className="max-w-3xl mx-auto space-y-8">
 									<div className="flex gap-6 items-start">
 										<div className="flex flex-col gap-2">
-											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">图标</label>
+											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+												图标
+											</label>
 											<input
 												type="text"
 												value={editingPrompt?.icon || ""}
-												onChange={e => setEditingPrompt(prev => prev ? ({ ...prev, icon: e.target.value }) : null)}
+												onChange={(e) =>
+													setEditingPrompt((prev) =>
+														prev ? { ...prev, icon: e.target.value } : null,
+													)
+												}
 												className="w-16 h-16 text-3xl text-center rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all"
 												placeholder="📝"
 											/>
 										</div>
 										<div className="flex-1 space-y-6">
 											<div className="space-y-2">
-												<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">名称</label>
+												<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+													名称
+												</label>
 												<input
 													type="text"
 													value={editingPrompt?.name || ""}
-													onChange={e => setEditingPrompt(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+													onChange={(e) =>
+														setEditingPrompt((prev) =>
+															prev ? { ...prev, name: e.target.value } : null,
+														)
+													}
 													className="w-full text-2xl font-bold bg-transparent border-b border-zinc-200 dark:border-zinc-800 pb-2 focus:border-zinc-900 dark:focus:border-zinc-100 outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
 													placeholder="输入提示词名称..."
 													autoFocus
@@ -710,24 +824,48 @@ export function PromptLibraryModal({
 											</div>
 											<div className="grid grid-cols-2 gap-6">
 												<div className="space-y-2">
-													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">文件夹</label>
+													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+														文件夹
+													</label>
 													<select
 														value={editingPrompt?.folderId || ""}
-														onChange={e => setEditingPrompt(prev => prev ? ({ ...prev, folderId: e.target.value || undefined }) : null)}
+														onChange={(e) =>
+															setEditingPrompt((prev) =>
+																prev
+																	? {
+																			...prev,
+																			folderId: e.target.value || undefined,
+																		}
+																	: null,
+															)
+														}
 														className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
 													>
 														<option value="">未分类</option>
-														{folders.map(f => (
-															<option key={f.id} value={f.id}>{f.name}</option>
+														{folders.map((f) => (
+															<option key={f.id} value={f.id}>
+																{f.name}
+															</option>
 														))}
 													</select>
 												</div>
 												<div className="space-y-2">
-													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">简介</label>
+													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+														简介
+													</label>
 													<input
 														type="text"
 														value={editingPrompt?.shortDescription || ""}
-														onChange={e => setEditingPrompt(prev => prev ? ({ ...prev, shortDescription: e.target.value }) : null)}
+														onChange={(e) =>
+															setEditingPrompt((prev) =>
+																prev
+																	? {
+																			...prev,
+																			shortDescription: e.target.value,
+																		}
+																	: null,
+															)
+														}
 														className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
 														placeholder="简短描述..."
 													/>
@@ -738,17 +876,23 @@ export function PromptLibraryModal({
 
 									<div className="space-y-3 pt-4">
 										<div className="flex items-center justify-between">
-											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">提示词内容</label>
+											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+												提示词内容
+											</label>
 											<div className="text-xs text-zinc-400 flex items-center gap-1">
 												<Sparkles className="w-3 h-3" />
-												<span>支持 {'{变量名}'} 格式的占位符</span>
+												<span>支持 {"{变量名}"} 格式的占位符</span>
 											</div>
 										</div>
 										<div className="relative group">
 											<div className="absolute top-0 bottom-0 left-0 w-1 bg-zinc-200 dark:bg-zinc-800 group-focus-within:bg-zinc-900 dark:group-focus-within:bg-zinc-100 transition-colors rounded-full" />
 											<textarea
 												value={editingPrompt?.content || ""}
-												onChange={e => setEditingPrompt(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
+												onChange={(e) =>
+													setEditingPrompt((prev) =>
+														prev ? { ...prev, content: e.target.value } : null,
+													)
+												}
 												className="w-full h-[400px] pl-6 pr-4 py-2 bg-transparent resize-none outline-none font-mono text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700"
 												placeholder="在此输入详细的提示词内容..."
 											/>

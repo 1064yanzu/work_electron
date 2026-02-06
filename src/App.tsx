@@ -14,11 +14,11 @@ import { useManagedModeStore } from "./lib/managedModeStore";
 import { themeManager } from "./lib/theme";
 import { useWorkspaceStore, workspaceStore } from "./lib/workspaceStore";
 
-
 export default function App() {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const { activeMainView } = useWorkspaceStore();
-	const { isActive: isManagedMode, store: managedModeStore } = useManagedModeStore();
+	const { isActive: isManagedMode, store: managedModeStore } =
+		useManagedModeStore();
 
 	// 使用解耦的导航 Hook
 	const {
@@ -81,11 +81,13 @@ export default function App() {
 						<Panel
 							defaultSize={55}
 							minSize={30}
-							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-all"
+							className="mid-center-panel flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_6px_30px_-12px_rgba(0,0,0,0.14)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-all"
 						>
 							{isManagedMode ? (
 								<SandboxWorkspace
-									onExitManagedMode={() => managedModeStore.disableManagedMode()}
+									onExitManagedMode={() =>
+										managedModeStore.disableManagedMode()
+									}
 								/>
 							) : activeMainView === "browser" ? (
 								<BrowserPanel />

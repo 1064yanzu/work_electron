@@ -54,7 +54,7 @@ export const agentModelSettingsStore = {
 						? (state.scenarioConfigs as ScenarioModelConfig[]).map((c) => ({
 								...c,
 								enabled: c?.enabled !== false,
-						  }))
+							}))
 						: [],
 				};
 			} catch {

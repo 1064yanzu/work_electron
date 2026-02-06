@@ -147,7 +147,10 @@ async function getProvider(
 			is_enabled: Boolean(row.is_enabled),
 			models:
 				typeof row.models === "string" ? JSON.parse(row.models) : row.models,
-			metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : (row.metadata || {}),
+			metadata:
+				typeof row.metadata === "string"
+					? JSON.parse(row.metadata)
+					: row.metadata || {},
 			template_id: row.template_id as string | undefined,
 			created_at: row.created_at as number,
 			updated_at: row.updated_at as number,
@@ -174,9 +177,7 @@ function normalizeBaseUrl(provider: Provider, fallback: string): string {
 /**
  * 构建请求头
  */
-function buildAuthHeaders(
-	provider: Provider,
-): Record<string, string> {
+function buildAuthHeaders(provider: Provider): Record<string, string> {
 	const headers: Record<string, string> = {};
 	if (provider.api_key) {
 		headers["Authorization"] = `Bearer ${provider.api_key}`;
@@ -294,7 +295,10 @@ async function callImageGenerationAPI(
  * 2. url 字段包含 data URL (data:image/xxx;base64,...)
  * 3. b64_json 字段包含纯 base64 字符串
  */
-function normalizeImageResponse(item: { url?: string; b64_json?: string }): string {
+function normalizeImageResponse(item: {
+	url?: string;
+	b64_json?: string;
+}): string {
 	// 优先使用 url 字段（可能是普通 URL 或 data URL）
 	if (item.url) {
 		return item.url;
@@ -368,7 +372,10 @@ async function saveImageToFile(imageData: string): Promise<string> {
 		} else {
 			throw new Error("无效的 data URL 格式");
 		}
-	} else if (imageData.startsWith("http://") || imageData.startsWith("https://")) {
+	} else if (
+		imageData.startsWith("http://") ||
+		imageData.startsWith("https://")
+	) {
 		// 如果是 HTTP URL，下载图片
 		const response = await fetch(imageData);
 		if (!response.ok) {
@@ -409,7 +416,9 @@ async function saveImageToFile(imageData: string): Promise<string> {
 	const buffer = Buffer.from(base64Data, "base64");
 	await fs.writeFile(filePath, buffer);
 
-	console.log(`[imageGeneration] 图片已保存: ${filePath} (${buffer.length} bytes)`);
+	console.log(
+		`[imageGeneration] 图片已保存: ${filePath} (${buffer.length} bytes)`,
+	);
 
 	return filePath;
 }

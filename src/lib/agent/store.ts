@@ -104,11 +104,14 @@ class AgentStore {
 		// 否则调度延迟执行
 		if (!this.emitScheduled) {
 			this.emitScheduled = true;
-			setTimeout(() => {
-				this.emitScheduled = false;
-				this.emit();
-				this.lastEmitTime = Date.now();
-			}, this.THROTTLE_MS - (now - this.lastEmitTime));
+			setTimeout(
+				() => {
+					this.emitScheduled = false;
+					this.emit();
+					this.lastEmitTime = Date.now();
+				},
+				this.THROTTLE_MS - (now - this.lastEmitTime),
+			);
 		}
 	}
 
@@ -569,9 +572,9 @@ class AgentStore {
 					const input = nextToolCall.input || {};
 					const filePath = String(
 						(input as any).file_path ||
-						(input as any).path ||
-						(input as any).file ||
-						"",
+							(input as any).path ||
+							(input as any).file ||
+							"",
 					).trim();
 
 					if (filePath) {
@@ -1104,7 +1107,9 @@ export function useAgentStore() {
 }
 
 // Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
-export function useAgentStoreSelector<T>(selector: (state: AgentState) => T): T {
+export function useAgentStoreSelector<T>(
+	selector: (state: AgentState) => T,
+): T {
 	// 使用 useRef 缓存 selector 结果，避免每次渲染都创建新的 getSnapshot
 	const selectorRef = useRef(selector);
 	selectorRef.current = selector;
@@ -1114,11 +1119,7 @@ export function useAgentStoreSelector<T>(selector: (state: AgentState) => T): T 
 		[],
 	);
 
-	return useSyncExternalStore(
-		agentStore.subscribe,
-		getSnapshot,
-		getSnapshot,
-	);
+	return useSyncExternalStore(agentStore.subscribe, getSnapshot, getSnapshot);
 }
 
 // 导出类型供外部使用

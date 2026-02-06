@@ -44,8 +44,13 @@ export class CryptoService {
 		const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
 		// 加密数据
-		const dataBuffer = Buffer.isBuffer(data) ? data : Buffer.from(data, "utf-8");
-		const encryptedData = Buffer.concat([cipher.update(dataBuffer), cipher.final()]);
+		const dataBuffer = Buffer.isBuffer(data)
+			? data
+			: Buffer.from(data, "utf-8");
+		const encryptedData = Buffer.concat([
+			cipher.update(dataBuffer),
+			cipher.final(),
+		]);
 
 		// 获取认证标签
 		const tag = cipher.getAuthTag();
@@ -90,7 +95,12 @@ export class CryptoService {
 	 * 格式：[salt(32 bytes)][iv(16 bytes)][tag(16 bytes)][encrypted data]
 	 */
 	static serializeEncrypted(result: EncryptionResult): Buffer {
-		return Buffer.concat([result.salt, result.iv, result.tag, result.encryptedData]);
+		return Buffer.concat([
+			result.salt,
+			result.iv,
+			result.tag,
+			result.encryptedData,
+		]);
 	}
 
 	/**
@@ -152,7 +162,8 @@ export class CryptoService {
 	 * 解密文件
 	 */
 	static decryptFile(encryptedBuffer: Buffer, password: string): Buffer {
-		const { salt, iv, tag, encryptedData } = this.deserializeEncrypted(encryptedBuffer);
+		const { salt, iv, tag, encryptedData } =
+			this.deserializeEncrypted(encryptedBuffer);
 		return this.decrypt(encryptedData, password, iv, salt, tag);
 	}
 
@@ -160,7 +171,10 @@ export class CryptoService {
 	 * 验证密码强度
 	 * @returns 如果密码足够强则返回 true，否则返回错误消息
 	 */
-	static validatePassword(password: string): { valid: boolean; message?: string } {
+	static validatePassword(password: string): {
+		valid: boolean;
+		message?: string;
+	} {
 		if (password.length < 8) {
 			return { valid: false, message: "密码长度至少为 8 个字符" };
 		}
@@ -175,9 +189,12 @@ export class CryptoService {
 		const hasNumber = /[0-9]/.test(password);
 		const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
-		const complexityScore = [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(
-			Boolean,
-		).length;
+		const complexityScore = [
+			hasUpperCase,
+			hasLowerCase,
+			hasNumber,
+			hasSpecial,
+		].filter(Boolean).length;
 
 		if (complexityScore < 2) {
 			return {

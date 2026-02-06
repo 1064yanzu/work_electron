@@ -33,22 +33,30 @@ import TerminalBlock from "./TerminalBlock";
 import { InlineImage } from "../ui/InlineImage";
 
 // 工具输出显示组件 - 处理 persisted-output 和 base64 图片
-function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId?: string }) {
+function ToolOutputDisplay({
+	output,
+	toolCallId,
+}: {
+	output: unknown;
+	toolCallId?: string;
+}) {
 	const [imagePath, setImagePath] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const agentStore = useAgentStore();
 
-	const outputStr = typeof output === "string"
-		? output
-		: JSON.stringify(output, null, 2);
+	const outputStr =
+		typeof output === "string" ? output : JSON.stringify(output, null, 2);
 
 	// 检测 persisted-output 标签
-	const persistedMatch = outputStr.match(/<persisted-output>[\s\S]*?Full output saved to:\s*([^\n<]+)/);
+	const persistedMatch = outputStr.match(
+		/<persisted-output>[\s\S]*?Full output saved to:\s*([^\n<]+)/,
+	);
 	const persistedFilePath = persistedMatch?.[1]?.trim();
 
 	// 检测预览中的 base64 图片标记（不完整的，需要读取文件）
-	const hasPartialBase64 = /data:image\/[a-z]+;base64,/.test(outputStr) && persistedFilePath;
+	const hasPartialBase64 =
+		/data:image\/[a-z]+;base64,/.test(outputStr) && persistedFilePath;
 
 	useEffect(() => {
 		if (!persistedFilePath || !hasPartialBase64) return;
@@ -60,9 +68,12 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 		(async () => {
 			try {
 				// 读取持久化文件
-				const fileContent = await (window as any).electronAPI?.invoke("read_file_utf8", {
-					path: persistedFilePath,
-				});
+				const fileContent = await (window as any).electronAPI?.invoke(
+					"read_file_utf8",
+					{
+						path: persistedFilePath,
+					},
+				);
 				if (cancelled) return;
 
 				if (!fileContent) {
@@ -104,10 +115,14 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 							return pathCandidate;
 						}
 						// 如果是 base64，也返回（备用方案）
-						const match = obj.match(/(data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)/);
+						const match = obj.match(
+							/(data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)/,
+						);
 						if (match) return match[1];
 						// 也检查 markdown 格式
-						const mdMatch = obj.match(/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)\)/);
+						const mdMatch = obj.match(
+							/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)\)/,
+						);
 						if (mdMatch) return mdMatch[1];
 					}
 					if (Array.isArray(obj)) {
@@ -135,13 +150,14 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 				let finalPath = imageData;
 				if (imageData.startsWith("data:image/")) {
 					// base64 格式：优先保存到当前任务 sandbox（中间栏可直接复用），否则回退全局目录
-					const sandboxDir = (agentStore.currentTask?.metadata as any)?.sandboxDir as
-						| string
-						| undefined;
+					const sandboxDir = (agentStore.currentTask?.metadata as any)
+						?.sandboxDir as string | undefined;
 					const fileName = `subagent-image-${Date.now()}.jpg`;
 					let savedPath: string | null = null;
 					if (sandboxDir) {
-						const match = imageData.match(/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/i);
+						const match = imageData.match(
+							/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/i,
+						);
 						if (match?.[1]) {
 							const candidate = `${sandboxDir.replace(/[\\/]+$/, "")}/images/${fileName}`;
 							try {
@@ -160,10 +176,13 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 						}
 					}
 					if (!savedPath) {
-						savedPath = await (window as any).electronAPI?.invoke("save_base64_image", {
-							base64Data: imageData,
-							fileName,
-						});
+						savedPath = await (window as any).electronAPI?.invoke(
+							"save_base64_image",
+							{
+								base64Data: imageData,
+								fileName,
+							},
+						);
 					}
 					if (cancelled) return;
 
@@ -176,7 +195,8 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 
 				if (cancelled) return;
 				setImagePath(finalPath);
-				const fileName = finalPath.split('/').pop() || `image-${Date.now()}.jpg`;
+				const fileName =
+					finalPath.split("/").pop() || `image-${Date.now()}.jpg`;
 				console.log("[ToolOutputDisplay] Image path:", finalPath);
 
 				// 添加到产物列表
@@ -215,14 +235,20 @@ function ToolOutputDisplay({ output, toolCallId }: { output: unknown; toolCallId
 			}
 		})();
 
-		return () => { cancelled = true; };
+		return () => {
+			cancelled = true;
+		};
 	}, [persistedFilePath, hasPartialBase64, toolCallId]);
 
 	// 渲染图片（已添加到产物列表，会在中间栏自动预览）
 	if (imagePath) {
 		return (
 			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
-				<InlineImage path={imagePath} title="生成的图片（已添加到产物列表）" className="max-w-full" />
+				<InlineImage
+					path={imagePath}
+					title="生成的图片（已添加到产物列表）"
+					className="max-w-full"
+				/>
 			</div>
 		);
 	}
@@ -359,10 +385,10 @@ function getReadableDescription(toolCall: ToolCall): {
 	if (toolCall.name === "Task" || name === "task") {
 		const subagentType = String(
 			(input as any)?.subagent_type ||
-			(input as any)?.agent_type ||
-			(input as any)?.subagentType ||
-			(input as any)?.agentType ||
-			"",
+				(input as any)?.agent_type ||
+				(input as any)?.subagentType ||
+				(input as any)?.agentType ||
+				"",
 		).trim();
 		return {
 			icon: Brain,
@@ -480,7 +506,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		let hostname = "";
 		try {
 			hostname = new URL(url).hostname;
-		} catch { }
+		} catch {}
 		return {
 			icon: Globe,
 			prefix: "获取",
@@ -811,7 +837,12 @@ export default function ToolCallInline({
 					)}
 
 					{/* 输出 */}
-					{toolCall.output && <ToolOutputDisplay output={toolCall.output} toolCallId={toolCall.id} />}
+					{toolCall.output && (
+						<ToolOutputDisplay
+							output={toolCall.output}
+							toolCallId={toolCall.id}
+						/>
+					)}
 				</div>
 			)}
 

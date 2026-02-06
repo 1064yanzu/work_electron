@@ -25,7 +25,6 @@ function ensureMermaidInit() {
 	});
 }
 
-
 interface MermaidRendererProps {
 	chart: string;
 	className?: string;

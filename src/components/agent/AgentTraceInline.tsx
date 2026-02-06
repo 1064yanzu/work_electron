@@ -169,7 +169,11 @@ function formatDurationMs(ms?: number) {
 }
 
 // 命令语法高亮组件
-const CommandHighlight = memo(function CommandHighlight({ command }: { command: string }) {
+const CommandHighlight = memo(function CommandHighlight({
+	command,
+}: {
+	command: string;
+}) {
 	// 简单的语法高亮逻辑
 	const parts = command.split(/(\s+)/); // 按空格分割，保留空格
 
@@ -223,7 +227,11 @@ const CommandHighlight = memo(function CommandHighlight({ command }: { command: 
 	);
 });
 
-const ArtifactRow = memo(function ArtifactRow({ artifact }: { artifact: ToolArtifact }) {
+const ArtifactRow = memo(function ArtifactRow({
+	artifact,
+}: {
+	artifact: ToolArtifact;
+}) {
 	const [showPreview, setShowPreview] = useState(false);
 	const [fileContent, setFileContent] = useState<string | null>(null);
 	const [loadingContent, setLoadingContent] = useState(false);
@@ -314,7 +322,7 @@ const ArtifactRow = memo(function ArtifactRow({ artifact }: { artifact: ToolArti
 				className={cn(
 					"flex items-start gap-2 px-3 py-2",
 					isPreviewable &&
-					"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
+						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
 				)}
 				onClick={isPreviewable ? togglePreview : undefined}
 			>
@@ -416,7 +424,11 @@ const ArtifactRow = memo(function ArtifactRow({ artifact }: { artifact: ToolArti
 	);
 });
 
-const ToolCallRow = memo(function ToolCallRow({ toolCall }: { toolCall: ToolCall }) {
+const ToolCallRow = memo(function ToolCallRow({
+	toolCall,
+}: {
+	toolCall: ToolCall;
+}) {
 	const Icon = getToolIcon(toolCall.type);
 	const duration = formatDurationMs(toolCall.duration);
 	const progress = toolCall.metadata?.progress as number | undefined;
@@ -673,7 +685,7 @@ const ToolCallRow = memo(function ToolCallRow({ toolCall }: { toolCall: ToolCall
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
 					hasDetails &&
-					"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
@@ -1112,10 +1124,11 @@ function ContextControl({
 					<button
 						onClick={handleCompact}
 						disabled={isCompacting || !sdkSessionId}
-						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${isCompacting
-							? "bg-zinc-100 text-zinc-400 cursor-wait"
-							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
-							}`}
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+							isCompacting
+								? "bg-zinc-100 text-zinc-400 cursor-wait"
+								: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+						}`}
 						title="执行 /compact 命令压缩历史"
 					>
 						{isCompacting ? (

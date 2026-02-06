@@ -591,9 +591,7 @@ export async function backupToWebdav(
 	return await safeInvoke("backup_to_webdav", { data, config });
 }
 
-export async function restoreFromWebdav(
-	config: WebDavConfig,
-): Promise<string> {
+export async function restoreFromWebdav(config: WebDavConfig): Promise<string> {
 	return await safeInvoke("restore_from_webdav", { config });
 }
 
@@ -647,7 +645,9 @@ export async function restoreFromLocalFile(
 }
 
 /** 选择本地备份目录 */
-export async function selectBackupDirectory(): Promise<{ path: string | null }> {
+export async function selectBackupDirectory(): Promise<{
+	path: string | null;
+}> {
 	return await safeInvoke("select_backup_directory");
 }
 
@@ -732,15 +732,21 @@ export async function listArtifacts(
 	return await safeInvoke("artifact_list", { session_id: sessionId, limit });
 }
 
-export async function getArtifact(id: string): Promise<ArtifactMetadata | null> {
+export async function getArtifact(
+	id: string,
+): Promise<ArtifactMetadata | null> {
 	return await safeInvoke("artifact_get", { id });
 }
 
-export async function deleteArtifact(id: string): Promise<{ success: boolean }> {
+export async function deleteArtifact(
+	id: string,
+): Promise<{ success: boolean }> {
 	return await safeInvoke("artifact_delete", { id });
 }
 
-export async function revealArtifact(id: string): Promise<{ success: boolean }> {
+export async function revealArtifact(
+	id: string,
+): Promise<{ success: boolean }> {
 	return await safeInvoke("artifact_reveal", { id });
 }
 
@@ -776,4 +782,3 @@ export async function updateArtifactSettings(
 ): Promise<ArtifactSettings> {
 	return await safeInvoke("artifact_update_settings", settings);
 }
-

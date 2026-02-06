@@ -129,7 +129,9 @@ export function createSyncHandlers(db: DbContext) {
 			local_backup_auto_sync: Boolean(row.local_backup_auto_sync),
 			local_backup_interval: (row.local_backup_interval as number) || 60,
 			local_backup_max_count: (row.local_backup_max_count as number) || 10,
-			local_backup_last_sync_at: row.local_backup_last_sync_at as number | undefined,
+			local_backup_last_sync_at: row.local_backup_last_sync_at as
+				| number
+				| undefined,
 		};
 	};
 
@@ -266,9 +268,14 @@ export function createSyncHandlers(db: DbContext) {
 			// 重启自动同步调度器以应用新配置
 			try {
 				await autoSyncScheduler.restart();
-				console.log("[SyncHandler] AutoSyncScheduler restarted after config update");
+				console.log(
+					"[SyncHandler] AutoSyncScheduler restarted after config update",
+				);
 			} catch (error) {
-				console.error("[SyncHandler] Failed to restart AutoSyncScheduler:", error);
+				console.error(
+					"[SyncHandler] Failed to restart AutoSyncScheduler:",
+					error,
+				);
 			}
 		}
 
@@ -388,7 +395,9 @@ export function createSyncHandlers(db: DbContext) {
 	const listWebdavBackups = async (
 		event: IpcMainInvokeEvent,
 		input: { config: WebDavConfig },
-	): Promise<Array<{ fileName: string; modifiedTime: string; size: number }>> => {
+	): Promise<
+		Array<{ fileName: string; modifiedTime: string; size: number }>
+	> => {
 		return await backupManager.listWebdavFiles(event, input.config);
 	};
 
@@ -416,7 +425,10 @@ export function createSyncHandlers(db: DbContext) {
 		input: { deviceId: string; limit?: number },
 	): Promise<BackupHistory[]> => {
 		const limit = input.limit ?? 20;
-		return await backupHistoryManager.getDeviceBackupHistory(input.deviceId, limit);
+		return await backupHistoryManager.getDeviceBackupHistory(
+			input.deviceId,
+			limit,
+		);
 	};
 
 	// 清理 WebDAV 旧备份

@@ -8,7 +8,7 @@ async function safeAddColumn(
 	ctx: DbContext,
 	table: string,
 	column: string,
-	definition: string
+	definition: string,
 ): Promise<void> {
 	try {
 		await ctx.client.execute({
@@ -32,10 +32,30 @@ export async function runMigrations(ctx: DbContext) {
 	// 运行增量迁移 - 安全添加新列
 	// Migration: 添加 SDK 相关字段到 agent_sessions
 	await safeAddColumn(ctx, "agent_sessions", "sdk_session_id", "TEXT");
-	await safeAddColumn(ctx, "agent_sessions", "model", "TEXT DEFAULT 'claude-sonnet-4-5'");
-	await safeAddColumn(ctx, "agent_sessions", "total_prompt_tokens", "INTEGER DEFAULT 0");
-	await safeAddColumn(ctx, "agent_sessions", "total_completion_tokens", "INTEGER DEFAULT 0");
-	await safeAddColumn(ctx, "agent_sessions", "total_tokens", "INTEGER DEFAULT 0");
+	await safeAddColumn(
+		ctx,
+		"agent_sessions",
+		"model",
+		"TEXT DEFAULT 'claude-sonnet-4-5'",
+	);
+	await safeAddColumn(
+		ctx,
+		"agent_sessions",
+		"total_prompt_tokens",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"agent_sessions",
+		"total_completion_tokens",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"agent_sessions",
+		"total_tokens",
+		"INTEGER DEFAULT 0",
+	);
 	await safeAddColumn(ctx, "agent_sessions", "last_compact_at", "INTEGER");
 	await safeAddColumn(ctx, "agent_sessions", "pre_compact_tokens", "INTEGER");
 

@@ -4,841 +4,143 @@ import {
 	Background,
 	BackgroundVariant,
 	Controls,
-	Handle,
 	MiniMap,
-	Position,
 	ReactFlow,
 	ReactFlowProvider,
-	type Edge,
-	type Node,
-	type NodeProps,
-	useReactFlow,
 } from "@xyflow/react";
 import {
-	AlertTriangle,
-	Archive,
-	Bot,
-	CheckCircle2,
 	ChevronLeft,
 	ChevronRight,
-	Copy,
-	Eye,
-	FileText,
+	ChevronUp,
 	Loader2,
+	Search,
 	Sparkles,
-	Wand2,
 	X,
+	XCircle,
 } from "lucide-react";
-import React, {
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import type { AgentTask, ToolArtifact, ToolCall } from "../../lib/agent/types";
-import { EVENTS, events } from "../../lib/events";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
+import { buildExecutionGraph } from "./graph/buildExecutionGraph";
+import { GraphInspectorPanel } from "./graph/GraphInspectorPanel";
+import { nodeTypes } from "./graph/GraphNodes";
+import {
+	type ExecutionGraphSource,
+	type GraphFilter,
+	type ExecutionGraphNode,
+} from "./graph/types";
+import { useGraphFocus } from "./graph/useGraphFocus";
+import { useGraphSelection } from "./graph/useGraphSelection";
 
-export type ExecutionGraphSource = {
-	/** Stable id for the graph (usually taskId, fallback to session id). */
-	id: string;
-	title: string;
-	subtitle?: string;
-	status: AgentTask["status"];
-	toolCalls: ToolCall[];
-	artifacts: ToolArtifact[];
-};
-
-type TaskNodeData = {
-	kind: "task";
-	taskId: string;
-	title: string;
-	subtitle?: string;
-	status: AgentTask["status"];
-	stats: {
-		toolsTotal: number;
-		toolsCompleted: number;
-		toolsFailed: number;
-		artifacts: number;
-	};
-};
-
-type ToolNodeData = {
-	kind: "tool";
-	toolCallId: string;
-	name: string;
-	status: ToolCall["status"];
-	description?: string;
-	durationMs?: number;
-	startedAt?: number;
-	isSubagent?: boolean;
-	subagentType?: string;
-	lastActivity?: string;
-};
-
-type ArtifactNodeData = {
-	kind: "artifact";
-	artifactId: string;
-	title: string;
-	artifactType: ToolArtifact["type"];
-	url?: string;
-	toolCallId?: string;
-};
-
-type TaskGraphNode = Node<TaskNodeData, "task">;
-type ToolGraphNode = Node<ToolNodeData, "tool">;
-type ArtifactGraphNode = Node<ArtifactNodeData, "artifact">;
-type ExecutionGraphNode = TaskGraphNode | ToolGraphNode | ArtifactGraphNode;
-
-function formatDuration(ms?: number) {
-	if (!ms || ms <= 0) return "";
-	if (ms < 1000) return `${ms}ms`;
-	return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function safeJson(value: unknown): string {
-	try {
-		const result = JSON.stringify(value, null, 2);
-		return typeof result === "string" ? result : String(value);
-	} catch {
-		return String(value);
-	}
-}
-
-function getSubagentType(toolCall: ToolCall): string | null {
-	const input = toolCall.input as any;
-	// The SDK subagent tool is typically exposed as "Task", but older/newer versions may emit "Agent".
-	// We detect by presence of the subagent_type field to keep the UI robust.
-	if (!input || typeof input !== "object") return null;
-	const candidate =
-		typeof input?.subagent_type === "string"
-			? input.subagent_type
-			: typeof input?.agent_type === "string"
-				? input.agent_type
-				: typeof input?.subagentType === "string"
-					? input.subagentType
-					: typeof input?.agentType === "string"
-						? input.agentType
-						: null;
-	const subType = candidate ? String(candidate).trim() || null : null;
-	if (!subType) return null;
-
-	// Ensure this looks like a subagent invocation (Task/Agent tool shape).
-	const hasPrompt =
-		typeof input?.prompt === "string" && input.prompt.trim().length > 0;
-	const hasDesc =
-		typeof input?.description === "string" &&
-		input.description.trim().length > 0;
-	if (!hasPrompt && !hasDesc) return null;
-	return subType;
-}
-
-function statusPill(status: string): {
-	label: string;
-	cls: string;
-	icon: React.ElementType;
-} {
-	switch (status) {
-		case "running":
-			return {
-				label: "运行中",
-				cls: "text-blue-600 dark:text-blue-400",
-				icon: Loader2,
-			};
-		case "completed":
-			return {
-				label: "完成",
-				cls: "text-emerald-600 dark:text-emerald-400",
-				icon: CheckCircle2,
-			};
-		case "error":
-			return {
-				label: "失败",
-				cls: "text-rose-600 dark:text-rose-400",
-				icon: AlertTriangle,
-			};
-		default:
-			return {
-				label: "等待",
-				cls: "text-zinc-500 dark:text-zinc-400",
-				icon: Sparkles,
-			};
-	}
-}
-
-function taskStatusPill(status: AgentTask["status"]): {
-	label: string;
-	cls: string;
-	icon: React.ElementType;
-	spinning?: boolean;
-} {
-	switch (status) {
-		case "planning":
-			return {
-				label: "规划中",
-				cls: "text-blue-600 dark:text-blue-400",
-				icon: Loader2,
-				spinning: true,
-			};
-		case "executing":
-			return {
-				label: "执行中",
-				cls: "text-blue-600 dark:text-blue-400",
-				icon: Loader2,
-				spinning: true,
-			};
-		case "waiting":
-			return {
-				label: "等待",
-				cls: "text-zinc-500 dark:text-zinc-400",
-				icon: Sparkles,
-			};
-		case "completed":
-			return {
-				label: "完成",
-				cls: "text-emerald-600 dark:text-emerald-400",
-				icon: CheckCircle2,
-			};
-		case "error":
-			return {
-				label: "失败",
-				cls: "text-rose-600 dark:text-rose-400",
-				icon: AlertTriangle,
-			};
-		case "cancelled":
-			return {
-				label: "已取消",
-				cls: "text-zinc-500 dark:text-zinc-400",
-				icon: X,
-			};
-		default:
-			return {
-				label: "就绪",
-				cls: "text-zinc-500 dark:text-zinc-400",
-				icon: Sparkles,
-			};
-	}
-}
-
-const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
-	const { data, selected } = props;
-	const pill = taskStatusPill(data.status);
-	const Icon = pill.icon;
-
+function isTypingElement(target: EventTarget | null): boolean {
+	if (!(target instanceof HTMLElement)) return false;
+	const tag = target.tagName.toLowerCase();
 	return (
-		<div
-			className={cn(
-				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]",
-				"border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
-			)}
-		>
-			<Handle type="target" position={Position.Left} className="opacity-0" />
-			<Handle type="source" position={Position.Right} className="opacity-0" />
+		tag === "input" ||
+		tag === "textarea" ||
+		tag === "select" ||
+		target.isContentEditable
+	);
+}
 
-			<div className="px-4 py-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
-				<div className="flex items-start gap-3">
-					<div className="mt-0.5 w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-900 flex items-center justify-center shadow-sm">
-						<Bot className="w-4 h-4" />
-					</div>
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2">
-							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-								{data.title}
-							</div>
-							<span
-								className={cn(
-									"inline-flex items-center gap-1 text-[11px] font-medium",
-									pill.cls,
-								)}
-							>
-								<Icon
-									className={cn("w-3 h-3", pill.spinning && "animate-spin")}
-								/>
-								{pill.label}
-							</span>
-						</div>
-						{data.subtitle ? (
-							<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-								{data.subtitle}
-							</div>
-						) : null}
-					</div>
+function EmptyGraph() {
+	return (
+		<div className="flex-1 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+			<div className="text-center space-y-2 max-w-md">
+				<div className="mx-auto w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
+					<Sparkles className="w-6 h-6 text-zinc-400" />
 				</div>
-			</div>
-
-			<div className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-300">
-				<div className="flex items-center gap-2 flex-wrap">
-					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Wand2 className="w-3.5 h-3.5 text-indigo-500" />
-						工具 {data.stats.toolsCompleted}/{data.stats.toolsTotal}
-					</span>
-					{data.stats.toolsFailed > 0 ? (
-						<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/15">
-							<AlertTriangle className="w-3.5 h-3.5" />
-							失败 {data.stats.toolsFailed}
-						</span>
-					) : null}
-					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Archive className="w-3.5 h-3.5 text-zinc-500" />
-						产物 {data.stats.artifacts}
-					</span>
+				<div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+					暂无运行任务
+				</div>
+				<div className="text-xs text-zinc-400 dark:text-zinc-500">
+					开始托管任务后，这里会展示运行图。
 				</div>
 			</div>
 		</div>
 	);
-});
-
-const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
-	const { data, selected } = props;
-	const pill = statusPill(data.status);
-	const Icon = pill.icon;
-
-	const accent = data.isSubagent
-		? "purple"
-		: data.status === "error"
-			? "rose"
-			: "zinc";
-	const borderCls =
-		accent === "purple"
-			? "border-purple-200/70 dark:border-purple-900/40"
-			: accent === "rose"
-				? "border-rose-200/70 dark:border-rose-900/40"
-				: "border-black/[0.06] dark:border-white/[0.08]";
-
-	return (
-		<div
-			className={cn(
-				"min-w-[280px] max-w-[320px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
-				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
-				borderCls,
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
-				data.status === "running" &&
-					"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
-			)}
-		>
-			<Handle type="target" position={Position.Left} className="opacity-0" />
-			<Handle type="source" position={Position.Right} className="opacity-0" />
-
-			<div className="px-3.5 py-3">
-				<div className="flex items-start gap-3">
-					<div
-						className={cn(
-							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10",
-							data.isSubagent
-								? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300"
-								: data.status === "error"
-									? "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300"
-									: "bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300",
-						)}
-					>
-						{data.status === "running" ? (
-							<Icon className="w-4 h-4 animate-spin" />
-						) : (
-							<Icon className="w-4 h-4" />
-						)}
-					</div>
-
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2">
-							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-								{data.isSubagent
-									? data.subagentType
-										? `子代理 · ${data.subagentType}`
-										: "子代理"
-									: data.name}
-							</div>
-							<span
-								className={cn(
-									"inline-flex items-center gap-1 text-[11px] font-medium",
-									pill.cls,
-								)}
-							>
-								{pill.label}
-							</span>
-						</div>
-						<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-							{data.description || (data.isSubagent ? "子代理调用中..." : "")}
-						</div>
-
-						{data.lastActivity ? (
-							<div className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-50/80 dark:bg-zinc-900/60 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
-								<span className="text-zinc-400 dark:text-zinc-500 mr-1">
-									最新：
-								</span>
-								{data.lastActivity}
-							</div>
-						) : null}
-					</div>
-
-					{data.durationMs ? (
-						<div className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
-							{formatDuration(data.durationMs)}
-						</div>
-					) : null}
-				</div>
-			</div>
-		</div>
-	);
-});
-
-const ArtifactNode = memo(function ArtifactNode(
-	props: NodeProps<ArtifactGraphNode>,
-) {
-	const { data, selected } = props;
-	const Icon =
-		data.artifactType === "image"
-			? Eye
-			: data.artifactType === "code"
-				? FileText
-				: Archive;
-
-	return (
-		<div
-			className={cn(
-				"min-w-[220px] max-w-[280px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
-				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
-				"border-black/[0.06] dark:border-white/[0.08]",
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
-			)}
-		>
-			<Handle type="target" position={Position.Top} className="opacity-0" />
-			<div className="px-3.5 py-3">
-				<div className="flex items-start gap-3">
-					<div className="mt-0.5 w-8 h-8 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10">
-						<Icon className="w-4 h-4" />
-					</div>
-					<div className="min-w-0 flex-1">
-						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-							{data.title}
-						</div>
-						<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400">
-							产物 · {data.artifactType}
-						</div>
-					</div>
-					<ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 shrink-0 mt-1" />
-				</div>
-			</div>
-		</div>
-	);
-});
-
-const nodeTypes = {
-	task: TaskNode,
-	tool: ToolNode,
-	artifact: ArtifactNode,
-};
-
-type ExecutionGraphBuild = {
-	nodes: ExecutionGraphNode[];
-	edges: Edge[];
-	taskNodeId: string | null;
-};
-
-function buildExecutionGraph(
-	source: ExecutionGraphSource | null,
-): ExecutionGraphBuild {
-	if (!source) return { nodes: [], edges: [], taskNodeId: null };
-
-	const toolCalls = Array.isArray(source.toolCalls) ? source.toolCalls : [];
-	const artifacts = Array.isArray(source.artifacts) ? source.artifacts : [];
-
-	const orderedToolCalls = [...toolCalls].sort((a, b) => {
-		const ia = toolCalls.indexOf(a);
-		const ib = toolCalls.indexOf(b);
-		const ta = typeof a.startedAt === "number" ? a.startedAt : null;
-		const tb = typeof b.startedAt === "number" ? b.startedAt : null;
-		if (ta !== null && tb !== null && ta !== tb) return ta - tb;
-		return ia - ib;
-	});
-
-	const laneKeys: string[] = ["main"];
-	const laneIndex = new Map<string, number>([["main", 0]]);
-	for (const tc of orderedToolCalls) {
-		const subType = getSubagentType(tc);
-		if (!subType) continue;
-		const key = `subagent:${subType}`;
-		if (!laneIndex.has(key)) {
-			laneIndex.set(key, laneKeys.length);
-			laneKeys.push(key);
-		}
-	}
-
-	const X_STEP = 380;
-	const Y_STEP = 190;
-	const ROOT_X = 40;
-	const ROOT_Y = 40;
-
-	const toolsCompleted = orderedToolCalls.filter(
-		(t) => t.status === "completed",
-	).length;
-	const toolsFailed = orderedToolCalls.filter(
-		(t) => t.status === "error",
-	).length;
-
-	const nodes: ExecutionGraphNode[] = [];
-	const edges: Edge[] = [];
-
-	const taskNodeId = `task-${source.id}`;
-	nodes.push({
-		id: taskNodeId,
-		type: "task",
-		position: { x: ROOT_X, y: ROOT_Y },
-		data: {
-			kind: "task",
-			taskId: source.id,
-			title: source.title || "托管任务",
-			subtitle: source.subtitle,
-			status: source.status,
-			stats: {
-				toolsTotal: orderedToolCalls.length,
-				toolsCompleted,
-				toolsFailed,
-				artifacts: artifacts.length,
-			},
-		},
-	});
-
-	const toolXById = new Map<string, number>();
-	const toolYById = new Map<string, number>();
-
-	for (let i = 0; i < orderedToolCalls.length; i++) {
-		const tc = orderedToolCalls[i]!;
-		const subType = getSubagentType(tc);
-		const lane = subType ? `subagent:${subType}` : "main";
-		const lanePos = laneIndex.get(lane) ?? 0;
-		const y = ROOT_Y + lanePos * Y_STEP;
-		const x = ROOT_X + (i + 1) * X_STEP;
-		toolXById.set(tc.id, x);
-		toolYById.set(tc.id, y);
-
-		const lastActivity =
-			Array.isArray(tc.subagentActivities) && tc.subagentActivities.length > 0
-				? tc.subagentActivities[tc.subagentActivities.length - 1]?.content
-				: undefined;
-
-		nodes.push({
-			id: tc.id,
-			type: "tool",
-			position: { x, y },
-			data: {
-				kind: "tool",
-				toolCallId: tc.id,
-				name: tc.name,
-				status: tc.status,
-				description: tc.description,
-				durationMs: tc.duration,
-				startedAt: tc.startedAt,
-				isSubagent: Boolean(subType),
-				subagentType: subType || undefined,
-				lastActivity: lastActivity
-					? String(lastActivity).slice(0, 240)
-					: undefined,
-			},
-		});
-
-		// Sequential edges
-		const sourceId = i === 0 ? taskNodeId : orderedToolCalls[i - 1]!.id;
-		const sourceLaneY =
-			sourceId === taskNodeId ? ROOT_Y : (toolYById.get(sourceId) ?? ROOT_Y);
-		const sameLane = sourceLaneY === y;
-		const dashed = !sameLane;
-		const isSub = Boolean(subType);
-
-		edges.push({
-			id: `edge-${sourceId}-${tc.id}`,
-			source: sourceId,
-			target: tc.id,
-			type: "smoothstep",
-			animated: tc.status === "running",
-			style: {
-				stroke: isSub
-					? "rgba(139,92,246,0.85)"
-					: tc.status === "error"
-						? "rgba(251,113,133,0.85)"
-						: "rgba(148,163,184,0.75)",
-				strokeWidth: 2,
-				strokeDasharray: dashed ? "6 6" : undefined,
-				opacity: 0.85,
-				strokeLinecap: "round",
-				strokeLinejoin: "round",
-			},
-		});
-	}
-
-	// Artifact nodes (grouped by toolCallId)
-	const artifactsByTool = new Map<string, ToolArtifact[]>();
-	for (const a of artifacts) {
-		const toolCallId = String(a?.metadata?.toolCallId || "").trim();
-		const key = toolCallId || "__unbound__";
-		const arr = artifactsByTool.get(key) || [];
-		arr.push(a);
-		artifactsByTool.set(key, arr);
-	}
-
-	const baseArtifactsY = ROOT_Y + laneKeys.length * Y_STEP + 90;
-	for (const [toolCallId, list] of artifactsByTool.entries()) {
-		const yOffset = toolCallId === "__unbound__" ? 70 : 0;
-		for (let i = 0; i < list.length; i++) {
-			const a = list[i]!;
-			const parentToolId =
-				toolCallId !== "__unbound__"
-					? toolCallId
-					: orderedToolCalls[orderedToolCalls.length - 1]?.id;
-			const baseX = parentToolId
-				? (toolXById.get(parentToolId) ?? ROOT_X + X_STEP)
-				: ROOT_X + X_STEP;
-			const x = baseX;
-			const y = baseArtifactsY + yOffset + i * 140;
-			const nodeId = `artifact-${a.id}`;
-			nodes.push({
-				id: nodeId,
-				type: "artifact",
-				position: { x, y },
-				data: {
-					kind: "artifact",
-					artifactId: a.id,
-					title: a.title,
-					artifactType: a.type,
-					url: a.url,
-					toolCallId:
-						typeof a.metadata?.toolCallId === "string"
-							? a.metadata.toolCallId
-							: undefined,
-				},
-			});
-
-			if (parentToolId) {
-				edges.push({
-					id: `edge-${parentToolId}-${nodeId}`,
-					source: parentToolId,
-					target: nodeId,
-					type: "smoothstep",
-					style: {
-						stroke: "rgba(161,161,170,0.75)",
-						strokeWidth: 1.5,
-						strokeDasharray: "2 6",
-						opacity: 0.8,
-						strokeLinecap: "round",
-						strokeLinejoin: "round",
-					},
-				});
-			}
-		}
-	}
-
-	return { nodes, edges, taskNodeId };
 }
 
-function GraphInspector({
-	selectedNodeId,
-	source,
-	taskNodeId,
-	toolCallById,
-	artifactByNodeId,
-	onClose,
-	onOpenArtifact,
+function getDefaultFocusIds(
+	nodes: ExecutionGraphNode[],
+	taskNodeId: string | null,
+	filter: GraphFilter,
+): string[] {
+	const toolNodes = nodes.filter((n) => n.type === "tool");
+	const artifactNodes = nodes.filter((n) => n.type === "artifact");
+	if (filter === "running") {
+		const ids = toolNodes
+			.filter(
+				(n) =>
+					(n.data as any)?.status === "running" ||
+					(n.data as any)?.status === "pending",
+			)
+			.map((n) => n.id);
+		if (ids.length > 0) return ids;
+	}
+	if (filter === "error") {
+		const ids = toolNodes
+			.filter((n) => (n.data as any)?.status === "error")
+			.map((n) => n.id);
+		if (ids.length > 0) return ids;
+	}
+	if (filter === "artifact") {
+		const ids = artifactNodes.map((n) => n.id);
+		if (ids.length > 0) return ids;
+	}
+
+	const running = toolNodes
+		.filter((n) => (n.data as any)?.status === "running")
+		.map((n) => n.id);
+	if (running.length > 0) return running;
+	return taskNodeId ? [taskNodeId] : [];
+}
+
+function FilterButton({
+	active,
+	label,
+	onClick,
+	icon,
 }: {
-	selectedNodeId: string;
-	source: ExecutionGraphSource;
-	taskNodeId: string;
-	toolCallById: Map<string, ToolCall>;
-	artifactByNodeId: Map<string, ToolArtifact>;
-	onClose: () => void;
-	onOpenArtifact: (filePath: string) => void;
+	active: boolean;
+	label: string;
+	onClick: () => void;
+	icon: ReactNode;
 }) {
-	const selectedToolCall = toolCallById.get(selectedNodeId);
-	const selectedArtifact = artifactByNodeId.get(selectedNodeId);
-	const isTaskSelected = selectedNodeId === taskNodeId;
-
-	const title = selectedToolCall
-		? selectedToolCall.name
-		: selectedArtifact
-			? selectedArtifact.title
-			: isTaskSelected
-				? source.title
-				: "详情";
-
-	const subtitle = selectedToolCall
-		? selectedToolCall.status
-		: selectedArtifact
-			? selectedArtifact.type
-			: source.status;
-
-	const copy = useCallback(async (text: string) => {
-		try {
-			await navigator.clipboard.writeText(text);
-		} catch {}
-	}, []);
-
 	return (
-		<div className="absolute right-3 top-3 bottom-3 w-[420px] z-20 pointer-events-auto">
-			<div className="h-full rounded-3xl bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
-				<div className="px-4 py-3 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-start justify-between gap-3">
-					<div className="min-w-0">
-						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-							{title}
-						</div>
-						{subtitle ? (
-							<div className="text-[12px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
-								{subtitle}
-							</div>
-						) : null}
-					</div>
-					<button
-						type="button"
-						onClick={onClose}
-						className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 transition-colors"
-						title="关闭"
-					>
-						<X className="w-4 h-4" />
-					</button>
-				</div>
-
-				<div className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 space-y-4">
-					{selectedToolCall ? (
-						<>
-							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between">
-									<span>输入</span>
-									<button
-										type="button"
-										onClick={() => copy(safeJson(selectedToolCall.input))}
-										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-white/70 dark:hover:bg-zinc-800/60 transition-colors"
-										title="复制"
-									>
-										<Copy className="w-3.5 h-3.5" />
-									</button>
-								</div>
-								<pre className="px-3 py-2 text-[11px] text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words">
-									{safeJson(selectedToolCall.input)}
-								</pre>
-							</div>
-
-							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between">
-									<span>输出</span>
-									<button
-										type="button"
-										onClick={() => copy(safeJson(selectedToolCall.output))}
-										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-white/70 dark:hover:bg-zinc-800/60 transition-colors"
-										title="复制"
-									>
-										<Copy className="w-3.5 h-3.5" />
-									</button>
-								</div>
-								<pre className="px-3 py-2 text-[11px] text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
-									{safeJson(selectedToolCall.output)}
-								</pre>
-							</div>
-
-							{Array.isArray(selectedToolCall.subagentActivities) &&
-							selectedToolCall.subagentActivities.length > 0 ? (
-								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
-										子代理活动
-									</div>
-									<div className="px-2 py-2 space-y-1">
-										{selectedToolCall.subagentActivities.slice(-50).map((s) => (
-											<div
-												key={s.id}
-												className="px-2 py-1.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
-											>
-												<div className="text-[11px] text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words">
-													{s.content}
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
-							) : null}
-
-							<div className="flex items-center justify-between pt-1">
-								<button
-									type="button"
-									onClick={() => {
-										events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
-											toolCallId: selectedToolCall.id,
-											source: "graph",
-										});
-									}}
-									className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
-								>
-									<ChevronRight className="w-4 h-4" />
-									定位到右侧
-								</button>
-								<div className="text-[11px] text-zinc-400 dark:text-zinc-500">
-									{selectedToolCall.duration
-										? `耗时 ${formatDuration(selectedToolCall.duration)}`
-										: ""}
-								</div>
-							</div>
-						</>
-					) : selectedArtifact ? (
-						<>
-							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
-									路径
-								</div>
-								<div className="px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-200 break-words">
-									{selectedArtifact.url || "—"}
-								</div>
-							</div>
-
-							{selectedArtifact.url ? (
-								<div className="flex items-center gap-2">
-									<button
-										type="button"
-										onClick={() => onOpenArtifact(selectedArtifact.url!)}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
-									>
-										<Eye className="w-4 h-4" />
-										打开预览
-									</button>
-									<button
-										type="button"
-										onClick={() => copy(selectedArtifact.url!)}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 transition-colors"
-									>
-										<Copy className="w-4 h-4" />
-										复制路径
-									</button>
-								</div>
-							) : null}
-						</>
-					) : isTaskSelected ? (
-						<div className="space-y-3">
-							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
-									任务描述
-								</div>
-								<div className="px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-200 break-words">
-									{source.subtitle || "—"}
-								</div>
-							</div>
-						</div>
-					) : (
-						<div className="text-sm text-zinc-500 dark:text-zinc-400">
-							未找到对应数据。
-						</div>
-					)}
-				</div>
-			</div>
-		</div>
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors",
+				active
+					? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08]"
+					: "bg-white/80 dark:bg-zinc-950/60 text-zinc-600 dark:text-zinc-300 border-black/[0.06] dark:border-white/[0.08] hover:bg-white dark:hover:bg-zinc-900/70",
+			)}
+		>
+			{icon}
+			{label}
+		</button>
 	);
 }
 
 function ExecutionGraphInner({
 	source,
 	onOpenArtifact,
+	filter = "all",
+	onFilterChange,
+	searchQuery = "",
+	onSearchQueryChange,
+	pinnedInspector = false,
+	onPinnedInspectorChange,
 }: {
 	source: ExecutionGraphSource | null;
 	onOpenArtifact: (filePath: string) => void;
+	filter?: GraphFilter;
+	onFilterChange?: (filter: GraphFilter) => void;
+	searchQuery?: string;
+	onSearchQueryChange?: (query: string) => void;
+	pinnedInspector?: boolean;
+	onPinnedInspectorChange?: (value: boolean) => void;
 }) {
 	const graphBuild = useMemo(() => buildExecutionGraph(source), [source]);
 	const graph = useMemo(
@@ -850,126 +152,179 @@ function ExecutionGraphInner({
 	const artifacts = source?.artifacts || [];
 
 	const toolCallById = useMemo(() => {
-		const map = new Map<string, ToolCall>();
+		const map = new Map<string, any>();
 		for (const tc of toolCalls) map.set(tc.id, tc);
 		return map;
 	}, [toolCalls]);
 
 	const artifactByNodeId = useMemo(() => {
-		const map = new Map<string, ToolArtifact>();
+		const map = new Map<string, any>();
 		for (const a of artifacts) map.set(`artifact-${a.id}`, a);
 		return map;
 	}, [artifacts]);
 
-	const { fitView } = useReactFlow();
+	const defaultFocusIds = useMemo(
+		() => getDefaultFocusIds(graph.nodes, graphBuild.taskNodeId, filter),
+		[filter, graph.nodes, graphBuild.taskNodeId],
+	);
 
-	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-	const [follow, setFollow] = useState(true);
-	const lastFocusKeyRef = useRef<string>("");
+	const { selectedNodeId, setSelectedNodeId, onNodeClick, onPaneClick } =
+		useGraphSelection({
+			onOpenArtifact,
+			isInspectorPinned: pinnedInspector,
+		});
+
+	const {
+		follow,
+		setFollow,
+		searchMatchedNodeIds,
+		searchIndex,
+		focusFirstSearchMatch,
+		focusNextSearchMatch,
+	} = useGraphFocus({
+		nodes: graph.nodes,
+		defaultFocusIds,
+		toolCallById,
+		onSelectNode: setSelectedNodeId,
+		searchQuery,
+	});
+	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	const clearSearch = useCallback(() => {
+		onSearchQueryChange?.("");
+		searchInputRef.current?.focus();
+	}, [onSearchQueryChange]);
 
 	useEffect(() => {
 		setSelectedNodeId(null);
-		setFollow(true);
-		lastFocusKeyRef.current = "";
-	}, [source?.id]);
-
-	const runningToolIds = useMemo(() => {
-		const ids = graph.nodes
-			.filter((n) => n.type === "tool" && (n.data as any)?.status === "running")
-			.map((n) => n.id);
-		return ids;
-	}, [graph.nodes]);
-
-	const focusIds =
-		runningToolIds.length > 0
-			? runningToolIds
-			: graphBuild.taskNodeId
-				? [graphBuild.taskNodeId]
-				: [];
+	}, [source?.id, setSelectedNodeId]);
 
 	useEffect(() => {
-		if (!follow) return;
-		if (focusIds.length === 0) return;
-
-		const key = focusIds.join("|");
-		if (key === lastFocusKeyRef.current) return;
-		lastFocusKeyRef.current = key;
-
-		const t = setTimeout(() => {
-			try {
-				fitView({
-					nodes: focusIds.map((id) => ({ id })),
-					padding: 0.35,
-					duration: 800,
-					minZoom: 0.15,
-					maxZoom: 1.05,
-				});
-			} catch {}
-		}, 200);
-
-		return () => clearTimeout(t);
-	}, [fitView, focusIds, follow]);
-
-	useEffect(() => {
-		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, (payload) => {
-			const toolCallId =
-				typeof payload?.toolCallId === "string" ? payload.toolCallId : "";
-			if (!toolCallId) return;
-			if (!toolCallById.has(toolCallId)) return;
-			setSelectedNodeId(toolCallId);
-			try {
-				fitView({
-					nodes: [{ id: toolCallId }],
-					padding: 0.4,
-					duration: 600,
-					minZoom: 0.2,
-					maxZoom: 1.1,
-				});
-			} catch {}
-		});
-	}, [fitView, toolCallById]);
-
-	const onNodeClick = useCallback(
-		(_: React.MouseEvent, node: ExecutionGraphNode) => {
-			setSelectedNodeId(node.id);
-			if (node.data.kind === "tool") {
-				events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
-					toolCallId: node.id,
-					source: "graph",
-				});
+		const handleShortcuts = (e: KeyboardEvent) => {
+			if (isTypingElement(e.target)) return;
+			if (e.key === "/") {
+				e.preventDefault();
+				searchInputRef.current?.focus();
+				searchInputRef.current?.select();
+				return;
 			}
-			if (node.data.kind === "artifact" && node.data.url) {
-				onOpenArtifact(node.data.url);
+			if (e.altKey && e.key.toLowerCase() === "f") {
+				e.preventDefault();
+				setFollow((v) => !v);
 			}
-		},
-		[onOpenArtifact],
-	);
-
-	const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
+		};
+		window.addEventListener("keydown", handleShortcuts);
+		return () => window.removeEventListener("keydown", handleShortcuts);
+	}, [setFollow]);
 
 	if (!source) {
-		return (
-			<div className="flex-1 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-				<div className="text-center space-y-2 max-w-md">
-					<div className="mx-auto w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
-						<Sparkles className="w-6 h-6 text-zinc-400" />
-					</div>
-					<div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-						暂无运行任务
-					</div>
-					<div className="text-xs text-zinc-400 dark:text-zinc-500">
-						开始托管任务后，这里会展示运行图。
-					</div>
-				</div>
-			</div>
-		);
+		return <EmptyGraph />;
 	}
 
 	return (
 		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
 			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.10),transparent_55%)]" />
-			{/* Top-right micro toolbar */}
+
+			<div className="absolute left-4 top-4 z-20 flex items-center gap-2 pointer-events-auto">
+				<div className="relative">
+					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+					<input
+						ref={searchInputRef}
+						type="text"
+						value={searchQuery}
+						onChange={(e) => onSearchQueryChange?.(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault();
+								focusNextSearchMatch(e.shiftKey ? -1 : 1);
+								return;
+							}
+							if (e.key === "Escape") {
+								e.preventDefault();
+								if (searchQuery.trim()) {
+									clearSearch();
+								} else {
+									searchInputRef.current?.blur();
+								}
+							}
+						}}
+						placeholder="搜索节点..."
+						className="w-56 pl-8 pr-8 py-2 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-zinc-950/70 backdrop-blur-xl text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400"
+					/>
+					{searchQuery.trim() ? (
+						<button
+							type="button"
+							onClick={clearSearch}
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70 transition-colors"
+							title="清空搜索"
+						>
+							<X className="w-3.5 h-3.5" />
+						</button>
+					) : null}
+				</div>
+				{searchQuery.trim() ? (
+					<div className="inline-flex items-center gap-1 bg-white/85 dark:bg-zinc-950/70 border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-1.5 py-1.5 text-xs">
+						<button
+							type="button"
+							onClick={focusFirstSearchMatch}
+							disabled={searchMatchedNodeIds.length === 0}
+							className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+							title="定位第一个匹配项"
+						>
+							定位
+						</button>
+						<button
+							type="button"
+							onClick={() => focusNextSearchMatch(-1)}
+							disabled={searchMatchedNodeIds.length === 0}
+							className="p-1 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+							title="上一个匹配"
+						>
+							<ChevronUp className="w-3.5 h-3.5" />
+						</button>
+						<button
+							type="button"
+							onClick={() => focusNextSearchMatch(1)}
+							disabled={searchMatchedNodeIds.length === 0}
+							className="p-1 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+							title="下一个匹配"
+						>
+							<ChevronRight className="w-3.5 h-3.5" />
+						</button>
+						<span className="px-1.5 text-zinc-500 dark:text-zinc-400 tabular-nums">
+							{searchMatchedNodeIds.length === 0
+								? "0/0"
+								: `${searchIndex + 1}/${searchMatchedNodeIds.length}`}
+						</span>
+					</div>
+				) : null}
+			</div>
+
 			<div className="absolute right-4 top-4 z-20 flex items-center gap-2 pointer-events-auto">
+				<FilterButton
+					active={filter === "all"}
+					label="全部"
+					onClick={() => onFilterChange?.("all")}
+					icon={<Sparkles className="w-3.5 h-3.5" />}
+				/>
+				<FilterButton
+					active={filter === "running"}
+					label="运行中"
+					onClick={() => onFilterChange?.("running")}
+					icon={<Loader2 className="w-3.5 h-3.5" />}
+				/>
+				<FilterButton
+					active={filter === "error"}
+					label="失败"
+					onClick={() => onFilterChange?.("error")}
+					icon={<XCircle className="w-3.5 h-3.5" />}
+				/>
+				<FilterButton
+					active={filter === "artifact"}
+					label="产物"
+					onClick={() => onFilterChange?.("artifact")}
+					icon={<Sparkles className="w-3.5 h-3.5" />}
+				/>
 				<button
 					type="button"
 					onClick={() => setFollow((v) => !v)}
@@ -980,14 +335,14 @@ function ExecutionGraphInner({
 							? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08]"
 							: "bg-white/85 dark:bg-zinc-950/60 text-zinc-700 dark:text-zinc-200 border-black/[0.06] dark:border-white/[0.08] hover:bg-white dark:hover:bg-zinc-900/70",
 					)}
-					title={follow ? "正在跟随运行节点" : "暂停自动聚焦"}
+					title={follow ? "正在跟随运行节点（Alt+F）" : "暂停自动聚焦（Alt+F）"}
 				>
 					{follow ? (
 						<ChevronRight className="w-4 h-4" />
 					) : (
 						<ChevronLeft className="w-4 h-4" />
 					)}
-					跟随
+					{follow ? "跟随中" : "手动浏览"}
 				</button>
 			</div>
 
@@ -1027,7 +382,7 @@ function ExecutionGraphInner({
 			</ReactFlow>
 
 			{selectedNodeId ? (
-				<GraphInspector
+				<GraphInspectorPanel
 					selectedNodeId={selectedNodeId}
 					source={source}
 					taskNodeId={graphBuild.taskNodeId || `task-${source.id}`}
@@ -1035,6 +390,8 @@ function ExecutionGraphInner({
 					artifactByNodeId={artifactByNodeId}
 					onClose={() => setSelectedNodeId(null)}
 					onOpenArtifact={onOpenArtifact}
+					pinned={pinnedInspector}
+					onTogglePin={() => onPinnedInspectorChange?.(!pinnedInspector)}
 				/>
 			) : null}
 		</div>
@@ -1044,13 +401,36 @@ function ExecutionGraphInner({
 export function ExecutionGraph({
 	source,
 	onOpenArtifact,
+	filter,
+	onFilterChange,
+	searchQuery,
+	onSearchQueryChange,
+	pinnedInspector,
+	onPinnedInspectorChange,
 }: {
 	source: ExecutionGraphSource | null;
 	onOpenArtifact: (filePath: string) => void;
+	filter?: GraphFilter;
+	onFilterChange?: (filter: GraphFilter) => void;
+	searchQuery?: string;
+	onSearchQueryChange?: (query: string) => void;
+	pinnedInspector?: boolean;
+	onPinnedInspectorChange?: (value: boolean) => void;
 }) {
 	return (
 		<ReactFlowProvider>
-			<ExecutionGraphInner source={source} onOpenArtifact={onOpenArtifact} />
+			<ExecutionGraphInner
+				source={source}
+				onOpenArtifact={onOpenArtifact}
+				filter={filter}
+				onFilterChange={onFilterChange}
+				searchQuery={searchQuery}
+				onSearchQueryChange={onSearchQueryChange}
+				pinnedInspector={pinnedInspector}
+				onPinnedInspectorChange={onPinnedInspectorChange}
+			/>
 		</ReactFlowProvider>
 	);
 }
+
+export type { ExecutionGraphSource, GraphFilter };

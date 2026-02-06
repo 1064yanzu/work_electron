@@ -128,9 +128,9 @@ export function createHttpRequestLogger(
 			const remaining =
 				maxResBytes > 0
 					? Math.max(
-						0,
-						maxResBytes - Buffer.byteLength(responseBodyText, "utf8"),
-					)
+							0,
+							maxResBytes - Buffer.byteLength(responseBodyText, "utf8"),
+						)
 					: buf.length;
 			const slice = maxResBytes > 0 ? buf.subarray(0, remaining) : buf;
 			responseBodyText += slice.toString("utf8");

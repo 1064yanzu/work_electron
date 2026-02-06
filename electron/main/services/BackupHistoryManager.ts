@@ -29,7 +29,9 @@ export class BackupHistoryManager {
 	/**
 	 * 记录备份历史
 	 */
-	async recordBackup(record: Omit<BackupHistoryRecord, "id" | "created_at">): Promise<string> {
+	async recordBackup(
+		record: Omit<BackupHistoryRecord, "id" | "created_at">,
+	): Promise<string> {
 		const db = getDbContext();
 		const id = randomUUID();
 		const created_at = Date.now();
@@ -60,7 +62,9 @@ export class BackupHistoryManager {
 			],
 		});
 
-		console.log(`[BackupHistoryManager] Recorded backup: ${id} (${record.backup_type})`);
+		console.log(
+			`[BackupHistoryManager] Recorded backup: ${id} (${record.backup_type})`,
+		);
 		return id;
 	}
 
@@ -78,7 +82,9 @@ export class BackupHistoryManager {
 			args: [status, errorMessage || null, id],
 		});
 
-		console.log(`[BackupHistoryManager] Updated backup ${id} status: ${status}`);
+		console.log(
+			`[BackupHistoryManager] Updated backup ${id} status: ${status}`,
+		);
 	}
 
 	/**
@@ -116,7 +122,10 @@ export class BackupHistoryManager {
 	/**
 	 * 获取指定设备的备份历史
 	 */
-	async getDeviceBackupHistory(deviceId: string, limit = 20): Promise<BackupHistoryRecord[]> {
+	async getDeviceBackupHistory(
+		deviceId: string,
+		limit = 20,
+	): Promise<BackupHistoryRecord[]> {
 		const db = getDbContext();
 		const result = await db.client.execute({
 			sql: `
@@ -169,7 +178,8 @@ export class BackupHistoryManager {
 			const filesByDevice = new Map<string, any[]>();
 			for (const file of files) {
 				if (file.type === "file" && file.basename.endsWith(".zip")) {
-					const deviceId = extractDeviceIdFromFileName(file.basename) || "unknown";
+					const deviceId =
+						extractDeviceIdFromFileName(file.basename) || "unknown";
 					if (!filesByDevice.has(deviceId)) {
 						filesByDevice.set(deviceId, []);
 					}
@@ -183,7 +193,8 @@ export class BackupHistoryManager {
 			for (const [deviceId, deviceFiles] of filesByDevice.entries()) {
 				// 按修改时间排序（最新的在前）
 				deviceFiles.sort(
-					(a, b) => new Date(b.lastmod).getTime() - new Date(a.lastmod).getTime(),
+					(a, b) =>
+						new Date(b.lastmod).getTime() - new Date(a.lastmod).getTime(),
 				);
 
 				// 删除超出限制的备份
@@ -219,9 +230,14 @@ export class BackupHistoryManager {
 	 * @param backupDir 本地备份目录
 	 * @param maxBackups 保留的最大备份数
 	 */
-	async cleanupOldLocalBackups(backupDir: string, maxBackups: number): Promise<number> {
+	async cleanupOldLocalBackups(
+		backupDir: string,
+		maxBackups: number,
+	): Promise<number> {
 		if (maxBackups <= 0) {
-			console.log("[BackupHistoryManager] Local cleanup disabled (maxBackups = 0)");
+			console.log(
+				"[BackupHistoryManager] Local cleanup disabled (maxBackups = 0)",
+			);
 			return 0;
 		}
 
@@ -231,7 +247,9 @@ export class BackupHistoryManager {
 
 			// 检查目录是否存在
 			if (!(await fs.pathExists(backupDir))) {
-				console.log(`[BackupHistoryManager] Backup directory does not exist: ${backupDir}`);
+				console.log(
+					`[BackupHistoryManager] Backup directory does not exist: ${backupDir}`,
+				);
 				return 0;
 			}
 
@@ -259,7 +277,9 @@ export class BackupHistoryManager {
 				try {
 					await fs.remove(fileInfo.path);
 					deletedCount++;
-					console.log(`[BackupHistoryManager] Deleted old local backup: ${fileInfo.file}`);
+					console.log(
+						`[BackupHistoryManager] Deleted old local backup: ${fileInfo.file}`,
+					);
 				} catch (error) {
 					console.error(
 						`[BackupHistoryManager] Failed to delete ${fileInfo.file}:`,

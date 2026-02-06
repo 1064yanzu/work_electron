@@ -52,9 +52,12 @@ const PasswordPrompt = ({
 		const hasNumber = /[0-9]/.test(pwd);
 		const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
 
-		const complexityScore = [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(
-			Boolean,
-		).length;
+		const complexityScore = [
+			hasUpperCase,
+			hasLowerCase,
+			hasNumber,
+			hasSpecial,
+		].filter(Boolean).length;
 
 		if (complexityScore < 2) {
 			return "密码建议包含大小写字母、数字和特殊字符中的至少两种";

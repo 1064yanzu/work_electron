@@ -337,19 +337,23 @@ export function ChatInput({
 
 		// 收集提示词 Chips 的内容
 		const promptContent = selectedChips
-			.filter(c => c.type === "prompt" && c.content)
-			.map(c => c.content)
+			.filter((c) => c.type === "prompt" && c.content)
+			.map((c) => c.content)
 			.join("\n\n");
 
 		// 最终要发送的消息：提示词内容 + 用户输入
 		let finalMessage = trimmed;
 		if (promptContent) {
-			finalMessage = finalMessage ? `${promptContent}\n\n${finalMessage}` : promptContent;
+			finalMessage = finalMessage
+				? `${promptContent}\n\n${finalMessage}`
+				: promptContent;
 		}
 
 		if (finalMessage && !disabled) {
 			// 查找强制使用的 Agent Skill
-			const agentSkillChip = selectedChips.find(c => c.type === "agent_skill");
+			const agentSkillChip = selectedChips.find(
+				(c) => c.type === "agent_skill",
+			);
 			const forcedSkillId = agentSkillChip?.skillName; // 使用存储的 skillName
 
 			// 提交带有 chips 和强制 skill 信息
@@ -423,21 +427,21 @@ export function ChatInput({
 
 		// 如果是 agent_skill 类型，替换已有的（只能有一个强制 skill）
 		if (chipType === "agent_skill") {
-			setSelectedChips(prev => [
-				...prev.filter(c => c.type !== "agent_skill"),
+			setSelectedChips((prev) => [
+				...prev.filter((c) => c.type !== "agent_skill"),
 				newChip,
 			]);
 			setValue(""); // Agent Skill 不填充内容
 		} else if (chipType === "skill") {
-			setSelectedChips(prev => [
-				...prev.filter(c => c.type !== "skill"),
+			setSelectedChips((prev) => [
+				...prev.filter((c) => c.type !== "skill"),
 				newChip,
 			]);
 			setValue("");
 		} else {
 			// 对于提示词类型：保留 chip，并填充输入框
 			// 或者是其他类型（如 data），也保留 chip
-			setSelectedChips(prev => [...prev, newChip]);
+			setSelectedChips((prev) => [...prev, newChip]);
 
 			// 如果是提示词，填充到输入框
 			if (command.prompt && chipType === "prompt") {
@@ -457,18 +461,20 @@ export function ChatInput({
 	};
 
 	const handleRemoveChip = (chipId: string) => {
-		setSelectedChips(prev => prev.filter(c => c.id !== chipId));
+		setSelectedChips((prev) => prev.filter((c) => c.id !== chipId));
 	};
 
 	const handleToggleChipExpand = (chipId: string) => {
-		setSelectedChips(prev =>
-			prev.map(c => c.id === chipId ? { ...c, isExpanded: !c.isExpanded } : c)
+		setSelectedChips((prev) =>
+			prev.map((c) =>
+				c.id === chipId ? { ...c, isExpanded: !c.isExpanded } : c,
+			),
 		);
 	};
 
 	const handleUpdateChip = (chipId: string, content: string) => {
-		setSelectedChips(prev =>
-			prev.map(c => c.id === chipId ? { ...c, content } : c)
+		setSelectedChips((prev) =>
+			prev.map((c) => (c.id === chipId ? { ...c, content } : c)),
 		);
 	};
 
@@ -514,8 +520,8 @@ export function ChatInput({
 														: "file",
 											status:
 												ctx.content &&
-													ctx.content.trim().length > 0 &&
-													!ctx.filePath
+												ctx.content.trim().length > 0 &&
+												!ctx.filePath
 													? "preparing"
 													: "ready",
 										}}
@@ -578,10 +584,11 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${isModelSelectorOpen
-									? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-									: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
-									}`}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${
+									isModelSelectorOpen
+										? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
+										: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
+								}`}
 							>
 								<span className="font-medium truncate max-w-[100px]">
 									{model ? model.split("/").pop()?.slice(0, 12) : "Auto"}

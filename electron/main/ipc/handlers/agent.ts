@@ -137,7 +137,14 @@ export function createAgentSessionHandlers(db: DbContext) {
 		await db.client.execute({
 			sql: `INSERT INTO agent_sessions (id, project_id, title, status, config_json, created_at, updated_at)
             VALUES (?, ?, ?, 'active', ?, ?, ?)`,
-			args: [id, input.project_id ?? null, input.title ?? null, configStr, timestamp, timestamp],
+			args: [
+				id,
+				input.project_id ?? null,
+				input.title ?? null,
+				configStr,
+				timestamp,
+				timestamp,
+			],
 		});
 
 		return {
@@ -182,7 +189,7 @@ export function createAgentSessionHandlers(db: DbContext) {
 			args.push(input.status);
 		}
 		if (input.project_id !== undefined) {
-			if (input.project_id === null || input.project_id === '') {
+			if (input.project_id === null || input.project_id === "") {
 				// 查询不属于任何项目的会话（全局会话）
 				sql += ` AND project_id IS NULL`;
 			} else {

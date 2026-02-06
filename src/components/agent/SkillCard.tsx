@@ -1,10 +1,4 @@
-import {
-	CheckCircle2,
-	File,
-	Loader2,
-	Wand2,
-	XCircle,
-} from "lucide-react";
+import { CheckCircle2, File, Loader2, Wand2, XCircle } from "lucide-react";
 import type { SkillExecution } from "../../lib/agent/SkillExecutor";
 import { cn } from "../../lib/utils";
 
@@ -45,9 +39,13 @@ function StepStatusIcon({
 }) {
 	switch (status) {
 		case "running":
-			return <Loader2 className="w-3 h-3 text-blue-500 animate-spin flex-shrink-0" />;
+			return (
+				<Loader2 className="w-3 h-3 text-blue-500 animate-spin flex-shrink-0" />
+			);
 		case "completed":
-			return <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />;
+			return (
+				<CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+			);
 		case "error":
 			return <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />;
 		default:
@@ -65,9 +63,12 @@ export function SkillCard({
 	// 紧凑模式样式(适配 AgentTraceInline 风格)
 	if (compact) {
 		// 判断是否正在运行或出错
-		const isActive = ["loading", "parsing", "loading_style", "generating"].includes(
-			skill.status,
-		);
+		const isActive = [
+			"loading",
+			"parsing",
+			"loading_style",
+			"generating",
+		].includes(skill.status);
 		const hasError = skill.status === "error";
 
 		return (
@@ -137,7 +138,10 @@ export function SkillCard({
 				{skill.steps.length > 0 && (
 					<div className={cn("px-3 space-y-1.5", hideHeader ? "pt-0" : "pb-2")}>
 						{skill.steps.map((step) => (
-							<div key={step.id} className="flex items-center gap-2 text-[11px]">
+							<div
+								key={step.id}
+								className="flex items-center gap-2 text-[11px]"
+							>
 								<StepStatusIcon status={step.status} />
 								<span
 									className={

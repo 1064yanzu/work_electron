@@ -29,9 +29,14 @@ export function SubagentCard({
 
 	// 提取子代理信息
 	const input = toolCall.input as Record<string, unknown> | undefined;
-	const subagentType = typeof input?.subagent_type === "string" ? input.subagent_type : undefined;
-	const subagentModel = typeof input?.model === "string" ? input.model : undefined;
-	const subagentDescription = typeof input?.description === "string" ? input.description : toolCall.description;
+	const subagentType =
+		typeof input?.subagent_type === "string" ? input.subagent_type : undefined;
+	const subagentModel =
+		typeof input?.model === "string" ? input.model : undefined;
+	const subagentDescription =
+		typeof input?.description === "string"
+			? input.description
+			: toolCall.description;
 
 	// Auto-scroll to bottom of activities
 	useEffect(() => {
@@ -126,7 +131,13 @@ export function SubagentCard({
 										: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
 							)}
 						>
-							{isRunning ? "运行中" : isCompleted ? "已完成" : isError ? "错误" : toolCall.status}
+							{isRunning
+								? "运行中"
+								: isCompleted
+									? "已完成"
+									: isError
+										? "错误"
+										: toolCall.status}
 						</div>
 					</div>
 

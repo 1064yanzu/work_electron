@@ -70,10 +70,10 @@ function recordToTask(
 ): AgentTask {
 	const legacyFrontendTaskId =
 		record.budget_json &&
-			typeof (record.budget_json as Record<string, unknown>)
-				.legacy_frontend_task_id === "string"
+		typeof (record.budget_json as Record<string, unknown>)
+			.legacy_frontend_task_id === "string"
 			? ((record.budget_json as Record<string, unknown>)
-				.legacy_frontend_task_id as string)
+					.legacy_frontend_task_id as string)
 			: null;
 
 	return {
@@ -142,18 +142,18 @@ function recordToToolCall(record: api.ToolCallRecord): ToolCall {
 
 	const legacyId =
 		record.args_json &&
-			typeof (record.args_json as Record<string, unknown>)
-				._legacy_frontend_tool_call_id === "string"
+		typeof (record.args_json as Record<string, unknown>)
+			._legacy_frontend_tool_call_id === "string"
 			? ((record.args_json as Record<string, unknown>)
-				._legacy_frontend_tool_call_id as string)
+					._legacy_frontend_tool_call_id as string)
 			: null;
 
 	const legacyName =
 		record.args_json &&
-			typeof (record.args_json as Record<string, unknown>)
-				._legacy_frontend_tool_call_name === "string"
+		typeof (record.args_json as Record<string, unknown>)
+			._legacy_frontend_tool_call_name === "string"
 			? ((record.args_json as Record<string, unknown>)
-				._legacy_frontend_tool_call_name as string)
+					._legacy_frontend_tool_call_name as string)
 			: null;
 
 	return {
@@ -282,7 +282,9 @@ class AgentPersistence {
 			const projectId = workspaceStore.getState().currentProjectId || null;
 			const session = await api.createAgentSession(title, projectId);
 			this.currentSessionId = session.id;
-			console.log(`[AgentPersistence] 创建会话: ${session.id}, 项目: ${projectId || '全局'}`);
+			console.log(
+				`[AgentPersistence] 创建会话: ${session.id}, 项目: ${projectId || "全局"}`,
+			);
 			return session.id;
 		} catch (error) {
 			console.error("[AgentPersistence] 创建会话失败:", error);

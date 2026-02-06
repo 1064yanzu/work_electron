@@ -317,34 +317,34 @@ export type AgentEvent =
 	| { type: "task_error"; taskId: string; error: string }
 	| { type: "tool_started"; taskId: string; toolCall: ToolCall }
 	| {
-		type: "tool_progress";
-		taskId: string;
-		toolCallId: string;
-		progress: number;
-		message?: string;
-	}
+			type: "tool_progress";
+			taskId: string;
+			toolCallId: string;
+			progress: number;
+			message?: string;
+	  }
 	| {
-		type: "tool_completed";
-		taskId: string;
-		toolCallId: string;
-		result: ToolResult;
-	}
+			type: "tool_completed";
+			taskId: string;
+			toolCallId: string;
+			result: ToolResult;
+	  }
 	| { type: "tool_error"; taskId: string; toolCallId: string; error: string }
 	| { type: "artifact_added"; taskId: string; artifact: ToolArtifact }
 	| { type: "thought"; taskId: string; thought: AgentThought }
 	| {
-		type: "thinking_phase_changed";
-		taskId: string;
-		phase: ThinkingPhase;
-		content?: string;
-	}
+			type: "thinking_phase_changed";
+			taskId: string;
+			phase: ThinkingPhase;
+			content?: string;
+	  }
 	| { type: "progress_updated"; taskId: string; progress: TaskProgress }
 	| {
-		type: "error_recovery";
-		taskId: string;
-		toolCallId: string;
-		strategy: ErrorRecoveryStrategy;
-	};
+			type: "error_recovery";
+			taskId: string;
+			toolCallId: string;
+			strategy: ErrorRecoveryStrategy;
+	  };
 
 // ============ 辅助函数 ============
 

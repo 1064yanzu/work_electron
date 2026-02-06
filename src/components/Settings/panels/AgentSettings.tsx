@@ -615,10 +615,11 @@ export function AgentSettings() {
 									<button
 										key={opt.value}
 										onClick={() => handleKbModeChange(opt.value)}
-										className={`p-3 rounded-xl text-left transition-colors ${kbRetrievalMode === opt.value
+										className={`p-3 rounded-xl text-left transition-colors ${
+											kbRetrievalMode === opt.value
 												? "border-2 border-primary bg-primary/5"
 												: "border border-border hover:border-primary/50"
-											}`}
+										}`}
 									>
 										<div
 											className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}

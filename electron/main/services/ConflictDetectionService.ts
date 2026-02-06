@@ -16,7 +16,9 @@ export class ConflictDetectionService {
 	 * 检测是否存在潜在冲突
 	 * 简化策略：比较本地和远程的最后修改时间
 	 */
-	static async detectConflict(remoteLastModified: number): Promise<ConflictInfo> {
+	static async detectConflict(
+		remoteLastModified: number,
+	): Promise<ConflictInfo> {
 		const db = getDbContext();
 
 		// 获取本地最后修改时间

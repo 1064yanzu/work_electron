@@ -1,9 +1,4 @@
-import {
-	Check,
-	ChevronRight,
-	Search,
-	Zap,
-} from "lucide-react";
+import { Check, ChevronRight, Search, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getModelIcon } from "../Settings/modelIcons";
 
@@ -49,9 +44,7 @@ function getProviderInfo(provider: string) {
 function formatModelName(modelId: string): string {
 	const name = modelId.split("/").pop() || modelId;
 	// 简单的格式化：去除连字符，首字母大写
-	return name
-		.replace(/[-_]/g, " ")
-		.replace(/\b\w/g, (c) => c.toUpperCase());
+	return name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function ModelSelector({
@@ -81,10 +74,10 @@ export function ModelSelector({
 	const groups = useMemo(() => {
 		const filtered = searchQuery
 			? models.filter(
-				(m) =>
-					m.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					m.provider.toLowerCase().includes(searchQuery.toLowerCase()),
-			)
+					(m) =>
+						m.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						m.provider.toLowerCase().includes(searchQuery.toLowerCase()),
+				)
 			: models;
 
 		const g = filtered.reduce(
@@ -188,10 +181,11 @@ export function ModelSelector({
 															onSelect(model.id);
 															onClose();
 														}}
-														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-lg transition-all border border-transparent ${isActive
-															? "bg-zinc-100 dark:bg-[#262626] border-zinc-200 dark:border-zinc-700/50 shadow-sm"
-															: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400"
-															}`}
+														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-lg transition-all border border-transparent ${
+															isActive
+																? "bg-zinc-100 dark:bg-[#262626] border-zinc-200 dark:border-zinc-700/50 shadow-sm"
+																: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400"
+														}`}
 													>
 														{/* 模型图标 */}
 														<div className="shrink-0 mt-0.5">

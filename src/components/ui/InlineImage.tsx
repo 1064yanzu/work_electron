@@ -54,7 +54,7 @@ export const InlineImage = memo(function InlineImage({
 	const [open, setOpen] = useState(false);
 	const savedRef = useRef(false);
 	// 使用 selector 只订阅 currentTask，减少不必要的重渲染
-	const currentTask = useAgentStoreSelector(state => state.currentTask);
+	const currentTask = useAgentStoreSelector((state) => state.currentTask);
 
 	const downloadName = useMemo(
 		() => guessDownloadName(title, path),
@@ -119,7 +119,10 @@ export const InlineImage = memo(function InlineImage({
 							description: `Generated image: ${title || fileName}`,
 						});
 					} catch (dbErr) {
-						console.warn("[InlineImage] Failed to save image to database:", dbErr);
+						console.warn(
+							"[InlineImage] Failed to save image to database:",
+							dbErr,
+						);
 					}
 				}
 
@@ -165,7 +168,9 @@ export const InlineImage = memo(function InlineImage({
 	// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 	if (error) {
 		return (
-			<span className="block text-[11px] text-zinc-400">图片加载失败: {path}</span>
+			<span className="block text-[11px] text-zinc-400">
+				图片加载失败: {path}
+			</span>
 		);
 	}
 
