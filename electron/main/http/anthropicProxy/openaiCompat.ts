@@ -5,6 +5,29 @@ import type {
 	OpenAIResponse,
 	OpenAIToolCall,
 } from "./types";
+import {
+	extractThoughtFragmentsFromOpenAIChunk,
+	mergeThoughtFragmentsBySource,
+	ThoughtDeltaNormalizer,
+} from "./thinkingCompat";
+
+function computeStringOverlap(prev: string, incoming: string): number {
+	const max = Math.min(prev.length, incoming.length);
+	for (let k = max; k > 0; k--) {
+		if (prev.slice(-k) === incoming.slice(0, k)) return k;
+	}
+	return 0;
+}
+
+function mergeStreamingFragment(prev: string, incoming: string): string {
+	if (!incoming) return prev;
+	if (!prev) return incoming;
+	if (incoming.startsWith(prev)) return incoming;
+	if (prev.endsWith(incoming)) return prev;
+	const overlap = computeStringOverlap(prev, incoming);
+	if (overlap > 0) return prev + incoming.slice(overlap);
+	return prev + incoming;
+}
 
 async function readSseStream(
 	body: ReadableStream<Uint8Array>,
@@ -62,6 +85,8 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 	const legacyFunctionCall: {
 		value: { name?: string; args: string } | null;
 	} = { value: null };
+	const thoughtDeltaNormalizer = new ThoughtDeltaNormalizer();
+	const thoughtBySource: Partial<Record<"thinking" | "reasoning", string>> = {};
 
 	await readSseStream(body, async (data) => {
 		if (data === "[DONE]") return;
@@ -80,6 +105,13 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 		if (typeof delta?.role === "string") role = delta.role;
 		if (typeof delta?.content === "string") content += delta.content;
 		if (choice?.finish_reason) finishReason = choice.finish_reason;
+		const thoughtDeltas = thoughtDeltaNormalizer.consume(
+			extractThoughtFragmentsFromOpenAIChunk(parsed),
+		);
+		for (const fragment of thoughtDeltas) {
+			const prev = thoughtBySource[fragment.source] || "";
+			thoughtBySource[fragment.source] = `${prev}${fragment.text}`;
+		}
 
 		if (Array.isArray(delta?.tool_calls)) {
 			for (const tc of delta.tool_calls) {
@@ -92,7 +124,7 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 					typeof tc?.function?.arguments === "string" &&
 					tc.function.arguments
 				) {
-					existing.args += tc.function.arguments;
+					existing.args = mergeStreamingFragment(existing.args, tc.function.arguments);
 				}
 				toolCalls.set(idx, existing);
 			}
@@ -136,6 +168,12 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 				message: {
 					role,
 					content: content || null,
+					...(thoughtBySource.thinking
+						? { thinking: thoughtBySource.thinking }
+						: null),
+					...(thoughtBySource.reasoning
+						? { reasoning: thoughtBySource.reasoning }
+						: null),
 					...(tool_calls.length > 0 ? { tool_calls } : null),
 					...(function_call ? { function_call } : null),
 				} as any,
@@ -181,12 +219,20 @@ export function translateToOpenAI(
 			const textParts: string[] = [];
 			const toolCalls: OpenAIToolCall[] = [];
 			for (const block of msg.content) {
-				if (block.type === "text" && block.text) {
-					textParts.push(block.text);
-				} else if (block.type === "tool_use" && msg.role === "assistant") {
-					const id = typeof block.id === "string" ? block.id : "";
-					const name = typeof block.name === "string" ? block.name : "";
-					const args = JSON.stringify(block.input ?? {});
+				const blockType =
+					typeof (block as any)?.type === "string" ? (block as any).type : "";
+				if (
+					blockType === "text" &&
+					typeof (block as any)?.text === "string" &&
+					(block as any).text
+				) {
+					textParts.push((block as any).text);
+				} else if (blockType === "tool_use" && msg.role === "assistant") {
+					const id =
+						typeof (block as any)?.id === "string" ? (block as any).id : "";
+					const name =
+						typeof (block as any)?.name === "string" ? (block as any).name : "";
+					const args = JSON.stringify((block as any)?.input ?? {});
 					if (id && name) {
 						toolCalls.push({
 							id,
@@ -194,9 +240,13 @@ export function translateToOpenAI(
 							function: { name, arguments: args },
 						});
 					}
-				} else if (block.type === "tool_result" && block.tool_use_id) {
+				} else if (
+					blockType === "tool_result" &&
+					typeof (block as any)?.tool_use_id === "string" &&
+					(block as any).tool_use_id
+				) {
 					// tool_result 转为 tool role
-					const raw = (block as { content?: unknown }).content;
+					const raw = (block as any).content;
 					const resultContent =
 						typeof raw === "string"
 							? raw
@@ -210,7 +260,7 @@ export function translateToOpenAI(
 					messages.push({
 						role: "tool",
 						content: resultContent,
-						tool_call_id: String(block.tool_use_id),
+						tool_call_id: String((block as any).tool_use_id),
 					});
 				}
 			}
@@ -246,6 +296,24 @@ export function translateToAnthropic(
 ): AnthropicResponse {
 	const choice = openaiResp.choices[0];
 	const content: AnthropicResponse["content"] = [];
+	const thoughtFragments = extractThoughtFragmentsFromOpenAIChunk(openaiResp);
+	const mergedThoughtBySource = mergeThoughtFragmentsBySource(thoughtFragments);
+
+	// Anthropic 兼容面优先使用标准 thinking block，避免客户端对非标准 reasoning block 兼容不一致。
+	const mergedThinkingText = [
+		mergedThoughtBySource.thinking,
+		mergedThoughtBySource.reasoning,
+	]
+		.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+		.join("\n\n")
+		.trim();
+
+	if (mergedThinkingText) {
+		content.push({
+			type: "thinking",
+			text: mergedThinkingText,
+		});
+	}
 
 	// 文本内容
 	if (choice.message.content) {

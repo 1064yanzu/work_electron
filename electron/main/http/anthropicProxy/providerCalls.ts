@@ -13,6 +13,11 @@ import {
 	translateToAnthropic,
 	translateToOpenAI,
 } from "./openaiCompat";
+import {
+	extractThoughtFragmentsFromOpenAIChunk,
+	ThoughtDeltaNormalizer,
+	type ThoughtSource,
+} from "./thinkingCompat";
 import type {
 	AnthropicRequest,
 	AnthropicResponse,
@@ -27,6 +32,10 @@ const OPENAI_COMPAT_SCHEMA_MAX_DEPTH = 10;
 const OPENAI_COMPAT_SCHEMA_MAX_KEYS_PER_OBJECT = 200;
 const OPENAI_COMPAT_SCHEMA_MAX_ARRAY_ITEMS = 200;
 const OPENAI_COMPAT_SCHEMA_STR_MAX_LEN = 512;
+
+type ProviderCallOptions = {
+	anthropicBeta?: string;
+};
 
 function sanitizeOpenAICompatibleToolName(name: unknown): string {
 	const raw = typeof name === "string" ? name : "";
@@ -194,6 +203,27 @@ function isInvalidArgumentError(bodyText: string): boolean {
 	);
 }
 
+function computeStringOverlap(prev: string, incoming: string): number {
+	const max = Math.min(prev.length, incoming.length);
+	for (let k = max; k > 0; k--) {
+		if (prev.slice(-k) === incoming.slice(0, k)) return k;
+	}
+	return 0;
+}
+
+/**
+ * 兼容增量与累计两种上游分片模式，返回新的累计值。
+ */
+function mergeStreamingFragment(prev: string, incoming: string): string {
+	if (!incoming) return prev;
+	if (!prev) return incoming;
+	if (incoming.startsWith(prev)) return incoming;
+	if (prev.endsWith(incoming)) return prev;
+	const overlap = computeStringOverlap(prev, incoming);
+	if (overlap > 0) return prev + incoming.slice(overlap);
+	return prev + incoming;
+}
+
 /**
  * Some OpenAI-compatible providers (notably Gemini-style gateways) reject chat histories that
  * include prior tool_calls + role=tool messages. As a compatibility fallback, we flatten tool
@@ -252,6 +282,7 @@ export async function callProvider(
 	logger?: Logger,
 	requestId?: string,
 	conversationId?: string,
+	callOptions?: ProviderCallOptions,
 ): Promise<AnthropicResponse> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -267,6 +298,10 @@ export async function callProvider(
 		);
 		headers["x-api-key"] = provider.api_key || "";
 		headers["anthropic-version"] = "2023-06-01";
+		if (typeof callOptions?.anthropicBeta === "string") {
+			const beta = callOptions.anthropicBeta.trim();
+			if (beta) headers["anthropic-beta"] = beta;
+		}
 
 		const response = await loggedFetch(
 			`${baseUrl}/v1/messages`,
@@ -466,6 +501,99 @@ function emitToolUseBlock(
 	});
 }
 
+function emitThoughtBlock(
+	res: Response,
+	opts: {
+		index: number;
+		source: ThoughtSource;
+		text: string;
+	},
+) {
+	const text = String(opts.text || "").trim();
+	if (!text) return;
+
+	writeSseEvent(res, "content_block_start", {
+		type: "content_block_start",
+		index: opts.index,
+		content_block: {
+			// Anthropic SSE 规范中仅保证 thinking block 的兼容性；
+			// 将各类 reasoning/thinking 上游字段统一映射为 thinking 事件输出。
+			type: "thinking",
+			text: "",
+		},
+	});
+
+	writeSseEvent(res, "content_block_delta", {
+		type: "content_block_delta",
+		index: opts.index,
+		delta: {
+			type: "thinking_delta",
+			thinking: text,
+		},
+	});
+
+	writeSseEvent(res, "content_block_stop", {
+		type: "content_block_stop",
+		index: opts.index,
+	});
+}
+
+function emitAnthropicMessageContentBlocks(
+	res: Response,
+	contentBlocks: AnthropicResponse["content"],
+	startIndex = 0,
+): number {
+	let nextIndex = startIndex;
+
+	for (const block of contentBlocks) {
+		if (!block || typeof block !== "object") continue;
+
+		if (block.type === "text") {
+			const text = typeof block.text === "string" ? block.text : "";
+			if (!text) continue;
+			const index = nextIndex++;
+			writeSseEvent(res, "content_block_start", {
+				type: "content_block_start",
+				index,
+				content_block: { type: "text", text: "" },
+			});
+			writeSseEvent(res, "content_block_delta", {
+				type: "content_block_delta",
+				index,
+				delta: { type: "text_delta", text },
+			});
+			writeSseEvent(res, "content_block_stop", {
+				type: "content_block_stop",
+				index,
+			});
+			continue;
+		}
+
+		if (block.type === "tool_use") {
+			emitToolUseBlock(res, {
+				index: nextIndex++,
+				id: block.id,
+				name: block.name,
+				input: block.input,
+			});
+			continue;
+		}
+
+		if (block.type === "thinking" || block.type === "reasoning") {
+			const thoughtText =
+				typeof (block as any).text === "string" ? (block as any).text : "";
+			if (!thoughtText) continue;
+			emitThoughtBlock(res, {
+				index: nextIndex++,
+				source: block.type,
+				text: thoughtText,
+			});
+		}
+	}
+
+	return nextIndex;
+}
+
 async function readSseStream(
 	body: ReadableStream<Uint8Array>,
 	onData: (data: string) => void | Promise<void>,
@@ -512,6 +640,7 @@ export async function callProviderStream(
 	logger?: Logger,
 	requestId?: string,
 	conversationId?: string,
+	callOptions?: ProviderCallOptions,
 ): Promise<void> {
 	const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 
@@ -526,6 +655,10 @@ export async function callProviderStream(
 			"x-api-key": provider.api_key || "",
 			"anthropic-version": "2023-06-01",
 		};
+		if (typeof callOptions?.anthropicBeta === "string") {
+			const beta = callOptions.anthropicBeta.trim();
+			if (beta) headers["anthropic-beta"] = beta;
+		}
 
 		const upstream = await loggedFetch(
 			`${baseUrl}/v1/messages`,
@@ -610,6 +743,47 @@ export async function callProviderStream(
 		toolCount: openaiReq.tools?.length || 0,
 	});
 
+	// 尽早发送 message_start，避免上游首包较慢时客户端误判为“无流式输出”并触发补偿请求。
+	const estimatedInputTokens = estimateAnthropicInputTokens(anthropicReq);
+	let messageStarted = false;
+	let heartbeatTimer: NodeJS.Timeout | null = null;
+
+	const sendMessageStart = () => {
+		if (messageStarted || res.writableEnded) return;
+		messageStarted = true;
+		writeSseEvent(res, "message_start", {
+			type: "message_start",
+			message: {
+				id: messageId,
+				type: "message",
+				role: "assistant",
+				content: [],
+				model,
+				usage: { input_tokens: estimatedInputTokens, output_tokens: 0 },
+			},
+		});
+	};
+
+	const stopHeartbeat = () => {
+		if (!heartbeatTimer) return;
+		clearInterval(heartbeatTimer);
+		heartbeatTimer = null;
+	};
+
+	const startHeartbeat = () => {
+		if (heartbeatTimer || res.writableEnded) return;
+		heartbeatTimer = setInterval(() => {
+			if (res.writableEnded) {
+				stopHeartbeat();
+				return;
+			}
+			writeSseEvent(res, "ping", { type: "ping" });
+		}, 3000);
+	};
+
+	sendMessageStart();
+	startHeartbeat();
+
 	const upstream = await loggedFetch(
 		`${baseUrl}/chat/completions`,
 		{
@@ -678,55 +852,15 @@ export async function callProviderStream(
 							message: `Retry upstream JSON parse failed: ${e instanceof Error ? e.message : String(e)}`,
 						},
 					});
+					stopHeartbeat();
 					res.end();
 					return;
 				}
 
 				const message = translateToAnthropic(messageId, model, openaiResp);
+				sendMessageStart();
 
-				writeSseEvent(res, "message_start", {
-					type: "message_start",
-					message: {
-						id: message.id,
-						type: "message",
-						role: "assistant",
-						content: [],
-						model: message.model,
-						usage: {
-							input_tokens: message.usage.input_tokens,
-							output_tokens: 0,
-						},
-					},
-				});
-
-				message.content.forEach((block, index) => {
-					writeSseEvent(res, "content_block_start", {
-						type: "content_block_start",
-						index,
-						content_block:
-							block.type === "text" ? { type: "text", text: "" } : block,
-					});
-					if (block.type === "text") {
-						writeSseEvent(res, "content_block_delta", {
-							type: "content_block_delta",
-							index,
-							delta: { type: "text_delta", text: block.text },
-						});
-					} else if (block.type === "tool_use") {
-						writeSseEvent(res, "content_block_delta", {
-							type: "content_block_delta",
-							index,
-							delta: {
-								type: "input_json_delta",
-								partial_json: JSON.stringify(block.input ?? {}),
-							},
-						});
-					}
-					writeSseEvent(res, "content_block_stop", {
-						type: "content_block_stop",
-						index,
-					});
-				});
+				emitAnthropicMessageContentBlocks(res, message.content, 0);
 
 				writeSseEvent(res, "message_delta", {
 					type: "message_delta",
@@ -734,6 +868,7 @@ export async function callProviderStream(
 					usage: { output_tokens: message.usage.output_tokens },
 				});
 				writeSseEvent(res, "message_stop", { type: "message_stop" });
+				stopHeartbeat();
 				res.end();
 				return;
 			}
@@ -743,6 +878,7 @@ export async function callProviderStream(
 			type: "error",
 			error: { type: "api_error", message: errorText || "Upstream error" },
 		});
+		stopHeartbeat();
 		res.end();
 		return;
 	}
@@ -751,6 +887,7 @@ export async function callProviderStream(
 			type: "error",
 			error: { type: "api_error", message: "No upstream body" },
 		});
+		stopHeartbeat();
 		res.end();
 		return;
 	}
@@ -769,52 +906,15 @@ export async function callProviderStream(
 					message: `Upstream did not return SSE and JSON parse failed: ${e instanceof Error ? e.message : String(e)}`,
 				},
 			});
+			stopHeartbeat();
 			res.end();
 			return;
 		}
 
 		const message = translateToAnthropic(messageId, model, openaiResp);
+		sendMessageStart();
 
-		writeSseEvent(res, "message_start", {
-			type: "message_start",
-			message: {
-				id: message.id,
-				type: "message",
-				role: "assistant",
-				content: [],
-				model: message.model,
-				usage: { input_tokens: message.usage.input_tokens, output_tokens: 0 },
-			},
-		});
-
-		message.content.forEach((block, index) => {
-			writeSseEvent(res, "content_block_start", {
-				type: "content_block_start",
-				index,
-				content_block:
-					block.type === "text" ? { type: "text", text: "" } : block,
-			});
-			if (block.type === "text") {
-				writeSseEvent(res, "content_block_delta", {
-					type: "content_block_delta",
-					index,
-					delta: { type: "text_delta", text: block.text },
-				});
-			} else if (block.type === "tool_use") {
-				writeSseEvent(res, "content_block_delta", {
-					type: "content_block_delta",
-					index,
-					delta: {
-						type: "input_json_delta",
-						partial_json: JSON.stringify(block.input ?? {}),
-					},
-				});
-			}
-			writeSseEvent(res, "content_block_stop", {
-				type: "content_block_stop",
-				index,
-			});
-		});
+		emitAnthropicMessageContentBlocks(res, message.content, 0);
 
 		writeSseEvent(res, "message_delta", {
 			type: "message_delta",
@@ -822,32 +922,25 @@ export async function callProviderStream(
 			usage: { output_tokens: message.usage.output_tokens },
 		});
 		writeSseEvent(res, "message_stop", { type: "message_stop" });
+		stopHeartbeat();
 		res.end();
 		return;
 	}
 
-	// message_start
-	const estimatedInputTokens = estimateAnthropicInputTokens(anthropicReq);
-	writeSseEvent(res, "message_start", {
-		type: "message_start",
-		message: {
-			id: messageId,
-			type: "message",
-			role: "assistant",
-			content: [],
-			model,
-			usage: { input_tokens: estimatedInputTokens, output_tokens: 0 },
-		},
-	});
-
 	const doneErr = new Error("__OPENAI_STREAM_DONE__");
 	let nextBlockIndex = 0;
 	let textBlockIndex: number | null = null;
-	let toolCalls = new Map<
-		number,
-		{ id?: string; name?: string; args: string }
-	>();
-	let emittedToolUse = false;
+	let thoughtBlockIndex: number | null = null;
+	type StreamingToolCallState = {
+		id?: string;
+		name?: string;
+		args: string;
+		blockIndex: number | null;
+		sentArgsLength: number;
+		stopped: boolean;
+	};
+	let toolCalls = new Map<number, StreamingToolCallState>();
+	const thoughtDeltaNormalizer = new ThoughtDeltaNormalizer();
 	let pendingStopReason: "end_turn" | "tool_use" | "max_tokens" | null = null;
 	let lastUsage: any = null;
 	let finalized = false;
@@ -861,12 +954,98 @@ export async function callProviderStream(
 		textBlockIndex = null;
 	};
 
+	const stopThoughtBlockIfNeeded = () => {
+		if (thoughtBlockIndex === null) return;
+		writeSseEvent(res, "content_block_stop", {
+			type: "content_block_stop",
+			index: thoughtBlockIndex,
+		});
+		thoughtBlockIndex = null;
+	};
+
+	const ensureThoughtBlock = (_source: ThoughtSource) => {
+		if (thoughtBlockIndex !== null) {
+			return thoughtBlockIndex;
+		}
+		stopThoughtBlockIfNeeded();
+		thoughtBlockIndex = nextBlockIndex++;
+		writeSseEvent(res, "content_block_start", {
+			type: "content_block_start",
+			index: thoughtBlockIndex,
+			content_block: {
+				type: "thinking",
+				text: "",
+			},
+		});
+		return thoughtBlockIndex;
+	};
+
+	const startToolCallBlockIfNeeded = (state: StreamingToolCallState) => {
+		if (state.blockIndex !== null) return;
+		stopTextBlockIfNeeded();
+		stopThoughtBlockIfNeeded();
+		state.blockIndex = nextBlockIndex++;
+		writeSseEvent(res, "content_block_start", {
+			type: "content_block_start",
+			index: state.blockIndex,
+			content_block: {
+				type: "tool_use",
+				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+				name: state.name || "Tool",
+				input: {},
+			},
+		});
+	};
+
+	const emitToolCallArgsIfNeeded = (state: StreamingToolCallState) => {
+		if (state.blockIndex === null) return;
+		const deltaArgs = state.args.slice(state.sentArgsLength);
+		if (!deltaArgs) return;
+		writeSseEvent(res, "content_block_delta", {
+			type: "content_block_delta",
+			index: state.blockIndex,
+			delta: {
+				type: "input_json_delta",
+				partial_json: deltaArgs,
+			},
+		});
+		state.sentArgsLength = state.args.length;
+	};
+
+	const stopAllToolCallBlocksIfNeeded = () => {
+		for (const state of toolCalls.values()) {
+			if (state.stopped || state.blockIndex === null) continue;
+			writeSseEvent(res, "content_block_stop", {
+				type: "content_block_stop",
+				index: state.blockIndex,
+			});
+			state.stopped = true;
+		}
+	};
+
+	const flushToolCallsAsToolUse = () => {
+		if (toolCalls.size === 0) return false;
+		stopTextBlockIfNeeded();
+		stopThoughtBlockIfNeeded();
+		const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
+		for (const [_idx, state] of sorted) {
+			startToolCallBlockIfNeeded(state);
+			emitToolCallArgsIfNeeded(state);
+		}
+		stopAllToolCallBlocksIfNeeded();
+		return true;
+	};
+
 	const finalize = () => {
 		if (finalized || res.writableEnded) return;
 		finalized = true;
+		stopHeartbeat();
 
 		stopTextBlockIfNeeded();
-		const stopReason = pendingStopReason || "end_turn";
+		stopThoughtBlockIfNeeded();
+		stopAllToolCallBlocksIfNeeded();
+		const stopReason =
+			pendingStopReason || (toolCalls.size > 0 ? "tool_use" : "end_turn");
 
 		const usageAny = lastUsage as any;
 		const completionTokens =
@@ -904,8 +1083,28 @@ export async function callProviderStream(
 			const choice = parsed?.choices?.[0];
 			const delta = choice?.delta || {};
 			const finishReason = choice?.finish_reason as string | null | undefined;
+			const thoughtDeltas = thoughtDeltaNormalizer.consume(
+				extractThoughtFragmentsFromOpenAIChunk(parsed),
+			);
+
+			if (thoughtDeltas.length > 0) {
+				stopTextBlockIfNeeded();
+				for (const fragment of thoughtDeltas) {
+					if (!fragment.text) continue;
+					const thoughtIndex = ensureThoughtBlock(fragment.source);
+					writeSseEvent(res, "content_block_delta", {
+						type: "content_block_delta",
+						index: thoughtIndex,
+						delta: {
+							type: "thinking_delta",
+							thinking: fragment.text,
+						},
+					});
+				}
+			}
 
 			if (typeof delta?.content === "string" && delta.content.length > 0) {
+				stopThoughtBlockIfNeeded();
 				if (textBlockIndex === null) {
 					textBlockIndex = nextBlockIndex++;
 					writeSseEvent(res, "content_block_start", {
@@ -924,7 +1123,12 @@ export async function callProviderStream(
 			if (Array.isArray(delta?.tool_calls)) {
 				for (const tc of delta.tool_calls) {
 					const idx = typeof tc?.index === "number" ? tc.index : 0;
-					const existing = toolCalls.get(idx) || { args: "" };
+					const existing = toolCalls.get(idx) || {
+						args: "",
+						blockIndex: null,
+						sentArgsLength: 0,
+						stopped: false,
+					};
 					if (typeof tc?.id === "string" && tc.id) existing.id = tc.id;
 					if (typeof tc?.function?.name === "string" && tc.function.name)
 						existing.name = tc.function.name;
@@ -932,8 +1136,13 @@ export async function callProviderStream(
 						typeof tc?.function?.arguments === "string" &&
 						tc.function.arguments
 					) {
-						existing.args += tc.function.arguments;
+						existing.args = mergeStreamingFragment(
+							existing.args,
+							tc.function.arguments,
+						);
 					}
+					startToolCallBlockIfNeeded(existing);
+					emitToolCallArgsIfNeeded(existing);
 					toolCalls.set(idx, existing);
 				}
 			}
@@ -949,62 +1158,20 @@ export async function callProviderStream(
 			});
 
 			if (finishReason === "tool_calls") {
-				stopTextBlockIfNeeded();
-
-				// Emit tool_use blocks
-				if (!emittedToolUse) {
-					emittedToolUse = true;
-					const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
-					for (const [_i, tc] of sorted) {
-						const toolIndex = nextBlockIndex++;
-						let input: unknown = {};
-						const rawArgs = String(tc.args || "").trim();
-						if (rawArgs) {
-							try {
-								input = JSON.parse(rawArgs);
-							} catch {
-								input = { _raw: rawArgs };
-							}
-						}
-						emitToolUseBlock(res, {
-							index: toolIndex,
-							id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-							name: tc.name || "Tool",
-							input,
-						});
-					}
-				}
+				flushToolCallsAsToolUse();
 				pendingStopReason = "tool_use";
 				return;
 			}
 
 			if (finishReason === "stop" || finishReason === "length") {
 				stopTextBlockIfNeeded();
+				stopThoughtBlockIfNeeded();
 
-				// 【关键修复】某些模型（如 Gemini）即使有工具调用也返回 finish_reason="stop"
-				// 如果有未发送的工具调用，需要在这里发送它们
-				if (toolCalls.size > 0 && !emittedToolUse) {
-					emittedToolUse = true;
-					const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
-					for (const [_i, tc] of sorted) {
-						const toolIndex = nextBlockIndex++;
-						let input: unknown = {};
-						const rawArgs = String(tc.args || "").trim();
-						if (rawArgs) {
-							try {
-								input = JSON.parse(rawArgs);
-							} catch {
-								input = { _raw: rawArgs };
-							}
-						}
-						emitToolUseBlock(res, {
-							index: toolIndex,
-							id: tc.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-							name: tc.name || "Tool",
-							input,
-						});
+				// 某些网关会在有工具调用时仍返回 stop，这里按实际内容兜底为 tool_use。
+				if (toolCalls.size > 0) {
+					if (flushToolCallsAsToolUse()) {
+						pendingStopReason = "tool_use";
 					}
-					pendingStopReason = "tool_use";
 					return;
 				}
 
@@ -1024,6 +1191,7 @@ export async function callProviderStream(
 			type: "error",
 			error: { type: "api_error", message: msg || "Upstream stream error" },
 		});
+		stopHeartbeat();
 		res.end();
 		return;
 	}

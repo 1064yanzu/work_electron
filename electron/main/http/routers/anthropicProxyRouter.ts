@@ -235,6 +235,13 @@ export function createAnthropicProxyRouter(options?: {
 				req.headers["x-conversation-id"].trim()) ||
 			extractIpoConversationId(anthropicReq) ||
 			undefined;
+		const anthropicBetaHeaderRaw = req.headers["anthropic-beta"];
+		const anthropicBetaHeader =
+			typeof anthropicBetaHeaderRaw === "string"
+				? anthropicBetaHeaderRaw
+				: Array.isArray(anthropicBetaHeaderRaw)
+					? anthropicBetaHeaderRaw.join(",")
+					: undefined;
 
 		if (!db) {
 			return res.status(501).json({
@@ -395,6 +402,7 @@ export function createAnthropicProxyRouter(options?: {
 					logger,
 					requestId,
 					conversationId,
+					{ anthropicBeta: anthropicBetaHeader },
 				);
 				return;
 			}
@@ -407,6 +415,7 @@ export function createAnthropicProxyRouter(options?: {
 				logger,
 				requestId,
 				conversationId,
+				{ anthropicBeta: anthropicBetaHeader },
 			);
 			res.json(result);
 		} catch (error) {
