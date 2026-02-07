@@ -4,13 +4,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { cn } from "../../lib/utils";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
-
-function formatDuration(durationMs?: number) {
-	if (!durationMs || durationMs <= 0) return "";
-	const s = durationMs / 1000;
-	return s >= 10 ? `${Math.round(s)}s` : `${s.toFixed(1)}s`;
-}
 
 function formatDurationCompact(durationMs?: number) {
 	if (!durationMs || durationMs <= 0) return "";
@@ -21,9 +16,11 @@ function formatDurationCompact(durationMs?: number) {
 export function ThoughtInline({
 	title,
 	content,
-	phase,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	phase: _phase,
 	durationMs,
-	source,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	source: _source,
 	truncated,
 	isStreaming = false,
 }: {
@@ -47,10 +44,8 @@ export function ThoughtInline({
 				streamStartedAtRef.current = Date.now();
 				setLiveDurationMs(0);
 			}
-			// 流式期间强制展开，保证实时可见。
 			setOpen(true);
 		} else if (wasStreaming) {
-			// 思维链结束后自动折叠，符合主流产品默认行为。
 			setOpen(false);
 		}
 		prevStreamingRef.current = isStreaming;
@@ -65,20 +60,12 @@ export function ThoughtInline({
 		return () => clearInterval(timer);
 	}, [isStreaming]);
 
-	const subtitle = useMemo(() => {
-		const parts: string[] = [];
-		if (phase) parts.push(phase);
-		const displayDurationMs = isStreaming ? liveDurationMs : durationMs;
-		const d = formatDuration(displayDurationMs);
-		if (d) parts.push(d);
-		return parts.join(" · ");
-	}, [phase, durationMs, isStreaming, liveDurationMs]);
-
 	const headerDuration = useMemo(() => {
 		const displayDurationMs = isStreaming ? liveDurationMs : durationMs;
 		return formatDurationCompact(displayDurationMs);
 	}, [durationMs, isStreaming, liveDurationMs]);
 
+	// 标题格式：Thought for Xs
 	const headerTitle = useMemo(() => {
 		const baseTitle = title?.trim() || "Thought";
 		return headerDuration ? `${baseTitle} for ${headerDuration}` : baseTitle;
@@ -86,45 +73,46 @@ export function ThoughtInline({
 
 	return (
 		<div className="w-full">
+			{/* 极简行式布局：折叠箭头 + 文字 */}
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
-				className="w-full flex items-center gap-2 px-1 py-1 text-left text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+				className={cn(
+					"w-full flex items-center gap-2 text-left transition-colors py-0.5",
+					"cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded",
+				)}
 				aria-expanded={open}
 			>
-				<div className="shrink-0 mt-[1px]">
+				{/* 折叠箭头 */}
+				<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
 					{open ? (
-						<ChevronDown className="w-4 h-4" />
+						<ChevronDown className="w-3.5 h-3.5" />
 					) : (
-						<ChevronRight className="w-4 h-4" />
+						<ChevronRight className="w-3.5 h-3.5" />
 					)}
-				</div>
-				<div className="min-w-0 truncate text-[15px] leading-6 font-medium tracking-[0.01em]">
+				</span>
+
+				{/* 文字：Thought for Xs */}
+				<span className="text-sm text-zinc-500 dark:text-zinc-400">
 					{headerTitle}
-				</div>
+				</span>
 			</button>
 
-			{open ? (
-				<div className="mt-1 ml-6 pl-4 pr-2 py-3 rounded-md bg-zinc-100/90 dark:bg-zinc-800/55 border border-zinc-200/70 dark:border-zinc-700/70">
-					{truncated ? (
-						<div className="mb-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+			{/* 展开内容 - 极简风格 */}
+			{open && (
+				<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+					{truncated && (
+						<div className="mb-2 text-[11px] text-zinc-400">
 							内容较长，已自动截断展示。
 						</div>
-					) : null}
-					<div className="max-h-72 overflow-y-auto pr-2 text-[15px] text-zinc-600 dark:text-zinc-300 leading-[1.65] whitespace-pre-wrap break-words">
-						<div className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-[1.65] prose-headings:font-medium prose-strong:font-medium">
+					)}
+					<div className="max-h-72 overflow-y-auto text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+						<div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:mt-3 prose-headings:mb-1.5">
 							<MarkdownRenderer content={content} />
 						</div>
 					</div>
-					{subtitle || source ? (
-						<div className="mt-2 text-[11px] text-zinc-500/90 dark:text-zinc-400/90">
-							{subtitle}
-							{subtitle && source ? " · " : ""}
-							{source}
-						</div>
-					) : null}
 				</div>
-			) : null}
+			)}
 		</div>
 	);
 }

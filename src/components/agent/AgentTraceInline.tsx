@@ -1,6 +1,5 @@
 import {
 	BookOpen,
-	Brain,
 	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
@@ -322,7 +321,7 @@ const ArtifactRow = memo(function ArtifactRow({
 				className={cn(
 					"flex items-start gap-2 px-3 py-2",
 					isPreviewable &&
-						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
+					"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
 				)}
 				onClick={isPreviewable ? togglePreview : undefined}
 			>
@@ -685,7 +684,7 @@ const ToolCallRow = memo(function ToolCallRow({
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
 					hasDetails &&
-						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
@@ -922,26 +921,25 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 				<div className="px-3 pb-3 space-y-3">
 					{/* 思考过程 */}
 					{thinking ? (
-						<div className="rounded-xl bg-amber-50/50 dark:bg-amber-900/10 ring-1 ring-amber-200/50 dark:ring-amber-800/30 overflow-hidden">
+						<div className="w-full">
 							<button
 								onClick={() => setThinkingOpen((v) => !v)}
-								className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors"
+								className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded"
 							>
-								<div className="flex items-center gap-2">
-									<Brain className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-									<span className="text-xs font-medium text-amber-800 dark:text-amber-200">
-										思考过程
-									</span>
-								</div>
-								{thinkingOpen ? (
-									<ChevronDown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-								)}
+								<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+									{thinkingOpen ? (
+										<ChevronDown className="w-3.5 h-3.5" />
+									) : (
+										<ChevronRight className="w-3.5 h-3.5" />
+									)}
+								</span>
+								<span className="text-sm text-zinc-500 dark:text-zinc-400">
+									思考过程
+								</span>
 							</button>
 							{thinkingOpen ? (
-								<div className="px-3 pb-3">
-									<div className="text-xs text-amber-700 dark:text-amber-300 whitespace-pre-wrap leading-relaxed">
+								<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+									<div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
 										{thinking}
 									</div>
 								</div>
@@ -1124,11 +1122,10 @@ function ContextControl({
 					<button
 						onClick={handleCompact}
 						disabled={isCompacting || !sdkSessionId}
-						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
-							isCompacting
-								? "bg-zinc-100 text-zinc-400 cursor-wait"
-								: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
-						}`}
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${isCompacting
+							? "bg-zinc-100 text-zinc-400 cursor-wait"
+							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+							}`}
 						title="执行 /compact 命令压缩历史"
 					>
 						{isCompacting ? (
