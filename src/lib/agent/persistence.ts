@@ -95,6 +95,7 @@ function recordToTask(
 		metadata: {
 			backendTaskId: record.id,
 			legacyFrontendTaskId: legacyFrontendTaskId || undefined,
+			sessionId: record.session_id,
 			budget_json: record.budget_json,
 		},
 	};

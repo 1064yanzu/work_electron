@@ -40,6 +40,7 @@ import {
 	invokeLlmWithCallback,
 	useChatStore,
 } from "../lib/chat";
+import { chatStore as chatStoreInstance } from "../lib/chat/store";
 import {
 	filterThoughtBlocksForPersistence,
 	StreamBlocksBuilder,
@@ -411,7 +412,7 @@ export default function CopilotSidebar() {
 	const [isProposalMenuOpen, setIsProposalMenuOpen] = useState(false);
 	const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
 	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-	const restoredAgentSessionIdsRef = useRef<Set<string>>(new Set());
+	const activeRestoredAgentSessionIdRef = useRef<string | null>(null);
 	const replayedAgentSessionIdsRef = useRef<Set<string>>(new Set());
 
 	// 消息队列（队列功能框架已建立，具体消费逻辑待后续完善）
@@ -552,11 +553,17 @@ export default function CopilotSidebar() {
 	useEffect(() => {
 		const s = chatStore.activeSession;
 		const agentSessionId = s?.agentSessionId;
-		if (!agentSessionId) return;
-		if (agentSessionId.startsWith("local-")) return;
+		if (!agentSessionId) {
+			activeRestoredAgentSessionIdRef.current = null;
+			return;
+		}
+		if (agentSessionId.startsWith("local-")) {
+			activeRestoredAgentSessionIdRef.current = agentSessionId;
+			return;
+		}
 
 		const shouldResume =
-			!restoredAgentSessionIdsRef.current.has(agentSessionId);
+			activeRestoredAgentSessionIdRef.current !== agentSessionId;
 		const shouldReplay =
 			chatSettings.replayEnabled &&
 			!replayedAgentSessionIdsRef.current.has(agentSessionId);
@@ -565,7 +572,7 @@ export default function CopilotSidebar() {
 		(async () => {
 			try {
 				if (shouldResume) {
-					restoredAgentSessionIdsRef.current.add(agentSessionId);
+					activeRestoredAgentSessionIdRef.current = agentSessionId;
 					agentPersistence.setCurrentSessionId(agentSessionId);
 					await resumePersistentSession(agentSessionId);
 				}
@@ -1282,6 +1289,32 @@ export default function CopilotSidebar() {
 				}
 			};
 
+			const persistSessionMessageById = (messageId: string) => {
+				if (
+					!chatSettings.persistEnabled ||
+					!boundAgentSessionId ||
+					boundAgentSessionId.startsWith("local-")
+				) {
+					return;
+				}
+
+				const latestState = chatStoreInstance.getState();
+				const latestSession = latestState.sessions.find((s) => s.id === session.id);
+				const latestMessage = latestSession?.messages.find((m) => m.id === messageId);
+				if (!latestMessage) return;
+
+				void persistChatMessageToAgentSession(
+					boundAgentSessionId,
+					latestMessage,
+				).then((record) => {
+					if (record?.id) {
+						chatStore.updateMessage(session.id, messageId, {
+							metadata: { agentMessageId: record.id },
+						});
+					}
+				});
+			};
+
 			ensureStreamingMessage();
 
 			try {
@@ -1297,6 +1330,15 @@ export default function CopilotSidebar() {
 					forcedFinalized = true;
 					streamBuilder.flushParser();
 					const finalRawText = rawText || getStreamText();
+					const forcedFinalState = agentStore.getState();
+					const forcedTokenUsage = (forcedFinalState.currentTask?.metadata as any)
+						?.tokenUsage as
+						| {
+								promptTokens: number;
+								completionTokens: number;
+								totalTokens: number;
+						  }
+						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
 						activeDocContent: workspaceStore.getActiveDocContent() || "",
@@ -1320,8 +1362,13 @@ export default function CopilotSidebar() {
 								...(protocol.kind === "create" || protocol.kind === "update"
 									? { fileUpdates: [protocol.fileUpdate] }
 									: null),
+								...(forcedTokenUsage ? { tokenUsage: forcedTokenUsage } : null),
+								taskId: forcedFinalState.currentTask?.id,
+								sandboxDir: (forcedFinalState.currentTask?.metadata as any)
+									?.sandboxDir,
 							},
 						});
+						persistSessionMessageById(streamingMsgId);
 					}
 
 					if (protocol.kind === "update") {
@@ -1810,6 +1857,7 @@ export default function CopilotSidebar() {
 							sandboxDir: (finalState.currentTask?.metadata as any)?.sandboxDir,
 						},
 					});
+					persistSessionMessageById(streamingMsgId);
 
 					if (protocol.kind === "update") {
 						events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);

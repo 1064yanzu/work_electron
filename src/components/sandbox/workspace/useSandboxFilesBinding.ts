@@ -60,10 +60,29 @@ export function useSandboxFilesBinding({
 	}, [activeSession]);
 
 	const boundTask = useMemo(() => {
-		if (!sessionTaskId) return null;
-		if (currentTask?.id === sessionTaskId) return currentTask;
-		return taskHistory.find((t) => t.id === sessionTaskId) || null;
-	}, [currentTask, sessionTaskId, taskHistory]);
+		if (sessionTaskId) {
+			if (currentTask?.id === sessionTaskId) return currentTask;
+			const matched = taskHistory.find((t) => t.id === sessionTaskId);
+			if (matched) return matched;
+		}
+
+		const sessionAgentSessionId = String(activeSession?.agentSessionId || "").trim();
+		if (!sessionAgentSessionId) return null;
+
+		const currentTaskSessionId = String(
+			(currentTask?.metadata as any)?.sessionId || "",
+		).trim();
+		if (currentTaskSessionId && currentTaskSessionId === sessionAgentSessionId) {
+			return currentTask;
+		}
+
+		return (
+			taskHistory.find((t) => {
+				const taskSessionId = String((t?.metadata as any)?.sessionId || "").trim();
+				return taskSessionId === sessionAgentSessionId;
+			}) || null
+		);
+	}, [activeSession, currentTask, sessionTaskId, taskHistory]);
 
 	const sandboxDir = useMemo(() => {
 		const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
