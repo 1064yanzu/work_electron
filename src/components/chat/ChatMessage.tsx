@@ -164,7 +164,10 @@ function ChatMessageImpl({
 	if (renderableAgentBlocks) {
 		return (
 			<div className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
-				<AgentBlocksInline blocks={message.metadata!.blocks!} />
+				<AgentBlocksInline
+					blocks={message.metadata!.blocks!}
+					isStreaming={isStreaming}
+				/>
 			</div>
 		);
 	}
@@ -178,7 +181,10 @@ function ChatMessageImpl({
 
 		return (
 			<div className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
-				<AgentBlocksInline blocks={message.metadata.blocks} />
+				<AgentBlocksInline
+					blocks={message.metadata.blocks}
+					isStreaming={isStreaming}
+				/>
 			</div>
 		);
 	}
@@ -190,7 +196,10 @@ function ChatMessageImpl({
 		return (
 			<div className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
 				{Array.isArray(message.metadata?.blocks) ? (
-					<AgentBlocksInline blocks={message.metadata.blocks} />
+					<AgentBlocksInline
+						blocks={message.metadata.blocks}
+						isStreaming={isStreaming}
+					/>
 				) : (
 					<ToolCallInline
 						taskId={message.metadata.trace.taskId}
@@ -381,10 +390,13 @@ function ChatMessageImpl({
 						)}
 
 						{/* AI 内容渲染区 */}
-						<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
-							{canRenderAssistantByBlocks ? (
-								<AgentBlocksInline blocks={message.metadata!.blocks!} />
-							) : (
+							<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
+								{canRenderAssistantByBlocks ? (
+									<AgentBlocksInline
+										blocks={message.metadata!.blocks!}
+										isStreaming={isStreaming}
+									/>
+								) : (
 								<>
 									{/* 渲染 Markdown 内容,代码块会被预览卡片替换 */}
 									{message.content

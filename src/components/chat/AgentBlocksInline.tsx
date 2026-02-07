@@ -10,7 +10,13 @@ import { ToolCallsStack } from "./ToolCallsStack";
 import type { ToolCall } from "../../lib/agent/types";
 import { ProcessingCard } from "./ProcessingCard";
 
-export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
+export function AgentBlocksInline({
+	blocks,
+	isStreaming = false,
+}: {
+	blocks: ChatMessageBlock[];
+	isStreaming?: boolean;
+}) {
 	const nodes: ReactNode[] = [];
 
 	const replaceProtocolWithMarker = (
@@ -133,6 +139,7 @@ export function AgentBlocksInline({ blocks }: { blocks: ChatMessageBlock[] }) {
 					durationMs={b.durationMs}
 					source={b.source}
 					truncated={b.truncated}
+					isStreaming={isStreaming}
 				/>,
 			);
 			continue;
