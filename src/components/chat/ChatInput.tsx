@@ -89,6 +89,8 @@ export function ChatInput({
 		contexts,
 		removeContext,
 		addSourceToContext,
+		currentProjectId,
+		currentFolderId,
 	} = useWorkspaceStore();
 
 	// 加载外部数据
@@ -103,7 +105,24 @@ export function ChatInput({
 				]);
 
 				if (sourcesData.status === "fulfilled") {
-					setSources(sourcesData.value);
+					// 根据当前项目和文件夹过滤资料,与 ResourceSidebar 保持一致
+					let filteredSources = sourcesData.value;
+
+					// 1. 按项目过滤
+					if (currentProjectId) {
+						filteredSources = filteredSources.filter(
+							(s) => s.project_id === currentProjectId || s.project_id == null,
+						);
+					}
+
+					// 2. 按文件夹过滤
+					if (currentFolderId) {
+						filteredSources = filteredSources.filter(
+							(s) => s.folder_id === currentFolderId,
+						);
+					}
+
+					setSources(filteredSources);
 				}
 				if (cardsData.status === "fulfilled") {
 					setCards(cardsData.value);
@@ -117,7 +136,7 @@ export function ChatInput({
 		};
 
 		loadData();
-	}, []);
+	}, [currentProjectId, currentFolderId]);
 
 	// 辅助函数：获取资料图标
 	const getSourceIcon = (kind: SourceType) => {
@@ -520,8 +539,8 @@ export function ChatInput({
 														: "file",
 											status:
 												ctx.content &&
-												ctx.content.trim().length > 0 &&
-												!ctx.filePath
+													ctx.content.trim().length > 0 &&
+													!ctx.filePath
 													? "preparing"
 													: "ready",
 										}}
@@ -584,11 +603,10 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${
-									isModelSelectorOpen
-										? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-										: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
-								}`}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${isModelSelectorOpen
+									? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
+									: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
+									}`}
 							>
 								<span className="font-medium truncate max-w-[100px]">
 									{model ? model.split("/").pop()?.slice(0, 12) : "Auto"}
