@@ -71,6 +71,40 @@ export async function runMigrations(ctx: DbContext) {
 	await safeAddColumn(ctx, "backup_history", "device_id", "TEXT");
 	await safeAddColumn(ctx, "backup_history", "device_name", "TEXT");
 
+	// Migration: 添加 WebDAV 高级配置字段到 sync_config
+	await safeAddColumn(
+		ctx,
+		"sync_config",
+		"webdav_auto_sync",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"sync_config",
+		"webdav_sync_interval",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"sync_config",
+		"webdav_max_backups",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"sync_config",
+		"webdav_skip_backup_file",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(
+		ctx,
+		"sync_config",
+		"webdav_disable_stream",
+		"INTEGER DEFAULT 0",
+	);
+	await safeAddColumn(ctx, "sync_config", "webdav_last_sync_at", "INTEGER");
+	await safeAddColumn(ctx, "sync_config", "webdav_last_sync_error", "TEXT");
+
 	// Migration: sources 表增强（作用域、路径、软删除、来源类型）
 	await safeAddColumn(ctx, "sources", "scope", "TEXT DEFAULT 'global'");
 	await safeAddColumn(ctx, "sources", "storage_path", "TEXT");

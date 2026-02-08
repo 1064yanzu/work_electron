@@ -265,8 +265,34 @@ class ChatStore {
 		);
 	}
 
-	// 创建新会话
+	// 创建新会话（如果已有空会话则复用）
 	createNewSession(title?: string): ChatSession {
+		// 检查是否已有空会话（没有消息的会话）
+		const existingEmptySession = this.state.sessions.find(
+			(s) => s.messages.length === 0,
+		);
+
+		// 如果当前激活的就是空会话，直接返回它
+		if (
+			existingEmptySession &&
+			this.state.activeSessionId === existingEmptySession.id
+		) {
+			return existingEmptySession;
+		}
+
+		// 如果有空会话但不是当前激活的，切换到它
+		if (existingEmptySession) {
+			this.setState(
+				(state) => ({
+					...state,
+					activeSessionId: existingEmptySession.id,
+				}),
+				"normal",
+			);
+			return existingEmptySession;
+		}
+
+		// 没有空会话，创建新的
 		const session = createSession(title);
 		this.setState(
 			(state) => ({
@@ -310,10 +336,10 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-								...s,
-								messages: [...s.messages, message],
-								updatedAt: Date.now(),
-							}
+							...s,
+							messages: [...s.messages, message],
+							updatedAt: Date.now(),
+						}
 						: s,
 				),
 			}),
@@ -372,31 +398,31 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-								...s,
-								messages: s.messages.map((m) => {
-									if (m.id !== messageId) return m;
-									const updated = {
-										...m,
-										...updates,
-										metadata: (() => {
-											if (updates.metadata === undefined) return m.metadata;
-											const merged = {
-												...(m.metadata || {}),
-												...(((updates.metadata as any) || {}) as any),
-											};
-											const mergedBlocks = mergeFileUpdatesIntoBlocks(
-												merged.blocks,
-												merged.fileUpdates,
-											);
-											return mergedBlocks
-												? { ...merged, blocks: mergedBlocks }
-												: merged;
-										})(),
-									} satisfies ChatMessage;
-									return updated;
-								}),
-								updatedAt: Date.now(),
-							}
+							...s,
+							messages: s.messages.map((m) => {
+								if (m.id !== messageId) return m;
+								const updated = {
+									...m,
+									...updates,
+									metadata: (() => {
+										if (updates.metadata === undefined) return m.metadata;
+										const merged = {
+											...(m.metadata || {}),
+											...(((updates.metadata as any) || {}) as any),
+										};
+										const mergedBlocks = mergeFileUpdatesIntoBlocks(
+											merged.blocks,
+											merged.fileUpdates,
+										);
+										return mergedBlocks
+											? { ...merged, blocks: mergedBlocks }
+											: merged;
+									})(),
+								} satisfies ChatMessage;
+								return updated;
+							}),
+							updatedAt: Date.now(),
+						}
 						: s,
 				),
 			}),
@@ -489,10 +515,10 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-								...s,
-								messages: s.messages.filter((m) => m.id !== messageId),
-								updatedAt: Date.now(),
-							}
+							...s,
+							messages: s.messages.filter((m) => m.id !== messageId),
+							updatedAt: Date.now(),
+						}
 						: s,
 				),
 			}),

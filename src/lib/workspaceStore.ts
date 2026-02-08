@@ -41,12 +41,12 @@ export interface ResearchTask {
 	id: string;
 	query: string;
 	status:
-		| "idle"
-		| "searching"
-		| "fetching"
-		| "analyzing"
-		| "completed"
-		| "error";
+	| "idle"
+	| "searching"
+	| "fetching"
+	| "analyzing"
+	| "completed"
+	| "error";
 	steps: ResearchStep[];
 	sources: ResearchSource[];
 	summary?: string;
@@ -105,18 +105,20 @@ interface WorkspaceState {
 	activeMainView: "editor" | "browser";
 	// 左边栏视图模式
 	leftSidebarView:
-		| "sources"
-		| "research"
-		| "detail"
-		| "agent"
-		| "cards"
-		| "websearch";
+	| "sources"
+	| "research"
+	| "detail"
+	| "agent"
+	| "cards"
+	| "websearch";
 	// 当前研究任务
 	currentResearch: ResearchTask | null;
 	// 历史研究任务
 	researchHistory: ResearchTask[];
 	// 当前预览的资料
 	previewSource: Source | ResearchSource | null;
+	// 右侧栏可见性
+	rightSidebarVisible: boolean;
 
 	// === 多标签文档工作区 ===
 	// 已打开的文档 ID 列表（按顺序）
@@ -154,6 +156,7 @@ const initialState: WorkspaceState = {
 	currentResearch: null,
 	researchHistory: [],
 	previewSource: null,
+	rightSidebarVisible: true,
 
 	// 多标签文档工作区
 	openedDocs: [],
@@ -226,11 +229,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-								...c,
-								filePath: result.path,
-								size: result.size,
-								mimeType: "text/plain",
-							}
+							...c,
+							filePath: result.path,
+							size: result.size,
+							mimeType: "text/plain",
+						}
 						: c,
 				),
 			}));
@@ -426,6 +429,19 @@ class WorkspaceStore {
 	// 设置主视图模式
 	setMainView(view: "editor" | "browser") {
 		this.setState((state) => ({ ...state, activeMainView: view }));
+	}
+
+	// 切换右侧栏可见性
+	toggleRightSidebar() {
+		this.setState((state) => ({
+			...state,
+			rightSidebarVisible: !state.rightSidebarVisible,
+		}));
+	}
+
+	// 设置右侧栏可见性
+	setRightSidebarVisible(visible: boolean) {
+		this.setState((state) => ({ ...state, rightSidebarVisible: visible }));
 	}
 
 	// 设置左边栏视图模式
@@ -1002,6 +1018,10 @@ export function useWorkspaceStore() {
 		setCurrentFolder: workspaceStore.setCurrentFolder.bind(workspaceStore),
 		setMainView: workspaceStore.setMainView.bind(workspaceStore),
 		getContextText: workspaceStore.getContextText.bind(workspaceStore),
+		// 右侧栏控制
+		toggleRightSidebar: workspaceStore.toggleRightSidebar.bind(workspaceStore),
+		setRightSidebarVisible:
+			workspaceStore.setRightSidebarVisible.bind(workspaceStore),
 		// 左边栏和研究相关
 		setLeftSidebarView: workspaceStore.setLeftSidebarView.bind(workspaceStore),
 		setPreviewSource: workspaceStore.setPreviewSource.bind(workspaceStore),
