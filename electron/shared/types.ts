@@ -11,6 +11,7 @@ export type SourceKind = "web" | "document" | "audio" | "text" | "image";
 
 /** 资料来源 */
 export type SourceOrigin = "manual" | "browser_clip" | "web_search" | "import";
+export type SourceScope = "global" | "project";
 
 /** 资料分类 */
 export type SourceCategory =
@@ -113,11 +114,15 @@ export interface Source {
 	title: string;
 	kind: SourceKind;
 	tags: string[];
+	scope?: SourceScope;
 	url?: string;
 	project_id?: string;
 	folder_id?: string;
 	source_type: SourceOrigin;
+	origin_type?: "manual" | "web_clip" | "import" | "agent_output";
 	category: SourceCategory;
+	storage_path?: string;
+	is_deleted?: boolean;
 	description?: string;
 	thumbnail?: string;
 	author?: string;
@@ -165,10 +170,47 @@ export interface OutputAsset {
 	content: string;
 	output_type: OutputType;
 	related_notes: string[];
+	scope?: SourceScope;
+	tags?: string[];
+	storage_path?: string;
+	is_deleted?: boolean;
 	project_id?: string;
 	version: number;
 	created_at: number;
 	updated_at: number;
+}
+
+export interface Theme {
+	id: string;
+	name: string;
+	slug: string;
+	created_at: number;
+	updated_at: number;
+}
+
+export interface StorageSettings {
+	vault_root: string;
+	obsidian_frontmatter: boolean;
+	obsidian_wiki_links: boolean;
+	conflict_strategy: "append_suffix" | "prevent_overwrite";
+	last_migrated_at?: number;
+}
+
+export interface FileRecord {
+	id: string;
+	entity_type: "source" | "output";
+	title: string;
+	scope: SourceScope;
+	project_id?: string;
+	tags: string[];
+	themes: string[];
+	storage_path?: string;
+	origin_type: "manual" | "web_clip" | "import" | "agent_output";
+	source_type?: SourceOrigin;
+	output_type?: OutputType;
+	updated_at: number;
+	created_at: number;
+	is_deleted: boolean;
 }
 
 export interface AppConfig {
@@ -208,6 +250,7 @@ export interface CreateFolderPayload {
 export interface UpdateFolderPayload {
 	id: string;
 	name?: string;
+	parent_id?: string | null;
 	color?: string;
 	icon?: string;
 }

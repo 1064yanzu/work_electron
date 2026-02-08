@@ -6,6 +6,10 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { dialog, type IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
+import {
+	collectFullBackupPayload,
+	importBackupPayload,
+} from "../../services/backupPayload";
 
 interface BackupFileInfo {
 	fileName: string;
@@ -140,9 +144,12 @@ export function createLocalBackupHandlers(db: DbContext) {
 		const filePath = path.join(dir, fileName);
 		const jsonData = await fs.readFile(filePath, "utf-8");
 		const data = JSON.parse(jsonData);
-
-		// 导入数据
-		await importDataFromBackup(db, data);
+		await importBackupPayload(
+			db,
+			data,
+			{ overwrite: true, clearAllFirst: true },
+			console,
+		);
 
 		return { success: true };
 	};
@@ -179,145 +186,5 @@ export function createLocalBackupHandlers(db: DbContext) {
  * 导出所有数据用于备份
  */
 export async function exportAllDataForBackup(db: DbContext): Promise<object> {
-	const [projects, folders, sources, notes, providers, configs] =
-		await Promise.all([
-			db.client.execute("SELECT * FROM projects"),
-			db.client.execute("SELECT * FROM folders"),
-			db.client.execute("SELECT * FROM sources"),
-			db.client.execute("SELECT * FROM notes"),
-			db.client.execute("SELECT * FROM providers"),
-			db.client.execute("SELECT * FROM app_config"),
-		]);
-
-	return {
-		version: "1.0.0",
-		exported_at: new Date().toISOString(),
-		data: {
-			projects: projects.rows,
-			folders: folders.rows,
-			sources: sources.rows,
-			notes: notes.rows,
-			providers: providers.rows,
-			configs: configs.rows,
-		},
-	};
-}
-
-/**
- * 从备份数据导入
- */
-async function importDataFromBackup(
-	db: DbContext,
-	backupData: {
-		version: string;
-		data: {
-			projects?: unknown[];
-			folders?: unknown[];
-			sources?: unknown[];
-			notes?: unknown[];
-			providers?: unknown[];
-			configs?: unknown[];
-		};
-	},
-): Promise<void> {
-	const { data } = backupData;
-
-	// 开始事务
-	await db.client.execute("BEGIN TRANSACTION");
-
-	try {
-		// 清空现有数据
-		await db.client.execute("DELETE FROM notes");
-		await db.client.execute("DELETE FROM sources");
-		await db.client.execute("DELETE FROM folders");
-		await db.client.execute("DELETE FROM projects");
-
-		// 导入项目
-		if (data.projects) {
-			for (const project of data.projects as Record<string, unknown>[]) {
-				await db.client.execute({
-					sql: `INSERT INTO projects (id, name, description, color, icon, is_archived, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-					args: [
-						project.id as string,
-						project.name as string,
-						(project.description as string) ?? null,
-						(project.color as string) ?? null,
-						(project.icon as string) ?? null,
-						(project.is_archived as number) ?? 0,
-						project.created_at as number,
-						project.updated_at as number,
-					],
-				});
-			}
-		}
-
-		// 导入文件夹
-		if (data.folders) {
-			for (const folder of data.folders as Record<string, unknown>[]) {
-				await db.client.execute({
-					sql: `INSERT INTO folders (id, name, project_id, parent_id, color, sort_order, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-					args: [
-						folder.id as string,
-						folder.name as string,
-						(folder.project_id as string) ?? null,
-						(folder.parent_id as string) ?? null,
-						(folder.color as string) ?? null,
-						(folder.sort_order as number) ?? 0,
-						folder.created_at as number,
-						folder.updated_at as number,
-					],
-				});
-			}
-		}
-
-		// 导入资源
-		if (data.sources) {
-			for (const source of data.sources as Record<string, unknown>[]) {
-				await db.client.execute({
-					sql: `INSERT INTO sources (id, title, source_type, url, favicon, description, thumbnail, project_id, folder_id, tags, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-					args: [
-						source.id as string,
-						source.title as string,
-						source.source_type as string,
-						(source.url as string) ?? null,
-						(source.favicon as string) ?? null,
-						(source.description as string) ?? null,
-						(source.thumbnail as string) ?? null,
-						(source.project_id as string) ?? null,
-						(source.folder_id as string) ?? null,
-						(source.tags as string) ?? "[]",
-						(source.metadata as string) ?? "{}",
-						source.created_at as number,
-						source.updated_at as number,
-					],
-				});
-			}
-		}
-
-		// 导入笔记
-		if (data.notes) {
-			for (const note of data.notes as Record<string, unknown>[]) {
-				await db.client.execute({
-					sql: `INSERT INTO notes (id, source_id, content, summary, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-					args: [
-						note.id as string,
-						note.source_id as string,
-						(note.content as string) ?? "",
-						(note.summary as string) ?? null,
-						note.created_at as number,
-						note.updated_at as number,
-					],
-				});
-			}
-		}
-
-		await db.client.execute("COMMIT");
-	} catch (error) {
-		await db.client.execute("ROLLBACK");
-		throw error;
-	}
+	return await collectFullBackupPayload(db);
 }

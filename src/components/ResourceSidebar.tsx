@@ -17,7 +17,6 @@ import {
 	FileEdit,
 	FileText,
 	Folder as FolderIcon,
-	FolderInput,
 	FolderPlus,
 	Globe,
 	Grid,
@@ -29,7 +28,6 @@ import {
 	MoreHorizontal,
 	Paperclip,
 	PenLine,
-	Plus,
 	Quote,
 	RefreshCw,
 	Save,
@@ -50,6 +48,9 @@ import {
 	deleteCard as deleteCardApi,
 	deleteFolder,
 	deleteSource,
+	fileRevealInFinder,
+	fileSetScope,
+	fileSetTags,
 	fetchUrlContent,
 	getCardImagePath,
 	getSourceDetail,
@@ -58,11 +59,16 @@ import {
 	listFolders,
 	listSources,
 	moveSourcesToFolder,
+	revealProjectDirectory,
 	updateFolder,
 	updateNote,
 	updateSource,
 	uploadFileContent,
 } from "../lib/api";
+import {
+	buildFileItemContextMenu,
+	buildFolderItemContextMenu,
+} from "../lib/contextMenu/actions";
 import { EVENTS, events } from "../lib/events";
 import { convertFileSrc, invoke } from "../lib/tauriCompat";
 import {
@@ -84,6 +90,7 @@ import DocumentViewer, { extractDocumentInfo } from "./ui/DocumentViewer";
 import { DragAndDropImportUI } from "./ui/DragAndDropImportUI";
 import { MarkdownRenderer } from "./ui/MarkdownRenderer";
 import { Modal } from "./ui/Modal";
+import { ContextMenu } from "./ui/ContextMenu";
 import { RichContentWithStyles } from "./ui/RichContentRenderer";
 import WebSearchModule from "./WebSearchModule";
 
@@ -1400,6 +1407,164 @@ export default function ResourceSidebar({
 		}
 	};
 
+	const handleRevealSourceInFinder = useCallback(async (source: Source) => {
+		try {
+			await fileRevealInFinder({ id: source.id, entity_type: "source" });
+		} catch (error) {
+			console.error("在文件管理器中显示失败:", error);
+			alert(`打开失败: ${String(error)}`);
+		}
+	}, []);
+
+	const handleSetSourceScope = useCallback(
+		async (source: Source, scope: "global" | "project") => {
+			if (scope === "project" && !currentProjectId) {
+				alert("当前不在项目上下文，无法设为项目内可见");
+				return;
+			}
+			try {
+				await fileSetScope({
+					id: source.id,
+					entity_type: "source",
+					scope,
+					project_id: scope === "project" ? currentProjectId || undefined : undefined,
+				});
+				await fetchSources();
+			} catch (error) {
+				console.error("切换作用域失败:", error);
+				alert(`切换作用域失败: ${String(error)}`);
+			}
+		},
+		[currentProjectId, fetchSources],
+	);
+
+	const handleSetSourceTags = useCallback(
+		async (source: Source) => {
+			const next = window.prompt(
+				"请输入标签（使用逗号分隔）",
+				(source.tags || []).join(", "),
+			);
+			if (next == null) return;
+			const tags = next
+				.split(",")
+				.map((item) => item.trim())
+				.filter(Boolean);
+			try {
+				await fileSetTags({
+					id: source.id,
+					entity_type: "source",
+					tags,
+				});
+				await fetchSources();
+			} catch (error) {
+				console.error("更新标签失败:", error);
+				alert(`更新标签失败: ${String(error)}`);
+			}
+		},
+		[fetchSources],
+	);
+
+	const sourceContextMenuItems = useMemo(() => {
+		if (!contextMenu) return [];
+		const source = contextMenu.source;
+		const fileActions = buildFileItemContextMenu({
+			onOpen: () => handleOpenDetail(source),
+			onRename: async () => {
+				const nextTitle = window.prompt("请输入新的资料名称", source.title);
+				if (!nextTitle?.trim()) return;
+				try {
+					await updateSource({ id: source.id, title: nextTitle.trim() });
+					await fetchSources();
+				} catch (error) {
+					console.error("重命名资料失败:", error);
+					alert(`重命名失败: ${String(error)}`);
+				}
+			},
+			onMove: () => {
+				setSingleSourceMoveModal(source);
+				setSingleSourceMoveTargetId(source.folder_id || UNASSIGNED_FOLDER_ID);
+			},
+			onCopyPath: async () => {
+				const targetPath = source.storage_path?.trim();
+				if (!targetPath) {
+					alert("该资料暂无物理路径");
+					return;
+				}
+				await navigator.clipboard.writeText(targetPath);
+			},
+			onReveal: () => void handleRevealSourceInFinder(source),
+			onSetTags: () => void handleSetSourceTags(source),
+			onSetGlobal: () => void handleSetSourceScope(source, "global"),
+			onSetProject: () => void handleSetSourceScope(source, "project"),
+			onDelete: () => void handleDeleteSource(source),
+			canSetScope: true,
+		});
+		return [
+			{
+				label: "添加到 AI 上下文",
+				onClick: () => events.emit(EVENTS.ADD_TO_CONTEXT, { source }),
+			},
+			{ separator: true, label: "" as string, onClick: () => {} },
+			...fileActions,
+		];
+	}, [
+		contextMenu,
+		fetchSources,
+		handleDeleteSource,
+		handleOpenDetail,
+		handleRevealSourceInFinder,
+		handleSetSourceScope,
+		handleSetSourceTags,
+	]);
+
+	const folderContextMenuItems = useMemo(() => {
+		if (!folderContextMenu) return [];
+		const folder = folderContextMenu.folder;
+		return buildFolderItemContextMenu({
+			onCreateFile: () => {
+				setCurrentFolder(folder.id);
+				setActiveTab("text");
+				setIsAddModalOpen(true);
+			},
+			onCreateSubFolder: () => {
+				setCurrentFolder(folder.id);
+				setIsFolderModalOpen(true);
+			},
+			onRename: () => {
+				setRenameFolderTarget(folder);
+				setRenameFolderName(folder.name);
+				setIsRenameFolderModalOpen(true);
+			},
+			onMove: () => {
+				setMoveFolderSource(folder);
+				setMoveFolderToTargetId(folder.parent_id || "");
+				setIsMoveFolderToModalOpen(true);
+			},
+			onReveal: async () => {
+				try {
+					const projectId = folder.project_id || currentProjectId || undefined;
+					if (!projectId) {
+						alert("该文件夹不属于具体项目，暂不支持定位目录");
+						return;
+					}
+					const result = await revealProjectDirectory(projectId);
+					if (!result.success) {
+						alert(result.error || "打开目录失败");
+					}
+				} catch (error) {
+					console.error("打开目录失败:", error);
+					alert(`打开目录失败: ${String(error)}`);
+				}
+			},
+			onDelete: () => void handleDeleteFolder(folder),
+		});
+	}, [
+		currentProjectId,
+		folderContextMenu,
+		handleDeleteFolder,
+		setCurrentFolder,
+	]);
+
 	// 创建资料
 	const handleCreateSource = async () => {
 		if (!newSourceTitle.trim()) {
@@ -1494,6 +1659,16 @@ export default function ResourceSidebar({
 				return "bg-zinc-500";
 		}
 	};
+
+	const getScopeLabel = useCallback((source: Source) => {
+		return source.scope === "project" ? "项目内" : "全局";
+	}, []);
+
+	const getScopeBadgeClassName = useCallback((source: Source) => {
+		return source.scope === "project"
+			? "bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300"
+			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
+	}, []);
 
 	// 获取步骤图标
 	const getStepIcon = (step: ResearchStep) => {
@@ -1785,6 +1960,38 @@ export default function ResourceSidebar({
 												本地导入
 											</span>
 										)}
+									{isSource && (
+										<span
+											className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
+										>
+											{getScopeLabel(previewSource as Source)}
+										</span>
+									)}
+									{isSource &&
+										((previewSource as Source).tags || [])
+											.slice(0, 3)
+											.map((tag) => (
+												<span
+													key={`${previewSource.id}-detail-tag-${tag}`}
+													className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300"
+												>
+													#{tag}
+												</span>
+											))}
+									{isSource && (previewSource as Source).storage_path ? (
+										<button
+											onClick={() =>
+												void navigator.clipboard.writeText(
+													(previewSource as Source).storage_path!,
+												)
+											}
+											className="inline-flex items-center gap-1 text-zinc-500 hover:text-zinc-700 text-[11px]"
+											title={(previewSource as Source).storage_path}
+										>
+											<Copy className="w-3 h-3" />
+											复制路径
+										</button>
+									) : null}
 
 									{/* URL Link */}
 									{previewSource.url && (
@@ -2520,6 +2727,11 @@ export default function ResourceSidebar({
 														{ month: "short", day: "numeric" },
 													)}
 												</p>
+												<span
+													className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(source)}`}
+												>
+													{getScopeLabel(source)}
+												</span>
 												{source.source_type === SourceOrigin.BrowserClip && (
 													<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
 														<Globe className="w-2.5 h-2.5" />
@@ -2538,6 +2750,14 @@ export default function ResourceSidebar({
 														导入
 													</span>
 												)}
+												{(source.tags || []).slice(0, 2).map((tag) => (
+													<span
+														key={`${source.id}-tag-${tag}`}
+														className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-300"
+													>
+														#{tag}
+													</span>
+												))}
 											</div>
 										</div>
 										{!selectionMode && (
@@ -2967,102 +3187,24 @@ export default function ResourceSidebar({
 			)}
 
 			{/* 右键菜单 */}
-			{contextMenu && (
-				<>
-					<div
-						className="fixed inset-0 z-40"
-						onClick={() => setContextMenu(null)}
-					/>
-					<div
-						className="fixed z-50 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
-						style={{ left: contextMenu.x, top: contextMenu.y }}
-					>
-						<button
-							onClick={() => {
-								events.emit(EVENTS.ADD_TO_CONTEXT, {
-									source: contextMenu.source,
-								});
-								setContextMenu(null);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-						>
-							<Plus className="w-4 h-4" />
-							添加到 AI 上下文
-						</button>
-						<button
-							onClick={() => {
-								setSingleSourceMoveModal(contextMenu.source);
-								setSingleSourceMoveTargetId(
-									contextMenu.source.folder_id || UNASSIGNED_FOLDER_ID,
-								);
-								setContextMenu(null);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-						>
-							<FolderInput className="w-4 h-4" />
-							移动到文件夹
-						</button>
-						<button
-							onClick={() => handleDeleteSource(contextMenu.source)}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-						>
-							<Trash2 className="w-4 h-4" />
-							删除
-						</button>
-					</div>
-				</>
-			)}
+			{contextMenu && sourceContextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={sourceContextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			) : null}
 
 			{/* 文件夹右键菜单 */}
-			{folderContextMenu && (
-				<>
-					<div
-						className="fixed inset-0 z-40"
-						onClick={() => setFolderContextMenu(null)}
-					/>
-					<div
-						className="fixed z-50 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
-						style={{ left: folderContextMenu.x, top: folderContextMenu.y }}
-					>
-						<button
-							onClick={() => {
-								setRenameFolderTarget(folderContextMenu.folder);
-								setRenameFolderName(folderContextMenu.folder.name);
-								setIsRenameFolderModalOpen(true);
-								setFolderContextMenu(null);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-						>
-							<Edit2 className="w-4 h-4" />
-							重命名
-						</button>
-						<button
-							onClick={() => {
-								setMoveFolderSource(folderContextMenu.folder);
-								setMoveFolderToTargetId(
-									folderContextMenu.folder.parent_id || "",
-								);
-								setIsMoveFolderToModalOpen(true);
-								setFolderContextMenu(null);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-						>
-							<FolderInput className="w-4 h-4" />
-							移动到...
-						</button>
-						<button
-							onClick={() => {
-								handleDeleteFolder(folderContextMenu.folder);
-								setFolderContextMenu(null);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-						>
-							<Trash2 className="w-4 h-4" />
-							删除文件夹
-						</button>
-					</div>
-				</>
-			)}
+			{folderContextMenu && folderContextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={folderContextMenu.x}
+					y={folderContextMenu.y}
+					items={folderContextMenuItems}
+					onClose={() => setFolderContextMenu(null)}
+				/>
+			) : null}
 
 			{/* 文件夹删除确认对话框 */}
 			{folderDeleteConfirm && (

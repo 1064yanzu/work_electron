@@ -6,6 +6,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { OutputAsset, OutputType } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
+import { syncOutputToVault } from "../../storage/sync";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -26,6 +27,16 @@ function parseOutputAsset(row: Record<string, unknown>): OutputAsset {
 		content: row.content as string,
 		output_type: row.output_type as OutputType,
 		related_notes: relatedNotes,
+		scope: (row.scope as OutputAsset["scope"]) || "project",
+		tags: (() => {
+			try {
+				return JSON.parse((row.tags as string) || "[]");
+			} catch {
+				return [];
+			}
+		})(),
+		storage_path: row.storage_path as string | undefined,
+		is_deleted: Number(row.is_deleted ?? 0) === 1,
 		project_id: row.project_id as string | undefined,
 		version: (row.version as number) || 1,
 		created_at: row.created_at as number,
@@ -40,11 +51,11 @@ export function createOutputHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		let sql = `SELECT * FROM output_assets`;
+		let sql = `SELECT * FROM output_assets WHERE COALESCE(is_deleted, 0) = 0`;
 		const args: (string | number)[] = [];
 
 		if (input.project_id) {
-			sql += ` WHERE project_id = ? OR project_id IS NULL`;
+			sql += ` AND (scope = 'global' OR project_id = ?)`;
 			args.push(input.project_id);
 		}
 		sql += ` ORDER BY updated_at DESC`;
@@ -62,15 +73,19 @@ export function createOutputHandlers(db: DbContext) {
 		const id = randomUUID();
 		const timestamp = now();
 		const relatedNotes = JSON.stringify(input.related_notes ?? []);
+		const scope: OutputAsset["scope"] = input.project_id ? "project" : "global";
+		const tags = JSON.stringify([]);
 
 		await db.client.execute({
-			sql: `INSERT INTO output_assets (id, title, content, output_type, related_notes, project_id, version, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+			sql: `INSERT INTO output_assets (id, title, content, output_type, scope, tags, related_notes, project_id, version, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
 			args: [
 				id,
 				input.title,
 				input.content,
 				input.output_type,
+				scope,
+				tags,
 				relatedNotes,
 				input.project_id ?? null,
 				timestamp,
@@ -78,12 +93,16 @@ export function createOutputHandlers(db: DbContext) {
 			],
 		});
 
+		await syncOutputToVault(db, id);
+
 		return {
 			id,
 			title: input.title,
 			content: input.content,
 			output_type: input.output_type,
 			related_notes: input.related_notes ?? [],
+			scope,
+			tags: [],
 			project_id: input.project_id,
 			version: 1,
 			created_at: timestamp,
@@ -128,6 +147,8 @@ export function createOutputHandlers(db: DbContext) {
 			args,
 		});
 
+		await syncOutputToVault(db, input.id);
+
 		const rows = await db.client.execute({
 			sql: `SELECT * FROM output_assets WHERE id = ?`,
 			args: [input.id],
@@ -142,8 +163,8 @@ export function createOutputHandlers(db: DbContext) {
 		input,
 	) => {
 		await db.client.execute({
-			sql: `DELETE FROM output_assets WHERE id = ?`,
-			args: [input.id],
+			sql: `UPDATE output_assets SET is_deleted = 1, updated_at = ? WHERE id = ?`,
+			args: [now(), input.id],
 		});
 		return { success: true };
 	};

@@ -13,12 +13,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { fetchUrlContent } from "../lib/api";
+import { buildLinkContextMenu } from "../lib/contextMenu/actions";
 import {
 	fetchPageContent,
 	openBrowserWindow,
 	type PageContent,
 } from "../lib/config";
 import { workspaceStore } from "../lib/workspaceStore";
+import { ContextMenu } from "./ui/ContextMenu";
 
 interface BrowserPanelProps {
 	initialUrl?: string;
@@ -39,6 +41,12 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 	const [history, setHistory] = useState<HistoryItem[]>([]);
 	const [historyIndex, setHistoryIndex] = useState(-1);
 	const [error, setError] = useState<string | null>(null);
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		url: string;
+		removeIndex?: number;
+	} | null>(null);
 
 	// Content state
 	const [pageContent, setPageContent] = useState<PageContent | null>(null);
@@ -214,6 +222,36 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 		}
 	};
 
+	const saveUrlAsSource = async (targetUrl: string, scope: "global" | "project") => {
+		const state = workspaceStore.getState();
+		const projectId = state.currentProjectId || undefined;
+		const folderId =
+			state.currentFolderId && state.currentFolderId !== "__unassigned__"
+				? state.currentFolderId
+				: undefined;
+		await fetchUrlContent({
+			url: targetUrl,
+			project_id: scope === "project" ? projectId : undefined,
+			folder_id: scope === "project" ? folderId : undefined,
+		});
+	};
+
+	const contextMenuItems = contextMenu
+		? buildLinkContextMenu({
+				onOpen: () => navigateTo(contextMenu.url),
+				onCopy: () => navigator.clipboard.writeText(contextMenu.url),
+				onSaveGlobal: () => void saveUrlAsSource(contextMenu.url, "global"),
+				onSaveProject: () => void saveUrlAsSource(contextMenu.url, "project"),
+				onRemove:
+					typeof contextMenu.removeIndex === "number"
+						? () =>
+								setHistory((prev) =>
+									prev.filter((_, idx) => idx !== contextMenu.removeIndex),
+								)
+						: undefined,
+			})
+		: [];
+
 	// Iframe Sandbox attributes
 	const iframeSandbox =
 		"allow-scripts allow-same-origin allow-forms allow-popups";
@@ -370,6 +408,15 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 									<button
 										key={link.url}
 										onClick={() => navigateTo(link.url)}
+										onContextMenu={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											setContextMenu({
+												x: e.clientX,
+												y: e.clientY,
+												url: link.url,
+											});
+										}}
 										className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-800/50 rounded-2xl hover:shadow-lg hover:scale-105 transition-all group"
 									>
 										<span className="text-3xl">{link.icon}</span>
@@ -394,6 +441,16 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 												<button
 													key={i}
 													onClick={() => navigateTo(item.url)}
+													onContextMenu={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														setContextMenu({
+															x: e.clientX,
+															y: e.clientY,
+															url: item.url,
+															removeIndex: history.length - 1 - i,
+														});
+													}}
 													className="w-full flex items-center gap-3 p-3 bg-white dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
 												>
 													<Globe className="w-4 h-4 text-zinc-400" />
@@ -488,6 +545,14 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 					</div>
 				)}
 			</div>
+			{contextMenu && contextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

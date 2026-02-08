@@ -7,6 +7,7 @@ import type { DbContext } from "../../db/client";
 import { backupManager } from "../../services/BackupManager";
 import { autoSyncScheduler } from "../../services/AutoSyncScheduler";
 import { backupHistoryManager } from "../../services/BackupHistoryManager";
+import { importBackupPayload } from "../../services/backupPayload";
 import type { WebDavConfig } from "../../services/WebDavService";
 
 const now = () => Date.now();
@@ -64,6 +65,21 @@ interface BackupHistory {
 }
 
 export function createSyncHandlers(db: DbContext) {
+	const toWebdavFriendlyError = (error: unknown): Error => {
+		const anyErr = error as { status?: number; message?: string };
+		const status = Number(anyErr?.status);
+		if (status === 401) {
+			return new Error(
+				"WebDAV 认证失败（401）：请检查账号/密码（或应用专用密码）、以及 WebDAV 地址与目录是否正确。",
+			);
+		}
+		if (status === 403) {
+			return new Error("WebDAV 权限不足（403）：当前账号无权访问该目录。");
+		}
+		return new Error(
+			anyErr?.message || "WebDAV 请求失败，请检查网络与配置后重试。",
+		);
+	};
 	const getSyncConfig = async (
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
@@ -139,123 +155,132 @@ export function createSyncHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		input: Partial<Omit<SyncConfig, "id">>,
 	): Promise<SyncConfig> => {
+		const normalizedInput = (() => {
+			const maybeWrapped = (input as { config?: Partial<Omit<SyncConfig, "id">> })
+				.config;
+			if (maybeWrapped && typeof maybeWrapped === "object") {
+				return maybeWrapped;
+			}
+			return input;
+		})();
+
 		const updates: string[] = [];
 		const args: (string | number | null)[] = [];
 
-		if (input.data_path !== undefined) {
+		if (normalizedInput.data_path !== undefined) {
 			updates.push("data_path = ?");
-			args.push(input.data_path ?? null);
+			args.push(normalizedInput.data_path ?? null);
 		}
-		if (input.webdav_enabled !== undefined) {
+		if (normalizedInput.webdav_enabled !== undefined) {
 			updates.push("webdav_enabled = ?");
-			args.push(input.webdav_enabled ? 1 : 0);
+			args.push(normalizedInput.webdav_enabled ? 1 : 0);
 		}
-		if (input.webdav_url !== undefined) {
+		if (normalizedInput.webdav_url !== undefined) {
 			updates.push("webdav_url = ?");
-			args.push(input.webdav_url ?? null);
+			args.push(normalizedInput.webdav_url ?? null);
 		}
-		if (input.webdav_username !== undefined) {
+		if (normalizedInput.webdav_username !== undefined) {
 			updates.push("webdav_username = ?");
-			args.push(input.webdav_username ?? null);
+			args.push(normalizedInput.webdav_username ?? null);
 		}
-		if (input.webdav_password !== undefined) {
+		if (normalizedInput.webdav_password !== undefined) {
 			updates.push("webdav_password = ?");
-			args.push(input.webdav_password ?? null);
+			args.push(normalizedInput.webdav_password ?? null);
 		}
-		if (input.webdav_path !== undefined) {
+		if (normalizedInput.webdav_path !== undefined) {
 			updates.push("webdav_path = ?");
-			args.push(input.webdav_path);
+			args.push(normalizedInput.webdav_path);
 		}
 		// WebDAV 高级配置
-		if (input.webdav_auto_sync !== undefined) {
+		if (normalizedInput.webdav_auto_sync !== undefined) {
 			updates.push("webdav_auto_sync = ?");
-			args.push(input.webdav_auto_sync ? 1 : 0);
+			args.push(normalizedInput.webdav_auto_sync ? 1 : 0);
 		}
-		if (input.webdav_sync_interval !== undefined) {
+		if (normalizedInput.webdav_sync_interval !== undefined) {
 			updates.push("webdav_sync_interval = ?");
-			args.push(input.webdav_sync_interval);
+			args.push(normalizedInput.webdav_sync_interval);
 		}
-		if (input.webdav_max_backups !== undefined) {
+		if (normalizedInput.webdav_max_backups !== undefined) {
 			updates.push("webdav_max_backups = ?");
-			args.push(input.webdav_max_backups);
+			args.push(normalizedInput.webdav_max_backups);
 		}
-		if (input.webdav_skip_backup_file !== undefined) {
+		if (normalizedInput.webdav_skip_backup_file !== undefined) {
 			updates.push("webdav_skip_backup_file = ?");
-			args.push(input.webdav_skip_backup_file ? 1 : 0);
+			args.push(normalizedInput.webdav_skip_backup_file ? 1 : 0);
 		}
-		if (input.webdav_disable_stream !== undefined) {
+		if (normalizedInput.webdav_disable_stream !== undefined) {
 			updates.push("webdav_disable_stream = ?");
-			args.push(input.webdav_disable_stream ? 1 : 0);
+			args.push(normalizedInput.webdav_disable_stream ? 1 : 0);
 		}
-		if (input.webdav_last_sync_at !== undefined) {
+		if (normalizedInput.webdav_last_sync_at !== undefined) {
 			updates.push("webdav_last_sync_at = ?");
-			args.push(input.webdav_last_sync_at);
+			args.push(normalizedInput.webdav_last_sync_at);
 		}
-		if (input.webdav_last_sync_error !== undefined) {
+		if (normalizedInput.webdav_last_sync_error !== undefined) {
 			updates.push("webdav_last_sync_error = ?");
-			args.push(input.webdav_last_sync_error ?? null);
+			args.push(normalizedInput.webdav_last_sync_error ?? null);
 		}
 		// 通用备份配置
-		if (input.auto_backup_enabled !== undefined) {
+		if (normalizedInput.auto_backup_enabled !== undefined) {
 			updates.push("auto_backup_enabled = ?");
-			args.push(input.auto_backup_enabled ? 1 : 0);
+			args.push(normalizedInput.auto_backup_enabled ? 1 : 0);
 		}
-		if (input.auto_backup_interval !== undefined) {
+		if (normalizedInput.auto_backup_interval !== undefined) {
 			updates.push("auto_backup_interval = ?");
-			args.push(input.auto_backup_interval);
+			args.push(normalizedInput.auto_backup_interval);
 		}
-		if (input.max_backup_count !== undefined) {
+		if (normalizedInput.max_backup_count !== undefined) {
 			updates.push("max_backup_count = ?");
-			args.push(input.max_backup_count);
+			args.push(normalizedInput.max_backup_count);
 		}
-		if (input.sync_on_startup !== undefined) {
+		if (normalizedInput.sync_on_startup !== undefined) {
 			updates.push("sync_on_startup = ?");
-			args.push(input.sync_on_startup ? 1 : 0);
+			args.push(normalizedInput.sync_on_startup ? 1 : 0);
 		}
-		if (input.sync_on_change !== undefined) {
+		if (normalizedInput.sync_on_change !== undefined) {
 			updates.push("sync_on_change = ?");
-			args.push(input.sync_on_change ? 1 : 0);
+			args.push(normalizedInput.sync_on_change ? 1 : 0);
 		}
-		if (input.compact_backup !== undefined) {
+		if (normalizedInput.compact_backup !== undefined) {
 			updates.push("compact_backup = ?");
-			args.push(input.compact_backup ? 1 : 0);
+			args.push(normalizedInput.compact_backup ? 1 : 0);
 		}
-		if (input.last_backup_at !== undefined) {
+		if (normalizedInput.last_backup_at !== undefined) {
 			updates.push("last_backup_at = ?");
-			args.push(input.last_backup_at);
+			args.push(normalizedInput.last_backup_at);
 		}
-		if (input.last_sync_at !== undefined) {
+		if (normalizedInput.last_sync_at !== undefined) {
 			updates.push("last_sync_at = ?");
-			args.push(input.last_sync_at);
+			args.push(normalizedInput.last_sync_at);
 		}
-		if (input.last_sync_status !== undefined) {
+		if (normalizedInput.last_sync_status !== undefined) {
 			updates.push("last_sync_status = ?");
-			args.push(input.last_sync_status);
+			args.push(normalizedInput.last_sync_status);
 		}
-		if (input.last_sync_error !== undefined) {
+		if (normalizedInput.last_sync_error !== undefined) {
 			updates.push("last_sync_error = ?");
-			args.push(input.last_sync_error ?? null);
+			args.push(normalizedInput.last_sync_error ?? null);
 		}
 		// 本地备份配置字段
-		if (input.local_backup_dir !== undefined) {
+		if (normalizedInput.local_backup_dir !== undefined) {
 			updates.push("local_backup_dir = ?");
-			args.push(input.local_backup_dir ?? null);
+			args.push(normalizedInput.local_backup_dir ?? null);
 		}
-		if (input.local_backup_auto_sync !== undefined) {
+		if (normalizedInput.local_backup_auto_sync !== undefined) {
 			updates.push("local_backup_auto_sync = ?");
-			args.push(input.local_backup_auto_sync ? 1 : 0);
+			args.push(normalizedInput.local_backup_auto_sync ? 1 : 0);
 		}
-		if (input.local_backup_interval !== undefined) {
+		if (normalizedInput.local_backup_interval !== undefined) {
 			updates.push("local_backup_interval = ?");
-			args.push(input.local_backup_interval);
+			args.push(normalizedInput.local_backup_interval);
 		}
-		if (input.local_backup_max_count !== undefined) {
+		if (normalizedInput.local_backup_max_count !== undefined) {
 			updates.push("local_backup_max_count = ?");
-			args.push(input.local_backup_max_count);
+			args.push(normalizedInput.local_backup_max_count);
 		}
-		if (input.local_backup_last_sync_at !== undefined) {
+		if (normalizedInput.local_backup_last_sync_at !== undefined) {
 			updates.push("local_backup_last_sync_at = ?");
-			args.push(input.local_backup_last_sync_at);
+			args.push(normalizedInput.local_backup_last_sync_at);
 		}
 
 		if (updates.length > 0) {
@@ -382,14 +407,30 @@ export function createSyncHandlers(db: DbContext) {
 		event: IpcMainInvokeEvent,
 		input: { data: string; config: WebDavConfig },
 	): Promise<any> => {
-		return await backupManager.backupToWebdav(event, input.data, input.config);
+		try {
+			return await backupManager.backupToWebdav(event, input.data, input.config);
+		} catch (error) {
+			throw toWebdavFriendlyError(error);
+		}
 	};
 
 	const restoreFromWebdav = async (
 		event: IpcMainInvokeEvent,
 		input: { config: WebDavConfig },
 	): Promise<string> => {
-		return await backupManager.restoreFromWebdav(event, input.config);
+		try {
+			const jsonData = await backupManager.restoreFromWebdav(event, input.config);
+			const parsed = JSON.parse(jsonData || "{}");
+			await importBackupPayload(
+				db,
+				parsed,
+				{ overwrite: true, clearAllFirst: true },
+				console,
+			);
+			return jsonData;
+		} catch (error) {
+			throw toWebdavFriendlyError(error);
+		}
 	};
 
 	const listWebdavBackups = async (
@@ -398,25 +439,37 @@ export function createSyncHandlers(db: DbContext) {
 	): Promise<
 		Array<{ fileName: string; modifiedTime: string; size: number }>
 	> => {
-		return await backupManager.listWebdavFiles(event, input.config);
+		try {
+			return await backupManager.listWebdavFiles(event, input.config);
+		} catch (error) {
+			throw toWebdavFriendlyError(error);
+		}
 	};
 
 	const deleteWebdavBackup = async (
 		event: IpcMainInvokeEvent,
 		input: { fileName: string; config: WebDavConfig },
 	): Promise<any> => {
-		return await backupManager.deleteWebdavFile(
-			event,
-			input.fileName,
-			input.config,
-		);
+		try {
+			return await backupManager.deleteWebdavFile(
+				event,
+				input.fileName,
+				input.config,
+			);
+		} catch (error) {
+			throw toWebdavFriendlyError(error);
+		}
 	};
 
 	const testWebdavConnection = async (
 		event: IpcMainInvokeEvent,
 		input: { config: WebDavConfig },
 	): Promise<boolean> => {
-		return await backupManager.checkConnection(event, input.config);
+		try {
+			return await backupManager.checkConnection(event, input.config);
+		} catch (error) {
+			throw toWebdavFriendlyError(error);
+		}
 	};
 
 	// 获取指定设备的备份历史

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
+import { shell } from "electron";
 
 type ReadFileInput = { path: string; encoding?: "utf-8" | "base64" };
 type ReadFileOutput = { content: string; encoding: string; size: number };
@@ -29,6 +30,12 @@ type MkdirOutput = { success: boolean };
 
 type CopyFileInput = { src: string; dest: string; create_dirs?: boolean };
 type CopyFileOutput = { success: boolean };
+type MoveFileInput = { src: string; dest: string; create_dirs?: boolean };
+type MoveFileOutput = { success: boolean };
+type DeleteFileInput = { path: string };
+type DeleteFileOutput = { success: boolean };
+type RevealFileInput = { path: string };
+type RevealFileOutput = { success: boolean };
 
 function normalizePathInput(p: string): string {
 	const raw = String(p ?? "").trim();
@@ -204,6 +211,46 @@ export function createFsSafeHandlers() {
 		return { success: true };
 	};
 
+	const move_file_safe = async (
+		_event: IpcMainInvokeEvent,
+		input: MoveFileInput,
+	): Promise<MoveFileOutput> => {
+		const src = normalizePathInput(input.src);
+		const dest = normalizePathInput(input.dest);
+		requireAbsolute(src);
+		requireAbsolute(dest);
+		if (input.create_dirs) {
+			await fs.mkdir(path.dirname(dest), { recursive: true });
+		}
+		try {
+			await fs.rename(src, dest);
+		} catch {
+			await fs.copyFile(src, dest);
+			await fs.unlink(src);
+		}
+		return { success: true };
+	};
+
+	const delete_file_safe = async (
+		_event: IpcMainInvokeEvent,
+		input: DeleteFileInput,
+	): Promise<DeleteFileOutput> => {
+		const filePath = normalizePathInput(input.path);
+		requireAbsolute(filePath);
+		await fs.rm(filePath, { force: true, recursive: true });
+		return { success: true };
+	};
+
+	const reveal_file_safe = async (
+		_event: IpcMainInvokeEvent,
+		input: RevealFileInput,
+	): Promise<RevealFileOutput> => {
+		const filePath = normalizePathInput(input.path);
+		requireAbsolute(filePath);
+		shell.showItemInFolder(filePath);
+		return { success: true };
+	};
+
 	// 简化版读取 UTF-8 文件内容
 	const read_file_utf8 = async (
 		_event: IpcMainInvokeEvent,
@@ -263,6 +310,9 @@ export function createFsSafeHandlers() {
 		list_files_safe,
 		mkdir_safe,
 		copy_file_safe,
+		move_file_safe,
+		delete_file_safe,
+		reveal_file_safe,
 		read_file_utf8,
 		save_base64_image,
 	};

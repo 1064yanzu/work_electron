@@ -27,13 +27,22 @@ import {
 	getDatabasePath,
 	getDataDirectory,
 	getDataStats,
+	getStorageSettings,
 	getSyncConfig,
 	importDataFromJson,
+	type StorageSettings,
+	type Theme,
+	createTheme,
+	deleteTheme,
+	listThemes,
+	pickStorageDirectory,
+	renameTheme,
+	revealVaultRoot,
 	listWebdavBackups,
 	restoreFromWebdav,
 	type SyncConfig,
-	setDatabasePath,
 	testWebdavConnection,
+	updateStorageSettings,
 	updateSyncConfig,
 	type WebDavConfig,
 	type WebdavBackupFile,
@@ -41,7 +50,6 @@ import {
 	selectBackupDirectory,
 	backupToLocalDir,
 } from "../../../lib/api";
-import { saveFilePath } from "../../../lib/dialogCompat";
 import { Modal } from "../components";
 import { LocalBackupManagerModal } from "../components/LocalBackupManagerModal";
 import { FolderOpen } from "lucide-react";
@@ -184,6 +192,11 @@ export function DataSettings() {
 	const [dataStats, setDataStats] = useState<DataStats | null>(null);
 	const [dataDir, setDataDir] = useState<string>("");
 	const [dbPath, setDbPath] = useState<string>("");
+	const [storageSettings, setStorageSettings] = useState<StorageSettings | null>(
+		null,
+	);
+	const [themes, setThemes] = useState<Theme[]>([]);
+	const [newThemeName, setNewThemeName] = useState("");
 
 	// UI 状态
 	const [activeSection, setActiveSection] = useState<"storage" | "webdav">(
@@ -229,20 +242,25 @@ export function DataSettings() {
 	const [isLocalBackupManagerOpen, setIsLocalBackupManagerOpen] =
 		useState(false);
 	const [isBackingUpToLocal, setIsBackingUpToLocal] = useState(false);
+	const [isUpdatingStorage, setIsUpdatingStorage] = useState(false);
 
 	// 加载数据
 	const loadData = useCallback(async () => {
 		try {
-			const [config, stats, dir, path] = await Promise.all([
+			const [config, stats, dir, path, storage, themeList] = await Promise.all([
 				getSyncConfig(),
 				getDataStats(),
 				getDataDirectory(),
 				getDatabasePath(),
+				getStorageSettings(),
+				listThemes(),
 			]);
 			setSyncConfig(config);
 			setDataStats(stats);
 			setDataDir(dir);
 			setDbPath(path);
+			setStorageSettings(storage);
+			setThemes(themeList);
 		} catch (error) {
 			console.error("加载数据设置失败:", error);
 		}
@@ -263,6 +281,47 @@ export function DataSettings() {
 			console.error("保存配置失败:", error);
 		}
 	};
+
+	const saveStorageConfig = useCallback(
+		async (
+			updates: Partial<StorageSettings>,
+			options?: { migrate_existing?: boolean },
+		) => {
+			if (!storageSettings) return;
+			setIsUpdatingStorage(true);
+			try {
+				const result = await updateStorageSettings({
+					settings: updates,
+					migrate_existing: options?.migrate_existing,
+				});
+				setStorageSettings(result.settings);
+				if (result.migration) {
+					toast.success(
+						`迁移完成：资料 ${result.migration.sources}，文档 ${result.migration.outputs}`,
+					);
+				}
+			} catch (error) {
+				console.error("更新存储设置失败:", error);
+				toast.error(`更新存储设置失败: ${String(error)}`);
+			} finally {
+				setIsUpdatingStorage(false);
+			}
+		},
+		[storageSettings],
+	);
+
+	const handleAddTheme = useCallback(async () => {
+		const name = newThemeName.trim();
+		if (!name) return;
+		try {
+			await createTheme(name);
+			setNewThemeName("");
+			setThemes(await listThemes());
+		} catch (error) {
+			console.error("创建主题失败:", error);
+			toast.error(`创建主题失败: ${String(error)}`);
+		}
+	}, [newThemeName]);
 
 	// 处理服务商选择
 	const handleProviderChange = (providerId: string) => {
@@ -400,20 +459,34 @@ export function DataSettings() {
 				}
 
 				const stats = [
-					data.sources?.length && `${data.sources.length} 条资料`,
-					data.notes?.length && `${data.notes.length} 条笔记`,
-					data.outputs?.length && `${data.outputs.length} 篇文稿`,
+					(data.sources?.length || data?.data?.sources?.length) &&
+						`${data.sources?.length || data?.data?.sources?.length} 条资料`,
+					(data.notes?.length || data?.data?.notes?.length) &&
+						`${data.notes?.length || data?.data?.notes?.length} 条笔记`,
+					(data.outputs?.length ||
+						data.output_assets?.length ||
+						data?.data?.outputs?.length ||
+						data?.data?.output_assets?.length) &&
+						`${
+							data.outputs?.length ||
+							data.output_assets?.length ||
+							data?.data?.outputs?.length ||
+							data?.data?.output_assets?.length
+						} 篇文稿`,
 				]
 					.filter(Boolean)
 					.join("、");
 
 				const confirmed = await confirmUI.warning(
-					`确认导入数据吗？\n\n包含：${stats || "无数据"}\n\n导入会合并到现有数据中。`,
+					`确认恢复数据吗？\n\n包含：${stats || "无数据"}\n\n将先清空当前数据，再按备份内容全量覆盖。`,
 					"导入数据",
 				);
 
 				if (confirmed) {
-					await importDataFromJson(text);
+					await importDataFromJson(text, {
+						overwrite: true,
+						clear_all_first: true,
+					});
 					toast.success("数据导入成功！页面即将刷新", 2000);
 					setTimeout(() => window.location.reload(), 2000);
 				}
@@ -448,25 +521,20 @@ export function DataSettings() {
 	// 迁移数据库
 	const handleMigrateDatabase = async () => {
 		try {
-			// 使用 Tauri 文件对话框选择保存位置
-			const newPath = await saveFilePath({
-				title: "选择新的数据库保存位置",
-				defaultPath: dbPath,
-			});
-
-			if (!newPath) return;
+			const picked = await pickStorageDirectory();
+			if (!picked.path) return;
 
 			const confirmed = await confirmUI.warning(
-				`确定要将数据库迁移到以下位置吗？\n\n${newPath}\n\n迁移后应用将使用新位置的数据库。`,
-				"迁移数据库",
+				`确定要迁移到新的 Vault 目录吗？\n\n${picked.path}\n\n将自动备份并迁移资料与文档。`,
+				"迁移 Vault",
 			);
 			if (!confirmed) return;
 
-			await setDatabasePath(newPath);
-			toast.success(
-				`数据库已成功迁移到：${newPath}\n\n请重启应用以使用新数据库。`,
-				5000,
+			await saveStorageConfig(
+				{ vault_root: picked.path },
+				{ migrate_existing: true },
 			);
+			toast.success("Vault 迁移完成");
 			await loadData();
 		} catch (error) {
 			toast.error(
@@ -507,9 +575,9 @@ export function DataSettings() {
 		try {
 			const config = getWebdavConfig(filename);
 			await restoreFromWebdav(config);
-			toast.success("数据恢复成功！");
+			toast.success("数据恢复成功！页面即将刷新", 2000);
 			setIsBackupManagerOpen(false);
-			await loadData();
+			setTimeout(() => window.location.reload(), 2000);
 		} catch (error) {
 			toast.error(
 				`恢复失败：${error instanceof Error ? error.message : String(error)}`,
@@ -542,7 +610,7 @@ export function DataSettings() {
 		}
 	};
 
-	if (!syncConfig || !dataStats) {
+	if (!syncConfig || !dataStats || !storageSettings) {
 		return (
 			<div className="flex-1 h-full bg-[#F7F7F5] flex items-center justify-center">
 				<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
@@ -586,6 +654,160 @@ export function DataSettings() {
 					<div className="max-w-2xl mx-auto space-y-6">
 						{activeSection === "storage" && (
 							<>
+								{/* Vault 与互通 */}
+								<SectionCard>
+									<div className="p-5">
+										<SectionTitle>存储与互通</SectionTitle>
+										<SettingRow
+											label="Vault 根目录"
+											description={storageSettings.vault_root}
+											action={
+												<div className="flex items-center gap-2">
+													<button
+														onClick={async () => {
+															const picked = await pickStorageDirectory();
+															if (!picked.path) return;
+															await saveStorageConfig(
+																{ vault_root: picked.path },
+																{ migrate_existing: true },
+															);
+														}}
+														disabled={isUpdatingStorage}
+														className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors disabled:opacity-60"
+													>
+														选择目录
+													</button>
+													<button
+														onClick={async () => {
+															const result = await revealVaultRoot();
+															if (!result.success) {
+																toast.error(result.error || "打开目录失败");
+															}
+														}}
+														className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+													>
+														打开目录
+													</button>
+												</div>
+											}
+										/>
+										<SettingRow
+											label="Obsidian Frontmatter"
+											description="为 Markdown 文件写入 YAML 元信息"
+											action={
+												<Toggle
+													checked={storageSettings.obsidian_frontmatter}
+													onChange={(v) =>
+														void saveStorageConfig({ obsidian_frontmatter: v })
+													}
+													disabled={isUpdatingStorage}
+												/>
+											}
+										/>
+										<SettingRow
+											label="Wiki Link"
+											description="优先使用 [[文档]] 互链风格"
+											action={
+												<Toggle
+													checked={storageSettings.obsidian_wiki_links}
+													onChange={(v) =>
+														void saveStorageConfig({ obsidian_wiki_links: v })
+													}
+													disabled={isUpdatingStorage}
+												/>
+											}
+										/>
+										<SettingRow
+											label="重名冲突策略"
+											action={
+												<select
+													value={storageSettings.conflict_strategy}
+													onChange={(e) =>
+														void saveStorageConfig({
+															conflict_strategy: e.target.value as StorageSettings["conflict_strategy"],
+														})
+													}
+													className="px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm"
+												>
+													<option value="append_suffix">追加后缀</option>
+													<option value="prevent_overwrite">阻止覆盖</option>
+												</select>
+											}
+										/>
+										<div className="mt-4 border-t border-zinc-100 pt-4">
+											<div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+												主题目录
+											</div>
+											<div className="flex items-center gap-2 mb-3">
+												<input
+													type="text"
+													value={newThemeName}
+													onChange={(e) => setNewThemeName(e.target.value)}
+													placeholder="新主题名称"
+													className="flex-1 px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60"
+												/>
+												<button
+													onClick={handleAddTheme}
+													className="px-3 py-2 text-xs bg-zinc-900 text-white rounded-lg hover:opacity-90 transition-opacity"
+												>
+													新增
+												</button>
+											</div>
+											<div className="space-y-2">
+												{themes.length === 0 ? (
+													<div className="text-xs text-zinc-400">暂无主题目录</div>
+												) : (
+													themes.map((theme) => (
+														<div
+															key={theme.id}
+															className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-50"
+														>
+															<div className="min-w-0">
+																<div className="text-sm text-zinc-700 truncate">
+																	{theme.name}
+																</div>
+																<div className="text-[11px] text-zinc-400 truncate">
+																	Themes/{theme.slug}
+																</div>
+															</div>
+															<div className="flex items-center gap-2">
+																<button
+																	onClick={async () => {
+																		const next = window.prompt(
+																			"请输入新的主题名称",
+																			theme.name,
+																		);
+																		if (!next?.trim()) return;
+																		await renameTheme(theme.id, next.trim());
+																		setThemes(await listThemes());
+																	}}
+																	className="text-xs text-zinc-500 hover:text-zinc-700"
+																>
+																	重命名
+																</button>
+																<button
+																	onClick={async () => {
+																		const ok = await confirmUI.danger(
+																			`确定删除主题「${theme.name}」吗？`,
+																			"删除主题",
+																		);
+																		if (!ok) return;
+																		await deleteTheme(theme.id);
+																		setThemes(await listThemes());
+																	}}
+																	className="text-xs text-red-500 hover:text-red-600"
+																>
+																	删除
+																</button>
+															</div>
+														</div>
+													))
+												)}
+											</div>
+										</div>
+									</div>
+								</SectionCard>
+
 								{/* 数据统计 */}
 								<SectionCard>
 									<div className="p-5">

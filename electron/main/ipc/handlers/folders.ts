@@ -19,7 +19,7 @@ export function createFolderHandlers(db: DbContext) {
 		const args: (string | number)[] = [];
 
 		if (input.project_id) {
-			sql += ` WHERE project_id = ?`;
+			sql += ` WHERE project_id = ? OR project_id IS NULL`;
 			args.push(input.project_id);
 		}
 		sql += ` ORDER BY name ASC`;
@@ -73,6 +73,10 @@ export function createFolderHandlers(db: DbContext) {
 		if (input.name !== undefined) {
 			updates.push("name = ?");
 			args.push(input.name);
+		}
+		if (input.parent_id !== undefined) {
+			updates.push("parent_id = ?");
+			args.push(input.parent_id ?? null);
 		}
 		if (input.color !== undefined) {
 			updates.push("color = ?");

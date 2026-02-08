@@ -11,6 +11,7 @@ import type {
 	SourceOrigin,
 } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
+import { syncSourceToVault } from "../../storage/sync";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -30,11 +31,15 @@ function parseSource(row: Record<string, unknown>): Source {
 		title: row.title as string,
 		kind: (row.kind as SourceKind) || "text",
 		tags,
+		scope: (row.scope as Source["scope"]) || "global",
 		url: row.url as string | undefined,
 		project_id: row.project_id as string | undefined,
 		folder_id: row.folder_id as string | undefined,
 		source_type: (row.source_type as SourceOrigin) || "manual",
+		origin_type: (row.origin_type as Source["origin_type"]) || "manual",
 		category: (row.category as SourceCategory) || "article",
+		storage_path: row.storage_path as string | undefined,
+		is_deleted: Number(row.is_deleted ?? 0) === 1,
 		description: row.description as string | undefined,
 		thumbnail: row.thumbnail as string | undefined,
 		author: row.author as string | undefined,
@@ -48,11 +53,11 @@ export function createSourceHandlers(db: DbContext) {
 	const now = () => Date.now();
 
 	const listSources: Handler<"list_sources"> = async (_event, input) => {
-		let sql = `SELECT * FROM sources WHERE 1=1`;
+		let sql = `SELECT * FROM sources WHERE COALESCE(is_deleted, 0) = 0`;
 		const args: (string | number)[] = [];
 
 		if (input.project_id) {
-			sql += ` AND (project_id = ? OR project_id IS NULL)`;
+			sql += ` AND (scope = 'global' OR project_id = ?)`;
 			args.push(input.project_id);
 		}
 		if (input.folder_id) {
@@ -114,19 +119,28 @@ export function createSourceHandlers(db: DbContext) {
 		const id = randomUUID();
 		const timestamp = now();
 		const tags = JSON.stringify(input.tags ?? []);
+		const scope: Source["scope"] = "global";
+		const originType: Source["origin_type"] =
+			input.source_type === "browser_clip"
+				? "web_clip"
+				: input.source_type === "import"
+					? "import"
+					: "manual";
 
 		await db.client.execute({
-			sql: `INSERT INTO sources (id, title, kind, tags, url, project_id, folder_id, source_type, category, description, author, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			sql: `INSERT INTO sources (id, title, kind, scope, tags, url, project_id, folder_id, source_type, origin_type, category, description, author, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			args: [
 				id,
 				input.title,
 				input.kind,
+				scope,
 				tags,
 				input.url ?? null,
-				input.project_id ?? null,
+				null,
 				input.folder_id ?? null,
 				input.source_type ?? "manual",
+				originType,
 				input.category ?? "article",
 				input.description ?? null,
 				input.author ?? null,
@@ -135,15 +149,19 @@ export function createSourceHandlers(db: DbContext) {
 			],
 		});
 
+		await syncSourceToVault(db, id);
+
 		return {
 			id,
 			title: input.title,
 			kind: input.kind,
 			tags: input.tags ?? [],
+			scope,
 			url: input.url,
-			project_id: input.project_id,
+			project_id: undefined,
 			folder_id: input.folder_id,
 			source_type: input.source_type ?? "manual",
+			origin_type: originType,
 			category: input.category ?? "article",
 			description: input.description,
 			author: input.author,
@@ -187,6 +205,8 @@ export function createSourceHandlers(db: DbContext) {
 			args,
 		});
 
+		await syncSourceToVault(db, input.id);
+
 		const result = await getSource({} as IpcMainInvokeEvent, { id: input.id });
 		if (!result) throw new Error(`Source not found: ${input.id}`);
 		return result;
@@ -195,8 +215,8 @@ export function createSourceHandlers(db: DbContext) {
 	const deleteSource: Handler<"delete_source"> = async (_event, input) => {
 		// notes 通过外键级联删除
 		await db.client.execute({
-			sql: `DELETE FROM sources WHERE id = ?`,
-			args: [input.id],
+			sql: `UPDATE sources SET is_deleted = 1, updated_at = ? WHERE id = ?`,
+			args: [now(), input.id],
 		});
 		return { success: true };
 	};
@@ -211,11 +231,11 @@ export function createSourceHandlers(db: DbContext) {
 					: "";
 		if (!rawQuery) return [];
 
-		let sql = `SELECT * FROM sources WHERE title LIKE ?`;
+		let sql = `SELECT * FROM sources WHERE COALESCE(is_deleted, 0) = 0 AND title LIKE ?`;
 		const args: (string | number)[] = [`%${rawQuery}%`];
 
 		if (input.project_id) {
-			sql += ` AND (project_id = ? OR project_id IS NULL)`;
+			sql += ` AND (scope = 'global' OR project_id = ?)`;
 			args.push(input.project_id);
 		}
 		sql += ` ORDER BY updated_at DESC LIMIT ?`;

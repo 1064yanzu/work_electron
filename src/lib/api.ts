@@ -37,6 +37,7 @@ import type {
 	CreateWorkflowPayload,
 	DashboardStats,
 	FetchUrlPayload,
+	FileRecord,
 	Folder,
 	ImportLocalFilesPayload,
 	InvokeLlmPayload,
@@ -51,6 +52,8 @@ import type {
 	SearchSourcePayload,
 	Source,
 	SourceDetail,
+	StorageSettings,
+	Theme,
 	UpdateFolderPayload,
 	UpdateNotePayload,
 	UpdateOutputPayload,
@@ -63,6 +66,8 @@ import type {
 	WorkflowNode,
 	WorkflowRunLog,
 } from "../types";
+
+export type { FileRecord, StorageSettings, Theme } from "../types";
 
 // Projects
 export interface CreateProjectPayload {
@@ -395,8 +400,15 @@ export async function setDatabasePath(newPath: string): Promise<void> {
 	return await safeInvoke("set_database_path", { newPath });
 }
 
-export async function importDataFromJson(jsonData: string): Promise<void> {
-	return await safeInvoke("import_data_from_json", { jsonData });
+export async function importDataFromJson(
+	jsonData: string,
+	options?: { overwrite?: boolean; clear_all_first?: boolean },
+): Promise<void> {
+	return await safeInvoke("import_data_from_json", {
+		jsonData,
+		overwrite: options?.overwrite ?? true,
+		clear_all_first: options?.clear_all_first ?? true,
+	});
 }
 
 // Web 搜索
@@ -558,7 +570,128 @@ export async function getSyncConfig(): Promise<SyncConfig> {
 }
 
 export async function updateSyncConfig(config: SyncConfig): Promise<void> {
-	return await safeInvoke("update_sync_config", { config });
+	return await safeInvoke("update_sync_config", { payload: config });
+}
+
+export async function getStorageSettings(): Promise<StorageSettings> {
+	return await safeInvoke("storage_get_settings");
+}
+
+export async function updateStorageSettings(payload: {
+	settings: Partial<StorageSettings>;
+	migrate_existing?: boolean;
+}): Promise<{
+	settings: StorageSettings;
+	migration?: { backup_path: string; sources: number; outputs: number };
+}> {
+	return await safeInvoke("storage_update_settings", payload);
+}
+
+export async function pickStorageDirectory(): Promise<{ path: string | null }> {
+	return await safeInvoke("storage_pick_directory");
+}
+
+export async function revealVaultRoot(): Promise<{ success: boolean; error?: string }> {
+	return await safeInvoke("storage_reveal_vault_root");
+}
+
+export async function revealProjectDirectory(projectId: string): Promise<{
+	success: boolean;
+	path: string;
+	error?: string;
+}> {
+	return await safeInvoke("project_reveal_directory", { project_id: projectId });
+}
+
+export async function fileList(params?: {
+	project_id?: string;
+	scope?: "global" | "project";
+	themes?: string[];
+	tags?: string[];
+	include_deleted?: boolean;
+	entity_type?: "source" | "output" | "all";
+}): Promise<FileRecord[]> {
+	return await safeInvoke("file_list", params ?? {});
+}
+
+export async function fileMove(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+	destination: "project_docs" | "global_shared" | "global_webclips" | "theme";
+	project_id?: string;
+	theme_id?: string;
+}): Promise<FileRecord> {
+	return await safeInvoke("file_move", payload);
+}
+
+export async function fileDelete(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+}): Promise<{ success: boolean }> {
+	return await safeInvoke("file_delete", payload);
+}
+
+export async function fileRestore(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+}): Promise<{ success: boolean }> {
+	return await safeInvoke("file_restore", payload);
+}
+
+export async function fileRevealInFinder(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+}): Promise<{ success: boolean; path: string }> {
+	return await safeInvoke("file_reveal_in_finder", payload);
+}
+
+export async function fileSetScope(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+	scope: "global" | "project";
+	project_id?: string;
+}): Promise<FileRecord> {
+	return await safeInvoke("file_set_scope", payload);
+}
+
+export async function fileSetTags(payload: {
+	id: string;
+	entity_type?: "source" | "output";
+	tags: string[];
+}): Promise<FileRecord> {
+	return await safeInvoke("file_set_tags", payload);
+}
+
+export async function listThemes(): Promise<Theme[]> {
+	return await safeInvoke("theme_list");
+}
+
+export async function createTheme(name: string): Promise<Theme> {
+	return await safeInvoke("theme_create", { name });
+}
+
+export async function renameTheme(id: string, name: string): Promise<Theme> {
+	return await safeInvoke("theme_rename", { id, name });
+}
+
+export async function deleteTheme(id: string): Promise<{ success: boolean }> {
+	return await safeInvoke("theme_delete", { id });
+}
+
+export async function moveFileSafe(payload: {
+	src: string;
+	dest: string;
+	create_dirs?: boolean;
+}): Promise<{ success: boolean }> {
+	return await safeInvoke("move_file_safe", payload);
+}
+
+export async function deleteFileSafe(path: string): Promise<{ success: boolean }> {
+	return await safeInvoke("delete_file_safe", { path });
+}
+
+export async function revealFileSafe(path: string): Promise<{ success: boolean }> {
+	return await safeInvoke("reveal_file_safe", { path });
 }
 
 export interface WebDavConfig {

@@ -1,21 +1,31 @@
 // 文档标签栏组件 - 类似 Cursor/VS Code 的多标签文档切换
 
 import { Circle, FileText, Plus, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { fileList, fileMove } from "../lib/api";
+import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
 import { useWorkspaceStore } from "../lib/workspaceStore";
+import { ContextMenu } from "./ui/ContextMenu";
 
 interface DocumentTabsProps {
 	onNewDoc?: () => void;
 	onCloseDoc?: (docId: string, dirty: boolean) => void;
+	onDeleteDoc?: (docId: string) => void;
 }
 
 export default function DocumentTabs({
 	onNewDoc,
 	onCloseDoc,
+	onDeleteDoc,
 }: DocumentTabsProps) {
 	const { openedDocs, activeDocId, docCache, setActiveDoc, closeDoc } =
 		useWorkspaceStore();
 	const tabsRef = useRef<HTMLDivElement>(null);
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		docId: string;
+	} | null>(null);
 
 	// 当激活文档改变时，滚动到可见区域
 	useEffect(() => {
@@ -77,6 +87,71 @@ export default function DocumentTabs({
 		}
 	};
 
+	const closeCurrentDoc = (docId: string) => {
+		const doc = docCache[docId];
+		if (onCloseDoc) {
+			onCloseDoc(docId, doc?.dirty || false);
+		} else {
+			closeDoc(docId);
+		}
+	};
+
+	const closeOtherDocs = (docId: string) => {
+		const targets = openedDocs.filter((id) => id !== docId);
+		for (const id of targets) {
+			closeCurrentDoc(id);
+		}
+		setActiveDoc(docId);
+	};
+
+	const closeRightDocs = (docId: string) => {
+		const index = openedDocs.indexOf(docId);
+		if (index < 0) return;
+		const targets = openedDocs.slice(index + 1);
+		for (const id of targets) {
+			closeCurrentDoc(id);
+		}
+	};
+
+	const contextMenuItems = useMemo(() => {
+		if (!contextMenu) return [];
+		const docId = contextMenu.docId;
+		return buildDocumentTabContextMenu({
+			onClose: () => closeCurrentDoc(docId),
+			onCloseOthers: () => closeOtherDocs(docId),
+			onCloseRight: () => closeRightDocs(docId),
+			onCopyPath: async () => {
+				const all = await fileList({
+					entity_type: "output",
+					include_deleted: true,
+				});
+				const record = all.find((item) => item.id === docId);
+				if (record?.storage_path) {
+					await navigator.clipboard.writeText(record.storage_path);
+				}
+			},
+			onMove: async () => {
+				const all = await fileList({
+					entity_type: "output",
+					include_deleted: true,
+				});
+				const record = all.find((item) => item.id === docId);
+				const moveToProject = window.confirm(
+					"选择“确定”移动到项目目录，选择“取消”移动到全局目录。",
+				);
+				await fileMove({
+					id: docId,
+					entity_type: "output",
+					destination: moveToProject ? "project_docs" : "global_shared",
+					project_id: moveToProject ? record?.project_id : undefined,
+				});
+			},
+			onDelete: onDeleteDoc
+				? () => onDeleteDoc(docId)
+				: () => closeCurrentDoc(docId),
+		});
+	}, [contextMenu, docCache, onDeleteDoc, openedDocs, onCloseDoc, closeDoc, setActiveDoc]);
+
 	if (openedDocs.length === 0) {
 		return null;
 	}
@@ -97,6 +172,10 @@ export default function DocumentTabs({
 							key={docId}
 							data-doc-id={docId}
 							onClick={() => handleTabClick(docId)}
+							onContextMenu={(e) => {
+								e.preventDefault();
+								setContextMenu({ x: e.clientX, y: e.clientY, docId });
+							}}
 							className={`
                 group flex items-center gap-2 px-3.5 py-2 cursor-pointer
                 transition-all duration-150 min-w-[120px] max-w-[220px] mx-0.5 my-1 rounded-xl
@@ -144,6 +223,14 @@ export default function DocumentTabs({
 					<Plus className="w-4 h-4" />
 				</button>
 			)}
+			{contextMenu && contextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

@@ -17,6 +17,7 @@ import type {
 	CreateProjectPayload,
 	CreateSourcePayload,
 	DashboardStats,
+	FileRecord,
 	Folder,
 	InvokeLlmPayload,
 	InvokeLlmResult,
@@ -26,6 +27,8 @@ import type {
 	Provider,
 	SaveCheckpointPayload,
 	Source,
+	StorageSettings,
+	Theme,
 	UpdateFolderPayload,
 	UpdateNotePayload,
 	UpdateOutputPayload,
@@ -169,6 +172,18 @@ export type IPCSchema = {
 	};
 	copy_file_safe: {
 		input: { src: string; dest: string; create_dirs?: boolean };
+		output: { success: boolean };
+	};
+	move_file_safe: {
+		input: { src: string; dest: string; create_dirs?: boolean };
+		output: { success: boolean };
+	};
+	delete_file_safe: {
+		input: { path: string };
+		output: { success: boolean };
+	};
+	reveal_file_safe: {
+		input: { path: string };
 		output: { success: boolean };
 	};
 	save_temp_file: {
@@ -738,6 +753,102 @@ export type IPCSchema = {
 	};
 
 	// ==================
+	// Storage / Vault
+	// ==================
+	storage_get_settings: {
+		input: Record<string, never>;
+		output: StorageSettings;
+	};
+	storage_update_settings: {
+		input: {
+			settings: Partial<StorageSettings>;
+			migrate_existing?: boolean;
+		};
+		output: {
+			settings: StorageSettings;
+			migration?: { backup_path: string; sources: number; outputs: number };
+		};
+	};
+	storage_pick_directory: {
+		input: Record<string, never>;
+		output: { path: string | null };
+	};
+	storage_reveal_vault_root: {
+		input: Record<string, never>;
+		output: { success: boolean; error?: string };
+	};
+	project_reveal_directory: {
+		input: { project_id: string };
+		output: { success: boolean; path: string; error?: string };
+	};
+	file_list: {
+		input: {
+			project_id?: string;
+			scope?: "global" | "project";
+			themes?: string[];
+			tags?: string[];
+			include_deleted?: boolean;
+			entity_type?: "source" | "output" | "all";
+		};
+		output: FileRecord[];
+	};
+	file_move: {
+		input: {
+			id: string;
+			entity_type?: "source" | "output";
+			destination:
+				| "project_docs"
+				| "global_shared"
+				| "global_webclips"
+				| "theme";
+			project_id?: string;
+			theme_id?: string;
+		};
+		output: FileRecord;
+	};
+	file_delete: {
+		input: { id: string; entity_type?: "source" | "output" };
+		output: { success: boolean };
+	};
+	file_restore: {
+		input: { id: string; entity_type?: "source" | "output" };
+		output: { success: boolean };
+	};
+	file_reveal_in_finder: {
+		input: { id: string; entity_type?: "source" | "output" };
+		output: { success: boolean; path: string };
+	};
+	file_set_scope: {
+		input: {
+			id: string;
+			entity_type?: "source" | "output";
+			scope: "global" | "project";
+			project_id?: string;
+		};
+		output: FileRecord;
+	};
+	file_set_tags: {
+		input: { id: string; entity_type?: "source" | "output"; tags: string[] };
+		output: FileRecord;
+	};
+	theme_list: {
+		input: Record<string, never>;
+		output: Theme[];
+	};
+	theme_create: {
+		input: { name: string };
+		output: Theme;
+	};
+	theme_rename: {
+		input: { id: string; name: string };
+		output: Theme;
+	};
+	theme_delete: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+
+	// ==================
 	// Agent 产物命令
 	// ==================
 	artifact_save: {
@@ -786,6 +897,70 @@ export type IPCSchema = {
 	artifact_update_settings: {
 		input: Partial<ArtifactSettings>;
 		output: ArtifactSettings;
+	};
+
+	// ==================
+	// 同步与备份
+	// ==================
+	get_sync_config: {
+		input: Record<string, never>;
+		output: Record<string, unknown>;
+	};
+	update_sync_config: {
+		input: Record<string, unknown>;
+		output: Record<string, unknown>;
+	};
+	list_backup_history: {
+		input: { limit?: number };
+		output: Array<Record<string, unknown>>;
+	};
+	create_backup_record: {
+		input: Record<string, unknown>;
+		output: { success: boolean };
+	};
+	clean_old_backups: {
+		input: { keep_days?: number };
+		output: { deleted_count: number };
+	};
+	backup_to_webdav: {
+		input: { data: string; config: Record<string, unknown> };
+		output: Record<string, unknown>;
+	};
+	restore_from_webdav: {
+		input: { config: Record<string, unknown> };
+		output: string;
+	};
+	list_webdav_backups: {
+		input: { config: Record<string, unknown> };
+		output: Array<Record<string, unknown>>;
+	};
+	delete_webdav_backup: {
+		input: { fileName: string; config: Record<string, unknown> };
+		output: Record<string, unknown>;
+	};
+	test_webdav_connection: {
+		input: { config: Record<string, unknown> };
+		output: boolean;
+	};
+	get_data_stats: {
+		input: Record<string, never>;
+		output: Record<string, number>;
+	};
+	get_data_directory: {
+		input: Record<string, never>;
+		output: string;
+	};
+	get_database_path: {
+		input: Record<string, never>;
+		output: string;
+	};
+	clear_cache: {
+		input: Record<string, never>;
+		output: number;
+	};
+	clear_all_data: {
+		input: Record<string, never>;
+		output: void;
 	};
 
 	// ==================

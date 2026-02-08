@@ -7,6 +7,7 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Note } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
 import { rebuildNoteChunks } from "../../kb/rebuildNoteChunks";
+import { syncSourceToVault } from "../../storage/sync";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -66,6 +67,10 @@ export function createNoteHandlers(db: DbContext) {
 			content: input.content,
 		});
 
+		if (input.source_id) {
+			await syncSourceToVault(db, input.source_id);
+		}
+
 		return {
 			id,
 			source_id: input.source_id,
@@ -119,6 +124,9 @@ export function createNoteHandlers(db: DbContext) {
 				sourceId,
 				content: newContent,
 			});
+			if (sourceId) {
+				await syncSourceToVault(db, sourceId);
+			}
 		}
 
 		const rows = await db.client.execute({

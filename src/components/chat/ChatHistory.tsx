@@ -2,13 +2,16 @@
 
 import { Calendar, MessageSquare, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
 import type { ChatSession } from "../../lib/chat/types";
+import { ContextMenu } from "../ui/ContextMenu";
 
 interface ChatHistoryProps {
 	sessions: ChatSession[];
 	activeSessionId: string | null;
 	onSelectSession: (sessionId: string) => void;
 	onDeleteSession: (sessionId: string) => void;
+	onRenameSession: (sessionId: string, title: string) => void;
 	onNewSession: () => void;
 	onClose: () => void;
 }
@@ -18,10 +21,17 @@ export function ChatHistory({
 	activeSessionId,
 	onSelectSession,
 	onDeleteSession,
+	onRenameSession,
 	onNewSession,
 	onClose,
 }: ChatHistoryProps) {
 	const [searchQuery, setSearchQuery] = useState("");
+	const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		session: ChatSession;
+	} | null>(null);
 
 	const formatDate = (timestamp: number) => {
 		const date = new Date(timestamp);
@@ -58,6 +68,60 @@ export function ChatHistory({
 
 		return { groupedSessions: groups, hasResults: filtered.length > 0 };
 	}, [sessions, searchQuery]);
+
+	const sortedEntries = useMemo(() => {
+		return Object.entries(groupedSessions).map(([dateKey, dateSessions]) => {
+			const sorted = [...dateSessions].sort((a, b) => {
+				const aPinned = pinnedIds.includes(a.id) ? 1 : 0;
+				const bPinned = pinnedIds.includes(b.id) ? 1 : 0;
+				if (aPinned !== bPinned) return bPinned - aPinned;
+				return b.updatedAt - a.updatedAt;
+			});
+			return [dateKey, sorted] as [string, ChatSession[]];
+		});
+	}, [groupedSessions, pinnedIds]);
+
+	const contextMenuItems = contextMenu
+		? buildSessionContextMenu({
+				onOpen: () => onSelectSession(contextMenu.session.id),
+				onRename: () => {
+					const nextTitle = window.prompt(
+						"请输入新的会话标题",
+						contextMenu.session.title || "新对话",
+					);
+					if (!nextTitle?.trim()) return;
+					onRenameSession(contextMenu.session.id, nextTitle.trim());
+				},
+				onTogglePin: () => {
+					setPinnedIds((prev) =>
+						prev.includes(contextMenu.session.id)
+							? prev.filter((id) => id !== contextMenu.session.id)
+							: [...prev, contextMenu.session.id],
+					);
+				},
+				onExport: () => {
+					const lines = contextMenu.session.messages.map((msg) => {
+						const role =
+							msg.role === "assistant"
+								? "Assistant"
+								: msg.role === "user"
+									? "User"
+									: "System";
+						return `## ${role}\n\n${msg.content}`;
+					});
+					const markdown = `# ${contextMenu.session.title || "新对话"}\n\n${lines.join("\n\n")}`;
+					const blob = new Blob([markdown], { type: "text/markdown" });
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement("a");
+					a.href = url;
+					a.download = `${(contextMenu.session.title || "会话").replace(/[\\\\/:*?\"<>|]/g, "-")}.md`;
+					a.click();
+					URL.revokeObjectURL(url);
+				},
+				onDelete: () => onDeleteSession(contextMenu.session.id),
+				pinned: pinnedIds.includes(contextMenu.session.id),
+			})
+		: [];
 
 	return (
 		<div className="flex flex-col h-full bg-white dark:bg-zinc-900 animate-in slide-in-from-left-5 duration-200">
@@ -122,7 +186,7 @@ export function ChatHistory({
 					</div>
 				) : (
 					<div className="space-y-6 mt-2">
-						{Object.entries(groupedSessions).map(([dateKey, dateSessions]) => (
+						{sortedEntries.map(([dateKey, dateSessions]) => (
 							<div key={dateKey} className="space-y-2">
 								<div className="flex items-center gap-2 px-2">
 									<Calendar className="w-3.5 h-3.5 text-zinc-400" />
@@ -137,6 +201,15 @@ export function ChatHistory({
 										<div
 											key={session.id}
 											onClick={() => onSelectSession(session.id)}
+											onContextMenu={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												setContextMenu({
+													x: e.clientX,
+													y: e.clientY,
+													session,
+												});
+											}}
 											className={`
                         group relative flex items-start gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200
                         ${
@@ -167,6 +240,11 @@ export function ChatHistory({
                         `}
 												>
 													{session.title || "新对话"}
+													{pinnedIds.includes(session.id) ? (
+														<span className="ml-2 text-[10px] text-blue-500">
+															置顶
+														</span>
+													) : null}
 												</div>
 												<div className="text-xs text-zinc-400 truncate">
 													{session.messages[
@@ -193,6 +271,14 @@ export function ChatHistory({
 					</div>
 				)}
 			</div>
+			{contextMenu && contextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

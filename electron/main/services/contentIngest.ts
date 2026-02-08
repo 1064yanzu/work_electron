@@ -17,6 +17,7 @@ import type {
 } from "../../shared/types";
 import { extractArticleFromHtml } from "../kb/extractArticleFromHtml";
 import { rebuildNoteChunks } from "../kb/rebuildNoteChunks";
+import { syncSourceToVault } from "../storage/sync";
 import { requireAbsoluteLocalPath } from "../utils/localPaths";
 
 export type FetchUrlContentInput = {
@@ -191,17 +192,19 @@ async function insertSource(
 ): Promise<Source> {
 	const timestamp = Date.now();
 	await db.client.execute({
-		sql: `INSERT INTO sources (id, title, kind, tags, url, project_id, folder_id, source_type, category, description, thumbnail, author, published_at, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sql: `INSERT INTO sources (id, title, kind, scope, tags, url, project_id, folder_id, source_type, origin_type, category, description, thumbnail, author, published_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		args: [
 			input.id,
 			input.title,
 			input.kind,
+			input.scope ?? "global",
 			JSON.stringify(input.tags ?? []),
 			input.url ?? null,
 			input.project_id ?? null,
 			input.folder_id ?? null,
 			input.source_type,
+			input.origin_type ?? sourceTypeToOriginType(input.source_type) ?? "manual",
 			input.category,
 			input.description ?? null,
 			input.thumbnail ?? null,
@@ -213,6 +216,14 @@ async function insertSource(
 	});
 
 	return { ...input, created_at: timestamp, updated_at: timestamp };
+}
+
+function sourceTypeToOriginType(
+	sourceType: SourceOrigin | undefined,
+): "manual" | "web_clip" | "import" | "agent_output" {
+	if (sourceType === "browser_clip") return "web_clip";
+	if (sourceType === "import") return "import";
+	return "manual";
 }
 
 async function insertNote(
@@ -278,10 +289,12 @@ export async function ingestUrlContent(
 		title,
 		kind: "web",
 		tags: payload.tags ?? [],
+		scope: "global",
 		url: finalUrl,
-		project_id: payload.project_id,
+		project_id: undefined,
 		folder_id: payload.folder_id,
 		source_type: payload.source_type ?? "manual",
+		origin_type: sourceTypeToOriginType(payload.source_type),
 		category: payload.category ?? "article",
 		description,
 		thumbnail,
@@ -295,6 +308,7 @@ export async function ingestUrlContent(
 		content: contentText || title,
 		content_html: contentHtml,
 	});
+	await syncSourceToVault(db, source.id);
 
 	return { source, note };
 }
@@ -322,10 +336,12 @@ export async function ingestUploadedFileContent(
 		title,
 		kind,
 		tags: payload.tags ?? [],
+		scope: "global",
 		url: undefined,
-		project_id: payload.project_id,
+		project_id: undefined,
 		folder_id: payload.folder_id,
 		source_type: payload.source_type ?? "manual",
+		origin_type: sourceTypeToOriginType(payload.source_type),
 		category,
 		description: undefined,
 		thumbnail: undefined,
@@ -339,6 +355,7 @@ export async function ingestUploadedFileContent(
 		content: contentText || title,
 		content_html: contentHtml,
 	});
+	await syncSourceToVault(db, source.id);
 
 	return { source, note };
 }
@@ -403,10 +420,12 @@ async function ingestLocalFile(
 		title: baseName,
 		kind,
 		tags: options.tags,
+		scope: "global",
 		url: undefined,
-		project_id: options.project_id,
+		project_id: undefined,
 		folder_id: options.folder_id,
 		source_type: options.source_type,
+		origin_type: sourceTypeToOriginType(options.source_type),
 		category,
 		description: undefined,
 		thumbnail: undefined,
@@ -420,6 +439,7 @@ async function ingestLocalFile(
 		content: contentText || baseName,
 		content_html: contentHtml,
 	});
+	await syncSourceToVault(db, source.id);
 
 	return { source, note };
 }

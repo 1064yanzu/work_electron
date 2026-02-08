@@ -52,12 +52,16 @@ CREATE TABLE IF NOT EXISTS sources (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   kind TEXT NOT NULL,
+  scope TEXT DEFAULT 'global',
   tags TEXT DEFAULT '[]',
   url TEXT,
   project_id TEXT,
   folder_id TEXT,
   source_type TEXT DEFAULT 'manual',
+  origin_type TEXT DEFAULT 'manual',
   category TEXT DEFAULT 'article',
+  storage_path TEXT,
+  is_deleted INTEGER DEFAULT 0,
   description TEXT,
   thumbnail TEXT,
   author TEXT,
@@ -70,6 +74,8 @@ CREATE TABLE IF NOT EXISTS sources (
 CREATE INDEX IF NOT EXISTS idx_sources_project ON sources(project_id);
 CREATE INDEX IF NOT EXISTS idx_sources_folder ON sources(folder_id);
 CREATE INDEX IF NOT EXISTS idx_sources_kind ON sources(kind);
+-- NOTE: idx_sources_scope / idx_sources_deleted 在 migrate.ts 中安全创建
+-- 原因：旧版本 sources 表可能不存在这些列，需先安全补列再建索引
 CREATE INDEX IF NOT EXISTS idx_sources_updated ON sources(updated_at DESC);
 
 -- 笔记表（扩展版）
@@ -175,6 +181,10 @@ CREATE TABLE IF NOT EXISTS output_assets (
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   output_type TEXT NOT NULL,
+  scope TEXT DEFAULT 'project',
+  tags TEXT DEFAULT '[]',
+  storage_path TEXT,
+  is_deleted INTEGER DEFAULT 0,
   related_notes TEXT DEFAULT '[]',
   project_id TEXT,
   version INTEGER DEFAULT 1,
@@ -184,6 +194,8 @@ CREATE TABLE IF NOT EXISTS output_assets (
 );
 CREATE INDEX IF NOT EXISTS idx_output_assets_project ON output_assets(project_id);
 CREATE INDEX IF NOT EXISTS idx_output_assets_type ON output_assets(output_type);
+-- NOTE: idx_output_assets_scope / idx_output_assets_deleted 在 migrate.ts 中安全创建
+-- 原因：旧版本 output_assets 表可能不存在这些列，需先安全补列再建索引
 
 -- =====================
 -- 工作流节点
@@ -283,6 +295,28 @@ CREATE TABLE IF NOT EXISTS cards (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+-- =====================
+-- 主题与文件映射
+-- =====================
+CREATE TABLE IF NOT EXISTS themes (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS file_themes (
+  source_id TEXT NOT NULL,
+  theme_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (source_id, theme_id),
+  FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE,
+  FOREIGN KEY (theme_id) REFERENCES themes(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_file_themes_source ON file_themes(source_id);
+CREATE INDEX IF NOT EXISTS idx_file_themes_theme ON file_themes(theme_id);
 
 -- =====================
 -- Agent Runtime 表

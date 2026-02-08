@@ -10,9 +10,18 @@ import {
 	Sparkles,
 	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createProject, getRecentProjects, listProjects } from "../lib/api";
+import { useCallback, useEffect, useState } from "react";
+import {
+	createProject,
+	deleteProject,
+	getRecentProjects,
+	listProjects,
+	revealProjectDirectory,
+	updateProject,
+} from "../lib/api";
+import { buildProjectContextMenu } from "../lib/contextMenu/actions";
 import type { Project } from "../types";
+import { ContextMenu } from "./ui/ContextMenu";
 
 interface DashboardProps {
 	onOpenSettings: () => void;
@@ -35,9 +44,43 @@ export default function Dashboard({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showNewProject, setShowNewProject] = useState(false);
 	const [newProjectName, setNewProjectName] = useState("");
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		project: Project;
+	} | null>(null);
 
 	// Try to get username from settings or default to a generic title
 	const username = "Creator"; // TODO: replace with real profile name when available
+
+	const loadProjects = useCallback(async () => {
+		try {
+			console.log("[Dashboard] 开始获取项目列表...");
+			let recent: Project[] = [];
+			let all: Project[] = [];
+
+			try {
+				recent = await getRecentProjects(10);
+				console.log("[Dashboard] 获取到", recent.length, "个最近项目");
+			} catch (e) {
+				console.warn("[Dashboard] 获取最近项目失败，可能是表不存在:", e);
+			}
+
+			try {
+				all = await listProjects();
+				console.log("[Dashboard] 获取到", all.length, "个全部项目");
+			} catch (e) {
+				console.warn("[Dashboard] 获取全部项目失败，可能是表不存在:", e);
+			}
+
+			setRecentProjects(recent);
+			setAllProjects(all);
+		} catch (e) {
+			console.error("[Dashboard] 获取项目失败:", e);
+		} finally {
+			setIsLoading(false);
+		}
+	}, []);
 
 	useEffect(() => {
 		const hour = new Date().getHours();
@@ -45,37 +88,8 @@ export default function Dashboard({
 		else if (hour < 18) setGreeting("下午好");
 		else setGreeting("晚上好");
 
-		const fetchData = async () => {
-			try {
-				console.log("[Dashboard] 开始获取项目列表...");
-				// 分别获取，避免一个失败导致全部失败
-				let recent: Project[] = [];
-				let all: Project[] = [];
-
-				try {
-					recent = await getRecentProjects(10);
-					console.log("[Dashboard] 获取到", recent.length, "个最近项目");
-				} catch (e) {
-					console.warn("[Dashboard] 获取最近项目失败，可能是表不存在:", e);
-				}
-
-				try {
-					all = await listProjects();
-					console.log("[Dashboard] 获取到", all.length, "个全部项目");
-				} catch (e) {
-					console.warn("[Dashboard] 获取全部项目失败，可能是表不存在:", e);
-				}
-
-				setRecentProjects(recent);
-				setAllProjects(all);
-			} catch (e) {
-				console.error("[Dashboard] 获取项目失败:", e);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchData();
-	}, []);
+		void loadProjects();
+	}, [loadProjects]);
 
 	const handleCreateProject = async () => {
 		if (!newProjectName.trim()) return;
@@ -91,6 +105,91 @@ export default function Dashboard({
 			console.error("创建项目失败:", e);
 		}
 	};
+
+	const handleOpenProject = useCallback(
+		(projectId: string) => {
+			onOpenProject?.(projectId);
+		},
+		[onOpenProject],
+	);
+
+	const handleProjectContextMenu = useCallback(
+		(e: React.MouseEvent, project: Project) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setContextMenu({
+				x: e.clientX,
+				y: e.clientY,
+				project,
+			});
+		},
+		[],
+	);
+
+	const handleRenameProject = useCallback(
+		async (project: Project) => {
+			const nextName = window.prompt("请输入新的项目名称", project.name);
+			if (!nextName?.trim() || nextName.trim() === project.name) return;
+			try {
+				await updateProject({ id: project.id, name: nextName.trim() });
+				await loadProjects();
+			} catch (error) {
+				console.error("重命名项目失败:", error);
+				window.alert(`重命名失败: ${String(error)}`);
+			}
+		},
+		[loadProjects],
+	);
+
+	const handleToggleArchiveProject = useCallback(
+		async (project: Project) => {
+			try {
+				await updateProject({ id: project.id, is_archived: !project.is_archived });
+				await loadProjects();
+			} catch (error) {
+				console.error("更新项目归档状态失败:", error);
+				window.alert(`更新失败: ${String(error)}`);
+			}
+		},
+		[loadProjects],
+	);
+
+	const handleDeleteProject = useCallback(
+		async (project: Project) => {
+			const confirmed = window.confirm(
+				`确定要删除项目「${project.name}」吗？此操作不可撤销。`,
+			);
+			if (!confirmed) return;
+			try {
+				await deleteProject(project.id);
+				await loadProjects();
+			} catch (error) {
+				console.error("删除项目失败:", error);
+				window.alert(`删除失败: ${String(error)}`);
+			}
+		},
+		[loadProjects],
+	);
+
+	const projectContextMenuItems = contextMenu
+		? buildProjectContextMenu({
+				onOpen: () => handleOpenProject(contextMenu.project.id),
+				onRename: () => void handleRenameProject(contextMenu.project),
+				onToggleArchive: () => void handleToggleArchiveProject(contextMenu.project),
+				onDelete: () => void handleDeleteProject(contextMenu.project),
+				onReveal: async () => {
+					try {
+						const result = await revealProjectDirectory(contextMenu.project.id);
+						if (!result.success) {
+							window.alert(result.error || "打开目录失败");
+						}
+					} catch (error) {
+						window.alert(`打开目录失败: ${String(error)}`);
+					}
+				},
+				isArchived: contextMenu.project.is_archived,
+			})
+		: [];
 
 	// overview（工作台）显示所有项目，recent（最近访问）显示有访问记录的项目
 	const displayProjects =
@@ -360,8 +459,9 @@ export default function Dashboard({
 												project.id,
 												project.name,
 											);
-											onOpenProject?.(project.id);
+											handleOpenProject(project.id);
 										}}
+										onContextMenu={(e) => handleProjectContextMenu(e, project)}
 										className={`
                         group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 
                         rounded-xl p-6 cursor-pointer transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)]
@@ -439,6 +539,14 @@ export default function Dashboard({
 					</div>
 				</div>
 			</main>
+			{contextMenu && projectContextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={projectContextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

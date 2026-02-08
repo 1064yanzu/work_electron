@@ -51,6 +51,8 @@ import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
 import { createLocalBackupHandlers } from "./handlers/localBackup";
 import { createImageGenHandlers } from "./handlers/imageGen";
+import { createStorageHandlers } from "./handlers/storage";
+import { createFileHandlers } from "./handlers/files";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -94,6 +96,8 @@ export function registerIpcHandlers({
 	const skillsHandlers = createSkillsHandlers(db);
 	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
 	const dataStatsHandlers = createDataStatsHandlers(db);
+	const storageHandlers = createStorageHandlers(db);
+	const fileHandlers = createFileHandlers(db);
 	const fsSafeHandlers = createFsSafeHandlers();
 	const tempFileHandlers = createTempFileHandlers();
 	const documentHandlers = createDocumentHandlers();
@@ -187,6 +191,9 @@ export function registerIpcHandlers({
 	ipcMain.handle("list_files_safe", fsSafeHandlers.list_files_safe);
 	ipcMain.handle("mkdir_safe", fsSafeHandlers.mkdir_safe);
 	ipcMain.handle("copy_file_safe", fsSafeHandlers.copy_file_safe);
+	ipcMain.handle("move_file_safe", fsSafeHandlers.move_file_safe);
+	ipcMain.handle("delete_file_safe", fsSafeHandlers.delete_file_safe);
+	ipcMain.handle("reveal_file_safe", fsSafeHandlers.reveal_file_safe);
 	ipcMain.handle("read_file_utf8", fsSafeHandlers.read_file_utf8);
 	ipcMain.handle("save_base64_image", fsSafeHandlers.save_base64_image);
 	ipcMain.handle("save_temp_file", tempFileHandlers.save_temp_file);
@@ -359,6 +366,41 @@ export function registerIpcHandlers({
 	ipcMain.handle("clear_all_data", dataStatsHandlers.clear_all_data);
 
 	// ==================
+	// Storage / Vault
+	// ==================
+	ipcMain.handle("storage_get_settings", storageHandlers.storage_get_settings);
+	ipcMain.handle(
+		"storage_update_settings",
+		storageHandlers.storage_update_settings,
+	);
+	ipcMain.handle(
+		"storage_pick_directory",
+		storageHandlers.storage_pick_directory,
+	);
+	ipcMain.handle(
+		"storage_reveal_vault_root",
+		storageHandlers.storage_reveal_vault_root,
+	);
+	ipcMain.handle(
+		"project_reveal_directory",
+		storageHandlers.project_reveal_directory,
+	);
+	ipcMain.handle("file_list", fileHandlers.file_list);
+	ipcMain.handle("file_move", fileHandlers.file_move);
+	ipcMain.handle("file_delete", fileHandlers.file_delete);
+	ipcMain.handle("file_restore", fileHandlers.file_restore);
+	ipcMain.handle(
+		"file_reveal_in_finder",
+		fileHandlers.file_reveal_in_finder,
+	);
+	ipcMain.handle("file_set_scope", fileHandlers.file_set_scope);
+	ipcMain.handle("file_set_tags", fileHandlers.file_set_tags);
+	ipcMain.handle("theme_list", fileHandlers.theme_list);
+	ipcMain.handle("theme_create", fileHandlers.theme_create);
+	ipcMain.handle("theme_rename", fileHandlers.theme_rename);
+	ipcMain.handle("theme_delete", fileHandlers.theme_delete);
+
+	// ==================
 	// Sync & Backup
 	// ==================
 	ipcMain.handle("get_sync_config", syncHandlers.get_sync_config);
@@ -379,6 +421,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("export_all_data", importExportHandlers.export_all_data);
 	ipcMain.handle("export_project", importExportHandlers.export_project);
 	ipcMain.handle("import_data", importExportHandlers.import_data);
+	ipcMain.handle(
+		"import_data_from_json",
+		importExportHandlers.import_data_from_json,
+	);
 
 	// ==================
 	// Agent Sessions

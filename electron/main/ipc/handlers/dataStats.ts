@@ -6,6 +6,7 @@ import path from "node:path";
 import { app } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
+import { getDatabaseFilePath } from "../../db/paths";
 
 // 递归计算文件夹大小
 async function getFolderSize(folderPath: string): Promise<number> {
@@ -47,7 +48,7 @@ export function createDataStatsHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
 	): Promise<string> => {
-		return path.join(app.getPath("userData"), "ipo-workbench.db");
+		return db.filePath || getDatabaseFilePath();
 	};
 
 	// 获取数据统计
@@ -73,7 +74,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			{ key: "projects", table: "projects" },
 			{ key: "sources", table: "sources" },
 			{ key: "notes", table: "notes" },
-			{ key: "outputs", table: "outputs" },
+			{ key: "outputs", table: "output_assets" },
 			{ key: "agentSessions", table: "agent_sessions" },
 			{ key: "agentTasks", table: "agent_tasks" },
 			{ key: "mcpServers", table: "mcp_servers" },
@@ -103,7 +104,7 @@ export function createDataStatsHandlers(db: DbContext) {
 
 		try {
 			// 数据库大小
-			const dbPath = path.join(app.getPath("userData"), "ipo-workbench.db");
+			const dbPath = getDatabaseFilePath();
 			const dbStat = await fs.stat(dbPath);
 			databaseSize = dbStat.size;
 		} catch {

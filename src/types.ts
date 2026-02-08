@@ -58,11 +58,15 @@ export interface Source {
 	title: string;
 	kind: SourceType;
 	tags: string[];
+	scope?: "global" | "project";
 	url?: string;
 	project_id?: Uuid;
 	folder_id?: Uuid;
 	source_type?: SourceOrigin; // 资料来源
+	origin_type?: "manual" | "web_clip" | "import" | "agent_output";
 	category?: SourceCategory; // 资料分类
+	storage_path?: string;
+	is_deleted?: boolean;
 	description?: string; // 摘要/描述
 	thumbnail?: string; // 缩略图
 	author?: string; // 作者
@@ -142,10 +146,47 @@ export interface OutputAsset {
 	content: string;
 	output_type: OutputType;
 	related_notes: Uuid[];
+	scope?: "global" | "project";
+	tags?: string[];
+	storage_path?: string;
+	is_deleted?: boolean;
 	project_id?: Uuid;
 	version: number;
 	created_at: DateTime;
 	updated_at: DateTime;
+}
+
+export interface Theme {
+	id: Uuid;
+	name: string;
+	slug: string;
+	created_at: DateTime;
+	updated_at: DateTime;
+}
+
+export interface StorageSettings {
+	vault_root: string;
+	obsidian_frontmatter: boolean;
+	obsidian_wiki_links: boolean;
+	conflict_strategy: "append_suffix" | "prevent_overwrite";
+	last_migrated_at?: number;
+}
+
+export interface FileRecord {
+	id: Uuid;
+	entity_type: "source" | "output";
+	title: string;
+	scope: "global" | "project";
+	project_id?: Uuid;
+	tags: string[];
+	themes: string[];
+	storage_path?: string;
+	origin_type: "manual" | "web_clip" | "import" | "agent_output";
+	source_type?: SourceOrigin;
+	output_type?: OutputType;
+	updated_at: DateTime;
+	created_at: DateTime;
+	is_deleted: boolean;
 }
 
 export interface DashboardStats {

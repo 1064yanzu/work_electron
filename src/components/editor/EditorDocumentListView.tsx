@@ -6,7 +6,6 @@ import {
 	Home,
 	LayoutGrid,
 	LayoutList,
-	LayoutTemplate,
 	Plus,
 	Search,
 	X,
@@ -27,7 +26,6 @@ interface EditorDocumentListViewProps {
 	onRequestBulkDeleteConfirm: () => void;
 	isBulkDeleting: boolean;
 	onCreateNew: () => void | Promise<void>;
-	onOpenTemplates?: () => void;
 	onSelectOutput: (output: OutputAsset) => void | Promise<void>;
 	isSelectedForManage: (id: string) => boolean;
 	onToggleManageSelection: (id: string) => void;
@@ -46,7 +44,6 @@ export function EditorDocumentListView({
 	onRequestBulkDeleteConfirm,
 	isBulkDeleting,
 	onCreateNew,
-	onOpenTemplates,
 	onSelectOutput,
 	isSelectedForManage,
 	onToggleManageSelection,
@@ -61,6 +58,21 @@ export function EditorDocumentListView({
 			return title.includes(normalizedQuery) || type.includes(normalizedQuery);
 		});
 	}, [normalizedQuery, outputs]);
+
+	const getScopeBadge = (scope?: "global" | "project") => {
+		if (scope === "project") {
+			return {
+				label: "项目内",
+				className:
+					"bg-zinc-100 dark:bg-zinc-700/70 text-zinc-600 dark:text-zinc-300",
+			};
+		}
+		return {
+			label: "全局",
+			className:
+				"bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300",
+		};
+	};
 
 	return (
 		<div className="flex flex-col h-full editor-shell">
@@ -96,15 +108,6 @@ export function EditorDocumentListView({
 							<LayoutGrid className="w-5 h-5" />
 						)}
 					</button>
-					{onOpenTemplates ? (
-						<button
-							onClick={onOpenTemplates}
-							className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-							title="从模板创建"
-						>
-							<LayoutTemplate className="w-5 h-5" />
-						</button>
-					) : null}
 					<button
 						onClick={onToggleManaging}
 						className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
@@ -227,6 +230,7 @@ export function EditorDocumentListView({
 					>
 						{filteredOutputs.map((output) => {
 							const checked = isSelectedForManage(output.id);
+							const scopeBadge = getScopeBadge(output.scope);
 							const cardCommon =
 								"relative bg-white dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-600 transition-all";
 							if (viewMode === "list") {
@@ -264,6 +268,21 @@ export function EditorDocumentListView({
 														{ month: "short", day: "numeric" },
 													)}
 												</p>
+												<div className="mt-1 flex items-center gap-1.5 flex-wrap">
+													<span
+														className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${scopeBadge.className}`}
+													>
+														{scopeBadge.label}
+													</span>
+													{(output.tags || []).slice(0, 2).map((tag) => (
+														<span
+															key={`${output.id}-list-tag-${tag}`}
+															className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-700/70 text-zinc-500 dark:text-zinc-300"
+														>
+															#{tag}
+														</span>
+													))}
+												</div>
 											</div>
 										</div>
 										<span className="text-xs px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-500">
@@ -298,13 +317,32 @@ export function EditorDocumentListView({
 											<div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-700 rounded-xl flex items-center justify-center text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
 												<FileText className="w-5 h-5" />
 											</div>
-											<span className="text-[10px] font-medium px-2 py-1 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-500">
-												{output.output_type || "Article"}
-											</span>
+											<div className="flex items-center gap-1.5 flex-wrap justify-end">
+												<span
+													className={`text-[10px] font-medium px-2 py-1 rounded-lg ${scopeBadge.className}`}
+												>
+													{scopeBadge.label}
+												</span>
+												<span className="text-[10px] font-medium px-2 py-1 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-500">
+													{output.output_type || "Article"}
+												</span>
+											</div>
 										</div>
 										<h4 className="font-semibold text-zinc-800 dark:text-zinc-100 line-clamp-2 mb-auto leading-snug">
 											{output.title || "无标题文档"}
 										</h4>
+										{(output.tags || []).length > 0 ? (
+											<div className="mt-2 flex items-center gap-1.5 flex-wrap">
+												{(output.tags || []).slice(0, 2).map((tag) => (
+													<span
+														key={`${output.id}-grid-tag-${tag}`}
+														className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-700/70 text-zinc-500 dark:text-zinc-300"
+													>
+														#{tag}
+													</span>
+												))}
+											</div>
+										) : null}
 										<div className="flex items-center gap-2 mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-700/50 text-xs text-zinc-400">
 											<Clock className="w-3 h-3" />
 											{new Date(output.updated_at).toLocaleDateString("zh-CN", {

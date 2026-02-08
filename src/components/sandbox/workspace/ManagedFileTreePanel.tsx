@@ -8,9 +8,11 @@ import {
 	Search,
 	X,
 } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, type MouseEvent, useMemo, useState } from "react";
+import { buildFileItemContextMenu } from "../../../lib/contextMenu/actions";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
+import { ContextMenu } from "../../ui/ContextMenu";
 
 const FileTypeIcons = {
 	code: <FileCode className="w-3.5 h-3.5" />,
@@ -27,6 +29,10 @@ interface FileCategoryGroupProps {
 	onToggle: () => void;
 	selectedFileId: string | null;
 	onSelectFile: (fileId: string) => void;
+	onFileContextMenu: (
+		event: MouseEvent<HTMLButtonElement>,
+		file: SandboxFile,
+	) => void;
 }
 
 const FileCategoryGroup = memo(function FileCategoryGroup({
@@ -36,6 +42,7 @@ const FileCategoryGroup = memo(function FileCategoryGroup({
 	onToggle,
 	selectedFileId,
 	onSelectFile,
+	onFileContextMenu,
 }: FileCategoryGroupProps) {
 	if (files.length === 0) return null;
 
@@ -67,6 +74,7 @@ const FileCategoryGroup = memo(function FileCategoryGroup({
 								key={file.id}
 								type="button"
 								onClick={() => onSelectFile(file.id)}
+								onContextMenu={(e) => onFileContextMenu(e, file)}
 								className={cn(
 									"w-full flex items-center gap-2 px-3 py-1.5 text-[13px] transition-colors",
 									isSelected
@@ -116,6 +124,10 @@ interface ManagedFileTreePanelProps {
 	onToggleCategory: (key: string) => void;
 	selectedFileId: string | null;
 	onSelectFile: (id: string) => void;
+	onCopyPath: (file: SandboxFile) => Promise<void> | void;
+	onRevealFile: (file: SandboxFile) => Promise<void> | void;
+	onMoveFile: (file: SandboxFile) => Promise<void> | void;
+	onDeleteFile: (file: SandboxFile) => Promise<void> | void;
 }
 
 export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
@@ -128,7 +140,16 @@ export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
 	onToggleCategory,
 	selectedFileId,
 	onSelectFile,
+	onCopyPath,
+	onRevealFile,
+	onMoveFile,
+	onDeleteFile,
 }: ManagedFileTreePanelProps) {
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		file: SandboxFile;
+	} | null>(null);
 	const visibleCount = useMemo(
 		() =>
 			filteredTree.docs.length +
@@ -238,6 +259,11 @@ export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
 							onToggle={() => onToggleCategory(cat.key)}
 							selectedFileId={selectedFileId}
 							onSelectFile={onSelectFile}
+							onFileContextMenu={(event, file) => {
+								event.preventDefault();
+								event.stopPropagation();
+								setContextMenu({ x: event.clientX, y: event.clientY, file });
+							}}
 						/>
 					))
 				)}
@@ -249,6 +275,20 @@ export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
 						全部下载
 					</button>
 				</div>
+			) : null}
+			{contextMenu ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={buildFileItemContextMenu({
+						onOpen: () => onSelectFile(contextMenu.file.id),
+						onMove: () => void onMoveFile(contextMenu.file),
+						onCopyPath: () => void onCopyPath(contextMenu.file),
+						onReveal: () => void onRevealFile(contextMenu.file),
+						onDelete: () => void onDeleteFile(contextMenu.file),
+					})}
+					onClose={() => setContextMenu(null)}
+				/>
 			) : null}
 		</div>
 	);

@@ -1,7 +1,9 @@
 import { ChevronLeft, ChevronRight, History, Sparkles } from "lucide-react";
-import { memo, useCallback, useEffect } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { buildFileItemContextMenu } from "../../../lib/contextMenu/actions";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
+import { ContextMenu } from "../../ui/ContextMenu";
 import { FilePreviewContent } from "./FilePreviewContent";
 import { useArtifactNavigator } from "./useArtifactNavigator";
 
@@ -12,6 +14,10 @@ interface ManagedArtifactPreviewPanelProps {
 	onSetPreviewMode: (mode: "preview" | "source") => void;
 	onLoadContent: (fileId: string) => Promise<void>;
 	onSelectArtifact: (fileId: string) => void;
+	onCopyPath: (file: SandboxFile) => Promise<void> | void;
+	onRevealFile: (file: SandboxFile) => Promise<void> | void;
+	onMoveFile: (file: SandboxFile) => Promise<void> | void;
+	onDeleteFile: (file: SandboxFile) => Promise<void> | void;
 }
 
 export const ManagedArtifactPreviewPanel = memo(
@@ -22,7 +28,16 @@ export const ManagedArtifactPreviewPanel = memo(
 		onSetPreviewMode,
 		onLoadContent,
 		onSelectArtifact,
+		onCopyPath,
+		onRevealFile,
+		onMoveFile,
+		onDeleteFile,
 	}: ManagedArtifactPreviewPanelProps) {
+		const [contextMenu, setContextMenu] = useState<{
+			x: number;
+			y: number;
+			file: SandboxFile;
+		} | null>(null);
 		const {
 			recentArtifacts,
 			selectedArtifactIndex,
@@ -57,6 +72,24 @@ export const ManagedArtifactPreviewPanel = memo(
 			window.addEventListener("keydown", handleKeyDown);
 			return () => window.removeEventListener("keydown", handleKeyDown);
 		}, [jumpArtifact]);
+
+		const contextMenuItems = useMemo(() => {
+			if (!contextMenu) return [];
+			return buildFileItemContextMenu({
+				onOpen: () => onSelectArtifact(contextMenu.file.id),
+				onMove: () => void onMoveFile(contextMenu.file),
+				onCopyPath: () => void onCopyPath(contextMenu.file),
+				onReveal: () => void onRevealFile(contextMenu.file),
+				onDelete: () => void onDeleteFile(contextMenu.file),
+			});
+		}, [
+			contextMenu,
+			onCopyPath,
+			onDeleteFile,
+			onMoveFile,
+			onRevealFile,
+			onSelectArtifact,
+		]);
 
 		return (
 			<div className="h-full flex flex-col bg-white dark:bg-zinc-900">
@@ -101,6 +134,15 @@ export const ManagedArtifactPreviewPanel = memo(
 									key={artifact.id}
 									type="button"
 									onClick={() => onSelectArtifact(artifact.id)}
+									onContextMenu={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										setContextMenu({
+											x: e.clientX,
+											y: e.clientY,
+											file: artifact,
+										});
+									}}
 									className={cn(
 										"px-2.5 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-colors",
 										selectedFile?.id === artifact.id
@@ -143,6 +185,14 @@ export const ManagedArtifactPreviewPanel = memo(
 						emptyDescription="从左侧文件树或上方产物导航选择文件"
 					/>
 				</div>
+				{contextMenu && contextMenuItems.length > 0 ? (
+					<ContextMenu
+						x={contextMenu.x}
+						y={contextMenu.y}
+						items={contextMenuItems}
+						onClose={() => setContextMenu(null)}
+					/>
+				) : null}
 			</div>
 		);
 	},

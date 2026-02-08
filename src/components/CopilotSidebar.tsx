@@ -2673,6 +2673,7 @@ export default function CopilotSidebar() {
 							setIsHistoryOpen(false);
 						}}
 						onDeleteSession={chatStore.deleteSession}
+						onRenameSession={chatStore.updateSessionTitle}
 						onNewSession={handleNewSession}
 						onClose={() => setIsHistoryOpen(false)}
 					/>

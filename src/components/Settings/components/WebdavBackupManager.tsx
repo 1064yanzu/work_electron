@@ -125,6 +125,7 @@ export function WebdavBackupManager({
 			setTimeout(() => {
 				onRestoreSuccess?.();
 				onClose();
+				window.location.reload();
 			}, 3000);
 		} catch (error) {
 			console.error("Failed to restore backup:", error);

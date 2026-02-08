@@ -10,6 +10,7 @@ import {
 	listOutputAssets,
 	updateOutputAsset,
 } from "../lib/api";
+import { buildEditorBlankContextMenu } from "../lib/contextMenu/actions";
 import { EVENTS, events } from "../lib/events";
 import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
 import { type OutputAsset, OutputType } from "../types";
@@ -17,11 +18,7 @@ import AIContentSuggest from "./AIContentSuggest";
 import DiffView from "./DiffView";
 import DocCreationProposal from "./DocCreationProposal";
 import DocumentTabs from "./DocumentTabs";
-import {
-	EditorDialogs,
-	type EditorTemplate,
-	editorTemplates,
-} from "./editor/EditorDialogs";
+import { EditorDialogs } from "./editor/EditorDialogs";
 import { EditorDocumentListView } from "./editor/EditorDocumentListView";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorStatusBar } from "./editor/EditorStatusBar";
@@ -54,7 +51,6 @@ export default function EditorCanvas({
 	const [editorMode, setEditorMode] = useState<"edit" | "preview" | "split">(
 		"split",
 	);
-	const [showTemplates, setShowTemplates] = useState(false);
 	const [isManaging, setIsManaging] = useState(false);
 	const [selectedForManage, setSelectedForManage] = useState<string[]>([]);
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -64,7 +60,8 @@ export default function EditorCanvas({
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
 		y: number;
-		selectedText: string;
+		type: "selection" | "blank";
+		selectedText?: string;
 	} | null>(null);
 	const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 	const { focusMode, density, toggleFocusMode, toggleDensity } =
@@ -872,22 +869,12 @@ export default function EditorCanvas({
 			});
 			setSelectedOutput(completeAsset);
 			setEditorContent(initialContent);
-			setShowTemplates(false);
 			console.log("[EditorCanvas] 状态更新完成");
 		} catch (error) {
 			console.error("[EditorCanvas] 创建文档失败:", error);
 			alert("创建文档失败，请重试");
 		}
 	};
-
-	const handleCreateFromTemplate = useCallback(
-		(template: EditorTemplate) => {
-			const title =
-				template.title === "空白文档" ? "未命名文档" : template.title;
-			return handleCreateNew(OutputType.Article, title, template.content);
-		},
-		[handleCreateNew],
-	);
 
 	useEffect(() => {
 		if (selectedOutput) return;
@@ -966,6 +953,7 @@ export default function EditorCanvas({
 				setContextMenu({
 					x: e.clientX,
 					y: e.clientY,
+					type: "selection",
 					selectedText: selectedText.trim(),
 				});
 			}
@@ -982,6 +970,7 @@ export default function EditorCanvas({
 			setContextMenu({
 				x: e.clientX,
 				y: e.clientY,
+				type: "selection",
 				selectedText,
 			});
 		}
@@ -1059,9 +1048,23 @@ export default function EditorCanvas({
 
 	// 右键菜单项
 	const contextMenuItems: ContextMenuItem[] = useMemo(() => {
-		const items: ContextMenuItem[] = [];
+		if (!contextMenu) return [];
+		if (contextMenu.type === "blank") {
+			return buildEditorBlankContextMenu({
+				onCreate: () => void handleCreateNew(OutputType.Article, "未命名文档", ""),
+				onPaste: async () => {
+					const text = await navigator.clipboard.readText();
+					if (!text.trim()) return;
+					await handleCreateNew(OutputType.Article, "未命名文档", text);
+				},
+				onRefresh: () => {
+					void fetchOutputs(undefined, { skipAutoSelect: true });
+				},
+			});
+		}
 
-		if (contextMenu?.selectedText) {
+		const items: ContextMenuItem[] = [];
+		if (contextMenu.selectedText) {
 			items.push({
 				label: isGeneratingImage ? "生成中..." : "AI 生成配图",
 				icon: isGeneratingImage ? (
@@ -1076,7 +1079,7 @@ export default function EditorCanvas({
 				label: "复制选中文字",
 				icon: <Copy className="w-4 h-4" />,
 				onClick: () => {
-					if (contextMenu?.selectedText) {
+					if (contextMenu.selectedText) {
 						navigator.clipboard.writeText(contextMenu.selectedText);
 						setContextMenu(null);
 					}
@@ -1085,7 +1088,13 @@ export default function EditorCanvas({
 		}
 
 		return items;
-	}, [contextMenu, isGeneratingImage, handleGenerateImage]);
+	}, [
+		contextMenu,
+		fetchOutputs,
+		handleCreateNew,
+		handleGenerateImage,
+		isGeneratingImage,
+	]);
 
 	// 新文档处理
 	const handleNewDoc = useCallback(async () => {
@@ -1217,26 +1226,48 @@ export default function EditorCanvas({
 
 	// 文档列表视图
 	const renderDocumentList = () => (
-		<EditorDocumentListView
-			onBack={onBack}
-			outputs={outputs}
-			viewMode={viewMode}
-			onToggleViewMode={() =>
-				setViewMode((prev) => (prev === "grid" ? "list" : "grid"))
-			}
-			isManaging={isManaging}
-			onToggleManaging={handleToggleManaging}
-			selectedForManageCount={selectedForManage.length}
-			isAllSelected={isAllSelected}
-			onToggleSelectAll={handleToggleSelectAll}
-			onRequestBulkDeleteConfirm={() => setShowBulkDeleteConfirm(true)}
-			isBulkDeleting={isBulkDeleting}
-			onCreateNew={() => handleCreateNew(OutputType.Article, "未命名文档", "")}
-			onOpenTemplates={() => setShowTemplates(true)}
-			onSelectOutput={handleSelectOutput}
-			isSelectedForManage={isSelectedForManage}
-			onToggleManageSelection={toggleManageSelection}
-		/>
+		<div
+			className="h-full"
+			onContextMenu={(e) => {
+				const target = e.target as HTMLElement | null;
+				if (!target) return;
+				const tag = target.tagName.toLowerCase();
+				if (
+					tag === "input" ||
+					tag === "textarea" ||
+					tag === "button" ||
+					target.closest("button")
+				) {
+					return;
+				}
+				e.preventDefault();
+				setContextMenu({
+					x: e.clientX,
+					y: e.clientY,
+					type: "blank",
+				});
+			}}
+		>
+			<EditorDocumentListView
+				onBack={onBack}
+				outputs={outputs}
+				viewMode={viewMode}
+				onToggleViewMode={() =>
+					setViewMode((prev) => (prev === "grid" ? "list" : "grid"))
+				}
+				isManaging={isManaging}
+				onToggleManaging={handleToggleManaging}
+				selectedForManageCount={selectedForManage.length}
+				isAllSelected={isAllSelected}
+				onToggleSelectAll={handleToggleSelectAll}
+				onRequestBulkDeleteConfirm={() => setShowBulkDeleteConfirm(true)}
+				isBulkDeleting={isBulkDeleting}
+				onCreateNew={() => handleCreateNew(OutputType.Article, "未命名文档", "")}
+				onSelectOutput={handleSelectOutput}
+				isSelectedForManage={isSelectedForManage}
+				onToggleManageSelection={toggleManageSelection}
+			/>
+		</div>
 	);
 
 	// 编辑器视图
@@ -1244,7 +1275,16 @@ export default function EditorCanvas({
 		<div className="editor-shell flex flex-col h-full">
 			{/* 文档标签栏 */}
 			{!focusMode && (
-				<DocumentTabs onNewDoc={handleNewDoc} onCloseDoc={handleCloseDoc} />
+				<DocumentTabs
+					onNewDoc={handleNewDoc}
+					onCloseDoc={handleCloseDoc}
+					onDeleteDoc={(docId) => {
+						const target = outputs.find((item) => item.id === docId);
+						if (target) {
+							setDeleteConfirm(target);
+						}
+					}}
+				/>
 			)}
 
 			{/* AI 新文档创建提案 */}
@@ -1364,10 +1404,6 @@ export default function EditorCanvas({
 				isBulkDeleting={isBulkDeleting}
 				onCloseBulkDeleteConfirm={() => setShowBulkDeleteConfirm(false)}
 				onConfirmBulkDelete={handleBulkDelete}
-				showTemplates={showTemplates}
-				templates={editorTemplates}
-				onCloseTemplates={() => setShowTemplates(false)}
-				onCreateFromTemplate={handleCreateFromTemplate}
 				deleteConfirm={deleteConfirm}
 				onCloseDeleteConfirm={() => setDeleteConfirm(null)}
 				onConfirmDelete={handleConfirmDelete}

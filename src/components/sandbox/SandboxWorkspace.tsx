@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { deleteFileSafe, moveFileSafe, revealFileSafe } from "../../lib/api";
 import { useAgentStore } from "../../lib/agent/store";
 import { useChatStore } from "../../lib/chat/store";
 import { EVENTS, events } from "../../lib/events";
@@ -158,6 +159,55 @@ export default function SandboxWorkspace({
 		return files.filter((f) => urlSet.has(f.path));
 	}, [files, graphSource]);
 
+	const handleCopyArtifactPath = useCallback(async (file: SandboxFile) => {
+		await navigator.clipboard.writeText(file.path);
+	}, []);
+
+	const handleRevealArtifactFile = useCallback(async (file: SandboxFile) => {
+		try {
+			await revealFileSafe(file.path);
+		} catch (error) {
+			console.error("[SandboxWorkspace] reveal file failed:", error);
+			window.alert(`打开失败: ${String(error)}`);
+		}
+	}, []);
+
+	const handleMoveArtifactFile = useCallback(
+		async (file: SandboxFile) => {
+			const nextPath = window.prompt("请输入新的绝对路径", file.path);
+			if (!nextPath?.trim() || nextPath.trim() === file.path) return;
+			try {
+				await moveFileSafe({
+					src: file.path,
+					dest: nextPath.trim(),
+					create_dirs: true,
+				});
+				await refreshFiles();
+			} catch (error) {
+				console.error("[SandboxWorkspace] move file failed:", error);
+				window.alert(`移动失败: ${String(error)}`);
+			}
+		},
+		[refreshFiles],
+	);
+
+	const handleDeleteArtifactFile = useCallback(
+		async (file: SandboxFile) => {
+			const confirmed = window.confirm(
+				`确定删除文件「${file.name}」吗？此操作不可撤销。`,
+			);
+			if (!confirmed) return;
+			try {
+				await deleteFileSafe(file.path);
+				await refreshFiles();
+			} catch (error) {
+				console.error("[SandboxWorkspace] delete file failed:", error);
+				window.alert(`删除失败: ${String(error)}`);
+			}
+		},
+		[refreshFiles],
+	);
+
 	return (
 		<div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">
 			<ManagedCenterHeader
@@ -197,6 +247,10 @@ export default function SandboxWorkspace({
 							onToggleCategory={(key) => store.toggleFolderExpanded(key)}
 							selectedFileId={selectedFileId}
 							onSelectFile={(id) => void handleSelectFile(id, "user")}
+							onCopyPath={handleCopyArtifactPath}
+							onRevealFile={handleRevealArtifactFile}
+							onMoveFile={handleMoveArtifactFile}
+							onDeleteFile={handleDeleteArtifactFile}
 						/>
 					</Panel>
 
@@ -212,6 +266,10 @@ export default function SandboxWorkspace({
 								await store.loadFileContent(fileId);
 							}}
 							onSelectArtifact={(id) => void handleSelectFile(id, "user")}
+							onCopyPath={handleCopyArtifactPath}
+							onRevealFile={handleRevealArtifactFile}
+							onMoveFile={handleMoveArtifactFile}
+							onDeleteFile={handleDeleteArtifactFile}
 						/>
 					</Panel>
 				</PanelGroup>
