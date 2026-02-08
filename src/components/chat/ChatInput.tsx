@@ -520,8 +520,8 @@ export function ChatInput({
 			<div className="bg-white dark:bg-zinc-800 rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 ring-1 ring-black/5 dark:ring-white/5 focus-within:border-zinc-300 dark:focus-within:border-zinc-600 focus-within:ring-4 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-800 transition-all shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.15)]">
 				{/* 上下文附件条 - Claude 风格 */}
 				{contexts.length > 0 ? (
-					<div className="px-4 pt-3 pb-2">
-						<div className="flex items-center gap-2 overflow-x-auto">
+					<div className="px-4 pt-2.5 pb-1.5">
+						<div className="flex items-center gap-1.5 overflow-x-auto">
 							{contexts.map((ctx) => (
 								<div key={ctx.id} className="shrink-0">
 									<AttachmentCard

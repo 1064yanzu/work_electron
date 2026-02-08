@@ -113,28 +113,28 @@ export function AttachmentCard({
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-2.5 rounded-xl",
+				"flex items-center gap-2 rounded-xl",
 				"bg-white dark:bg-zinc-800",
 				"border border-zinc-200 dark:border-zinc-700",
 				"hover:border-zinc-300 dark:hover:border-zinc-600",
 				"transition-colors duration-200",
 				"cursor-default shadow-sm",
-				variant === "chip" ? "px-3 py-2" : "px-3 py-2.5",
+				variant === "chip" ? "px-2.5 py-1.5" : "px-3 py-2",
 			)}
-			title={file.path || file.title}
+			title={`${file.title}${meta ? `\n${meta}` : ''}`}
 		>
 			{/* 图标容器 */}
 			<div
 				className={cn(
 					"flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-700",
-					variant === "chip" ? "w-7 h-7" : "w-8 h-8",
+					variant === "chip" ? "w-6 h-6" : "w-7 h-7",
 				)}
 			>
 				{icon}
 			</div>
 
-			{/* 文件信息 */}
-			<div className="min-w-0 flex-1">
+			{/* 文件信息 - 只显示文件名 */}
+			<div className="min-w-0 flex-1 max-w-[180px]">
 				<div
 					className={cn(
 						"font-medium text-zinc-800 dark:text-zinc-100 truncate",
@@ -143,7 +143,6 @@ export function AttachmentCard({
 				>
 					{file.title}
 				</div>
-				<div className="text-xs text-zinc-400">{meta}</div>
 			</div>
 
 			{onRemove ? (
