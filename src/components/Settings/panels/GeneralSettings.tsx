@@ -1,4 +1,5 @@
-import { ChevronDown, Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
+import { Select } from "../../ui/Select";
 import { useEffect, useState } from "react";
 import {
 	describeSearchHealth,
@@ -140,7 +141,7 @@ export function GeneralSettings() {
 					if (shouldUpdate) {
 						window.open(
 							data.html_url ||
-								"https://github.com/1064yanzu/ipo-workbench/releases",
+							"https://github.com/1064yanzu/ipo-workbench/releases",
 							"_blank",
 						);
 					}
@@ -181,31 +182,28 @@ export function GeneralSettings() {
 					<div className="grid grid-cols-3 gap-4">
 						<button
 							onClick={() => handleThemeChange("light")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${
-								theme === "light"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "light"
 									? "border-2 border-primary bg-primary/5 text-primary"
 									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
-							}`}
+								}`}
 						>
 							浅色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("dark")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${
-								theme === "dark"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "dark"
 									? "border-2 border-primary bg-primary/5 text-primary"
 									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
-							}`}
+								}`}
 						>
 							深色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("system")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${
-								theme === "system"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "system"
 									? "border-2 border-primary bg-primary/5 text-primary"
 									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
-							}`}
+								}`}
 						>
 							跟随系统
 						</button>
@@ -215,57 +213,44 @@ export function GeneralSettings() {
 				{/* Language */}
 				<div className="space-y-4">
 					<h4 className="font-medium text-text-primary">语言</h4>
-					<div className="relative">
-						<select
-							value={language}
-							onChange={(e) => handleLanguageChange(e.target.value)}
-							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-						>
-							<option value="zh-CN">简体中文</option>
-							<option value="en-US">English</option>
-						</select>
-						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-					</div>
+					<Select
+						value={language}
+						onChange={(e) => handleLanguageChange(e.target.value)}
+						options={[
+							{ value: "zh-CN", label: "简体中文" },
+							{ value: "en-US", label: "English" },
+						]}
+					/>
 				</div>
 
 				{/* 搜索策略 */}
 				<div className="space-y-4">
 					<h4 className="font-medium text-text-primary">搜索策略</h4>
-					<div className="relative">
-						<select
-							value={searchStrategy}
-							onChange={(e) =>
-								handleSearchStrategyChange(e.target.value as SearchStrategy)
-							}
-							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-						>
-							<option value="local_first">
-								本地优先（失败或无结果再用 MCP）
-							</option>
-							<option value="mcp_first">
-								MCP 优先（失败或无结果再用本地）
-							</option>
-							<option value="local_only">仅本地（不联网）</option>
-							<option value="mcp_only">仅 MCP</option>
-						</select>
-						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-					</div>
-					<div className="relative">
-						<select
-							value={searchMcpProvider}
-							onChange={(e) =>
-								handleSearchMcpProviderChange(
-									e.target.value as SearchMcpProvider,
-								)
-							}
-							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-						>
-							<option value="auto">自动（优先 Tavily，无则 Exa MCP）</option>
-							<option value="tavily">Tavily (MCP)</option>
-							<option value="exa_mcp">Exa MCP（免费）</option>
-						</select>
-						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-					</div>
+					<Select
+						value={searchStrategy}
+						onChange={(e) =>
+							handleSearchStrategyChange(e.target.value as SearchStrategy)
+						}
+						options={[
+							{ value: "local_first", label: "本地优先（失败或无结果再用 MCP）" },
+							{ value: "mcp_first", label: "MCP 优先（失败或无结果再用本地）" },
+							{ value: "local_only", label: "仅本地（不联网）" },
+							{ value: "mcp_only", label: "仅 MCP" },
+						]}
+					/>
+					<Select
+						value={searchMcpProvider}
+						onChange={(e) =>
+							handleSearchMcpProviderChange(
+								e.target.value as SearchMcpProvider,
+							)
+						}
+						options={[
+							{ value: "auto", label: "自动（优先 Tavily，无则 Exa MCP）" },
+							{ value: "tavily", label: "Tavily (MCP)" },
+							{ value: "exa_mcp", label: "Exa MCP（免费）" },
+						]}
+					/>
 					{searchHealth && (
 						<p className="text-xs text-text-muted">
 							当前健康状态：{searchHealth}
@@ -281,24 +266,20 @@ export function GeneralSettings() {
 							<label className="text-sm text-text-secondary mb-1.5 block">
 								会话标题生成模型
 							</label>
-							<div className="relative">
-								<select
-									value={titleModel}
-									onChange={(e) => handleTitleModelChange(e.target.value)}
-									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-								>
-									<option value="">跟随当前对话模型 (默认)</option>
-									{allModels.map((model) => (
-										<option
-											key={`${model.provider}-${model.id}`}
-											value={model.id}
-										>
-											{model.id} ({model.provider})
-										</option>
-									))}
-								</select>
-								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-							</div>
+							<Select
+								value={titleModel}
+								onChange={(e) => handleTitleModelChange(e.target.value)}
+							>
+								<option value="">跟随当前对话模型 (默认)</option>
+								{allModels.map((model) => (
+									<option
+										key={`${model.provider}-${model.id}`}
+										value={model.id}
+									>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
 							<p className="text-xs text-text-muted mt-1.5">
 								用于自动根据对话内容生成简短标题。如果未选择，将尝试使用当前对话的模型。
 							</p>
@@ -308,26 +289,22 @@ export function GeneralSettings() {
 							<label className="text-sm text-text-secondary mb-1.5 block">
 								图像信息提取模型
 							</label>
-							<div className="relative">
-								<select
-									value={imageExtractionModel}
-									onChange={(e) =>
-										handleImageExtractionModelChange(e.target.value)
-									}
-									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-								>
-									<option value="">跟随当前对话模型 (默认)</option>
-									{allModels.map((model) => (
-										<option
-											key={`${model.provider}-${model.id}`}
-											value={model.id}
-										>
-											{model.id} ({model.provider})
-										</option>
-									))}
-								</select>
-								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-							</div>
+							<Select
+								value={imageExtractionModel}
+								onChange={(e) =>
+									handleImageExtractionModelChange(e.target.value)
+								}
+							>
+								<option value="">跟随当前对话模型 (默认)</option>
+								{allModels.map((model) => (
+									<option
+										key={`${model.provider}-${model.id}`}
+										value={model.id}
+									>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
 							<p className="text-xs text-text-muted mt-1.5">
 								用于图片导入后的信息提取与结构化整理。如果未选择，将尝试使用当前对话的模型。
 							</p>

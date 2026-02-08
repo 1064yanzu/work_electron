@@ -1,6 +1,5 @@
 import {
 	Bot,
-	ChevronDown,
 	Clock,
 	Database,
 	Loader2,
@@ -29,6 +28,7 @@ import {
 } from "../../../lib/api";
 import { getConfig, setConfig } from "../../../lib/config";
 import { useSettingsStore } from "../../../lib/settingsStore";
+import { Select } from "../../ui/Select";
 import { Toggle } from "../components";
 import { AgentModelScenarioSettings } from "../components/AgentModelScenarioSettings";
 
@@ -137,15 +137,15 @@ export function AgentSettings() {
 				setSdkPluginPathsDraft(
 					Array.isArray(pluginPaths)
 						? pluginPaths
-								.filter((item): item is string => typeof item === "string")
-								.join("\n")
+							.filter((item): item is string => typeof item === "string")
+							.join("\n")
 						: "",
 				);
 				setSdkAdditionalDirsDraft(
 					Array.isArray(additionalDirs)
 						? additionalDirs
-								.filter((item): item is string => typeof item === "string")
-								.join("\n")
+							.filter((item): item is string => typeof item === "string")
+							.join("\n")
 						: "",
 				);
 			} catch {
@@ -418,19 +418,19 @@ export function AgentSettings() {
 							/>
 						</div>
 						<div>
-							<label className="text-sm text-text-primary">
+							<label className="text-sm text-text-primary mb-1.5 block">
 								默认 permission mode
 							</label>
-							<select
+							<Select
 								value={sdkPermissionMode}
 								onChange={(event) => saveSdkPermissionMode(event.target.value)}
-								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
-							>
-								<option value="default">default</option>
-								<option value="acceptEdits">acceptEdits</option>
-								<option value="dontAsk">dontAsk</option>
-								<option value="plan">plan</option>
-							</select>
+								options={[
+									{ value: "default", label: "default" },
+									{ value: "acceptEdits", label: "acceptEdits" },
+									{ value: "dontAsk", label: "dontAsk" },
+									{ value: "plan", label: "plan" },
+								]}
+							/>
 						</div>
 						<div>
 							<label className="text-sm text-text-primary">
@@ -487,25 +487,20 @@ export function AgentSettings() {
 											{cfg.label}
 										</span>
 									</div>
-									<div className="relative flex-1 max-w-[200px]">
-										<select
-											value={policy.levelPolicies[level]}
-											onChange={(e) =>
-												handleLevelPolicyChange(
-													level,
-													e.target.value as PermissionMode,
-												)
-											}
-											className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-										>
-											{PERMISSION_MODE_OPTIONS.map((opt) => (
-												<option key={opt.value} value={opt.value}>
-													{opt.label}
-												</option>
-											))}
-										</select>
-										<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-									</div>
+									<Select
+										value={policy.levelPolicies[level]}
+										onChange={(e) =>
+											handleLevelPolicyChange(
+												level,
+												e.target.value as PermissionMode,
+											)
+										}
+										containerClassName="flex-1 max-w-[200px]"
+										options={PERMISSION_MODE_OPTIONS.map((opt) => ({
+											value: opt.value,
+											label: opt.label,
+										}))}
+									/>
 								</div>
 							);
 						})}
@@ -702,30 +697,25 @@ export function AgentSettings() {
 												{TOOL_NAMES[toolType]}
 											</td>
 											<td className="px-4 py-2.5">
-												<div className="relative inline-block">
-													<select
-														value={riskLevel}
-														onChange={(e) =>
-															handleToolRiskLevelChange(
-																toolType,
-																e.target.value as ToolRiskLevel,
-															)
-														}
-														className="appearance-none px-3 py-1.5 pr-8 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-													>
-														{(["L0", "L1", "L2"] as ToolRiskLevel[]).map(
-															(level) => {
-																const levelCfg = RISK_LEVEL_CONFIG[level];
-																return (
-																	<option key={level} value={level}>
-																		{level} - {levelCfg.label}
-																	</option>
-																);
-															},
-														)}
-													</select>
-													<ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
-												</div>
+												<Select
+													value={riskLevel}
+													onChange={(e) =>
+														handleToolRiskLevelChange(
+															toolType,
+															e.target.value as ToolRiskLevel,
+														)
+													}
+													variant="compact"
+													containerClassName="inline-block"
+													options={([
+														"L0",
+														"L1",
+														"L2",
+													] as ToolRiskLevel[]).map((level) => ({
+														value: level,
+														label: `${level} - ${RISK_LEVEL_CONFIG[level].label}`,
+													}))}
+												/>
 											</td>
 											<td className="px-4 py-2.5 text-text-secondary">
 												{modeLabel}
@@ -779,11 +769,10 @@ export function AgentSettings() {
 									<button
 										key={opt.value}
 										onClick={() => handleKbModeChange(opt.value)}
-										className={`p-3 rounded-xl text-left transition-colors ${
-											kbRetrievalMode === opt.value
-												? "border-2 border-primary bg-primary/5"
-												: "border border-border hover:border-primary/50"
-										}`}
+										className={`p-3 rounded-xl text-left transition-colors ${kbRetrievalMode === opt.value
+											? "border-2 border-primary bg-primary/5"
+											: "border border-border hover:border-primary/50"
+											}`}
 									>
 										<div
 											className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}
@@ -856,21 +845,17 @@ export function AgentSettings() {
 							<label className="text-sm text-text-secondary mb-1.5 block">
 								Embedding 模型
 							</label>
-							<div className="relative">
-								<select
-									value={kbEmbeddingModel}
-									onChange={(e) => handleKbEmbeddingModelChange(e.target.value)}
-									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-								>
-									<option value="">未选择（将回退到 FTS/LIKE）</option>
-									{allModels.map((m) => (
-										<option key={`${m.provider}-${m.id}`} value={m.id}>
-											{m.id} ({m.provider})
-										</option>
-									))}
-								</select>
-								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-							</div>
+							<Select
+								value={kbEmbeddingModel}
+								onChange={(e) => handleKbEmbeddingModelChange(e.target.value)}
+							>
+								<option value="">未选择（将回退到 FTS/LIKE）</option>
+								{allModels.map((m) => (
+									<option key={`${m.provider}-${m.id}`} value={m.id}>
+										{m.id} ({m.provider})
+									</option>
+								))}
+							</Select>
 							<p className="text-xs text-text-muted mt-1.5">
 								用于将资料库分块转换为向量。
 								<strong>必须选择服务商支持的 embedding 专用模型</strong>，如

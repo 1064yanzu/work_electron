@@ -1,6 +1,7 @@
 import { Clock, Globe, Shield, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
+import { Select } from "../../ui/Select";
 
 export function AutomationSettings() {
 	const [fetchFrequency, setFetchFrequency] = useState("daily");
@@ -81,16 +82,18 @@ export function AutomationSettings() {
 									定期检查已订阅源的更新
 								</div>
 							</div>
-							<select
+							<Select
 								value={fetchFrequency}
 								onChange={(e) => handleFrequencyChange(e.target.value)}
-								className="text-sm bg-white border border-border rounded px-3 py-1.5"
-							>
-								<option value="hourly">每小时</option>
-								<option value="daily">每天 (默认)</option>
-								<option value="weekly">每周</option>
-								<option value="manual">手动触发</option>
-							</select>
+								variant="inline"
+								containerClassName="w-auto"
+								options={[
+									{ value: "hourly", label: "每小时" },
+									{ value: "daily", label: "每天 (默认)" },
+									{ value: "weekly", label: "每周" },
+									{ value: "manual", label: "手动触发" },
+								]}
+							/>
 						</div>
 						<div className="text-xs text-text-muted flex gap-1">
 							<span>上次运行:</span>
