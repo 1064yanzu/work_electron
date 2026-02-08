@@ -619,7 +619,7 @@ export function ChatInput({
 					{/* 右侧：发送按钮 */}
 					<button
 						onClick={handleSubmit}
-						disabled={disabled || !value.trim()}
+						disabled={disabled || (!value.trim() && selectedChips.length === 0)}
 						className="flex items-center justify-center w-8 h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-100 dark:disabled:bg-zinc-800 disabled:text-zinc-300 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white dark:text-zinc-900 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
 					>
 						<Send className="w-3.5 h-3.5 ml-0.5" />
