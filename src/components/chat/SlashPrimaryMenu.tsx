@@ -197,24 +197,24 @@ export function SlashPrimaryMenu({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[300px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+			className="absolute left-0 bottom-full mb-2 w-[320px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-2xl rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_12px_32px_-8px_rgba(0,0,0,0.12),0_24px_60px_-12px_rgba(0,0,0,0.15)] border border-zinc-200/40 dark:border-zinc-700/40 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-3 duration-200"
 		>
 			{/* 头部 */}
-			<div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-				<div className="flex items-center gap-2">
-					<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600 flex items-center justify-center">
-						<span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
+			<div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
+				<div className="flex items-center gap-2.5">
+					<div className="w-6 h-6 rounded-lg bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600 flex items-center justify-center shadow-sm">
+						<span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
 							/
 						</span>
 					</div>
-					<span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+					<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
 						选择类型
 					</span>
 				</div>
 			</div>
 
 			{/* 类别列表 */}
-			<div className="p-1.5">
+			<div className="p-2">
 				{filteredCategories.map((category, index) => {
 					const isSelected = index === selectedIndex;
 					return (
@@ -224,46 +224,42 @@ export function SlashPrimaryMenu({
 								itemRefs.current[index] = el;
 							}}
 							onClick={() => onSelectCategory(category.id)}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150
-                ${
-									isSelected
-										? `bg-gradient-to-r ${category.gradient} ring-1 ring-inset ring-black/5 dark:ring-white/10`
-										: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+							className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-left transition-all duration-200
+                ${isSelected
+									? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
+									: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
 								}`}
 						>
 							{/* 图标容器 */}
 							<div
-								className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150
-                  ${
-										isSelected
-											? `bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10`
-											: "bg-zinc-100 dark:bg-zinc-800"
+								className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200
+                  ${isSelected
+										? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
+										: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
 									}`}
 							>
 								<category.icon
-									className={`w-4.5 h-4.5 ${isSelected ? category.iconColor : "text-zinc-500 dark:text-zinc-400"}`}
+									className={`w-5 h-5 transition-colors ${isSelected ? category.iconColor : "text-zinc-500 dark:text-zinc-400"}`}
 								/>
 							</div>
 
 							{/* 文字内容 */}
 							<div className="flex-1 min-w-0">
-								<div className="flex items-center gap-2">
+								<div className="flex items-center gap-2.5">
 									<span
-										className={`text-sm font-medium ${
-											isSelected
-												? "text-zinc-900 dark:text-zinc-100"
-												: "text-zinc-700 dark:text-zinc-300"
-										}`}
+										className={`text-sm font-medium ${isSelected
+											? "text-zinc-900 dark:text-zinc-100"
+											: "text-zinc-700 dark:text-zinc-300"
+											}`}
 									>
 										{category.name}
 									</span>
 									{category.shortcut && (
 										<kbd
 											className={`px-1.5 py-0.5 text-[9px] font-medium rounded-md transition-colors
-                        ${
-													isSelected
-														? "bg-white/80 dark:bg-zinc-700/80 text-zinc-500 dark:text-zinc-400 shadow-sm"
-														: "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                        ${isSelected
+													? "bg-white/80 dark:bg-zinc-700/80 text-zinc-500 dark:text-zinc-400 shadow-sm"
+													: "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
 												}`}
 										>
 											/{category.shortcut}
@@ -271,11 +267,10 @@ export function SlashPrimaryMenu({
 									)}
 								</div>
 								<p
-									className={`text-xs truncate mt-0.5 ${
-										isSelected
-											? "text-zinc-600 dark:text-zinc-400"
-											: "text-zinc-400 dark:text-zinc-500"
-									}`}
+									className={`text-xs truncate mt-0.5 ${isSelected
+										? "text-zinc-600 dark:text-zinc-400"
+										: "text-zinc-400 dark:text-zinc-500"
+										}`}
 								>
 									{category.description}
 								</p>
@@ -283,11 +278,10 @@ export function SlashPrimaryMenu({
 
 							{/* 箭头 */}
 							<ChevronRight
-								className={`w-4 h-4 transition-all duration-150 ${
-									isSelected
-										? "text-zinc-500 dark:text-zinc-400 translate-x-0.5"
-										: "text-zinc-300 dark:text-zinc-600"
-								}`}
+								className={`w-4 h-4 transition-all duration-150 ${isSelected
+									? "text-zinc-500 dark:text-zinc-400 translate-x-0.5"
+									: "text-zinc-300 dark:text-zinc-600"
+									}`}
 							/>
 						</button>
 					);

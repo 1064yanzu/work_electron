@@ -316,27 +316,27 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[340px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+			className="absolute left-0 bottom-full mb-2 w-[360px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-2xl rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_12px_32px_-8px_rgba(0,0,0,0.12),0_24px_60px_-12px_rgba(0,0,0,0.15)] border border-zinc-200/40 dark:border-zinc-700/40 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-3 duration-200"
 		>
 			{/* 头部：返回按钮 + 标题 */}
-			<div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
 				<button
 					onClick={handleBack}
-					className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
+					className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90"
 					title="返回"
 				>
-					<ArrowLeft className="w-4 h-4" />
+					<ArrowLeft className="w-5 h-5" />
 				</button>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2.5">
 					{Icon && (
-						<div className="w-6 h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-							<Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+						<div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm">
+							<Icon className={`w-4 h-4 ${iconColor}`} />
 						</div>
 					)}
-					<span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+					<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
 						{categoryName}
 					</span>
-					<span className="px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+					<span className="px-2 py-0.5 text-[10px] font-semibold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
 						{totalCommands}
 					</span>
 				</div>
@@ -349,10 +349,10 @@ export function SlashMenuContainer({
 						onOpenPromptLibrary();
 						onClose();
 					}}
-					className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group"
+					className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left text-sm border-b border-zinc-100 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group active:scale-[0.99]"
 				>
-					<div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200">
-						<Plus className="w-4 h-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
+					<div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
+						<Plus className="w-4.5 h-4.5 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
 					</div>
 					<div>
 						<span className="font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
@@ -487,14 +487,14 @@ function GroupSection({
 			{group.isCollapsible ? (
 				<button
 					onClick={onToggle}
-					className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+					className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
 				>
 					{isCollapsed ? (
 						<ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
 					) : (
 						<ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
 					)}
-					<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+					<span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
 						{group.name}
 					</span>
 					<span className="px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
@@ -502,8 +502,8 @@ function GroupSection({
 					</span>
 				</button>
 			) : (
-				<div className="px-4 py-2">
-					<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+				<div className="px-4 py-2.5">
+					<span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
 						{group.name}
 					</span>
 				</div>
@@ -521,44 +521,40 @@ function GroupSection({
 									itemRefs.current[index] = el;
 								}}
 								onClick={() => onSelect(command)}
-								className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-150
-                  ${
-										isSelected
-											? "bg-zinc-100 dark:bg-zinc-800 ring-1 ring-inset ring-black/5 dark:ring-white/10"
-											: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+								className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all duration-200
+                  ${isSelected
+										? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
+										: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
 									}`}
 							>
 								{/* 图标 */}
 								<div
-									className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all
-                    ${
-											isSelected
-												? "bg-white dark:bg-zinc-700 shadow-sm"
-												: "bg-zinc-100 dark:bg-zinc-800"
+									className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200
+                    ${isSelected
+											? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
+											: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
 										}`}
 								>
 									<command.icon
-										className={`w-4 h-4 ${isSelected ? "text-zinc-700 dark:text-zinc-200" : "text-zinc-500 dark:text-zinc-400"}`}
+										className={`w-4.5 h-4.5 transition-colors ${isSelected ? "text-zinc-700 dark:text-zinc-200" : "text-zinc-500 dark:text-zinc-400"}`}
 									/>
 								</div>
 
 								{/* 文字 */}
 								<div className="flex-1 min-w-0">
 									<div
-										className={`text-sm font-medium truncate ${
-											isSelected
-												? "text-zinc-900 dark:text-zinc-100"
-												: "text-zinc-700 dark:text-zinc-300"
-										}`}
+										className={`text-sm font-medium truncate ${isSelected
+											? "text-zinc-900 dark:text-zinc-100"
+											: "text-zinc-700 dark:text-zinc-300"
+											}`}
 									>
 										{command.name}
 									</div>
 									<div
-										className={`text-xs truncate ${
-											isSelected
-												? "text-zinc-500 dark:text-zinc-400"
-												: "text-zinc-400 dark:text-zinc-500"
-										}`}
+										className={`text-xs truncate ${isSelected
+											? "text-zinc-500 dark:text-zinc-400"
+											: "text-zinc-400 dark:text-zinc-500"
+											}`}
 									>
 										{command.description}
 									</div>
