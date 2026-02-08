@@ -34,7 +34,17 @@ type CompactBlock =
 	  } // thought: label, content, phase, duration
 	| { t: "tl"; id: string } // task_list
 	| { t: "at"; id: string } // agent_task
-	| { t: "tc"; id: string; tid: string; n?: string; s?: string } // tool_call: id, taskId, name, status
+	| {
+			t: "tc";
+			id: string;
+			tid: string;
+			n?: string;
+			tt?: string;
+			s?: string;
+			i?: any;
+			o?: any;
+			e?: string;
+	  } // tool_call: id, taskId, name, toolType, status, input, output, error
 	| { t: "fu"; f: string; tp: "c" | "u"; a: number; d: number } // file_update
 	| {
 			t: "sk";
@@ -52,6 +62,12 @@ interface CompactMetadata {
 	tcIds?: string[]; // toolCallIds for lazy loading
 	fus?: Array<{ f: string; t: "c" | "u"; a: number; d: number }>; // fileUpdates
 	bs?: CompactBlock[]; // blocks
+	tr?: { t: "a" | "tc"; tid: string; tcid?: string }; // trace
+	tid?: string; // taskId
+	sd?: string; // sandboxDir
+	af?: Array<{ t: string; p: string; k?: "f" | "d"; s?: number }>; // attachedFiles
+	tu?: { p: number; c: number; t: number }; // tokenUsage
+	x?: Record<string, unknown>; // extra metadata (forward-compatible)
 }
 
 /** 精简存储的消息 */
@@ -146,6 +162,17 @@ const STATUS_REVERSE_MAP: Record<
 	x: "cancelled",
 };
 
+const STATUS_MAP: Record<
+	"pending" | "running" | "completed" | "error" | "cancelled",
+	string
+> = {
+	pending: "p",
+	running: "r",
+	completed: "c",
+	error: "e",
+	cancelled: "x",
+};
+
 /**
  * 精简消息块
  */
@@ -171,13 +198,17 @@ function compactBlock(block: ChatMessageBlock): CompactBlock {
 		case "agent_task":
 			return { t: "at", id: block.taskId };
 		case "tool_call":
-			// 工具调用只保留必要信息，详情从后端加载
+			// 工具调用保留可回放必要信息，避免历史会话回显丢失
 			return {
 				t: "tc",
 				id: block.toolCallId,
 				tid: block.taskId,
 				n: block.name,
-				s: block.status,
+				tt: block.toolType,
+				s: block.status ? STATUS_MAP[block.status] || block.status : undefined,
+				i: block.input,
+				o: block.output,
+				e: block.error,
 			};
 		case "file_update":
 			return {
@@ -230,7 +261,19 @@ function expandBlock(compact: CompactBlock): ChatMessageBlock {
 				toolCallId: compact.id,
 				taskId: compact.tid,
 				name: compact.n,
-				status: compact.s ? STATUS_REVERSE_MAP[compact.s] : undefined,
+				toolType: compact.tt,
+				status: compact.s
+					? STATUS_REVERSE_MAP[compact.s] ||
+						(compact.s as
+							| "pending"
+							| "running"
+							| "completed"
+							| "error"
+							| "cancelled")
+					: undefined,
+				input: compact.i,
+				output: compact.o,
+				error: compact.e,
 			};
 		case "fu":
 			return {
@@ -287,6 +330,54 @@ function compactMessage(msg: ChatMessage): CompactMessage {
 			md.bs = msg.metadata.blocks.map(compactBlock);
 		}
 
+		if (msg.metadata.trace) {
+			if (msg.metadata.trace.type === "agent_task") {
+				md.tr = { t: "a", tid: msg.metadata.trace.taskId };
+			} else if (msg.metadata.trace.type === "tool_call") {
+				md.tr = {
+					t: "tc",
+					tid: msg.metadata.trace.taskId,
+					tcid: msg.metadata.trace.toolCallId,
+				};
+			}
+		}
+
+		if (msg.metadata.taskId) md.tid = msg.metadata.taskId;
+		if (msg.metadata.sandboxDir) md.sd = msg.metadata.sandboxDir;
+
+		if (msg.metadata.attachedFiles && msg.metadata.attachedFiles.length > 0) {
+			md.af = msg.metadata.attachedFiles.map((f) => ({
+				t: f.title,
+				p: f.path,
+				k: f.type === "document" ? "d" : f.type === "file" ? "f" : undefined,
+				s: typeof f.size === "number" ? f.size : undefined,
+			}));
+		}
+
+		if (msg.metadata.tokenUsage) {
+			md.tu = {
+				p: msg.metadata.tokenUsage.promptTokens,
+				c: msg.metadata.tokenUsage.completionTokens,
+				t: msg.metadata.tokenUsage.totalTokens,
+			};
+		}
+
+		const {
+			agentMessageId: _agentMessageId,
+			fileUpdates: _fileUpdates,
+			blocks: _blocks,
+			trace: _trace,
+			taskId: _taskId,
+			sandboxDir: _sandboxDir,
+			attachedFiles: _attachedFiles,
+			tokenUsage: _tokenUsage,
+			...rest
+		} = msg.metadata as Record<string, unknown>;
+
+		if (Object.keys(rest).length > 0) {
+			md.x = rest;
+		}
+
 		if (Object.keys(md).length > 0) {
 			compact.md = md;
 		}
@@ -312,6 +403,38 @@ function expandMessage(compact: CompactMessage): ChatMessage {
 		const metadata: ChatMessage["metadata"] = {};
 		if (compact.md.aid) metadata.agentMessageId = compact.md.aid;
 
+		if (compact.md.tr) {
+			if (compact.md.tr.t === "a") {
+				metadata.trace = { type: "agent_task", taskId: compact.md.tr.tid };
+			} else if (compact.md.tr.t === "tc" && compact.md.tr.tcid) {
+				metadata.trace = {
+					type: "tool_call",
+					taskId: compact.md.tr.tid,
+					toolCallId: compact.md.tr.tcid,
+				};
+			}
+		}
+
+		if (compact.md.tid) metadata.taskId = compact.md.tid;
+		if (compact.md.sd) metadata.sandboxDir = compact.md.sd;
+
+		if (compact.md.af && compact.md.af.length > 0) {
+			metadata.attachedFiles = compact.md.af.map((f) => ({
+				title: f.t,
+				path: f.p,
+				type: f.k === "d" ? "document" : f.k === "f" ? "file" : undefined,
+				size: typeof f.s === "number" ? f.s : undefined,
+			}));
+		}
+
+		if (compact.md.tu) {
+			metadata.tokenUsage = {
+				promptTokens: compact.md.tu.p,
+				completionTokens: compact.md.tu.c,
+				totalTokens: compact.md.tu.t,
+			};
+		}
+
 		// 还原 fileUpdates
 		if (compact.md.fus && compact.md.fus.length > 0) {
 			metadata.fileUpdates = compact.md.fus.map((fu) => ({
@@ -325,6 +448,10 @@ function expandMessage(compact: CompactMessage): ChatMessage {
 		// 还原 blocks
 		if (compact.md.bs && compact.md.bs.length > 0) {
 			metadata.blocks = compact.md.bs.map(expandBlock);
+		}
+
+		if (compact.md.x && typeof compact.md.x === "object") {
+			Object.assign(metadata, compact.md.x);
 		}
 
 		if (Object.keys(metadata).length > 0) {

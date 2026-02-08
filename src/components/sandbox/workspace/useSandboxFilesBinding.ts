@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAgentSandboxDir } from "../../../lib/api";
 import type {
 	AgentTaskStatus,
 	ToolArtifact,
@@ -24,7 +25,11 @@ export function useSandboxFilesBinding({
 	store,
 }: UseSandboxFilesBindingArgs) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [fallbackSandboxDir, setFallbackSandboxDir] = useState<
+		string | undefined
+	>(undefined);
 	const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const fallbackResolvedKeyRef = useRef<string | null>(null);
 
 	const sessionTaskId = useMemo(() => {
 		if (!activeSession) return null;
@@ -84,10 +89,86 @@ export function useSandboxFilesBinding({
 		);
 	}, [activeSession, currentTask, sessionTaskId, taskHistory]);
 
+	useEffect(() => {
+		const explicitSandboxDir =
+			(boundTask?.metadata?.sandboxDir as string | undefined) || sessionSandboxDir;
+		if (explicitSandboxDir) {
+			setFallbackSandboxDir(undefined);
+			fallbackResolvedKeyRef.current = null;
+			return;
+		}
+
+		const hasAgentSignals = Boolean(
+			activeSession?.agentSessionId ||
+				activeSession?.sdkSessionId ||
+				sessionTaskId ||
+				activeSession?.messages?.some((msg: any) => {
+					const traceType = msg?.metadata?.trace?.type;
+					if (traceType === "agent_task" || traceType === "tool_call") {
+						return true;
+					}
+					const blocks = msg?.metadata?.blocks;
+					return (
+						Array.isArray(blocks) &&
+						blocks.some((b: any) =>
+							["agent_task", "tool_call", "image", "task_list"].includes(
+								b?.type,
+							),
+						)
+					);
+				}),
+		);
+		if (!hasAgentSignals) {
+			setFallbackSandboxDir(undefined);
+			fallbackResolvedKeyRef.current = null;
+			return;
+		}
+
+		const sandboxKey = String(
+			activeSession?.agentSessionId || activeSessionId || "",
+		).trim();
+		if (!sandboxKey) {
+			setFallbackSandboxDir(undefined);
+			fallbackResolvedKeyRef.current = null;
+			return;
+		}
+		if (fallbackResolvedKeyRef.current === sandboxKey) return;
+
+		let cancelled = false;
+		fallbackResolvedKeyRef.current = sandboxKey;
+		void (async () => {
+			try {
+				const res = await getAgentSandboxDir(sandboxKey);
+				if (!cancelled) {
+					setFallbackSandboxDir(String(res?.path || "").trim() || undefined);
+				}
+			} catch (error) {
+				if (!cancelled) {
+					setFallbackSandboxDir(undefined);
+					fallbackResolvedKeyRef.current = null;
+				}
+				console.warn(
+					"[useSandboxFilesBinding] 兜底恢复 sandbox 目录失败:",
+					error,
+				);
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		activeSession,
+		activeSessionId,
+		boundTask?.metadata?.sandboxDir,
+		sessionSandboxDir,
+		sessionTaskId,
+	]);
+
 	const sandboxDir = useMemo(() => {
 		const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
-		return fromTask || sessionSandboxDir;
-	}, [boundTask, sessionSandboxDir]);
+		return fromTask || sessionSandboxDir || fallbackSandboxDir;
+	}, [boundTask, fallbackSandboxDir, sessionSandboxDir]);
 
 	const graphSource = useMemo<ExecutionGraphSource | null>(() => {
 		if (boundTask) {
