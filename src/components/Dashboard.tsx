@@ -440,11 +440,27 @@ export default function Dashboard({
 						)}
 
 						{isLoading ? (
-							<div className="flex items-center justify-center py-20 opacity-50">
-								<div className="animate-pulse flex flex-col items-center gap-2">
-									<div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
-									<div className="text-xs text-zinc-400">加载中...</div>
-								</div>
+							<div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
+								{Array.from({ length: 6 }).map((_, i) => (
+									<div
+										key={i}
+										className="rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 space-y-4 h-48 animate-in fade-in"
+										style={{ animationDelay: `${i * 50}ms` }}
+									>
+										<div className="flex items-start justify-between">
+											<div className="w-10 h-10 rounded-lg skeleton" />
+										</div>
+										<div className="space-y-2">
+											<div className="h-5 w-3/4 skeleton rounded" />
+											<div className="h-4 w-full skeleton rounded" />
+											<div className="h-4 w-2/3 skeleton rounded" />
+										</div>
+										<div className="flex items-center justify-between pt-2">
+											<div className="h-3 w-20 skeleton rounded" />
+											<div className="h-1.5 w-1.5 rounded-full skeleton" />
+										</div>
+									</div>
+								))}
 							</div>
 						) : (
 							<div

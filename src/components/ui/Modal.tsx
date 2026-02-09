@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import type * as React from "react";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { cn } from "../../lib/utils";
 
 interface ModalProps {
@@ -43,20 +43,33 @@ export function Modal({
 	closeOnOverlayClick = true,
 	footer,
 }: ModalProps) {
+	const [isClosing, setIsClosing] = useState(false);
+	const [shouldRender, setShouldRender] = useState(false);
+
+	// 处理关闭动画
+	const handleClose = useCallback(() => {
+		setIsClosing(true);
+		setTimeout(() => {
+			setIsClosing(false);
+			onClose();
+		}, 200); // 匹配退出动画时长
+	}, [onClose]);
+
 	// ESC 键关闭
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
 			if (e.key === "Escape") {
-				onClose();
+				handleClose();
 			}
 		},
-		[onClose],
+		[handleClose],
 	);
 
+	// 控制渲染和动画状态
 	useEffect(() => {
 		if (isOpen) {
+			setShouldRender(true);
 			document.addEventListener("keydown", handleKeyDown);
-			// 防止背景滚动
 			document.body.style.overflow = "hidden";
 		}
 		return () => {
@@ -65,15 +78,22 @@ export function Modal({
 		};
 	}, [isOpen, handleKeyDown]);
 
-	if (!isOpen) return null;
+	// 关闭后清理渲染状态
+	useEffect(() => {
+		if (!isOpen && !isClosing) {
+			setShouldRender(false);
+		}
+	}, [isOpen, isClosing]);
+
+	if (!shouldRender && !isOpen) return null;
 
 	return (
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans"
-			onClick={closeOnOverlayClick ? onClose : undefined}
+			onClick={closeOnOverlayClick ? handleClose : undefined}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
-					if (closeOnOverlayClick) onClose();
+					if (closeOnOverlayClick) handleClose();
 				}
 			}}
 			role="dialog"
@@ -81,7 +101,12 @@ export function Modal({
 			aria-labelledby="modal-title"
 		>
 			{/* 遮罩层 */}
-			<div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm animate-fade-in" />
+			<div
+				className={cn(
+					"absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm",
+					isClosing ? "animate-fade-out" : "animate-fade-in"
+				)}
+			/>
 
 			{/* 模态框 */}
 			<div
@@ -91,7 +116,7 @@ export function Modal({
 					"shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]",
 					"border border-zinc-200/50 dark:border-zinc-700/50",
 					"overflow-hidden",
-					"animate-scale-in",
+					isClosing ? "animate-scale-out" : "animate-scale-in",
 					sizeStyles[size],
 				)}
 				onClick={(e) => e.stopPropagation()}
@@ -108,14 +133,13 @@ export function Modal({
 					{showCloseButton && (
 						<button
 							type="button"
-							onClick={onClose}
+							onClick={handleClose}
 							className={cn(
 								"rounded-full p-1.5",
 								"text-zinc-400 dark:text-zinc-500",
 								"hover:text-zinc-600 dark:hover:text-zinc-300",
 								"hover:bg-zinc-100 dark:hover:bg-zinc-800",
-								"transition-all duration-150",
-								"hover:scale-110 active:scale-95",
+								"btn-spring",
 								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
 							)}
 							aria-label="关闭"
@@ -138,4 +162,3 @@ export function Modal({
 		</div>
 	);
 }
-

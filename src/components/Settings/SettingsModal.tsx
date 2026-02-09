@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AgentSettings } from "./panels/AgentSettings";
 import { ArtifactSettings } from "./panels/ArtifactSettings";
 import { DashboardSettings } from "./panels/DashboardSettings";
@@ -18,8 +18,38 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	const [activeTab, setActiveTab] = useState("models");
+	const [isClosing, setIsClosing] = useState(false);
+	const [shouldRender, setShouldRender] = useState(false);
 
-	if (!isOpen) return null;
+	// 处理关闭动画
+	const handleClose = useCallback(() => {
+		setIsClosing(true);
+		setTimeout(() => {
+			setIsClosing(false);
+			onClose();
+		}, 200);
+	}, [onClose]);
+
+	// 控制渲染和 ESC 关闭
+	useEffect(() => {
+		if (isOpen) {
+			setShouldRender(true);
+			const handleKeyDown = (e: KeyboardEvent) => {
+				if (e.key === "Escape") handleClose();
+			};
+			document.addEventListener("keydown", handleKeyDown);
+			return () => document.removeEventListener("keydown", handleKeyDown);
+		}
+	}, [isOpen, handleClose]);
+
+	// 关闭后清理渲染状态
+	useEffect(() => {
+		if (!isOpen && !isClosing) {
+			setShouldRender(false);
+		}
+	}, [isOpen, isClosing]);
+
+	if (!shouldRender && !isOpen) return null;
 
 	const renderContent = () => {
 		switch (activeTab) {
@@ -53,9 +83,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm font-sans animate-in fade-in duration-200">
+		<div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}>
 			{/* Click outside to close could be added here, but explicit close button is safer for settings */}
-			<div className="relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200 flex">
+			<div className={`relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}>
 				{/* Sidebar */}
 				<SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -63,8 +93,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 					{/* Close Button - Absolute positioned at top right of the content area */}
 					<button
-						onClick={onClose}
-						className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-surface text-text-muted hover:text-text-primary transition-all duration-150 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+						onClick={handleClose}
+						className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-surface text-text-muted hover:text-text-primary btn-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 						title="关闭"
 					>
 						<svg
