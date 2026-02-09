@@ -105,6 +105,72 @@ function parseJsonObject(
 	}
 }
 
+function splitCommandLine(input: string): string[] {
+	const line = input.trim();
+	if (!line) return [];
+
+	const tokens: string[] = [];
+	let current = "";
+	let quote: '"' | "'" | null = null;
+	let escaped = false;
+
+	for (const ch of line) {
+		if (escaped) {
+			current += ch;
+			escaped = false;
+			continue;
+		}
+		if (ch === "\\") {
+			escaped = true;
+			continue;
+		}
+		if (quote) {
+			if (ch === quote) {
+				quote = null;
+			} else {
+				current += ch;
+			}
+			continue;
+		}
+		if (ch === '"' || ch === "'") {
+			quote = ch;
+			continue;
+		}
+		if (/\s/.test(ch)) {
+			if (current) {
+				tokens.push(current);
+				current = "";
+			}
+			continue;
+		}
+		current += ch;
+	}
+
+	if (current) {
+		tokens.push(current);
+	}
+	return tokens;
+}
+
+function normalizeRuntimeCommand(
+	command: string,
+	args: string[] | null | undefined,
+): { command: string; args: string[] } {
+	const explicitArgs = Array.isArray(args) ? args.filter(Boolean) : [];
+	const parsed = splitCommandLine(command);
+	if (parsed.length <= 1) {
+		return {
+			command: (parsed[0] || command || "").trim(),
+			args: explicitArgs,
+		};
+	}
+	const [cmd, ...inlineArgs] = parsed;
+	return {
+		command: cmd,
+		args: [...inlineArgs, ...explicitArgs],
+	};
+}
+
 export function createMcpHandlers(db: DbContext) {
 	const runtime = new McpRuntimeService();
 
@@ -160,10 +226,15 @@ export function createMcpHandlers(db: DbContext) {
 			...serverEnv,
 		};
 
+		const normalized = normalizeRuntimeCommand(server.command, server.args);
+		if (!normalized.command) {
+			throw new Error(`MCP server command is empty: ${server.name}`);
+		}
+
 		const runtimeServer: McpRuntimeServerConfig = {
 			id: server.id,
-			command: server.command,
-			args: server.args,
+			command: normalized.command,
+			args: normalized.args,
 			env: mergedEnv,
 		};
 		return runtimeServer;
@@ -207,6 +278,10 @@ export function createMcpHandlers(db: DbContext) {
 	): Promise<McpServer> => {
 		const id = randomUUID();
 		const timestamp = now();
+		const normalized = normalizeRuntimeCommand(input.command, input.args ?? []);
+		if (!normalized.command) {
+			throw new Error("MCP server command is required");
+		}
 
 		await db.client.execute({
 			sql: `INSERT INTO mcp_servers (id, name, command, args, env, enabled, created_at, updated_at)
@@ -214,8 +289,8 @@ export function createMcpHandlers(db: DbContext) {
 			args: [
 				id,
 				input.name,
-				input.command,
-				JSON.stringify(input.args ?? []),
+				normalized.command,
+				JSON.stringify(normalized.args),
 				JSON.stringify(input.env ?? {}),
 				(input.enabled ?? true) ? 1 : 0,
 				timestamp,
@@ -226,8 +301,8 @@ export function createMcpHandlers(db: DbContext) {
 		return {
 			id,
 			name: input.name,
-			command: input.command,
-			args: input.args ?? [],
+			command: normalized.command,
+			args: normalized.args,
 			env: input.env ?? {},
 			enabled: input.enabled ?? true,
 			created_at: timestamp,
@@ -248,16 +323,30 @@ export function createMcpHandlers(db: DbContext) {
 	): Promise<McpServer> => {
 		const updates: string[] = [];
 		const args: (string | number | null)[] = [];
+		let argsHandledByCommand = false;
 
 		if (input.name !== undefined) {
 			updates.push("name = ?");
 			args.push(input.name);
 		}
 		if (input.command !== undefined) {
+			const commandTokens = splitCommandLine(input.command);
+			const normalized = normalizeRuntimeCommand(
+				input.command,
+				input.args ?? undefined,
+			);
+			if (!normalized.command) {
+				throw new Error("MCP server command is required");
+			}
 			updates.push("command = ?");
-			args.push(input.command);
+			args.push(normalized.command);
+			if (input.args !== undefined || commandTokens.length > 1) {
+				argsHandledByCommand = true;
+				updates.push("args = ?");
+				args.push(JSON.stringify(normalized.args));
+			}
 		}
-		if (input.args !== undefined) {
+		if (input.args !== undefined && !argsHandledByCommand) {
 			updates.push("args = ?");
 			args.push(JSON.stringify(input.args));
 		}

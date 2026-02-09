@@ -1,15 +1,17 @@
 import { useCallback, useState, type MouseEvent } from "react";
-import type { ExecutionGraphNode } from "./types";
+import type { ArtifactClickBehavior, ExecutionGraphNode } from "./types";
 import { EVENTS, events } from "../../../lib/events";
 
 interface UseGraphSelectionArgs {
 	onOpenArtifact: (filePath: string) => void;
 	isInspectorPinned: boolean;
+	artifactClickBehavior: ArtifactClickBehavior;
 }
 
 export function useGraphSelection({
 	onOpenArtifact,
 	isInspectorPinned,
+	artifactClickBehavior,
 }: UseGraphSelectionArgs) {
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -22,6 +24,19 @@ export function useGraphSelection({
 					source: "graph",
 				});
 			}
+			if (
+				node.data.kind === "artifact" &&
+				node.data.url &&
+				artifactClickBehavior === "open_preview"
+			) {
+				onOpenArtifact(node.data.url);
+			}
+		},
+		[artifactClickBehavior, onOpenArtifact],
+	);
+
+	const onNodeDoubleClick = useCallback(
+		(_: MouseEvent, node: ExecutionGraphNode) => {
 			if (node.data.kind === "artifact" && node.data.url) {
 				onOpenArtifact(node.data.url);
 			}
@@ -38,6 +53,7 @@ export function useGraphSelection({
 		selectedNodeId,
 		setSelectedNodeId,
 		onNodeClick,
+		onNodeDoubleClick,
 		onPaneClick,
 	};
 }

@@ -17,6 +17,7 @@ import { cn } from "../../../lib/utils";
 import type {
 	ArtifactGraphNode,
 	ExecutionGraphNode,
+	LaneGraphNode,
 	TaskGraphNode,
 	ToolGraphNode,
 } from "./types";
@@ -32,7 +33,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]",
 				"border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
+				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 			)}
 		>
 			<Handle type="target" position={Position.Left} className="opacity-0" />
@@ -74,7 +75,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 			<div className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-300">
 				<div className="flex items-center gap-2 flex-wrap">
 					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Wand2 className="w-3.5 h-3.5 text-indigo-500" />
+						<Wand2 className="w-3.5 h-3.5 text-primary" />
 						工具 {data.stats.toolsCompleted}/{data.stats.toolsTotal}
 					</span>
 					{data.stats.toolsFailed > 0 ? (
@@ -98,13 +99,13 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 	const pill = statusPill(data.status);
 
 	const accent = data.isSubagent
-		? "purple"
+		? "warm"
 		: data.status === "error"
 			? "rose"
 			: "zinc";
 	const borderCls =
-		accent === "purple"
-			? "border-purple-200/70 dark:border-purple-900/40"
+		accent === "warm"
+			? "border-primary/35 dark:border-primary/30"
 			: accent === "rose"
 				? "border-rose-200/70 dark:border-rose-900/40"
 				: "border-black/[0.06] dark:border-white/[0.08]";
@@ -116,9 +117,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				borderCls,
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
+				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 				data.status === "running" &&
-					"shadow-[0_16px_50px_-28px_rgba(79,70,229,0.35)]",
+					"shadow-[0_16px_50px_-28px_rgba(217,108,70,0.35)]",
 			)}
 		>
 			<Handle type="target" position={Position.Left} className="opacity-0" />
@@ -130,7 +131,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						className={cn(
 							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10",
 							data.isSubagent
-								? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300"
+								? "bg-primary/10 dark:bg-primary/20 text-primary"
 								: data.status === "error"
 									? "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300"
 									: "bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300",
@@ -213,7 +214,7 @@ const ArtifactNode = memo(function ArtifactNode(
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
-				selected && "ring-2 ring-indigo-400/50 dark:ring-indigo-500/40",
+				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 			)}
 		>
 			<Handle type="target" position={Position.Top} className="opacity-0" />
@@ -240,7 +241,17 @@ const ArtifactNode = memo(function ArtifactNode(
 	);
 });
 
+const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
+	const { data } = props;
+	return (
+		<div className="px-3 py-1.5 rounded-full border border-zinc-200/70 dark:border-zinc-700/70 bg-white/80 dark:bg-zinc-900/70 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 shadow-sm">
+			{data.label}
+		</div>
+	);
+});
+
 export const nodeTypes = {
+	lane: LaneNode,
 	task: TaskNode,
 	tool: ToolNode,
 	artifact: ArtifactNode,

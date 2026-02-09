@@ -6,6 +6,7 @@ import {
 	Plus,
 	Sparkles,
 } from "lucide-react";
+import { PanelIconButton } from "../layout/PanelIconButton";
 
 interface CopilotHeaderProps {
 	isAgentExecuting: boolean;
@@ -47,34 +48,22 @@ export function CopilotHeader({
 				</div>
 			</div>
 			<div className="flex items-center gap-1">
-				<button
-					type="button"
+				<PanelIconButton
 					onClick={onNewSession}
-					aria-label="新建对话"
-					className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-					title="新建对话"
-				>
-					<Plus className="w-4.5 h-4.5" />
-				</button>
-				<button
-					type="button"
+					label="新建对话"
+					icon={<Plus className="w-4.5 h-4.5" />}
+				/>
+				<PanelIconButton
 					onClick={onOpenHistory}
-					aria-label="查看对话历史"
-					className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-					title="对话历史"
-				>
-					<History className="w-4.5 h-4.5" />
-				</button>
+					label="查看对话历史"
+					icon={<History className="w-4.5 h-4.5" />}
+				/>
 				<div className="relative">
-					<button
-						type="button"
+					<PanelIconButton
 						onClick={onToggleMoreMenu}
-						aria-label="更多操作"
-						className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-						title="更多"
-					>
-						<MoreHorizontal className="w-4.5 h-4.5" />
-					</button>
+						label="更多操作"
+						icon={<MoreHorizontal className="w-4.5 h-4.5" />}
+					/>
 					{isMoreMenuOpen ? (
 						<>
 							<div className="fixed inset-0 z-40" onClick={onCloseMoreMenu} />

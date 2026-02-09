@@ -14,6 +14,7 @@ import {
 	useEffect,
 	useMemo,
 	useRef,
+	useState,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { buildExecutionGraph } from "./graph/buildExecutionGraph";
@@ -21,6 +22,7 @@ import { GraphInspectorPanel } from "./graph/GraphInspectorPanel";
 import { nodeTypes } from "./graph/GraphNodes";
 import { GraphTopToolbar } from "./graph/GraphTopToolbar";
 import {
+	type ArtifactClickBehavior,
 	type ExecutionGraphSource,
 	type GraphFilter,
 	type ExecutionGraphNode,
@@ -101,6 +103,10 @@ function ExecutionGraphInner({
 	onSearchQueryChange,
 	pinnedInspector = false,
 	onPinnedInspectorChange,
+	defaultFollow = true,
+	onFollowChange,
+	artifactClickBehavior = "select_only",
+	density = "comfortable",
 }: {
 	source: ExecutionGraphSource | null;
 	onOpenArtifact: (filePath: string) => void;
@@ -110,6 +116,10 @@ function ExecutionGraphInner({
 	onSearchQueryChange?: (query: string) => void;
 	pinnedInspector?: boolean;
 	onPinnedInspectorChange?: (value: boolean) => void;
+	defaultFollow?: boolean;
+	onFollowChange?: (value: boolean) => void;
+	artifactClickBehavior?: ArtifactClickBehavior;
+	density?: "comfortable" | "compact";
 }) {
 	const graphBuild = useMemo(() => buildExecutionGraph(source), [source]);
 	const graph = useMemo(
@@ -137,15 +147,20 @@ function ExecutionGraphInner({
 		[filter, graph.nodes, graphBuild.taskNodeId],
 	);
 
-	const { selectedNodeId, setSelectedNodeId, onNodeClick, onPaneClick } =
-		useGraphSelection({
-			onOpenArtifact,
-			isInspectorPinned: pinnedInspector,
-		});
+	const {
+		selectedNodeId,
+		setSelectedNodeId,
+		onNodeClick,
+		onNodeDoubleClick,
+		onPaneClick,
+	} = useGraphSelection({
+		onOpenArtifact,
+		isInspectorPinned: pinnedInspector,
+		artifactClickBehavior,
+	});
+	const [follow, setFollow] = useState(defaultFollow);
 
 	const {
-		follow,
-		setFollow,
 		searchMatchedNodeIds,
 		searchIndex,
 		focusFirstSearchMatch,
@@ -156,8 +171,20 @@ function ExecutionGraphInner({
 		toolCallById,
 		onSelectNode: setSelectedNodeId,
 		searchQuery,
+		follow,
 	});
 	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	const updateFollow = useCallback(
+		(next: boolean | ((value: boolean) => boolean)) => {
+			setFollow((prev) => {
+				const resolved = typeof next === "function" ? next(prev) : next;
+				onFollowChange?.(resolved);
+				return resolved;
+			});
+		},
+		[onFollowChange],
+	);
 
 	const clearSearch = useCallback(() => {
 		onSearchQueryChange?.("");
@@ -187,6 +214,10 @@ function ExecutionGraphInner({
 	}, [source?.id, setSelectedNodeId]);
 
 	useEffect(() => {
+		setFollow(defaultFollow);
+	}, [defaultFollow]);
+
+	useEffect(() => {
 		const handleShortcuts = (e: KeyboardEvent) => {
 			if (isTypingElement(e.target)) return;
 			if (e.key === "/") {
@@ -197,12 +228,12 @@ function ExecutionGraphInner({
 			}
 			if (e.altKey && e.key.toLowerCase() === "f") {
 				e.preventDefault();
-				setFollow((v) => !v);
+				updateFollow((v) => !v);
 			}
 		};
 		window.addEventListener("keydown", handleShortcuts);
 		return () => window.removeEventListener("keydown", handleShortcuts);
-	}, [setFollow]);
+	}, [updateFollow]);
 
 	if (!source) {
 		return <EmptyGraph />;
@@ -210,7 +241,7 @@ function ExecutionGraphInner({
 
 	return (
 		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.10),transparent_55%)]" />
+			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(217,108,70,0.11),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(82,94,111,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(224,123,82,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(113,125,145,0.12),transparent_55%)]" />
 			<GraphTopToolbar
 				searchInputRef={searchInputRef}
 				searchQuery={searchQuery}
@@ -225,7 +256,8 @@ function ExecutionGraphInner({
 				filter={filter}
 				onFilterChange={(value) => onFilterChange?.(value)}
 				follow={follow}
-				onToggleFollow={() => setFollow((v) => !v)}
+				density={density}
+				onToggleFollow={() => updateFollow((v) => !v)}
 			/>
 
 			<ReactFlow
@@ -233,20 +265,21 @@ function ExecutionGraphInner({
 				edges={graph.edges}
 				nodeTypes={nodeTypes as any}
 				onNodeClick={onNodeClick}
+				onNodeDoubleClick={onNodeDoubleClick}
 				onPaneClick={onPaneClick}
-				onMoveStart={() => setFollow(false)}
+				onMoveStart={() => updateFollow(false)}
 				onlyRenderVisibleElements
 				nodesConnectable={false}
 				fitView
-				fitViewOptions={{ padding: 0.35, minZoom: 0.15, maxZoom: 1.05 }}
-				minZoom={0.1}
-				maxZoom={1.2}
+				fitViewOptions={{ padding: 0.28, minZoom: 0.2, maxZoom: 1.2 }}
+				minZoom={0.16}
+				maxZoom={1.35}
 				className="relative z-10"
 				proOptions={{ hideAttribution: true }}
 			>
 				<Background
 					variant={BackgroundVariant.Dots}
-					gap={24}
+					gap={20}
 					size={1}
 					color="rgba(148,163,184,0.25)"
 				/>
@@ -291,6 +324,10 @@ export function ExecutionGraph({
 	onSearchQueryChange,
 	pinnedInspector,
 	onPinnedInspectorChange,
+	defaultFollow,
+	onFollowChange,
+	artifactClickBehavior,
+	density,
 }: {
 	source: ExecutionGraphSource | null;
 	onOpenArtifact: (filePath: string) => void;
@@ -300,6 +337,10 @@ export function ExecutionGraph({
 	onSearchQueryChange?: (query: string) => void;
 	pinnedInspector?: boolean;
 	onPinnedInspectorChange?: (value: boolean) => void;
+	defaultFollow?: boolean;
+	onFollowChange?: (value: boolean) => void;
+	artifactClickBehavior?: ArtifactClickBehavior;
+	density?: "comfortable" | "compact";
 }) {
 	return (
 		<ReactFlowProvider>
@@ -312,9 +353,13 @@ export function ExecutionGraph({
 				onSearchQueryChange={onSearchQueryChange}
 				pinnedInspector={pinnedInspector}
 				onPinnedInspectorChange={onPinnedInspectorChange}
+				defaultFollow={defaultFollow}
+				onFollowChange={onFollowChange}
+				artifactClickBehavior={artifactClickBehavior}
+				density={density}
 			/>
 		</ReactFlowProvider>
 	);
 }
 
-export type { ExecutionGraphSource, GraphFilter };
+export type { ArtifactClickBehavior, ExecutionGraphSource, GraphFilter };

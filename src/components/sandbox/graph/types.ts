@@ -15,6 +15,7 @@ export type ExecutionGraphSource = {
 };
 
 export type GraphFilter = "all" | "running" | "error" | "artifact";
+export type ArtifactClickBehavior = "select_only" | "open_preview";
 
 export type TaskNodeData = {
 	kind: "task";
@@ -54,18 +55,27 @@ export type ArtifactNodeData = {
 	toolCallId?: string;
 };
 
+export type LaneNodeData = {
+	kind: "lane";
+	laneId: string;
+	label: string;
+};
+
 export type TaskGraphNode = Node<TaskNodeData, "task">;
 export type ToolGraphNode = Node<ToolNodeData, "tool">;
 export type ArtifactGraphNode = Node<ArtifactNodeData, "artifact">;
+export type LaneGraphNode = Node<LaneNodeData, "lane">;
 export type ExecutionGraphNode =
 	| TaskGraphNode
 	| ToolGraphNode
-	| ArtifactGraphNode;
+	| ArtifactGraphNode
+	| LaneGraphNode;
 
 export type ExecutionGraphBuild = {
 	nodes: ExecutionGraphNode[];
 	edges: Edge[];
 	taskNodeId: string | null;
+	laneCount: number;
 };
 
 export type GraphNodeQuickAction =

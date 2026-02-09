@@ -58,7 +58,7 @@ export interface ManagedModeState {
 		expandedFolders: Set<string>;
 		/** 搜索关键词 */
 		searchQuery: string;
-		/** 中间栏视图：运行图 / 预览 */
+		/** 中间栏视图：运行图 / 产物预览 */
 		centerView: "graph" | "preview";
 		/** 预览视图模式：preview 渲染预览, source 源码 */
 		previewMode: "preview" | "source";
@@ -66,6 +66,12 @@ export interface ManagedModeState {
 		graphFilter?: "all" | "running" | "error" | "artifact";
 		/** 运行图搜索 */
 		graphSearch?: string;
+		/** 运行图自动跟随 */
+		graphFollow?: boolean;
+		/** 中间栏信息密度 */
+		centerDensity?: "comfortable" | "compact";
+		/** 产物节点点击行为 */
+		artifactClickBehavior?: "select_only" | "open_preview";
 		/** 详情面板是否固定 */
 		pinnedInspector?: boolean;
 	};
@@ -78,12 +84,15 @@ const initialState: ManagedModeState = {
 	files: [],
 	selectedFileId: null,
 	ui: {
-		expandedFolders: new Set(["docs", "code", "images", "data", "other"]),
+		expandedFolders: new Set(["docs", "code"]),
 		searchQuery: "",
 		centerView: "graph",
 		previewMode: "preview",
 		graphFilter: "all",
 		graphSearch: "",
+		graphFollow: true,
+		centerDensity: "comfortable",
+		artifactClickBehavior: "select_only",
 		pinnedInspector: false,
 	},
 };
@@ -359,7 +368,10 @@ class ManagedModeStore {
 		this.setState((s) => ({
 			...s,
 			isActive: true,
-			ui: { ...s.ui, centerView: "graph" },
+			ui: {
+				...s.ui,
+				expandedFolders: new Set([...s.ui.expandedFolders, "docs"]),
+			},
 		}));
 	}
 
@@ -545,6 +557,30 @@ class ManagedModeStore {
 		this.setState((s) => ({
 			...s,
 			ui: { ...s.ui, graphSearch: query },
+		}));
+	}
+
+	/** 设置运行图自动跟随 */
+	setGraphFollow(follow: boolean) {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, graphFollow: follow },
+		}));
+	}
+
+	/** 设置中间栏信息密度 */
+	setCenterDensity(density: "comfortable" | "compact") {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, centerDensity: density },
+		}));
+	}
+
+	/** 设置产物节点点击行为 */
+	setArtifactClickBehavior(behavior: "select_only" | "open_preview") {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, artifactClickBehavior: behavior },
 		}));
 	}
 

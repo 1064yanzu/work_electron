@@ -9,6 +9,7 @@ import {
 	Square,
 } from "lucide-react";
 import type React from "react";
+import { PanelIconButton } from "../../layout/PanelIconButton";
 
 interface ResourceSidebarHeaderProps {
 	currentResearch?: { status?: string } | null;
@@ -46,58 +47,47 @@ export function ResourceSidebarHeader({
 			</div>
 			<div className="flex items-center gap-1">
 				{currentResearch ? (
-					<button
-						type="button"
-						onClick={onOpenResearch}
-						aria-label="查看研究进度"
-						className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors relative"
-						title="查看研究进度"
-					>
-						<Sparkles className="w-4 h-4" />
+					<div className="relative">
+						<PanelIconButton
+							onClick={onOpenResearch}
+							label="查看研究进度"
+							className="text-primary hover:text-primary"
+							icon={<Sparkles className="w-4 h-4" />}
+						/>
 						{currentResearch.status !== "completed" ? (
-							<span className="absolute top-0.5 right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+							<span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
 						) : null}
-					</button>
+					</div>
 				) : null}
-				<button
-					type="button"
+				<PanelIconButton
 					onClick={onOpenFolderModal}
-					aria-label="新建文件夹"
-					className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-					title="新建文件夹"
-				>
-					<FolderPlus className="w-4 h-4" />
-				</button>
-				<button
-					type="button"
+					label="新建文件夹"
+					icon={<FolderPlus className="w-4 h-4" />}
+				/>
+				<PanelIconButton
 					onClick={onToggleViewMode}
-					aria-label={viewMode === "grid" ? "切换到列表视图" : "切换到平铺视图"}
-					className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-					title={viewMode === "grid" ? "列表视图" : "平铺视图"}
-				>
-					{viewMode === "grid" ? (
-						<List className="w-4 h-4" />
-					) : (
-						<Grid className="w-4 h-4" />
-					)}
-				</button>
-				<button
-					type="button"
+					label={viewMode === "grid" ? "切换到列表视图" : "切换到平铺视图"}
+					icon={
+						viewMode === "grid" ? (
+							<List className="w-4 h-4" />
+						) : (
+							<Grid className="w-4 h-4" />
+						)
+					}
+				/>
+				<PanelIconButton
 					onClick={onOpenSettings}
-					aria-label="打开设置"
-					className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-					title="设置"
-				>
-					<Settings className="w-4 h-4" />
-				</button>
+					label="打开设置"
+					icon={<Settings className="w-4 h-4" />}
+				/>
 				<button
 					type="button"
 					onClick={onToggleSelectionMode}
 					aria-label={selectionMode ? "退出批量管理" : "进入批量管理"}
-					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium ${
+					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring ${
 						selectionMode
-							? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
-							: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+							? "text-primary bg-primary/10"
+							: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
 					}`}
 				>
 					{selectionMode ? (

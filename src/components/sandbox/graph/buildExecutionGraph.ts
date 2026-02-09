@@ -10,7 +10,7 @@ import { getSubagentType } from "./utils";
 export function buildExecutionGraph(
 	source: ExecutionGraphSource | null,
 ): ExecutionGraphBuild {
-	if (!source) return { nodes: [], edges: [], taskNodeId: null };
+	if (!source) return { nodes: [], edges: [], taskNodeId: null, laneCount: 0 };
 
 	const toolCalls = Array.isArray(source.toolCalls) ? source.toolCalls : [];
 	const artifacts = Array.isArray(source.artifacts) ? source.artifacts : [];
@@ -36,8 +36,10 @@ export function buildExecutionGraph(
 		}
 	}
 
-	const X_STEP = 380;
-	const Y_STEP = 190;
+	const laneCount = laneKeys.length;
+	const toolCount = orderedToolCalls.length;
+	const X_STEP = toolCount > 16 ? 300 : toolCount > 10 ? 340 : 380;
+	const Y_STEP = laneCount > 3 ? 170 : 190;
 	const ROOT_X = 40;
 	const ROOT_Y = 40;
 
@@ -52,6 +54,23 @@ export function buildExecutionGraph(
 	const edges: Edge[] = [];
 
 	const taskNodeId = `task-${source.id}`;
+	laneKeys.forEach((laneKey, index) => {
+		const label =
+			laneKey === "main" ? "主流程" : laneKey.replace("subagent:", "");
+		nodes.push({
+			id: `lane-${laneKey}`,
+			type: "lane",
+			position: { x: ROOT_X - 220, y: ROOT_Y + index * Y_STEP + 62 },
+			draggable: false,
+			selectable: false,
+			data: {
+				kind: "lane",
+				laneId: laneKey,
+				label,
+			},
+		});
+	});
+
 	nodes.push({
 		id: taskNodeId,
 		type: "task",
@@ -125,7 +144,7 @@ export function buildExecutionGraph(
 			animated: tc.status === "running",
 			style: {
 				stroke: isSub
-					? "rgba(139,92,246,0.85)"
+					? "rgba(217,108,70,0.82)"
 					: tc.status === "error"
 						? "rgba(251,113,133,0.85)"
 						: "rgba(148,163,184,0.75)",
@@ -201,5 +220,5 @@ export function buildExecutionGraph(
 		}
 	}
 
-	return { nodes, edges, taskNodeId };
+	return { nodes, edges, taskNodeId, laneCount };
 }

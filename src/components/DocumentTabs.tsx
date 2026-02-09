@@ -1,12 +1,12 @@
-// 文档标签栏组件 - 类似 Cursor/VS Code 的多标签文档切换
-
 import { Circle, FileText, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fileList, fileMove } from "../lib/api";
 import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
 import { useWorkspaceStore } from "../lib/workspaceStore";
+import { isInteractiveTypingTarget } from "./editor/list/documentListMeta";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
+import { cn } from "../lib/utils";
 
 interface DocumentTabsProps {
 	onNewDoc?: () => void;
@@ -28,65 +28,18 @@ export default function DocumentTabs({
 		docId: string;
 	} | null>(null);
 
-	// 当激活文档改变时，滚动到可见区域
 	useEffect(() => {
-		if (activeDocId && tabsRef.current) {
-			const activeTab = tabsRef.current.querySelector(
-				`[data-doc-id="${activeDocId}"]`,
-			);
-			if (activeTab) {
-				activeTab.scrollIntoView({
-					behavior: "smooth",
-					block: "nearest",
-					inline: "nearest",
-				});
-			}
-		}
+		if (!activeDocId || !tabsRef.current) return;
+		const activeTab = tabsRef.current.querySelector(
+			`[data-doc-id="${activeDocId}"]`,
+		);
+		if (!activeTab) return;
+		activeTab.scrollIntoView({
+			behavior: "smooth",
+			block: "nearest",
+			inline: "nearest",
+		});
 	}, [activeDocId]);
-
-	// 键盘快捷键
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			// Cmd/Ctrl + W 关闭当前标签
-			if ((e.metaKey || e.ctrlKey) && e.key === "w") {
-				e.preventDefault();
-				if (activeDocId) {
-					const doc = docCache[activeDocId];
-					if (onCloseDoc) {
-						onCloseDoc(activeDocId, doc?.dirty || false);
-					} else {
-						closeDoc(activeDocId);
-					}
-				}
-			}
-
-			// Cmd/Ctrl + 1-9 快速切换标签
-			if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "9") {
-				e.preventDefault();
-				const index = parseInt(e.key) - 1;
-				if (index < openedDocs.length) {
-					setActiveDoc(openedDocs[index]);
-				}
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [activeDocId, openedDocs, docCache, closeDoc, setActiveDoc, onCloseDoc]);
-
-	const handleTabClick = (docId: string) => {
-		setActiveDoc(docId);
-	};
-
-	const handleCloseClick = (e: React.MouseEvent, docId: string) => {
-		e.stopPropagation();
-		const doc = docCache[docId];
-		if (onCloseDoc) {
-			onCloseDoc(docId, doc?.dirty || false);
-		} else {
-			closeDoc(docId);
-		}
-	};
 
 	const closeCurrentDoc = (docId: string) => {
 		const doc = docCache[docId];
@@ -99,20 +52,55 @@ export default function DocumentTabs({
 
 	const closeOtherDocs = (docId: string) => {
 		const targets = openedDocs.filter((id) => id !== docId);
-		for (const id of targets) {
-			closeCurrentDoc(id);
-		}
+		for (const id of targets) closeCurrentDoc(id);
 		setActiveDoc(docId);
 	};
 
 	const closeRightDocs = (docId: string) => {
 		const index = openedDocs.indexOf(docId);
 		if (index < 0) return;
-		const targets = openedDocs.slice(index + 1);
-		for (const id of targets) {
-			closeCurrentDoc(id);
-		}
+		for (const id of openedDocs.slice(index + 1)) closeCurrentDoc(id);
 	};
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (isInteractiveTypingTarget(e.target)) return;
+
+			if ((e.metaKey || e.ctrlKey) && e.key === "w") {
+				e.preventDefault();
+				if (activeDocId) closeCurrentDoc(activeDocId);
+				return;
+			}
+
+			if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "9") {
+				e.preventDefault();
+				const index = Number.parseInt(e.key, 10) - 1;
+				if (index < openedDocs.length) setActiveDoc(openedDocs[index]);
+				return;
+			}
+
+			if (!activeDocId || openedDocs.length < 2) return;
+			const currentIndex = openedDocs.indexOf(activeDocId);
+			if (currentIndex < 0) return;
+
+			if (e.key === "ArrowRight") {
+				e.preventDefault();
+				const nextIndex = (currentIndex + 1) % openedDocs.length;
+				setActiveDoc(openedDocs[nextIndex]);
+				return;
+			}
+
+			if (e.key === "ArrowLeft") {
+				e.preventDefault();
+				const prevIndex =
+					(currentIndex - 1 + openedDocs.length) % openedDocs.length;
+				setActiveDoc(openedDocs[prevIndex]);
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [activeDocId, openedDocs, setActiveDoc, onCloseDoc, closeDoc, docCache]);
 
 	const contextMenuItems = useMemo(() => {
 		if (!contextMenu) return [];
@@ -156,79 +144,102 @@ export default function DocumentTabs({
 				? () => onDeleteDoc(docId)
 				: () => closeCurrentDoc(docId),
 		});
-	}, [contextMenu, docCache, onDeleteDoc, openedDocs, onCloseDoc, closeDoc, setActiveDoc]);
+	}, [
+		contextMenu,
+		openedDocs,
+		onDeleteDoc,
+		onCloseDoc,
+		closeDoc,
+		setActiveDoc,
+		docCache,
+	]);
 
-	if (openedDocs.length === 0) {
-		return null;
-	}
+	if (openedDocs.length === 0) return null;
 
 	return (
-		<div className="flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-b border-zinc-200/60 dark:border-zinc-800/60">
-			{/* 标签列表 */}
+		<div className="doc-toolbar border-b border-zinc-200/70 dark:border-zinc-800/70 px-2 py-1.5 flex items-center gap-1.5">
 			<div
 				ref={tabsRef}
-				className="flex-1 flex items-center overflow-x-auto scrollbar-hide"
+				className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide"
+				role="tablist"
+				aria-label="已打开文档标签"
 			>
 				{openedDocs.map((docId) => {
 					const doc = docCache[docId];
 					const isActive = docId === activeDocId;
+					const label = doc?.title || "未命名文档";
+					const dirty = Boolean(doc?.dirty);
 
 					return (
 						<div
 							key={docId}
 							data-doc-id={docId}
-							onClick={() => handleTabClick(docId)}
 							onContextMenu={(e) => {
 								e.preventDefault();
 								setContextMenu({ x: e.clientX, y: e.clientY, docId });
 							}}
-							className={`
-                group flex items-center gap-2 px-3.5 py-2 cursor-pointer
-                transition-all duration-150 min-w-[120px] max-w-[220px] mx-0.5 my-1 rounded-xl
-                ${
-									isActive
-										? "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-										: "bg-transparent text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 hover:text-zinc-700 dark:hover:text-zinc-300"
-								}
-              `}
+							className={cn(
+								"group flex items-center gap-1.5 rounded-xl border min-h-11 px-2 py-1 shrink-0 transition-colors",
+								isActive
+									? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
+									: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
+							)}
 						>
-							{/* 文档图标 */}
-							<FileText className="w-4 h-4 shrink-0 text-zinc-400" />
-
-							{/* 文档标题 */}
-							<span className="flex-1 text-sm font-medium truncate">
-								{doc?.title || "未命名文档"}
-							</span>
-
-							{/* 脏标记 / 关闭按钮 */}
-							<div className="shrink-0 w-4 h-4 flex items-center justify-center relative">
-								{/* 脏标记：未保存时显示，悬停时隐藏 */}
-								{doc?.dirty && (
-									<Circle className="w-2 h-2 fill-blue-500 text-blue-500 group-hover:opacity-0 transition-opacity" />
-								)}
-								{/* 关闭按钮：始终存在，悬停时显示 */}
-								<button
-									onClick={(e) => handleCloseClick(e, docId)}
-									className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all`}
+							<button
+								type="button"
+								role="tab"
+								aria-selected={isActive}
+								aria-label={dirty ? `${label}，未保存` : label}
+								onClick={() => setActiveDoc(docId)}
+								className="focus-ring min-h-9 pl-1 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left"
+							>
+								<FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
+								<span
+									className={cn(
+										"text-sm font-medium max-w-[200px] truncate",
+										isActive
+											? "text-zinc-900 dark:text-zinc-100"
+											: "text-zinc-700 dark:text-zinc-300",
+									)}
 								>
-									<X className="w-3 h-3" />
-								</button>
-							</div>
+									{label}
+								</span>
+								{dirty ? (
+									<span
+										className="inline-flex items-center justify-center w-4 h-4"
+										title="该文档有未保存修改"
+									>
+										<Circle className="w-2.5 h-2.5 fill-primary text-primary" />
+									</span>
+								) : null}
+							</button>
+
+							<button
+								type="button"
+								onClick={() => closeCurrentDoc(docId)}
+								className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors"
+								aria-label={`关闭文档 ${label}`}
+								title="关闭文档"
+							>
+								<X className="w-3.5 h-3.5" />
+							</button>
 						</div>
 					);
 				})}
 			</div>
 
-			{/* 新建文档按钮 */}
-			{onNewDoc && (
+			{onNewDoc ? (
 				<button
+					type="button"
 					onClick={onNewDoc}
-					className="shrink-0 p-2 mx-1 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/50 transition-colors"
+					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+					aria-label="新建文档"
 					title="新建文档 (Cmd+N)"
 				>
-					<Plus className="w-4 h-4" />
+					<Plus className="w-4.5 h-4.5" />
 				</button>
-			)}
+			) : null}
+
 			{contextMenu && contextMenuItems.length > 0 ? (
 				<ContextMenu
 					x={contextMenu.x}

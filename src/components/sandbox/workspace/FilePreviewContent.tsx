@@ -1,7 +1,9 @@
 import { Check, Copy, Download, Eye, FileCode2, Link2 } from "lucide-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
+import { MarkdownRenderer } from "../../ui/MarkdownRenderer";
+import DocumentViewer from "../../ui/DocumentViewer";
 import { SandboxImagePreview } from "./SandboxImagePreview";
 
 interface FilePreviewContentProps {
@@ -24,7 +26,13 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 	const [copiedAction, setCopiedAction] = useState<"" | "content" | "path">("");
 
 	useEffect(() => {
-		if (file && file.content === undefined) {
+		if (
+			file &&
+			file.content === undefined &&
+			file.category !== "images" &&
+			file.extension !== "pdf" &&
+			file.extension !== "docx"
+		) {
 			onLoadContent(file.id);
 		}
 	}, [file, onLoadContent]);
@@ -59,6 +67,17 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		URL.revokeObjectURL(url);
 	}, [file]);
 
+	// useMemo must be called before any early returns to satisfy React Hooks rules
+	const copiedLabel = useMemo(
+		() =>
+			copiedAction === "content"
+				? "内容已复制"
+				: copiedAction === "path"
+					? "路径已复制"
+					: "",
+		[copiedAction],
+	);
+
 	if (!file) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-zinc-900">
@@ -66,7 +85,9 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<h3 className="text-lg font-medium text-zinc-700 dark:text-zinc-300">
 						{emptyTitle}
 					</h3>
-					<p className="text-sm text-zinc-400">{emptyDescription}</p>
+					<p className="text-sm text-zinc-500 dark:text-zinc-400">
+						{emptyDescription}
+					</p>
 				</div>
 			</div>
 		);
@@ -74,11 +95,19 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 
 	const isImage = file.category === "images";
 	const isHtmlLike = ["html", "tsx", "jsx"].includes(file.extension);
+	const isMarkdown = file.extension === "md" || file.extension === "markdown";
+	const isDocument = file.extension === "pdf" || file.extension === "docx";
 	const previewAvailable =
 		isImage ||
 		isHtmlLike ||
-		file.extension === "md" ||
+		isMarkdown ||
+		isDocument ||
 		file.content !== undefined;
+	const isLoadingContent =
+		file.category !== "images" &&
+		file.extension !== "pdf" &&
+		file.extension !== "docx" &&
+		file.content === undefined;
 
 	const renderSource = () => (
 		<div className="flex-1 overflow-auto bg-zinc-900 dark:bg-black">
@@ -88,13 +117,25 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<span className="w-3 h-3 rounded-full bg-yellow-500/70" />
 					<span className="w-3 h-3 rounded-full bg-green-500/70" />
 				</div>
-				<span className="text-xs text-zinc-500 font-mono ml-2">
+				<span className="text-xs text-zinc-400 font-mono ml-2">
 					{file.name}
 				</span>
 			</div>
-			<pre className="p-4 text-[13px] font-mono text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
-				{file.content || ""}
-			</pre>
+			<div className="p-4 font-mono text-[13px] leading-relaxed text-zinc-200">
+				{(file.content || "").split("\n").map((line, index) => (
+					<div
+						key={`${file.id}-line-${index + 1}`}
+						className="grid grid-cols-[3rem_minmax(0,1fr)]"
+					>
+						<span className="select-none text-right pr-3 text-zinc-500">
+							{index + 1}
+						</span>
+						<span className="whitespace-pre-wrap break-words">
+							{line || " "}
+						</span>
+					</div>
+				))}
+			</div>
 		</div>
 	);
 
@@ -129,14 +170,27 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 			);
 		}
 
-		if (file.extension === "md") {
+		if (isMarkdown) {
 			return (
 				<div className="flex-1 overflow-auto bg-white dark:bg-zinc-900 px-8 py-6">
-					<div className="max-w-3xl mx-auto prose dark:prose-invert prose-zinc">
-						<pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300">
-							{file.content}
-						</pre>
-					</div>
+					<article className="max-w-3xl mx-auto prose prose-zinc dark:prose-invert">
+						<MarkdownRenderer
+							content={file.content || ""}
+							className="text-sm leading-relaxed"
+						/>
+					</article>
+				</div>
+			);
+		}
+
+		if (isDocument) {
+			return (
+				<div className="flex-1 min-h-0 p-4 bg-zinc-50 dark:bg-zinc-900">
+					<DocumentViewer
+						src={file.path}
+						type={file.extension as "pdf" | "docx"}
+						className="h-full min-h-0 rounded-xl overflow-hidden"
+					/>
 				</div>
 			);
 		}
@@ -159,11 +213,19 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate">
 						{file.name}
 					</span>
-					<span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+					<span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
 						{fileExtensionLabel}
 					</span>
 				</div>
 				<div className="flex items-center gap-1 flex-wrap justify-end">
+					{copiedLabel ? (
+						<span
+							className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+							aria-live="polite"
+						>
+							{copiedLabel}
+						</span>
+					) : null}
 					{isFallbackToSource ? (
 						<span className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
@@ -174,11 +236,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							type="button"
 							onClick={() => onSetPreviewMode("preview")}
 							className={cn(
-								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1",
+								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 focus-ring",
 								effectiveMode === "preview"
 									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-700",
+									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
 							)}
+							aria-label="切换到预览模式"
 						>
 							<Eye className="w-3 h-3" />
 							预览
@@ -187,11 +250,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							type="button"
 							onClick={() => onSetPreviewMode("source")}
 							className={cn(
-								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1",
+								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 focus-ring",
 								effectiveMode === "source"
 									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-700",
+									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
 							)}
+							aria-label="切换到源码模式"
 						>
 							<FileCode2 className="w-3 h-3" />
 							源码
@@ -202,11 +266,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleCopy}
 						disabled={!canCopyContent}
 						className={cn(
-							"p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors",
+							"p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring",
 							!canCopyContent &&
-								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-400",
+							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
-						title="复制"
+						title="复制内容"
+						aria-label="复制内容"
 					>
 						{copiedAction === "content" ? (
 							<Check className="w-4 h-4" />
@@ -217,8 +282,9 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<button
 						type="button"
 						onClick={handleCopyPath}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+						className="p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring"
 						title="复制路径"
+						aria-label="复制路径"
 					>
 						{copiedAction === "path" ? (
 							<Check className="w-4 h-4" />
@@ -231,17 +297,32 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleDownload}
 						disabled={!canDownload}
 						className={cn(
-							"p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors",
+							"p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring",
 							!canDownload &&
-								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-400",
+							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
-						title="下载"
+						title="下载文件"
+						aria-label="下载文件"
 					>
 						<Download className="w-4 h-4" />
 					</button>
 				</div>
 			</div>
-			{effectiveMode === "preview" ? renderPreview() : renderSource()}
+			{isLoadingContent ? (
+				<div className="flex-1 p-6 bg-white dark:bg-zinc-900">
+					<div className="max-w-4xl mx-auto space-y-3 animate-pulse">
+						<div className="h-6 w-1/3 rounded bg-zinc-200 dark:bg-zinc-800" />
+						<div className="h-4 w-full rounded bg-zinc-100 dark:bg-zinc-800/80" />
+						<div className="h-4 w-11/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
+						<div className="h-4 w-10/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
+						<div className="h-4 w-9/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
+					</div>
+				</div>
+			) : effectiveMode === "preview" ? (
+				renderPreview()
+			) : (
+				renderSource()
+			)}
 		</div>
 	);
 });

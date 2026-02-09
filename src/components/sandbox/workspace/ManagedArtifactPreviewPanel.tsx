@@ -11,6 +11,7 @@ interface ManagedArtifactPreviewPanelProps {
 	selectedFile: SandboxFile | null;
 	artifactFiles: SandboxFile[];
 	previewMode: "preview" | "source";
+	density?: "comfortable" | "compact";
 	onSetPreviewMode: (mode: "preview" | "source") => void;
 	onLoadContent: (fileId: string) => Promise<void>;
 	onSelectArtifact: (fileId: string) => void;
@@ -25,6 +26,7 @@ export const ManagedArtifactPreviewPanel = memo(
 		selectedFile,
 		artifactFiles,
 		previewMode,
+		density = "comfortable",
 		onSetPreviewMode,
 		onLoadContent,
 		onSelectArtifact,
@@ -91,9 +93,15 @@ export const ManagedArtifactPreviewPanel = memo(
 			onSelectArtifact,
 		]);
 
+		const isCompact = density === "compact";
 		return (
 			<div className="h-full flex flex-col bg-white dark:bg-zinc-900">
-				<div className="px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5">
+				<div
+					className={cn(
+						"border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5",
+						isCompact ? "px-2.5 py-2" : "px-3 py-2.5",
+					)}
+				>
 					<div className="flex items-center justify-between">
 						<div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
 							<Sparkles className="w-3.5 h-3.5" />
@@ -104,8 +112,9 @@ export const ManagedArtifactPreviewPanel = memo(
 								type="button"
 								onClick={() => jumpArtifact(-1)}
 								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
+								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 focus-ring"
 								title="上一个产物 (Alt+[)"
+								aria-label="上一个产物"
 							>
 								<ChevronLeft className="w-3 h-3" />
 							</button>
@@ -118,8 +127,9 @@ export const ManagedArtifactPreviewPanel = memo(
 								type="button"
 								onClick={() => jumpArtifact(1)}
 								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
+								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 focus-ring"
 								title="下一个产物 (Alt+])"
+								aria-label="下一个产物"
 							>
 								<ChevronRight className="w-3 h-3" />
 							</button>
@@ -144,7 +154,7 @@ export const ManagedArtifactPreviewPanel = memo(
 										});
 									}}
 									className={cn(
-										"px-2.5 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-colors",
+										"px-2.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-colors focus-ring",
 										selectedFile?.id === artifact.id
 											? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08]"
 											: "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700",
@@ -166,6 +176,7 @@ export const ManagedArtifactPreviewPanel = memo(
 										type="button"
 										onClick={() => onSelectArtifact(artifact.id)}
 										className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px]"
+										aria-label={`最近预览 ${artifact.name}`}
 									>
 										{artifact.name}
 									</button>

@@ -7,6 +7,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { deleteFileSafe, moveFileSafe, revealFileSafe } from "../../lib/api";
 import { useAgentStore } from "../../lib/agent/store";
 import { useChatStore } from "../../lib/chat/store";
+import { getCenterUxPrefs } from "../../lib/config";
 import { EVENTS, events } from "../../lib/events";
 import {
 	groupFilesByCategory,
@@ -104,6 +105,20 @@ export default function SandboxWorkspace({
 			isExecuting,
 			openArtifactInPreview,
 		});
+
+	useEffect(() => {
+		let cancelled = false;
+		void getCenterUxPrefs().then((prefs) => {
+			if (cancelled) return;
+			store.setCenterView(prefs.defaultView);
+			store.setGraphFollow(prefs.graphFollow);
+			store.setArtifactClickBehavior(prefs.artifactClickBehavior);
+			store.setCenterDensity(prefs.infoDensity);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [store]);
 
 	useEffect(() => {
 		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {
@@ -229,12 +244,46 @@ export default function SandboxWorkspace({
 		[refreshFiles],
 	);
 
+	const handleRevealSandboxDir = useCallback(async () => {
+		if (!sandboxDir) {
+			toast.info("当前会话未生成沙盒目录");
+			return;
+		}
+		try {
+			await revealFileSafe(sandboxDir);
+		} catch (error) {
+			console.error("[SandboxWorkspace] reveal sandbox dir failed:", error);
+			toast.error(
+				`打开目录失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}, [sandboxDir]);
+
+	const previewPanel = (
+		<ManagedArtifactPreviewPanel
+			selectedFile={selectedFile}
+			artifactFiles={artifactFiles}
+			previewMode={ui.previewMode}
+			density={ui.centerDensity || "comfortable"}
+			onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
+			onLoadContent={async (fileId) => {
+				await store.loadFileContent(fileId);
+			}}
+			onSelectArtifact={(id) => void handleSelectFile(id, "user")}
+			onCopyPath={handleCopyArtifactPath}
+			onRevealFile={handleRevealArtifactFile}
+			onMoveFile={handleMoveArtifactFile}
+			onDeleteFile={handleDeleteArtifactFile}
+		/>
+	);
+
 	return (
 		<div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">
 			<ManagedCenterHeader
 				centerView={ui.centerView}
 				headerTitle={headerTitle}
 				headerMeta={headerMeta}
+				density={ui.centerDensity || "comfortable"}
 				isRefreshing={isRefreshing}
 				onSetCenterView={(view) => store.setCenterView(view)}
 				onRefresh={refreshFiles}
@@ -254,11 +303,16 @@ export default function SandboxWorkspace({
 					onSearchQueryChange={(value) => store.setGraphSearch(value)}
 					pinnedInspector={Boolean(ui.pinnedInspector)}
 					onPinnedInspectorChange={(value) => store.setPinnedInspector(value)}
+					defaultFollow={ui.graphFollow ?? true}
+					onFollowChange={(value) => store.setGraphFollow(value)}
+					artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
+					density={ui.centerDensity || "comfortable"}
 				/>
 			) : (
 				<PanelGroup direction="horizontal" className="flex-1">
 					<Panel defaultSize={25} minSize={15} maxSize={40}>
 						<ManagedFileTreePanel
+							density={ui.centerDensity || "comfortable"}
 							searchQuery={ui.searchQuery}
 							onSearchQueryChange={(query) => store.setSearchQuery(query)}
 							totalFiles={totalFiles}
@@ -272,26 +326,15 @@ export default function SandboxWorkspace({
 							onRevealFile={handleRevealArtifactFile}
 							onMoveFile={handleMoveArtifactFile}
 							onDeleteFile={handleDeleteArtifactFile}
+							sandboxDir={sandboxDir || null}
+							onRevealSandboxDir={handleRevealSandboxDir}
 						/>
 					</Panel>
 
 					<PanelResizeHandle className="w-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
 
 					<Panel defaultSize={75} minSize={40}>
-						<ManagedArtifactPreviewPanel
-							selectedFile={selectedFile}
-							artifactFiles={artifactFiles}
-							previewMode={ui.previewMode}
-							onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
-							onLoadContent={async (fileId) => {
-								await store.loadFileContent(fileId);
-							}}
-							onSelectArtifact={(id) => void handleSelectFile(id, "user")}
-							onCopyPath={handleCopyArtifactPath}
-							onRevealFile={handleRevealArtifactFile}
-							onMoveFile={handleMoveArtifactFile}
-							onDeleteFile={handleDeleteArtifactFile}
-						/>
+						{previewPanel}
 					</Panel>
 				</PanelGroup>
 			)}

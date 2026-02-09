@@ -27,6 +27,7 @@ function FilterButton({
 		<button
 			type="button"
 			onClick={onClick}
+			aria-label={`筛选${label}`}
 			className={cn(
 				"inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors",
 				active
@@ -55,6 +56,7 @@ interface GraphTopToolbarProps {
 	onFilterChange: (filter: GraphFilter) => void;
 	follow: boolean;
 	onToggleFollow: () => void;
+	density?: "comfortable" | "compact";
 }
 
 export function GraphTopToolbar({
@@ -72,6 +74,7 @@ export function GraphTopToolbar({
 	onFilterChange,
 	follow,
 	onToggleFollow,
+	density = "comfortable",
 }: GraphTopToolbarProps) {
 	return (
 		<div className="absolute inset-x-4 top-4 z-30 pointer-events-none">
@@ -86,7 +89,11 @@ export function GraphTopToolbar({
 							onChange={(e) => onSearchQueryChange(e.target.value)}
 							onKeyDown={onSearchInputKeyDown}
 							placeholder="搜索节点..."
-							className="w-56 max-w-[68vw] pl-8 pr-8 py-2 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-zinc-950/70 backdrop-blur-xl text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400"
+							className={cn(
+								"max-w-[68vw] pl-8 pr-8 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-zinc-950/70 backdrop-blur-xl text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-ring",
+								density === "compact" ? "w-48 py-1.5" : "w-56 py-2",
+							)}
+							aria-label="搜索运行图节点"
 						/>
 						{searchQuery.trim() ? (
 							<button
@@ -94,6 +101,7 @@ export function GraphTopToolbar({
 								onClick={onClearSearch}
 								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70 transition-colors"
 								title="清空搜索"
+								aria-label="清空搜索"
 							>
 								<X className="w-3.5 h-3.5" />
 							</button>
@@ -107,6 +115,7 @@ export function GraphTopToolbar({
 								disabled={searchMatchedNodeCount === 0}
 								className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
 								title="定位第一个匹配项"
+								aria-label="定位第一个匹配节点"
 							>
 								定位
 							</button>
@@ -116,6 +125,7 @@ export function GraphTopToolbar({
 								disabled={searchMatchedNodeCount === 0}
 								className="p-1 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
 								title="上一个匹配"
+								aria-label="上一个匹配节点"
 							>
 								<ChevronUp className="w-3.5 h-3.5" />
 							</button>
@@ -125,6 +135,7 @@ export function GraphTopToolbar({
 								disabled={searchMatchedNodeCount === 0}
 								className="p-1 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
 								title="下一个匹配"
+								aria-label="下一个匹配节点"
 							>
 								<ChevronRight className="w-3.5 h-3.5" />
 							</button>
@@ -175,6 +186,7 @@ export function GraphTopToolbar({
 						title={
 							follow ? "正在跟随运行节点（Alt+F）" : "暂停自动聚焦（Alt+F）"
 						}
+						aria-label={follow ? "关闭自动跟随" : "开启自动跟随"}
 					>
 						{follow ? (
 							<ChevronRight className="w-4 h-4" />

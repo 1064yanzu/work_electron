@@ -14,6 +14,7 @@ import {
 } from "react-resizable-panels";
 import Dashboard from "./components/Dashboard";
 import EditorCanvas from "./components/EditorCanvas";
+import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import ResourceSidebar from "./components/ResourceSidebar";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
@@ -198,9 +199,13 @@ export default function App() {
 							defaultSize={20}
 							minSize={15}
 							maxSize={50}
-							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-[background-color,border-color,box-shadow]"
+							className="overflow-hidden"
 						>
-							<ResourceSidebar onOpenSettings={() => setIsSettingsOpen(true)} />
+							<PanelShell>
+								<ResourceSidebar
+									onOpenSettings={() => setIsSettingsOpen(true)}
+								/>
+							</PanelShell>
 						</Panel>
 
 						<ResizeHandle />
@@ -209,30 +214,35 @@ export default function App() {
 						<Panel
 							defaultSize={rightSidebarVisible ? 55 : 80}
 							minSize={30}
-							className="mid-center-panel flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_6px_30px_-12px_rgba(0,0,0,0.14)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-[background-color,border-color,box-shadow]"
+							className="overflow-hidden"
 						>
-							{isManagedMode ? (
-								<Suspense fallback={<PanelLoadingFallback />}>
-									<SandboxWorkspace
-										onExitManagedMode={() =>
-											managedModeStore.disableManagedMode()
-										}
+							<PanelShell
+								variant="center"
+								className="mid-center-panel relative"
+							>
+								{isManagedMode ? (
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<SandboxWorkspace
+											onExitManagedMode={() =>
+												managedModeStore.disableManagedMode()
+											}
+										/>
+									</Suspense>
+								) : activeMainView === "browser" ? (
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<BrowserPanel />
+									</Suspense>
+								) : (
+									<EditorCanvas
+										projectId={currentProjectId}
+										initialDocId={currentDocId}
+										onBack={() => {
+											console.log("[App] 返回首页");
+											navigateToDashboard();
+										}}
 									/>
-								</Suspense>
-							) : activeMainView === "browser" ? (
-								<Suspense fallback={<PanelLoadingFallback />}>
-									<BrowserPanel />
-								</Suspense>
-							) : (
-								<EditorCanvas
-									projectId={currentProjectId}
-									initialDocId={currentDocId}
-									onBack={() => {
-										console.log("[App] 返回首页");
-										navigateToDashboard();
-									}}
-								/>
-							)}
+								)}
+							</PanelShell>
 						</Panel>
 
 						{rightSidebarVisible && (
@@ -244,11 +254,13 @@ export default function App() {
 									minSize={5}
 									maxSize={50}
 									onResize={handleRightPanelResize}
-									className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-[background-color,border-color,box-shadow]"
+									className="overflow-hidden"
 								>
-									<Suspense fallback={<PanelLoadingFallback />}>
-										<CopilotSidebar />
-									</Suspense>
+									<PanelShell>
+										<Suspense fallback={<PanelLoadingFallback />}>
+											<CopilotSidebar />
+										</Suspense>
+									</PanelShell>
 								</Panel>
 							</>
 						)}

@@ -11,6 +11,7 @@ interface UseGraphFocusArgs {
 	toolCallById: Map<string, ToolCall>;
 	onSelectNode: (nodeId: string | null) => void;
 	searchQuery: string;
+	follow: boolean;
 }
 
 export function useGraphFocus({
@@ -19,9 +20,9 @@ export function useGraphFocus({
 	toolCallById,
 	onSelectNode,
 	searchQuery,
+	follow,
 }: UseGraphFocusArgs) {
 	const { fitView } = useReactFlow();
-	const [follow, setFollow] = useState(true);
 	const [searchIndex, setSearchIndex] = useState(0);
 	const lastFocusKeyRef = useRef<string>("");
 
@@ -108,8 +109,6 @@ export function useGraphFocus({
 	);
 
 	return {
-		follow,
-		setFollow,
 		searchMatchedNodeIds,
 		searchIndex,
 		focusFirstSearchMatch,

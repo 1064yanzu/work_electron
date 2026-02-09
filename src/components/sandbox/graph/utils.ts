@@ -124,5 +124,8 @@ export function getNodeSearchText(node: { type: string; data: any }): string {
 	if (node.type === "artifact") {
 		return `${node.data.title || ""} ${node.data.artifactType || ""}`.toLowerCase();
 	}
+	if (node.type === "lane") {
+		return `${node.data.label || ""}`.toLowerCase();
+	}
 	return "";
 }

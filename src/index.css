@@ -10,6 +10,16 @@
 		--editor-surface: #ffffff;
 		--editor-muted-surface: #f3f2ef;
 		--editor-border: #e5e3de;
+		--doc-surface: rgba(250, 250, 248, 0.92);
+		--doc-toolbar: rgba(255, 255, 255, 0.78);
+		--doc-card: rgba(255, 255, 255, 0.96);
+		--doc-muted: #5f6470;
+		--panel-bg: rgba(255, 255, 255, 0.86);
+		--panel-bg-strong: rgba(255, 255, 255, 0.9);
+		--panel-border: rgba(15, 23, 42, 0.08);
+		--panel-ring: rgba(15, 23, 42, 0.04);
+		--panel-shadow: 0 8px 36px -18px rgba(15, 23, 42, 0.24);
+		--interactive-ring: rgba(217, 108, 70, 0.35);
 	}
 
 	.dark {
@@ -19,6 +29,16 @@
 		--editor-surface: #1a1a1a;
 		--editor-muted-surface: #1f1f23;
 		--editor-border: #2b2b31;
+		--doc-surface: rgba(20, 20, 23, 0.85);
+		--doc-toolbar: rgba(20, 20, 23, 0.78);
+		--doc-card: rgba(30, 30, 35, 0.85);
+		--doc-muted: #aeb4c2;
+		--panel-bg: rgba(30, 30, 30, 0.9);
+		--panel-bg-strong: rgba(24, 24, 27, 0.92);
+		--panel-border: rgba(255, 255, 255, 0.08);
+		--panel-ring: rgba(255, 255, 255, 0.04);
+		--panel-shadow: 0 14px 50px -26px rgba(0, 0, 0, 0.6);
+		--interactive-ring: rgba(224, 123, 82, 0.4);
 	}
 
 	body {
@@ -121,22 +141,30 @@
 
 .mid-center-panel {
 	background:
-		radial-gradient(120% 120% at 100% 0%,
+		radial-gradient(
+			120% 120% at 100% 0%,
 			rgba(245, 158, 11, 0.06),
-			transparent 48%),
-		radial-gradient(100% 100% at 0% 100%,
+			transparent 48%
+		),
+		radial-gradient(
+			100% 100% at 0% 100%,
 			rgba(59, 130, 246, 0.04),
-			transparent 52%);
+			transparent 52%
+		);
 }
 
 .dark .mid-center-panel {
 	background:
-		radial-gradient(120% 120% at 100% 0%,
+		radial-gradient(
+			120% 120% at 100% 0%,
 			rgba(245, 158, 11, 0.08),
-			transparent 48%),
-		radial-gradient(100% 100% at 0% 100%,
+			transparent 48%
+		),
+		radial-gradient(
+			100% 100% at 0% 100%,
 			rgba(59, 130, 246, 0.08),
-			transparent 52%);
+			transparent 52%
+		);
 }
 
 .editor-shell {
@@ -148,15 +176,79 @@
 	border-color: var(--editor-border);
 }
 
+.doc-surface {
+	background-color: var(--doc-surface);
+}
+
+.doc-toolbar {
+	background-color: var(--doc-toolbar);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+}
+
+.doc-card {
+	background-color: var(--doc-card);
+}
+
+.doc-muted {
+	color: var(--doc-muted);
+}
+
+.panel-shell {
+	background-color: var(--panel-bg);
+	border: 1px solid var(--panel-border);
+	box-shadow: var(--panel-shadow);
+	backdrop-filter: blur(18px);
+	-webkit-backdrop-filter: blur(18px);
+	border-radius: 16px;
+}
+
+.panel-shell--center {
+	background-color: var(--panel-bg-strong);
+}
+
+.panel-icon-button {
+	height: 36px;
+	width: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	color: rgb(113 113 122);
+	transition:
+		color 0.2s ease,
+		background-color 0.2s ease,
+		transform 0.2s ease;
+}
+
+.panel-icon-button:hover {
+	background-color: rgba(15, 23, 42, 0.07);
+	color: rgb(39 39 42);
+}
+
+.dark .panel-icon-button:hover {
+	background-color: rgba(255, 255, 255, 0.08);
+	color: rgb(228 228 231);
+}
+
+.panel-icon-button:active {
+	transform: scale(0.97);
+}
+
+.panel-icon-button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--interactive-ring);
+}
+
 /* ============================================
    高级交互工具类
    ============================================ */
 @layer utilities {
-
 	/* 按钮微交互 - 高级质感 */
 	.btn-interactive {
 		@apply duration-150 ease-out;
-		transition-property: transform, background-color, color, border-color, box-shadow;
+		transition-property:
+			transform, background-color, color, border-color, box-shadow;
 		transform: scale(1);
 	}
 
@@ -201,19 +293,23 @@
 	/* 骨架屏动画 */
 	.skeleton {
 		@apply relative overflow-hidden;
-		background: linear-gradient(90deg,
-				theme('colors.zinc.200') 0%,
-				theme('colors.zinc.100') 50%,
-				theme('colors.zinc.200') 100%);
+		background: linear-gradient(
+			90deg,
+			theme("colors.zinc.200") 0%,
+			theme("colors.zinc.100") 50%,
+			theme("colors.zinc.200") 100%
+		);
 		background-size: 200% 100%;
 		animation: shimmer 2s linear infinite;
 	}
 
 	.dark .skeleton {
-		background: linear-gradient(90deg,
-				theme('colors.zinc.800') 0%,
-				theme('colors.zinc.700') 50%,
-				theme('colors.zinc.800') 100%);
+		background: linear-gradient(
+			90deg,
+			theme("colors.zinc.800") 0%,
+			theme("colors.zinc.700") 50%,
+			theme("colors.zinc.800") 100%
+		);
 		background-size: 200% 100%;
 	}
 
@@ -225,7 +321,8 @@
 	/* 平滑过渡 */
 	.transition-smooth {
 		@apply duration-200 ease-out;
-		transition-property: transform, opacity, background-color, color, border-color, box-shadow;
+		transition-property:
+			transform, opacity, background-color, color, border-color, box-shadow;
 	}
 
 	/* 涟漪效果容器 */
@@ -311,7 +408,6 @@ html[data-motion-preference="reduced"] *::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
 	*,
 	*::before,
 	*::after {
