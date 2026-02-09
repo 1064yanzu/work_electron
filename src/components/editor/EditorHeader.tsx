@@ -62,7 +62,7 @@ function IconBtn({ label, onClick, icon, active, disabled }: IconBtnProps) {
 			aria-label={label}
 			title={label}
 			className={cn(
-				"focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors",
+				"focus-ring h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg transition-colors",
 				active
 					? "bg-primary/12 dark:bg-primary/20 text-primary"
 					: "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
@@ -103,8 +103,8 @@ export function EditorHeader({
 				: "已保存";
 
 	return (
-		<header className="doc-toolbar shrink-0 border-b border-zinc-200/70 dark:border-zinc-800/70 px-3 py-2.5 sm:px-4 flex items-center justify-between gap-2 relative z-30">
-			<div className="flex items-center gap-2 min-w-0">
+		<header className="doc-toolbar shrink-0 border-b border-zinc-200/70 dark:border-zinc-800/70 px-2 py-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 relative z-30 overflow-x-auto">
+			<div className="flex items-center gap-1.5 shrink-0">
 				<IconBtn
 					label="返回文档列表"
 					onClick={onBackToList}
@@ -154,8 +154,11 @@ export function EditorHeader({
 				</div>
 			</div>
 
+			{/* Spacer */}
+			<div className="flex-1 min-w-0" />
+
 			{editorMode !== "preview" && !focusMode ? (
-				<div className="hidden lg:flex items-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/88 dark:bg-zinc-900/78 p-0.5">
+				<div className="hidden lg:flex items-center shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/88 dark:bg-zinc-900/78 p-0.5">
 					<IconBtn
 						label="粗体"
 						onClick={() => onInsertMarkdown("**", "**")}
@@ -198,11 +201,9 @@ export function EditorHeader({
 						active
 					/>
 				</div>
-			) : (
-				<div className="hidden lg:block flex-1" />
-			)}
+			) : null}
 
-			<div className="flex items-center gap-1.5 shrink-0">
+			<div className="flex items-center gap-1 shrink-0">
 				<button
 					type="button"
 					onClick={onSave}
@@ -222,7 +223,7 @@ export function EditorHeader({
 					) : (
 						<Check className="w-4 h-4" />
 					)}
-					<span className="hidden xl:inline">{saveLabel}</span>
+					<span className="hidden xl:inline truncate">{saveLabel}</span>
 				</button>
 
 				<IconBtn

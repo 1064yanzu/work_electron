@@ -29,10 +29,10 @@ export function DocumentGridCard({
 			className={cn(
 				"doc-card relative rounded-2xl border p-4 sm:p-5 bg-white/95 dark:bg-zinc-900/78",
 				"border-zinc-200/75 dark:border-zinc-700/70 shadow-[0_6px_24px_-16px_rgba(0,0,0,0.22)]",
-				"transition-[box-shadow,border-color,background-color] duration-200",
-				"hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.30)]",
+				"transition-all duration-200 ease-out",
+				"hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.30)] hover:-translate-y-1",
 				checked &&
-					"ring-2 ring-primary/35 border-primary/45 dark:border-primary/40 bg-primary/[0.04] dark:bg-primary/[0.12]",
+				"ring-2 ring-primary/35 border-primary/45 dark:border-primary/40 bg-primary/[0.04] dark:bg-primary/[0.12]",
 			)}
 		>
 			{isManaging ? (

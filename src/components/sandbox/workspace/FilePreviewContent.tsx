@@ -80,12 +80,16 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 
 	if (!file) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-zinc-900">
-				<div className="text-center space-y-2">
-					<h3 className="text-lg font-medium text-zinc-700 dark:text-zinc-300">
+			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-900/80">
+				<div className="text-center space-y-4">
+					{/* 装饰性图标 */}
+					<div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center shadow-inner">
+						<Eye className="w-7 h-7 text-zinc-400 dark:text-zinc-500" />
+					</div>
+					<h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
 						{emptyTitle}
 					</h3>
-					<p className="text-sm text-zinc-500 dark:text-zinc-400">
+					<p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
 						{emptyDescription}
 					</p>
 				</div>
@@ -125,9 +129,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				{(file.content || "").split("\n").map((line, index) => (
 					<div
 						key={`${file.id}-line-${index + 1}`}
-						className="grid grid-cols-[3rem_minmax(0,1fr)]"
+						className="grid grid-cols-[3rem_minmax(0,1fr)] group hover:bg-zinc-800/50 -mx-4 px-4 transition-colors"
 					>
-						<span className="select-none text-right pr-3 text-zinc-500">
+						<span
+							className="select-none text-right pr-3 text-zinc-500 group-hover:text-zinc-400 cursor-pointer transition-colors"
+							title={`第 ${index + 1} 行`}
+						>
 							{index + 1}
 						</span>
 						<span className="whitespace-pre-wrap break-words">
@@ -236,41 +243,43 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							type="button"
 							onClick={() => onSetPreviewMode("preview")}
 							className={cn(
-								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 focus-ring",
+								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
 								effectiveMode === "preview"
 									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
+									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50",
 							)}
 							aria-label="切换到预览模式"
 						>
-							<Eye className="w-3 h-3" />
+							<Eye className="w-3.5 h-3.5" />
 							预览
 						</button>
 						<button
 							type="button"
 							onClick={() => onSetPreviewMode("source")}
 							className={cn(
-								"px-2 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 focus-ring",
+								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
 								effectiveMode === "source"
 									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
+									: "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50",
 							)}
 							aria-label="切换到源码模式"
 						>
-							<FileCode2 className="w-3 h-3" />
+							<FileCode2 className="w-3.5 h-3.5" />
 							源码
 						</button>
 					</div>
+					{/* 分隔线 */}
+					<div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1" />
 					<button
 						type="button"
 						onClick={handleCopy}
 						disabled={!canCopyContent}
 						className={cn(
-							"p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring",
+							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all focus-ring active:scale-95",
 							!canCopyContent &&
 							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
-						title="复制内容"
+						title="复制内容 (⌘C)"
 						aria-label="复制内容"
 					>
 						{copiedAction === "content" ? (
@@ -282,7 +291,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<button
 						type="button"
 						onClick={handleCopyPath}
-						className="p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring"
+						className="p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all focus-ring active:scale-95"
 						title="复制路径"
 						aria-label="复制路径"
 					>
@@ -297,11 +306,11 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleDownload}
 						disabled={!canDownload}
 						className={cn(
-							"p-1.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors focus-ring",
+							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all focus-ring active:scale-95",
 							!canDownload &&
 							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
-						title="下载文件"
+						title="下载文件 (⌘D)"
 						aria-label="下载文件"
 					>
 						<Download className="w-4 h-4" />
@@ -310,12 +319,21 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 			</div>
 			{isLoadingContent ? (
 				<div className="flex-1 p-6 bg-white dark:bg-zinc-900">
-					<div className="max-w-4xl mx-auto space-y-3 animate-pulse">
-						<div className="h-6 w-1/3 rounded bg-zinc-200 dark:bg-zinc-800" />
-						<div className="h-4 w-full rounded bg-zinc-100 dark:bg-zinc-800/80" />
-						<div className="h-4 w-11/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
-						<div className="h-4 w-10/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
-						<div className="h-4 w-9/12 rounded bg-zinc-100 dark:bg-zinc-800/80" />
+					<div className="max-w-4xl mx-auto space-y-4">
+						{/* 标题骨架 */}
+						<div className="h-8 w-2/5 rounded-lg skeleton" />
+						{/* 段落骨架 */}
+						<div className="space-y-2.5 pt-2">
+							<div className="h-4 w-full rounded skeleton" />
+							<div className="h-4 w-[95%] rounded skeleton" />
+							<div className="h-4 w-[88%] rounded skeleton" />
+						</div>
+						{/* 第二段 */}
+						<div className="space-y-2.5 pt-3">
+							<div className="h-4 w-full rounded skeleton" />
+							<div className="h-4 w-[92%] rounded skeleton" />
+							<div className="h-4 w-3/4 rounded skeleton" />
+						</div>
 					</div>
 				</div>
 			) : effectiveMode === "preview" ? (

@@ -21,8 +21,11 @@ export function getScopeBadge(scope?: "global" | "project"): ScopeBadgeMeta {
 	};
 }
 
-export function formatDocumentDate(date: string | number): string {
-	return new Date(date).toLocaleDateString("zh-CN", {
+export function formatDocumentDate(date: string | number | undefined | null): string {
+	if (!date) return "未知日期";
+	const d = new Date(date);
+	if (Number.isNaN(d.getTime())) return "未知日期";
+	return d.toLocaleDateString("zh-CN", {
 		month: "short",
 		day: "numeric",
 	});

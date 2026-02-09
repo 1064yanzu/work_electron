@@ -135,35 +135,42 @@ export const ManagedArtifactPreviewPanel = memo(
 							</button>
 						</div>
 					</div>
-					<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-						{totalArtifacts === 0 ? (
-							<span className="text-xs text-zinc-400 px-2 py-1">暂无产物</span>
-						) : (
-							artifactFiles.map((artifact) => (
-								<button
-									key={artifact.id}
-									type="button"
-									onClick={() => onSelectArtifact(artifact.id)}
-									onContextMenu={(e) => {
-										e.preventDefault();
-										e.stopPropagation();
-										setContextMenu({
-											x: e.clientX,
-											y: e.clientY,
-											file: artifact,
-										});
-									}}
-									className={cn(
-										"px-2.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-colors focus-ring",
-										selectedFile?.id === artifact.id
-											? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08]"
-											: "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700",
-									)}
-								>
-									{artifact.name}
-								</button>
-							))
-						)}
+					{/* 产物导航条，带滚动渐隐指示 */}
+					<div className="relative">
+						{/* 左侧渐隐遮罩 */}
+						<div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
+						{/* 右侧渐隐遮罩 */}
+						<div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
+						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 px-1">
+							{totalArtifacts === 0 ? (
+								<span className="text-xs text-zinc-400 px-2 py-1">暂无产物</span>
+							) : (
+								artifactFiles.map((artifact) => (
+									<button
+										key={artifact.id}
+										type="button"
+										onClick={() => onSelectArtifact(artifact.id)}
+										onContextMenu={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											setContextMenu({
+												x: e.clientX,
+												y: e.clientY,
+												file: artifact,
+											});
+										}}
+										className={cn(
+											"px-2.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-all focus-ring active:scale-95",
+											selectedFile?.id === artifact.id
+												? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08] shadow-sm"
+												: "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700",
+										)}
+									>
+										{artifact.name}
+									</button>
+								))
+							)}
+						</div>
 					</div>
 					{recentArtifacts.length > 0 ? (
 						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
