@@ -24,7 +24,10 @@ import {
 	listSources,
 	saveTempFile,
 } from "../../lib/api";
-import { useWorkspaceStore } from "../../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../../lib/workspaceStore";
 import {
 	type Card,
 	type OutputAsset,
@@ -81,17 +84,20 @@ export function ChatInput({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// 获取工作区数据 - 实时同步上下文状态
-	const {
-		docCache,
-		addSelectionToContext,
-		addFileToContext,
-		contexts,
-		removeContext,
-		addSourceToContext,
-		currentProjectId,
-		currentFolderId,
-	} = useWorkspaceStore();
+	const docCache = useWorkspaceStoreSelector((state) => state.docCache);
+	const contexts = useWorkspaceStoreSelector((state) => state.contexts);
+	const currentProjectId = useWorkspaceStoreSelector(
+		(state) => state.currentProjectId,
+	);
+	const currentFolderId = useWorkspaceStoreSelector(
+		(state) => state.currentFolderId,
+	);
+	const addSelectionToContext =
+		workspaceStore.addSelectionToContext.bind(workspaceStore);
+	const addFileToContext = workspaceStore.addFileToContext.bind(workspaceStore);
+	const removeContext = workspaceStore.removeContext.bind(workspaceStore);
+	const addSourceToContext =
+		workspaceStore.addSourceToContext.bind(workspaceStore);
 
 	// 加载外部数据
 	useEffect(() => {
@@ -539,8 +545,8 @@ export function ChatInput({
 														: "file",
 											status:
 												ctx.content &&
-													ctx.content.trim().length > 0 &&
-													!ctx.filePath
+												ctx.content.trim().length > 0 &&
+												!ctx.filePath
 													? "preparing"
 													: "ready",
 										}}
@@ -603,10 +609,11 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${isModelSelectorOpen
-									? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-									: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
-									}`}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${
+									isModelSelectorOpen
+										? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
+										: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
+								}`}
 							>
 								<span className="font-medium truncate max-w-[100px]">
 									{model ? model.split("/").pop()?.slice(0, 12) : "Auto"}

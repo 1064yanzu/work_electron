@@ -150,7 +150,7 @@ const CustomSelect = ({
 				}
 			};
 			updatePosition();
-			window.addEventListener("scroll", updatePosition);
+			window.addEventListener("scroll", updatePosition, { passive: true });
 			window.addEventListener("resize", updatePosition);
 			return () => {
 				window.removeEventListener("scroll", updatePosition);

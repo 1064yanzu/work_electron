@@ -1,35 +1,63 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	Suspense,
+	lazy,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { MessageCircle } from "lucide-react";
 import {
 	Panel,
 	PanelGroup,
 	type ImperativePanelHandle,
 } from "react-resizable-panels";
-import BrowserPanel from "./components/BrowserPanel";
-import CopilotSidebar from "./components/CopilotSidebar";
 import Dashboard from "./components/Dashboard";
 import EditorCanvas from "./components/EditorCanvas";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import ResourceSidebar from "./components/ResourceSidebar";
-import { SandboxWorkspace } from "./components/sandbox";
-import { SettingsModal } from "./components/Settings/SettingsModal";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
 import { useManagedModeStore } from "./lib/managedModeStore";
 import { themeManager } from "./lib/theme";
-import { useWorkspaceStore, workspaceStore } from "./lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "./lib/workspaceStore";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
 
+const BrowserPanel = lazy(() => import("./components/BrowserPanel"));
+const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
+const SandboxWorkspace = lazy(
+	() => import("./components/sandbox/SandboxWorkspace"),
+);
+const SettingsModal = lazy(async () => {
+	const mod = await import("./components/Settings/SettingsModal");
+	return { default: mod.SettingsModal };
+});
+
+function PanelLoadingFallback() {
+	return (
+		<div className="h-full w-full flex items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+			正在加载...
+		</div>
+	);
+}
+
 export default function App() {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	const {
-		activeMainView,
-		rightSidebarVisible,
-		toggleRightSidebar,
-		setRightSidebarVisible,
-	} = useWorkspaceStore();
+	const activeMainView = useWorkspaceStoreSelector(
+		(state) => state.activeMainView,
+	);
+	const rightSidebarVisible = useWorkspaceStoreSelector(
+		(state) => state.rightSidebarVisible,
+	);
+	const toggleRightSidebar =
+		workspaceStore.toggleRightSidebar.bind(workspaceStore);
+	const setRightSidebarVisible =
+		workspaceStore.setRightSidebarVisible.bind(workspaceStore);
 	const { isActive: isManagedMode, store: managedModeStore } =
 		useManagedModeStore();
 
@@ -139,13 +167,17 @@ export default function App() {
 							className="mid-center-panel flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_6px_30px_-12px_rgba(0,0,0,0.14)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-all"
 						>
 							{isManagedMode ? (
-								<SandboxWorkspace
-									onExitManagedMode={() =>
-										managedModeStore.disableManagedMode()
-									}
-								/>
+								<Suspense fallback={<PanelLoadingFallback />}>
+									<SandboxWorkspace
+										onExitManagedMode={() =>
+											managedModeStore.disableManagedMode()
+										}
+									/>
+								</Suspense>
 							) : activeMainView === "browser" ? (
-								<BrowserPanel />
+								<Suspense fallback={<PanelLoadingFallback />}>
+									<BrowserPanel />
+								</Suspense>
 							) : (
 								<EditorCanvas
 									projectId={currentProjectId}
@@ -169,7 +201,9 @@ export default function App() {
 									onResize={handleRightPanelResize}
 									className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-all"
 								>
-									<CopilotSidebar />
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<CopilotSidebar />
+									</Suspense>
 								</Panel>
 							</>
 						)}
@@ -191,10 +225,14 @@ export default function App() {
 			)}
 
 			{/* Global Settings Modal - Always rendered */}
-			<SettingsModal
-				isOpen={isSettingsOpen}
-				onClose={() => setIsSettingsOpen(false)}
-			/>
+			{isSettingsOpen ? (
+				<Suspense fallback={null}>
+					<SettingsModal
+						isOpen={isSettingsOpen}
+						onClose={() => setIsSettingsOpen(false)}
+					/>
+				</Suspense>
+			) : null}
 		</MouseDragProvider>
 	);
 }

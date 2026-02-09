@@ -24,7 +24,6 @@ import {
 	agentStore,
 	resumePersistentSession,
 	startPersistentSession,
-	useAgentStore,
 } from "../lib/agent";
 import {
 	encodeChatMessageToAgentContentJson,
@@ -34,13 +33,11 @@ import {
 import { useAgentChatSettingsStore } from "../lib/agent/chatSettingsStore";
 import { usePermissionStore } from "../lib/agent";
 import { useAskUserQuestionStore } from "../lib/agent/askUserQuestionStore";
+import { createMessage, invokeLlm, invokeLlmWithCallback } from "../lib/chat";
 import {
-	createMessage,
-	invokeLlm,
-	invokeLlmWithCallback,
-	useChatStore,
-} from "../lib/chat";
-import { chatStore as chatStoreInstance } from "../lib/chat/store";
+	chatStore as chatStoreInstance,
+	useChatStoreSelector,
+} from "../lib/chat/store";
 import {
 	filterThoughtBlocksForPersistence,
 	StreamBlocksBuilder,
@@ -55,10 +52,20 @@ import { useManagedModeStore } from "../lib/managedModeStore";
 import { useMessageQueueStore } from "../lib/messageQueueStore";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
-import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../lib/agent/context/conversationMessages";
 import { isSdkSessionId } from "../lib/agent/context/sessionId";
-import { createOutputAsset } from "../lib/api";
+import {
+	createOutputAsset,
+	getAgentSandboxDir,
+	getSourceDetail,
+	saveTempFile,
+} from "../lib/api";
+import { useAgentStoreSelector } from "../lib/agent/store";
+import { safeInvoke } from "../lib/tauriBridge";
 import { OutputType } from "../types";
 import { PermissionList } from "./agent";
 import { AskUserQuestionList } from "./agent/AskUserQuestionCard";
@@ -106,40 +113,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-		kind: "update";
-		displayContent: string;
-		suggestedContent: string;
-		fileUpdate: {
-			fileName: string;
-			type: "update";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
-			originalContent: string;
+			kind: "update";
+			displayContent: string;
 			suggestedContent: string;
-			prompt: string;
-		};
-	}
+			fileUpdate: {
+				fileName: string;
+				type: "update";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				originalContent: string;
+				suggestedContent: string;
+				prompt: string;
+			};
+	  }
 	| {
-		kind: "create";
-		displayContent: string;
-		title: string;
-		summary: string;
-		content: string;
-		fileUpdate: {
-			fileName: string;
-			type: "create";
-			additions: number;
-			deletions: number;
-		};
-		eventPayload: {
+			kind: "create";
+			displayContent: string;
 			title: string;
 			summary: string;
 			content: string;
-			prompt: string;
-		};
-	} {
+			fileUpdate: {
+				fileName: string;
+				type: "create";
+				additions: number;
+				deletions: number;
+			};
+			eventPayload: {
+				title: string;
+				summary: string;
+				content: string;
+				prompt: string;
+			};
+	  } {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
@@ -375,20 +382,60 @@ function guessFallbackSearchQuery(messages: ChatMessageType[]): string | null {
 }
 
 // 快捷操作按钮
+const chatActions = {
+	createNewSession: chatStoreInstance.createNewSession.bind(chatStoreInstance),
+	setActiveSession: chatStoreInstance.setActiveSession.bind(chatStoreInstance),
+	deleteSession: chatStoreInstance.deleteSession.bind(chatStoreInstance),
+	addMessage: chatStoreInstance.addMessage.bind(chatStoreInstance),
+	updateMessage: chatStoreInstance.updateMessage.bind(chatStoreInstance),
+	replaceSessionMessages:
+		chatStoreInstance.replaceSessionMessages.bind(chatStoreInstance),
+	updateSessionTitle:
+		chatStoreInstance.updateSessionTitle.bind(chatStoreInstance),
+	setSessionAgentSessionId:
+		chatStoreInstance.setSessionAgentSessionId.bind(chatStoreInstance),
+	setSessionSdkSessionId:
+		chatStoreInstance.setSessionSdkSessionId.bind(chatStoreInstance),
+	setStatus: chatStoreInstance.setStatus.bind(chatStoreInstance),
+	deleteMessage: chatStoreInstance.deleteMessage.bind(chatStoreInstance),
+};
 
 export default function CopilotSidebar() {
 	const { providers, activeModel, settingsStore } = useSettingsStore();
-	const chatStore = useChatStore();
+	const sessions = useChatStoreSelector((state) => state.sessions);
+	const activeSessionId = useChatStoreSelector(
+		(state) => state.activeSessionId,
+	);
+	const status = useChatStoreSelector((state) => state.status);
+	const activeSession = useChatStoreSelector((state) => {
+		if (!state.activeSessionId) return null;
+		return (
+			state.sessions.find((session) => session.id === state.activeSessionId) ||
+			null
+		);
+	});
+	const chatStore = useMemo(
+		() => ({
+			sessions,
+			activeSessionId,
+			activeSession,
+			status,
+			...chatActions,
+		}),
+		[sessions, activeSessionId, activeSession, status],
+	);
 	const { settings: chatSettings } = useAgentChatSettingsStore();
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const { currentResearch } = useWorkspaceStore();
+	const currentResearch = useWorkspaceStoreSelector(
+		(state) => state.currentResearch,
+	);
 	// Agent 状态
-	const {
-		isExecuting: isAgentExecuting,
-		currentTask: agentCurrentTask,
-		isWaitingForLLM,
-	} = useAgentStore();
+	const isAgentExecuting = useAgentStoreSelector((state) => state.isExecuting);
+	const agentCurrentTask = useAgentStoreSelector((state) => state.currentTask);
+	const isWaitingForLLM = useAgentStoreSelector(
+		(state) => state.isWaitingForLLM,
+	);
 	const { pendingRequests, respondToPermission } = usePermissionStore();
 	const { pending: pendingAskUserQuestions, resolve: resolveAskUserQuestion } =
 		useAskUserQuestionStore();
@@ -656,7 +703,7 @@ export default function CopilotSidebar() {
 				const anyCss = (window as any)?.CSS;
 				if (anyCss && typeof anyCss.escape === "function")
 					return anyCss.escape(value);
-			} catch { }
+			} catch {}
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -1299,8 +1346,12 @@ export default function CopilotSidebar() {
 				}
 
 				const latestState = chatStoreInstance.getState();
-				const latestSession = latestState.sessions.find((s) => s.id === session.id);
-				const latestMessage = latestSession?.messages.find((m) => m.id === messageId);
+				const latestSession = latestState.sessions.find(
+					(s) => s.id === session.id,
+				);
+				const latestMessage = latestSession?.messages.find(
+					(m) => m.id === messageId,
+				);
 				if (!latestMessage) return;
 
 				void persistChatMessageToAgentSession(
@@ -1331,13 +1382,14 @@ export default function CopilotSidebar() {
 					streamBuilder.flushParser();
 					const finalRawText = rawText || getStreamText();
 					const forcedFinalState = agentStore.getState();
-					const forcedTokenUsage = (forcedFinalState.currentTask?.metadata as any)
-						?.tokenUsage as
+					const forcedTokenUsage = (
+						forcedFinalState.currentTask?.metadata as any
+					)?.tokenUsage as
 						| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-						}
+								promptTokens: number;
+								completionTokens: number;
+								totalTokens: number;
+						  }
 						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
@@ -1380,7 +1432,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch { }
+					} catch {}
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1440,7 +1492,7 @@ export default function CopilotSidebar() {
 					conversationMessagesForAgent,
 				);
 				// 获取用户附加的上下文（文档、资料等）
-				// 如果有 sourceId 但 content 为空，尝试重新加载
+				// 阶段 1：并发补齐 context 文件与缺失内容
 				await workspaceStore.ensureAllContextsHaveFiles();
 				const contexts = workspaceStore.getState().contexts;
 				const attachedContexts: Array<{ title: string; content: string }> = [];
@@ -1458,7 +1510,6 @@ export default function CopilotSidebar() {
 				const sandboxKeyForFiles = boundAgentSessionId || session.id;
 				let sandboxDirForFiles: string | null = null;
 				try {
-					const { getAgentSandboxDir } = await import("../lib/api");
 					const res = await getAgentSandboxDir(sandboxKeyForFiles);
 					if (res?.path) sandboxDirForFiles = String(res.path);
 					console.log("[CopilotSidebar] sandboxDir获取:", {
@@ -1485,7 +1536,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-							withoutTrailingDotsOrSpaces === ".."
+						withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1494,109 +1545,133 @@ export default function CopilotSidebar() {
 				const ensureMdExt = (name: string) =>
 					name.toLowerCase().endsWith(".md") ? name : `${name}.md`;
 
-				const seenSandboxNames = new Map<string, number>();
-
-				for (const ctx of contexts) {
-					let content = ctx.content;
-					let filePath = ctx.filePath;
-					let fileSize = ctx.size;
-
-					// 【调试】打印每个上下文的详细信息
-					console.log("[CopilotSidebar] 处理上下文:", {
-						title: ctx.title,
-						hasFilePath: !!filePath,
-						filePath,
-						hasContent: !!content,
-						contentLength: content?.length || 0,
-						fileSize,
-					});
-
-					// 如果资料内容为空，尝试加载
-					if (!content && ctx.sourceId) {
-						try {
-							const { getSourceDetail } = await import("../lib/api");
-							const detail = await getSourceDetail(ctx.sourceId);
-							content = detail.note?.content || detail.source.description || "";
-							console.log(
-								"[CopilotSidebar] 加载资料内容:",
-								ctx.title,
-								content.slice(0, 100),
-							);
-						} catch (err) {
-							console.error("[CopilotSidebar] 加载资料内容失败:", err);
+				const resolvedContexts = await Promise.all(
+					contexts.map(async (ctx) => {
+						let content = ctx.content;
+						if (!content && ctx.sourceId) {
+							try {
+								const detail = await getSourceDetail(ctx.sourceId);
+								content =
+									detail.note?.content || detail.source.description || "";
+								console.log(
+									"[CopilotSidebar] 加载资料内容:",
+									ctx.title,
+									content.slice(0, 100),
+								);
+							} catch (err) {
+								console.error("[CopilotSidebar] 加载资料内容失败:", err);
+							}
 						}
+						return { ...ctx, content };
+					}),
+				);
+
+				const sandboxPathByContextId = new Map<string, string>();
+				const sandboxDirNormalized = sandboxDirForFiles
+					? String(sandboxDirForFiles).replace(/[/\\]+$/g, "")
+					: null;
+				if (sandboxDirNormalized) {
+					const seenSandboxNames = new Map<string, number>();
+					for (const ctx of resolvedContexts) {
+						if (!ctx.content || ctx.content.trim().length === 0) continue;
+						const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
+						const count = (seenSandboxNames.get(base) ?? 0) + 1;
+						seenSandboxNames.set(base, count);
+						const dot = base.lastIndexOf(".");
+						const stem = dot > 0 ? base.slice(0, dot) : base;
+						const ext = dot > 0 ? base.slice(dot) : "";
+						const name = count === 1 ? base : `${stem}-${count}${ext}`;
+						sandboxPathByContextId.set(
+							ctx.id,
+							`${sandboxDirNormalized}/${name}`,
+						);
 					}
+				}
 
-					// 【修复】如果有沙盒目录和内容，始终写入沙盒以确保文件存在于 SDK 的 cwd 中
-					// 原来的逻辑只在 filePath 不存在时才写入，但旧的 filePath 可能指向过期路径
-					if (sandboxDirForFiles && content && content.trim().length > 0) {
-						try {
-							const { safeInvoke } = await import("../lib/tauriBridge");
-							const dir = String(sandboxDirForFiles).replace(/[/\\]+$/g, "");
-							const base = ensureMdExt(
-								sanitizeFileName(ctx.title || "document"),
-							);
-							const count = (seenSandboxNames.get(base) ?? 0) + 1;
-							seenSandboxNames.set(base, count);
-							const dot = base.lastIndexOf(".");
-							const stem = dot > 0 ? base.slice(0, dot) : base;
-							const ext = dot > 0 ? base.slice(dot) : "";
-							const name = count === 1 ? base : `${stem}-${count}${ext}`;
-							const dest = `${dir}/${name}`;
+				// 阶段 2：并发落盘（沙盒或临时文件）
+				const contextsWithFiles = await Promise.all(
+					resolvedContexts.map(async (ctx) => {
+						const content = ctx.content || "";
+						let filePath = ctx.filePath;
+						let fileSize = ctx.size;
 
-							await safeInvoke<{ success: boolean }>("write_file_safe", {
-								payload: {
-									path: dest,
+						console.log("[CopilotSidebar] 处理上下文:", {
+							title: ctx.title,
+							hasFilePath: !!filePath,
+							filePath,
+							hasContent: !!content,
+							contentLength: content.length || 0,
+							fileSize,
+						});
+
+						if (sandboxDirNormalized && content.trim().length > 0) {
+							const dest = sandboxPathByContextId.get(ctx.id);
+							if (dest) {
+								try {
+									await safeInvoke<{ success: boolean }>("write_file_safe", {
+										payload: {
+											path: dest,
+											content,
+											encoding: "utf-8",
+											create_dirs: true,
+										},
+									});
+									filePath = dest;
+									fileSize = content.length;
+									console.log(
+										"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
+										ctx.title,
+										filePath,
+										fileSize,
+										"bytes",
+									);
+								} catch (err) {
+									console.error("[CopilotSidebar] 写入沙盒文件失败:", err);
+								}
+							}
+						} else if (
+							content.trim().length > 0 &&
+							(!filePath || fileSize === 0 || fileSize === undefined)
+						) {
+							try {
+								const tempResult = await saveTempFile({
 									content,
+									extension: "md",
+									prefix: "doc",
 									encoding: "utf-8",
-									create_dirs: true,
-								},
-							});
-							filePath = dest;
-							fileSize = content.length;
-							console.log(
-								"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
-								ctx.title,
-								filePath,
-								fileSize,
-								"bytes",
-							);
-						} catch (err) {
-							console.error("[CopilotSidebar] 写入沙盒文件失败:", err);
+								});
+								filePath = tempResult.path;
+								fileSize = tempResult.size;
+								console.log(
+									"[CopilotSidebar] 创建临时文件:",
+									ctx.title,
+									filePath,
+									tempResult.size,
+									"bytes",
+								);
+							} catch (err) {
+								console.error("[CopilotSidebar] 创建临时文件失败:", err);
+							}
 						}
-					} else if (
-						content &&
-						content.trim().length > 0 &&
-						(!filePath || fileSize === 0 || fileSize === undefined)
-					) {
-						// 无沙盒目录时的兼容逻辑：使用临时文件
-						try {
-							const { saveTempFile } = await import("../lib/api");
-							const tempResult = await saveTempFile({
-								content,
-								extension: "md",
-								prefix: "doc",
-								encoding: "utf-8",
-							});
-							filePath = tempResult.path;
-							fileSize = tempResult.size;
-							console.log(
-								"[CopilotSidebar] 创建临时文件:",
-								ctx.title,
-								filePath,
-								tempResult.size,
-								"bytes",
-							);
-						} catch (err) {
-							console.error("[CopilotSidebar] 创建临时文件失败:", err);
-						}
-					}
 
+						return {
+							...ctx,
+							content,
+							filePath,
+							fileSize,
+						};
+					}),
+				);
+
+				for (const ctx of contextsWithFiles) {
+					const content = ctx.content || "";
+					const filePath = ctx.filePath;
+					const fileSize = ctx.fileSize;
 					if (filePath) {
 						const isText =
 							(typeof ctx.mimeType === "string" &&
 								ctx.mimeType.startsWith("text/")) ||
-							(content && content.trim().length > 0);
+							content.trim().length > 0;
 						attachedFiles.push({
 							title: ctx.title,
 							path: filePath,
@@ -1607,7 +1682,7 @@ export default function CopilotSidebar() {
 						});
 					}
 
-					if (!filePath && content && content.trim()) {
+					if (!filePath && content.trim()) {
 						attachedContexts.push({ title: ctx.title, content });
 					}
 				}
@@ -1800,10 +1875,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-						promptTokens: number;
-						completionTokens: number;
-						totalTokens: number;
-					}
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+					  }
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1899,16 +1974,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
+								{
+									type: "skill_execution" as const,
+									skillName: finalSkillState.skillName,
+									skillPath: finalSkillState.skillPath,
+									status: finalSkillState.status,
+									steps: finalSkillState.steps,
+									loadedFiles: finalSkillState.loadedFiles,
+									detectedScene: finalSkillState.detectedScene,
+								},
+							]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1964,8 +2039,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+									(update: any) => ({ type: "file_update" as const, update }),
+								)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -2037,8 +2112,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-							(update: any) => ({ type: "file_update" as const, update }),
-						)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -2067,9 +2142,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-								type: "file_update" as const,
-								update,
-							}))
+									type: "file_update" as const,
+									update,
+								}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2964,10 +3039,11 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
-												? "bg-zinc-50 dark:bg-zinc-800/40"
-												: ""
-												}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
+												p.id === activeCreateProposal.id
+													? "bg-zinc-50 dark:bg-zinc-800/40"
+													: ""
+											}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -3004,10 +3080,11 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
-								? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-								}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+								chatMode === "chat"
+									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
 							对话
@@ -3017,10 +3094,11 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
-								? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-								}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+								chatMode === "agent"
+									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							}`}
 						>
 							<Bot className="w-3.5 h-3.5" />
 							托管
@@ -3031,7 +3109,6 @@ export default function CopilotSidebar() {
 						{chatMode === "agent" ? "托管模式" : "普通对话"}
 					</div>
 				</div>
-
 
 				<ChatInput
 					onSubmit={handleSendMessage}

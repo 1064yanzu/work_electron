@@ -1,10 +1,20 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Suspense,
+	lazy,
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InlineImage } from "./InlineImage";
 import { isTauriUnavailableError, safeInvoke } from "../../lib/tauriBridge";
-import MermaidRenderer from "./MermaidRenderer";
 import { WebPreviewCard } from "../chat/WebPreviewCard";
+
+const MermaidRenderer = lazy(() => import("./MermaidRenderer"));
 
 function useThrottledValue<T>(value: T, intervalMs: number, enabled: boolean) {
 	const [throttledValue, setThrottledValue] = useState(value);
@@ -217,7 +227,17 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 							</div>
 						);
 					}
-					return <MermaidRenderer chart={code} className="my-6" />;
+					return (
+						<Suspense
+							fallback={
+								<div className="my-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 text-xs text-zinc-500 dark:text-zinc-400">
+									正在加载图表渲染器...
+								</div>
+							}
+						>
+							<MermaidRenderer chart={code} className="my-6" />
+						</Suspense>
+					);
 				}
 
 				// 普通代码块

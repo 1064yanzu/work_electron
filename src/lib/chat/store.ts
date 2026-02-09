@@ -1,5 +1,5 @@
 // AI 聊天状态管理
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { parseStoredData, serializeForStorage } from "./compression";
 import {
 	type ChatMessage,
@@ -336,10 +336,10 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-							...s,
-							messages: [...s.messages, message],
-							updatedAt: Date.now(),
-						}
+								...s,
+								messages: [...s.messages, message],
+								updatedAt: Date.now(),
+							}
 						: s,
 				),
 			}),
@@ -398,31 +398,31 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-							...s,
-							messages: s.messages.map((m) => {
-								if (m.id !== messageId) return m;
-								const updated = {
-									...m,
-									...updates,
-									metadata: (() => {
-										if (updates.metadata === undefined) return m.metadata;
-										const merged = {
-											...(m.metadata || {}),
-											...(((updates.metadata as any) || {}) as any),
-										};
-										const mergedBlocks = mergeFileUpdatesIntoBlocks(
-											merged.blocks,
-											merged.fileUpdates,
-										);
-										return mergedBlocks
-											? { ...merged, blocks: mergedBlocks }
-											: merged;
-									})(),
-								} satisfies ChatMessage;
-								return updated;
-							}),
-							updatedAt: Date.now(),
-						}
+								...s,
+								messages: s.messages.map((m) => {
+									if (m.id !== messageId) return m;
+									const updated = {
+										...m,
+										...updates,
+										metadata: (() => {
+											if (updates.metadata === undefined) return m.metadata;
+											const merged = {
+												...(m.metadata || {}),
+												...(((updates.metadata as any) || {}) as any),
+											};
+											const mergedBlocks = mergeFileUpdatesIntoBlocks(
+												merged.blocks,
+												merged.fileUpdates,
+											);
+											return mergedBlocks
+												? { ...merged, blocks: mergedBlocks }
+												: merged;
+										})(),
+									} satisfies ChatMessage;
+									return updated;
+								}),
+								updatedAt: Date.now(),
+							}
 						: s,
 				),
 			}),
@@ -515,10 +515,10 @@ class ChatStore {
 				sessions: state.sessions.map((s) =>
 					s.id === sessionId
 						? {
-							...s,
-							messages: s.messages.filter((m) => m.id !== messageId),
-							updatedAt: Date.now(),
-						}
+								...s,
+								messages: s.messages.filter((m) => m.id !== messageId),
+								updatedAt: Date.now(),
+							}
 						: s,
 				),
 			}),
@@ -581,4 +581,17 @@ export function useChatStore() {
 		activeSession: chatStore.getActiveSession(),
 		...chatActions,
 	};
+}
+
+// Selector Hook - 按需订阅 chat 状态，减少无关重渲染
+export function useChatStoreSelector<T>(selector: (state: ChatState) => T): T {
+	const selectorRef = useRef(selector);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(
+		() => selectorRef.current(chatStore.getState()),
+		[],
+	);
+
+	return useSyncExternalStore(chatStore.subscribe, getSnapshot, getSnapshot);
 }

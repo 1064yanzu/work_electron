@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import ToolCallInline from "../agent/ToolCallInline";
 import { SkillCard } from "../agent/SkillCard";
@@ -21,7 +21,8 @@ export type ToolCallRef = {
 };
 
 export function ToolCallsGroup({ calls }: { calls: ToolCallRef[] }) {
-	const { currentTask, taskHistory } = useAgentStore();
+	const currentTask = useAgentStoreSelector((state) => state.currentTask);
+	const taskHistory = useAgentStoreSelector((state) => state.taskHistory);
 
 	const uniqueCalls = useMemo(() => {
 		const seen = new Set<string>();

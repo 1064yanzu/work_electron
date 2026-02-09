@@ -41,12 +41,12 @@ export interface ResearchTask {
 	id: string;
 	query: string;
 	status:
-	| "idle"
-	| "searching"
-	| "fetching"
-	| "analyzing"
-	| "completed"
-	| "error";
+		| "idle"
+		| "searching"
+		| "fetching"
+		| "analyzing"
+		| "completed"
+		| "error";
 	steps: ResearchStep[];
 	sources: ResearchSource[];
 	summary?: string;
@@ -105,12 +105,12 @@ interface WorkspaceState {
 	activeMainView: "editor" | "browser";
 	// 左边栏视图模式
 	leftSidebarView:
-	| "sources"
-	| "research"
-	| "detail"
-	| "agent"
-	| "cards"
-	| "websearch";
+		| "sources"
+		| "research"
+		| "detail"
+		| "agent"
+		| "cards"
+		| "websearch";
 	// 当前研究任务
 	currentResearch: ResearchTask | null;
 	// 历史研究任务
@@ -229,11 +229,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-							...c,
-							filePath: result.path,
-							size: result.size,
-							mimeType: "text/plain",
-						}
+								...c,
+								filePath: result.path,
+								size: result.size,
+								mimeType: "text/plain",
+							}
 						: c,
 				),
 			}));
@@ -243,10 +243,24 @@ class WorkspaceStore {
 	}
 
 	async ensureAllContextsHaveFiles(): Promise<void> {
-		const snapshot = [...this.state.contexts];
-		for (const ctx of snapshot) {
-			if (ctx.content && ctx.content.trim().length > 0 && !ctx.filePath) {
-				await this.ensureContextHasFile(ctx.id);
+		const pendingContextIds = this.state.contexts
+			.filter(
+				(ctx) => ctx.content && ctx.content.trim().length > 0 && !ctx.filePath,
+			)
+			.map((ctx) => ctx.id);
+		if (pendingContextIds.length === 0) return;
+
+		const results = await Promise.allSettled(
+			pendingContextIds.map((contextId) =>
+				this.ensureContextHasFile(contextId),
+			),
+		);
+		for (const result of results) {
+			if (result.status === "rejected") {
+				console.error(
+					"[workspaceStore] 批量生成上下文文件失败:",
+					result.reason,
+				);
 			}
 		}
 	}

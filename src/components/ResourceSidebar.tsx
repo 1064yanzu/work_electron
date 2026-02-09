@@ -74,7 +74,7 @@ import { convertFileSrc, invoke } from "../lib/tauriCompat";
 import {
 	type ResearchSource,
 	type ResearchStep,
-	useWorkspaceStore,
+	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../lib/workspaceStore";
 import {
@@ -159,9 +159,10 @@ export default function ResourceSidebar({
 	// 批量管理
 	const [selectionMode, setSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 	const selectedSources = useMemo(
-		() => sources.filter((source) => selectedIds.includes(source.id)),
-		[selectedIds, sources],
+		() => sources.filter((source) => selectedIdSet.has(source.id)),
+		[selectedIdSet, sources],
 	);
 	const [isMoveFolderModalOpen, setIsMoveFolderModalOpen] = useState(false);
 	const [moveFolderTargetId, setMoveFolderTargetId] = useState<string>("");
@@ -201,18 +202,27 @@ export default function ResourceSidebar({
 	const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
 	const [cardPreview, setCardPreview] = useState<Card | null>(null);
 
-	// 从 workspaceStore 获取状态
-	const {
-		currentProjectId,
-		currentFolderId,
-		leftSidebarView,
-		currentResearch,
-		previewSource,
-		setLeftSidebarView,
-		setPreviewSource,
-		setCurrentFolder,
-		openSourceInMainView,
-	} = useWorkspaceStore();
+	const currentProjectId = useWorkspaceStoreSelector(
+		(state) => state.currentProjectId,
+	);
+	const currentFolderId = useWorkspaceStoreSelector(
+		(state) => state.currentFolderId,
+	);
+	const leftSidebarView = useWorkspaceStoreSelector(
+		(state) => state.leftSidebarView,
+	);
+	const currentResearch = useWorkspaceStoreSelector(
+		(state) => state.currentResearch,
+	);
+	const previewSource = useWorkspaceStoreSelector(
+		(state) => state.previewSource,
+	);
+	const setLeftSidebarView =
+		workspaceStore.setLeftSidebarView.bind(workspaceStore);
+	const setPreviewSource = workspaceStore.setPreviewSource.bind(workspaceStore);
+	const setCurrentFolder = workspaceStore.setCurrentFolder.bind(workspaceStore);
+	const openSourceInMainView =
+		workspaceStore.openSourceInMainView.bind(workspaceStore);
 
 	const foldersById = useMemo(() => {
 		const map = new Map<string, Folder>();
@@ -285,8 +295,8 @@ export default function ResourceSidebar({
 			const data = await listSources();
 			const filteredByProject = currentProjectId
 				? data.filter(
-					(s) => s.project_id === currentProjectId || s.project_id == null,
-				)
+						(s) => s.project_id === currentProjectId || s.project_id == null,
+					)
 				: data;
 			setRawSources(filteredByProject);
 			setErrorMessage(null);
@@ -631,17 +641,19 @@ export default function ResourceSidebar({
 			return (
 				<div key={folder.id} className="group/folder">
 					<div
-						className={`flex items-center gap-1 rounded-lg px-2 py-1.5 transition-colors ${isActive
+						className={`flex items-center gap-1 rounded-lg px-2 py-1.5 transition-colors ${
+							isActive
 								? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
 								: "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-							}`}
+						}`}
 						style={{ paddingLeft: 8 + depth * 14 }}
 						onContextMenu={(e) => handleFolderContextMenu(e, folder)}
 					>
 						<button
 							type="button"
-							className={`p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 ${hasChildren ? "opacity-100" : "opacity-0 pointer-events-none"
-								}`}
+							className={`p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 ${
+								hasChildren ? "opacity-100" : "opacity-0 pointer-events-none"
+							}`}
 							onClick={(e) => {
 								e.stopPropagation();
 								toggleFolderExpanded(folder.id);
@@ -812,16 +824,18 @@ export default function ResourceSidebar({
 								setDragOverFolderId(null);
 							}
 						}}
-						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-all border relative ${isDragOver
+						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-all border relative ${
+							isDragOver
 								? "bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/50"
 								: "bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/70 dark:hover:bg-amber-900/20 border-amber-200/50 dark:border-amber-800/30"
-							}`}
+						}`}
 					>
 						<div
-							className={`w-10 h-10 rounded-xl flex items-center justify-center pointer-events-none ${isDragOver
+							className={`w-10 h-10 rounded-xl flex items-center justify-center pointer-events-none ${
+								isDragOver
 									? "bg-blue-200 dark:bg-blue-800/50"
 									: "bg-amber-100 dark:bg-amber-900/30"
-								}`}
+							}`}
 						>
 							<FolderIcon
 								className={`w-5 h-5 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
@@ -904,16 +918,18 @@ export default function ResourceSidebar({
 							setDragOverFolderId(null);
 						}
 					}}
-					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-all ${isDragOver
+					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-all ${
+						isDragOver
 							? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
 							: "hover:bg-amber-50/70 dark:hover:bg-amber-900/10"
-						}`}
+					}`}
 				>
 					<div
-						className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 pointer-events-none ${isDragOver
+						className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 pointer-events-none ${
+							isDragOver
 								? "bg-blue-200 dark:bg-blue-800/50"
 								: "bg-amber-100 dark:bg-amber-900/30"
-							}`}
+						}`}
 					>
 						<FolderIcon
 							className={`w-4 h-4 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
@@ -973,10 +989,11 @@ export default function ResourceSidebar({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ${index === breadcrumbPath.length - 1
+							className={`px-1.5 py-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ${
+								index === breadcrumbPath.length - 1
 									? "text-zinc-800 dark:text-zinc-200 font-medium"
 									: "text-zinc-500 dark:text-zinc-400"
-								}`}
+							}`}
 						>
 							{item.name}
 						</button>
@@ -1420,7 +1437,8 @@ export default function ResourceSidebar({
 					id: source.id,
 					entity_type: "source",
 					scope,
-					project_id: scope === "project" ? currentProjectId || undefined : undefined,
+					project_id:
+						scope === "project" ? currentProjectId || undefined : undefined,
 				});
 				await fetchSources();
 			} catch (error) {
@@ -1497,7 +1515,7 @@ export default function ResourceSidebar({
 				label: "添加到 AI 上下文",
 				onClick: () => events.emit(EVENTS.ADD_TO_CONTEXT, { source }),
 			},
-			{ separator: true, label: "" as string, onClick: () => { } },
+			{ separator: true, label: "" as string, onClick: () => {} },
 			...fileActions,
 		];
 	}, [
@@ -1922,16 +1940,16 @@ export default function ResourceSidebar({
 										<Clock className="w-3 h-3" />
 										{isSource
 											? new Date(
-												(previewSource as Source).created_at,
-											).toLocaleDateString("zh-CN")
+													(previewSource as Source).created_at,
+												).toLocaleDateString("zh-CN")
 											: new Date(
-												(previewSource as ResearchSource).timestamp,
-											).toLocaleDateString("zh-CN")}
+													(previewSource as ResearchSource).timestamp,
+												).toLocaleDateString("zh-CN")}
 									</span>
 									{/* 来源标记 */}
 									{isSource &&
 										(previewSource as Source).source_type ===
-										SourceOrigin.BrowserClip && (
+											SourceOrigin.BrowserClip && (
 											<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
 												<Globe className="w-2.5 h-2.5" />
 												浏览器剪存
@@ -1939,7 +1957,7 @@ export default function ResourceSidebar({
 										)}
 									{isSource &&
 										(previewSource as Source).source_type ===
-										SourceOrigin.WebSearch && (
+											SourceOrigin.WebSearch && (
 											<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
 												<Search className="w-2.5 h-2.5" />
 												网络搜索
@@ -1947,7 +1965,7 @@ export default function ResourceSidebar({
 										)}
 									{isSource &&
 										(previewSource as Source).source_type ===
-										SourceOrigin.Import && (
+											SourceOrigin.Import && (
 											<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
 												<ArrowDownToLine className="w-2.5 h-2.5" />
 												本地导入
@@ -2104,22 +2122,22 @@ export default function ResourceSidebar({
 												}
 											})()
 										) : // ResearchSource
-											(previewSource as ResearchSource).content ? (
-												<article className="prose prose-zinc dark:prose-invert max-w-none select-text">
-													<MarkdownRenderer
-														content={(previewSource as ResearchSource).content!}
-														className="text-base leading-relaxed"
-													/>
-												</article>
-											) : (previewSource as ResearchSource).snippet ? (
-												<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed select-text">
-													{(previewSource as ResearchSource).snippet}
-												</p>
-											) : (
-												<p className="text-sm text-zinc-400 text-center py-8">
-													暂无内容
-												</p>
-											)}
+										(previewSource as ResearchSource).content ? (
+											<article className="prose prose-zinc dark:prose-invert max-w-none select-text">
+												<MarkdownRenderer
+													content={(previewSource as ResearchSource).content!}
+													className="text-base leading-relaxed"
+												/>
+											</article>
+										) : (previewSource as ResearchSource).snippet ? (
+											<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed select-text">
+												{(previewSource as ResearchSource).snippet}
+											</p>
+										) : (
+											<p className="text-sm text-zinc-400 text-center py-8">
+												暂无内容
+											</p>
+										)}
 									</>
 								)}
 							</div>
@@ -2141,9 +2159,9 @@ export default function ResourceSidebar({
 											source.title,
 											sourceDetail.note
 												? {
-													content: sourceDetail.note.content,
-													content_html: sourceDetail.note.content_html,
-												}
+														content: sourceDetail.note.content,
+														content_html: sourceDetail.note.content_html,
+													}
 												: undefined,
 										);
 									}}
@@ -2242,14 +2260,15 @@ export default function ResourceSidebar({
 							{currentResearch.steps.map((step) => (
 								<div
 									key={step.id}
-									className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${step.status === "running"
+									className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+										step.status === "running"
 											? "bg-blue-50 dark:bg-blue-900/20"
 											: step.status === "completed"
 												? "bg-green-50/50 dark:bg-green-900/10"
 												: step.status === "error"
 													? "bg-red-50/50 dark:bg-red-900/10"
 													: "bg-zinc-50 dark:bg-zinc-800/50"
-										}`}
+									}`}
 								>
 									<div className="mt-0.5">{getStepIcon(step)}</div>
 									<div className="flex-1 min-w-0">
@@ -2334,10 +2353,11 @@ export default function ResourceSidebar({
 					<button
 						key={tab}
 						onClick={() => setLeftSidebarView(tab)}
-						className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${isActive
+						className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+							isActive
 								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm"
 								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
-							}`}
+						}`}
 					>
 						{tab === "sources" ? "资料" : "卡片"}
 					</button>
@@ -2402,10 +2422,11 @@ export default function ResourceSidebar({
 							onClick={() =>
 								selectionMode ? exitSelectionMode() : setSelectionMode(true)
 							}
-							className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium ${selectionMode
+							className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium ${
+								selectionMode
 									? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
 									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-								}`}
+							}`}
 						>
 							{selectionMode ? (
 								<CheckSquare className="w-3.5 h-3.5" />
@@ -2432,10 +2453,11 @@ export default function ResourceSidebar({
 							<button
 								onClick={handleBulkAddToContext}
 								disabled={selectedSources.length === 0}
-								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
+								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+									selectedSources.length === 0
 										? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
 										: "bg-zinc-900 text-white hover:bg-zinc-800"
-									}`}
+								}`}
 							>
 								添加到 AI 上下文
 							</button>
@@ -2449,20 +2471,22 @@ export default function ResourceSidebar({
 									setIsMoveFolderModalOpen(true);
 								}}
 								disabled={selectedSources.length === 0}
-								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
+								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+									selectedSources.length === 0
 										? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
 										: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-									}`}
+								}`}
 							>
 								移动
 							</button>
 							<button
 								onClick={handleDeleteSelected}
 								disabled={selectedSources.length === 0}
-								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
+								className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+									selectedSources.length === 0
 										? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
 										: "bg-red-50 text-red-600 hover:bg-red-100"
-									}`}
+								}`}
 							>
 								删除
 							</button>
@@ -2624,7 +2648,7 @@ export default function ResourceSidebar({
 
 							{/* 资料列表 */}
 							{sources.map((source) => {
-								const isSelected = selectedIds.includes(source.id);
+								const isSelected = selectedIdSet.has(source.id);
 								const cardBase =
 									viewMode === "grid"
 										? "p-3 flex flex-col"
@@ -2681,10 +2705,11 @@ export default function ResourceSidebar({
 													e.stopPropagation();
 													toggleSelection(source.id);
 												}}
-												className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${isSelected
+												className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${
+													isSelected
 														? "bg-blue-600 text-white"
 														: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
-													}`}
+												}`}
 											>
 												{isSelected ? (
 													<CheckSquare className="w-4 h-4" />
@@ -3469,10 +3494,11 @@ export default function ResourceSidebar({
 								onClick={() =>
 									setSingleSourceMoveTargetId(UNASSIGNED_FOLDER_ID)
 								}
-								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
+								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
 										? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
 										: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-									}`}
+								}`}
 							>
 								<FolderIcon className="w-4 h-4 shrink-0" />
 								<span className="text-sm font-medium">未归类</span>
@@ -3482,10 +3508,11 @@ export default function ResourceSidebar({
 								<button
 									key={opt.id}
 									onClick={() => setSingleSourceMoveTargetId(opt.id)}
-									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${singleSourceMoveTargetId === opt.id
+									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+										singleSourceMoveTargetId === opt.id
 											? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
 											: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-										}`}
+									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
 									<FolderIcon className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -3529,10 +3556,11 @@ export default function ResourceSidebar({
 							<button
 								key={tab}
 								onClick={() => setActiveTab(tab)}
-								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${activeTab === tab
+								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+									activeTab === tab
 										? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-800 dark:text-zinc-100"
 										: "text-zinc-500"
-									}`}
+								}`}
 							>
 								{tab === "web" ? "网页" : tab === "text" ? "笔记" : "文件"}
 							</button>
