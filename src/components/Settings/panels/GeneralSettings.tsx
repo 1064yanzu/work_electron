@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import {
 	describeSearchHealth,
 	getConfig,
+	getMotionPreference,
 	getSearchMcpProvider,
 	getSearchStrategy,
 	type SearchMcpProvider,
 	type SearchStrategy,
 	setConfig,
+	setMotionPreference,
 	setSearchMcpProvider,
 	setSearchStrategy,
 } from "../../../lib/config";
+import type { MotionPreference } from "../../../lib/interaction/motionPreference";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { type ThemeMode, themeManager } from "../../../lib/theme";
 import { confirmDialog } from "../../ui/ConfirmDialog";
@@ -28,6 +31,8 @@ export function GeneralSettings() {
 		useState<SearchStrategy>("local_first");
 	const [searchMcpProvider, setSearchMcpProviderState] =
 		useState<SearchMcpProvider>("auto");
+	const [motionPreference, setMotionPreferenceState] =
+		useState<MotionPreference>("system");
 	const [searchHealth, setSearchHealth] = useState<string>("");
 	const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
@@ -59,6 +64,8 @@ export function GeneralSettings() {
 			setSearchStrategyState(strategy);
 			const mcpProvider = await getSearchMcpProvider();
 			setSearchMcpProviderState(mcpProvider);
+			const motionPref = await getMotionPreference();
+			setMotionPreferenceState(motionPref);
 			setSearchHealth(describeSearchHealth());
 		} catch (error) {
 			console.error("加载设置失败:", error);
@@ -118,6 +125,15 @@ export function GeneralSettings() {
 			setSearchHealth(describeSearchHealth());
 		} catch (error) {
 			console.error("保存 MCP 搜索提供商失败:", error);
+		}
+	};
+
+	const handleMotionPreferenceChange = async (value: MotionPreference) => {
+		setMotionPreferenceState(value);
+		try {
+			await setMotionPreference(value);
+		} catch (error) {
+			console.error("保存动效偏好失败:", error);
 		}
 	};
 
@@ -211,6 +227,26 @@ export function GeneralSettings() {
 							跟随系统
 						</button>
 					</div>
+				</div>
+
+				<div className="space-y-4">
+					<h4 className="font-medium text-text-primary">动效偏好</h4>
+					<Select
+						value={motionPreference}
+						onChange={(e) =>
+							handleMotionPreferenceChange(
+								e.target.value as MotionPreference,
+							)
+						}
+						options={[
+							{ value: "system", label: "跟随系统（默认）" },
+							{ value: "standard", label: "标准动效" },
+							{ value: "reduced", label: "减少动效" },
+						]}
+					/>
+					<p className="text-xs text-text-muted">
+						减少动效会显著缩短过渡与动画时长，适合对动态效果敏感的场景。
+					</p>
 				</div>
 
 

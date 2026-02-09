@@ -18,6 +18,13 @@ const STREAMING_SAVE_THROTTLE_MS = 2000;
 
 type PersistMode = "normal" | "streaming" | "immediate";
 
+interface DeletedSessionSnapshot {
+	session: ChatSession;
+	index: number;
+	wasActive: boolean;
+	expiresAt: number;
+}
+
 function sameFileUpdate(a: FileUpdate, b: FileUpdate): boolean {
 	return (
 		a.fileName === b.fileName &&
@@ -116,6 +123,9 @@ class ChatStore {
 	private listeners: Set<() => void> = new Set();
 	private emitScheduled = false;
 	private lastEmitTime = 0;
+	private deletedSessions: Map<string, DeletedSessionSnapshot> = new Map();
+	private deletedSessionTimers: Map<string, ReturnType<typeof setTimeout>> =
+		new Map();
 
 	private saveScheduled = false;
 	private lastSaveTime = 0;
@@ -247,6 +257,21 @@ class ChatStore {
 		}
 	}
 
+	private clearDeletedSession(sessionId: string) {
+		const timer = this.deletedSessionTimers.get(sessionId);
+		if (timer) {
+			clearTimeout(timer);
+			this.deletedSessionTimers.delete(sessionId);
+		}
+		this.deletedSessions.delete(sessionId);
+	}
+
+	private clearAllDeletedSessions() {
+		for (const sessionId of this.deletedSessionTimers.keys()) {
+			this.clearDeletedSession(sessionId);
+		}
+	}
+
 	private setState(
 		updater: (state: ChatState) => ChatState,
 		persist: PersistMode,
@@ -318,6 +343,7 @@ class ChatStore {
 
 	// 删除会话
 	deleteSession(sessionId: string) {
+		this.clearDeletedSession(sessionId);
 		this.setState((state) => {
 			const sessions = state.sessions.filter((s) => s.id !== sessionId);
 			const activeSessionId =
@@ -326,6 +352,74 @@ class ChatStore {
 					: state.activeSessionId;
 			return { ...state, sessions, activeSessionId };
 		}, "normal");
+	}
+
+	// 删除会话（支持撤销）
+	deleteSessionWithUndo(sessionId: string, undoWindowMs = 5000) {
+		const index = this.state.sessions.findIndex(
+			(session) => session.id === sessionId,
+		);
+		if (index < 0) return null;
+
+		const session = this.state.sessions[index];
+		const windowMs = Math.max(1000, undoWindowMs);
+		const expiresAt = Date.now() + windowMs;
+		const wasActive = this.state.activeSessionId === sessionId;
+
+		this.clearDeletedSession(sessionId);
+		this.deletedSessions.set(sessionId, {
+			session,
+			index,
+			wasActive,
+			expiresAt,
+		});
+		const timer = setTimeout(() => {
+			this.clearDeletedSession(sessionId);
+		}, windowMs);
+		this.deletedSessionTimers.set(sessionId, timer);
+
+		this.setState((state) => {
+			const sessions = state.sessions.filter((item) => item.id !== sessionId);
+			const activeSessionId =
+				state.activeSessionId === sessionId
+					? sessions[0]?.id || null
+					: state.activeSessionId;
+			return { ...state, sessions, activeSessionId };
+		}, "normal");
+
+		return {
+			sessionId,
+			title: session.title,
+			expiresAt,
+			undoWindowMs: windowMs,
+		};
+	}
+
+	undoDeleteSession(sessionId: string) {
+		const snapshot = this.deletedSessions.get(sessionId);
+		if (!snapshot) return false;
+		if (snapshot.expiresAt < Date.now()) {
+			this.clearDeletedSession(sessionId);
+			return false;
+		}
+
+		this.clearDeletedSession(sessionId);
+		this.setState((state) => {
+			if (state.sessions.some((item) => item.id === sessionId)) {
+				return state;
+			}
+			const sessions = [...state.sessions];
+			const insertAt = Math.max(0, Math.min(snapshot.index, sessions.length));
+			sessions.splice(insertAt, 0, snapshot.session);
+			return {
+				...state,
+				sessions,
+				activeSessionId: snapshot.wasActive
+					? snapshot.session.id
+					: state.activeSessionId || snapshot.session.id,
+			};
+		}, "normal");
+		return true;
 	}
 
 	// 添加消息
@@ -504,6 +598,7 @@ class ChatStore {
 
 	// 清空所有会话
 	clearAllSessions() {
+		this.clearAllDeletedSessions();
 		this.setState(() => ({ ...initialState }), "immediate");
 	}
 
@@ -554,6 +649,8 @@ const chatActions = {
 	createNewSession: chatStore.createNewSession.bind(chatStore),
 	setActiveSession: chatStore.setActiveSession.bind(chatStore),
 	deleteSession: chatStore.deleteSession.bind(chatStore),
+	deleteSessionWithUndo: chatStore.deleteSessionWithUndo.bind(chatStore),
+	undoDeleteSession: chatStore.undoDeleteSession.bind(chatStore),
 	addMessage: chatStore.addMessage.bind(chatStore),
 	insertMessageBefore: chatStore.insertMessageBefore.bind(chatStore),
 	updateMessage: chatStore.updateMessage.bind(chatStore),

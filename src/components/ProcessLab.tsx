@@ -13,7 +13,9 @@ import {
 	type ContextItem as ComposerContextItem,
 	EnhancedInput,
 } from "./ui/EnhancedInput";
+import { inputDialog } from "./ui/InputDialog";
 import type { SlashCommand } from "./ui/SlashCommandMenu";
+import { toast } from "./ui/Toast";
 
 export default function ProcessLab() {
 	const { providers, activeModel, settingsStore } = useSettingsStore();
@@ -51,7 +53,17 @@ export default function ProcessLab() {
 	}, []);
 
 	const handleAddNode = async () => {
-		const name = prompt("请输入工作流名称:");
+		const name = await inputDialog.show({
+			title: "新建工作流",
+			message: "请输入工作流名称",
+			placeholder: "例如：资料摘要流程",
+			confirmText: "创建",
+			cancelText: "取消",
+			validate: (value) => {
+				if (!value.trim()) return "工作流名称不能为空";
+				return null;
+			},
+		});
 		if (!name) return;
 
 		try {
@@ -63,13 +75,13 @@ export default function ProcessLab() {
 			fetchNodes();
 		} catch (error) {
 			console.error("创建工作流失败:", error);
-			alert("创建失败");
+			toast.error("创建失败");
 		}
 	};
 
 	const handleRunWorkflow = async (node: WorkflowNode) => {
 		if (!activeModel) {
-			alert("请先在模型设置中选择一个模型");
+			toast.warning("请先在模型设置中选择一个模型");
 			return;
 		}
 
@@ -83,7 +95,9 @@ export default function ProcessLab() {
 			}, 2000);
 		} catch (error) {
 			console.error("执行工作流失败:", error);
-			alert(`执行失败: ${error}`);
+			toast.error(
+				`执行失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 
@@ -118,7 +132,7 @@ export default function ProcessLab() {
 		}
 
 		if (!activeModel) {
-			alert("请先在模型设置中选择一个模型");
+			toast.warning("请先在模型设置中选择一个模型");
 			return;
 		}
 

@@ -6,12 +6,9 @@ import {
 	Check,
 	ChevronDown,
 	FileText,
-	History,
 	Loader2,
 	MessageSquare,
-	MoreHorizontal,
 	Plus,
-	Sparkles,
 	StopCircle,
 	X,
 } from "lucide-react";
@@ -67,8 +64,10 @@ import {
 import { useAgentStoreSelector } from "../lib/agent/store";
 import { safeInvoke } from "../lib/tauriBridge";
 import { OutputType } from "../types";
-import { PermissionList } from "./agent";
 import { AskUserQuestionList } from "./agent/AskUserQuestionCard";
+import { CopilotHeader } from "./copilot/CopilotHeader";
+import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
+import { useCopilotActions } from "./copilot/useCopilotActions";
 import { PromptLibraryModal } from "./PromptLibraryModal";
 import {
 	ChatHistory,
@@ -77,6 +76,7 @@ import {
 	type SlashCommand,
 } from "./chat";
 import { WelcomeScreen } from "./chat/WelcomeScreen";
+import { toast } from "./ui/Toast";
 
 // AI 写作标记
 const WRITE_START_MARKER = "<<<WRITE>>>";
@@ -386,6 +386,10 @@ const chatActions = {
 	createNewSession: chatStoreInstance.createNewSession.bind(chatStoreInstance),
 	setActiveSession: chatStoreInstance.setActiveSession.bind(chatStoreInstance),
 	deleteSession: chatStoreInstance.deleteSession.bind(chatStoreInstance),
+	deleteSessionWithUndo:
+		chatStoreInstance.deleteSessionWithUndo.bind(chatStoreInstance),
+	undoDeleteSession:
+		chatStoreInstance.undoDeleteSession.bind(chatStoreInstance),
 	addMessage: chatStoreInstance.addMessage.bind(chatStoreInstance),
 	updateMessage: chatStoreInstance.updateMessage.bind(chatStoreInstance),
 	replaceSessionMessages:
@@ -838,7 +842,7 @@ export default function CopilotSidebar() {
 	// 执行深度研究（使用新的 Agent 系统）
 	const performDeepResearch = async (query: string) => {
 		if (!activeModel) {
-			alert("请先在设置中配置并选择一个模型");
+			toast.warning("请先在设置中配置并选择一个模型");
 			return;
 		}
 
@@ -965,7 +969,7 @@ export default function CopilotSidebar() {
 		const skipUserMessage = submitOptions?.skipUserMessage;
 
 		if (!activeModel) {
-			alert("请先在设置中配置并选择一个模型");
+			toast.warning("请先在设置中配置并选择一个模型");
 			return;
 		}
 
@@ -2657,11 +2661,10 @@ export default function CopilotSidebar() {
 		});
 	};
 
-	// 新建对话
-	const handleNewSession = () => {
-		chatStore.createNewSession();
-		setIsHistoryOpen(false);
-	};
+	const { handleNewSession, handleDeleteSession } = useCopilotActions({
+		chatStore,
+		onCloseHistory: () => setIsHistoryOpen(false),
+	});
 
 	// 重新生成消息
 	const handleRegenerateMessage = useCallback(
@@ -2747,7 +2750,9 @@ export default function CopilotSidebar() {
 							chatStore.setActiveSession(id);
 							setIsHistoryOpen(false);
 						}}
-						onDeleteSession={chatStore.deleteSession}
+						onDeleteSession={(sessionId) => {
+							void handleDeleteSession(sessionId);
+						}}
 						onRenameSession={chatStore.updateSessionTitle}
 						onNewSession={handleNewSession}
 						onClose={() => setIsHistoryOpen(false)}
@@ -2755,91 +2760,24 @@ export default function CopilotSidebar() {
 				</div>
 			)}
 
-			{/* Header - 极简风格，移除底部边框 */}
-			<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
-				<div className="flex items-center gap-3">
-					<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 dark:from-zinc-100 dark:to-zinc-300 flex items-center justify-center shadow-sm">
-						<Sparkles className="w-4 h-4 text-white dark:text-zinc-900" />
-					</div>
-					<div>
-						<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 tracking-tight">
-							AI 助手
-						</h2>
-						{isAgentExecuting ? (
-							<span className="flex items-center gap-1 text-[10px] text-primary font-medium animate-pulse">
-								<Loader2 className="w-2.5 h-2.5 animate-spin" />
-								{agentCurrentTask?.type === "research"
-									? "正在深度研究"
-									: "Agent 执行中"}
-							</span>
-						) : null}
-					</div>
-				</div>
-				<div className="flex items-center gap-1">
-					<button
-						onClick={handleNewSession}
-						className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-						title="新建对话"
-					>
-						<Plus className="w-4.5 h-4.5" />
-					</button>
-					<button
-						onClick={() => setIsHistoryOpen(true)}
-						className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-						title="对话历史"
-					>
-						<History className="w-4.5 h-4.5" />
-					</button>
-					{/* 三点更多菜单 */}
-					<div className="relative">
-						<button
-							onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-							className="p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all active:scale-95"
-							title="更多"
-						>
-							<MoreHorizontal className="w-4.5 h-4.5" />
-						</button>
-						{isMoreMenuOpen && (
-							<>
-								{/* 点击外部关闭 */}
-								<div
-									className="fixed inset-0 z-40"
-									onClick={() => setIsMoreMenuOpen(false)}
-								/>
-								{/* 下拉菜单 */}
-								<div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
-									<button
-										onClick={() => {
-											setIsPromptLibraryOpen(true);
-											setIsMoreMenuOpen(false);
-										}}
-										className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
-									>
-										<MessageSquare className="w-4 h-4" />
-										<span>提示词仓库</span>
-									</button>
-								</div>
-							</>
-						)}
-					</div>
-				</div>
-			</div>
+			<CopilotHeader
+				isAgentExecuting={isAgentExecuting}
+				agentTaskType={agentCurrentTask?.type}
+				isMoreMenuOpen={isMoreMenuOpen}
+				onToggleMoreMenu={() => setIsMoreMenuOpen((prev) => !prev)}
+				onCloseMoreMenu={() => setIsMoreMenuOpen(false)}
+				onOpenPromptLibrary={() => {
+					setIsPromptLibraryOpen(true);
+					setIsMoreMenuOpen(false);
+				}}
+				onNewSession={handleNewSession}
+				onOpenHistory={() => setIsHistoryOpen(true)}
+			/>
 
-			{pendingRequests.size > 0 && (
-				<div className="px-4 pb-3 shrink-0">
-					<div className="rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-900/10 p-3">
-						<div className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">
-							需要授权才能继续执行工具（例如联网搜索）
-						</div>
-						<PermissionList
-							requests={Array.from(pendingRequests.values()).map(
-								(p) => p.request,
-							)}
-							onRespond={respondToPermission}
-						/>
-					</div>
-				</div>
-			)}
+			<CopilotStatusArea
+				requests={Array.from(pendingRequests.values()).map((p) => p.request)}
+				onRespond={respondToPermission}
+			/>
 
 			{/* Messages */}
 			<div

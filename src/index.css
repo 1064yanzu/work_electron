@@ -155,7 +155,8 @@
 
 	/* 按钮微交互 - 高级质感 */
 	.btn-interactive {
-		@apply transition-all duration-150 ease-out;
+		@apply duration-150 ease-out;
+		transition-property: transform, background-color, color, border-color, box-shadow;
 		transform: scale(1);
 	}
 
@@ -173,7 +174,8 @@
 
 	/* 卡片悬浮效果 */
 	.card-hover {
-		@apply transition-all duration-200 ease-out;
+		@apply duration-200 ease-out;
+		transition-property: transform, box-shadow, border-color, background-color;
 	}
 
 	.card-hover:hover {
@@ -183,7 +185,8 @@
 
 	/* 圆润悬浮按钮 */
 	.btn-float {
-		@apply transition-all duration-200 ease-out;
+		@apply duration-200 ease-out;
+		transition-property: transform, box-shadow, background-color, color;
 	}
 
 	.btn-float:hover {
@@ -221,7 +224,8 @@
 
 	/* 平滑过渡 */
 	.transition-smooth {
-		@apply transition-all duration-200 ease-out;
+		@apply duration-200 ease-out;
+		transition-property: transform, opacity, background-color, color, border-color, box-shadow;
 	}
 
 	/* 涟漪效果容器 */
@@ -294,6 +298,18 @@
 /* ============================================
    减少动画偏好支持（可访问性）
    ============================================ */
+html.motion-reduced *,
+html.motion-reduced *::before,
+html.motion-reduced *::after,
+html[data-motion-preference="reduced"] *,
+html[data-motion-preference="reduced"] *::before,
+html[data-motion-preference="reduced"] *::after {
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0.01ms !important;
+	scroll-behavior: auto !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
 	*,

@@ -17,12 +17,9 @@ import {
 	FileEdit,
 	FileText,
 	Folder as FolderIcon,
-	FolderPlus,
 	Globe,
-	Grid,
 	Image as ImageIcon,
 	Link,
-	List,
 	Loader2,
 	Mic,
 	MoreHorizontal,
@@ -44,14 +41,13 @@ import { useDragAndDropImport } from "../hooks/useDragAndDropImport";
 import { useMouseDrag } from "../hooks/useMouseDrag";
 import {
 	createFolder,
-	createSource,
 	deleteCard as deleteCardApi,
 	deleteFolder,
-	deleteSource,
 	fileRevealInFinder,
+	fileDelete,
+	fileRestore,
 	fileSetScope,
 	fileSetTags,
-	fetchUrlContent,
 	getCardImagePath,
 	getSourceDetail,
 	importLocalFiles,
@@ -59,11 +55,9 @@ import {
 	listFolders,
 	listSources,
 	moveSourcesToFolder,
-	revealProjectDirectory,
 	updateFolder,
 	updateNote,
 	updateSource,
-	uploadFileContent,
 } from "../lib/api";
 import {
 	buildFileItemContextMenu,
@@ -86,12 +80,17 @@ import {
 	SourceType,
 } from "../types";
 import AgentTaskPanel from "./agent/AgentTaskPanel";
+import { ResourceSidebarDialogs } from "./resource/sidebar/ResourceSidebarDialogs";
+import { ResourceSidebarHeader } from "./resource/sidebar/ResourceSidebarHeader";
+import { useResourceSidebarActions } from "./resource/sidebar/useResourceSidebarActions";
 import DocumentViewer, { extractDocumentInfo } from "./ui/DocumentViewer";
 import { DragAndDropImportUI } from "./ui/DragAndDropImportUI";
 import { MarkdownRenderer } from "./ui/MarkdownRenderer";
 import { Modal } from "./ui/Modal";
 import { ContextMenu } from "./ui/ContextMenu";
+import { inputDialog } from "./ui/InputDialog";
 import { RichContentWithStyles } from "./ui/RichContentRenderer";
+import { toast } from "./ui/Toast";
 import WebSearchModule from "./WebSearchModule";
 
 interface ResourceSidebarProps {
@@ -315,6 +314,11 @@ export default function ResourceSidebar({
 		}
 	}, [currentProjectId]);
 
+	const { createSourceFromModal, revealFolderProjectDirectory } =
+		useResourceSidebarActions({
+			onCreated: fetchSources,
+		});
+
 	useEffect(() => {
 		// 切换文件夹时，清理选中状态
 		setSelectedIds([]);
@@ -368,7 +372,9 @@ export default function ResourceSidebar({
 			setCurrentFolder(folder.id);
 		} catch (error) {
 			console.error("创建文件夹失败:", error);
-			alert(`创建文件夹失败: ${error}`);
+			toast.error(
+				`创建文件夹失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, [
 		newFolderName,
@@ -393,7 +399,9 @@ export default function ResourceSidebar({
 			await fetchSources();
 		} catch (error) {
 			console.error("移动文件夹失败:", error);
-			alert(`移动失败: ${error}`);
+			toast.error(
+				`移动失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, [selectedIds, moveFolderTargetId, fetchSources]);
 
@@ -421,7 +429,9 @@ export default function ResourceSidebar({
 			await fetchFolders();
 		} catch (error) {
 			console.error("重命名文件夹失败:", error);
-			alert(`重命名失败: ${error}`);
+			toast.error(
+				`重命名失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, [renameFolderTarget, renameFolderName, fetchFolders]);
 
@@ -444,7 +454,9 @@ export default function ResourceSidebar({
 				await fetchSources();
 			} catch (error) {
 				console.error("删除文件夹失败:", error);
-				alert(`删除失败: ${error}`);
+				toast.error(
+					`删除失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[currentFolderId, setCurrentFolder, fetchFolders, fetchSources],
@@ -464,7 +476,9 @@ export default function ResourceSidebar({
 			await fetchFolders();
 		} catch (error) {
 			console.error("移动文件夹失败:", error);
-			alert(`移动失败: ${error}`);
+			toast.error(
+				`移动失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, [moveFolderSource, moveFolderToTargetId, fetchFolders]);
 
@@ -486,7 +500,9 @@ export default function ResourceSidebar({
 			await fetchSources();
 		} catch (error) {
 			console.error("移动资料失败:", error);
-			alert(`移动失败: ${error}`);
+			toast.error(
+				`移动失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, [singleSourceMoveModal, singleSourceMoveTargetId, fetchSources]);
 
@@ -588,7 +604,9 @@ export default function ResourceSidebar({
 				console.log("[Drag] 移动成功");
 			} catch (error) {
 				console.error("[Drag] 移动资料失败:", error);
-				alert(`移动失败: ${error}`);
+				toast.error(
+					`移动失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			} finally {
 				setDraggedSourceId(null);
 				setDragOverFolderId(null);
@@ -1233,7 +1251,7 @@ export default function ResourceSidebar({
 			setEditHtmlContent(detail.note?.content_html || "");
 		} catch (error) {
 			console.error("加载详情失败:", error);
-			alert("加载详情失败，请重试");
+			toast.error("加载详情失败，请重试");
 		} finally {
 			setIsLoadingDetail(false);
 		}
@@ -1292,6 +1310,53 @@ export default function ResourceSidebar({
 		setSelectionPopup(null);
 	};
 
+	const deleteSourcesWithUndo = useCallback(
+		async (sourceIds: string[]) => {
+			if (sourceIds.length === 0) return;
+
+			for (const id of sourceIds) {
+				await fileDelete({ id, entity_type: "source" });
+			}
+
+			if (
+				previewSource &&
+				"id" in previewSource &&
+				sourceIds.includes(previewSource.id)
+			) {
+				handleCloseDetail();
+			}
+
+			await fetchSources();
+
+			toast.show(
+				sourceIds.length === 1
+					? "资料已删除"
+					: `已删除 ${sourceIds.length} 条资料`,
+				{
+					type: "warning",
+					duration: 5000,
+					actionLabel: "撤销",
+					actionVariant: "primary",
+					onAction: async () => {
+						try {
+							for (const id of sourceIds) {
+								await fileRestore({ id, entity_type: "source" });
+							}
+							await fetchSources();
+							toast.success("已恢复删除的资料");
+						} catch (error) {
+							console.error("撤销删除资料失败:", error);
+							toast.error(
+								`撤销失败: ${error instanceof Error ? error.message : String(error)}`,
+							);
+						}
+					},
+				},
+			);
+		},
+		[fetchSources, previewSource],
+	);
+
 	// 删除资料
 	const handleDeleteSource = async (source: Source, skipConfirm = false) => {
 		if (!skipConfirm) {
@@ -1300,21 +1365,11 @@ export default function ResourceSidebar({
 		}
 
 		try {
-			await deleteSource(source.id);
-			// 如果删除的是当前预览的资料，先关闭详情
-			if (
-				previewSource &&
-				"id" in previewSource &&
-				previewSource.id === source.id
-			) {
-				handleCloseDetail();
-			}
-			// 刷新完整列表，确保数据一致性
-			await fetchSources();
+			await deleteSourcesWithUndo([source.id]);
 			setDeleteConfirm(null);
 		} catch (error) {
 			console.error("删除失败:", error);
-			alert("删除失败，请重试");
+			toast.error("删除失败，请重试");
 		}
 		setContextMenu(null);
 	};
@@ -1340,7 +1395,7 @@ export default function ResourceSidebar({
 			}
 		} catch (error) {
 			console.error("删除卡片失败:", error);
-			alert("删除卡片失败");
+			toast.error("删除卡片失败");
 		} finally {
 			setCardDeleteConfirm(null);
 		}
@@ -1385,23 +1440,11 @@ export default function ResourceSidebar({
 	const handleConfirmBatchDelete = async () => {
 		if (!batchDeleteConfirm) return;
 		try {
-			for (const id of batchDeleteConfirm) {
-				await deleteSource(id);
-			}
-			// 如果删除的包含当前预览的资料，先关闭详情
-			if (
-				previewSource &&
-				"id" in previewSource &&
-				batchDeleteConfirm.includes(previewSource.id)
-			) {
-				handleCloseDetail();
-			}
-			// 刷新完整列表，确保数据一致性
-			await fetchSources();
+			await deleteSourcesWithUndo(batchDeleteConfirm);
 			exitSelectionMode();
 		} catch (error) {
 			console.error("批量删除失败:", error);
-			alert("批量删除失败，请重试");
+			toast.error("批量删除失败，请重试");
 		} finally {
 			setBatchDeleteConfirm(null);
 		}
@@ -1422,14 +1465,16 @@ export default function ResourceSidebar({
 			await fileRevealInFinder({ id: source.id, entity_type: "source" });
 		} catch (error) {
 			console.error("在文件管理器中显示失败:", error);
-			alert(`打开失败: ${String(error)}`);
+			toast.error(
+				`打开失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, []);
 
 	const handleSetSourceScope = useCallback(
 		async (source: Source, scope: "global" | "project") => {
 			if (scope === "project" && !currentProjectId) {
-				alert("当前不在项目上下文，无法设为项目内可见");
+				toast.warning("当前不在项目上下文，无法设为项目内可见");
 				return;
 			}
 			try {
@@ -1443,7 +1488,9 @@ export default function ResourceSidebar({
 				await fetchSources();
 			} catch (error) {
 				console.error("切换作用域失败:", error);
-				alert(`切换作用域失败: ${String(error)}`);
+				toast.error(
+					`切换作用域失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[currentProjectId, fetchSources],
@@ -1451,10 +1498,13 @@ export default function ResourceSidebar({
 
 	const handleSetSourceTags = useCallback(
 		async (source: Source) => {
-			const next = window.prompt(
-				"请输入标签（使用逗号分隔）",
-				(source.tags || []).join(", "),
-			);
+			const next = await inputDialog.show({
+				title: "编辑标签",
+				message: "请输入标签（使用逗号分隔）",
+				defaultValue: (source.tags || []).join(", "),
+				confirmText: "保存",
+				cancelText: "取消",
+			});
 			if (next == null) return;
 			const tags = next
 				.split(",")
@@ -1469,7 +1519,9 @@ export default function ResourceSidebar({
 				await fetchSources();
 			} catch (error) {
 				console.error("更新标签失败:", error);
-				alert(`更新标签失败: ${String(error)}`);
+				toast.error(
+					`更新标签失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[fetchSources],
@@ -1481,14 +1533,26 @@ export default function ResourceSidebar({
 		const fileActions = buildFileItemContextMenu({
 			onOpen: () => handleOpenDetail(source),
 			onRename: async () => {
-				const nextTitle = window.prompt("请输入新的资料名称", source.title);
+				const nextTitle = await inputDialog.show({
+					title: "重命名资料",
+					message: "请输入新的资料名称",
+					defaultValue: source.title,
+					confirmText: "保存",
+					cancelText: "取消",
+					validate: (value) => {
+						if (!value.trim()) return "资料名称不能为空";
+						return null;
+					},
+				});
 				if (!nextTitle?.trim()) return;
 				try {
 					await updateSource({ id: source.id, title: nextTitle.trim() });
 					await fetchSources();
 				} catch (error) {
 					console.error("重命名资料失败:", error);
-					alert(`重命名失败: ${String(error)}`);
+					toast.error(
+						`重命名失败: ${error instanceof Error ? error.message : String(error)}`,
+					);
 				}
 			},
 			onMove: () => {
@@ -1498,10 +1562,11 @@ export default function ResourceSidebar({
 			onCopyPath: async () => {
 				const targetPath = source.storage_path?.trim();
 				if (!targetPath) {
-					alert("该资料暂无物理路径");
+					toast.warning("该资料暂无物理路径");
 					return;
 				}
 				await navigator.clipboard.writeText(targetPath);
+				toast.success("路径已复制");
 			},
 			onReveal: () => void handleRevealSourceInFinder(source),
 			onSetTags: () => void handleSetSourceTags(source),
@@ -1551,21 +1616,9 @@ export default function ResourceSidebar({
 				setMoveFolderToTargetId(folder.parent_id || "");
 				setIsMoveFolderToModalOpen(true);
 			},
-			onReveal: async () => {
-				try {
-					const projectId = folder.project_id || currentProjectId || undefined;
-					if (!projectId) {
-						alert("该文件夹不属于具体项目，暂不支持定位目录");
-						return;
-					}
-					const result = await revealProjectDirectory(projectId);
-					if (!result.success) {
-						alert(result.error || "打开目录失败");
-					}
-				} catch (error) {
-					console.error("打开目录失败:", error);
-					alert(`打开目录失败: ${String(error)}`);
-				}
+			onReveal: () => {
+				const projectId = folder.project_id || currentProjectId || undefined;
+				void revealFolderProjectDirectory(projectId);
 			},
 			onDelete: () => void handleDeleteFolder(folder),
 		});
@@ -1573,68 +1626,23 @@ export default function ResourceSidebar({
 		currentProjectId,
 		folderContextMenu,
 		handleDeleteFolder,
+		revealFolderProjectDirectory,
 		setCurrentFolder,
 	]);
 
 	// 创建资料
 	const handleCreateSource = async () => {
-		if (!newSourceTitle.trim()) {
-			alert("请输入标题");
-			return;
-		}
+		const created = await createSourceFromModal({
+			title: newSourceTitle,
+			content: newSourceContent,
+			activeTab,
+		});
+		if (!created) return;
 
-		try {
-			const project_id =
-				workspaceStore.getState().currentProjectId || undefined;
-			const currentFolderId = workspaceStore.getState().currentFolderId;
-			const folder_id =
-				currentFolderId && currentFolderId !== "__unassigned__"
-					? currentFolderId
-					: undefined;
-			if (activeTab === "web") {
-				if (!newSourceContent.trim()) {
-					alert("请输入 URL");
-					return;
-				}
-				await fetchUrlContent({
-					url: newSourceContent,
-					title: newSourceTitle,
-					tags: [],
-					project_id,
-					folder_id,
-				});
-			} else if (activeTab === "text") {
-				await createSource({
-					title: newSourceTitle,
-					kind: SourceType.Text,
-					tags: [],
-					project_id,
-					folder_id,
-				});
-			} else if (activeTab === "file") {
-				if (!newSourceContent.trim()) {
-					alert("请选择文件");
-					return;
-				}
-				await uploadFileContent({
-					title: newSourceTitle,
-					content: newSourceContent,
-					file_type: "txt",
-					tags: [],
-					project_id,
-					folder_id,
-				});
-			}
-
-			setIsAddModalOpen(false);
-			setNewSourceTitle("");
-			setNewSourceContent("");
-			setSelectedFile(null);
-			fetchSources();
-		} catch (error) {
-			console.error("创建资源失败:", error);
-			alert(`创建失败: ${error}`);
-		}
+		setIsAddModalOpen(false);
+		setNewSourceTitle("");
+		setNewSourceContent("");
+		setSelectedFile(null);
 	};
 
 	const getIconForSource = (kind: SourceType) => {
@@ -1736,7 +1744,7 @@ export default function ResourceSidebar({
 			setIsEditing(false);
 		} catch (error) {
 			console.error("保存失败:", error);
-			alert("保存失败，请重试");
+			toast.error("保存失败，请重试");
 		} finally {
 			setIsSaving(false);
 		}
@@ -2369,74 +2377,21 @@ export default function ResourceSidebar({
 	const renderSourcesView = () => {
 		return (
 			<>
-				{/* Header */}
-				<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-					<div className="flex items-center gap-3">
-						<div className="flex items-center gap-2">
-							<BookOpen className="w-4 h-4 text-zinc-400" />
-							<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
-								资料库
-							</h2>
-						</div>
-						{renderViewTabs()}
-					</div>
-					<div className="flex items-center gap-1">
-						{currentResearch && (
-							<button
-								onClick={() => setLeftSidebarView("research")}
-								className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors relative"
-								title="查看研究进度"
-							>
-								<Sparkles className="w-4 h-4" />
-								{currentResearch.status !== "completed" && (
-									<span className="absolute top-0.5 right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-								)}
-							</button>
-						)}
-						<button
-							onClick={() => setIsFolderModalOpen(true)}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-							title="新建文件夹"
-						>
-							<FolderPlus className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-							title={viewMode === "grid" ? "列表视图" : "平铺视图"}
-						>
-							{viewMode === "grid" ? (
-								<List className="w-4 h-4" />
-							) : (
-								<Grid className="w-4 h-4" />
-							)}
-						</button>
-						<button
-							onClick={onOpenSettings}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-							title="设置"
-						>
-							<Settings className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() =>
-								selectionMode ? exitSelectionMode() : setSelectionMode(true)
-							}
-							className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium ${
-								selectionMode
-									? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-							}`}
-						>
-							{selectionMode ? (
-								<CheckSquare className="w-3.5 h-3.5" />
-							) : (
-								<Square className="w-3.5 h-3.5" />
-							)}
-							{selectionMode ? "完成" : "管理"}
-						</button>
-					</div>
-				</div>
+				<ResourceSidebarHeader
+					currentResearch={currentResearch}
+					viewMode={viewMode}
+					selectionMode={selectionMode}
+					viewTabs={renderViewTabs()}
+					onOpenResearch={() => setLeftSidebarView("research")}
+					onOpenFolderModal={() => setIsFolderModalOpen(true)}
+					onToggleViewMode={() =>
+						setViewMode(viewMode === "grid" ? "list" : "grid")
+					}
+					onOpenSettings={onOpenSettings}
+					onToggleSelectionMode={() =>
+						selectionMode ? exitSelectionMode() : setSelectionMode(true)
+					}
+				/>
 
 				{renderBreadcrumb()}
 
@@ -3013,60 +2968,28 @@ export default function ResourceSidebar({
 				onClear={dragImport.clearQueue}
 				onRemoveItem={dragImport.removeItem}
 			/>
-			{/* 删除确认对话框 */}
-			{deleteConfirm && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
-							删除资料
-						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-							确定要删除「{deleteConfirm.title}」吗？此操作无法撤销。
-						</p>
-						<div className="flex justify-end gap-2">
-							<button
-								onClick={() => setDeleteConfirm(null)}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-							>
-								取消
-							</button>
-							<button
-								onClick={() => handleDeleteSource(deleteConfirm, true)}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-							>
-								删除
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{cardDeleteConfirm && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
-							删除卡片
-						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-							确定删除「{cardDeleteConfirm.title}」吗？图片文件也会一并移除。
-						</p>
-						<div className="flex justify-end gap-2">
-							<button
-								onClick={() => setCardDeleteConfirm(null)}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-							>
-								取消
-							</button>
-							<button
-								onClick={confirmDeleteCard}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-							>
-								删除
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+			<ResourceSidebarDialogs
+				deleteConfirm={deleteConfirm}
+				onCancelDeleteSource={() => setDeleteConfirm(null)}
+				onConfirmDeleteSource={(source) => {
+					void handleDeleteSource(source, true);
+				}}
+				cardDeleteConfirm={cardDeleteConfirm}
+				onCancelDeleteCard={() => setCardDeleteConfirm(null)}
+				onConfirmDeleteCard={() => {
+					void confirmDeleteCard();
+				}}
+				batchDeleteConfirm={batchDeleteConfirm}
+				onCancelBatchDelete={handleCancelBatchDelete}
+				onConfirmBatchDelete={() => {
+					void handleConfirmBatchDelete();
+				}}
+				folderDeleteConfirm={folderDeleteConfirm}
+				onCancelDeleteFolder={() => setFolderDeleteConfirm(null)}
+				onConfirmDeleteFolder={(folder) => {
+					void handleDeleteFolder(folder, true);
+				}}
+			/>
 
 			{cardPreview && (
 				<div
@@ -3169,34 +3092,6 @@ export default function ResourceSidebar({
 				</div>
 			)}
 
-			{batchDeleteConfirm && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
-							批量删除
-						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-							已选择 {batchDeleteConfirm.length}{" "}
-							条资料，删除后不可恢复，确认继续吗？
-						</p>
-						<div className="flex justify-end gap-2">
-							<button
-								onClick={handleCancelBatchDelete}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-							>
-								取消
-							</button>
-							<button
-								onClick={handleConfirmBatchDelete}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-							>
-								删除
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
-
 			{/* 右键菜单 */}
 			{contextMenu && sourceContextMenuItems.length > 0 ? (
 				<ContextMenu
@@ -3216,35 +3111,6 @@ export default function ResourceSidebar({
 					onClose={() => setFolderContextMenu(null)}
 				/>
 			) : null}
-
-			{/* 文件夹删除确认对话框 */}
-			{folderDeleteConfirm && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
-							删除文件夹
-						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-							确定要删除「{folderDeleteConfirm.name}
-							」吗？文件夹内的资料将变为未归类状态。
-						</p>
-						<div className="flex justify-end gap-2">
-							<button
-								onClick={() => setFolderDeleteConfirm(null)}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-							>
-								取消
-							</button>
-							<button
-								onClick={() => handleDeleteFolder(folderDeleteConfirm, true)}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-							>
-								删除
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
 
 			{/* 主内容区域 - 根据视图模式切换 */}
 			{leftSidebarView === "detail" && previewSource ? (

@@ -1,5 +1,6 @@
 import { type ContextItem, EnhancedInput } from "./EnhancedInput";
 import type { SlashCommand } from "./SlashCommandMenu";
+import { toast } from "./Toast";
 
 // 测试组件 - 展示如何使用 EnhancedInput
 export function TestEnhancedInput() {
@@ -9,8 +10,8 @@ export function TestEnhancedInput() {
 		command?: SlashCommand,
 	) => {
 		console.log("提交:", { text, contexts, command });
-		alert(
-			`提交成功!\n\n文本: ${text}\n上下文数: ${contexts.length}\n命令: ${command?.label || "无"}`,
+		toast.info(
+			`提交成功，文本长度 ${text.length}，上下文 ${contexts.length}，命令 ${command?.label || "无"}`,
 		);
 	};
 

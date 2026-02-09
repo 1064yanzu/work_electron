@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fileList, fileMove } from "../lib/api";
 import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
 import { useWorkspaceStore } from "../lib/workspaceStore";
+import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
 
 interface DocumentTabsProps {
@@ -136,9 +137,14 @@ export default function DocumentTabs({
 					include_deleted: true,
 				});
 				const record = all.find((item) => item.id === docId);
-				const moveToProject = window.confirm(
-					"选择“确定”移动到项目目录，选择“取消”移动到全局目录。",
-				);
+				const moveToProject = await confirmDialog.show({
+					title: "移动文档",
+					message:
+						"点击“移动到项目目录”将文档移动到项目目录；点击“移动到全局目录”将文档移动到全局共享目录。",
+					confirmText: "移动到项目目录",
+					cancelText: "移动到全局目录",
+					type: "info",
+				});
 				await fileMove({
 					id: docId,
 					entity_type: "output",

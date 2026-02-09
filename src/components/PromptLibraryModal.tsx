@@ -29,6 +29,8 @@ import {
 	type CustomPrompt,
 	useCustomPromptStore,
 } from "../lib/customPromptStore";
+import { confirmDialog } from "./ui/ConfirmDialog";
+import { toast } from "./ui/Toast";
 
 // ============================================================================
 // Types & Constants
@@ -379,7 +381,9 @@ export function PromptLibraryModal({
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				const res = importPrompts(event.target?.result as string);
-				if (res.success) alert(`已导入 ${res.count} 条提示词`);
+				if (res.success) {
+					toast.success(`已导入 ${res.count} 条提示词`);
+				}
 			};
 			reader.readAsText(file);
 			e.target.value = "";
@@ -746,8 +750,15 @@ export function PromptLibraryModal({
 										}}
 										onDelete={(e) => {
 											e.stopPropagation();
-											if (confirm(`确定删除"${prompt.name}"吗？`))
-												deletePrompt(prompt.id);
+											void (async () => {
+												const confirmed = await confirmDialog.danger(
+													`确定删除「${prompt.name}」吗？`,
+													"删除提示词",
+												);
+												if (confirmed) {
+													deletePrompt(prompt.id);
+												}
+											})();
 										}}
 									/>
 								))}

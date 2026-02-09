@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AgentSettings } from "./panels/AgentSettings";
 import { ArtifactSettings } from "./panels/ArtifactSettings";
 import { DashboardSettings } from "./panels/DashboardSettings";
@@ -10,6 +10,7 @@ import { ModelSettings } from "./panels/ModelSettings";
 import { PromptSettings } from "./panels/PromptSettings";
 import { SkillsSettings } from "./panels/SkillsSettings";
 import { SettingsSidebar } from "./SettingsSidebar";
+import { FocusTrap } from "../ui/FocusTrap";
 
 interface SettingsModalProps {
 	isOpen: boolean;
@@ -20,6 +21,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	const [activeTab, setActiveTab] = useState("models");
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
+	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
 	// 处理关闭动画
 	const handleClose = useCallback(() => {
@@ -30,15 +32,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		}, 200);
 	}, [onClose]);
 
-	// 控制渲染和 ESC 关闭
+	// 控制渲染
 	useEffect(() => {
 		if (isOpen) {
 			setShouldRender(true);
-			const handleKeyDown = (e: KeyboardEvent) => {
-				if (e.key === "Escape") handleClose();
-			};
-			document.addEventListener("keydown", handleKeyDown);
-			return () => document.removeEventListener("keydown", handleKeyDown);
+			setIsClosing(false);
 		}
 	}, [isOpen, handleClose]);
 
@@ -83,19 +81,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	};
 
 	return (
-		<div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}>
-			{/* Click outside to close could be added here, but explicit close button is safer for settings */}
-			<div className={`relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}>
-				{/* Sidebar */}
+		<div
+			className={`fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
+			onMouseDown={(event) => {
+				if (event.target === event.currentTarget) {
+					handleClose();
+				}
+			}}
+		>
+			<FocusTrap
+				className={`relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+				onEscape={handleClose}
+				initialFocusRef={closeButtonRef}
+				role="dialog"
+				aria-modal="true"
+				aria-label="设置"
+			>
 				<SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-				{/* Main Content Area */}
 				<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-					{/* Close Button - Absolute positioned at top right of the content area */}
 					<button
+						ref={closeButtonRef}
 						onClick={handleClose}
 						className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-surface text-text-muted hover:text-text-primary btn-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 						title="关闭"
+						aria-label="关闭设置"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -115,7 +125,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
 					{renderContent()}
 				</main>
-			</div>
+			</FocusTrap>
 		</div>
 	);
 }

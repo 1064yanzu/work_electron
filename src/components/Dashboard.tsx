@@ -21,7 +21,10 @@ import {
 } from "../lib/api";
 import { buildProjectContextMenu } from "../lib/contextMenu/actions";
 import type { Project } from "../types";
+import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
+import { inputDialog } from "./ui/InputDialog";
+import { toast } from "./ui/Toast";
 
 interface DashboardProps {
 	onOpenSettings: () => void;
@@ -103,6 +106,9 @@ export default function Dashboard({
 			onOpenProject?.(project.id);
 		} catch (e) {
 			console.error("创建项目失败:", e);
+			toast.error(
+				`创建项目失败: ${e instanceof Error ? e.message : String(e)}`,
+			);
 		}
 	};
 
@@ -128,14 +134,28 @@ export default function Dashboard({
 
 	const handleRenameProject = useCallback(
 		async (project: Project) => {
-			const nextName = window.prompt("请输入新的项目名称", project.name);
+			const nextName = await inputDialog.show({
+				title: "重命名项目",
+				message: "请输入新的项目名称",
+				defaultValue: project.name,
+				confirmText: "保存",
+				cancelText: "取消",
+				validate: (value) => {
+					const trimmed = value.trim();
+					if (!trimmed) return "项目名称不能为空";
+					return null;
+				},
+			});
 			if (!nextName?.trim() || nextName.trim() === project.name) return;
 			try {
 				await updateProject({ id: project.id, name: nextName.trim() });
 				await loadProjects();
+				toast.success("重命名成功");
 			} catch (error) {
 				console.error("重命名项目失败:", error);
-				window.alert(`重命名失败: ${String(error)}`);
+				toast.error(
+					`重命名失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[loadProjects],
@@ -146,9 +166,12 @@ export default function Dashboard({
 			try {
 				await updateProject({ id: project.id, is_archived: !project.is_archived });
 				await loadProjects();
+				toast.success(project.is_archived ? "已取消归档" : "已归档");
 			} catch (error) {
 				console.error("更新项目归档状态失败:", error);
-				window.alert(`更新失败: ${String(error)}`);
+				toast.error(
+					`更新失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[loadProjects],
@@ -156,16 +179,20 @@ export default function Dashboard({
 
 	const handleDeleteProject = useCallback(
 		async (project: Project) => {
-			const confirmed = window.confirm(
+			const confirmed = await confirmDialog.danger(
 				`确定要删除项目「${project.name}」吗？此操作不可撤销。`,
+				"删除项目",
 			);
 			if (!confirmed) return;
 			try {
 				await deleteProject(project.id);
 				await loadProjects();
+				toast.success("项目已删除");
 			} catch (error) {
 				console.error("删除项目失败:", error);
-				window.alert(`删除失败: ${String(error)}`);
+				toast.error(
+					`删除失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[loadProjects],
@@ -181,10 +208,14 @@ export default function Dashboard({
 				try {
 					const result = await revealProjectDirectory(contextMenu.project.id);
 					if (!result.success) {
-						window.alert(result.error || "打开目录失败");
+						toast.error(result.error || "打开目录失败");
+					} else {
+						toast.success("已在文件管理器中打开项目目录");
 					}
 				} catch (error) {
-					window.alert(`打开目录失败: ${String(error)}`);
+					toast.error(
+						`打开目录失败: ${error instanceof Error ? error.message : String(error)}`,
+					);
 				}
 			},
 			isArchived: contextMenu.project.is_archived,
@@ -616,4 +647,3 @@ function NavItem({
 		</button>
 	);
 }
-

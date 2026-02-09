@@ -1,17 +1,18 @@
-/**
- * Toast 通知组件
- * 提供优雅的通知提示，替代原始的 alert()
- */
 import { CheckCircle2, Info, X, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { cn } from "../../lib/utils";
 
 export type ToastType = "success" | "error" | "info" | "warning";
+export type ToastActionVariant = "default" | "primary" | "danger";
 
 export interface ToastOptions {
 	type?: ToastType;
-	duration?: number; // 毫秒，0 表示不自动关闭
+	duration?: number;
 	closable?: boolean;
+	actionLabel?: string;
+	onAction?: () => void | Promise<void>;
+	actionVariant?: ToastActionVariant;
 }
 
 interface ToastItem {
@@ -20,204 +21,242 @@ interface ToastItem {
 	type: ToastType;
 	duration: number;
 	closable: boolean;
+	actionLabel?: string;
+	onAction?: () => void | Promise<void>;
+	actionVariant: ToastActionVariant;
 }
 
-const ToastContainer = () => {
+const TOAST_EVENT_NAME = "show-toast";
+
+function getToastStyles(type: ToastType) {
+	switch (type) {
+		case "success":
+			return {
+				border: "border-emerald-200 dark:border-emerald-800/50",
+				iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+				icon: <CheckCircle2 size={18} className="text-emerald-500" />,
+				progress: "bg-emerald-500",
+			};
+		case "error":
+			return {
+				border: "border-red-200 dark:border-red-800/50",
+				iconBg: "bg-red-50 dark:bg-red-900/30",
+				icon: <XCircle size={18} className="text-red-500" />,
+				progress: "bg-red-500",
+			};
+		case "warning":
+			return {
+				border: "border-amber-200 dark:border-amber-800/50",
+				iconBg: "bg-amber-50 dark:bg-amber-900/30",
+				icon: <Info size={18} className="text-amber-500" />,
+				progress: "bg-amber-500",
+			};
+		default:
+			return {
+				border: "border-blue-200 dark:border-blue-800/50",
+				iconBg: "bg-blue-50 dark:bg-blue-900/30",
+				icon: <Info size={18} className="text-blue-500" />,
+				progress: "bg-blue-500",
+			};
+	}
+}
+
+function getActionClass(variant: ToastActionVariant) {
+	switch (variant) {
+		case "primary":
+			return "bg-blue-500 text-white hover:bg-blue-600";
+		case "danger":
+			return "bg-red-500 text-white hover:bg-red-600";
+		default:
+			return "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
+	}
+}
+
+function ToastContainer() {
 	const [toasts, setToasts] = useState<ToastItem[]>([]);
+	const timersRef = useRef<Map<string, number>>(new Map());
 
 	useEffect(() => {
-		// 监听全局 toast 事件
-		const handleToast = (event: CustomEvent<ToastItem>) => {
-			const toast = event.detail;
-			setToasts((prev) => [...prev, toast]);
+		const handleToast = (event: Event) => {
+			const custom = event as CustomEvent<ToastItem>;
+			const nextToast = custom.detail;
+			setToasts((prev) => [...prev, nextToast]);
 
-			// 自动移除
-			if (toast.duration > 0) {
-				setTimeout(() => {
-					setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-				}, toast.duration);
+			if (nextToast.duration > 0) {
+				const timer = window.setTimeout(() => {
+					setToasts((prev) => prev.filter((item) => item.id !== nextToast.id));
+					timersRef.current.delete(nextToast.id);
+				}, nextToast.duration);
+				timersRef.current.set(nextToast.id, timer);
 			}
 		};
 
-		window.addEventListener("show-toast" as any, handleToast);
+		window.addEventListener(TOAST_EVENT_NAME, handleToast);
 		return () => {
-			window.removeEventListener("show-toast" as any, handleToast);
+			window.removeEventListener(TOAST_EVENT_NAME, handleToast);
+			for (const timer of timersRef.current.values()) {
+				window.clearTimeout(timer);
+			}
+			timersRef.current.clear();
 		};
 	}, []);
 
 	const handleClose = (id: string) => {
-		setToasts((prev) => prev.filter((t) => t.id !== id));
+		const timer = timersRef.current.get(id);
+		if (timer) {
+			window.clearTimeout(timer);
+			timersRef.current.delete(id);
+		}
+		setToasts((prev) => prev.filter((item) => item.id !== id));
 	};
 
 	if (toasts.length === 0) return null;
 
 	return (
-		<div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
-			{toasts.map((toast) => (
-				<ToastItem
-					key={toast.id}
-					toast={toast}
-					onClose={() => handleClose(toast.id)}
+		<div
+			className="pointer-events-none fixed right-4 top-4 z-[9999] flex max-w-[min(92vw,420px)] flex-col gap-2"
+			aria-live="polite"
+			aria-atomic="false"
+		>
+			{toasts.map((item) => (
+				<ToastItemView
+					key={item.id}
+					toast={item}
+					onClose={() => handleClose(item.id)}
 				/>
 			))}
 		</div>
 	);
-};
-
-interface ToastItemProps {
-	toast: ToastItem;
-	onClose: () => void;
 }
 
-const ToastItem = ({ toast, onClose }: ToastItemProps) => {
+function ToastItemView({
+	toast: item,
+	onClose,
+}: {
+	toast: ToastItem;
+	onClose: () => void;
+}) {
 	const [isExiting, setIsExiting] = useState(false);
 	const [progress, setProgress] = useState(100);
 
-	// 进度条动画
 	useEffect(() => {
-		if (toast.duration <= 0) return;
-
-		const startTime = Date.now();
-		const interval = setInterval(() => {
-			const elapsed = Date.now() - startTime;
-			const remaining = Math.max(0, 100 - (elapsed / toast.duration) * 100);
-			setProgress(remaining);
-			if (remaining <= 0) {
-				clearInterval(interval);
+		if (item.duration <= 0) return;
+		const start = Date.now();
+		const timer = window.setInterval(() => {
+			const elapsed = Date.now() - start;
+			const percentage = Math.max(0, 100 - (elapsed / item.duration) * 100);
+			setProgress(percentage);
+			if (percentage <= 0) {
+				window.clearInterval(timer);
 			}
 		}, 50);
+		return () => window.clearInterval(timer);
+	}, [item.duration]);
 
-		return () => clearInterval(interval);
-	}, [toast.duration]);
+	const styles = getToastStyles(item.type);
 
-	const handleClose = () => {
+	const closeWithMotion = () => {
 		setIsExiting(true);
-		setTimeout(onClose, 200); // 等待动画完成
+		window.setTimeout(onClose, 180);
 	};
-
-	const getIcon = () => {
-		switch (toast.type) {
-			case "success":
-				return <CheckCircle2 size={18} className="text-emerald-500" />;
-			case "error":
-				return <XCircle size={18} className="text-red-500" />;
-			case "warning":
-				return <Info size={18} className="text-amber-500" />;
-			default:
-				return <Info size={18} className="text-blue-500" />;
-		}
-	};
-
-	const getStyles = () => {
-		switch (toast.type) {
-			case "success":
-				return {
-					bg: "bg-white dark:bg-zinc-900",
-					border: "border-emerald-200 dark:border-emerald-800/50",
-					iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-					progress: "bg-emerald-500",
-				};
-			case "error":
-				return {
-					bg: "bg-white dark:bg-zinc-900",
-					border: "border-red-200 dark:border-red-800/50",
-					iconBg: "bg-red-50 dark:bg-red-900/30",
-					progress: "bg-red-500",
-				};
-			case "warning":
-				return {
-					bg: "bg-white dark:bg-zinc-900",
-					border: "border-amber-200 dark:border-amber-800/50",
-					iconBg: "bg-amber-50 dark:bg-amber-900/30",
-					progress: "bg-amber-500",
-				};
-			default:
-				return {
-					bg: "bg-white dark:bg-zinc-900",
-					border: "border-blue-200 dark:border-blue-800/50",
-					iconBg: "bg-blue-50 dark:bg-blue-900/30",
-					progress: "bg-blue-500",
-				};
-		}
-	};
-
-	const styles = getStyles();
 
 	return (
 		<div
-			className={`
-				pointer-events-auto relative overflow-hidden
-				flex items-start gap-3 p-4 rounded-xl border
-				min-w-[320px] max-w-md
-				shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)]
-				transition-all duration-200 ease-out
-				${styles.bg} ${styles.border}
-				${isExiting ? "opacity-0 translate-x-8 scale-95" : "opacity-100 translate-x-0 scale-100 animate-slide-in-right"}
-			`}
-		>
-			{/* 图标 */}
-			<div
-				className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${styles.iconBg}`}
-			>
-				{getIcon()}
-			</div>
-
-			{/* 内容 */}
-			<div className="flex-1 text-sm text-zinc-800 dark:text-zinc-100 break-words pt-1">
-				{toast.message}
-			</div>
-
-			{/* 关闭按钮 */}
-			{toast.closable && (
-				<button
-					type="button"
-					onClick={handleClose}
-					className="flex-shrink-0 p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95"
-				>
-					<X size={14} className="text-zinc-400 dark:text-zinc-500" />
-				</button>
+			role="status"
+			className={cn(
+				"pointer-events-auto relative overflow-hidden rounded-xl border bg-white p-4 shadow-[0_6px_28px_-10px_rgba(0,0,0,0.2)] dark:bg-zinc-900",
+				"transition-[opacity,transform] duration-200 ease-out",
+				isExiting ? "translate-x-4 scale-[0.98] opacity-0" : "opacity-100",
+				styles.border,
 			)}
+		>
+			<div className="flex items-start gap-3">
+				<div
+					className={cn(
+						"mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+						styles.iconBg,
+					)}
+				>
+					{styles.icon}
+				</div>
 
-			{/* 进度条 */}
-			{toast.duration > 0 && (
+				<div className="min-w-0 flex-1">
+					<div className="break-words pt-0.5 text-sm text-zinc-800 dark:text-zinc-100">
+						{item.message}
+					</div>
+					{item.actionLabel && item.onAction ? (
+						<div className="mt-2">
+							<button
+								type="button"
+								onClick={async () => {
+									await item.onAction?.();
+									closeWithMotion();
+								}}
+								className={cn(
+									"rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
+									getActionClass(item.actionVariant),
+								)}
+							>
+								{item.actionLabel}
+							</button>
+						</div>
+					) : null}
+				</div>
+
+				{item.closable ? (
+					<button
+						type="button"
+						onClick={closeWithMotion}
+						aria-label="关闭通知"
+						className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+					>
+						<X size={14} />
+					</button>
+				) : null}
+			</div>
+
+			{item.duration > 0 ? (
 				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-100 dark:bg-zinc-800">
 					<div
-						className={`h-full transition-all duration-100 ease-linear ${styles.progress}`}
+						className={cn("h-full transition-[width] duration-75", styles.progress)}
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
-};
+}
 
-// Toast API
 class ToastAPI {
 	private container: HTMLDivElement | null = null;
-	private root: any = null;
+	private root: ReturnType<typeof createRoot> | null = null;
 
 	private ensureContainer() {
-		if (!this.container) {
-			this.container = document.createElement("div");
-			this.container.id = "toast-container";
-			document.body.appendChild(this.container);
-			this.root = createRoot(this.container);
-			this.root.render(<ToastContainer />);
-		}
+		if (this.container) return;
+		this.container = document.createElement("div");
+		this.container.id = "toast-container";
+		document.body.appendChild(this.container);
+		this.root = createRoot(this.container);
+		this.root.render(<ToastContainer />);
 	}
 
 	show(message: string, options: ToastOptions = {}) {
 		this.ensureContainer();
-
-		const toast: ToastItem = {
-			id: `toast-${Date.now()}-${Math.random()}`,
+		const id =
+			typeof crypto !== "undefined" && "randomUUID" in crypto
+				? crypto.randomUUID()
+				: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+		const payload: ToastItem = {
+			id,
 			message,
 			type: options.type || "info",
 			duration: options.duration ?? 3000,
 			closable: options.closable ?? true,
+			actionLabel: options.actionLabel,
+			onAction: options.onAction,
+			actionVariant: options.actionVariant ?? "default",
 		};
-
-		window.dispatchEvent(new CustomEvent("show-toast", { detail: toast }));
+		window.dispatchEvent(new CustomEvent(TOAST_EVENT_NAME, { detail: payload }));
 	}
 
 	success(message: string, duration = 3000) {

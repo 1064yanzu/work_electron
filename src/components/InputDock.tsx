@@ -23,6 +23,7 @@ import {
 import { workspaceStore } from "../lib/workspaceStore";
 import { type Source, SourceType } from "../types";
 import { Modal } from "./ui/Modal";
+import { toast } from "./ui/Toast";
 
 interface InputDockProps {
 	onOpenSettings: () => void;
@@ -71,7 +72,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 
 	const handleCreateSource = async () => {
 		if (!newSourceTitle.trim()) {
-			alert("请输入标题");
+			toast.warning("请输入标题");
 			return;
 		}
 
@@ -86,7 +87,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			if (activeTab === "web") {
 				// URL 抓取
 				if (!newSourceContent.trim()) {
-					alert("请输入 URL");
+					toast.warning("请输入 URL");
 					return;
 				}
 				await fetchUrlContent({
@@ -108,7 +109,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			} else if (activeTab === "file") {
 				// 文件上传（当前为文本内容模拟）
 				if (!newSourceContent.trim()) {
-					alert("请输入文件内容");
+					toast.warning("请输入文件内容");
 					return;
 				}
 				await uploadFileContent({
@@ -128,7 +129,9 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			fetchSources();
 		} catch (error) {
 			console.error("创建来源失败:", error);
-			alert(`创建来源失败: ${error}`);
+			toast.error(
+				`创建来源失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 

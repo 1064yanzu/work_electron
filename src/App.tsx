@@ -20,6 +20,14 @@ import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
 import { useManagedModeStore } from "./lib/managedModeStore";
 import { themeManager } from "./lib/theme";
+import { getMotionPreference } from "./lib/config";
+import {
+	applyMotionPreferenceToDocument,
+	MOTION_PREFERENCE_EVENT,
+	normalizeMotionPreference,
+	subscribeSystemMotionPreference,
+	type MotionPreference,
+} from "./lib/interaction/motionPreference";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -48,6 +56,8 @@ function PanelLoadingFallback() {
 
 export default function App() {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+	const [motionPreference, setMotionPreference] =
+		useState<MotionPreference>("system");
 	const activeMainView = useWorkspaceStoreSelector(
 		(state) => state.activeMainView,
 	);
@@ -91,6 +101,41 @@ export default function App() {
 		const theme = themeManager.getTheme();
 		console.log("当前主题:", theme);
 	}, []);
+
+	useEffect(() => {
+		let disposed = false;
+
+		const applyPreference = (next: MotionPreference) => {
+			if (disposed) return;
+			setMotionPreference(next);
+			applyMotionPreferenceToDocument(next);
+		};
+
+		void getMotionPreference().then((next) => {
+			applyPreference(next);
+		});
+
+		const handlePreferenceChange = (event: Event) => {
+			const custom = event as CustomEvent<unknown>;
+			applyPreference(normalizeMotionPreference(custom.detail));
+		};
+
+		window.addEventListener(MOTION_PREFERENCE_EVENT, handlePreferenceChange);
+		const unsubscribeSystem = subscribeSystemMotionPreference(() => {
+			if (motionPreference === "system") {
+				applyMotionPreferenceToDocument("system");
+			}
+		});
+
+		return () => {
+			disposed = true;
+			window.removeEventListener(
+				MOTION_PREFERENCE_EVENT,
+				handlePreferenceChange,
+			);
+			unsubscribeSystem();
+		};
+	}, [motionPreference]);
 
 	// Cmd+L 快捷键切换右侧栏
 	useEffect(() => {
@@ -153,7 +198,7 @@ export default function App() {
 							defaultSize={20}
 							minSize={15}
 							maxSize={50}
-							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-all"
+							className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-[background-color,border-color,box-shadow]"
 						>
 							<ResourceSidebar onOpenSettings={() => setIsSettingsOpen(true)} />
 						</Panel>
@@ -164,7 +209,7 @@ export default function App() {
 						<Panel
 							defaultSize={rightSidebarVisible ? 55 : 80}
 							minSize={30}
-							className="mid-center-panel flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_6px_30px_-12px_rgba(0,0,0,0.14)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-all"
+							className="mid-center-panel flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_6px_30px_-12px_rgba(0,0,0,0.14)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden relative transition-[background-color,border-color,box-shadow]"
 						>
 							{isManagedMode ? (
 								<Suspense fallback={<PanelLoadingFallback />}>
@@ -199,7 +244,7 @@ export default function App() {
 									minSize={5}
 									maxSize={50}
 									onResize={handleRightPanelResize}
-									className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-all"
+									className="flex flex-col bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-xl rounded-[16px] shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] border border-black/[0.06] dark:border-white/[0.06] ring-1 ring-black/[0.02] overflow-hidden transition-[background-color,border-color,box-shadow]"
 								>
 									<Suspense fallback={<PanelLoadingFallback />}>
 										<CopilotSidebar />
@@ -214,7 +259,7 @@ export default function App() {
 						<button
 							type="button"
 							onClick={handleShowRightSidebar}
-							className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-[#1E1E1E]/90 backdrop-blur-xl hover:bg-white dark:hover:bg-[#2a2a2a] text-zinc-600 dark:text-zinc-300 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)] border border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] transition-all duration-200 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98]"
+							className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-[#1E1E1E]/90 backdrop-blur-xl hover:bg-white dark:hover:bg-[#2a2a2a] text-zinc-600 dark:text-zinc-300 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)] border border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] transition-[transform,box-shadow,background-color,color,border-color] duration-200 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98]"
 							title="打开 AI 对话 (⌘L)"
 						>
 							<MessageCircle className="w-4 h-4" />

@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
 import type * as React from "react";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
+import { FocusTrap } from "./FocusTrap";
 
 interface ModalProps {
 	isOpen: boolean;
@@ -45,6 +46,11 @@ export function Modal({
 }: ModalProps) {
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
+	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+	const reduceMotion =
+		typeof document !== "undefined" &&
+		document.documentElement.dataset.motionPreference === "reduced";
+	const closeDuration = reduceMotion ? 0 : 200;
 
 	// 处理关闭动画
 	const handleClose = useCallback(() => {
@@ -52,8 +58,8 @@ export function Modal({
 		setTimeout(() => {
 			setIsClosing(false);
 			onClose();
-		}, 200); // 匹配退出动画时长
-	}, [onClose]);
+		}, closeDuration);
+	}, [onClose, closeDuration]);
 
 	// ESC 键关闭
 	const handleKeyDown = useCallback(
@@ -109,7 +115,7 @@ export function Modal({
 			/>
 
 			{/* 模态框 */}
-			<div
+			<FocusTrap
 				className={cn(
 					"relative w-full rounded-2xl",
 					"bg-white dark:bg-zinc-900",
@@ -121,6 +127,8 @@ export function Modal({
 				)}
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
+				onEscape={handleClose}
+				initialFocusRef={closeButtonRef}
 			>
 				{/* Header */}
 				<div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-800/50">
@@ -132,6 +140,7 @@ export function Modal({
 					</h3>
 					{showCloseButton && (
 						<button
+							ref={closeButtonRef}
 							type="button"
 							onClick={handleClose}
 							className={cn(
@@ -158,7 +167,7 @@ export function Modal({
 						{footer}
 					</div>
 				)}
-			</div>
+			</FocusTrap>
 		</div>
 	);
 }

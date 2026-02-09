@@ -8,7 +8,8 @@
  * - 智能定位
  */
 
-import { useEffect, useRef } from "react";
+import type React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 export interface ContextMenuItem {
@@ -32,9 +33,23 @@ import { createPortal } from "react-dom";
 
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 	const menuRef = useRef<HTMLDivElement>(null);
+	const previousActiveElementRef = useRef<HTMLElement | null>(null);
+	const [activeIndex, setActiveIndex] = useState<number>(-1);
+
+	const actionableIndexes = useMemo(() => {
+		return items
+			.map((item, index) => (item.separator || item.disabled ? null : index))
+			.filter((index): index is number => index !== null);
+	}, [items]);
+
+	useEffect(() => {
+		setActiveIndex(actionableIndexes[0] ?? -1);
+	}, [actionableIndexes]);
 
 	// 智能定位:避免超出屏幕
 	useEffect(() => {
+		previousActiveElementRef.current =
+			document.activeElement as HTMLElement | null;
 		if (!menuRef.current) return;
 
 		const menu = menuRef.current;
@@ -67,6 +82,13 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
 		menu.style.left = `${adjustedX}px`;
 		menu.style.top = `${adjustedY}px`;
+		menu.focus();
+		return () => {
+			const previous = previousActiveElementRef.current;
+			if (previous && document.contains(previous)) {
+				previous.focus();
+			}
+		};
 	}, [x, y]);
 
 	// 点击外部关闭
@@ -106,9 +128,79 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 		onClose();
 	};
 
+	const focusActiveItem = (index: number) => {
+		if (!menuRef.current || index < 0) return;
+		const node = menuRef.current.querySelector<HTMLButtonElement>(
+			`button[data-menu-index="${index}"]`,
+		);
+		node?.focus();
+	};
+
+	useEffect(() => {
+		focusActiveItem(activeIndex);
+	}, [activeIndex]);
+
+	const moveActive = (direction: 1 | -1) => {
+		if (actionableIndexes.length === 0) return;
+		if (activeIndex < 0) {
+			setActiveIndex(actionableIndexes[0]);
+			return;
+		}
+		const currentPosition = actionableIndexes.indexOf(activeIndex);
+		const nextPosition =
+			currentPosition < 0
+				? 0
+				: (currentPosition + direction + actionableIndexes.length) %
+					actionableIndexes.length;
+		setActiveIndex(actionableIndexes[nextPosition]);
+	};
+
+	const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		switch (event.key) {
+			case "ArrowDown":
+				event.preventDefault();
+				moveActive(1);
+				return;
+			case "ArrowUp":
+				event.preventDefault();
+				moveActive(-1);
+				return;
+			case "Home":
+				event.preventDefault();
+				if (actionableIndexes.length > 0) {
+					setActiveIndex(actionableIndexes[0]);
+				}
+				return;
+			case "End":
+				event.preventDefault();
+				if (actionableIndexes.length > 0) {
+					setActiveIndex(actionableIndexes[actionableIndexes.length - 1]);
+				}
+				return;
+			case "Enter":
+			case " ":
+				if (activeIndex < 0) return;
+				event.preventDefault();
+				handleItemClick(items[activeIndex]);
+				return;
+			case "Tab":
+				event.preventDefault();
+				moveActive(event.shiftKey ? -1 : 1);
+				return;
+			case "Escape":
+				event.preventDefault();
+				onClose();
+				return;
+			default:
+				return;
+		}
+	};
+
 	return createPortal(
 		<div
 			ref={menuRef}
+			role="menu"
+			aria-label="上下文菜单"
 			className={cn(
 				"fixed z-[9999] min-w-[200px]",
 				// 高级毛玻璃效果
@@ -123,6 +215,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 				"animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-200",
 			)}
 			style={{ left: x, top: y }}
+			tabIndex={-1}
+			onKeyDown={handleKeyDown}
 		>
 			{items.map((item, index) => {
 				if (item.separator) {
@@ -138,7 +232,14 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 					<button
 						key={index}
 						onClick={() => handleItemClick(item)}
+						onMouseEnter={() => {
+							if (!item.disabled) setActiveIndex(index);
+						}}
 						disabled={item.disabled}
+						role="menuitem"
+						aria-disabled={item.disabled}
+						data-menu-index={index}
+						tabIndex={index === activeIndex ? 0 : -1}
 						className={cn(
 							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-all duration-150",
 							"group/item relative",

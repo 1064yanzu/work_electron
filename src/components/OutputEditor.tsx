@@ -6,6 +6,8 @@ import {
 	listOutputAssets,
 } from "../lib/api";
 import { type OutputAsset, OutputType } from "../types";
+import { confirmDialog } from "./ui/ConfirmDialog";
+import { toast } from "./ui/Toast";
 
 export function OutputEditor() {
 	const [assets, setAssets] = useState<OutputAsset[]>([]);
@@ -20,6 +22,7 @@ export function OutputEditor() {
 			}
 		} catch (error) {
 			console.error(error);
+			toast.error("加载输出失败");
 		}
 	};
 
@@ -39,17 +42,21 @@ export function OutputEditor() {
 			setActiveId(newAsset.id);
 		} catch (error) {
 			console.error(error);
+			toast.error("创建文档失败");
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		if (!confirm("Are you sure?")) return;
+		const confirmed = await confirmDialog.warning("确定删除该文档吗？", "删除文档");
+		if (!confirmed) return;
 		try {
 			await deleteOutputAsset(id);
 			if (activeId === id) setActiveId(null);
 			fetchAssets();
+			toast.success("删除成功");
 		} catch (error) {
 			console.error(error);
+			toast.error("删除失败");
 		}
 	};
 

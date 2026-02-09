@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomPromptStore } from "../../lib/customPromptStore";
 import { useSkillsStore } from "../../lib/skillsStore";
+import { FocusTrap } from "../ui/FocusTrap";
 import { SlashPrimaryMenu, slashCategories } from "./SlashPrimaryMenu";
 import { type SlashCommand, defaultCommands } from "./SlashCommand";
 
@@ -318,99 +319,102 @@ export function SlashMenuContainer({
 			ref={menuRef}
 			className="absolute left-0 bottom-full mb-2 w-[360px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-2xl rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_12px_32px_-8px_rgba(0,0,0,0.12),0_24px_60px_-12px_rgba(0,0,0,0.15)] border border-zinc-200/40 dark:border-zinc-700/40 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-3 duration-200"
 		>
-			{/* 头部：返回按钮 + 标题 */}
-			<div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
-				<button
-					onClick={handleBack}
-					className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90"
-					title="返回"
-				>
-					<ArrowLeft className="w-5 h-5" />
-				</button>
-				<div className="flex items-center gap-2.5">
-					{Icon && (
-						<div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm">
-							<Icon className={`w-4 h-4 ${iconColor}`} />
+			<FocusTrap onEscape={onClose} role="menu" aria-label="斜杠命令菜单">
+				{/* 头部：返回按钮 + 标题 */}
+				<div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
+					<button
+						onClick={handleBack}
+						aria-label="返回命令类型"
+						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90"
+						title="返回"
+					>
+						<ArrowLeft className="w-5 h-5" />
+					</button>
+					<div className="flex items-center gap-2.5">
+						{Icon && (
+							<div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm">
+								<Icon className={`w-4 h-4 ${iconColor}`} />
+							</div>
+						)}
+						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+							{categoryName}
+						</span>
+						<span className="px-2 py-0.5 text-[10px] font-semibold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+							{totalCommands}
+						</span>
+					</div>
+				</div>
+
+				{/* 添加提示词按钮（仅在提示词类别显示）- 高级中性风格 */}
+				{showAddPromptButton && onOpenPromptLibrary && (
+					<button
+						onClick={() => {
+							onOpenPromptLibrary();
+							onClose();
+						}}
+						className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left text-sm border-b border-zinc-100 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group active:scale-[0.99]"
+					>
+						<div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
+							<Plus className="w-4.5 h-4.5 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
+						</div>
+						<div>
+							<span className="font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
+								添加提示词
+							</span>
+							<p className="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
+								管理自定义提示词库
+							</p>
+						</div>
+					</button>
+				)}
+
+				{/* 命令列表 */}
+				<div className="max-h-[320px] overflow-y-auto">
+					{groups.length === 0 && totalCommands === 0 ? (
+						<div className="px-4 py-10 text-center">
+							<div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+								<Sparkles className="w-6 h-6 text-zinc-400" />
+							</div>
+							<p className="text-sm text-zinc-500 dark:text-zinc-400">
+								{selectedCategory === "prompt"
+									? "暂无自定义提示词"
+									: "暂无可用命令"}
+							</p>
+						</div>
+					) : (
+						<div className="py-1">
+							{groups.map((group) => (
+								<GroupSection
+									key={group.id}
+									group={group}
+									filter={filter}
+									isCollapsed={collapsedGroups.has(group.id)}
+									onToggle={() => toggleGroup(group.id)}
+									onSelect={onSelect}
+								/>
+							))}
 						</div>
 					)}
-					<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-						{categoryName}
-					</span>
-					<span className="px-2 py-0.5 text-[10px] font-semibold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-						{totalCommands}
-					</span>
 				</div>
-			</div>
 
-			{/* 添加提示词按钮（仅在提示词类别显示）- 高级中性风格 */}
-			{showAddPromptButton && onOpenPromptLibrary && (
-				<button
-					onClick={() => {
-						onOpenPromptLibrary();
-						onClose();
-					}}
-					className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left text-sm border-b border-zinc-100 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group active:scale-[0.99]"
-				>
-					<div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
-						<Plus className="w-4.5 h-4.5 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
-					</div>
-					<div>
-						<span className="font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-							添加提示词
+				{/* 底部快捷键提示 */}
+				<div className="px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+					<div className="flex items-center justify-center gap-4 text-[10px] text-zinc-400">
+						<span className="flex items-center gap-1">
+							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
+								⌫
+							</kbd>
+							<span>返回</span>
 						</span>
-						<p className="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
-							管理自定义提示词库
-						</p>
+						<span className="flex items-center gap-1">
+							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
+								↵
+							</kbd>
+							<span>选择</span>
+						</span>
 					</div>
-				</button>
-			)}
-
-			{/* 命令列表 */}
-			<div className="max-h-[320px] overflow-y-auto">
-				{groups.length === 0 && totalCommands === 0 ? (
-					<div className="px-4 py-10 text-center">
-						<div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-							<Sparkles className="w-6 h-6 text-zinc-400" />
-						</div>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">
-							{selectedCategory === "prompt"
-								? "暂无自定义提示词"
-								: "暂无可用命令"}
-						</p>
-					</div>
-				) : (
-					<div className="py-1">
-						{groups.map((group) => (
-							<GroupSection
-								key={group.id}
-								group={group}
-								filter={filter}
-								isCollapsed={collapsedGroups.has(group.id)}
-								onToggle={() => toggleGroup(group.id)}
-								onSelect={onSelect}
-							/>
-						))}
-					</div>
-				)}
-			</div>
-
-			{/* 底部快捷键提示 */}
-			<div className="px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-zinc-400">
-					<span className="flex items-center gap-1">
-						<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-							⌫
-						</kbd>
-						<span>返回</span>
-					</span>
-					<span className="flex items-center gap-1">
-						<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-							↵
-						</kbd>
-						<span>选择</span>
-					</span>
 				</div>
-			</div>
+			</FocusTrap>
 		</div>
 	);
 }
@@ -522,17 +526,19 @@ function GroupSection({
 								}}
 								onClick={() => onSelect(command)}
 								className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all duration-200
-                  ${isSelected
-										? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
-										: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
+                  ${
+										isSelected
+											? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
+											: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
 									}`}
 							>
 								{/* 图标 */}
 								<div
 									className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200
-                    ${isSelected
-											? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
-											: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
+                    ${
+											isSelected
+												? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
+												: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
 										}`}
 								>
 									<command.icon
@@ -543,18 +549,20 @@ function GroupSection({
 								{/* 文字 */}
 								<div className="flex-1 min-w-0">
 									<div
-										className={`text-sm font-medium truncate ${isSelected
-											? "text-zinc-900 dark:text-zinc-100"
-											: "text-zinc-700 dark:text-zinc-300"
-											}`}
+										className={`text-sm font-medium truncate ${
+											isSelected
+												? "text-zinc-900 dark:text-zinc-100"
+												: "text-zinc-700 dark:text-zinc-300"
+										}`}
 									>
 										{command.name}
 									</div>
 									<div
-										className={`text-xs truncate ${isSelected
-											? "text-zinc-500 dark:text-zinc-400"
-											: "text-zinc-400 dark:text-zinc-500"
-											}`}
+										className={`text-xs truncate ${
+											isSelected
+												? "text-zinc-500 dark:text-zinc-400"
+												: "text-zinc-400 dark:text-zinc-500"
+										}`}
 									>
 										{command.description}
 									</div>

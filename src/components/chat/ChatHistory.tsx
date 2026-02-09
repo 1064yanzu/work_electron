@@ -4,6 +4,7 @@ import { Calendar, MessageSquare, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
 import type { ChatSession } from "../../lib/chat/types";
+import { inputDialog } from "../ui/InputDialog";
 import { ContextMenu } from "../ui/ContextMenu";
 
 interface ChatHistoryProps {
@@ -85,12 +86,21 @@ export function ChatHistory({
 		? buildSessionContextMenu({
 				onOpen: () => onSelectSession(contextMenu.session.id),
 				onRename: () => {
-					const nextTitle = window.prompt(
-						"请输入新的会话标题",
-						contextMenu.session.title || "新对话",
-					);
-					if (!nextTitle?.trim()) return;
-					onRenameSession(contextMenu.session.id, nextTitle.trim());
+					void (async () => {
+						const nextTitle = await inputDialog.show({
+							title: "重命名会话",
+							message: "请输入新的会话标题",
+							defaultValue: contextMenu.session.title || "新对话",
+							confirmText: "保存",
+							cancelText: "取消",
+							validate: (value) => {
+								if (!value.trim()) return "标题不能为空";
+								return null;
+							},
+						});
+						if (!nextTitle?.trim()) return;
+						onRenameSession(contextMenu.session.id, nextTitle.trim());
+					})();
 				},
 				onTogglePin: () => {
 					setPinnedIds((prev) =>
@@ -134,6 +144,7 @@ export function ChatHistory({
 					<div className="flex items-center gap-2">
 						<button
 							onClick={onNewSession}
+							aria-label="新建对话"
 							className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95"
 							title="新建对话"
 						>
@@ -141,6 +152,7 @@ export function ChatHistory({
 						</button>
 						<button
 							onClick={onClose}
+							aria-label="关闭历史记录"
 							className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95"
 						>
 							<X className="w-5 h-5" />
@@ -258,6 +270,7 @@ export function ChatHistory({
 													e.stopPropagation();
 													onDeleteSession(session.id);
 												}}
+												aria-label={`删除对话 ${session.title || "新对话"}`}
 												className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
 												title="删除对话"
 											>

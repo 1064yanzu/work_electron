@@ -22,6 +22,7 @@ import {
 	smartBrowserSearch,
 } from "../lib/config";
 import { workspaceStore } from "../lib/workspaceStore";
+import { FocusTrap } from "./ui/FocusTrap";
 
 interface WebSearchModuleProps {
 	onAddSource?: (sourceId: string) => void;
@@ -270,6 +271,7 @@ export default function WebSearchModule({
 					{query && (
 						<button
 							onClick={() => setQuery("")}
+							aria-label="清空搜索关键词"
 							className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors"
 						>
 							<X className="w-3.5 h-3.5" />
@@ -279,6 +281,7 @@ export default function WebSearchModule({
 					<button
 						onClick={handleSearch}
 						disabled={!query.trim() || isSearching}
+						aria-label="执行搜索"
 						className={`p-1.5 rounded-lg transition-all ${
 							query.trim() && !isSearching
 								? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90"
@@ -363,6 +366,7 @@ export default function WebSearchModule({
 										{/* 预览按钮 */}
 										<button
 											onClick={() => handlePreview(result)}
+											aria-label={`预览 ${result.title}`}
 											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
 											title="预览内容"
 										>
@@ -373,6 +377,11 @@ export default function WebSearchModule({
 										<button
 											onClick={() => handleAddAsSource(result)}
 											disabled={isAdding || isAdded}
+											aria-label={
+												isAdded
+													? `${result.title} 已添加`
+													: `添加 ${result.title} 为资料`
+											}
 											className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 transition-colors ${
 												isAdded
 													? "bg-green-500 text-white cursor-default"
@@ -407,6 +416,7 @@ export default function WebSearchModule({
 											target="_blank"
 											rel="noopener noreferrer"
 											onClick={(e) => e.stopPropagation()}
+											aria-label={`在浏览器打开 ${result.title}`}
 											className="shrink-0 p-1 text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity"
 											title="在浏览器中打开"
 										>
@@ -440,9 +450,13 @@ export default function WebSearchModule({
 					className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
 					onClick={closePreview}
 				>
-					<div
+					<FocusTrap
 						className="w-[90vw] h-[85vh] max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
 						onClick={(e) => e.stopPropagation()}
+						onEscape={closePreview}
+						role="dialog"
+						aria-modal="true"
+						aria-label="网页预览"
 					>
 						{/* 模态框头部 */}
 						<div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80">
@@ -461,6 +475,7 @@ export default function WebSearchModule({
 							</div>
 							<button
 								onClick={closePreview}
+								aria-label="关闭预览"
 								className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
 							>
 								<X className="w-5 h-5" />
@@ -471,12 +486,12 @@ export default function WebSearchModule({
 						{useReadingMode ? (
 							<div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-900">
 								{isLoadingPreview ? (
-									<div className="flex flex-col items-center justify-center h满 gap-3">
+									<div className="flex flex-col items-center justify-center h-full gap-3">
 										<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
 										<p className="text-sm text-zinc-500">正在加载页面内容...</p>
 									</div>
 								) : previewError ? (
-									<div className="flex flex-col items-center justify-center h满 gap-4 px-8">
+									<div className="flex flex-col items-center justify-center h-full gap-4 px-8">
 										<div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
 											<X className="w-8 h-8 text-red-400" />
 										</div>
@@ -519,7 +534,7 @@ export default function WebSearchModule({
 										</div>
 									</article>
 								) : (
-									<div className="flex items-center justify-center h满">
+									<div className="flex items-center justify-center h-full">
 										<p className="text-sm text-zinc-400">暂无内容</p>
 									</div>
 								)}
@@ -585,7 +600,7 @@ export default function WebSearchModule({
 								</button>
 							</div>
 						</div>
-					</div>
+					</FocusTrap>
 				</div>
 			)}
 		</div>

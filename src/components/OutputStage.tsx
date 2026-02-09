@@ -7,6 +7,8 @@ import {
 } from "../lib/api";
 import { EVENTS, events } from "../lib/events";
 import { type OutputAsset, OutputType } from "../types";
+import { inputDialog } from "./ui/InputDialog";
+import { toast } from "./ui/Toast";
 
 export default function OutputStage() {
 	const [outputs, setOutputs] = useState<OutputAsset[]>([]);
@@ -31,11 +33,22 @@ export default function OutputStage() {
 			}
 		} catch (error) {
 			console.error("获取输出失败:", error);
+			toast.error("获取输出失败，请稍后重试");
 		}
 	};
 
 	const handleCreateOutput = async () => {
-		const title = prompt("请输入文章标题:");
+		const title = await inputDialog.show({
+			title: "新建文章",
+			message: "请输入文章标题",
+			placeholder: "例如：季度项目复盘",
+			confirmText: "创建",
+			cancelText: "取消",
+			validate: (value) => {
+				if (!value.trim()) return "标题不能为空";
+				return null;
+			},
+		});
 		if (!title) return;
 
 		try {
@@ -52,7 +65,7 @@ export default function OutputStage() {
 			setIsEditing(true);
 		} catch (error) {
 			console.error("创建文章失败:", error);
-			alert("创建失败");
+			toast.error("创建失败");
 		}
 	};
 
@@ -76,6 +89,7 @@ export default function OutputStage() {
 				setLastSaved(new Date());
 			} catch (error) {
 				console.error("自动保存失败:", error);
+				toast.error("自动保存失败");
 			} finally {
 				setIsSaving(false);
 			}

@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAISuggestion } from "../hooks/useAISuggestion";
 import {
 	createOutputAsset,
-	deleteOutputAsset,
+	fileDelete,
+	fileRestore,
 	generateImageForText,
 	listOutputAssets,
 	updateOutputAsset,
@@ -26,7 +27,9 @@ import { useEditorUiPrefs } from "./editor/useEditorUiPrefs";
 import { EditorWorkspaceView } from "./editor/EditorWorkspaceView";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
+import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "./ui/ContextMenu";
+import { toast } from "./ui/Toast";
 
 interface EditorCanvasProps {
 	onBack?: () => void;
@@ -465,30 +468,67 @@ export default function EditorCanvas({
 		});
 	}, []);
 
+	const deleteOutputsWithUndo = useCallback(
+		async (ids: string[]) => {
+			if (ids.length === 0) return;
+
+			for (const id of ids) {
+				await fileDelete({ id, entity_type: "output" });
+				closeDoc(id);
+			}
+
+			setOutputs((prev) => prev.filter((item) => !ids.includes(item.id)));
+			setSelectedOutput((prev) => (prev && ids.includes(prev.id) ? null : prev));
+			setEditorContent((prev) => {
+				if (
+					selectedOutputRef.current &&
+					ids.includes(selectedOutputRef.current.id)
+				) {
+					return "";
+				}
+				return prev;
+			});
+
+			const label = ids.length === 1 ? "文档已删除" : `已删除 ${ids.length} 篇文档`;
+			toast.show(label, {
+				type: "warning",
+				duration: 5000,
+				actionLabel: "撤销",
+				actionVariant: "primary",
+				onAction: async () => {
+					try {
+						for (const id of ids) {
+							await fileRestore({ id, entity_type: "output" });
+						}
+						await fetchOutputs(undefined, { skipAutoSelect: true });
+						toast.success("已恢复删除的文档");
+					} catch (error) {
+						console.error("[EditorCanvas] 撤销删除失败", error);
+						toast.error(
+							`撤销失败: ${error instanceof Error ? error.message : String(error)}`,
+						);
+					}
+				},
+			});
+		},
+		[closeDoc, fetchOutputs],
+	);
+
 	const handleBulkDelete = useCallback(async () => {
 		if (selectedForManage.length === 0 || isBulkDeleting) return;
 		setIsBulkDeleting(true);
 		try {
-			for (const id of selectedForManage) {
-				await deleteOutputAsset(id);
-			}
-			setOutputs((prev) =>
-				prev.filter((o) => !selectedForManage.includes(o.id)),
-			);
-			if (selectedOutput && selectedForManage.includes(selectedOutput.id)) {
-				setSelectedOutput(null);
-				setEditorContent("");
-			}
+			await deleteOutputsWithUndo(selectedForManage);
 			setSelectedForManage([]);
 			setIsManaging(false);
 			setShowBulkDeleteConfirm(false);
 		} catch (error) {
 			console.error("[EditorCanvas] 批量删除失败", error);
-			alert("批量删除失败，请稍后重试");
+			toast.error("批量删除失败，请稍后重试");
 		} finally {
 			setIsBulkDeleting(false);
 		}
-	}, [selectedForManage, isBulkDeleting, outputs, selectedOutput]);
+	}, [selectedForManage, isBulkDeleting, deleteOutputsWithUndo]);
 
 	const handleSelectOutput = useCallback(
 		async (output: OutputAsset | null) => {
@@ -713,9 +753,10 @@ export default function EditorCanvas({
 		if (!selectedOutput) return;
 		try {
 			await flushPendingSaveImmediately();
+			toast.success("保存成功");
 		} catch (error) {
 			console.error("[EditorCanvas] 手动保存失败", error);
-			alert("保存失败，请稍后重试");
+			toast.error("保存失败，请稍后重试");
 		}
 	}, [flushPendingSaveImmediately, selectedOutput]);
 
@@ -872,7 +913,7 @@ export default function EditorCanvas({
 			console.log("[EditorCanvas] 状态更新完成");
 		} catch (error) {
 			console.error("[EditorCanvas] 创建文档失败:", error);
-			alert("创建文档失败，请重试");
+			toast.error("创建文档失败，请重试");
 		}
 	};
 
@@ -1122,46 +1163,46 @@ export default function EditorCanvas({
 	const handleConfirmDelete = useCallback(
 		async (target: OutputAsset) => {
 			try {
-				await deleteOutputAsset(target.id);
-				setOutputs((prev) => prev.filter((o) => o.id !== target.id));
-				if (selectedOutput?.id === target.id) {
-					setSelectedOutput(null);
-					setEditorContent("");
-				}
+				await deleteOutputsWithUndo([target.id]);
 				setDeleteConfirm(null);
 			} catch (error) {
 				console.error("删除失败:", error);
+				toast.error("删除失败，请稍后重试");
 			}
 		},
-		[selectedOutput],
+		[deleteOutputsWithUndo],
 	);
 
 	// 关闭文档处理
 	const handleCloseDoc = useCallback(
 		(docId: string, dirty: boolean) => {
-			if (dirty) {
-				// 显示保存确认对话框
-				const confirmed = window.confirm("文档有未保存的修改，确定要关闭吗？");
-				if (!confirmed) return;
-			}
-
-			closeDoc(docId);
-
-			// 如果关闭的是当前选中的文档，切换到其他文档或空状态
-			if (selectedOutput?.id === docId) {
-				if (openedDocs.length > 1) {
-					const remainingDocs = openedDocs.filter((id) => id !== docId);
-					const nextDocId = remainingDocs[remainingDocs.length - 1];
-					const nextDoc = outputs.find((o) => o.id === nextDocId);
-					if (nextDoc) {
-						setSelectedOutput(nextDoc);
-						setEditorContent(nextDoc.content);
-					}
-				} else {
-					setSelectedOutput(null);
-					setEditorContent("");
+			void (async () => {
+				if (dirty) {
+					const confirmed = await confirmDialog.warning(
+						"文档有未保存的修改，确定要关闭吗？",
+						"关闭文档",
+					);
+					if (!confirmed) return;
 				}
-			}
+
+				closeDoc(docId);
+
+				// 如果关闭的是当前选中的文档，切换到其他文档或空状态
+				if (selectedOutput?.id === docId) {
+					if (openedDocs.length > 1) {
+						const remainingDocs = openedDocs.filter((id) => id !== docId);
+						const nextDocId = remainingDocs[remainingDocs.length - 1];
+						const nextDoc = outputs.find((o) => o.id === nextDocId);
+						if (nextDoc) {
+							setSelectedOutput(nextDoc);
+							setEditorContent(nextDoc.content);
+						}
+					} else {
+						setSelectedOutput(null);
+						setEditorContent("");
+					}
+				}
+			})();
 		},
 		[closeDoc, selectedOutput, openedDocs, outputs],
 	);

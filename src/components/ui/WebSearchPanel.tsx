@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createSource } from "../../lib/api";
 import { smartWebSearch } from "../../lib/config";
 import type { WebSearchResult } from "../../types";
+import { toast } from "./Toast";
 
 interface WebSearchPanelProps {
 	onClose: () => void;
@@ -26,7 +27,9 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 			setResults(searchResults);
 		} catch (error) {
 			console.error("搜索失败:", error);
-			alert(`搜索失败: ${error}`);
+			toast.error(
+				`搜索失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		} finally {
 			setIsSearching(false);
 		}
@@ -40,13 +43,15 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 				url: result.url,
 				tags: ["web-search"],
 			});
-			alert(`✅ 已添加到输入源: ${result.title}`);
+			toast.success(`已添加到输入源: ${result.title}`);
 			if (onAddSource) {
 				onAddSource(result.url);
 			}
 		} catch (error) {
 			console.error("添加失败:", error);
-			alert(`添加失败: ${error}`);
+			toast.error(
+				`添加失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	};
 

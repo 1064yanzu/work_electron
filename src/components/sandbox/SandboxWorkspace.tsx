@@ -19,6 +19,9 @@ import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
+import { confirmDialog } from "../ui/ConfirmDialog";
+import { inputDialog } from "../ui/InputDialog";
+import { toast } from "../ui/Toast";
 
 interface SandboxWorkspaceProps {
 	onExitManagedMode: () => void;
@@ -168,13 +171,25 @@ export default function SandboxWorkspace({
 			await revealFileSafe(file.path);
 		} catch (error) {
 			console.error("[SandboxWorkspace] reveal file failed:", error);
-			window.alert(`打开失败: ${String(error)}`);
+			toast.error(
+				`打开失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}, []);
 
 	const handleMoveArtifactFile = useCallback(
 		async (file: SandboxFile) => {
-			const nextPath = window.prompt("请输入新的绝对路径", file.path);
+			const nextPath = await inputDialog.show({
+				title: "移动文件",
+				message: "请输入新的绝对路径",
+				defaultValue: file.path,
+				confirmText: "移动",
+				cancelText: "取消",
+				validate: (value) => {
+					if (!value.trim()) return "目标路径不能为空";
+					return null;
+				},
+			});
 			if (!nextPath?.trim() || nextPath.trim() === file.path) return;
 			try {
 				await moveFileSafe({
@@ -185,7 +200,9 @@ export default function SandboxWorkspace({
 				await refreshFiles();
 			} catch (error) {
 				console.error("[SandboxWorkspace] move file failed:", error);
-				window.alert(`移动失败: ${String(error)}`);
+				toast.error(
+					`移动失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[refreshFiles],
@@ -193,16 +210,20 @@ export default function SandboxWorkspace({
 
 	const handleDeleteArtifactFile = useCallback(
 		async (file: SandboxFile) => {
-			const confirmed = window.confirm(
+			const confirmed = await confirmDialog.danger(
 				`确定删除文件「${file.name}」吗？此操作不可撤销。`,
+				"删除文件",
 			);
 			if (!confirmed) return;
 			try {
 				await deleteFileSafe(file.path);
 				await refreshFiles();
+				toast.success(`已删除 ${file.name}`);
 			} catch (error) {
 				console.error("[SandboxWorkspace] delete file failed:", error);
-				window.alert(`删除失败: ${String(error)}`);
+				toast.error(
+					`删除失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 		},
 		[refreshFiles],
