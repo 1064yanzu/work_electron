@@ -2,6 +2,8 @@ import { AlertCircle, FolderOpen, RefreshCw, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { openDirectory } from "../../../lib/dialogCompat";
 import { useSkillsStore } from "../../../lib/skillsStore";
+import { confirmDialog } from "../../ui/ConfirmDialog";
+import { SettingsPageContainer, SettingsSwitch } from "../ui/SettingsPrimitives";
 
 export function SkillsSettings() {
 	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
@@ -44,7 +46,11 @@ export function SkillsSettings() {
 	};
 
 	const handleDelete = async (skillName: string) => {
-		if (!confirm(`确定要删除技能 "${skillName}" 吗？`)) return;
+		const confirmed = await confirmDialog.danger(
+			`确定要删除技能 "${skillName}" 吗？`,
+			"删除技能",
+		);
+		if (!confirmed) return;
 
 		try {
 			setIsLoading(true);
@@ -66,8 +72,7 @@ export function SkillsSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-3xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
 						<Zap className="w-5 h-5" />
@@ -148,17 +153,10 @@ export function SkillsSettings() {
 									</div>
 
 									<div className="flex items-center gap-2 ml-4">
-										<label className="relative inline-flex items-center cursor-pointer">
-											<input
-												type="checkbox"
-												checked={skill.enabled}
-												onChange={(e) =>
-													handleToggle(skill.name, e.target.checked)
-												}
-												className="sr-only peer"
-											/>
-											<div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-										</label>
+										<SettingsSwitch
+											checked={skill.enabled}
+											onChange={(next) => handleToggle(skill.name, next)}
+										/>
 										<button
 											onClick={() => handleDelete(skill.name)}
 											className="p-1.5 text-text-muted hover:text-red-600 transition-colors"
@@ -191,7 +189,6 @@ export function SkillsSettings() {
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

@@ -40,7 +40,6 @@ export function WebdavBackupManager({
 	const [loading, setLoading] = useState(false);
 	const [deleting, setDeleting] = useState<string | null>(null);
 	const [restoring, setRestoring] = useState<string | null>(null);
-	const [restoreProgress, setRestoreProgress] = useState(0);
 	const [restoreStage, setRestoreStage] = useState<string>();
 
 	// 获取备份文件列表
@@ -97,27 +96,12 @@ export function WebdavBackupManager({
 		if (!confirmed) return;
 
 		setRestoring(fileName);
-		setRestoreProgress(0);
 		setRestoreStage("downloading");
 
 		try {
 			const config = { ...webdavConfig, fileName };
 
-			// 模拟进度更新（实际应该从后端获取）
-			const progressInterval = setInterval(() => {
-				setRestoreProgress((prev) => {
-					if (prev >= 95) {
-						clearInterval(progressInterval);
-						return 95;
-					}
-					return prev + 5;
-				});
-			}, 200);
-
 			await restoreFromWebdav(config);
-
-			clearInterval(progressInterval);
-			setRestoreProgress(100);
 			setRestoreStage("completed");
 
 			toast.success("数据恢复成功！应用将在 3 秒后重启", 3000);
@@ -132,7 +116,6 @@ export function WebdavBackupManager({
 			toast.error(
 				"恢复失败：" + (error instanceof Error ? error.message : "未知错误"),
 			);
-			setRestoreProgress(0);
 			setRestoreStage(undefined);
 		} finally {
 			setRestoring(null);
@@ -179,9 +162,10 @@ export function WebdavBackupManager({
 				{restoring && (
 					<div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b dark:border-gray-700">
 						<ProgressBar
-							progress={restoreProgress}
+							progress={restoreStage === "completed" ? 100 : 0}
 							stage={restoreStage}
-							showPercentage={true}
+							showPercentage={false}
+							indeterminate={restoreStage !== "completed"}
 						/>
 					</div>
 				)}

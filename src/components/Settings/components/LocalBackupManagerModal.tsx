@@ -9,7 +9,9 @@ import {
 	restoreFromLocalFile,
 	type LocalBackupFileInfo,
 } from "../../../lib/api";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import { Modal } from "../../ui/Modal";
+import { toast } from "../../ui/Toast";
 import { RefreshCw, Trash2, Download, AlertCircle } from "lucide-react";
 
 interface LocalBackupManagerModalProps {
@@ -74,7 +76,11 @@ export function LocalBackupManagerModal({
 	}, [isOpen, backupDir, fetchBackupFiles]);
 
 	const handleDelete = async (fileName: string) => {
-		if (!confirm(`确定要删除备份文件 "${fileName}" 吗？此操作不可恢复。`)) {
+		const confirmed = await confirmDialog.danger(
+			`确定要删除备份文件 "${fileName}" 吗？此操作不可恢复。`,
+			"删除备份文件",
+		);
+		if (!confirmed) {
 			return;
 		}
 
@@ -88,7 +94,7 @@ export function LocalBackupManagerModal({
 				return next;
 			});
 		} catch (err) {
-			alert(`删除失败: ${err instanceof Error ? err.message : err}`);
+			toast.error(`删除失败: ${err instanceof Error ? err.message : err}`);
 		} finally {
 			setIsDeleting(null);
 		}
@@ -97,11 +103,11 @@ export function LocalBackupManagerModal({
 	const handleBatchDelete = async () => {
 		if (selectedFiles.size === 0) return;
 
-		if (
-			!confirm(
-				`确定要删除选中的 ${selectedFiles.size} 个备份文件吗？此操作不可恢复。`,
-			)
-		) {
+		const confirmed = await confirmDialog.danger(
+			`确定要删除选中的 ${selectedFiles.size} 个备份文件吗？此操作不可恢复。`,
+			"批量删除备份",
+		);
+		if (!confirmed) {
 			return;
 		}
 
@@ -115,30 +121,32 @@ export function LocalBackupManagerModal({
 			);
 			setSelectedFiles(new Set());
 		} catch (err) {
-			alert(`批量删除失败: ${err instanceof Error ? err.message : err}`);
+			toast.error(`批量删除失败: ${err instanceof Error ? err.message : err}`);
 		} finally {
 			setIsDeleting(null);
 		}
 	};
 
 	const handleRestore = async (fileName: string) => {
-		if (
-			!confirm(
-				`确定要从 "${fileName}" 恢复数据吗？当前数据将被覆盖，建议先备份当前数据。`,
-			)
-		) {
+		const confirmed = await confirmDialog.warning(
+			`确定要从 "${fileName}" 恢复数据吗？当前数据将被覆盖，建议先备份当前数据。`,
+			"恢复备份",
+		);
+		if (!confirmed) {
 			return;
 		}
 
 		setIsRestoring(fileName);
 		try {
 			await restoreFromLocalFile(backupDir, fileName);
-			alert("恢复成功！应用将刷新以加载新数据。");
+			toast.success("恢复成功！应用将刷新以加载新数据。", 2200);
 			onRestoreSuccess?.();
 			onClose();
-			window.location.reload();
+			setTimeout(() => {
+				window.location.reload();
+			}, 800);
 		} catch (err) {
-			alert(`恢复失败: ${err instanceof Error ? err.message : err}`);
+			toast.error(`恢复失败: ${err instanceof Error ? err.message : err}`);
 		} finally {
 			setIsRestoring(null);
 		}

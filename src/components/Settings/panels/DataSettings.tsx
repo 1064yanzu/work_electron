@@ -50,7 +50,7 @@ import {
 	selectBackupDirectory,
 	backupToLocalDir,
 } from "../../../lib/api";
-import { Modal } from "../components";
+import { Modal } from "../../ui/Modal";
 import { LocalBackupManagerModal } from "../components/LocalBackupManagerModal";
 import { FolderOpen } from "lucide-react";
 import {
@@ -61,6 +61,12 @@ import {
 import { toast } from "../../ui/Toast";
 import { confirmDialog as confirmUI } from "../../ui/ConfirmDialog";
 import { Select } from "../../ui/Select";
+import {
+	SettingsRow,
+	SettingsSectionCard,
+	SettingsSectionTitle,
+	SettingsSwitch,
+} from "../ui/SettingsPrimitives";
 
 // 格式化文件大小
 function formatSize(bytes: number): string {
@@ -90,103 +96,6 @@ function formatTime(dateStr: string | null): string {
 	});
 }
 
-// 切换开关组件
-function Toggle({
-	checked,
-	onChange,
-	disabled,
-}: {
-	checked: boolean;
-	onChange: (v: boolean) => void;
-	disabled?: boolean;
-}) {
-	return (
-		<button
-			type="button"
-			role="switch"
-			aria-checked={checked}
-			disabled={disabled}
-			onClick={() => !disabled && onChange(!checked)}
-			className={`
-        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-        ${checked ? "bg-primary" : "bg-zinc-200"}
-        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-      `}
-		>
-			<span
-				className={`
-          inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform
-          ${checked ? "translate-x-6" : "translate-x-1"}
-        `}
-			/>
-		</button>
-	);
-}
-
-// 设置行组件
-function SettingRow({
-	label,
-	description,
-	value,
-	action,
-}: {
-	label: string;
-	description?: string;
-	value?: React.ReactNode;
-	action?: React.ReactNode;
-}) {
-	return (
-		<div className="flex items-center justify-between py-4 border-b border-zinc-100 last:border-0">
-			<div className="flex-1 min-w-0">
-				<div className="text-sm font-medium text-zinc-800">{label}</div>
-				{description && (
-					<div className="text-xs text-zinc-400 mt-0.5 truncate">
-						{description}
-					</div>
-				)}
-			</div>
-			<div className="flex items-center gap-3 ml-4">
-				{value && <div className="text-sm text-zinc-500">{value}</div>}
-				{action}
-			</div>
-		</div>
-	);
-}
-
-// 分区标题组件
-function SectionTitle({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<h4
-			className={`text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3 ${className}`}
-		>
-			{children}
-		</h4>
-	);
-}
-
-// 分区卡片组件
-function SectionCard({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<div
-			className={`bg-white rounded-2xl ring-1 ring-black/[0.03] shadow-[0_2px_8px_rgb(0,0,0,0.04)] ${className}`}
-		>
-			{children}
-		</div>
-	);
-}
-
 export function DataSettings() {
 	// 同步配置状态
 	const [syncConfig, setSyncConfig] = useState<SyncConfig | null>(null);
@@ -198,6 +107,8 @@ export function DataSettings() {
 	);
 	const [themes, setThemes] = useState<Theme[]>([]);
 	const [newThemeName, setNewThemeName] = useState("");
+	const [themeBeingRenamed, setThemeBeingRenamed] = useState<Theme | null>(null);
+	const [renameThemeName, setRenameThemeName] = useState("");
 
 	// UI 状态
 	const [activeSection, setActiveSection] = useState<"storage" | "webdav">(
@@ -323,6 +234,27 @@ export function DataSettings() {
 			toast.error(`创建主题失败: ${String(error)}`);
 		}
 	}, [newThemeName]);
+
+	const handleOpenRenameTheme = useCallback((theme: Theme) => {
+		setThemeBeingRenamed(theme);
+		setRenameThemeName(theme.name);
+	}, []);
+
+	const handleRenameTheme = useCallback(async () => {
+		if (!themeBeingRenamed) return;
+		const nextName = renameThemeName.trim();
+		if (!nextName) return;
+		try {
+			await renameTheme(themeBeingRenamed.id, nextName);
+			setThemes(await listThemes());
+			setThemeBeingRenamed(null);
+			setRenameThemeName("");
+			toast.success("主题重命名成功");
+		} catch (error) {
+			console.error("重命名主题失败:", error);
+			toast.error(`重命名失败: ${String(error)}`);
+		}
+	}, [renameThemeName, themeBeingRenamed]);
 
 	// 处理服务商选择
 	const handleProviderChange = (providerId: string) => {
@@ -612,14 +544,14 @@ export function DataSettings() {
 
 	if (!syncConfig || !dataStats || !storageSettings) {
 		return (
-			<div className="flex-1 h-full bg-[#F7F7F5] flex items-center justify-center">
+			<div className="flex-1 h-full bg-background flex items-center justify-center">
 				<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex-1 h-full bg-[#F7F7F5] overflow-hidden">
+		<div className="flex-1 h-full bg-background dark:bg-zinc-950 overflow-hidden text-text-primary">
 			<div className="h-full flex">
 				{/* 左侧导航 */}
 				<div className="w-52 border-r border-zinc-200/60 bg-white/50 p-4">
@@ -653,10 +585,10 @@ export function DataSettings() {
 						{activeSection === "storage" && (
 							<>
 								{/* Vault 与互通 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
-										<SectionTitle>存储与互通</SectionTitle>
-										<SettingRow
+										<SettingsSectionTitle>存储与互通</SettingsSectionTitle>
+										<SettingsRow
 											label="Vault 根目录"
 											description={storageSettings.vault_root}
 											action={
@@ -689,11 +621,11 @@ export function DataSettings() {
 												</div>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="Obsidian Frontmatter"
 											description="为 Markdown 文件写入 YAML 元信息"
 											action={
-												<Toggle
+												<SettingsSwitch
 													checked={storageSettings.obsidian_frontmatter}
 													onChange={(v) =>
 														void saveStorageConfig({ obsidian_frontmatter: v })
@@ -702,11 +634,11 @@ export function DataSettings() {
 												/>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="Wiki Link"
 											description="优先使用 [[文档]] 互链风格"
 											action={
-												<Toggle
+												<SettingsSwitch
 													checked={storageSettings.obsidian_wiki_links}
 													onChange={(v) =>
 														void saveStorageConfig({ obsidian_wiki_links: v })
@@ -715,7 +647,7 @@ export function DataSettings() {
 												/>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="重名冲突策略"
 											action={
 												<Select
@@ -773,13 +705,7 @@ export function DataSettings() {
 															<div className="flex items-center gap-2">
 																<button
 																	onClick={async () => {
-																		const next = window.prompt(
-																			"请输入新的主题名称",
-																			theme.name,
-																		);
-																		if (!next?.trim()) return;
-																		await renameTheme(theme.id, next.trim());
-																		setThemes(await listThemes());
+																		handleOpenRenameTheme(theme);
 																	}}
 																	className="text-xs text-zinc-500 hover:text-zinc-700"
 																>
@@ -806,12 +732,12 @@ export function DataSettings() {
 											</div>
 										</div>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 数据统计 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
-										<SectionTitle>数据概览</SectionTitle>
+										<SettingsSectionTitle>数据概览</SettingsSectionTitle>
 										<div className="grid grid-cols-3 gap-4">
 											<div className="text-center p-4 bg-zinc-50 rounded-xl">
 												<div className="text-2xl font-semibold text-zinc-800">
@@ -841,20 +767,20 @@ export function DataSettings() {
 											</div>
 										</div>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 数据目录 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
-										<SectionTitle>数据目录</SectionTitle>
-										<SettingRow
+										<SettingsSectionTitle>数据目录</SettingsSectionTitle>
+										<SettingsRow
 											label="应用数据"
 											description={dataDir}
 											action={
 												<button
 													onClick={() => {
 														navigator.clipboard.writeText(dataDir);
-														alert("路径已复制");
+														toast.success("路径已复制");
 													}}
 													className="text-xs text-primary hover:underline"
 												>
@@ -862,7 +788,7 @@ export function DataSettings() {
 												</button>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="数据库文件"
 											description={dbPath}
 											action={
@@ -874,15 +800,15 @@ export function DataSettings() {
 												</button>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="数据库大小"
 											value={formatSize(dataStats.database_size)}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="媒体文件"
 											value={formatSize(dataStats.media_size)}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="缓存"
 											description="分享卡片等临时文件"
 											value={formatSize(dataStats.cache_size)}
@@ -896,13 +822,13 @@ export function DataSettings() {
 											}
 										/>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 本地备份目录 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
-										<SectionTitle>本地备份目录</SectionTitle>
-										<SettingRow
+										<SettingsSectionTitle>本地备份目录</SettingsSectionTitle>
+										<SettingsRow
 											label="备份目录"
 											description={syncConfig.local_backup_dir || "未设置"}
 											action={
@@ -922,11 +848,11 @@ export function DataSettings() {
 										/>
 										{syncConfig.local_backup_dir && (
 											<>
-												<SettingRow
+												<SettingsRow
 													label="自动备份"
 													description="定期自动备份到本地目录"
 													action={
-														<Toggle
+														<SettingsSwitch
 															checked={
 																syncConfig.local_backup_auto_sync ?? false
 															}
@@ -936,7 +862,7 @@ export function DataSettings() {
 														/>
 													}
 												/>
-												<SettingRow
+												<SettingsRow
 													label="备份间隔"
 													action={
 														<Select
@@ -961,7 +887,7 @@ export function DataSettings() {
 														/>
 													}
 												/>
-												<SettingRow
+												<SettingsRow
 													label="最大备份数"
 													description="超出后自动删除旧备份"
 													action={
@@ -994,12 +920,12 @@ export function DataSettings() {
 																const result = await backupToLocalDir(
 																	syncConfig.local_backup_dir,
 																);
-																alert(
-																	`✅ 备份成功！\n文件大小: ${formatSize(result.size)}`,
+																toast.success(
+																	`备份成功，文件大小 ${formatSize(result.size)}`,
 																);
 																await loadData();
 															} catch (error) {
-																alert(`备份失败: ${error}`);
+																toast.error(`备份失败: ${error}`);
 															} finally {
 																setIsBackingUpToLocal(false);
 															}
@@ -1033,12 +959,12 @@ export function DataSettings() {
 											</>
 										)}
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 备份与恢复 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
-										<SectionTitle>数据备份与恢复</SectionTitle>
+										<SettingsSectionTitle>数据备份与恢复</SettingsSectionTitle>
 										<div className="flex gap-3 mb-4">
 											<button
 												onClick={handleLocalBackup}
@@ -1055,7 +981,7 @@ export function DataSettings() {
 												恢复
 											</button>
 										</div>
-										<SettingRow
+										<SettingsRow
 											label="导出为 JSON"
 											description="导出所有数据，可用于迁移或分享"
 											action={
@@ -1068,15 +994,15 @@ export function DataSettings() {
 											}
 										/>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 危险区域 */}
-								<SectionCard className="ring-red-100">
+								<SettingsSectionCard className="ring-red-100">
 									<div className="p-5">
-										<SectionTitle className="text-red-400">
+										<SettingsSectionTitle className="text-red-400">
 											危险操作
-										</SectionTitle>
-										<SettingRow
+										</SettingsSectionTitle>
+										<SettingsRow
 											label="重置数据"
 											description="删除所有数据，恢复到初始状态"
 											action={
@@ -1089,14 +1015,14 @@ export function DataSettings() {
 											}
 										/>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 							</>
 						)}
 
 						{activeSection === "webdav" && (
 							<>
 								{/* WebDAV 状态 */}
-								<SectionCard>
+								<SettingsSectionCard>
 									<div className="p-5">
 										<div className="flex items-center justify-between mb-4">
 											<div className="flex items-center gap-3">
@@ -1118,7 +1044,7 @@ export function DataSettings() {
 													</div>
 												</div>
 											</div>
-											<Toggle
+											<SettingsSwitch
 												checked={syncConfig.webdav_enabled}
 												onChange={(v) => saveConfig({ webdav_enabled: v })}
 											/>
@@ -1131,14 +1057,14 @@ export function DataSettings() {
 											</div>
 										)}
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* WebDAV 配置 */}
-								<SectionCard
+								<SettingsSectionCard
 									className={!syncConfig.webdav_enabled ? "opacity-50" : ""}
 								>
 									<div className="p-5">
-										<SectionTitle>连接配置</SectionTitle>
+										<SettingsSectionTitle>连接配置</SettingsSectionTitle>
 										<div className="space-y-4">
 											<div>
 												<label className="block text-xs font-medium text-zinc-500 mb-2">
@@ -1330,10 +1256,10 @@ export function DataSettings() {
 											)}
 										</div>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 备份设置 */}
-								<SectionCard
+								<SettingsSectionCard
 									className={
 										!syncConfig.webdav_enabled
 											? "opacity-50 pointer-events-none"
@@ -1341,7 +1267,7 @@ export function DataSettings() {
 									}
 								>
 									<div className="p-5">
-										<SectionTitle>备份设置</SectionTitle>
+										<SettingsSectionTitle>备份设置</SettingsSectionTitle>
 
 										{/* 同步状态显示 */}
 										{syncConfig.webdav_auto_sync && (
@@ -1377,18 +1303,18 @@ export function DataSettings() {
 											</div>
 										)}
 
-										<SettingRow
+										<SettingsRow
 											label="自动备份"
 											description="定期自动备份数据到 WebDAV"
 											action={
-												<Toggle
+												<SettingsSwitch
 													checked={syncConfig.webdav_auto_sync ?? false}
 													onChange={(v) => saveConfig({ webdav_auto_sync: v })}
 													disabled={!syncConfig.webdav_enabled}
 												/>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="备份间隔"
 											action={
 												<Select
@@ -1419,7 +1345,7 @@ export function DataSettings() {
 												/>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="最大备份数"
 											description="超出后自动删除旧备份"
 											action={
@@ -1445,11 +1371,11 @@ export function DataSettings() {
 												/>
 											}
 										/>
-										<SettingRow
+										<SettingsRow
 											label="精简备份"
 											description="仅备份设置和记录，不包含大文件"
 											action={
-												<Toggle
+												<SettingsSwitch
 													checked={syncConfig.webdav_skip_backup_file ?? false}
 													onChange={(v) =>
 														saveConfig({ webdav_skip_backup_file: v })
@@ -1459,10 +1385,10 @@ export function DataSettings() {
 											}
 										/>
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 手动操作 */}
-								<SectionCard
+								<SettingsSectionCard
 									className={
 										!syncConfig.webdav_enabled
 											? "opacity-50 pointer-events-none"
@@ -1470,7 +1396,7 @@ export function DataSettings() {
 									}
 								>
 									<div className="p-5">
-										<SectionTitle>数据备份与恢复</SectionTitle>
+										<SettingsSectionTitle>数据备份与恢复</SettingsSectionTitle>
 										<div className="flex gap-3 mb-4">
 											<button
 												onClick={handleBackupToWebdav}
@@ -1504,7 +1430,7 @@ export function DataSettings() {
 											</div>
 										)}
 									</div>
-								</SectionCard>
+								</SettingsSectionCard>
 
 								{/* 多设备同步说明 */}
 								<div className="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700">
@@ -1524,6 +1450,51 @@ export function DataSettings() {
 					</div>
 				</div>
 			</div>
+
+			<Modal
+				isOpen={!!themeBeingRenamed}
+				onClose={() => {
+					setThemeBeingRenamed(null);
+					setRenameThemeName("");
+				}}
+				title="重命名主题"
+				size="sm"
+			>
+				<div className="space-y-4">
+					<div className="space-y-2">
+						<label className="text-xs text-zinc-500 dark:text-zinc-400">
+							主题名称
+						</label>
+						<input
+							type="text"
+							value={renameThemeName}
+							onChange={(e) => setRenameThemeName(e.target.value)}
+							placeholder="请输入新的主题名称"
+							className="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+						/>
+					</div>
+					<div className="flex justify-end gap-2">
+						<button
+							type="button"
+							onClick={() => {
+								setThemeBeingRenamed(null);
+								setRenameThemeName("");
+							}}
+							className="px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors dark:text-zinc-300 dark:hover:bg-zinc-800"
+						>
+							取消
+						</button>
+						<button
+							type="button"
+							onClick={() => void handleRenameTheme()}
+							disabled={!renameThemeName.trim()}
+							className="px-3 py-2 text-sm text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+						>
+							保存
+						</button>
+					</div>
+				</div>
+			</Modal>
 
 			{/* 危险操作确认弹窗 */}
 			<Modal
@@ -1587,10 +1558,10 @@ export function DataSettings() {
 							setIsClearing(true);
 							try {
 								await clearAllData();
-								alert("✅ 所有数据已删除，页面即将刷新");
+								toast.success("所有数据已删除，页面即将刷新", 1800);
 								window.location.reload();
 							} catch (error) {
-								alert(`重置失败: ${error}`);
+								toast.error(`重置失败: ${error}`);
 								setIsClearing(false);
 							}
 						}}

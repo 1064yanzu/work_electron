@@ -23,6 +23,9 @@ import {
 	testMcpServer,
 	updateMcpServer,
 } from "../../../lib/config";
+import { confirmDialog } from "../../ui/ConfirmDialog";
+import { toast } from "../../ui/Toast";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 export function MCPSettings() {
 	const [servers, setServers] = useState<
@@ -70,7 +73,7 @@ export function MCPSettings() {
 
 	const handleAddServer = async () => {
 		if (!newServer.name || !newServer.command) {
-			alert("请填写服务器名称和命令");
+			toast.warning("请填写服务器名称和命令");
 			return;
 		}
 
@@ -89,18 +92,21 @@ export function MCPSettings() {
 			setIsAdding(false);
 			setNewServer({ name: "", command: "", args: [], enabled: true });
 		} catch (error) {
-			alert(`添加失败: ${error}`);
+			toast.error(`添加失败: ${error}`);
 		}
 	};
 
 	const handleRemoveServer = async (id: string) => {
-		if (confirm("确定要删除此 MCP 服务器吗？")) {
-			try {
-				await deleteMcpServer(id);
-				await loadServers();
-			} catch (error) {
-				alert(`删除失败: ${error}`);
-			}
+		const confirmed = await confirmDialog.danger(
+			"确定要删除此 MCP 服务器吗？",
+			"删除 MCP 服务器",
+		);
+		if (!confirmed) return;
+		try {
+			await deleteMcpServer(id);
+			await loadServers();
+		} catch (error) {
+			toast.error(`删除失败: ${error}`);
 		}
 	};
 
@@ -112,7 +118,7 @@ export function MCPSettings() {
 			await updateMcpServer({ ...server, enabled: !server.enabled });
 			await loadServers();
 		} catch (error) {
-			alert(`更新失败: ${error}`);
+			toast.error(`更新失败: ${error}`);
 		}
 	};
 
@@ -140,7 +146,7 @@ export function MCPSettings() {
 				const imported = JSON.parse(text) as MCPServer[];
 
 				if (!Array.isArray(imported)) {
-					alert("无效的 JSON 格式");
+					toast.error("无效的 JSON 格式");
 					return;
 				}
 
@@ -153,9 +159,9 @@ export function MCPSettings() {
 				}
 
 				await loadServers();
-				alert(`成功导入 ${imported.length} 个 MCP 服务器`);
+				toast.success(`成功导入 ${imported.length} 个 MCP 服务器`);
 			} catch (error) {
-				alert(`导入失败: ${error}`);
+				toast.error(`导入失败: ${error}`);
 			}
 		};
 		input.click();
@@ -175,8 +181,8 @@ export function MCPSettings() {
 			setServers(
 				servers.map((s) => (s.id === id ? { ...s, status: "running" } : s)),
 			);
-			alert(
-				`✅ MCP 服务器 "${server.name}" 可用（tools: ${result.tool_count}）`,
+			toast.success(
+				`MCP 服务器 "${server.name}" 可用（tools: ${result.tool_count}）`,
 			);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
@@ -184,12 +190,12 @@ export function MCPSettings() {
 				setServers(
 					servers.map((s) => (s.id === id ? { ...s, status: "stopped" } : s)),
 				);
-				alert(`ℹ️ ${msg}`);
+				toast.info(msg);
 			} else {
 				setServers(
 					servers.map((s) => (s.id === id ? { ...s, status: "error" } : s)),
 				);
-				alert(`❌ 测试失败: ${msg}`);
+				toast.error(`测试失败: ${msg}`);
 			}
 		}
 
@@ -202,8 +208,7 @@ export function MCPSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-3xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
 						<Plug className="w-5 h-5" />
@@ -517,7 +522,6 @@ export function MCPSettings() {
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

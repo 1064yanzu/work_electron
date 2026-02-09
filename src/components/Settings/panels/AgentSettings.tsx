@@ -28,7 +28,9 @@ import {
 } from "../../../lib/api";
 import { getConfig, setConfig } from "../../../lib/config";
 import { useSettingsStore } from "../../../lib/settingsStore";
+import { toast } from "../../ui/Toast";
 import { Select } from "../../ui/Select";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 import { Toggle } from "../components";
 import { AgentModelScenarioSettings } from "../components/AgentModelScenarioSettings";
 
@@ -249,7 +251,7 @@ export function AgentSettings() {
 
 	const handleKbRebuild = async () => {
 		if (!kbEmbeddingModel) {
-			alert("请先选择 Embedding 模型");
+			toast.warning("请先选择 Embedding 模型");
 			return;
 		}
 		setIsRebuilding(true);
@@ -260,9 +262,9 @@ export function AgentSettings() {
 				batch_size: 32,
 			});
 			setKbStats(await kbGetEmbeddingStats());
-			alert(`✅ 已生成/更新 ${rebuilt} 条分块向量索引`);
+			toast.success(`已生成/更新 ${rebuilt} 条分块向量索引`);
 		} catch (e) {
-			alert(`❌ 重建失败: ${e}`);
+			toast.error(`重建失败: ${e}`);
 		} finally {
 			setIsRebuilding(false);
 		}
@@ -369,8 +371,7 @@ export function AgentSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
 						<Bot className="w-5 h-5" />
@@ -938,7 +939,6 @@ export function AgentSettings() {
 						</button>
 					</div>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

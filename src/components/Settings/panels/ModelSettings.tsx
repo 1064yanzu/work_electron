@@ -15,6 +15,8 @@ import { useCallback, useEffect, useState } from "react";
 import { checkProviderApiKey, invokeLlm } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { ProviderType } from "../../../types";
+import { confirmDialog } from "../../ui/ConfirmDialog";
+import { toast } from "../../ui/Toast";
 import {
 	CheckButton,
 	type CheckStatus,
@@ -172,15 +174,20 @@ export function ModelSettings() {
 
 	// 删除服务商
 	const handleDelete = useCallback(async () => {
-		if (!selected || !confirm(`确定要删除服务商 "${selected.name}" 吗？`))
+		if (!selected)
 			return;
+		const confirmed = await confirmDialog.danger(
+			`确定要删除服务商 "${selected.name}" 吗？`,
+			"删除服务商",
+		);
+		if (!confirmed) return;
 		setIsDeleting(true);
 		try {
 			await settingsStore.deleteProvider(selected.id);
 			const rest = providers.filter((p) => p.id !== selected.id);
 			setSelectedId(rest[0]?.id || "");
 		} catch (e) {
-			alert(`删除失败: ${e}`);
+			toast.error(`删除失败: ${e}`);
 		} finally {
 			setIsDeleting(false);
 		}
@@ -213,11 +220,13 @@ export function ModelSettings() {
 					prompt: 'Say "OK" to confirm.',
 					temperature: 0.1,
 				});
-				alert(
-					result.content ? `✅ 模型 ${model} 连接成功！` : "⚠️ 返回了空响应",
-				);
+				if (result.content) {
+					toast.success(`模型 ${model} 连接成功`);
+				} else {
+					toast.warning("返回了空响应");
+				}
 			} catch (e) {
-				alert(`❌ 测试失败: ${e}`);
+				toast.error(`测试失败: ${e}`);
 			} finally {
 				setTestingModel(null);
 			}
@@ -245,7 +254,7 @@ export function ModelSettings() {
 			setProviderName("");
 			if (created?.id) setSelectedId(created.id);
 		} catch (e) {
-			alert(`创建失败: ${e}`);
+			toast.error(`创建失败: ${e}`);
 		} finally {
 			setIsCreating(false);
 		}
@@ -310,7 +319,7 @@ export function ModelSettings() {
 				<div className="p-4 border-t border-zinc-200/80">
 					<button
 						onClick={() => setIsAddProviderOpen(true)}
-						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 					>
 						<Plus className="w-4 h-4" />
 						添加服务商

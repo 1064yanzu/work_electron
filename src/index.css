@@ -62,11 +62,11 @@
 	@apply bg-border rounded-full hover:bg-text-muted transition-colors;
 }
 
-/* 编辑器 textarea 样式重置 */
-textarea:focus,
-textarea:focus-visible,
-input:focus,
-input:focus-visible {
+/* 编辑器区域焦点样式重置（避免影响设置表单可访问性） */
+.editor-shell textarea:focus,
+.editor-shell textarea:focus-visible,
+.editor-shell input:focus,
+.editor-shell input:focus-visible {
 	outline: none !important;
 	box-shadow: none !important;
 }

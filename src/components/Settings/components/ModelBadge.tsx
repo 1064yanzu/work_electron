@@ -30,9 +30,9 @@ const badgeConfig = {
 	},
 	"image-gen": {
 		icon: Paintbrush,
-		bg: "bg-purple-50",
-		text: "text-purple-600",
-		border: "border-purple-200",
+		bg: "bg-cyan-50 dark:bg-cyan-950/30",
+		text: "text-cyan-700 dark:text-cyan-300",
+		border: "border-cyan-200 dark:border-cyan-800/50",
 		title: "图像生成",
 	},
 };

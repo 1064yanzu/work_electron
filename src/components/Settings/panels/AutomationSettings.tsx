@@ -2,11 +2,16 @@ import { Clock, Globe, Shield, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
 import { Select } from "../../ui/Select";
+import {
+	SettingsPageContainer,
+	SettingsSwitch,
+} from "../ui/SettingsPrimitives";
 
 export function AutomationSettings() {
 	const [fetchFrequency, setFetchFrequency] = useState("daily");
 	const [headlessMode, setHeadlessMode] = useState(true);
 	const [autoExtract, setAutoExtract] = useState(true);
+	const [lastRunAt, setLastRunAt] = useState<string | null>(null);
 
 	useEffect(() => {
 		loadSettings();
@@ -17,10 +22,12 @@ export function AutomationSettings() {
 			const freq = await getConfig("automation.fetch_frequency");
 			const headless = await getConfig("automation.headless_mode");
 			const extract = await getConfig("automation.auto_extract");
+			const lastRun = await getConfig("automation.last_run_at");
 
 			if (freq) setFetchFrequency(freq);
 			if (headless !== null) setHeadlessMode(headless);
 			if (extract !== null) setAutoExtract(extract);
+			setLastRunAt(typeof lastRun === "string" && lastRun.trim() ? lastRun : null);
 		} catch (error) {
 			console.error("加载设置失败:", error);
 		}
@@ -54,8 +61,7 @@ export function AutomationSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
 						<Zap className="w-5 h-5" />
@@ -97,7 +103,11 @@ export function AutomationSettings() {
 						</div>
 						<div className="text-xs text-text-muted flex gap-1">
 							<span>上次运行:</span>
-							<span className="font-mono">2025-11-23 18:30:00</span>
+							<span className="font-mono">
+								{lastRunAt
+									? new Date(lastRunAt).toLocaleString("zh-CN")
+									: "暂无记录"}
+							</span>
 						</div>
 					</div>
 				</div>
@@ -110,11 +120,10 @@ export function AutomationSettings() {
 					</h4>
 					<div className="space-y-3">
 						<label className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-surface/50 cursor-pointer transition-colors">
-							<input
-								type="checkbox"
-								className="mt-1"
+							<SettingsSwitch
 								checked={headlessMode}
-								onChange={(e) => handleHeadlessModeChange(e.target.checked)}
+								onChange={handleHeadlessModeChange}
+								className="mt-0.5"
 							/>
 							<div>
 								<div className="text-sm font-medium text-text-primary">
@@ -126,11 +135,10 @@ export function AutomationSettings() {
 							</div>
 						</label>
 						<label className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-surface/50 cursor-pointer transition-colors">
-							<input
-								type="checkbox"
-								className="mt-1"
+							<SettingsSwitch
 								checked={autoExtract}
-								onChange={(e) => handleAutoExtractChange(e.target.checked)}
+								onChange={handleAutoExtractChange}
+								className="mt-0.5"
 							/>
 							<div>
 								<div className="text-sm font-medium text-text-primary">
@@ -159,7 +167,6 @@ export function AutomationSettings() {
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

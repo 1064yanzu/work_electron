@@ -6,6 +6,7 @@ import {
 	type ImageGenConfig,
 } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 // 比例预设（参考 Cherry Studio）
 const ASPECT_RATIO_GROUPS = [
@@ -133,15 +134,14 @@ export function ImageGenSettings() {
 
 	if (isLoading) {
 		return (
-			<div className="flex-1 h-full bg-white p-8 flex items-center justify-center">
+			<div className="flex-1 h-full bg-background p-8 flex items-center justify-center">
 				<Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
 				{/* 标题 */}
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
@@ -349,7 +349,6 @@ export function ImageGenSettings() {
 						</p>
 					</div>
 				)}
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

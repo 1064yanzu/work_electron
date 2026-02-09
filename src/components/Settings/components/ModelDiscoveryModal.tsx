@@ -141,7 +141,7 @@ export function ModelDiscoveryModal({
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
 			<div
-				className="w-full max-w-2xl bg-[#F7F7F5] rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+				className="w-full max-w-2xl bg-background dark:bg-zinc-900 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-zinc-200/70 dark:border-zinc-700 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
 				style={{ height: "85vh", maxHeight: "850px" }}
 			>
 				{/* Header */}

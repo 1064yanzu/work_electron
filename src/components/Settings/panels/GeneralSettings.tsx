@@ -14,6 +14,9 @@ import {
 } from "../../../lib/config";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { type ThemeMode, themeManager } from "../../../lib/theme";
+import { confirmDialog } from "../../ui/ConfirmDialog";
+import { toast } from "../../ui/Toast";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 export function GeneralSettings() {
 	const { providers } = useSettingsStore();
@@ -135,8 +138,9 @@ export function GeneralSettings() {
 				const currentVersion = "0.1.0"; // 当前版本
 
 				if (latestVersion > currentVersion) {
-					const shouldUpdate = confirm(
+					const shouldUpdate = await confirmDialog.warning(
 						`🎉 发现新版本 v${latestVersion}！\n\n当前版本: v${currentVersion}\n\n是否前往下载页面？`,
+						"发现新版本",
 					);
 					if (shouldUpdate) {
 						window.open(
@@ -146,26 +150,25 @@ export function GeneralSettings() {
 						);
 					}
 				} else {
-					alert("✅ 当前已是最新版本");
+					toast.success("当前已是最新版本");
 				}
 			} else if (response.status === 404) {
 				// 仓库不存在或没有 releases
-				alert("✅ 当前已是最新版本（暂无发布版本）");
+				toast.info("当前已是最新版本（暂无发布版本）");
 			} else {
 				throw new Error(`HTTP ${response.status}`);
 			}
 		} catch (error) {
 			// 网络错误时静默处理
 			console.error("检查更新失败:", error);
-			alert("✅ 当前已是最新版本（无法连接更新服务器）");
+			toast.info("当前已是最新版本（无法连接更新服务器）");
 		} finally {
 			setIsCheckingUpdate(false);
 		}
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
 						<SettingsIcon className="w-5 h-5" />
@@ -182,27 +185,27 @@ export function GeneralSettings() {
 					<div className="grid grid-cols-3 gap-4">
 						<button
 							onClick={() => handleThemeChange("light")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "light"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "light"
 								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
 								}`}
 						>
 							浅色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("dark")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "dark"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "dark"
 								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
 								}`}
 						>
 							深色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("system")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "system"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "system"
 								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
 								}`}
 						>
 							跟随系统
@@ -329,7 +332,6 @@ export function GeneralSettings() {
 						</button>
 					</div>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
+import { toast } from "../../ui/Toast";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 // 默认提示词配置
 export const DEFAULT_PROMPTS: Record<string, string> = {
@@ -429,7 +431,7 @@ export function PromptSettings() {
 			console.log("[PromptSettings] 提示词保存成功");
 		} catch (error) {
 			console.error("[PromptSettings] 保存提示词失败:", error);
-			alert("保存失败，请重试");
+			toast.error("保存失败，请重试");
 		} finally {
 			setIsSaving(false);
 		}
@@ -441,8 +443,7 @@ export function PromptSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
-			<div className="max-w-3xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 				{/* 标题区域 */}
 				<div className="border-b border-border pb-4 mb-8">
 					<div className="flex items-center justify-between">
@@ -595,7 +596,6 @@ export function PromptSettings() {
 						<li>• 提示词的质量直接影响 AI 的响应效果，请谨慎修改</li>
 					</ul>
 				</div>
-			</div>
-		</div>
+		</SettingsPageContainer>
 	);
 }

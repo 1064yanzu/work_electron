@@ -23,11 +23,11 @@ export function SettingsSidebar({
 						onClick={() => onTabChange(item.id)}
 						className={`
 							w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl 
-							cursor-pointer transition-all duration-150 relative
+							cursor-pointer transition-colors duration-200 relative
 							focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1
 							${activeTab === item.id
 								? "bg-white dark:bg-zinc-800 text-primary shadow-sm ring-1 ring-primary/10"
-								: "text-text-secondary hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-text-primary hover:scale-[1.02] active:scale-[0.98]"
+								: "text-text-secondary hover:bg-white/70 dark:hover:bg-zinc-800/60 hover:text-text-primary"
 							}
 						`}
 					>
