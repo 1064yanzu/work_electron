@@ -5,7 +5,12 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { IpcMainInvokeEvent } from "electron";
+import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
+import {
+	McpRuntimeService,
+	type McpRuntimeServerConfig,
+} from "../../services/mcpRuntimeService";
 
 const now = () => Date.now();
 
@@ -75,6 +80,11 @@ interface McpServer {
 	updated_at: number;
 }
 
+type Handler<K extends keyof IPCSchema> = (
+	_event: IpcMainInvokeEvent,
+	input: IPCSchema[K]["input"],
+) => Promise<IPCSchema[K]["output"]>;
+
 function parseJsonArray(str: string | null | undefined): string[] {
 	if (!str) return [];
 	try {
@@ -96,6 +106,69 @@ function parseJsonObject(
 }
 
 export function createMcpHandlers(db: DbContext) {
+	const runtime = new McpRuntimeService();
+
+	const getServerById = async (id: string): Promise<McpServer | null> => {
+		const rows = await db.client.execute({
+			sql: `SELECT * FROM mcp_servers WHERE id = ?`,
+			args: [id],
+		});
+		if (rows.rows.length === 0) return null;
+		const row = rows.rows[0];
+		return {
+			id: row.id as string,
+			name: row.name as string,
+			command: row.command as string,
+			args: parseJsonArray(row.args as string),
+			env: parseJsonObject(row.env as string),
+			enabled: Boolean(row.enabled),
+			created_at: row.created_at as number,
+			updated_at: row.updated_at as number,
+		};
+	};
+
+	const resolveRuntimeServer = async (serverId: string) => {
+		const server = await getServerById(serverId);
+		if (!server) {
+			throw new Error(`MCP server not found: ${serverId}`);
+		}
+		if (!server.enabled) {
+			throw new Error(`MCP server is disabled: ${server.name}`);
+		}
+
+		const shell =
+			typeof process.env.SHELL === "string" ? process.env.SHELL : null;
+		const pathFromShell = await resolveUserPathFromShell(shell);
+		const envPath = pathFromShell || process.env.PATH || "";
+		const baseEnv: Record<string, string> = {};
+		for (const [key, value] of Object.entries(process.env)) {
+			if (typeof value === "string") {
+				baseEnv[key] = value;
+			}
+		}
+		if (envPath) {
+			baseEnv.PATH = envPath;
+		}
+		const serverEnv: Record<string, string> = {};
+		for (const [key, value] of Object.entries(server.env)) {
+			if (typeof value === "string") {
+				serverEnv[key] = value;
+			}
+		}
+		const mergedEnv: Record<string, string> = {
+			...baseEnv,
+			...serverEnv,
+		};
+
+		const runtimeServer: McpRuntimeServerConfig = {
+			id: server.id,
+			command: server.command,
+			args: server.args,
+			env: mergedEnv,
+		};
+		return runtimeServer;
+	};
+
 	const listMcpServers = async (
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
@@ -119,22 +192,7 @@ export function createMcpHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		input: { id: string },
 	): Promise<McpServer | null> => {
-		const rows = await db.client.execute({
-			sql: `SELECT * FROM mcp_servers WHERE id = ?`,
-			args: [input.id],
-		});
-		if (rows.rows.length === 0) return null;
-		const row = rows.rows[0];
-		return {
-			id: row.id as string,
-			name: row.name as string,
-			command: row.command as string,
-			args: parseJsonArray(row.args as string),
-			env: parseJsonObject(row.env as string),
-			enabled: Boolean(row.enabled),
-			created_at: row.created_at as number,
-			updated_at: row.updated_at as number,
-		};
+		return getServerById(input.id);
 	};
 
 	const createMcpServer = async (
@@ -221,9 +279,8 @@ export function createMcpHandlers(db: DbContext) {
 			args,
 		});
 
-		const result = await getMcpServer({} as IpcMainInvokeEvent, {
-			id: input.id,
-		});
+		runtime.stopServer(input.id);
+		const result = await getServerById(input.id);
 		if (!result) throw new Error(`MCP server not found: ${input.id}`);
 		return result;
 	};
@@ -236,6 +293,7 @@ export function createMcpHandlers(db: DbContext) {
 			sql: `DELETE FROM mcp_servers WHERE id = ?`,
 			args: [input.id],
 		});
+		runtime.stopServer(input.id);
 		return { success: true };
 	};
 
@@ -247,6 +305,9 @@ export function createMcpHandlers(db: DbContext) {
 			sql: `UPDATE mcp_servers SET enabled = ?, updated_at = ? WHERE id = ?`,
 			args: [input.enabled ? 1 : 0, now(), input.id],
 		});
+		if (!input.enabled) {
+			runtime.stopServer(input.id);
+		}
 		return { success: true };
 	};
 
@@ -277,6 +338,29 @@ export function createMcpHandlers(db: DbContext) {
 		};
 	};
 
+	const mcpListTools: Handler<"mcp_list_tools"> = async (_event, input) => {
+		const server = await resolveRuntimeServer(input.server_id);
+		const forceRefresh = input.force_refresh === true;
+		return runtime.listTools(server, forceRefresh);
+	};
+
+	const mcpCallTool: Handler<"mcp_call_tool"> = async (_event, input) => {
+		const server = await resolveRuntimeServer(input.server_id);
+		const toolName = String(input.tool_name || "").trim();
+		if (!toolName) {
+			throw new Error("tool_name is required");
+		}
+		const args =
+			input.arguments && typeof input.arguments === "object"
+				? (input.arguments as Record<string, unknown>)
+				: {};
+		return runtime.callTool(server, toolName, args);
+	};
+
+	const mcpStopServer: Handler<"mcp_stop_server"> = async (_event, input) => {
+		return { success: runtime.stopServer(input.server_id) };
+	};
+
 	return {
 		list_mcp_servers: listMcpServers,
 		get_mcp_server: getMcpServer,
@@ -285,5 +369,8 @@ export function createMcpHandlers(db: DbContext) {
 		delete_mcp_server: deleteMcpServer,
 		toggle_mcp_server: toggleMcpServer,
 		mcp_check_env: mcpCheckEnv,
+		mcp_list_tools: mcpListTools,
+		mcp_call_tool: mcpCallTool,
+		mcp_stop_server: mcpStopServer,
 	};
 }

@@ -355,6 +355,9 @@ export function registerIpcHandlers({
 	ipcMain.handle("delete_mcp_server", mcpHandlers.delete_mcp_server);
 	ipcMain.handle("toggle_mcp_server", mcpHandlers.toggle_mcp_server);
 	ipcMain.handle("mcp_check_env", mcpHandlers.mcp_check_env);
+	ipcMain.handle("mcp_list_tools", mcpHandlers.mcp_list_tools);
+	ipcMain.handle("mcp_call_tool", mcpHandlers.mcp_call_tool);
+	ipcMain.handle("mcp_stop_server", mcpHandlers.mcp_stop_server);
 
 	// ==================
 	// Data Stats & Management
@@ -389,10 +392,7 @@ export function registerIpcHandlers({
 	ipcMain.handle("file_move", fileHandlers.file_move);
 	ipcMain.handle("file_delete", fileHandlers.file_delete);
 	ipcMain.handle("file_restore", fileHandlers.file_restore);
-	ipcMain.handle(
-		"file_reveal_in_finder",
-		fileHandlers.file_reveal_in_finder,
-	);
+	ipcMain.handle("file_reveal_in_finder", fileHandlers.file_reveal_in_finder);
 	ipcMain.handle("file_set_scope", fileHandlers.file_set_scope);
 	ipcMain.handle("file_set_tags", fileHandlers.file_set_tags);
 	ipcMain.handle("theme_list", fileHandlers.theme_list);
