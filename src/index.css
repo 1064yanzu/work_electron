@@ -152,3 +152,135 @@ input:focus-visible {
 	background-color: var(--editor-surface);
 	border-color: var(--editor-border);
 }
+
+/* ============================================
+   高级交互工具类
+   ============================================ */
+@layer utilities {
+	/* 按钮微交互 - 高级质感 */
+	.btn-interactive {
+		@apply transition-all duration-150 ease-out;
+		transform: scale(1);
+	}
+	.btn-interactive:hover {
+		transform: scale(1.02);
+	}
+	.btn-interactive:active {
+		transform: scale(0.98);
+	}
+	.btn-interactive:focus-visible {
+		@apply outline-none ring-2 ring-primary/30 ring-offset-2;
+	}
+
+	/* 卡片悬浮效果 */
+	.card-hover {
+		@apply transition-all duration-200 ease-out;
+	}
+	.card-hover:hover {
+		transform: translateY(-2px);
+		@apply shadow-lg;
+	}
+
+	/* 圆润悬浮按钮 */
+	.btn-float {
+		@apply transition-all duration-200 ease-out;
+	}
+	.btn-float:hover {
+		@apply shadow-lg;
+		transform: translateY(-1px);
+	}
+	.btn-float:active {
+		transform: translateY(0);
+	}
+
+	/* 骨架屏动画 */
+	.skeleton {
+		@apply relative overflow-hidden;
+		background: linear-gradient(
+			90deg,
+			theme('colors.zinc.200') 0%,
+			theme('colors.zinc.100') 50%,
+			theme('colors.zinc.200') 100%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 2s linear infinite;
+	}
+	.dark .skeleton {
+		background: linear-gradient(
+			90deg,
+			theme('colors.zinc.800') 0%,
+			theme('colors.zinc.700') 50%,
+			theme('colors.zinc.800') 100%
+		);
+		background-size: 200% 100%;
+	}
+
+	/* 高亮焦点环 */
+	.focus-ring {
+		@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2;
+	}
+
+	/* 平滑过渡 */
+	.transition-smooth {
+		@apply transition-all duration-200 ease-out;
+	}
+
+	/* 涟漪效果容器 */
+	.ripple-container {
+		@apply relative overflow-hidden;
+	}
+}
+
+/* ============================================
+   减少动画偏好支持（可访问性）
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* ============================================
+   高级阴影系统
+   ============================================ */
+.shadow-elevation-1 {
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.05),
+		0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-elevation-2 {
+	box-shadow:
+		0 4px 6px -1px rgba(0, 0, 0, 0.1),
+		0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-elevation-3 {
+	box-shadow:
+		0 10px 15px -3px rgba(0, 0, 0, 0.1),
+		0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .shadow-elevation-1 {
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.3),
+		0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow-elevation-2 {
+	box-shadow:
+		0 4px 6px -1px rgba(0, 0, 0, 0.4),
+		0 2px 4px -2px rgba(0, 0, 0, 0.3);
+}
+
+.dark .shadow-elevation-3 {
+	box-shadow:
+		0 10px 15px -3px rgba(0, 0, 0, 0.5),
+		0 4px 6px -4px rgba(0, 0, 0, 0.4);
+}
+

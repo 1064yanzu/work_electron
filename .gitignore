@@ -32,3 +32,8 @@ CHANGELOG.md
 /icon.iconset
 Claude.md
 /Claude.md
+.agent
+.agent/
+.claude
+.claude/
+.gitignore

@@ -1,33 +1,141 @@
 import { X } from "lucide-react";
 import type * as React from "react";
+import { useEffect, useCallback } from "react";
+import { cn } from "../../lib/utils";
 
 interface ModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	title: string;
 	children: React.ReactNode;
+	/**
+	 * 模态框尺寸
+	 */
+	size?: "sm" | "md" | "lg" | "xl";
+	/**
+	 * 是否显示关闭按钮
+	 */
+	showCloseButton?: boolean;
+	/**
+	 * 点击遮罩是否关闭
+	 */
+	closeOnOverlayClick?: boolean;
+	/**
+	 * 底部操作区
+	 */
+	footer?: React.ReactNode;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+const sizeStyles = {
+	sm: "max-w-sm",
+	md: "max-w-lg",
+	lg: "max-w-2xl",
+	xl: "max-w-4xl",
+};
+
+export function Modal({
+	isOpen,
+	onClose,
+	title,
+	children,
+	size = "md",
+	showCloseButton = true,
+	closeOnOverlayClick = true,
+	footer,
+}: ModalProps) {
+	// ESC 键关闭
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				onClose();
+			}
+		},
+		[onClose],
+	);
+
+	useEffect(() => {
+		if (isOpen) {
+			document.addEventListener("keydown", handleKeyDown);
+			// 防止背景滚动
+			document.body.style.overflow = "hidden";
+		}
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+			document.body.style.overflow = "";
+		};
+	}, [isOpen, handleKeyDown]);
+
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans animate-in fade-in duration-200">
-			<div className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200">
-				<div className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface">
-					<h3 className="font-serif font-medium text-lg text-text-primary">
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans"
+			onClick={closeOnOverlayClick ? onClose : undefined}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					if (closeOnOverlayClick) onClose();
+				}
+			}}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="modal-title"
+		>
+			{/* 遮罩层 */}
+			<div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm animate-fade-in" />
+
+			{/* 模态框 */}
+			<div
+				className={cn(
+					"relative w-full rounded-2xl",
+					"bg-white dark:bg-zinc-900",
+					"shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]",
+					"border border-zinc-200/50 dark:border-zinc-700/50",
+					"overflow-hidden",
+					"animate-scale-in",
+					sizeStyles[size],
+				)}
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+			>
+				{/* Header */}
+				<div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-800/50">
+					<h3
+						id="modal-title"
+						className="font-serif font-medium text-lg text-zinc-900 dark:text-zinc-100"
+					>
 						{title}
 					</h3>
-					<button
-						onClick={onClose}
-						className="rounded-full p-1 hover:bg-border/50 text-text-muted hover:text-text-primary transition-colors"
-					>
-						<X className="h-4 w-4" />
-						<span className="sr-only">Close</span>
-					</button>
+					{showCloseButton && (
+						<button
+							type="button"
+							onClick={onClose}
+							className={cn(
+								"rounded-full p-1.5",
+								"text-zinc-400 dark:text-zinc-500",
+								"hover:text-zinc-600 dark:hover:text-zinc-300",
+								"hover:bg-zinc-100 dark:hover:bg-zinc-800",
+								"transition-all duration-150",
+								"hover:scale-110 active:scale-95",
+								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+							)}
+							aria-label="关闭"
+						>
+							<X className="h-4 w-4" />
+						</button>
+					)}
 				</div>
-				<div className="p-6">{children}</div>
+
+				{/* Content */}
+				<div className="p-6 max-h-[60vh] overflow-y-auto">{children}</div>
+
+				{/* Footer */}
+				{footer && (
+					<div className="flex items-center justify-end gap-3 border-t border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-800/50">
+						{footer}
+					</div>
+				)}
 			</div>
 		</div>
 	);
 }
+

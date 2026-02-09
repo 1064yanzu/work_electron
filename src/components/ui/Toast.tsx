@@ -71,6 +71,24 @@ interface ToastItemProps {
 
 const ToastItem = ({ toast, onClose }: ToastItemProps) => {
 	const [isExiting, setIsExiting] = useState(false);
+	const [progress, setProgress] = useState(100);
+
+	// 进度条动画
+	useEffect(() => {
+		if (toast.duration <= 0) return;
+
+		const startTime = Date.now();
+		const interval = setInterval(() => {
+			const elapsed = Date.now() - startTime;
+			const remaining = Math.max(0, 100 - (elapsed / toast.duration) * 100);
+			setProgress(remaining);
+			if (remaining <= 0) {
+				clearInterval(interval);
+			}
+		}, 50);
+
+		return () => clearInterval(interval);
+	}, [toast.duration]);
 
 	const handleClose = () => {
 		setIsExiting(true);
@@ -80,52 +98,94 @@ const ToastItem = ({ toast, onClose }: ToastItemProps) => {
 	const getIcon = () => {
 		switch (toast.type) {
 			case "success":
-				return <CheckCircle2 size={18} className="text-green-500" />;
+				return <CheckCircle2 size={18} className="text-emerald-500" />;
 			case "error":
 				return <XCircle size={18} className="text-red-500" />;
 			case "warning":
-				return <Info size={18} className="text-yellow-500" />;
+				return <Info size={18} className="text-amber-500" />;
 			default:
 				return <Info size={18} className="text-blue-500" />;
 		}
 	};
 
-	const getBgColor = () => {
+	const getStyles = () => {
 		switch (toast.type) {
 			case "success":
-				return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+				return {
+					bg: "bg-white dark:bg-zinc-900",
+					border: "border-emerald-200 dark:border-emerald-800/50",
+					iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+					progress: "bg-emerald-500",
+				};
 			case "error":
-				return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+				return {
+					bg: "bg-white dark:bg-zinc-900",
+					border: "border-red-200 dark:border-red-800/50",
+					iconBg: "bg-red-50 dark:bg-red-900/30",
+					progress: "bg-red-500",
+				};
 			case "warning":
-				return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+				return {
+					bg: "bg-white dark:bg-zinc-900",
+					border: "border-amber-200 dark:border-amber-800/50",
+					iconBg: "bg-amber-50 dark:bg-amber-900/30",
+					progress: "bg-amber-500",
+				};
 			default:
-				return "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800";
+				return {
+					bg: "bg-white dark:bg-zinc-900",
+					border: "border-blue-200 dark:border-blue-800/50",
+					iconBg: "bg-blue-50 dark:bg-blue-900/30",
+					progress: "bg-blue-500",
+				};
 		}
 	};
+
+	const styles = getStyles();
 
 	return (
 		<div
 			className={`
-				pointer-events-auto
-				flex items-start gap-3 p-4 rounded-lg border shadow-lg
+				pointer-events-auto relative overflow-hidden
+				flex items-start gap-3 p-4 rounded-xl border
 				min-w-[320px] max-w-md
+				shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)]
 				transition-all duration-200 ease-out
-				${getBgColor()}
-				${isExiting ? "opacity-0 translate-x-4" : "opacity-100 translate-x-0 animate-slide-in-right"}
+				${styles.bg} ${styles.border}
+				${isExiting ? "opacity-0 translate-x-8 scale-95" : "opacity-100 translate-x-0 scale-100 animate-slide-in-right"}
 			`}
 		>
-			<div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
-			<div className="flex-1 text-sm text-gray-900 dark:text-gray-100 break-words">
+			{/* 图标 */}
+			<div
+				className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${styles.iconBg}`}
+			>
+				{getIcon()}
+			</div>
+
+			{/* 内容 */}
+			<div className="flex-1 text-sm text-zinc-800 dark:text-zinc-100 break-words pt-1">
 				{toast.message}
 			</div>
+
+			{/* 关闭按钮 */}
 			{toast.closable && (
 				<button
 					type="button"
 					onClick={handleClose}
-					className="flex-shrink-0 p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
+					className="flex-shrink-0 p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95"
 				>
-					<X size={14} className="text-gray-500 dark:text-gray-400" />
+					<X size={14} className="text-zinc-400 dark:text-zinc-500" />
 				</button>
+			)}
+
+			{/* 进度条 */}
+			{toast.duration > 0 && (
+				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-100 dark:bg-zinc-800">
+					<div
+						className={`h-full transition-all duration-100 ease-linear ${styles.progress}`}
+						style={{ width: `${progress}%` }}
+					/>
+				</div>
 			)}
 		</div>
 	);
