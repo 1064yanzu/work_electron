@@ -272,7 +272,7 @@ export function ModelSettings() {
 							placeholder="搜索模型平台..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200/80 rounded-xl text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all"
+							className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200/80 rounded-xl text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
 						/>
 					</div>
 				</div>
@@ -282,11 +282,10 @@ export function ModelSettings() {
 						<div
 							key={provider.id}
 							onClick={() => setSelectedId(provider.id)}
-							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
-								selectedId === provider.id
+							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${selectedId === provider.id
 									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
 									: "hover:bg-white/60"
-							}`}
+								}`}
 						>
 							<div
 								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color} overflow-hidden`}
@@ -311,7 +310,7 @@ export function ModelSettings() {
 				<div className="p-4 border-t border-zinc-200/80">
 					<button
 						onClick={() => setIsAddProviderOpen(true)}
-						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-all shadow-sm"
+						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 					>
 						<Plus className="w-4 h-4" />
 						添加服务商

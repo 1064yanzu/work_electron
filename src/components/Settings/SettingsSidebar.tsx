@@ -24,17 +24,18 @@ export function SettingsSidebar({
 						className={`
 							w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl 
 							cursor-pointer transition-all duration-150 relative
+							focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1
 							${activeTab === item.id
 								? "bg-white dark:bg-zinc-800 text-primary shadow-sm ring-1 ring-primary/10"
-								: "text-text-secondary hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-text-primary hover:scale-[1.01]"
+								: "text-text-secondary hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-text-primary hover:scale-[1.02] active:scale-[0.98]"
 							}
 						`}
 					>
-						{/* 激活指示器 */}
+						{/* 激活指示器 - 贴紧容器左边缘 */}
 						{activeTab === item.id && (
-							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
+							<div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
 						)}
-						<item.icon className={`w-4 h-4 ${activeTab === item.id ? "text-primary" : ""}`} />
+						<item.icon className={`w-4 h-4 shrink-0 ${activeTab === item.id ? "text-primary" : ""}`} />
 						{item.label}
 					</button>
 				))}

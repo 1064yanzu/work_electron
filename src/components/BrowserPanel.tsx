@@ -238,18 +238,18 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 	const contextMenuItems = contextMenu
 		? buildLinkContextMenu({
-				onOpen: () => navigateTo(contextMenu.url),
-				onCopy: () => navigator.clipboard.writeText(contextMenu.url),
-				onSaveGlobal: () => void saveUrlAsSource(contextMenu.url, "global"),
-				onSaveProject: () => void saveUrlAsSource(contextMenu.url, "project"),
-				onRemove:
-					typeof contextMenu.removeIndex === "number"
-						? () =>
-								setHistory((prev) =>
-									prev.filter((_, idx) => idx !== contextMenu.removeIndex),
-								)
-						: undefined,
-			})
+			onOpen: () => navigateTo(contextMenu.url),
+			onCopy: () => navigator.clipboard.writeText(contextMenu.url),
+			onSaveGlobal: () => void saveUrlAsSource(contextMenu.url, "global"),
+			onSaveProject: () => void saveUrlAsSource(contextMenu.url, "project"),
+			onRemove:
+				typeof contextMenu.removeIndex === "number"
+					? () =>
+						setHistory((prev) =>
+							prev.filter((_, idx) => idx !== contextMenu.removeIndex),
+						)
+					: undefined,
+		})
 		: [];
 
 	// Iframe Sandbox attributes
@@ -285,7 +285,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 						title="刷新"
 					>
 						{isLoading ? (
-							<Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+							<Loader2 className="w-4 h-4 text-primary animate-spin" />
 						) : (
 							<RotateCw className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
 						)}
@@ -307,7 +307,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				<div className="flex-1 max-w-3xl mx-auto relative group">
 					<div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
 						{isLoading ? (
-							<Globe className="w-4 h-4 text-blue-500 animate-pulse" />
+							<Globe className="w-4 h-4 text-primary animate-pulse" />
 						) : (
 							<Search className="w-4 h-4 text-zinc-400" />
 						)}
@@ -319,7 +319,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 						onKeyDown={handleInputKeyDown}
 						onFocus={(e) => e.currentTarget.select()}
 						placeholder="输入网址或搜索内容，按 Enter 访问..."
-						className="w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-black/20 border border-transparent focus:border-blue-500/30 focus:bg-white dark:focus:bg-black/40 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 transition-all outline-none shadow-sm"
+						className="w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-black/20 border border-transparent focus:border-primary/30 focus:bg-white dark:focus:bg-black/40 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 transition-all outline-none shadow-sm"
 					/>
 				</div>
 
@@ -329,7 +329,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 						<>
 							<button
 								onClick={loadReaderMode}
-								className={`p-2 rounded-lg transition-colors ${viewMode === "reader" ? "bg-blue-100 text-blue-600" : "hover:bg-black/5 dark:hover:bg-white/10 text-zinc-600 dark:text-zinc-400"}`}
+								className={`p-2 rounded-lg transition-colors ${viewMode === "reader" ? "bg-primary/10 text-primary" : "hover:bg-black/5 dark:hover:bg-white/10 text-zinc-600 dark:text-zinc-400"}`}
 								title="阅读模式"
 							>
 								<BookOpen className="w-4 h-4" />
@@ -343,7 +343,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							</button>
 							<button
 								onClick={saveAsSource}
-								className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg text-xs font-medium transition-colors"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								保存
@@ -384,10 +384,9 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 											onClick={() => setSelectedEngine(engine)}
 											className={`
                         px-4 py-2 rounded-xl text-sm font-medium transition-all
-                        ${
-													selectedEngine === engine
-														? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm"
-														: "bg-white dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                        ${selectedEngine === engine
+													? "bg-primary/10 dark:bg-primary/20 text-primary shadow-sm"
+													: "bg-white dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
 												}
                       `}
 										>
@@ -420,7 +419,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 										className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-800/50 rounded-2xl hover:shadow-lg hover:scale-105 transition-all group"
 									>
 										<span className="text-3xl">{link.icon}</span>
-										<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+										<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-primary">
 											{link.name}
 										</span>
 									</button>
@@ -471,7 +470,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							)}
 
 							{/* 提示信息 */}
-							<div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 text-sm text-center">
+							<div className="mt-8 p-4 bg-surface dark:bg-zinc-800/50 rounded-xl text-text-secondary text-sm text-center border border-border">
 								💡 输入网址或搜索词后按 Enter，将在独立窗口中打开
 							</div>
 						</div>
@@ -481,7 +480,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				{/* Loading View */}
 				{viewMode === "loading" && (
 					<div className="h-full flex flex-col items-center justify-center">
-						<Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+						<Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
 						<p className="text-zinc-400">加载中...</p>
 					</div>
 				)}
@@ -528,7 +527,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 										href={pageContent.url}
 										target="_blank"
 										rel="noreferrer"
-										className="hover:text-blue-500 hover:underline truncate max-w-lg"
+										className="hover:text-primary hover:underline truncate max-w-lg"
 									>
 										{pageContent.url}
 									</a>
@@ -536,7 +535,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							</header>
 
 							{/* Page Content */}
-							<div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:text-blue-600">
+							<div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:text-primary">
 								<div className="whitespace-pre-wrap text-zinc-700 dark:text-zinc-300 leading-relaxed">
 									{pageContent.content}
 								</div>

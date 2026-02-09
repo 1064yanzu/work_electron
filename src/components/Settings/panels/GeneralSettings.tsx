@@ -182,33 +182,34 @@ export function GeneralSettings() {
 					<div className="grid grid-cols-3 gap-4">
 						<button
 							onClick={() => handleThemeChange("light")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "light"
-									? "border-2 border-primary bg-primary/5 text-primary"
-									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "light"
+								? "border-2 border-primary bg-primary/5 text-primary"
+								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
 								}`}
 						>
 							浅色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("dark")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "dark"
-									? "border-2 border-primary bg-primary/5 text-primary"
-									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "dark"
+								? "border-2 border-primary bg-primary/5 text-primary"
+								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
 								}`}
 						>
 							深色模式
 						</button>
 						<button
 							onClick={() => handleThemeChange("system")}
-							className={`p-4 rounded-lg text-sm font-medium text-center transition-colors ${theme === "system"
-									? "border-2 border-primary bg-primary/5 text-primary"
-									: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
+							className={`p-4 rounded-lg text-sm font-medium text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${theme === "system"
+								? "border-2 border-primary bg-primary/5 text-primary"
+								: "border border-border hover:border-primary/50 text-text-secondary hover:text-primary"
 								}`}
 						>
 							跟随系统
 						</button>
 					</div>
 				</div>
+
 
 				{/* Language */}
 				<div className="space-y-4">

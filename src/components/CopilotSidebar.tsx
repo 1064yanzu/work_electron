@@ -106,40 +106,40 @@ function parseDocProtocolFinal(
 ):
 	| { kind: "none"; displayContent: string }
 	| {
-			kind: "update";
-			displayContent: string;
+		kind: "update";
+		displayContent: string;
+		suggestedContent: string;
+		fileUpdate: {
+			fileName: string;
+			type: "update";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
+			originalContent: string;
 			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
+			prompt: string;
+		};
+	}
 	| {
-			kind: "create";
-			displayContent: string;
+		kind: "create";
+		displayContent: string;
+		title: string;
+		summary: string;
+		content: string;
+		fileUpdate: {
+			fileName: string;
+			type: "create";
+			additions: number;
+			deletions: number;
+		};
+		eventPayload: {
 			title: string;
 			summary: string;
 			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
+			prompt: string;
+		};
+	} {
 	const extractProtocolSection = (
 		raw: string,
 		marker: ":::update-doc" | ":::create-doc",
@@ -656,7 +656,7 @@ export default function CopilotSidebar() {
 				const anyCss = (window as any)?.CSS;
 				if (anyCss && typeof anyCss.escape === "function")
 					return anyCss.escape(value);
-			} catch {}
+			} catch { }
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -1334,10 +1334,10 @@ export default function CopilotSidebar() {
 					const forcedTokenUsage = (forcedFinalState.currentTask?.metadata as any)
 						?.tokenUsage as
 						| {
-								promptTokens: number;
-								completionTokens: number;
-								totalTokens: number;
-						  }
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+						}
 						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
@@ -1380,7 +1380,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch {}
+					} catch { }
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1485,7 +1485,7 @@ export default function CopilotSidebar() {
 						.trim();
 					const safe =
 						withoutTrailingDotsOrSpaces === "." ||
-						withoutTrailingDotsOrSpaces === ".."
+							withoutTrailingDotsOrSpaces === ".."
 							? "document"
 							: withoutTrailingDotsOrSpaces;
 					return safe.length > 0 ? safe.slice(0, 180) : "document";
@@ -1800,10 +1800,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-					  }
+						promptTokens: number;
+						completionTokens: number;
+						totalTokens: number;
+					}
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1899,16 +1899,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1964,8 +1964,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -2037,8 +2037,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -2067,9 +2067,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2643,11 +2643,11 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-blue-500/10 border-blue-400" : "bg-zinc-500/5 border-zinc-300"}`}
+					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-zinc-500/5 border-zinc-300"}`}
 				>
-					<div className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700 flex items-center gap-3">
-						<div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-							<Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+					<div className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl shadow-lg border border-primary/30 dark:border-primary/40 flex items-center gap-3">
+						<div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+							<Plus className="w-5 h-5 text-primary" />
 						</div>
 						<div>
 							<p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
@@ -2691,7 +2691,7 @@ export default function CopilotSidebar() {
 							AI 助手
 						</h2>
 						{isAgentExecuting ? (
-							<span className="flex items-center gap-1 text-[10px] text-indigo-500 font-medium animate-pulse">
+							<span className="flex items-center gap-1 text-[10px] text-primary font-medium animate-pulse">
 								<Loader2 className="w-2.5 h-2.5 animate-spin" />
 								{agentCurrentTask?.type === "research"
 									? "正在深度研究"
@@ -2781,8 +2781,8 @@ export default function CopilotSidebar() {
 							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-300">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2.5">
-										<div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-											<Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+										<div className="w-8 h-8 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+											<Loader2 className="w-4 h-4 text-primary animate-spin" />
 										</div>
 										<div className="flex flex-col">
 											<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
@@ -2822,34 +2822,34 @@ export default function CopilotSidebar() {
 						{/* 等待 AI 响应的提示 */}
 						{isWaitingForLLM && chatMode === "agent" && (
 							<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">
-									<Bot className="w-4 h-4 text-white" />
+								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 dark:from-zinc-300 dark:to-zinc-500 flex items-center justify-center shrink-0 shadow-md">
+									<Bot className="w-4 h-4 text-white dark:text-zinc-900" />
 								</div>
 								<div className="flex-1 min-w-0">
-									<div className="inline-flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl border border-blue-100 dark:border-blue-800/50 shadow-sm">
+									<div className="inline-flex items-center gap-3 px-4 py-3 bg-surface dark:bg-zinc-800/50 rounded-2xl border border-border shadow-sm">
 										<div className="relative flex items-center justify-center">
-											<div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-											<div className="absolute w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+											<div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+											<div className="absolute w-2 h-2 bg-primary rounded-full animate-pulse" />
 										</div>
 										<div className="flex flex-col">
-											<span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+											<span className="text-sm font-medium text-text-primary">
 												正在思考中...
 											</span>
-											<span className="text-xs text-blue-500/70 dark:text-blue-400/60">
+											<span className="text-xs text-text-muted">
 												AI 正在分析您的请求
 											</span>
 										</div>
 										<div className="flex gap-1 ml-2">
 											<span
-												className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
 												style={{ animationDelay: "0ms" }}
 											/>
 											<span
-												className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
 												style={{ animationDelay: "150ms" }}
 											/>
 											<span
-												className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
 												style={{ animationDelay: "300ms" }}
 											/>
 										</div>
@@ -2964,11 +2964,10 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
-											}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
+												? "bg-zinc-50 dark:bg-zinc-800/40"
+												: ""
+												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -3005,12 +3004,12 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+								}`}
 						>
+							<MessageSquare className="w-3.5 h-3.5" />
 							对话
 						</button>
 						<button
@@ -3018,12 +3017,12 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
-								chatMode === "agent"
-									? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-							}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
+								? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+								}`}
 						>
+							<Bot className="w-3.5 h-3.5" />
 							托管
 						</button>
 					</div>
@@ -3032,6 +3031,7 @@ export default function CopilotSidebar() {
 						{chatMode === "agent" ? "托管模式" : "普通对话"}
 					</div>
 				</div>
+
 
 				<ChatInput
 					onSubmit={handleSendMessage}
