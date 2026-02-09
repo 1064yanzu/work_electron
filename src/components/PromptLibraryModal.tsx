@@ -23,7 +23,8 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
+import ReactDOM from "react-dom";
 import {
 	type CustomPrompt,
 	useCustomPromptStore,
@@ -97,7 +98,7 @@ function PromptCard({
 				onMouseLeave={() => setIsHovered(false)}
 			>
 				{/* 图标 */}
-				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-700 text-xl border border-zinc-200/50 dark:border-zinc-600/50 shadow-sm shrink-0 transition-transform group-hover:scale-105">
+				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xl border border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0 transition-transform group-hover:scale-105">
 					{prompt.icon || "📝"}
 				</div>
 
@@ -150,10 +151,10 @@ function PromptCard({
 		<div
 			draggable
 			onDragStart={(e) => onDragStart(e, prompt.id)}
-			className={`group relative flex flex-col p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
+			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
                 ${isSelected
-					? "bg-white dark:bg-zinc-800 ring-2 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
-					: "bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_16px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.12),0_16px_40px_-8px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 hover:scale-[1.02]"
+					? "bg-white dark:bg-zinc-800 ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
+					: "bg-white dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
 				}`}
 			onClick={onSelect}
 			onMouseEnter={() => setIsHovered(true)}
@@ -161,7 +162,7 @@ function PromptCard({
 		>
 			{/* 头部：图标 + 操作按钮 */}
 			<div className="flex items-start justify-between mb-4">
-				<div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 border border-zinc-200/50 dark:border-zinc-600/50 text-3xl shadow-sm group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 text-2xl shadow-sm group-hover:scale-105 transition-all duration-300">
 					{prompt.icon || "📝"}
 				</div>
 				{/* 操作按钮 - 始终占位但悬停时显示 */}
@@ -196,13 +197,13 @@ function PromptCard({
 
 			{/* 标题 */}
 			<div className="mb-2">
-				<h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-base line-clamp-1">
+				<h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg mb-1 line-clamp-1 tracking-tight">
 					{prompt.name}
 				</h3>
 			</div>
 
 			{/* 描述 */}
-			<p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed flex-1">
+			<p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-4 leading-relaxed flex-1">
 				{prompt.shortDescription || prompt.content}
 			</p>
 		</div>
@@ -402,17 +403,17 @@ export function PromptLibraryModal({
 
 	if (!isOpen) return null;
 
-	return (
+	return ReactDOM.createPortal(
 		<div
 			className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-200 p-4 sm:p-6 md:p-8"
 			onClick={handleBackdropClick}
 		>
-			{/* 响应式弹窗容器 */}
-			<div className="w-full max-w-[1100px] h-[85vh] max-h-[750px] min-h-[500px] bg-[#FAFAFA] dark:bg-[#121212] rounded-3xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_4px_8px_rgba(0,0,0,0.04),0_16px_32px_-4px_rgba(0,0,0,0.08),0_32px_80px_-12px_rgba(0,0,0,0.12)] border border-white/50 dark:border-zinc-800 flex overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
+			{/* 响应式弹窗容器 - Clean Modern Style */}
+			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200/50 dark:border-zinc-800 flex flex-col md:flex-row overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
 				{/* Sidebar (Folder Navigation) */}
-				<div className="w-64 bg-zinc-50/50 dark:bg-zinc-900/50 border-r border-zinc-200/50 dark:border-zinc-800 flex flex-col p-4 backdrop-blur-xl">
-					<div className="flex items-center gap-3 px-2 mb-6 mt-2">
-						<div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-black shadow-lg shadow-zinc-900/10">
+				<div className="w-full md:w-56 bg-zinc-50/50 dark:bg-zinc-900/50 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
+					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
+						<div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 shadow-md shadow-zinc-900/5">
 							<Library className="w-4 h-4" />
 						</div>
 						<span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
@@ -420,13 +421,13 @@ export function PromptLibraryModal({
 						</span>
 					</div>
 
-					<div className="px-2 mb-2">
+					<div className="px-2 mb-2 hidden md:block">
 						<div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">
 							文件夹
 						</div>
 					</div>
 
-					<div className="space-y-1 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+					<div className="flex md:flex-col gap-2 md:gap-1 md:space-y-1 overflow-x-auto md:overflow-x-visible md:overflow-y-auto pb-2 md:pb-0 pr-0 md:pr-2 no-scrollbar md:custom-scrollbar min-h-[50px] md:min-h-0 items-center md:items-stretch">
 						{/* 全部 */}
 						<button
 							onClick={() => setActiveFolderId(null)}
@@ -473,7 +474,7 @@ export function PromptLibraryModal({
 										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 										${activeFolderId === folder.id
 												? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-												: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+												: "text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
 											}`}
 									>
 										<div
@@ -616,10 +617,10 @@ export function PromptLibraryModal({
 						)}
 					</div>
 
-					<div className="pt-4 border-t border-zinc-200/50 dark:border-zinc-800 mt-2">
+					<div className="pt-2 md:pt-4 border-t border-zinc-200/50 dark:border-zinc-800 mt-0 md:mt-2">
 						<button
 							onClick={() => handleStartEdit()}
-							className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-3 rounded-xl hover:opacity-90 transition-all active:scale-[0.98] font-medium text-sm shadow-md hover:shadow-lg shadow-zinc-900/10"
+							className="w-full flex items-center justify-center gap-2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-[0.98] font-medium text-sm shadow-sm"
 						>
 							<Plus className="w-4 h-4" />
 							<span>新建提示词</span>
@@ -628,31 +629,31 @@ export function PromptLibraryModal({
 				</div>
 
 				{/* Main Content */}
-				<div className="flex-1 flex flex-col bg-white dark:bg-[#121212] relative">
+				<div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 relative min-w-0">
 					{/* Header Toolbar */}
-					<div className="px-6 py-4 flex items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800/50 sticky top-0 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-md z-10">
+					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md z-10">
 						<div className="relative flex-1 max-w-md group">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 dark:group-focus-within:text-zinc-300 transition-colors" />
 							<input
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="搜索提示词..."
-								className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition-all outline-none"
+								placeholder="搜索..."
+								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-zinc-100/50 dark:bg-zinc-900 border-none rounded-lg text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-800 transition-all outline-none"
 							/>
 						</div>
 
-						<div className="flex items-center gap-0.5 bg-zinc-50 dark:bg-zinc-900 p-1.5 rounded-xl border border-zinc-100 dark:border-zinc-800">
+						<div className="flex items-center gap-0.5 bg-white dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
 							<button
 								onClick={() => setViewMode("grid")}
-								className={`p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg transition-all ${viewMode === "grid" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-800"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "grid" ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"}`}
 								title="网格视图"
 							>
 								<LayoutGrid className="w-4 h-4" />
 							</button>
 							<button
 								onClick={() => setViewMode("list")}
-								className={`p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg transition-all ${viewMode === "list" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-800"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "list" ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"}`}
 								title="列表视图"
 							>
 								<LayoutList className="w-4 h-4" />
@@ -671,21 +672,21 @@ export function PromptLibraryModal({
 							/>
 							<button
 								onClick={() => fileInputRef.current?.click()}
-								className="p-2.5 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
 								title="导入"
 							>
 								<Upload className="w-4.5 h-4.5" />
 							</button>
 							<button
 								onClick={handleExport}
-								className="p-2.5 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
 								title="导出"
 							>
 								<Download className="w-4.5 h-4.5" />
 							</button>
 							<button
 								onClick={onClose}
-								className="p-2.5 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
 								title="关闭"
 							>
 								<X className="w-4.5 h-4.5" />
@@ -721,7 +722,7 @@ export function PromptLibraryModal({
 							<div
 								className={
 									viewMode === "grid"
-										? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+										? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-6"
 										: "flex flex-col gap-3"
 								}
 							>
@@ -823,7 +824,7 @@ export function PromptLibraryModal({
 													autoFocus
 												/>
 											</div>
-											<div className="grid grid-cols-2 gap-6">
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 												<div className="space-y-2">
 													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
 														文件夹
@@ -907,6 +908,7 @@ export function PromptLibraryModal({
 			</div>
 
 			{/* Note: Backdrop for folder menu is now rendered inline with the menu */}
-		</div>
+		</div>,
+		document.body,
 	);
 }
