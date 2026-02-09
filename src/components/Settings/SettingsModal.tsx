@@ -64,7 +64,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					{/* Close Button - Absolute positioned at top right of the content area */}
 					<button
 						onClick={onClose}
-						className="absolute top-4 right-4 z-10 p-2 rounded-full hover:bg-surface text-text-muted hover:text-text-primary transition-colors"
+						className="absolute top-4 right-4 z-10 p-2 rounded-full cursor-pointer hover:bg-surface text-text-muted hover:text-text-primary transition-all duration-150 hover:scale-105 active:scale-95"
 						title="关闭"
 					>
 						<svg

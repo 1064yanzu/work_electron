@@ -173,22 +173,22 @@ export default function Dashboard({
 
 	const projectContextMenuItems = contextMenu
 		? buildProjectContextMenu({
-				onOpen: () => handleOpenProject(contextMenu.project.id),
-				onRename: () => void handleRenameProject(contextMenu.project),
-				onToggleArchive: () => void handleToggleArchiveProject(contextMenu.project),
-				onDelete: () => void handleDeleteProject(contextMenu.project),
-				onReveal: async () => {
-					try {
-						const result = await revealProjectDirectory(contextMenu.project.id);
-						if (!result.success) {
-							window.alert(result.error || "打开目录失败");
-						}
-					} catch (error) {
-						window.alert(`打开目录失败: ${String(error)}`);
+			onOpen: () => handleOpenProject(contextMenu.project.id),
+			onRename: () => void handleRenameProject(contextMenu.project),
+			onToggleArchive: () => void handleToggleArchiveProject(contextMenu.project),
+			onDelete: () => void handleDeleteProject(contextMenu.project),
+			onReveal: async () => {
+				try {
+					const result = await revealProjectDirectory(contextMenu.project.id);
+					if (!result.success) {
+						window.alert(result.error || "打开目录失败");
 					}
-				},
-				isArchived: contextMenu.project.is_archived,
-			})
+				} catch (error) {
+					window.alert(`打开目录失败: ${String(error)}`);
+				}
+			},
+			isArchived: contextMenu.project.is_archived,
+		})
 		: [];
 
 	// overview（工作台）显示所有项目，recent（最近访问）显示有访问记录的项目
@@ -331,21 +331,21 @@ export default function Dashboard({
 						</div>
 
 						{/* Minimal View Toggles */}
-						<div className="flex items-center gap-1">
+						<div className="flex items-center gap-1 p-1 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg">
 							<button
 								onClick={() => setViewMode("grid")}
-								className={`p-2 rounded-md transition-all ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-zinc-200/50 dark:bg-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}
+								className={`p-2 rounded-md cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
 							>
 								<LayoutGrid className="w-4 h-4" />
 							</button>
 							<button
 								onClick={() => setViewMode("list")}
-								className={`p-2 rounded-md transition-all ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-zinc-200/50 dark:bg-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}
+								className={`p-2 rounded-md cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
 							>
 								<ListIcon className="w-4 h-4" />
 							</button>
 							<button
-								className="p-2 rounded-md text-zinc-400 hover:text-zinc-600 ml-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+								className="p-2 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ml-1 hover:bg-white/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-150 active:scale-95"
 								onClick={() => setShowSearch(true)}
 							>
 								<Search className="w-4 h-4" />
@@ -360,7 +360,7 @@ export default function Dashboard({
 								console.log("[Dashboard] 点击新建项目按钮");
 								setShowNewProject(true);
 							}}
-							className="group relative w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 cursor-pointer mb-16 overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+							className="group relative w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer mb-16 overflow-hidden hover:shadow-[0_12px_40px_-12px_rgba(217,108,70,0.15)] active:scale-[0.995]"
 						>
 							<div className="px-8 py-10 flex items-center justify-between">
 								<div>
@@ -448,7 +448,7 @@ export default function Dashboard({
 							</div>
 						) : (
 							<div
-								className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
+								className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
 							>
 								{filteredProjects.map((project, idx) => (
 									<div
@@ -463,9 +463,15 @@ export default function Dashboard({
 										}}
 										onContextMenu={(e) => handleProjectContextMenu(e, project)}
 										className={`
-                        group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 
-                        rounded-xl p-6 cursor-pointer transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)]
-                        animate-in fade-in slide-in-from-bottom-4 flex flex-col h-48 justify-between
+                        group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 
+                        hover:border-zinc-300 dark:hover:border-zinc-600
+                        rounded-2xl p-6 cursor-pointer 
+                        transition-all duration-300 ease-out
+                        hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.4)]
+                        hover:-translate-y-1
+                        active:scale-[0.98] active:shadow-sm
+                        animate-in fade-in slide-in-from-bottom-4 
+                        flex flex-col h-48 justify-between
                       `}
 										style={{
 											animationDelay: `${50 + idx * 30}ms`,
@@ -568,15 +574,22 @@ function NavItem({
 		<button
 			onClick={onClick}
 			className={`
-      w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all group relative text-sm
-      ${active ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-black/5" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100"}
+      w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative text-sm cursor-pointer
+      ${active
+					? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+					: "text-zinc-500 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 hover:scale-[1.01] active:scale-[0.99]"
+				}
     `}
 		>
+			{/* 激活指示器 */}
+			{active && (
+				<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
+			)}
 			<Icon
-				className={`w-4 h-4 ${active ? "text-zinc-900 dark:text-white" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"}`}
+				className={`w-4 h-4 transition-colors ${active ? "text-zinc-900 dark:text-white" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"}`}
 				strokeWidth={2}
 			/>
-			<span className={`font-medium ${active ? "font-semibold" : ""}`}>
+			<span className={`font-medium hidden lg:block ${active ? "font-semibold" : ""}`}>
 				{label}
 			</span>
 			{badge && (
@@ -587,3 +600,4 @@ function NavItem({
 		</button>
 	);
 }
+
