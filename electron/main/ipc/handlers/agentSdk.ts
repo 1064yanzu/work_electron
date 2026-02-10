@@ -16,6 +16,7 @@ import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
 import { createSubagentLifecycleHooks } from "./agentSdk/subagentHooks";
 import { isSdkSessionId, normalizeSdkSessionId } from "./agentSdk/sessionId";
+import { publishAgentSdkBusEvent } from "../../remote-control/core/agentSdkEventBus";
 
 const execFileAsync = promisify(execFile);
 const MAX_RESOLVE_SCAN_ENTRIES = 5000;
@@ -740,6 +741,7 @@ function emit(getMainWindow: GetMainWindow, payload: AgentSdkEventPayload) {
 	const win = getMainWindow();
 	if (!win) return;
 	win.webContents.send("agent-sdk-event", payload);
+	publishAgentSdkBusEvent(payload as any);
 }
 
 const DATA_IMAGE_URL_RE =

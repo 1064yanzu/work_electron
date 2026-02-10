@@ -591,7 +591,10 @@ export async function pickStorageDirectory(): Promise<{ path: string | null }> {
 	return await safeInvoke("storage_pick_directory");
 }
 
-export async function revealVaultRoot(): Promise<{ success: boolean; error?: string }> {
+export async function revealVaultRoot(): Promise<{
+	success: boolean;
+	error?: string;
+}> {
 	return await safeInvoke("storage_reveal_vault_root");
 }
 
@@ -600,7 +603,9 @@ export async function revealProjectDirectory(projectId: string): Promise<{
 	path: string;
 	error?: string;
 }> {
-	return await safeInvoke("project_reveal_directory", { project_id: projectId });
+	return await safeInvoke("project_reveal_directory", {
+		project_id: projectId,
+	});
 }
 
 export async function fileList(params?: {
@@ -686,11 +691,15 @@ export async function moveFileSafe(payload: {
 	return await safeInvoke("move_file_safe", payload);
 }
 
-export async function deleteFileSafe(path: string): Promise<{ success: boolean }> {
+export async function deleteFileSafe(
+	path: string,
+): Promise<{ success: boolean }> {
 	return await safeInvoke("delete_file_safe", { path });
 }
 
-export async function revealFileSafe(path: string): Promise<{ success: boolean }> {
+export async function revealFileSafe(
+	path: string,
+): Promise<{ success: boolean }> {
 	return await safeInvoke("reveal_file_safe", { path });
 }
 
@@ -914,4 +923,170 @@ export async function updateArtifactSettings(
 	settings: Partial<ArtifactSettings>,
 ): Promise<ArtifactSettings> {
 	return await safeInvoke("artifact_update_settings", settings);
+}
+
+// ==================== 远程控制 ====================
+
+export interface RemoteControlConfig {
+	enabled: boolean;
+	channels: {
+		feishu: {
+			enabled: boolean;
+			appId?: string;
+			appSecret?: string;
+			domain: "feishu" | "lark";
+			connectionMode: "websocket" | "webhook";
+			webhookPath: string;
+			webhookPort?: number;
+			dmPolicy: "pairing" | "allowlist" | "open";
+			allowFrom: string[];
+			groupPolicy: "disabled" | "allowlist" | "open";
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+		};
+		telegram: { enabled: boolean; note?: string };
+		slack: { enabled: boolean; note?: string };
+		generic_webhook: { enabled: boolean; note?: string };
+	};
+	security: {
+		interactionTimeoutSec: number;
+		defaultScopes: string[];
+	};
+	mobileGateway: {
+		enabled: boolean;
+		port: number;
+		host: string;
+		requirePairing: boolean;
+	};
+}
+
+export interface RemoteChannelStatus {
+	channel_id: string;
+	enabled: boolean;
+	running: boolean;
+	connected: boolean;
+	mode?: string;
+	last_inbound_at?: number;
+	last_outbound_at?: number;
+	last_error?: string;
+}
+
+export interface RemoteRuntimeStatus {
+	enabled: boolean;
+	started_at?: number;
+	channels: RemoteChannelStatus[];
+	active_runs: number;
+	pending_pairings: number;
+}
+
+export interface RemotePairingRequest {
+	request_id: string;
+	channel_id: string;
+	peer_id: string;
+	peer_name?: string;
+	code: string;
+	requested_at: number;
+	expires_at: number;
+	status: string;
+	reason?: string;
+}
+
+export interface RemotePairingRecord {
+	pairing_id: string;
+	channel_id: string;
+	peer_id: string;
+	peer_name?: string;
+	approved_at: number;
+	approved_by: string;
+	status: string;
+	revoked_at?: number;
+	revoked_reason?: string;
+}
+
+export interface RemoteSessionInfo {
+	session_id: string;
+	channel_id: string;
+	peer_id: string;
+	peer_name?: string;
+	target_id: string;
+	run_id?: string;
+	prompt_preview: string;
+	state: string;
+	last_message_at: number;
+	created_at: number;
+	updated_at: number;
+	last_error?: string;
+}
+
+export async function getRemoteControlConfig(): Promise<RemoteControlConfig> {
+	return await safeInvoke("get_remote_control_config");
+}
+
+export async function setRemoteControlConfig(
+	config: RemoteControlConfig,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("set_remote_control_config", { config });
+}
+
+export async function getRemoteControlRuntimeStatus(): Promise<RemoteRuntimeStatus> {
+	return await safeInvoke("get_remote_control_runtime_status");
+}
+
+export async function listRemoteChannels(): Promise<RemoteChannelStatus[]> {
+	return await safeInvoke("list_remote_channels");
+}
+
+export async function listRemotePairings(): Promise<{
+	pending_requests: RemotePairingRequest[];
+	records: RemotePairingRecord[];
+}> {
+	return await safeInvoke("list_remote_pairings");
+}
+
+export async function approveRemotePairing(
+	requestId: string,
+	approvedBy?: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("approve_remote_pairing", {
+		request_id: requestId,
+		approved_by: approvedBy,
+	});
+}
+
+export async function rejectRemotePairing(
+	requestId: string,
+	reason?: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("reject_remote_pairing", {
+		request_id: requestId,
+		reason,
+	});
+}
+
+export async function revokeRemotePairing(payload: {
+	channel_id: string;
+	peer_id: string;
+	reason?: string;
+}): Promise<{ success: boolean }> {
+	return await safeInvoke("revoke_remote_pairing", payload);
+}
+
+export async function listRemoteSessions(
+	limit = 50,
+): Promise<RemoteSessionInfo[]> {
+	return await safeInvoke("list_remote_sessions", { limit });
+}
+
+export async function terminateRemoteSession(
+	runId: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("terminate_remote_session", { run_id: runId });
+}
+
+export async function testRemoteChannel(
+	channelId: string,
+): Promise<{ ok: boolean; message: string }> {
+	return await safeInvoke("test_remote_channel", { channel_id: channelId });
 }

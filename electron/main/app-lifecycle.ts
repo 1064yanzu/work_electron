@@ -4,6 +4,7 @@ import { startHttpServers } from "./http/start";
 import { registerIpcHandlers } from "./ipc/register";
 import { createLogger } from "./logging/logger";
 import { autoSyncScheduler } from "./services/AutoSyncScheduler";
+import { initRemoteControlOrchestrator } from "./remote-control/core/service";
 
 export async function bootstrapApp({
 	createWindow,
@@ -28,6 +29,8 @@ export async function bootstrapApp({
 
 	let db: Awaited<ReturnType<typeof initDatabase>>;
 	let httpStatus: Awaited<ReturnType<typeof startHttpServers>>;
+	let remoteControl: ReturnType<typeof initRemoteControlOrchestrator> | null =
+		null;
 
 	try {
 		db = await initDatabase({ logger });
@@ -46,11 +49,24 @@ export async function bootstrapApp({
 	}
 
 	try {
+		remoteControl = initRemoteControlOrchestrator({ db, logger });
+	} catch (error) {
+		logger.error({ msg: "Failed to init remote control orchestrator", error });
+	}
+
+	try {
 		registerIpcHandlers({ logger, httpStatus, db });
 		logger.info({ msg: "IPC handlers registered successfully" });
 	} catch (error) {
 		logger.error({ msg: "Failed to register IPC handlers", error });
 		throw error;
+	}
+
+	try {
+		if (remoteControl) await remoteControl.start();
+		logger.info({ msg: "Remote control orchestrator started successfully" });
+	} catch (error) {
+		logger.error({ msg: "Failed to start remote control orchestrator", error });
 	}
 
 	// 启动自动同步调度器
@@ -65,5 +81,8 @@ export async function bootstrapApp({
 	app.on("before-quit", () => {
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });
+		if (remoteControl) {
+			void remoteControl.stop();
+		}
 	});
 }

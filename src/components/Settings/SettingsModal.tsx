@@ -9,6 +9,7 @@ import { ImageGenSettings } from "./panels/ImageGenSettings";
 import { MCPSettings } from "./panels/MCPSettings";
 import { ModelSettings } from "./panels/ModelSettings";
 import { PromptSettings } from "./panels/PromptSettings";
+import { RemoteControlSettings } from "./panels/RemoteControlSettings";
 import { SkillsSettings } from "./panels/SkillsSettings";
 import { SettingsSidebar } from "./SettingsSidebar";
 import { FocusTrap } from "../ui/FocusTrap";
@@ -66,6 +67,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				return <SkillsSettings />;
 			case "mcp":
 				return <MCPSettings />;
+			case "remoteControl":
+				return <RemoteControlSettings />;
 			case "general":
 				return <GeneralSettings />;
 			case "data":

@@ -53,6 +53,8 @@ import { createLocalBackupHandlers } from "./handlers/localBackup";
 import { createImageGenHandlers } from "./handlers/imageGen";
 import { createStorageHandlers } from "./handlers/storage";
 import { createFileHandlers } from "./handlers/files";
+import { createRemoteControlHandlers } from "./handlers/remoteControl";
+import { getRemoteControlOrchestrator } from "../remote-control/core/service";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -110,6 +112,8 @@ export function registerIpcHandlers({
 		logger,
 		db,
 	});
+	const remoteControlHandlers = createRemoteControlHandlers();
+	getRemoteControlOrchestrator().bindAgentSdkHandlers(agentSdkHandlers);
 
 	// Agent Runtime handlers
 	const agentSessionHandlers = createAgentSessionHandlers(db);
@@ -291,6 +295,50 @@ export function registerIpcHandlers({
 	// ==================
 	ipcMain.handle("get_config", configHandlers.get_config);
 	ipcMain.handle("set_config", configHandlers.set_config);
+	ipcMain.handle(
+		"get_remote_control_config",
+		remoteControlHandlers.get_remote_control_config,
+	);
+	ipcMain.handle(
+		"set_remote_control_config",
+		remoteControlHandlers.set_remote_control_config,
+	);
+	ipcMain.handle(
+		"get_remote_control_runtime_status",
+		remoteControlHandlers.get_remote_control_runtime_status,
+	);
+	ipcMain.handle(
+		"list_remote_channels",
+		remoteControlHandlers.list_remote_channels,
+	);
+	ipcMain.handle(
+		"list_remote_pairings",
+		remoteControlHandlers.list_remote_pairings,
+	);
+	ipcMain.handle(
+		"approve_remote_pairing",
+		remoteControlHandlers.approve_remote_pairing,
+	);
+	ipcMain.handle(
+		"reject_remote_pairing",
+		remoteControlHandlers.reject_remote_pairing,
+	);
+	ipcMain.handle(
+		"revoke_remote_pairing",
+		remoteControlHandlers.revoke_remote_pairing,
+	);
+	ipcMain.handle(
+		"list_remote_sessions",
+		remoteControlHandlers.list_remote_sessions,
+	);
+	ipcMain.handle(
+		"terminate_remote_session",
+		remoteControlHandlers.terminate_remote_session,
+	);
+	ipcMain.handle(
+		"test_remote_channel",
+		remoteControlHandlers.test_remote_channel,
+	);
 	ipcMain.handle("get_all_configs", configHandlers.get_all_configs);
 	ipcMain.handle("get_active_model", configHandlers.get_active_model);
 	ipcMain.handle("set_active_model", configHandlers.set_active_model);

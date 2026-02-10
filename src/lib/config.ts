@@ -1,4 +1,12 @@
 import type { WebSearchResult } from "../types";
+import type {
+	RemoteChannelStatus,
+	RemoteControlConfig,
+	RemotePairingRecord,
+	RemotePairingRequest,
+	RemoteRuntimeStatus,
+	RemoteSessionInfo,
+} from "./api";
 import {
 	MOTION_PREFERENCE_CONFIG_KEY,
 	MOTION_PREFERENCE_EVENT,
@@ -1066,4 +1074,89 @@ export async function setSkillEnabled(
 	enabled: boolean,
 ): Promise<void> {
 	return invoke("set_skill_enabled", { skillName, enabled });
+}
+
+// ==================== 远程控制配置 ====================
+
+let cachedRemoteControlConfig: RemoteControlConfig | null = null;
+
+export async function getRemoteControlConfig(
+	forceRefresh = false,
+): Promise<RemoteControlConfig> {
+	if (cachedRemoteControlConfig && !forceRefresh) {
+		return cachedRemoteControlConfig;
+	}
+	const config = await invoke<RemoteControlConfig>(
+		"get_remote_control_config",
+		{},
+	);
+	cachedRemoteControlConfig = config;
+	return config;
+}
+
+export async function setRemoteControlConfig(
+	config: RemoteControlConfig,
+): Promise<void> {
+	await invoke("set_remote_control_config", { config });
+	cachedRemoteControlConfig = config;
+}
+
+export async function getRemoteControlRuntimeStatus(): Promise<RemoteRuntimeStatus> {
+	return invoke("get_remote_control_runtime_status", {});
+}
+
+export async function listRemoteChannels(): Promise<RemoteChannelStatus[]> {
+	return invoke("list_remote_channels", {});
+}
+
+export async function listRemotePairings(): Promise<{
+	pending_requests: RemotePairingRequest[];
+	records: RemotePairingRecord[];
+}> {
+	return invoke("list_remote_pairings", {});
+}
+
+export async function approveRemotePairing(
+	requestId: string,
+	approvedBy = "settings",
+): Promise<void> {
+	await invoke("approve_remote_pairing", {
+		request_id: requestId,
+		approved_by: approvedBy,
+	});
+}
+
+export async function rejectRemotePairing(
+	requestId: string,
+	reason?: string,
+): Promise<void> {
+	await invoke("reject_remote_pairing", {
+		request_id: requestId,
+		reason,
+	});
+}
+
+export async function revokeRemotePairing(input: {
+	channel_id: string;
+	peer_id: string;
+	reason?: string;
+}): Promise<void> {
+	await invoke("revoke_remote_pairing", input);
+}
+
+export async function listRemoteSessions(
+	limit = 50,
+): Promise<RemoteSessionInfo[]> {
+	return invoke("list_remote_sessions", { limit });
+}
+
+export async function terminateRemoteSession(runId: string): Promise<void> {
+	await invoke("terminate_remote_session", { run_id: runId });
+}
+
+export async function testRemoteChannel(channelId: string): Promise<{
+	ok: boolean;
+	message: string;
+}> {
+	return invoke("test_remote_channel", { channel_id: channelId });
 }

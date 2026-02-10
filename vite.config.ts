@@ -73,6 +73,10 @@ export default defineConfig({
 								"@libsql/linux-x64",
 								"@libsql/win32-x64",
 								"jsdom",
+								// CJS-only modules that break when bundled into ESM output
+								"@larksuiteoapi/node-sdk",
+								"bufferutil",
+								"utf-8-validate",
 							],
 						},
 					},
@@ -89,7 +93,7 @@ export default defineConfig({
 			renderer:
 				process.env.NODE_ENV === "test"
 					? // https://github.com/electron-vite/vite-plugin-electron-renderer/issues/78#issuecomment-2053600808
-						undefined
+					undefined
 					: {},
 		}),
 	],
