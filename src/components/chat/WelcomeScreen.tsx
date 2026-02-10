@@ -1,13 +1,5 @@
 import { Sparkles } from "lucide-react";
 
-export interface QuickAction {
-	id: string;
-	label: string;
-	icon: React.ElementType; // Lucide icon
-	prompt: string;
-	isResearch?: boolean;
-}
-
 export function WelcomeScreen() {
 	return (
 		<div className="flex flex-col h-full items-center justify-center -mt-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10 transition-all">

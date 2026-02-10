@@ -1,4 +1,5 @@
 import {
+	ChevronRight,
 	Clock,
 	Folder,
 	FolderOpen,
@@ -45,6 +46,7 @@ export default function Dashboard({
 	// Interactive States
 	const [showSearch, setShowSearch] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [searchSelectedIndex, setSearchSelectedIndex] = useState(-1);
 	const [showNewProject, setShowNewProject] = useState(false);
 	const [newProjectName, setNewProjectName] = useState("");
 	const [contextMenu, setContextMenu] = useState<{
@@ -275,7 +277,8 @@ export default function Dashboard({
 				<div className="mt-auto pt-4 border-t border-black/[0.03] dark:border-white/[0.03]">
 					<button
 						onClick={onOpenSettings}
-						className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all group text-sm"
+						aria-label="设置"
+						className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all group text-sm cursor-pointer"
 					>
 						<Settings className="w-4 h-4" />
 						<span className="font-medium hidden lg:block">设置</span>
@@ -303,11 +306,35 @@ export default function Dashboard({
 									className="flex-1 bg-transparent border-none outline-none text-lg placeholder:text-zinc-300 font-serif text-zinc-800 dark:text-zinc-100"
 									placeholder="搜索文档..."
 									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
+									onChange={(e) => {
+										setSearchQuery(e.target.value);
+										setSearchSelectedIndex(-1);
+									}}
+									onKeyDown={(e) => {
+										if (e.key === "ArrowDown") {
+											e.preventDefault();
+											setSearchSelectedIndex((prev) =>
+												Math.min(prev + 1, filteredProjects.length - 1)
+											);
+										} else if (e.key === "ArrowUp") {
+											e.preventDefault();
+											setSearchSelectedIndex((prev) => Math.max(prev - 1, -1));
+										} else if (e.key === "Enter" && searchSelectedIndex >= 0) {
+											e.preventDefault();
+											const selected = filteredProjects[searchSelectedIndex];
+											if (selected) {
+												onOpenProject?.(selected.id);
+												setShowSearch(false);
+											}
+										} else if (e.key === "Escape") {
+											setShowSearch(false);
+										}
+									}}
 								/>
 								<button
 									onClick={() => setShowSearch(false)}
-									className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-zinc-400"
+									aria-label="关闭搜索"
+									className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 cursor-pointer transition-colors"
 								>
 									<X className="w-5 h-5" />
 								</button>
@@ -322,7 +349,10 @@ export default function Dashboard({
 													onOpenProject?.(project.id);
 													setShowSearch(false);
 												}}
-												className="w-full text-left px-4 py-3 rounded-lg hover:bg-[#F4F4F2] dark:hover:bg-zinc-800 flex items-center gap-3 group transition-colors"
+												className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 group transition-colors cursor-pointer ${filteredProjects.indexOf(project) === searchSelectedIndex
+													? "bg-primary/10 dark:bg-primary/20"
+													: "hover:bg-[#F4F4F2] dark:hover:bg-zinc-800"
+													}`}
 											>
 												<Folder
 													className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"
@@ -365,18 +395,21 @@ export default function Dashboard({
 						<div className="flex items-center gap-1 p-1 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg">
 							<button
 								onClick={() => setViewMode("grid")}
-								className={`p-2 rounded-md cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
+								aria-label="网格视图"
+								className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
 							>
 								<LayoutGrid className="w-4 h-4" />
 							</button>
 							<button
 								onClick={() => setViewMode("list")}
-								className={`p-2 rounded-md cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
+								aria-label="列表视图"
+								className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
 							>
 								<ListIcon className="w-4 h-4" />
 							</button>
 							<button
-								className="p-2 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ml-1 hover:bg-white/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-150 active:scale-95"
+								aria-label="搜索项目"
+								className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ml-1 hover:bg-white/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-150 active:scale-95"
 								onClick={() => setShowSearch(true)}
 							>
 								<Search className="w-4 h-4" />
@@ -542,19 +575,7 @@ export default function Dashboard({
 													<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
 														OPEN
 													</span>
-													<svg
-														className="w-3 h-3 text-zinc-400"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke="currentColor"
-													>
-														<path
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															strokeWidth={2}
-															d="M9 5l7 7-7 7"
-														/>
-													</svg>
+													<ChevronRight className="w-3 h-3 text-zinc-400" />
 												</div>
 											</div>
 											<h4 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-50 mb-3 line-clamp-1 group-hover:text-primary transition-colors duration-300">
@@ -611,7 +632,7 @@ function NavItem({
 	badge,
 	onClick,
 }: {
-	icon: any;
+	icon: React.ElementType;
 	label: string;
 	active?: boolean;
 	badge?: string;
@@ -620,6 +641,7 @@ function NavItem({
 	return (
 		<button
 			onClick={onClick}
+			aria-label={label}
 			className={`
       w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative text-sm cursor-pointer
       ${active

@@ -1,5 +1,5 @@
 import { Eye, RefreshCw, Sparkles, X } from "lucide-react";
-import { PanelIconButton } from "../../layout/PanelIconButton";
+import { IconButton } from "../../ui/Button";
 import { cn } from "../../../lib/utils";
 
 interface ManagedCenterHeaderProps {
@@ -36,7 +36,7 @@ export function ManagedCenterHeader({
 						type="button"
 						onClick={() => onSetCenterView("graph")}
 						className={cn(
-							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring",
+							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
 							centerView === "graph"
 								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
 								: "text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
@@ -51,7 +51,7 @@ export function ManagedCenterHeader({
 						type="button"
 						onClick={() => onSetCenterView("preview")}
 						className={cn(
-							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring",
+							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
 							centerView === "preview"
 								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
 								: "text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
@@ -80,18 +80,26 @@ export function ManagedCenterHeader({
 			</div>
 
 			<div className="flex items-center gap-2">
-				<PanelIconButton
+				<IconButton
 					onClick={onRefresh}
 					disabled={isRefreshing}
-					label="刷新文件列表"
+					aria-label="刷新文件列表"
+					title="刷新文件列表"
+					variant="ghost"
+					size="sm"
 					className={cn(isRefreshing && "animate-spin")}
-					icon={<RefreshCw className="w-4 h-4" />}
-				/>
-				<PanelIconButton
+				>
+					<RefreshCw className="w-4 h-4" />
+				</IconButton>
+				<IconButton
 					onClick={onExit}
-					label="关闭托管模式"
-					icon={<X className="w-4 h-4" />}
-				/>
+					aria-label="关闭托管模式"
+					title="关闭托管模式"
+					variant="ghost"
+					size="sm"
+				>
+					<X className="w-4 h-4" />
+				</IconButton>
 			</div>
 		</div>
 	);

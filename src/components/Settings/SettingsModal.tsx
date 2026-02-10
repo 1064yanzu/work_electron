@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { AgentSettings } from "./panels/AgentSettings";
 import { ArtifactSettings } from "./panels/ArtifactSettings";
@@ -90,7 +91,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 			}}
 		>
 			<FocusTrap
-				className={`relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+				className={`relative w-[85vw] h-[80vh] max-w-6xl rounded-xl bg-white dark:bg-zinc-900 shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
 				onEscape={handleClose}
 				initialFocusRef={closeButtonRef}
 				role="dialog"
@@ -107,20 +108,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 						title="关闭"
 						aria-label="关闭设置"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="20"
-							height="20"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						>
-							<path d="M18 6 6 18" />
-							<path d="m6 6 12 12" />
-						</svg>
+						<X className="w-5 h-5" />
 					</button>
 
 					{renderContent()}

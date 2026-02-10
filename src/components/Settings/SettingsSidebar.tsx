@@ -16,11 +16,12 @@ export function SettingsSidebar({
 					设置
 				</div>
 			</div>
-			<nav className="flex-1 space-y-1 px-3">
+			<nav className="flex-1 space-y-1 px-3" aria-label="设置导航">
 				{SETTINGS_MENU.map((item) => (
 					<button
 						key={item.id}
 						onClick={() => onTabChange(item.id)}
+						aria-current={activeTab === item.id ? "page" : undefined}
 						className={`
 							w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl 
 							cursor-pointer transition-colors duration-200 relative

@@ -1,5 +1,5 @@
-import { Circle, FileText, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Circle, FileText, GripVertical, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fileList, fileMove } from "../lib/api";
 import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
 import { useWorkspaceStore } from "../lib/workspaceStore";
@@ -19,7 +19,7 @@ export default function DocumentTabs({
 	onCloseDoc,
 	onDeleteDoc,
 }: DocumentTabsProps) {
-	const { openedDocs, activeDocId, docCache, setActiveDoc, closeDoc } =
+	const { openedDocs, activeDocId, docCache, setActiveDoc, closeDoc, reorderDocs } =
 		useWorkspaceStore();
 	const tabsRef = useRef<HTMLDivElement>(null);
 	const [contextMenu, setContextMenu] = useState<{
@@ -27,6 +27,10 @@ export default function DocumentTabs({
 		y: number;
 		docId: string;
 	} | null>(null);
+
+	// --- 拖拽状态 ---
+	const [dragIndex, setDragIndex] = useState<number | null>(null);
+	const [dropIndex, setDropIndex] = useState<number | null>(null);
 
 	useEffect(() => {
 		if (!activeDocId || !tabsRef.current) return;
@@ -128,7 +132,7 @@ export default function DocumentTabs({
 				const moveToProject = await confirmDialog.show({
 					title: "移动文档",
 					message:
-						"点击“移动到项目目录”将文档移动到项目目录；点击“移动到全局目录”将文档移动到全局共享目录。",
+						"点击\u201c移动到项目目录\u201d将文档移动到项目目录；点击\u201c移动到全局目录\u201d将文档移动到全局共享目录。",
 					confirmText: "移动到项目目录",
 					cancelText: "移动到全局目录",
 					type: "info",
@@ -154,6 +158,50 @@ export default function DocumentTabs({
 		docCache,
 	]);
 
+	// --- 拖拽事件处理 ---
+	const handleDragStart = useCallback(
+		(e: React.DragEvent, index: number) => {
+			setDragIndex(index);
+			e.dataTransfer.effectAllowed = "move";
+			e.dataTransfer.setData("text/plain", String(index));
+			// 半透明拖拽效果
+			if (e.currentTarget instanceof HTMLElement) {
+				e.currentTarget.style.opacity = "0.4";
+			}
+		},
+		[],
+	);
+
+	const handleDragEnd = useCallback(
+		(e: React.DragEvent) => {
+			if (e.currentTarget instanceof HTMLElement) {
+				e.currentTarget.style.opacity = "1";
+			}
+			// 执行重排
+			if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+				reorderDocs(dragIndex, dropIndex);
+			}
+			setDragIndex(null);
+			setDropIndex(null);
+		},
+		[dragIndex, dropIndex, reorderDocs],
+	);
+
+	const handleDragOver = useCallback(
+		(e: React.DragEvent, index: number) => {
+			e.preventDefault();
+			e.dataTransfer.dropEffect = "move";
+			if (index !== dropIndex) {
+				setDropIndex(index);
+			}
+		},
+		[dropIndex],
+	);
+
+	const handleDragLeave = useCallback(() => {
+		// 不在此清除 dropIndex，避免闪烁
+	}, []);
+
 	if (openedDocs.length === 0) return null;
 
 	return (
@@ -164,34 +212,52 @@ export default function DocumentTabs({
 				role="tablist"
 				aria-label="已打开文档标签"
 			>
-				{openedDocs.map((docId) => {
+				{openedDocs.map((docId, index) => {
 					const doc = docCache[docId];
 					const isActive = docId === activeDocId;
 					const label = doc?.title || "未命名文档";
 					const dirty = Boolean(doc?.dirty);
+					const isDragging = dragIndex === index;
+					const isDropTarget = dropIndex === index && dragIndex !== index;
 
 					return (
 						<div
 							key={docId}
 							data-doc-id={docId}
+							draggable
+							onDragStart={(e) => handleDragStart(e, index)}
+							onDragEnd={handleDragEnd}
+							onDragOver={(e) => handleDragOver(e, index)}
+							onDragLeave={handleDragLeave}
 							onContextMenu={(e) => {
 								e.preventDefault();
 								setContextMenu({ x: e.clientX, y: e.clientY, docId });
 							}}
 							className={cn(
-								"group flex items-center gap-1.5 rounded-xl border min-h-11 px-2 py-1 shrink-0 transition-colors",
+								"group flex items-center gap-1 rounded-xl border min-h-11 px-1.5 py-1 shrink-0 transition-all duration-150",
 								isActive
 									? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
 									: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
+								isDragging && "opacity-40 scale-95",
+								isDropTarget &&
+								"border-primary/50 bg-primary/5 dark:bg-primary/10",
 							)}
 						>
+							{/* 拖拽手柄 */}
+							<div
+								className="flex items-center justify-center w-4 h-4 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
+								aria-hidden="true"
+							>
+								<GripVertical className="w-3 h-3" />
+							</div>
+
 							<button
 								type="button"
 								role="tab"
 								aria-selected={isActive}
 								aria-label={dirty ? `${label}，未保存` : label}
 								onClick={() => setActiveDoc(docId)}
-								className="focus-ring min-h-9 pl-1 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left"
+								className="focus-ring min-h-9 pl-0.5 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left cursor-pointer"
 							>
 								<FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
 								<span
@@ -217,7 +283,7 @@ export default function DocumentTabs({
 							<button
 								type="button"
 								onClick={() => closeCurrentDoc(docId)}
-								className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors"
+								className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
 								aria-label={`关闭文档 ${label}`}
 								title="关闭文档"
 							>
@@ -232,7 +298,7 @@ export default function DocumentTabs({
 				<button
 					type="button"
 					onClick={onNewDoc}
-					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
 					aria-label="新建文档"
 					title="新建文档 (Cmd+N)"
 				>

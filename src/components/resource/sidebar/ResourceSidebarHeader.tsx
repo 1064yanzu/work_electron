@@ -9,7 +9,7 @@ import {
 	Square,
 } from "lucide-react";
 import type React from "react";
-import { PanelIconButton } from "../../layout/PanelIconButton";
+import { IconButton } from "../../ui/Button";
 
 interface ResourceSidebarHeaderProps {
 	currentResearch?: { status?: string } | null;
@@ -48,47 +48,60 @@ export function ResourceSidebarHeader({
 			<div className="flex items-center gap-1">
 				{currentResearch ? (
 					<div className="relative">
-						<PanelIconButton
+						<IconButton
 							onClick={onOpenResearch}
-							label="查看研究进度"
+							aria-label="查看研究进度"
+							title="查看研究进度"
+							variant="ghost"
+							size="sm"
 							className="text-primary hover:text-primary"
-							icon={<Sparkles className="w-4 h-4" />}
-						/>
+						>
+							<Sparkles className="w-4 h-4" />
+						</IconButton>
 						{currentResearch.status !== "completed" ? (
 							<span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
 						) : null}
 					</div>
 				) : null}
-				<PanelIconButton
+				<IconButton
 					onClick={onOpenFolderModal}
-					label="新建文件夹"
-					icon={<FolderPlus className="w-4 h-4" />}
-				/>
-				<PanelIconButton
+					aria-label="新建文件夹"
+					title="新建文件夹"
+					variant="ghost"
+					size="sm"
+				>
+					<FolderPlus className="w-4 h-4" />
+				</IconButton>
+				<IconButton
 					onClick={onToggleViewMode}
-					label={viewMode === "grid" ? "切换到列表视图" : "切换到平铺视图"}
-					icon={
-						viewMode === "grid" ? (
-							<List className="w-4 h-4" />
-						) : (
-							<Grid className="w-4 h-4" />
-						)
-					}
-				/>
-				<PanelIconButton
+					aria-label={viewMode === "grid" ? "切换到列表视图" : "切换到平铺视图"}
+					title={viewMode === "grid" ? "切换到列表视图" : "切换到平铺视图"}
+					variant="ghost"
+					size="sm"
+				>
+					{viewMode === "grid" ? (
+						<List className="w-4 h-4" />
+					) : (
+						<Grid className="w-4 h-4" />
+					)}
+				</IconButton>
+				<IconButton
 					onClick={onOpenSettings}
-					label="打开设置"
-					icon={<Settings className="w-4 h-4" />}
-				/>
+					aria-label="打开设置"
+					title="打开设置"
+					variant="ghost"
+					size="sm"
+				>
+					<Settings className="w-4 h-4" />
+				</IconButton>
 				<button
 					type="button"
 					onClick={onToggleSelectionMode}
 					aria-label={selectionMode ? "退出批量管理" : "进入批量管理"}
-					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring ${
-						selectionMode
+					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring cursor-pointer ${selectionMode
 							? "text-primary bg-primary/10"
 							: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-					}`}
+						}`}
 				>
 					{selectionMode ? (
 						<CheckSquare className="w-3.5 h-3.5" />

@@ -207,39 +207,6 @@
 	background-color: var(--panel-bg-strong);
 }
 
-.panel-icon-button {
-	height: 36px;
-	width: 36px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 10px;
-	color: rgb(113 113 122);
-	transition:
-		color 0.2s ease,
-		background-color 0.2s ease,
-		transform 0.2s ease;
-}
-
-.panel-icon-button:hover {
-	background-color: rgba(15, 23, 42, 0.07);
-	color: rgb(39 39 42);
-}
-
-.dark .panel-icon-button:hover {
-	background-color: rgba(255, 255, 255, 0.08);
-	color: rgb(228 228 231);
-}
-
-.panel-icon-button:active {
-	transform: scale(0.97);
-}
-
-.panel-icon-button:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 2px var(--interactive-ring);
-}
-
 /* ============================================
    高级交互工具类
    ============================================ */

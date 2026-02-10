@@ -6,7 +6,7 @@ import {
 	Plus,
 	Sparkles,
 } from "lucide-react";
-import { PanelIconButton } from "../layout/PanelIconButton";
+import { IconButton } from "../ui/Button";
 
 interface CopilotHeaderProps {
 	isAgentExecuting: boolean;
@@ -48,22 +48,34 @@ export function CopilotHeader({
 				</div>
 			</div>
 			<div className="flex items-center gap-1">
-				<PanelIconButton
+				<IconButton
 					onClick={onNewSession}
-					label="新建对话"
-					icon={<Plus className="w-4.5 h-4.5" />}
-				/>
-				<PanelIconButton
+					aria-label="新建对话"
+					title="新建对话"
+					variant="ghost"
+					size="sm"
+				>
+					<Plus className="w-4.5 h-4.5" />
+				</IconButton>
+				<IconButton
 					onClick={onOpenHistory}
-					label="查看对话历史"
-					icon={<History className="w-4.5 h-4.5" />}
-				/>
+					aria-label="查看对话历史"
+					title="查看对话历史"
+					variant="ghost"
+					size="sm"
+				>
+					<History className="w-4.5 h-4.5" />
+				</IconButton>
 				<div className="relative">
-					<PanelIconButton
+					<IconButton
 						onClick={onToggleMoreMenu}
-						label="更多操作"
-						icon={<MoreHorizontal className="w-4.5 h-4.5" />}
-					/>
+						aria-label="更多操作"
+						title="更多操作"
+						variant="ghost"
+						size="sm"
+					>
+						<MoreHorizontal className="w-4.5 h-4.5" />
+					</IconButton>
 					{isMoreMenuOpen ? (
 						<>
 							<div className="fixed inset-0 z-40" onClick={onCloseMoreMenu} />
@@ -71,7 +83,7 @@ export function CopilotHeader({
 								<button
 									type="button"
 									onClick={onOpenPromptLibrary}
-									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
 								>
 									<MessageSquare className="w-4 h-4" />
 									<span>提示词仓库</span>

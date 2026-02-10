@@ -78,308 +78,23 @@ import {
 import { WelcomeScreen } from "./chat/WelcomeScreen";
 import { toast } from "./ui/Toast";
 
-// AI 写作标记
-const WRITE_START_MARKER = "<<<WRITE>>>";
-const WRITE_END_MARKER = "<<<END>>>";
-
-// 解析 AI 响应中的写入内容
-function parseWriteContent(content: string): {
-	displayContent: string;
-	writeContent: string | null;
-} {
-	const startIdx = content.indexOf(WRITE_START_MARKER);
-	const endIdx = content.indexOf(WRITE_END_MARKER);
-
-	if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-		const writeContent = content
-			.slice(startIdx + WRITE_START_MARKER.length, endIdx)
-			.trim();
-		const displayContent =
-			content.slice(0, startIdx) +
-			content.slice(endIdx + WRITE_END_MARKER.length);
-		return { displayContent: displayContent.trim(), writeContent };
-	}
-
-	return { displayContent: content, writeContent: null };
-}
-
-function parseDocProtocolFinal(
-	full: string,
-	options: {
-		activeDocContent?: string;
-		hasActiveDoc?: boolean;
-		prompt: string;
-	},
-):
-	| { kind: "none"; displayContent: string }
-	| {
-			kind: "update";
-			displayContent: string;
-			suggestedContent: string;
-			fileUpdate: {
-				fileName: string;
-				type: "update";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				originalContent: string;
-				suggestedContent: string;
-				prompt: string;
-			};
-	  }
-	| {
-			kind: "create";
-			displayContent: string;
-			title: string;
-			summary: string;
-			content: string;
-			fileUpdate: {
-				fileName: string;
-				type: "create";
-				additions: number;
-				deletions: number;
-			};
-			eventPayload: {
-				title: string;
-				summary: string;
-				content: string;
-				prompt: string;
-			};
-	  } {
-	const extractProtocolSection = (
-		raw: string,
-		marker: ":::update-doc" | ":::create-doc",
-	): {
-		fullMatchText: string;
-		sectionText: string;
-	} | null => {
-		const startIdx = raw.indexOf(marker);
-		if (startIdx < 0) return null;
-		const after = raw.slice(startIdx + marker.length);
-		const endRel = after.indexOf(":::");
-		const endIdx =
-			endRel >= 0 ? startIdx + marker.length + endRel + 3 : raw.length;
-		const sectionText = (endRel >= 0 ? after.slice(0, endRel) : after).trim();
-		const fullMatchText = raw.slice(startIdx, endIdx);
-		return { fullMatchText, sectionText };
-	};
-
-	const updateSection = extractProtocolSection(full, ":::update-doc");
-	if (updateSection) {
-		const suggestedContent = updateSection.sectionText;
-		if (!options.hasActiveDoc) {
-			const docContent = suggestedContent;
-			const changes = diffLines("", docContent);
-			let additions = 0;
-			let deletions = 0;
-			changes.forEach((part) => {
-				if (part.added) additions += part.count || 0;
-				if (part.removed) deletions += part.count || 0;
-			});
-
-			const title = options.prompt?.trim()
-				? options.prompt.trim().slice(0, 80)
-				: "新文档";
-			const summary = docContent.replace(/\s+/g, " ").trim().slice(0, 120);
-
-			return {
-				kind: "create",
-				displayContent: full.replace(
-					updateSection.fullMatchText,
-					"\n<<<AI_CREATE_DONE>>>\n",
-				),
-				title,
-				summary,
-				content: docContent,
-				fileUpdate: {
-					fileName: title,
-					type: "create",
-					additions,
-					deletions,
-				},
-				eventPayload: {
-					title,
-					summary,
-					content: docContent,
-					prompt: options.prompt,
-				},
-			};
-		}
-		const originalContent = options.activeDocContent ?? "";
-		const changes = diffLines(originalContent, suggestedContent);
-		let additions = 0;
-		let deletions = 0;
-		changes.forEach((part) => {
-			if (part.added) additions += part.count || 0;
-			if (part.removed) deletions += part.count || 0;
-		});
-
-		return {
-			kind: "update",
-			displayContent: full.replace(
-				updateSection.fullMatchText,
-				"\n<<<AI_UPDATE_DONE>>>\n",
-			),
-			suggestedContent,
-			fileUpdate: {
-				fileName: "当前文档",
-				type: "update",
-				additions,
-				deletions,
-			},
-			eventPayload: {
-				originalContent,
-				suggestedContent,
-				prompt: options.prompt,
-			},
-		};
-	}
-
-	const createSection = extractProtocolSection(full, ":::create-doc");
-	if (createSection) {
-		const docContentBuffer = createSection.sectionText;
-		const lines = docContentBuffer.split("\n");
-		let title = "新文档";
-		let summary = "";
-		let docContent = docContentBuffer;
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i].trim();
-			if (line.startsWith("标题:") || line.startsWith("标题：")) {
-				title = line.replace(/^标题[:：]\s*/, "");
-			} else if (line.startsWith("摘要:") || line.startsWith("摘要：")) {
-				summary = line.replace(/^摘要[:：]\s*/, "");
-			} else if (line.startsWith("内容:") || line.startsWith("内容：")) {
-				docContent = lines
-					.slice(i + 1)
-					.join("\n")
-					.trim();
-				break;
-			}
-		}
-
-		const changes = diffLines("", docContent);
-		let additions = 0;
-		changes.forEach((part) => {
-			if (part.added) additions += part.count || 0;
-		});
-
-		return {
-			kind: "create",
-			displayContent: full.replace(
-				createSection.fullMatchText,
-				"\n<<<AI_CREATE_DONE>>>\n",
-			),
-			title,
-			summary,
-			content: docContent,
-			fileUpdate: {
-				fileName: title,
-				type: "create",
-				additions,
-				deletions: 0,
-			},
-			eventPayload: {
-				title,
-				summary: docContent, // Changed from summary to docContent as per the original code's logic for summary if not explicitly provided
-				content: docContent,
-				prompt: options.prompt,
-			},
-		};
-	}
-
-	return { kind: "none", displayContent: full };
-}
-
-function tokenizeForRecall(text: string): string[] {
-	return text
-		.toLowerCase()
-		.replace(/[\u200b\u200c\u200d\ufeff]/g, "")
-		.split(/[^\p{L}\p{N}]+/u)
-		.map((s) => s.trim())
-		.filter((s) => s.length >= 2)
-		.slice(0, 10);
-}
-
-function buildAgentConversationContext(
-	messages: ChatMessageType[],
-	currentQuery: string,
-	options?: { maxLines?: number; tailKeep?: number; headRelevant?: number },
-): string[] {
-	const maxLines = options?.maxLines ?? 12;
-	const tailKeep = options?.tailKeep ?? 8;
-	const headRelevant = options?.headRelevant ?? 4;
-
-	const filtered = messages
-		.filter(
-			(m) =>
-				(m.role === "user" || m.role === "assistant") &&
-				typeof m.content === "string" &&
-				m.content.trim().length > 0,
-		)
-		.map((m) => ({
-			id: m.id,
-			role: m.role,
-			content: m.content,
-			timestamp: m.timestamp || 0,
-		}));
-
-	if (filtered.length === 0) return [];
-
-	const tail = filtered.slice(-tailKeep);
-	const tokens = tokenizeForRecall(currentQuery);
-
-	const tailIds = new Set(tail.map((m) => m.id));
-	const scored = filtered
-		.filter((m) => !tailIds.has(m.id))
-		.map((m) => {
-			const text = m.content.toLowerCase();
-			const score = tokens.reduce(
-				(acc, t) => acc + (text.includes(t) ? 1 : 0),
-				0,
-			);
-			return { ...m, score };
-		})
-		.filter((m) => m.score > 0)
-		.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp)
-		.slice(0, headRelevant)
-		.sort((a, b) => a.timestamp - b.timestamp);
-
-	const picked = [...scored, ...tail]
-		.sort((a, b) => a.timestamp - b.timestamp)
-		.slice(-maxLines);
-	// 限制每条消息的长度，避免对话历史过长
-	return picked.map((m) => {
-		const truncated =
-			m.content.length > 500 ? m.content.slice(0, 500) + "..." : m.content;
-		return `${m.role === "user" ? "用户" : "AI"}: ${truncated}`;
-	});
-}
-
-function guessFallbackSearchQuery(messages: ChatMessageType[]): string | null {
-	const isGeneric = (t: string) => {
-		const s = t.trim();
-		if (!s) return true;
-		return (
-			s === "请你搜索" ||
-			s === "再次搜索" ||
-			s === "不对" ||
-			s === "不对，再次搜索" ||
-			s === "继续" ||
-			s === "再来一次" ||
-			s === "重试"
-		);
-	};
-
-	for (let i = messages.length - 1; i >= 0; i--) {
-		const m = messages[i];
-		if (m.role !== "user") continue;
-		const text = typeof m.content === "string" ? m.content : "";
-		if (!isGeneric(text)) return text.trim();
-	}
-	return null;
-}
+import {
+	WRITE_START_MARKER,
+	WRITE_END_MARKER,
+	parseWriteContent,
+	parseDocProtocolFinal,
+	buildAgentConversationContext,
+	guessFallbackSearchQuery,
+} from "../lib/chat/docProtocol";
+import {
+	stripDocProtocolSections,
+	stripAiFileUpdateMarkers,
+	normalizeRuntimeText,
+	getTaskImageArtifactPaths,
+	replaceDataImageMarkdownWithPaths,
+	sanitizeFileName,
+	ensureMdExt,
+} from "../lib/chat/streamHelpers";
 
 // 快捷操作按钮
 const chatActions = {
@@ -707,7 +422,7 @@ export default function CopilotSidebar() {
 				const anyCss = (window as any)?.CSS;
 				if (anyCss && typeof anyCss.escape === "function")
 					return anyCss.escape(value);
-			} catch {}
+			} catch { }
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -1082,64 +797,15 @@ export default function CopilotSidebar() {
 
 			const getStreamText = () => streamBuilder.getText();
 
-			const stripDocProtocolSections = (text: string) =>
-				String(text || "")
-					.replace(/:::update-doc[\s\S]*?:::/g, "")
-					.replace(/:::create-doc[\s\S]*?:::/g, "");
+			// stripDocProtocolSections → 已抽取到 streamHelpers.ts
 
-			const stripAiFileUpdateMarkers = (text: string) =>
-				String(text || "").replace(
-					/(<<<AI_UPDATE_PENDING>>>|<<<AI_CREATE_PENDING>>>|<<<AI_UPDATE_DONE>>>|<<<AI_CREATE_DONE>>>)/g,
-					"",
-				);
+			// stripAiFileUpdateMarkers → 已抽取到 streamHelpers.ts
 
-			const normalizeRuntimeText = (text: string) =>
-				stripAiFileUpdateMarkers(stripDocProtocolSections(text)).replace(
-					/\n{3,}/g,
-					"\n\n",
-				);
+			// normalizeRuntimeText → 已抽取到 streamHelpers.ts
 
-			const getTaskImageArtifactPaths = (): string[] => {
-				const task = agentStore.getState().currentTask;
-				const seen = new Set<string>();
-				const out: string[] = [];
-				for (const a of task?.artifacts || []) {
-					if (a.type !== "image" || typeof a.url !== "string") continue;
-					const p = String(a.url || "").trim();
-					if (
-						!p ||
-						p.startsWith("data:image/") ||
-						p.startsWith("http://") ||
-						p.startsWith("https://") ||
-						seen.has(p)
-					) {
-						continue;
-					}
-					seen.add(p);
-					out.push(p);
-				}
-				return out;
-			};
+			// getTaskImageArtifactPaths → 已抽取到 streamHelpers.ts
 
-			const replaceDataImageMarkdownWithPaths = (
-				text: string,
-				imagePaths: string[],
-			): string => {
-				const paths = imagePaths.filter(
-					(p) => typeof p === "string" && p.trim(),
-				);
-				if (paths.length === 0) return text;
-				let idx = 0;
-				return String(text || "").replace(
-					/!\[([^\]]*)\]\(data:image\/[a-z0-9.+-]+;base64,[^)]+\)/gi,
-					(_m, alt: string) => {
-						const path =
-							paths[Math.min(idx, paths.length - 1)] || paths[0] || "";
-						idx += 1;
-						return `![${String(alt || "image")}](${path})`;
-					},
-				);
-			};
+			// replaceDataImageMarkdownWithPaths → 已抽取到 streamHelpers.ts
 
 			const buildSkillBlocks = () => {
 				const blocks: ChatMessageBlock[] = streamBuilder.getBlocks();
@@ -1178,7 +844,7 @@ export default function CopilotSidebar() {
 				finalText: string,
 				protocol: ReturnType<typeof parseDocProtocolFinal>,
 			): ChatMessageBlock[] => {
-				const taskImagePaths = getTaskImageArtifactPaths();
+				const taskImagePaths = getTaskImageArtifactPaths(agentStore.getState().currentTask?.artifacts);
 				const blocks: ChatMessageBlock[] = streamBuilder
 					.getBlocks()
 					.map((b) => {
@@ -1390,10 +1056,10 @@ export default function CopilotSidebar() {
 						forcedFinalState.currentTask?.metadata as any
 					)?.tokenUsage as
 						| {
-								promptTokens: number;
-								completionTokens: number;
-								totalTokens: number;
-						  }
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+						}
 						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
@@ -1403,7 +1069,7 @@ export default function CopilotSidebar() {
 					});
 					const result = replaceDataImageMarkdownWithPaths(
 						normalizeRuntimeText(protocol.displayContent),
-						getTaskImageArtifactPaths(),
+						getTaskImageArtifactPaths(agentStore.getState().currentTask?.artifacts),
 					);
 
 					if (streamingMsgId) {
@@ -1436,7 +1102,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch {}
+					} catch { }
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1524,30 +1190,7 @@ export default function CopilotSidebar() {
 					console.error("[CopilotSidebar] 获取沙盒目录失败:", e);
 				}
 
-				// Include both ASCII and full-width Chinese punctuation that may cause SDK tool issues
-				const ILLEGAL_FILENAME_CHARS_RE =
-					/[<>:"/\\|?*\u0000-\u001F？！""''“”‘’：；【】（）《》、，。]/g;
-				const sanitizeFileName = (name: string): string => {
-					const base = String(name || "document")
-						.normalize("NFC")
-						.trim();
-					const normalized = base.replace(ILLEGAL_FILENAME_CHARS_RE, "_");
-					const collapsed = normalized.replace(/\s+/g, " ").trim();
-					// Collapse multiple underscores into one
-					const cleanUnderscores = collapsed.replace(/_+/g, "_");
-					const withoutTrailingDotsOrSpaces = cleanUnderscores
-						.replace(/[. _]+$/g, "")
-						.trim();
-					const safe =
-						withoutTrailingDotsOrSpaces === "." ||
-						withoutTrailingDotsOrSpaces === ".."
-							? "document"
-							: withoutTrailingDotsOrSpaces;
-					return safe.length > 0 ? safe.slice(0, 180) : "document";
-				};
-
-				const ensureMdExt = (name: string) =>
-					name.toLowerCase().endsWith(".md") ? name : `${name}.md`;
+				// sanitizeFileName / ensureMdExt / ILLEGAL_FILENAME_CHARS_RE → 已抽取到 streamHelpers.ts
 
 				const resolvedContexts = await Promise.all(
 					contexts.map(async (ctx) => {
@@ -1879,10 +1522,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-					  }
+						promptTokens: number;
+						completionTokens: number;
+						totalTokens: number;
+					}
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1915,7 +1558,7 @@ export default function CopilotSidebar() {
 				});
 				const result = replaceDataImageMarkdownWithPaths(
 					normalizeRuntimeText(protocol.displayContent),
-					getTaskImageArtifactPaths(),
+					getTaskImageArtifactPaths(agentStore.getState().currentTask?.artifacts),
 				);
 
 				// Agent 模式下我们总是走“流式消息”，但这会导致 create-doc / update-doc 协议没有被执行。
@@ -1978,16 +1621,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -2043,8 +1686,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -2116,8 +1759,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -2146,9 +1789,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2810,7 +2453,8 @@ export default function CopilotSidebar() {
 										onClick={() =>
 											workspaceStore.setLeftSidebarView("research")
 										}
-										className="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
+										aria-label="查看研究进度"
+										className="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
 									>
 										查看进度
 									</button>
@@ -2902,7 +2546,8 @@ export default function CopilotSidebar() {
 								}
 								chatStore.setStatus("idle");
 							}}
-							className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-sm font-medium"
+							aria-label="停止响应"
+							className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-sm font-medium cursor-pointer"
 						>
 							<StopCircle className="w-4 h-4" />
 							停止响应
@@ -2949,8 +2594,9 @@ export default function CopilotSidebar() {
 								<button
 									type="button"
 									onClick={() => removeCreateProposal(activeCreateProposal.id)}
-									className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-all"
+									className="h-10 w-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-all cursor-pointer"
 									title="忽略"
+									aria-label="忽略建议"
 								>
 									<X className="w-3.5 h-3.5" />
 								</button>
@@ -2977,11 +2623,10 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
-											}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
+												? "bg-zinc-50 dark:bg-zinc-800/40"
+												: ""
+												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -3001,7 +2646,8 @@ export default function CopilotSidebar() {
 									<button
 										type="button"
 										onClick={() => setIsProposalMenuOpen(false)}
-										className="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+										aria-label="关闭文档列表"
+										className="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer"
 									>
 										关闭
 									</button>
@@ -3018,11 +2664,10 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-							}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+								}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
 							对话
@@ -3032,11 +2677,10 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "agent"
-									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-							}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
+								? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+								}`}
 						>
 							<Bot className="w-3.5 h-3.5" />
 							托管

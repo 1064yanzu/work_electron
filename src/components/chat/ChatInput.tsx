@@ -545,8 +545,8 @@ export function ChatInput({
 														: "file",
 											status:
 												ctx.content &&
-												ctx.content.trim().length > 0 &&
-												!ctx.filePath
+													ctx.content.trim().length > 0 &&
+													!ctx.filePath
 													? "preparing"
 													: "ready",
 										}}
@@ -587,7 +587,8 @@ export function ChatInput({
 					<div className="flex items-center gap-1.5">
 						<button
 							onClick={() => setValue("/")}
-							className="p-2 text-zinc-300 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
+							aria-label="命令菜单"
+							className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-300 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors cursor-pointer"
 							title="命令菜单 (/)"
 						>
 							<AtSign className="w-4 h-4" />
@@ -609,11 +610,10 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${
-									isModelSelectorOpen
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${isModelSelectorOpen
 										? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
 										: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
-								}`}
+									}`}
 							>
 								<span className="font-medium truncate max-w-[100px]">
 									{model ? model.split("/").pop()?.slice(0, 12) : "Auto"}
@@ -627,7 +627,8 @@ export function ChatInput({
 					<button
 						onClick={handleSubmit}
 						disabled={disabled || (!value.trim() && selectedChips.length === 0)}
-						className="flex items-center justify-center w-8 h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-100 dark:disabled:bg-zinc-800 disabled:text-zinc-300 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white dark:text-zinc-900 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+						aria-label="发送消息"
+						className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-100 dark:disabled:bg-zinc-800 disabled:text-zinc-300 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white dark:text-zinc-900 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
 					>
 						<Send className="w-3.5 h-3.5 ml-0.5" />
 					</button>

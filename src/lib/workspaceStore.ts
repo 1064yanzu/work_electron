@@ -41,12 +41,12 @@ export interface ResearchTask {
 	id: string;
 	query: string;
 	status:
-		| "idle"
-		| "searching"
-		| "fetching"
-		| "analyzing"
-		| "completed"
-		| "error";
+	| "idle"
+	| "searching"
+	| "fetching"
+	| "analyzing"
+	| "completed"
+	| "error";
 	steps: ResearchStep[];
 	sources: ResearchSource[];
 	summary?: string;
@@ -105,12 +105,12 @@ interface WorkspaceState {
 	activeMainView: "editor" | "browser";
 	// 左边栏视图模式
 	leftSidebarView:
-		| "sources"
-		| "research"
-		| "detail"
-		| "agent"
-		| "cards"
-		| "websearch";
+	| "sources"
+	| "research"
+	| "detail"
+	| "agent"
+	| "cards"
+	| "websearch";
 	// 当前研究任务
 	currentResearch: ResearchTask | null;
 	// 历史研究任务
@@ -229,11 +229,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-								...c,
-								filePath: result.path,
-								size: result.size,
-								mimeType: "text/plain",
-							}
+							...c,
+							filePath: result.path,
+							size: result.size,
+							mimeType: "text/plain",
+						}
 						: c,
 				),
 			}));
@@ -693,6 +693,25 @@ class WorkspaceStore {
 		});
 	}
 
+	// 重排文档标签顺序（拖拽排序）
+	reorderDocs(fromIndex: number, toIndex: number) {
+		this.setState((state) => {
+			if (
+				fromIndex < 0 ||
+				fromIndex >= state.openedDocs.length ||
+				toIndex < 0 ||
+				toIndex >= state.openedDocs.length ||
+				fromIndex === toIndex
+			) {
+				return state;
+			}
+			const newDocs = [...state.openedDocs];
+			const [moved] = newDocs.splice(fromIndex, 1);
+			newDocs.splice(toIndex, 0, moved);
+			return { ...state, openedDocs: newDocs };
+		});
+	}
+
 	// 切换激活文档
 	setActiveDoc(docId: string) {
 		this.setState((state) => ({
@@ -1052,6 +1071,7 @@ export function useWorkspaceStore() {
 		openDoc: workspaceStore.openDoc.bind(workspaceStore),
 		closeDoc: workspaceStore.closeDoc.bind(workspaceStore),
 		setActiveDoc: workspaceStore.setActiveDoc.bind(workspaceStore),
+		reorderDocs: workspaceStore.reorderDocs.bind(workspaceStore),
 		updateDocCache: workspaceStore.updateDocCache.bind(workspaceStore),
 		markDocSaved: workspaceStore.markDocSaved.bind(workspaceStore),
 		saveDocSnapshot: workspaceStore.saveDocSnapshot.bind(workspaceStore),

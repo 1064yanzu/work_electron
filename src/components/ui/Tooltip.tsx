@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useRef, useEffect } from "react";
+import { type ReactNode, useState, useRef, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/utils";
 
@@ -8,11 +8,12 @@ interface TooltipProps {
     /** 延迟显示毫秒数 */
     delay?: number;
     /** 位置偏好 */
-    placement?: "top" | "bottom";
+    placement?: "top" | "bottom" | "left" | "right";
 }
 
 /**
  * 简易 Tooltip 组件，鼠标悬浮显示文字说明
+ * 支持 top / bottom / left / right 四个方向
  */
 export function Tooltip({
     children,
@@ -24,13 +25,34 @@ export function Tooltip({
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const triggerRef = useRef<HTMLDivElement>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+    const tooltipId = useId();
 
     const showTooltip = () => {
         timeoutRef.current = setTimeout(() => {
             if (triggerRef.current) {
                 const rect = triggerRef.current.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = placement === "bottom" ? rect.bottom + 6 : rect.top - 6;
+                let x: number;
+                let y: number;
+
+                switch (placement) {
+                    case "top":
+                        x = rect.left + rect.width / 2;
+                        y = rect.top - 6;
+                        break;
+                    case "bottom":
+                        x = rect.left + rect.width / 2;
+                        y = rect.bottom + 6;
+                        break;
+                    case "left":
+                        x = rect.left - 6;
+                        y = rect.top + rect.height / 2;
+                        break;
+                    case "right":
+                        x = rect.right + 6;
+                        y = rect.top + rect.height / 2;
+                        break;
+                }
+
                 setPosition({ x, y });
                 setVisible(true);
             }
@@ -48,6 +70,19 @@ export function Tooltip({
         };
     }, []);
 
+    const getTransform = () => {
+        switch (placement) {
+            case "top":
+                return "translateX(-50%) translateY(-100%)";
+            case "bottom":
+                return "translateX(-50%)";
+            case "left":
+                return "translateX(-100%) translateY(-50%)";
+            case "right":
+                return "translateY(-50%)";
+        }
+    };
+
     return (
         <>
             <div
@@ -57,12 +92,14 @@ export function Tooltip({
                 onFocus={showTooltip}
                 onBlur={hideTooltip}
                 className="inline-flex"
+                aria-describedby={visible ? tooltipId : undefined}
             >
                 {children}
             </div>
             {visible &&
                 createPortal(
                     <div
+                        id={tooltipId}
                         role="tooltip"
                         className={cn(
                             "fixed z-[9999] px-2.5 py-1.5 text-xs font-medium rounded-lg",
@@ -73,10 +110,7 @@ export function Tooltip({
                         style={{
                             left: position.x,
                             top: position.y,
-                            transform:
-                                placement === "bottom"
-                                    ? "translateX(-50%)"
-                                    : "translateX(-50%) translateY(-100%)",
+                            transform: getTransform(),
                         }}
                     >
                         {content}
