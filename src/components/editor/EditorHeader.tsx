@@ -14,16 +14,16 @@ import {
 	Link,
 	List,
 	Loader2,
-	MoreHorizontal,
 	Quote,
 	Save,
 	Sparkles,
 	Trash2,
 	ZoomIn,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import type { EditorDensity } from "./useEditorUiPrefs";
+import { Tooltip } from "../ui/Tooltip";
 
 interface EditorHeaderProps {
 	editorMode: "edit" | "preview" | "split";
@@ -55,22 +55,23 @@ interface IconBtnProps {
 
 function IconBtn({ label, onClick, icon, active, disabled }: IconBtnProps) {
 	return (
-		<button
-			type="button"
-			onClick={onClick}
-			disabled={disabled}
-			aria-label={label}
-			title={label}
-			className={cn(
-				"focus-ring h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg transition-colors",
-				active
-					? "bg-primary/12 dark:bg-primary/20 text-primary"
-					: "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-				disabled && "opacity-50 cursor-not-allowed",
-			)}
-		>
-			{icon}
-		</button>
+		<Tooltip content={label}>
+			<button
+				type="button"
+				onClick={onClick}
+				disabled={disabled}
+				aria-label={label}
+				className={cn(
+					"focus-ring h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg transition-colors",
+					active
+						? "bg-primary/12 dark:bg-primary/20 text-primary"
+						: "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+					disabled && "opacity-50 cursor-not-allowed",
+				)}
+			>
+				{icon}
+			</button>
+		</Tooltip>
 	);
 }
 
@@ -93,7 +94,7 @@ export function EditorHeader({
 	density,
 	onToggleDensity,
 }: EditorHeaderProps) {
-	const [showMoreMenu, setShowMoreMenu] = useState(false);
+
 	const saveLabel = isSaving
 		? "保存中…"
 		: hasUnsavedChanges
@@ -244,46 +245,18 @@ export function EditorHeader({
 					icon={<Copy className="w-4 h-4" />}
 					disabled={!selectedOutput}
 				/>
-
-				<div className="relative">
-					<IconBtn
-						label="更多操作"
-						onClick={() => setShowMoreMenu((v) => !v)}
-						icon={<MoreHorizontal className="w-4 h-4" />}
-					/>
-					{showMoreMenu ? (
-						<>
-							<div
-								className="fixed inset-0 z-40"
-								onClick={() => setShowMoreMenu(false)}
-							/>
-							<div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl z-50 p-1.5">
-								<button
-									type="button"
-									onClick={() => {
-										onExport();
-										setShowMoreMenu(false);
-									}}
-									className="focus-ring min-h-11 w-full px-3 rounded-xl text-left text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 inline-flex items-center gap-2 transition-colors"
-								>
-									<Download className="w-4 h-4" />
-									导出 Markdown
-								</button>
-								<button
-									type="button"
-									onClick={() => {
-										onDelete();
-										setShowMoreMenu(false);
-									}}
-									className="focus-ring min-h-11 w-full px-3 rounded-xl text-left text-sm text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 inline-flex items-center gap-2 transition-colors"
-								>
-									<Trash2 className="w-4 h-4" />
-									删除文档
-								</button>
-							</div>
-						</>
-					) : null}
-				</div>
+				<IconBtn
+					label="导出 Markdown"
+					onClick={onExport}
+					icon={<Download className="w-4 h-4" />}
+					disabled={!selectedOutput}
+				/>
+				<IconBtn
+					label="删除文档"
+					onClick={onDelete}
+					icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+					disabled={!selectedOutput}
+				/>
 			</div>
 		</header>
 	);
