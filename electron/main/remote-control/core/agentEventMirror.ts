@@ -9,6 +9,18 @@ type StreamBuffer = {
 	lastFlushAt: number;
 };
 
+type OutboundFingerprint = {
+	fingerprint: string;
+	timestamp: number;
+};
+
+function normalizeOutboundText(text: string): string {
+	return String(text || "")
+		.replace(/\r\n/g, "\n")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 export type AgentEventMirrorDeps = {
 	sessionStore: RemoteSessionStore;
 	router: RemoteCommandRouter;
@@ -17,6 +29,7 @@ export type AgentEventMirrorDeps = {
 
 export class AgentEventMirror {
 	private readonly streamBufferByRun = new Map<string, StreamBuffer>();
+	private readonly lastOutboundByRun = new Map<string, OutboundFingerprint>();
 
 	constructor(private readonly deps: AgentEventMirrorDeps) { }
 
@@ -57,6 +70,17 @@ export class AgentEventMirror {
 	private async sendRunMessage(runId: string, text: string): Promise<void> {
 		const session = this.deps.sessionStore.getByRunId(runId);
 		if (!session || !text.trim()) return;
+		const normalized = normalizeOutboundText(text);
+		if (!normalized) return;
+		const prev = this.lastOutboundByRun.get(runId);
+		const now = nowTs();
+		if (prev && prev.fingerprint === normalized && now - prev.timestamp < 20_000) {
+			return;
+		}
+		this.lastOutboundByRun.set(runId, {
+			fingerprint: normalized,
+			timestamp: now,
+		});
 		await this.deps.sendToChannel({
 			channel_id: session.channel_id,
 			target_id: session.target_id,
@@ -198,17 +222,7 @@ export class AgentEventMirror {
 					? ((event.result as Record<string, unknown>).result as string)
 					: "";
 
-			// 优化:避免重复发送
-			// 如果有result,只发送result(不带[done]标记)
-			// 如果没有result但有buffer,发送buffer内容
 			if (resultText.trim()) {
-				// 如果tail和resultText内容重复,只发送一次
-				const isSameContent = tail.trim() === resultText.trim();
-				if (!isSameContent && tail) {
-					// buffer内容与result不同,先发送buffer
-					await this.sendRunMessage(runId, tail);
-				}
-				// 发送最终结果,不带[done]标记
 				await this.sendRunMessage(
 					runId,
 					clampString(resultText, 2000),
@@ -220,6 +234,7 @@ export class AgentEventMirror {
 
 			this.deps.sessionStore.updateStateByRun(runId, "completed");
 			this.deps.sessionStore.removeByRunId(runId);
+			this.lastOutboundByRun.delete(runId);
 			return;
 		}
 
@@ -232,6 +247,7 @@ export class AgentEventMirror {
 			await this.sendRunMessage(runId, `\n[error] ${errorText}`);
 			this.deps.sessionStore.updateStateByRun(runId, "error", errorText);
 			this.deps.sessionStore.removeByRunId(runId);
+			this.lastOutboundByRun.delete(runId);
 		}
 	}
 }

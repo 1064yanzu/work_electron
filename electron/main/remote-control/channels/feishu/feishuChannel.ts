@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import fsp from "node:fs/promises";
 import * as Lark from "@larksuiteoapi/node-sdk";
 import type { Logger } from "../../../logging/types";
 import type {
@@ -87,6 +89,11 @@ type FeishuCardActionAck = {
 const RECONNECT_DELAY_MS = 5_000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const ATTACHMENT_MESSAGE_TYPES = new Set(["file", "image", "media", "audio"]);
+const IMAGE_FILE_EXT_REGEX = /\.(?:png|jpe?g|webp|gif|bmp|tiff?|ico)$/i;
+const FILE_URL_REGEX = /file:\/\/[^\s)>\]}]+/gi;
+const ABS_PATH_IMAGE_REGEX =
+	/(?:\/Users\/[^\s)>\]}]+|\/home\/[^\s)>\]}]+|\/Volumes\/[^\s)>\]}]+)\.(?:png|jpe?g|webp|gif|bmp|tiff?|ico)/gi;
+const MARKDOWN_LINK_REGEX = /\[([^\]]*)\]\(([^)]+)\)/g;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	if (!value || typeof value !== "object") return null;
@@ -154,6 +161,29 @@ function buildCardSendFallbackText(cardJson: string): string {
 	return "收到交互审批请求，但卡片发送失败，已降级到文本模式。请发送 /sessions 或 /status 继续操作。";
 }
 
+function normalizeOutboundTextForDedupe(text: string): string {
+	return String(text || "")
+		.replace(/\r\n/g, "\n")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function isLikelyImagePath(pathLike: string): boolean {
+	return IMAGE_FILE_EXT_REGEX.test(pathLike.trim());
+}
+
+function normalizeFileUrlToPath(input: string): string {
+	const value = String(input || "").trim();
+	if (!value) return "";
+	if (!value.toLowerCase().startsWith("file://")) return value;
+	try {
+		const url = new URL(value);
+		return decodeURIComponent(url.pathname || "");
+	} catch {
+		return value.replace(/^file:\/\//i, "");
+	}
+}
+
 export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	readonly id = "feishu" as const;
 	private ctx: RemoteChannelContext | null = null;
@@ -162,6 +192,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	private botOpenId: string | undefined;
 	private readonly dedupe = new Map<string, number>();
 	private readonly textCommandDedupe = new Map<string, number>();
+	private readonly outboundTextDedupe = new Map<string, number>();
 	private readonly outboundLimiter = new FeishuOutboundRateLimiter(4);
 	private readonly inboundMergeBuffer = new FeishuInboundMergeBuffer();
 	private readonly shareContextBuffer = new FeishuShareContextBuffer();
@@ -216,6 +247,66 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				this.docLinkMergeBuffer.delete(key);
 			}
 		}
+	}
+
+	private touchOutboundTextDedupe(targetId: string, text: string): boolean {
+		const now = Date.now();
+		for (const [key, ts] of this.outboundTextDedupe.entries()) {
+			if (now - ts > 15_000) {
+				this.outboundTextDedupe.delete(key);
+			}
+		}
+		const normalized = normalizeOutboundTextForDedupe(text);
+		if (!normalized) return false;
+		const fingerprint = `${targetId}::${normalized}`;
+		const lastAt = this.outboundTextDedupe.get(fingerprint);
+		this.outboundTextDedupe.set(fingerprint, now);
+		if (!lastAt) return true;
+		return now - lastAt > 8_000;
+	}
+
+	private extractLocalImagePathsFromText(text: string): {
+		imagePaths: string[];
+		cleanedText: string;
+	} {
+		const found = new Set<string>();
+		let cleaned = String(text || "");
+
+		cleaned = cleaned.replace(
+			MARKDOWN_LINK_REGEX,
+			(match: string, label: string, href: string) => {
+				const normalizedHref = normalizeFileUrlToPath(href);
+				if (isLikelyImagePath(normalizedHref)) {
+					found.add(normalizedHref);
+					return label?.trim() ? `[${label}]` : "";
+				}
+				return match;
+			},
+		);
+
+		cleaned = cleaned.replace(FILE_URL_REGEX, (match: string) => {
+			const normalized = normalizeFileUrlToPath(match);
+			if (isLikelyImagePath(normalized)) {
+				found.add(normalized);
+				return "";
+			}
+			return match;
+		});
+
+		cleaned = cleaned.replace(ABS_PATH_IMAGE_REGEX, (match: string) => {
+			if (isLikelyImagePath(match)) {
+				found.add(match);
+				return "";
+			}
+			return match;
+		});
+
+		cleaned = cleaned.replace(/[ \t]+\n/g, "\n");
+		cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
+		return {
+			imagePaths: Array.from(found),
+			cleanedText: cleaned,
+		};
 	}
 
 	// ─── 客户端构建 ──────────────────────────────────────
@@ -823,6 +914,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.shareContextBuffer.clear();
 		this.docLinkMergeBuffer.clear();
 		this.textCommandDedupe.clear();
+		this.outboundTextDedupe.clear();
 		this.ctx = null;
 	}
 
@@ -830,7 +922,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 
 	private async sendRawMessage(
 		message: RemoteOutboundMessage,
-		msgType: "text" | "interactive",
+		msgType: "text" | "interactive" | "image",
 		content: string,
 	): Promise<void> {
 		if (!this.client) {
@@ -877,6 +969,88 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		await this.sendRawMessage(message, "text", JSON.stringify({ text: message.text }));
 	}
 
+	private async sendImageByKey(
+		message: RemoteOutboundMessage,
+		imageKey: string,
+	): Promise<void> {
+		await this.sendRawMessage(
+			message,
+			"image",
+			JSON.stringify({ image_key: imageKey }),
+		);
+	}
+
+	private async uploadImageAsMessageImage(imagePath: string): Promise<string> {
+		if (!this.client) {
+			throw new Error("Feishu channel not initialized");
+		}
+		const normalized = String(imagePath || "").trim();
+		if (!normalized) {
+			throw new Error("image path is empty");
+		}
+		const stat = await fsp.stat(normalized);
+		if (!stat.isFile()) {
+			throw new Error(`not a file: ${normalized}`);
+		}
+		const uploadResp = await this.client.im.image.create({
+			data: {
+				image_type: "message",
+				image: fs.createReadStream(normalized),
+			},
+		});
+		const imageKey = toStringOrEmpty(
+			(uploadResp as { image_key?: string } | null)?.image_key ??
+				(uploadResp as { data?: { image_key?: string } } | null)?.data
+					?.image_key,
+		);
+		if (!imageKey) {
+			throw new Error("upload image success but image_key is empty");
+		}
+		return imageKey;
+	}
+
+	private async sendTextAndLocalImages(
+		message: RemoteOutboundMessage,
+		text: string,
+		imagePaths: string[],
+	): Promise<void> {
+		const sentImagePaths: string[] = [];
+		let firstReplyMessageId = message.reply_to_message_id;
+
+		if (text.trim()) {
+			await this.sendText({ ...message, text });
+			firstReplyMessageId = undefined;
+		}
+
+		for (const imagePath of imagePaths) {
+			try {
+				const imageKey = await this.uploadImageAsMessageImage(imagePath);
+				await this.sendImageByKey(
+					{
+						...message,
+						reply_to_message_id: firstReplyMessageId,
+					},
+					imageKey,
+				);
+				firstReplyMessageId = undefined;
+				sentImagePaths.push(imagePath);
+			} catch (error) {
+				this.logger.warn({
+					msg: "feishu send local image failed",
+					imagePath,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+
+		if (imagePaths.length > 0 && sentImagePaths.length === 0 && !text.trim()) {
+			await this.sendText({
+				...message,
+				text: "图片发送失败：请检查 im:resource 权限、图片大小与格式。",
+			});
+		}
+	}
+
 	private async sendCard(message: RemoteOutboundMessage): Promise<void> {
 		await this.sendRawMessage(message, "interactive", message.text);
 	}
@@ -904,7 +1078,27 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				await this.sendText({ ...message, text: fallbackText, use_card: false });
 			}
 		} else {
-			await this.sendText(message);
+			const { imagePaths, cleanedText } = this.extractLocalImagePathsFromText(
+				message.text,
+			);
+			const outboundText =
+				imagePaths.length > 0 && !cleanedText.trim()
+					? "图片结果如下："
+					: cleanedText;
+
+			if (imagePaths.length > 0) {
+				await this.sendTextAndLocalImages(message, outboundText, imagePaths);
+			} else if (outboundText.trim()) {
+				if (this.touchOutboundTextDedupe(message.target_id, outboundText)) {
+					await this.sendText({ ...message, text: outboundText });
+				} else {
+					this.logger.info({
+						msg: "feishu duplicate outbound text skipped",
+						targetId: message.target_id,
+						textPreview: outboundText.slice(0, 100),
+					});
+				}
+			}
 		}
 
 		this.ctx?.onStatusPatch({
