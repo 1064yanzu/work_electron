@@ -17,6 +17,9 @@ export class RemoteSessionStore {
 		target_id: string;
 		prompt_preview: string;
 		run_id?: string;
+		agent_session_id?: string;
+		task_id?: string;
+		sandbox_dir?: string;
 	}): RemoteSession {
 		const ts = nowTs();
 		const session: RemoteSession = {
@@ -26,6 +29,9 @@ export class RemoteSessionStore {
 			peer_name: input.peer_name,
 			target_id: input.target_id,
 			run_id: input.run_id,
+			agent_session_id: input.agent_session_id,
+			task_id: input.task_id,
+			sandbox_dir: input.sandbox_dir,
 			prompt_preview: input.prompt_preview,
 			state: "running",
 			last_message_at: ts,

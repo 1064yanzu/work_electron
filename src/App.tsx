@@ -33,6 +33,7 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "./lib/workspaceStore";
+import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
@@ -56,6 +57,8 @@ function PanelLoadingFallback() {
 }
 
 export default function App() {
+	useRemoteChatBridge();
+
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");

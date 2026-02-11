@@ -28,6 +28,7 @@ import { RemoteSessionStore } from "../store/sessionStore";
 import { PairingService } from "./pairingService";
 import { SlidingWindowRateLimiter } from "./rateLimiter";
 import { nowTs } from "./utils";
+import { RemoteChatHistoryService } from "./remoteChatHistoryService";
 
 const DEFAULT_MODEL = "gpt-4o";
 const MAX_EVENT_LOGS = 200;
@@ -52,6 +53,7 @@ export class RemoteControlOrchestrator {
 		RemoteChannelRuntimeStatus
 	>();
 	private readonly eventMirror: AgentEventMirror;
+	private readonly remoteChatHistory: RemoteChatHistoryService;
 	private readonly eventLogs: RemoteEventLog[] = [];
 	private config: RemoteControlConfig | null = null;
 	private startedAt: number | null = null;
@@ -68,6 +70,7 @@ export class RemoteControlOrchestrator {
 		this.configStore = new RemoteControlConfigStore(db);
 		this.pairingStore = new RemotePairingStore(db);
 		this.pairingService = new PairingService(this.pairingStore);
+		this.remoteChatHistory = new RemoteChatHistoryService(db, logger);
 
 		this.channels.set("feishu", new FeishuChannelPlugin(logger));
 		this.channels.set("telegram", new TelegramChannelPlugin(logger));
@@ -96,6 +99,7 @@ export class RemoteControlOrchestrator {
 			getRuntimeStatus: () => this.getRuntimeStatus(),
 			getActiveModel: () => this.getActiveModel(),
 			getMainWindow: () => this.mainWindow,
+			remoteChatHistory: this.remoteChatHistory,
 			sendMessage: async (message) => {
 				await this.sendToChannel(message);
 			},
@@ -300,15 +304,32 @@ export class RemoteControlOrchestrator {
 	}
 
 	private async handleAgentEvent(event: AgentSdkBusEvent): Promise<void> {
-		try {
-			await this.eventMirror.handle(event);
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
+		const results = await Promise.allSettled([
+			this.eventMirror.handle(event),
+			this.remoteChatHistory.handleAgentEvent(event),
+		]);
+		const [mirrorResult, historyResult] = results;
+		if (mirrorResult.status === "rejected") {
+			const message =
+				mirrorResult.reason instanceof Error
+					? mirrorResult.reason.message
+					: String(mirrorResult.reason);
 			this.logger.error({
 				msg: "remote agent event mirror failed",
 				error: message,
 			});
 			this.appendEventLog("error", "agent-event", `事件镜像失败: ${message}`);
+		}
+		if (historyResult.status === "rejected") {
+			const message =
+				historyResult.reason instanceof Error
+					? historyResult.reason.message
+					: String(historyResult.reason);
+			this.logger.error({
+				msg: "remote chat history persist failed",
+				error: message,
+			});
+			this.appendEventLog("error", "agent-history", `历史落库失败: ${message}`);
 		}
 	}
 

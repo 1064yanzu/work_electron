@@ -203,6 +203,55 @@ function isInvalidArgumentError(bodyText: string): boolean {
 	);
 }
 
+function getProviderTemplateId(provider: ProviderConfig): string {
+	const fromTemplateId =
+		typeof provider.template_id === "string" ? provider.template_id.trim() : "";
+	if (fromTemplateId) return fromTemplateId.toLowerCase();
+	const fromMetadata =
+		provider.metadata &&
+		typeof provider.metadata === "object" &&
+		typeof (provider.metadata as { templateId?: unknown }).templateId === "string"
+			? String((provider.metadata as { templateId?: unknown }).templateId).trim()
+			: "";
+	return fromMetadata.toLowerCase();
+}
+
+function isGeminiOpenAICompatibleProvider(provider: ProviderConfig): boolean {
+	if (getProviderTemplateId(provider) === "gemini") return true;
+	const base = String(provider.api_base || "").toLowerCase();
+	return (
+		base.includes("generativelanguage.googleapis.com") ||
+		base.includes("/v1beta/openai")
+	);
+}
+
+function hasPriorToolHistory(messages: OpenAIChatMessage[]): boolean {
+	return messages.some((message) => {
+		if (!message || typeof message !== "object") return false;
+		if (message.role === "tool") return true;
+		if (message.role !== "assistant") return false;
+		const toolCalls = (message as { tool_calls?: unknown[] }).tool_calls;
+		if (!Array.isArray(toolCalls)) return false;
+		return toolCalls.length > 0;
+	});
+}
+
+function normalizeMessagesForProvider(
+	provider: ProviderConfig,
+	messages: OpenAIChatMessage[],
+	logger?: Logger,
+): OpenAIChatMessage[] {
+	if (!isGeminiOpenAICompatibleProvider(provider)) return messages;
+	if (!hasPriorToolHistory(messages)) return messages;
+	const flattened = flattenToolHistoryForOpenAICompatible(messages);
+	logger?.info({
+		msg: "anthropic proxy: pre-flattening tool history for gemini-compatible provider",
+		originalMessages: messages.length,
+		flattenedMessages: flattened.length,
+	});
+	return flattened;
+}
+
 function computeStringOverlap(prev: string, incoming: string): number {
 	const max = Math.min(prev.length, incoming.length);
 	for (let k = max; k > 0; k--) {
@@ -338,7 +387,11 @@ export async function callProvider(
 	);
 
 	// 转换 Anthropic 请求为 OpenAI 格式
-	const openaiMessages = translateToOpenAI(anthropicReq);
+	const openaiMessages = normalizeMessagesForProvider(
+		provider,
+		translateToOpenAI(anthropicReq),
+		logger,
+	);
 
 	const openaiTools = toOpenAICompatibleTools(anthropicReq);
 	if (openaiTools?.length) {
@@ -387,14 +440,24 @@ export async function callProvider(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		logger?.error({
-			msg: "anthropic proxy: OpenAI API error",
-			status: response.status,
-			error: errorText,
-		});
+		const shouldRetryInvalidArgument =
+			response.status === 400 && isInvalidArgumentError(errorText);
+		if (shouldRetryInvalidArgument) {
+			logger?.warn({
+				msg: "anthropic proxy: OpenAI API returned retryable invalid argument",
+				status: response.status,
+				error: errorText,
+			});
+		} else {
+			logger?.error({
+				msg: "anthropic proxy: OpenAI API error",
+				status: response.status,
+				error: errorText,
+			});
+		}
 
 		// One-shot retry: flatten prior tool history for stricter OpenAI-compatible gateways.
-		if (response.status === 400 && isInvalidArgumentError(errorText)) {
+		if (shouldRetryInvalidArgument) {
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),
@@ -711,7 +774,11 @@ export async function callProviderStream(
 	}
 
 	// OpenAI-compatible: stream chat completions and translate to Anthropic SSE
-	const openaiMessages = translateToOpenAI(anthropicReq);
+	const openaiMessages = normalizeMessagesForProvider(
+		provider,
+		translateToOpenAI(anthropicReq),
+		logger,
+	);
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 	};
@@ -802,14 +869,24 @@ export async function callProviderStream(
 
 	if (!upstream.ok) {
 		const errorText = await upstream.text();
-		logger?.error({
-			msg: "anthropic proxy: openai stream error",
-			status: upstream.status,
-			error: errorText,
-		});
+		const shouldRetryInvalidArgument =
+			upstream.status === 400 && isInvalidArgumentError(errorText);
+		if (shouldRetryInvalidArgument) {
+			logger?.warn({
+				msg: "anthropic proxy: openai stream returned retryable invalid argument",
+				status: upstream.status,
+				error: errorText,
+			});
+		} else {
+			logger?.error({
+				msg: "anthropic proxy: openai stream error",
+				status: upstream.status,
+				error: errorText,
+			});
+		}
 
 		// One-shot retry for strict gateways: flatten tool history and fall back to non-stream JSON.
-		if (upstream.status === 400 && isInvalidArgumentError(errorText)) {
+		if (shouldRetryInvalidArgument) {
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),

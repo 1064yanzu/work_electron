@@ -2,25 +2,25 @@
  * Remote Chat Bridge
  *
  * 监听主进程 `remote-chat-inject` IPC 事件，
- * 将远程第三方渠道（如飞书）的请求注入到“标准聊天会话 + 历史持久化 + 沙盒产物”链路。
+ * 并将远程会话镜像到本地聊天历史。
+ * 远程会话持久化以主进程落库为准，前端只负责实时展示与同步。
  */
 
 import { useEffect, useRef } from "react";
-import { createAgentSession } from "./agent/api";
-import { persistChatMessageToAgentSession } from "./agent/chatBridge";
+import { listAgentSessions } from "./agent/api";
+import { loadAgentSessionMessagesAsChatMessages } from "./agent/chatBridge";
 import type { UIEvent } from "./agent/streamState";
 import { chatStore } from "./chat/store";
 import type { ChatMessage, ChatMessageBlock, ChatSession } from "./chat/types";
 import { createMessage } from "./chat/types";
 import { listen, type UnlistenFn } from "./tauriEventCompat";
-import { workspaceStore } from "./workspaceStore";
 
 type ToolCallBlock = Extract<ChatMessageBlock, { type: "tool_call" }>;
 
 type RemoteRunBinding = {
 	chatSessionId: string;
 	assistantMessageId: string;
-	agentSessionPromise: Promise<string | undefined>;
+	agentSessionId?: string;
 	taskId: string;
 	sandboxDir?: string;
 	textParts: string[];
@@ -37,6 +37,9 @@ export interface RemoteChatInjectPayload {
 	peerName: string;
 	peerId?: string;
 	sessionId: string;
+	taskId?: string;
+	agentSessionId?: string;
+	persistedByMain?: boolean;
 	sandboxDir?: string;
 }
 
@@ -70,9 +73,32 @@ function buildRemoteSessionTitle(
 	return `远程 · ${channelLabel} · ${peerLabel}`;
 }
 
+function parseTimestamp(raw: unknown): number {
+	if (typeof raw === "number" && Number.isFinite(raw)) {
+		return Math.max(0, Math.floor(raw));
+	}
+	if (typeof raw === "string") {
+		const parsed = Number(raw);
+		if (Number.isFinite(parsed)) {
+			return Math.max(0, Math.floor(parsed));
+		}
+	}
+	return Date.now();
+}
+
 function getChatSessionById(sessionId: string): ChatSession | null {
 	return (
 		chatStore.getState().sessions.find((session) => session.id === sessionId) ||
+		null
+	);
+}
+
+function findChatSessionByAgentSessionId(agentSessionId: string): ChatSession | null {
+	if (!agentSessionId) return null;
+	return (
+		chatStore
+			.getState()
+			.sessions.find((session) => session.agentSessionId === agentSessionId) ||
 		null
 	);
 }
@@ -130,105 +156,185 @@ function extractTokenUsage(result?: Record<string, unknown>): {
 	};
 }
 
+function parseRemoteConfig(configJson: unknown): {
+	remoteSessionId?: string;
+	channelId?: string;
+	peerName?: string;
+	peerId?: string;
+	taskId?: string;
+	sandboxDir?: string;
+} | null {
+	if (!configJson || typeof configJson !== "object") return null;
+	const obj = configJson as Record<string, unknown>;
+	if (obj.source !== "remote-control") return null;
+	const remoteSessionId =
+		typeof obj.remoteSessionId === "string" ? obj.remoteSessionId.trim() : "";
+	const channelId = typeof obj.channelId === "string" ? obj.channelId.trim() : "";
+	const peerName = typeof obj.peerName === "string" ? obj.peerName.trim() : "";
+	const peerId = typeof obj.peerId === "string" ? obj.peerId.trim() : "";
+	const taskId = typeof obj.taskId === "string" ? obj.taskId.trim() : "";
+	const sandboxDir =
+		typeof obj.sandboxDir === "string" ? obj.sandboxDir.trim() : "";
+	return {
+		remoteSessionId: remoteSessionId || undefined,
+		channelId: channelId || undefined,
+		peerName: peerName || undefined,
+		peerId: peerId || undefined,
+		taskId: taskId || undefined,
+		sandboxDir: sandboxDir || undefined,
+	};
+}
+
 /**
  * useRemoteChatBridge
  *
- * 在 CopilotSidebar 中调用此钩子，即可让远程消息走“和本地一致”的会话/历史/产物链路。
+ * 在 App 根组件中调用该 hook，保证任意界面下远程会话都可镜像进聊天历史。
  */
 export function useRemoteChatBridge(): void {
 	const activeRunsRef = useRef<Map<string, RemoteRunBinding>>(new Map());
 	const remoteSessionToChatSessionRef = useRef<Map<string, string>>(new Map());
-	const ensuringAgentSessionRef = useRef<
-		Map<string, Promise<string | undefined>>
-	>(new Map());
+	const agentSessionToChatSessionRef = useRef<Map<string, string>>(new Map());
+	const activeRunByAgentSessionRef = useRef<Map<string, string>>(new Map());
+	const syncInFlightRef = useRef(false);
+	const lastSyncedAtRef = useRef(0);
 
 	useEffect(() => {
 		let unlistenInject: UnlistenFn | null = null;
 		let unlistenSdkEvent: UnlistenFn | null = null;
+		let syncTimer: ReturnType<typeof setInterval> | null = null;
+		let disposed = false;
 
-		const ensureAgentSessionIdForChatSession = (
-			chatSessionId: string,
-		): Promise<string | undefined> => {
-			const session = getChatSessionById(chatSessionId);
-			if (!session) return Promise.resolve(undefined);
-			if (
-				session.agentSessionId &&
-				!session.agentSessionId.startsWith("local-")
-			) {
-				return Promise.resolve(session.agentSessionId);
-			}
-			const pending = ensuringAgentSessionRef.current.get(chatSessionId);
-			if (pending) return pending;
-
-			const promise = (async () => {
-				try {
-					const projectId = workspaceStore.getState().currentProjectId || null;
-					const created = await createAgentSession(session.title, projectId);
-					chatStore.setSessionAgentSessionId(chatSessionId, created.id);
-					return created.id;
-				} catch (error) {
-					console.warn("[RemoteChatBridge] 创建远程会话持久化记录失败:", error);
-					return undefined;
+		const ensureRemoteChatSession = (input: {
+			remoteSessionId?: string;
+			agentSessionId?: string;
+			title: string;
+		}): ChatSession => {
+			const { remoteSessionId, agentSessionId, title } = input;
+			if (agentSessionId) {
+				const mappedByAgent = agentSessionToChatSessionRef.current.get(agentSessionId);
+				if (mappedByAgent) {
+					const existing = getChatSessionById(mappedByAgent);
+					if (existing) {
+						if (remoteSessionId) {
+							remoteSessionToChatSessionRef.current.set(
+								remoteSessionId,
+								existing.id,
+							);
+						}
+						return existing;
+					}
+					agentSessionToChatSessionRef.current.delete(agentSessionId);
 				}
-			})();
-			ensuringAgentSessionRef.current.set(chatSessionId, promise);
-			void promise.finally(() => {
-				ensuringAgentSessionRef.current.delete(chatSessionId);
-			});
-			return promise;
-		};
-
-		const persistMessageById = async (
-			chatSessionId: string,
-			messageId: string,
-			agentSessionPromise: Promise<string | undefined>,
-		): Promise<void> => {
-			const agentSessionId = await agentSessionPromise;
-			if (!agentSessionId || agentSessionId.startsWith("local-")) return;
-
-			const latestSession = getChatSessionById(chatSessionId);
-			const latestMessage = latestSession?.messages.find(
-				(msg) => msg.id === messageId,
-			);
-			if (!latestMessage) return;
-
-			const record = await persistChatMessageToAgentSession(
-				agentSessionId,
-				latestMessage,
-			);
-			if (record?.id) {
-				chatStore.updateMessage(chatSessionId, messageId, {
-					metadata: { agentMessageId: record.id },
-				});
+				const existingByAgent = findChatSessionByAgentSessionId(agentSessionId);
+				if (existingByAgent) {
+					agentSessionToChatSessionRef.current.set(agentSessionId, existingByAgent.id);
+					if (remoteSessionId) {
+						remoteSessionToChatSessionRef.current.set(
+							remoteSessionId,
+							existingByAgent.id,
+						);
+					}
+					return existingByAgent;
+				}
 			}
-		};
 
-		const ensureRemoteChatSession = (
-			payload: RemoteChatInjectPayload,
-		): ChatSession => {
-			const mappedId = remoteSessionToChatSessionRef.current.get(
-				payload.sessionId,
-			);
-			if (mappedId) {
-				const mapped = getChatSessionById(mappedId);
-				if (mapped) return mapped;
-				remoteSessionToChatSessionRef.current.delete(payload.sessionId);
+			if (remoteSessionId) {
+				const mappedByRemote = remoteSessionToChatSessionRef.current.get(remoteSessionId);
+				if (mappedByRemote) {
+					const existing = getChatSessionById(mappedByRemote);
+					if (existing) return existing;
+					remoteSessionToChatSessionRef.current.delete(remoteSessionId);
+				}
 			}
 
 			const previousActiveId = chatStore.getState().activeSessionId;
-			const created = chatStore.createNewSession(
-				buildRemoteSessionTitle(
-					payload.channelId,
-					payload.peerName,
-					payload.peerId,
-				),
-			);
-			remoteSessionToChatSessionRef.current.set(payload.sessionId, created.id);
-
+			const created = chatStore.createFreshSession(title);
 			if (previousActiveId !== created.id) {
 				chatStore.setActiveSession(previousActiveId);
 			}
+			if (remoteSessionId) {
+				remoteSessionToChatSessionRef.current.set(remoteSessionId, created.id);
+			}
+			if (agentSessionId) {
+				agentSessionToChatSessionRef.current.set(agentSessionId, created.id);
+				chatStore.setSessionAgentSessionId(created.id, agentSessionId);
+			}
 			return created;
+		};
+
+		const hydrateAgentSessionMessages = async (
+			agentSessionId: string,
+			chatSessionId: string,
+		): Promise<void> => {
+			const session = getChatSessionById(chatSessionId);
+			if (!session) return;
+			try {
+				const messages = await loadAgentSessionMessagesAsChatMessages(agentSessionId);
+				if (!getChatSessionById(chatSessionId)) return;
+				chatStore.replaceSessionMessages(chatSessionId, messages);
+			} catch (error) {
+				console.warn("[RemoteChatBridge] 同步远程会话消息失败:", error);
+			}
+		};
+
+		const syncRemoteSessions = async (force: boolean): Promise<void> => {
+			if (disposed || syncInFlightRef.current) return;
+			syncInFlightRef.current = true;
+			try {
+				const sessions = await listAgentSessions();
+				if (disposed) return;
+				const remoteSessions = sessions
+					.map((session) => {
+						const meta = parseRemoteConfig(session.config_json);
+						if (!meta) return null;
+						return { session, meta };
+					})
+					.filter((item): item is { session: any; meta: NonNullable<ReturnType<typeof parseRemoteConfig>> } => Boolean(item))
+					.sort(
+						(a, b) =>
+							parseTimestamp(b.session.updated_at) -
+							parseTimestamp(a.session.updated_at),
+					)
+					.slice(0, 200);
+
+				let maxUpdatedAt = lastSyncedAtRef.current;
+				for (const item of remoteSessions) {
+					const updatedAt = parseTimestamp(item.session.updated_at);
+					maxUpdatedAt = Math.max(maxUpdatedAt, updatedAt);
+					const agentSessionId = String(item.session.id || "").trim();
+					if (!agentSessionId) continue;
+					const chatSession = ensureRemoteChatSession({
+						remoteSessionId: item.meta.remoteSessionId,
+						agentSessionId,
+						title:
+							typeof item.session.title === "string" && item.session.title.trim()
+								? item.session.title.trim()
+								: buildRemoteSessionTitle(
+									item.meta.channelId || "feishu",
+									item.meta.peerName,
+									item.meta.peerId,
+								),
+					});
+					chatStore.setSessionAgentSessionId(chatSession.id, agentSessionId);
+
+					if (
+						!force &&
+						updatedAt <= lastSyncedAtRef.current &&
+						!activeRunByAgentSessionRef.current.has(agentSessionId)
+					) {
+						continue;
+					}
+					if (activeRunByAgentSessionRef.current.has(agentSessionId) && !force) {
+						continue;
+					}
+					await hydrateAgentSessionMessages(agentSessionId, chatSession.id);
+				}
+				lastSyncedAtRef.current = Math.max(lastSyncedAtRef.current, maxUpdatedAt);
+			} catch (error) {
+				console.warn("[RemoteChatBridge] 远程会话增量同步失败:", error);
+			} finally {
+				syncInFlightRef.current = false;
+			}
 		};
 
 		const updateAssistantMessage = (
@@ -240,39 +346,77 @@ export function useRemoteChatBridge(): void {
 				sandboxDir: binding.sandboxDir,
 				blocks: buildRunBlocks(binding),
 			};
-			chatStore.updateMessage(
-				binding.chatSessionId,
-				binding.assistantMessageId,
-				{
-					content: binding.textParts.join(""),
-					metadata: metadataBase,
-					...overrides,
-				},
-			);
+			chatStore.updateMessage(binding.chatSessionId, binding.assistantMessageId, {
+				content: binding.textParts.join(""),
+				metadata: metadataBase,
+				...overrides,
+			});
 		};
 
 		const setup = async () => {
+			await syncRemoteSessions(true);
+
+			const handleWindowFocus = () => {
+				void syncRemoteSessions(false);
+			};
+			const handleVisibility = () => {
+				if (document.visibilityState === "visible") {
+					void syncRemoteSessions(false);
+				}
+			};
+			window.addEventListener("focus", handleWindowFocus);
+			document.addEventListener("visibilitychange", handleVisibility);
+
+			syncTimer = setInterval(() => {
+				void syncRemoteSessions(false);
+			}, 15000);
+
 			unlistenInject = await listen<RemoteChatInjectPayload>(
 				"remote-chat-inject",
 				(event) => {
 					const payload = event.payload;
 					const runId = String(payload.runId || "").trim();
 					if (!runId) return;
+					if (activeRunsRef.current.has(runId)) return;
 
-					const session = ensureRemoteChatSession(payload);
-					const taskId = `remote-${payload.sessionId}`;
+					const taskId = String(payload.taskId || `remote-${payload.sessionId}`);
+					const session = ensureRemoteChatSession({
+						remoteSessionId: payload.sessionId,
+						agentSessionId: payload.agentSessionId,
+						title: buildRemoteSessionTitle(
+							payload.channelId,
+							payload.peerName,
+							payload.peerId,
+						),
+					});
+					if (payload.agentSessionId) {
+						chatStore.setSessionAgentSessionId(session.id, payload.agentSessionId);
+						agentSessionToChatSessionRef.current.set(
+							payload.agentSessionId,
+							session.id,
+						);
+						activeRunByAgentSessionRef.current.set(payload.agentSessionId, runId);
+						if (payload.persistedByMain) {
+							void hydrateAgentSessionMessages(payload.agentSessionId, session.id);
+						}
+					}
+
 					const channelLabel = getChannelLabel(payload.channelId);
 					const peerDisplay = payload.peerName || payload.peerId || "未知来源";
-
-					const userMessage = createMessage("user", payload.prompt, {
-						metadata: {
-							attachedFiles: [],
-							taskId,
-							sandboxDir: payload.sandboxDir,
-						},
-					});
-					userMessage.content = `[${channelLabel} · ${peerDisplay}] ${payload.prompt}`;
-					chatStore.addMessage(session.id, userMessage);
+					const hasUserForTask = getChatSessionById(session.id)?.messages.some(
+						(msg) => msg.role === "user" && msg.metadata?.taskId === taskId,
+					);
+					if (!payload.persistedByMain || !hasUserForTask) {
+						const userMessage = createMessage("user", payload.prompt, {
+							metadata: {
+								attachedFiles: [],
+								taskId,
+								sandboxDir: payload.sandboxDir,
+							},
+						});
+						userMessage.content = `[${channelLabel} · ${peerDisplay}] ${payload.prompt}`;
+						chatStore.addMessage(session.id, userMessage);
+					}
 
 					const assistantMessage = createMessage("assistant", "", {
 						isStreaming: true,
@@ -284,19 +428,10 @@ export function useRemoteChatBridge(): void {
 					});
 					chatStore.addMessage(session.id, assistantMessage);
 
-					const agentSessionPromise = ensureAgentSessionIdForChatSession(
-						session.id,
-					);
-					void persistMessageById(
-						session.id,
-						userMessage.id,
-						agentSessionPromise,
-					);
-
 					activeRunsRef.current.set(runId, {
 						chatSessionId: session.id,
 						assistantMessageId: assistantMessage.id,
-						agentSessionPromise,
+						agentSessionId: payload.agentSessionId,
 						taskId,
 						sandboxDir: payload.sandboxDir,
 						textParts: [],
@@ -390,9 +525,7 @@ export function useRemoteChatBridge(): void {
 									output: uiEvent.output,
 									error: uiEvent.isError ? "工具调用失败" : undefined,
 								});
-								for (const path of extractImagePathsFromOutput(
-									uiEvent.output,
-								)) {
+								for (const path of extractImagePathsFromOutput(uiEvent.output)) {
 									binding.imagePaths.add(path);
 								}
 								changed = true;
@@ -424,12 +557,20 @@ export function useRemoteChatBridge(): void {
 								...(tokenUsage ? { tokenUsage } : {}),
 							},
 						});
-						void persistMessageById(
-							binding.chatSessionId,
-							binding.assistantMessageId,
-							binding.agentSessionPromise,
-						);
 						activeRunsRef.current.delete(runId);
+						if (binding.agentSessionId) {
+							activeRunByAgentSessionRef.current.delete(binding.agentSessionId);
+							void hydrateAgentSessionMessages(
+								binding.agentSessionId,
+								binding.chatSessionId,
+							);
+							setTimeout(() => {
+								void hydrateAgentSessionMessages(
+									binding.agentSessionId as string,
+									binding.chatSessionId,
+								);
+							}, 500);
+						}
 						return;
 					}
 
@@ -442,27 +583,46 @@ export function useRemoteChatBridge(): void {
 								: `❌ 远程任务出错: ${errorText}`,
 							isStreaming: false,
 						});
-						void persistMessageById(
-							binding.chatSessionId,
-							binding.assistantMessageId,
-							binding.agentSessionPromise,
-						);
 						activeRunsRef.current.delete(runId);
+						if (binding.agentSessionId) {
+							activeRunByAgentSessionRef.current.delete(binding.agentSessionId);
+							void hydrateAgentSessionMessages(
+								binding.agentSessionId,
+								binding.chatSessionId,
+							);
+						}
 					}
 				},
 			);
+
+			return () => {
+				window.removeEventListener("focus", handleWindowFocus);
+				document.removeEventListener("visibilitychange", handleVisibility);
+			};
 		};
 
-		setup().catch((error) => {
-			console.error("[RemoteChatBridge] Setup failed:", error);
-		});
+		let cleanupWindowHooks: (() => void) | undefined;
+		setup()
+			.then((cleanupFn) => {
+				cleanupWindowHooks = cleanupFn;
+			})
+			.catch((error) => {
+				console.error("[RemoteChatBridge] Setup failed:", error);
+			});
 
 		return () => {
+			disposed = true;
+			cleanupWindowHooks?.();
 			unlistenInject?.();
 			unlistenSdkEvent?.();
+			if (syncTimer) {
+				clearInterval(syncTimer);
+				syncTimer = null;
+			}
 			activeRunsRef.current.clear();
 			remoteSessionToChatSessionRef.current.clear();
-			ensuringAgentSessionRef.current.clear();
+			agentSessionToChatSessionRef.current.clear();
+			activeRunByAgentSessionRef.current.clear();
 		};
 	}, []);
 }

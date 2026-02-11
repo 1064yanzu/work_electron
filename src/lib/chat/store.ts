@@ -330,6 +330,20 @@ class ChatStore {
 		return session;
 	}
 
+	// 创建全新会话（不复用空会话）
+	createFreshSession(title?: string): ChatSession {
+		const session = createSession(title);
+		this.setState(
+			(state) => ({
+				...state,
+				sessions: [session, ...state.sessions],
+				activeSessionId: session.id,
+			}),
+			"normal",
+		);
+		return session;
+	}
+
 	// 切换会话
 	setActiveSession(sessionId: string | null) {
 		this.setState(
@@ -647,6 +661,7 @@ export const chatStore = new ChatStore();
 
 const chatActions = {
 	createNewSession: chatStore.createNewSession.bind(chatStore),
+	createFreshSession: chatStore.createFreshSession.bind(chatStore),
 	setActiveSession: chatStore.setActiveSession.bind(chatStore),
 	deleteSession: chatStore.deleteSession.bind(chatStore),
 	deleteSessionWithUndo: chatStore.deleteSessionWithUndo.bind(chatStore),

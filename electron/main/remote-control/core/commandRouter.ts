@@ -9,6 +9,7 @@ import {
 	buildContextFilesPrompt,
 	persistInboundContextFiles,
 } from "./contextFilePersistence";
+import type { RemoteChatHistoryService } from "./remoteChatHistoryService";
 import type {
 	RemoteControlConfig,
 	RemoteInboundMessage,
@@ -28,6 +29,7 @@ export type RemoteCommandRouterDeps = {
 	getRuntimeStatus: () => RemoteRuntimeStatus;
 	getActiveModel: () => Promise<string>;
 	getMainWindow: () => BrowserWindow | null;
+	remoteChatHistory: RemoteChatHistoryService;
 	sendMessage: (message: RemoteOutboundMessage) => Promise<void>;
 };
 
@@ -264,60 +266,88 @@ export class RemoteCommandRouter {
 				);
 				return;
 			}
-			case "chat": {
-				if (!this.deps.executor.ready) {
+				case "chat": {
+					if (!this.deps.executor.ready) {
 					await this.sendSystemReply(
 						message,
 						"Agent 运行器尚未就绪，请稍后重试。",
 					);
 					return;
 				}
-				const model = await this.deps.getActiveModel();
-				const basePrompt = command.prompt;
-				const session = this.deps.sessionStore.create({
-					session_id: randomUUID(),
+					const model = await this.deps.getActiveModel();
+					const basePrompt = command.prompt;
+					const session = this.deps.sessionStore.create({
+						session_id: randomUUID(),
 					channel_id: message.channel_id,
 					peer_id: message.peer_id,
 					peer_name: message.peer_name,
 					target_id: message.target_id,
-					prompt_preview: clampString(basePrompt, 80),
-				});
-				try {
-					const sandboxDir = await ensureRemoteSessionSandboxDir(
-						session.session_id,
-					);
-					const persistedContextFiles = await persistInboundContextFiles({
-						logger: this.deps.logger,
-						sandboxDir,
+						prompt_preview: clampString(basePrompt, 80),
+					});
+					const taskId = `remote-${session.session_id}`;
+					let sandboxDir: string | undefined;
+					let agentSessionId: string | undefined;
+					try {
+						sandboxDir = await ensureRemoteSessionSandboxDir(
+							session.session_id,
+						);
+						const persistedContextFiles = await persistInboundContextFiles({
+							logger: this.deps.logger,
+							sandboxDir,
 						files: message.context_files || [],
 					});
-					const contextPrompt = buildContextFilesPrompt(persistedContextFiles);
-					const prompt = contextPrompt
-						? `${basePrompt}\n\n${contextPrompt}`
-						: basePrompt;
-					const runId = await this.deps.executor.start({
-						prompt,
-						model,
-						cwd: sandboxDir,
-						interactive_approval: true,
-						persist_session: true,
-					});
-					this.deps.sessionStore.bindRun(session.session_id, runId);
-
-					// 将远程消息注入前端 UI，让用户可以在界面中看到远程对话
-					const win = this.deps.getMainWindow();
-					if (win && !win.isDestroyed()) {
-						win.webContents.send("remote-chat-inject", {
-							runId,
+						const contextPrompt = buildContextFilesPrompt(persistedContextFiles);
+						const prompt = contextPrompt
+							? `${basePrompt}\n\n${contextPrompt}`
+							: basePrompt;
+						const persistedRun =
+							await this.deps.remoteChatHistory.prepareRemoteChatRun({
+								channelId: message.channel_id,
+								peerId: message.peer_id,
+								peerName: message.peer_name,
+								remoteSessionId: session.session_id,
+								taskId,
+								prompt,
+								sandboxDir,
+							});
+						agentSessionId = persistedRun.agentSessionId;
+						const runId = await this.deps.executor.start({
 							prompt,
-							channelId: message.channel_id,
-							peerName: message.peer_name || message.peer_id,
-							peerId: message.peer_id,
-							sessionId: session.session_id,
-							sandboxDir,
-							contextFiles: persistedContextFiles.map((file) => file.relativePath),
+							model,
+							cwd: sandboxDir,
+							interactive_approval: true,
+							persist_session: true,
 						});
-					}
+						this.deps.sessionStore.bindRun(session.session_id, runId);
+						this.deps.sessionStore.update(session.session_id, {
+							agent_session_id: agentSessionId,
+							task_id: taskId,
+							sandbox_dir: sandboxDir,
+						});
+						this.deps.remoteChatHistory.registerRunContext({
+							runId,
+							agentSessionId,
+							taskId,
+							sandboxDir,
+						});
+
+						// 将远程消息注入前端 UI，让用户可以在界面中看到远程对话
+						const win = this.deps.getMainWindow();
+						if (win && !win.isDestroyed()) {
+							win.webContents.send("remote-chat-inject", {
+								runId,
+								prompt,
+								channelId: message.channel_id,
+								peerName: message.peer_name || message.peer_id,
+								peerId: message.peer_id,
+								sessionId: session.session_id,
+								taskId,
+								agentSessionId,
+								persistedByMain: true,
+								sandboxDir,
+								contextFiles: persistedContextFiles.map((file) => file.relativePath),
+							});
+						}
 
 					await this.sendSystemReply(message, "收到，正在处理中…");
 				} catch (error) {
@@ -325,13 +355,22 @@ export class RemoteCommandRouter {
 						msg: "remote control start failed",
 						error: error instanceof Error ? error.message : String(error),
 					});
-					this.deps.sessionStore.update(session.session_id, {
-						state: "error",
-						last_error: error instanceof Error ? error.message : String(error),
-					});
-					await this.sendSystemReply(
-						message,
-						`任务启动失败：${error instanceof Error ? error.message : String(error)}`,
+						this.deps.sessionStore.update(session.session_id, {
+							state: "error",
+							last_error: error instanceof Error ? error.message : String(error),
+						});
+						if (agentSessionId) {
+							await this.deps.remoteChatHistory.persistRunStartFailure({
+								agentSessionId,
+								taskId,
+								sandboxDir,
+								errorText:
+									error instanceof Error ? error.message : String(error),
+							});
+						}
+						await this.sendSystemReply(
+							message,
+							`任务启动失败：${error instanceof Error ? error.message : String(error)}`,
 					);
 				}
 				return;

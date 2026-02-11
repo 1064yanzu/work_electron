@@ -47,7 +47,6 @@ import { getConfig } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { useManagedModeStore } from "../lib/managedModeStore";
 import { useMessageQueueStore } from "../lib/messageQueueStore";
-import { useRemoteChatBridge } from "../lib/remoteChatBridge";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import {
@@ -123,9 +122,6 @@ export default function CopilotSidebar() {
 		(state) => state.activeSessionId,
 	);
 	const status = useChatStoreSelector((state) => state.status);
-
-	// 远程消息桥接：监听远程渠道消息并注入到 UI 对话
-	useRemoteChatBridge();
 	const activeSession = useChatStoreSelector((state) => {
 		if (!state.activeSessionId) return null;
 		return (

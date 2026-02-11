@@ -145,6 +145,9 @@ export type RemoteSession = {
 	peer_name?: string;
 	target_id: string;
 	run_id?: string;
+	agent_session_id?: string;
+	task_id?: string;
+	sandbox_dir?: string;
 	prompt_preview: string;
 	state: RemoteSessionState;
 	last_message_at: number;
