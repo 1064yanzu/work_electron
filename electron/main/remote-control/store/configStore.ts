@@ -107,6 +107,24 @@ function mergeConfig(
 				next.channels.feishu.enableDocLinkPrefetch =
 					feishu.enableDocLinkPrefetch;
 			}
+			if (typeof feishu.enableDocxMcp === "boolean") {
+				next.channels.feishu.enableDocxMcp = feishu.enableDocxMcp;
+			}
+			if (typeof feishu.enableDocWriteOps === "boolean") {
+				next.channels.feishu.enableDocWriteOps = feishu.enableDocWriteOps;
+			}
+			if (typeof feishu.enableDocFileDelete === "boolean") {
+				next.channels.feishu.enableDocFileDelete =
+					feishu.enableDocFileDelete;
+			}
+			if (typeof feishu.enableLegacyDocsRead === "boolean") {
+				next.channels.feishu.enableLegacyDocsRead =
+					feishu.enableLegacyDocsRead;
+			}
+			if (typeof feishu.enableDocCommandFallback === "boolean") {
+				next.channels.feishu.enableDocCommandFallback =
+					feishu.enableDocCommandFallback;
+			}
 		}
 
 		// ─── Telegram ───

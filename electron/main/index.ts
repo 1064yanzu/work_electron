@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bootstrapApp } from "./app-lifecycle";
+import { startFeishuDocxMcpServerFromEnv } from "./remote-control/feishu-docx/mcpStdioServer";
 import { createMainWindow } from "./windows/createMainWindow";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 	? path.join(process.env.APP_ROOT, "public")
 	: RENDERER_DIST;
 
+const REMOTE_FEISHU_DOCX_MCP_ARG = "--remote-feishu-docx-mcp";
+
 const createWindow = () => {
 	const publicDir = process.env.VITE_PUBLIC ?? RENDERER_DIST;
 	createMainWindow({
@@ -25,4 +28,8 @@ const createWindow = () => {
 	});
 };
 
-bootstrapApp({ createWindow }).then(createWindow);
+if (process.argv.includes(REMOTE_FEISHU_DOCX_MCP_ARG)) {
+	startFeishuDocxMcpServerFromEnv();
+} else {
+	bootstrapApp({ createWindow }).then(createWindow);
+}

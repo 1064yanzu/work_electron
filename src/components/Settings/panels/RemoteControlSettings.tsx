@@ -580,6 +580,90 @@ export function RemoteControlSettings() {
 					</div>
 				</div>
 
+				<div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+					<div>
+						<SettingsSectionTitle className="mb-1 text-base">
+							文档控制能力
+						</SettingsSectionTitle>
+						<p className="text-xs text-text-secondary">
+							仅作用于远程控制 Feishu 通道：优先 MCP 工具调用，支持 /doc.call 命令兜底。
+						</p>
+					</div>
+					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+							<div className="text-sm text-text-secondary">启用 Docx MCP</div>
+							<SettingsSwitch
+								checked={config.channels.feishu.enableDocxMcp}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableDocxMcp = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+							<div className="text-sm text-text-secondary">允许写操作</div>
+							<SettingsSwitch
+								checked={config.channels.feishu.enableDocWriteOps}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableDocWriteOps = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+							<div className="text-sm text-text-secondary">
+								允许文档级删除（高风险）
+							</div>
+							<SettingsSwitch
+								checked={config.channels.feishu.enableDocFileDelete}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableDocFileDelete = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+							<div className="text-sm text-text-secondary">启用旧 Docs 读取兼容</div>
+							<SettingsSwitch
+								checked={config.channels.feishu.enableLegacyDocsRead}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableLegacyDocsRead = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900 md:col-span-2">
+							<div className="text-sm text-text-secondary">启用 /doc.call 兜底</div>
+							<SettingsSwitch
+								checked={config.channels.feishu.enableDocCommandFallback}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableDocCommandFallback = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+					</div>
+					<div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+						需要的飞书权限：docx:document / docx:document:write_only / docs:document.content:read / drive:drive 或
+						space:document:delete（删除能力）。
+					</div>
+				</div>
+
 				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/60">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">

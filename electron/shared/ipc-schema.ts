@@ -642,6 +642,11 @@ export type IPCSchema = {
 					enableAttachmentMerge: boolean;
 					attachmentMergeWindowSec: number;
 					enableDocLinkPrefetch: boolean;
+					enableDocxMcp: boolean;
+					enableDocWriteOps: boolean;
+					enableDocFileDelete: boolean;
+					enableLegacyDocsRead: boolean;
+					enableDocCommandFallback: boolean;
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
 				};
@@ -716,6 +721,11 @@ export type IPCSchema = {
 						enableAttachmentMerge: boolean;
 						attachmentMergeWindowSec: number;
 						enableDocLinkPrefetch: boolean;
+						enableDocxMcp: boolean;
+						enableDocWriteOps: boolean;
+						enableDocFileDelete: boolean;
+						enableLegacyDocsRead: boolean;
+						enableDocCommandFallback: boolean;
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
 					};
