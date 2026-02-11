@@ -946,8 +946,42 @@ export interface RemoteControlConfig {
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
 		};
-		telegram: { enabled: boolean; note?: string };
-		slack: { enabled: boolean; note?: string };
+		telegram: {
+			enabled: boolean;
+			botToken?: string;
+			dmPolicy: "pairing" | "allowlist" | "open";
+			allowFrom: string[];
+			groupPolicy: "disabled" | "allowlist" | "open";
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+		};
+		slack: {
+			enabled: boolean;
+			botToken?: string;
+			appToken?: string;
+			signingSecret?: string;
+			dmPolicy: "pairing" | "allowlist" | "open";
+			allowFrom: string[];
+			groupPolicy: "disabled" | "allowlist" | "open";
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+		};
+		discord: {
+			enabled: boolean;
+			botToken?: string;
+			applicationId?: string;
+			dmPolicy: "pairing" | "allowlist" | "open";
+			allowFrom: string[];
+			groupPolicy: "disabled" | "allowlist" | "open";
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+		};
 		generic_webhook: { enabled: boolean; note?: string };
 	};
 	security: {
@@ -1089,4 +1123,17 @@ export async function testRemoteChannel(
 	channelId: string,
 ): Promise<{ ok: boolean; message: string }> {
 	return await safeInvoke("test_remote_channel", { channel_id: channelId });
+}
+
+export interface RemoteEventLog {
+	timestamp: number;
+	level: "info" | "warn" | "error";
+	source: string;
+	message: string;
+}
+
+export async function listRemoteEventLogs(
+	limit = 50,
+): Promise<RemoteEventLog[]> {
+	return await safeInvoke("list_remote_event_logs", { limit });
 }

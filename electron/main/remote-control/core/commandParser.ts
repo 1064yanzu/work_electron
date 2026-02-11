@@ -5,6 +5,7 @@ export type ParsedRemoteCommand =
 	| { kind: "help" }
 	| { kind: "status" }
 	| { kind: "sessions" }
+	| { kind: "model" }
 	| { kind: "stop"; runId?: string }
 	| { kind: "approve"; requestId: string; message?: string }
 	| { kind: "reject"; requestId: string; message?: string };
@@ -27,6 +28,8 @@ function parseSlashCommand(text: string): ParsedRemoteCommand | null {
 			return { kind: "status" };
 		case "/sessions":
 			return { kind: "sessions" };
+		case "/model":
+			return { kind: "model" };
 		case "/stop":
 			return { kind: "stop", runId: tokens[1] };
 		case "/approve": {
@@ -64,6 +67,7 @@ export function getRemoteHelpText(): string {
 		"/help 查看帮助",
 		"/status 查看运行状态",
 		"/sessions 查看会话",
+		"/model 查看当前模型",
 		"/stop [runId] 停止运行",
 		"/approve <requestId> [message] 批准交互请求",
 		"/reject <requestId> [message] 拒绝交互请求",

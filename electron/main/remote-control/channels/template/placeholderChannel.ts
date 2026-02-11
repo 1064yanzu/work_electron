@@ -3,13 +3,13 @@ import type {
 	RemoteChannelPlugin,
 	RemoteChannelContext,
 } from "../../core/channel-plugin";
-import type { RemoteChannelId, RemoteOutboundMessage } from "../../core/types";
+import type { RemoteOutboundMessage } from "../../core/types";
 
 export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 	constructor(
-		public readonly id: Exclude<RemoteChannelId, "feishu">,
+		public readonly id: "generic_webhook",
 		private readonly logger: Logger,
-	) {}
+	) { }
 
 	async start(ctx: RemoteChannelContext): Promise<void> {
 		ctx.onStatusPatch({
@@ -19,7 +19,7 @@ export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 		});
 	}
 
-	async stop(): Promise<void> {}
+	async stop(): Promise<void> { }
 
 	async send(message: RemoteOutboundMessage): Promise<void> {
 		this.logger.warn({

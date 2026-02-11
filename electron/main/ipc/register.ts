@@ -66,6 +66,12 @@ let mainWindowRef: BrowserWindow | null = null;
 
 export function setMainWindow(window: BrowserWindow) {
 	mainWindowRef = window;
+	// 同步传递给远程控制编排器，让远程消息可以注入到前端 UI
+	try {
+		getRemoteControlOrchestrator().setMainWindow(window);
+	} catch {
+		// orchestrator 可能尚未初始化，忽略
+	}
 }
 
 export function registerIpcHandlers({
@@ -338,6 +344,10 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"test_remote_channel",
 		remoteControlHandlers.test_remote_channel,
+	);
+	ipcMain.handle(
+		"list_remote_event_logs",
+		remoteControlHandlers.list_remote_event_logs,
 	);
 	ipcMain.handle("get_all_configs", configHandlers.get_all_configs);
 	ipcMain.handle("get_active_model", configHandlers.get_active_model);

@@ -1,6 +1,10 @@
+import type { BrowserWindow } from "electron";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { FeishuChannelPlugin } from "../channels/feishu/feishuChannel";
+import { TelegramChannelPlugin } from "../channels/telegram/telegramChannel";
+import { SlackChannelPlugin } from "../channels/slack/slackChannel";
+import { DiscordChannelPlugin } from "../channels/discord/discordChannel";
 import { PlaceholderChannelPlugin } from "../channels/template/placeholderChannel";
 import {
 	AgentSdkExecutor,
@@ -26,6 +30,14 @@ import { SlidingWindowRateLimiter } from "./rateLimiter";
 import { nowTs } from "./utils";
 
 const DEFAULT_MODEL = "gpt-4o";
+const MAX_EVENT_LOGS = 200;
+
+export type RemoteEventLog = {
+	timestamp: number;
+	level: "info" | "warn" | "error";
+	source: string;
+	message: string;
+};
 
 export class RemoteControlOrchestrator {
 	private readonly configStore: RemoteControlConfigStore;
@@ -40,9 +52,11 @@ export class RemoteControlOrchestrator {
 		RemoteChannelRuntimeStatus
 	>();
 	private readonly eventMirror: AgentEventMirror;
+	private readonly eventLogs: RemoteEventLog[] = [];
 	private config: RemoteControlConfig | null = null;
 	private startedAt: number | null = null;
 	private unsubscribeAgentBus: (() => void) | null = null;
+	private mainWindow: BrowserWindow | null = null;
 
 	private readonly router: RemoteCommandRouter;
 	private pendingPairingCount = 0;
@@ -56,11 +70,9 @@ export class RemoteControlOrchestrator {
 		this.pairingService = new PairingService(this.pairingStore);
 
 		this.channels.set("feishu", new FeishuChannelPlugin(logger));
-		this.channels.set(
-			"telegram",
-			new PlaceholderChannelPlugin("telegram", logger),
-		);
-		this.channels.set("slack", new PlaceholderChannelPlugin("slack", logger));
+		this.channels.set("telegram", new TelegramChannelPlugin(logger));
+		this.channels.set("slack", new SlackChannelPlugin(logger));
+		this.channels.set("discord", new DiscordChannelPlugin(logger));
 		this.channels.set(
 			"generic_webhook",
 			new PlaceholderChannelPlugin("generic_webhook", logger),
@@ -83,6 +95,7 @@ export class RemoteControlOrchestrator {
 			getConfig: () => this.requireConfig(),
 			getRuntimeStatus: () => this.getRuntimeStatus(),
 			getActiveModel: () => this.getActiveModel(),
+			getMainWindow: () => this.mainWindow,
 			sendMessage: async (message) => {
 				await this.sendToChannel(message);
 			},
@@ -98,6 +111,10 @@ export class RemoteControlOrchestrator {
 
 	bindAgentSdkHandlers(handlers: AgentSdkHandlersLike): void {
 		this.executor.bindHandlers(handlers);
+	}
+
+	setMainWindow(win: BrowserWindow | null): void {
+		this.mainWindow = win;
 	}
 
 	private requireConfig(): RemoteControlConfig {
@@ -120,11 +137,8 @@ export class RemoteControlOrchestrator {
 	private async startEnabledChannels(): Promise<void> {
 		const config = this.requireConfig();
 		for (const [channelId, channel] of this.channels.entries()) {
-			const enabled =
-				config.enabled &&
-				(channelId === "feishu"
-					? config.channels.feishu.enabled
-					: config.channels[channelId].enabled);
+			const channelConfig = config.channels[channelId];
+			const enabled = config.enabled && channelConfig?.enabled;
 			if (!enabled) {
 				await channel.stop();
 				this.patchChannelStatus(channelId, {
@@ -150,6 +164,7 @@ export class RemoteControlOrchestrator {
 					enabled: true,
 					running: true,
 				});
+				this.appendEventLog("info", channelId, `频道已启动`);
 			} catch (error) {
 				this.patchChannelStatus(channelId, {
 					enabled: true,
@@ -214,9 +229,10 @@ export class RemoteControlOrchestrator {
 		raw?: unknown;
 	}): Promise<void> {
 		const config = this.requireConfig();
+		const channelCfg = config.channels[message.channel_id];
 		const limit =
-			message.channel_id === "feishu"
-				? config.channels.feishu.rateLimitPerMinute
+			"rateLimitPerMinute" in channelCfg
+				? (channelCfg as { rateLimitPerMinute: number }).rateLimitPerMinute
 				: 20;
 		const key = `${message.channel_id}:${message.peer_id}`;
 		if (!this.rateLimiter.allow(key, limit)) {
@@ -231,10 +247,27 @@ export class RemoteControlOrchestrator {
 		await this.router.handleInbound(message);
 	}
 
+	private appendEventLog(
+		level: RemoteEventLog["level"],
+		source: string,
+		message: string,
+	): void {
+		this.eventLogs.push({
+			timestamp: nowTs(),
+			level,
+			source,
+			message,
+		});
+		if (this.eventLogs.length > MAX_EVENT_LOGS) {
+			this.eventLogs.splice(0, this.eventLogs.length - MAX_EVENT_LOGS);
+		}
+	}
+
 	private resolveChunkLimit(channelId: RemoteChannelId): number {
 		const config = this.requireConfig();
-		if (channelId === "feishu") {
-			return Math.max(300, config.channels.feishu.textChunkLimit);
+		const channelCfg = config.channels[channelId];
+		if ("textChunkLimit" in channelCfg) {
+			return Math.max(300, (channelCfg as { textChunkLimit: number }).textChunkLimit);
 		}
 		return 1500;
 	}
@@ -320,6 +353,10 @@ export class RemoteControlOrchestrator {
 
 	listSessions(limit = 50) {
 		return this.sessionStore.list(limit);
+	}
+
+	listEventLogs(limit = 50): RemoteEventLog[] {
+		return this.eventLogs.slice(-limit);
 	}
 
 	async terminateSession(runId: string): Promise<boolean> {

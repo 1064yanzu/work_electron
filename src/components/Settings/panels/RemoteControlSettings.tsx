@@ -6,7 +6,7 @@ import {
 	Smartphone,
 	Wifi,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { toast } from "../../ui/Toast";
@@ -36,6 +36,8 @@ import {
 import { PairingList } from "./remote-control/PairingList";
 import { RemoteStatusBadge } from "./remote-control/RemoteStatusBadge";
 import { SessionList } from "./remote-control/SessionList";
+import { EventLogPanel } from "./remote-control/EventLogPanel";
+import { ChannelConfigCard } from "./remote-control/ChannelConfigCard";
 
 function splitAllowList(raw: string): string[] {
 	return raw
@@ -102,6 +104,7 @@ export function RemoteControlSettings() {
 		void loadData();
 	}, [loadData]);
 
+
 	const saveConfig = useCallback(
 		async (updater: (draft: RemoteControlConfig) => RemoteControlConfig) => {
 			if (!config) return;
@@ -141,6 +144,18 @@ export function RemoteControlSettings() {
 			);
 		}
 	}, []);
+
+	// 自动刷新运行时状态（每 10 秒，仅当远程控制启用时）
+	const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	useEffect(() => {
+		if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+		if (config?.enabled) {
+			autoRefreshRef.current = setInterval(() => void refreshRuntime(), 10_000);
+		}
+		return () => {
+			if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+		};
+	}, [config?.enabled, refreshRuntime]);
 
 	const handleApprove = useCallback(
 		async (requestId: string) => {
@@ -240,8 +255,8 @@ export function RemoteControlSettings() {
 					远程控制
 				</h3>
 				<p className="mt-1 text-sm text-text-secondary">
-					对齐 OpenClaw 思路的多通道远控骨架，首期完整支持
-					Feishu，预留移动端与其他通道扩展。
+					多通道远控骨架，支持 Feishu、Telegram、Slack、Discord，
+					预留移动端与通用 Webhook 扩展。
 				</p>
 			</div>
 
@@ -286,6 +301,9 @@ export function RemoteControlSettings() {
 						刷新状态
 					</Button>
 				</div>
+
+				{/* 事件日志面板 */}
+				{config.enabled && <EventLogPanel />}
 			</SettingsSectionCard>
 
 			<SettingsSectionCard className="p-5 space-y-5">
@@ -443,7 +461,7 @@ export function RemoteControlSettings() {
 					</label>
 					<label className="space-y-1 text-sm">
 						<span className="text-text-secondary">
-							群 allowlist（每行一个用户ID）
+							群 allowlist（每行一个群 ID 或用户 ID）
 						</span>
 						<textarea
 							value={groupAllowFromDraft}
@@ -549,6 +567,136 @@ export function RemoteControlSettings() {
 					</Button>
 				</div>
 			</SettingsSectionCard>
+
+			{/* ─── Telegram 通道 ─────────────────────────────── */}
+			{config.channels.telegram && "dmPolicy" in config.channels.telegram && (
+				<ChannelConfigCard
+					channelId="telegram"
+					title="Telegram 通道"
+					description="使用 Telegram Bot API 长轮询，无需公网 IP。"
+					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "telegram")}
+					channelConfig={config.channels.telegram}
+					saving={saving}
+					onSave={(updater) => void saveConfig(updater)}
+					credentialFields={
+						<div className="grid grid-cols-1 gap-4">
+							<label className="space-y-1 text-sm">
+								<span className="text-text-secondary">Bot Token</span>
+								<input
+									type="password"
+									value={config.channels.telegram?.botToken ?? ""}
+									onChange={(e) => {
+										const value = e.target.value;
+										void saveConfig((draft) => {
+											draft.channels.telegram.botToken = value;
+											return draft;
+										});
+									}}
+									className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+									placeholder="从 @BotFather 获取的 Token"
+								/>
+							</label>
+						</div>
+					}
+				/>
+			)}
+
+			{/* ─── Slack 通道 ─────────────────────────────── */}
+			{config.channels.slack && "dmPolicy" in config.channels.slack && (
+				<ChannelConfigCard
+					channelId="slack"
+					title="Slack 通道"
+					description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
+					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "slack")}
+					channelConfig={config.channels.slack}
+					saving={saving}
+					onSave={(updater) => void saveConfig(updater)}
+					credentialFields={
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<label className="space-y-1 text-sm">
+								<span className="text-text-secondary">Bot Token</span>
+								<input
+									type="password"
+									value={config.channels.slack?.botToken ?? ""}
+									onChange={(e) => {
+										const value = e.target.value;
+										void saveConfig((draft) => {
+											draft.channels.slack.botToken = value;
+											return draft;
+										});
+									}}
+									className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+									placeholder="xoxb-..."
+								/>
+							</label>
+							<label className="space-y-1 text-sm">
+								<span className="text-text-secondary">App-Level Token</span>
+								<input
+									type="password"
+									value={config.channels.slack?.appToken ?? ""}
+									onChange={(e) => {
+										const value = e.target.value;
+										void saveConfig((draft) => {
+											draft.channels.slack.appToken = value;
+											return draft;
+										});
+									}}
+									className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+									placeholder="xapp-..."
+								/>
+							</label>
+						</div>
+					}
+				/>
+			)}
+
+			{/* ─── Discord 通道 ─────────────────────────────── */}
+			{config.channels.discord && "dmPolicy" in config.channels.discord && (
+				<ChannelConfigCard
+					channelId="discord"
+					title="Discord 通道"
+					description="使用 Discord Gateway WebSocket，无需公网 IP。"
+					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "discord")}
+					channelConfig={config.channels.discord}
+					saving={saving}
+					onSave={(updater) => void saveConfig(updater)}
+					credentialFields={
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<label className="space-y-1 text-sm">
+								<span className="text-text-secondary">Bot Token</span>
+								<input
+									type="password"
+									value={config.channels.discord?.botToken ?? ""}
+									onChange={(e) => {
+										const value = e.target.value;
+										void saveConfig((draft) => {
+											draft.channels.discord.botToken = value;
+											return draft;
+										});
+									}}
+									className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+									placeholder="从 Discord Developer Portal 获取"
+								/>
+							</label>
+							<label className="space-y-1 text-sm">
+								<span className="text-text-secondary">Application ID</span>
+								<input
+									value={config.channels.discord?.applicationId ?? ""}
+									onChange={(e) => {
+										const value = e.target.value;
+										void saveConfig((draft) => {
+											draft.channels.discord.applicationId = value;
+											return draft;
+										});
+									}}
+									className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+									placeholder="应用 ID（可选）"
+								/>
+							</label>
+						</div>
+					}
+				/>
+			)}
 
 			<SettingsSectionCard className="p-5 space-y-4">
 				<div>

@@ -4,6 +4,7 @@ export type RemoteChannelId =
 	| "feishu"
 	| "telegram"
 	| "slack"
+	| "discord"
 	| "generic_webhook";
 
 export type RemoteDmPolicy = "pairing" | "allowlist" | "open";
@@ -19,6 +20,45 @@ export type RemoteFeishuConfig = {
 	connectionMode: FeishuConnectionMode;
 	webhookPath: string;
 	webhookPort?: number;
+	dmPolicy: RemoteDmPolicy;
+	allowFrom: string[];
+	groupPolicy: RemoteGroupPolicy;
+	groupAllowFrom: string[];
+	requireMention: boolean;
+	textChunkLimit: number;
+	rateLimitPerMinute: number;
+};
+
+export type RemoteTelegramConfig = {
+	enabled: boolean;
+	botToken?: string;
+	dmPolicy: RemoteDmPolicy;
+	allowFrom: string[];
+	groupPolicy: RemoteGroupPolicy;
+	groupAllowFrom: string[];
+	requireMention: boolean;
+	textChunkLimit: number;
+	rateLimitPerMinute: number;
+};
+
+export type RemoteSlackConfig = {
+	enabled: boolean;
+	botToken?: string;
+	appToken?: string;
+	signingSecret?: string;
+	dmPolicy: RemoteDmPolicy;
+	allowFrom: string[];
+	groupPolicy: RemoteGroupPolicy;
+	groupAllowFrom: string[];
+	requireMention: boolean;
+	textChunkLimit: number;
+	rateLimitPerMinute: number;
+};
+
+export type RemoteDiscordConfig = {
+	enabled: boolean;
+	botToken?: string;
+	applicationId?: string;
 	dmPolicy: RemoteDmPolicy;
 	allowFrom: string[];
 	groupPolicy: RemoteGroupPolicy;
@@ -49,8 +89,9 @@ export type RemoteControlConfig = {
 	enabled: boolean;
 	channels: {
 		feishu: RemoteFeishuConfig;
-		telegram: PlaceholderChannelConfig;
-		slack: PlaceholderChannelConfig;
+		telegram: RemoteTelegramConfig;
+		slack: RemoteSlackConfig;
+		discord: RemoteDiscordConfig;
 		generic_webhook: PlaceholderChannelConfig;
 	};
 	security: RemoteSecurityConfig;

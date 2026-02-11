@@ -61,4 +61,7 @@ export const EVENTS = {
 
 	// Agent 跨面板联动
 	AGENT_FOCUS_TOOL_CALL: "AGENT_FOCUS_TOOL_CALL", // 在右侧定位某次工具调用 / 中间运行图聚焦
+
+	// 远程控制
+	REMOTE_CHAT_INJECT: "REMOTE_CHAT_INJECT", // 远程消息注入到 UI 对话
 };

@@ -1,3 +1,4 @@
+import type { BrowserWindow } from "electron";
 import { randomUUID } from "node:crypto";
 import type { Logger } from "../../logging/types";
 import { AgentSdkExecutor } from "./agentSdkExecutor";
@@ -21,6 +22,7 @@ export type RemoteCommandRouterDeps = {
 	getConfig: () => RemoteControlConfig;
 	getRuntimeStatus: () => RemoteRuntimeStatus;
 	getActiveModel: () => Promise<string>;
+	getMainWindow: () => BrowserWindow | null;
 	sendMessage: (message: RemoteOutboundMessage) => Promise<void>;
 };
 
@@ -33,10 +35,17 @@ function isAllowedByPolicy(
 	if (message.is_group) {
 		if (policy.groupPolicy === "disabled") return false;
 		if (policy.groupPolicy === "allowlist") {
-			const senderId = String(message.sender_id ?? "").trim();
-			if (!senderId || !policy.groupAllowFrom.includes(senderId)) return false;
+			// 先检查群 ID（target_id）是否在群白名单中
+			const groupId = String(message.target_id ?? "").trim();
+			if (!groupId || !policy.groupAllowFrom.includes(groupId)) {
+				// 群 ID 不在白名单中，再回退检查发送者 ID
+				const senderId = String(message.sender_id ?? "").trim();
+				if (!senderId || !policy.groupAllowFrom.includes(senderId)) {
+					return false;
+				}
+			}
 		}
-		if (policy.requireMention && !message.text.includes("@")) return false;
+		// @bot 检测已在 feishuChannel 中处理，这里不再重复
 		return true;
 	}
 	if (policy.dmPolicy === "open") return true;
@@ -52,7 +61,7 @@ export class RemoteCommandRouter {
 		RemoteInteractionRef
 	>();
 
-	constructor(private readonly deps: RemoteCommandRouterDeps) {}
+	constructor(private readonly deps: RemoteCommandRouterDeps) { }
 
 	bindInteraction(ref: RemoteInteractionRef): void {
 		this.interactionByRequestId.set(ref.request_id, ref);
@@ -165,6 +174,14 @@ export class RemoteCommandRouter {
 				);
 				return;
 			}
+			case "model": {
+				const model = await this.deps.getActiveModel();
+				await this.sendSystemReply(
+					message,
+					`当前模型：${model}`,
+				);
+				return;
+			}
 			case "approve": {
 				const ref = this.interactionByRequestId.get(command.requestId);
 				if (!ref) {
@@ -242,9 +259,22 @@ export class RemoteCommandRouter {
 						interactive_approval: true,
 					});
 					this.deps.sessionStore.bindRun(session.session_id, runId);
+
+					// 将远程消息注入前端 UI，让用户可以在界面中看到远程对话
+					const win = this.deps.getMainWindow();
+					if (win && !win.isDestroyed()) {
+						win.webContents.send("remote-chat-inject", {
+							runId,
+							prompt,
+							channelId: message.channel_id,
+							peerName: message.peer_name || message.peer_id,
+							sessionId: session.session_id,
+						});
+					}
+
 					await this.sendSystemReply(
 						message,
-						`已启动远程任务\nrunId=${runId}\nsession=${session.session_id}`,
+						"收到，正在处理中…",
 					);
 				} catch (error) {
 					this.deps.logger.error({

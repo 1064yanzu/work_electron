@@ -47,6 +47,7 @@ import { getConfig } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { useManagedModeStore } from "../lib/managedModeStore";
 import { useMessageQueueStore } from "../lib/messageQueueStore";
+import { useRemoteChatBridge } from "../lib/remoteChatBridge";
 import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import {
@@ -122,6 +123,9 @@ export default function CopilotSidebar() {
 		(state) => state.activeSessionId,
 	);
 	const status = useChatStoreSelector((state) => state.status);
+
+	// 远程消息桥接：监听远程渠道消息并注入到 UI 对话
+	useRemoteChatBridge();
 	const activeSession = useChatStoreSelector((state) => {
 		if (!state.activeSessionId) return null;
 		return (
@@ -418,7 +422,7 @@ export default function CopilotSidebar() {
 				const anyCss = (window as any)?.CSS;
 				if (anyCss && typeof anyCss.escape === "function")
 					return anyCss.escape(value);
-			} catch {}
+			} catch { }
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -1054,10 +1058,10 @@ export default function CopilotSidebar() {
 						forcedFinalState.currentTask?.metadata as any
 					)?.tokenUsage as
 						| {
-								promptTokens: number;
-								completionTokens: number;
-								totalTokens: number;
-						  }
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+						}
 						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
@@ -1102,7 +1106,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch {}
+					} catch { }
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1522,10 +1526,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-					  }
+						promptTokens: number;
+						completionTokens: number;
+						totalTokens: number;
+					}
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1623,16 +1627,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-								{
-									type: "skill_execution" as const,
-									skillName: finalSkillState.skillName,
-									skillPath: finalSkillState.skillPath,
-									status: finalSkillState.status,
-									steps: finalSkillState.steps,
-									loadedFiles: finalSkillState.loadedFiles,
-									detectedScene: finalSkillState.detectedScene,
-								},
-							]
+							{
+								type: "skill_execution" as const,
+								skillName: finalSkillState.skillName,
+								skillPath: finalSkillState.skillPath,
+								status: finalSkillState.status,
+								steps: finalSkillState.steps,
+								loadedFiles: finalSkillState.loadedFiles,
+								detectedScene: finalSkillState.detectedScene,
+							},
+						]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1688,8 +1692,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-									(update: any) => ({ type: "file_update" as const, update }),
-								)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1761,8 +1765,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+							(update: any) => ({ type: "file_update" as const, update }),
+						)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1791,9 +1795,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-									type: "file_update" as const,
-									update,
-								}))
+								type: "file_update" as const,
+								update,
+							}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2625,11 +2629,10 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
 													? "bg-zinc-50 dark:bg-zinc-800/40"
 													: ""
-											}`}
+												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2667,11 +2670,10 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "chat"
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
 									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
 									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-							}`}
+								}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
 							对话
@@ -2681,11 +2683,10 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "agent"
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
 									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
 									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-							}`}
+								}`}
 						>
 							<Bot className="w-3.5 h-3.5" />
 							托管

@@ -18,7 +18,7 @@ export type AgentEventMirrorDeps = {
 export class AgentEventMirror {
 	private readonly streamBufferByRun = new Map<string, StreamBuffer>();
 
-	constructor(private readonly deps: AgentEventMirrorDeps) {}
+	constructor(private readonly deps: AgentEventMirrorDeps) { }
 
 	private flushBuffer(runId: string): string {
 		const buffer = this.streamBufferByRun.get(runId);
@@ -37,10 +37,11 @@ export class AgentEventMirror {
 			lastFlushAt: nowTs(),
 		};
 		current.text += delta;
+		// 飞书 API 限制约 5 条/秒，增大 flush 阈值以降低 API 压力
 		const shouldFlush =
-			current.text.length >= 200 ||
+			current.text.length >= 400 ||
 			delta.includes("\n") ||
-			nowTs() - current.lastFlushAt >= 1200;
+			nowTs() - current.lastFlushAt >= 2000;
 		if (shouldFlush) {
 			const text = current.text;
 			this.streamBufferByRun.set(runId, {
@@ -94,6 +95,37 @@ export class AgentEventMirror {
 			return;
 		}
 
+		// 处理工具调用事件
+		if (event.type === "transformed" && Array.isArray(event.events)) {
+			for (const item of event.events as Array<Record<string, unknown>>) {
+				// 工具开始调用
+				if (item.type === "tool_use" && typeof item.name === "string") {
+					const toolName = item.name;
+					const inputPreview = item.input
+						? clampString(JSON.stringify(item.input), 200)
+						: "";
+					await this.sendRunMessage(
+						runId,
+						`🔧 调用工具: ${toolName}${inputPreview ? `\n参数: ${inputPreview}` : ""}`,
+					);
+					continue;
+				}
+				// 工具结果
+				if (item.type === "tool_result" && typeof item.tool_use_id === "string") {
+					const resultPreview = typeof item.content === "string"
+						? clampString(item.content, 300)
+						: "";
+					if (resultPreview) {
+						await this.sendRunMessage(
+							runId,
+							`📋 工具结果: ${resultPreview}`,
+						);
+					}
+					continue;
+				}
+			}
+		}
+
 		if (event.type === "transformed" && Array.isArray(event.events)) {
 			const deltas: string[] = [];
 			for (const item of event.events as Array<Record<string, unknown>>) {
@@ -123,7 +155,7 @@ export class AgentEventMirror {
 			}
 			const resultText =
 				typeof (event.result as Record<string, unknown> | undefined)?.result ===
-				"string"
+					"string"
 					? ((event.result as Record<string, unknown>).result as string)
 					: "";
 			if (resultText.trim()) {

@@ -38,7 +38,7 @@ import type {
 } from "./types";
 import type { RemoteGatewayScope } from "./remote-control-schema";
 
-type RemoteChannelId = "feishu" | "telegram" | "slack" | "generic_webhook";
+type RemoteChannelId = "feishu" | "telegram" | "slack" | "discord" | "generic_webhook";
 type RemotePairingStatus = "pending" | "approved" | "rejected" | "revoked";
 type RemotePairingRecordStatus = "approved" | "revoked";
 type RemoteSessionState =
@@ -642,8 +642,42 @@ export type IPCSchema = {
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
 				};
-				telegram: { enabled: boolean; note?: string };
-				slack: { enabled: boolean; note?: string };
+				telegram: {
+					enabled: boolean;
+					botToken?: string;
+					dmPolicy: "pairing" | "allowlist" | "open";
+					allowFrom: string[];
+					groupPolicy: "disabled" | "allowlist" | "open";
+					groupAllowFrom: string[];
+					requireMention: boolean;
+					textChunkLimit: number;
+					rateLimitPerMinute: number;
+				};
+				slack: {
+					enabled: boolean;
+					botToken?: string;
+					appToken?: string;
+					signingSecret?: string;
+					dmPolicy: "pairing" | "allowlist" | "open";
+					allowFrom: string[];
+					groupPolicy: "disabled" | "allowlist" | "open";
+					groupAllowFrom: string[];
+					requireMention: boolean;
+					textChunkLimit: number;
+					rateLimitPerMinute: number;
+				};
+				discord: {
+					enabled: boolean;
+					botToken?: string;
+					applicationId?: string;
+					dmPolicy: "pairing" | "allowlist" | "open";
+					allowFrom: string[];
+					groupPolicy: "disabled" | "allowlist" | "open";
+					groupAllowFrom: string[];
+					requireMention: boolean;
+					textChunkLimit: number;
+					rateLimitPerMinute: number;
+				};
 				generic_webhook: { enabled: boolean; note?: string };
 			};
 			security: {
@@ -679,8 +713,42 @@ export type IPCSchema = {
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
 					};
-					telegram: { enabled: boolean; note?: string };
-					slack: { enabled: boolean; note?: string };
+					telegram: {
+						enabled: boolean;
+						botToken?: string;
+						dmPolicy: "pairing" | "allowlist" | "open";
+						allowFrom: string[];
+						groupPolicy: "disabled" | "allowlist" | "open";
+						groupAllowFrom: string[];
+						requireMention: boolean;
+						textChunkLimit: number;
+						rateLimitPerMinute: number;
+					};
+					slack: {
+						enabled: boolean;
+						botToken?: string;
+						appToken?: string;
+						signingSecret?: string;
+						dmPolicy: "pairing" | "allowlist" | "open";
+						allowFrom: string[];
+						groupPolicy: "disabled" | "allowlist" | "open";
+						groupAllowFrom: string[];
+						requireMention: boolean;
+						textChunkLimit: number;
+						rateLimitPerMinute: number;
+					};
+					discord: {
+						enabled: boolean;
+						botToken?: string;
+						applicationId?: string;
+						dmPolicy: "pairing" | "allowlist" | "open";
+						allowFrom: string[];
+						groupPolicy: "disabled" | "allowlist" | "open";
+						groupAllowFrom: string[];
+						requireMention: boolean;
+						textChunkLimit: number;
+						rateLimitPerMinute: number;
+					};
 					generic_webhook: { enabled: boolean; note?: string };
 				};
 				security: {
@@ -793,6 +861,15 @@ export type IPCSchema = {
 		input: { channel_id: RemoteChannelId };
 		output: { ok: boolean; message: string };
 	};
+	list_remote_event_logs: {
+		input: { limit?: number };
+		output: Array<{
+			timestamp: number;
+			level: "info" | "warn" | "error";
+			source: string;
+			message: string;
+		}>;
+	};
 	get_all_configs: {
 		input: Record<string, never>;
 		output: AppConfig[];
@@ -903,13 +980,13 @@ export type IPCSchema = {
 		input: {
 			runId: string;
 			action:
-				| "set_permission_mode"
-				| "set_model"
-				| "interrupt"
-				| "mcp_status"
-				| "mcp_reconnect"
-				| "mcp_toggle"
-				| "mcp_set_servers";
+			| "set_permission_mode"
+			| "set_model"
+			| "interrupt"
+			| "mcp_status"
+			| "mcp_reconnect"
+			| "mcp_toggle"
+			| "mcp_set_servers";
 			mode?: string;
 			model?: string;
 			serverName?: string;
@@ -1095,10 +1172,10 @@ export type IPCSchema = {
 			id: string;
 			entity_type?: "source" | "output";
 			destination:
-				| "project_docs"
-				| "global_shared"
-				| "global_webclips"
-				| "theme";
+			| "project_docs"
+			| "global_shared"
+			| "global_webclips"
+			| "theme";
 			project_id?: string;
 			theme_id?: string;
 		};

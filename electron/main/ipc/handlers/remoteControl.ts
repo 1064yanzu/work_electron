@@ -151,6 +151,14 @@ export function createRemoteControlHandlers() {
 		);
 	};
 
+	const list_remote_event_logs: Handler<"list_remote_event_logs"> = async (
+		_event,
+		input,
+	) => {
+		const limit = typeof input.limit === "number" ? input.limit : 50;
+		return getRemoteControlOrchestrator().listEventLogs(limit);
+	};
+
 	return {
 		get_remote_control_config,
 		set_remote_control_config,
@@ -163,5 +171,6 @@ export function createRemoteControlHandlers() {
 		list_remote_sessions,
 		terminate_remote_session,
 		test_remote_channel,
+		list_remote_event_logs,
 	};
 }
