@@ -4,6 +4,11 @@ import type { Logger } from "../../logging/types";
 import { AgentSdkExecutor } from "./agentSdkExecutor";
 import { clampString } from "./utils";
 import { getRemoteHelpText, parseRemoteInboundCommand } from "./commandParser";
+import { ensureRemoteSessionSandboxDir } from "./sandboxDir";
+import {
+	buildContextFilesPrompt,
+	persistInboundContextFiles,
+} from "./contextFilePersistence";
 import type {
 	RemoteControlConfig,
 	RemoteInboundMessage,
@@ -61,7 +66,7 @@ export class RemoteCommandRouter {
 		RemoteInteractionRef
 	>();
 
-	constructor(private readonly deps: RemoteCommandRouterDeps) { }
+	constructor(private readonly deps: RemoteCommandRouterDeps) {}
 
 	bindInteraction(ref: RemoteInteractionRef): void {
 		this.interactionByRequestId.set(ref.request_id, ref);
@@ -73,6 +78,21 @@ export class RemoteCommandRouter {
 
 	removeInteractionRef(requestId: string): void {
 		this.interactionByRequestId.delete(requestId);
+	}
+
+	private findLatestInteractionRef(
+		channelId: string,
+		peerId: string,
+	): RemoteInteractionRef | null {
+		let picked: RemoteInteractionRef | null = null;
+		for (const item of this.interactionByRequestId.values()) {
+			if (item.channel_id !== channelId) continue;
+			if (item.peer_id !== peerId) continue;
+			if (!picked || item.created_at > picked.created_at) {
+				picked = item;
+			}
+		}
+		return picked;
 	}
 
 	private async sendSystemReply(
@@ -176,18 +196,19 @@ export class RemoteCommandRouter {
 			}
 			case "model": {
 				const model = await this.deps.getActiveModel();
-				await this.sendSystemReply(
-					message,
-					`当前模型：${model}`,
-				);
+				await this.sendSystemReply(message, `当前模型：${model}`);
 				return;
 			}
 			case "approve": {
-				const ref = this.interactionByRequestId.get(command.requestId);
+				const ref = command.requestId
+					? this.interactionByRequestId.get(command.requestId)
+					: this.findLatestInteractionRef(message.channel_id, message.peer_id);
 				if (!ref) {
 					await this.sendSystemReply(
 						message,
-						`未找到交互请求：${command.requestId}`,
+						command.requestId
+							? `未找到交互请求：${command.requestId}`
+							: "当前没有待审批的交互请求。",
 					);
 					return;
 				}
@@ -199,20 +220,27 @@ export class RemoteCommandRouter {
 						message: command.message,
 					},
 				});
+				if (success) {
+					this.interactionByRequestId.delete(ref.request_id);
+				}
 				await this.sendSystemReply(
 					message,
 					success
-						? `已批准交互请求 ${command.requestId}`
-						: `批准失败：${command.requestId}`,
+						? `已批准交互请求 ${ref.request_id}`
+						: `批准失败：${ref.request_id}`,
 				);
 				return;
 			}
 			case "reject": {
-				const ref = this.interactionByRequestId.get(command.requestId);
+				const ref = command.requestId
+					? this.interactionByRequestId.get(command.requestId)
+					: this.findLatestInteractionRef(message.channel_id, message.peer_id);
 				if (!ref) {
 					await this.sendSystemReply(
 						message,
-						`未找到交互请求：${command.requestId}`,
+						command.requestId
+							? `未找到交互请求：${command.requestId}`
+							: "当前没有待审批的交互请求。",
 					);
 					return;
 				}
@@ -225,11 +253,14 @@ export class RemoteCommandRouter {
 						interrupt: true,
 					},
 				});
+				if (success) {
+					this.interactionByRequestId.delete(ref.request_id);
+				}
 				await this.sendSystemReply(
 					message,
 					success
-						? `已拒绝交互请求 ${command.requestId}`
-						: `拒绝失败：${command.requestId}`,
+						? `已拒绝交互请求 ${ref.request_id}`
+						: `拒绝失败：${ref.request_id}`,
 				);
 				return;
 			}
@@ -242,21 +273,34 @@ export class RemoteCommandRouter {
 					return;
 				}
 				const model = await this.deps.getActiveModel();
-				const prompt = command.prompt;
+				const basePrompt = command.prompt;
 				const session = this.deps.sessionStore.create({
 					session_id: randomUUID(),
 					channel_id: message.channel_id,
 					peer_id: message.peer_id,
 					peer_name: message.peer_name,
 					target_id: message.target_id,
-					prompt_preview: clampString(prompt, 80),
+					prompt_preview: clampString(basePrompt, 80),
 				});
 				try {
+					const sandboxDir = await ensureRemoteSessionSandboxDir(
+						session.session_id,
+					);
+					const persistedContextFiles = await persistInboundContextFiles({
+						logger: this.deps.logger,
+						sandboxDir,
+						files: message.context_files || [],
+					});
+					const contextPrompt = buildContextFilesPrompt(persistedContextFiles);
+					const prompt = contextPrompt
+						? `${basePrompt}\n\n${contextPrompt}`
+						: basePrompt;
 					const runId = await this.deps.executor.start({
 						prompt,
 						model,
-						cwd: process.cwd(),
+						cwd: sandboxDir,
 						interactive_approval: true,
+						persist_session: true,
 					});
 					this.deps.sessionStore.bindRun(session.session_id, runId);
 
@@ -268,14 +312,14 @@ export class RemoteCommandRouter {
 							prompt,
 							channelId: message.channel_id,
 							peerName: message.peer_name || message.peer_id,
+							peerId: message.peer_id,
 							sessionId: session.session_id,
+							sandboxDir,
+							contextFiles: persistedContextFiles.map((file) => file.relativePath),
 						});
 					}
 
-					await this.sendSystemReply(
-						message,
-						"收到，正在处理中…",
-					);
+					await this.sendSystemReply(message, "收到，正在处理中…");
 				} catch (error) {
 					this.deps.logger.error({
 						msg: "remote control start failed",

@@ -19,6 +19,16 @@ export default defineConfig({
 				"@libsql/linux-x64",
 				"@libsql/win32-x64",
 				"jsdom",
+				// Node-only deps accidentally pulled into renderer graph
+				"discord.js",
+				"@discordjs/ws",
+				"zlib-sync",
+				"bufferutil",
+				"utf-8-validate",
+				"@slack/bolt",
+				"@slack/web-api",
+				"grammy",
+				"@larksuiteoapi/node-sdk",
 			],
 			output: {
 				manualChunks(id) {
@@ -56,7 +66,16 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		exclude: ["@anthropic-ai/claude-agent-sdk"],
+		exclude: [
+			"@anthropic-ai/claude-agent-sdk",
+			"discord.js",
+			"@discordjs/ws",
+			"zlib-sync",
+			"@slack/bolt",
+			"@slack/web-api",
+			"grammy",
+			"@larksuiteoapi/node-sdk",
+		],
 	},
 	plugins: [
 		react(),
@@ -77,6 +96,9 @@ export default defineConfig({
 								"@larksuiteoapi/node-sdk",
 								"bufferutil",
 								"utf-8-validate",
+								"discord.js",
+								"@discordjs/ws",
+								"zlib-sync",
 							],
 						},
 					},

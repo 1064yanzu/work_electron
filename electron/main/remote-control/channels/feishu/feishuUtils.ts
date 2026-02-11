@@ -1,4 +1,8 @@
 import * as Lark from "@larksuiteoapi/node-sdk";
+import {
+	extractFeishuApiErrorInfo,
+	isFeishuPermissionDenied,
+} from "./feishuApiError";
 
 // ─── 消息解析工具 ────────────────────────────────────────────
 
@@ -22,8 +26,8 @@ export function parseTextContent(
 		const { textContent } = parsePostContent(content);
 		return textContent;
 	}
-	// 其他类型返回占位符
-	return `[${messageType ?? "message"}]`;
+	// 非 text/post 不作为文本命令触发源
+	return "";
 }
 
 /**
@@ -58,14 +62,15 @@ export function parsePostContent(content: string): {
 			}
 		}
 
-		return {
-			textContent: textContent.trim() || "[富文本消息]",
-			imageKeys,
-		};
-	} catch {
-		return { textContent: "[富文本消息]", imageKeys: [] };
+			return {
+				// 仅保留真实可提取文本；避免用占位文案触发误命令。
+				textContent: textContent.trim(),
+				imageKeys,
+			};
+		} catch {
+			return { textContent: "", imageKeys: [] };
+		}
 	}
-}
 
 // ─── 目标类型推断 ────────────────────────────────────────────
 
@@ -122,10 +127,13 @@ export function stripBotMention(
 // ─── 发送者名称缓存 ────────────────────────────────────────
 
 const SENDER_NAME_TTL_MS = 10 * 60 * 1000; // 10 分钟
+const CONTACT_SCOPE_COOLDOWN_MS = 30 * 60 * 1000; // 30 分钟
 const senderNameCache = new Map<
 	string,
 	{ name: string; expireAt: number }
 >();
+let contactScopeBlockedUntil = 0;
+let contactScopeLastHintAt = 0;
 
 /**
  * 通过飞书 API 解析发送者显示名称（带缓存）
@@ -140,6 +148,7 @@ export async function resolveSenderName(
 	const cached = senderNameCache.get(senderOpenId);
 	const now = Date.now();
 	if (cached && cached.expireAt > now) return cached.name;
+	if (now < contactScopeBlockedUntil) return undefined;
 
 	try {
 		const res: Record<string, unknown> = await (
@@ -170,9 +179,21 @@ export async function resolveSenderName(
 		}
 		return undefined;
 	} catch (err) {
-		log?.(
-			`feishu: 解析发送者名称失败 ${senderOpenId}: ${String(err)}`,
-		);
+		const info = extractFeishuApiErrorInfo(err);
+		if (
+			isFeishuPermissionDenied(err) &&
+			/(^|[^a-z])contact:/i.test(String(info.msg || ""))
+		) {
+			contactScopeBlockedUntil = Date.now() + CONTACT_SCOPE_COOLDOWN_MS;
+			if (Date.now() - contactScopeLastHintAt > 60_000) {
+				contactScopeLastHintAt = Date.now();
+				log?.(
+					"feishu: 联系人权限不足，已暂停发送者名称解析。请在飞书开放平台为应用开通 contact 只读权限后重试。",
+				);
+			}
+			return undefined;
+		}
+		log?.(`feishu: 解析发送者名称失败 ${senderOpenId}: ${String(err)}`);
 		return undefined;
 	}
 }

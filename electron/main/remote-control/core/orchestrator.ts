@@ -289,6 +289,10 @@ export class RemoteControlOrchestrator {
 		if (!plugin) {
 			throw new Error(`Unsupported channel: ${message.channel_id}`);
 		}
+		if (message.use_card) {
+			await plugin.send(message);
+			return;
+		}
 		const limit = this.resolveChunkLimit(message.channel_id);
 		for (const chunk of this.splitText(message.text, limit)) {
 			await plugin.send({ ...message, text: chunk });
@@ -296,7 +300,16 @@ export class RemoteControlOrchestrator {
 	}
 
 	private async handleAgentEvent(event: AgentSdkBusEvent): Promise<void> {
-		await this.eventMirror.handle(event);
+		try {
+			await this.eventMirror.handle(event);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			this.logger.error({
+				msg: "remote agent event mirror failed",
+				error: message,
+			});
+			this.appendEventLog("error", "agent-event", `事件镜像失败: ${message}`);
+		}
 	}
 
 	async start(): Promise<void> {

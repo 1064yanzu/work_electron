@@ -37,14 +37,24 @@ function formatTime(ts: number): string {
 export function EventLogPanel() {
     const [logs, setLogs] = useState<RemoteEventLog[]>([]);
     const [expanded, setExpanded] = useState(false);
+    const [unsupportedHint, setUnsupportedHint] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const stopPollingRef = useRef(false);
 
     const refresh = useCallback(async () => {
+        if (stopPollingRef.current) return;
         try {
             const next = await listRemoteEventLogs(50);
             setLogs(next);
-        } catch {
-            // ignore
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (
+                message.includes("No handler registered for 'list_remote_event_logs'") ||
+                message.includes("No handler registered")
+            ) {
+                stopPollingRef.current = true;
+                setUnsupportedHint("当前主进程版本不支持活动日志接口（list_remote_event_logs）。");
+            }
         }
     }, []);
 
@@ -76,6 +86,11 @@ export function EventLogPanel() {
             </button>
             {expanded && (
                 <div className="max-h-52 overflow-y-auto border-t border-zinc-100 dark:border-zinc-800 font-mono text-[11px]">
+                    {unsupportedHint ? (
+                        <div className="px-4 py-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-500/10 border-b border-amber-200/60 dark:border-amber-500/20">
+                            {unsupportedHint}
+                        </div>
+                    ) : null}
                     {logs.length === 0 ? (
                         <div className="px-4 py-6 text-center text-text-muted">
                             暂无日志

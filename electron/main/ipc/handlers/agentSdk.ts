@@ -2093,6 +2093,10 @@ ${opts.appendContent}`.trim();
 					typeof input.interactive_approval === "boolean"
 						? input.interactive_approval
 						: true;
+				const hasExplicitAllowedTools = Object.prototype.hasOwnProperty.call(
+					input,
+					"allowed_tools",
+				);
 				const allowedRaw = Array.isArray(input.allowed_tools)
 					? input.allowed_tools
 					: [];
@@ -2231,6 +2235,7 @@ ${opts.appendContent}`.trim();
 					msg: "agent_sdk agentsConfig before sdk.query",
 					scope: "agent",
 					runId,
+					hasExplicitAllowedTools,
 					allowedToolsCount: allowed.length,
 					allowedToolsHasTask: allowed.includes("Task"),
 					agentKeys: Object.keys(agentsConfig),
@@ -2253,7 +2258,9 @@ ${opts.appendContent}`.trim();
 						mcpServers,
 						// 必须传入 allowedTools 并包含 Task，否则自定义 agents 无法被调用
 						// 参考文档: "The Task tool must be included in allowedTools since Claude invokes subagents through the Task tool."
-						allowedTools: allowed.length > 0 ? allowed : undefined,
+						allowedTools: hasExplicitAllowedTools
+							? allowed
+							: undefined,
 						agents: agentsConfig as any,
 						hooks: {
 							...lifecycleHooks,
@@ -2635,10 +2642,9 @@ ${opts.appendContent}`.trim();
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
 						// 必须包含 "user" 和 "project" 才能加载 ~/.claude/skills 和 .claude/skills
 						settingSources: ["user", "project"] as any,
-						tools:
-							allowed.length > 0
-								? allowed
-								: { type: "preset", preset: "claude_code" },
+						tools: hasExplicitAllowedTools
+							? allowed
+							: { type: "preset", preset: "claude_code" },
 						env: (() => {
 							const env: Record<string, string> = {};
 							for (const [k, v] of Object.entries(process.env)) {
@@ -2706,7 +2712,10 @@ ${opts.appendContent}`.trim();
 									message: "aborted",
 								};
 							}
-							if (allowed.length > 0 && !allowed.includes(toolName)) {
+							if (
+								hasExplicitAllowedTools &&
+								!allowed.includes(toolName)
+							) {
 								return {
 									behavior: "deny",
 									message: `Tool disabled: ${toolName}`,

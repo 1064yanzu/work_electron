@@ -45,41 +45,43 @@ export function SecuritySettingsCard({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <label className="space-y-1.5 text-sm">
                         <span className="text-text-secondary font-medium">交互超时（秒）</span>
-                        <input
-                            type="number"
-                            min={10}
-                            max={300}
-                            value={config.security.interactionTimeoutSec}
+	                        <input
+	                            type="number"
+	                            min={10}
+	                            max={300}
+	                            value={config.security.interactionTimeoutSec}
                             onChange={(e) => {
                                 const value = Math.max(10, Number(e.target.value || 55));
                                 onSave((draft) => {
                                     draft.security.interactionTimeoutSec = value;
                                     return draft;
                                 });
-                            }}
-                            className={INPUT_CLASS}
-                        />
+	                            }}
+	                            className={INPUT_CLASS}
+	                            disabled={saving}
+	                        />
                     </label>
                     <label className="space-y-1.5 text-sm">
                         <span className="text-text-secondary font-medium">移动网关 Host</span>
-                        <input
-                            value={config.mobileGateway.host}
+	                        <input
+	                            value={config.mobileGateway.host}
                             onChange={(e) => {
                                 const value = e.target.value;
                                 onSave((draft) => {
                                     draft.mobileGateway.host = value;
                                     return draft;
                                 });
-                            }}
-                            className={INPUT_CLASS}
-                        />
+	                            }}
+	                            className={INPUT_CLASS}
+	                            disabled={saving}
+	                        />
                     </label>
                     <label className="space-y-1.5 text-sm">
                         <span className="text-text-secondary font-medium">移动网关 Port</span>
-                        <input
-                            type="number"
-                            min={1024}
-                            max={65535}
+	                        <input
+	                            type="number"
+	                            min={1024}
+	                            max={65535}
                             value={config.mobileGateway.port}
                             onChange={(e) => {
                                 const value = Math.max(1024, Number(e.target.value || 28777));
@@ -87,9 +89,10 @@ export function SecuritySettingsCard({
                                     draft.mobileGateway.port = value;
                                     return draft;
                                 });
-                            }}
-                            className={INPUT_CLASS}
-                        />
+	                            }}
+	                            className={INPUT_CLASS}
+	                            disabled={saving}
+	                        />
                     </label>
                 </div>
 

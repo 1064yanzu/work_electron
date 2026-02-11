@@ -16,6 +16,7 @@ const REMOTE_CHANNEL_IDS: RemoteChannelId[] = [
 	"feishu",
 	"telegram",
 	"slack",
+	"discord",
 	"generic_webhook",
 ];
 

@@ -81,17 +81,59 @@ export class AgentEventMirror {
 				peer_id: session.peer_id,
 				created_at: nowTs(),
 			});
-			await this.sendRunMessage(
-				runId,
-				[
-					"收到交互审批请求：",
-					`requestId=${event.request.requestId}`,
-					`tool=${event.request.toolName}`,
-					"可用命令：",
-					`/approve ${event.request.requestId}`,
-					`/reject ${event.request.requestId} <reason>`,
-				].join("\n"),
-			);
+
+			// 判断是否为飞书渠道,使用交互卡片
+			if (session.channel_id === "feishu") {
+				try {
+					// 动态导入飞书卡片构建器
+					const { buildInteractionApprovalCard } = await import(
+						"../channels/feishu/feishuCardBuilder"
+					);
+					const cardJson = buildInteractionApprovalCard({
+						requestId: event.request.requestId,
+						toolName: event.request.toolName,
+						toolInput: event.request.toolInput as Record<string, unknown> | undefined,
+					});
+
+					// 发送交互卡片
+					await this.deps.sendToChannel({
+						channel_id: session.channel_id,
+						target_id: session.target_id,
+						text: cardJson,
+						// 标记为卡片消息
+						use_card: true,
+					});
+				} catch (error) {
+					await this.sendRunMessage(
+						runId,
+						[
+							"收到交互审批请求:",
+							`requestId=${event.request.requestId}`,
+							`tool=${event.request.toolName}`,
+							"飞书卡片发送失败，已降级为命令审批：",
+							`/approve ${event.request.requestId}`,
+							`/reject ${event.request.requestId} <reason>`,
+						].join("\n"),
+					);
+					await this.sendRunMessage(
+						runId,
+						`[warn] 卡片发送失败: ${error instanceof Error ? error.message : String(error)}`,
+					);
+				}
+			} else {
+				// 非飞书渠道使用纯文本
+				await this.sendRunMessage(
+					runId,
+					[
+						"收到交互审批请求:",
+						`requestId=${event.request.requestId}`,
+						`tool=${event.request.toolName}`,
+						"可用命令:",
+						`/approve ${event.request.requestId}`,
+						`/reject ${event.request.requestId} <reason>`,
+					].join("\n"),
+				);
+			}
 			return;
 		}
 
@@ -150,20 +192,32 @@ export class AgentEventMirror {
 
 		if (event.type === "done") {
 			const tail = this.flushBuffer(runId);
-			if (tail) {
-				await this.sendRunMessage(runId, tail);
-			}
 			const resultText =
 				typeof (event.result as Record<string, unknown> | undefined)?.result ===
 					"string"
 					? ((event.result as Record<string, unknown>).result as string)
 					: "";
+
+			// 优化:避免重复发送
+			// 如果有result,只发送result(不带[done]标记)
+			// 如果没有result但有buffer,发送buffer内容
 			if (resultText.trim()) {
+				// 如果tail和resultText内容重复,只发送一次
+				const isSameContent = tail.trim() === resultText.trim();
+				if (!isSameContent && tail) {
+					// buffer内容与result不同,先发送buffer
+					await this.sendRunMessage(runId, tail);
+				}
+				// 发送最终结果,不带[done]标记
 				await this.sendRunMessage(
 					runId,
-					`\n[done]\n${clampString(resultText, 2000)}`,
+					clampString(resultText, 2000),
 				);
+			} else if (tail) {
+				// 没有result但有buffer内容,发送buffer
+				await this.sendRunMessage(runId, tail);
 			}
+
 			this.deps.sessionStore.updateStateByRun(runId, "completed");
 			this.deps.sessionStore.removeByRunId(runId);
 			return;

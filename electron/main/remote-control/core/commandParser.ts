@@ -7,11 +7,18 @@ export type ParsedRemoteCommand =
 	| { kind: "sessions" }
 	| { kind: "model" }
 	| { kind: "stop"; runId?: string }
-	| { kind: "approve"; requestId: string; message?: string }
-	| { kind: "reject"; requestId: string; message?: string };
+	| { kind: "approve"; requestId?: string; message?: string }
+	| { kind: "reject"; requestId?: string; message?: string };
 
 function normalizeInput(input: string): string {
 	return String(input || "").trim();
+}
+
+function looksLikeRequestId(value: string | undefined): boolean {
+	if (!value) return false;
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+		value,
+	);
 }
 
 function parseSlashCommand(text: string): ParsedRemoteCommand | null {
@@ -33,16 +40,28 @@ function parseSlashCommand(text: string): ParsedRemoteCommand | null {
 		case "/stop":
 			return { kind: "stop", runId: tokens[1] };
 		case "/approve": {
-			const requestId = tokens[1] ?? "";
-			if (!requestId) return { kind: "help" };
-			const message = tokens.slice(2).join(" ");
-			return { kind: "approve", requestId, message: message || undefined };
+			const token1 = tokens[1];
+			const requestId = looksLikeRequestId(token1) ? token1 : undefined;
+			const message = requestId
+				? tokens.slice(2).join(" ")
+				: tokens.slice(1).join(" ");
+			return {
+				kind: "approve",
+				requestId: requestId || undefined,
+				message: message || undefined,
+			};
 		}
 		case "/reject": {
-			const requestId = tokens[1] ?? "";
-			if (!requestId) return { kind: "help" };
-			const message = tokens.slice(2).join(" ");
-			return { kind: "reject", requestId, message: message || undefined };
+			const token1 = tokens[1];
+			const requestId = looksLikeRequestId(token1) ? token1 : undefined;
+			const message = requestId
+				? tokens.slice(2).join(" ")
+				: tokens.slice(1).join(" ");
+			return {
+				kind: "reject",
+				requestId: requestId || undefined,
+				message: message || undefined,
+			};
 		}
 		default:
 			return null;
@@ -69,8 +88,8 @@ export function getRemoteHelpText(): string {
 		"/sessions 查看会话",
 		"/model 查看当前模型",
 		"/stop [runId] 停止运行",
-		"/approve <requestId> [message] 批准交互请求",
-		"/reject <requestId> [message] 拒绝交互请求",
+		"/approve [requestId] [message] 批准交互请求（省略 requestId 时默认最近一条）",
+		"/reject [requestId] [message] 拒绝交互请求（省略 requestId 时默认最近一条）",
 		"直接发送文本会触发 Agent 运行",
 	].join("\n");
 }

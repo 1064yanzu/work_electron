@@ -304,6 +304,57 @@ export function FeishuChannelCard({
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="space-y-1.5">
+                        <span className="text-sm text-text-secondary font-medium">附件与命令合并</span>
+                        <div className="flex h-[42px] items-center">
+                            <SettingsSwitch
+                                checked={config.channels.feishu.enableAttachmentMerge}
+                                onChange={(next) => {
+                                    onSave((draft) => {
+                                        draft.channels.feishu.enableAttachmentMerge = next;
+                                        return draft;
+                                    });
+                                }}
+                                disabled={saving}
+                            />
+                        </div>
+                    </div>
+                    <label className="space-y-1.5 text-sm">
+                        <span className="text-text-secondary font-medium">合并窗口（秒）</span>
+                        <input
+                            type="number"
+                            min={5}
+                            max={300}
+                            value={config.channels.feishu.attachmentMergeWindowSec}
+                            onChange={(e) => {
+                                const value = Math.max(5, Math.min(300, Number(e.target.value || 45)));
+                                onSave((draft) => {
+                                    draft.channels.feishu.attachmentMergeWindowSec = value;
+                                    return draft;
+                                });
+                            }}
+                            className={INPUT_CLASS}
+                            disabled={!config.channels.feishu.enableAttachmentMerge}
+                        />
+                    </label>
+                    <div className="space-y-1.5">
+                        <span className="text-sm text-text-secondary font-medium">文档链接预取（Docx/Wiki）</span>
+                        <div className="flex h-[42px] items-center">
+                            <SettingsSwitch
+                                checked={config.channels.feishu.enableDocLinkPrefetch}
+                                onChange={(next) => {
+                                    onSave((draft) => {
+                                        draft.channels.feishu.enableDocLinkPrefetch = next;
+                                        return draft;
+                                    });
+                                }}
+                                disabled={saving}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* 运行状态条 */}
                 <div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
                     <Wifi className="h-4 w-4 text-text-muted" />

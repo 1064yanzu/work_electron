@@ -943,6 +943,9 @@ export interface RemoteControlConfig {
 			groupPolicy: "disabled" | "allowlist" | "open";
 			groupAllowFrom: string[];
 			requireMention: boolean;
+			enableAttachmentMerge: boolean;
+			attachmentMergeWindowSec: number;
+			enableDocLinkPrefetch: boolean;
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
 		};

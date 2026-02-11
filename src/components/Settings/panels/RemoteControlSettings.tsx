@@ -529,6 +529,57 @@ export function RemoteControlSettings() {
 					</div>
 				</div>
 
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+					<div className="space-y-1">
+						<span className="text-sm text-text-secondary">附件与命令合并</span>
+						<div className="flex h-[42px] items-center">
+							<SettingsSwitch
+								checked={config.channels.feishu.enableAttachmentMerge}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableAttachmentMerge = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+					</div>
+					<label className="space-y-1 text-sm">
+						<span className="text-text-secondary">合并窗口（秒）</span>
+						<input
+							type="number"
+							min={5}
+							max={300}
+							value={config.channels.feishu.attachmentMergeWindowSec}
+							onChange={(e) => {
+								const value = Math.max(5, Math.min(300, Number(e.target.value || 45)));
+								void saveConfig((draft) => {
+									draft.channels.feishu.attachmentMergeWindowSec = value;
+									return draft;
+								});
+							}}
+							disabled={!config.channels.feishu.enableAttachmentMerge}
+							className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"
+						/>
+					</label>
+					<div className="space-y-1">
+						<span className="text-sm text-text-secondary">文档链接预取（Docx/Wiki）</span>
+						<div className="flex h-[42px] items-center">
+							<SettingsSwitch
+								checked={config.channels.feishu.enableDocLinkPrefetch}
+								onChange={(next) => {
+									void saveConfig((draft) => {
+										draft.channels.feishu.enableDocLinkPrefetch = next;
+										return draft;
+									});
+								}}
+								disabled={saving}
+							/>
+						</div>
+					</div>
+				</div>
+
 				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/60">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">
@@ -569,13 +620,14 @@ export function RemoteControlSettings() {
 			</SettingsSectionCard>
 
 			{/* ─── Telegram 通道 ─────────────────────────────── */}
-			{config.channels.telegram && "dmPolicy" in config.channels.telegram && (
-				<ChannelConfigCard
-					channelId="telegram"
-					title="Telegram 通道"
-					description="使用 Telegram Bot API 长轮询，无需公网 IP。"
-					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "telegram")}
-					channelConfig={config.channels.telegram}
+				{config.channels.telegram && "dmPolicy" in config.channels.telegram && (
+					<ChannelConfigCard
+						channelId="telegram"
+						title="Telegram 通道"
+						description="使用 Telegram Bot API 长轮询，无需公网 IP。"
+						icon={<Smartphone className="h-4.5 w-4.5 text-sky-600 dark:text-sky-400" />}
+						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "telegram")}
+						channelConfig={config.channels.telegram}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={
@@ -602,13 +654,14 @@ export function RemoteControlSettings() {
 			)}
 
 			{/* ─── Slack 通道 ─────────────────────────────── */}
-			{config.channels.slack && "dmPolicy" in config.channels.slack && (
-				<ChannelConfigCard
-					channelId="slack"
-					title="Slack 通道"
-					description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
-					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "slack")}
-					channelConfig={config.channels.slack}
+				{config.channels.slack && "dmPolicy" in config.channels.slack && (
+					<ChannelConfigCard
+						channelId="slack"
+						title="Slack 通道"
+						description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
+						icon={<Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />}
+						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "slack")}
+						channelConfig={config.channels.slack}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={
@@ -651,13 +704,14 @@ export function RemoteControlSettings() {
 			)}
 
 			{/* ─── Discord 通道 ─────────────────────────────── */}
-			{config.channels.discord && "dmPolicy" in config.channels.discord && (
-				<ChannelConfigCard
-					channelId="discord"
-					title="Discord 通道"
-					description="使用 Discord Gateway WebSocket，无需公网 IP。"
-					runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "discord")}
-					channelConfig={config.channels.discord}
+				{config.channels.discord && "dmPolicy" in config.channels.discord && (
+					<ChannelConfigCard
+						channelId="discord"
+						title="Discord 通道"
+						description="使用 Discord Gateway WebSocket，无需公网 IP。"
+						icon={<Wifi className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />}
+						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "discord")}
+						channelConfig={config.channels.discord}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={

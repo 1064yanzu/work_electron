@@ -93,6 +93,20 @@ function mergeConfig(
 				next.channels.feishu.webhookPath = feishu.webhookPath;
 			if (typeof feishu.webhookPort === "number")
 				next.channels.feishu.webhookPort = feishu.webhookPort;
+			if (typeof feishu.enableAttachmentMerge === "boolean") {
+				next.channels.feishu.enableAttachmentMerge =
+					feishu.enableAttachmentMerge;
+			}
+			if (typeof feishu.attachmentMergeWindowSec === "number") {
+				next.channels.feishu.attachmentMergeWindowSec = Math.max(
+					5,
+					Math.floor(feishu.attachmentMergeWindowSec),
+				);
+			}
+			if (typeof feishu.enableDocLinkPrefetch === "boolean") {
+				next.channels.feishu.enableDocLinkPrefetch =
+					feishu.enableDocLinkPrefetch;
+			}
 		}
 
 		// ─── Telegram ───

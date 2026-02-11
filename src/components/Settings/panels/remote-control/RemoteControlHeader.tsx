@@ -4,10 +4,8 @@
  */
 
 import {
-	Activity,
 	Globe,
 	Radio,
-	Shield,
 	Smartphone,
 	Users,
 	Zap,
@@ -71,7 +69,7 @@ export function RemoteControlHeader({
 	const fetchModel = useCallback(async () => {
 		try {
 			const model = await getActiveModel();
-			setCurrentModel(model);
+			setCurrentModel(model ?? "unknown");
 		} catch {
 			setCurrentModel("unknown");
 		}
@@ -83,8 +81,6 @@ export function RemoteControlHeader({
 
 	const connectedChannels =
 		runtimeStatus?.channels.filter((ch) => ch.connected).length ?? 0;
-	const runningChannels =
-		runtimeStatus?.channels.filter((ch) => ch.running).length ?? 0;
 	const totalChannels = runtimeStatus?.channels.length ?? 0;
 
 	return (

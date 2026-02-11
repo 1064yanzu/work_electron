@@ -25,6 +25,9 @@ export type RemoteFeishuConfig = {
 	groupPolicy: RemoteGroupPolicy;
 	groupAllowFrom: string[];
 	requireMention: boolean;
+	enableAttachmentMerge: boolean;
+	attachmentMergeWindowSec: number;
+	enableDocLinkPrefetch: boolean;
 	textChunkLimit: number;
 	rateLimitPerMinute: number;
 };
@@ -169,6 +172,14 @@ export type RemoteRuntimeStatus = {
 	pending_pairings: number;
 };
 
+export type RemoteInboundContextFile = {
+	source: string;
+	title: string;
+	suggested_name: string;
+	content: string;
+	metadata?: Record<string, string>;
+};
+
 export type RemoteInboundMessage = {
 	channel_id: RemoteChannelId;
 	peer_id: string;
@@ -181,6 +192,7 @@ export type RemoteInboundMessage = {
 	reply_to_message_id?: string;
 	target_id: string;
 	raw?: unknown;
+	context_files?: RemoteInboundContextFile[];
 };
 
 export type RemoteOutboundMessage = {
@@ -188,6 +200,7 @@ export type RemoteOutboundMessage = {
 	target_id: string;
 	text: string;
 	reply_to_message_id?: string;
+	use_card?: boolean; // 是否使用卡片格式(飞书等平台)
 };
 
 export type RemoteInteractionRef = {
