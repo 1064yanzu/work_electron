@@ -2626,8 +2626,8 @@ export default function CopilotSidebar() {
 												setIsProposalMenuOpen(false);
 											}}
 											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
+												? "bg-zinc-50 dark:bg-zinc-800/40"
+												: ""
 												}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
@@ -2660,15 +2660,15 @@ export default function CopilotSidebar() {
 				)}
 
 				<div className="mb-2 flex items-center justify-between">
-					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5">
+					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
 						<button
 							onClick={() => {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
+								? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
 								}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
@@ -2679,9 +2679,9 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
-									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
+								? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md scale-[1.02]"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
 								}`}
 						>
 							<Bot className="w-3.5 h-3.5" />
@@ -2689,8 +2689,15 @@ export default function CopilotSidebar() {
 						</button>
 					</div>
 
-					<div className="text-[11px] text-zinc-400">
-						{chatMode === "agent" ? "托管模式" : "普通对话"}
+					<div className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-400"}`}>
+						{chatMode === "agent" ? (
+							<>
+								<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+								托管模式
+							</>
+						) : (
+							"普通对话"
+						)}
 					</div>
 				</div>
 

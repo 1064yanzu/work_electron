@@ -25,6 +25,10 @@ interface ModalProps {
 	 * 底部操作区
 	 */
 	footer?: React.ReactNode;
+	/**
+	 * 初始焦点引用，不传则自动聚焦第一个可交互元素
+	 */
+	initialFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 const sizeStyles = {
@@ -43,6 +47,7 @@ export function Modal({
 	showCloseButton = true,
 	closeOnOverlayClick = true,
 	footer,
+	initialFocusRef,
 }: ModalProps) {
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
@@ -128,7 +133,7 @@ export function Modal({
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
 				onEscape={handleClose}
-				initialFocusRef={closeButtonRef}
+				initialFocusRef={initialFocusRef}
 			>
 				{/* Header */}
 				<div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-800/50">

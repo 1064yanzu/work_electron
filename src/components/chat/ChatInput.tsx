@@ -1,14 +1,15 @@
 // Cursor 风格的聊天输入框 - 支持斜杠命令和动态上下文
 
 import {
+	ArrowUp,
 	AtSign,
-	ChevronDown,
+	ChevronUp,
 	FileText,
 	Folder,
 	Globe,
 	Image as ImageIcon,
 	Mic,
-	Send,
+	Plus,
 	Type,
 } from "lucide-react";
 import {
@@ -523,10 +524,10 @@ export function ChatInput({
 			/>
 
 			{/* 主输入区域 */}
-			<div className="bg-white dark:bg-zinc-800 rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 ring-1 ring-black/5 dark:ring-white/5 focus-within:border-zinc-300 dark:focus-within:border-zinc-600 focus-within:ring-4 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-800 transition-all shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.15)]">
-				{/* 上下文附件条 - Claude 风格 */}
+			<div className="bg-zinc-50 dark:bg-zinc-800/80 rounded-[20px] border border-zinc-200/80 dark:border-zinc-700/60 focus-within:border-zinc-300 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+				{/* 上下文附件条 */}
 				{contexts.length > 0 ? (
-					<div className="px-4 pt-2.5 pb-1.5">
+					<div className="px-4 pt-3 pb-1">
 						<div className="flex items-center gap-1.5 overflow-x-auto">
 							{contexts.map((ctx) => (
 								<div key={ctx.id} className="shrink-0">
@@ -555,10 +556,12 @@ export function ChatInput({
 								</div>
 							))}
 						</div>
+						{/* 附件与输入区分割线 */}
+						<div className="mt-2 border-t border-zinc-200/60 dark:border-zinc-700/40" />
 					</div>
 				) : null}
 
-				{/* 已选择的命令卡片 - 新 Chips 系统 */}
+				{/* 已选择的命令卡片 */}
 				<SlashCommandChipList
 					chips={selectedChips}
 					onRemove={handleRemoveChip}
@@ -576,26 +579,38 @@ export function ChatInput({
 						placeholder={placeholder}
 						disabled={disabled}
 						rows={1}
-						className="w-full px-4 py-3.5 bg-transparent text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 resize-none focus:outline-none disabled:opacity-50 min-h-[52px] leading-relaxed selection:bg-zinc-100 dark:selection:bg-zinc-700"
+						className="w-full px-5 py-3.5 bg-transparent text-[14px] text-zinc-800 dark:text-zinc-200 placeholder-zinc-400/80 dark:placeholder-zinc-500 resize-none focus:outline-none disabled:opacity-50 min-h-[52px] leading-relaxed"
 						style={{ maxHeight: "200px" }}
 					/>
 				</div>
 
-				{/* 底部工具栏 */}
+				{/* 底部工具栏 — 分割线 + 宽松布局 */}
+				<div className="mx-4 border-t border-zinc-200/50 dark:border-zinc-700/30" />
 				<div className="flex items-center justify-between px-3 py-2.5">
-					{/* 左侧：快捷按钮 */}
-					<div className="flex items-center gap-1.5">
+					{/* 左侧：圆形按钮组 */}
+					<div className="flex items-center gap-1">
+						{/* 附件/命令按钮 */}
+						<button
+							onClick={() => fileInputRef.current?.click()}
+							aria-label="添加附件"
+							className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200/80 dark:border-zinc-600/60 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-500 transition-all duration-150 cursor-pointer active:scale-95"
+							title="添加附件"
+						>
+							<Plus className="w-4 h-4" />
+						</button>
+
+						{/* 斜杠命令按钮 */}
 						<button
 							onClick={() => setValue("/")}
 							aria-label="命令菜单"
-							className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-300 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors cursor-pointer"
+							className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200/80 dark:border-zinc-600/60 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-500 transition-all duration-150 cursor-pointer active:scale-95"
 							title="命令菜单 (/)"
 						>
 							<AtSign className="w-4 h-4" />
 						</button>
 
-						{/* 模型选择 - Dropdown Trigger */}
-						<div className="relative">
+						{/* 模型选择器 */}
+						<div className="relative ml-1">
 							{isModelSelectorOpen && models.length > 0 && (
 								<ModelSelector
 									models={models}
@@ -610,41 +625,53 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all border ${isModelSelectorOpen
-										? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-										: "text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 border-transparent"
+								className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-full transition-all duration-150 cursor-pointer ${isModelSelectorOpen
+									? "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100"
+									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
 									}`}
 							>
+								<ChevronUp className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`} />
 								<span className="font-medium truncate max-w-[100px]">
-									{model ? model.split("/").pop()?.slice(0, 12) : "Auto"}
+									{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
 								</span>
-								<ChevronDown className="w-3 h-3 text-zinc-300 group-hover:text-zinc-500 dark:group-hover:text-zinc-300 transition-colors" />
 							</button>
 						</div>
 					</div>
 
-					{/* 右侧：发送按钮 */}
-					<button
-						onClick={handleSubmit}
-						disabled={disabled || (!value.trim() && selectedChips.length === 0)}
-						aria-label="发送消息"
-						className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-100 dark:disabled:bg-zinc-800 disabled:text-zinc-300 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white dark:text-zinc-900 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-					>
-						<Send className="w-3.5 h-3.5 ml-0.5" />
-					</button>
+					{/* 右侧：语音 + 发送按钮 */}
+					<div className="flex items-center gap-2">
+						<button
+							aria-label="语音输入"
+							className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-300 hover:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+							title="语音输入"
+						>
+							<Mic className="w-4 h-4" />
+						</button>
+						<button
+							onClick={handleSubmit}
+							disabled={disabled || (!value.trim() && selectedChips.length === 0)}
+							aria-label="发送消息"
+							className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 cursor-pointer active:scale-90 ${value.trim() || selectedChips.length > 0
+									? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+									: "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 disabled:cursor-not-allowed"
+								}`}
+						>
+							<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+						</button>
+					</div>
 				</div>
 			</div>
 
 			{/* 快捷键提示 */}
-			<div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-zinc-300 dark:text-zinc-600 select-none">
-				<span className="flex items-center gap-1">
-					<kbd className="px-1.5 h-4 flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded text-[9px] font-sans text-zinc-400">
+			<div className="flex items-center justify-center gap-5 mt-2.5 text-[10px] text-zinc-300 dark:text-zinc-600 select-none">
+				<span className="flex items-center gap-1.5">
+					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-white dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60 rounded text-[9px] font-sans text-zinc-400 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 						/
 					</kbd>
 					命令
 				</span>
-				<span className="flex items-center gap-1">
-					<kbd className="px-1.5 h-4 flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded text-[9px] font-sans text-zinc-400">
+				<span className="flex items-center gap-1.5">
+					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-white dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60 rounded text-[9px] font-sans text-zinc-400 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 						↵
 					</kbd>
 					发送
