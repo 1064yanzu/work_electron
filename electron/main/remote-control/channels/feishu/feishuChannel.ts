@@ -29,6 +29,7 @@ import { extractFeishuApiErrorInfo } from "./feishuApiError";
 import { FeishuShareMessageContextService } from "./feishuShareMessageContextService";
 import { FeishuShareContextBuffer } from "./feishuShareContextBuffer";
 import { parseCardAction } from "./feishuCardBuilder";
+import { extractLocalImagePathsFromText } from "./feishuOutboundImageExtractor";
 
 // ─── 消息事件类型 ──────────────────────────────────────────
 
@@ -89,11 +90,6 @@ type FeishuCardActionAck = {
 const RECONNECT_DELAY_MS = 5_000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const ATTACHMENT_MESSAGE_TYPES = new Set(["file", "image", "media", "audio"]);
-const IMAGE_FILE_EXT_REGEX = /\.(?:png|jpe?g|webp|gif|bmp|tiff?|ico)$/i;
-const FILE_URL_REGEX = /file:\/\/[^\s)>\]}]+/gi;
-const ABS_PATH_IMAGE_REGEX =
-	/(?:\/Users\/[^\s)>\]}]+|\/home\/[^\s)>\]}]+|\/Volumes\/[^\s)>\]}]+)\.(?:png|jpe?g|webp|gif|bmp|tiff?|ico)/gi;
-const MARKDOWN_LINK_REGEX = /\[([^\]]*)\]\(([^)]+)\)/g;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	if (!value || typeof value !== "object") return null;
@@ -105,7 +101,9 @@ function toStringOrEmpty(value: unknown): string {
 }
 
 function normalizeInboundTextForDedupe(text: string): string {
-	let normalized = String(text || "").replace(/\r\n/g, "\n").trim();
+	let normalized = String(text || "")
+		.replace(/\r\n/g, "\n")
+		.trim();
 	normalized = normalized.replace(/^回复\s*[^:\n：]{1,40}[：:]\s*/u, "");
 	normalized = normalized.replace(/^(?:>\s?.*(?:\n|$))+/g, "");
 	return normalized.replace(/\s+/g, " ").trim();
@@ -168,22 +166,6 @@ function normalizeOutboundTextForDedupe(text: string): string {
 		.trim();
 }
 
-function isLikelyImagePath(pathLike: string): boolean {
-	return IMAGE_FILE_EXT_REGEX.test(pathLike.trim());
-}
-
-function normalizeFileUrlToPath(input: string): string {
-	const value = String(input || "").trim();
-	if (!value) return "";
-	if (!value.toLowerCase().startsWith("file://")) return value;
-	try {
-		const url = new URL(value);
-		return decodeURIComponent(url.pathname || "");
-	} catch {
-		return value.replace(/^file:\/\//i, "");
-	}
-}
-
 export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	readonly id = "feishu" as const;
 	private ctx: RemoteChannelContext | null = null;
@@ -196,15 +178,19 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	private readonly outboundLimiter = new FeishuOutboundRateLimiter(4);
 	private readonly inboundMergeBuffer = new FeishuInboundMergeBuffer();
 	private readonly shareContextBuffer = new FeishuShareContextBuffer();
-	private readonly docLinkMergeBuffer = new Map<string, { text: string; timestamp: number }>();
+	private readonly docLinkMergeBuffer = new Map<
+		string,
+		{ text: string; timestamp: number }
+	>();
 	private messageResourceService: FeishuMessageResourceService | null = null;
-	private shareMessageContextService: FeishuShareMessageContextService | null = null;
+	private shareMessageContextService: FeishuShareMessageContextService | null =
+		null;
 	private docLinkResolver: FeishuDocLinkResolver | null = null;
 	private reconnectAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 	private stopped = false;
 
-	constructor(private readonly logger: Logger) { }
+	constructor(private readonly logger: Logger) {}
 
 	// ─── 消息去重 ────────────────────────────────────────
 
@@ -265,50 +251,6 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		return now - lastAt > 8_000;
 	}
 
-	private extractLocalImagePathsFromText(text: string): {
-		imagePaths: string[];
-		cleanedText: string;
-	} {
-		const found = new Set<string>();
-		let cleaned = String(text || "");
-
-		cleaned = cleaned.replace(
-			MARKDOWN_LINK_REGEX,
-			(match: string, label: string, href: string) => {
-				const normalizedHref = normalizeFileUrlToPath(href);
-				if (isLikelyImagePath(normalizedHref)) {
-					found.add(normalizedHref);
-					return label?.trim() ? `[${label}]` : "";
-				}
-				return match;
-			},
-		);
-
-		cleaned = cleaned.replace(FILE_URL_REGEX, (match: string) => {
-			const normalized = normalizeFileUrlToPath(match);
-			if (isLikelyImagePath(normalized)) {
-				found.add(normalized);
-				return "";
-			}
-			return match;
-		});
-
-		cleaned = cleaned.replace(ABS_PATH_IMAGE_REGEX, (match: string) => {
-			if (isLikelyImagePath(match)) {
-				found.add(match);
-				return "";
-			}
-			return match;
-		});
-
-		cleaned = cleaned.replace(/[ \t]+\n/g, "\n");
-		cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
-		return {
-			imagePaths: Array.from(found),
-			cleanedText: cleaned,
-		};
-	}
-
 	// ─── 客户端构建 ──────────────────────────────────────
 
 	private buildClient(
@@ -352,9 +294,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.shareContextBuffer.cleanupExpired();
 		this.cleanupDocLinkBuffer();
 
-		const senderOpenId = String(
-			event.sender?.sender_id?.open_id ?? "",
-		).trim();
+		const senderOpenId = String(event.sender?.sender_id?.open_id ?? "").trim();
 		const isGroup = message.chat_type === "group";
 		const messageType = String(message.message_type ?? "")
 			.trim()
@@ -370,11 +310,12 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			this.shouldBufferAttachment(messageType) &&
 			conversationKey
 		) {
-			const attachment = await this.messageResourceService.fetchBufferedAttachment({
-				message_id: message.message_id,
-				message_type: message.message_type,
-				content: message.content,
-			});
+			const attachment =
+				await this.messageResourceService.fetchBufferedAttachment({
+					message_id: message.message_id,
+					message_type: message.message_type,
+					content: message.content,
+				});
 			if (attachment) {
 				this.inboundMergeBuffer.push(
 					conversationKey,
@@ -443,7 +384,8 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			this.messageResourceService &&
 			conversationKey
 		) {
-			const mergedAttachments = this.inboundMergeBuffer.consume(conversationKey);
+			const mergedAttachments =
+				this.inboundMergeBuffer.consume(conversationKey);
 			if (mergedAttachments.length > 0) {
 				const attachmentContext =
 					this.messageResourceService.buildContextBlock(mergedAttachments);
@@ -470,8 +412,13 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		const contextFiles: RemoteInboundContextFile[] = [];
 
 		// 文档链接处理:如果是纯文档链接消息,缓冲起来等待合并
-		if (feishuConfig.enableDocLinkPrefetch && this.docLinkResolver && conversationKey) {
-			const hasDocLink = /https?:\/\/[^\s<>"'`]*\/(?:docx|wiki)\/[^\s<>"'`]+/.test(text);
+		if (
+			feishuConfig.enableDocLinkPrefetch &&
+			this.docLinkResolver &&
+			conversationKey
+		) {
+			const hasDocLink =
+				/https?:\/\/[^\s<>"'`]*\/(?:docx|wiki)\/[^\s<>"'`]+/.test(text);
 			if (hasDocLink && isOnlyDocLink(text)) {
 				// 纯文档链接消息,缓冲起来
 				this.docLinkMergeBuffer.set(conversationKey, {
@@ -540,10 +487,8 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		// 解析发送者名称
 		let senderName: string | undefined;
 		if (this.client && senderOpenId) {
-			senderName = await resolveSenderName(
-				this.client,
-				senderOpenId,
-				(msg) => this.logger.info({ msg }),
+			senderName = await resolveSenderName(this.client, senderOpenId, (msg) =>
+				this.logger.info({ msg }),
 			);
 		}
 
@@ -741,10 +686,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.wsClient = new Lark.WSClient({
 			appId: feishu.appId,
 			appSecret: feishu.appSecret,
-			domain:
-				feishu.domain === "lark"
-					? Lark.Domain.Lark
-					: Lark.Domain.Feishu,
+			domain: feishu.domain === "lark" ? Lark.Domain.Lark : Lark.Domain.Feishu,
 			loggerLevel: Lark.LoggerLevel.warn,
 		});
 
@@ -761,8 +703,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			ctx.onStatusPatch({
 				running: false,
 				connected: false,
-				last_error:
-					error instanceof Error ? error.message : String(error),
+				last_error: error instanceof Error ? error.message : String(error),
 			});
 			this.logger.error({
 				msg: "feishu websocket start failed",
@@ -793,8 +734,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		}
 
 		this.reconnectAttempts++;
-		const delay =
-			RECONNECT_DELAY_MS * Math.min(this.reconnectAttempts, 6);
+		const delay = RECONNECT_DELAY_MS * Math.min(this.reconnectAttempts, 6);
 
 		this.logger.info({
 			msg: `feishu websocket 将在 ${delay}ms 后重连 (第 ${this.reconnectAttempts} 次)`,
@@ -806,9 +746,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 
 			// 先停掉旧的 ws client
 			try {
-				(
-					this.wsClient as { stop?: () => void } | null
-				)?.stop?.();
+				(this.wsClient as { stop?: () => void } | null)?.stop?.();
 			} catch {
 				// ignore
 			}
@@ -878,8 +816,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			ctx.onStatusPatch({
 				running: false,
 				connected: false,
-				last_error:
-					"当前版本仅实现 Feishu WebSocket，Webhook 已预留接口",
+				last_error: "当前版本仅实现 Feishu WebSocket，Webhook 已预留接口",
 			});
 			return;
 		}
@@ -966,7 +903,11 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	}
 
 	private async sendText(message: RemoteOutboundMessage): Promise<void> {
-		await this.sendRawMessage(message, "text", JSON.stringify({ text: message.text }));
+		await this.sendRawMessage(
+			message,
+			"text",
+			JSON.stringify({ text: message.text }),
+		);
 	}
 
 	private async sendImageByKey(
@@ -1072,13 +1013,20 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				this.logger.warn({
 					msg: "feishu interactive card send failed, fallback to text",
 					code: info.code,
-					error: info.msg || info.message || (error instanceof Error ? error.message : String(error)),
+					error:
+						info.msg ||
+						info.message ||
+						(error instanceof Error ? error.message : String(error)),
 				});
 				const fallbackText = buildCardSendFallbackText(message.text);
-				await this.sendText({ ...message, text: fallbackText, use_card: false });
+				await this.sendText({
+					...message,
+					text: fallbackText,
+					use_card: false,
+				});
 			}
 		} else {
-			const { imagePaths, cleanedText } = this.extractLocalImagePathsFromText(
+			const { imagePaths, cleanedText } = extractLocalImagePathsFromText(
 				message.text,
 			);
 			const outboundText =
@@ -1116,10 +1064,6 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			return { ok: false, message: "App ID / App Secret 未配置" };
 		}
 		// 实际调用飞书 API 验证凭证
-		return testFeishuCredentials(
-			feishu.appId,
-			feishu.appSecret,
-			feishu.domain,
-		);
+		return testFeishuCredentials(feishu.appId, feishu.appSecret, feishu.domain);
 	}
 }
