@@ -36,7 +36,9 @@ import {
 	Type,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDragAndDropImport } from "../hooks/useDragAndDropImport";
 import { useMouseDrag } from "../hooks/useMouseDrag";
 import {
@@ -51,14 +53,13 @@ import {
 	getCardImagePath,
 	getSourceDetail,
 	importLocalFiles,
-	listCards,
-	listFolders,
-	listSources,
 	moveSourcesToFolder,
 	updateFolder,
 	updateNote,
 	updateSource,
 } from "../lib/api";
+import { getPerformanceTuning } from "../lib/config";
+import { queryKeys, useCardsQuery, useFoldersQuery, useSourcesQuery } from "../lib/query";
 import {
 	buildFileItemContextMenu,
 	buildFolderItemContextMenu,
@@ -79,7 +80,6 @@ import {
 	SourceOrigin,
 	SourceType,
 } from "../types";
-import AgentTaskPanel from "./agent/AgentTaskPanel";
 import { ResourceSidebarDialogs } from "./resource/sidebar/ResourceSidebarDialogs";
 import { ResourceSidebarHeader } from "./resource/sidebar/ResourceSidebarHeader";
 import { useResourceSidebarActions } from "./resource/sidebar/useResourceSidebarActions";
@@ -91,7 +91,9 @@ import { ContextMenu } from "./ui/ContextMenu";
 import { inputDialog } from "./ui/InputDialog";
 import { RichContentWithStyles } from "./ui/RichContentRenderer";
 import { toast } from "./ui/Toast";
-import WebSearchModule from "./WebSearchModule";
+
+const AgentTaskPanel = lazy(() => import("./agent/AgentTaskPanel"));
+const WebSearchModule = lazy(() => import("./WebSearchModule"));
 
 interface ResourceSidebarProps {
 	onOpenSettings: () => void;
@@ -193,6 +195,9 @@ export default function ResourceSidebar({
 	// 拖拽状态
 	const [draggedSourceId, setDraggedSourceId] = useState<string | null>(null);
 	const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+	const sourceListScrollRef = useRef<HTMLDivElement | null>(null);
+	const [sourceAutoRefreshMs, setSourceAutoRefreshMs] = useState(10000);
+	const [uiDebugLogsEnabled, setUiDebugLogsEnabled] = useState(false);
 
 	// 分享卡片
 	const [cards, setCards] = useState<Card[]>([]);
@@ -222,6 +227,49 @@ export default function ResourceSidebar({
 	const setCurrentFolder = workspaceStore.setCurrentFolder.bind(workspaceStore);
 	const openSourceInMainView =
 		workspaceStore.openSourceInMainView.bind(workspaceStore);
+	const queryClient = useQueryClient();
+	const sourcesQuery = useSourcesQuery(currentProjectId, {
+		refetchInterval:
+			leftSidebarView === "sources" ? sourceAutoRefreshMs : false,
+	});
+	const foldersQuery = useFoldersQuery(currentProjectId);
+	const cardsQuery = useCardsQuery();
+	const preloadWebSearchModule = useCallback(() => {
+		void import("./WebSearchModule");
+	}, []);
+	const preloadAgentTaskPanel = useCallback(() => {
+		void import("./agent/AgentTaskPanel");
+	}, []);
+	const debugLog = useCallback(
+		(...args: unknown[]) => {
+			if (!uiDebugLogsEnabled) return;
+			console.log(...args);
+		},
+		[uiDebugLogsEnabled],
+	);
+	const debugWarn = useCallback(
+		(...args: unknown[]) => {
+			if (!uiDebugLogsEnabled) return;
+			console.warn(...args);
+		},
+		[uiDebugLogsEnabled],
+	);
+
+	useEffect(() => {
+		let cancelled = false;
+		void getPerformanceTuning()
+			.then((settings) => {
+				if (cancelled) return;
+				setSourceAutoRefreshMs(settings.sourceAutoRefreshMs);
+				setUiDebugLogsEnabled(settings.enableUiDebugLogs);
+			})
+			.catch((error) => {
+				console.error("加载性能设置失败:", error);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const foldersById = useMemo(() => {
 		const map = new Map<string, Folder>();
@@ -279,40 +327,41 @@ export default function ResourceSidebar({
 	}, [rawSources, currentFolderId, getSubtreeFolderIds]);
 
 	const fetchFolders = useCallback(async () => {
-		try {
-			const data = await listFolders(currentProjectId);
-			setFolders(data);
-		} catch (error) {
-			console.error("获取文件夹失败:", error);
-		}
-	}, [currentProjectId]);
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.folders(currentProjectId),
+		});
+	}, [queryClient, currentProjectId]);
 
-	// 加载资料列表
 	const fetchSources = useCallback(async () => {
-		try {
-			setIsLoading(true);
-			const data = await listSources();
-			const filteredByProject = currentProjectId
-				? data.filter(
-					(s) => s.project_id === currentProjectId || s.project_id == null,
-				)
-				: data;
-			setRawSources(filteredByProject);
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.sources(),
+		});
+	}, [queryClient]);
+
+	useEffect(() => {
+		if (Array.isArray(sourcesQuery.data)) {
+			setRawSources(sourcesQuery.data);
 			setErrorMessage(null);
-		} catch (error) {
-			console.error("获取资源失败:", error);
-			if (
-				error instanceof Error &&
-				error.message.includes("TAURI_UNAVAILABLE")
-			) {
-				setErrorMessage("请通过桌面应用访问");
-			} else {
-				setErrorMessage("获取资料失败");
-			}
-		} finally {
-			setIsLoading(false);
 		}
-	}, [currentProjectId]);
+	}, [sourcesQuery.data]);
+
+	useEffect(() => {
+		if (Array.isArray(foldersQuery.data)) {
+			setFolders(foldersQuery.data);
+		}
+	}, [foldersQuery.data]);
+
+	useEffect(() => {
+		setIsLoading(sourcesQuery.isFetching && !Array.isArray(sourcesQuery.data));
+		if (!sourcesQuery.error) return;
+		const error = sourcesQuery.error;
+		console.error("获取资源失败:", error);
+		if (error instanceof Error && error.message.includes("TAURI_UNAVAILABLE")) {
+			setErrorMessage("请通过桌面应用访问");
+		} else {
+			setErrorMessage("获取资料失败");
+		}
+	}, [sourcesQuery.error, sourcesQuery.isFetching, sourcesQuery.data]);
 
 	const { createSourceFromModal, revealFolderProjectDirectory } =
 		useResourceSidebarActions({
@@ -532,25 +581,25 @@ export default function ResourceSidebar({
 			e.dataTransfer.effectAllowed = "copyMove"; // 允许 copy 或 move
 
 			setDraggedSourceId(sourceId);
-			console.log(
+			debugLog(
 				"[Drag] 开始拖拽资料:",
 				sourceId,
 				"types:",
 				e.dataTransfer.types,
 			);
 		},
-		[sources],
+		[sources, debugLog],
 	);
 
 	const handleDragEnd = useCallback((e: React.DragEvent) => {
 		// 拖拽结束时清理状态
-		console.log("[Drag] 拖拽结束, dropEffect:", e.dataTransfer.dropEffect);
+		debugLog("[Drag] 拖拽结束, dropEffect:", e.dataTransfer.dropEffect);
 		// 延迟清理，确保 drop 事件能获取到 draggedSourceId
 		setTimeout(() => {
 			setDraggedSourceId(null);
 			setDragOverFolderId(null);
 		}, 100);
-	}, []);
+	}, [debugLog]);
 
 	const handleFolderDragOver = useCallback(
 		(e: React.DragEvent, folderId: string) => {
@@ -578,13 +627,13 @@ export default function ResourceSidebar({
 			e.stopPropagation();
 			const sourceId =
 				draggedSourceId || e.dataTransfer.getData("application/x-source-id");
-			console.log("[Drag] 文件夹 drop 事件:", {
+			debugLog("[Drag] 文件夹 drop 事件:", {
 				sourceId,
 				folderId,
 				draggedSourceId,
 			});
 			if (!sourceId) {
-				console.warn("[Drag] 没有 sourceId，无法移动");
+				debugWarn("[Drag] 没有 sourceId，无法移动");
 				return;
 			}
 
@@ -592,7 +641,7 @@ export default function ResourceSidebar({
 				// 如果 folderId 是 UNASSIGNED_FOLDER_ID，设置为 undefined
 				const actualFolderId =
 					folderId === UNASSIGNED_FOLDER_ID ? undefined : folderId;
-				console.log("[Drag] 开始移动资料到文件夹:", {
+				debugLog("[Drag] 开始移动资料到文件夹:", {
 					sourceId,
 					actualFolderId,
 				});
@@ -601,7 +650,7 @@ export default function ResourceSidebar({
 					folder_id: actualFolderId,
 				});
 				await fetchSources();
-				console.log("[Drag] 移动成功");
+				debugLog("[Drag] 移动成功");
 			} catch (error) {
 				console.error("[Drag] 移动资料失败:", error);
 				toast.error(
@@ -612,7 +661,7 @@ export default function ResourceSidebar({
 				setDragOverFolderId(null);
 			}
 		},
-		[fetchSources, draggedSourceId],
+		[fetchSources, draggedSourceId, debugLog, debugWarn],
 	);
 
 	const toggleFolderExpanded = useCallback((folderId: string) => {
@@ -742,6 +791,14 @@ export default function ResourceSidebar({
 		// 当前文件夹的子文件夹
 		return childrenByParentId.get(currentFolderId) || [];
 	}, [currentFolderId, childrenByParentId]);
+	const shouldVirtualizeSources =
+		viewMode === "list" && sources.length > 200 && currentSubfolders.length === 0;
+	const sourceVirtualizer = useVirtualizer({
+		count: shouldVirtualizeSources ? sources.length : 0,
+		getScrollElement: () => sourceListScrollRef.current,
+		estimateSize: () => 62,
+		overscan: 10,
+	});
 
 	// 面包屑路径
 	const breadcrumbPath = useMemo(() => {
@@ -803,24 +860,24 @@ export default function ResourceSidebar({
 						onMouseLeave={() => {
 							setDragOverFolderId(null);
 						}}
-						onMouseUp={() => {
-							if (isMouseDragging && dragItem?.type === "source") {
-								console.log(
-									"[MouseDrag] 拖拽到文件夹 (grid):",
-									folder.id,
-									"sourceId:",
-									dragItem.sourceId,
-								);
+					onMouseUp={() => {
+						if (isMouseDragging && dragItem?.type === "source") {
+							debugLog(
+								"[MouseDrag] 拖拽到文件夹 (grid):",
+								folder.id,
+								"sourceId:",
+								dragItem.sourceId,
+							);
 								// 执行移动操作
-								moveSourcesToFolder({
-									source_ids: [dragItem.sourceId],
-									folder_id: folder.id,
-								})
-									.then((count) => {
-										console.log(
-											"[MouseDrag] 移动成功 (grid), 影响行数:",
-											count,
-										);
+							moveSourcesToFolder({
+								source_ids: [dragItem.sourceId],
+								folder_id: folder.id,
+							})
+								.then((count) => {
+									debugLog(
+										"[MouseDrag] 移动成功 (grid), 影响行数:",
+										count,
+									);
 										// 立即从当前视图移除该资料
 										setSources((prev) =>
 											prev.filter((s) => s.id !== dragItem.sourceId),
@@ -829,13 +886,13 @@ export default function ResourceSidebar({
 											prev.filter((s) => s.id !== dragItem.sourceId),
 										);
 										// 刷新以确保数据一致性
-										return fetchSources();
-									})
-									.then(() => {
-										console.log("[MouseDrag] 资料列表已刷新 (grid)");
-									})
-									.catch((err) => {
-										console.error("[MouseDrag] 移动失败 (grid):", err);
+									return fetchSources();
+								})
+								.then(() => {
+									debugLog("[MouseDrag] 资料列表已刷新 (grid)");
+								})
+								.catch((err) => {
+									console.error("[MouseDrag] 移动失败 (grid):", err);
 									});
 								setDragOverFolderId(null);
 							}
@@ -900,7 +957,7 @@ export default function ResourceSidebar({
 					}}
 					onMouseUp={() => {
 						if (isMouseDragging && dragItem?.type === "source") {
-							console.log(
+							debugLog(
 								"[MouseDrag] 拖拽到文件夹 (列表):",
 								folder.id,
 								"sourceId:",
@@ -912,7 +969,7 @@ export default function ResourceSidebar({
 								folder_id: folder.id,
 							})
 								.then((count) => {
-									console.log("[MouseDrag] 移动成功, 影响行数:", count);
+									debugLog("[MouseDrag] 移动成功, 影响行数:", count);
 									// 立即从当前视图移除该资料
 									setSources((prev) =>
 										prev.filter((s) => s.id !== dragItem.sourceId),
@@ -924,7 +981,7 @@ export default function ResourceSidebar({
 									return fetchSources();
 								})
 								.then(() => {
-									console.log("[MouseDrag] 资料列表已刷新");
+									debugLog("[MouseDrag] 资料列表已刷新");
 								})
 								.catch((err) => {
 									console.error("[MouseDrag] 移动失败:", err);
@@ -976,6 +1033,7 @@ export default function ResourceSidebar({
 			isMouseDragging,
 			dragItem,
 			fetchSources,
+			debugLog,
 		],
 	);
 
@@ -1014,18 +1072,6 @@ export default function ResourceSidebar({
 		);
 	}, [breadcrumbPath, setCurrentFolder, leftSidebarView, setLeftSidebarView]);
 
-	useEffect(() => {
-		fetchSources();
-		fetchFolders();
-
-		// 定时刷新资料列表（用于接收浏览器插件剪存的新资料）
-		const intervalId = setInterval(() => {
-			fetchSources();
-		}, 5000); // 每 5 秒刷新一次
-
-		return () => clearInterval(intervalId);
-	}, [fetchSources, fetchFolders]);
-
 	// 使用 ref 保存 draggedSourceId，避免闭包问题
 	const draggedSourceIdRef = useRef<string | null>(null);
 	useEffect(() => {
@@ -1034,14 +1080,14 @@ export default function ResourceSidebar({
 
 	// 容器级别的 drop 处理（处理拖拽到空白区域）
 	const handleContainerDragOver = useCallback((e: React.DragEvent) => {
-		console.log("[Drag] handleContainerDragOver 被调用");
+		debugLog("[Drag] handleContainerDragOver 被调用");
 		// 允许 drop
 		if (e.dataTransfer.types.includes("application/x-source-id")) {
 			e.preventDefault();
 			e.dataTransfer.dropEffect = "move";
-			console.log("[Drag] 容器 dragover，允许 drop");
+			debugLog("[Drag] 容器 dragover，允许 drop");
 		}
-	}, []);
+	}, [debugLog]);
 
 	const handleContainerDrop = useCallback(
 		(e: React.DragEvent) => {
@@ -1052,11 +1098,11 @@ export default function ResourceSidebar({
 
 			const sourceId = e.dataTransfer.getData("application/x-source-id");
 			if (sourceId) {
-				console.log("[Drag] 拖拽到侧边栏空白区域，移动到未归类");
+				debugLog("[Drag] 拖拽到侧边栏空白区域，移动到未归类");
 				handleFolderDrop(e, UNASSIGNED_FOLDER_ID);
 			}
 		},
-		[handleFolderDrop],
+		[handleFolderDrop, debugLog],
 	);
 
 	useEffect(() => {
@@ -1195,26 +1241,29 @@ export default function ResourceSidebar({
 		dragImport.cancelImport();
 	}, [dragImport.cancelImport]);
 
-	const fetchCards = async () => {
+	const buildCardImages = useCallback(async (data: Card[]) => {
+		const entries = await Promise.all(
+			data.map(async (card) => {
+				try {
+					const fullPath = await getCardImagePath(card.image_path);
+					const assetUrl = convertFileSrc(fullPath);
+					return [card.id, assetUrl] as const;
+				} catch (error) {
+					console.error("加载卡片图片失败:", error);
+					return [card.id, ""] as const;
+				}
+			}),
+		);
+		setCardImages(Object.fromEntries(entries));
+	}, []);
+
+	const fetchCards = useCallback(async () => {
+		setIsLoadingCards(true);
 		try {
-			setIsLoadingCards(true);
-			const data = await listCards();
+			const result = await cardsQuery.refetch();
+			const data = result.data ?? [];
 			setCards(data);
-			const entries = await Promise.all(
-				data.map(async (card) => {
-					try {
-						const fullPath = await getCardImagePath(card.image_path);
-						// Tauri v2: convertFileSrc 会自动使用 asset 协议
-						const assetUrl = convertFileSrc(fullPath);
-						console.log("[Card] 图片路径:", fullPath, "->", assetUrl);
-						return [card.id, assetUrl] as const;
-					} catch (error) {
-						console.error("加载卡片图片失败:", error);
-						return [card.id, ""] as const;
-					}
-				}),
-			);
-			setCardImages(Object.fromEntries(entries));
+			await buildCardImages(data);
 			setCardErrorMessage(null);
 		} catch (error) {
 			console.error("获取分享卡片失败:", error);
@@ -1222,11 +1271,13 @@ export default function ResourceSidebar({
 		} finally {
 			setIsLoadingCards(false);
 		}
-	};
+	}, [cardsQuery, buildCardImages]);
 
 	useEffect(() => {
-		fetchCards();
-	}, []);
+		if (!cardsQuery.data) return;
+		setCards(cardsQuery.data);
+		void buildCardImages(cardsQuery.data);
+	}, [cardsQuery.data, buildCardImages]);
 
 	// 打开资料详情
 	const handleOpenDetail = async (source: Source) => {
@@ -2365,6 +2416,149 @@ export default function ResourceSidebar({
 		</div>
 	);
 
+	const renderSourceCard = useCallback(
+		(source: Source) => {
+			const isSelected = selectedIdSet.has(source.id);
+			const cardBase =
+				viewMode === "grid" ? "p-3 flex flex-col" : "p-2 flex items-center gap-3";
+			const cardState = selectionMode
+				? isSelected
+					? "ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+					: "border border-dashed border-zinc-200 dark:border-zinc-700"
+				: viewMode === "grid"
+					? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-white dark:bg-zinc-800/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
+					: "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 hover:pl-3";
+			const isDraggingThis = isMouseDragging && dragItem?.sourceId === source.id;
+			return (
+				<div
+					key={source.id}
+					draggable={!selectionMode}
+					onDragStart={(e) => {
+						if (selectionMode) {
+							e.preventDefault();
+							return;
+						}
+						handleDragStart(e, source.id);
+					}}
+					onDragEnd={handleDragEnd}
+					onMouseDown={(e) => {
+						if (e.button === 0 && !selectionMode) {
+							startDrag(
+								{
+									type: "source",
+									sourceId: source.id,
+									sourceData: source,
+								},
+								e,
+							);
+						}
+					}}
+					onClick={() =>
+						selectionMode ? toggleSelection(source.id) : handleOpenDetail(source)
+					}
+					onContextMenu={(e) => {
+						if (selectionMode) return;
+						e.preventDefault();
+						setContextMenu({ x: e.clientX, y: e.clientY, source });
+					}}
+					className={`group cursor-pointer rounded-xl transition-all duration-200 relative ${cardBase} ${cardState} ${isDraggingThis ? "opacity-50 scale-95" : ""}`}
+				>
+					{selectionMode ? (
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								toggleSelection(source.id);
+							}}
+							className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${isSelected
+								? "bg-blue-600 text-white"
+								: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
+								}`}
+						>
+							{isSelected ? (
+								<CheckSquare className="w-4 h-4" />
+							) : (
+								<Square className="w-4 h-4" />
+							)}
+						</button>
+					) : null}
+					<div
+						className={`w-8 h-8 rounded-lg ${getKindColor(source.kind)} bg-opacity-10 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105`}
+					>
+						{getIconForSource(source.kind)}
+					</div>
+					<div className={viewMode === "grid" ? "mt-2" : "flex-1 min-w-0 ml-1"}>
+						<h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2 leading-snug">
+							{source.title}
+						</h3>
+						<div className="flex items-center gap-2 mt-1">
+							<p className="text-[10px] text-zinc-400">
+								{new Date(source.created_at).toLocaleDateString("zh-CN", {
+									month: "short",
+									day: "numeric",
+								})}
+							</p>
+							<span
+								className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(source)}`}
+							>
+								{getScopeLabel(source)}
+							</span>
+							{source.source_type === SourceOrigin.BrowserClip ? (
+								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
+									<Globe className="w-2.5 h-2.5" />
+									剪存
+								</span>
+							) : null}
+							{source.source_type === SourceOrigin.WebSearch ? (
+								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
+									<Search className="w-2.5 h-2.5" />
+									搜索
+								</span>
+							) : null}
+							{source.source_type === SourceOrigin.Import ? (
+								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
+									<ArrowDownToLine className="w-2.5 h-2.5" />
+									导入
+								</span>
+							) : null}
+							{(source.tags || []).slice(0, 2).map((tag) => (
+								<span
+									key={`${source.id}-tag-${tag}`}
+									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-300"
+								>
+									#{tag}
+								</span>
+							))}
+						</div>
+					</div>
+					{!selectionMode ? (
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								void handleDeleteSource(source);
+							}}
+							className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0 hover:scale-110"
+						>
+							<Trash2 className="w-3.5 h-3.5" />
+						</button>
+					) : null}
+				</div>
+			);
+		},
+		[
+			selectedIdSet,
+			viewMode,
+			selectionMode,
+			isMouseDragging,
+			dragItem,
+			startDrag,
+			handleDragStart,
+			handleDragEnd,
+			handleOpenDetail,
+			getScopeBadgeClassName,
+			getScopeLabel,
+		],
+	);
+
 	const renderSourcesView = () => {
 		return (
 			<>
@@ -2439,18 +2633,21 @@ export default function ResourceSidebar({
 
 				{/* Content */}
 				<div
+					ref={sourceListScrollRef}
 					className="flex-1 overflow-y-auto scrollbar-hide p-3"
 					onDragOver={(e) => {
 						// 在整个内容区域处理拖拽，允许 drop
 						const hasSourceData =
 							draggedSourceId ||
 							e.dataTransfer.types.includes("application/x-source-id");
-						console.log(
-							"[Drag] 内容区域 onDragOver, hasSourceData:",
-							hasSourceData,
-							"types:",
-							Array.from(e.dataTransfer.types),
-						);
+						if (uiDebugLogsEnabled) {
+							debugLog(
+								"[Drag] 内容区域 onDragOver, hasSourceData:",
+								hasSourceData,
+								"types:",
+								Array.from(e.dataTransfer.types),
+							);
+						}
 						if (hasSourceData) {
 							e.preventDefault();
 							e.stopPropagation();
@@ -2465,15 +2662,17 @@ export default function ResourceSidebar({
 						const sourceId =
 							draggedSourceId ||
 							e.dataTransfer.getData("application/x-source-id");
-						console.log(
-							"[Drag] 内容区域 onDrop 触发, sourceId:",
-							sourceId,
-							"target:",
-							(e.target as HTMLElement)?.tagName,
-						);
+						if (uiDebugLogsEnabled) {
+							debugLog(
+								"[Drag] 内容区域 onDrop 触发, sourceId:",
+								sourceId,
+								"target:",
+								(e.target as HTMLElement)?.tagName,
+							);
+						}
 
 						if (!sourceId) {
-							console.warn("[Drag] 没有 sourceId");
+							debugWarn("[Drag] 没有 sourceId");
 							return;
 						}
 
@@ -2484,14 +2683,14 @@ export default function ResourceSidebar({
 						if (folderElement) {
 							const folderId = folderElement.getAttribute("data-folder-id");
 							if (folderId) {
-								console.log("[Drag] 在内容区域 drop，找到文件夹:", folderId);
+								debugLog("[Drag] 在内容区域 drop，找到文件夹:", folderId);
 								handleFolderDrop(e, folderId);
 								return;
 							}
 						}
 
 						// 如果没有找到文件夹，移动到未归类
-						console.log("[Drag] 在内容区域 drop，未找到文件夹，移动到未归类");
+						debugLog("[Drag] 在内容区域 drop，未找到文件夹，移动到未归类");
 						handleFolderDrop(e, UNASSIGNED_FOLDER_ID);
 					}}
 				>
@@ -2529,12 +2728,14 @@ export default function ResourceSidebar({
 								const hasSourceData =
 									draggedSourceId ||
 									e.dataTransfer.types.includes("application/x-source-id");
-								console.log(
-									"[Drag] 列表容器 onDragOver, hasSourceData:",
-									hasSourceData,
-									"types:",
-									Array.from(e.dataTransfer.types),
-								);
+								if (uiDebugLogsEnabled) {
+									debugLog(
+										"[Drag] 列表容器 onDragOver, hasSourceData:",
+										hasSourceData,
+										"types:",
+										Array.from(e.dataTransfer.types),
+									);
+								}
 								if (hasSourceData) {
 									e.preventDefault();
 									e.stopPropagation();
@@ -2549,17 +2750,19 @@ export default function ResourceSidebar({
 								const sourceId =
 									draggedSourceId ||
 									e.dataTransfer.getData("application/x-source-id");
-								console.log(
-									"[Drag] 列表容器 onDrop 触发, sourceId:",
-									sourceId,
-									"target:",
-									(e.target as HTMLElement)?.tagName,
-									"className:",
-									(e.target as HTMLElement)?.className,
-								);
+								if (uiDebugLogsEnabled) {
+									debugLog(
+										"[Drag] 列表容器 onDrop 触发, sourceId:",
+										sourceId,
+										"target:",
+										(e.target as HTMLElement)?.tagName,
+										"className:",
+										(e.target as HTMLElement)?.className,
+									);
+								}
 
 								if (!sourceId) {
-									console.warn("[Drag] 列表容器 drop，没有 sourceId");
+									debugWarn("[Drag] 列表容器 drop，没有 sourceId");
 									return;
 								}
 
@@ -2570,7 +2773,7 @@ export default function ResourceSidebar({
 								if (folderElement) {
 									const folderId = folderElement.getAttribute("data-folder-id");
 									if (folderId) {
-										console.log(
+										debugLog(
 											"[Drag] 在列表容器 drop，找到文件夹:",
 											folderId,
 										);
@@ -2580,7 +2783,7 @@ export default function ResourceSidebar({
 								}
 
 								// 如果没有找到文件夹，移动到未归类
-								console.log(
+								debugLog(
 									"[Drag] 在列表容器 drop，未找到文件夹，移动到未归类",
 								);
 								handleFolderDrop(e, UNASSIGNED_FOLDER_ID);
@@ -2590,143 +2793,48 @@ export default function ResourceSidebar({
 							{currentSubfolders.map((folder) => renderFolderItem(folder))}
 
 							{/* 资料列表 */}
-							{sources.map((source) => {
-								const isSelected = selectedIdSet.has(source.id);
-								const cardBase =
-									viewMode === "grid"
-										? "p-3 flex flex-col"
-										: "p-2 flex items-center gap-3";
-								const cardState = selectionMode
-									? isSelected
-										? "ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-										: "border border-dashed border-zinc-200 dark:border-zinc-700"
-									: viewMode === "grid"
-										? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-white dark:bg-zinc-800/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
-										: "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 hover:pl-3";
-								const isDraggingThis =
-									isMouseDragging && dragItem?.sourceId === source.id;
-								return (
+							{shouldVirtualizeSources ? (
+								<div
+									style={{
+										height: `${sourceVirtualizer.getTotalSize()}px`,
+										position: "relative",
+									}}
+								>
+									{sourceVirtualizer.getVirtualItems().map((virtualRow) => {
+										const source = sources[virtualRow.index];
+										if (!source) return null;
+										return (
+											<div
+												key={source.id}
+												data-index={virtualRow.index}
+												ref={sourceVirtualizer.measureElement}
+												style={{
+													position: "absolute",
+													top: 0,
+													left: 0,
+													width: "100%",
+													transform: `translateY(${virtualRow.start}px)`,
+												}}
+											>
+												{renderSourceCard(source)}
+											</div>
+										);
+									})}
+								</div>
+							) : (
+								sources.map((source) => (
 									<div
 										key={source.id}
-										draggable={!selectionMode}
-										onDragStart={(e) => {
-											if (selectionMode) {
-												e.preventDefault();
-												return;
-											}
-											handleDragStart(e, source.id);
-										}}
-										onDragEnd={handleDragEnd}
-										onMouseDown={(e) => {
-											// 只有左键且非选择模式时启动拖拽
-											if (e.button === 0 && !selectionMode) {
-												startDrag(
-													{
-														type: "source",
-														sourceId: source.id,
-														sourceData: source,
-													},
-													e,
-												);
-											}
-										}}
-										onClick={() =>
-											selectionMode
-												? toggleSelection(source.id)
-												: handleOpenDetail(source)
+										style={
+											viewMode === "list"
+												? ({ contentVisibility: "auto" } as const)
+												: undefined
 										}
-										onContextMenu={(e) => {
-											if (selectionMode) return;
-											e.preventDefault();
-											setContextMenu({ x: e.clientX, y: e.clientY, source });
-										}}
-										className={`group cursor-pointer rounded-xl transition-all duration-200 relative ${cardBase} ${cardState} ${isDraggingThis ? "opacity-50 scale-95" : ""}`}
 									>
-										{selectionMode && (
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													toggleSelection(source.id);
-												}}
-												className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${isSelected
-													? "bg-blue-600 text-white"
-													: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
-													}`}
-											>
-												{isSelected ? (
-													<CheckSquare className="w-4 h-4" />
-												) : (
-													<Square className="w-4 h-4" />
-												)}
-											</button>
-										)}
-										<div
-											className={`w-8 h-8 rounded-lg ${getKindColor(source.kind)} bg-opacity-10 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105`}
-										>
-											{getIconForSource(source.kind)}
-										</div>
-										<div
-											className={
-												viewMode === "grid" ? "mt-2" : "flex-1 min-w-0 ml-1"
-											}
-										>
-											<h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2 leading-snug">
-												{source.title}
-											</h3>
-											<div className="flex items-center gap-2 mt-1">
-												<p className="text-[10px] text-zinc-400">
-													{new Date(source.created_at).toLocaleDateString(
-														"zh-CN",
-														{ month: "short", day: "numeric" },
-													)}
-												</p>
-												<span
-													className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(source)}`}
-												>
-													{getScopeLabel(source)}
-												</span>
-												{source.source_type === SourceOrigin.BrowserClip && (
-													<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
-														<Globe className="w-2.5 h-2.5" />
-														剪存
-													</span>
-												)}
-												{source.source_type === SourceOrigin.WebSearch && (
-													<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
-														<Search className="w-2.5 h-2.5" />
-														搜索
-													</span>
-												)}
-												{source.source_type === SourceOrigin.Import && (
-													<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
-														<ArrowDownToLine className="w-2.5 h-2.5" />
-														导入
-													</span>
-												)}
-												{(source.tags || []).slice(0, 2).map((tag) => (
-													<span
-														key={`${source.id}-tag-${tag}`}
-														className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-300"
-													>
-														#{tag}
-													</span>
-												))}
-											</div>
-										</div>
-										{!selectionMode && (
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDeleteSource(source);
-												}}
-												className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0 hover:scale-110"
-											>
-												<Trash2 className="w-3.5 h-3.5" />
-											</button>
-										)}
+										{renderSourceCard(source)}
 									</div>
-								);
-							})}
+								))
+							)}
 						</div>
 					)}
 				</div>
@@ -2737,6 +2845,7 @@ export default function ResourceSidebar({
 						onClick={() => {
 							setLeftSidebarView("websearch");
 						}}
+						onMouseEnter={preloadWebSearchModule}
 						className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg text-xs font-medium text-white transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
 					>
 						<Search className="w-3.5 h-3.5" />
@@ -3100,23 +3209,32 @@ export default function ResourceSidebar({
 			) : null}
 
 			{/* 主内容区域 - 根据视图模式切换 */}
-			{leftSidebarView === "detail" && previewSource ? (
-				renderDetailView()
-			) : leftSidebarView === "research" ? (
-				renderResearchView()
-			) : leftSidebarView === "agent" ? (
-				<AgentTaskPanel
-					onBack={() => setLeftSidebarView("sources")}
-					onArtifactClick={(artifact) => {
-						// 可以在这里处理 artifact 点击，比如打开详情
-						if (artifact.url) {
-							workspaceStore.setMainView("browser");
+				{leftSidebarView === "detail" && previewSource ? (
+					renderDetailView()
+				) : leftSidebarView === "research" ? (
+					renderResearchView()
+				) : leftSidebarView === "agent" ? (
+					<Suspense
+						fallback={
+							<div className="flex h-full items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+								正在加载 Agent 面板...
+							</div>
 						}
-					}}
-				/>
-			) : leftSidebarView === "cards" ? (
-				renderCardsView()
-			) : leftSidebarView === "websearch" ? (
+					>
+						<div onMouseEnter={preloadAgentTaskPanel}>
+							<AgentTaskPanel
+								onBack={() => setLeftSidebarView("sources")}
+								onArtifactClick={(artifact) => {
+									if (artifact.url) {
+										workspaceStore.setMainView("browser");
+									}
+								}}
+							/>
+						</div>
+					</Suspense>
+				) : leftSidebarView === "cards" ? (
+					renderCardsView()
+				) : leftSidebarView === "websearch" ? (
 				<div className="flex flex-col h-full">
 					{/* Header */}
 					<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
@@ -3141,16 +3259,23 @@ export default function ResourceSidebar({
 					</div>
 
 					{/* Search Module */}
-					<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
-						<WebSearchModule
-							onAddSource={(sourceId) => {
-								console.log("[ResourceSidebar] 资料已添加:", sourceId);
-								fetchSources(); // 刷新资料列表
-							}}
-						/>
+						<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
+							<Suspense
+								fallback={
+									<div className="flex h-full items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+										正在加载搜索模块...
+									</div>
+								}
+							>
+								<WebSearchModule
+									onAddSource={(_sourceId) => {
+										void fetchSources();
+									}}
+								/>
+							</Suspense>
+						</div>
 					</div>
-				</div>
-			) : (
+				) : (
 				renderSourcesView()
 			)}
 

@@ -163,7 +163,13 @@ function ChatMessageImpl({
 
 	if (renderableAgentBlocks) {
 		return (
-			<div className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
+			<div
+				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				style={{
+					contentVisibility: "auto",
+					containIntrinsicSize: "320px",
+				}}
+			>
 				<AgentBlocksInline
 					blocks={message.metadata!.blocks!}
 					isStreaming={isStreaming}
@@ -180,7 +186,13 @@ function ChatMessageImpl({
 		if (!Array.isArray(message.metadata?.blocks)) return null;
 
 		return (
-			<div className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
+			<div
+				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				style={{
+					contentVisibility: "auto",
+					containIntrinsicSize: "320px",
+				}}
+			>
 				<AgentBlocksInline
 					blocks={message.metadata.blocks}
 					isStreaming={isStreaming}
@@ -194,7 +206,13 @@ function ChatMessageImpl({
 		message.metadata?.trace?.type === "tool_call"
 	) {
 		return (
-			<div className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full">
+			<div
+				className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				style={{
+					contentVisibility: "auto",
+					containIntrinsicSize: "320px",
+				}}
+			>
 				{Array.isArray(message.metadata?.blocks) ? (
 					<AgentBlocksInline
 						blocks={message.metadata.blocks}
@@ -337,6 +355,10 @@ function ChatMessageImpl({
 			<div
 				className={`group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full`}
 				onContextMenu={handleContextMenu}
+				style={{
+					contentVisibility: "auto",
+					containIntrinsicSize: "320px",
+				}}
 			>
 				{/* 彻底移除头像，根据角色采用完全不同的布局策略 */}
 

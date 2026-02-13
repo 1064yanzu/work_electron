@@ -13,6 +13,7 @@ import {
 	Shield,
 	Smartphone,
 	Sparkles,
+	Gauge,
 	Terminal,
 	Workflow,
 	Zap,
@@ -29,6 +30,7 @@ export const SETTINGS_MENU = [
 	{ id: "mcp", label: "MCP 配置", icon: Plug },
 	{ id: "remoteControl", label: "远程控制", icon: Smartphone },
 	{ id: "general", label: "常规设置", icon: SettingsIcon },
+	{ id: "performance", label: "性能优化", icon: Gauge },
 	{ id: "data", label: "数据与同步", icon: Database },
 	{ id: "artifacts", label: "产物管理", icon: Archive },
 ];

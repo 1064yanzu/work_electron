@@ -13,7 +13,9 @@ import type { UIEvent } from "./agent/streamState";
 import { chatStore } from "./chat/store";
 import type { ChatMessage, ChatMessageBlock, ChatSession } from "./chat/types";
 import { createMessage } from "./chat/types";
+import { getPerformanceTuning } from "./config";
 import { listen, type UnlistenFn } from "./tauriEventCompat";
+import { isDesktopEnvironment } from "./tauriCompat";
 
 type ToolCallBlock = Extract<ChatMessageBlock, { type: "tool_call" }>;
 
@@ -28,6 +30,10 @@ type RemoteRunBinding = {
 	toolsById: Map<string, ToolCallBlock>;
 	imagePaths: Set<string>;
 };
+
+const INITIAL_MIRROR_LIMIT = 80;
+const INITIAL_HYDRATION_LIMIT = 40;
+const INCREMENTAL_MIRROR_LIMIT = 200;
 
 /** 远程注入事件的载荷 */
 export interface RemoteChatInjectPayload {
@@ -199,6 +205,8 @@ export function useRemoteChatBridge(): void {
 	const lastSyncedAtRef = useRef(0);
 
 	useEffect(() => {
+		if (!isDesktopEnvironment()) return;
+
 		let unlistenInject: UnlistenFn | null = null;
 		let unlistenSdkEvent: UnlistenFn | null = null;
 		let syncTimer: ReturnType<typeof setInterval> | null = null;
@@ -281,8 +289,9 @@ export function useRemoteChatBridge(): void {
 			if (disposed || syncInFlightRef.current) return;
 			syncInFlightRef.current = true;
 			try {
-				const sessions = await listAgentSessions();
+				const sessions = await listAgentSessions("active");
 				if (disposed) return;
+				const mirrorLimit = force ? INITIAL_MIRROR_LIMIT : INCREMENTAL_MIRROR_LIMIT;
 				const remoteSessions = sessions
 					.map((session) => {
 						const meta = parseRemoteConfig(session.config_json);
@@ -290,14 +299,19 @@ export function useRemoteChatBridge(): void {
 						return { session, meta };
 					})
 					.filter((item): item is { session: any; meta: NonNullable<ReturnType<typeof parseRemoteConfig>> } => Boolean(item))
-					.sort(
-						(a, b) =>
-							parseTimestamp(b.session.updated_at) -
-							parseTimestamp(a.session.updated_at),
-					)
-					.slice(0, 200);
+						.sort(
+							(a, b) =>
+								parseTimestamp(b.session.updated_at) -
+								parseTimestamp(a.session.updated_at),
+						)
+						.slice(0, mirrorLimit);
 
 				let maxUpdatedAt = lastSyncedAtRef.current;
+				let hydratedCount = 0;
+				const hydrateTargets: Array<{
+					agentSessionId: string;
+					chatSessionId: string;
+				}> = [];
 				for (const item of remoteSessions) {
 					const updatedAt = parseTimestamp(item.session.updated_at);
 					maxUpdatedAt = Math.max(maxUpdatedAt, updatedAt);
@@ -322,12 +336,39 @@ export function useRemoteChatBridge(): void {
 						updatedAt <= lastSyncedAtRef.current &&
 						!activeRunByAgentSessionRef.current.has(agentSessionId)
 					) {
-						continue;
+						// 按 updated_at 已降序，后续更旧，直接提前结束。
+						break;
 					}
-					if (activeRunByAgentSessionRef.current.has(agentSessionId) && !force) {
-						continue;
+						if (activeRunByAgentSessionRef.current.has(agentSessionId) && !force) {
+							continue;
+						}
+						if (force && hydratedCount >= INITIAL_HYDRATION_LIMIT) {
+							continue;
+						}
+						hydrateTargets.push({
+							agentSessionId,
+							chatSessionId: chatSession.id,
+						});
+						if (force) hydratedCount += 1;
 					}
-					await hydrateAgentSessionMessages(agentSessionId, chatSession.id);
+				const maxConcurrentHydration = 4;
+				for (
+					let index = 0;
+					index < hydrateTargets.length;
+					index += maxConcurrentHydration
+				) {
+					const chunk = hydrateTargets.slice(
+						index,
+						index + maxConcurrentHydration,
+					);
+					await Promise.allSettled(
+						chunk.map((target) =>
+							hydrateAgentSessionMessages(
+								target.agentSessionId,
+								target.chatSessionId,
+							),
+						),
+					);
 				}
 				lastSyncedAtRef.current = Math.max(lastSyncedAtRef.current, maxUpdatedAt);
 			} catch (error) {
@@ -354,7 +395,14 @@ export function useRemoteChatBridge(): void {
 		};
 
 		const setup = async () => {
-			await syncRemoteSessions(true);
+			void syncRemoteSessions(true);
+			let remoteSyncIntervalMs = 15000;
+			try {
+				const settings = await getPerformanceTuning();
+				remoteSyncIntervalMs = settings.remoteSyncIntervalMs;
+			} catch (error) {
+				console.warn("[RemoteChatBridge] 加载性能设置失败，使用默认同步间隔:", error);
+			}
 
 			const handleWindowFocus = () => {
 				void syncRemoteSessions(false);
@@ -368,8 +416,9 @@ export function useRemoteChatBridge(): void {
 			document.addEventListener("visibilitychange", handleVisibility);
 
 			syncTimer = setInterval(() => {
+				if (document.visibilityState !== "visible") return;
 				void syncRemoteSessions(false);
-			}, 15000);
+			}, remoteSyncIntervalMs);
 
 			unlistenInject = await listen<RemoteChatInjectPayload>(
 				"remote-chat-inject",

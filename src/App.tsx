@@ -82,7 +82,6 @@ export default function App() {
 
 	// 使用解耦的导航 Hook
 	const {
-		navState,
 		navigateToDashboard,
 		navigateToProject,
 		isInDashboard,
@@ -95,15 +94,9 @@ export default function App() {
 		workspaceStore.setCurrentProject(currentProjectId || null);
 	}, [currentProjectId]);
 
-	// 添加导航变化日志
-	useEffect(() => {
-		console.log("[App] 导航状态变化:", navState);
-	}, [navState]);
-
 	// 初始化主题管理器
 	useEffect(() => {
-		const theme = themeManager.getTheme();
-		console.log("当前主题:", theme);
+		void themeManager.getTheme();
 	}, []);
 
 	useEffect(() => {
@@ -186,7 +179,6 @@ export default function App() {
 				<Dashboard
 					onOpenSettings={() => setIsSettingsOpen(true)}
 					onOpenProject={(projectId) => {
-						console.log("[App] 打开项目:", projectId);
 						navigateToProject(projectId);
 					}}
 				/>
@@ -240,7 +232,6 @@ export default function App() {
 										projectId={currentProjectId}
 										initialDocId={currentDocId}
 										onBack={() => {
-											console.log("[App] 返回首页");
 											navigateToDashboard();
 										}}
 									/>

@@ -11,4 +11,4 @@ export {
 	startPersistentSession,
 } from "./persistence";
 export { agentStore, useAgentStore } from "./store";
-export * from "./types";
+export type { AgentTask, ToolCall } from "./types";

@@ -8,6 +8,7 @@ import { GeneralSettings } from "./panels/GeneralSettings";
 import { ImageGenSettings } from "./panels/ImageGenSettings";
 import { MCPSettings } from "./panels/MCPSettings";
 import { ModelSettings } from "./panels/ModelSettings";
+import { PerformanceSettings } from "./panels/PerformanceSettings";
 import { PromptSettings } from "./panels/PromptSettings";
 import { RemoteControlSettings } from "./panels/RemoteControlSettings";
 import { SkillsSettings } from "./panels/SkillsSettings";
@@ -71,6 +72,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				return <RemoteControlSettings />;
 			case "general":
 				return <GeneralSettings />;
+			case "performance":
+				return <PerformanceSettings />;
 			case "data":
 				return <DataSettings />;
 			case "artifacts":

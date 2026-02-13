@@ -14,27 +14,24 @@ import {
 } from "lucide-react";
 import {
 	type KeyboardEvent,
+	useDeferredValue,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
+import { saveTempFile } from "../../lib/api";
 import {
-	listCards,
-	listOutputAssets,
-	listSources,
-	saveTempFile,
-} from "../../lib/api";
+	filterSourcesByProjectAndFolder,
+	useCardsQuery,
+	useOutputAssetsQuery,
+	useSourcesQuery,
+} from "../../lib/query";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
-import {
-	type Card,
-	type OutputAsset,
-	type Source,
-	SourceType,
-} from "../../types";
+import { SourceType } from "../../types";
 import { AttachmentCard } from "./AttachmentCard";
 import { Model, ModelSelector } from "./ModelSelector";
 import { type SlashCommand } from "./SlashCommand";
@@ -60,6 +57,8 @@ interface ChatInputProps {
 	isAgentExecuting?: boolean;
 }
 
+const EMPTY_COMMANDS: SlashCommand[] = [];
+
 export function ChatInput({
 	onSubmit,
 	disabled = false,
@@ -77,11 +76,6 @@ export function ChatInput({
 	// 已选择的命令卡片
 	const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
 
-	// 数据源状态
-	const [sources, setSources] = useState<Source[]>([]);
-	const [cards, setCards] = useState<Card[]>([]);
-	const [outputs, setOutputs] = useState<OutputAsset[]>([]);
-
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,57 +87,39 @@ export function ChatInput({
 	const currentFolderId = useWorkspaceStoreSelector(
 		(state) => state.currentFolderId,
 	);
+	const menuDataEnabled = showSlashMenu;
+	const sourcesQuery = useSourcesQuery(currentProjectId, {
+		enabled: menuDataEnabled,
+	});
+	const cardsQuery = useCardsQuery({ enabled: menuDataEnabled });
+	const outputsQuery = useOutputAssetsQuery({ enabled: menuDataEnabled });
+
+	const sources = useMemo(
+		() =>
+			!menuDataEnabled
+				? []
+				: filterSourcesByProjectAndFolder(
+				sourcesQuery.data ?? [],
+				currentProjectId,
+				currentFolderId,
+			),
+		[menuDataEnabled, sourcesQuery.data, currentProjectId, currentFolderId],
+	);
+	const cards = useMemo(
+		() => (menuDataEnabled ? cardsQuery.data ?? [] : []),
+		[menuDataEnabled, cardsQuery.data],
+	);
+	const outputs = useMemo(
+		() => (menuDataEnabled ? outputsQuery.data ?? [] : []),
+		[menuDataEnabled, outputsQuery.data],
+	);
+
 	const addSelectionToContext =
 		workspaceStore.addSelectionToContext.bind(workspaceStore);
 	const addFileToContext = workspaceStore.addFileToContext.bind(workspaceStore);
 	const removeContext = workspaceStore.removeContext.bind(workspaceStore);
 	const addSourceToContext =
 		workspaceStore.addSourceToContext.bind(workspaceStore);
-
-	// 加载外部数据
-	useEffect(() => {
-		const loadData = async () => {
-			try {
-				// 并行加载资料、卡片和文档
-				const [sourcesData, cardsData, outputsData] = await Promise.allSettled([
-					listSources(),
-					listCards(),
-					listOutputAssets(),
-				]);
-
-				if (sourcesData.status === "fulfilled") {
-					// 根据当前项目和文件夹过滤资料,与 ResourceSidebar 保持一致
-					let filteredSources = sourcesData.value;
-
-					// 1. 按项目过滤
-					if (currentProjectId) {
-						filteredSources = filteredSources.filter(
-							(s) => s.project_id === currentProjectId || s.project_id == null,
-						);
-					}
-
-					// 2. 按文件夹过滤
-					if (currentFolderId) {
-						filteredSources = filteredSources.filter(
-							(s) => s.folder_id === currentFolderId,
-						);
-					}
-
-					setSources(filteredSources);
-				}
-				if (cardsData.status === "fulfilled") {
-					setCards(cardsData.value);
-				}
-				if (outputsData.status === "fulfilled") {
-					setOutputs(outputsData.value);
-				}
-			} catch (err) {
-				console.error("加载上下文数据失败:", err);
-			}
-		};
-
-		loadData();
-	}, [currentProjectId, currentFolderId]);
 
 	// 辅助函数：获取资料图标
 	const getSourceIcon = (kind: SourceType) => {
@@ -163,6 +139,7 @@ export function ChatInput({
 
 	// 动态生成命令列表
 	const dynamicCommands = useMemo(() => {
+		if (!menuDataEnabled) return EMPTY_COMMANDS;
 		const commands: SlashCommand[] = [];
 
 		// 1. 添加“导入本地文件”命令
@@ -235,7 +212,6 @@ export function ChatInput({
 					group: "最近打开",
 					action: () => {
 						addSelectionToContext(doc.content, doc.title);
-						console.log("已添加文档上下文:", doc.title);
 					},
 				});
 			}
@@ -249,6 +225,7 @@ export function ChatInput({
 		outputs,
 		addSelectionToContext,
 		addSourceToContext,
+		menuDataEnabled,
 	]);
 
 	// 处理本地文件选择
@@ -329,8 +306,6 @@ export function ChatInput({
 				size: file.size,
 				mimeType: file.type || undefined,
 			});
-
-			console.log("已添加文件上下文:", file.name, temp.path);
 			// 清空 input 以便允许重复选择同名文件
 			e.target.value = "";
 		} catch (err) {
@@ -357,6 +332,7 @@ export function ChatInput({
 			setSlashFilter("");
 		}
 	}, [value]);
+	const deferredSlashFilter = useDeferredValue(slashFilter);
 
 	const handleSubmit = () => {
 		const trimmed = value.trim();
@@ -518,7 +494,7 @@ export function ChatInput({
 				isOpen={showSlashMenu}
 				onClose={() => setShowSlashMenu(false)}
 				onSelect={handleSelectCommand}
-				filter={slashFilter}
+				filter={deferredSlashFilter}
 				dynamicCommands={dynamicCommands}
 				onOpenPromptLibrary={onOpenPromptLibrary}
 			/>

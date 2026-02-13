@@ -6,7 +6,6 @@ import {
 	Check,
 	ChevronDown,
 	FileText,
-	Loader2,
 	MessageSquare,
 	Plus,
 	StopCircle,
@@ -15,22 +14,22 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DragItem, useMouseDropZone } from "../hooks/useMouseDrag";
 // webSearch 和 fetchUrlContent 现在由 Agent 工具调用
-import {
-	agentExecutor,
-	agentPersistence,
-	agentStore,
-	resumePersistentSession,
-	startPersistentSession,
-} from "../lib/agent";
+import { agentExecutor } from "../lib/agent/executor";
 import {
 	encodeChatMessageToAgentContentJson,
 	loadAgentSessionMessagesAsChatMessages,
 	persistChatMessageToAgentSession,
 } from "../lib/agent/chatBridge";
+import {
+	agentPersistence,
+	resumePersistentSession,
+	startPersistentSession,
+} from "../lib/agent/persistence";
+import { agentStore, useAgentStoreSelector } from "../lib/agent/store";
 import { useAgentChatSettingsStore } from "../lib/agent/chatSettingsStore";
-import { usePermissionStore } from "../lib/agent";
+import { usePermissionStore } from "../lib/agent/permissionStore";
 import { useAskUserQuestionStore } from "../lib/agent/askUserQuestionStore";
-import { createMessage, invokeLlm, invokeLlmWithCallback } from "../lib/chat";
+import { invokeLlm, invokeLlmWithCallback } from "../lib/chat/api";
 import {
 	chatStore as chatStoreInstance,
 	useChatStoreSelector,
@@ -43,7 +42,7 @@ import type {
 	ChatMessageBlock,
 	ChatMessage as ChatMessageType,
 } from "../lib/chat/types";
-import { getConfig } from "../lib/config";
+import { getConfig, getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { useManagedModeStore } from "../lib/managedModeStore";
 import { useMessageQueueStore } from "../lib/messageQueueStore";
@@ -61,21 +60,17 @@ import {
 	getSourceDetail,
 	saveTempFile,
 } from "../lib/api";
-import { useAgentStoreSelector } from "../lib/agent/store";
+import { createMessage } from "../lib/chat/types";
 import { safeInvoke } from "../lib/tauriBridge";
 import { OutputType } from "../types";
-import { AskUserQuestionList } from "./agent/AskUserQuestionCard";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
 import { useCopilotActions } from "./copilot/useCopilotActions";
 import { PromptLibraryModal } from "./PromptLibraryModal";
-import {
-	ChatHistory,
-	ChatInput,
-	ChatMessage as ChatMessageComponent,
-	type SlashCommand,
-} from "./chat";
-import { WelcomeScreen } from "./chat/WelcomeScreen";
+import { ChatHistory } from "./chat/ChatHistory";
+import { ChatInput } from "./chat/ChatInput";
+import { CopilotMessagePane } from "./chat/CopilotMessagePane";
+import type { SlashCommand } from "./chat/SlashCommand";
 import { toast } from "./ui/Toast";
 
 import {
@@ -114,6 +109,10 @@ const chatActions = {
 	setStatus: chatStoreInstance.setStatus.bind(chatStoreInstance),
 	deleteMessage: chatStoreInstance.deleteMessage.bind(chatStoreInstance),
 };
+
+const MESSAGE_WINDOW_SIZE = 140;
+const MESSAGE_WINDOW_STEP = 120;
+const AGENT_STREAM_UPDATE_INTERVAL_MS = 48;
 
 export default function CopilotSidebar() {
 	const { providers, activeModel, settingsStore } = useSettingsStore();
@@ -174,8 +173,41 @@ export default function CopilotSidebar() {
 	const [isProposalMenuOpen, setIsProposalMenuOpen] = useState(false);
 	const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
 	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+	const [messageRenderStart, setMessageRenderStart] = useState(0);
+	const [uiDebugLogsEnabled, setUiDebugLogsEnabled] = useState(false);
 	const activeRestoredAgentSessionIdRef = useRef<string | null>(null);
 	const replayedAgentSessionIdsRef = useRef<Set<string>>(new Set());
+	const scrollRafRef = useRef<number | null>(null);
+
+	const debugLog = useCallback(
+		(...args: unknown[]) => {
+			if (!uiDebugLogsEnabled) return;
+			console.log(...args);
+		},
+		[uiDebugLogsEnabled],
+	);
+	const debugWarn = useCallback(
+		(...args: unknown[]) => {
+			if (!uiDebugLogsEnabled) return;
+			console.warn(...args);
+		},
+		[uiDebugLogsEnabled],
+	);
+
+	useEffect(() => {
+		let cancelled = false;
+		void getPerformanceTuning()
+			.then((settings) => {
+				if (cancelled) return;
+				setUiDebugLogsEnabled(settings.enableUiDebugLogs);
+			})
+			.catch((error) => {
+				console.error("加载性能设置失败:", error);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	// 消息队列（队列功能框架已建立，具体消费逻辑待后续完善）
 	const { queueLength } = useMessageQueueStore();
@@ -185,10 +217,10 @@ export default function CopilotSidebar() {
 	// 鼠标拖拽 drop zone (替代 HTML5 拖拽，因为 Tauri 不支持)
 	const handleMouseDrop = useCallback((item: DragItem) => {
 		if (item.type === "source" && item.sourceData) {
-			console.log("[CopilotDrag] 资料拖入 AI 对话:", item.sourceData.title);
+			debugLog("[CopilotDrag] 资料拖入 AI 对话:", item.sourceData.title);
 			events.emit(EVENTS.ADD_TO_CONTEXT, { source: item.sourceData });
 		}
-	}, []);
+	}, [debugLog]);
 
 	const {
 		isOver: isMouseDragOver,
@@ -377,7 +409,7 @@ export default function CopilotSidebar() {
 	]);
 
 	// 滚动到底部
-	const scrollToBottom = () => {
+	const scrollToBottom = useCallback(() => {
 		const el = scrollContainerRef.current;
 		if (el) {
 			el.scrollTop = el.scrollHeight;
@@ -387,7 +419,15 @@ export default function CopilotSidebar() {
 		const behavior: ScrollBehavior =
 			chatStore.status === "streaming" || isAgentExecuting ? "auto" : "smooth";
 		messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
-	};
+	}, [chatStore.status, isAgentExecuting]);
+
+	const scheduleScrollToBottom = useCallback(() => {
+		if (scrollRafRef.current !== null) return;
+		scrollRafRef.current = window.requestAnimationFrame(() => {
+			scrollRafRef.current = null;
+			scrollToBottom();
+		});
+	}, [scrollToBottom]);
 
 	const shouldAutoScrollRef = useRef(true);
 
@@ -400,9 +440,18 @@ export default function CopilotSidebar() {
 
 	useEffect(() => {
 		if (shouldAutoScrollRef.current) {
-			scrollToBottom();
+			scheduleScrollToBottom();
 		}
-	}, [chatStore.activeSession?.messages]);
+	}, [chatStore.activeSession?.messages, scheduleScrollToBottom]);
+
+	useEffect(() => {
+		return () => {
+			if (scrollRafRef.current !== null) {
+				window.cancelAnimationFrame(scrollRafRef.current);
+				scrollRafRef.current = null;
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		// 切换会话/首次渲染时刷新一次“是否在底部附近”的判断，避免错误触发自动滚动
@@ -478,7 +527,7 @@ export default function CopilotSidebar() {
 			const modelToUse =
 				configModel || fallbackModel || enabledModels[0]?.id || "gpt-4o-mini";
 
-			console.log(
+			debugLog(
 				`[CopilotSidebar] 开始为会话 ${sessionId.slice(0, 6)}... 生成标题，使用模型: ${modelToUse}`,
 			);
 
@@ -501,7 +550,7 @@ export default function CopilotSidebar() {
 					title = title.slice(0, 20);
 				}
 
-				console.log(`[CopilotSidebar] 标题生成成功: "${title}"`);
+				debugLog(`[CopilotSidebar] 标题生成成功: "${title}"`);
 				chatStore.updateSessionTitle(sessionId, title);
 			} else {
 				throw new Error("AI 返回内容为空");
@@ -984,8 +1033,7 @@ export default function CopilotSidebar() {
 
 			const scheduleStreamingUpdate = () => {
 				const now = Date.now();
-				// 降低节流阈值以获得更平滑的打字机效果 (100ms -> 32ms, approx 30fps)
-				if (now - lastUpdateTime >= 32) {
+				if (now - lastUpdateTime >= AGENT_STREAM_UPDATE_INTERVAL_MS) {
 					updateStreamingMessage();
 					lastUpdateTime = now;
 					return;
@@ -999,7 +1047,7 @@ export default function CopilotSidebar() {
 								lastUpdateTime = Date.now();
 							}
 						},
-						32 - (now - lastUpdateTime),
+						AGENT_STREAM_UPDATE_INTERVAL_MS - (now - lastUpdateTime),
 					);
 				}
 			};
@@ -1108,7 +1156,7 @@ export default function CopilotSidebar() {
 						detachAgentEvent();
 						detachAgentEvent = null;
 					}
-					console.warn("[CopilotSidebar] Forced finalize agent message", {
+					debugWarn("[CopilotSidebar] Forced finalize agent message", {
 						source,
 					});
 				};
@@ -1182,7 +1230,7 @@ export default function CopilotSidebar() {
 				try {
 					const res = await getAgentSandboxDir(sandboxKeyForFiles);
 					if (res?.path) sandboxDirForFiles = String(res.path);
-					console.log("[CopilotSidebar] sandboxDir获取:", {
+					debugLog("[CopilotSidebar] sandboxDir获取:", {
 						sandboxKeyForFiles,
 						sandboxDirForFiles,
 					});
@@ -1200,7 +1248,7 @@ export default function CopilotSidebar() {
 								const detail = await getSourceDetail(ctx.sourceId);
 								content =
 									detail.note?.content || detail.source.description || "";
-								console.log(
+								debugLog(
 									"[CopilotSidebar] 加载资料内容:",
 									ctx.title,
 									content.slice(0, 100),
@@ -1242,7 +1290,7 @@ export default function CopilotSidebar() {
 						let filePath = ctx.filePath;
 						let fileSize = ctx.size;
 
-						console.log("[CopilotSidebar] 处理上下文:", {
+						debugLog("[CopilotSidebar] 处理上下文:", {
 							title: ctx.title,
 							hasFilePath: !!filePath,
 							filePath,
@@ -1265,7 +1313,7 @@ export default function CopilotSidebar() {
 									});
 									filePath = dest;
 									fileSize = content.length;
-									console.log(
+									debugLog(
 										"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
 										ctx.title,
 										filePath,
@@ -1289,7 +1337,7 @@ export default function CopilotSidebar() {
 								});
 								filePath = tempResult.path;
 								fileSize = tempResult.size;
-								console.log(
+								debugLog(
 									"[CopilotSidebar] 创建临时文件:",
 									ctx.title,
 									filePath,
@@ -1334,7 +1382,7 @@ export default function CopilotSidebar() {
 					}
 				}
 
-				console.log("[CopilotSidebar] 附件聚合统计:", {
+				debugLog("[CopilotSidebar] 附件聚合统计:", {
 					contextCount: contexts.length,
 					attachedFiles: attachedFiles.map((f) => ({
 						title: f.title,
@@ -1915,11 +1963,11 @@ export default function CopilotSidebar() {
 					if (accumulatedContent.includes(":::update-doc")) {
 						isUpdatingDoc = true;
 						events.emit(EVENTS.AI_DOC_UPDATE_START, {});
-						console.log("[CopilotSidebar] AI 开始修改文档");
+						debugLog("[CopilotSidebar] AI 开始修改文档");
 					} else if (accumulatedContent.includes(":::create-doc")) {
 						isCreatingDoc = true;
 						events.emit(EVENTS.AI_DOC_CREATE_START, {});
-						console.log("[CopilotSidebar] AI 开始创建新文档");
+						debugLog("[CopilotSidebar] AI 开始创建新文档");
 					}
 				}
 
@@ -1976,7 +2024,7 @@ export default function CopilotSidebar() {
 									suggestedContent: docContentBuffer,
 									prompt: command?.name || content.slice(0, 50),
 								});
-								console.log("[CopilotSidebar] AI 完成文档修改");
+								debugLog("[CopilotSidebar] AI 完成文档修改");
 							} else if (isCreatingDoc) {
 								// 解析 create-doc 内容
 								const lines = docContentBuffer.split("\n");
@@ -2032,7 +2080,7 @@ export default function CopilotSidebar() {
 									content: docContent,
 									prompt: command?.name || content.slice(0, 50),
 								});
-								console.log("[CopilotSidebar] AI 完成新文档创建");
+								debugLog("[CopilotSidebar] AI 完成新文档创建");
 							}
 
 							isUpdatingDoc = false;
@@ -2111,9 +2159,9 @@ export default function CopilotSidebar() {
 				accumulatedContent = streamBuilder.getText();
 				// 兜底处理：如果流结束时仍在修改/创建文档状态（例如结束标记不完整）
 				if (isUpdatingDoc || isCreatingDoc) {
-					console.log(
-						"[CopilotSidebar] 流结束但状态仍为 processing，执行兜底处理",
-					);
+						debugLog(
+							"[CopilotSidebar] 流结束但状态仍为 processing，执行兜底处理",
+						);
 
 					// 尝试提取内容
 					const startMarker = isUpdatingDoc ? ":::update-doc" : ":::create-doc";
@@ -2253,7 +2301,7 @@ export default function CopilotSidebar() {
 				chatStore.setStatus("idle");
 
 				// 调试：打印 AI 完整响应
-				console.log("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
+					debugLog("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
 
 				// 兼容旧的写入协议
 				const { writeContent } = parseWriteContent(accumulatedContent);
@@ -2290,11 +2338,11 @@ export default function CopilotSidebar() {
 				});
 				chatStore.setStatus("error", error);
 			},
-			onUsage: (usage) => {
-				// 将 token 使用数据保存到消息 metadata
-				console.log("[CopilotSidebar] 收到 token usage:", usage);
-				chatStore.updateMessage(session.id, assistantMessage.id, {
-					metadata: {
+				onUsage: (usage) => {
+					// 将 token 使用数据保存到消息 metadata
+					debugLog("[CopilotSidebar] 收到 token usage:", usage);
+					chatStore.updateMessage(session.id, assistantMessage.id, {
+						metadata: {
 						tokenUsage: {
 							promptTokens: usage.promptTokens,
 							completionTokens: usage.completionTokens,
@@ -2355,7 +2403,33 @@ export default function CopilotSidebar() {
 	);
 
 	const messages = chatStore.activeSession?.messages || [];
+	const maxMessageWindowStart = Math.max(0, messages.length - MESSAGE_WINDOW_SIZE);
+	const effectiveMessageRenderStart = Math.min(
+		messageRenderStart,
+		maxMessageWindowStart,
+	);
+	const hiddenMessageCount = effectiveMessageRenderStart;
+	const visibleMessages = useMemo(
+		() => messages.slice(effectiveMessageRenderStart),
+		[messages, effectiveMessageRenderStart],
+	);
+	const pendingAskUserRequests = useMemo(
+		() => Array.from(pendingAskUserQuestions.values()).map((item) => item.request),
+		[pendingAskUserQuestions],
+	);
 	const isStreaming = chatStore.status === "streaming";
+
+	useEffect(() => {
+		setMessageRenderStart(maxMessageWindowStart);
+	}, [chatStore.activeSessionId, maxMessageWindowStart]);
+
+	useEffect(() => {
+		setMessageRenderStart((previous) => {
+			if (messages.length <= MESSAGE_WINDOW_SIZE) return 0;
+			if (shouldAutoScrollRef.current) return maxMessageWindowStart;
+			return Math.min(previous, maxMessageWindowStart);
+		});
+	}, [messages.length, maxMessageWindowStart]);
 
 	return (
 		<aside
@@ -2424,113 +2498,29 @@ export default function CopilotSidebar() {
 				onRespond={respondToPermission}
 			/>
 
-			{/* Messages */}
-			<div
-				ref={scrollContainerRef}
+			<CopilotMessagePane
+				scrollContainerRef={scrollContainerRef}
+				messagesEndRef={messagesEndRef}
+				messages={visibleMessages}
+				hiddenMessageCount={hiddenMessageCount}
+				currentResearch={currentResearch}
+				isStreaming={isStreaming}
+				isAgentExecuting={isAgentExecuting}
+				isWaitingForLLM={isWaitingForLLM}
+				chatMode={chatMode}
+				preferBlocks={chatSettings.blocksFirstEnabled}
+				pendingAskUserRequests={pendingAskUserRequests}
 				onScroll={updateAutoScrollState}
-				className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide"
-			>
-				{messages.length === 0 ? (
-					<div className="h-full relative">
-						<WelcomeScreen />
-
-						{/* 研究进度提示 (浮动在底部) */}
-						{currentResearch && currentResearch.status !== "completed" && (
-							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-300">
-								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-2.5">
-										<div className="w-8 h-8 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-											<Loader2 className="w-4 h-4 text-primary animate-spin" />
-										</div>
-										<div className="flex flex-col">
-											<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-												正在进行深度研究...
-											</span>
-											<span className="text-xs text-zinc-400 dark:text-zinc-500">
-												AI 正在分析相关资料
-											</span>
-										</div>
-									</div>
-									<button
-										onClick={() =>
-											workspaceStore.setLeftSidebarView("research")
-										}
-										aria-label="查看研究进度"
-										className="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-									>
-										查看进度
-									</button>
-								</div>
-							</div>
-						)}
-					</div>
-				) : (
-					<>
-						{messages.map((msg) => (
-							<ChatMessageComponent
-								key={msg.id}
-								message={msg}
-								preferBlocks={chatSettings.blocksFirstEnabled}
-								onRegenerate={
-									!isStreaming && !isAgentExecuting && msg.role === "assistant"
-										? handleRegenerateMessage
-										: undefined
-								}
-							/>
-						))}
-						{/* 等待 AI 响应的提示 */}
-						{isWaitingForLLM && chatMode === "agent" && (
-							<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 dark:from-zinc-300 dark:to-zinc-500 flex items-center justify-center shrink-0 shadow-md">
-									<Bot className="w-4 h-4 text-white dark:text-zinc-900" />
-								</div>
-								<div className="flex-1 min-w-0">
-									<div className="inline-flex items-center gap-3 px-4 py-3 bg-surface dark:bg-zinc-800/50 rounded-2xl border border-border shadow-sm">
-										<div className="relative flex items-center justify-center">
-											<div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-											<div className="absolute w-2 h-2 bg-primary rounded-full animate-pulse" />
-										</div>
-										<div className="flex flex-col">
-											<span className="text-sm font-medium text-text-primary">
-												正在思考中...
-											</span>
-											<span className="text-xs text-text-muted">
-												AI 正在分析您的请求
-											</span>
-										</div>
-										<div className="flex gap-1 ml-2">
-											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
-												style={{ animationDelay: "0ms" }}
-											/>
-											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
-												style={{ animationDelay: "150ms" }}
-											/>
-											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
-												style={{ animationDelay: "300ms" }}
-											/>
-										</div>
-									</div>
-								</div>
-							</div>
-						)}
-						{pendingAskUserQuestions.size > 0 && (
-							<div className="px-4 pb-3 shrink-0">
-								<AskUserQuestionList
-									requests={Array.from(pendingAskUserQuestions.values()).map(
-										(item) => item.request,
-									)}
-									onAllow={handleAllowAskUserQuestion}
-									onDeny={handleDenyAskUserQuestion}
-								/>
-							</div>
-						)}
-						<div ref={messagesEndRef} />
-					</>
-				)}
-			</div>
+				onLoadOlderMessages={() =>
+					setMessageRenderStart((previous) =>
+						Math.max(0, previous - MESSAGE_WINDOW_STEP),
+					)
+				}
+				onRegenerateMessage={handleRegenerateMessage}
+				onOpenResearch={() => workspaceStore.setLeftSidebarView("research")}
+				onAllowAskUserQuestion={handleAllowAskUserQuestion}
+				onDenyAskUserQuestion={handleDenyAskUserQuestion}
+			/>
 
 			{/* Input */}
 			<div className="p-4 pt-2 relative">

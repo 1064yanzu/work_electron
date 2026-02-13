@@ -33,6 +33,10 @@ interface CommandGroup {
 	isCollapsible: boolean;
 }
 
+interface FilteredCommandGroup extends CommandGroup {
+	filteredCommands: SlashCommand[];
+}
+
 export function SlashMenuContainer({
 	isOpen,
 	onClose,
@@ -46,6 +50,7 @@ export function SlashMenuContainer({
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 		new Set(),
 	);
+	const [activeCommandIndex, setActiveCommandIndex] = useState(0);
 	const { prompts: customPrompts, folders: customFolders } =
 		useCustomPromptStore();
 	const { enabledSkills } = useSkillsStore(); // 使用 hook 获取已启用的 Agent Skills
@@ -57,23 +62,9 @@ export function SlashMenuContainer({
 			setLevel("primary");
 			setSelectedCategory(null);
 			setCollapsedGroups(new Set());
+			setActiveCommandIndex(0);
 		}
 	}, [isOpen]);
-
-	// 监听 Backspace 返回上一级
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (!isOpen) return;
-			if (level === "secondary" && e.key === "Backspace" && !filter) {
-				e.preventDefault();
-				setLevel("primary");
-				setSelectedCategory(null);
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isOpen, level, filter]);
 
 	// 点击外部关闭
 	useEffect(() => {
@@ -117,7 +108,7 @@ export function SlashMenuContainer({
 	}, []);
 
 	// 根据类别获取分组后的命令
-	const getCategoryGroups = useCallback((): CommandGroup[] => {
+	const categoryGroups = useMemo<CommandGroup[]>(() => {
 		switch (selectedCategory) {
 			case "file": {
 				// 文件按来源分组
@@ -280,7 +271,7 @@ export function SlashMenuContainer({
 			default:
 				return [];
 		}
-	}, [selectedCategory, dynamicCommands, customPrompts, enabledSkills]);
+	}, [selectedCategory, dynamicCommands, customPrompts, customFolders, enabledSkills]);
 
 	// 获取类别标题和颜色
 	const getCategoryInfo = useCallback(() => {
@@ -291,6 +282,121 @@ export function SlashMenuContainer({
 			Icon: cat?.icon,
 		};
 	}, [selectedCategory]);
+
+	const categoryGroupSearchIndex = useMemo(
+		() =>
+			categoryGroups.map((group) => ({
+				group,
+				searchableTextList: group.commands.map((command) =>
+					`${command.name}\n${command.description}`.toLowerCase(),
+				),
+			})),
+		[categoryGroups],
+	);
+
+	const filteredGroups = useMemo<FilteredCommandGroup[]>(() => {
+		const keyword = filter.trim().toLowerCase();
+		if (!keyword) {
+			return categoryGroups
+				.map((group) => ({ ...group, filteredCommands: group.commands }))
+				.filter((group) => group.filteredCommands.length > 0);
+		}
+		return categoryGroupSearchIndex
+			.map(({ group, searchableTextList }) => ({
+				...group,
+				filteredCommands: group.commands.filter((_, index) =>
+					searchableTextList[index]?.includes(keyword),
+				),
+			}))
+			.filter((group) => group.filteredCommands.length > 0);
+	}, [categoryGroups, categoryGroupSearchIndex, filter]);
+	const visibleCommands = useMemo(
+		() =>
+			filteredGroups.flatMap((group) =>
+				collapsedGroups.has(group.id) ? [] : group.filteredCommands,
+			),
+		[filteredGroups, collapsedGroups],
+	);
+	const visibleCommandIndexMap = useMemo(() => {
+		const indexMap = new Map<string, number>();
+		for (let index = 0; index < visibleCommands.length; index += 1) {
+			const command = visibleCommands[index];
+			if (!command) continue;
+			indexMap.set(command.id, index);
+		}
+		return indexMap;
+	}, [visibleCommands]);
+	const { name: categoryName, iconColor, Icon } = getCategoryInfo();
+	const showAddPromptButton = selectedCategory === "prompt";
+
+	// 计算总命令数
+	const totalCommands = filteredGroups.reduce(
+		(sum, group) => sum + group.filteredCommands.length,
+		0,
+	);
+
+	useEffect(() => {
+		setActiveCommandIndex((previous) => {
+			if (visibleCommands.length === 0) return 0;
+			return Math.min(previous, visibleCommands.length - 1);
+		});
+	}, [visibleCommands]);
+
+	const visibleCommandsRef = useRef<SlashCommand[]>(visibleCommands);
+	const activeCommandIndexRef = useRef(activeCommandIndex);
+	const filterRef = useRef(filter);
+
+	useEffect(() => {
+		visibleCommandsRef.current = visibleCommands;
+	}, [visibleCommands]);
+
+	useEffect(() => {
+		activeCommandIndexRef.current = activeCommandIndex;
+	}, [activeCommandIndex]);
+
+	useEffect(() => {
+		filterRef.current = filter;
+	}, [filter]);
+
+	useEffect(() => {
+		if (!isOpen || level !== "secondary") return;
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Backspace" && !filterRef.current) {
+				event.preventDefault();
+				setLevel("primary");
+				setSelectedCategory(null);
+				return;
+			}
+
+			const commands = visibleCommandsRef.current;
+			if (commands.length === 0) return;
+			switch (event.key) {
+				case "ArrowUp":
+					event.preventDefault();
+					setActiveCommandIndex((previous) =>
+						previous > 0 ? previous - 1 : commands.length - 1,
+					);
+					break;
+				case "ArrowDown":
+					event.preventDefault();
+					setActiveCommandIndex((previous) =>
+						previous < commands.length - 1 ? previous + 1 : 0,
+					);
+					break;
+				case "Enter":
+					event.preventDefault();
+					{
+						const command = commands[activeCommandIndexRef.current];
+						if (command) onSelect(command);
+					}
+					break;
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, level, onSelect]);
 
 	if (!isOpen) return null;
 
@@ -305,14 +411,6 @@ export function SlashMenuContainer({
 			/>
 		);
 	}
-
-	// 二级菜单
-	const groups = getCategoryGroups();
-	const { name: categoryName, iconColor, Icon } = getCategoryInfo();
-	const showAddPromptButton = selectedCategory === "prompt";
-
-	// 计算总命令数
-	const totalCommands = groups.reduce((sum, g) => sum + g.commands.length, 0);
 
 	return (
 		<div
@@ -370,7 +468,7 @@ export function SlashMenuContainer({
 
 				{/* 命令列表 */}
 				<div className="max-h-[320px] overflow-y-auto">
-					{groups.length === 0 && totalCommands === 0 ? (
+					{filteredGroups.length === 0 && totalCommands === 0 ? (
 						<div className="px-4 py-10 text-center">
 							<div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
 								<Sparkles className="w-6 h-6 text-zinc-400" />
@@ -383,14 +481,21 @@ export function SlashMenuContainer({
 						</div>
 					) : (
 						<div className="py-1">
-							{groups.map((group) => (
+							{filteredGroups.map((group) => (
 								<GroupSection
 									key={group.id}
 									group={group}
-									filter={filter}
+									filteredCommands={group.filteredCommands}
 									isCollapsed={collapsedGroups.has(group.id)}
 									onToggle={() => toggleGroup(group.id)}
 									onSelect={onSelect}
+									activeCommandId={visibleCommands[activeCommandIndex]?.id}
+									onHoverCommand={(commandId) => {
+										const index = visibleCommandIndexMap.get(commandId);
+										if (typeof index === "number") {
+											setActiveCommandIndex(index);
+										}
+									}}
 								/>
 							))}
 						</div>
@@ -422,67 +527,21 @@ export function SlashMenuContainer({
 // 分组区块组件
 function GroupSection({
 	group,
-	filter,
+	filteredCommands,
 	isCollapsed,
 	onToggle,
 	onSelect,
+	activeCommandId,
+	onHoverCommand,
 }: {
 	group: CommandGroup;
-	filter: string;
+	filteredCommands: SlashCommand[];
 	isCollapsed: boolean;
 	onToggle: () => void;
 	onSelect: (command: SlashCommand) => void;
+	activeCommandId?: string;
+	onHoverCommand: (commandId: string) => void;
 }) {
-	const [selectedIndex, setSelectedIndex] = useState(0);
-	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-	// 过滤命令
-	const filteredCommands = useMemo(() => {
-		if (!filter) return group.commands;
-		const lowerFilter = filter.toLowerCase();
-		return group.commands.filter(
-			(cmd) =>
-				cmd.name.toLowerCase().includes(lowerFilter) ||
-				cmd.description.toLowerCase().includes(lowerFilter),
-		);
-	}, [group.commands, filter]);
-
-	// 重置选中
-	useEffect(() => {
-		setSelectedIndex(0);
-	}, [filter]);
-
-	// 键盘导航
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (isCollapsed) return;
-
-			switch (e.key) {
-				case "ArrowUp":
-					e.preventDefault();
-					setSelectedIndex((prev) =>
-						prev > 0 ? prev - 1 : filteredCommands.length - 1,
-					);
-					break;
-				case "ArrowDown":
-					e.preventDefault();
-					setSelectedIndex((prev) =>
-						prev < filteredCommands.length - 1 ? prev + 1 : 0,
-					);
-					break;
-				case "Enter":
-					e.preventDefault();
-					if (filteredCommands[selectedIndex]) {
-						onSelect(filteredCommands[selectedIndex]);
-					}
-					break;
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isCollapsed, filteredCommands, selectedIndex, onSelect]);
-
 	if (filteredCommands.length === 0) return null;
 
 	return (
@@ -516,15 +575,13 @@ function GroupSection({
 			{/* 命令列表 */}
 			{!isCollapsed && (
 				<div className="px-1.5">
-					{filteredCommands.map((command, index) => {
-						const isSelected = index === selectedIndex;
+					{filteredCommands.map((command) => {
+						const isSelected = command.id === activeCommandId;
 						return (
 							<button
 								key={command.id}
-								ref={(el) => {
-									itemRefs.current[index] = el;
-								}}
 								onClick={() => onSelect(command)}
+								onMouseEnter={() => onHoverCommand(command.id)}
 								className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all duration-200
                   ${
 										isSelected

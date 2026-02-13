@@ -1,6 +1,6 @@
 import { FileText, Globe } from "lucide-react";
-import { useEffect, useState } from "react";
-import { listOutputAssets, listSources } from "../../lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { useOutputAssetsQuery, useSourcesQuery } from "../../lib/query";
 
 interface ContextPickerProps {
 	filterText: string;
@@ -20,45 +20,34 @@ export function ContextPicker({
 	onSelect,
 	onClose,
 }: ContextPickerProps) {
-	const [items, setItems] = useState<ContextItem[]>([]);
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const sourcesQuery = useSourcesQuery();
+	const outputsQuery = useOutputAssetsQuery();
+
+	const items = useMemo(() => {
+		const sources = sourcesQuery.data ?? [];
+		const outputs = outputsQuery.data ?? [];
+		const allItems: ContextItem[] = [
+			...sources.map((source) => ({
+				id: source.id,
+				title: source.title,
+				type: "source" as const,
+				kind: source.kind,
+			})),
+			...outputs.map((output) => ({
+				id: output.id,
+				title: output.title,
+				type: "output" as const,
+				kind: output.output_type,
+			})),
+		];
+		const keyword = filterText.toLowerCase();
+		return allItems.filter((item) => item.title.toLowerCase().includes(keyword));
+	}, [sourcesQuery.data, outputsQuery.data, filterText]);
 
 	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				const [sources, outputs] = await Promise.all([
-					listSources(),
-					listOutputAssets(),
-				]);
-
-				const contextItems: ContextItem[] = [
-					...sources.map((s) => ({
-						id: s.id,
-						title: s.title,
-						type: "source" as const,
-						kind: s.kind,
-					})),
-					...outputs.map((o) => ({
-						id: o.id,
-						title: o.title,
-						type: "output" as const,
-						kind: o.output_type,
-					})),
-				];
-
-				const filtered = contextItems.filter((item) =>
-					item.title.toLowerCase().includes(filterText.toLowerCase()),
-				);
-
-				setItems(filtered);
-				setSelectedIndex(0);
-			} catch (error) {
-				console.error("Failed to fetch context items", error);
-			}
-		};
-
-		fetchData();
-	}, [filterText]);
+		setSelectedIndex(0);
+	}, [filterText, items.length]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {

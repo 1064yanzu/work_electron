@@ -216,7 +216,7 @@ class WorkspaceStore {
 		if (!ctx.content || ctx.content.trim().length === 0) return;
 
 		try {
-			const { saveTempFile } = await import("./api");
+			const { saveTempFile } = await import("./api/context");
 			const { extension, prefix } = this.deriveFileParams(ctx.title);
 			const result = await saveTempFile({
 				content: ctx.content,
@@ -296,7 +296,7 @@ class WorkspaceStore {
 	async loadSourceContent(sourceId: string) {
 		try {
 			// 动态导入避免循环依赖
-			const { getSourceDetail } = await import("./api");
+			const { getSourceDetail } = await import("./api/context");
 			const detail = await getSourceDetail(sourceId);
 			const content = detail.note?.content || detail.source.description || "";
 
