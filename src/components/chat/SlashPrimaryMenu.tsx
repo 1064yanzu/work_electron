@@ -7,7 +7,6 @@ import {
 	Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { FocusTrap } from "../ui/FocusTrap";
 
 // 命令类别定义
 export interface SlashCategory {
@@ -16,8 +15,8 @@ export interface SlashCategory {
 	description: string;
 	icon: React.ComponentType<{ className?: string }>;
 	shortcut?: string;
-	gradient?: string; // 渐变色
-	iconColor?: string; // 图标颜色
+	gradient?: string;
+	iconColor?: string;
 }
 
 export const slashCategories: SlashCategory[] = [
@@ -28,7 +27,7 @@ export const slashCategories: SlashCategory[] = [
 		icon: FileText,
 		shortcut: "f",
 		gradient: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
-		iconColor: "text-blue-500",
+		iconColor: "text-blue-600 dark:text-blue-400",
 	},
 	{
 		id: "folder",
@@ -38,7 +37,7 @@ export const slashCategories: SlashCategory[] = [
 		shortcut: "d",
 		gradient:
 			"bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
-		iconColor: "text-amber-500",
+		iconColor: "text-amber-600 dark:text-amber-400",
 	},
 	{
 		id: "prompt",
@@ -48,7 +47,7 @@ export const slashCategories: SlashCategory[] = [
 		shortcut: "p",
 		gradient:
 			"bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
-		iconColor: "text-orange-500",
+		iconColor: "text-orange-600 dark:text-orange-400",
 	},
 	{
 		id: "agent_skill",
@@ -58,7 +57,7 @@ export const slashCategories: SlashCategory[] = [
 		shortcut: "s",
 		gradient:
 			"bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
-		iconColor: "text-violet-500",
+		iconColor: "text-violet-600 dark:text-violet-400",
 	},
 	{
 		id: "action",
@@ -67,7 +66,7 @@ export const slashCategories: SlashCategory[] = [
 		icon: Zap,
 		shortcut: "a",
 		gradient: "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
-		iconColor: "text-rose-500",
+		iconColor: "text-rose-600 dark:text-rose-400",
 	},
 ];
 
@@ -86,7 +85,7 @@ export function SlashPrimaryMenu({
 }: SlashPrimaryMenuProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const menuRef = useRef<HTMLDivElement>(null);
-	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+	const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
 	// 根据 filter 过滤或快捷匹配
 	const filteredCategories = slashCategories.filter((cat) => {
@@ -181,18 +180,13 @@ export function SlashPrimaryMenu({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[300px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden z-50"
+				className="absolute left-0 bottom-full mb-2 w-[280px] bg-white dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50"
 			>
-				<FocusTrap onEscape={onClose} role="menu" aria-label="斜杠命令类型菜单">
-					<div className="px-4 py-10 text-center">
-						<div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-							<Sparkles className="w-6 h-6 text-zinc-400" />
-						</div>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">
-							未找到匹配的命令类型
-						</p>
-					</div>
-				</FocusTrap>
+				<div className="px-4 py-8 text-center">
+					<p className="text-[13px] text-[#999] dark:text-[#666]">
+						未找到匹配的命令类型
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -200,128 +194,114 @@ export function SlashPrimaryMenu({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[320px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-2xl rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_12px_32px_-8px_rgba(0,0,0,0.12),0_24px_60px_-12px_rgba(0,0,0,0.15)] border border-zinc-200/40 dark:border-zinc-700/40 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-3 duration-200"
+			className="absolute left-0 bottom-full mb-2 w-[280px] bg-white dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
-			<FocusTrap onEscape={onClose} role="menu" aria-label="斜杠命令类型菜单">
-				{/* 头部 */}
-				<div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
-					<div className="flex items-center gap-2.5">
-						<div className="w-6 h-6 rounded-lg bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600 flex items-center justify-center shadow-sm">
-							<span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
-								/
-							</span>
-						</div>
-						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-							选择类型
-						</span>
-					</div>
-				</div>
+			{/* 头部标签 */}
+			<div className="px-4 pt-3 pb-1">
+				<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666] tracking-wide">
+					选择类型
+				</span>
+			</div>
 
-				{/* 类别列表 */}
-				<div className="p-2">
-					{filteredCategories.map((category, index) => {
-						const isSelected = index === selectedIndex;
-						return (
-							<button
-								key={category.id}
-								ref={(el) => {
-									itemRefs.current[index] = el;
-								}}
-								onClick={() => onSelectCategory(category.id)}
-								className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-left transition-all duration-200
-                ${
-									isSelected
-										? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
-										: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
+			{/* 类别列表 — 使用 div[role=option] 替代 button 避免浏览器 focus ring */}
+			<div className="px-1.5 pb-1.5" role="listbox">
+				{filteredCategories.map((category, index) => {
+					const isSelected = index === selectedIndex;
+					return (
+						<div
+							key={category.id}
+							ref={(el) => {
+								itemRefs.current[index] = el;
+							}}
+							role="option"
+							aria-selected={isSelected}
+							tabIndex={-1}
+							onClick={() => onSelectCategory(category.id)}
+							onMouseEnter={() => setSelectedIndex(index)}
+							className={`w-full flex items-center gap-3 px-2.5 py-[9px] rounded-xl text-left cursor-pointer select-none
+                transition-all duration-[120ms] ease-out
+                ${isSelected
+									? "bg-[#f3f3f3] dark:bg-[#363636]"
+									: ""
 								}`}
+						>
+							{/* 图标容器 — 选中时用品牌色底 */}
+							<div
+								className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0
+                  transition-all duration-[120ms] ease-out
+                  ${isSelected
+										? `${category.gradient} shadow-sm`
+										: "bg-[#f5f5f5] dark:bg-[#363636]"
+									}`}
 							>
-								{/* 图标容器 */}
-								<div
-									className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200
-                  ${
-										isSelected
-											? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
-											: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
-									}`}
-								>
-									<category.icon
-										className={`w-5 h-5 transition-colors ${isSelected ? category.iconColor : "text-zinc-500 dark:text-zinc-400"}`}
-									/>
-								</div>
-
-								{/* 文字内容 */}
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-2.5">
-										<span
-											className={`text-sm font-medium ${
-												isSelected
-													? "text-zinc-900 dark:text-zinc-100"
-													: "text-zinc-700 dark:text-zinc-300"
-											}`}
-										>
-											{category.name}
-										</span>
-										{category.shortcut && (
-											<kbd
-												className={`px-1.5 py-0.5 text-[9px] font-medium rounded-md transition-colors
-                        ${
-													isSelected
-														? "bg-white/80 dark:bg-zinc-700/80 text-zinc-500 dark:text-zinc-400 shadow-sm"
-														: "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
-												}`}
-											>
-												/{category.shortcut}
-											</kbd>
-										)}
-									</div>
-									<p
-										className={`text-xs truncate mt-0.5 ${
-											isSelected
-												? "text-zinc-600 dark:text-zinc-400"
-												: "text-zinc-400 dark:text-zinc-500"
+								<category.icon
+									className={`w-[15px] h-[15px] transition-colors duration-[120ms]
+                    ${isSelected
+											? "" // gradient 类里已有颜色
+											: "text-[#999] dark:text-[#666]"
 										}`}
-									>
-										{category.description}
-									</p>
-								</div>
-
-								{/* 箭头 */}
-								<ChevronRight
-									className={`w-4 h-4 transition-all duration-150 ${
-										isSelected
-											? "text-zinc-500 dark:text-zinc-400 translate-x-0.5"
-											: "text-zinc-300 dark:text-zinc-600"
-									}`}
 								/>
-							</button>
-						);
-					})}
-				</div>
+							</div>
 
-				{/* 底部快捷键提示 */}
-				<div className="px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-					<div className="flex items-center justify-center gap-4 text-[10px] text-zinc-400">
-						<span className="flex items-center gap-1">
-							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-								↑↓
-							</kbd>
-							<span>导航</span>
-						</span>
-						<span className="flex items-center gap-1">
-							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-								↵
-							</kbd>
-							<span>选择</span>
-						</span>
-						<span className="flex items-center gap-1">
-							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-								Esc
-							</kbd>
-							<span>取消</span>
-						</span>
-					</div>
+							{/* 文字区域 */}
+							<div className="flex-1 min-w-0">
+								<div className="flex items-baseline gap-1.5">
+									<span
+										className={`text-[13px] font-medium leading-tight transition-colors duration-[120ms]
+                      ${isSelected
+												? "text-[#1a1a1a] dark:text-[#eee]"
+												: "text-[#666] dark:text-[#999]"
+											}`}
+									>
+										{category.name}
+									</span>
+									{category.shortcut && (
+										<span className="text-[10px] text-[#ccc] dark:text-[#555] font-mono">
+											/{category.shortcut}
+										</span>
+									)}
+								</div>
+								<p
+									className={`text-[11px] leading-tight mt-0.5 transition-colors duration-[120ms]
+                    ${isSelected
+											? "text-[#999] dark:text-[#777]"
+											: "text-[#bbb] dark:text-[#555]"
+										}`}
+								>
+									{category.description}
+								</p>
+							</div>
+
+							{/* chevron */}
+							<ChevronRight
+								className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-[120ms] ease-out
+                  ${isSelected
+										? "text-[#999] dark:text-[#666] translate-x-px opacity-100"
+										: "text-transparent opacity-0"
+									}`}
+							/>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* 底部快捷键 */}
+			<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
+				<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+					<span className="flex items-center gap-1">
+						<span className="font-mono text-[9px]">↑↓</span>
+						<span>导航</span>
+					</span>
+					<span className="flex items-center gap-1">
+						<span className="font-mono text-[9px]">↵</span>
+						<span>选择</span>
+					</span>
+					<span className="flex items-center gap-1">
+						<span className="font-mono text-[9px]">esc</span>
+						<span>关闭</span>
+					</span>
 				</div>
-			</FocusTrap>
+			</div>
 		</div>
 	);
 }

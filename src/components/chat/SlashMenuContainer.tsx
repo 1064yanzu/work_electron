@@ -1,18 +1,15 @@
-// 斜杠命令二级菜单容器 - Claude 风格高级质感
+// 斜杠命令二级菜单容器
 // 整合一级菜单（类型选择）和二级菜单（具体命令）
 
 import {
 	ArrowLeft,
-	ChevronDown,
 	ChevronRight,
 	Plus,
-	Sparkles,
 	Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomPromptStore } from "../../lib/customPromptStore";
 import { useSkillsStore } from "../../lib/skillsStore";
-import { FocusTrap } from "../ui/FocusTrap";
 import { SlashPrimaryMenu, slashCategories } from "./SlashPrimaryMenu";
 import { type SlashCommand, defaultCommands } from "./SlashCommand";
 
@@ -53,7 +50,7 @@ export function SlashMenuContainer({
 	const [activeCommandIndex, setActiveCommandIndex] = useState(0);
 	const { prompts: customPrompts, folders: customFolders } =
 		useCustomPromptStore();
-	const { enabledSkills } = useSkillsStore(); // 使用 hook 获取已启用的 Agent Skills
+	const { enabledSkills } = useSkillsStore();
 	const menuRef = useRef<HTMLDivElement>(null);
 
 	// 当菜单打开时重置状态
@@ -86,6 +83,7 @@ export function SlashMenuContainer({
 	const handleSelectCategory = useCallback((categoryId: string) => {
 		setSelectedCategory(categoryId);
 		setLevel("secondary");
+		setActiveCommandIndex(0);
 	}, []);
 
 	// 返回一级菜单
@@ -111,43 +109,39 @@ export function SlashMenuContainer({
 	const categoryGroups = useMemo<CommandGroup[]>(() => {
 		switch (selectedCategory) {
 			case "file": {
-				// 文件按来源分组
 				const groups: CommandGroup[] = [];
 
-				// 资料库
 				const sourceCommands = dynamicCommands.filter(
 					(cmd) => cmd.group === "资料库",
 				);
 				if (sourceCommands.length > 0) {
 					groups.push({
 						id: "sources",
-						name: "📚 资料库",
+						name: "资料库",
 						commands: sourceCommands,
 						isCollapsible: true,
 					});
 				}
 
-				// 最近打开
 				const recentCommands = dynamicCommands.filter(
 					(cmd) => cmd.group === "最近打开",
 				);
 				if (recentCommands.length > 0) {
 					groups.push({
 						id: "recent",
-						name: "🕐 最近打开",
+						name: "最近打开",
 						commands: recentCommands,
 						isCollapsible: true,
 					});
 				}
 
-				// 文档
 				const docCommands = dynamicCommands.filter(
 					(cmd) => cmd.group === "文档",
 				);
 				if (docCommands.length > 0) {
 					groups.push({
 						id: "docs",
-						name: "📄 文档缓存",
+						name: "文档缓存",
 						commands: docCommands,
 						isCollapsible: true,
 					});
@@ -157,14 +151,13 @@ export function SlashMenuContainer({
 			}
 
 			case "folder": {
-				// 文件夹操作
 				const folderCommands = dynamicCommands.filter(
 					(cmd) => cmd.id === "import-file",
 				);
 				return [
 					{
 						id: "folder-actions",
-						name: "📁 文件夹操作",
+						name: "文件夹操作",
 						commands: folderCommands,
 						isCollapsible: false,
 					},
@@ -172,8 +165,6 @@ export function SlashMenuContainer({
 			}
 
 			case "prompt": {
-				// 自定义提示词按文件夹分组
-				// 构建 folderId -> folderName 的映射
 				const folderNameMap = new Map<string, string>();
 				for (const f of customFolders) {
 					folderNameMap.set(f.id, f.name);
@@ -182,7 +173,6 @@ export function SlashMenuContainer({
 				const groupMap = new Map<string, SlashCommand[]>();
 
 				for (const p of customPrompts) {
-					// 获取文件夹名称或使用"未分类"
 					const groupName = p.folderId
 						? folderNameMap.get(p.folderId) || "未分类"
 						: "未分类";
@@ -217,7 +207,6 @@ export function SlashMenuContainer({
 			}
 
 			case "agent_skill": {
-				// Agent 技能（来自设置页面的 Skills）
 				const agentSkillCommands: SlashCommand[] = enabledSkills.map(
 					(skill) => ({
 						id: `agent-skill-${skill.name}`,
@@ -226,7 +215,6 @@ export function SlashMenuContainer({
 						icon: () => <Zap className="w-4 h-4" />,
 						category: "skill" as const,
 						group: "Agent 技能",
-						// 存储 skill 名称以便后续强制执行
 						prompt: `[FORCE_SKILL:${skill.name}]`,
 					}),
 				);
@@ -235,7 +223,7 @@ export function SlashMenuContainer({
 					return [
 						{
 							id: "no-agent-skills",
-							name: "⚠️ 暂无已启用的 Agent 技能",
+							name: "暂无已启用的 Agent 技能",
 							commands: [],
 							isCollapsible: false,
 						},
@@ -245,7 +233,7 @@ export function SlashMenuContainer({
 				return [
 					{
 						id: "agent-skills",
-						name: "⚡ Agent 技能",
+						name: "Agent 技能",
 						commands: agentSkillCommands,
 						isCollapsible: false,
 					},
@@ -253,7 +241,6 @@ export function SlashMenuContainer({
 			}
 
 			case "action": {
-				// 操作类命令
 				const actionCommands = [
 					...defaultCommands.filter((cmd) => cmd.category === "action"),
 					...dynamicCommands.filter((cmd) => cmd.group === "卡片"),
@@ -261,7 +248,7 @@ export function SlashMenuContainer({
 				return [
 					{
 						id: "actions",
-						name: "⚡ 快捷操作",
+						name: "快捷操作",
 						commands: actionCommands,
 						isCollapsible: false,
 					},
@@ -278,8 +265,9 @@ export function SlashMenuContainer({
 		const cat = slashCategories.find((c) => c.id === selectedCategory);
 		return {
 			name: cat?.name || "",
-			iconColor: cat?.iconColor || "text-zinc-500",
+			iconColor: cat?.iconColor || "text-[#999]",
 			Icon: cat?.icon,
+			gradient: cat?.gradient || "",
 		};
 	}, [selectedCategory]);
 
@@ -310,6 +298,7 @@ export function SlashMenuContainer({
 			}))
 			.filter((group) => group.filteredCommands.length > 0);
 	}, [categoryGroups, categoryGroupSearchIndex, filter]);
+
 	const visibleCommands = useMemo(
 		() =>
 			filteredGroups.flatMap((group) =>
@@ -317,6 +306,7 @@ export function SlashMenuContainer({
 			),
 		[filteredGroups, collapsedGroups],
 	);
+
 	const visibleCommandIndexMap = useMemo(() => {
 		const indexMap = new Map<string, number>();
 		for (let index = 0; index < visibleCommands.length; index += 1) {
@@ -326,7 +316,8 @@ export function SlashMenuContainer({
 		}
 		return indexMap;
 	}, [visibleCommands]);
-	const { name: categoryName, iconColor, Icon } = getCategoryInfo();
+
+	const { name: categoryName, Icon, gradient } = getCategoryInfo();
 	const showAddPromptButton = selectedCategory === "prompt";
 
 	// 计算总命令数
@@ -357,6 +348,19 @@ export function SlashMenuContainer({
 	useEffect(() => {
 		filterRef.current = filter;
 	}, [filter]);
+
+	// Escape 键关闭
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleEscape);
+		return () => window.removeEventListener("keydown", handleEscape);
+	}, [isOpen, onClose]);
 
 	useEffect(() => {
 		if (!isOpen || level !== "secondary") return;
@@ -415,111 +419,104 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[360px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-2xl rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_12px_32px_-8px_rgba(0,0,0,0.12),0_24px_60px_-12px_rgba(0,0,0,0.15)] border border-zinc-200/40 dark:border-zinc-700/40 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-3 duration-200"
+			className="absolute left-0 bottom-full mb-2 w-[300px] bg-white dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
-			<FocusTrap onEscape={onClose} role="menu" aria-label="斜杠命令菜单">
-				{/* 头部：返回按钮 + 标题 */}
-				<div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80">
-					<button
-						onClick={handleBack}
-						aria-label="返回命令类型"
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90"
-						title="返回"
-					>
-						<ArrowLeft className="w-5 h-5" />
-					</button>
-					<div className="flex items-center gap-2.5">
-						{Icon && (
-							<div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm">
-								<Icon className={`w-4 h-4 ${iconColor}`} />
-							</div>
-						)}
-						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-							{categoryName}
-						</span>
-						<span className="px-2 py-0.5 text-[10px] font-semibold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-							{totalCommands}
-						</span>
-					</div>
+			{/* 头部：返回按钮 + 标题 */}
+			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#333]">
+				<div
+					role="button"
+					tabIndex={-1}
+					onClick={handleBack}
+					className="w-7 h-7 flex items-center justify-center text-[#999] hover:text-[#666] dark:hover:text-[#bbb] hover:bg-[#f3f3f3] dark:hover:bg-[#363636] rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
+					title="返回"
+				>
+					<ArrowLeft className="w-4 h-4" />
 				</div>
-
-				{/* 添加提示词按钮（仅在提示词类别显示）- 高级中性风格 */}
-				{showAddPromptButton && onOpenPromptLibrary && (
-					<button
-						onClick={() => {
-							onOpenPromptLibrary();
-							onClose();
-						}}
-						className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left text-sm border-b border-zinc-100 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group active:scale-[0.99]"
-					>
-						<div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
-							<Plus className="w-4.5 h-4.5 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
-						</div>
-						<div>
-							<span className="font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-								添加提示词
-							</span>
-							<p className="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
-								管理自定义提示词库
-							</p>
-						</div>
-					</button>
-				)}
-
-				{/* 命令列表 */}
-				<div className="max-h-[320px] overflow-y-auto">
-					{filteredGroups.length === 0 && totalCommands === 0 ? (
-						<div className="px-4 py-10 text-center">
-							<div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-								<Sparkles className="w-6 h-6 text-zinc-400" />
-							</div>
-							<p className="text-sm text-zinc-500 dark:text-zinc-400">
-								{selectedCategory === "prompt"
-									? "暂无自定义提示词"
-									: "暂无可用命令"}
-							</p>
-						</div>
-					) : (
-						<div className="py-1">
-							{filteredGroups.map((group) => (
-								<GroupSection
-									key={group.id}
-									group={group}
-									filteredCommands={group.filteredCommands}
-									isCollapsed={collapsedGroups.has(group.id)}
-									onToggle={() => toggleGroup(group.id)}
-									onSelect={onSelect}
-									activeCommandId={visibleCommands[activeCommandIndex]?.id}
-									onHoverCommand={(commandId) => {
-										const index = visibleCommandIndexMap.get(commandId);
-										if (typeof index === "number") {
-											setActiveCommandIndex(index);
-										}
-									}}
-								/>
-							))}
+				<div className="flex items-center gap-2">
+					{Icon && (
+						<div className={`w-5 h-5 rounded-md flex items-center justify-center ${gradient}`}>
+							<Icon className="w-3 h-3" />
 						</div>
 					)}
-				</div>
-
-				{/* 底部快捷键提示 */}
-				<div className="px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-					<div className="flex items-center justify-center gap-4 text-[10px] text-zinc-400">
-						<span className="flex items-center gap-1">
-							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-								⌫
-							</kbd>
-							<span>返回</span>
+					<span className="text-[13px] font-medium text-[#1a1a1a] dark:text-[#eee]">
+						{categoryName}
+					</span>
+					{totalCommands > 0 && (
+						<span className="text-[10px] text-[#bbb] dark:text-[#555]">
+							{totalCommands}
 						</span>
-						<span className="flex items-center gap-1">
-							<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-medium">
-								↵
-							</kbd>
-							<span>选择</span>
+					)}
+				</div>
+			</div>
+
+			{/* 添加提示词按钮（仅在提示词类别显示） */}
+			{showAddPromptButton && onOpenPromptLibrary && (
+				<div
+					role="button"
+					tabIndex={-1}
+					onClick={() => {
+						onOpenPromptLibrary();
+						onClose();
+					}}
+					className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-[#f0f0f0] dark:border-[#333] hover:bg-[#f8f8f8] dark:hover:bg-[#333] transition-colors duration-100 cursor-pointer select-none group"
+				>
+					<div className="w-6 h-6 rounded-md bg-[#f3f3f3] dark:bg-[#363636] flex items-center justify-center group-hover:bg-[#eee] dark:group-hover:bg-[#404040] transition-colors duration-100">
+						<Plus className="w-3.5 h-3.5 text-[#999] group-hover:text-[#666]" />
+					</div>
+					<div>
+						<span className="text-[12px] font-medium text-[#666] dark:text-[#999] group-hover:text-[#333] dark:group-hover:text-[#ddd]">
+							添加提示词
 						</span>
 					</div>
 				</div>
-			</FocusTrap>
+			)}
+
+			{/* 命令列表 */}
+			<div className="max-h-[300px] overflow-y-auto">
+				{filteredGroups.length === 0 && totalCommands === 0 ? (
+					<div className="px-4 py-8 text-center">
+						<p className="text-[13px] text-[#999] dark:text-[#666]">
+							{selectedCategory === "prompt"
+								? "暂无自定义提示词"
+								: "暂无可用命令"}
+						</p>
+					</div>
+				) : (
+					<div className="py-0.5">
+						{filteredGroups.map((group) => (
+							<GroupSection
+								key={group.id}
+								group={group}
+								filteredCommands={group.filteredCommands}
+								isCollapsed={collapsedGroups.has(group.id)}
+								onToggle={() => toggleGroup(group.id)}
+								onSelect={onSelect}
+								activeCommandId={visibleCommands[activeCommandIndex]?.id}
+								onHoverCommand={(commandId) => {
+									const index = visibleCommandIndexMap.get(commandId);
+									if (typeof index === "number") {
+										setActiveCommandIndex(index);
+									}
+								}}
+							/>
+						))}
+					</div>
+				)}
+			</div>
+
+			{/* 底部快捷键提示 */}
+			<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
+				<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+					<span className="flex items-center gap-1">
+						<span className="font-mono text-[9px]">⌫</span>
+						<span>返回</span>
+					</span>
+					<span className="flex items-center gap-1">
+						<span className="font-mono text-[9px]">↵</span>
+						<span>选择</span>
+					</span>
+				</div>
+			</div>
 		</div>
 	);
 }
@@ -545,93 +542,91 @@ function GroupSection({
 	if (filteredCommands.length === 0) return null;
 
 	return (
-		<div className="mb-1">
+		<div>
 			{/* 分组标题 */}
 			{group.isCollapsible ? (
-				<button
+				<div
+					role="button"
+					tabIndex={-1}
 					onClick={onToggle}
-					className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-[#fafafa] dark:hover:bg-[#333]/60 transition-colors duration-100 cursor-pointer select-none"
 				>
-					{isCollapsed ? (
-						<ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
-					) : (
-						<ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-					)}
-					<span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
+					<ChevronRight
+						className={`w-3 h-3 text-[#ccc] dark:text-[#555] transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"
+							}`}
+					/>
+					<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
 						{group.name}
 					</span>
-					<span className="px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+					<span className="text-[10px] text-[#ccc] dark:text-[#555]">
 						{filteredCommands.length}
 					</span>
-				</button>
+				</div>
 			) : (
-				<div className="px-4 py-2.5">
-					<span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
+				<div className="px-4 py-1.5">
+					<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
 						{group.name}
 					</span>
 				</div>
 			)}
 
-			{/* 命令列表 */}
+			{/* 命令列表 — 使用 div 替代 button 避免 focus ring */}
 			{!isCollapsed && (
-				<div className="px-1.5">
+				<div className="px-1.5" role="listbox">
 					{filteredCommands.map((command) => {
 						const isSelected = command.id === activeCommandId;
 						return (
-							<button
+							<div
 								key={command.id}
+								role="option"
+								aria-selected={isSelected}
+								tabIndex={-1}
 								onClick={() => onSelect(command)}
 								onMouseEnter={() => onHoverCommand(command.id)}
-								className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all duration-200
-                  ${
-										isSelected
-											? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-inset ring-black/[0.02] dark:ring-white/[0.04]"
-											: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98]"
+								className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left cursor-pointer select-none
+                  transition-all duration-[120ms] ease-out
+                  ${isSelected
+										? "bg-[#f3f3f3] dark:bg-[#363636]"
+										: ""
 									}`}
 							>
 								{/* 图标 */}
 								<div
-									className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200
-                    ${
-											isSelected
-												? "bg-white dark:bg-zinc-700 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
-												: "bg-zinc-100 dark:bg-zinc-800 shadow-sm"
+									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
+                    ${isSelected
+											? "bg-white dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+											: "bg-[#f5f5f5] dark:bg-[#363636]"
 										}`}
 								>
 									<command.icon
-										className={`w-4.5 h-4.5 transition-colors ${isSelected ? "text-zinc-700 dark:text-zinc-200" : "text-zinc-500 dark:text-zinc-400"}`}
+										className={`w-3.5 h-3.5 transition-colors duration-[120ms]
+                      ${isSelected ? "text-[#555] dark:text-[#ccc]" : "text-[#999] dark:text-[#666]"}`}
 									/>
 								</div>
 
 								{/* 文字 */}
 								<div className="flex-1 min-w-0">
 									<div
-										className={`text-sm font-medium truncate ${
-											isSelected
-												? "text-zinc-900 dark:text-zinc-100"
-												: "text-zinc-700 dark:text-zinc-300"
-										}`}
+										className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
+                      ${isSelected
+												? "text-[#1a1a1a] dark:text-[#eee]"
+												: "text-[#666] dark:text-[#999]"
+											}`}
 									>
 										{command.name}
 									</div>
-									<div
-										className={`text-xs truncate ${
-											isSelected
-												? "text-zinc-500 dark:text-zinc-400"
-												: "text-zinc-400 dark:text-zinc-500"
-										}`}
-									>
+									<div className="text-[11px] truncate text-[#bbb] dark:text-[#555]">
 										{command.description}
 									</div>
 								</div>
 
-								{/* 选中指示器 */}
+								{/* 选中 Enter 提示 */}
 								{isSelected && (
-									<span className="px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 bg-white dark:bg-zinc-700 rounded shadow-sm">
+									<span className="text-[10px] font-mono text-[#ccc] dark:text-[#555] flex-shrink-0">
 										↵
 									</span>
 								)}
-							</button>
+							</div>
 						);
 					})}
 				</div>
