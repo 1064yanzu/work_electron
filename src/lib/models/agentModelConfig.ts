@@ -88,6 +88,22 @@ export interface AgentModelSettings {
 		/** 压缩策略: 'summary' (摘要) | 'selection' (筛选关键信息) */
 		strategy: "summary" | "selection";
 	};
+	/** 运行时上下文治理配置 */
+	contextRuntime?: {
+		contextPolicy: "balanced" | "strict" | "aggressive";
+		subagentContextMode: "capsule" | "inherit";
+		maxTurns: number;
+		maxThinkingTokens: number;
+		maxBudgetUsd?: number;
+		settingSources: Array<"user" | "project" | "local">;
+		enableToolSearch: "auto" | "auto:5" | "true" | "false";
+		contextBudget: {
+			maxContextChars: number;
+			maxFiles: number;
+			maxFileChars: number;
+		};
+		betas: string[];
+	};
 }
 
 /**
@@ -102,6 +118,21 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 		enabled: false,
 		threshold: 30000,
 		strategy: "summary",
+	},
+	contextRuntime: {
+		contextPolicy: "balanced",
+		subagentContextMode: "capsule",
+		maxTurns: 24,
+		maxThinkingTokens: 8192,
+		maxBudgetUsd: undefined,
+		settingSources: ["user", "project"],
+		enableToolSearch: "auto:5",
+		contextBudget: {
+			maxContextChars: 16000,
+			maxFiles: 12,
+			maxFileChars: 6000,
+		},
+		betas: [],
 	},
 };
 

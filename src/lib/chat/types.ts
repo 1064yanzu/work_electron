@@ -85,6 +85,14 @@ export interface ChatMessage {
 		// Agent 任务关联信息（用于历史记录恢复）
 		taskId?: string;
 		sandboxDir?: string;
+		parentSdkSessionId?: string;
+		contextCharsBefore?: number;
+		contextCharsAfter?: number;
+		attachedFilesBefore?: number;
+		attachedFilesAfter?: number;
+		dedupeHitCount?: number;
+		compactionCount?: number;
+		degradeLevel?: number;
 	};
 }
 

@@ -22,6 +22,21 @@ export interface AgentStartPayload {
 	plugins?: Array<{ type: "local"; path: string }>;
 	sandbox?: Record<string, unknown>;
 	interactive_approval?: boolean;
+	fork_session?: boolean;
+	resume_session_at?: string;
+	max_turns?: number;
+	max_thinking_tokens?: number;
+	max_budget_usd?: number;
+	setting_sources?: Array<"user" | "project" | "local">;
+	betas?: string[];
+	context_policy?: "balanced" | "strict" | "aggressive";
+	subagent_context_mode?: "capsule" | "inherit";
+	context_budget?: {
+		max_context_chars: number;
+		max_files: number;
+		max_file_chars: number;
+	};
+	enable_tool_search?: "auto" | "auto:5" | "true" | "false";
 }
 
 export interface AgentInteractionRequestPayload {

@@ -38,7 +38,12 @@ import type {
 } from "./types";
 import type { RemoteGatewayScope } from "./remote-control-schema";
 
-type RemoteChannelId = "feishu" | "telegram" | "slack" | "discord" | "generic_webhook";
+type RemoteChannelId =
+	| "feishu"
+	| "telegram"
+	| "slack"
+	| "discord"
+	| "generic_webhook";
 type RemotePairingStatus = "pending" | "approved" | "rejected" | "revoked";
 type RemotePairingRecordStatus = "approved" | "revoked";
 type RemoteSessionState =
@@ -971,6 +976,32 @@ export type IPCSchema = {
 			sandbox?: Record<string, unknown>;
 			/** Enable interactive approval broker in canUseTool (default: true) */
 			interactive_approval?: boolean;
+			/** Fork resumed session into a new branch */
+			fork_session?: boolean;
+			/** Resume only up to a specific assistant message uuid */
+			resume_session_at?: string;
+			/** Max conversation turns */
+			max_turns?: number;
+			/** Max thinking tokens */
+			max_thinking_tokens?: number;
+			/** Max budget in USD */
+			max_budget_usd?: number;
+			/** SDK settingSources passthrough */
+			setting_sources?: Array<"user" | "project" | "local">;
+			/** SDK beta features */
+			betas?: string[];
+			/** Runtime context strategy */
+			context_policy?: "balanced" | "strict" | "aggressive";
+			/** Subagent context inheritance policy */
+			subagent_context_mode?: "capsule" | "inherit";
+			/** Context budget controls */
+			context_budget?: {
+				max_context_chars: number;
+				max_files: number;
+				max_file_chars: number;
+			};
+			/** MCP tool search mode */
+			enable_tool_search?: "auto" | "auto:5" | "true" | "false";
 		};
 		output: string;
 	};
@@ -996,13 +1027,13 @@ export type IPCSchema = {
 		input: {
 			runId: string;
 			action:
-			| "set_permission_mode"
-			| "set_model"
-			| "interrupt"
-			| "mcp_status"
-			| "mcp_reconnect"
-			| "mcp_toggle"
-			| "mcp_set_servers";
+				| "set_permission_mode"
+				| "set_model"
+				| "interrupt"
+				| "mcp_status"
+				| "mcp_reconnect"
+				| "mcp_toggle"
+				| "mcp_set_servers";
 			mode?: string;
 			model?: string;
 			serverName?: string;
@@ -1188,10 +1219,10 @@ export type IPCSchema = {
 			id: string;
 			entity_type?: "source" | "output";
 			destination:
-			| "project_docs"
-			| "global_shared"
-			| "global_webclips"
-			| "theme";
+				| "project_docs"
+				| "global_shared"
+				| "global_webclips"
+				| "theme";
 			project_id?: string;
 			theme_id?: string;
 		};

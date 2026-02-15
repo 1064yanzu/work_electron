@@ -2,6 +2,10 @@
 
 import { DEFAULT_PROMPTS } from "../components/Settings/panels/PromptSettings";
 import { getConfig } from "./config";
+import {
+	buildDocumentBudget,
+	type DocumentBudgetResult,
+} from "./agent/context/documentBudget";
 
 // 提示词配置键
 export const PROMPT_KEYS = {
@@ -70,6 +74,24 @@ export async function getChatSystemPrompt(
 ): Promise<string> {
 	const template = await getPrompt("chatSystem");
 	return template.replace("{document}", documentContent || "（空文档）");
+}
+
+export async function getChatSystemPromptWithBudget(input: {
+	documentContent: string;
+	hasActiveDoc: boolean;
+	docPath?: string | null;
+	maxInlineChars?: number;
+	maxSummaryChars?: number;
+}): Promise<{ prompt: string; budget: DocumentBudgetResult }> {
+	const budget = buildDocumentBudget({
+		content: input.documentContent,
+		hasActiveDoc: input.hasActiveDoc,
+		docPath: input.docPath,
+		maxInlineChars: input.maxInlineChars,
+		maxSummaryChars: input.maxSummaryChars,
+	});
+	const prompt = await getChatSystemPrompt(budget.injectedDocument);
+	return { prompt, budget };
 }
 
 /**

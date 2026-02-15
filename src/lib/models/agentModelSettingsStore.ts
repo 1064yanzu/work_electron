@@ -50,6 +50,28 @@ export const agentModelSettingsStore = {
 				// Normalize per-config defaults for backward compatibility.
 				state = {
 					...state,
+					contextRuntime: {
+						...(DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime || {}),
+						...((state as any).contextRuntime || {}),
+						contextBudget: {
+							...(DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextBudget ||
+								{}),
+							...((state as any).contextRuntime?.contextBudget || {}),
+						},
+						settingSources: Array.isArray(
+							(state as any).contextRuntime?.settingSources,
+						)
+							? ((state as any).contextRuntime.settingSources as Array<
+									"user" | "project" | "local"
+								>)
+							: DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.settingSources || [
+									"user",
+									"project",
+								],
+						betas: Array.isArray((state as any).contextRuntime?.betas)
+							? ((state as any).contextRuntime.betas as string[])
+							: [],
+					},
 					scenarioConfigs: Array.isArray((state as any).scenarioConfigs)
 						? (state.scenarioConfigs as ScenarioModelConfig[]).map((c) => ({
 								...c,
@@ -166,6 +188,84 @@ export const agentModelSettingsStore = {
 				strategy: "summary",
 				...(state.contextCompression || {}),
 				...settings,
+			},
+		};
+		emitChange();
+		await this.save();
+	},
+
+	async updateContextRuntime(
+		settings: Partial<
+			Omit<NonNullable<AgentModelSettings["contextRuntime"]>, "contextBudget">
+		> & {
+			contextBudget?: Partial<
+				NonNullable<AgentModelSettings["contextRuntime"]>["contextBudget"]
+			>;
+		},
+	): Promise<void> {
+		const mergedBudget = {
+			maxContextChars:
+				settings.contextBudget?.maxContextChars ??
+				state.contextRuntime?.contextBudget?.maxContextChars ??
+				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextBudget
+					?.maxContextChars ??
+				16000,
+			maxFiles:
+				settings.contextBudget?.maxFiles ??
+				state.contextRuntime?.contextBudget?.maxFiles ??
+				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextBudget?.maxFiles ??
+				12,
+			maxFileChars:
+				settings.contextBudget?.maxFileChars ??
+				state.contextRuntime?.contextBudget?.maxFileChars ??
+				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextBudget
+					?.maxFileChars ??
+				6000,
+		};
+		state = {
+			...state,
+			contextRuntime: {
+				contextPolicy:
+					settings.contextPolicy ??
+					state.contextRuntime?.contextPolicy ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextPolicy ??
+					"balanced",
+				subagentContextMode:
+					settings.subagentContextMode ??
+					state.contextRuntime?.subagentContextMode ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.subagentContextMode ??
+					"capsule",
+				maxTurns:
+					settings.maxTurns ??
+					state.contextRuntime?.maxTurns ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxTurns ??
+					24,
+				maxThinkingTokens:
+					settings.maxThinkingTokens ??
+					state.contextRuntime?.maxThinkingTokens ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxThinkingTokens ??
+					8192,
+				maxBudgetUsd:
+					settings.maxBudgetUsd ??
+					state.contextRuntime?.maxBudgetUsd ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxBudgetUsd,
+				settingSources: settings.settingSources ??
+					state.contextRuntime?.settingSources ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.settingSources ?? [
+						"user",
+						"project",
+					],
+				enableToolSearch:
+					settings.enableToolSearch ??
+					state.contextRuntime?.enableToolSearch ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.enableToolSearch ??
+					"auto:5",
+				contextBudget: mergedBudget,
+				betas:
+					settings.betas ??
+					state.contextRuntime?.betas ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.betas ??
+					[],
 			},
 		};
 		emitChange();

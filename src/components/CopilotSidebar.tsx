@@ -46,7 +46,11 @@ import { getConfig, getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { useManagedModeStore } from "../lib/managedModeStore";
 import { useMessageQueueStore } from "../lib/messageQueueStore";
-import { getChatSystemPrompt, getTitleGenerationPrompt } from "../lib/prompts";
+import {
+	getChatSystemPrompt,
+	getChatSystemPromptWithBudget,
+	getTitleGenerationPrompt,
+} from "../lib/prompts";
 import { useSettingsStore } from "../lib/settingsStore";
 import {
 	useWorkspaceStoreSelector,
@@ -54,14 +58,8 @@ import {
 } from "../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../lib/agent/context/conversationMessages";
 import { isSdkSessionId } from "../lib/agent/context/sessionId";
-import {
-	createOutputAsset,
-	getAgentSandboxDir,
-	getSourceDetail,
-	saveTempFile,
-} from "../lib/api";
+import { createOutputAsset, getSourceDetail } from "../lib/api";
 import { createMessage } from "../lib/chat/types";
-import { safeInvoke } from "../lib/tauriBridge";
 import { OutputType } from "../types";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
@@ -83,8 +81,6 @@ import {
 	normalizeRuntimeText,
 	getTaskImageArtifactPaths,
 	replaceDataImageMarkdownWithPaths,
-	sanitizeFileName,
-	ensureMdExt,
 } from "../lib/chat/streamHelpers";
 
 // 快捷操作按钮
@@ -215,12 +211,15 @@ export default function CopilotSidebar() {
 	void queueLength;
 
 	// 鼠标拖拽 drop zone (替代 HTML5 拖拽，因为 Tauri 不支持)
-	const handleMouseDrop = useCallback((item: DragItem) => {
-		if (item.type === "source" && item.sourceData) {
-			debugLog("[CopilotDrag] 资料拖入 AI 对话:", item.sourceData.title);
-			events.emit(EVENTS.ADD_TO_CONTEXT, { source: item.sourceData });
-		}
-	}, [debugLog]);
+	const handleMouseDrop = useCallback(
+		(item: DragItem) => {
+			if (item.type === "source" && item.sourceData) {
+				debugLog("[CopilotDrag] 资料拖入 AI 对话:", item.sourceData.title);
+				events.emit(EVENTS.ADD_TO_CONTEXT, { source: item.sourceData });
+			}
+		},
+		[debugLog],
+	);
 
 	const {
 		isOver: isMouseDragOver,
@@ -467,7 +466,7 @@ export default function CopilotSidebar() {
 				const anyCss = (window as any)?.CSS;
 				if (anyCss && typeof anyCss.escape === "function")
 					return anyCss.escape(value);
-			} catch { }
+			} catch {}
 			return value.replace(/["\\]/g, "\\$&");
 		};
 
@@ -721,12 +720,16 @@ export default function CopilotSidebar() {
 			chips?: Array<{ type: string; command: SlashCommand }>;
 			forcedSkillId?: string;
 			skipUserMessage?: boolean; // 用于重新生成时跳过添加用户消息
+			forceForkSession?: boolean;
+			parentSdkSessionId?: string;
 		},
 	) => {
 		// 从 submitOptions 提取参数
 		const command = submitOptions?.command;
 		const forcedSkillId = submitOptions?.forcedSkillId;
 		const skipUserMessage = submitOptions?.skipUserMessage;
+		const forceForkSession = submitOptions?.forceForkSession === true;
+		const parentSdkSessionIdForRun = submitOptions?.parentSdkSessionId;
 
 		if (!activeModel) {
 			toast.warning("请先在设置中配置并选择一个模型");
@@ -1102,10 +1105,10 @@ export default function CopilotSidebar() {
 						forcedFinalState.currentTask?.metadata as any
 					)?.tokenUsage as
 						| {
-							promptTokens: number;
-							completionTokens: number;
-							totalTokens: number;
-						}
+								promptTokens: number;
+								completionTokens: number;
+								totalTokens: number;
+						  }
 						| undefined;
 
 					const protocol = parseDocProtocolFinal(finalRawText, {
@@ -1150,7 +1153,7 @@ export default function CopilotSidebar() {
 					chatStore.setStatus("idle");
 					try {
 						agentExecutor.cancel();
-					} catch { }
+					} catch {}
 
 					if (detachAgentEvent) {
 						detachAgentEvent();
@@ -1193,9 +1196,13 @@ export default function CopilotSidebar() {
 					finalizeFromRawText(raw, "watchdog_inactivity");
 				}, 1000);
 
-				let systemPrompt = await getChatSystemPrompt(
-					workspaceStore.getActiveDocContent() || "",
-				);
+				const activeDocContent = workspaceStore.getActiveDocContent() || "";
+				const hasActiveDoc = Boolean(workspaceStore.getState().activeDocId);
+				const chatPromptWithBudget = await getChatSystemPromptWithBudget({
+					documentContent: activeDocContent,
+					hasActiveDoc,
+				});
+				let systemPrompt = chatPromptWithBudget.prompt;
 				const conversationMessagesForAgent =
 					buildConversationMessagesForAgentRun({
 						sessionMessages: session.messages,
@@ -1210,8 +1217,6 @@ export default function CopilotSidebar() {
 					conversationMessagesForAgent,
 				);
 				// 获取用户附加的上下文（文档、资料等）
-				// 阶段 1：并发补齐 context 文件与缺失内容
-				await workspaceStore.ensureAllContextsHaveFiles();
 				const contexts = workspaceStore.getState().contexts;
 				const attachedContexts: Array<{ title: string; content: string }> = [];
 				const attachedFiles: Array<{
@@ -1222,23 +1227,6 @@ export default function CopilotSidebar() {
 					size?: number;
 					isBinary?: boolean;
 				}> = [];
-
-				// 预先拿到 agent 沙盒目录：让“资料库内容 -> 临时文件”直接落到沙盒中，
-				// 避免先写到系统 temp 再复制导致路径不在 cwd，从而触发 SDK 的 File does not exist。
-				const sandboxKeyForFiles = boundAgentSessionId || session.id;
-				let sandboxDirForFiles: string | null = null;
-				try {
-					const res = await getAgentSandboxDir(sandboxKeyForFiles);
-					if (res?.path) sandboxDirForFiles = String(res.path);
-					debugLog("[CopilotSidebar] sandboxDir获取:", {
-						sandboxKeyForFiles,
-						sandboxDirForFiles,
-					});
-				} catch (e) {
-					console.error("[CopilotSidebar] 获取沙盒目录失败:", e);
-				}
-
-				// sanitizeFileName / ensureMdExt / ILLEGAL_FILENAME_CHARS_RE → 已抽取到 streamHelpers.ts
 
 				const resolvedContexts = await Promise.all(
 					contexts.map(async (ctx) => {
@@ -1260,108 +1248,10 @@ export default function CopilotSidebar() {
 						return { ...ctx, content };
 					}),
 				);
-
-				const sandboxPathByContextId = new Map<string, string>();
-				const sandboxDirNormalized = sandboxDirForFiles
-					? String(sandboxDirForFiles).replace(/[/\\]+$/g, "")
-					: null;
-				if (sandboxDirNormalized) {
-					const seenSandboxNames = new Map<string, number>();
-					for (const ctx of resolvedContexts) {
-						if (!ctx.content || ctx.content.trim().length === 0) continue;
-						const base = ensureMdExt(sanitizeFileName(ctx.title || "document"));
-						const count = (seenSandboxNames.get(base) ?? 0) + 1;
-						seenSandboxNames.set(base, count);
-						const dot = base.lastIndexOf(".");
-						const stem = dot > 0 ? base.slice(0, dot) : base;
-						const ext = dot > 0 ? base.slice(dot) : "";
-						const name = count === 1 ? base : `${stem}-${count}${ext}`;
-						sandboxPathByContextId.set(
-							ctx.id,
-							`${sandboxDirNormalized}/${name}`,
-						);
-					}
-				}
-
-				// 阶段 2：并发落盘（沙盒或临时文件）
-				const contextsWithFiles = await Promise.all(
-					resolvedContexts.map(async (ctx) => {
-						const content = ctx.content || "";
-						let filePath = ctx.filePath;
-						let fileSize = ctx.size;
-
-						debugLog("[CopilotSidebar] 处理上下文:", {
-							title: ctx.title,
-							hasFilePath: !!filePath,
-							filePath,
-							hasContent: !!content,
-							contentLength: content.length || 0,
-							fileSize,
-						});
-
-						if (sandboxDirNormalized && content.trim().length > 0) {
-							const dest = sandboxPathByContextId.get(ctx.id);
-							if (dest) {
-								try {
-									await safeInvoke<{ success: boolean }>("write_file_safe", {
-										payload: {
-											path: dest,
-											content,
-											encoding: "utf-8",
-											create_dirs: true,
-										},
-									});
-									filePath = dest;
-									fileSize = content.length;
-									debugLog(
-										"[CopilotSidebar] 写入资料到 agent 沙盒文件:",
-										ctx.title,
-										filePath,
-										fileSize,
-										"bytes",
-									);
-								} catch (err) {
-									console.error("[CopilotSidebar] 写入沙盒文件失败:", err);
-								}
-							}
-						} else if (
-							content.trim().length > 0 &&
-							(!filePath || fileSize === 0 || fileSize === undefined)
-						) {
-							try {
-								const tempResult = await saveTempFile({
-									content,
-									extension: "md",
-									prefix: "doc",
-									encoding: "utf-8",
-								});
-								filePath = tempResult.path;
-								fileSize = tempResult.size;
-								debugLog(
-									"[CopilotSidebar] 创建临时文件:",
-									ctx.title,
-									filePath,
-									tempResult.size,
-									"bytes",
-								);
-							} catch (err) {
-								console.error("[CopilotSidebar] 创建临时文件失败:", err);
-							}
-						}
-
-						return {
-							...ctx,
-							content,
-							filePath,
-							fileSize,
-						};
-					}),
-				);
-
-				for (const ctx of contextsWithFiles) {
+				for (const ctx of resolvedContexts) {
 					const content = ctx.content || "";
 					const filePath = ctx.filePath;
-					const fileSize = ctx.fileSize;
+					const fileSize = ctx.size;
 					if (filePath) {
 						const isText =
 							(typeof ctx.mimeType === "string" &&
@@ -1417,11 +1307,12 @@ export default function CopilotSidebar() {
 							metadata: {
 								...userMessage.metadata,
 								attachedFiles: attachedFilesForUI,
+								contextCharsAfter:
+									chatPromptWithBudget.budget.stats.injectedChars,
 							},
 						});
 					}
 				}
-				workspaceStore.clearContexts();
 
 				detachAgentEvent = agentStore.onEvent((event) => {
 					touchActivity();
@@ -1536,6 +1427,9 @@ export default function CopilotSidebar() {
 							return undefined;
 						})(),
 						persistSession: true,
+						forkSession: forceForkSession,
+						parentSdkSessionId: parentSdkSessionIdForRun,
+						documentContextInjected: true,
 						forcedSkillName: forcedSkillId, // 传递强制 skill 名称
 						onChunk, // 流式输出回调
 						onThoughtChunk: (chunk, meta) => {
@@ -1545,6 +1439,7 @@ export default function CopilotSidebar() {
 						},
 					},
 				);
+				workspaceStore.clearContexts();
 
 				if (agentRun?.sdkSessionId) {
 					chatStore.setSessionSdkSessionId(session.id, agentRun.sdkSessionId);
@@ -1570,10 +1465,10 @@ export default function CopilotSidebar() {
 				const tokenUsage = (finalState.currentTask?.metadata as any)
 					?.tokenUsage as
 					| {
-						promptTokens: number;
-						completionTokens: number;
-						totalTokens: number;
-					}
+							promptTokens: number;
+							completionTokens: number;
+							totalTokens: number;
+					  }
 					| undefined;
 
 				// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
@@ -1624,9 +1519,24 @@ export default function CopilotSidebar() {
 								? { fileUpdates: [protocol.fileUpdate] }
 								: null),
 							...(tokenUsage ? { tokenUsage } : null),
+							...(parentSdkSessionIdForRun
+								? { parentSdkSessionId: parentSdkSessionIdForRun }
+								: null),
 							// 保存 taskId 和 sandboxDir 到消息，用于历史记录恢复
 							taskId: finalState.currentTask?.id,
 							sandboxDir: (finalState.currentTask?.metadata as any)?.sandboxDir,
+							contextCharsBefore: (finalState.currentTask?.metadata as any)
+								?.contextCharsBefore,
+							contextCharsAfter: (finalState.currentTask?.metadata as any)
+								?.contextCharsAfter,
+							attachedFilesBefore: (finalState.currentTask?.metadata as any)
+								?.attachedFilesBefore,
+							attachedFilesAfter: (finalState.currentTask?.metadata as any)
+								?.attachedFilesAfter,
+							dedupeHitCount: (finalState.currentTask?.metadata as any)
+								?.dedupeHitCount,
+							degradeLevel: (finalState.currentTask?.metadata as any)
+								?.degradeLevel,
 						},
 					});
 					persistSessionMessageById(streamingMsgId);
@@ -1671,16 +1581,16 @@ export default function CopilotSidebar() {
 					const finalSkillState = agentStore.getState().currentSkill;
 					const skillBlocks = finalSkillState
 						? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
+								{
+									type: "skill_execution" as const,
+									skillName: finalSkillState.skillName,
+									skillPath: finalSkillState.skillPath,
+									status: finalSkillState.status,
+									steps: finalSkillState.steps,
+									loadedFiles: finalSkillState.loadedFiles,
+									detectedScene: finalSkillState.detectedScene,
+								},
+							]
 						: [];
 
 					const baseBlocks: any[] = [
@@ -1736,8 +1646,8 @@ export default function CopilotSidebar() {
 							(assistantMessage.metadata as any)?.fileUpdates,
 						)
 							? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
+									(update: any) => ({ type: "file_update" as const, update }),
+								)
 							: [];
 						assistantMessage.metadata = {
 							...(assistantMessage.metadata || {}),
@@ -1809,8 +1719,8 @@ export default function CopilotSidebar() {
 						(assistantMessage.metadata as any)?.fileUpdates,
 					)
 						? (assistantMessage.metadata as any).fileUpdates.map(
-							(update: any) => ({ type: "file_update" as const, update }),
-						)
+								(update: any) => ({ type: "file_update" as const, update }),
+							)
 						: [];
 					assistantMessage.metadata = {
 						...(assistantMessage.metadata || {}),
@@ -1839,9 +1749,9 @@ export default function CopilotSidebar() {
 							assistantMessage.metadata.fileUpdates,
 						)
 							? assistantMessage.metadata.fileUpdates.map((update) => ({
-								type: "file_update" as const,
-								update,
-							}))
+									type: "file_update" as const,
+									update,
+								}))
 							: [];
 						assistantMessage.metadata = {
 							...assistantMessage.metadata,
@@ -2159,9 +2069,9 @@ export default function CopilotSidebar() {
 				accumulatedContent = streamBuilder.getText();
 				// 兜底处理：如果流结束时仍在修改/创建文档状态（例如结束标记不完整）
 				if (isUpdatingDoc || isCreatingDoc) {
-						debugLog(
-							"[CopilotSidebar] 流结束但状态仍为 processing，执行兜底处理",
-						);
+					debugLog(
+						"[CopilotSidebar] 流结束但状态仍为 processing，执行兜底处理",
+					);
 
 					// 尝试提取内容
 					const startMarker = isUpdatingDoc ? ":::update-doc" : ":::create-doc";
@@ -2301,7 +2211,7 @@ export default function CopilotSidebar() {
 				chatStore.setStatus("idle");
 
 				// 调试：打印 AI 完整响应
-					debugLog("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
+				debugLog("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
 
 				// 兼容旧的写入协议
 				const { writeContent } = parseWriteContent(accumulatedContent);
@@ -2338,11 +2248,11 @@ export default function CopilotSidebar() {
 				});
 				chatStore.setStatus("error", error);
 			},
-				onUsage: (usage) => {
-					// 将 token 使用数据保存到消息 metadata
-					debugLog("[CopilotSidebar] 收到 token usage:", usage);
-					chatStore.updateMessage(session.id, assistantMessage.id, {
-						metadata: {
+			onUsage: (usage) => {
+				// 将 token 使用数据保存到消息 metadata
+				debugLog("[CopilotSidebar] 收到 token usage:", usage);
+				chatStore.updateMessage(session.id, assistantMessage.id, {
+					metadata: {
 						tokenUsage: {
 							promptTokens: usage.promptTokens,
 							completionTokens: usage.completionTokens,
@@ -2397,13 +2307,18 @@ export default function CopilotSidebar() {
 			// 重新生成，传递 skipUserMessage 避免重复添加用户消息
 			handleSendMessage(userMessageContent, {
 				skipUserMessage: true,
+				forceForkSession: true,
+				parentSdkSessionId: session.sdkSessionId,
 			});
 		},
 		[chatStore.activeSession, handleSendMessage],
 	);
 
 	const messages = chatStore.activeSession?.messages || [];
-	const maxMessageWindowStart = Math.max(0, messages.length - MESSAGE_WINDOW_SIZE);
+	const maxMessageWindowStart = Math.max(
+		0,
+		messages.length - MESSAGE_WINDOW_SIZE,
+	);
 	const effectiveMessageRenderStart = Math.min(
 		messageRenderStart,
 		maxMessageWindowStart,
@@ -2414,7 +2329,8 @@ export default function CopilotSidebar() {
 		[messages, effectiveMessageRenderStart],
 	);
 	const pendingAskUserRequests = useMemo(
-		() => Array.from(pendingAskUserQuestions.values()).map((item) => item.request),
+		() =>
+			Array.from(pendingAskUserQuestions.values()).map((item) => item.request),
 		[pendingAskUserQuestions],
 	);
 	const isStreaming = chatStore.status === "streaming";
@@ -2615,10 +2531,11 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${p.id === activeCreateProposal.id
-												? "bg-zinc-50 dark:bg-zinc-800/40"
-												: ""
-												}`}
+											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
+												p.id === activeCreateProposal.id
+													? "bg-zinc-50 dark:bg-zinc-800/40"
+													: ""
+											}`}
 										>
 											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{p.title || "新文档"}
@@ -2656,10 +2573,11 @@ export default function CopilotSidebar() {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "chat"
-								? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-								}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+								chatMode === "chat"
+									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
 							对话
@@ -2669,17 +2587,20 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${chatMode === "agent"
-								? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md scale-[1.02]"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
-								}`}
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+								chatMode === "agent"
+									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md scale-[1.02]"
+									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+							}`}
 						>
 							<Bot className="w-3.5 h-3.5" />
 							托管
 						</button>
 					</div>
 
-					<div className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-400"}`}>
+					<div
+						className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-400"}`}
+					>
 						{chatMode === "agent" ? (
 							<>
 								<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

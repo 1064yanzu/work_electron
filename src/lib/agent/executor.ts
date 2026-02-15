@@ -18,6 +18,7 @@ import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
 import { buildRuntimeUserPrompt } from "./context/userPrompt";
+import { buildDocumentBudget } from "./context/documentBudget";
 import { managedModeStore } from "../managedModeStore";
 import { EVENTS, events } from "../events";
 
@@ -204,6 +205,51 @@ function uniqStrings(values: string[]): string[] {
 		out.push(s);
 	}
 	return out;
+}
+
+function normalizePathKey(value: string): string {
+	return String(value || "")
+		.trim()
+		.replace(/\\/g, "/")
+		.replace(/\/+/g, "/")
+		.toLowerCase();
+}
+
+function simpleFingerprint(text: string): string {
+	let hash = 2166136261;
+	const raw = String(text || "");
+	for (let i = 0; i < raw.length; i++) {
+		hash ^= raw.charCodeAt(i);
+		hash = Math.imul(hash, 16777619);
+	}
+	return `${hash >>> 0}`;
+}
+
+function isContextTooLongError(text: string): boolean {
+	const t = String(text || "").toLowerCase();
+	return (
+		t.includes("context_length_exceeded") ||
+		t.includes("context too long") ||
+		t.includes("max tokens") ||
+		t.includes("token limit")
+	);
+}
+
+function trimConversationContextLines(
+	lines: string[],
+	maxLines: number,
+	maxCharsPerLine: number,
+): string[] {
+	const trimmed = lines
+		.map((line) => String(line || "").trim())
+		.filter(Boolean)
+		.map((line) =>
+			line.length > maxCharsPerLine
+				? `${line.slice(0, maxCharsPerLine)}...`
+				: line,
+		);
+	if (trimmed.length <= maxLines) return trimmed;
+	return trimmed.slice(-maxLines);
 }
 
 function mergeImagePathsIntoToolOutput(
@@ -463,6 +509,7 @@ class AgentExecutor {
 			fallbackSearchQuery?: string | null;
 			activeDocContent?: string | null;
 			hasActiveDoc?: boolean;
+			activeDocPath?: string | null;
 			attachedContexts?: Array<{ title: string; content: string }>;
 			attachedFiles?: Array<{
 				title: string;
@@ -481,6 +528,23 @@ class AgentExecutor {
 			resumeSessionId?: string;
 			/** Whether to persist SDK sessions to disk (defaults to true in SDK) */
 			persistSession?: boolean;
+			forkSession?: boolean;
+			resumeSessionAt?: string;
+			maxTurns?: number;
+			maxThinkingTokens?: number;
+			maxBudgetUsd?: number;
+			settingSources?: Array<"user" | "project" | "local">;
+			betas?: string[];
+			contextPolicy?: "balanced" | "strict" | "aggressive";
+			subagentContextMode?: "capsule" | "inherit";
+			documentContextInjected?: boolean;
+			contextBudget?: {
+				maxContextChars: number;
+				maxFiles: number;
+				maxFileChars: number;
+			};
+			enableToolSearch?: "auto" | "auto:5" | "true" | "false";
+			parentSdkSessionId?: string;
 			/** 强制使用的 Agent Skill 名称 */
 			forcedSkillName?: string;
 			onChunk?: (chunk: string) => void;
@@ -558,6 +622,60 @@ class AgentExecutor {
 
 		this.abortController = new AbortController();
 		options = options || {};
+		const runtimeConfig = agentModelSettingsStore.getSettings().contextRuntime;
+		const resolvedContextPolicy =
+			options.contextPolicy ||
+			runtimeConfig?.contextPolicy ||
+			("balanced" as const);
+		const resolvedSubagentContextMode =
+			options.subagentContextMode ||
+			runtimeConfig?.subagentContextMode ||
+			("capsule" as const);
+		const resolvedContextBudget = {
+			maxContextChars:
+				options.contextBudget?.maxContextChars ||
+				runtimeConfig?.contextBudget?.maxContextChars ||
+				16000,
+			maxFiles:
+				options.contextBudget?.maxFiles ||
+				runtimeConfig?.contextBudget?.maxFiles ||
+				12,
+			maxFileChars:
+				options.contextBudget?.maxFileChars ||
+				runtimeConfig?.contextBudget?.maxFileChars ||
+				6000,
+		};
+		const resolvedSettingSources = options.settingSources?.length
+			? options.settingSources
+			: runtimeConfig?.settingSources?.length
+				? runtimeConfig.settingSources
+				: (["user", "project"] as Array<"user" | "project" | "local">);
+		const resolvedMaxTurns = options.maxTurns ?? runtimeConfig?.maxTurns ?? 24;
+		const resolvedMaxThinkingTokens =
+			options.maxThinkingTokens ?? runtimeConfig?.maxThinkingTokens ?? 8192;
+		const resolvedMaxBudgetUsd =
+			options.maxBudgetUsd ?? runtimeConfig?.maxBudgetUsd;
+		const resolvedBetas =
+			options.betas && options.betas.length > 0
+				? options.betas
+				: runtimeConfig?.betas || [];
+		const resolvedEnableToolSearch =
+			options.enableToolSearch ||
+			runtimeConfig?.enableToolSearch ||
+			("auto:5" as const);
+		const conversationContextBeforeChars = String(
+			(options.conversationContext || []).join("\n"),
+		).length;
+		const attachedFilesBefore = options.attachedFiles?.length || 0;
+		const attachedContextsBefore = options.attachedContexts?.length || 0;
+		agentStore.setTaskMetadata({
+			contextPolicy: resolvedContextPolicy,
+			subagentContextMode: resolvedSubagentContextMode,
+			contextCharsBefore: conversationContextBeforeChars,
+			attachedFilesBefore: attachedFilesBefore + attachedContextsBefore,
+			degradeLevel: 0,
+			compactionCount: 0,
+		});
 
 		let sandboxDir = options?.workingDirectory;
 		if (!sandboxDir) {
@@ -572,6 +690,63 @@ class AgentExecutor {
 		}
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
+		}
+
+		let dedupeHitCount = 0;
+		if (options?.attachedFiles?.length) {
+			const pathSeen = new Set<string>();
+			const dedupedFiles: NonNullable<typeof options.attachedFiles> = [];
+			for (const file of options.attachedFiles) {
+				const pathKey = normalizePathKey(file.path);
+				if (pathKey && pathSeen.has(pathKey)) {
+					dedupeHitCount++;
+					continue;
+				}
+				if (pathKey) pathSeen.add(pathKey);
+				dedupedFiles.push(file);
+			}
+			options.attachedFiles = dedupedFiles;
+		}
+		if (options?.attachedContexts?.length) {
+			const ctxSeen = new Set<string>();
+			const dedupedContexts: NonNullable<typeof options.attachedContexts> = [];
+			for (const ctx of options.attachedContexts) {
+				const content = String(ctx.content || "");
+				const fingerprint = `${ctx.title}::${simpleFingerprint(content)}`;
+				if (ctxSeen.has(fingerprint)) {
+					dedupeHitCount++;
+					continue;
+				}
+				ctxSeen.add(fingerprint);
+				dedupedContexts.push({
+					...ctx,
+					content:
+						content.length > resolvedContextBudget.maxFileChars
+							? `${content.slice(0, resolvedContextBudget.maxFileChars)}\n...(已按上下文预算截断)`
+							: content,
+				});
+			}
+			options.attachedContexts = dedupedContexts;
+		}
+		const allowedFiles = Math.max(1, resolvedContextBudget.maxFiles);
+		if ((options?.attachedFiles?.length || 0) > allowedFiles) {
+			dedupeHitCount += (options?.attachedFiles?.length || 0) - allowedFiles;
+			options.attachedFiles = (options?.attachedFiles || []).slice(
+				0,
+				allowedFiles,
+			);
+		}
+		const remainForContexts = Math.max(
+			0,
+			allowedFiles - (options?.attachedFiles?.length || 0),
+		);
+		if ((options?.attachedContexts?.length || 0) > remainForContexts) {
+			dedupeHitCount +=
+				(options?.attachedContexts?.length || 0) - remainForContexts;
+			options.attachedContexts = (options?.attachedContexts || []).slice(
+				0,
+				remainForContexts,
+			);
 		}
 
 		if (sandboxDir && options?.attachedContexts?.length) {
@@ -704,47 +879,80 @@ class AgentExecutor {
 			}
 		}
 
-		// Build enhanced system prompt with minimal context (avoid embedding large source text here).
-		// IMPORTANT:
-		// - Keep "user-configured" systemPrompt content as-is.
-		// - Avoid duplicating large runtime context here (conversation/doc/files); prefer placing it in the user prompt.
-		let enhancedPrompt = systemPrompt || "";
-
-		const promptMentionsDoc =
-			/:::update-doc|:::create-doc|文档输出协议|当前编辑器|文档内容|正在编辑文档/i.test(
-				enhancedPrompt,
+		let degradeLevel = 0;
+		const getConversationContextForRun = () => {
+			const source = options?.conversationContext || [];
+			if (degradeLevel <= 0) return source;
+			if (degradeLevel === 1)
+				return trimConversationContextLines(source, 8, 220);
+			return trimConversationContextLines(source, 4, 160);
+		};
+		const getAttachedForRun = () => {
+			const files = [...(options?.attachedFiles || [])];
+			const contexts = [...(options?.attachedContexts || [])];
+			if (degradeLevel < 3) return { files, contexts };
+			const maxFilesOnDegrade = Math.max(
+				1,
+				Math.floor(resolvedContextBudget.maxFiles / 2),
 			);
+			return {
+				files: files.slice(0, maxFilesOnDegrade),
+				contexts: contexts.slice(
+					0,
+					Math.max(0, maxFilesOnDegrade - files.length),
+				),
+			};
+		};
+		const buildEnhancedPromptForRun = () => {
+			let enhancedPrompt = systemPrompt || "";
+			const promptMentionsDoc =
+				options?.documentContextInjected === true ||
+				/:::update-doc|:::create-doc|文档输出协议|当前编辑器|文档内容|正在编辑文档/i.test(
+					enhancedPrompt,
+				);
 
-		// 强制执行指定 skill 的指令
-		if (forcedSkillName) {
-			enhancedPrompt += `\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
-		}
-
-		// Document protocol guidance for the editor integration (only if not already present in user-configured prompt).
-		if (!promptMentionsDoc) {
-			const hasActiveDoc = Boolean(options?.hasActiveDoc);
-			enhancedPrompt +=
-				"\n\n## 文档输出协议\n" +
-				(hasActiveDoc
-					? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
-					: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
-
-			// Add active document content only when the base prompt doesn't already carry doc context.
-			if (options?.activeDocContent) {
-				const content = String(options.activeDocContent || "");
-				if (content.trim()) {
-					enhancedPrompt += "\n\n## 当前编辑器文档\n```\n" + content + "\n```";
-				}
+			// 强制执行指定 skill 的指令
+			if (forcedSkillName) {
+				enhancedPrompt += `\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
 			}
-		}
 
-		// Internal marker for proxy-side log grouping (does not affect user-visible UI).
-		if (
-			typeof options?.conversationSessionId === "string" &&
-			options.conversationSessionId.trim()
-		) {
-			enhancedPrompt += `\n\n<ipo-conversation id="${options.conversationSessionId.trim()}" />`;
-		}
+			if (!promptMentionsDoc) {
+				const hasActiveDoc = Boolean(options?.hasActiveDoc);
+				enhancedPrompt +=
+					"\n\n## 文档输出协议\n" +
+					(hasActiveDoc
+						? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
+						: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
+				const docBudget = buildDocumentBudget({
+					content: String(options?.activeDocContent || ""),
+					hasActiveDoc,
+					docPath: options?.activeDocPath,
+					maxInlineChars:
+						degradeLevel >= 2
+							? 1200
+							: Math.min(4000, resolvedContextBudget.maxFileChars),
+					maxSummaryChars:
+						degradeLevel >= 2
+							? 3200
+							: Math.min(12000, resolvedContextBudget.maxContextChars),
+				});
+				enhancedPrompt += `\n\n## 当前编辑器文档\n\`\`\`\n${docBudget.injectedDocument}\n\`\`\``;
+				if (docBudget.guidance) {
+					enhancedPrompt += `\n${docBudget.guidance}`;
+				}
+				agentStore.setTaskMetadata({
+					contextCharsAfter: docBudget.stats.injectedChars,
+				});
+			}
+
+			if (
+				typeof options?.conversationSessionId === "string" &&
+				options.conversationSessionId.trim()
+			) {
+				enhancedPrompt += `\n\n<ipo-conversation id="${options.conversationSessionId.trim()}" />`;
+			}
+			return enhancedPrompt;
+		};
 
 		let finalResult = "";
 		let sdkSessionId: string | undefined;
@@ -765,12 +973,31 @@ class AgentExecutor {
 
 		const runOnce = async (resumeSessionId?: string) => {
 			shouldRetryWithoutResume = false;
+			const conversationContextForRun = getConversationContextForRun();
+			const attachedForRun = getAttachedForRun();
+			const enhancedPrompt = buildEnhancedPromptForRun();
 			const userPromptForRun = buildRuntimeUserPrompt({
 				query,
 				resumeSessionId,
-				conversationContext: options?.conversationContext,
-				attachedFiles: options?.attachedFiles,
-				attachedContexts: options?.attachedContexts,
+				conversationContext: conversationContextForRun,
+				attachedFiles: attachedForRun.files,
+				attachedContexts: attachedForRun.contexts,
+				contextBudget: {
+					maxContextChars: Math.min(
+						6000,
+						resolvedContextBudget.maxContextChars,
+					),
+					maxContextLines: degradeLevel >= 2 ? 4 : degradeLevel >= 1 ? 8 : 16,
+					maxFiles:
+						attachedForRun.files.length + attachedForRun.contexts.length,
+				},
+			});
+			agentStore.setTaskMetadata({
+				contextCharsAfter: userPromptForRun.length,
+				attachedFilesAfter:
+					attachedForRun.files.length + attachedForRun.contexts.length,
+				dedupeHitCount,
+				degradeLevel,
 			});
 			await this.sdkService.execute({
 				prompt: userPromptForRun,
@@ -778,8 +1005,23 @@ class AgentExecutor {
 				workingDirectory: sandboxDir,
 				resumeSessionId,
 				persistSession: options?.persistSession,
+				forkSession: options?.forkSession,
+				resumeSessionAt: options?.resumeSessionAt,
 				model: activeModel,
 				skills: enabledSkills.map((s) => s.name),
+				maxTurns: resolvedMaxTurns,
+				maxThinkingTokens: resolvedMaxThinkingTokens,
+				maxBudgetUsd: resolvedMaxBudgetUsd,
+				settingSources: resolvedSettingSources,
+				betas: resolvedBetas,
+				contextPolicy: resolvedContextPolicy,
+				subagentContextMode: resolvedSubagentContextMode,
+				contextBudget: {
+					max_context_chars: resolvedContextBudget.maxContextChars,
+					max_files: resolvedContextBudget.maxFiles,
+					max_file_chars: resolvedContextBudget.maxFileChars,
+				},
+				enableToolSearch: resolvedEnableToolSearch,
 				abortController: this.abortController ?? undefined,
 
 				onChunk: (text) => {
@@ -1119,6 +1361,19 @@ class AgentExecutor {
 								"[AgentExecutor SDK] System message:",
 								message.content,
 							);
+							if (
+								/压缩上下文|compacting|compact/i.test(
+									String(message.content || ""),
+								)
+							) {
+								const currentCount = Number(
+									(agentStore.getState().currentTask?.metadata as any)
+										?.compactionCount || 0,
+								);
+								agentStore.setTaskMetadata({
+									compactionCount: currentCount + 1,
+								});
+							}
 							break;
 					}
 				},
@@ -1216,7 +1471,27 @@ class AgentExecutor {
 		try {
 			await runOnce(options?.resumeSessionId);
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : "执行失败";
+			let errorMessage = error instanceof Error ? error.message : "执行失败";
+			if (isContextTooLongError(errorMessage) && degradeLevel < 3) {
+				while (degradeLevel < 3) {
+					degradeLevel += 1;
+					agentStore.setTaskMetadata({ degradeLevel });
+					console.warn(
+						`[AgentExecutor SDK] Context too long, retry with degrade level=${degradeLevel}`,
+					);
+					try {
+						finalResult = "";
+						toolStepCounter = 0;
+						lastToolCallId = null;
+						await runOnce(options?.resumeSessionId);
+						return { sdkSessionId, sandboxDir };
+					} catch (retryError) {
+						errorMessage =
+							retryError instanceof Error ? retryError.message : "执行失败";
+						if (!isContextTooLongError(errorMessage)) break;
+					}
+				}
+			}
 			if (options?.resumeSessionId && shouldRetryWithoutResume) {
 				try {
 					finalResult = "";

@@ -17,19 +17,36 @@ export function buildRuntimeUserPrompt(input: {
 	conversationContext?: ConversationContextLine[];
 	attachedFiles?: AttachedFile[];
 	attachedContexts?: AttachedContext[];
+	contextBudget?: {
+		maxContextChars?: number;
+		maxContextLines?: number;
+		maxFiles?: number;
+	};
 }): string {
 	let enhancedUserPrompt = input.query;
+	const maxContextLines = Math.max(
+		1,
+		Math.floor(Number(input.contextBudget?.maxContextLines ?? 16)),
+	);
+	const maxContextChars = Math.max(
+		500,
+		Math.floor(Number(input.contextBudget?.maxContextChars ?? 4000)),
+	);
+	const maxFiles = Math.max(
+		1,
+		Math.floor(Number(input.contextBudget?.maxFiles ?? 12)),
+	);
 
 	// Inject conversation context only for fresh turns (non-resume).
 	if (!input.resumeSessionId && input.conversationContext?.length) {
 		const lines = input.conversationContext
 			.map((line) => String(line || "").trim())
 			.filter(Boolean);
-		const maxLines = 16;
-		const tail = lines.length > maxLines ? lines.slice(-maxLines) : lines;
-		const maxChars = 4000;
+		const tail =
+			lines.length > maxContextLines ? lines.slice(-maxContextLines) : lines;
 		let joined = tail.join("\n");
-		if (joined.length > maxChars) joined = joined.slice(-maxChars);
+		if (joined.length > maxContextChars)
+			joined = joined.slice(-maxContextChars);
 		if (joined) {
 			enhancedUserPrompt = `【对话历史（节选）】\n${joined}\n\n${enhancedUserPrompt}`;
 		}
@@ -38,7 +55,7 @@ export function buildRuntimeUserPrompt(input: {
 	if (input.attachedFiles?.length || input.attachedContexts?.length) {
 		const fileList: string[] = [];
 		if (input.attachedFiles?.length) {
-			for (const file of input.attachedFiles) {
+			for (const file of input.attachedFiles.slice(0, maxFiles)) {
 				fileList.push(
 					`- ${file.title} (文件路径: ${file.path})${
 						file.type ? ` [${file.type}]` : ""
@@ -47,7 +64,8 @@ export function buildRuntimeUserPrompt(input: {
 			}
 		}
 		if (input.attachedContexts?.length) {
-			for (const ctx of input.attachedContexts) {
+			const remaining = Math.max(0, maxFiles - fileList.length);
+			for (const ctx of input.attachedContexts.slice(0, remaining)) {
 				fileList.push(`- ${ctx.title}`);
 			}
 		}

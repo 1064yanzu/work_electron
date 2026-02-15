@@ -27,6 +27,7 @@ import {
 	kbGetEmbeddingStats,
 } from "../../../lib/api";
 import { getConfig, setConfig } from "../../../lib/config";
+import { useAgentModelSettingsStore } from "../../../lib/models/agentModelSettingsStore";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { toast } from "../../ui/Toast";
 import { Select } from "../../ui/Select";
@@ -66,6 +67,8 @@ const RETRIEVAL_MODE_OPTIONS = [
 export function AgentSettings() {
 	const { policy, updatePolicy, clearSessionRemembered } = usePermissionStore();
 	const { providers } = useSettingsStore();
+	const { settings: modelSettings, store: modelSettingsStore } =
+		useAgentModelSettingsStore();
 	const { settings: chatSettings, agentChatSettingsStore } =
 		useAgentChatSettingsStore();
 	const [toolRiskLevels, setToolRiskLevelsState] = useState<
@@ -139,15 +142,15 @@ export function AgentSettings() {
 				setSdkPluginPathsDraft(
 					Array.isArray(pluginPaths)
 						? pluginPaths
-							.filter((item): item is string => typeof item === "string")
-							.join("\n")
+								.filter((item): item is string => typeof item === "string")
+								.join("\n")
 						: "",
 				);
 				setSdkAdditionalDirsDraft(
 					Array.isArray(additionalDirs)
 						? additionalDirs
-							.filter((item): item is string => typeof item === "string")
-							.join("\n")
+								.filter((item): item is string => typeof item === "string")
+								.join("\n")
 						: "",
 				);
 			} catch {
@@ -369,576 +372,846 @@ export function AgentSettings() {
 			parseLines(sdkAdditionalDirsDraft),
 		);
 	};
+	const contextRuntime = modelSettings.contextRuntime || {
+		contextPolicy: "balanced" as const,
+		subagentContextMode: "capsule" as const,
+		maxTurns: 24,
+		maxThinkingTokens: 8192,
+		maxBudgetUsd: undefined as number | undefined,
+		settingSources: ["user", "project"] as Array<"user" | "project" | "local">,
+		enableToolSearch: "auto:5" as const,
+		contextBudget: {
+			maxContextChars: 16000,
+			maxFiles: 12,
+			maxFileChars: 6000,
+		},
+		betas: [] as string[],
+	};
+
+	const saveContextRuntime = async (
+		patch: Partial<Omit<typeof contextRuntime, "contextBudget">> & {
+			contextBudget?: Partial<typeof contextRuntime.contextBudget>;
+		},
+	): Promise<void> => {
+		const next = {
+			...contextRuntime,
+			...patch,
+			contextBudget: {
+				...contextRuntime.contextBudget,
+				...(patch.contextBudget || {}),
+			},
+		};
+		await modelSettingsStore.updateContextRuntime(patch as any);
+		await Promise.all([
+			setConfig("agent.sdk.context_policy", next.contextPolicy),
+			setConfig("agent.sdk.subagent_context_mode", next.subagentContextMode),
+			setConfig("agent.sdk.max_turns", next.maxTurns),
+			setConfig("agent.sdk.max_thinking_tokens", next.maxThinkingTokens),
+			setConfig("agent.sdk.max_budget_usd", next.maxBudgetUsd ?? ""),
+			setConfig("agent.sdk.setting_sources", next.settingSources),
+			setConfig("agent.sdk.enable_tool_search", next.enableToolSearch),
+			setConfig("agent.sdk.context_budget", {
+				max_context_chars: next.contextBudget.maxContextChars,
+				max_files: next.contextBudget.maxFiles,
+				max_file_chars: next.contextBudget.maxFileChars,
+			}),
+			setConfig("agent.sdk.betas", next.betas),
+		]);
+	};
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
-				<div className="border-b border-border pb-4 mb-8">
-					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-						<Bot className="w-5 h-5" />
-						Agent 设置
-					</h3>
-					<p className="text-sm text-text-secondary mt-1">
-						配置 Agent 模型场景、工具权限与资料库检索策略
-					</p>
-				</div>
+			<div className="border-b border-border pb-4 mb-8">
+				<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
+					<Bot className="w-5 h-5" />
+					Agent 设置
+				</h3>
+				<p className="text-sm text-text-secondary mt-1">
+					配置 Agent 模型场景、工具权限与资料库检索策略
+				</p>
+			</div>
 
-				{/* 模型场景配置 */}
-				<AgentModelScenarioSettings />
+			{/* 模型场景配置 */}
+			<AgentModelScenarioSettings />
 
-				{/* Claude Agent SDK 运行时配置 */}
-				<div className="space-y-4">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Bot className="w-4 h-4" />
-						Claude Agent SDK
-					</h4>
-					<div className="space-y-3">
-						<div className="flex items-center justify-between gap-3">
-							<div>
-								<div className="text-sm text-text-primary">交互审批</div>
-								<div className="text-xs text-text-muted">
-									默认开启。工具调用与 AskUserQuestion 通过 UI 确认。
-								</div>
+			{/* Claude Agent SDK 运行时配置 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Bot className="w-4 h-4" />
+					Claude Agent SDK
+				</h4>
+				<div className="space-y-3">
+					<div className="flex items-center justify-between gap-3">
+						<div>
+							<div className="text-sm text-text-primary">交互审批</div>
+							<div className="text-xs text-text-muted">
+								默认开启。工具调用与 AskUserQuestion 通过 UI 确认。
 							</div>
-							<Toggle
-								checked={sdkInteractiveApproval}
-								onChange={() =>
-									void saveSdkInteractiveApproval(!sdkInteractiveApproval)
-								}
-							/>
 						</div>
-						<div className="flex items-center justify-between gap-3">
-							<div>
-								<div className="text-sm text-text-primary">兼容模式</div>
-								<div className="text-xs text-text-muted">
-									开启后回退为旧路径（acceptEdits + 关闭交互审批）。
-								</div>
+						<Toggle
+							checked={sdkInteractiveApproval}
+							onChange={() =>
+								void saveSdkInteractiveApproval(!sdkInteractiveApproval)
+							}
+						/>
+					</div>
+					<div className="flex items-center justify-between gap-3">
+						<div>
+							<div className="text-sm text-text-primary">兼容模式</div>
+							<div className="text-xs text-text-muted">
+								开启后回退为旧路径（acceptEdits + 关闭交互审批）。
 							</div>
-							<Toggle
-								checked={sdkCompatMode}
-								onChange={() => void saveSdkCompatMode(!sdkCompatMode)}
-							/>
 						</div>
-						<div>
-							<label className="text-sm text-text-primary mb-1.5 block">
-								默认 permission mode
-							</label>
-							<Select
-								value={sdkPermissionMode}
-								onChange={(event) => saveSdkPermissionMode(event.target.value)}
-								options={[
-									{ value: "default", label: "default" },
-									{ value: "acceptEdits", label: "acceptEdits" },
-									{ value: "dontAsk", label: "dontAsk" },
-									{ value: "plan", label: "plan" },
-								]}
-							/>
-						</div>
-						<div>
-							<label className="text-sm text-text-primary">
-								插件路径（每行一个）
-							</label>
-							<textarea
-								value={sdkPluginPathsDraft}
-								onChange={(event) => setSdkPluginPathsDraft(event.target.value)}
-								onBlur={saveSdkPluginPaths}
-								placeholder="/abs/path/to/plugin"
-								rows={3}
-								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
-							/>
-						</div>
-						<div>
-							<label className="text-sm text-text-primary">
-								additionalDirectories（每行一个）
-							</label>
-							<textarea
-								value={sdkAdditionalDirsDraft}
-								onChange={(event) =>
-									setSdkAdditionalDirsDraft(event.target.value)
-								}
-								onBlur={saveSdkAdditionalDirs}
-								placeholder="/abs/path/to/extra/dir"
-								rows={3}
-								className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
-							/>
-						</div>
+						<Toggle
+							checked={sdkCompatMode}
+							onChange={() => void saveSdkCompatMode(!sdkCompatMode)}
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							默认 permission mode
+						</label>
+						<Select
+							value={sdkPermissionMode}
+							onChange={(event) => saveSdkPermissionMode(event.target.value)}
+							options={[
+								{ value: "default", label: "default" },
+								{ value: "acceptEdits", label: "acceptEdits" },
+								{ value: "dontAsk", label: "dontAsk" },
+								{ value: "plan", label: "plan" },
+							]}
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary">
+							插件路径（每行一个）
+						</label>
+						<textarea
+							value={sdkPluginPathsDraft}
+							onChange={(event) => setSdkPluginPathsDraft(event.target.value)}
+							onBlur={saveSdkPluginPaths}
+							placeholder="/abs/path/to/plugin"
+							rows={3}
+							className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary">
+							additionalDirectories（每行一个）
+						</label>
+						<textarea
+							value={sdkAdditionalDirsDraft}
+							onChange={(event) =>
+								setSdkAdditionalDirsDraft(event.target.value)
+							}
+							onBlur={saveSdkAdditionalDirs}
+							placeholder="/abs/path/to/extra/dir"
+							rows={3}
+							className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
 					</div>
 				</div>
+			</div>
 
-				{/* 工具权限策略 */}
-				<div className="space-y-4">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Shield className="w-4 h-4" />
-						工具权限策略
-					</h4>
-					<p className="text-xs text-text-muted -mt-2">
-						按风险等级配置工具调用的默认权限。低风险（L0）为纯读取操作，中风险（L1）涉及网络请求，高风险（L2）可能修改系统状态。
-					</p>
-					<div className="space-y-3">
-						{(["L0", "L1", "L2"] as ToolRiskLevel[]).map((level) => {
-							const cfg = RISK_LEVEL_CONFIG[level];
-							const Icon = cfg.icon;
+			{/* 上下文治理配置 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Clock className="w-4 h-4" />
+					上下文治理
+				</h4>
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							context_policy
+						</label>
+						<Select
+							value={contextRuntime.contextPolicy}
+							onChange={(event) =>
+								void saveContextRuntime({
+									contextPolicy: event.target.value as
+										| "balanced"
+										| "strict"
+										| "aggressive",
+								})
+							}
+							options={[
+								{ value: "balanced", label: "balanced" },
+								{ value: "strict", label: "strict" },
+								{ value: "aggressive", label: "aggressive" },
+							]}
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							subagent_context_mode
+						</label>
+						<Select
+							value={contextRuntime.subagentContextMode}
+							onChange={(event) =>
+								void saveContextRuntime({
+									subagentContextMode: event.target.value as
+										| "capsule"
+										| "inherit",
+								})
+							}
+							options={[
+								{ value: "capsule", label: "capsule（推荐）" },
+								{ value: "inherit", label: "inherit" },
+							]}
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							max_turns
+						</label>
+						<input
+							type="number"
+							min={1}
+							max={200}
+							value={contextRuntime.maxTurns}
+							onChange={(event) =>
+								void saveContextRuntime({
+									maxTurns: Math.max(
+										1,
+										Math.min(200, Number(event.target.value) || 24),
+									),
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							max_thinking_tokens
+						</label>
+						<input
+							type="number"
+							min={256}
+							max={131072}
+							step={256}
+							value={contextRuntime.maxThinkingTokens}
+							onChange={(event) =>
+								void saveContextRuntime({
+									maxThinkingTokens: Math.max(
+										256,
+										Math.min(131072, Number(event.target.value) || 8192),
+									),
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							max_budget_usd（可空）
+						</label>
+						<input
+							type="number"
+							min={0}
+							step={0.1}
+							value={contextRuntime.maxBudgetUsd ?? ""}
+							onChange={(event) =>
+								void saveContextRuntime({
+									maxBudgetUsd:
+										event.target.value.trim() === ""
+											? undefined
+											: Math.max(0, Number(event.target.value) || 0),
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							enable_tool_search
+						</label>
+						<Select
+							value={contextRuntime.enableToolSearch}
+							onChange={(event) =>
+								void saveContextRuntime({
+									enableToolSearch: event.target.value as
+										| "auto"
+										| "auto:5"
+										| "true"
+										| "false",
+								})
+							}
+							options={[
+								{ value: "auto:5", label: "auto:5（推荐）" },
+								{ value: "auto", label: "auto" },
+								{ value: "true", label: "true" },
+								{ value: "false", label: "false" },
+							]}
+						/>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<div className="text-sm text-text-primary">setting_sources</div>
+					<div className="flex flex-wrap gap-3 text-sm text-text-secondary">
+						{(["user", "project", "local"] as const).map((source) => {
+							const checked = contextRuntime.settingSources.includes(source);
 							return (
-								<div
-									key={level}
-									className="flex items-center justify-between gap-4"
-								>
-									<div className="flex items-center gap-2 min-w-[100px]">
-										<Icon className={`w-4 h-4 ${cfg.color}`} />
-										<span className="text-sm text-text-primary">
-											{cfg.label}
-										</span>
-									</div>
-									<Select
-										value={policy.levelPolicies[level]}
-										onChange={(e) =>
-											handleLevelPolicyChange(
-												level,
-												e.target.value as PermissionMode,
-											)
-										}
-										containerClassName="flex-1 max-w-[200px]"
-										options={PERMISSION_MODE_OPTIONS.map((opt) => ({
-											value: opt.value,
-											label: opt.label,
-										}))}
+								<label key={source} className="inline-flex items-center gap-2">
+									<input
+										type="checkbox"
+										checked={checked}
+										onChange={(event) => {
+											const next = event.target.checked
+												? Array.from(
+														new Set([...contextRuntime.settingSources, source]),
+													)
+												: contextRuntime.settingSources.filter(
+														(item) => item !== source,
+													);
+											void saveContextRuntime({
+												settingSources:
+													next.length > 0 ? next : ["user", "project"],
+											});
+										}}
 									/>
-								</div>
+									<span>{source}</span>
+								</label>
 							);
 						})}
 					</div>
 				</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							context_budget.max_context_chars
+						</label>
+						<input
+							type="number"
+							min={1000}
+							step={500}
+							value={contextRuntime.contextBudget.maxContextChars}
+							onChange={(event) =>
+								void saveContextRuntime({
+									contextBudget: {
+										maxContextChars: Math.max(
+											1000,
+											Number(event.target.value) || 16000,
+										),
+									},
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							context_budget.max_files
+						</label>
+						<input
+							type="number"
+							min={1}
+							max={100}
+							value={contextRuntime.contextBudget.maxFiles}
+							onChange={(event) =>
+								void saveContextRuntime({
+									contextBudget: {
+										maxFiles: Math.max(1, Number(event.target.value) || 12),
+									},
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+					<div>
+						<label className="text-sm text-text-primary mb-1.5 block">
+							context_budget.max_file_chars
+						</label>
+						<input
+							type="number"
+							min={500}
+							step={100}
+							value={contextRuntime.contextBudget.maxFileChars}
+							onChange={(event) =>
+								void saveContextRuntime({
+									contextBudget: {
+										maxFileChars: Math.max(
+											500,
+											Number(event.target.value) || 6000,
+										),
+									},
+								})
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+						/>
+					</div>
+				</div>
+			</div>
 
-				{/* 会话持久化与回放 */}
-				<div className="space-y-4">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Database className="w-4 h-4" />
-						会话持久化与回放
-					</h4>
-					<p className="text-xs text-text-muted -mt-2">
-						控制聊天消息是否写入后端 Agent
-						Runtime（agent_messages），以及是否在切换会话时从后端回放。
-					</p>
-
-					<div className="space-y-3">
-						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
-							<div>
-								<div className="text-sm font-medium text-text-primary">
-									启用回放
-								</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									切换到绑定了 Agent Session
-									的会话时，从后端消息记录回放到聊天窗口
-								</div>
-							</div>
-							<Toggle
-								checked={chatSettings.replayEnabled}
-								onChange={() =>
-									void agentChatSettingsStore.setReplayEnabled(
-										!chatSettings.replayEnabled,
-									)
-								}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
-							<div>
-								<div className="text-sm font-medium text-text-primary">
-									启用消息落库
-								</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									将 user/assistant 消息写入
-									agent_messages（后端不可用会自动降级）
-								</div>
-							</div>
-							<Toggle
-								checked={chatSettings.persistEnabled}
-								onChange={() =>
-									void agentChatSettingsStore.setPersistEnabled(
-										!chatSettings.persistEnabled,
-									)
-								}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
-							<div>
-								<div className="text-sm font-medium text-text-primary">
-									落库 Trace 事件
-								</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									将工具调用/任务等 trace 事件也写入
-									agent_messages（用于更完整回放）
-								</div>
-							</div>
-							<Toggle
-								checked={chatSettings.persistTraceEnabled}
-								onChange={() =>
-									void agentChatSettingsStore.setPersistTraceEnabled(
-										!chatSettings.persistTraceEnabled,
-									)
-								}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
-							<div>
-								<div className="text-sm font-medium">Blocks 优先渲染</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									当消息包含 blocks
-									时优先按结构化方式渲染（回放更一致，可随时关闭回退旧渲染）
-								</div>
-							</div>
-							<Toggle
-								checked={chatSettings.blocksFirstEnabled}
-								onChange={() =>
-									void agentChatSettingsStore.setBlocksFirstEnabled(
-										!chatSettings.blocksFirstEnabled,
-									)
-								}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between py-3">
-							<div>
-								<div className="text-sm font-medium">就地展示思考/工具调用</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									在对话正文中按时间线插入“思考/工具卡片/任务列表”，不再集中显示“Agent
-									运行过程”面板
-								</div>
-							</div>
-							<Toggle
-								checked={chatSettings.inlineTraceEnabled}
-								onChange={() =>
-									void agentChatSettingsStore.setInlineTraceEnabled(
-										!chatSettings.inlineTraceEnabled,
-									)
-								}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
-							<div>
-								<div className="text-sm font-medium text-text-primary">
-									回放条数限制
-								</div>
-								<div className="text-xs text-text-muted mt-0.5">
-									仅回放最近 N 条消息；设置为 0 表示不限制
-								</div>
-							</div>
-							<div className="flex items-center gap-2">
-								<input
-									type="number"
-									min={0}
-									max={5000}
-									value={replayLimitDraft}
-									onChange={(e) => setReplayLimitDraft(e.target.value)}
-									onBlur={() => void commitReplayLimit()}
-									className="w-24 px-3 py-2 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-								/>
-								<span className="text-xs text-text-muted">条</span>
-							</div>
-						</div>
-
-						<div className="flex items-center justify-between gap-4 pt-2">
-							<div>
-								<div className="text-sm font-medium text-text-primary">
-									重置为默认
-								</div>
-								<div className="text-xs text-text-muted">
-									恢复回放/落库相关开关与限制为默认值
-								</div>
-							</div>
-							<button
-								onClick={() => void agentChatSettingsStore.resetToDefaults()}
-								className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-primary hover:border-primary transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+			{/* 工具权限策略 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Shield className="w-4 h-4" />
+					工具权限策略
+				</h4>
+				<p className="text-xs text-text-muted -mt-2">
+					按风险等级配置工具调用的默认权限。低风险（L0）为纯读取操作，中风险（L1）涉及网络请求，高风险（L2）可能修改系统状态。
+				</p>
+				<div className="space-y-3">
+					{(["L0", "L1", "L2"] as ToolRiskLevel[]).map((level) => {
+						const cfg = RISK_LEVEL_CONFIG[level];
+						const Icon = cfg.icon;
+						return (
+							<div
+								key={level}
+								className="flex items-center justify-between gap-4"
 							>
-								<RotateCcw className="w-4 h-4 shrink-0" />
-								重置
-							</button>
+								<div className="flex items-center gap-2 min-w-[100px]">
+									<Icon className={`w-4 h-4 ${cfg.color}`} />
+									<span className="text-sm text-text-primary">{cfg.label}</span>
+								</div>
+								<Select
+									value={policy.levelPolicies[level]}
+									onChange={(e) =>
+										handleLevelPolicyChange(
+											level,
+											e.target.value as PermissionMode,
+										)
+									}
+									containerClassName="flex-1 max-w-[200px]"
+									options={PERMISSION_MODE_OPTIONS.map((opt) => ({
+										value: opt.value,
+										label: opt.label,
+									}))}
+								/>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+
+			{/* 会话持久化与回放 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Database className="w-4 h-4" />
+					会话持久化与回放
+				</h4>
+				<p className="text-xs text-text-muted -mt-2">
+					控制聊天消息是否写入后端 Agent
+					Runtime（agent_messages），以及是否在切换会话时从后端回放。
+				</p>
+
+				<div className="space-y-3">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+						<div>
+							<div className="text-sm font-medium text-text-primary">
+								启用回放
+							</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								切换到绑定了 Agent Session
+								的会话时，从后端消息记录回放到聊天窗口
+							</div>
 						</div>
+						<Toggle
+							checked={chatSettings.replayEnabled}
+							onChange={() =>
+								void agentChatSettingsStore.setReplayEnabled(
+									!chatSettings.replayEnabled,
+								)
+							}
+						/>
 					</div>
-				</div>
 
-				{/* 内置工具列表 */}
-				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<h4 className="font-medium text-text-primary">内置工具风险等级</h4>
-						<p className="text-xs text-text-muted">
-							调整每个工具的风险等级，影响权限策略的默认行为
-						</p>
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+						<div>
+							<div className="text-sm font-medium text-text-primary">
+								启用消息落库
+							</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								将 user/assistant 消息写入
+								agent_messages（后端不可用会自动降级）
+							</div>
+						</div>
+						<Toggle
+							checked={chatSettings.persistEnabled}
+							onChange={() =>
+								void agentChatSettingsStore.setPersistEnabled(
+									!chatSettings.persistEnabled,
+								)
+							}
+						/>
 					</div>
-					<div className="border border-border rounded-xl overflow-hidden">
-						<table className="w-full text-sm">
-							<thead className="bg-zinc-50">
-								<tr>
-									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-										工具名称
-									</th>
-									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-										风险等级
-									</th>
-									<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-										当前策略
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{(Object.keys(TOOL_NAMES) as ToolType[]).map((toolType) => {
-									const riskLevel = toolRiskLevels[toolType] || "L0";
-									const currentMode = policy.levelPolicies[riskLevel];
-									const modeLabel = PERMISSION_MODE_OPTIONS.find(
-										(o) => o.value === currentMode,
-									)?.label;
-									return (
-										<tr
-											key={toolType}
-											className="border-t border-border hover:bg-zinc-50/50"
-										>
-											<td className="px-4 py-2.5 text-text-primary">
-												{TOOL_NAMES[toolType]}
-											</td>
-											<td className="px-4 py-2.5">
-												<Select
-													value={riskLevel}
-													onChange={(e) =>
-														handleToolRiskLevelChange(
-															toolType,
-															e.target.value as ToolRiskLevel,
-														)
-													}
-													variant="compact"
-													containerClassName="inline-block"
-													options={([
-														"L0",
-														"L1",
-														"L2",
-													] as ToolRiskLevel[]).map((level) => ({
-														value: level,
-														label: `${level} - ${RISK_LEVEL_CONFIG[level].label}`,
-													}))}
-												/>
-											</td>
-											<td className="px-4 py-2.5 text-text-secondary">
-												{modeLabel}
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-					</div>
-				</div>
 
-				{/* 权限请求超时 */}
-				<div className="space-y-4">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Clock className="w-4 h-4" />
-						权限请求超时
-					</h4>
-					<div className="flex items-center gap-3">
-						<div className="relative w-28">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+						<div>
+							<div className="text-sm font-medium text-text-primary">
+								落库 Trace 事件
+							</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								将工具调用/任务等 trace 事件也写入
+								agent_messages（用于更完整回放）
+							</div>
+						</div>
+						<Toggle
+							checked={chatSettings.persistTraceEnabled}
+							onChange={() =>
+								void agentChatSettingsStore.setPersistTraceEnabled(
+									!chatSettings.persistTraceEnabled,
+								)
+							}
+						/>
+					</div>
+
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+						<div>
+							<div className="text-sm font-medium">Blocks 优先渲染</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								当消息包含 blocks
+								时优先按结构化方式渲染（回放更一致，可随时关闭回退旧渲染）
+							</div>
+						</div>
+						<Toggle
+							checked={chatSettings.blocksFirstEnabled}
+							onChange={() =>
+								void agentChatSettingsStore.setBlocksFirstEnabled(
+									!chatSettings.blocksFirstEnabled,
+								)
+							}
+						/>
+					</div>
+
+					<div className="flex items-center justify-between py-3">
+						<div>
+							<div className="text-sm font-medium">就地展示思考/工具调用</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								在对话正文中按时间线插入“思考/工具卡片/任务列表”，不再集中显示“Agent
+								运行过程”面板
+							</div>
+						</div>
+						<Toggle
+							checked={chatSettings.inlineTraceEnabled}
+							onChange={() =>
+								void agentChatSettingsStore.setInlineTraceEnabled(
+									!chatSettings.inlineTraceEnabled,
+								)
+							}
+						/>
+					</div>
+
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+						<div>
+							<div className="text-sm font-medium text-text-primary">
+								回放条数限制
+							</div>
+							<div className="text-xs text-text-muted mt-0.5">
+								仅回放最近 N 条消息；设置为 0 表示不限制
+							</div>
+						</div>
+						<div className="flex items-center gap-2">
 							<input
 								type="number"
-								min={5}
-								max={120}
-								value={policy.timeoutSeconds}
-								onChange={(e) =>
-									handleTimeoutChange(parseInt(e.target.value) || 30)
-								}
-								className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								min={0}
+								max={5000}
+								value={replayLimitDraft}
+								onChange={(e) => setReplayLimitDraft(e.target.value)}
+								onBlur={() => void commitReplayLimit()}
+								className="w-24 px-3 py-2 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 							/>
-						</div>
-						<span className="text-sm text-text-secondary">
-							秒（超时后自动拒绝）
-						</span>
-					</div>
-				</div>
-
-				{/* 资料库检索 */}
-				<div className="space-y-4">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Database className="w-4 h-4" />
-						资料库检索
-					</h4>
-					<div className="space-y-3">
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								检索模式
-							</label>
-							<div className="grid grid-cols-3 gap-3">
-								{RETRIEVAL_MODE_OPTIONS.map((opt) => (
-									<button
-										key={opt.value}
-										onClick={() => handleKbModeChange(opt.value)}
-										className={`p-3 rounded-xl text-left transition-colors ${kbRetrievalMode === opt.value
-											? "border-2 border-primary bg-primary/5"
-											: "border border-border hover:border-primary/50"
-											}`}
-									>
-										<div
-											className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}
-										>
-											{opt.label}
-										</div>
-										<div className="text-xs text-text-muted mt-0.5">
-											{opt.desc}
-										</div>
-									</button>
-								))}
-							</div>
-						</div>
-
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								Embedding 输入最大长度
-							</label>
-							<div className="flex items-center gap-3">
-								<div className="relative w-28">
-									<input
-										type="number"
-										min={32}
-										max={4096}
-										step={16}
-										value={kbEmbeddingMaxChars}
-										onChange={(e) =>
-											handleKbEmbeddingMaxCharsChange(
-												parseInt(e.target.value) || 480,
-											)
-										}
-										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-									/>
-								</div>
-								<span className="text-xs text-text-muted">
-									为规避部分服务商的 512 tokens 限制，向量化时会先截断内容（默认
-									480 字符）。
-								</span>
-							</div>
-						</div>
-
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								向量命中阈值
-							</label>
-							<div className="flex items-center gap-3">
-								<div className="relative w-28">
-									<input
-										type="number"
-										min={0}
-										max={1}
-										step={0.01}
-										value={kbVectorMinScore}
-										onChange={(e) =>
-											handleKbVectorMinScoreChange(
-												parseFloat(e.target.value) || 0.2,
-											)
-										}
-										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-									/>
-								</div>
-								<span className="text-xs text-text-muted">
-									仅保留相似度≥阈值的向量命中；不足时会自动回退到 FTS/LIKE
-									兜底（建议 0.15-0.35）。
-								</span>
-							</div>
-						</div>
-
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								Embedding 模型
-							</label>
-							<Select
-								value={kbEmbeddingModel}
-								onChange={(e) => handleKbEmbeddingModelChange(e.target.value)}
-							>
-								<option value="">未选择（将回退到 FTS/LIKE）</option>
-								{allModels.map((m) => (
-									<option key={`${m.provider}-${m.id}`} value={m.id}>
-										{m.id} ({m.provider})
-									</option>
-								))}
-							</Select>
-							<p className="text-xs text-text-muted mt-1.5">
-								用于将资料库分块转换为向量。
-								<strong>必须选择服务商支持的 embedding 专用模型</strong>，如
-								OpenAI 的 text-embedding-3-small。
-							</p>
-						</div>
-
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								索引补齐并发（兼容模式）
-							</label>
-							<div className="flex items-center gap-3">
-								<div className="relative w-28">
-									<input
-										type="number"
-										min={1}
-										max={16}
-										value={kbEmbeddingFallbackConcurrency}
-										onChange={(e) =>
-											handleKbFallbackConcurrencyChange(
-												parseInt(e.target.value) || 4,
-											)
-										}
-										className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-									/>
-								</div>
-								<span className="text-xs text-text-muted">
-									当服务商不支持批量 embeddings
-									时，自动降级为逐条请求并按此并发数执行（1-16）。
-								</span>
-							</div>
-						</div>
-
-						<div className="flex items-center justify-between pt-2">
-							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
-								<div className="text-sm text-text-secondary break-words">
-									{kbStats
-										? `分块总数 ${kbStats.total_chunks}，已向量化 ${kbStats.embedded_chunks}，缺失 ${kbStats.missing_chunks}`
-										: "暂未获取向量索引统计"}
-									{autoHint && (
-										<div className="text-xs text-text-muted mt-1">
-											{autoHint}
-										</div>
-									)}
-								</div>
-								<button
-									onClick={handleKbRebuild}
-									disabled={isRebuilding || !kbEmbeddingModel}
-									className="min-w-[100px] px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-primary hover:text-primary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 self-start sm:self-auto whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-								>
-									{isRebuilding ? (
-										<>
-											<Loader2 className="w-4 h-4 animate-spin shrink-0" />
-											<span>生成中...</span>
-										</>
-									) : (
-										<span>立即补齐</span>
-									)}
-								</button>
-							</div>
+							<span className="text-xs text-text-muted">条</span>
 						</div>
 					</div>
-				</div>
 
-				{/* 重置 */}
-				<div className="pt-4 border-t border-border">
-					<div className="flex items-center justify-between">
+					<div className="flex items-center justify-between gap-4 pt-2">
 						<div>
-							<div className="font-medium text-text-primary">重置设置</div>
+							<div className="text-sm font-medium text-text-primary">
+								重置为默认
+							</div>
 							<div className="text-xs text-text-muted">
-								恢复所有 Agent 设置为默认值
+								恢复回放/落库相关开关与限制为默认值
 							</div>
 						</div>
 						<button
-							onClick={handleResetToDefault}
-							className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-white hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+							onClick={() => void agentChatSettingsStore.resetToDefaults()}
+							className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-primary hover:border-primary transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
 						>
 							<RotateCcw className="w-4 h-4 shrink-0" />
 							重置
 						</button>
 					</div>
 				</div>
+			</div>
+
+			{/* 内置工具列表 */}
+			<div className="space-y-4">
+				<div className="flex items-center justify-between">
+					<h4 className="font-medium text-text-primary">内置工具风险等级</h4>
+					<p className="text-xs text-text-muted">
+						调整每个工具的风险等级，影响权限策略的默认行为
+					</p>
+				</div>
+				<div className="border border-border rounded-xl overflow-hidden">
+					<table className="w-full text-sm">
+						<thead className="bg-zinc-50">
+							<tr>
+								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+									工具名称
+								</th>
+								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+									风险等级
+								</th>
+								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
+									当前策略
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{(Object.keys(TOOL_NAMES) as ToolType[]).map((toolType) => {
+								const riskLevel = toolRiskLevels[toolType] || "L0";
+								const currentMode = policy.levelPolicies[riskLevel];
+								const modeLabel = PERMISSION_MODE_OPTIONS.find(
+									(o) => o.value === currentMode,
+								)?.label;
+								return (
+									<tr
+										key={toolType}
+										className="border-t border-border hover:bg-zinc-50/50"
+									>
+										<td className="px-4 py-2.5 text-text-primary">
+											{TOOL_NAMES[toolType]}
+										</td>
+										<td className="px-4 py-2.5">
+											<Select
+												value={riskLevel}
+												onChange={(e) =>
+													handleToolRiskLevelChange(
+														toolType,
+														e.target.value as ToolRiskLevel,
+													)
+												}
+												variant="compact"
+												containerClassName="inline-block"
+												options={(["L0", "L1", "L2"] as ToolRiskLevel[]).map(
+													(level) => ({
+														value: level,
+														label: `${level} - ${RISK_LEVEL_CONFIG[level].label}`,
+													}),
+												)}
+											/>
+										</td>
+										<td className="px-4 py-2.5 text-text-secondary">
+											{modeLabel}
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			{/* 权限请求超时 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Clock className="w-4 h-4" />
+					权限请求超时
+				</h4>
+				<div className="flex items-center gap-3">
+					<div className="relative w-28">
+						<input
+							type="number"
+							min={5}
+							max={120}
+							value={policy.timeoutSeconds}
+							onChange={(e) =>
+								handleTimeoutChange(parseInt(e.target.value) || 30)
+							}
+							className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+						/>
+					</div>
+					<span className="text-sm text-text-secondary">
+						秒（超时后自动拒绝）
+					</span>
+				</div>
+			</div>
+
+			{/* 资料库检索 */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Database className="w-4 h-4" />
+					资料库检索
+				</h4>
+				<div className="space-y-3">
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							检索模式
+						</label>
+						<div className="grid grid-cols-3 gap-3">
+							{RETRIEVAL_MODE_OPTIONS.map((opt) => (
+								<button
+									key={opt.value}
+									onClick={() => handleKbModeChange(opt.value)}
+									className={`p-3 rounded-xl text-left transition-colors ${
+										kbRetrievalMode === opt.value
+											? "border-2 border-primary bg-primary/5"
+											: "border border-border hover:border-primary/50"
+									}`}
+								>
+									<div
+										className={`text-sm font-medium ${kbRetrievalMode === opt.value ? "text-primary" : "text-text-primary"}`}
+									>
+										{opt.label}
+									</div>
+									<div className="text-xs text-text-muted mt-0.5">
+										{opt.desc}
+									</div>
+								</button>
+							))}
+						</div>
+					</div>
+
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							Embedding 输入最大长度
+						</label>
+						<div className="flex items-center gap-3">
+							<div className="relative w-28">
+								<input
+									type="number"
+									min={32}
+									max={4096}
+									step={16}
+									value={kbEmbeddingMaxChars}
+									onChange={(e) =>
+										handleKbEmbeddingMaxCharsChange(
+											parseInt(e.target.value) || 480,
+										)
+									}
+									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								/>
+							</div>
+							<span className="text-xs text-text-muted">
+								为规避部分服务商的 512 tokens 限制，向量化时会先截断内容（默认
+								480 字符）。
+							</span>
+						</div>
+					</div>
+
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							向量命中阈值
+						</label>
+						<div className="flex items-center gap-3">
+							<div className="relative w-28">
+								<input
+									type="number"
+									min={0}
+									max={1}
+									step={0.01}
+									value={kbVectorMinScore}
+									onChange={(e) =>
+										handleKbVectorMinScoreChange(
+											parseFloat(e.target.value) || 0.2,
+										)
+									}
+									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								/>
+							</div>
+							<span className="text-xs text-text-muted">
+								仅保留相似度≥阈值的向量命中；不足时会自动回退到 FTS/LIKE
+								兜底（建议 0.15-0.35）。
+							</span>
+						</div>
+					</div>
+
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							Embedding 模型
+						</label>
+						<Select
+							value={kbEmbeddingModel}
+							onChange={(e) => handleKbEmbeddingModelChange(e.target.value)}
+						>
+							<option value="">未选择（将回退到 FTS/LIKE）</option>
+							{allModels.map((m) => (
+								<option key={`${m.provider}-${m.id}`} value={m.id}>
+									{m.id} ({m.provider})
+								</option>
+							))}
+						</Select>
+						<p className="text-xs text-text-muted mt-1.5">
+							用于将资料库分块转换为向量。
+							<strong>必须选择服务商支持的 embedding 专用模型</strong>，如
+							OpenAI 的 text-embedding-3-small。
+						</p>
+					</div>
+
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							索引补齐并发（兼容模式）
+						</label>
+						<div className="flex items-center gap-3">
+							<div className="relative w-28">
+								<input
+									type="number"
+									min={1}
+									max={16}
+									value={kbEmbeddingFallbackConcurrency}
+									onChange={(e) =>
+										handleKbFallbackConcurrencyChange(
+											parseInt(e.target.value) || 4,
+										)
+									}
+									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								/>
+							</div>
+							<span className="text-xs text-text-muted">
+								当服务商不支持批量 embeddings
+								时，自动降级为逐条请求并按此并发数执行（1-16）。
+							</span>
+						</div>
+					</div>
+
+					<div className="flex items-center justify-between pt-2">
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
+							<div className="text-sm text-text-secondary break-words">
+								{kbStats
+									? `分块总数 ${kbStats.total_chunks}，已向量化 ${kbStats.embedded_chunks}，缺失 ${kbStats.missing_chunks}`
+									: "暂未获取向量索引统计"}
+								{autoHint && (
+									<div className="text-xs text-text-muted mt-1">{autoHint}</div>
+								)}
+							</div>
+							<button
+								onClick={handleKbRebuild}
+								disabled={isRebuilding || !kbEmbeddingModel}
+								className="min-w-[100px] px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-primary hover:text-primary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 self-start sm:self-auto whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+							>
+								{isRebuilding ? (
+									<>
+										<Loader2 className="w-4 h-4 animate-spin shrink-0" />
+										<span>生成中...</span>
+									</>
+								) : (
+									<span>立即补齐</span>
+								)}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* 重置 */}
+			<div className="pt-4 border-t border-border">
+				<div className="flex items-center justify-between">
+					<div>
+						<div className="font-medium text-text-primary">重置设置</div>
+						<div className="text-xs text-text-muted">
+							恢复所有 Agent 设置为默认值
+						</div>
+					</div>
+					<button
+						onClick={handleResetToDefault}
+						className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-white hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+					>
+						<RotateCcw className="w-4 h-4 shrink-0" />
+						重置
+					</button>
+				</div>
+			</div>
 		</SettingsPageContainer>
 	);
 }

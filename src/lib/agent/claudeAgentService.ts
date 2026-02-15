@@ -72,8 +72,35 @@ export interface ClaudeAgentExecutionOptions {
 	/** Whether the SDK should persist sessions to disk (defaults to true in SDK) */
 	persistSession?: boolean;
 
+	/** Fork resumed session into a new branch */
+	forkSession?: boolean;
+
+	/** Resume only up to this assistant message uuid */
+	resumeSessionAt?: string;
+
 	/** Model to use for this execution (e.g., 'claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5') */
 	model?: string;
+
+	/** Runtime hard limits */
+	maxTurns?: number;
+	maxThinkingTokens?: number;
+	maxBudgetUsd?: number;
+
+	/** SDK settings sources */
+	settingSources?: Array<"user" | "project" | "local">;
+
+	/** SDK beta feature flags */
+	betas?: string[];
+
+	/** Runtime context strategy */
+	contextPolicy?: "balanced" | "strict" | "aggressive";
+	subagentContextMode?: "capsule" | "inherit";
+	contextBudget?: {
+		max_context_chars: number;
+		max_files: number;
+		max_file_chars: number;
+	};
+	enableToolSearch?: "auto" | "auto:5" | "true" | "false";
 
 	/** Enabled skills list (used for skill routing and subagents) */
 	skills?: string[];
@@ -141,6 +168,20 @@ const DEFAULT_TOOLS = [
 	"AskUserQuestion",
 ] as const;
 
+function resolveMcpServerLimitByToolSearchMode(
+	mode: "auto" | "auto:5" | "true" | "false",
+): number | undefined {
+	if (mode === "false") return 0;
+	if (mode === "true") return undefined;
+	if (mode === "auto") return 5;
+	const matched = /^auto:(\d+)$/.exec(mode);
+	if (matched) {
+		const parsed = Number(matched[1]);
+		if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+	}
+	return 5;
+}
+
 // Import settings store to respect user's model selection
 import { settingsStore } from "../settingsStore";
 
@@ -187,8 +228,19 @@ export class ClaudeAgentService {
 			workingDirectory,
 			resumeSessionId,
 			persistSession,
+			forkSession,
+			resumeSessionAt,
 			model: userModel,
 			skills,
+			maxTurns,
+			maxThinkingTokens,
+			maxBudgetUsd,
+			settingSources,
+			betas,
+			contextPolicy,
+			subagentContextMode,
+			contextBudget,
+			enableToolSearch,
 			additionalDirectories,
 			plugins,
 			sandbox,
@@ -211,17 +263,60 @@ export class ClaudeAgentService {
 			configAdditionalDirs,
 			configPluginPaths,
 			configCompatMode,
+			configMaxTurns,
+			configMaxThinkingTokens,
+			configMaxBudgetUsd,
+			configSettingSources,
+			configBetas,
+			configContextPolicy,
+			configSubagentContextMode,
+			configContextBudget,
+			configEnableToolSearch,
 		] = await Promise.all([
 			getConfig("agent.sdk.interactive_approval_enabled").catch(() => null),
 			getConfig("agent.sdk.default_permission_mode").catch(() => null),
 			getConfig("agent.sdk.additional_directories").catch(() => null),
 			getConfig("agent.sdk.plugin_paths").catch(() => null),
 			getConfig("agent.sdk.compat_mode").catch(() => null),
+			getConfig("agent.sdk.max_turns").catch(() => null),
+			getConfig("agent.sdk.max_thinking_tokens").catch(() => null),
+			getConfig("agent.sdk.max_budget_usd").catch(() => null),
+			getConfig("agent.sdk.setting_sources").catch(() => null),
+			getConfig("agent.sdk.betas").catch(() => null),
+			getConfig("agent.sdk.context_policy").catch(() => null),
+			getConfig("agent.sdk.subagent_context_mode").catch(() => null),
+			getConfig("agent.sdk.context_budget").catch(() => null),
+			getConfig("agent.sdk.enable_tool_search").catch(() => null),
 		]);
 		const parseStringArray = (value: unknown): string[] =>
 			Array.isArray(value)
 				? value.filter((v): v is string => typeof v === "string")
 				: [];
+		const parseNumber = (value: unknown): number | undefined => {
+			if (typeof value === "number" && Number.isFinite(value)) return value;
+			if (typeof value === "string" && value.trim()) {
+				const parsed = Number(value);
+				if (Number.isFinite(parsed)) return parsed;
+			}
+			return undefined;
+		};
+		const normalizeSettingSources = (
+			value: unknown,
+		): Array<"user" | "project" | "local"> => {
+			const allowed = new Set(["user", "project", "local"]);
+			const arr = Array.isArray(value)
+				? value
+				: typeof value === "string"
+					? value.split(/[,\s]+/g)
+					: [];
+			const out: Array<"user" | "project" | "local"> = [];
+			for (const item of arr) {
+				const s = String(item || "").trim() as "user" | "project" | "local";
+				if (!allowed.has(s)) continue;
+				if (!out.includes(s)) out.push(s);
+			}
+			return out.length > 0 ? out : ["user", "project"];
+		};
 		const sdkAdditionalDirectories = parseStringArray(configAdditionalDirs);
 		const sdkPluginsFromConfig = parseStringArray(configPluginPaths).map(
 			(pluginPath) => ({
@@ -272,6 +367,75 @@ export class ClaudeAgentService {
 					)
 					.map((item) => [item.path, item] as const),
 			).values(),
+		);
+		const resolvedMaxTurns =
+			parseNumber(maxTurns) ?? parseNumber(configMaxTurns) ?? 24;
+		const resolvedMaxThinkingTokens =
+			parseNumber(maxThinkingTokens) ??
+			parseNumber(configMaxThinkingTokens) ??
+			8192;
+		const resolvedMaxBudgetUsd =
+			parseNumber(maxBudgetUsd) ?? parseNumber(configMaxBudgetUsd);
+		const resolvedSettingSources = normalizeSettingSources(
+			settingSources || configSettingSources,
+		);
+		const resolvedBetas = Array.from(
+			new Set(
+				parseStringArray(Array.isArray(betas) ? betas : configBetas).map(
+					(item) => item.trim(),
+				),
+			),
+		).filter(Boolean);
+		const resolvedContextPolicy =
+			(contextPolicy ||
+				(typeof configContextPolicy === "string"
+					? configContextPolicy
+					: "")) === "strict"
+				? "strict"
+				: (contextPolicy ||
+							(typeof configContextPolicy === "string"
+								? configContextPolicy
+								: "")) === "aggressive"
+					? "aggressive"
+					: "balanced";
+		const resolvedSubagentContextMode =
+			(subagentContextMode ||
+				(typeof configSubagentContextMode === "string"
+					? configSubagentContextMode
+					: "")) === "inherit"
+				? "inherit"
+				: "capsule";
+		const contextBudgetRaw =
+			contextBudget && typeof contextBudget === "object"
+				? contextBudget
+				: configContextBudget && typeof configContextBudget === "object"
+					? (configContextBudget as Record<string, unknown>)
+					: {};
+		const resolvedContextBudget = {
+			max_context_chars: Math.max(
+				1000,
+				Math.floor(
+					parseNumber((contextBudgetRaw as any).max_context_chars) ?? 16000,
+				),
+			),
+			max_files: Math.max(
+				1,
+				Math.floor(parseNumber((contextBudgetRaw as any).max_files) ?? 12),
+			),
+			max_file_chars: Math.max(
+				500,
+				Math.floor(
+					parseNumber((contextBudgetRaw as any).max_file_chars) ?? 6000,
+				),
+			),
+		};
+		const resolvedEnableToolSearch =
+			enableToolSearch ||
+			(typeof configEnableToolSearch === "string"
+				? (configEnableToolSearch as "auto" | "auto:5" | "true" | "false")
+				: "auto:5");
+		const resolvedMcpServerLimit = resolveMcpServerLimitByToolSearchMode(
+			resolvedEnableToolSearch,
 		);
 
 		let unlisten: (() => void) | null = null;
@@ -930,8 +1094,11 @@ export class ClaudeAgentService {
 								// 清空缓冲区
 								bufferedEvents.length = 0;
 
-								// 重新获取 MCP 配置
-								const mcpServers = await getMcpConfigForSdk();
+								// 重新获取 MCP 配置（按任务意图排序 + 可选上限）
+								const mcpServers = await getMcpConfigForSdk({
+									taskPrompt: prompt,
+									maxServers: resolvedMcpServerLimit,
+								});
 
 								// 重新启动 SDK
 								runId = await invoke<string>("agent_sdk_start", {
@@ -956,6 +1123,17 @@ export class ClaudeAgentService {
 											mergedPlugins.length > 0 ? mergedPlugins : undefined,
 										sandbox: sandbox,
 										interactive_approval: interactiveApprovalForRun,
+										fork_session: forkSession,
+										resume_session_at: resumeSessionAt,
+										max_turns: resolvedMaxTurns,
+										max_thinking_tokens: resolvedMaxThinkingTokens,
+										max_budget_usd: resolvedMaxBudgetUsd,
+										setting_sources: resolvedSettingSources,
+										betas: resolvedBetas,
+										context_policy: resolvedContextPolicy,
+										subagent_context_mode: resolvedSubagentContextMode,
+										context_budget: resolvedContextBudget,
+										enable_tool_search: resolvedEnableToolSearch,
 									},
 								});
 								this.activeRunId = runId;
@@ -1011,8 +1189,11 @@ export class ClaudeAgentService {
 				handleEvent(event.payload as any);
 			});
 
-			// 获取 MCP 配置（来自设置页 DB 配置）
-			const mcpServers = await getMcpConfigForSdk();
+			// 获取 MCP 配置（来自设置页 DB 配置，按任务意图排序 + 可选上限）
+			const mcpServers = await getMcpConfigForSdk({
+				taskPrompt: prompt,
+				maxServers: resolvedMcpServerLimit,
+			});
 			console.log("[ClaudeAgentService] MCP servers:", Object.keys(mcpServers));
 
 			runId = await invoke<string>("agent_sdk_start", {
@@ -1036,6 +1217,17 @@ export class ClaudeAgentService {
 					plugins: mergedPlugins.length > 0 ? mergedPlugins : undefined,
 					sandbox: sandbox,
 					interactive_approval: interactiveApprovalForRun,
+					fork_session: forkSession,
+					resume_session_at: resumeSessionAt,
+					max_turns: resolvedMaxTurns,
+					max_thinking_tokens: resolvedMaxThinkingTokens,
+					max_budget_usd: resolvedMaxBudgetUsd,
+					setting_sources: resolvedSettingSources,
+					betas: resolvedBetas,
+					context_policy: resolvedContextPolicy,
+					subagent_context_mode: resolvedSubagentContextMode,
+					context_budget: resolvedContextBudget,
+					enable_tool_search: resolvedEnableToolSearch,
 				},
 			});
 			this.activeRunId = runId;

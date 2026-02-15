@@ -493,6 +493,50 @@ function normalizeStringArray(v: unknown): string[] {
 	return v.map((x) => (typeof x === "string" ? x.trim() : "")).filter(Boolean);
 }
 
+function normalizeNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+function normalizeSettingSources(
+	value: unknown,
+): Array<"user" | "project" | "local"> {
+	const arr = Array.isArray(value)
+		? value
+		: typeof value === "string"
+			? value.split(/[,\s]+/g)
+			: [];
+	const allowed = new Set(["user", "project", "local"]);
+	const out: Array<"user" | "project" | "local"> = [];
+	for (const item of arr) {
+		const s = String(item || "").trim() as "user" | "project" | "local";
+		if (!allowed.has(s)) continue;
+		if (!out.includes(s)) out.push(s);
+	}
+	return out.length > 0 ? out : ["user", "project"];
+}
+
+function normalizeToolSearchMode(
+	value: unknown,
+): "auto" | "auto:5" | "true" | "false" {
+	const normalized = String(value || "")
+		.trim()
+		.toLowerCase();
+	if (
+		normalized === "auto" ||
+		normalized === "auto:5" ||
+		normalized === "true" ||
+		normalized === "false"
+	) {
+		return normalized;
+	}
+	return "auto:5";
+}
+
 function isLikelyWritingTask(prompt: string): boolean {
 	const p = prompt.toLowerCase();
 	return (
@@ -1713,17 +1757,20 @@ export function createAgentSdkHandlers(options: {
 			: [];
 
 		const lines: string[] = [];
-
+		const MAX_SKILLS = 8;
+		const MAX_SUBAGENTS = 8;
 		if (opts.enabledSkills.length > 0) {
 			lines.push("## Skills（可通过 Skill 工具调用）");
 			lines.push(
-				`已安装技能（skill 参数可用值）：${opts.enabledSkills.slice(0, 50).join(", ")}`,
+				`已安装技能（节选）：${opts.enabledSkills.slice(0, MAX_SKILLS).join(", ")}`,
 			);
-			if (opts.enabledSkills.length > 50) {
-				lines.push(`（还有 ${opts.enabledSkills.length - 50} 个已省略）`);
+			if (opts.enabledSkills.length > MAX_SKILLS) {
+				lines.push(
+					`（还有 ${opts.enabledSkills.length - MAX_SKILLS} 个已省略）`,
+				);
 			}
+			lines.push("");
 		}
-
 		if (configs.length === 0) return lines.join("\n");
 
 		type ScenarioItem = {
@@ -1731,8 +1778,6 @@ export function createAgentSdkHandlers(options: {
 			description: string;
 			enabled: boolean;
 		};
-
-		// Keep custom-N stable by config order (UI order), regardless of enabled/disabled state.
 		let customIndex = 0;
 		const items: ScenarioItem[] = [];
 		for (const c of configs) {
@@ -1740,18 +1785,14 @@ export function createAgentSdkHandlers(options: {
 			const scenario = coerceString((c as any).scenario) || "";
 			if (!scenario) continue;
 			const customName = coerceString((c as any).customName);
-
 			const indexForKey = customIndex;
 			if (scenario === "custom") customIndex++;
-
 			const agentKey = generateAgentKey(scenario, customName, indexForKey);
 			if (!agentKey) continue;
-
 			const description =
 				scenario === "custom" && customName
 					? customName
 					: scenarioLabel(scenario, customName);
-
 			items.push({
 				agentKey,
 				description,
@@ -1759,68 +1800,34 @@ export function createAgentSdkHandlers(options: {
 			});
 		}
 
+		const enabled = items.filter((x) => x.enabled).slice(0, MAX_SUBAGENTS);
 		lines.push("## 子代理(通过 Task 工具调用)");
-		lines.push("");
+		lines.push("优先把复杂任务委派给最匹配的子代理，并只传最小必要上下文。");
 		lines.push(
-			"**委派规则**：用户已配置以下子代理，当用户请求的意图与子代理的功能描述**语义相关**时，请**优先**调用 Task 工具委派；如需补充最小必要上下文，可先进行少量 Read/Glob/Grep。",
+			'调用方式：Task({ subagent_type: "<英文标识符>", description: "简述任务", prompt: "任务 + 最小上下文" })',
 		);
-		lines.push("");
-		lines.push(
-			'调用方式：Task({ subagent_type: "<英文标识符>", description: "简述任务", prompt: "完整任务描述+所需上下文" })',
-		);
-		lines.push("");
-
-		const enabled = items.filter((x) => x.enabled);
-		const disabled = items.filter((x) => !x.enabled);
-
-		if (enabled.length === 0) {
+		lines.push("已启用子代理（节选）：");
+		for (const x of enabled) {
+			lines.push(`- ${x.description} -> Task(subagent_type="${x.agentKey}")`);
+		}
+		if (items.filter((x) => x.enabled).length > MAX_SUBAGENTS) {
 			lines.push(
-				"当前：你已配置子代理场景，但都处于【禁用】状态。请到设置中启用后再使用。",
-			);
-		} else {
-			lines.push("已启用的子代理：");
-			for (const x of enabled.slice(0, 30)) {
-				lines.push(
-					`- 功能：**${x.description}** → 调用 Task({ subagent_type: "${x.agentKey}", ... })`,
-				);
-			}
-			if (enabled.length > 30) {
-				lines.push(`- ...(还有 ${enabled.length - 30} 个已省略)`);
-			}
-			lines.push("");
-			lines.push(
-				'**语义匹配示例**：如果子代理描述是"画图"，那么用户说"绘制图像""生成图片""作图"都应该匹配。',
-			);
-			lines.push(
-				"**执行顺序**：在需要调用子代理的任务中，默认优先调用 Task；若确有必要，可先做最小化的信息读取或定位，再发起 Task。",
-			);
-			lines.push(
-				"**避免重复**：同一需求在拿到子代理结果前，不要重复调用同一个 Task；若子代理已返回 image_paths，请直接基于该结果结束回答。",
-			);
-			lines.push("");
-			lines.push(
-				"（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）",
+				`- ...(还有 ${items.filter((x) => x.enabled).length - MAX_SUBAGENTS} 个已省略)`,
 			);
 		}
+		lines.push(
+			"注意：同一需求在拿到子代理结果前不要重复调用同类 Task；子代理返回后直接汇总。",
+		);
+		lines.push(
+			"（内置子代理：general-purpose / Explore / Plan / Bash 可直接使用）",
+		);
 
-		if (disabled.length > 0) {
-			lines.push("");
-			lines.push("已配置但禁用（不会生成子代理，请先在设置中启用）：");
-			for (const x of disabled.slice(0, 30)) {
-				lines.push(`- ${x.agentKey}（禁用）→ ${x.description}`);
-			}
-			if (disabled.length > 30) {
-				lines.push(`- ...(还有 ${disabled.length - 30} 个已省略)`);
-			}
-		}
-
-		// 【调试】记录生成的子代理提示词
 		const result = lines.join("\n");
 		logger.info({
 			msg: "agent_sdk buildSubagentPolicyAppend result",
 			scope: "agent",
-			enabledSubagentsCount: enabled.length,
-			disabledSubagentsCount: disabled.length,
+			enabledSubagentsCount: items.filter((x) => x.enabled).length,
+			disabledSubagentsCount: items.filter((x) => !x.enabled).length,
 			subagentItems: items.map((x) => ({
 				agentKey: x.agentKey,
 				description: x.description.slice(0, 50),
@@ -2160,6 +2167,87 @@ ${opts.appendContent}`.trim();
 					typeof (input as any).persist_session === "boolean"
 						? (input as any).persist_session
 						: undefined;
+				const forkSession =
+					typeof (input as any).fork_session === "boolean"
+						? ((input as any).fork_session as boolean)
+						: false;
+				const resumeSessionAtRaw =
+					typeof (input as any).resume_session_at === "string"
+						? String((input as any).resume_session_at).trim()
+						: "";
+				const resumeSessionAt = resumeSessionAtRaw || undefined;
+				const runtimeConfig = (agentModelSettings as any)?.contextRuntime || {};
+				const maxTurns =
+					normalizeNumber((input as any).max_turns) ??
+					normalizeNumber(runtimeConfig?.maxTurns) ??
+					24;
+				const maxThinkingTokens =
+					normalizeNumber((input as any).max_thinking_tokens) ??
+					normalizeNumber(runtimeConfig?.maxThinkingTokens) ??
+					8192;
+				const maxBudgetUsd =
+					normalizeNumber((input as any).max_budget_usd) ??
+					normalizeNumber(runtimeConfig?.maxBudgetUsd);
+				const settingSources = normalizeSettingSources(
+					(input as any).setting_sources ?? runtimeConfig?.settingSources,
+				);
+				const betas = uniqStrings(
+					normalizeStringArray(
+						(input as any).betas ?? runtimeConfig?.betas ?? [],
+					),
+				);
+				const rawContextPolicy = String(
+					(input as any).context_policy ?? runtimeConfig?.contextPolicy ?? "",
+				).trim();
+				const contextPolicy: "balanced" | "strict" | "aggressive" =
+					rawContextPolicy === "strict" || rawContextPolicy === "aggressive"
+						? rawContextPolicy
+						: "balanced";
+				const subagentContextMode =
+					String(
+						(input as any).subagent_context_mode ??
+							runtimeConfig?.subagentContextMode ??
+							"capsule",
+					).trim() === "inherit"
+						? "inherit"
+						: "capsule";
+				const contextBudgetRaw =
+					(input as any).context_budget &&
+					typeof (input as any).context_budget === "object"
+						? ((input as any).context_budget as Record<string, unknown>)
+						: runtimeConfig?.contextBudget &&
+								typeof runtimeConfig.contextBudget === "object"
+							? (runtimeConfig.contextBudget as Record<string, unknown>)
+							: {};
+				const contextBudget = {
+					max_context_chars: Math.max(
+						1000,
+						Math.floor(
+							normalizeNumber(contextBudgetRaw.max_context_chars) ??
+								normalizeNumber((contextBudgetRaw as any).maxContextChars) ??
+								16000,
+						),
+					),
+					max_files: Math.max(
+						1,
+						Math.floor(
+							normalizeNumber(contextBudgetRaw.max_files) ??
+								normalizeNumber((contextBudgetRaw as any).maxFiles) ??
+								12,
+						),
+					),
+					max_file_chars: Math.max(
+						500,
+						Math.floor(
+							normalizeNumber(contextBudgetRaw.max_file_chars) ??
+								normalizeNumber((contextBudgetRaw as any).maxFileChars) ??
+								6000,
+						),
+					),
+				};
+				const enableToolSearch = normalizeToolSearchMode(
+					(input as any).enable_tool_search ?? runtimeConfig?.enableToolSearch,
+				);
 				const mcpServers =
 					(input as any).mcp_servers &&
 					typeof (input as any).mcp_servers === "object"
@@ -2246,6 +2334,11 @@ ${opts.appendContent}`.trim();
 						model: (v as any)?.model?.slice?.(0, 50) ?? (v as any)?.model,
 					})),
 				});
+				const userPromptHintFingerprint = new Set<string>();
+				const normalizedContextPolicy: "balanced" | "strict" | "aggressive" =
+					contextPolicy === "strict" || contextPolicy === "aggressive"
+						? contextPolicy
+						: "balanced";
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -2254,13 +2347,17 @@ ${opts.appendContent}`.trim();
 						cwd,
 						model: String(input.model ?? ""),
 						resume: resumeSessionId,
+						resumeSessionAt,
+						forkSession,
 						persistSession,
 						mcpServers,
+						maxTurns,
+						maxThinkingTokens,
+						maxBudgetUsd,
+						betas: betas.length > 0 ? betas : undefined,
 						// 必须传入 allowedTools 并包含 Task，否则自定义 agents 无法被调用
 						// 参考文档: "The Task tool must be included in allowedTools since Claude invokes subagents through the Task tool."
-						allowedTools: hasExplicitAllowedTools
-							? allowed
-							: undefined,
+						allowedTools: hasExplicitAllowedTools ? allowed : undefined,
 						agents: agentsConfig as any,
 						hooks: {
 							...lifecycleHooks,
@@ -2588,42 +2685,83 @@ ${opts.appendContent}`.trim();
 												hookInput.hook_event_name === "UserPromptSubmit"
 													? String((hookInput as any).prompt ?? "")
 													: "";
+											const inSubagentContext = Boolean(
+												(hookInput as any)?.parent_tool_use_id ||
+													(hookInput as any)?.agent_id ||
+													(hookInput as any)?.agent_type,
+											);
+											const maxAdditionalChars = 600;
 											const additions: string[] = [];
-											additions.push(
+											const pushHint = (
+												fingerprint: string,
+												content: string,
+											) => {
+												if (!content.trim()) return;
+												if (userPromptHintFingerprint.has(fingerprint)) return;
+												userPromptHintFingerprint.add(fingerprint);
+												additions.push(content.trim());
+											};
+											pushHint(
+												"read-rule",
 												"读取文件请优先使用 Read/Glob/Grep 等内置工具（不要依赖通配符 Bash）。",
 											);
+											pushHint(
+												`context-policy:${normalizedContextPolicy}`,
+												`上下文策略：${normalizedContextPolicy}；子代理上下文模式：${subagentContextMode}。`,
+											);
+											pushHint(
+												"context-budget",
+												`上下文预算：max_context_chars=${contextBudget.max_context_chars}, max_files=${contextBudget.max_files}, max_file_chars=${contextBudget.max_file_chars}。`,
+											);
 
-											const matchedScenarioAgent = matchScenarioAgentForPrompt({
-												settings: agentModelSettings,
-												promptText,
-											});
-											if (matchedScenarioAgent) {
-												additions.push(
-													`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })；如需补充上下文，可先做最小必要的 Read/Glob/Grep。`,
-												);
+											if (!inSubagentContext) {
+												const matchedScenarioAgent =
+													matchScenarioAgentForPrompt({
+														settings: agentModelSettings,
+														promptText,
+													});
+												if (matchedScenarioAgent) {
+													pushHint(
+														`subagent-match:${matchedScenarioAgent.agentKey}`,
+														`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })；如需补充上下文，可先做最小必要的 Read/Glob/Grep。`,
+													);
+												}
 											}
 
-											if (isLikelyWritingTask(promptText)) {
+											if (
+												!inSubagentContext &&
+												isLikelyWritingTask(promptText)
+											) {
 												if (preferredWritingSkill) {
-													additions.push(
+													pushHint(
+														"writing-skill-preferred",
 														`这是写作任务：请先调用 Skill 工具（skill=\"${preferredWritingSkill}\"）生成初稿/框架，再根据需要整理为最终输出。`,
 													);
 												} else if (enabledSkills.length > 0) {
-													additions.push(
-														`这是写作任务：如果有合适技能，请先调用 Skill 工具（可用技能：${enabledSkills.join(", ")}）。`,
+													pushHint(
+														"writing-skill-any",
+														`这是写作任务：如果有合适技能，请先调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`,
 													);
 												}
 
-												additions.push(
+												pushHint(
+													"writing-subagent-pattern",
 													'为减少上下文污染：请用 Task 工具把"读资料/提炼要点"委派给 reader 子代理，把"写作成文"委派给 writer 子代理，然后你只输出最终结果。',
 												);
+											}
+
+											let additionalContext = additions.join("\n");
+											if (additionalContext.length > maxAdditionalChars) {
+												additionalContext =
+													additionalContext.slice(0, maxAdditionalChars) +
+													"\n...(系统提示已截断)";
 											}
 
 											return {
 												continue: true,
 												hookSpecificOutput: {
 													hookEventName: "UserPromptSubmit",
-													additionalContext: additions.join("\n"),
+													additionalContext,
 												},
 											};
 										},
@@ -2640,8 +2778,8 @@ ${opts.appendContent}`.trim();
 						sandbox: sandboxSettings as any,
 						pathToClaudeCodeExecutable,
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
-						// 必须包含 "user" 和 "project" 才能加载 ~/.claude/skills 和 .claude/skills
-						settingSources: ["user", "project"] as any,
+						// 默认 user+project，可由 UI/调用方覆盖
+						settingSources: settingSources as any,
 						tools: hasExplicitAllowedTools
 							? allowed
 							: { type: "preset", preset: "claude_code" },
@@ -2672,6 +2810,7 @@ ${opts.appendContent}`.trim();
 							env.DISABLE_TELEMETRY = "1";
 							env.DISABLE_ERROR_REPORTING = "1";
 							env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+							env.ENABLE_TOOL_SEARCH = enableToolSearch;
 
 							return env;
 						})(),
@@ -2712,10 +2851,7 @@ ${opts.appendContent}`.trim();
 									message: "aborted",
 								};
 							}
-							if (
-								hasExplicitAllowedTools &&
-								!allowed.includes(toolName)
-							) {
+							if (hasExplicitAllowedTools && !allowed.includes(toolName)) {
 								return {
 									behavior: "deny",
 									message: `Tool disabled: ${toolName}`,
