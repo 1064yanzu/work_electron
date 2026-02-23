@@ -62,6 +62,10 @@ export default defineConfig({
 					) {
 						return "graph";
 					}
+
+					if (id.includes("/lucide-react/")) {
+						return "icons";
+					}
 				},
 			},
 		},

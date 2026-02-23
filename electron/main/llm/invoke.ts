@@ -12,6 +12,15 @@ import {
 
 const DEFAULT_MODEL = "gpt-4o";
 
+/** LLM 调用超时（毫秒） */
+const LLM_CALL_TIMEOUT_MS = 120_000; // 非流式：2 分钟
+const LLM_STREAM_TIMEOUT_MS = 300_000; // 流式：5 分钟
+
+/** 创建带超时的 AbortSignal */
+function createTimeoutSignal(timeoutMs: number): AbortSignal {
+	return AbortSignal.timeout(timeoutMs);
+}
+
 /** Provider 类型 */
 type ProviderType =
 	| "openai"
@@ -181,16 +190,23 @@ async function getActiveModel(db: DbContext): Promise<string> {
 }
 
 /**
- * 根据模型查找 Provider
+ * Provider 缓存 - 避免每次 LLM 调用都重新查询数据库
  */
-async function findProviderForModel(
-	db: DbContext,
-	model: string,
-): Promise<Provider | null> {
+const PROVIDER_CACHE_TTL_MS = 30_000;
+let providerCacheTimestamp = 0;
+let providerCacheData: Provider[] = [];
+
+async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
+	const now = Date.now();
+	if (now - providerCacheTimestamp < PROVIDER_CACHE_TTL_MS && providerCacheData.length > 0) {
+		return providerCacheData;
+	}
+
 	const rows = await db.client.execute(
 		`SELECT * FROM providers WHERE is_enabled = 1`,
 	);
 
+	const providers: Provider[] = [];
 	for (const row of rows.rows) {
 		let models: string[] = [];
 		try {
@@ -198,29 +214,47 @@ async function findProviderForModel(
 		} catch {
 			continue;
 		}
-		if (models.includes(model)) {
-			let metadata: Record<string, unknown> = {};
-			try {
-				metadata = JSON.parse((row.metadata as string) || "{}");
-			} catch {
-				metadata = {};
-			}
-			return {
-				id: row.id as string,
-				name: row.name as string,
-				provider_type: row.provider_type as ProviderType,
-				is_enabled: true,
-				api_key: row.api_key as string | undefined,
-				api_base: row.api_base as string | undefined,
-				models,
-				metadata,
-				template_id: row.template_id as string | undefined,
-				created_at: row.created_at as number,
-				updated_at: row.updated_at as number,
-			};
+		let metadata: Record<string, unknown> = {};
+		try {
+			metadata = JSON.parse((row.metadata as string) || "{}");
+		} catch {
+			metadata = {};
 		}
+		providers.push({
+			id: row.id as string,
+			name: row.name as string,
+			provider_type: row.provider_type as ProviderType,
+			is_enabled: true,
+			api_key: row.api_key as string | undefined,
+			api_base: row.api_base as string | undefined,
+			models,
+			metadata,
+			template_id: row.template_id as string | undefined,
+			created_at: row.created_at as number,
+			updated_at: row.updated_at as number,
+		});
 	}
-	return null;
+
+	providerCacheData = providers;
+	providerCacheTimestamp = now;
+	return providers;
+}
+
+/** 主动失效 provider 缓存（在 provider 变更时调用） */
+export function invalidateProviderCache() {
+	providerCacheTimestamp = 0;
+	providerCacheData = [];
+}
+
+/**
+ * 根据模型查找 Provider
+ */
+async function findProviderForModel(
+	db: DbContext,
+	model: string,
+): Promise<Provider | null> {
+	const providers = await getEnabledProviders(db);
+	return providers.find((p) => p.models.includes(model)) ?? null;
 }
 
 /**
@@ -311,6 +345,7 @@ async function callOpenAICompatible(
 				messages,
 				temperature: temperature ?? 0.7,
 			}),
+			signal: createTimeoutSignal(LLM_CALL_TIMEOUT_MS),
 		});
 
 		if (response.ok) break;
@@ -386,6 +421,7 @@ async function callOpenAICompatibleStream(opts: {
 				stream_options: { include_usage: true },
 				temperature: opts.temperature ?? 0.7,
 			}),
+			signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
 		});
 
 		if (!response.ok) {
@@ -469,6 +505,7 @@ async function callAnthropic(
 			max_tokens: 4096,
 			temperature: temperature ?? 0.7,
 		}),
+		signal: createTimeoutSignal(LLM_CALL_TIMEOUT_MS),
 	});
 
 	if (!response.ok) {
@@ -538,6 +575,7 @@ async function callAnthropicStream(opts: {
 			temperature: opts.temperature ?? 0.7,
 			stream: true,
 		}),
+		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
 	});
 
 	if (!response.ok) {
@@ -653,6 +691,7 @@ async function callOllamaStream(opts: {
 			messages: [{ role: "user", content: opts.prompt }],
 			stream: true,
 		}),
+		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
 	});
 
 	if (!response.ok) {

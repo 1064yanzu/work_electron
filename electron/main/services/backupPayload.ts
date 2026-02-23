@@ -148,6 +148,11 @@ function withFallback(
 	}
 }
 
+// 大表分批导出时的批次大小
+const LARGE_TABLE_BATCH_SIZE = 500;
+// 行数超过此阈值的表将使用分批导出
+const LARGE_TABLE_THRESHOLD = 1000;
+
 export async function collectFullBackupPayload(
 	db: DbContext,
 ): Promise<Record<string, unknown>> {
@@ -158,8 +163,35 @@ export async function collectFullBackupPayload(
 		if (!existingTables.has(table)) {
 			continue;
 		}
-		const rows = await db.client.execute(`SELECT * FROM ${quoteIdentifier(table)}`);
-		tables[table] = rows.rows.map((row) => ({ ...(row as BackupRow) }));
+
+		// 先查行数，决定是全量还是分批导出
+		const countResult = await db.client.execute(
+			`SELECT COUNT(1) AS c FROM ${quoteIdentifier(table)}`,
+		);
+		const rowCount = Number((countResult.rows[0] as any)?.c ?? 0);
+
+		if (rowCount <= LARGE_TABLE_THRESHOLD) {
+			// 小表全量导出
+			const rows = await db.client.execute(`SELECT * FROM ${quoteIdentifier(table)}`);
+			tables[table] = rows.rows.map((row) => ({ ...(row as BackupRow) }));
+		} else {
+			// 大表分批导出，降低内存峰值
+			const allRows: BackupRow[] = [];
+			let offset = 0;
+			for (;;) {
+				const batch = await db.client.execute({
+					sql: `SELECT * FROM ${quoteIdentifier(table)} LIMIT ? OFFSET ?`,
+					args: [LARGE_TABLE_BATCH_SIZE, offset],
+				});
+				if (batch.rows.length === 0) break;
+				for (const row of batch.rows) {
+					allRows.push({ ...(row as BackupRow) });
+				}
+				offset += batch.rows.length;
+				if (batch.rows.length < LARGE_TABLE_BATCH_SIZE) break;
+			}
+			tables[table] = allRows;
+		}
 	}
 
 	return {

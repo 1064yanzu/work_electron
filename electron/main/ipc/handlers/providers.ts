@@ -6,7 +6,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Provider, ProviderType } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
-import { resolveProviderApiKey } from "../../llm/invoke";
+import { resolveProviderApiKey, invalidateProviderCache } from "../../llm/invoke";
 import {
 	getOpenAICompatibleAuthHeaders,
 	normalizeAnthropicBaseUrl,
@@ -305,6 +305,7 @@ export function createProviderHandlers(db: DbContext) {
 					sql: `SELECT * FROM providers WHERE id = ?`,
 					args: [input.id],
 				});
+				invalidateProviderCache();
 				return parseProvider(rows.rows[0] as Record<string, unknown>);
 			}
 		}
@@ -328,8 +329,8 @@ export function createProviderHandlers(db: DbContext) {
 			],
 		});
 
+		invalidateProviderCache();
 		return {
-			id,
 			name: input.name,
 			provider_type: input.provider_type,
 			is_enabled: input.is_enabled ?? true,
@@ -348,6 +349,7 @@ export function createProviderHandlers(db: DbContext) {
 			sql: `DELETE FROM providers WHERE id = ?`,
 			args: [input.id],
 		});
+		invalidateProviderCache();
 		return { success: true };
 	};
 
@@ -444,6 +446,7 @@ export function createProviderHandlers(db: DbContext) {
 			}
 		}
 
+		invalidateProviderCache();
 		return { success: true, count };
 	};
 

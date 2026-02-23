@@ -21,6 +21,7 @@ import {
 	updateProject,
 } from "../lib/api";
 import { buildProjectContextMenu } from "../lib/contextMenu/actions";
+import { prefetchProjectData } from "../lib/query";
 import type { Project } from "../types";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
@@ -349,6 +350,7 @@ export default function Dashboard({
 													onOpenProject?.(project.id);
 													setShowSearch(false);
 												}}
+												onMouseEnter={() => prefetchProjectData(project.id)}
 												className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 group transition-colors cursor-pointer ${filteredProjects.indexOf(project) === searchSelectedIndex
 													? "bg-primary/10 dark:bg-primary/20"
 													: "hover:bg-[#F4F4F2] dark:hover:bg-zinc-800"
@@ -541,6 +543,7 @@ export default function Dashboard({
 											);
 											handleOpenProject(project.id);
 										}}
+										onMouseEnter={() => prefetchProjectData(project.id)}
 										onContextMenu={(e) => handleProjectContextMenu(e, project)}
 										className={`
                         group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 

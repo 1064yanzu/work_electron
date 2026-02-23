@@ -1,197 +1,119 @@
 // 工作区状态管理 - 三栏互通的核心
+// 此文件保留核心状态（上下文、项目、预览）并作为所有子 Store 的统一入口
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import type { Source } from "../types";
 
-// 上下文项
-export interface ContextItem {
-	id: string;
-	type: "source" | "selection" | "file";
-	title: string;
-	content: string;
-	sourceId?: string;
-	filePath?: string;
-	size?: number;
-	mimeType?: string;
-}
+// 从子 Store 重新导出类型，保持向后兼容
+export type {
+	ContextItem,
+	ResearchStep,
+	ResearchSource,
+	ResearchTask,
+	DocCacheItem,
+	TabType,
+	TabItem,
+	AIReviewState,
+	WorkspaceState,
+} from "./stores/types";
 
-// 研究步骤
-export interface ResearchStep {
-	id: string;
-	type: "search" | "fetch" | "analyze" | "summarize" | "complete" | "error";
-	status: "pending" | "running" | "completed" | "error";
-	title: string;
-	description?: string;
-	timestamp: number;
-	data?: any; // 步骤相关数据
-}
+import type {
+	CoreWorkspaceState,
+	ResearchSource,
+	WorkspaceState,
+} from "./stores/types";
 
-// 研究资料项（搜索结果或抓取的内容）
-export interface ResearchSource {
-	id: string;
-	title: string;
-	url?: string;
-	snippet?: string;
-	content?: string;
-	type: "search_result" | "fetched_content" | "generated";
-	timestamp: number;
-}
+// 导入子 Store
+import { layoutStore } from "./stores/layoutStore";
+import { editorStore } from "./stores/editorStore";
+import { researchStore } from "./stores/researchStore";
+import { tabStore } from "./stores/tabStore";
 
-// 研究任务
-export interface ResearchTask {
-	id: string;
-	query: string;
-	status:
-	| "idle"
-	| "searching"
-	| "fetching"
-	| "analyzing"
-	| "completed"
-	| "error";
-	steps: ResearchStep[];
-	sources: ResearchSource[];
-	summary?: string;
-	createdAt: number;
-	completedAt?: number;
-}
+// 重新导出子 Store，方便渐进迁移
+export { layoutStore, useLayoutStore, useLayoutStoreSelector } from "./stores/layoutStore";
+export { editorStore, useEditorStore, useEditorStoreSelector } from "./stores/editorStore";
+export { researchStore, useResearchStore, useResearchStoreSelector } from "./stores/researchStore";
+export { tabStore, useTabStore, useTabStoreSelector } from "./stores/tabStore";
 
-// 文档缓存项
-export interface DocCacheItem {
-	id: string;
-	title: string;
-	content: string;
-	dirty: boolean; // 是否有未保存修改
-	lastSynced: number; // 最后同步时间戳
-	snapshot?: string; // 快照（用于撤销 AI 修改）
-}
-
-// 标签页类型
-export type TabType = "doc" | "source";
-
-// 标签页项
-export interface TabItem {
-	id: string;
-	type: TabType;
-	title: string;
-	// 对于 source 类型，存储 sourceId
-	sourceId?: string;
-}
-
-// AI 审查状态
-export interface AIReviewState {
-	isReviewing: boolean;
-	docId: string | null;
-	originalContent: string;
-	suggestedContent: string;
-	type: "update" | "create";
-	title?: string; // 用于 create-doc
-	summary?: string; // 用于 create-doc
-}
-
-// 工作区状态
-interface WorkspaceState {
-	// 当前选中的资料（用于 AI 上下文）
-	selectedSources: Source[];
-	// 上下文列表
-	contexts: ContextItem[];
-	// 编辑器当前内容
-	editorContent: string;
-	// 编辑器选中文本
-	editorSelection: string;
-	// 当前项目 ID
-	currentProjectId: string | null;
-	// 当前选中的文件夹（用于资料库筛选/新增归类）；null=全部
-	currentFolderId: string | null;
-	// 中间栏主视图模式
-	activeMainView: "editor" | "browser";
-	// 左边栏视图模式
-	leftSidebarView:
-	| "sources"
-	| "research"
-	| "detail"
-	| "agent"
-	| "cards"
-	| "websearch";
-	// 当前研究任务
-	currentResearch: ResearchTask | null;
-	// 历史研究任务
-	researchHistory: ResearchTask[];
-	// 当前预览的资料
-	previewSource: Source | ResearchSource | null;
-	// 右侧栏可见性
-	rightSidebarVisible: boolean;
-
-	// === 多标签文档工作区 ===
-	// 已打开的文档 ID 列表（按顺序）
-	openedDocs: string[];
-	// 当前激活的文档 ID
-	activeDocId: string | null;
-	// 文档缓存
-	docCache: Record<string, DocCacheItem>;
-	// AI 审查状态
-	aiReview: AIReviewState;
-
-	// === 标签页系统（支持文档和资料阅读） ===
-	tabs: TabItem[];
-	activeTabId: string | null;
-	// 资料阅读缓存（sourceId -> SourceDetail）
-	sourceReadCache: Record<
-		string,
-		{
-			sourceId: string;
-			title: string;
-			note?: { content: string; content_html?: string };
-		}
-	>;
-}
-
-const initialState: WorkspaceState = {
+// 核心工作区状态（保留在此文件中）
+const initialCoreState: CoreWorkspaceState = {
 	selectedSources: [],
 	contexts: [],
-	editorContent: "",
-	editorSelection: "",
 	currentProjectId: null,
 	currentFolderId: null,
-	activeMainView: "editor",
-	leftSidebarView: "sources",
-	currentResearch: null,
-	researchHistory: [],
 	previewSource: null,
-	rightSidebarVisible: true,
-
-	// 多标签文档工作区
-	openedDocs: [],
-	activeDocId: null,
-	docCache: {},
-	aiReview: {
-		isReviewing: false,
-		docId: null,
-		originalContent: "",
-		suggestedContent: "",
-		type: "update",
-	},
-
-	// 标签页系统
-	tabs: [],
-	activeTabId: null,
-	sourceReadCache: {},
 };
 
 class WorkspaceStore {
-	private state: WorkspaceState = initialState;
+	private state: CoreWorkspaceState = initialCoreState;
 	private listeners: Set<() => void> = new Set();
 
-	getState = () => this.state;
+	// 缓存聚合状态，避免 useSyncExternalStore 因引用不同而无限重渲染
+	private cachedAggregatedState: WorkspaceState | null = null;
+	private lastCoreState: CoreWorkspaceState | null = null;
+	private lastLayoutState: ReturnType<typeof layoutStore.getState> | null = null;
+	private lastEditorState: ReturnType<typeof editorStore.getState> | null = null;
+	private lastResearchState: ReturnType<typeof researchStore.getState> | null = null;
+	private lastTabState: ReturnType<typeof tabStore.getState> | null = null;
+
+	getState = (): WorkspaceState => {
+		const coreState = this.state;
+		const layout = layoutStore.getState();
+		const editor = editorStore.getState();
+		const research = researchStore.getState();
+		const tab = tabStore.getState();
+
+		// 只有当某个子 Store 状态实际变化时，才重新聚合
+		if (
+			this.cachedAggregatedState !== null &&
+			coreState === this.lastCoreState &&
+			layout === this.lastLayoutState &&
+			editor === this.lastEditorState &&
+			research === this.lastResearchState &&
+			tab === this.lastTabState
+		) {
+			return this.cachedAggregatedState;
+		}
+
+		this.lastCoreState = coreState;
+		this.lastLayoutState = layout;
+		this.lastEditorState = editor;
+		this.lastResearchState = research;
+		this.lastTabState = tab;
+		this.cachedAggregatedState = {
+			...coreState,
+			...layout,
+			...editor,
+			...research,
+			...tab,
+		};
+		return this.cachedAggregatedState;
+	};
+
+	// 仅获取核心状态（不聚合子 Store）
+	getCoreState = (): CoreWorkspaceState => this.state;
 
 	subscribe = (listener: () => void) => {
 		this.listeners.add(listener);
-		return () => this.listeners.delete(listener);
+		// 同时订阅所有子 Store，以便在任何 Store 变化时通知聚合监听器
+		const unsubs = [
+			layoutStore.subscribe(listener),
+			editorStore.subscribe(listener),
+			researchStore.subscribe(listener),
+			tabStore.subscribe(listener),
+		];
+		return () => {
+			this.listeners.delete(listener);
+			for (const unsub of unsubs) unsub();
+		};
 	};
 
 	private emit() {
+		// 失效缓存，让下次 getState 重新聚合
+		this.cachedAggregatedState = null;
 		this.listeners.forEach((l) => l());
 	}
 
-	private setState(updater: (state: WorkspaceState) => WorkspaceState) {
+	private setState(updater: (state: CoreWorkspaceState) => CoreWorkspaceState) {
 		this.state = updater(this.state);
 		this.emit();
 	}
@@ -391,46 +313,39 @@ class WorkspaceStore {
 		}));
 	}
 
-	// 更新编辑器内容
+	// === 委托给子 Store 的方法（保持向后兼容的 API） ===
+
+	// 更新编辑器内容 -> editorStore
 	setEditorContent(content: string) {
-		this.setState((state) => ({ ...state, editorContent: content }));
+		editorStore.setEditorContent(content);
 	}
 
-	// 更新编辑器选中
+	// 更新编辑器选中 -> editorStore
 	setEditorSelection(selection: string) {
-		this.setState((state) => ({ ...state, editorSelection: selection }));
+		editorStore.setEditorSelection(selection);
 	}
 
-	// 设置当前项目
+	// 设置当前项目 - 核心方法，需要协调所有子 Store
 	setCurrentProject(projectId: string | null) {
-		this.setState((state) => {
-			if (state.currentProjectId === projectId) {
-				return state;
-			}
+		if (this.state.currentProjectId === projectId) {
+			return;
+		}
 
-			// 切换项目时，清理与“具体文档/资料阅读/上下文”强相关的状态，避免跨项目串台
-			return {
-				...state,
-				currentProjectId: projectId,
-				currentFolderId: null,
-				selectedSources: [],
-				contexts: [],
-				previewSource: null,
-				openedDocs: [],
-				activeDocId: null,
-				docCache: {},
-				tabs: [],
-				activeTabId: null,
-				sourceReadCache: {},
-				aiReview: {
-					isReviewing: false,
-					docId: null,
-					originalContent: "",
-					suggestedContent: "",
-					type: "update",
-				},
-			};
-		});
+		// 切换项目时，清理核心状态
+		this.setState((state) => ({
+			...state,
+			currentProjectId: projectId,
+			currentFolderId: null,
+			selectedSources: [],
+			contexts: [],
+			previewSource: null,
+		}));
+
+		// 通知子 Store 执行各自的清理
+		editorStore.resetOnProjectChange();
+		tabStore.resetOnProjectChange();
+		layoutStore.resetOnProjectChange();
+		researchStore.resetOnProjectChange();
 	}
 
 	setCurrentFolder(folderId: string | null) {
@@ -440,191 +355,75 @@ class WorkspaceStore {
 		});
 	}
 
-	// 设置主视图模式
+	// 设置主视图模式 -> layoutStore
 	setMainView(view: "editor" | "browser") {
-		this.setState((state) => ({ ...state, activeMainView: view }));
+		layoutStore.setMainView(view);
 	}
 
-	// 切换右侧栏可见性
+	// 切换右侧栏可见性 -> layoutStore
 	toggleRightSidebar() {
-		this.setState((state) => ({
-			...state,
-			rightSidebarVisible: !state.rightSidebarVisible,
-		}));
+		layoutStore.toggleRightSidebar();
 	}
 
-	// 设置右侧栏可见性
+	// 设置右侧栏可见性 -> layoutStore
 	setRightSidebarVisible(visible: boolean) {
-		this.setState((state) => ({ ...state, rightSidebarVisible: visible }));
+		layoutStore.setRightSidebarVisible(visible);
 	}
 
-	// 设置左边栏视图模式
+	// 设置左边栏视图模式 -> layoutStore
 	setLeftSidebarView(
 		view: "sources" | "research" | "detail" | "agent" | "cards" | "websearch",
 	) {
-		this.setState((state) => ({ ...state, leftSidebarView: view }));
+		layoutStore.setLeftSidebarView(view);
 	}
 
-	// 设置预览资料
+	// 设置预览资料 - 跨 Store 操作（涉及核心状态 + 布局状态）
 	setPreviewSource(source: Source | ResearchSource | null) {
 		this.setState((state) => ({
 			...state,
 			previewSource: source,
-			leftSidebarView: source
-				? "detail"
-				: state.leftSidebarView === "detail"
-					? "sources"
-					: state.leftSidebarView,
 		}));
+		// 同时更新布局
+		const currentView = layoutStore.getState().leftSidebarView;
+		if (source) {
+			layoutStore.setLeftSidebarView("detail");
+		} else if (currentView === "detail") {
+			layoutStore.setLeftSidebarView("sources");
+		}
 	}
 
-	// 开始研究任务
+	// 开始研究任务 -> researchStore + layoutStore
 	startResearch(query: string) {
-		const task: ResearchTask = {
-			id: `research-${Date.now()}`,
-			query,
-			status: "searching",
-			steps: [
-				{
-					id: `step-${Date.now()}`,
-					type: "search",
-					status: "running",
-					title: "搜索相关资料",
-					description: `正在搜索: ${query}`,
-					timestamp: Date.now(),
-				},
-			],
-			sources: [],
-			createdAt: Date.now(),
-		};
-
-		this.setState((state) => ({
-			...state,
-			currentResearch: task,
-			leftSidebarView: "research",
-		}));
-
-		return task.id;
+		const taskId = researchStore.startResearch(query);
+		layoutStore.setLeftSidebarView("research");
+		return taskId;
 	}
 
-	// 添加研究步骤
-	addResearchStep(step: Omit<ResearchStep, "id" | "timestamp">) {
-		this.setState((state) => {
-			if (!state.currentResearch) return state;
-
-			const newStep: ResearchStep = {
-				...step,
-				id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-				timestamp: Date.now(),
-			};
-
-			return {
-				...state,
-				currentResearch: {
-					...state.currentResearch,
-					steps: [...state.currentResearch.steps, newStep],
-				},
-			};
-		});
+	// 研究相关方法 -> researchStore
+	addResearchStep(step: Parameters<typeof researchStore.addResearchStep>[0]) {
+		researchStore.addResearchStep(step);
 	}
 
-	// 更新研究步骤状态
-	updateResearchStep(stepId: string, updates: Partial<ResearchStep>) {
-		this.setState((state) => {
-			if (!state.currentResearch) return state;
-
-			return {
-				...state,
-				currentResearch: {
-					...state.currentResearch,
-					steps: state.currentResearch.steps.map((s) =>
-						s.id === stepId ? { ...s, ...updates } : s,
-					),
-				},
-			};
-		});
+	updateResearchStep(stepId: string, updates: Parameters<typeof researchStore.updateResearchStep>[1]) {
+		researchStore.updateResearchStep(stepId, updates);
 	}
 
-	// 添加研究资料
-	addResearchSource(source: Omit<ResearchSource, "id" | "timestamp">) {
-		this.setState((state) => {
-			if (!state.currentResearch) return state;
-
-			const newSource: ResearchSource = {
-				...source,
-				id: `source-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-				timestamp: Date.now(),
-			};
-
-			return {
-				...state,
-				currentResearch: {
-					...state.currentResearch,
-					sources: [...state.currentResearch.sources, newSource],
-				},
-			};
-		});
+	addResearchSource(source: Parameters<typeof researchStore.addResearchSource>[0]) {
+		researchStore.addResearchSource(source);
 	}
 
-	// 更新研究任务状态
-	updateResearchStatus(status: ResearchTask["status"], summary?: string) {
-		this.setState((state) => {
-			if (!state.currentResearch) return state;
-
-			return {
-				...state,
-				currentResearch: {
-					...state.currentResearch,
-					status,
-					summary,
-					completedAt:
-						status === "completed" || status === "error"
-							? Date.now()
-							: undefined,
-				},
-			};
-		});
+	updateResearchStatus(status: Parameters<typeof researchStore.updateResearchStatus>[0], summary?: string) {
+		researchStore.updateResearchStatus(status, summary);
 	}
 
-	// 完成研究任务
 	completeResearch(summary: string) {
-		this.setState((state) => {
-			if (!state.currentResearch) return state;
-
-			const completedTask: ResearchTask = {
-				...state.currentResearch,
-				status: "completed",
-				summary,
-				completedAt: Date.now(),
-				steps: [
-					...state.currentResearch.steps,
-					{
-						id: `step-complete-${Date.now()}`,
-						type: "complete",
-						status: "completed",
-						title: "研究完成",
-						description:
-							summary.slice(0, 100) + (summary.length > 100 ? "..." : ""),
-						timestamp: Date.now(),
-					},
-				],
-			};
-
-			return {
-				...state,
-				currentResearch: completedTask,
-				researchHistory: [completedTask, ...state.researchHistory].slice(0, 10), // 保留最近10个
-			};
-		});
+		researchStore.completeResearch(summary);
 	}
 
-	// 清除当前研究
+	// 清除当前研究 -> researchStore + layoutStore
 	clearCurrentResearch() {
-		this.setState((state) => ({
-			...state,
-			currentResearch: null,
-			leftSidebarView: "sources",
-		}));
+		researchStore.clearCurrentResearch();
+		layoutStore.setLeftSidebarView("sources");
 	}
 
 	// 获取上下文文本（用于 AI）
@@ -639,395 +438,101 @@ class WorkspaceStore {
 			.filter(Boolean);
 	}
 
-	// === 多标签文档管理 ===
+	// === 多标签文档管理 -> editorStore ===
 
-	// 打开文档（添加到标签栏）
 	openDoc(docId: string, title: string, content: string) {
-		this.setState((state) => {
-			const isAlreadyOpen = state.openedDocs.includes(docId);
-			const newOpenedDocs = isAlreadyOpen
-				? state.openedDocs
-				: [...state.openedDocs, docId];
-
-			const newDocCache = {
-				...state.docCache,
-				[docId]: state.docCache[docId] || {
-					id: docId,
-					title,
-					content,
-					dirty: false,
-					lastSynced: Date.now(),
-				},
-			};
-
-			return {
-				...state,
-				openedDocs: newOpenedDocs,
-				activeDocId: docId,
-				docCache: newDocCache,
-			};
-		});
+		editorStore.openDoc(docId, title, content);
 	}
 
-	// 关闭文档
 	closeDoc(docId: string) {
-		this.setState((state) => {
-			const newOpenedDocs = state.openedDocs.filter((id) => id !== docId);
-			const { [docId]: removed, ...newDocCache } = state.docCache;
-
-			// 如果关闭的是当前激活文档，切换到最后一个
-			let newActiveDocId = state.activeDocId;
-			if (state.activeDocId === docId) {
-				newActiveDocId =
-					newOpenedDocs.length > 0
-						? newOpenedDocs[newOpenedDocs.length - 1]
-						: null;
-			}
-
-			return {
-				...state,
-				openedDocs: newOpenedDocs,
-				activeDocId: newActiveDocId,
-				docCache: newDocCache,
-			};
-		});
+		editorStore.closeDoc(docId);
 	}
 
-	// 重排文档标签顺序（拖拽排序）
-	reorderDocs(fromIndex: number, toIndex: number) {
-		this.setState((state) => {
-			if (
-				fromIndex < 0 ||
-				fromIndex >= state.openedDocs.length ||
-				toIndex < 0 ||
-				toIndex >= state.openedDocs.length ||
-				fromIndex === toIndex
-			) {
-				return state;
-			}
-			const newDocs = [...state.openedDocs];
-			const [moved] = newDocs.splice(fromIndex, 1);
-			newDocs.splice(toIndex, 0, moved);
-			return { ...state, openedDocs: newDocs };
-		});
-	}
-
-	// 切换激活文档
 	setActiveDoc(docId: string) {
-		this.setState((state) => ({
-			...state,
-			activeDocId: docId,
-		}));
+		editorStore.setActiveDoc(docId);
 	}
 
-	// 更新文档缓存内容
-	updateDocCache(docId: string, content: string, dirty = true) {
-		this.setState((state) => {
-			if (!state.docCache[docId]) return state;
-			return {
-				...state,
-				docCache: {
-					...state.docCache,
-					[docId]: {
-						...state.docCache[docId],
-						content,
-						dirty,
-					},
-				},
-			};
-		});
+	reorderDocs(fromIndex: number, toIndex: number) {
+		editorStore.reorderDocs(fromIndex, toIndex);
 	}
 
-	// 标记文档已保存
+	updateDocCache(docId: string, content: string, dirty?: boolean) {
+		editorStore.updateDocCache(docId, content, dirty);
+	}
+
 	markDocSaved(docId: string) {
-		this.setState((state) => {
-			if (!state.docCache[docId]) return state;
-			return {
-				...state,
-				docCache: {
-					...state.docCache,
-					[docId]: {
-						...state.docCache[docId],
-						dirty: false,
-						lastSynced: Date.now(),
-					},
-				},
-			};
-		});
+		editorStore.markDocSaved(docId);
 	}
 
-	// 保存快照（用于撤销 AI 修改）
 	saveDocSnapshot(docId: string) {
-		this.setState((state) => {
-			if (!state.docCache[docId]) return state;
-			return {
-				...state,
-				docCache: {
-					...state.docCache,
-					[docId]: {
-						...state.docCache[docId],
-						snapshot: state.docCache[docId].content,
-					},
-				},
-			};
-		});
+		editorStore.saveDocSnapshot(docId);
 	}
 
-	// 恢复快照
 	restoreDocSnapshot(docId: string) {
-		this.setState((state) => {
-			const doc = state.docCache[docId];
-			if (!doc || !doc.snapshot) return state;
-			return {
-				...state,
-				docCache: {
-					...state.docCache,
-					[docId]: {
-						...doc,
-						content: doc.snapshot,
-						snapshot: undefined,
-						dirty: true,
-					},
-				},
-			};
-		});
+		editorStore.restoreDocSnapshot(docId);
 	}
 
-	// 获取当前激活文档的内容
 	getActiveDocContent(): string {
-		const { activeDocId, docCache, editorContent } = this.state;
-		// 优先从 docCache 获取，如果没有则回退到 editorContent
-		if (activeDocId && docCache[activeDocId]) {
-			return docCache[activeDocId].content;
-		}
-		// 回退到旧的 editorContent 状态
-		return editorContent;
+		return editorStore.getActiveDocContent();
 	}
 
-	// === AI 审查状态管理 ===
+	// === AI 审查状态管理 -> editorStore ===
 
-	// 开始 AI 审查（update-doc）
 	startAIReview(
 		docId: string,
 		originalContent: string,
 		suggestedContent: string,
 	) {
-		// 先保存快照
-		this.saveDocSnapshot(docId);
-
-		this.setState((state) => ({
-			...state,
-			aiReview: {
-				isReviewing: true,
-				docId,
-				originalContent,
-				suggestedContent,
-				type: "update",
-			},
-		}));
+		editorStore.startAIReview(docId, originalContent, suggestedContent);
 	}
 
-	// 开始 AI 新建文档提案（create-doc）
 	startAICreateProposal(title: string, summary: string, content: string) {
-		this.setState((state) => ({
-			...state,
-			aiReview: {
-				isReviewing: true,
-				docId: null,
-				originalContent: "",
-				suggestedContent: content,
-				type: "create",
-				title,
-				summary,
-			},
-		}));
+		editorStore.startAICreateProposal(title, summary, content);
 	}
 
-	// 接受 AI 修改
 	acceptAIReview() {
-		this.setState((state) => {
-			if (!state.aiReview.isReviewing) return state;
-
-			// 如果是 update-doc，更新文档内容
-			if (state.aiReview.type === "update" && state.aiReview.docId) {
-				const docId = state.aiReview.docId;
-				return {
-					...state,
-					docCache: {
-						...state.docCache,
-						[docId]: {
-							...state.docCache[docId],
-							content: state.aiReview.suggestedContent,
-							dirty: true,
-						},
-					},
-					aiReview: {
-						isReviewing: false,
-						docId: null,
-						originalContent: "",
-						suggestedContent: "",
-						type: "update",
-					},
-				};
-			}
-
-			// 如果是 create-doc，清除审查状态（实际创建由外部处理）
-			return {
-				...state,
-				aiReview: {
-					isReviewing: false,
-					docId: null,
-					originalContent: "",
-					suggestedContent: "",
-					type: "update",
-				},
-			};
-		});
+		editorStore.acceptAIReview();
 	}
 
-	// 拒绝 AI 修改
 	rejectAIReview() {
-		this.setState((state) => {
-			// 如果是 update-doc，恢复快照
-			if (state.aiReview.type === "update" && state.aiReview.docId) {
-				const docId = state.aiReview.docId;
-				const doc = state.docCache[docId];
-				if (doc && doc.snapshot) {
-					return {
-						...state,
-						docCache: {
-							...state.docCache,
-							[docId]: {
-								...doc,
-								content: doc.snapshot,
-								snapshot: undefined,
-							},
-						},
-						aiReview: {
-							isReviewing: false,
-							docId: null,
-							originalContent: "",
-							suggestedContent: "",
-							type: "update",
-						},
-					};
-				}
-			}
-
-			return {
-				...state,
-				aiReview: {
-					isReviewing: false,
-					docId: null,
-					originalContent: "",
-					suggestedContent: "",
-					type: "update",
-				},
-			};
-		});
+		editorStore.rejectAIReview();
 	}
 
-	// 检查是否有脏文档
 	hasDirtyDocs(): boolean {
-		return Object.values(this.state.docCache).some((doc) => doc.dirty);
+		return editorStore.hasDirtyDocs();
 	}
 
-	// 获取脏文档列表
-	getDirtyDocs(): DocCacheItem[] {
-		return Object.values(this.state.docCache).filter((doc) => doc.dirty);
+	getDirtyDocs() {
+		return editorStore.getDirtyDocs();
 	}
 
-	// === 标签页系统（支持文档和资料阅读） ===
+	// === 标签页系统 -> tabStore + layoutStore ===
 
-	// 在中间栏打开资料阅读
 	openSourceInMainView(
 		sourceId: string,
 		title: string,
 		note?: { content: string; content_html?: string },
 	) {
-		const tabId = `source-${sourceId}`;
-
-		this.setState((state) => {
-			// 检查是否已打开
-			const existingTab = state.tabs.find((t) => t.id === tabId);
-			if (existingTab) {
-				// 已打开，直接激活
-				return {
-					...state,
-					activeTabId: tabId,
-					activeMainView: "editor",
-				};
-			}
-
-			// 新建标签页
-			const newTab: TabItem = {
-				id: tabId,
-				type: "source",
-				title,
-				sourceId,
-			};
-
-			return {
-				...state,
-				tabs: [...state.tabs, newTab],
-				activeTabId: tabId,
-				activeMainView: "editor",
-				sourceReadCache: {
-					...state.sourceReadCache,
-					[sourceId]: { sourceId, title, note },
-				},
-			};
-		});
+		const layoutUpdate = tabStore.openSourceInMainView(sourceId, title, note);
+		layoutStore.setMainView(layoutUpdate.activeMainView);
 	}
 
-	// 关闭标签页
 	closeTab(tabId: string) {
-		this.setState((state) => {
-			const newTabs = state.tabs.filter((t) => t.id !== tabId);
-
-			// 如果关闭的是当前激活标签，切换到最后一个
-			let newActiveTabId = state.activeTabId;
-			if (state.activeTabId === tabId) {
-				newActiveTabId =
-					newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
-			}
-
-			// 如果是资料标签，清理缓存
-			const closedTab = state.tabs.find((t) => t.id === tabId);
-			let newSourceReadCache = state.sourceReadCache;
-			if (closedTab?.type === "source" && closedTab.sourceId) {
-				const { [closedTab.sourceId]: removed, ...rest } =
-					state.sourceReadCache;
-				newSourceReadCache = rest;
-			}
-
-			return {
-				...state,
-				tabs: newTabs,
-				activeTabId: newActiveTabId,
-				sourceReadCache: newSourceReadCache,
-			};
-		});
+		tabStore.closeTab(tabId);
 	}
 
-	// 切换激活标签页
 	setActiveTab(tabId: string) {
-		this.setState((state) => ({
-			...state,
-			activeTabId: tabId,
-		}));
+		tabStore.setActiveTab(tabId);
 	}
 
-	// 获取当前激活的标签页
-	getActiveTab(): TabItem | null {
-		const { tabs, activeTabId } = this.state;
-		return tabs.find((t) => t.id === activeTabId) || null;
+	getActiveTab() {
+		return tabStore.getActiveTab();
 	}
 }
 
 export const workspaceStore = new WorkspaceStore();
 
-// React Hook
+// React Hook - 提供完整的聚合状态（向后兼容）
 export function useWorkspaceStore() {
 	const state = useSyncExternalStore(
 		workspaceStore.subscribe,
@@ -1113,6 +618,3 @@ export function useWorkspaceStoreSelector<T>(
 		getSnapshot,
 	);
 }
-
-// 导出类型
-export type { WorkspaceState };

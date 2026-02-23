@@ -37,14 +37,16 @@ const ProcessingCard = ProcessingCardComponent;
 // 文件变更卡片组件 - 现代化卡片 (黑白灰高级感)
 const FileChangeCard = FileChangeCardComponent;
 
-// 提取代码块
+// 提取代码块（正则提升到模块级别，避免每次调用重新编译）
+const CODE_BLOCK_REGEX = /```(\w*)\n([\s\S]*?)```/g;
+
 function extractCodeBlocks(
 	content: string,
 ): { language: string; code: string }[] {
-	const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+	CODE_BLOCK_REGEX.lastIndex = 0;
 	const blocks: { language: string; code: string }[] = [];
 	let match;
-	while ((match = codeBlockRegex.exec(content)) !== null) {
+	while ((match = CODE_BLOCK_REGEX.exec(content)) !== null) {
 		blocks.push({
 			language: match[1] || "text",
 			code: match[2].trim(),

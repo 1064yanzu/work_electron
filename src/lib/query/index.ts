@@ -9,3 +9,12 @@ export {
 } from "./sources";
 export { useFoldersQuery } from "./folders";
 export { useAgentSessionsQuery } from "./agentSessions";
+export {
+	prefetchAgentSessions,
+	prefetchCards,
+	prefetchChatContext,
+	prefetchFolders,
+	prefetchOutputAssets,
+	prefetchProjectData,
+	prefetchSources,
+} from "./prefetch";

@@ -11,12 +11,21 @@ type QueryControl = {
 export type AgentSdkRunState = {
 	abortController: AbortController;
 	query?: QueryControl;
+	completedAt?: number;
 };
+
+const MAX_REGISTRY_SIZE = 100;
+const CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 export class AgentSdkRunRegistry {
 	private runs = new Map<string, AgentSdkRunState>();
+	private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	set(runId: string, state: AgentSdkRunState) {
+		// 如果达到上限，清理最早完成的运行
+		if (this.runs.size >= MAX_REGISTRY_SIZE) {
+			this.evictOldest();
+		}
 		this.runs.set(runId, state);
 	}
 
@@ -32,6 +41,46 @@ export class AgentSdkRunRegistry {
 
 	delete(runId: string) {
 		this.runs.delete(runId);
+		const timer = this.cleanupTimers.get(runId);
+		if (timer) {
+			clearTimeout(timer);
+			this.cleanupTimers.delete(runId);
+		}
+	}
+
+	/** 标记运行完成，启动延迟清理 */
+	markCompleted(runId: string) {
+		const current = this.runs.get(runId);
+		if (!current) return;
+		this.runs.set(runId, { ...current, completedAt: Date.now() });
+
+		this.cleanupTimers.set(
+			runId,
+			setTimeout(() => {
+				this.runs.delete(runId);
+				this.cleanupTimers.delete(runId);
+			}, CLEANUP_DELAY_MS),
+		);
+	}
+
+	private evictOldest() {
+		let oldestId: string | null = null;
+		let oldestTime = Number.POSITIVE_INFINITY;
+
+		for (const [id, state] of this.runs) {
+			if (state.completedAt && state.completedAt < oldestTime) {
+				oldestTime = state.completedAt;
+				oldestId = id;
+			}
+		}
+
+		if (oldestId) {
+			this.delete(oldestId);
+		} else {
+			// 没有已完成的可清理，删除第一个条目
+			const firstKey = this.runs.keys().next().value;
+			if (firstKey) this.delete(firstKey);
+		}
 	}
 }
 

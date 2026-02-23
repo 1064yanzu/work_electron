@@ -23,6 +23,7 @@ import {
 import { saveTempFile } from "../../lib/api";
 import {
 	filterSourcesByProjectAndFolder,
+	prefetchChatContext,
 	useCardsQuery,
 	useOutputAssetsQuery,
 	useSourcesQuery,
@@ -552,10 +553,11 @@ export function ChatInput({
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
 						onKeyDown={handleKeyDown}
+						onFocus={prefetchChatContext}
 						placeholder={placeholder}
 						disabled={disabled}
 						rows={1}
-						className="w-full px-5 py-3.5 bg-transparent text-[14px] text-zinc-800 dark:text-zinc-200 placeholder-zinc-400/80 dark:placeholder-zinc-500 resize-none focus:outline-none disabled:opacity-50 min-h-[52px] leading-relaxed"
+						className="w-full px-5 py-4 bg-transparent text-[14px] text-zinc-800 dark:text-zinc-200 placeholder-zinc-400/80 dark:placeholder-zinc-500 resize-none focus:outline-none disabled:opacity-50 min-h-[72px] leading-relaxed"
 						style={{ maxHeight: "200px" }}
 					/>
 				</div>
@@ -578,6 +580,7 @@ export function ChatInput({
 						{/* 斜杠命令按钮 */}
 						<button
 							onClick={() => setValue("/")}
+							onMouseEnter={prefetchChatContext}
 							aria-label="命令菜单"
 							className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200/80 dark:border-zinc-600/60 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-500 transition-all duration-150 cursor-pointer active:scale-95"
 							title="命令菜单 (/)"
