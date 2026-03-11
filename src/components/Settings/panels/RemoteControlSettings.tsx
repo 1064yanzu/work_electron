@@ -12,15 +12,21 @@ import { Select } from "../../ui/Select";
 import { toast } from "../../ui/Toast";
 import {
 	approveRemotePairing,
+	bindCloudNode,
+	getCloudNodeStatus,
 	getRemoteControlConfig,
 	getRemoteControlRuntimeStatus,
 	listRemotePairings,
 	listRemoteSessions,
 	rejectRemotePairing,
 	revokeRemotePairing,
+	setCloudNodeConfig,
 	setRemoteControlConfig,
 	terminateRemoteSession,
 	testRemoteChannel,
+	unbindCloudNode,
+	type CloudNodeConfig,
+	type CloudNodeRuntimeStatus,
 	type RemoteControlConfig,
 	type RemotePairingRecord,
 	type RemotePairingRequest,
@@ -66,6 +72,18 @@ export function RemoteControlSettings() {
 	const [busyRevokeKey, setBusyRevokeKey] = useState<string | null>(null);
 	const [busyRunId, setBusyRunId] = useState<string | null>(null);
 	const [busyTest, setBusyTest] = useState(false);
+	const [busyCloudBind, setBusyCloudBind] = useState(false);
+	const [busyCloudUnbind, setBusyCloudUnbind] = useState(false);
+	const [cloudNodeConfig, setCloudNodeConfigState] =
+		useState<CloudNodeConfig | null>(null);
+	const [cloudNodeRuntime, setCloudNodeRuntime] =
+		useState<CloudNodeRuntimeStatus | null>(null);
+	const [cloudBindForm, setCloudBindForm] = useState({
+		relay_url: "",
+		email: "",
+		password: "",
+		node_name: "",
+	});
 
 	const allowFromDraft = useMemo(
 		() => joinAllowList(config?.channels.feishu.allowFrom ?? []),
@@ -79,18 +97,26 @@ export function RemoteControlSettings() {
 	const loadData = useCallback(async () => {
 		setLoading(true);
 		try {
-			const [nextConfig, nextRuntime, pairings, nextSessions] =
+			const [nextConfig, nextRuntime, pairings, nextSessions, cloudNode] =
 				await Promise.all([
 					getRemoteControlConfig(),
 					getRemoteControlRuntimeStatus(),
 					listRemotePairings(),
 					listRemoteSessions(20),
+					getCloudNodeStatus(),
 				]);
 			setConfig(nextConfig);
 			setRuntime(nextRuntime);
 			setPendingPairings(pairings.pending_requests);
 			setPairingRecords(pairings.records);
 			setSessions(nextSessions);
+			setCloudNodeConfigState(cloudNode.config);
+			setCloudNodeRuntime(cloudNode.status);
+			setCloudBindForm((prev) => ({
+				...prev,
+				relay_url: cloudNode.config.relayUrl || prev.relay_url,
+				node_name: cloudNode.config.nodeName || prev.node_name,
+			}));
 		} catch (error) {
 			toast.error(
 				`加载远程控制配置失败：${error instanceof Error ? error.message : String(error)}`,
@@ -127,17 +153,44 @@ export function RemoteControlSettings() {
 		[config],
 	);
 
+	const saveCloudConfig = useCallback(
+		async (updater: (draft: CloudNodeConfig) => CloudNodeConfig) => {
+			if (!cloudNodeConfig) return;
+			const previous = cloudNodeConfig;
+			const next = updater(structuredClone(cloudNodeConfig));
+			setCloudNodeConfigState(next);
+			setSaving(true);
+			try {
+				await setCloudNodeConfig(next);
+				const latest = await getCloudNodeStatus();
+				setCloudNodeConfigState(latest.config);
+				setCloudNodeRuntime(latest.status);
+			} catch (error) {
+				setCloudNodeConfigState(previous);
+				toast.error(
+					`云节点配置保存失败：${error instanceof Error ? error.message : String(error)}`,
+				);
+			} finally {
+				setSaving(false);
+			}
+		},
+		[cloudNodeConfig],
+	);
+
 	const refreshRuntime = useCallback(async () => {
 		try {
-			const [nextRuntime, nextSessions, pairings] = await Promise.all([
+			const [nextRuntime, nextSessions, pairings, cloudNode] = await Promise.all([
 				getRemoteControlRuntimeStatus(),
 				listRemoteSessions(20),
 				listRemotePairings(),
+				getCloudNodeStatus(),
 			]);
 			setRuntime(nextRuntime);
 			setSessions(nextSessions);
 			setPendingPairings(pairings.pending_requests);
 			setPairingRecords(pairings.records);
+			setCloudNodeConfigState(cloudNode.config);
+			setCloudNodeRuntime(cloudNode.status);
 		} catch (error) {
 			toast.error(
 				`刷新状态失败：${error instanceof Error ? error.message : String(error)}`,
@@ -233,6 +286,49 @@ export function RemoteControlSettings() {
 		},
 		[refreshRuntime],
 	);
+
+	const handleCloudBind = useCallback(async () => {
+		setBusyCloudBind(true);
+		try {
+			const relay = cloudBindForm.relay_url.trim();
+			const email = cloudBindForm.email.trim();
+			const password = cloudBindForm.password.trim();
+			if (!relay || !email || !password) {
+				toast.warning("请填写 Relay URL、邮箱和密码");
+				return;
+			}
+			await bindCloudNode({
+				relay_url: relay,
+				email,
+				password,
+				node_name: cloudBindForm.node_name.trim() || undefined,
+			});
+			toast.success("云节点绑定成功");
+			setCloudBindForm((prev) => ({ ...prev, password: "" }));
+			await refreshRuntime();
+		} catch (error) {
+			toast.error(
+				`云节点绑定失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		} finally {
+			setBusyCloudBind(false);
+		}
+	}, [cloudBindForm, refreshRuntime]);
+
+	const handleCloudUnbind = useCallback(async () => {
+		setBusyCloudUnbind(true);
+		try {
+			await unbindCloudNode();
+			toast.success("已解绑云节点");
+			await refreshRuntime();
+		} catch (error) {
+			toast.error(
+				`解绑失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		} finally {
+			setBusyCloudUnbind(false);
+		}
+	}, [refreshRuntime]);
 
 	if (loading || !config) {
 		return (
@@ -906,6 +1002,182 @@ export function RemoteControlSettings() {
 					</div>
 				</div>
 			</SettingsSectionCard>
+
+			{cloudNodeConfig && (
+				<SettingsSectionCard className="p-5 space-y-4">
+					<div>
+						<SettingsSectionTitle className="mb-1">
+							云节点（桌面可选执行端）
+						</SettingsSectionTitle>
+						<p className="text-sm text-text-secondary">
+							桌面在线时可接入云中继作为执行节点；桌面离线不影响手机端云执行。
+						</p>
+					</div>
+
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<label className="space-y-1 text-sm">
+							<span className="text-text-secondary">Relay URL</span>
+							<input
+								value={cloudNodeConfig.relayUrl}
+								onChange={(e) => {
+									const value = e.target.value;
+									void saveCloudConfig((draft) => {
+										draft.relayUrl = value;
+										return draft;
+									});
+								}}
+								className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+								placeholder="https://relay.example.com"
+							/>
+						</label>
+						<label className="space-y-1 text-sm">
+							<span className="text-text-secondary">节点名称</span>
+							<input
+								value={cloudNodeConfig.nodeName}
+								onChange={(e) => {
+									const value = e.target.value;
+									void saveCloudConfig((draft) => {
+										draft.nodeName = value;
+										return draft;
+									});
+								}}
+								className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+								placeholder="desktop-node"
+							/>
+						</label>
+						<label className="space-y-1 text-sm">
+							<span className="text-text-secondary">心跳间隔（秒）</span>
+							<input
+								type="number"
+								min={5}
+								max={120}
+								value={cloudNodeConfig.heartbeatSec}
+								onChange={(e) => {
+									const value = Math.max(5, Number(e.target.value || 20));
+									void saveCloudConfig((draft) => {
+										draft.heartbeatSec = value;
+										return draft;
+									});
+								}}
+								className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+							/>
+						</label>
+						<label className="space-y-1 text-sm">
+							<span className="text-text-secondary">路由策略</span>
+							<Select
+								value={cloudNodeConfig.routingMode}
+								onChange={(e) => {
+									const value = e.target.value as
+										| "cloud_only"
+										| "prefer_desktop"
+										| "auto";
+									void saveCloudConfig((draft) => {
+										draft.routingMode = value;
+										return draft;
+									});
+								}}
+								options={[
+									{ label: "仅云执行", value: "cloud_only" },
+									{ label: "优先桌面", value: "prefer_desktop" },
+									{ label: "自动切换", value: "auto" },
+								]}
+							/>
+						</label>
+					</div>
+
+					<div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-800/30">
+						<div className="flex flex-col gap-1">
+							<div className="text-text-secondary">
+								节点连接：{cloudNodeRuntime?.connected ? "已连接" : "未连接"}
+							</div>
+							<div className="text-text-secondary">
+								Node ID：{cloudNodeConfig.nodeId || "-"}
+							</div>
+							{cloudNodeRuntime?.lastError ? (
+								<div className="text-rose-500 text-xs">
+									最近错误：{cloudNodeRuntime.lastError}
+								</div>
+							) : null}
+						</div>
+						<SettingsSwitch
+							checked={cloudNodeConfig.enabled}
+							onChange={(next: boolean) => {
+								void saveCloudConfig((draft) => {
+									draft.enabled = next;
+									return draft;
+								});
+							}}
+							disabled={saving}
+						/>
+					</div>
+
+					<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+						<input
+							value={cloudBindForm.relay_url}
+							onChange={(e) =>
+								setCloudBindForm((prev) => ({
+									...prev,
+									relay_url: e.target.value,
+								}))
+							}
+							className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+							placeholder="绑定用 Relay URL"
+						/>
+						<input
+							value={cloudBindForm.email}
+							onChange={(e) =>
+								setCloudBindForm((prev) => ({ ...prev, email: e.target.value }))
+							}
+							className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+							placeholder="账号邮箱"
+						/>
+						<input
+							type="password"
+							value={cloudBindForm.password}
+							onChange={(e) =>
+								setCloudBindForm((prev) => ({
+									...prev,
+									password: e.target.value,
+								}))
+							}
+							className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+							placeholder="账号密码"
+						/>
+						<input
+							value={cloudBindForm.node_name}
+							onChange={(e) =>
+								setCloudBindForm((prev) => ({
+									...prev,
+									node_name: e.target.value,
+								}))
+							}
+							className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+							placeholder="绑定节点名（可选）"
+						/>
+					</div>
+
+					<div className="flex items-center gap-2">
+						<Button
+							variant="primary"
+							size="sm"
+							disabled={busyCloudBind || saving}
+							onClick={() => void handleCloudBind()}
+						>
+							{busyCloudBind ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+							绑定云节点
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							disabled={busyCloudUnbind || saving}
+							onClick={() => void handleCloudUnbind()}
+						>
+							{busyCloudUnbind ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
+							解绑节点
+						</Button>
+					</div>
+				</SettingsSectionCard>
+			)}
 
 			<SettingsSectionCard className="p-5 space-y-4">
 				<div>

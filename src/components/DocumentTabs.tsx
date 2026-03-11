@@ -1,8 +1,9 @@
 import { Circle, FileText, GripVertical, Plus, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent, MouseEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fileList, fileMove } from "../lib/api";
 import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
-import { useWorkspaceStore } from "../lib/workspaceStore";
+import { useWorkspaceStoreSelector, workspaceStore } from "../lib/workspaceStore";
 import { isInteractiveTypingTarget } from "./editor/list/documentListMeta";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
@@ -14,13 +15,119 @@ interface DocumentTabsProps {
 	onDeleteDoc?: (docId: string) => void;
 }
 
+const getDocDirty = (docId: string) =>
+	Boolean(workspaceStore.getState().docCache[docId]?.dirty);
+
+const DocumentTabItem = memo(function DocumentTabItem({
+	docId,
+	index,
+	isActive,
+	dragIndex,
+	dropIndex,
+	onActivate,
+	onClose,
+	onContextMenu,
+	onDragStart,
+	onDragEnd,
+	onDragOver,
+	onDragLeave,
+}: {
+	docId: string;
+	index: number;
+	isActive: boolean;
+	dragIndex: number | null;
+	dropIndex: number | null;
+	onActivate: (docId: string) => void;
+	onClose: (docId: string) => void;
+	onContextMenu: (e: MouseEvent, docId: string) => void;
+	onDragStart: (e: DragEvent, index: number) => void;
+	onDragEnd: (e: DragEvent) => void;
+	onDragOver: (e: DragEvent, index: number) => void;
+	onDragLeave: () => void;
+}) {
+	const label = useWorkspaceStoreSelector((state) => state.docCache[docId]?.title) || "未命名文档";
+	const dirty = useWorkspaceStoreSelector((state) => Boolean(state.docCache[docId]?.dirty));
+	const isDragging = dragIndex === index;
+	const isDropTarget = dropIndex === index && dragIndex !== index;
+
+	return (
+		<div
+			data-doc-id={docId}
+			draggable
+			onDragStart={(e) => onDragStart(e, index)}
+			onDragEnd={onDragEnd}
+			onDragOver={(e) => onDragOver(e, index)}
+			onDragLeave={onDragLeave}
+			onContextMenu={(e) => onContextMenu(e, docId)}
+			className={cn(
+				"group flex items-center gap-1 rounded-xl border min-h-11 px-1.5 py-1 shrink-0 transition-all duration-150",
+				isActive
+					? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
+					: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
+				isDragging && "opacity-40 scale-95",
+				isDropTarget &&
+					"border-primary/50 bg-primary/5 dark:bg-primary/10",
+			)}
+		>
+			<div
+				className="flex items-center justify-center w-4 h-4 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
+				aria-hidden="true"
+			>
+				<GripVertical className="w-3 h-3" />
+			</div>
+
+			<button
+				type="button"
+				role="tab"
+				aria-selected={isActive}
+				aria-label={dirty ? `${label}，未保存` : label}
+				onClick={() => onActivate(docId)}
+				className="focus-ring min-h-9 pl-0.5 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left cursor-pointer"
+			>
+				<FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
+				<span
+					className={cn(
+						"text-sm font-medium max-w-[200px] truncate",
+						isActive
+							? "text-zinc-900 dark:text-zinc-100"
+							: "text-zinc-700 dark:text-zinc-300",
+					)}
+				>
+					{label}
+				</span>
+				{dirty ? (
+					<span
+						className="inline-flex items-center justify-center w-4 h-4"
+						title="该文档有未保存修改"
+					>
+						<Circle className="w-2.5 h-2.5 fill-primary text-primary" />
+					</span>
+				) : null}
+			</button>
+
+			<button
+				type="button"
+				onClick={() => onClose(docId)}
+				className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
+				aria-label={`关闭文档 ${label}`}
+				title="关闭文档"
+			>
+				<X className="w-3.5 h-3.5" />
+			</button>
+		</div>
+	);
+});
+
 export default function DocumentTabs({
 	onNewDoc,
 	onCloseDoc,
 	onDeleteDoc,
 }: DocumentTabsProps) {
-	const { openedDocs, activeDocId, docCache, setActiveDoc, closeDoc, reorderDocs } =
-		useWorkspaceStore();
+	const openedDocs = useWorkspaceStoreSelector((state) => state.openedDocs);
+	const activeDocId = useWorkspaceStoreSelector((state) => state.activeDocId);
+	const setActiveDoc = workspaceStore.setActiveDoc.bind(workspaceStore);
+	const closeDoc = workspaceStore.closeDoc.bind(workspaceStore);
+	const reorderDocs = workspaceStore.reorderDocs.bind(workspaceStore);
 	const tabsRef = useRef<HTMLDivElement>(null);
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
@@ -46,9 +153,9 @@ export default function DocumentTabs({
 	}, [activeDocId]);
 
 	const closeCurrentDoc = (docId: string) => {
-		const doc = docCache[docId];
+		const dirty = getDocDirty(docId);
 		if (onCloseDoc) {
-			onCloseDoc(docId, doc?.dirty || false);
+			onCloseDoc(docId, dirty);
 		} else {
 			closeDoc(docId);
 		}
@@ -104,7 +211,7 @@ export default function DocumentTabs({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [activeDocId, openedDocs, setActiveDoc, onCloseDoc, closeDoc, docCache]);
+	}, [activeDocId, openedDocs, setActiveDoc, onCloseDoc, closeDoc]);
 
 	const contextMenuItems = useMemo(() => {
 		if (!contextMenu) return [];
@@ -155,7 +262,6 @@ export default function DocumentTabs({
 		onCloseDoc,
 		closeDoc,
 		setActiveDoc,
-		docCache,
 	]);
 
 	// --- 拖拽事件处理 ---
@@ -212,86 +318,26 @@ export default function DocumentTabs({
 				role="tablist"
 				aria-label="已打开文档标签"
 			>
-				{openedDocs.map((docId, index) => {
-					const doc = docCache[docId];
-					const isActive = docId === activeDocId;
-					const label = doc?.title || "未命名文档";
-					const dirty = Boolean(doc?.dirty);
-					const isDragging = dragIndex === index;
-					const isDropTarget = dropIndex === index && dragIndex !== index;
-
-					return (
-						<div
-							key={docId}
-							data-doc-id={docId}
-							draggable
-							onDragStart={(e) => handleDragStart(e, index)}
-							onDragEnd={handleDragEnd}
-							onDragOver={(e) => handleDragOver(e, index)}
-							onDragLeave={handleDragLeave}
-							onContextMenu={(e) => {
-								e.preventDefault();
-								setContextMenu({ x: e.clientX, y: e.clientY, docId });
-							}}
-							className={cn(
-								"group flex items-center gap-1 rounded-xl border min-h-11 px-1.5 py-1 shrink-0 transition-all duration-150",
-								isActive
-									? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
-									: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
-								isDragging && "opacity-40 scale-95",
-								isDropTarget &&
-								"border-primary/50 bg-primary/5 dark:bg-primary/10",
-							)}
-						>
-							{/* 拖拽手柄 */}
-							<div
-								className="flex items-center justify-center w-4 h-4 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
-								aria-hidden="true"
-							>
-								<GripVertical className="w-3 h-3" />
-							</div>
-
-							<button
-								type="button"
-								role="tab"
-								aria-selected={isActive}
-								aria-label={dirty ? `${label}，未保存` : label}
-								onClick={() => setActiveDoc(docId)}
-								className="focus-ring min-h-9 pl-0.5 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left cursor-pointer"
-							>
-								<FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
-								<span
-									className={cn(
-										"text-sm font-medium max-w-[200px] truncate",
-										isActive
-											? "text-zinc-900 dark:text-zinc-100"
-											: "text-zinc-700 dark:text-zinc-300",
-									)}
-								>
-									{label}
-								</span>
-								{dirty ? (
-									<span
-										className="inline-flex items-center justify-center w-4 h-4"
-										title="该文档有未保存修改"
-									>
-										<Circle className="w-2.5 h-2.5 fill-primary text-primary" />
-									</span>
-								) : null}
-							</button>
-
-							<button
-								type="button"
-								onClick={() => closeCurrentDoc(docId)}
-								className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
-								aria-label={`关闭文档 ${label}`}
-								title="关闭文档"
-							>
-								<X className="w-3.5 h-3.5" />
-							</button>
-						</div>
-					);
-				})}
+				{openedDocs.map((docId, index) => (
+					<DocumentTabItem
+						key={docId}
+						docId={docId}
+						index={index}
+						isActive={docId === activeDocId}
+						dragIndex={dragIndex}
+						dropIndex={dropIndex}
+						onActivate={setActiveDoc}
+						onClose={closeCurrentDoc}
+						onContextMenu={(e, targetDocId) => {
+							e.preventDefault();
+							setContextMenu({ x: e.clientX, y: e.clientY, docId: targetDocId });
+						}}
+						onDragStart={handleDragStart}
+						onDragEnd={handleDragEnd}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+					/>
+				))}
 			</div>
 
 			{onNewDoc ? (

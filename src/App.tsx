@@ -12,16 +12,14 @@ import {
 	PanelGroup,
 	type ImperativePanelHandle,
 } from "react-resizable-panels";
-import Dashboard from "./components/Dashboard";
-import EditorCanvas from "./components/EditorCanvas";
 import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
-import ResourceSidebar from "./components/ResourceSidebar";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
-import { useManagedModeStore } from "./lib/managedModeStore";
+import { useManagedModeStoreSelector, managedModeStore } from "./lib/managedModeStore";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
+import { preloadUiDebugSetting } from "./lib/debug/uiDebug";
 import {
 	applyMotionPreferenceToDocument,
 	MOTION_PREFERENCE_EVENT,
@@ -40,6 +38,9 @@ const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
 
 const BrowserPanel = lazy(() => import("./components/BrowserPanel"));
 const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
+const Dashboard = lazy(() => import("./components/Dashboard"));
+const EditorCanvas = lazy(() => import("./components/EditorCanvas"));
+const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
 );
@@ -72,8 +73,7 @@ export default function App() {
 		workspaceStore.toggleRightSidebar.bind(workspaceStore);
 	const setRightSidebarVisible =
 		workspaceStore.setRightSidebarVisible.bind(workspaceStore);
-	const { isActive: isManagedMode, store: managedModeStore } =
-		useManagedModeStore();
+	const isManagedMode = useManagedModeStoreSelector((state) => state.isActive);
 
 	// 右侧 Panel 的命令式句柄
 	const rightPanelRef = useRef<ImperativePanelHandle>(null);
@@ -97,6 +97,7 @@ export default function App() {
 	// 初始化主题管理器
 	useEffect(() => {
 		void themeManager.getTheme();
+		void preloadUiDebugSetting();
 	}, []);
 
 	useEffect(() => {
@@ -176,12 +177,14 @@ export default function App() {
 	return (
 		<MouseDragProvider>
 			{isInDashboard ? (
-				<Dashboard
-					onOpenSettings={() => setIsSettingsOpen(true)}
-					onOpenProject={(projectId) => {
-						navigateToProject(projectId);
-					}}
-				/>
+				<Suspense fallback={<PanelLoadingFallback />}>
+					<Dashboard
+						onOpenSettings={() => setIsSettingsOpen(true)}
+						onOpenProject={(projectId) => {
+							navigateToProject(projectId);
+						}}
+					/>
+				</Suspense>
 			) : (
 				<div className="h-screen w-screen bg-[#F9F9F8] dark:bg-[#0a0a0a] text-zinc-800 dark:text-zinc-200 font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-1.5 gap-1.5 animate-in fade-in zoom-in-95 duration-300">
 					<PanelGroup
@@ -197,9 +200,11 @@ export default function App() {
 							className="overflow-hidden"
 						>
 							<PanelShell>
-								<ResourceSidebar
-									onOpenSettings={() => setIsSettingsOpen(true)}
-								/>
+								<Suspense fallback={<PanelLoadingFallback />}>
+									<ResourceSidebar
+										onOpenSettings={() => setIsSettingsOpen(true)}
+									/>
+								</Suspense>
 							</PanelShell>
 						</Panel>
 
@@ -228,13 +233,15 @@ export default function App() {
 										<BrowserPanel />
 									</Suspense>
 								) : (
-									<EditorCanvas
-										projectId={currentProjectId}
-										initialDocId={currentDocId}
-										onBack={() => {
-											navigateToDashboard();
-										}}
-									/>
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<EditorCanvas
+											projectId={currentProjectId}
+											initialDocId={currentDocId}
+											onBack={() => {
+												navigateToDashboard();
+											}}
+										/>
+									</Suspense>
 								)}
 							</PanelShell>
 						</Panel>

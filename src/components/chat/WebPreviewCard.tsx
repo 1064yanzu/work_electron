@@ -1,8 +1,9 @@
 import { Eye, Code, X, Maximize2, Download } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useAgentStore } from "../../lib/agent/store";
-import { useManagedModeStore } from "../../lib/managedModeStore";
+import { managedModeStore } from "../../lib/managedModeStore";
+import { useAgentStoreSelector } from "../../lib/agent/store";
+import { debugUiLog } from "../../lib/debug/uiDebug";
 
 // -----------------------------------------------------------------------------
 // 0. 工具函数
@@ -306,9 +307,9 @@ export function WebPreviewCard({
 	const savedHashRef = useRef<string | null>(null);
 
 	// 获取沙盒目录
-	const { currentTask } = useAgentStore();
-	const { store } = useManagedModeStore();
-	const sandboxDir = currentTask?.metadata?.sandboxDir as string | undefined;
+	const sandboxDir = useAgentStoreSelector(
+		(state) => state.currentTask?.metadata?.sandboxDir as string | undefined,
+	);
 
 	// 下载功能
 	const handleDownload = () => {
@@ -332,12 +333,12 @@ export function WebPreviewCard({
 		savedHashRef.current = hash;
 
 		// 异步保存
-		store.saveArtifact(sandboxDir, content, kind, title).then((filePath) => {
+		managedModeStore.saveArtifact(sandboxDir, content, kind, title).then((filePath) => {
 			if (filePath) {
-				console.log("[WebPreviewCard] Auto-saved artifact to:", filePath);
+				debugUiLog("[WebPreviewCard] Auto-saved artifact to:", filePath);
 			}
 		});
-	}, [isStreaming, sandboxDir, kind, html, jsx, title, store]);
+	}, [isStreaming, sandboxDir, kind, html, jsx, title]);
 
 	// 构建预览文档 (复用原有逻辑)
 	const srcDoc = useMemo(() => {

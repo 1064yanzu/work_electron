@@ -3,6 +3,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { SlashCommand } from "../components/chat/SlashCommand";
+import { createUseStoreSelector } from "./stores/createStore";
 import type { ContextItem } from "./workspaceStore";
 
 // 队列中的消息
@@ -131,10 +132,13 @@ class MessageQueueStore {
 // 全局单例
 export const messageQueueStore = new MessageQueueStore();
 
+const useMessageQueueSelectorBase = createUseStoreSelector(messageQueueStore);
+
 // React Hook
 export function useMessageQueueStore() {
 	const state = useSyncExternalStore(
 		messageQueueStore.subscribe,
+		messageQueueStore.getState,
 		messageQueueStore.getState,
 	);
 
@@ -148,4 +152,10 @@ export function useMessageQueueStore() {
 		remove: messageQueueStore.remove.bind(messageQueueStore),
 		clear: messageQueueStore.clear.bind(messageQueueStore),
 	};
+}
+
+export function useMessageQueueStoreSelector<T>(
+	selector: (state: MessageQueueState) => T,
+): T {
+	return useMessageQueueSelectorBase(selector);
 }

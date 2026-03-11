@@ -53,6 +53,15 @@ import {
 	buildSubagentPolicyAppend,
 	buildCustomSystemPrompt,
 } from "./agentSdk/scenarioAgents";
+import {
+	buildLeaderCollaborationPrompt,
+	buildMultiAgentRuntime,
+	buildRuntimeMetadata,
+	buildStableTaskSpine,
+	buildSubagentCapsuleContext,
+	normalizeMultiAgentMode,
+	normalizeTeammateMode,
+} from "./agentSdk/multiAgentRuntime";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -67,7 +76,7 @@ type AgentSdkControlOutput = IPCSchema["agent_sdk_control"]["output"];
 
 export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
-	anthropicBaseUrl: string;
+	getAnthropicBaseUrl: () => Promise<string>;
 	logger: Logger;
 	db: DbContext;
 }) {
@@ -246,10 +255,9 @@ export function createAgentSdkHandlers(options: {
 				// Anthropic Messages endpoints, and telemetry uses `${ANTHROPIC_BASE_URL}/api/event_logging/batch`.
 				// If we append "/v1" here, telemetry becomes "/v1/api/event_logging/batch" (noisy) and may trigger
 				// fallback behavior.
-				const anthropicBaseUrl =
-					typeof options.anthropicBaseUrl === "string"
-						? options.anthropicBaseUrl.replace(/\/v1\/?$/i, "")
-						: "http://127.0.0.1:8765";
+				const anthropicBaseUrl = (
+					await options.getAnthropicBaseUrl()
+				).replace(/\/v1\/?$/i, "");
 
 				// The CLI requires an Anthropic-looking API key to follow the normal Anthropic client path.
 				// This key is only used against our local proxy; it is never forwarded upstream as a real secret.
@@ -482,6 +490,66 @@ export function createAgentSdkHandlers(options: {
 				const enableToolSearch = normalizeToolSearchMode(
 					(input as any).enable_tool_search ?? runtimeConfig?.enableToolSearch,
 				);
+				const experimentalMultiAgent =
+					typeof (input as any).experimental_multi_agent === "boolean"
+						? (input as any).experimental_multi_agent
+						: runtimeConfig?.experimentalMultiAgentEnabled === true;
+				const multiAgentMode = normalizeMultiAgentMode(
+					(input as any).multi_agent_mode ?? runtimeConfig?.multiAgentMode,
+				);
+				const maxTeammates =
+					normalizeNumber((input as any).max_teammates) ??
+					normalizeNumber(runtimeConfig?.maxTeammates) ??
+					2;
+				const teammateMode = normalizeTeammateMode(
+					(input as any).teammate_mode ?? runtimeConfig?.teammateMode,
+				);
+				const teammateBudgetRaw =
+					(input as any).teammate_budget &&
+					typeof (input as any).teammate_budget === "object"
+						? ((input as any).teammate_budget as Record<string, unknown>)
+						: runtimeConfig?.teammateBudget &&
+								typeof runtimeConfig.teammateBudget === "object"
+							? (runtimeConfig.teammateBudget as Record<string, unknown>)
+							: {};
+				const leaderSummaryModel =
+					typeof (input as any).leader_summary_model === "string" &&
+					String((input as any).leader_summary_model).trim()
+						? String((input as any).leader_summary_model).trim()
+						: typeof runtimeConfig?.leaderSummaryModel === "string" &&
+								runtimeConfig.leaderSummaryModel.trim()
+							? runtimeConfig.leaderSummaryModel.trim()
+							: undefined;
+				const teammateExecutionModel =
+					typeof (input as any).teammate_execution_model === "string" &&
+					String((input as any).teammate_execution_model).trim()
+						? String((input as any).teammate_execution_model).trim()
+						: typeof runtimeConfig?.teammateExecutionModel === "string" &&
+								runtimeConfig.teammateExecutionModel.trim()
+							? runtimeConfig.teammateExecutionModel.trim()
+							: undefined;
+				const multiAgentRuntime = buildMultiAgentRuntime({
+					runId,
+					resumeSessionId,
+					experimentalMultiAgent,
+					multiAgentMode,
+					maxTeammates,
+					teammateMode,
+					teammateBudget: teammateBudgetRaw,
+					leaderSummaryModel,
+					teammateExecutionModel,
+				});
+				const runtimeMetadata = buildRuntimeMetadata(multiAgentRuntime);
+				const stableTaskSpine = buildStableTaskSpine({
+					prompt: String(input.prompt ?? ""),
+					systemPrompt:
+						typeof input.system_prompt === "string"
+							? input.system_prompt
+							: undefined,
+					contextPolicy,
+					subagentContextMode,
+					runtime: multiAgentRuntime,
+				});
 				const mcpServers =
 					(input as any).mcp_servers &&
 					typeof (input as any).mcp_servers === "object"
@@ -497,6 +565,10 @@ export function createAgentSdkHandlers(options: {
 					input.permission_mode.trim()
 						? input.permission_mode.trim()
 						: "default";
+				const permissionModeForRun =
+					multiAgentRuntime.useDelegateMode && permissionMode !== "plan"
+						? "delegate"
+						: permissionMode;
 				const sandboxSettings =
 					(input as any).sandbox && typeof (input as any).sandbox === "object"
 						? ((input as any).sandbox as Record<string, unknown>)
@@ -506,13 +578,32 @@ export function createAgentSdkHandlers(options: {
 					runId,
 					stderr,
 					emitLifecycleEvent,
+					subagentAdditionalContext: buildSubagentCapsuleContext({
+						prompt: String(input.prompt ?? ""),
+						runtime: multiAgentRuntime,
+					}),
+					runtimeMetadata,
 				});
 				const lifecycleHooks = createLifecycleHooks({
 					logger,
 					runId,
 					stderr,
 					emitLifecycleEvent,
+					sessionAdditionalContext: stableTaskSpine,
+					preCompactAdditionalContext: [
+						stableTaskSpine,
+						"压缩后必须保留：任务目标、硬性约束、当前进度、未完成事项、协作策略。",
+					].join("\n"),
+					runtimeMetadata,
+					experimentalMultiAgentEnabled:
+						multiAgentRuntime.experimentalEnabled,
 				});
+				const allowedToolsForRun = uniqStrings(
+					multiAgentRuntime.experimentalEnabled &&
+						multiAgentRuntime.multiAgentMode !== "subagent_only"
+						? [...allowed, "Teammate"]
+						: [...allowed],
+				);
 
 				// 注意: SDK Options 不直接支持 skills 参数
 				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
@@ -558,8 +649,10 @@ export function createAgentSdkHandlers(options: {
 					scope: "agent",
 					runId,
 					hasExplicitAllowedTools,
-					allowedToolsCount: allowed.length,
-					allowedToolsHasTask: allowed.includes("Task"),
+					allowedToolsCount: allowedToolsForRun.length,
+					allowedToolsHasTask: allowedToolsForRun.includes("Task"),
+					allowedToolsHasTeammate: allowedToolsForRun.includes("Teammate"),
+					multiAgentRuntime,
 					agentKeys: Object.keys(agentsConfig),
 					agentsPreview: Object.entries(agentsConfig).map(([k, v]) => ({
 						key: k,
@@ -591,7 +684,11 @@ export function createAgentSdkHandlers(options: {
 						betas: betas.length > 0 ? betas : undefined,
 						// 必须传入 allowedTools 并包含 Task，否则自定义 agents 无法被调用
 						// 参考文档: "The Task tool must be included in allowedTools since Claude invokes subagents through the Task tool."
-						allowedTools: hasExplicitAllowedTools ? allowed : undefined,
+						allowedTools: hasExplicitAllowedTools
+							? allowedToolsForRun
+							: multiAgentRuntime.experimentalEnabled
+								? allowedToolsForRun
+								: undefined,
 						agents: agentsConfig as any,
 						hooks: {
 							...lifecycleHooks,
@@ -947,6 +1044,13 @@ export function createAgentSdkHandlers(options: {
 												"context-budget",
 												`上下文预算：max_context_chars=${contextBudget.max_context_chars}, max_files=${contextBudget.max_files}, max_file_chars=${contextBudget.max_file_chars}。`,
 											);
+											pushHint("stable-task-spine", stableTaskSpine);
+											if (multiAgentRuntime.experimentalEnabled) {
+												pushHint(
+													"multi-agent-policy",
+													`多 Agent 实验已开启：mode=${multiAgentRuntime.multiAgentMode}, max_teammates=${multiAgentRuntime.maxTeammates}, teammate_mode=${multiAgentRuntime.teammateMode}。优先使用最小 brief 协作；Teammate 不可用时回退 Task。`,
+												);
+											}
 
 											if (!inSubagentContext) {
 												const matchedScenarioAgent =
@@ -1003,7 +1107,7 @@ export function createAgentSdkHandlers(options: {
 								},
 							],
 						},
-						permissionMode: permissionMode as any,
+						permissionMode: permissionModeForRun as any,
 						additionalDirectories:
 							additionalDirectories.length > 0
 								? additionalDirectories
@@ -1015,8 +1119,18 @@ export function createAgentSdkHandlers(options: {
 						// 默认 user+project，可由 UI/调用方覆盖
 						settingSources: settingSources as any,
 						tools: hasExplicitAllowedTools
-							? allowed
+							? allowedToolsForRun
 							: { type: "preset", preset: "claude_code" },
+						extraArgs: multiAgentRuntime.experimentalEnabled
+							? {
+									"team-name": multiAgentRuntime.teamId,
+									"agent-name": "leader",
+									"agent-type": "leader",
+									"parent-session-id":
+										multiAgentRuntime.parentSessionId || null,
+									"teammate-mode": multiAgentRuntime.teammateMode,
+							  }
+							: undefined,
 						env: (() => {
 							const env: Record<string, string> = {};
 							for (const [k, v] of Object.entries(process.env)) {
@@ -1057,7 +1171,13 @@ export function createAgentSdkHandlers(options: {
 						systemPrompt: buildCustomSystemPrompt({
 							cwd,
 							model: String(input.model ?? ""),
-							appendContent: [input.system_prompt, subagentPolicyAppend]
+							appendContent: [
+								input.system_prompt,
+								subagentPolicyAppend,
+								buildLeaderCollaborationPrompt({
+									runtime: multiAgentRuntime,
+								}),
+							]
 								.filter((s) => typeof s === "string" && s.trim())
 								.join("\n\n"),
 						}),
@@ -1085,7 +1205,10 @@ export function createAgentSdkHandlers(options: {
 									message: "aborted",
 								};
 							}
-							if (hasExplicitAllowedTools && !allowed.includes(toolName)) {
+							if (
+								hasExplicitAllowedTools &&
+								!allowedToolsForRun.includes(toolName)
+							) {
 								return {
 									behavior: "deny",
 									message: `Tool disabled: ${toolName}`,
@@ -1294,6 +1417,8 @@ export function createAgentSdkHandlers(options: {
 				// Accumulate token usage from SDK stream events
 				let accumulatedInputTokens = 0;
 				let accumulatedOutputTokens = 0;
+				let accumulatedCacheReadInputTokens = 0;
+				let accumulatedCacheCreationInputTokens = 0;
 				const contentBlockKindByIndex = new Map<number, string>();
 				for await (const msg of q) {
 					// Avoid logging every stream delta; it can freeze the app.
@@ -1358,6 +1483,13 @@ export function createAgentSdkHandlers(options: {
 						if (typeof usage.input_tokens === "number") {
 							accumulatedInputTokens += usage.input_tokens;
 						}
+						if (typeof usage.cache_read_input_tokens === "number") {
+							accumulatedCacheReadInputTokens += usage.cache_read_input_tokens;
+						}
+						if (typeof usage.cache_creation_input_tokens === "number") {
+							accumulatedCacheCreationInputTokens +=
+								usage.cache_creation_input_tokens;
+						}
 					}
 					if (
 						msgAny?.type === "stream_event" &&
@@ -1367,6 +1499,13 @@ export function createAgentSdkHandlers(options: {
 						const usage = msgAny.event.usage;
 						if (typeof usage.output_tokens === "number") {
 							accumulatedOutputTokens += usage.output_tokens;
+						}
+						if (typeof usage.cache_read_input_tokens === "number") {
+							accumulatedCacheReadInputTokens += usage.cache_read_input_tokens;
+						}
+						if (typeof usage.cache_creation_input_tokens === "number") {
+							accumulatedCacheCreationInputTokens +=
+								usage.cache_creation_input_tokens;
 						}
 					}
 					if (msgAny?.type === "assistant" && msgAny?.message) {
@@ -1444,10 +1583,17 @@ export function createAgentSdkHandlers(options: {
 						const resultWithUsage = {
 							...(msg as any),
 							usage:
-								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
+								accumulatedInputTokens > 0 ||
+								accumulatedOutputTokens > 0 ||
+								accumulatedCacheReadInputTokens > 0 ||
+								accumulatedCacheCreationInputTokens > 0
 									? {
 											input_tokens: accumulatedInputTokens,
 											output_tokens: accumulatedOutputTokens,
+											cache_read_input_tokens:
+												accumulatedCacheReadInputTokens,
+											cache_creation_input_tokens:
+												accumulatedCacheCreationInputTokens,
 										}
 									: (msg as any)?.usage,
 						};
@@ -1462,19 +1608,26 @@ export function createAgentSdkHandlers(options: {
 					emit(options.getMainWindow, {
 						runId,
 						type: "done",
-						result: {
-							type: "result",
-							subtype: "success",
-							is_error: false,
-							result: "",
-							usage:
-								accumulatedInputTokens > 0 || accumulatedOutputTokens > 0
-									? {
-											input_tokens: accumulatedInputTokens,
-											output_tokens: accumulatedOutputTokens,
-										}
-									: undefined,
-						},
+							result: {
+								type: "result",
+								subtype: "success",
+								is_error: false,
+								result: "",
+								usage:
+									accumulatedInputTokens > 0 ||
+									accumulatedOutputTokens > 0 ||
+									accumulatedCacheReadInputTokens > 0 ||
+									accumulatedCacheCreationInputTokens > 0
+										? {
+												input_tokens: accumulatedInputTokens,
+												output_tokens: accumulatedOutputTokens,
+												cache_read_input_tokens:
+													accumulatedCacheReadInputTokens,
+												cache_creation_input_tokens:
+													accumulatedCacheCreationInputTokens,
+											}
+										: undefined,
+							},
 					});
 				}
 			} catch (e) {

@@ -544,6 +544,17 @@ class AgentExecutor {
 				maxFileChars: number;
 			};
 			enableToolSearch?: "auto" | "auto:5" | "true" | "false";
+			experimentalMultiAgent?: boolean;
+			multiAgentMode?: "subagent_only" | "hybrid" | "teammate_preferred";
+			maxTeammates?: number;
+			teammateMode?: "auto" | "tmux" | "in-process";
+			teammateBudget?: {
+				maxTurns?: number;
+				maxThinkingTokens?: number;
+				maxBudgetUsd?: number;
+			};
+			leaderSummaryModel?: string;
+			teammateExecutionModel?: string;
 			parentSdkSessionId?: string;
 			/** 强制使用的 Agent Skill 名称 */
 			forcedSkillName?: string;
@@ -663,6 +674,42 @@ class AgentExecutor {
 			options.enableToolSearch ||
 			runtimeConfig?.enableToolSearch ||
 			("auto:5" as const);
+		const resolvedExperimentalMultiAgent =
+			options.experimentalMultiAgent ??
+			runtimeConfig?.experimentalMultiAgentEnabled ??
+			false;
+		const resolvedMultiAgentMode =
+			options.multiAgentMode ||
+			runtimeConfig?.multiAgentMode ||
+			("hybrid" as const);
+		const resolvedMaxTeammates = Math.max(
+			1,
+			Math.min(
+				8,
+				options.maxTeammates ?? runtimeConfig?.maxTeammates ?? 2,
+			),
+		);
+		const resolvedTeammateMode =
+			options.teammateMode ||
+			runtimeConfig?.teammateMode ||
+			("auto" as const);
+		const resolvedTeammateBudget = {
+			maxTurns:
+				options.teammateBudget?.maxTurns ??
+				runtimeConfig?.teammateBudget?.maxTurns ??
+				12,
+			maxThinkingTokens:
+				options.teammateBudget?.maxThinkingTokens ??
+				runtimeConfig?.teammateBudget?.maxThinkingTokens ??
+				4096,
+			maxBudgetUsd:
+				options.teammateBudget?.maxBudgetUsd ??
+				runtimeConfig?.teammateBudget?.maxBudgetUsd,
+		};
+		const resolvedLeaderSummaryModel =
+			options.leaderSummaryModel || runtimeConfig?.leaderSummaryModel;
+		const resolvedTeammateExecutionModel =
+			options.teammateExecutionModel || runtimeConfig?.teammateExecutionModel;
 		const conversationContextBeforeChars = String(
 			(options.conversationContext || []).join("\n"),
 		).length;
@@ -675,6 +722,12 @@ class AgentExecutor {
 			attachedFilesBefore: attachedFilesBefore + attachedContextsBefore,
 			degradeLevel: 0,
 			compactionCount: 0,
+			agentRole: "leader",
+			delegationMode: resolvedMultiAgentMode,
+			experimentalMultiAgent: resolvedExperimentalMultiAgent,
+			maxTeammates: resolvedMaxTeammates,
+			teammateMode: resolvedTeammateMode,
+			parentSessionId: options.parentSdkSessionId,
 		});
 
 		let sandboxDir = options?.workingDirectory;
@@ -1022,6 +1075,17 @@ class AgentExecutor {
 					max_file_chars: resolvedContextBudget.maxFileChars,
 				},
 				enableToolSearch: resolvedEnableToolSearch,
+				experimentalMultiAgent: resolvedExperimentalMultiAgent,
+				multiAgentMode: resolvedMultiAgentMode,
+				maxTeammates: resolvedMaxTeammates,
+				teammateMode: resolvedTeammateMode,
+				teammateBudget: {
+					max_turns: resolvedTeammateBudget.maxTurns,
+					max_thinking_tokens: resolvedTeammateBudget.maxThinkingTokens,
+					max_budget_usd: resolvedTeammateBudget.maxBudgetUsd,
+				},
+				leaderSummaryModel: resolvedLeaderSummaryModel,
+				teammateExecutionModel: resolvedTeammateExecutionModel,
 				abortController: this.abortController ?? undefined,
 
 				onChunk: (text) => {
@@ -1361,6 +1425,9 @@ class AgentExecutor {
 								"[AgentExecutor SDK] System message:",
 								message.content,
 							);
+							if (message.metadata && typeof message.metadata === "object") {
+								agentStore.setTaskMetadata(message.metadata);
+							}
 							if (
 								/压缩上下文|compacting|compact/i.test(
 									String(message.content || ""),

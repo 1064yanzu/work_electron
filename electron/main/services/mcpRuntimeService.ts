@@ -4,6 +4,7 @@ const MCP_PROTOCOL_VERSION = "2024-11-05";
 const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
 const TOOL_CALL_TIMEOUT_MS = 60_000;
 const TOOL_CACHE_TTL_MS = 30_000;
+const SESSION_FAILURE_COOLDOWN_MS = 30_000;
 
 export type McpRuntimeServerConfig = {
 	id: string;
@@ -38,6 +39,12 @@ type PendingRequest = {
 	resolve: (value: unknown) => void;
 	reject: (error: Error) => void;
 	timer: NodeJS.Timeout;
+};
+
+type RecentFailure = {
+	message: string;
+	failedAt: number;
+	signature: string;
 };
 
 function makeConfigSignature(config: McpRuntimeServerConfig): string {
@@ -335,15 +342,19 @@ class McpStdioSession {
 
 export class McpRuntimeService {
 	private readonly sessions = new Map<string, McpStdioSession>();
+	private readonly recentFailures = new Map<string, RecentFailure>();
 
 	public async listTools(
 		config: McpRuntimeServerConfig,
 		forceRefresh = false,
 	): Promise<McpRuntimeTool[]> {
-		const session = this.getOrCreateSession(config);
+		const session = this.getOrCreateSession(config, forceRefresh);
 		try {
-			return await session.listTools(forceRefresh);
+			const tools = await session.listTools(forceRefresh);
+			this.clearRecentFailure(config.id);
+			return tools;
 		} catch (error) {
+			this.markFailure(config, error);
 			this.stopServer(config.id);
 			throw error;
 		}
@@ -354,10 +365,13 @@ export class McpRuntimeService {
 		toolName: string,
 		argumentsJson: Record<string, unknown>,
 	): Promise<McpRuntimeToolResult> {
-		const session = this.getOrCreateSession(config);
+		const session = this.getOrCreateSession(config, true);
 		try {
-			return await session.callTool(toolName, argumentsJson);
+			const result = await session.callTool(toolName, argumentsJson);
+			this.clearRecentFailure(config.id);
+			return result;
 		} catch (error) {
+			this.markFailure(config, error);
 			this.stopServer(config.id);
 			throw error;
 		}
@@ -371,7 +385,38 @@ export class McpRuntimeService {
 		return true;
 	}
 
-	private getOrCreateSession(config: McpRuntimeServerConfig): McpStdioSession {
+	private markFailure(config: McpRuntimeServerConfig, error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		this.recentFailures.set(config.id, {
+			message,
+			failedAt: Date.now(),
+			signature: makeConfigSignature(config),
+		});
+	}
+
+	private clearRecentFailure(serverId: string) {
+		this.recentFailures.delete(serverId);
+	}
+
+	private getOrCreateSession(
+		config: McpRuntimeServerConfig,
+		ignoreFailureCooldown = false,
+	): McpStdioSession {
+		const signature = makeConfigSignature(config);
+		const recentFailure = this.recentFailures.get(config.id);
+		if (recentFailure && recentFailure.signature !== signature) {
+			this.recentFailures.delete(config.id);
+		}
+		if (!ignoreFailureCooldown && recentFailure) {
+			const isCoolingDown =
+				recentFailure.signature === signature &&
+				Date.now() - recentFailure.failedAt < SESSION_FAILURE_COOLDOWN_MS;
+			if (isCoolingDown) {
+				throw new Error(recentFailure.message);
+			}
+			this.recentFailures.delete(config.id);
+		}
+
 		const existing = this.sessions.get(config.id);
 		if (existing && existing.isSameConfig(config)) return existing;
 		if (existing) {

@@ -2,6 +2,7 @@
 // 处理权限请求/响应/结果的状态管理
 
 import { useSyncExternalStore } from "react";
+import { createUseStoreSelector } from "../stores/createStore";
 import {
 	createPermissionRequest,
 	DEFAULT_PERMISSION_POLICY,
@@ -468,6 +469,8 @@ class PermissionStore {
 // 单例导出
 export const permissionStore = new PermissionStore();
 
+const usePermissionSelectorBase = createUseStoreSelector(permissionStore);
+
 // React Hook
 export function usePermissionStore() {
 	const state = useSyncExternalStore(
@@ -495,6 +498,12 @@ export function usePermissionStore() {
 		getHistory: permissionStore.getHistory.bind(permissionStore),
 		onEvent: permissionStore.onEvent.bind(permissionStore),
 	};
+}
+
+export function usePermissionStoreSelector<T>(
+	selector: (state: PermissionState) => T,
+): T {
+	return usePermissionSelectorBase(selector);
 }
 
 // 导出便捷函数

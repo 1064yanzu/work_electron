@@ -7,6 +7,7 @@ import {
 	Shield,
 	ShieldAlert,
 	ShieldCheck,
+	Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAgentChatSettingsStore } from "../../../lib/agent/chatSettingsStore";
@@ -386,11 +387,25 @@ export function AgentSettings() {
 			maxFileChars: 6000,
 		},
 		betas: [] as string[],
+		experimentalMultiAgentEnabled: false,
+		multiAgentMode: "hybrid" as const,
+		maxTeammates: 2,
+		teammateMode: "auto" as const,
+		teammateBudget: {
+			maxTurns: 12,
+			maxThinkingTokens: 4096,
+			maxBudgetUsd: undefined as number | undefined,
+		},
+		leaderSummaryModel: "" as string | undefined,
+		teammateExecutionModel: "" as string | undefined,
 	};
 
 	const saveContextRuntime = async (
-		patch: Partial<Omit<typeof contextRuntime, "contextBudget">> & {
+		patch: Partial<
+			Omit<typeof contextRuntime, "contextBudget" | "teammateBudget">
+		> & {
 			contextBudget?: Partial<typeof contextRuntime.contextBudget>;
+			teammateBudget?: Partial<typeof contextRuntime.teammateBudget>;
 		},
 	): Promise<void> => {
 		const next = {
@@ -399,6 +414,10 @@ export function AgentSettings() {
 			contextBudget: {
 				...contextRuntime.contextBudget,
 				...(patch.contextBudget || {}),
+			},
+			teammateBudget: {
+				...contextRuntime.teammateBudget,
+				...(patch.teammateBudget || {}),
 			},
 		};
 		await modelSettingsStore.updateContextRuntime(patch as any);
@@ -416,6 +435,26 @@ export function AgentSettings() {
 				max_file_chars: next.contextBudget.maxFileChars,
 			}),
 			setConfig("agent.sdk.betas", next.betas),
+			setConfig(
+				"agent.sdk.experimental_multi_agent_enabled",
+				next.experimentalMultiAgentEnabled,
+			),
+			setConfig("agent.sdk.multi_agent_mode", next.multiAgentMode),
+			setConfig("agent.sdk.max_teammates", next.maxTeammates),
+			setConfig("agent.sdk.teammate_mode", next.teammateMode),
+			setConfig("agent.sdk.teammate_budget", {
+				max_turns: next.teammateBudget.maxTurns,
+				max_thinking_tokens: next.teammateBudget.maxThinkingTokens,
+				max_budget_usd: next.teammateBudget.maxBudgetUsd ?? "",
+			}),
+			setConfig(
+				"agent.sdk.leader_summary_model",
+				next.leaderSummaryModel ?? "",
+			),
+			setConfig(
+				"agent.sdk.teammate_execution_model",
+				next.teammateExecutionModel ?? "",
+			),
 		]);
 	};
 
@@ -479,6 +518,7 @@ export function AgentSettings() {
 								{ value: "acceptEdits", label: "acceptEdits" },
 								{ value: "dontAsk", label: "dontAsk" },
 								{ value: "plan", label: "plan" },
+								{ value: "delegate", label: "delegate（多 Agent）" },
 							]}
 						/>
 					</div>
@@ -738,6 +778,205 @@ export function AgentSettings() {
 							}
 							className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
 						/>
+					</div>
+				</div>
+				<div className="rounded-2xl border border-border/70 bg-zinc-50/60 dark:bg-zinc-900/30 p-4 space-y-4">
+					<div className="flex items-start justify-between gap-4">
+						<div>
+							<div className="text-sm font-medium text-text-primary flex items-center gap-2">
+								<Users className="w-4 h-4" />
+								多 Agent 协作（实验）
+							</div>
+							<div className="text-xs text-text-muted mt-1">
+								开启后允许 leader 结合 Task / Teammate 做编排；Teammate
+								失败会自动回退到稳定子代理。
+							</div>
+						</div>
+						<Toggle
+							checked={contextRuntime.experimentalMultiAgentEnabled}
+							onChange={() =>
+								void saveContextRuntime({
+									experimentalMultiAgentEnabled:
+										!contextRuntime.experimentalMultiAgentEnabled,
+								})
+							}
+						/>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								multi_agent_mode
+							</label>
+							<Select
+								value={contextRuntime.multiAgentMode}
+								onChange={(event) =>
+									void saveContextRuntime({
+										multiAgentMode: event.target.value as
+											| "subagent_only"
+											| "hybrid"
+											| "teammate_preferred",
+									})
+								}
+								options={[
+									{ value: "hybrid", label: "hybrid（推荐）" },
+									{ value: "subagent_only", label: "subagent_only" },
+									{
+										value: "teammate_preferred",
+										label: "teammate_preferred",
+									},
+								]}
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								teammate_mode
+							</label>
+							<Select
+								value={contextRuntime.teammateMode}
+								onChange={(event) =>
+									void saveContextRuntime({
+										teammateMode: event.target.value as
+											| "auto"
+											| "tmux"
+											| "in-process",
+									})
+								}
+								options={[
+									{ value: "auto", label: "auto（推荐）" },
+									{ value: "in-process", label: "in-process" },
+									{ value: "tmux", label: "tmux" },
+								]}
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								max_teammates
+							</label>
+							<input
+								type="number"
+								min={1}
+								max={8}
+								value={contextRuntime.maxTeammates}
+								onChange={(event) =>
+									void saveContextRuntime({
+										maxTeammates: Math.max(
+											1,
+											Math.min(8, Number(event.target.value) || 2),
+										),
+									})
+								}
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								leader_summary_model（可空）
+							</label>
+							<input
+								type="text"
+								value={contextRuntime.leaderSummaryModel ?? ""}
+								onChange={(event) =>
+									void saveContextRuntime({
+										leaderSummaryModel:
+											event.target.value.trim() || undefined,
+									})
+								}
+								placeholder="留空则沿用主模型"
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+						<div className="md:col-span-2">
+							<label className="text-sm text-text-primary mb-1.5 block">
+								teammate_execution_model（可空）
+							</label>
+							<input
+								type="text"
+								value={contextRuntime.teammateExecutionModel ?? ""}
+								onChange={(event) =>
+									void saveContextRuntime({
+										teammateExecutionModel:
+											event.target.value.trim() || undefined,
+									})
+								}
+								placeholder="例如 claude-sonnet-4-5；留空则由 SDK/场景配置决定"
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								teammate_budget.max_turns
+							</label>
+							<input
+								type="number"
+								min={1}
+								max={100}
+								value={contextRuntime.teammateBudget.maxTurns}
+								onChange={(event) =>
+									void saveContextRuntime({
+										teammateBudget: {
+											maxTurns: Math.max(
+												1,
+												Math.min(100, Number(event.target.value) || 12),
+											),
+										},
+									})
+								}
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								teammate_budget.max_thinking_tokens
+							</label>
+							<input
+								type="number"
+								min={256}
+								max={65536}
+								step={256}
+								value={contextRuntime.teammateBudget.maxThinkingTokens}
+								onChange={(event) =>
+									void saveContextRuntime({
+										teammateBudget: {
+											maxThinkingTokens: Math.max(
+												256,
+												Math.min(
+													65536,
+													Number(event.target.value) || 4096,
+												),
+											),
+										},
+									})
+								}
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
+						<div>
+							<label className="text-sm text-text-primary mb-1.5 block">
+								teammate_budget.max_budget_usd（可空）
+							</label>
+							<input
+								type="number"
+								min={0}
+								step={0.1}
+								value={contextRuntime.teammateBudget.maxBudgetUsd ?? ""}
+								onChange={(event) =>
+									void saveContextRuntime({
+										teammateBudget: {
+											maxBudgetUsd:
+												event.target.value.trim() === ""
+													? undefined
+													: Math.max(
+															0,
+															Number(event.target.value) || 0,
+														),
+										},
+									})
+								}
+								className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+							/>
+						</div>
 					</div>
 				</div>
 			</div>

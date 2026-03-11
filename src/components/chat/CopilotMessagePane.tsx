@@ -1,10 +1,10 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Bot, Loader2 } from "lucide-react";
+import { memo } from "react";
 import type { RefObject } from "react";
 import type { AskUserQuestionRequest } from "../../lib/agent/askUserQuestionStore";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { AskUserQuestionList } from "../agent/AskUserQuestionCard";
-import { ChatMessage as ChatMessageComponent } from "./ChatMessage";
+import { CopilotMessageList } from "./CopilotMessageList";
 import { WelcomeScreen } from "./WelcomeScreen";
 
 interface CopilotMessagePaneProps {
@@ -31,10 +31,7 @@ interface CopilotMessagePaneProps {
 	) => void;
 	onDenyAskUserQuestion: (requestId: string, message?: string) => void;
 }
-
-const VIRTUALIZE_MESSAGE_THRESHOLD = 60;
-
-export function CopilotMessagePane({
+function CopilotMessagePaneImpl({
 	scrollContainerRef,
 	messagesEndRef,
 	messages,
@@ -53,14 +50,6 @@ export function CopilotMessagePane({
 	onAllowAskUserQuestion,
 	onDenyAskUserQuestion,
 }: CopilotMessagePaneProps) {
-	const shouldVirtualizeMessages = messages.length > VIRTUALIZE_MESSAGE_THRESHOLD;
-	const messageVirtualizer = useVirtualizer({
-		count: shouldVirtualizeMessages ? messages.length : 0,
-		getScrollElement: () => scrollContainerRef.current,
-		estimateSize: () => 280,
-		overscan: 6,
-	});
-
 	return (
 		<div
 			ref={scrollContainerRef}
@@ -99,72 +88,16 @@ export function CopilotMessagePane({
 				</div>
 			) : (
 				<>
-					{hiddenMessageCount > 0 && (
-						<div className="flex justify-center">
-							<button
-								type="button"
-								onClick={onLoadOlderMessages}
-								className="px-3 py-1.5 rounded-full text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-							>
-								加载更早消息（{hiddenMessageCount} 条）
-							</button>
-						</div>
-					)}
-
-					{shouldVirtualizeMessages ? (
-						<div
-							style={{
-								height: `${messageVirtualizer.getTotalSize()}px`,
-								position: "relative",
-							}}
-						>
-							{messageVirtualizer.getVirtualItems().map((virtualRow) => {
-								const message = messages[virtualRow.index];
-								if (!message) return null;
-								return (
-									<div
-										key={message.id}
-										data-index={virtualRow.index}
-										ref={messageVirtualizer.measureElement}
-										style={{
-											position: "absolute",
-											top: 0,
-											left: 0,
-											width: "100%",
-											transform: `translateY(${virtualRow.start}px)`,
-										}}
-									>
-										<ChatMessageComponent
-											message={message}
-											preferBlocks={preferBlocks}
-											onRegenerate={
-												!isStreaming &&
-												!isAgentExecuting &&
-												message.role === "assistant"
-													? onRegenerateMessage
-													: undefined
-											}
-										/>
-									</div>
-								);
-							})}
-						</div>
-					) : (
-						messages.map((message) => (
-							<ChatMessageComponent
-								key={message.id}
-								message={message}
-								preferBlocks={preferBlocks}
-								onRegenerate={
-									!isStreaming &&
-									!isAgentExecuting &&
-									message.role === "assistant"
-										? onRegenerateMessage
-										: undefined
-								}
-							/>
-						))
-					)}
+					<CopilotMessageList
+						scrollContainerRef={scrollContainerRef}
+						messagesEndRef={messagesEndRef}
+						messages={messages}
+						hiddenMessageCount={hiddenMessageCount}
+						preferBlocks={preferBlocks}
+						canRegenerateMessages={!isStreaming && !isAgentExecuting}
+						onLoadOlderMessages={onLoadOlderMessages}
+						onRegenerateMessage={onRegenerateMessage}
+					/>
 
 					{isWaitingForLLM && chatMode === "agent" && (
 						<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -213,10 +146,30 @@ export function CopilotMessagePane({
 							/>
 						</div>
 					)}
-
-					<div ref={messagesEndRef} />
 				</>
 			)}
 		</div>
 	);
 }
+
+export const CopilotMessagePane = memo(
+	CopilotMessagePaneImpl,
+	(prev, next) =>
+		prev.scrollContainerRef === next.scrollContainerRef &&
+		prev.messagesEndRef === next.messagesEndRef &&
+		prev.messages === next.messages &&
+		prev.hiddenMessageCount === next.hiddenMessageCount &&
+		prev.currentResearch === next.currentResearch &&
+		prev.isStreaming === next.isStreaming &&
+		prev.isAgentExecuting === next.isAgentExecuting &&
+		prev.isWaitingForLLM === next.isWaitingForLLM &&
+		prev.chatMode === next.chatMode &&
+		prev.preferBlocks === next.preferBlocks &&
+		prev.pendingAskUserRequests === next.pendingAskUserRequests &&
+		prev.onScroll === next.onScroll &&
+		prev.onLoadOlderMessages === next.onLoadOlderMessages &&
+		prev.onRegenerateMessage === next.onRegenerateMessage &&
+		prev.onOpenResearch === next.onOpenResearch &&
+		prev.onAllowAskUserQuestion === next.onAllowAskUserQuestion &&
+		prev.onDenyAskUserQuestion === next.onDenyAskUserQuestion,
+);

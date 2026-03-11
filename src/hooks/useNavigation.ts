@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { chatStore } from "../lib/chat/store";
+import { debugUiLog } from "../lib/debug/uiDebug";
 import { managedModeStore } from "../lib/managedModeStore";
 
 export type ViewType = "dashboard" | "workbench";
@@ -20,13 +21,13 @@ export function useNavigation(initialView: ViewType = "dashboard") {
 	});
 
 	const navigateToDashboard = useCallback(() => {
-		console.log("[useNavigation] 导航到 Dashboard");
+		debugUiLog("[useNavigation] 导航到 Dashboard");
 		setNavState({ view: "dashboard" });
 	}, []);
 
 	const navigateToWorkbench = useCallback(
 		(projectId?: string, docId?: string) => {
-			console.log(
+			debugUiLog(
 				"[useNavigation] 导航到 Workbench, projectId:",
 				projectId,
 				"docId:",
@@ -38,7 +39,7 @@ export function useNavigation(initialView: ViewType = "dashboard") {
 	);
 
 	const navigateToProject = useCallback((projectId: string) => {
-		console.log("[useNavigation] 导航到项目:", projectId);
+		debugUiLog("[useNavigation] 导航到项目:", projectId);
 		// 打开项目时自动新建对话并启用托管模式
 		chatStore.createNewSession();
 		managedModeStore.enableManagedMode();

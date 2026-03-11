@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
 	CORE_PROVIDER_IDS,
 	DEFAULT_PROVIDERS,
@@ -19,11 +19,13 @@ import {
 	setActiveModel as setActiveModelApi,
 	upsertProvider,
 } from "./api";
+import { createUseStoreSelector } from "./stores/createStore";
 
 // Simple event emitter for store updates
 const listeners = new Set<() => void>();
 
 const emitChange = () => {
+	updateCachedSettingsSnapshot();
 	listeners.forEach((l) => l());
 };
 
@@ -79,11 +81,35 @@ const mapUIToBackend = (ui: UIProvider): UpsertProviderPayload => ({
 	},
 });
 
+type SettingsSnapshot = {
+	providers: UIProvider[];
+	activeModel: string;
+};
+
 let currentProviders: UIProvider[] = [];
 let backendProviders: BackendProvider[] = [];
 let activeModelId = "";
 let isInitialized = false;
 let initPromise: Promise<void> | null = null;
+let ensureLoadPromise: Promise<void> | null = null;
+let cachedSettingsSnapshot: SettingsSnapshot = {
+	providers: currentProviders,
+	activeModel: activeModelId,
+};
+
+function updateCachedSettingsSnapshot() {
+	if (
+		cachedSettingsSnapshot.providers === currentProviders &&
+		cachedSettingsSnapshot.activeModel === activeModelId
+	) {
+		return;
+	}
+
+	cachedSettingsSnapshot = {
+		providers: currentProviders,
+		activeModel: activeModelId,
+	};
+}
 
 const getProviderTemplateId = (
 	provider: BackendProvider,
@@ -350,8 +376,8 @@ export const settingsStore = {
 
 		try {
 			const created = await upsertProvider(payload);
-			backendProviders.push(created);
-			currentProviders.push(mapBackendToUI(created));
+			backendProviders = [...backendProviders, created];
+			currentProviders = [...currentProviders, mapBackendToUI(created)];
 			emitChange();
 			return created;
 		} catch (error) {
@@ -391,51 +417,85 @@ export const settingsStore = {
 		};
 	},
 };
+function getSettingsSnapshot(): SettingsSnapshot {
+	return cachedSettingsSnapshot;
+}
 
-export function useSettingsStore() {
-	const [providers, setProviders] = useState(settingsStore.getProviders());
-	const [activeModel, setActiveModel] = useState(
-		settingsStore.getActiveModel(),
-	);
-	const [isLoading, setIsLoading] = useState(!isInitialized);
+const settingsSnapshotStore = {
+	getState: getSettingsSnapshot,
+	subscribe: settingsStore.subscribe,
+};
 
+const useSettingsSelectorBase = createUseStoreSelector(settingsSnapshotStore);
+
+function shouldReloadSettingsStore() {
+	return !isInitialized || settingsStore.getProviders().length === 0;
+}
+
+function ensureSettingsStoreLoaded() {
+	if (!shouldReloadSettingsStore()) {
+		return Promise.resolve();
+	}
+
+	if (!ensureLoadPromise) {
+		const needsForceReload =
+			isInitialized && settingsStore.getProviders().length === 0;
+		ensureLoadPromise = (
+			needsForceReload ? settingsStore.reload() : settingsStore.init()
+		).finally(() => {
+			ensureLoadPromise = null;
+		});
+	}
+
+	return ensureLoadPromise;
+}
+
+function useEnsureSettingsStoreLoaded(onSettled?: () => void) {
 	useEffect(() => {
 		let mounted = true;
 
-		// 【修复热重载】开发模式下强制重新加载配置
-		// 即使 isInitialized 为 true，也检查数据是否为空（热重载标志）
-		const needsReload =
-			!isInitialized || settingsStore.getProviders().length === 0;
-
-		if (needsReload) {
-			const loadData = async () => {
-				try {
-					await settingsStore.reload();
-					if (mounted) {
-						setProviders(settingsStore.getProviders());
-						setActiveModel(settingsStore.getActiveModel());
-						setIsLoading(false);
-					}
-				} catch (error) {
-					console.error("[useSettingsStore] 加载配置失败:", error);
-					if (mounted) setIsLoading(false);
-				}
+		if (!shouldReloadSettingsStore()) {
+			onSettled?.();
+			return () => {
+				mounted = false;
 			};
-			loadData();
 		}
 
-		const unsubscribe = settingsStore.subscribe(() => {
-			if (mounted) {
-				setProviders(settingsStore.getProviders());
-				setActiveModel(settingsStore.getActiveModel());
-			}
-		});
+		void ensureSettingsStoreLoaded()
+			.catch((error) => {
+				console.error("[useSettingsStore] 加载配置失败:", error);
+			})
+			.finally(() => {
+				if (mounted) {
+					onSettled?.();
+				}
+			});
 
 		return () => {
 			mounted = false;
-			unsubscribe();
 		};
+	}, [onSettled]);
+}
+
+export function useSettingsStoreSelector<T>(
+	selector: (state: SettingsSnapshot) => T,
+): T {
+	useEnsureSettingsStoreLoaded();
+	return useSettingsSelectorBase(selector);
+}
+
+export function useSettingsStore() {
+	const [isLoading, setIsLoading] = useState(!isInitialized);
+	const handleSettled = useCallback(() => {
+		setIsLoading(false);
 	}, []);
+	useEnsureSettingsStoreLoaded(handleSettled);
+
+	const { providers, activeModel } = useSyncExternalStore(
+		settingsStore.subscribe,
+		getSettingsSnapshot,
+		getSettingsSnapshot,
+	);
 
 	return { providers, activeModel, settingsStore, isLoading };
 }

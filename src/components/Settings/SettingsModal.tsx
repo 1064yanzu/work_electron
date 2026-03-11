@@ -1,17 +1,10 @@
 import { X } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
-import { AgentSettings } from "./panels/AgentSettings";
-import { ArtifactSettings } from "./panels/ArtifactSettings";
-import { DashboardSettings } from "./panels/DashboardSettings";
-import { DataSettings } from "./panels/DataSettings";
-import { GeneralSettings } from "./panels/GeneralSettings";
-import { ImageGenSettings } from "./panels/ImageGenSettings";
-import { MCPSettings } from "./panels/MCPSettings";
-import { ModelSettings } from "./panels/ModelSettings";
-import { PerformanceSettings } from "./panels/PerformanceSettings";
-import { PromptSettings } from "./panels/PromptSettings";
-import { RemoteControlSettings } from "./panels/RemoteControlSettings";
-import { SkillsSettings } from "./panels/SkillsSettings";
+import { Suspense, useState, useCallback, useEffect, useRef } from "react";
+import {
+	getSettingsPanelComponent,
+	preloadSettingsPanel,
+	type SettingsTabId,
+} from "./panelLoaders";
 import { SettingsSidebar } from "./SettingsSidebar";
 import { FocusTrap } from "../ui/FocusTrap";
 
@@ -21,7 +14,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-	const [activeTab, setActiveTab] = useState("models");
+	const [activeTab, setActiveTab] = useState<SettingsTabId>("models");
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
 	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -40,8 +33,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		if (isOpen) {
 			setShouldRender(true);
 			setIsClosing(false);
+			preloadSettingsPanel(activeTab);
 		}
-	}, [isOpen, handleClose]);
+	}, [activeTab, isOpen]);
 
 	// 关闭后清理渲染状态
 	useEffect(() => {
@@ -51,41 +45,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	}, [isOpen, isClosing]);
 
 	if (!shouldRender && !isOpen) return null;
-
-	const renderContent = () => {
-		switch (activeTab) {
-			case "dashboard":
-				return <DashboardSettings />;
-			case "models":
-				return <ModelSettings />;
-			case "prompts":
-				return <PromptSettings />;
-			case "imagegen":
-				return <ImageGenSettings />;
-			case "agent":
-				return <AgentSettings />;
-			case "skills":
-				return <SkillsSettings />;
-			case "mcp":
-				return <MCPSettings />;
-			case "remoteControl":
-				return <RemoteControlSettings />;
-			case "general":
-				return <GeneralSettings />;
-			case "performance":
-				return <PerformanceSettings />;
-			case "data":
-				return <DataSettings />;
-			case "artifacts":
-				return <ArtifactSettings />;
-			default:
-				return (
-					<div className="flex-1 flex items-center justify-center text-text-muted">
-						功能开发中...
-					</div>
-				);
-		}
-	};
+	const ActivePanel = getSettingsPanelComponent(activeTab);
 
 	return (
 		<div
@@ -104,7 +64,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				aria-modal="true"
 				aria-label="设置"
 			>
-				<SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+				<SettingsSidebar
+					activeTab={activeTab}
+					onTabChange={(tabId) => setActiveTab(tabId as SettingsTabId)}
+					onTabPrefetch={(tabId) =>
+						preloadSettingsPanel(tabId as SettingsTabId)
+					}
+				/>
 
 				<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 					<button
@@ -117,7 +83,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 						<X className="w-5 h-5" />
 					</button>
 
-					{renderContent()}
+					<Suspense
+						fallback={
+							<div className="flex-1 flex items-center justify-center text-sm text-text-muted">
+								正在加载设置面板...
+							</div>
+						}
+					>
+						<ActivePanel />
+					</Suspense>
 				</main>
 			</FocusTrap>
 		</div>

@@ -1,6 +1,7 @@
 // 编辑器画布 - 现代化所见即所得编辑器
 
 import { Copy, Image, Loader2 } from "lucide-react";
+import type { SetStateAction } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAISuggestion } from "../hooks/useAISuggestion";
 import {
@@ -12,8 +13,10 @@ import {
 	updateOutputAsset,
 } from "../lib/api";
 import { buildEditorBlankContextMenu } from "../lib/contextMenu/actions";
+import { debugUiLog, debugUiWarn } from "../lib/debug/uiDebug";
 import { EVENTS, events } from "../lib/events";
-import { useWorkspaceStore, workspaceStore } from "../lib/workspaceStore";
+import { measureNextPaint } from "../lib/performance/devMetrics";
+import { useWorkspaceStoreSelector, workspaceStore } from "../lib/workspaceStore";
 import { type OutputAsset, OutputType } from "../types";
 import AIContentSuggest from "./AIContentSuggest";
 import DiffView from "./DiffView";
@@ -79,39 +82,37 @@ export default function EditorCanvas({
 		rejectSuggestion,
 	} = useAISuggestion();
 
-	// 工作区状态管理（不传 selector，保持与 store 定义一致，避免类型报错）
-	const {
-		openedDocs,
-		activeDocId,
-		docCache,
-		tabs,
-		activeTabId,
-		sourceReadCache,
-		closeTab,
-		closeDoc,
-		openDoc,
-		updateDocCache,
-		markDocSaved,
-		aiReview,
-		startAIReview,
-		acceptAIReview,
-		rejectAIReview,
-	} = useWorkspaceStore();
-
-	const activeDocCacheContent = activeDocId
-		? docCache[activeDocId]?.content
-		: undefined;
+	const openedDocs = useWorkspaceStoreSelector((state) => state.openedDocs);
+	const activeDocId = useWorkspaceStoreSelector((state) => state.activeDocId);
+	const activeDocCache = useWorkspaceStoreSelector((state) =>
+		activeDocId ? state.docCache[activeDocId] ?? null : null,
+	);
+	const tabs = useWorkspaceStoreSelector((state) => state.tabs);
+	const activeTabId = useWorkspaceStoreSelector((state) => state.activeTabId);
+	const aiReview = useWorkspaceStoreSelector((state) => state.aiReview);
+	const activeDocCacheContent = activeDocCache?.content;
+	const closeTab = workspaceStore.closeTab.bind(workspaceStore);
+	const closeDoc = workspaceStore.closeDoc.bind(workspaceStore);
+	const openDoc = workspaceStore.openDoc.bind(workspaceStore);
+	const updateDocCache = workspaceStore.updateDocCache.bind(workspaceStore);
+	const markDocDirty = workspaceStore.markDocDirty.bind(workspaceStore);
+	const startAIReview = workspaceStore.startAIReview.bind(workspaceStore);
+	const acceptAIReview = workspaceStore.acceptAIReview.bind(workspaceStore);
+	const rejectAIReview = workspaceStore.rejectAIReview.bind(workspaceStore);
 
 	// 检查是否有激活的资料阅读标签页
 	const activeSourceTab = tabs.find(
 		(t) => t.id === activeTabId && t.type === "source",
 	);
-	const activeSourceData = activeSourceTab?.sourceId
-		? sourceReadCache[activeSourceTab.sourceId]
-		: null;
+	const activeSourceData = useWorkspaceStoreSelector((state) =>
+		activeSourceTab?.sourceId
+			? state.sourceReadCache[activeSourceTab.sourceId] ?? null
+			: null,
+	);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const docCacheSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const titleSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
 		null,
 	);
@@ -121,6 +122,65 @@ export default function EditorCanvas({
 	const lastSavedContentRef = useRef<string>("");
 	const lastSavedDocIdRef = useRef<string | null>(null); // 追踪上次保存的文档 ID
 	const pendingTitleRef = useRef<{ id: string; title: string } | null>(null);
+	const syncEditorBufferToStore = useCallback(
+		(docId: string, content: string, options?: { immediate?: boolean }) => {
+			if (docCacheSyncTimeoutRef.current) {
+				clearTimeout(docCacheSyncTimeoutRef.current);
+				docCacheSyncTimeoutRef.current = null;
+			}
+
+			const commit = () => {
+				const snapshot = workspaceStore.getState().docCache[docId];
+				if (workspaceStore.getState().editorContent !== content) {
+					workspaceStore.setEditorContent(content);
+				}
+				if (!snapshot) return;
+				if (snapshot.content === content && snapshot.dirty) return;
+				updateDocCache(docId, content, true);
+			};
+
+			if (options?.immediate) {
+				commit();
+				return;
+			}
+
+			docCacheSyncTimeoutRef.current = setTimeout(() => {
+				docCacheSyncTimeoutRef.current = null;
+				commit();
+			}, 320);
+		},
+		[updateDocCache],
+	);
+
+	const handleEditorContentChange = useCallback(
+		(content: string) => {
+			const startedAt = performance.now();
+			setEditorContent(content);
+			measureNextPaint("editor.input.commit", startedAt, {
+				length: content.length,
+				docId: activeDocId ?? undefined,
+			});
+		},
+		[activeDocId],
+	);
+
+	const handleEditorBlur = useCallback(() => {
+		if (!activeDocId) return;
+		syncEditorBufferToStore(activeDocId, editorContentRef.current, {
+			immediate: true,
+		});
+	}, [activeDocId, syncEditorBufferToStore]);
+
+	const replaceEditorBuffer = useCallback((next: SetStateAction<string>) => {
+		setEditorContent((previous) => {
+			const resolved = typeof next === "function" ? next(previous) : next;
+			if (workspaceStore.getState().editorContent !== resolved) {
+				workspaceStore.setEditorContent(resolved);
+			}
+			return resolved;
+		});
+	}, []);
+
 	const hasUnsavedChanges = useMemo(() => {
 		if (!selectedOutput) return false;
 		// 优先使用 lastSavedContentRef，如果为空则回退到 selectedOutput.content
@@ -191,14 +251,14 @@ export default function EditorCanvas({
 	const fetchOutputs = useCallback(
 		async (preferredId?: string, options?: { skipAutoSelect?: boolean }) => {
 			try {
-				console.log(
+				debugUiLog(
 					"[EditorCanvas] fetchOutputs called, preferredId:",
 					preferredId,
 					"options:",
 					options,
 				);
 				const data = await listOutputAssets();
-				console.log(
+				debugUiLog(
 					"[EditorCanvas] listOutputAssets returned:",
 					data.length,
 					"items",
@@ -210,7 +270,7 @@ export default function EditorCanvas({
 							return d.project_id == null;
 						})
 					: data;
-				console.log(
+				debugUiLog(
 					"[EditorCanvas] filtered for project:",
 					filtered.length,
 					"items",
@@ -226,7 +286,7 @@ export default function EditorCanvas({
 				// 跨项目切换时，清理旧选中，避免串到别的项目
 				if (currentSelected && !currentSelectedInProject) {
 					setSelectedOutput(null);
-					setEditorContent("");
+					replaceEditorBuffer("");
 				}
 
 				if (currentSelectedInProject) {
@@ -235,7 +295,7 @@ export default function EditorCanvas({
 						(d) => d.id === currentSelectedInProject.id,
 					);
 					if (!existsInFiltered) {
-						console.log(
+						debugUiLog(
 							"[EditorCanvas] 当前文档不在列表中，添加到列表:",
 							currentSelectedInProject.id,
 						);
@@ -247,12 +307,12 @@ export default function EditorCanvas({
 
 				if (filtered.length === 0) {
 					setSelectedOutput(null);
-					setEditorContent("");
+					replaceEditorBuffer("");
 					return;
 				}
 
 				if (options?.skipAutoSelect) {
-					console.log("[EditorCanvas] skip auto select, keep current view");
+					debugUiLog("[EditorCanvas] skip auto select, keep current view");
 					return;
 				}
 
@@ -267,14 +327,14 @@ export default function EditorCanvas({
 					pickTarget(currentSelectedId);
 
 				if (targetDoc) {
-					console.log(
+					debugUiLog(
 						"[EditorCanvas] selecting targetDoc:",
 						targetDoc.id,
 						"content length:",
 						targetDoc.content.length,
 					);
 					setSelectedOutput(targetDoc);
-					setEditorContent(targetDoc.content);
+					replaceEditorBuffer(targetDoc.content);
 					// 同步到多标签工作区
 					openDoc(targetDoc.id, targetDoc.title, targetDoc.content);
 					return;
@@ -282,7 +342,7 @@ export default function EditorCanvas({
 
 				// 如果已经有选中的文档，不要覆盖
 				if (currentSelectedInProject) {
-					console.log(
+					debugUiLog(
 						"[EditorCanvas] 保留当前选中的文档:",
 						currentSelectedInProject.id,
 					);
@@ -296,9 +356,9 @@ export default function EditorCanvas({
 				}
 
 				// 默认不自动打开任一文档：保持文档列表视图，让用户手动选择
-				console.log("[EditorCanvas] no auto select fallback; show list view");
+				debugUiLog("[EditorCanvas] no auto select fallback; show list view");
 				setSelectedOutput(null);
-				setEditorContent("");
+				replaceEditorBuffer("");
 			} catch (error) {
 				console.error("[EditorCanvas] 获取文档失败:", error);
 			}
@@ -378,7 +438,7 @@ export default function EditorCanvas({
 			isSavingRef.current = false;
 			setIsSaving(false);
 		}
-	}, [markDocSaved, updateDocCache]);
+	}, [updateDocCache]);
 
 	const flushTitleSave = useCallback(async () => {
 		if (titleSaveTimeoutRef.current) {
@@ -425,11 +485,11 @@ export default function EditorCanvas({
 		// 从 outputs 列表中查找目标文档
 		const targetDoc = outputs.find((o) => o.id === activeDocId);
 		if (targetDoc) {
-			console.log("[EditorCanvas] 标签栏切换文档:", activeDocId);
+			debugUiLog("[EditorCanvas] 标签栏切换文档:", activeDocId);
 			// 先保存当前文档
 			flushPendingSaveImmediately().then(() => {
 				setSelectedOutput(targetDoc);
-				setEditorContent(targetDoc.content);
+				replaceEditorBuffer(targetDoc.content);
 			});
 		}
 	}, [activeDocId, outputs, selectedOutput?.id, flushPendingSaveImmediately]);
@@ -479,7 +539,7 @@ export default function EditorCanvas({
 
 			setOutputs((prev) => prev.filter((item) => !ids.includes(item.id)));
 			setSelectedOutput((prev) => (prev && ids.includes(prev.id) ? null : prev));
-			setEditorContent((prev) => {
+			replaceEditorBuffer((prev) => {
 				if (
 					selectedOutputRef.current &&
 					ids.includes(selectedOutputRef.current.id)
@@ -539,22 +599,22 @@ export default function EditorCanvas({
 			}
 
 			if (output) {
-				console.log(
+				debugUiLog(
 					"[EditorCanvas] handleSelectOutput, output.id:",
 					output.id,
 					"content.length:",
 					output.content.length,
 				);
 				setSelectedOutput(output);
-				setEditorContent(output.content);
+				replaceEditorBuffer(output.content);
 				// 添加到多标签工作区
 				openDoc(output.id, output.title, output.content);
 			} else {
-				console.log(
+				debugUiLog(
 					"[EditorCanvas] handleSelectOutput, output is null, 重新加载列表",
 				);
 				setSelectedOutput(null);
-				setEditorContent("");
+				replaceEditorBuffer("");
 				// 返回列表时重新加载，确保显示最新保存的内容
 				await fetchOutputs(undefined, { skipAutoSelect: true });
 			}
@@ -598,36 +658,51 @@ export default function EditorCanvas({
 		};
 	}, [flushPendingSave]);
 
-	// 同步编辑器内容到 workspaceStore
 	useEffect(() => {
-		if (workspaceStore.getState().editorContent !== editorContent) {
-			workspaceStore.setEditorContent(editorContent);
+		return () => {
+			if (docCacheSyncTimeoutRef.current) {
+				clearTimeout(docCacheSyncTimeoutRef.current);
+				docCacheSyncTimeoutRef.current = null;
+			}
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!activeDocId || !selectedOutput || selectedOutput.id !== activeDocId) {
+			return;
 		}
-
-		if (!activeDocId) return;
-		if (activeDocCacheContent === editorContent) return;
-
-		updateDocCache(activeDocId, editorContent);
-	}, [editorContent, activeDocId, activeDocCacheContent, updateDocCache]);
+		if (editorContent === activeDocCacheContent) {
+			return;
+		}
+		markDocDirty(activeDocId);
+		syncEditorBufferToStore(activeDocId, editorContent);
+	}, [
+		activeDocCacheContent,
+		activeDocId,
+		editorContent,
+		markDocDirty,
+		selectedOutput,
+		syncEditorBufferToStore,
+	]);
 
 	// AI 协议事件监听
 	useEffect(() => {
-		console.log("[EditorCanvas] 注册 AI 事件监听, activeDocId:", activeDocId);
+		debugUiLog("[EditorCanvas] 注册 AI 事件监听, activeDocId:", activeDocId);
 
 		const unsubscribeUpdateEnd = events.on(
 			EVENTS.AI_DOC_UPDATE_END,
 			(data: any) => {
-				console.log("[EditorCanvas] 收到 AI_DOC_UPDATE_END 事件:", data);
-				console.log("[EditorCanvas] activeDocId:", activeDocId);
+				debugUiLog("[EditorCanvas] 收到 AI_DOC_UPDATE_END 事件:", data);
+				debugUiLog("[EditorCanvas] activeDocId:", activeDocId);
 				if (activeDocId) {
-					console.log("[EditorCanvas] 调用 startAIReview");
+					debugUiLog("[EditorCanvas] 调用 startAIReview");
 					startAIReview(
 						activeDocId,
 						data.originalContent,
 						data.suggestedContent,
 					);
 				} else {
-					console.warn("[EditorCanvas] activeDocId 为空，无法启动审查");
+					debugUiWarn("[EditorCanvas] activeDocId 为空，无法启动审查");
 				}
 			},
 		);
@@ -635,7 +710,7 @@ export default function EditorCanvas({
 		const unsubscribeCreateEnd = events.on(
 			EVENTS.AI_DOC_CREATE_END,
 			(data: any) => {
-				console.log("[EditorCanvas] 收到 AI_DOC_CREATE_END 事件:", data);
+				debugUiLog("[EditorCanvas] 收到 AI_DOC_CREATE_END 事件:", data);
 				// 自动创建文档（无提案弹窗），行为类似 Cursor：直接生成并打开
 				void (async () => {
 					try {
@@ -650,7 +725,7 @@ export default function EditorCanvas({
 						openDoc(newAsset.id, newAsset.title, newAsset.content);
 						setOutputs((prev) => [newAsset, ...prev]);
 						setSelectedOutput(newAsset);
-						setEditorContent(newAsset.content);
+						replaceEditorBuffer(newAsset.content);
 						// 清理潜在的 aiReview 状态（如果存在旧的 create 提案状态）
 						acceptAIReview();
 					} catch (error) {
@@ -707,9 +782,9 @@ export default function EditorCanvas({
 					const start = textarea.selectionStart;
 					const before = editorContent.substring(0, start);
 					const after = editorContent.substring(start);
-					setEditorContent(before + data.content + after);
+					replaceEditorBuffer(before + data.content + after);
 				} else {
-					setEditorContent((prev) => prev + "\n\n" + data.content);
+					replaceEditorBuffer((prev) => prev + "\n\n" + data.content);
 				}
 			},
 		);
@@ -722,7 +797,7 @@ export default function EditorCanvas({
 		if (!suggestion) return;
 
 		if (suggestion.type === "diff") {
-			setEditorContent(suggestion.content);
+			replaceEditorBuffer(suggestion.content);
 			return;
 		}
 
@@ -736,12 +811,12 @@ export default function EditorCanvas({
 				});
 				await fetchOutputs();
 				setSelectedOutput(newAsset);
-				setEditorContent(newAsset.content);
+				replaceEditorBuffer(newAsset.content);
 			} catch (e) {
 				console.error("[EditorCanvas] 创建文档失败:", e);
 			}
 		} else {
-			setEditorContent((prev) => prev + "\n\n" + suggestion.content);
+			replaceEditorBuffer((prev) => prev + "\n\n" + suggestion.content);
 		}
 	};
 
@@ -884,7 +959,7 @@ export default function EditorCanvas({
 	) => {
 		try {
 			await flushPendingSaveImmediately();
-			console.log("[EditorCanvas] 创建新文档:", { title, type, projectId });
+			debugUiLog("[EditorCanvas] 创建新文档:", { title, type, projectId });
 			const newAsset = await createOutputAsset({
 				title: title,
 				content: initialContent,
@@ -892,8 +967,8 @@ export default function EditorCanvas({
 				related_notes: [],
 				project_id: projectId,
 			});
-			console.log("[EditorCanvas] 文档创建成功:", newAsset.id);
-			console.log("[EditorCanvas] 返回的完整数据:", JSON.stringify(newAsset));
+			debugUiLog("[EditorCanvas] 文档创建成功:", newAsset.id);
+			debugUiLog("[EditorCanvas] 返回的完整数据:", JSON.stringify(newAsset));
 
 			// 确保 newAsset 有完整的数据
 			const completeAsset = {
@@ -903,14 +978,14 @@ export default function EditorCanvas({
 				output_type: newAsset.output_type || type,
 			};
 
-			console.log("[EditorCanvas] 设置 selectedOutput:", completeAsset.id);
+			debugUiLog("[EditorCanvas] 设置 selectedOutput:", completeAsset.id);
 			setOutputs((prev) => {
-				console.log("[EditorCanvas] 更新 outputs, 之前数量:", prev.length);
+				debugUiLog("[EditorCanvas] 更新 outputs, 之前数量:", prev.length);
 				return [completeAsset, ...prev];
 			});
 			setSelectedOutput(completeAsset);
-			setEditorContent(initialContent);
-			console.log("[EditorCanvas] 状态更新完成");
+			replaceEditorBuffer(initialContent);
+			debugUiLog("[EditorCanvas] 状态更新完成");
 		} catch (error) {
 			console.error("[EditorCanvas] 创建文档失败:", error);
 			toast.error("创建文档失败，请重试");
@@ -971,7 +1046,7 @@ export default function EditorCanvas({
 			const after = text.substring(end);
 
 			const newContent = before + prefix + selection + suffix + after;
-			setEditorContent(newContent);
+			replaceEditorBuffer(newContent);
 
 			setTimeout(() => {
 				textarea.focus();
@@ -1046,7 +1121,7 @@ export default function EditorCanvas({
 			newContentWithPlaceholder = editorContent + placeholderMarkdown;
 		}
 
-		setEditorContent(newContentWithPlaceholder);
+		replaceEditorBuffer(newContentWithPlaceholder);
 
 		try {
 			// 使用配置服务生成图像
@@ -1054,7 +1129,7 @@ export default function EditorCanvas({
 				text: selectedText,
 			});
 
-			console.log("[EditorCanvas] 生图结果:", result);
+			debugUiLog("[EditorCanvas] 生图结果:", result);
 
 			if (result.images.length > 0) {
 				// 后端已统一解析各种格式，直接使用 imageUrl
@@ -1063,20 +1138,20 @@ export default function EditorCanvas({
 				const imageMarkdown = `\n\n![AI 配图](<${imageUrl}>)\n`;
 
 				// 替换占位符
-				setEditorContent((prevContent) =>
+				replaceEditorBuffer((prevContent) =>
 					prevContent.replace(placeholderMarkdown, imageMarkdown),
 				);
 			} else {
 				// 没有图片结果，移除占位符
-				console.warn("[EditorCanvas] 生图响应无图片");
-				setEditorContent((prevContent) =>
+				debugUiWarn("[EditorCanvas] 生图响应无图片");
+				replaceEditorBuffer((prevContent) =>
 					prevContent.replace(placeholderMarkdown, ""),
 				);
 			}
 		} catch (error) {
 			console.error("生成配图失败:", error);
 			// 移除占位符，显示错误提示
-			setEditorContent((prevContent) =>
+			replaceEditorBuffer((prevContent) =>
 				prevContent.replace(
 					placeholderMarkdown,
 					`\n\n> ⚠️ 生图失败: ${error instanceof Error ? error.message : "未知错误"}\n`,
@@ -1154,7 +1229,7 @@ export default function EditorCanvas({
 			// 更新文档列表
 			setOutputs((prev) => [newAsset, ...prev]);
 			setSelectedOutput(newAsset);
-			setEditorContent(newAsset.content);
+			replaceEditorBuffer(newAsset.content);
 		} catch (error) {
 			console.error("创建文档失败:", error);
 		}
@@ -1195,11 +1270,11 @@ export default function EditorCanvas({
 						const nextDoc = outputs.find((o) => o.id === nextDocId);
 						if (nextDoc) {
 							setSelectedOutput(nextDoc);
-							setEditorContent(nextDoc.content);
+							replaceEditorBuffer(nextDoc.content);
 						}
 					} else {
 						setSelectedOutput(null);
-						setEditorContent("");
+						replaceEditorBuffer("");
 					}
 				}
 			})();
@@ -1217,7 +1292,7 @@ export default function EditorCanvas({
 			aiReview.docId &&
 			activeDocId === aiReview.docId
 		) {
-			setEditorContent(aiReview.suggestedContent);
+			replaceEditorBuffer(aiReview.suggestedContent);
 
 			// 更新 selectedOutput
 			if (selectedOutput && selectedOutput.id === aiReview.docId) {
@@ -1256,7 +1331,7 @@ export default function EditorCanvas({
 			// 更新文档列表
 			setOutputs((prev) => [newAsset, ...prev]);
 			setSelectedOutput(newAsset);
-			setEditorContent(newAsset.content);
+			replaceEditorBuffer(newAsset.content);
 
 			// 清除 AI 审查状态
 			acceptAIReview();
@@ -1403,7 +1478,8 @@ export default function EditorCanvas({
 						selectedTitle={selectedOutput?.title || ""}
 						editorContent={editorContent}
 						onTitleChange={handleTitleChange}
-						onContentChange={setEditorContent}
+						onContentChange={handleEditorContentChange}
+						onEditorBlur={handleEditorBlur}
 						onTextareaScroll={handleTextareaScroll}
 						onPreviewScroll={handlePreviewScroll}
 						onTextareaContextMenu={handleTextareaContextMenu}

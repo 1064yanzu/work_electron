@@ -469,6 +469,14 @@ let cachedPerformanceTuning: PerformanceTuning = {
 };
 let cachedPerformanceTuningLoaded = false;
 
+export function getCachedPerformanceTuning(): PerformanceTuning {
+	return cachedPerformanceTuning;
+}
+
+export function isUiDebugLogsEnabled(): boolean {
+	return cachedPerformanceTuning.enableUiDebugLogs;
+}
+
 function normalizeInterval(
 	value: unknown,
 	defaultValue: number,

@@ -9,7 +9,9 @@ type HookResult = {
 			| "PreCompact"
 			| "TaskCompleted"
 			| "Notification"
-			| "PermissionRequest";
+			| "PermissionRequest"
+			| "TeammateIdle"
+			| "PostToolUseFailure";
 		additionalContext?: string;
 	};
 };
@@ -19,8 +21,21 @@ export function createLifecycleHooks(input: {
 	runId: string;
 	stderr: (message: string) => void;
 	emitLifecycleEvent: (event: Record<string, unknown>) => void;
+	sessionAdditionalContext?: string;
+	preCompactAdditionalContext?: string;
+	runtimeMetadata?: Record<string, unknown>;
+	experimentalMultiAgentEnabled?: boolean;
 }) {
-	const { logger, runId, stderr, emitLifecycleEvent } = input;
+	const {
+		logger,
+		runId,
+		stderr,
+		emitLifecycleEvent,
+		sessionAdditionalContext,
+		preCompactAdditionalContext,
+		runtimeMetadata,
+		experimentalMultiAgentEnabled,
+	} = input;
 
 	return {
 		SessionStart: [
@@ -35,14 +50,32 @@ export function createLifecycleHooks(input: {
 							source: hookInput?.source ?? null,
 							agentType: hookInput?.agent_type ?? null,
 							model: hookInput?.model ?? null,
+							...(runtimeMetadata || {}),
 						});
+						if (experimentalMultiAgentEnabled) {
+							emitLifecycleEvent({
+								type: "leader_start",
+								source: hookInput?.source ?? null,
+								agentType: hookInput?.agent_type ?? null,
+								model: hookInput?.model ?? null,
+								...(runtimeMetadata || {}),
+							});
+						}
 						logger.info({
 							msg: "agent_sdk session start",
 							scope: "agent",
 							runId,
 							source: hookInput?.source ?? null,
 						});
-						return { continue: true };
+						return sessionAdditionalContext
+							? {
+									continue: true,
+									hookSpecificOutput: {
+										hookEventName: "SessionStart",
+										additionalContext: sessionAdditionalContext,
+									},
+								}
+							: { continue: true };
 					},
 				],
 			},
@@ -80,11 +113,20 @@ export function createLifecycleHooks(input: {
 							type: "pre_compact",
 							trigger: hookInput?.trigger ?? null,
 							customInstructions: hookInput?.custom_instructions ?? null,
+							...(runtimeMetadata || {}),
 						});
 						stderr(
 							`[PreCompact] trigger='${String(hookInput?.trigger ?? "unknown")}'`,
 						);
-						return { continue: true };
+						return preCompactAdditionalContext
+							? {
+									continue: true,
+									hookSpecificOutput: {
+										hookEventName: "PreCompact",
+										additionalContext: preCompactAdditionalContext,
+									},
+								}
+							: { continue: true };
 					},
 				],
 			},
@@ -97,11 +139,26 @@ export function createLifecycleHooks(input: {
 							return { continue: true };
 						}
 						emitLifecycleEvent({
-							type: "task_notification",
+							type:
+								hookInput?.teammate_name || hookInput?.team_name
+									? "teammate_complete"
+									: "task_notification",
 							taskId: hookInput?.task_id ?? null,
 							status: "completed",
 							summary: hookInput?.task_subject ?? null,
+							teammateName: hookInput?.teammate_name ?? null,
+							teamName: hookInput?.team_name ?? null,
+							...(runtimeMetadata || {}),
 						});
+						if (hookInput?.team_name && !hookInput?.teammate_name) {
+							emitLifecycleEvent({
+								type: "leader_merge",
+								taskId: hookInput?.task_id ?? null,
+								summary: hookInput?.task_subject ?? null,
+								teamName: hookInput?.team_name ?? null,
+								...(runtimeMetadata || {}),
+							});
+						}
 						return { continue: true };
 					},
 				],
@@ -139,6 +196,52 @@ export function createLifecycleHooks(input: {
 							tool: hookInput?.tool_name ?? null,
 						});
 						return { continue: true };
+					},
+				],
+			},
+		],
+		TeammateIdle: [
+			{
+				hooks: [
+					async (hookInput: any): Promise<HookResult> => {
+						if (hookInput?.hook_event_name !== "TeammateIdle") {
+							return { continue: true };
+						}
+						emitLifecycleEvent({
+							type: "teammate_idle",
+							teammateName: hookInput?.teammate_name ?? null,
+							teamName: hookInput?.team_name ?? null,
+							...(runtimeMetadata || {}),
+						});
+						return { continue: true };
+					},
+				],
+			},
+		],
+		PostToolUseFailure: [
+			{
+				hooks: [
+					async (hookInput: any): Promise<HookResult> => {
+						if (hookInput?.hook_event_name !== "PostToolUseFailure") {
+							return { continue: true };
+						}
+						if (String(hookInput?.tool_name || "") !== "Teammate") {
+							return { continue: true };
+						}
+						emitLifecycleEvent({
+							type: "delegation_fallback",
+							toolName: hookInput?.tool_name ?? null,
+							error: hookInput?.error ?? null,
+							...(runtimeMetadata || {}),
+						});
+						return {
+							continue: true,
+							hookSpecificOutput: {
+								hookEventName: "PostToolUseFailure",
+								additionalContext:
+									"Teammate 调用失败，请立即回退到 Task 子代理，并继续主流程。",
+							},
+						};
 					},
 				],
 			},

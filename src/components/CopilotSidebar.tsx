@@ -10,7 +10,15 @@ import {
 	StopCircle,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	lazy,
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { type DragItem, useMouseDropZone } from "../hooks/useMouseDrag";
 // webSearch 和 fetchUrlContent 现在由 Agent 工具调用
 import { agentExecutor } from "../lib/agent/executor";
@@ -24,20 +32,23 @@ import {
 } from "../lib/agent/persistence";
 import { agentStore, useAgentStoreSelector } from "../lib/agent/store";
 import { useAgentChatSettingsStore } from "../lib/agent/chatSettingsStore";
-import { usePermissionStore } from "../lib/agent/permissionStore";
-import { useAskUserQuestionStore } from "../lib/agent/askUserQuestionStore";
+import {
+	askUserQuestionStore,
+	useAskUserQuestionStoreSelector,
+} from "../lib/agent/askUserQuestionStore";
+import {
+	permissionStore,
+	usePermissionStoreSelector,
+} from "../lib/agent/permissionStore";
 import {
 	chatStore as chatStoreInstance,
 	useChatStoreSelector,
 } from "../lib/chat/store";
-import type {
-	ChatMessage as ChatMessageType,
-} from "../lib/chat/types";
+import type { ChatMessage as ChatMessageType } from "../lib/chat/types";
 import { getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
-import { useManagedModeStore } from "../lib/managedModeStore";
-import { useMessageQueueStore } from "../lib/messageQueueStore";
-import { useSettingsStore } from "../lib/settingsStore";
+import { managedModeStore } from "../lib/managedModeStore";
+import { settingsStore, useSettingsStoreSelector } from "../lib/settingsStore";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -53,16 +64,12 @@ import {
 	useAgentHandler,
 	useChatHandler,
 } from "./copilot/hooks";
-import { PromptLibraryModal } from "./PromptLibraryModal";
-import { ChatHistory } from "./chat/ChatHistory";
 import { ChatInput } from "./chat/ChatInput";
 import { CopilotMessagePane } from "./chat/CopilotMessagePane";
 import type { SlashCommand } from "./chat/SlashCommand";
 import { toast } from "./ui/Toast";
 
-import {
-	parseDocProtocolFinal,
-} from "../lib/chat/docProtocol";
+import { parseDocProtocolFinal } from "../lib/chat/docProtocol";
 
 // 快捷操作按钮
 const chatActions = {
@@ -90,8 +97,24 @@ const chatActions = {
 const MESSAGE_WINDOW_SIZE = 140;
 const MESSAGE_WINDOW_STEP = 120;
 
+const LazyPromptLibraryModal = lazy(async () => {
+	const mod = await import("./PromptLibraryModal");
+	return { default: mod.PromptLibraryModal };
+});
+
+const LazyChatHistory = lazy(async () => {
+	const mod = await import("./chat/ChatHistory");
+	return { default: mod.ChatHistory };
+});
+
+const respondToPermission =
+	permissionStore.respondToPermission.bind(permissionStore);
+const resolveAskUserQuestion =
+	askUserQuestionStore.resolve.bind(askUserQuestionStore);
+
 export default function CopilotSidebar() {
-	const { providers, activeModel, settingsStore } = useSettingsStore();
+	const providers = useSettingsStoreSelector((state) => state.providers);
+	const activeModel = useSettingsStoreSelector((state) => state.activeModel);
 	const sessions = useChatStoreSelector((state) => state.sessions);
 	const activeSessionId = useChatStoreSelector(
 		(state) => state.activeSessionId,
@@ -124,10 +147,12 @@ export default function CopilotSidebar() {
 	const isWaitingForLLM = useAgentStoreSelector(
 		(state) => state.isWaitingForLLM,
 	);
-	const { pendingRequests, respondToPermission } = usePermissionStore();
-	const { pending: pendingAskUserQuestions, resolve: resolveAskUserQuestion } =
-		useAskUserQuestionStore();
-	const { store: managedModeStore } = useManagedModeStore();
+	const pendingRequests = usePermissionStoreSelector(
+		(state) => state.pendingRequests,
+	);
+	const pendingAskUserQuestions = useAskUserQuestionStoreSelector(
+		(state) => state.pending,
+	);
 
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
 	const [abortController, setAbortController] =
@@ -180,11 +205,6 @@ export default function CopilotSidebar() {
 		};
 	}, []);
 
-	// 消息队列（队列功能框架已建立，具体消费逻辑待后续完善）
-	const { queueLength } = useMessageQueueStore();
-	// 注：当 Agent 执行完成时，未来可在 useEffect 中自动 dequeue 处理队列消息
-	void queueLength;
-
 	// 鼠标拖拽 drop zone (替代 HTML5 拖拽，因为 Tauri 不支持)
 	const handleMouseDrop = useCallback(
 		(item: DragItem) => {
@@ -236,6 +256,17 @@ export default function CopilotSidebar() {
 		},
 		[resolveAskUserQuestion],
 	);
+	const handleLoadOlderMessages = useCallback(() => {
+		setMessageRenderStart((previous) =>
+			Math.max(0, previous - MESSAGE_WINDOW_STEP),
+		);
+	}, []);
+	const handleOpenResearch = useCallback(() => {
+		workspaceStore.setLeftSidebarView("research");
+	}, []);
+	const handleSelectModel = useCallback((id: string) => {
+		void settingsStore.setActiveModel(id);
+	}, []);
 
 	// 监听添加上下文事件
 	useEffect(() => {
@@ -377,15 +408,19 @@ export default function CopilotSidebar() {
 	}, []);
 
 	// 获取可用模型
-	const enabledModels = providers
-		.filter((provider) => provider.isEnabled)
-		.flatMap((provider) =>
-			provider.models.map((modelId) => ({
-				id: modelId,
-				provider: provider.name,
-			})),
-		)
-		.sort((a, b) => a.id.localeCompare(b.id));
+	const enabledModels = useMemo(
+		() =>
+			providers
+				.filter((provider) => provider.isEnabled)
+				.flatMap((provider) =>
+					provider.models.map((modelId) => ({
+						id: modelId,
+						provider: provider.name,
+					})),
+				)
+				.sort((a, b) => a.id.localeCompare(b.id)),
+		[providers],
+	);
 
 	// 会话标题自动生成
 	const { generateSessionTitle } = useSessionTitleGeneration({
@@ -676,6 +711,10 @@ export default function CopilotSidebar() {
 			Array.from(pendingAskUserQuestions.values()).map((item) => item.request),
 		[pendingAskUserQuestions],
 	);
+	const pendingPermissionRequests = useMemo(
+		() => Array.from(pendingRequests.values()).map((item) => item.request),
+		[pendingRequests],
+	);
 	const isStreaming = chatStore.status === "streaming";
 
 	useEffect(() => {
@@ -721,20 +760,28 @@ export default function CopilotSidebar() {
 			{/* 历史记录面板 */}
 			{isHistoryOpen && (
 				<div className="absolute inset-0 z-50 bg-white dark:bg-zinc-900">
-					<ChatHistory
-						sessions={chatStore.sessions}
-						activeSessionId={chatStore.activeSessionId}
-						onSelectSession={(id) => {
-							chatStore.setActiveSession(id);
-							setIsHistoryOpen(false);
-						}}
-						onDeleteSession={(sessionId) => {
-							void handleDeleteSession(sessionId);
-						}}
-						onRenameSession={chatStore.updateSessionTitle}
-						onNewSession={handleNewSession}
-						onClose={() => setIsHistoryOpen(false)}
-					/>
+					<Suspense
+						fallback={
+							<div className="h-full flex items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
+								正在加载对话历史...
+							</div>
+						}
+					>
+						<LazyChatHistory
+							sessions={chatStore.sessions}
+							activeSessionId={chatStore.activeSessionId}
+							onSelectSession={(id) => {
+								chatStore.setActiveSession(id);
+								setIsHistoryOpen(false);
+							}}
+							onDeleteSession={(sessionId) => {
+								void handleDeleteSession(sessionId);
+							}}
+							onRenameSession={chatStore.updateSessionTitle}
+							onNewSession={handleNewSession}
+							onClose={() => setIsHistoryOpen(false)}
+						/>
+					</Suspense>
 				</div>
 			)}
 
@@ -753,7 +800,7 @@ export default function CopilotSidebar() {
 			/>
 
 			<CopilotStatusArea
-				requests={Array.from(pendingRequests.values()).map((p) => p.request)}
+				requests={pendingPermissionRequests}
 				onRespond={respondToPermission}
 			/>
 
@@ -770,13 +817,9 @@ export default function CopilotSidebar() {
 				preferBlocks={chatSettings.blocksFirstEnabled}
 				pendingAskUserRequests={pendingAskUserRequests}
 				onScroll={updateAutoScrollState}
-				onLoadOlderMessages={() =>
-					setMessageRenderStart((previous) =>
-						Math.max(0, previous - MESSAGE_WINDOW_STEP),
-					)
-				}
+				onLoadOlderMessages={handleLoadOlderMessages}
 				onRegenerateMessage={handleRegenerateMessage}
-				onOpenResearch={() => workspaceStore.setLeftSidebarView("research")}
+				onOpenResearch={handleOpenResearch}
 				onAllowAskUserQuestion={handleAllowAskUserQuestion}
 				onDenyAskUserQuestion={handleDenyAskUserQuestion}
 			/>
@@ -969,17 +1012,21 @@ export default function CopilotSidebar() {
 					}
 					model={activeModel || undefined}
 					models={enabledModels}
-					onModelSelect={(id) => settingsStore.setActiveModel(id)}
+					onModelSelect={handleSelectModel}
 					onOpenPromptLibrary={() => setIsPromptLibraryOpen(true)}
 					isAgentExecuting={isAgentExecuting}
 				/>
 			</div>
 
 			{/* 提示词仓库弹窗 */}
-			<PromptLibraryModal
-				isOpen={isPromptLibraryOpen}
-				onClose={() => setIsPromptLibraryOpen(false)}
-			/>
+			{isPromptLibraryOpen ? (
+				<Suspense fallback={null}>
+					<LazyPromptLibraryModal
+						isOpen={isPromptLibraryOpen}
+						onClose={() => setIsPromptLibraryOpen(false)}
+					/>
+				</Suspense>
+			) : null}
 		</aside>
 	);
 }

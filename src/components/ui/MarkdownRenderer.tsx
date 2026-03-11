@@ -12,9 +12,12 @@ import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InlineImage } from "./InlineImage";
 import { isTauriUnavailableError, safeInvoke } from "../../lib/tauriBridge";
-import { WebPreviewCard } from "../chat/WebPreviewCard";
 
 const MermaidRenderer = lazy(() => import("./MermaidRenderer"));
+const WebPreviewCard = lazy(async () => {
+	const mod = await import("../chat/WebPreviewCard");
+	return { default: mod.WebPreviewCard };
+});
 
 function useThrottledValue<T>(value: T, intervalMs: number, enabled: boolean) {
 	const [throttledValue, setThrottledValue] = useState(value);
@@ -188,12 +191,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				if (language === "html" || language === "htm") {
 					return (
 						<div className="my-3">
-							<WebPreviewCard
-								kind="html"
-								html={code}
-								title="前端预览"
-								isStreaming={isStreaming}
-							/>
+							<Suspense fallback={null}>
+								<WebPreviewCard
+									kind="html"
+									html={code}
+									title="前端预览"
+									isStreaming={isStreaming}
+								/>
+							</Suspense>
 						</div>
 					);
 				}
@@ -201,12 +206,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				if (language === "jsx" || language === "tsx" || language === "react") {
 					return (
 						<div className="my-3">
-							<WebPreviewCard
-								kind="react"
-								jsx={code}
-								title="React 预览"
-								isStreaming={isStreaming}
-							/>
+							<Suspense fallback={null}>
+								<WebPreviewCard
+									kind="react"
+									jsx={code}
+									title="React 预览"
+									isStreaming={isStreaming}
+								/>
+							</Suspense>
 						</div>
 					);
 				}

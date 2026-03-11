@@ -460,6 +460,10 @@ class WorkspaceStore {
 		editorStore.updateDocCache(docId, content, dirty);
 	}
 
+	markDocDirty(docId: string) {
+		editorStore.markDocDirty(docId);
+	}
+
 	markDocSaved(docId: string) {
 		editorStore.markDocSaved(docId);
 	}
@@ -578,6 +582,7 @@ export function useWorkspaceStore() {
 		setActiveDoc: workspaceStore.setActiveDoc.bind(workspaceStore),
 		reorderDocs: workspaceStore.reorderDocs.bind(workspaceStore),
 		updateDocCache: workspaceStore.updateDocCache.bind(workspaceStore),
+		markDocDirty: workspaceStore.markDocDirty.bind(workspaceStore),
 		markDocSaved: workspaceStore.markDocSaved.bind(workspaceStore),
 		saveDocSnapshot: workspaceStore.saveDocSnapshot.bind(workspaceStore),
 		restoreDocSnapshot: workspaceStore.restoreDocSnapshot.bind(workspaceStore),

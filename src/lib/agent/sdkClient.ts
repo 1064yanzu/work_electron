@@ -37,6 +37,17 @@ export interface AgentStartPayload {
 		max_file_chars: number;
 	};
 	enable_tool_search?: "auto" | "auto:5" | "true" | "false";
+	experimental_multi_agent?: boolean;
+	multi_agent_mode?: "subagent_only" | "hybrid" | "teammate_preferred";
+	max_teammates?: number;
+	teammate_mode?: "auto" | "tmux" | "in-process";
+	teammate_budget?: {
+		max_turns?: number;
+		max_thinking_tokens?: number;
+		max_budget_usd?: number;
+	};
+	leader_summary_model?: string;
+	teammate_execution_model?: string;
 }
 
 export interface AgentInteractionRequestPayload {

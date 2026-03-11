@@ -20,6 +20,7 @@ import { useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { moveSourcesToFolder } from "../../lib/api";
 import { useMouseDrag } from "../../hooks/useMouseDrag";
+import { measureNextPaint } from "../../lib/performance/devMetrics";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -142,6 +143,7 @@ export function SourceListView({
 }: SourceListViewProps) {
 	const { startDrag, isDragging: isMouseDragging, dragItem } = useMouseDrag();
 	const sourceListScrollRef = useRef<HTMLDivElement | null>(null);
+	const scrollMetricPendingRef = useRef(false);
 
 	const currentFolderId = useWorkspaceStoreSelector(
 		(state) => state.currentFolderId,
@@ -153,13 +155,12 @@ export function SourceListView({
 		workspaceStore.setLeftSidebarView.bind(workspaceStore);
 	const setCurrentFolder = workspaceStore.setCurrentFolder.bind(workspaceStore);
 
-	const shouldVirtualizeSources =
-		viewMode === "list" && sources.length > 200 && currentSubfolders.length === 0;
+	const shouldVirtualizeSources = viewMode === "list";
 	const sourceVirtualizer = useVirtualizer({
 		count: shouldVirtualizeSources ? sources.length : 0,
 		getScrollElement: () => sourceListScrollRef.current,
 		estimateSize: () => 62,
-		overscan: 10,
+		overscan: 14,
 	});
 
 	const getIconForSource = useCallback((kind: SourceType) => {
@@ -178,6 +179,29 @@ export function SourceListView({
 				return <FileText className="w-4 h-4" />;
 		}
 	}, []);
+
+	const handleToggleViewMode = useCallback(() => {
+		const nextMode = viewMode === "grid" ? "list" : "grid";
+		const startedAt = performance.now();
+		setViewMode(nextMode);
+		measureNextPaint("resource.list.view_mode_toggle", startedAt, {
+			nextMode,
+			sourceCount: sources.length,
+		});
+	}, [setViewMode, sources.length, viewMode]);
+
+	const handleListScroll = useCallback(() => {
+		if (scrollMetricPendingRef.current) return;
+		scrollMetricPendingRef.current = true;
+		const startedAt = performance.now();
+		measureNextPaint("resource.list.scroll", startedAt, {
+			sourceCount: sources.length,
+			viewMode,
+		});
+		requestAnimationFrame(() => {
+			scrollMetricPendingRef.current = false;
+		});
+	}, [sources.length, viewMode]);
 
 	const getKindColor = useCallback((kind: SourceType) => {
 		switch (kind) {
@@ -616,9 +640,7 @@ export function SourceListView({
 				viewTabs={viewTabs}
 				onOpenResearch={() => setLeftSidebarView("research")}
 				onOpenFolderModal={onOpenFolderModal}
-				onToggleViewMode={() =>
-					setViewMode(viewMode === "grid" ? "list" : "grid")
-				}
+				onToggleViewMode={handleToggleViewMode}
 				onOpenSettings={onOpenSettings}
 				onToggleSelectionMode={() =>
 					selectionMode ? exitSelectionMode() : setSelectionMode(true)
@@ -682,6 +704,7 @@ export function SourceListView({
 			<div
 				ref={sourceListScrollRef}
 				className="flex-1 overflow-y-auto scrollbar-hide p-3"
+				onScroll={handleListScroll}
 				onDragOver={(e) => {
 					const hasSourceData =
 						draggedSourceId ||
@@ -860,19 +883,12 @@ export function SourceListView({
 									);
 								})}
 							</div>
-						) : (
-							sources.map((source) => (
-								<div
-									key={source.id}
-									style={
-										viewMode === "list"
-											? ({ contentVisibility: "auto" } as const)
-											: undefined
-									}
-								>
-									{renderSourceCard(source)}
-								</div>
-							))
+							) : (
+								sources.map((source) => (
+									<div key={source.id}>
+										{renderSourceCard(source)}
+									</div>
+								))
 						)}
 					</div>
 				)}

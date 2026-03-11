@@ -129,6 +129,23 @@ function updateDocCache(docId: string, content: string, dirty = true) {
 	});
 }
 
+function markDocDirty(docId: string) {
+	store.setState((state) => {
+		const doc = state.docCache[docId];
+		if (!doc || doc.dirty) return state;
+		return {
+			...state,
+			docCache: {
+				...state.docCache,
+				[docId]: {
+					...doc,
+					dirty: true,
+				},
+			},
+		};
+	});
+}
+
 // 标记文档已保存
 function markDocSaved(docId: string) {
 	store.setState((state) => {
@@ -352,6 +369,7 @@ export const editorStore = {
 	setActiveDoc,
 	reorderDocs,
 	updateDocCache,
+	markDocDirty,
 	markDocSaved,
 	saveDocSnapshot,
 	restoreDocSnapshot,

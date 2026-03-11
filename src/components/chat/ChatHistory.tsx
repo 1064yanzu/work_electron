@@ -1,7 +1,7 @@
 // 聊天历史记录面板
 
 import { Calendar, MessageSquare, Plus, Search, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
 import type { ChatSession } from "../../lib/chat/types";
 import { inputDialog } from "../ui/InputDialog";
@@ -28,6 +28,7 @@ export function ChatHistory({
 }: ChatHistoryProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+	const deferredSearchQuery = useDeferredValue(searchQuery);
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
 		y: number;
@@ -49,11 +50,12 @@ export function ChatHistory({
 
 	// 过滤和分组
 	const { groupedSessions, hasResults } = useMemo(() => {
+		const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
 		const filtered = sessions.filter(
 			(s) =>
-				s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				s.title.toLowerCase().includes(normalizedQuery) ||
 				s.messages.some((m) =>
-					m.content.toLowerCase().includes(searchQuery.toLowerCase()),
+					m.content.toLowerCase().includes(normalizedQuery),
 				),
 		);
 
@@ -68,7 +70,7 @@ export function ChatHistory({
 		);
 
 		return { groupedSessions: groups, hasResults: filtered.length > 0 };
-	}, [sessions, searchQuery]);
+	}, [sessions, deferredSearchQuery]);
 
 	const sortedEntries = useMemo(() => {
 		return Object.entries(groupedSessions).map(([dateKey, dateSessions]) => {
@@ -230,6 +232,10 @@ export function ChatHistory({
 														: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:shadow-sm"
 												}
                       `}
+											style={{
+												contentVisibility: "auto",
+												containIntrinsicSize: "88px",
+											}}
 										>
 											<div
 												className={`

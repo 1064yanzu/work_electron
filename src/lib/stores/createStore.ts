@@ -2,9 +2,12 @@
 
 import { useCallback, useRef, useSyncExternalStore } from "react";
 
-export interface StoreApi<T> {
+export interface ReadableStoreApi<T> {
 	getState: () => T;
 	subscribe: (listener: () => void) => () => void;
+}
+
+export interface StoreApi<T> extends ReadableStoreApi<T> {
 	setState: (updater: (state: T) => T) => void;
 }
 
@@ -41,7 +44,7 @@ export function createStore<T>(initialState: T): StoreApi<T> {
  * 创建绑定到 Store 的 React Hook。
  * 返回完整的 state 对象。
  */
-export function createUseStore<T>(store: StoreApi<T>) {
+export function createUseStore<T>(store: ReadableStoreApi<T>) {
 	return function useStore(): T {
 		return useSyncExternalStore(
 			store.subscribe,
@@ -55,7 +58,7 @@ export function createUseStore<T>(store: StoreApi<T>) {
  * 创建绑定到 Store 的 React Selector Hook。
  * 允许组件只订阅需要的状态字段，减少不必要的重渲染。
  */
-export function createUseStoreSelector<T>(store: StoreApi<T>) {
+export function createUseStoreSelector<T>(store: ReadableStoreApi<T>) {
 	return function useStoreSelector<R>(selector: (state: T) => R): R {
 		const selectorRef = useRef(selector);
 		selectorRef.current = selector;
@@ -65,10 +68,6 @@ export function createUseStoreSelector<T>(store: StoreApi<T>) {
 			[],
 		);
 
-		return useSyncExternalStore(
-			store.subscribe,
-			getSnapshot,
-			getSnapshot,
-		);
+		return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 	};
 }

@@ -331,6 +331,7 @@ export function createProviderHandlers(db: DbContext) {
 
 		invalidateProviderCache();
 		return {
+			id,
 			name: input.name,
 			provider_type: input.provider_type,
 			is_enabled: input.is_enabled ?? true,

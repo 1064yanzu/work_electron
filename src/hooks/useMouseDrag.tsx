@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { debugUiLog } from "../lib/debug/uiDebug";
 
 // 拖拽数据类型
 export interface DragItem {
@@ -54,7 +55,7 @@ export function MouseDragProvider({ children }: { children: ReactNode }) {
 			dragPosition: { x: e.clientX, y: e.clientY },
 			dragOffset: { x: 0, y: 0 },
 		});
-		console.log("[MouseDrag] 开始拖拽:", item.sourceId);
+		debugUiLog("[MouseDrag] 开始拖拽:", item.sourceId);
 	}, []);
 
 	const updatePosition = useCallback((e: MouseEvent) => {
@@ -65,7 +66,7 @@ export function MouseDragProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const endDrag = useCallback(() => {
-		console.log("[MouseDrag] 结束拖拽");
+		debugUiLog("[MouseDrag] 结束拖拽");
 		dragItemRef.current = null;
 		setState({
 			isDragging: false,
@@ -153,7 +154,7 @@ export function useMouseDropZone(onDrop: (item: DragItem) => void) {
 	const handleMouseEnter = useCallback(() => {
 		if (isDragging) {
 			setIsOver(true);
-			console.log("[MouseDrag] 进入 drop 区域");
+			debugUiLog("[MouseDrag] 进入 drop 区域");
 		}
 	}, [isDragging]);
 
@@ -164,7 +165,7 @@ export function useMouseDropZone(onDrop: (item: DragItem) => void) {
 	const handleMouseUp = useCallback(() => {
 		const item = getDragItem();
 		if (isOver && item) {
-			console.log("[MouseDrag] 执行 drop:", item.sourceId);
+			debugUiLog("[MouseDrag] 执行 drop:", item.sourceId);
 			onDrop(item);
 		}
 		setIsOver(false);

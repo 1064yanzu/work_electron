@@ -2,19 +2,19 @@
  * SandboxWorkspace - 托管模式的沙盒工作区（解耦版）
  */
 
-import { useCallback, useEffect, useMemo } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { deleteFileSafe, moveFileSafe, revealFileSafe } from "../../lib/api";
-import { useAgentStore } from "../../lib/agent/store";
-import { useChatStore } from "../../lib/chat/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
+import { useChatStoreSelector } from "../../lib/chat/store";
 import { getCenterUxPrefs } from "../../lib/config";
 import { EVENTS, events } from "../../lib/events";
 import {
 	groupFilesByCategory,
-	useManagedModeStore,
+	managedModeStore,
+	useManagedModeStoreSelector,
 	type SandboxFile,
 } from "../../lib/managedModeStore";
-import { ExecutionGraph } from "./ExecutionGraph";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
@@ -24,6 +24,11 @@ import { confirmDialog } from "../ui/ConfirmDialog";
 import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
 
+const ExecutionGraph = lazy(async () => {
+	const mod = await import("./ExecutionGraph");
+	return { default: mod.ExecutionGraph };
+});
+
 interface SandboxWorkspaceProps {
 	onExitManagedMode: () => void;
 }
@@ -31,10 +36,19 @@ interface SandboxWorkspaceProps {
 export default function SandboxWorkspace({
 	onExitManagedMode,
 }: SandboxWorkspaceProps) {
-	const { files, selectedFileId, ui, store } = useManagedModeStore();
-	const { currentTask, taskHistory, isExecuting } = useAgentStore();
+	const files = useManagedModeStoreSelector((state) => state.files);
+	const selectedFileId = useManagedModeStoreSelector(
+		(state) => state.selectedFileId,
+	);
+	const ui = useManagedModeStoreSelector((state) => state.ui);
+	const currentTask = useAgentStoreSelector((state) => state.currentTask);
+	const taskHistory = useAgentStoreSelector((state) => state.taskHistory);
+	const isExecuting = useAgentStoreSelector((state) => state.isExecuting);
 
-	const { activeSessionId, sessions } = useChatStore();
+	const activeSessionId = useChatStoreSelector(
+		(state) => state.activeSessionId,
+	);
+	const sessions = useChatStoreSelector((state) => state.sessions);
 	const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
 
 	const { sandboxDir, graphSource, isRefreshing, refreshFiles } =
@@ -44,7 +58,7 @@ export default function SandboxWorkspace({
 			currentTask,
 			taskHistory,
 			isExecuting,
-			store,
+			store: managedModeStore,
 		});
 
 	const fileTree = useMemo(() => groupFilesByCategory(files), [files]);
@@ -87,15 +101,15 @@ export default function SandboxWorkspace({
 
 	const openArtifactInPreview = useCallback(
 		async (filePath: string) => {
-			let fileId = store.selectFileByPath(filePath);
+			let fileId = managedModeStore.selectFileByPath(filePath);
 			if (!fileId && sandboxDir) {
-				await store.scanSandboxDir(sandboxDir);
-				fileId = store.selectFileByPath(filePath);
+				await managedModeStore.scanSandboxDir(sandboxDir);
+				fileId = managedModeStore.selectFileByPath(filePath);
 			}
-			store.setCenterView("preview");
-			if (fileId) await store.loadFileContent(fileId);
+			managedModeStore.setCenterView("preview");
+			if (fileId) await managedModeStore.loadFileContent(fileId);
 		},
-		[sandboxDir, store],
+		[sandboxDir],
 	);
 
 	const { markUserManualSelection, requestAutoPreview } =
@@ -110,15 +124,15 @@ export default function SandboxWorkspace({
 		let cancelled = false;
 		void getCenterUxPrefs().then((prefs) => {
 			if (cancelled) return;
-			store.setCenterView(prefs.defaultView);
-			store.setGraphFollow(prefs.graphFollow);
-			store.setArtifactClickBehavior(prefs.artifactClickBehavior);
-			store.setCenterDensity(prefs.infoDensity);
+			managedModeStore.setCenterView(prefs.defaultView);
+			managedModeStore.setGraphFollow(prefs.graphFollow);
+			managedModeStore.setArtifactClickBehavior(prefs.artifactClickBehavior);
+			managedModeStore.setCenterDensity(prefs.infoDensity);
 		});
 		return () => {
 			cancelled = true;
 		};
-	}, [store]);
+	}, []);
 
 	useEffect(() => {
 		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {
@@ -145,25 +159,25 @@ export default function SandboxWorkspace({
 
 			if (e.altKey && e.key === "1") {
 				e.preventDefault();
-				store.setCenterView("graph");
+				managedModeStore.setCenterView("graph");
 				return;
 			}
 			if (e.altKey && e.key === "2") {
 				e.preventDefault();
-				store.setCenterView("preview");
+				managedModeStore.setCenterView("preview");
 			}
 		};
 		window.addEventListener("keydown", handleShortcuts);
 		return () => window.removeEventListener("keydown", handleShortcuts);
-	}, [store]);
+	}, []);
 
 	const handleSelectFile = useCallback(
 		async (id: string, source: "user" | "auto" = "user") => {
 			if (source === "user") markUserManualSelection();
-			store.selectFile(id);
-			await store.loadFileContent(id);
+			managedModeStore.selectFile(id);
+			await managedModeStore.loadFileContent(id);
 		},
-		[markUserManualSelection, store],
+		[markUserManualSelection],
 	);
 
 	const artifactFiles = useMemo(() => {
@@ -265,9 +279,9 @@ export default function SandboxWorkspace({
 			artifactFiles={artifactFiles}
 			previewMode={ui.previewMode}
 			density={ui.centerDensity || "comfortable"}
-			onSetPreviewMode={(mode) => store.setPreviewMode(mode)}
+			onSetPreviewMode={(mode) => managedModeStore.setPreviewMode(mode)}
 			onLoadContent={async (fileId) => {
-				await store.loadFileContent(fileId);
+				await managedModeStore.loadFileContent(fileId);
 			}}
 			onSelectArtifact={(id) => void handleSelectFile(id, "user")}
 			onCopyPath={handleCopyArtifactPath}
@@ -285,41 +299,57 @@ export default function SandboxWorkspace({
 				headerMeta={headerMeta}
 				density={ui.centerDensity || "comfortable"}
 				isRefreshing={isRefreshing}
-				onSetCenterView={(view) => store.setCenterView(view)}
+				onSetCenterView={(view) => managedModeStore.setCenterView(view)}
 				onRefresh={refreshFiles}
 				onExit={onExitManagedMode}
 			/>
 
 			{ui.centerView === "graph" ? (
-				<ExecutionGraph
-					source={graphSource}
-					onOpenArtifact={async (filePath) => {
-						markUserManualSelection();
-						await openArtifactInPreview(filePath);
-					}}
-					filter={ui.graphFilter || "all"}
-					onFilterChange={(value) => store.setGraphFilter(value)}
-					searchQuery={ui.graphSearch || ""}
-					onSearchQueryChange={(value) => store.setGraphSearch(value)}
-					pinnedInspector={Boolean(ui.pinnedInspector)}
-					onPinnedInspectorChange={(value) => store.setPinnedInspector(value)}
-					defaultFollow={ui.graphFollow ?? true}
-					onFollowChange={(value) => store.setGraphFollow(value)}
-					artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
-					density={ui.centerDensity || "comfortable"}
-				/>
+				<Suspense
+					fallback={
+						<div className="flex-1 flex items-center justify-center text-sm text-zinc-500 dark:text-zinc-400 bg-white/70 dark:bg-zinc-900/40">
+							正在加载运行图...
+						</div>
+					}
+				>
+					<ExecutionGraph
+						source={graphSource}
+						onOpenArtifact={async (filePath) => {
+							markUserManualSelection();
+							await openArtifactInPreview(filePath);
+						}}
+						filter={ui.graphFilter || "all"}
+						onFilterChange={(value) => managedModeStore.setGraphFilter(value)}
+						searchQuery={ui.graphSearch || ""}
+						onSearchQueryChange={(value) =>
+							managedModeStore.setGraphSearch(value)
+						}
+						pinnedInspector={Boolean(ui.pinnedInspector)}
+						onPinnedInspectorChange={(value) =>
+							managedModeStore.setPinnedInspector(value)
+						}
+						defaultFollow={ui.graphFollow ?? true}
+						onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
+						artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
+						density={ui.centerDensity || "comfortable"}
+					/>
+				</Suspense>
 			) : (
 				<PanelGroup direction="horizontal" className="flex-1">
 					<Panel defaultSize={25} minSize={15} maxSize={40}>
 						<ManagedFileTreePanel
 							density={ui.centerDensity || "comfortable"}
 							searchQuery={ui.searchQuery}
-							onSearchQueryChange={(query) => store.setSearchQuery(query)}
+							onSearchQueryChange={(query) =>
+								managedModeStore.setSearchQuery(query)
+							}
 							totalFiles={totalFiles}
 							categories={categories}
 							filteredTree={filteredTree}
 							expandedFolders={ui.expandedFolders}
-							onToggleCategory={(key) => store.toggleFolderExpanded(key)}
+							onToggleCategory={(key) =>
+								managedModeStore.toggleFolderExpanded(key)
+							}
 							selectedFileId={selectedFileId}
 							onSelectFile={(id) => void handleSelectFile(id, "user")}
 							onCopyPath={handleCopyArtifactPath}

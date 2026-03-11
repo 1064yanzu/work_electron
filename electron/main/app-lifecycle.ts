@@ -1,10 +1,12 @@
+import { performance } from "node:perf_hooks";
 import { app, BrowserWindow } from "electron";
+import { initCloudNodeClient } from "./cloud-node/service";
 import { initDatabase } from "./db/init";
-import { startHttpServers } from "./http/start";
+import { startHttpServers, type HttpStatus } from "./http/start";
 import { registerIpcHandlers } from "./ipc/register";
 import { createLogger } from "./logging/logger";
-import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 import { initRemoteControlOrchestrator } from "./remote-control/core/service";
+import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 
 export async function bootstrapApp({
 	createWindow,
@@ -12,6 +14,7 @@ export async function bootstrapApp({
 	createWindow: () => void;
 }) {
 	const logger = createLogger();
+	const bootStartedAt = performance.now();
 
 	app.on("window-all-closed", () => {
 		if (process.platform !== "darwin") {
@@ -26,63 +29,93 @@ export async function bootstrapApp({
 	});
 
 	await app.whenReady();
+	const corePhaseStartedAt = performance.now();
 
-	let db: Awaited<ReturnType<typeof initDatabase>>;
-	let httpStatus: Awaited<ReturnType<typeof startHttpServers>>;
-	let remoteControl: ReturnType<typeof initRemoteControlOrchestrator> | null =
-		null;
+	const db = await initDatabase({ logger });
+	logger.info({ msg: "Database initialized successfully" });
 
-	try {
-		db = await initDatabase({ logger });
-		logger.info({ msg: "Database initialized successfully" });
-	} catch (error) {
-		logger.error({ msg: "Failed to initialize database", error });
-		throw error;
-	}
+	const remoteControl = initRemoteControlOrchestrator({ db, logger });
+	const cloudNodeClient = initCloudNodeClient({ db, logger });
 
-	try {
-		httpStatus = await startHttpServers({ logger, db });
-		logger.info({ msg: "HTTP servers started successfully" });
-	} catch (error) {
-		logger.error({ msg: "Failed to start HTTP servers", error });
-		throw error;
-	}
+	let httpStatusPromise: Promise<HttpStatus> | null = null;
+	const ensureHttpStatus = async () => {
+		if (!httpStatusPromise) {
+			httpStatusPromise = startHttpServers({ logger, db });
+		}
+		return httpStatusPromise;
+	};
 
-	try {
-		remoteControl = initRemoteControlOrchestrator({ db, logger });
-	} catch (error) {
-		logger.error({ msg: "Failed to init remote control orchestrator", error });
-	}
+	registerIpcHandlers({ logger, getHttpStatus: ensureHttpStatus, db });
+	logger.info({ msg: "IPC handlers registered successfully" });
 
-	try {
-		registerIpcHandlers({ logger, httpStatus, db });
-		logger.info({ msg: "IPC handlers registered successfully" });
-	} catch (error) {
-		logger.error({ msg: "Failed to register IPC handlers", error });
-		throw error;
-	}
+	createWindow();
+	logger.info({
+		msg: "App core phase ready",
+		scope: "performance",
+		corePhaseMs: Math.round(performance.now() - corePhaseStartedAt),
+		totalBootMs: Math.round(performance.now() - bootStartedAt),
+	});
 
-	try {
-		if (remoteControl) await remoteControl.start();
-		logger.info({ msg: "Remote control orchestrator started successfully" });
-	} catch (error) {
-		logger.error({ msg: "Failed to start remote control orchestrator", error });
-	}
+	void (async () => {
+		const backgroundPhaseStartedAt = performance.now();
+		const results = await Promise.allSettled([
+			ensureHttpStatus(),
+			remoteControl.start(),
+			cloudNodeClient.start(),
+			autoSyncScheduler.start(),
+		]);
 
-	// 启动自动同步调度器
-	try {
-		await autoSyncScheduler.start();
-		logger.info({ message: "AutoSyncScheduler started successfully" });
-	} catch (error) {
-		logger.error({ message: "Failed to start AutoSyncScheduler", error });
-	}
+		const [httpResult, remoteResult, cloudResult, autoSyncResult] = results;
 
-	// 应用退出时停止调度器
+		if (httpResult.status === "fulfilled") {
+			logger.info({ msg: "HTTP servers started successfully" });
+		} else {
+			logger.error({
+				msg: "Failed to start HTTP servers",
+				error: httpResult.reason,
+			});
+		}
+
+		if (remoteResult.status === "fulfilled") {
+			logger.info({ msg: "Remote control orchestrator started successfully" });
+		} else {
+			logger.error({
+				msg: "Failed to start remote control orchestrator",
+				error: remoteResult.reason,
+			});
+		}
+
+		if (cloudResult.status === "fulfilled") {
+			logger.info({ msg: "Cloud node client started successfully" });
+		} else {
+			logger.error({
+				msg: "Failed to start cloud node client",
+				error: cloudResult.reason,
+			});
+		}
+
+		if (autoSyncResult.status === "fulfilled") {
+			logger.info({ message: "AutoSyncScheduler started successfully" });
+		} else {
+			logger.error({
+				message: "Failed to start AutoSyncScheduler",
+				error: autoSyncResult.reason,
+			});
+		}
+
+		logger.info({
+			msg: "App background phase settled",
+			scope: "performance",
+			backgroundPhaseMs: Math.round(
+				performance.now() - backgroundPhaseStartedAt,
+			),
+		});
+	})();
+
 	app.on("before-quit", () => {
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });
-		if (remoteControl) {
-			void remoteControl.stop();
-		}
+		void remoteControl.stop();
+		void cloudNodeClient.stop();
 	});
 }

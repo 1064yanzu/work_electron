@@ -32,6 +32,7 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
+import type { DocCacheItem } from "../../lib/stores/types";
 import { SourceType } from "../../types";
 import { AttachmentCard } from "./AttachmentCard";
 import { Model, ModelSelector } from "./ModelSelector";
@@ -59,6 +60,22 @@ interface ChatInputProps {
 }
 
 const EMPTY_COMMANDS: SlashCommand[] = [];
+const EMPTY_DOC_CACHE: Record<string, DocCacheItem> = {};
+
+function getSourceIcon(kind: SourceType) {
+	switch (kind) {
+		case SourceType.Web:
+			return Globe;
+		case SourceType.Audio:
+			return Mic;
+		case SourceType.Image:
+			return ImageIcon;
+		case SourceType.Text:
+			return Type;
+		default:
+			return FileText;
+	}
+}
 
 export function ChatInput({
 	onSubmit,
@@ -80,15 +97,17 @@ export function ChatInput({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const docCache = useWorkspaceStoreSelector((state) => state.docCache);
 	const contexts = useWorkspaceStoreSelector((state) => state.contexts);
-	const currentProjectId = useWorkspaceStoreSelector(
-		(state) => state.currentProjectId,
-	);
-	const currentFolderId = useWorkspaceStoreSelector(
-		(state) => state.currentFolderId,
-	);
 	const menuDataEnabled = showSlashMenu;
+	const docCache = useWorkspaceStoreSelector((state) =>
+		menuDataEnabled ? state.docCache : EMPTY_DOC_CACHE,
+	);
+	const currentProjectId = useWorkspaceStoreSelector((state) =>
+		menuDataEnabled ? state.currentProjectId : null,
+	);
+	const currentFolderId = useWorkspaceStoreSelector((state) =>
+		menuDataEnabled ? state.currentFolderId : null,
+	);
 	const sourcesQuery = useSourcesQuery(currentProjectId, {
 		enabled: menuDataEnabled,
 	});
@@ -100,19 +119,26 @@ export function ChatInput({
 			!menuDataEnabled
 				? []
 				: filterSourcesByProjectAndFolder(
-				sourcesQuery.data ?? [],
-				currentProjectId,
-				currentFolderId,
-			),
+						sourcesQuery.data ?? [],
+						currentProjectId,
+						currentFolderId,
+					),
 		[menuDataEnabled, sourcesQuery.data, currentProjectId, currentFolderId],
 	);
 	const cards = useMemo(
-		() => (menuDataEnabled ? cardsQuery.data ?? [] : []),
+		() => (menuDataEnabled ? (cardsQuery.data ?? []) : []),
 		[menuDataEnabled, cardsQuery.data],
 	);
 	const outputs = useMemo(
-		() => (menuDataEnabled ? outputsQuery.data ?? [] : []),
+		() => (menuDataEnabled ? (outputsQuery.data ?? []) : []),
 		[menuDataEnabled, outputsQuery.data],
+	);
+	const recentDocs = useMemo(
+		() =>
+			menuDataEnabled
+				? Object.values(docCache).filter((doc) => doc.content.trim())
+				: [],
+		[docCache, menuDataEnabled],
 	);
 
 	const addSelectionToContext =
@@ -121,22 +147,6 @@ export function ChatInput({
 	const removeContext = workspaceStore.removeContext.bind(workspaceStore);
 	const addSourceToContext =
 		workspaceStore.addSourceToContext.bind(workspaceStore);
-
-	// 辅助函数：获取资料图标
-	const getSourceIcon = (kind: SourceType) => {
-		switch (kind) {
-			case SourceType.Web:
-				return Globe;
-			case SourceType.Audio:
-				return Mic;
-			case SourceType.Image:
-				return ImageIcon;
-			case SourceType.Text:
-				return Type;
-			default:
-				return FileText;
-		}
-	};
 
 	// 动态生成命令列表
 	const dynamicCommands = useMemo(() => {
@@ -202,28 +212,26 @@ export function ChatInput({
 		// 5. 添加最近打开的文档 (docCache) - 仅当不在 outputs 中时才添加，或者作为“最近打开”
 		// 为避免重复，这里只添加那些ID不在 outputs 里的（虽然理论上 docCache 是子集）
 		// 或者简单地放在“最近打开”分组
-		Object.values(docCache).forEach((doc) => {
-			if (doc.content.trim()) {
-				commands.push({
-					id: `doc-${doc.id}`,
-					name: doc.title || "未命名文档",
-					description: doc.content.slice(0, 30).replace(/\n/g, " ") + "...",
-					icon: FileText,
-					category: "data",
-					group: "最近打开",
-					action: () => {
-						addSelectionToContext(doc.content, doc.title);
-					},
-				});
-			}
+		recentDocs.forEach((doc) => {
+			commands.push({
+				id: `doc-${doc.id}`,
+				name: doc.title || "未命名文档",
+				description: doc.content.slice(0, 30).replace(/\n/g, " ") + "...",
+				icon: FileText,
+				category: "data",
+				group: "最近打开",
+				action: () => {
+					addSelectionToContext(doc.content, doc.title);
+				},
+			});
 		});
 
 		return commands;
 	}, [
-		docCache,
 		sources,
 		cards,
 		outputs,
+		recentDocs,
 		addSelectionToContext,
 		addSourceToContext,
 		menuDataEnabled,
@@ -523,8 +531,8 @@ export function ChatInput({
 														: "file",
 											status:
 												ctx.content &&
-													ctx.content.trim().length > 0 &&
-													!ctx.filePath
+												ctx.content.trim().length > 0 &&
+												!ctx.filePath
 													? "preparing"
 													: "ready",
 										}}
@@ -604,12 +612,15 @@ export function ChatInput({
 							)}
 							<button
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-full transition-all duration-150 cursor-pointer ${isModelSelectorOpen
-									? "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
-									}`}
+								className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-full transition-all duration-150 cursor-pointer ${
+									isModelSelectorOpen
+										? "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100"
+										: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
+								}`}
 							>
-								<ChevronUp className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`} />
+								<ChevronUp
+									className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`}
+								/>
 								<span className="font-medium truncate max-w-[100px]">
 									{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
 								</span>
@@ -628,12 +639,15 @@ export function ChatInput({
 						</button>
 						<button
 							onClick={handleSubmit}
-							disabled={disabled || (!value.trim() && selectedChips.length === 0)}
+							disabled={
+								disabled || (!value.trim() && selectedChips.length === 0)
+							}
 							aria-label="发送消息"
-							className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 cursor-pointer active:scale-90 ${value.trim() || selectedChips.length > 0
+							className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 cursor-pointer active:scale-90 ${
+								value.trim() || selectedChips.length > 0
 									? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
 									: "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 disabled:cursor-not-allowed"
-								}`}
+							}`}
 						>
 							<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
 						</button>

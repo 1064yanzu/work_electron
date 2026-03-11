@@ -31,5 +31,5 @@ const createWindow = () => {
 if (process.argv.includes(REMOTE_FEISHU_DOCX_MCP_ARG)) {
 	startFeishuDocxMcpServerFromEnv();
 } else {
-	bootstrapApp({ createWindow }).then(createWindow);
+	void bootstrapApp({ createWindow });
 }

@@ -51,6 +51,29 @@ export interface AgentMessage {
 		durationMs?: number;
 	};
 	status?: "running" | "completed" | "error";
+	metadata?: Record<string, unknown>;
+}
+
+export interface AgentUsageStats {
+	promptTokens: number;
+	completionTokens: number;
+	totalTokens: number;
+	cacheReadInputTokens?: number;
+	cacheCreationInputTokens?: number;
+	costUsd?: number;
+	modelUsage?: Record<
+		string,
+		{
+			inputTokens: number;
+			outputTokens: number;
+			cacheReadInputTokens: number;
+			cacheCreationInputTokens: number;
+			webSearchRequests: number;
+			costUSD: number;
+			contextWindow: number;
+			maxOutputTokens: number;
+		}
+	>;
 }
 
 /**
@@ -101,6 +124,17 @@ export interface ClaudeAgentExecutionOptions {
 		max_file_chars: number;
 	};
 	enableToolSearch?: "auto" | "auto:5" | "true" | "false";
+	experimentalMultiAgent?: boolean;
+	multiAgentMode?: "subagent_only" | "hybrid" | "teammate_preferred";
+	maxTeammates?: number;
+	teammateMode?: "auto" | "tmux" | "in-process";
+	teammateBudget?: {
+		max_turns?: number;
+		max_thinking_tokens?: number;
+		max_budget_usd?: number;
+	};
+	leaderSummaryModel?: string;
+	teammateExecutionModel?: string;
 
 	/** Enabled skills list (used for skill routing and subagents) */
 	skills?: string[];
@@ -131,11 +165,7 @@ export interface ClaudeAgentExecutionOptions {
 		success: boolean;
 		summary?: string;
 		sessionId?: string;
-		usage?: {
-			promptTokens: number;
-			completionTokens: number;
-			totalTokens: number;
-		};
+		usage?: AgentUsageStats;
 	}) => void;
 
 	/** Callback for todo list updates */
@@ -167,6 +197,16 @@ const DEFAULT_TOOLS = [
 	"WebFetch",
 	"AskUserQuestion",
 ] as const;
+
+function buildAllowedTools(
+	experimentalMultiAgent: boolean,
+	mode: "subagent_only" | "hybrid" | "teammate_preferred",
+): string[] {
+	if (!experimentalMultiAgent || mode === "subagent_only") {
+		return [...DEFAULT_TOOLS];
+	}
+	return Array.from(new Set([...DEFAULT_TOOLS, "Teammate"]));
+}
 
 function resolveMcpServerLimitByToolSearchMode(
 	mode: "auto" | "auto:5" | "true" | "false",
@@ -241,6 +281,13 @@ export class ClaudeAgentService {
 			subagentContextMode,
 			contextBudget,
 			enableToolSearch,
+			experimentalMultiAgent,
+			multiAgentMode,
+			maxTeammates,
+			teammateMode,
+			teammateBudget,
+			leaderSummaryModel,
+			teammateExecutionModel,
 			additionalDirectories,
 			plugins,
 			sandbox,
@@ -272,6 +319,13 @@ export class ClaudeAgentService {
 			configSubagentContextMode,
 			configContextBudget,
 			configEnableToolSearch,
+			configExperimentalMultiAgent,
+			configMultiAgentMode,
+			configMaxTeammates,
+			configTeammateMode,
+			configTeammateBudget,
+			configLeaderSummaryModel,
+			configTeammateExecutionModel,
 		] = await Promise.all([
 			getConfig("agent.sdk.interactive_approval_enabled").catch(() => null),
 			getConfig("agent.sdk.default_permission_mode").catch(() => null),
@@ -287,6 +341,13 @@ export class ClaudeAgentService {
 			getConfig("agent.sdk.subagent_context_mode").catch(() => null),
 			getConfig("agent.sdk.context_budget").catch(() => null),
 			getConfig("agent.sdk.enable_tool_search").catch(() => null),
+			getConfig("agent.sdk.experimental_multi_agent_enabled").catch(() => null),
+			getConfig("agent.sdk.multi_agent_mode").catch(() => null),
+			getConfig("agent.sdk.max_teammates").catch(() => null),
+			getConfig("agent.sdk.teammate_mode").catch(() => null),
+			getConfig("agent.sdk.teammate_budget").catch(() => null),
+			getConfig("agent.sdk.leader_summary_model").catch(() => null),
+			getConfig("agent.sdk.teammate_execution_model").catch(() => null),
 		]);
 		const parseStringArray = (value: unknown): string[] =>
 			Array.isArray(value)
@@ -434,6 +495,79 @@ export class ClaudeAgentService {
 			(typeof configEnableToolSearch === "string"
 				? (configEnableToolSearch as "auto" | "auto:5" | "true" | "false")
 				: "auto:5");
+		const resolvedExperimentalMultiAgent =
+			typeof experimentalMultiAgent === "boolean"
+				? experimentalMultiAgent
+				: configExperimentalMultiAgent === true;
+		const resolvedMultiAgentMode =
+			multiAgentMode === "subagent_only" ||
+			multiAgentMode === "teammate_preferred"
+				? multiAgentMode
+				: configMultiAgentMode === "subagent_only" ||
+						configMultiAgentMode === "teammate_preferred"
+					? (configMultiAgentMode as
+							| "subagent_only"
+							| "teammate_preferred")
+					: "hybrid";
+		const resolvedMaxTeammates = Math.max(
+			1,
+			Math.min(
+				8,
+				parseNumber(maxTeammates) ?? parseNumber(configMaxTeammates) ?? 2,
+			),
+		);
+		const resolvedTeammateMode =
+			teammateMode === "tmux" || teammateMode === "in-process"
+				? teammateMode
+				: configTeammateMode === "tmux" ||
+						configTeammateMode === "in-process"
+					? (configTeammateMode as "tmux" | "in-process")
+					: "auto";
+		const teammateBudgetRaw =
+			teammateBudget && typeof teammateBudget === "object"
+				? teammateBudget
+				: configTeammateBudget && typeof configTeammateBudget === "object"
+					? (configTeammateBudget as Record<string, unknown>)
+					: {};
+		const resolvedTeammateBudget = {
+			max_turns: Math.max(
+				1,
+				Math.floor(parseNumber((teammateBudgetRaw as any).max_turns) ?? 12),
+			),
+			max_thinking_tokens: Math.max(
+				256,
+				Math.floor(
+					parseNumber((teammateBudgetRaw as any).max_thinking_tokens) ?? 4096,
+				),
+			),
+			max_budget_usd:
+				parseNumber((teammateBudgetRaw as any).max_budget_usd) ?? undefined,
+		};
+		const resolvedLeaderSummaryModel =
+			typeof leaderSummaryModel === "string" && leaderSummaryModel.trim()
+				? leaderSummaryModel.trim()
+				: typeof configLeaderSummaryModel === "string" &&
+						configLeaderSummaryModel.trim()
+					? configLeaderSummaryModel.trim()
+					: undefined;
+		const resolvedTeammateExecutionModel =
+			typeof teammateExecutionModel === "string" &&
+			teammateExecutionModel.trim()
+				? teammateExecutionModel.trim()
+				: typeof configTeammateExecutionModel === "string" &&
+						configTeammateExecutionModel.trim()
+					? configTeammateExecutionModel.trim()
+					: undefined;
+		const resolvedPermissionModeForRun =
+			resolvedExperimentalMultiAgent &&
+			resolvedMultiAgentMode === "teammate_preferred" &&
+			permissionModeForRun !== "plan"
+				? "delegate"
+				: permissionModeForRun;
+		const resolvedAllowedTools = buildAllowedTools(
+			resolvedExperimentalMultiAgent,
+			resolvedMultiAgentMode,
+		);
 		const resolvedMcpServerLimit = resolveMcpServerLimitByToolSearchMode(
 			resolvedEnableToolSearch,
 		);
@@ -833,6 +967,14 @@ export class ClaudeAgentService {
 								type: "system",
 								content: `会话开始（source=${String(event.source || "unknown")}）`,
 								status: "running",
+								metadata: {
+									agentRole: event.agentRole,
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
 							});
 							continue;
 						}
@@ -849,6 +991,9 @@ export class ClaudeAgentService {
 								type: "system",
 								content: `子代理启动：${String(event.agentType || event.agentId || "unknown")}`,
 								status: "running",
+								metadata: {
+									agentRole: "subagent",
+								},
 							});
 							continue;
 						}
@@ -882,6 +1027,82 @@ export class ClaudeAgentService {
 									event.status === "failed" || event.status === "stopped"
 										? "error"
 										: "running",
+							});
+							continue;
+						}
+						if (event.type === "leader_start") {
+							onMessage?.({
+								type: "system",
+								content: `协作编排已启动（mode=${String(event.delegationMode || "unknown")}）`,
+								status: "running",
+								metadata: {
+									agentRole: event.agentRole || "leader",
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
+							});
+							continue;
+						}
+						if (event.type === "teammate_idle") {
+							onMessage?.({
+								type: "system",
+								content: `Teammate 空闲：${String(event.teammateName || "unknown")}`,
+								status: "running",
+								metadata: {
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
+							});
+							continue;
+						}
+						if (event.type === "teammate_complete") {
+							onMessage?.({
+								type: "system",
+								content: `Teammate 完成：${String(event.teammateName || "unknown")} · ${String(event.summary || "已返回结果")}`,
+								status: "running",
+								metadata: {
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
+							});
+							continue;
+						}
+						if (event.type === "leader_merge") {
+							onMessage?.({
+								type: "system",
+								content: `Leader 汇总：${String(event.summary || "已合并 teammate 结果")}`,
+								status: "running",
+								metadata: {
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
+							});
+							continue;
+						}
+						if (event.type === "delegation_fallback") {
+							onMessage?.({
+								type: "system",
+								content: `Teammate 不可用，已回退到 Task 子代理：${String(event.error || "unknown")}`,
+								status: "error",
+								metadata: {
+									teamId: event.teamId,
+									leaderRunId: event.leaderRunId,
+									parentSessionId: event.parentSessionId,
+									teammateMode: event.teammateMode,
+									delegationMode: event.delegationMode,
+								},
 							});
 							continue;
 						}
@@ -1043,12 +1264,38 @@ export class ClaudeAgentService {
 						toFiniteNumber(usageAny?.output_tokens) ??
 						toFiniteNumber(usageAny?.outputTokens) ??
 						null;
+					const cacheReadInputTokens =
+						toFiniteNumber(usageAny?.cache_read_input_tokens) ??
+						toFiniteNumber(usageAny?.cacheReadInputTokens) ??
+						null;
+					const cacheCreationInputTokens =
+						toFiniteNumber(usageAny?.cache_creation_input_tokens) ??
+						toFiniteNumber(usageAny?.cacheCreationInputTokens) ??
+						null;
+					const costUsd =
+						toFiniteNumber(resultAny?.total_cost_usd) ??
+						toFiniteNumber(resultAny?.totalCostUsd) ??
+						null;
 					const usage =
 						promptTokens !== null && completionTokens !== null
 							? {
 									promptTokens,
 									completionTokens,
 									totalTokens: promptTokens + completionTokens,
+									cacheReadInputTokens:
+										cacheReadInputTokens !== null
+											? cacheReadInputTokens
+											: undefined,
+									cacheCreationInputTokens:
+										cacheCreationInputTokens !== null
+											? cacheCreationInputTokens
+											: undefined,
+									costUsd: costUsd !== null ? costUsd : undefined,
+									modelUsage:
+										resultAny?.modelUsage &&
+										typeof resultAny.modelUsage === "object"
+											? resultAny.modelUsage
+											: undefined,
 								}
 							: undefined;
 					onComplete?.({
@@ -1110,8 +1357,8 @@ export class ClaudeAgentService {
 											? resumeSessionId
 											: undefined,
 										persist_session: persistSession,
-										permission_mode: permissionModeForRun,
-										allowed_tools: [...DEFAULT_TOOLS],
+										permission_mode: resolvedPermissionModeForRun,
+										allowed_tools: resolvedAllowedTools,
 										system_prompt: systemPrompt,
 										skills,
 										mcp_servers: mcpServers,
@@ -1134,6 +1381,15 @@ export class ClaudeAgentService {
 										subagent_context_mode: resolvedSubagentContextMode,
 										context_budget: resolvedContextBudget,
 										enable_tool_search: resolvedEnableToolSearch,
+										experimental_multi_agent:
+											resolvedExperimentalMultiAgent,
+										multi_agent_mode: resolvedMultiAgentMode,
+										max_teammates: resolvedMaxTeammates,
+										teammate_mode: resolvedTeammateMode,
+										teammate_budget: resolvedTeammateBudget,
+										leader_summary_model: resolvedLeaderSummaryModel,
+										teammate_execution_model:
+											resolvedTeammateExecutionModel,
 									},
 								});
 								this.activeRunId = runId;
@@ -1205,8 +1461,8 @@ export class ClaudeAgentService {
 						? resumeSessionId
 						: undefined,
 					persist_session: persistSession,
-					permission_mode: permissionModeForRun,
-					allowed_tools: [...DEFAULT_TOOLS],
+					permission_mode: resolvedPermissionModeForRun,
+					allowed_tools: resolvedAllowedTools,
 					system_prompt: systemPrompt,
 					skills,
 					mcp_servers: mcpServers, // 传递 MCP 配置给 SDK
@@ -1228,6 +1484,13 @@ export class ClaudeAgentService {
 					subagent_context_mode: resolvedSubagentContextMode,
 					context_budget: resolvedContextBudget,
 					enable_tool_search: resolvedEnableToolSearch,
+					experimental_multi_agent: resolvedExperimentalMultiAgent,
+					multi_agent_mode: resolvedMultiAgentMode,
+					max_teammates: resolvedMaxTeammates,
+					teammate_mode: resolvedTeammateMode,
+					teammate_budget: resolvedTeammateBudget,
+					leader_summary_model: resolvedLeaderSummaryModel,
+					teammate_execution_model: resolvedTeammateExecutionModel,
 				},
 			});
 			this.activeRunId = runId;

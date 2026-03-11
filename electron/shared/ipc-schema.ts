@@ -52,6 +52,7 @@ type RemoteSessionState =
 	| "completed"
 	| "aborted"
 	| "error";
+type CloudNodeRoutingMode = "cloud_only" | "prefer_desktop" | "auto";
 
 export type IPCSchema = {
 	// ==================
@@ -891,6 +892,61 @@ export type IPCSchema = {
 			message: string;
 		}>;
 	};
+	cloud_node_get_status: {
+		input: Record<string, never>;
+		output: {
+			config: {
+				enabled: boolean;
+				relayUrl: string;
+				nodeId?: string;
+				nodeToken?: string;
+				nodeName: string;
+				heartbeatSec: number;
+				routingMode: CloudNodeRoutingMode;
+			};
+			status: {
+				enabled: boolean;
+				configured: boolean;
+				connected: boolean;
+				relayUrl: string;
+				nodeId?: string;
+				nodeName: string;
+				heartbeatSec: number;
+				routingMode: CloudNodeRoutingMode;
+				pendingRuns: number;
+				lastConnectedAt?: number;
+				lastHeartbeatAt?: number;
+				lastError?: string;
+			};
+		};
+	};
+	cloud_node_set_config: {
+		input: {
+			config: {
+				enabled: boolean;
+				relayUrl: string;
+				nodeId?: string;
+				nodeToken?: string;
+				nodeName: string;
+				heartbeatSec: number;
+				routingMode: CloudNodeRoutingMode;
+			};
+		};
+		output: { success: boolean };
+	};
+	cloud_node_bind: {
+		input: {
+			relay_url: string;
+			email: string;
+			password: string;
+			node_name?: string;
+		};
+		output: { success: boolean; node_id: string };
+	};
+	cloud_node_unbind: {
+		input: Record<string, never>;
+		output: { success: boolean };
+	};
 	get_all_configs: {
 		input: Record<string, never>;
 		output: AppConfig[];
@@ -1002,6 +1058,24 @@ export type IPCSchema = {
 			};
 			/** MCP tool search mode */
 			enable_tool_search?: "auto" | "auto:5" | "true" | "false";
+			/** Enable experimental multi-agent collaboration runtime */
+			experimental_multi_agent?: boolean;
+			/** Collaboration mode preference */
+			multi_agent_mode?: "subagent_only" | "hybrid" | "teammate_preferred";
+			/** Maximum number of teammates a leader may delegate concurrently */
+			max_teammates?: number;
+			/** Preferred teammate spawning mode */
+			teammate_mode?: "auto" | "tmux" | "in-process";
+			/** Default teammate execution budget */
+			teammate_budget?: {
+				max_turns?: number;
+				max_thinking_tokens?: number;
+				max_budget_usd?: number;
+			};
+			/** Optional leader-only summary model hint */
+			leader_summary_model?: string;
+			/** Optional teammate execution model hint */
+			teammate_execution_model?: string;
 		};
 		output: string;
 	};

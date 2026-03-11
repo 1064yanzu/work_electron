@@ -77,6 +77,12 @@ export interface SessionStartEvent {
 	source?: string;
 	agentType?: string;
 	model?: string;
+	agentRole?: string;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
 }
 
 export interface SessionEndEvent {
@@ -106,6 +112,66 @@ export interface TaskNotificationEvent {
 	notificationType?: string | null;
 	title?: string | null;
 	message?: string | null;
+}
+
+export interface LeaderStartEvent {
+	type: "leader_start";
+	source?: string | null;
+	agentType?: string | null;
+	model?: string | null;
+	agentRole?: string;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
+}
+
+export interface TeammateIdleEvent {
+	type: "teammate_idle";
+	teammateName?: string | null;
+	teamName?: string | null;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
+}
+
+export interface TeammateCompleteEvent {
+	type: "teammate_complete";
+	taskId?: string | null;
+	summary?: string | null;
+	teammateName?: string | null;
+	teamName?: string | null;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
+}
+
+export interface LeaderMergeEvent {
+	type: "leader_merge";
+	taskId?: string | null;
+	summary?: string | null;
+	teamName?: string | null;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
+}
+
+export interface DelegationFallbackEvent {
+	type: "delegation_fallback";
+	toolName?: string | null;
+	error?: string | null;
+	teamId?: string;
+	leaderRunId?: string;
+	parentSessionId?: string;
+	teammateMode?: string;
+	delegationMode?: string;
 }
 
 export interface ToolUseSummaryEvent {
@@ -144,6 +210,11 @@ export type UIEvent =
 	| SubagentStartEvent
 	| SubagentStopEvent
 	| TaskNotificationEvent
+	| LeaderStartEvent
+	| TeammateIdleEvent
+	| TeammateCompleteEvent
+	| LeaderMergeEvent
+	| DelegationFallbackEvent
 	| ToolUseSummaryEvent
 	| FilesPersistedEvent
 	| AuthStatusEvent
@@ -207,6 +278,11 @@ export class AgentStreamState {
 				case "subagent_start":
 				case "subagent_stop":
 				case "task_notification":
+				case "leader_start":
+				case "teammate_idle":
+				case "teammate_complete":
+				case "leader_merge":
+				case "delegation_fallback":
 				case "tool_use_summary":
 				case "files_persisted":
 				case "auth_status":

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { createUseStoreSelector } from "../stores/createStore";
 
 export type AskUserQuestionOption = {
 	label: string;
@@ -106,6 +107,9 @@ class AskUserQuestionStore {
 
 export const askUserQuestionStore = new AskUserQuestionStore();
 
+const useAskUserQuestionSelectorBase =
+	createUseStoreSelector(askUserQuestionStore);
+
 export function useAskUserQuestionStore() {
 	const state = useSyncExternalStore(
 		askUserQuestionStore.subscribe,
@@ -118,4 +122,10 @@ export function useAskUserQuestionStore() {
 		denyAllForRun:
 			askUserQuestionStore.denyAllForRun.bind(askUserQuestionStore),
 	};
+}
+
+export function useAskUserQuestionStoreSelector<T>(
+	selector: (state: AskUserQuestionState) => T,
+): T {
+	return useAskUserQuestionSelectorBase(selector);
 }

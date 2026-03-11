@@ -14,14 +14,15 @@ import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { EVENTS, events } from "../../lib/events";
 import { workspaceStore } from "../../lib/workspaceStore";
 import ToolCallInline from "../agent/ToolCallInline";
-import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { AgentBlocksInline } from "./AgentBlocksInline";
 import { AttachmentList } from "./AttachmentCard";
-import { FileChangeCard as FileChangeCardComponent } from "./FileChangeCard";
-import { ProcessingCard as ProcessingCardComponent } from "./ProcessingCard";
+import { ChatMessageAssistantContent } from "./ChatMessageAssistantContent";
 import { TokenDisplay } from "./TokenDisplay";
-import { WebPreviewCard } from "./WebPreviewCard";
+import {
+	extractCodeBlocks,
+	extractWebPreviewFromCodeBlocks,
+} from "./chatMessageDerivations";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
@@ -29,97 +30,6 @@ interface ChatMessageProps {
 	onRegenerate?: (messageId: string) => void; // 重新生成回调
 	onEdit?: (messageId: string) => void; // 编辑回调
 	onDelete?: (messageId: string) => void; // 删除回调
-}
-
-// 处理中的状态卡片 - 极简高级风
-const ProcessingCard = ProcessingCardComponent;
-
-// 文件变更卡片组件 - 现代化卡片 (黑白灰高级感)
-const FileChangeCard = FileChangeCardComponent;
-
-// 提取代码块（正则提升到模块级别，避免每次调用重新编译）
-const CODE_BLOCK_REGEX = /```(\w*)\n([\s\S]*?)```/g;
-
-function extractCodeBlocks(
-	content: string,
-): { language: string; code: string }[] {
-	CODE_BLOCK_REGEX.lastIndex = 0;
-	const blocks: { language: string; code: string }[] = [];
-	let match;
-	while ((match = CODE_BLOCK_REGEX.exec(content)) !== null) {
-		blocks.push({
-			language: match[1] || "text",
-			code: match[2].trim(),
-		});
-	}
-	return blocks;
-}
-
-function extractWebPreviewFromCodeBlocks(
-	blocks: Array<{ language: string; code: string }>,
-):
-	| {
-			kind: "html";
-			html: string;
-			css?: string;
-			js?: string;
-	  }
-	| {
-			kind: "react";
-			jsx: string;
-			css?: string;
-	  }
-	| null {
-	let html = "";
-	let jsx = "";
-	let css = "";
-	let js = "";
-
-	for (const b of blocks) {
-		const lang = String(b.language || "")
-			.trim()
-			.toLowerCase();
-		const code = String(b.code || "");
-		if (!html && (lang === "html" || lang === "htm")) html = code;
-		else if (!jsx && (lang === "jsx" || lang === "tsx")) jsx = code;
-		else if (!css && lang === "css") css = code;
-		else if (
-			!js &&
-			(lang === "js" ||
-				lang === "javascript" ||
-				lang === "mjs" ||
-				lang === "cjs")
-		)
-			js = code;
-	}
-
-	if (!html) {
-		const fallback = blocks.find((b) =>
-			/<\s*div[\s>]|<\s*html[\s>]|<!doctype/i.test(b.code),
-		);
-		if (fallback) {
-			const looksLikeHtml = /<\s*html[\s>]|<!doctype/i.test(fallback.code);
-			if (looksLikeHtml) html = fallback.code;
-			else if (!jsx) jsx = fallback.code;
-		}
-	}
-
-	if (html && html.trim()) {
-		return {
-			kind: "html",
-			html,
-			css: css.trim() ? css : undefined,
-			js: js.trim() ? js : undefined,
-		};
-	}
-	if (jsx && jsx.trim()) {
-		return {
-			kind: "react",
-			jsx,
-			css: css.trim() ? css : undefined,
-		};
-	}
-	return null;
 }
 
 function ChatMessageImpl({
@@ -136,7 +46,7 @@ function ChatMessageImpl({
 		y: number;
 	} | null>(null);
 	const isUser = message.role === "user";
-	const isStreaming = message.isStreaming;
+	const isStreaming = !!message.isStreaming;
 
 	const hasBlocks =
 		Array.isArray(message.metadata?.blocks) &&
@@ -232,7 +142,8 @@ function ChatMessageImpl({
 
 	// 提取代码块(流式和完成状态都提取)
 	const codeBlocks = useMemo(
-		() => extractCodeBlocks(message.content),
+		() =>
+			message.content.includes("```") ? extractCodeBlocks(message.content) : [],
 		[message.content],
 	);
 
@@ -382,122 +293,12 @@ function ChatMessageImpl({
 				) : (
 					/* AI 消息：全宽文档流 (纯粹的内容感) */
 					<div className="w-full pr-2">
-						{/* 流式预览卡片 - 在内容之前显示 */}
-						{streamingWebPreview && (
-							<div className="mb-3">
-								<WebPreviewCard
-									kind={streamingWebPreview.kind}
-									title={
-										streamingWebPreview.kind === "react"
-											? "React 预览"
-											: "前端预览"
-									}
-									html={
-										streamingWebPreview.kind === "html"
-											? streamingWebPreview.html
-											: undefined
-									}
-									jsx={
-										streamingWebPreview.kind === "react"
-											? streamingWebPreview.jsx
-											: undefined
-									}
-									css={streamingWebPreview.css}
-									js={
-										streamingWebPreview.kind === "html"
-											? streamingWebPreview.js
-											: undefined
-									}
-									isStreaming={true}
-								/>
-							</div>
-						)}
-
-						{/* AI 内容渲染区 */}
-							<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
-								{canRenderAssistantByBlocks ? (
-									<AgentBlocksInline
-										blocks={message.metadata!.blocks!}
-										isStreaming={isStreaming}
-									/>
-								) : (
-								<>
-									{/* 渲染 Markdown 内容,代码块会被预览卡片替换 */}
-									{message.content
-										.split(
-											/(<<<<AI_UPDATE_PENDING>>>>|<<<<AI_CREATE_PENDING>>>>|<<<<AI_UPDATE_DONE>>>>|<<<<AI_CREATE_DONE>>>>)/,
-										)
-										.map((part, idx) => {
-											if (part === "<<<<AI_UPDATE_PENDING>>>>")
-												return <ProcessingCard key={idx} type="update" />;
-											if (part === "<<<<AI_CREATE_PENDING>>>>")
-												return <ProcessingCard key={idx} type="create" />;
-											if (part === "<<<<AI_UPDATE_DONE>>>>") {
-												const update = message.metadata?.fileUpdates?.find(
-													(u) => u.type === "update",
-												);
-												if (update)
-													return <FileChangeCard key={idx} update={update} />;
-												return null;
-											}
-											if (part === "<<<<AI_CREATE_DONE>>>>") {
-												const update = message.metadata?.fileUpdates?.find(
-													(u) => u.type === "create",
-												);
-												if (update)
-													return <FileChangeCard key={idx} update={update} />;
-												return null;
-											}
-											if (!part || !part.trim()) return null;
-											return (
-												<div
-													key={idx}
-													className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
-												>
-													<MarkdownRenderer
-														content={part}
-														isStreaming={isStreaming}
-														sandboxDir={
-															typeof (message.metadata as any)?.sandboxDir ===
-															"string"
-																? (message.metadata as any).sandboxDir
-																: undefined
-														}
-													/>
-												</div>
-											);
-										})}
-								</>
-							)}
-
-							{!canRenderAssistantByBlocks ? (
-								<>
-									{/* 兼容旧消息 */}
-									{!message.content.includes("<<<<AI_UPDATE_DONE>>>>") &&
-										!message.content.includes("<<<<AI_CREATE_DONE>>>>") &&
-										message.metadata?.fileUpdates?.map((update, idx) => (
-											<FileChangeCard key={`update-${idx}`} update={update} />
-										))}
-
-									{(!message.metadata?.fileUpdates ||
-										message.metadata.fileUpdates.length === 0) &&
-									Array.isArray(message.metadata?.blocks)
-										? message.metadata.blocks.map((b, idx) =>
-												b.type === "file_update" ? (
-													<FileChangeCard
-														key={`block-file-update-${idx}`}
-														update={b.update}
-													/>
-												) : null,
-											)
-										: null}
-								</>
-							) : null}
-
-							{isStreaming && !message.content.includes("<<<<") && (
-								<span className="inline-block w-1.5 h-4 ml-1 bg-zinc-400 animate-pulse rounded-full align-middle" />
-							)}
-						</div>
+						<ChatMessageAssistantContent
+							message={message}
+							canRenderAssistantByBlocks={canRenderAssistantByBlocks}
+							isStreaming={isStreaming}
+							streamingWebPreview={streamingWebPreview}
+						/>
 
 						{/* Actions for assistant messages - 底部工具栏 */}
 						{!isStreaming && message.content && (

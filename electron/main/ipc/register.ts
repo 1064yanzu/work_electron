@@ -55,6 +55,8 @@ import { createStorageHandlers } from "./handlers/storage";
 import { createFileHandlers } from "./handlers/files";
 import { createRemoteControlHandlers } from "./handlers/remoteControl";
 import { getRemoteControlOrchestrator } from "../remote-control/core/service";
+import { createCloudNodeHandlers } from "./handlers/cloudNode";
+import { getCloudNodeClient } from "../cloud-node/service";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -72,15 +74,20 @@ export function setMainWindow(window: BrowserWindow) {
 	} catch {
 		// orchestrator 可能尚未初始化，忽略
 	}
+	try {
+		getCloudNodeClient();
+	} catch {
+		// cloud node client 可能尚未初始化，忽略
+	}
 }
 
 export function registerIpcHandlers({
 	logger,
-	httpStatus,
+	getHttpStatus,
 	db,
 }: {
 	logger: Logger;
-	httpStatus: HttpStatus;
+	getHttpStatus: () => Promise<HttpStatus>;
 	db: DbContext;
 }) {
 	// ==================
@@ -114,12 +121,17 @@ export function registerIpcHandlers({
 	const agentSandboxHandlers = createAgentSandboxHandlers();
 	const agentSdkHandlers = createAgentSdkHandlers({
 		getMainWindow: () => mainWindowRef,
-		anthropicBaseUrl: httpStatus.anthropicProxy.baseUrl,
+		getAnthropicBaseUrl: async () => {
+			const httpStatus = await getHttpStatus();
+			return httpStatus.anthropicProxy.baseUrl || "http://127.0.0.1:8765";
+		},
 		logger,
 		db,
 	});
 	const remoteControlHandlers = createRemoteControlHandlers();
+	const cloudNodeHandlers = createCloudNodeHandlers();
 	getRemoteControlOrchestrator().bindAgentSdkHandlers(agentSdkHandlers);
+	getCloudNodeClient().bindAgentSdkHandlers(agentSdkHandlers);
 
 	// Agent Runtime handlers
 	const agentSessionHandlers = createAgentSessionHandlers(db);
@@ -180,7 +192,7 @@ export function registerIpcHandlers({
 	}) satisfies IpcHandler<"open_external_url">);
 
 	ipcMain.handle("http_get_status", (async () => {
-		return httpStatus;
+		return getHttpStatus();
 	}) satisfies IpcHandler<"http_get_status">);
 
 	ipcMain.handle("open_browser_window", webContentHandlers.open_browser_window);
@@ -349,6 +361,16 @@ export function registerIpcHandlers({
 		"list_remote_event_logs",
 		remoteControlHandlers.list_remote_event_logs,
 	);
+	ipcMain.handle(
+		"cloud_node_get_status",
+		cloudNodeHandlers.cloud_node_get_status,
+	);
+	ipcMain.handle(
+		"cloud_node_set_config",
+		cloudNodeHandlers.cloud_node_set_config,
+	);
+	ipcMain.handle("cloud_node_bind", cloudNodeHandlers.cloud_node_bind);
+	ipcMain.handle("cloud_node_unbind", cloudNodeHandlers.cloud_node_unbind);
 	ipcMain.handle("get_all_configs", configHandlers.get_all_configs);
 	ipcMain.handle("get_active_model", configHandlers.get_active_model);
 	ipcMain.handle("set_active_model", configHandlers.set_active_model);

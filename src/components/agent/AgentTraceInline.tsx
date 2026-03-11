@@ -1056,8 +1056,26 @@ function ContextControl({
 	task: import("../../lib/agent/types").AgentTask;
 }) {
 	const { tokenUsage, sdkSessionId } = (task.metadata || {}) as {
-		tokenUsage?: { totalTokens: number };
+		tokenUsage?: {
+			totalTokens: number;
+			cacheReadInputTokens?: number;
+			cacheCreationInputTokens?: number;
+			costUsd?: number;
+		};
 		sdkSessionId?: string;
+	};
+	const {
+		agentRole,
+		teamId,
+		delegationMode,
+		teammateMode,
+		maxTeammates,
+	} = (task.metadata || {}) as {
+		agentRole?: string;
+		teamId?: string;
+		delegationMode?: string;
+		teammateMode?: string;
+		maxTeammates?: number;
 	};
 	const [isCompacting, setIsCompacting] = React.useState(false);
 	const [compactResult, setCompactResult] = React.useState<string | null>(null);
@@ -1084,7 +1102,7 @@ function ContextControl({
 		}
 	};
 
-	if (!tokenUsage && !sdkSessionId) return null;
+	if (!tokenUsage && !sdkSessionId && !teamId) return null;
 
 	const percent = Math.min(
 		100,
@@ -1106,6 +1124,29 @@ function ContextControl({
 						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-none">
 							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
 						</span>
+						{(tokenUsage?.cacheReadInputTokens ||
+							tokenUsage?.cacheCreationInputTokens ||
+							tokenUsage?.costUsd !== undefined) && (
+							<span className="text-[10px] text-zinc-500 leading-none mt-1">
+								cache read {(
+									tokenUsage?.cacheReadInputTokens || 0
+								).toLocaleString()}
+								{" · "}
+								cache create {(
+									tokenUsage?.cacheCreationInputTokens || 0
+								).toLocaleString()}
+								{tokenUsage?.costUsd !== undefined
+									? ` · $${tokenUsage.costUsd.toFixed(4)}`
+									: ""}
+							</span>
+						)}
+						{teamId && (
+							<span className="text-[10px] text-zinc-500 leading-none mt-1">
+								{agentRole || "leader"} · {delegationMode || "hybrid"}
+								{teammateMode ? ` · ${teammateMode}` : ""}
+								{maxTeammates ? ` · teammates ${maxTeammates}` : ""}
+							</span>
+						)}
 					</div>
 				</div>
 

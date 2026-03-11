@@ -23,6 +23,13 @@ export type AgentScenario =
 	| "debugging" // 调试
 	| "custom"; // 自定义
 
+export type MultiAgentMode =
+	| "subagent_only"
+	| "hybrid"
+	| "teammate_preferred";
+
+export type TeammateSpawnMode = "auto" | "tmux" | "in-process";
+
 /**
  * 场景描述
  */
@@ -103,6 +110,17 @@ export interface AgentModelSettings {
 			maxFileChars: number;
 		};
 		betas: string[];
+		experimentalMultiAgentEnabled: boolean;
+		multiAgentMode: MultiAgentMode;
+		maxTeammates: number;
+		teammateMode: TeammateSpawnMode;
+		teammateBudget: {
+			maxTurns: number;
+			maxThinkingTokens: number;
+			maxBudgetUsd?: number;
+		};
+		leaderSummaryModel?: string;
+		teammateExecutionModel?: string;
 	};
 }
 
@@ -133,6 +151,17 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 			maxFileChars: 6000,
 		},
 		betas: [],
+		experimentalMultiAgentEnabled: false,
+		multiAgentMode: "hybrid",
+		maxTeammates: 2,
+		teammateMode: "auto",
+		teammateBudget: {
+			maxTurns: 12,
+			maxThinkingTokens: 4096,
+			maxBudgetUsd: undefined,
+		},
+		leaderSummaryModel: undefined,
+		teammateExecutionModel: undefined,
 	},
 };
 

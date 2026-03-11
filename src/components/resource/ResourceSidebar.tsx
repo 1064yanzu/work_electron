@@ -83,6 +83,9 @@ export default function ResourceSidebar({
 	// Performance settings
 	const [sourceAutoRefreshMs, setSourceAutoRefreshMs] = useState(10000);
 	const [uiDebugLogsEnabled, setUiDebugLogsEnabled] = useState(false);
+	const [isWindowVisible, setIsWindowVisible] = useState(
+		typeof document === "undefined" || document.visibilityState === "visible",
+	);
 
 	const currentProjectId = useWorkspaceStoreSelector(
 		(state) => state.currentProjectId,
@@ -105,10 +108,18 @@ export default function ResourceSidebar({
 	const setCurrentFolder = workspaceStore.setCurrentFolder.bind(workspaceStore);
 	const queryClient = useQueryClient();
 
-	const sourcesQuery = useSourcesQuery(currentProjectId, {
-		refetchInterval:
-			leftSidebarView === "sources" ? sourceAutoRefreshMs : false,
-	});
+	useEffect(() => {
+		const handleVisibilityChange = () => {
+			setIsWindowVisible(document.visibilityState === "visible");
+		};
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			document.removeEventListener(
+				"visibilitychange",
+				handleVisibilityChange,
+			);
+		};
+	}, []);
 
 	const preloadWebSearchModule = useCallback(() => {
 		void import("../WebSearchModule");
@@ -218,6 +229,16 @@ export default function ResourceSidebar({
 	});
 
 	const sourceImport = useSourceImport({ fetchSources });
+
+	const sourcesQuery = useSourcesQuery(currentProjectId, {
+		refetchInterval:
+			leftSidebarView === "sources" &&
+			isWindowVisible &&
+			!sourceImport.dragImport.isDragging &&
+			!dragDrop.draggedSourceId
+				? sourceAutoRefreshMs
+				: false,
+	});
 
 	const { createSourceFromModal, revealFolderProjectDirectory } =
 		useResourceSidebarActions({

@@ -13,8 +13,17 @@ export function createSubagentLifecycleHooks(input: {
 	runId: string;
 	stderr: (message: string) => void;
 	emitLifecycleEvent?: (event: Record<string, unknown>) => void;
+	subagentAdditionalContext?: string;
+	runtimeMetadata?: Record<string, unknown>;
 }) {
-	const { logger, runId, stderr, emitLifecycleEvent } = input;
+	const {
+		logger,
+		runId,
+		stderr,
+		emitLifecycleEvent,
+		subagentAdditionalContext,
+		runtimeMetadata,
+	} = input;
 
 	return {
 		SubagentStart: [
@@ -38,12 +47,21 @@ export function createSubagentLifecycleHooks(input: {
 							type: "subagent_start",
 							agentId: agentId || null,
 							agentType: agentType || null,
+							...(runtimeMetadata || {}),
 						});
 						stderr(
 							`[SubagentStart] agent_id='${agentId || "unknown"}' agent_type='${agentType || "unknown"}'`,
 						);
 
-						return { continue: true };
+						return subagentAdditionalContext
+							? {
+									continue: true,
+									hookSpecificOutput: {
+										hookEventName: "SubagentStart",
+										additionalContext: subagentAdditionalContext,
+									},
+								}
+							: { continue: true };
 					},
 				],
 			},
@@ -74,6 +92,7 @@ export function createSubagentLifecycleHooks(input: {
 							agentId: agentId || null,
 							agentType: agentType || null,
 							transcriptPath: transcriptPath || null,
+							...(runtimeMetadata || {}),
 						});
 						stderr(
 							`[SubagentStop] agent_id='${agentId || "unknown"}' agent_type='${agentType || "unknown"}' transcript='${transcriptPath || "n/a"}'`,

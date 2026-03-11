@@ -428,9 +428,16 @@ export function createMcpHandlers(db: DbContext) {
 	};
 
 	const mcpListTools: Handler<"mcp_list_tools"> = async (_event, input) => {
-		const server = await resolveRuntimeServer(input.server_id);
 		const forceRefresh = input.force_refresh === true;
-		return runtime.listTools(server, forceRefresh);
+		try {
+			const server = await resolveRuntimeServer(input.server_id);
+			return await runtime.listTools(server, forceRefresh);
+		} catch (error) {
+			if (forceRefresh) {
+				throw error;
+			}
+			return [];
+		}
 	};
 
 	const mcpCallTool: Handler<"mcp_call_tool"> = async (_event, input) => {

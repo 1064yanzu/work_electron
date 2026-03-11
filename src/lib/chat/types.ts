@@ -81,6 +81,9 @@ export interface ChatMessage {
 			promptTokens: number;
 			completionTokens: number;
 			totalTokens: number;
+			cacheReadInputTokens?: number;
+			cacheCreationInputTokens?: number;
+			costUsd?: number;
 		};
 		// Agent 任务关联信息（用于历史记录恢复）
 		taskId?: string;
@@ -93,6 +96,14 @@ export interface ChatMessage {
 		dedupeHitCount?: number;
 		compactionCount?: number;
 		degradeLevel?: number;
+		agentRole?: string;
+		leaderRunId?: string;
+		parentSessionId?: string;
+		teamId?: string;
+		delegationMode?: string;
+		teammateMode?: string;
+		experimentalMultiAgent?: boolean;
+		maxTeammates?: number;
 	};
 }
 
