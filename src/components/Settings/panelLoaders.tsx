@@ -1,8 +1,8 @@
 import { lazy } from "react";
 import type { ComponentType, LazyExoticComponent } from "react";
-import { SETTINGS_MENU } from "./constants";
+import type { SettingsTabId } from "./types";
 
-export type SettingsTabId = (typeof SETTINGS_MENU)[number]["id"];
+export type { SettingsTabId } from "./types";
 
 type PanelModule = { default: ComponentType };
 type PanelImporter = () => Promise<PanelModule>;

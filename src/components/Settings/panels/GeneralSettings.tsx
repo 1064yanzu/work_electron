@@ -22,10 +22,13 @@ import { useSettingsStore } from "../../../lib/settingsStore";
 import { type ThemeMode, themeManager } from "../../../lib/theme";
 import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 export function GeneralSettings() {
 	const { providers } = useSettingsStore();
+	const { mode, setMode } = useSettingsExperience();
 	const [theme, setTheme] = useState<ThemeMode>(themeManager.getTheme());
 	const [language, setLanguage] = useState<string>("zh-CN");
 	const [titleModel, setTitleModel] = useState<string>("");
@@ -207,15 +210,11 @@ export function GeneralSettings() {
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
-			<div className="border-b border-border pb-4 mb-8">
-				<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-					<SettingsIcon className="w-5 h-5" />
-					常规设置
-				</h3>
-				<p className="text-sm text-text-secondary mt-1">
-					配置应用的基础行为和外观
-				</p>
-			</div>
+			<SettingsPanelHeader
+				icon={SettingsIcon}
+				title="常规设置"
+				description="配置应用的基础行为和外观。"
+			/>
 
 			{/* Theme */}
 			<div className="space-y-4">
@@ -353,6 +352,18 @@ export function GeneralSettings() {
 						</button>
 					</div>
 				</div>
+			</div>
+
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary">设置显示</h4>
+				<Select
+					value={mode}
+					onChange={(e) => setMode(e.target.value as typeof mode)}
+					options={[
+						{ value: "simple", label: "默认" },
+						{ value: "geek", label: "完整" },
+					]}
+				/>
 			</div>
 
 			{/* Language */}

@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import { openDirectory } from "../../../lib/dialogCompat";
 import { useSkillsStore } from "../../../lib/skillsStore";
 import { confirmDialog } from "../../ui/ConfirmDialog";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { SettingsPageContainer, SettingsSwitch } from "../ui/SettingsPrimitives";
 
 export function SkillsSettings() {
+	const { showTechnicalSummaries } = useSettingsExperience();
 	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
 		useSkillsStore();
 	const [isLoading, setIsLoading] = useState(false);
@@ -71,17 +74,50 @@ export function SkillsSettings() {
 		}
 	};
 
+	const enabledCount = skills.filter((skill) => skill.enabled).length;
+
+	if (showTechnicalSummaries) {
+		return (
+			<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
+				<SettingsPanelHeader
+					icon={Zap}
+					title="Agent 技能"
+					description="管理 Agent 技能。"
+				/>
+
+				{error && (
+					<div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200">
+						{error}
+					</div>
+				)}
+
+				<div className="grid gap-4 sm:grid-cols-3">
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">已安装技能</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{skills.length}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">启用中</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{enabledCount}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">状态</div>
+						<div className="mt-2 text-sm font-medium text-text-primary">
+							{isLoading ? "加载中" : skills.length > 0 ? "可用" : "尚未安装"}
+						</div>
+					</div>
+				</div>
+			</SettingsPageContainer>
+		);
+	}
+
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
-				<div className="border-b border-border pb-4 mb-8">
-					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-						<Zap className="w-5 h-5" />
-						Agent 技能
-					</h3>
-					<p className="text-sm text-text-secondary mt-1">
-						管理 Agent 可以使用的技能，技能格式遵循 agentskills.io 规范
-					</p>
-				</div>
+			<SettingsPanelHeader
+				icon={Zap}
+				title="Agent 技能"
+				description="管理 Agent 技能。"
+			/>
 
 				{/* Error Message */}
 				{error && (

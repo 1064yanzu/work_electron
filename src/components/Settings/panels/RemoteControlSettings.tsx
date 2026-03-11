@@ -39,6 +39,8 @@ import {
 	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../ui/SettingsPrimitives";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { PairingList } from "./remote-control/PairingList";
 import { RemoteStatusBadge } from "./remote-control/RemoteStatusBadge";
 import { SessionList } from "./remote-control/SessionList";
@@ -57,6 +59,7 @@ function joinAllowList(items: string[]): string {
 }
 
 export function RemoteControlSettings() {
+	const { showTechnicalSummaries } = useSettingsExperience();
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [config, setConfig] = useState<RemoteControlConfig | null>(null);
@@ -342,19 +345,63 @@ export function RemoteControlSettings() {
 
 	const runtimeChannel =
 		runtime?.channels.find((item) => item.channel_id === "feishu") ?? null;
+	const enabledChannels = Object.values(config.channels).filter(
+		(channel) => channel.enabled,
+	).length;
+
+	if (showTechnicalSummaries) {
+		return (
+			<SettingsPageContainer contentClassName="max-w-4xl space-y-6">
+				<SettingsPanelHeader
+					icon={Smartphone}
+					title="远程控制"
+					description="远程控制与通道配置。"
+				/>
+
+				<SettingsSectionCard className="p-5">
+					<div className="flex flex-wrap items-center justify-between gap-4">
+						<div className="text-sm font-medium text-text-primary">总开关</div>
+						<SettingsSwitch
+							checked={config.enabled}
+							onChange={(next) => {
+								void saveConfig((draft) => ({ ...draft, enabled: next }));
+							}}
+							disabled={saving}
+						/>
+					</div>
+				</SettingsSectionCard>
+
+				<div className="grid gap-4 sm:grid-cols-4">
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">状态</div>
+						<div className="mt-2 text-sm font-semibold text-text-primary">
+							{runtime?.enabled ? "运行中" : config.enabled ? "待启动" : "已关闭"}
+						</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">已启用通道</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{enabledChannels}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">待配对</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{runtime?.pending_pairings ?? 0}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">活跃运行</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{runtime?.active_runs ?? 0}</div>
+					</div>
+				</div>
+			</SettingsPageContainer>
+		);
+	}
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-4xl space-y-8">
-			<div className="border-b border-border pb-4">
-				<h3 className="flex items-center gap-2 text-lg font-medium text-text-primary">
-					<Smartphone className="h-5 w-5" />
-					远程控制
-				</h3>
-				<p className="mt-1 text-sm text-text-secondary">
-					多通道远控骨架，支持 Feishu、Telegram、Slack、Discord，
-					预留移动端与通用 Webhook 扩展。
-				</p>
-			</div>
+			<SettingsPanelHeader
+				icon={Smartphone}
+				title="远程控制"
+				description="配置远程控制通道。"
+			/>
 
 			<SettingsSectionCard className="p-5">
 				<div className="mb-4 flex items-center justify-between">

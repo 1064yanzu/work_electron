@@ -19,6 +19,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
 import { toast } from "../../ui/Toast";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 // 默认提示词配置
@@ -444,41 +445,34 @@ export function PromptSettings() {
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
-				{/* 标题区域 */}
-				<div className="border-b border-border pb-4 mb-8">
-					<div className="flex items-center justify-between">
-						<div>
-							<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-								<Sparkles className="w-5 h-5" />
-								提示词配置
-							</h3>
-							<p className="text-sm text-text-secondary mt-1">
-								自定义 AI 助手的行为和响应方式
-							</p>
-						</div>
-						<div className="flex items-center gap-2">
-							<button
-								onClick={handleResetAll}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
-							>
-								<RotateCcw className="w-3.5 h-3.5" />
-								<span>重置全部</span>
-							</button>
-							<button
-								onClick={handleSaveAll}
-								disabled={!hasChanges || isSaving}
-								className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
-									hasChanges && !isSaving
-										? "bg-zinc-900 text-white hover:bg-zinc-800"
-										: "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-								}`}
-							>
-								<Save className="w-3.5 h-3.5" />
-								<span>{isSaving ? "保存中..." : "保存更改"}</span>
-							</button>
-						</div>
-					</div>
-				</div>
+			<SettingsPanelHeader
+				icon={Sparkles}
+				title="提示词配置"
+				description="自定义提示词。"
+				actions={
+					<>
+						<button
+							onClick={handleResetAll}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+						>
+							<RotateCcw className="w-3.5 h-3.5" />
+							<span>重置全部</span>
+						</button>
+						<button
+							onClick={handleSaveAll}
+							disabled={!hasChanges || isSaving}
+							className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+								hasChanges && !isSaving
+									? "bg-zinc-900 text-white hover:bg-zinc-800"
+									: "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+							}`}
+						>
+							<Save className="w-3.5 h-3.5" />
+							<span>{isSaving ? "保存中..." : "保存更改"}</span>
+						</button>
+					</>
+				}
+			/>
 
 				{/* 提示词列表 */}
 				<div className="space-y-4">

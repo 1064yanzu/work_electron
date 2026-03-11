@@ -66,6 +66,10 @@ export function ModelSettings() {
 	const selected = providers.find((p) => p.id === selectedId);
 	const template = selected ? getTemplateForProvider(selected) : undefined;
 	const apiKeyUrl = template?.apiKeyUrl || template?.docsUrl;
+	const openaiEndpointType =
+		selected?.metadata?.openai_endpoint_type === "responses"
+			? "responses"
+			: "chat_completions";
 	const docsUrl = template?.docsUrl;
 	const modelsUrl = template?.modelsUrl;
 	const filtered = providers.filter((p) =>
@@ -103,7 +107,9 @@ export function ModelSettings() {
 			return `${rawBase}/v1`;
 		})();
 
-		return `${base}/chat/completions`;
+		return openaiEndpointType === "responses"
+			? `${base}/responses`
+			: `${base}/chat/completions`;
 	})();
 
 	// 初始化选中
@@ -331,6 +337,7 @@ export function ModelSettings() {
 			<div className="flex-1 overflow-y-auto bg-white">
 				{selected ? (
 					<div className="p-8 max-w-2xl">
+
 						{/* 标题栏 */}
 						<div className="flex items-center justify-between mb-10 pr-10">
 							<div className="flex items-center gap-3">
@@ -446,6 +453,31 @@ export function ModelSettings() {
 								</p>
 							)}
 						</div>
+
+
+						{(selected.providerType === ProviderType.OpenAi ||
+							selected.providerType === ProviderType.Custom) && (
+							<div className="mb-8">
+								<label className="mb-3 block text-sm font-medium text-zinc-700">
+									端点类型
+								</label>
+								<select
+									value={openaiEndpointType}
+									onChange={(e) =>
+										settingsStore.updateProvider(selected.id, {
+											metadata: {
+												...(selected.metadata || {}),
+												openai_endpoint_type: e.target.value,
+											},
+										})
+									}
+									className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50 px-4 py-2.5 text-sm transition-all focus:border-zinc-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+								>
+									<option value="chat_completions">兼容型</option>
+									<option value="responses">Responses</option>
+								</select>
+							</div>
+						)}
 
 						{/* 模型区域 */}
 						<div className="mb-8">

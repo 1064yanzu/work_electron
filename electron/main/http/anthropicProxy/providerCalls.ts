@@ -14,6 +14,17 @@ import {
 	translateToOpenAI,
 } from "./openaiCompat";
 import {
+	getOpenAIResponsesErrorMessage,
+	getOpenAIResponsesItemText,
+	getOpenAIResponsesStopReason,
+	isOpenAIResponsesProvider,
+	readOpenAIResponsesStream,
+	toOpenAIResponsesRequest,
+	translateResponsesToAnthropic,
+	type OpenAIEndpointType,
+	type OpenAIResponsesResponse,
+} from "./openaiResponsesCompat";
+import {
 	extractThoughtFragmentsFromOpenAIChunk,
 	ThoughtDeltaNormalizer,
 	type ThoughtSource,
@@ -172,7 +183,6 @@ function toOpenAICompatibleTools(
 		const validatedSchema = {
 			type: "object",
 			...(sanitized && typeof sanitized === "object" ? sanitized : {}),
-			// Ensure properties exists (some providers require it).
 			properties:
 				sanitized &&
 				typeof sanitized === "object" &&
@@ -192,6 +202,26 @@ function toOpenAICompatibleTools(
 			},
 		};
 	});
+}
+
+function toOpenAIResponsesTools(
+	anthropicReq: AnthropicRequest,
+):
+	| Array<{
+			type: "function";
+			name: string;
+			description?: string;
+			parameters: unknown;
+		}>
+	| undefined {
+	const compatTools = toOpenAICompatibleTools(anthropicReq);
+	if (!compatTools?.length) return undefined;
+	return compatTools.map((tool) => ({
+		type: "function" as const,
+		name: tool.function.name,
+		description: tool.function.description,
+		parameters: tool.function.parameters,
+	}));
 }
 
 function isInvalidArgumentError(bodyText: string): boolean {
@@ -271,6 +301,15 @@ function mergeStreamingFragment(prev: string, incoming: string): string {
 	const overlap = computeStringOverlap(prev, incoming);
 	if (overlap > 0) return prev + incoming.slice(overlap);
 	return prev + incoming;
+}
+
+
+function mergeStreamingFragmentWithDelta(prev: string, incoming: string) {
+	const next = mergeStreamingFragment(prev, incoming);
+	return {
+		next,
+		delta: next.slice(prev.length),
+	};
 }
 
 /**
@@ -402,6 +441,60 @@ export async function callProvider(
 		});
 	}
 
+	const endpointType: OpenAIEndpointType = isOpenAIResponsesProvider(provider)
+		? "responses"
+		: "chat_completions";
+
+	if (endpointType === "responses") {
+		const responsesReq = toOpenAIResponsesRequest({
+			model,
+			anthropicReq,
+			openaiMessages,
+			tools: toOpenAIResponsesTools(anthropicReq),
+			stream: false,
+		});
+
+		logger?.info({
+			msg: "anthropic proxy: sending to openai responses api",
+			model,
+			inputCount: responsesReq.input.length,
+			hasTools: !!responsesReq.tools,
+			toolCount: responsesReq.tools?.length || 0,
+		});
+
+		const responsesUpstream = await loggedFetch(
+			`${baseUrl}/responses`,
+			{
+				method: "POST",
+				headers,
+				body: JSON.stringify(responsesReq),
+			},
+			{
+				logger,
+				requestId,
+				conversationId,
+				service: "anthropic-proxy:upstream",
+				readResponseBody: false,
+			},
+		);
+
+		if (!responsesUpstream.ok) {
+			const errorText = await responsesUpstream.text();
+			logger?.error({
+				msg: "anthropic proxy: openai responses api error",
+				status: responsesUpstream.status,
+				error: errorText,
+			});
+			throw new Error(`OpenAI Responses API error: ${responsesUpstream.status} ${errorText}`.trim());
+		}
+
+		return translateResponsesToAnthropic(
+			messageId,
+			model,
+			await responsesUpstream.json(),
+		);
+	}
+
 	const openaiReq = {
 		model,
 		messages: openaiMessages,
@@ -409,11 +502,9 @@ export async function callProvider(
 		max_tokens: anthropicReq.max_tokens ?? 4096,
 		tools: openaiTools,
 		tool_choice: openaiTools?.length ? "auto" : undefined,
-		// Non-streaming callers expect a single JSON response from upstream.
 		stream: false,
 	};
 
-	// Log final OpenAI request
 	logger?.info({
 		msg: "anthropic proxy: sending to provider",
 		model: openaiReq.model,
@@ -423,7 +514,7 @@ export async function callProvider(
 	});
 
 	const response = await loggedFetch(
-		`${baseUrl}/chat/completions`,
+		`/chat/completions`,
 		{
 			method: "POST",
 			headers,
@@ -692,6 +783,542 @@ async function readSseStream(
 	}
 }
 
+
+type ResponsesTextBlockState = {
+	key: string;
+	index: number;
+	text: string;
+	stopped: boolean;
+};
+
+type ResponsesThoughtBlockState = {
+	key: string;
+	source: ThoughtSource;
+	index: number;
+	text: string;
+	stopped: boolean;
+};
+
+type ResponsesToolCallState = {
+	key: string;
+	id?: string;
+	name?: string;
+	args: string;
+	blockIndex: number | null;
+	sentArgsLength: number;
+	stopped: boolean;
+};
+
+async function streamOpenAIResponsesToAnthropic(params: {
+	upstreamBody: ReadableStream<Uint8Array> | null;
+	upstreamContentType: string;
+	readJsonFallback: () => Promise<unknown>;
+	res: Response;
+	messageId: string;
+	model: string;
+	estimatedInputTokens: number;
+	logger?: Logger;
+	requestId?: string;
+}) {
+	const {
+		upstreamBody,
+		upstreamContentType,
+		readJsonFallback,
+		res,
+		messageId,
+		model,
+		estimatedInputTokens,
+	} = params;
+	let messageStarted = false;
+	let heartbeatTimer: NodeJS.Timeout | null = null;
+
+	const sendMessageStart = () => {
+		if (messageStarted || res.writableEnded) return;
+		messageStarted = true;
+		writeSseEvent(res, "message_start", {
+			type: "message_start",
+			message: {
+				id: messageId,
+				type: "message",
+				role: "assistant",
+				content: [],
+				model,
+				usage: { input_tokens: estimatedInputTokens, output_tokens: 0 },
+			},
+		});
+	};
+
+	const stopHeartbeat = () => {
+		if (!heartbeatTimer) return;
+		clearInterval(heartbeatTimer);
+		heartbeatTimer = null;
+	};
+
+	const startHeartbeat = () => {
+		if (heartbeatTimer || res.writableEnded) return;
+		heartbeatTimer = setInterval(() => {
+			if (res.writableEnded) {
+				stopHeartbeat();
+				return;
+			}
+			writeSseEvent(res, "ping", { type: "ping" });
+		}, 3000);
+	};
+
+	const finishWithError = (message: string) => {
+		writeSseEvent(res, "error", {
+			type: "error",
+			error: { type: "api_error", message: message || "Upstream stream error" },
+		});
+		stopHeartbeat();
+		res.end();
+	};
+
+	sendMessageStart();
+	startHeartbeat();
+
+	if (!upstreamBody) {
+		finishWithError("No upstream body");
+		return;
+	}
+
+	if (!upstreamContentType.includes("text/event-stream")) {
+		let fallbackJson: unknown;
+		try {
+			fallbackJson = await readJsonFallback();
+		} catch (error) {
+			finishWithError(
+				`Upstream did not return SSE and JSON parse failed: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			return;
+		}
+		const message = translateResponsesToAnthropic(messageId, model, fallbackJson);
+		emitAnthropicMessageContentBlocks(res, message.content, 0);
+		writeSseEvent(res, "message_delta", {
+			type: "message_delta",
+			delta: { stop_reason: message.stop_reason },
+			usage: { output_tokens: message.usage.output_tokens },
+		});
+		writeSseEvent(res, "message_stop", { type: "message_stop" });
+		stopHeartbeat();
+		res.end();
+		return;
+	}
+
+	const doneErr = new Error("__OPENAI_RESPONSES_STREAM_DONE__");
+	let nextBlockIndex = 0;
+	let activeTextKey: string | null = null;
+	let activeThoughtKey: string | null = null;
+	const textStates = new Map<string, ResponsesTextBlockState>();
+	const thoughtStates = new Map<string, ResponsesThoughtBlockState>();
+	const toolCalls = new Map<string, ResponsesToolCallState>();
+	let lastUsage: OpenAIResponsesResponse["usage"] | null = null;
+	let finalResponse: OpenAIResponsesResponse | null = null;
+	let pendingStopReason: AnthropicResponse["stop_reason"] | null = null;
+	let finalized = false;
+
+	const stopTextBlockIfNeeded = (key = activeTextKey) => {
+		if (!key) return;
+		const state = textStates.get(key);
+		if (!state || state.stopped) {
+			if (activeTextKey === key) activeTextKey = null;
+			return;
+		}
+		writeSseEvent(res, "content_block_stop", {
+			type: "content_block_stop",
+			index: state.index,
+		});
+		state.stopped = true;
+		if (activeTextKey === key) activeTextKey = null;
+	};
+
+	const stopThoughtBlockIfNeeded = (key = activeThoughtKey) => {
+		if (!key) return;
+		const state = thoughtStates.get(key);
+		if (!state || state.stopped) {
+			if (activeThoughtKey === key) activeThoughtKey = null;
+			return;
+		}
+		writeSseEvent(res, "content_block_stop", {
+			type: "content_block_stop",
+			index: state.index,
+		});
+		state.stopped = true;
+		if (activeThoughtKey === key) activeThoughtKey = null;
+	};
+
+	const stopAllToolCallBlocksIfNeeded = () => {
+		for (const state of toolCalls.values()) {
+			if (state.stopped || state.blockIndex === null) continue;
+			writeSseEvent(res, "content_block_stop", {
+				type: "content_block_stop",
+				index: state.blockIndex,
+			});
+			state.stopped = true;
+		}
+	};
+
+	const emitTextDelta = (key: string, incoming: string) => {
+		if (!incoming) return;
+		stopThoughtBlockIfNeeded();
+		if (activeTextKey && activeTextKey !== key) {
+			stopTextBlockIfNeeded(activeTextKey);
+		}
+		let state = textStates.get(key);
+		if (!state) {
+			state = { key, index: nextBlockIndex++, text: "", stopped: false };
+			textStates.set(key, state);
+		}
+		if (state.stopped) return;
+		if (activeTextKey !== key) {
+			activeTextKey = key;
+			writeSseEvent(res, "content_block_start", {
+				type: "content_block_start",
+				index: state.index,
+				content_block: { type: "text", text: "" },
+			});
+		}
+		const merged = mergeStreamingFragmentWithDelta(state.text, incoming);
+		if (!merged.delta) return;
+		state.text = merged.next;
+		writeSseEvent(res, "content_block_delta", {
+			type: "content_block_delta",
+			index: state.index,
+			delta: { type: "text_delta", text: merged.delta },
+		});
+	};
+
+	const emitThoughtDelta = (
+		key: string,
+		source: ThoughtSource,
+		incoming: string,
+	) => {
+		if (!incoming) return;
+		stopTextBlockIfNeeded();
+		if (activeThoughtKey && activeThoughtKey !== key) {
+			stopThoughtBlockIfNeeded(activeThoughtKey);
+		}
+		let state = thoughtStates.get(key);
+		if (!state) {
+			state = {
+				key,
+				source,
+				index: nextBlockIndex++,
+				text: "",
+				stopped: false,
+			};
+			thoughtStates.set(key, state);
+		}
+		if (state.stopped) return;
+		if (activeThoughtKey !== key) {
+			activeThoughtKey = key;
+			writeSseEvent(res, "content_block_start", {
+				type: "content_block_start",
+				index: state.index,
+				content_block: { type: source, text: "" },
+			});
+		}
+		const merged = mergeStreamingFragmentWithDelta(state.text, incoming);
+		if (!merged.delta) return;
+		state.text = merged.next;
+		writeSseEvent(res, "content_block_delta", {
+			type: "content_block_delta",
+			index: state.index,
+			delta: {
+				type: "thinking_delta",
+				thinking: merged.delta,
+			},
+		});
+	};
+
+	const getToolState = (key: string) => {
+		let state = toolCalls.get(key);
+		if (!state) {
+			state = {
+				key,
+				args: "",
+				blockIndex: null,
+				sentArgsLength: 0,
+				stopped: false,
+			};
+			toolCalls.set(key, state);
+		}
+		return state;
+	};
+
+	const ensureToolCallBlock = (state: ResponsesToolCallState) => {
+		if (state.blockIndex !== null) return;
+		stopTextBlockIfNeeded();
+		stopThoughtBlockIfNeeded();
+		state.blockIndex = nextBlockIndex++;
+		writeSseEvent(res, "content_block_start", {
+			type: "content_block_start",
+			index: state.blockIndex,
+			content_block: {
+				type: "tool_use",
+				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+				name: state.name || "Tool",
+				input: {},
+			},
+		});
+	};
+
+	const emitToolCallArgsIfNeeded = (state: ResponsesToolCallState) => {
+		ensureToolCallBlock(state);
+		const deltaArgs = state.args.slice(state.sentArgsLength);
+		if (!deltaArgs || state.blockIndex === null) return;
+		writeSseEvent(res, "content_block_delta", {
+			type: "content_block_delta",
+			index: state.blockIndex,
+			delta: {
+				type: "input_json_delta",
+				partial_json: deltaArgs,
+			},
+		});
+		state.sentArgsLength = state.args.length;
+	};
+
+	const hydrateToolCallFromItem = (
+		item: Record<string, unknown>,
+		keyHint?: string,
+	) => {
+		const key =
+			keyHint ||
+			(typeof item.call_id === "string" && item.call_id) ||
+			(typeof item.id === "string" && item.id) ||
+			`tool_${toolCalls.size}`;
+		const state = getToolState(String(key));
+		if (typeof item.call_id === "string" && item.call_id) state.id = item.call_id;
+		else if (typeof item.id === "string" && item.id) state.id = item.id;
+		if (typeof item.name === "string" && item.name) state.name = item.name;
+		if (typeof item.arguments === "string" && item.arguments) {
+			state.args = mergeStreamingFragment(state.args, item.arguments);
+		}
+		emitToolCallArgsIfNeeded(state);
+	};
+
+	const hydrateMessageItem = (
+		item: Record<string, unknown>,
+		baseKey: string,
+	) => {
+		const itemText = getOpenAIResponsesItemText(item as any);
+		if (itemText) {
+			emitTextDelta(`${baseKey}:text:0`, itemText);
+		}
+		const content = Array.isArray(item.content) ? item.content : [];
+		content.forEach((part, partIndex) => {
+			if (!part || typeof part !== "object") return;
+			const record = part as Record<string, unknown>;
+			const partType = typeof record.type === "string" ? record.type : "";
+			const partText =
+				(typeof record.text === "string" && record.text) ||
+				(typeof record.content === "string" && record.content) ||
+				"";
+			if (!partText) return;
+			if (partType.includes("reasoning") || partType.includes("thinking")) {
+				emitThoughtDelta(
+					`${baseKey}:thought:${partIndex}`,
+					partType.includes("reasoning") ? "reasoning" : "thinking",
+					partText,
+				);
+				return;
+			}
+			emitTextDelta(`${baseKey}:text:${partIndex}`, partText);
+		});
+	};
+
+	const finalize = () => {
+		if (finalized || res.writableEnded) return;
+		finalized = true;
+		stopHeartbeat();
+		stopTextBlockIfNeeded();
+		stopThoughtBlockIfNeeded();
+		stopAllToolCallBlocksIfNeeded();
+		const stopReason =
+			pendingStopReason ||
+			getOpenAIResponsesStopReason(finalResponse, toolCalls.size > 0);
+		const completionTokens =
+			typeof lastUsage?.output_tokens === "number" ? lastUsage.output_tokens : 0;
+		writeSseEvent(res, "message_delta", {
+			type: "message_delta",
+			delta: { stop_reason: stopReason },
+			usage: { output_tokens: completionTokens },
+		});
+		writeSseEvent(res, "message_stop", { type: "message_stop" });
+		res.end();
+	};
+
+	let streamError: unknown = null;
+	try {
+		await readOpenAIResponsesStream(upstreamBody, async (event) => {
+			if (res.writableEnded) throw doneErr;
+			const eventType = typeof event.type === "string" ? event.type : "";
+			if (event.response?.usage) lastUsage = event.response.usage;
+			if (event.response) finalResponse = event.response;
+
+			if (eventType === "error" || eventType === "response.failed") {
+				throw new Error(getOpenAIResponsesErrorMessage(event));
+			}
+
+			if (eventType === "response.output_text.delta") {
+				const key = `text:${event.item_id || event.output_index || 0}:${event.content_index || 0}`;
+				emitTextDelta(key, typeof event.delta === "string" ? event.delta : "");
+				return;
+			}
+
+			if (eventType === "response.output_text.done") {
+				const key = `text:${event.item_id || event.output_index || 0}:${event.content_index || 0}`;
+				emitTextDelta(
+					key,
+					typeof event.text === "string"
+						? event.text
+						: typeof event.delta === "string"
+							? event.delta
+							: "",
+				);
+				return;
+			}
+
+			if (
+				eventType.includes("reasoning") ||
+				eventType.includes("thinking")
+			) {
+				const source: ThoughtSource = eventType.includes("reasoning")
+					? "reasoning"
+					: "thinking";
+				const key = `${source}:${event.item_id || event.output_index || 0}:${event.content_index || 0}`;
+				const text =
+					typeof event.delta === "string"
+						? event.delta
+						: typeof event.text === "string"
+							? event.text
+							: "";
+				emitThoughtDelta(key, source, text);
+				return;
+			}
+
+			if (
+				eventType === "response.content_part.added" ||
+				eventType === "response.content_part.done"
+			) {
+				const part = event.part && typeof event.part === "object" ? event.part : null;
+				if (!part) return;
+				const partType = typeof part.type === "string" ? part.type : "";
+				const partText =
+					(typeof part.text === "string" && part.text) ||
+					(typeof part.content === "string" && part.content) ||
+					"";
+				if (!partText) return;
+				if (partType.includes("reasoning") || partType.includes("thinking")) {
+					emitThoughtDelta(
+						`${partType}:${event.item_id || event.output_index || 0}:${event.content_index || 0}`,
+						partType.includes("reasoning") ? "reasoning" : "thinking",
+						partText,
+					);
+					return;
+				}
+				emitTextDelta(
+					`text:${event.item_id || event.output_index || 0}:${event.content_index || 0}`,
+					partText,
+				);
+				return;
+			}
+
+			if (eventType === "response.function_call_arguments.delta") {
+				const key = String(event.item_id || event.output_index || `tool_${toolCalls.size}`);
+				const state = getToolState(key);
+				if (typeof event.delta === "string" && event.delta) {
+					state.args = mergeStreamingFragment(state.args, event.delta);
+				}
+				emitToolCallArgsIfNeeded(state);
+				return;
+			}
+
+			if (eventType === "response.function_call_arguments.done") {
+				const key = String(event.item_id || event.output_index || `tool_${toolCalls.size}`);
+				const state = getToolState(key);
+				const finalArgs =
+					typeof event.delta === "string"
+						? event.delta
+						: typeof event.text === "string"
+							? event.text
+							: "";
+				if (finalArgs) {
+					state.args = mergeStreamingFragment(state.args, finalArgs);
+				}
+				emitToolCallArgsIfNeeded(state);
+				return;
+			}
+
+			if (
+				eventType === "response.output_item.added" ||
+				eventType === "response.output_item.done"
+			) {
+				const item = event.item && typeof event.item === "object" ? event.item : null;
+				if (!item) return;
+				const itemType = typeof item.type === "string" ? item.type : "";
+				const itemKey = String(
+					event.item_id ||
+					((typeof item.call_id === "string" && item.call_id) ||
+						(typeof item.id === "string" && item.id) ||
+						`item_${event.output_index || 0}`),
+				);
+				if (itemType === "function_call") {
+					hydrateToolCallFromItem(item, itemKey);
+					return;
+				}
+				if (itemType === "message" || itemType === "output_text" || itemType === "text") {
+					hydrateMessageItem(item, itemKey);
+				}
+				return;
+			}
+
+			if (
+				eventType === "response.completed" ||
+				eventType === "response.incomplete" ||
+				eventType === "response.done"
+			) {
+				if (finalResponse?.output) {
+					finalResponse.output.forEach((item, index) => {
+						if (!item || typeof item !== "object") return;
+						const key = String(
+							item.call_id || item.id || `final_item_${index}`,
+						);
+						if (item.type === "function_call") {
+							hydrateToolCallFromItem(item as any, key);
+							return;
+						}
+						if (
+							item.type === "message" ||
+							item.type === "output_text" ||
+							item.type === "text"
+						) {
+							hydrateMessageItem(item as any, key);
+						}
+					});
+				}
+				pendingStopReason = getOpenAIResponsesStopReason(
+					finalResponse,
+					toolCalls.size > 0,
+				);
+				finalize();
+				throw doneErr;
+			}
+		});
+	} catch (error) {
+		if (error !== doneErr) streamError = error;
+	}
+
+	if (streamError) {
+		finishWithError(
+			streamError instanceof Error ? streamError.message : String(streamError),
+		);
+		return;
+	}
+
+	finalize();
+}
+
 /**
  * 调用 Provider API（流式）
  */
@@ -792,6 +1419,65 @@ export async function callProviderStream(
 	);
 
 	const openaiTools = toOpenAICompatibleTools(anthropicReq);
+	if (isOpenAIResponsesProvider(provider)) {
+		const estimatedInputTokens = estimateAnthropicInputTokens(anthropicReq);
+		const responsesReq = toOpenAIResponsesRequest({
+			model,
+			anthropicReq,
+			openaiMessages,
+			tools: toOpenAIResponsesTools(anthropicReq),
+			stream: true,
+		});
+
+		logger?.info({
+			msg: "anthropic proxy: streaming via openai responses api",
+			model,
+			inputCount: responsesReq.input.length,
+			hasTools: !!responsesReq.tools,
+			toolCount: responsesReq.tools?.length || 0,
+		});
+
+		const responsesUpstream = await loggedFetch(
+			`${baseUrl}/responses`,
+			{
+				method: "POST",
+				headers,
+				body: JSON.stringify(responsesReq),
+			},
+			{
+				logger,
+				requestId,
+				conversationId,
+				service: "anthropic-proxy:upstream-stream",
+				readResponseBody: false,
+			},
+		);
+
+		if (!responsesUpstream.ok) {
+			const errorText = await responsesUpstream.text();
+			writeSseEvent(res, "error", {
+				type: "error",
+				error: { type: "api_error", message: errorText || "Upstream error" },
+			});
+			res.end();
+			return;
+		}
+
+		await streamOpenAIResponsesToAnthropic({
+			upstreamBody: responsesUpstream.body,
+			upstreamContentType: String(
+				responsesUpstream.headers.get("content-type") || "",
+			),
+			readJsonFallback: () => responsesUpstream.json(),
+			res,
+			messageId,
+			model,
+			estimatedInputTokens,
+			logger,
+			requestId,
+		});
+		return;
+	}
 	const openaiReq = {
 		model,
 		messages: openaiMessages,

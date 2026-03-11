@@ -32,6 +32,8 @@ import { useAgentModelSettingsStore } from "../../../lib/models/agentModelSettin
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { toast } from "../../ui/Toast";
 import { Select } from "../../ui/Select";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 import { Toggle } from "../components";
 import { AgentModelScenarioSettings } from "../components/AgentModelScenarioSettings";
@@ -66,6 +68,7 @@ const RETRIEVAL_MODE_OPTIONS = [
 ];
 
 export function AgentSettings() {
+	const { showTechnicalSummaries } = useSettingsExperience();
 	const { policy, updatePolicy, clearSessionRemembered } = usePermissionStore();
 	const { providers } = useSettingsStore();
 	const { settings: modelSettings, store: modelSettingsStore } =
@@ -458,17 +461,56 @@ export function AgentSettings() {
 		]);
 	};
 
+	const enabledScenarioCount = modelSettings.scenarioConfigs.filter(
+		(config) => config.enabled,
+	).length;
+	const permissionModeLabel =
+		PERMISSION_MODE_OPTIONS.find((option) => option.value === policy.defaultMode)
+			?.label ?? policy.defaultMode;
+	const retrievalModeLabel =
+		RETRIEVAL_MODE_OPTIONS.find((option) => option.value === kbRetrievalMode)
+			?.label ?? kbRetrievalMode;
+
+	if (showTechnicalSummaries) {
+		return (
+			<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+				<SettingsPanelHeader
+					icon={Bot}
+					title="Agent 设置"
+					description="Agent 权限、模型场景与检索。"
+				/>
+
+				<div className="grid gap-4 sm:grid-cols-2">
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">默认权限模式</div>
+						<div className="mt-2 text-lg font-semibold text-text-primary">{permissionModeLabel}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">默认模型</div>
+						<div className="mt-2 text-sm font-semibold text-text-primary break-all">
+							{modelSettings.defaultModelId || "尚未指定"}
+						</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">已启用场景</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{enabledScenarioCount}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">资料检索</div>
+						<div className="mt-2 text-lg font-semibold text-text-primary">{retrievalModeLabel}</div>
+					</div>
+				</div>
+			</SettingsPageContainer>
+		);
+	}
+
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
-			<div className="border-b border-border pb-4 mb-8">
-				<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-					<Bot className="w-5 h-5" />
-					Agent 设置
-				</h3>
-				<p className="text-sm text-text-secondary mt-1">
-					配置 Agent 模型场景、工具权限与资料库检索策略
-				</p>
-			</div>
+			<SettingsPanelHeader
+				icon={Bot}
+				title="Agent 设置"
+				description="模型场景、权限与检索。"
+			/>
 
 			{/* 模型场景配置 */}
 			<AgentModelScenarioSettings />

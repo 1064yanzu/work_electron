@@ -61,6 +61,7 @@ import {
 import { toast } from "../../ui/Toast";
 import { confirmDialog as confirmUI } from "../../ui/ConfirmDialog";
 import { Select } from "../../ui/Select";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsRow,
 	SettingsSectionCard,
@@ -582,6 +583,16 @@ export function DataSettings() {
 				{/* 右侧内容 */}
 				<div className="flex-1 overflow-y-auto p-6">
 					<div className="max-w-2xl mx-auto space-y-6">
+						<SettingsPanelHeader
+							icon={activeSection === "storage" ? HardDrive : Cloud}
+							title={activeSection === "storage" ? "数据目录" : "WebDAV 同步"}
+							description={
+								activeSection === "storage"
+									? "优先配置本地存储、Vault 互通和备份目录，适合大多数用户。"
+									: "这里管理 WebDAV 远程备份与同步连接，建议确认账号信息后再开启自动同步。"
+							}
+						/>
+
 						{activeSection === "storage" && (
 							<>
 								{/* Vault 与互通 */}

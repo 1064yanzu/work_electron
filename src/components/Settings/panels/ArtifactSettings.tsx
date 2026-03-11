@@ -15,6 +15,8 @@ import {
 } from "../../../lib/api";
 import { confirmDialog as confirmUI } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsPageContainer,
 	SettingsRow,
@@ -33,6 +35,7 @@ function formatSize(bytes: number): string {
 }
 
 export function ArtifactSettings() {
+	const { showTechnicalSummaries } = useSettingsExperience();
 	const [settings, setSettings] = useState<ArtifactSettingsType | null>(null);
 	const [artifacts, setArtifacts] = useState<ArtifactMetadata[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -114,18 +117,48 @@ export function ArtifactSettings() {
 		);
 	}
 
+	if (showTechnicalSummaries) {
+		return (
+			<SettingsPageContainer className="p-6" contentClassName="max-w-2xl mx-auto space-y-6">
+				<SettingsPanelHeader
+					icon={Archive}
+					title="产物管理"
+					description="管理 Agent 产物。"
+				/>
+
+				<div className="grid gap-4 sm:grid-cols-3">
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">产物数量</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{artifacts.length}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">涉及会话</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{sessionCount}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">总占用</div>
+						<div className="mt-2 text-lg font-semibold text-text-primary">{formatSize(totalSize)}</div>
+					</div>
+				</div>
+
+				<div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+					<div className="text-sm font-medium text-text-primary">当前策略</div>
+					<div className="mt-2 space-y-2 text-xs leading-6 text-text-secondary">
+						<div>存储路径：{settings.storage_path || "默认路径"}</div>
+						<div>自动清理：{settings.auto_cleanup ? `开启，保留 ${settings.retention_days} 天` : "关闭"}</div>
+					</div>
+				</div>
+			</SettingsPageContainer>
+		);
+	}
+
 	return (
 		<SettingsPageContainer className="p-6" contentClassName="max-w-2xl mx-auto space-y-6">
-				{/* 标题 */}
-				<div className="border-b border-border pb-4">
-					<h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
-						<Archive className="w-5 h-5" />
-						产物管理
-					</h3>
-					<p className="text-sm text-text-secondary mt-1">
-						管理 Agent 生成的文件产物
-					</p>
-				</div>
+			<SettingsPanelHeader
+				icon={Archive}
+				title="产物管理"
+				description="管理 Agent 产物。"
+			/>
 
 				{/* 产物统计 */}
 				<SettingsSectionCard>

@@ -25,9 +25,12 @@ import {
 } from "../../../lib/config";
 import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
+import { useSettingsExperience } from "../context/SettingsExperienceContext";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 export function MCPSettings() {
+	const { showTechnicalSummaries } = useSettingsExperience();
 	const [servers, setServers] = useState<
 		(MCPServer & { status?: "running" | "stopped" | "error" })[]
 	>([]);
@@ -207,17 +210,48 @@ export function MCPSettings() {
 		}, 3000);
 	};
 
+	const enabledServers = servers.filter((server) => server.enabled).length;
+
+	if (showTechnicalSummaries) {
+		return (
+			<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
+				<SettingsPanelHeader
+					icon={Plug}
+					title="MCP 服务配置"
+					description="配置 MCP 服务。"
+				/>
+
+				<div className="grid gap-4 sm:grid-cols-3">
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">已配置服务</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{servers.length}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">已启用</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">{enabledServers}</div>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">运行环境</div>
+						<div className="mt-2 text-sm font-medium text-text-primary">
+							{isCheckingEnv
+								? "检测中..."
+								: envCheck?.valid
+									? "已就绪"
+									: "需检查 Node / npx"}
+						</div>
+					</div>
+				</div>
+			</SettingsPageContainer>
+		);
+	}
+
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
-				<div className="border-b border-border pb-4 mb-8">
-					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-						<Plug className="w-5 h-5" />
-						MCP 服务配置
-					</h3>
-					<p className="text-sm text-text-secondary mt-1">
-						配置 Model Context Protocol 服务器，扩展应用能力
-					</p>
-				</div>
+			<SettingsPanelHeader
+				icon={Plug}
+				title="MCP 服务配置"
+				description="配置 MCP 服务。"
+			/>
 
 				{/* 环境检测 */}
 				<div className="bg-zinc-50 border border-border rounded-lg p-4">
