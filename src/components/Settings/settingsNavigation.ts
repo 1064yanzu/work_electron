@@ -1,5 +1,6 @@
 import {
 	Archive,
+	Bot,
 	BarChart3,
 	Database,
 	Gauge,
@@ -25,6 +26,7 @@ export interface SettingsNavItem {
 
 export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	{ id: "dashboard", label: "使用统计", icon: BarChart3, group: "common", simpleMode: "full" },
+	{ id: "aiCoding", label: "AI 编程", icon: Bot, group: "common", simpleMode: "full" },
 	{ id: "models", label: "模型配置", icon: Sparkles, group: "common", simpleMode: "full" },
 	{ id: "prompts", label: "提示词配置", icon: MessageSquare, group: "common", simpleMode: "full" },
 	{ id: "imagegen", label: "AI 生图", icon: Image, group: "common", simpleMode: "full" },

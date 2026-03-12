@@ -22,6 +22,10 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/DashboardSettings"),
 		"DashboardSettings",
 	),
+	aiCoding: toDefault(
+		() => import("./panels/AICodingSettings"),
+		"AICodingSettings",
+	),
 	models: toDefault(() => import("./panels/ModelSettings"), "ModelSettings"),
 	prompts: toDefault(() => import("./panels/PromptSettings"), "PromptSettings"),
 	imagegen: toDefault(

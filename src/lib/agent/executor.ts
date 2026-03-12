@@ -21,6 +21,8 @@ import { buildRuntimeUserPrompt } from "./context/userPrompt";
 import { buildDocumentBudget } from "./context/documentBudget";
 import { managedModeStore } from "../managedModeStore";
 import { EVENTS, events } from "../events";
+import { codingAgentStore } from "../stores/codingAgentStore";
+import { getCodingModePrompt } from "./codingModePrompts";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -958,6 +960,12 @@ class AgentExecutor {
 		};
 		const buildEnhancedPromptForRun = () => {
 			let enhancedPrompt = systemPrompt || "";
+
+			// 注入编码模式 prompt（Code/Plan/Ask）
+			const currentCodingMode = codingAgentStore.getState().codingMode;
+			const codingModePrompt = getCodingModePrompt(currentCodingMode);
+			enhancedPrompt += `\n\n## Coding Mode\n${codingModePrompt}`;
+
 			const promptMentionsDoc =
 				options?.documentContextInjected === true ||
 				/:::update-doc|:::create-doc|文档输出协议|当前编辑器|文档内容|正在编辑文档/i.test(

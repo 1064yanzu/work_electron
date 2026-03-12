@@ -36,6 +36,14 @@ import type {
 	UpdateSourcePayload,
 	UpsertProviderPayload,
 } from "./types";
+import type {
+	BackendCapabilityMatrix,
+	CodingWorkspaceProfile,
+	RuntimeControlAction,
+	WorkspaceMemoryReadResult,
+	WorkspaceMemoryWriteInput,
+	WorkspaceProfileUpdateInput,
+} from "./coding-workspace";
 import type { RemoteGatewayScope } from "./remote-control-schema";
 
 type RemoteChannelId =
@@ -1490,6 +1498,193 @@ export type IPCSchema = {
 	select_backup_directory: {
 		input: Record<string, never>;
 		output: { path: string | null };
+	};
+
+	// ==================
+	// 终端（Terminal / PTY）
+	// ==================
+	/** 创建终端实例 */
+	terminal_create: {
+		input: {
+			id: string;
+			cwd?: string;
+			shell?: string;
+			env?: Record<string, string>;
+			cols?: number;
+			rows?: number;
+		};
+		output: {
+			id: string;
+			name: string;
+			cwd: string;
+			shell: string;
+			pid: number;
+			createdAt: number;
+		};
+	};
+	/** 向终端写入数据 */
+	terminal_write: {
+		input: { id: string; data: string };
+		output: { success: boolean };
+	};
+	/** 调整终端大小 */
+	terminal_resize: {
+		input: { id: string; cols: number; rows: number };
+		output: { success: boolean };
+	};
+	/** 销毁终端 */
+	terminal_destroy: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 列出活跃终端 */
+	terminal_list: {
+		input: Record<string, never>;
+		output: Array<{
+			id: string;
+			name: string;
+			cwd: string;
+			shell: string;
+			pid: number;
+			createdAt: number;
+		}>;
+	};
+
+	// ==================
+	// Coding Workspace（AI 编程工作区）
+	// ==================
+	/** 选择项目目录（弹出系统文件夹选择器） */
+		coding_select_directory: {
+			input: Record<string, never>;
+			output: { path: string | null };
+		};
+		/** 选择上下文文件（弹出系统文件选择器） */
+		coding_select_files: {
+			input: { project_path?: string };
+			output: { paths: string[] };
+		};
+		/** 递归读取文件树 */
+		coding_read_file_tree: {
+		input: { path: string; maxDepth?: number };
+		output: {
+			tree: Array<{
+				name: string;
+				path: string;
+				type: "file" | "directory";
+				children?: unknown[];
+				size?: number;
+			}>;
+			isGitRepo: boolean;
+		};
+	};
+	/** 获取 Git 状态 */
+	coding_git_status: {
+		input: { path: string };
+		output: {
+			isGitRepo: boolean;
+			status: {
+				branch: string;
+				ahead: number;
+				behind: number;
+				files: Array<{
+					path: string;
+					status: "modified" | "added" | "deleted" | "renamed" | "untracked";
+					staged: boolean;
+				}>;
+			} | null;
+		};
+	};
+	/** 获取 Git 分支列表 */
+	coding_git_branches: {
+		input: { path: string };
+		output: {
+			isGitRepo: boolean;
+			branches: Array<{
+				name: string;
+				current: boolean;
+				remote?: string;
+				lastCommit?: string;
+			}>;
+		};
+	};
+	/** 读取单个文件内容 */
+	coding_read_file: {
+		input: { path: string; maxSize?: number };
+		output: { content: string; truncated: boolean };
+	};
+	coding_workspace_profile_get: {
+		input: { project_path: string };
+		output: CodingWorkspaceProfile;
+	};
+	coding_workspace_profile_update: {
+		input: WorkspaceProfileUpdateInput;
+		output: CodingWorkspaceProfile;
+	};
+	coding_workspace_memory_read: {
+		input: { project_path: string };
+		output: WorkspaceMemoryReadResult;
+	};
+	coding_workspace_memory_write: {
+		input: WorkspaceMemoryWriteInput;
+		output: WorkspaceMemoryReadResult;
+	};
+	coding_backend_capabilities_get: {
+		input: { backend?: "claude-code" | "codex" };
+		output:
+			| BackendCapabilityMatrix
+			| Record<"claude-code" | "codex", BackendCapabilityMatrix>;
+	};
+	/** 将 diff newContent 写入磁盘 */
+	coding_write_file: {
+		input: { path: string; content: string; createDirs?: boolean };
+		output: { success: boolean; error?: string };
+	};
+	/** 将 diff oldContent 还原到磁盘 */
+	coding_revert_file: {
+		input: { path: string; content: string };
+		output: { success: boolean; error?: string };
+	};
+	/** 开始监听项目文件变更 */
+	coding_watch_start: {
+		input: { path: string; ignored?: string[] };
+		output: { success: boolean; error?: string };
+	};
+	/** 停止监听项目文件变更 */
+	coding_watch_stop: {
+		input: { path: string };
+		output: { success: boolean; error?: string };
+	};
+
+	// ==================
+	// Codex Session（AI 编程工作区 - Codex 后端）
+	// ==================
+	/** 检查 Codex CLI 是否可用 */
+	codex_check_available: {
+		input: Record<string, never>;
+		output: { available: boolean; path: string | null };
+	};
+	/** 启动 Codex 会话 */
+	codex_session_start: {
+		input: {
+			prompt: string;
+			cwd: string;
+			mode?: 'suggest' | 'auto-edit' | 'full-auto';
+			model?: string;
+		};
+		output: string; // runId
+	};
+	/** 中止 Codex 会话 */
+	codex_session_abort: {
+		input: { runId: string };
+		output: { success: boolean };
+	};
+	codex_get_capabilities: {
+		input: Record<string, never>;
+		output: BackendCapabilityMatrix;
+	};
+	codex_runtime_control: {
+		input: { runId: string; action: RuntimeControlAction };
+		output: { success: boolean; error?: string };
 	};
 };
 

@@ -12,10 +12,15 @@ import { SettingsExperienceProvider } from "./context/SettingsExperienceContext"
 interface SettingsModalProps {
 	isOpen: boolean;
 	onClose: () => void;
+	initialTab?: SettingsTabId;
 }
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-	const [activeTab, setActiveTab] = useState<SettingsTabId>("models");
+export function SettingsModal({
+	isOpen,
+	onClose,
+	initialTab = "models",
+}: SettingsModalProps) {
+	const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
 	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -34,6 +39,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		if (isOpen) {
 			setShouldRender(true);
 			setIsClosing(false);
+			setActiveTab(initialTab);
+			preloadSettingsPanel(initialTab);
+		}
+	}, [initialTab, isOpen]);
+
+	useEffect(() => {
+		if (isOpen) {
 			preloadSettingsPanel(activeTab);
 		}
 	}, [activeTab, isOpen]);

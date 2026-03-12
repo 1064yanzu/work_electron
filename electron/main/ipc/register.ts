@@ -57,6 +57,10 @@ import { createRemoteControlHandlers } from "./handlers/remoteControl";
 import { getRemoteControlOrchestrator } from "../remote-control/core/service";
 import { createCloudNodeHandlers } from "./handlers/cloudNode";
 import { getCloudNodeClient } from "../cloud-node/service";
+import { createTerminalHandlers } from "./handlers/terminal";
+import { createCodingHandlers } from "./handlers/coding";
+import { createCodexSessionHandlers } from "./handlers/codexSession";
+import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -79,6 +83,8 @@ export function setMainWindow(window: BrowserWindow) {
 	} catch {
 		// cloud node client 可能尚未初始化，忽略
 	}
+	// 同步传递给文件监听服务
+	setFileWatcherMainWindow(window);
 }
 
 export function registerIpcHandlers({
@@ -155,6 +161,19 @@ export function registerIpcHandlers({
 
 	// Image Generation handlers (生图配置)
 	const imageGenHandlers = createImageGenHandlers(db);
+
+	// Terminal handlers (终端)
+	const terminalHandlers = createTerminalHandlers({
+		getMainWindow: () => mainWindowRef,
+	});
+
+	// Coding Workspace handlers (AI 编程工作区)
+	const codingHandlers = createCodingHandlers();
+
+	// Codex Session handlers (Codex 后端)
+	const codexSessionHandlers = createCodexSessionHandlers({
+		getMainWindow: () => mainWindowRef,
+	});
 
 	// ==================
 	// 系统命令
@@ -692,5 +711,56 @@ export function registerIpcHandlers({
 		localBackupHandlers.select_backup_directory,
 	);
 
-	logger.info({ msg: "IPC handlers registered", count: 100 });
+	// ==================
+	// Terminal (终端)
+	// ==================
+	ipcMain.handle("terminal_create", terminalHandlers.terminal_create);
+	ipcMain.handle("terminal_write", terminalHandlers.terminal_write);
+	ipcMain.handle("terminal_resize", terminalHandlers.terminal_resize);
+	ipcMain.handle("terminal_destroy", terminalHandlers.terminal_destroy);
+	ipcMain.handle("terminal_list", terminalHandlers.terminal_list);
+
+	// ==================
+	// Coding Workspace (AI 编程工作区)
+	// ==================
+	ipcMain.handle("coding_select_directory", codingHandlers.coding_select_directory);
+	ipcMain.handle("coding_read_file_tree", codingHandlers.coding_read_file_tree);
+	ipcMain.handle("coding_git_status", codingHandlers.coding_git_status);
+	ipcMain.handle("coding_git_branches", codingHandlers.coding_git_branches);
+	ipcMain.handle("coding_read_file", codingHandlers.coding_read_file);
+	ipcMain.handle(
+		"coding_workspace_profile_get",
+		codingHandlers.coding_workspace_profile_get,
+	);
+	ipcMain.handle(
+		"coding_workspace_profile_update",
+		codingHandlers.coding_workspace_profile_update,
+	);
+	ipcMain.handle(
+		"coding_workspace_memory_read",
+		codingHandlers.coding_workspace_memory_read,
+	);
+	ipcMain.handle(
+		"coding_workspace_memory_write",
+		codingHandlers.coding_workspace_memory_write,
+	);
+	ipcMain.handle(
+		"coding_backend_capabilities_get",
+		codingHandlers.coding_backend_capabilities_get,
+	);
+	ipcMain.handle("coding_write_file", codingHandlers.coding_write_file);
+	ipcMain.handle("coding_revert_file", codingHandlers.coding_revert_file);
+	ipcMain.handle("coding_watch_start", codingHandlers.coding_watch_start);
+	ipcMain.handle("coding_watch_stop", codingHandlers.coding_watch_stop);
+
+	// ==================
+	// Codex Session (Codex 后端)
+	// ==================
+	ipcMain.handle("codex_check_available", codexSessionHandlers.codex_check_available);
+	ipcMain.handle("codex_get_capabilities", codexSessionHandlers.codex_get_capabilities);
+	ipcMain.handle("codex_session_start", codexSessionHandlers.codex_session_start);
+	ipcMain.handle("codex_session_abort", codexSessionHandlers.codex_session_abort);
+	ipcMain.handle("codex_runtime_control", codexSessionHandlers.codex_runtime_control);
+
+	logger.info({ msg: "IPC handlers registered", count: 115 });
 }

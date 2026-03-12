@@ -104,6 +104,8 @@ export default defineConfig({
 								"discord.js",
 								"@discordjs/ws",
 								"zlib-sync",
+								// Native addon
+								"node-pty",
 							],
 						},
 					},

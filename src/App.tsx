@@ -17,6 +17,7 @@ import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
 import { useManagedModeStoreSelector, managedModeStore } from "./lib/managedModeStore";
+import { useTerminalStoreSelector } from "./lib/stores/terminalStore";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
 import { preloadUiDebugSetting } from "./lib/debug/uiDebug";
@@ -32,6 +33,7 @@ import {
 	workspaceStore,
 } from "./lib/workspaceStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
+import type { SettingsTabId } from "./components/Settings/types";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
@@ -44,10 +46,16 @@ const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
 );
+const CodingWorkspace = lazy(
+	() => import("./components/coding/CodingWorkspace"),
+);
 const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
 });
+const TerminalPanel = lazy(
+	() => import("./components/Terminal/TerminalPanel"),
+);
 
 function PanelLoadingFallback() {
 	return (
@@ -61,6 +69,8 @@ export default function App() {
 	useRemoteChatBridge();
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+	const [settingsInitialTab, setSettingsInitialTab] =
+		useState<SettingsTabId>("models");
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");
 	const activeMainView = useWorkspaceStoreSelector(
@@ -74,6 +84,7 @@ export default function App() {
 	const setRightSidebarVisible =
 		workspaceStore.setRightSidebarVisible.bind(workspaceStore);
 	const isManagedMode = useManagedModeStoreSelector((state) => state.isActive);
+	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
 
 	// 右侧 Panel 的命令式句柄
 	const rightPanelRef = useRef<ImperativePanelHandle>(null);
@@ -84,9 +95,13 @@ export default function App() {
 	const {
 		navigateToDashboard,
 		navigateToProject,
+		navigateToCoding,
 		isInDashboard,
+		isInCoding,
 		currentProjectId,
 		currentDocId,
+		currentCodingProjectPath,
+		currentCodingThreadId,
 	} = useNavigation("dashboard");
 
 	// 同步当前项目到工作区
@@ -174,15 +189,32 @@ export default function App() {
 		}
 	}, [setRightSidebarVisible]);
 
+	const handleOpenSettings = useCallback((tab?: SettingsTabId) => {
+		setSettingsInitialTab(tab ?? "models");
+		setIsSettingsOpen(true);
+	}, []);
+
 	return (
 		<MouseDragProvider>
 			{isInDashboard ? (
 				<Suspense fallback={<PanelLoadingFallback />}>
-					<Dashboard
-						onOpenSettings={() => setIsSettingsOpen(true)}
+						<Dashboard
+							onOpenSettings={() => handleOpenSettings()}
 						onOpenProject={(projectId) => {
 							navigateToProject(projectId);
 						}}
+						onOpenCoding={(projectPath) => {
+							navigateToCoding(projectPath);
+						}}
+					/>
+				</Suspense>
+			) : isInCoding ? (
+				<Suspense fallback={<PanelLoadingFallback />}>
+						<CodingWorkspace
+						projectPath={currentCodingProjectPath}
+						threadId={currentCodingThreadId}
+						onBack={navigateToDashboard}
+							onOpenSettings={handleOpenSettings}
 					/>
 				</Suspense>
 			) : (
@@ -201,8 +233,8 @@ export default function App() {
 						>
 							<PanelShell>
 								<Suspense fallback={<PanelLoadingFallback />}>
-									<ResourceSidebar
-										onOpenSettings={() => setIsSettingsOpen(true)}
+										<ResourceSidebar
+											onOpenSettings={() => handleOpenSettings()}
 									/>
 								</Suspense>
 							</PanelShell>
@@ -210,7 +242,7 @@ export default function App() {
 
 						<ResizeHandle />
 
-						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) */}
+						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
 						<Panel
 							defaultSize={rightSidebarVisible ? 55 : 80}
 							minSize={30}
@@ -220,29 +252,59 @@ export default function App() {
 								variant="center"
 								className="mid-center-panel relative"
 							>
-								{isManagedMode ? (
-									<Suspense fallback={<PanelLoadingFallback />}>
-										<SandboxWorkspace
-											onExitManagedMode={() =>
-												managedModeStore.disableManagedMode()
-											}
-										/>
-									</Suspense>
-								) : activeMainView === "browser" ? (
-									<Suspense fallback={<PanelLoadingFallback />}>
-										<BrowserPanel />
-									</Suspense>
-								) : (
-									<Suspense fallback={<PanelLoadingFallback />}>
-										<EditorCanvas
-											projectId={currentProjectId}
-											initialDocId={currentDocId}
-											onBack={() => {
-												navigateToDashboard();
-											}}
-										/>
-									</Suspense>
-								)}
+								<PanelGroup
+									direction="vertical"
+									className="h-full"
+									autoSaveId="center_vertical_split"
+								>
+									{/* 主内容区 */}
+									<Panel
+										defaultSize={terminalVisible ? 65 : 100}
+										minSize={20}
+										className="overflow-hidden"
+									>
+										{isManagedMode ? (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<SandboxWorkspace
+													onExitManagedMode={() =>
+														managedModeStore.disableManagedMode()
+													}
+												/>
+											</Suspense>
+										) : activeMainView === "browser" ? (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<BrowserPanel />
+											</Suspense>
+										) : (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<EditorCanvas
+													projectId={currentProjectId}
+													initialDocId={currentDocId}
+													onBack={() => {
+														navigateToDashboard();
+													}}
+												/>
+											</Suspense>
+										)}
+									</Panel>
+
+									{/* 终端面板 - 仅在可见时渲染 */}
+									{terminalVisible && (
+										<>
+											<ResizeHandle direction="vertical" />
+											<Panel
+												defaultSize={35}
+												minSize={10}
+												maxSize={80}
+												className="overflow-hidden"
+											>
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<TerminalPanel />
+												</Suspense>
+											</Panel>
+										</>
+									)}
+								</PanelGroup>
 							</PanelShell>
 						</Panel>
 
@@ -285,10 +347,11 @@ export default function App() {
 			{/* Global Settings Modal - Always rendered */}
 			{isSettingsOpen ? (
 				<Suspense fallback={null}>
-					<SettingsModal
-						isOpen={isSettingsOpen}
-						onClose={() => setIsSettingsOpen(false)}
-					/>
+						<SettingsModal
+							isOpen={isSettingsOpen}
+							onClose={() => setIsSettingsOpen(false)}
+							initialTab={settingsInitialTab}
+						/>
 				</Suspense>
 			) : null}
 		</MouseDragProvider>

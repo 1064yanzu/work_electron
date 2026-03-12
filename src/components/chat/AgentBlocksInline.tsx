@@ -9,6 +9,7 @@ import ToolCallInline from "../agent/ToolCallInline";
 import { ToolCallsStack } from "./ToolCallsStack";
 import type { ToolCall } from "../../lib/agent/types";
 import { ProcessingCard } from "./ProcessingCard";
+import { DiffSummary } from "../CodeView/DiffSummary";
 
 export function AgentBlocksInline({
 	blocks,
@@ -199,5 +200,11 @@ export function AgentBlocksInline({
 		nodes.push(null);
 	}
 
-	return <div className="flex flex-col gap-2 w-full">{nodes}</div>;
+	return (
+		<div className="flex flex-col gap-2 w-full">
+			{nodes}
+			{/* 当消息非流式输出时，显示 diff 汇总（如果有） */}
+			{!isStreaming && <DiffSummary />}
+		</div>
+	);
 }

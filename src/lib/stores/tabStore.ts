@@ -99,6 +99,38 @@ function getActiveTab(): TabItem | null {
 	return tabs.find((t) => t.id === activeTabId) || null;
 }
 
+// 在中间栏打开 Diff 视图
+function openDiffInMainView(
+	diffId: string,
+	title: string,
+): { activeMainView: "editor" } {
+	const tabId = `diff-${diffId}`;
+
+	store.setState((state) => {
+		// 检查是否已打开
+		const existingTab = state.tabs.find((t) => t.id === tabId);
+		if (existingTab) {
+			return { ...state, activeTabId: tabId };
+		}
+
+		// 新建 diff 标签页
+		const newTab: TabItem = {
+			id: tabId,
+			type: "diff",
+			title,
+			diffId,
+		};
+
+		return {
+			...state,
+			tabs: [...state.tabs, newTab],
+			activeTabId: tabId,
+		};
+	});
+
+	return { activeMainView: "editor" };
+}
+
 /**
  * 项目切换时重置标签页状态（由 workspaceStore.setCurrentProject 调用）
  */
@@ -115,6 +147,7 @@ function resetOnProjectChange() {
 export const tabStore = {
 	...store,
 	openSourceInMainView,
+	openDiffInMainView,
 	closeTab,
 	setActiveTab,
 	getActiveTab,

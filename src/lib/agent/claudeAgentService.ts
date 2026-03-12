@@ -22,6 +22,7 @@ import {
 	permissionStore,
 } from "./permissionStore";
 import { AgentStreamState, type UIEvent } from "./streamState";
+import { codingAgentStore } from "../stores/codingAgentStore";
 
 /**
  * Message types that our UI understands
@@ -201,7 +202,19 @@ const DEFAULT_TOOLS = [
 function buildAllowedTools(
 	experimentalMultiAgent: boolean,
 	mode: "subagent_only" | "hybrid" | "teammate_preferred",
+	codingMode?: "code" | "plan" | "ask",
 ): string[] {
+	// Ask 模式：只允许只读工具
+	if (codingMode === "ask") {
+		return ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "AskUserQuestion"];
+	}
+
+	// Plan 模式（计划确认前）：只读工具 + AskUserQuestion
+	if (codingMode === "plan") {
+		return ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "AskUserQuestion", "Skill", "Task"];
+	}
+
+	// Code 模式：完整工具集
 	if (!experimentalMultiAgent || mode === "subagent_only") {
 		return [...DEFAULT_TOOLS];
 	}
@@ -567,6 +580,7 @@ export class ClaudeAgentService {
 		const resolvedAllowedTools = buildAllowedTools(
 			resolvedExperimentalMultiAgent,
 			resolvedMultiAgentMode,
+			codingAgentStore.getState().codingMode,
 		);
 		const resolvedMcpServerLimit = resolveMcpServerLimitByToolSearchMode(
 			resolvedEnableToolSearch,

@@ -1,6 +1,7 @@
 import {
 	ChevronRight,
 	Clock,
+	Code2,
 	Folder,
 	FolderOpen,
 	LayoutGrid,
@@ -31,11 +32,13 @@ import { toast } from "./ui/Toast";
 interface DashboardProps {
 	onOpenSettings: () => void;
 	onOpenProject?: (projectId: string) => void;
+	onOpenCoding?: (projectPath?: string) => void;
 }
 
 export default function Dashboard({
 	onOpenSettings,
 	onOpenProject,
+	onOpenCoding,
 }: DashboardProps) {
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [activeTab, setActiveTab] = useState("overview");
@@ -272,6 +275,16 @@ export default function Dashboard({
 						active={activeTab === "archived"}
 						onClick={() => setActiveTab("archived")}
 					/>
+
+					{/* 分隔线 */}
+					<div className="!my-3 border-t border-black/[0.04] dark:border-white/[0.04]" />
+
+					<NavItem
+						icon={Code2}
+						label="AI 编程"
+						active={false}
+						onClick={() => onOpenCoding?.()}
+					/>
 				</nav>
 
 				{/* Sidebar Footer */}
@@ -382,6 +395,7 @@ export default function Dashboard({
 				)}
 
 				<div className="max-w-5xl mx-auto p-12 lg:p-16">
+					<>
 					{/* Header - Serif & Minimal */}
 					<header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
 						<div>
@@ -614,6 +628,7 @@ export default function Dashboard({
 							</div>
 						)}
 					</div>
+					</>
 				</div>
 			</main>
 			{contextMenu && projectContextMenuItems.length > 0 ? (

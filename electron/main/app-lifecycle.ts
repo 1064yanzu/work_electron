@@ -8,6 +8,9 @@ import { createLogger } from "./logging/logger";
 import { initRemoteControlOrchestrator } from "./remote-control/core/service";
 import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 
+import { getTerminalService } from "./services/terminalService";
+import { stopAllWatchers } from "./services/fileWatcherService";
+
 export async function bootstrapApp({
 	createWindow,
 }: {
@@ -117,5 +120,11 @@ export async function bootstrapApp({
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();
 		void cloudNodeClient.stop();
+		// 销毁所有终端进程
+		getTerminalService().destroyAll();
+		logger.info({ msg: "Terminal processes destroyed" });
+		// 停止所有文件监听
+		stopAllWatchers();
+		logger.info({ msg: "File watchers stopped" });
 	});
 }

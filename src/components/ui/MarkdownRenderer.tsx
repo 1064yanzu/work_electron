@@ -11,6 +11,7 @@ import {
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InlineImage } from "./InlineImage";
+import { ShikiCodeBlock } from "./ShikiCodeBlock";
 import { isTauriUnavailableError, safeInvoke } from "../../lib/tauriBridge";
 
 const MermaidRenderer = lazy(() => import("./MermaidRenderer"));
@@ -247,18 +248,28 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					);
 				}
 
-				// 普通代码块
-				return (
-					<div className="relative group my-3">
-						<div className="absolute top-2 right-2 text-xs text-zinc-400 font-mono">
-							{language}
+				// 普通代码块 — 流式输出时保持纯文本，流结束后用 Shiki 高亮
+				if (isStreaming) {
+					return (
+						<div className="relative group my-3">
+							<div className="absolute top-2 right-2 text-xs text-zinc-400 font-mono">
+								{language}
+							</div>
+							<pre className="bg-zinc-900 dark:bg-zinc-950 text-zinc-100 rounded-xl p-4 overflow-x-auto text-sm">
+								<code className={className} {...props}>
+									{children}
+								</code>
+							</pre>
 						</div>
-						<pre className="bg-zinc-900 dark:bg-zinc-950 text-zinc-100 rounded-xl p-4 overflow-x-auto text-sm">
-							<code className={className} {...props}>
-								{children}
-							</code>
-						</pre>
-					</div>
+					);
+				}
+
+				return (
+					<ShikiCodeBlock
+						code={code}
+						language={language}
+						maxHeight={600}
+					/>
 				);
 			},
 			// 自定义段落

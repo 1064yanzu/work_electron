@@ -65,7 +65,7 @@ export interface DocCacheItem {
 }
 
 // 标签页类型
-export type TabType = "doc" | "source";
+export type TabType = "doc" | "source" | "diff";
 
 // 标签页项
 export interface TabItem {
@@ -74,6 +74,8 @@ export interface TabItem {
 	title: string;
 	// 对于 source 类型，存储 sourceId
 	sourceId?: string;
+	// 对于 diff 类型，存储 diffId
+	diffId?: string;
 }
 
 // AI 审查状态

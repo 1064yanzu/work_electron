@@ -56,6 +56,9 @@ import {
 import { createMessage } from "../lib/chat/types";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
+import { CodingModeSelector } from "./copilot/coding/CodingModeSelector";
+import { CodingBackendSelector } from "./copilot/coding/CodingBackendSelector";
+import { useCodingAgentSelector } from "../lib/stores/codingAgentStore";
 import { useCopilotActions } from "./copilot/useCopilotActions";
 import {
 	useCopilotProposals,
@@ -70,6 +73,7 @@ import type { SlashCommand } from "./chat/SlashCommand";
 import { toast } from "./ui/Toast";
 
 import { parseDocProtocolFinal } from "../lib/chat/docProtocol";
+import { useDiffCapture } from "./CodeView/useDiffCapture";
 
 // 快捷操作按钮
 const chatActions = {
@@ -155,6 +159,9 @@ export default function CopilotSidebar() {
 	);
 
 	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
+	const codingMode = useCodingAgentSelector((s) => s.codingMode);
+	// 自动捕获文件操作的 diff 数据
+	useDiffCapture();
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -989,14 +996,32 @@ export default function CopilotSidebar() {
 					>
 						{chatMode === "agent" ? (
 							<>
-								<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-								托管模式
+								<span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+									codingMode === "ask"
+										? "bg-blue-500"
+										: codingMode === "plan"
+											? "bg-amber-500"
+											: "bg-emerald-500"
+								}`} />
+								{codingMode === "ask"
+									? "问答模式"
+									: codingMode === "plan"
+										? "规划模式"
+										: "编码模式"}
 							</>
 						) : (
 							"普通对话"
 						)}
 					</div>
 				</div>
+
+				{/* 编码模式选择器 - 仅在 agent 模式下显示 */}
+				{chatMode === "agent" && (
+					<div className="mb-2 flex items-center justify-between">
+						<CodingModeSelector />
+						<CodingBackendSelector />
+					</div>
+				)}
 
 				<ChatInput
 					onSubmit={handleSendMessage}
@@ -1007,7 +1032,11 @@ export default function CopilotSidebar() {
 								? "研究进行中..."
 								: "Agent 执行中..."
 							: chatMode === "agent"
-								? "Agent 模式：描述目标，我会自动调用工具..."
+								? codingMode === "ask"
+									? "Ask 模式：提出问题，我只回答不操作..."
+									: codingMode === "plan"
+										? "Plan 模式：描述目标，我会先制定计划..."
+										: "Code 模式：描述目标，我会自动编码..."
 								: "输入消息，或用 / 唤起命令..."
 					}
 					model={activeModel || undefined}

@@ -17,6 +17,8 @@ import { debugUiLog, debugUiWarn } from "../lib/debug/uiDebug";
 import { EVENTS, events } from "../lib/events";
 import { measureNextPaint } from "../lib/performance/devMetrics";
 import { useWorkspaceStoreSelector, workspaceStore } from "../lib/workspaceStore";
+import { tabStore } from "../lib/stores/tabStore";
+import { diffStore } from "../lib/stores/diffStore";
 import { type OutputAsset, OutputType } from "../types";
 import AIContentSuggest from "./AIContentSuggest";
 import DiffView from "./DiffView";
@@ -30,6 +32,7 @@ import { useEditorUiPrefs } from "./editor/useEditorUiPrefs";
 import { EditorWorkspaceView } from "./editor/EditorWorkspaceView";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
+import { DiffViewer } from "./CodeView/DiffViewer";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "./ui/ContextMenu";
 import { toast } from "./ui/Toast";
@@ -108,6 +111,11 @@ export default function EditorCanvas({
 		activeSourceTab?.sourceId
 			? state.sourceReadCache[activeSourceTab.sourceId] ?? null
 			: null,
+	);
+
+	// 检查是否有激活的 diff 标签页
+	const activeDiffTab = tabs.find(
+		(t) => t.id === activeTabId && t.type === "diff",
 	);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -211,6 +219,29 @@ export default function EditorCanvas({
 	useEffect(() => {
 		editorContentRef.current = editorContent;
 	}, [editorContent]);
+
+	// 监听打开 diff 视图事件
+	useEffect(() => {
+		const handleOpenDiff = (data: { diffId: string; title?: string }) => {
+			if (data.diffId) {
+				const diff = diffStore.getState().diffs[data.diffId];
+				const fileName = diff?.filePath.split("/").pop() || "Diff";
+				tabStore.openDiffInMainView(data.diffId, data.title || fileName);
+			}
+		};
+		// AGENT_FOCUS_TOOL_CALL 也可能携带 diffId
+		const handleFocusToolCall = (data: { diffId?: string; type?: string }) => {
+			if (data.type === "diff" && data.diffId) {
+				handleOpenDiff({ diffId: data.diffId });
+			}
+		};
+		const off1 = events.on(EVENTS.OPEN_DIFF_VIEW, handleOpenDiff);
+		const off2 = events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, handleFocusToolCall);
+		return () => {
+			off1();
+			off2();
+		};
+	}, []);
 
 	// 仅在真正切换到不同文档时初始化 lastSavedContentRef
 	useEffect(() => {
@@ -1503,7 +1534,12 @@ export default function EditorCanvas({
 
 	return (
 		<main className="flex-1 flex flex-col h-full relative overflow-hidden bg-transparent">
-			{activeSourceTab && activeSourceData ? (
+			{activeDiffTab?.diffId ? (
+				<DiffViewer
+					diffId={activeDiffTab.diffId}
+					onClose={() => closeTab(activeDiffTab.id)}
+				/>
+			) : activeSourceTab && activeSourceData ? (
 				<SourceReadView
 					title={activeSourceData.title}
 					note={activeSourceData.note}
