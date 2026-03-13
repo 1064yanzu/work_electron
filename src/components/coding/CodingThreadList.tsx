@@ -1,49 +1,72 @@
-import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ExternalThreadMeta } from '../../../electron/shared/external-history-types';
+import { Pencil, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ExternalThreadMeta } from "../../../electron/shared/external-history-types";
 import {
 	codingThreadStore,
 	useCodingThreadSelector,
-} from '../../lib/stores/codingThreadStore';
-import { useCodingWorkspaceSelector } from '../../lib/stores/codingWorkspaceStore';
-import type { CodingThread } from '../../lib/stores/codingThreadTypes';
+} from "../../lib/stores/codingThreadStore";
+import { useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
+import type { CodingThread } from "../../lib/stores/codingThreadTypes";
 import {
 	externalHistoryStore,
 	useExternalHistorySelector,
-} from '../../lib/stores/externalHistoryStore';
-import { importExternalThread } from '../../lib/coding/historyImporter';
-import { ContextMenuPortal } from '../ui/DropdownPortal';
-import { ThreadGroup } from './threadList/ThreadGroup';
+} from "../../lib/stores/externalHistoryStore";
+import { importExternalThread } from "../../lib/coding/historyImporter";
+import { ContextMenuPortal } from "../ui/DropdownPortal";
+import { ThreadGroup } from "./threadList/ThreadGroup";
+
+/** 来源过滤 */
+type SourceFilter = "all" | "local" | "claude" | "codex";
 
 interface CodingThreadListProps {
 	onSwitchThread?: (threadId: string) => void;
 	onNewThread?: () => void;
+	/** 续接外部 CLI 会话的回调 */
+	onResumeSession?: (
+		sessionId: string,
+		meta: ExternalThreadMeta,
+	) => void;
+	/** 导入外部 CLI 会话的回调 */
+	onImportSession?: (meta: ExternalThreadMeta) => void;
 }
 
-export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadListProps) {
+export function CodingThreadList({
+	onSwitchThread,
+	onNewThread,
+	onResumeSession,
+	onImportSession,
+}: CodingThreadListProps) {
 	const activeThreadId = useCodingThreadSelector((s) => s.activeThreadId);
 	const threads = useCodingThreadSelector((s) => s.threads);
 	const recentProjects = useCodingWorkspaceSelector((s) => s.recentProjects);
 	const syncStatus = useExternalHistorySelector((s) => s.syncStatus);
 	const codexThreads = useExternalHistorySelector((s) => s.codexThreads);
-	const claudeCodeThreads = useExternalHistorySelector((s) => s.claudeCodeThreads);
-	const [searchQuery, setSearchQuery] = useState('');
+	const claudeCodeThreads = useExternalHistorySelector(
+		(s) => s.claudeCodeThreads,
+	);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
 	const [contextMenu, setContextMenu] = useState<{
 		threadId: string;
 		position: { x: number; y: number };
 	} | null>(null);
 	const [editingId, setEditingId] = useState<string | null>(null);
-	const [editTitle, setEditTitle] = useState('');
-	const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
-	const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
+	const [editTitle, setEditTitle] = useState("");
+	const [collapsedProjects, setCollapsedProjects] = useState<
+		Record<string, boolean>
+	>({});
+	const [expandedProjects, setExpandedProjects] = useState<
+		Record<string, boolean>
+	>({});
 	const [importingId, setImportingId] = useState<string | null>(null);
 
-	const isSyncing = syncStatus === 'syncing';
+	const isSyncing = syncStatus === "syncing";
 
 	// 首次挂载或距上次同步超过 30 秒时自动同步外部历史
 	useEffect(() => {
-		const { lastSyncAt, syncStatus: status } = externalHistoryStore.getState();
-		if (status === 'syncing') return;
+		const { lastSyncAt, syncStatus: status } =
+			externalHistoryStore.getState();
+		if (status === "syncing") return;
 		const stale = !lastSyncAt || Date.now() - lastSyncAt > 30_000;
 		if (stale) {
 			void externalHistoryStore.checkAvailability().then(() => {
@@ -53,24 +76,51 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 
 		// 定时轮询外部历史（每 60 秒）
 		const interval = setInterval(() => {
-			const { syncStatus: currentStatus } = externalHistoryStore.getState();
-			if (currentStatus !== 'syncing') {
+			const { syncStatus: currentStatus } =
+				externalHistoryStore.getState();
+			if (currentStatus !== "syncing") {
 				void externalHistoryStore.syncAll({ limit: 30 });
 			}
 		}, 60_000);
 		return () => clearInterval(interval);
 	}, []);
 
-	/** 合并后的外部线程（按更新时间降序） */
-	const allExternalThreads = useMemo(
-		() => [...codexThreads, ...claudeCodeThreads].sort((a, b) => b.updatedAt - a.updatedAt),
-		[codexThreads, claudeCodeThreads],
-	);
+	/** 合并后的外部线程（按更新时间降序），根据来源过滤 */
+	const allExternalThreads = useMemo(() => {
+		let externals: ExternalThreadMeta[];
+		if (sourceFilter === "claude") {
+			externals = [...claudeCodeThreads];
+		} else if (sourceFilter === "codex") {
+			externals = [...codexThreads];
+		} else if (sourceFilter === "local") {
+			externals = [];
+		} else {
+			externals = [...codexThreads, ...claudeCodeThreads];
+		}
+		return externals.sort((a, b) => b.updatedAt - a.updatedAt);
+	}, [codexThreads, claudeCodeThreads, sourceFilter]);
 
-	/** 统一的项目分组：本地线程 + CLI 历史混合 */
+	/** 过滤后的本地线程（local 模式只显示本地，其他模式按来源过滤） */
+	const filteredLocalThreads = useMemo(() => {
+		if (sourceFilter === "claude") {
+			return threads.filter((t) => t.backend === "claude-code");
+		}
+		if (sourceFilter === "codex") {
+			return threads.filter((t) => t.backend === "codex");
+		}
+		return threads; // all 和 local 都显示全部本地线程
+	}, [threads, sourceFilter]);
+
+	/** 统一的项目分组 */
 	const projectGroups = useMemo(
-		() => codingThreadStore.getProjectGroups(recentProjects, searchQuery, allExternalThreads),
-		[recentProjects, searchQuery, threads, allExternalThreads],
+		() =>
+			codingThreadStore.getProjectGroups(
+				recentProjects,
+				searchQuery,
+				allExternalThreads,
+				sourceFilter !== "all" ? filteredLocalThreads : undefined,
+			),
+		[recentProjects, searchQuery, filteredLocalThreads, allExternalThreads, sourceFilter],
 	);
 
 	const handleSync = useCallback(() => {
@@ -83,18 +133,31 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 			if (importingId) return;
 			setImportingId(meta.id);
 			try {
-				const thread = await importExternalThread(meta);
-				if (thread) {
-					codingThreadStore.switchThread(thread.id);
-					onSwitchThread?.(thread.id);
+				// 优先尝试导入回调
+				if (onImportSession) {
+					onImportSession(meta);
+				} else {
+					const thread = await importExternalThread(meta);
+					if (thread) {
+						codingThreadStore.switchThread(thread.id);
+						onSwitchThread?.(thread.id);
+					}
 				}
 			} catch (err) {
-				console.error('[CodingThreadList] 导入外部线程失败:', err);
+				console.error("[CodingThreadList] 导入外部线程失败:", err);
 			} finally {
 				setImportingId(null);
 			}
 		},
-		[importingId, onSwitchThread],
+		[importingId, onSwitchThread, onImportSession],
+	);
+
+	const handleResumeExternal = useCallback(
+		(meta: ExternalThreadMeta) => {
+			if (!onResumeSession) return;
+			onResumeSession(meta.id, meta);
+		},
+		[onResumeSession],
 	);
 
 	const handleSwitch = useCallback(
@@ -119,15 +182,24 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 
 	const handleFinishRename = useCallback(() => {
 		if (editingId && editTitle.trim()) {
-			codingThreadStore.updateThread(editingId, { title: editTitle.trim() });
+			codingThreadStore.updateThread(editingId, {
+				title: editTitle.trim(),
+			});
 		}
 		setEditingId(null);
-		setEditTitle('');
+		setEditTitle("");
 	}, [editingId, editTitle]);
 
 	const hasAnyContent = projectGroups.some(
 		(g) => g.threads.length > 0 || g.externalThreads.length > 0,
 	);
+
+	const SOURCE_FILTERS: Array<{ key: SourceFilter; label: string }> = [
+		{ key: "all", label: "全部" },
+		{ key: "local", label: "本地" },
+		{ key: "claude", label: "Claude" },
+		{ key: "codex", label: "Codex" },
+	];
 
 	return (
 		<div className="flex h-full flex-col bg-[#f3f3f1] dark:bg-[#171717]">
@@ -147,10 +219,10 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 						onClick={handleSync}
 						disabled={isSyncing}
 						className="inline-flex h-9 min-w-[36px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition-colors hover:border-[#D96C46]/30 hover:text-[#D96C46] disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-						title={isSyncing ? '同步中...' : '同步 CLI 历史'}
+						title={isSyncing ? "同步中..." : "同步 CLI 历史"}
 					>
 						<RefreshCw
-							className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`}
+							className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
 						/>
 					</button>
 					{onNewThread && (
@@ -164,10 +236,30 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 						</button>
 					)}
 				</div>
+
+				{/* 来源过滤 */}
+				<div className="mt-2 flex gap-1">
+					{SOURCE_FILTERS.map(({ key, label }) => (
+						<button
+							key={key}
+							type="button"
+							onClick={() => setSourceFilter(key)}
+							className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+								sourceFilter === key
+									? "bg-[#D96C46]/10 text-[#D96C46]"
+									: "text-zinc-400 hover:bg-zinc-200/50 hover:text-zinc-600 dark:hover:bg-zinc-700/40 dark:hover:text-zinc-300"
+							}`}
+						>
+							{label}
+						</button>
+					))}
+				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto px-2 py-3">
 				{!hasAnyContent && projectGroups.length === 0 ? (
-					<div className="px-2 py-2 text-[13px] text-zinc-400">无会话</div>
+					<div className="px-2 py-2 text-[13px] text-zinc-400">
+						无会话
+					</div>
 				) : (
 					<div className="space-y-3">
 						{projectGroups.map((group) => (
@@ -176,34 +268,41 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 								group={group}
 								activeThreadId={activeThreadId}
 								searchActive={Boolean(searchQuery.trim())}
-								collapsed={Boolean(collapsedProjects[group.projectPath])}
-								expanded={Boolean(expandedProjects[group.projectPath])}
+								collapsed={Boolean(
+									collapsedProjects[group.projectPath],
+								)}
+								expanded={Boolean(
+									expandedProjects[group.projectPath],
+								)}
 								editingId={editingId}
 								editTitle={editTitle}
 								importingId={importingId}
 								onToggleCollapse={() => {
 									setCollapsedProjects((current) => ({
 										...current,
-										[group.projectPath]: !current[group.projectPath],
+										[group.projectPath]:
+											!current[group.projectPath],
 									}));
 								}}
 								onToggleExpanded={() => {
 									setExpandedProjects((current) => ({
 										...current,
-										[group.projectPath]: !current[group.projectPath],
+										[group.projectPath]:
+											!current[group.projectPath],
 									}));
 								}}
 								onSwitchThread={handleSwitch}
 								onImportExternal={handleImportExternal}
+								onResumeExternal={handleResumeExternal}
 								onEditTitleChange={setEditTitle}
 								onCommitRename={handleFinishRename}
 								onCancelRename={() => {
 									setEditingId(null);
-									setEditTitle('');
+									setEditTitle("");
 								}}
 								onOpenMenu={(threadId, position) => {
 									setEditingId(null);
-									setEditTitle('');
+									setEditTitle("");
 									setContextMenu({ threadId, position });
 								}}
 							/>
@@ -219,7 +318,9 @@ export function CodingThreadList({ onSwitchThread, onNewThread }: CodingThreadLi
 			>
 				<button
 					onClick={() => {
-						const thread = contextMenu ? codingThreadStore.getThread(contextMenu.threadId) : null;
+						const thread = contextMenu
+							? codingThreadStore.getThread(contextMenu.threadId)
+							: null;
 						if (thread) handleStartRename(thread);
 					}}
 					className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"

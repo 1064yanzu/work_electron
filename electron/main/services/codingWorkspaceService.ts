@@ -21,13 +21,8 @@ const execFileAsync = promisify(execFile);
 const WORKSPACE_DIR_PARTS = [".ipo", "ai-workspace"] as const;
 const WORKSPACE_PROFILE_FILE = "profile.json";
 const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-6";
-const DEFAULT_CODEX_MODEL = "gpt-5-codex";
-const DEFAULT_CODEX_MODEL_CATALOG = [
-	"gpt-5-codex",
-	"gpt-5.4",
-	"o3",
-	"o4-mini",
-];
+const DEFAULT_CODEX_MODEL = "";
+const DEFAULT_CODEX_MODEL_CATALOG: string[] = [];
 const MAX_INSTRUCTION_BYTES = 64 * 1024;
 const MAX_DISCOVERY_DEPTH = 4;
 

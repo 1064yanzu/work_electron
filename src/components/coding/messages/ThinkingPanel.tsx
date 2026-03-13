@@ -1,47 +1,57 @@
 /**
  * 思考过程面板 - 可折叠，支持流式追加
+ * 使用 Markdown 渲染思考内容
  */
-import { ChevronDown, Brain } from 'lucide-react';
-import { useState } from 'react';
-import type { ThinkingBlock } from '../../../lib/stores/codingSessionTypes';
+import { ChevronRight, Brain } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { ThinkingBlock } from "../../../lib/stores/codingSessionTypes";
+import { MarkdownRenderer } from "../../ui/MarkdownRenderer";
 
 interface ThinkingPanelProps {
 	blocks: ThinkingBlock[];
 }
 
 export function ThinkingPanel({ blocks }: ThinkingPanelProps) {
-	const [expanded, setExpanded] = useState(false);
+	const isAnyStreaming = blocks.some((b) => b.isStreaming);
+	const [expanded, setExpanded] = useState(isAnyStreaming);
+
+	useEffect(() => {
+		if (isAnyStreaming) setExpanded(true);
+		else setExpanded(false);
+	}, [isAnyStreaming]);
 
 	if (blocks.length === 0) return null;
 
-	// 合并所有块的内容用于显示
-	const totalContent = blocks.map((b) => b.content).join('');
-	const isAnyStreaming = blocks.some((b) => b.isStreaming);
+	const totalContent = blocks.map((b) => b.content).join("");
 
 	return (
-		<div className="mb-2">
+		<div className="mb-1">
 			<button
+				type="button"
 				onClick={() => setExpanded(!expanded)}
-				className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors group"
+				className="group flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:bg-zinc-100/60 hover:text-zinc-600 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-300"
 			>
-				<Brain className="w-3 h-3" />
-				<span>思考过程</span>
-				{isAnyStreaming && (
-					<span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-				)}
-				<ChevronDown
-					className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`}
+				<ChevronRight
+					className={`h-3 w-3 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
 				/>
+				<Brain className="h-3.5 w-3.5" />
+				<span className="font-medium">思考过程</span>
+				{isAnyStreaming && (
+					<span className="h-1.5 w-1.5 rounded-full bg-[#D96C46] animate-pulse" />
+				)}
 			</button>
 
 			{expanded && (
-				<div className="mt-1.5 px-3 py-2 border-l-2 border-amber-300/50 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-900/10 rounded-r-lg">
-					<p className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed">
-						{totalContent}
-						{isAnyStreaming && (
-							<span className="inline-block w-1 h-3 bg-amber-400 animate-pulse ml-0.5 align-middle" />
-						)}
-					</p>
+				<div className="mt-1.5 ml-2 border-l-[1.5px] border-zinc-200/80 pl-3.5 dark:border-zinc-700/50">
+					<div className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+						<MarkdownRenderer
+							content={totalContent}
+							isStreaming={isAnyStreaming}
+						/>
+					</div>
+					{isAnyStreaming && (
+						<span className="ml-0.5 inline-block h-3 w-[2px] animate-pulse rounded-full bg-zinc-400 align-middle" />
+					)}
 				</div>
 			)}
 		</div>

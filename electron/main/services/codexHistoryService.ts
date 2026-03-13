@@ -319,10 +319,33 @@ async function parseCodexRollout(
 
 		try {
 			const event = JSON.parse(line);
-			const parsed = parseCodexRolloutEvent(event, msgIndex);
+			const parsed = parseCodexRolloutEvent(event, msgIndex) as (ExternalSessionMessage & { _isToolOutput?: boolean }) | null;
 			if (parsed) {
-				messages.push(parsed);
-				msgIndex++;
+				// 如果是 function_call_output，尝试合并到对应的 assistant 消息中
+				if (parsed._isToolOutput && parsed.toolCalls?.[0]) {
+					const outputId = parsed.toolCalls[0].id;
+					const outputContent = parsed.toolCalls[0].output;
+					let found = false;
+					for (let i = messages.length - 1; i >= 0; i--) {
+						const prevMsg = messages[i];
+						if (prevMsg.toolCalls) {
+							const tc = prevMsg.toolCalls.find((t) => t.id === outputId);
+							if (tc) {
+								tc.output = outputContent;
+								found = true;
+								break;
+							}
+						}
+					}
+					// 如果没有找到对应的 toolCall（可能是跨会话或被截断），可以选择忽略或单独添加
+					if (!found) {
+						messages.push(parsed);
+						msgIndex++;
+					}
+				} else {
+					messages.push(parsed);
+					msgIndex++;
+				}
 			}
 		} catch {
 			// skip malformed lines
@@ -334,19 +357,83 @@ async function parseCodexRollout(
 
 /**
  * 将 Codex rollout 事件转换为统一消息格式
- * Codex rollout 格式参考 app-server-protocol 中的 ThreadItem 定义
+ * Codex rollout 格式存在旧版（顶层 item）和新版（payload）
  */
 function parseCodexRolloutEvent(
 	event: Record<string, unknown>,
 	index: number
-): ExternalSessionMessage | null {
+): ExternalSessionMessage | ({ _isToolOutput: boolean; toolCalls: ExternalToolCall[] }) | null {
 	const type = event.type as string;
+	const timestamp = event.timestamp
+		? new Date(event.timestamp as string).getTime()
+		: Date.now();
 
-	// Codex rollout 事件格式多样，常见类型：
-	// - input_item（用户输入）
-	// - response.output_item.done（AI 输出完成）
-	// - response.completed（轮次完成）
+	// 新版格式: payload 包装模式
+	const payload = event.payload as Record<string, unknown> | undefined;
+	if (payload) {
+		const payloadType = payload.type as string;
 
+		if (type === "event_msg" && payloadType === "user_message") {
+			return {
+				id: `codex_msg_${index}`,
+				role: "user",
+				timestamp,
+				content: (payload.message as string) || "",
+			};
+		}
+
+		if (type === "response_item" && payloadType === "message") {
+			const role = payload.role as string;
+			if (role === "user" || role === "assistant") {
+				const content = extractContentText(payload.content);
+				if (content) {
+					return {
+						id: `codex_msg_${index}`,
+						role: role as "user" | "assistant",
+						timestamp,
+						content,
+					};
+				}
+			}
+		}
+
+		if (type === "response_item" && payloadType === "function_call") {
+			const toolCall: ExternalToolCall = {
+				id: (payload.call_id as string) || `tool_${index}`,
+				name: (payload.name as string) || "unknown",
+				input: parseJsonSafe(payload.arguments as string),
+				output: undefined,
+				status: "completed",
+			};
+			return {
+				id: `codex_msg_${index}`,
+				role: "assistant",
+				timestamp,
+				content: `使用工具: ${toolCall.name}`,
+				toolCalls: [toolCall],
+			};
+		}
+
+		if (type === "response_item" && payloadType === "function_call_output") {
+			const toolCall: ExternalToolCall = {
+				id: (payload.call_id as string) || `tool_${index}`,
+				name: "unknown",
+				input: {},
+				output: (payload.output as string) || "",
+				status: "completed",
+			};
+			return {
+				_isToolOutput: true,
+				id: `codex_msg_${index}_out`,
+				role: "assistant", // 临时作为占位符
+				timestamp,
+				content: "",
+				toolCalls: [toolCall],
+			} as any;
+		}
+	}
+
+	// 旧版格式: 直接顶层 item
 	if (type === "input_item" || type === "conversation.item.created") {
 		const item = (event.item || event) as Record<string, unknown>;
 		const role = item.role as string;
@@ -356,7 +443,7 @@ function parseCodexRolloutEvent(
 				return {
 					id: (item.id as string) || `codex_msg_${index}`,
 					role: "user",
-					timestamp: Date.now(),
+					timestamp,
 					content,
 				};
 			}
@@ -373,7 +460,7 @@ function parseCodexRolloutEvent(
 				return {
 					id: (item.id as string) || `codex_msg_${index}`,
 					role: "assistant",
-					timestamp: Date.now(),
+					timestamp,
 					content,
 				};
 			}
@@ -391,19 +478,19 @@ function parseCodexRolloutEvent(
 			return {
 				id: (item.id as string) || `codex_msg_${index}`,
 				role: "assistant",
-				timestamp: Date.now(),
+				timestamp,
 				content: `使用工具: ${toolCall.name}`,
 				toolCalls: [toolCall],
 			};
 		}
 	}
 
-	// response.completed 包含 usage 信息，不产生消息
 	return null;
 }
 
 /** 从 Codex 的 content 数组中提取文本 */
 function extractContentText(content: unknown): string {
+	if (!content) return "";
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
 		return content

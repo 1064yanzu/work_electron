@@ -19,7 +19,13 @@ import {
 	Package,
 	Paperclip,
 } from "lucide-react";
-import { useCallback, useImperativeHandle, useState, forwardRef, type Ref } from "react";
+import {
+	useCallback,
+	useImperativeHandle,
+	useState,
+	forwardRef,
+	type Ref,
+} from "react";
 import {
 	useCodingWorkspaceSelector,
 	type FileTreeNode,
@@ -42,11 +48,19 @@ interface CodingFileTreeProps {
 }
 
 export const CodingFileTree = forwardRef(function CodingFileTree(
-	{ nodes, depth = 0, onOpenFile, onAttachFile, onDoubleClickFile }: CodingFileTreeProps,
+	{
+		nodes,
+		depth = 0,
+		onOpenFile,
+		onAttachFile,
+		onDoubleClickFile,
+	}: CodingFileTreeProps,
 	ref: Ref<CodingFileTreeHandle>,
 ) {
 	// 全局展开/折叠状态（仅根层级管理）
-	const [globalExpand, setGlobalExpand] = useState<"expand" | "collapse" | null>(null);
+	const [globalExpand, setGlobalExpand] = useState<
+		"expand" | "collapse" | null
+	>(null);
 
 	useImperativeHandle(ref, () => ({
 		expandAll: () => setGlobalExpand("expand"),
@@ -107,7 +121,12 @@ function TreeNode({
 	pendingDiffPaths: Set<string>;
 	globalExpand: "expand" | "collapse" | null;
 }) {
-	const defaultExpanded = globalExpand === "expand" ? true : globalExpand === "collapse" ? false : depth < 1;
+	const defaultExpanded =
+		globalExpand === "expand"
+			? true
+			: globalExpand === "collapse"
+				? false
+				: depth < 1;
 	const [expanded, setExpanded] = useState(defaultExpanded);
 
 	// 响应全局展开/折叠变化
@@ -117,7 +136,9 @@ function TreeNode({
 		setExpanded(false);
 	}
 
-	const selectedFilePath = useCodingWorkspaceSelector((s) => s.selectedFilePath);
+	const selectedFilePath = useCodingWorkspaceSelector(
+		(s) => s.selectedFilePath,
+	);
 	const isSelected = node.path === selectedFilePath;
 	const isDir = node.type === "directory";
 
@@ -190,13 +211,18 @@ function TreeNode({
 				<Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor}`} />
 
 				{/* 名称 */}
-				<span className={`text-xs truncate flex-1 ${statusIndicator?.textColor ?? ""}`}>
+				<span
+					className={`text-xs truncate flex-1 ${statusIndicator?.textColor ?? ""}`}
+				>
 					{node.name}
 				</span>
 
 				{/* Diff 待处理标记 */}
 				{hasPendingDiff && (
-					<span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="有待处理的变更" />
+					<span
+						className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"
+						title="有待处理的变更"
+					/>
 				)}
 
 				{/* Git 状态标记 */}
@@ -243,29 +269,69 @@ interface StatusIndicator {
 	title: string;
 }
 
-function getGitStatusIndicator(status?: GitFileStatus["status"]): StatusIndicator | null {
+function getGitStatusIndicator(
+	status?: GitFileStatus["status"],
+): StatusIndicator | null {
 	switch (status) {
 		case "modified":
-			return { letter: "M", color: "text-amber-500", textColor: "text-amber-600 dark:text-amber-400", title: "已修改" };
+			return {
+				letter: "M",
+				color: "text-amber-500",
+				textColor: "text-amber-600 dark:text-amber-400",
+				title: "已修改",
+			};
 		case "added":
-			return { letter: "A", color: "text-emerald-500", textColor: "text-emerald-600 dark:text-emerald-400", title: "新增" };
+			return {
+				letter: "A",
+				color: "text-emerald-500",
+				textColor: "text-emerald-600 dark:text-emerald-400",
+				title: "新增",
+			};
 		case "deleted":
-			return { letter: "D", color: "text-red-500", textColor: "text-red-500/70", title: "已删除" };
+			return {
+				letter: "D",
+				color: "text-red-500",
+				textColor: "text-red-500/70",
+				title: "已删除",
+			};
 		case "renamed":
-			return { letter: "R", color: "text-blue-500", textColor: "text-blue-600 dark:text-blue-400", title: "已重命名" };
+			return {
+				letter: "R",
+				color: "text-blue-500",
+				textColor: "text-blue-600 dark:text-blue-400",
+				title: "已重命名",
+			};
 		case "copied":
-			return { letter: "C", color: "text-cyan-500", textColor: "text-cyan-600 dark:text-cyan-400", title: "已复制" };
+			return {
+				letter: "C",
+				color: "text-cyan-500",
+				textColor: "text-cyan-600 dark:text-cyan-400",
+				title: "已复制",
+			};
 		case "conflicted":
-			return { letter: "!", color: "text-orange-500", textColor: "text-orange-600 dark:text-orange-400", title: "存在冲突" };
+			return {
+				letter: "!",
+				color: "text-orange-500",
+				textColor: "text-orange-600 dark:text-orange-400",
+				title: "存在冲突",
+			};
 		case "untracked":
-			return { letter: "U", color: "text-zinc-400", textColor: "text-zinc-500", title: "未跟踪" };
+			return {
+				letter: "U",
+				color: "text-zinc-400",
+				textColor: "text-zinc-500",
+				title: "未跟踪",
+			};
 		default:
 			return null;
 	}
 }
 
 // === 文件图标颜色（根据 Git 状态增强） ===
-function getFileIconColor(filename: string, gitStatus?: GitFileStatus["status"]): string {
+function getFileIconColor(
+	filename: string,
+	gitStatus?: GitFileStatus["status"],
+): string {
 	if (gitStatus === "added") return "text-emerald-500";
 	if (gitStatus === "modified") return "text-amber-500";
 	if (gitStatus === "deleted") return "text-red-500/50";
@@ -291,21 +357,67 @@ function getFileIcon(filename: string) {
 	const lowerName = filename.toLowerCase();
 
 	// 特殊文件名
-	if (lowerName === "package.json" || lowerName === "cargo.toml" || lowerName === "go.mod")
+	if (
+		lowerName === "package.json" ||
+		lowerName === "cargo.toml" ||
+		lowerName === "go.mod"
+	)
 		return Package;
-	if (lowerName.endsWith(".lock") || lowerName === "yarn.lock" || lowerName === "pnpm-lock.yaml")
+	if (
+		lowerName.endsWith(".lock") ||
+		lowerName === "yarn.lock" ||
+		lowerName === "pnpm-lock.yaml"
+	)
 		return FileLock2;
-	if (lowerName.startsWith(".env") || lowerName === ".gitignore" || lowerName === ".editorconfig")
+	if (
+		lowerName.startsWith(".env") ||
+		lowerName === ".gitignore" ||
+		lowerName === ".editorconfig"
+	)
 		return FileCog;
 
 	const codeExts = new Set([
-		"ts", "tsx", "js", "jsx", "py", "rb", "go", "rs", "java",
-		"c", "cpp", "h", "hpp", "cs", "swift", "kt", "vue", "svelte",
-		"php", "sh", "bash", "zsh", "lua", "r", "scala",
-		"css", "scss", "less", "html", "htm",
+		"ts",
+		"tsx",
+		"js",
+		"jsx",
+		"py",
+		"rb",
+		"go",
+		"rs",
+		"java",
+		"c",
+		"cpp",
+		"h",
+		"hpp",
+		"cs",
+		"swift",
+		"kt",
+		"vue",
+		"svelte",
+		"php",
+		"sh",
+		"bash",
+		"zsh",
+		"lua",
+		"r",
+		"scala",
+		"css",
+		"scss",
+		"less",
+		"html",
+		"htm",
 	]);
 	const jsonExts = new Set(["json", "yaml", "yml", "toml", "xml"]);
-	const imageExts = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"]);
+	const imageExts = new Set([
+		"png",
+		"jpg",
+		"jpeg",
+		"gif",
+		"svg",
+		"webp",
+		"ico",
+	]);
 	const textExts = new Set(["md", "txt", "rst", "log", "csv"]);
 	const fontExts = new Set(["woff", "woff2", "ttf", "otf", "eot"]);
 

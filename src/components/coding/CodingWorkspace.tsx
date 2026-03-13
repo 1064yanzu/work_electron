@@ -8,49 +8,67 @@
  * - 支持通过 threadId 直接导航到指定线程
  * - 线程切换时自动保存/恢复 session 快照
  */
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
-import { Panel, PanelGroup } from 'react-resizable-panels';
-import ResizeHandle from '../layout/ResizeHandle';
+import {
+	Suspense,
+	lazy,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+import { Panel, PanelGroup } from "react-resizable-panels";
+import ResizeHandle from "../layout/ResizeHandle";
 import {
 	codingWorkspaceStore,
 	useCodingWorkspaceSelector,
-	type FileTreeNode,
-} from '../../lib/stores/codingWorkspaceStore';
-import { codingSessionStore, useCodingSessionSelector } from '../../lib/stores/codingSessionStore';
-import { codingAgentStore } from '../../lib/stores/codingAgentStore';
-import { codingThreadStore, useCodingThreadSelector } from '../../lib/stores/codingThreadStore';
-import { diffStore } from '../../lib/stores/diffStore';
+} from "../../lib/stores/codingWorkspaceStore";
+import {
+	codingSessionStore,
+	useCodingSessionSelector,
+} from "../../lib/stores/codingSessionStore";
+import { codingAgentStore } from "../../lib/stores/codingAgentStore";
+import {
+	codingThreadStore,
+	useCodingThreadSelector,
+} from "../../lib/stores/codingThreadStore";
+import { diffStore } from "../../lib/stores/diffStore";
 import {
 	getOrCreateSessionManager,
 	disposeSessionManager,
-} from '../../lib/coding/sessionManagerFactory';
-import { createThreadFromWorkspaceProfile, syncThreadWorkspaceProfile } from '../../lib/coding/threadFactory';
-import { codingRuntimeStore } from '../../lib/stores/codingRuntimeStore';
-import { startFileWatcher, stopFileWatcher } from '../../lib/coding/fileWatcherBridge';
+} from "../../lib/coding/sessionManagerFactory";
+import {
+	createThreadFromWorkspaceProfile,
+	syncThreadWorkspaceProfile,
+} from "../../lib/coding/threadFactory";
+import { codingRuntimeStore } from "../../lib/stores/codingRuntimeStore";
+import {
+	startFileWatcher,
+	stopFileWatcher,
+} from "../../lib/coding/fileWatcherBridge";
 import {
 	loadFileTree,
 	loadGitBranches,
 	loadGitHistory,
 	loadGitStatus,
-} from '../../lib/coding/gitWorkspaceData';
-import { CodingToolbar } from './CodingToolbar';
-import { CodingFileExplorer } from './CodingFileExplorer';
-import { CodingChatThread } from './CodingChatThread';
-import { CodingChatInput } from './CodingChatInput';
-import { CodingChangesPanel } from './CodingChangesPanel';
-import { CodingThreadList } from './CodingThreadList';
-import { CodingHome } from './CodingHome';
-import { CenterPanelTabs } from './CenterPanelTabs';
-import { CodeViewerPanel } from './codeViewer/CodeViewerPanel';
-import { QuickFileSearchModal } from './QuickFileSearchModal';
-import { CodingDiffStatusBar } from './CodingDiffStatusBar';
-import { CodingStatusBar } from './CodingStatusBar';
-import type { SettingsTabId } from '../Settings/types';
+} from "../../lib/coding/gitWorkspaceData";
+import { CodingToolbar } from "./CodingToolbar";
+import { CodingFileExplorer } from "./CodingFileExplorer";
+import { CodingChatThread } from "./CodingChatThread";
+import { CodingChatInput } from "./CodingChatInput";
+import { CodingChangesPanel } from "./CodingChangesPanel";
+import { CodingThreadList } from "./CodingThreadList";
+import { CodingHome } from "./CodingHome";
+import { CenterPanelTabs } from "./CenterPanelTabs";
+import { CodeViewerPanel } from "./codeViewer/CodeViewerPanel";
+import { QuickFileSearchModal } from "./QuickFileSearchModal";
+import { CodingDiffStatusBar } from "./CodingDiffStatusBar";
+import { CodingStatusBar } from "./CodingStatusBar";
+import type { SettingsTabId } from "../Settings/types";
+
+import type { ExternalThreadMeta } from "../../../electron/shared/external-history-types";
 
 // 终端面板懒加载（复用已有组件）
-const TerminalPanel = lazy(
-	() => import('../Terminal/TerminalPanel'),
-);
+const TerminalPanel = lazy(() => import("../Terminal/TerminalPanel"));
 
 interface CodingWorkspaceProps {
 	/** 项目路径（可选，线程化后由 threadStore 管理） */
@@ -62,7 +80,7 @@ interface CodingWorkspaceProps {
 }
 
 /** 左侧面板 Tab */
-type LeftPanelTab = 'files' | 'threads';
+type LeftPanelTab = "files" | "threads";
 
 function PanelLoadingFallback() {
 	return (
@@ -90,10 +108,14 @@ export default function CodingWorkspace({
 	const sessionStatus = useCodingSessionSelector((s) => s.status);
 	const sdkSessionId = useCodingSessionSelector((s) => s.sdkSessionId);
 	const activeThreadId = useCodingThreadSelector((s) => s.activeThreadId);
-	const centerPanelMode = useCodingWorkspaceSelector((s) => s.layout.centerPanelMode);
+	const centerPanelMode = useCodingWorkspaceSelector(
+		(s) => s.layout.centerPanelMode,
+	);
 	const centerPanelTabs = useCodingWorkspaceSelector((s) => s.centerPanelTabs);
-	const activeCenterTabId = useCodingWorkspaceSelector((s) => s.activeCenterTabId);
-	const [leftTab, setLeftTab] = useState<LeftPanelTab>('files');
+	const activeCenterTabId = useCodingWorkspaceSelector(
+		(s) => s.activeCenterTabId,
+	);
+	const [leftTab, setLeftTab] = useState<LeftPanelTab>("files");
 	const [quickSearchOpen, setQuickSearchOpen] = useState(false);
 
 	// 面板 DOM 引用（用于 Cmd+1/2/3 聚焦）
@@ -104,9 +126,10 @@ export default function CodingWorkspace({
 	// 当前活跃线程
 	const activeThread = codingThreadStore.getActiveThread();
 	// 中间面板当前激活的文件 Tab
-	const activeFileTab = centerPanelTabs.find((t) => t.id === activeCenterTabId) ?? null;
+	const activeFileTab =
+		centerPanelTabs.find((t) => t.id === activeCenterTabId) ?? null;
 	// 实际使用的项目路径：线程优先 > prop 传入
-	const effectiveProjectPath = activeThread?.projectPath || projectPath || '';
+	const effectiveProjectPath = activeThread?.projectPath || projectPath || "";
 
 	// === 初始化：处理 threadId / projectPath ===
 	useEffect(() => {
@@ -132,9 +155,9 @@ export default function CodingWorkspace({
 
 			if (projectPath) {
 				// 兼容旧的 projectPath 模式：自动创建线程
-				const existingThread = codingThreadStore.getState().threads.find(
-					(t) => t.projectPath === projectPath,
-				);
+				const existingThread = codingThreadStore
+					.getState()
+					.threads.find((t) => t.projectPath === projectPath);
 				if (existingThread) {
 					codingThreadStore.switchThread(existingThread.id);
 					codingSessionStore.switchToThread(activeThreadId, existingThread.id);
@@ -164,7 +187,7 @@ export default function CodingWorkspace({
 			}
 			void stopFileWatcher();
 		};
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// === 线程切换处理 ===
@@ -197,13 +220,16 @@ export default function CodingWorkspace({
 	// === 新建线程 ===
 	const handleNewThread = useCallback(async () => {
 		try {
-			const result = await window.electronAPI.invoke('coding_select_directory', {});
+			const result = await window.electronAPI.invoke(
+				"coding_select_directory",
+				{},
+			);
 			if (result?.path) {
 				const newThread = await createThreadFromWorkspaceProfile(result.path);
 				handleSwitchThread(newThread.id);
 			}
 		} catch (error) {
-			console.error('[CodingWorkspace] 选择目录失败:', error);
+			console.error("[CodingWorkspace] 选择目录失败:", error);
 		}
 	}, [handleSwitchThread]);
 
@@ -213,51 +239,51 @@ export default function CodingWorkspace({
 			const modKey = e.metaKey || e.ctrlKey;
 
 			// Ctrl+` 切换终端
-			if (e.ctrlKey && e.key === '`') {
+			if (e.ctrlKey && e.key === "`") {
 				e.preventDefault();
 				codingWorkspaceStore.toggleTerminal();
 			}
 			// Cmd+B 切换左面板
-			if (modKey && e.key === 'b') {
+			if (modKey && e.key === "b") {
 				e.preventDefault();
 				codingWorkspaceStore.toggleLeftPanel();
 			}
 			// Cmd+J 切换右面板
-			if (modKey && e.key === 'j') {
+			if (modKey && e.key === "j") {
 				e.preventDefault();
 				codingWorkspaceStore.toggleRightPanel();
 			}
 			// Cmd+P / Ctrl+P 快速文件搜索
-			if (modKey && e.key === 'p') {
+			if (modKey && e.key === "p") {
 				e.preventDefault();
 				setQuickSearchOpen((prev) => !prev);
 			}
 			// Cmd+1 聚焦左侧面板
-			if (modKey && e.key === '1') {
+			if (modKey && e.key === "1") {
 				e.preventDefault();
 				if (!leftPanelVisible) codingWorkspaceStore.toggleLeftPanel();
 				leftPanelRef.current?.focus();
 			}
 			// Cmd+2 聚焦中间面板
-			if (modKey && e.key === '2') {
+			if (modKey && e.key === "2") {
 				e.preventDefault();
 				centerPanelRef.current?.focus();
 			}
 			// Cmd+3 聚焦右侧面板
-			if (modKey && e.key === '3') {
+			if (modKey && e.key === "3") {
 				e.preventDefault();
 				if (!rightPanelVisible) codingWorkspaceStore.toggleRightPanel();
 				rightPanelRef.current?.focus();
 			}
 		};
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [leftPanelVisible, rightPanelVisible]);
 
 	useEffect(() => {
 		if (!activeThreadId) return;
 		const updates =
-			activeThread?.backend === 'codex'
+			activeThread?.backend === "codex"
 				? { runtimeSessionId: sdkSessionId ?? undefined }
 				: { sdkSessionId: sdkSessionId ?? undefined };
 		codingThreadStore.updateThread(activeThreadId, updates);
@@ -268,7 +294,7 @@ export default function CodingWorkspace({
 		codingThreadStore.updateThread(activeThreadId, {
 			status: sessionStatus,
 			lastRunStatus: sessionStatus,
-			lastRunAt: sessionStatus === 'idle' ? undefined : Date.now(),
+			lastRunAt: sessionStatus === "idle" ? undefined : Date.now(),
 		});
 	}, [activeThreadId, sessionStatus]);
 
@@ -282,22 +308,28 @@ export default function CodingWorkspace({
 			if (activeThreadId) {
 				codingThreadStore.updateThread(activeThreadId, {
 					lastRunAt: Date.now(),
-					lastRunStatus: 'running',
+					lastRunStatus: "running",
 				});
 			}
 
 			// 2. 获取/创建 session manager（按线程索引）
-			const backend = activeThread?.backend || codingAgentStore.getState().codingBackend;
-			const manager = getOrCreateSessionManager(activeThreadId || undefined, backend);
+			const backend =
+				activeThread?.backend || codingAgentStore.getState().codingBackend;
+			const manager = getOrCreateSessionManager(
+				activeThreadId || undefined,
+				backend,
+			);
 			const workspaceMemory = codingRuntimeStore.getState().workspaceMemory;
 
 			try {
 				// 3. 通过 manager 发送到 CLI 子进程
 				await manager.send(content, {
 					cwd: effectiveProjectPath,
-					mode: activeThread?.codingMode || codingAgentStore.getState().codingMode,
+					mode:
+						activeThread?.codingMode || codingAgentStore.getState().codingMode,
 					contextFiles: codingWorkspaceStore.getState().contextFiles,
-					resumeSessionId: codingSessionStore.getState().sdkSessionId ?? undefined,
+					resumeSessionId:
+						codingSessionStore.getState().sdkSessionId ?? undefined,
 					model: activeThread?.model,
 					approvalMode: activeThread?.approvalMode,
 					workspaceContext: workspaceMemory?.mergedInstructions,
@@ -306,15 +338,15 @@ export default function CodingWorkspace({
 					codingThreadStore.updateThread(activeThreadId, {
 						sdkSessionId: manager.getSessionId() ?? undefined,
 						lastRunAt: Date.now(),
-						lastRunStatus: 'running',
+						lastRunStatus: "running",
 					});
 				}
 			} catch (err) {
-				codingSessionStore.setStatus('error');
+				codingSessionStore.setStatus("error");
 				if (activeThreadId) {
 					codingThreadStore.updateThread(activeThreadId, {
 						lastRunAt: Date.now(),
-						lastRunStatus: 'error',
+						lastRunStatus: "error",
 						lastRunSummary: err instanceof Error ? err.message : String(err),
 					});
 				}
@@ -329,27 +361,106 @@ export default function CodingWorkspace({
 
 	// === 中止运行 ===
 	const handleAbort = useCallback(async () => {
-		const backend = activeThread?.backend || codingAgentStore.getState().codingBackend;
-		const manager = getOrCreateSessionManager(activeThreadId || undefined, backend);
+		const backend =
+			activeThread?.backend || codingAgentStore.getState().codingBackend;
+		const manager = getOrCreateSessionManager(
+			activeThreadId || undefined,
+			backend,
+		);
 		try {
 			await manager.abort();
 		} catch (err) {
-			console.error('[CodingWorkspace] 中止失败:', err);
+			console.error("[CodingWorkspace] 中止失败:", err);
 		}
 	}, [activeThreadId, activeThread]);
 
 	// === 权限审批 ===
 	const handleResolvePermission = useCallback(
 		async (requestId: string, allow: boolean) => {
-			const backend = activeThread?.backend || codingAgentStore.getState().codingBackend;
-			const manager = getOrCreateSessionManager(activeThreadId || undefined, backend);
+			const backend =
+				activeThread?.backend || codingAgentStore.getState().codingBackend;
+			const manager = getOrCreateSessionManager(
+				activeThreadId || undefined,
+				backend,
+			);
 			try {
 				await manager.resolvePermission(requestId, allow);
 			} catch (err) {
-				console.error('[CodingWorkspace] 权限审批失败:', err);
+				console.error("[CodingWorkspace] 权限审批失败:", err);
 			}
 		},
 		[activeThreadId, activeThread],
+	);
+
+	// === 续接 CLI 历史会话（从 ~/.claude/projects/ 或 ~/.codex/ 恢复） ===
+	const handleResumeSession = useCallback(
+		async (sessionId: string, meta: ExternalThreadMeta) => {
+			if (!meta.cwd) return;
+
+			// 找到或创建该项目的线程
+			const existingThread = codingThreadStore.getState().threads.find(
+				(t) => t.projectPath === meta.cwd && t.backend === "claude-code",
+			);
+
+			let targetThreadId: string;
+
+			if (existingThread) {
+				targetThreadId = existingThread.id;
+			} else {
+				// 新建续接线程
+				const newThread = await createThreadFromWorkspaceProfile(meta.cwd);
+				targetThreadId = newThread.id;
+			}
+
+			// 切换到目标线程
+			handleSwitchThread(targetThreadId);
+
+			// 设置 SDK session ID，下次发送时自动续接
+			codingSessionStore.setSdkSessionId(sessionId);
+			codingThreadStore.updateThread(targetThreadId, {
+				sdkSessionId: sessionId,
+			});
+
+			// 切到 files tab 看文件
+			setLeftTab("files");
+		},
+		[handleSwitchThread],
+	);
+
+	// === 导入 CLI 历史会话为本地线程 ===
+	const handleImportSession = useCallback(
+		async (meta: ExternalThreadMeta) => {
+			if (!meta.cwd) return;
+
+			const backend = meta.source === "codex-cli" ? "codex" : "claude-code";
+
+			// 检查是否已经导入过
+			const exists = codingThreadStore
+				.getState()
+				.threads.find(
+					(t) =>
+						t.externalThreadId === meta.id && t.source === meta.source,
+				);
+			if (exists) {
+				handleSwitchThread(exists.id);
+				setLeftTab("threads");
+				return;
+			}
+
+			// 先创建项目线程，再更新 source/externalThreadId
+			const thread = await createThreadFromWorkspaceProfile(meta.cwd);
+			codingThreadStore.updateThread(thread.id, {
+				source: meta.source,
+				externalThreadId: meta.id,
+				title: meta.title || thread.title,
+				...(meta.model ? { model: meta.model } : {}),
+				backend,
+			});
+
+			handleSwitchThread(thread.id);
+			setLeftTab("threads");
+		},
+		[handleSwitchThread],
 	);
 
 	const handleBack = useCallback(() => {
@@ -367,7 +478,8 @@ export default function CodingWorkspace({
 		onBack();
 	}, [onBack, activeThreadId]);
 
-	const isRunning = sessionStatus === 'running' || sessionStatus === 'awaiting_permission';
+	const isRunning =
+		sessionStatus === "running" || sessionStatus === "awaiting_permission";
 	const showHome = !activeThread && !projectPath;
 
 	return (
@@ -406,44 +518,50 @@ export default function CodingWorkspace({
 										maxSize={35}
 										className="overflow-hidden"
 									>
-										<div ref={leftPanelRef} tabIndex={-1} className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] overflow-hidden flex flex-col outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30">
+										<div
+											ref={leftPanelRef}
+											tabIndex={-1}
+											className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] overflow-hidden flex flex-col outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30"
+										>
 											{/* Tab 切换 */}
 											<div className="flex items-center border-b border-zinc-100 dark:border-zinc-800">
 												<button
-													onClick={() => setLeftTab('files')}
+													onClick={() => setLeftTab("files")}
 													className={`flex-1 py-2 text-[11px] font-medium transition-colors ${
-														leftTab === 'files'
-															? 'text-[#D96C46] border-b-2 border-[#D96C46]'
-															: 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+														leftTab === "files"
+															? "text-[#D96C46] border-b-2 border-[#D96C46]"
+															: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
 													}`}
 												>
 													文件
 												</button>
 												<button
-													onClick={() => setLeftTab('threads')}
+													onClick={() => setLeftTab("threads")}
 													className={`flex-1 py-2 text-[11px] font-medium transition-colors ${
-														leftTab === 'threads'
-															? 'text-[#D96C46] border-b-2 border-[#D96C46]'
-															: 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+														leftTab === "threads"
+															? "text-[#D96C46] border-b-2 border-[#D96C46]"
+															: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
 													}`}
 												>
 													线程
 												</button>
 											</div>
 
-												{/* Tab 内容 */}
-												{leftTab === 'files' ? (
-													<CodingFileExplorer
-														onRefreshTree={() => {
-															if (effectiveProjectPath) {
-																void loadFileTree(effectiveProjectPath);
-															}
-														}}
-													/>
-												) : (
-													<CodingThreadList
+											{/* Tab 内容 */}
+											{leftTab === "files" ? (
+												<CodingFileExplorer
+													onRefreshTree={() => {
+														if (effectiveProjectPath) {
+															void loadFileTree(effectiveProjectPath);
+														}
+													}}
+												/>
+											) : (
+												<CodingThreadList
 													onSwitchThread={handleSwitchThread}
 													onNewThread={handleNewThread}
+													onResumeSession={handleResumeSession}
+													onImportSession={handleImportSession}
 												/>
 											)}
 										</div>
@@ -458,7 +576,11 @@ export default function CodingWorkspace({
 								minSize={30}
 								className="overflow-hidden"
 							>
-								<div ref={centerPanelRef} tabIndex={-1} className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] bg-white dark:bg-[#141414] overflow-hidden flex flex-col outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30">
+								<div
+									ref={centerPanelRef}
+									tabIndex={-1}
+									className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] bg-white dark:bg-[#141414] overflow-hidden flex flex-col outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30"
+								>
 									{showHome ? (
 										<CodingHome onOpenThread={handleSwitchThread} />
 									) : (
@@ -467,13 +589,15 @@ export default function CodingWorkspace({
 											<CenterPanelTabs />
 
 											{/* 内容区：对话 or 代码查看器 */}
-											{centerPanelMode === 'codeViewer' && activeFileTab ? (
+											{centerPanelMode === "codeViewer" && activeFileTab ? (
 												<div className="flex-1 overflow-hidden">
 													<CodeViewerPanel tab={activeFileTab} />
 												</div>
 											) : (
 												<>
-													<CodingChatThread onResolvePermission={handleResolvePermission} />
+													<CodingChatThread
+														onResolvePermission={handleResolvePermission}
+													/>
 													<CodingDiffStatusBar />
 													<CodingChatInput
 														onSend={handleSendMessage}
@@ -498,7 +622,11 @@ export default function CodingWorkspace({
 										maxSize={40}
 										className="overflow-hidden"
 									>
-										<div ref={rightPanelRef} tabIndex={-1} className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] overflow-hidden outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30">
+										<div
+											ref={rightPanelRef}
+											tabIndex={-1}
+											className="h-full rounded-xl border border-black/[0.04] dark:border-white/[0.04] overflow-hidden outline-none focus-within:ring-1 focus-within:ring-[#D96C46]/30"
+										>
 											<CodingChangesPanel />
 										</div>
 									</Panel>

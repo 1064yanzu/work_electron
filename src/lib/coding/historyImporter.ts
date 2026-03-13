@@ -46,7 +46,7 @@ export async function importExternalThread(
 	const thread = codingThreadStore.createThread(meta.cwd, {
 		title: meta.title,
 		backend: backend as 'codex' | 'claude-code',
-		model: meta.model || (backend === 'codex' ? 'gpt-5.4' : 'claude-sonnet-4-6'),
+		model: meta.model || (backend === 'codex' ? '' : 'claude-sonnet-4-6'),
 		source: meta.source,
 		externalThreadId: meta.id,
 	});

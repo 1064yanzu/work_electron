@@ -1,25 +1,68 @@
 /**
- * 文件工具卡片 - Read 显示代码预览，Edit/Write 显示 inline diff
+ * 文件工具卡片 - Read/Edit/Write/Patch/MultiEdit
+ * 折叠态：图标 + 动作 + 文件名 + 变更行数摘要
+ * 展开态：Read 显示代码内容, Edit/Write 显示 unified diff
  */
-import { FileCode, FilePen, FilePlus, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-import type { SessionToolCall } from '../../../lib/stores/codingSessionTypes';
-import { useDiffStoreSelector } from '../../../lib/stores/diffStore';
+import { FileCode, FilePen, FilePlus, FileSearch } from "lucide-react";
+import { useMemo } from "react";
+import type { SessionToolCall } from "../../../lib/stores/codingSessionTypes";
+import { useDiffStoreSelector } from "../../../lib/stores/diffStore";
+import { ToolCardShell } from "./shared/ToolCardShell";
 
 interface FileToolCardProps {
 	toolCall: SessionToolCall;
 }
 
-export function FileToolCard({ toolCall }: FileToolCardProps) {
-	const [expanded, setExpanded] = useState(false);
-	const filePath: string = String(toolCall.input.file_path || toolCall.input.path || '');
-	const fileName = filePath.split('/').pop() || filePath;
-	const isRead = toolCall.name === 'Read';
-	const isEdit = toolCall.name === 'Edit';
-	const isWrite = toolCall.name === 'Write';
+/** 计算简单行级 diff */
+function computeLineDiff(oldContent: string, newContent: string) {
+	const oldLines = oldContent.split("\n");
+	const newLines = newContent.split("\n");
+	const result: Array<{ type: "add" | "remove" | "context"; content: string }> =
+		[];
 
-	const Icon = isRead ? FileCode : isEdit ? FilePen : FilePlus;
-	const actionLabel = isRead ? '读取' : isEdit ? '编辑' : '写入';
+	let added = 0;
+	let removed = 0;
+
+	// 使用简单的 LCS 近似算法生成diff
+	const oldSet = new Set(oldLines);
+	const newSet = new Set(newLines);
+
+	// old 中有而 new 中没有的 → 删除
+	for (const line of oldLines) {
+		if (!newSet.has(line)) {
+			result.push({ type: "remove", content: line });
+			removed++;
+		}
+	}
+
+	// new 中有而 old 中没有的 → 新增
+	for (const line of newLines) {
+		if (!oldSet.has(line)) {
+			result.push({ type: "add", content: line });
+			added++;
+		}
+	}
+
+	return { lines: result, added, removed };
+}
+
+export function FileToolCard({ toolCall }: FileToolCardProps) {
+	const filePath: string = String(
+		toolCall.input.file_path || toolCall.input.path || "",
+	);
+	const fileName = filePath.split("/").pop() || filePath;
+	const isRead = toolCall.name === "Read";
+	const isEdit = toolCall.name === "Edit" || toolCall.name === "Patch" || toolCall.name === "MultiEdit";
+	const isWrite = toolCall.name === "Write";
+
+	const Icon = isRead ? FileCode : isEdit ? FilePen : isWrite ? FilePlus : FileSearch;
+	const actionLabel = isRead
+		? "读取"
+		: isEdit
+			? "编辑"
+			: isWrite
+				? "创建"
+				: toolCall.name;
 
 	// diff 关联
 	const diffId = toolCall.diffId;
@@ -27,79 +70,128 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 		diffId ? s.diffs[diffId] : undefined,
 	);
 
-	const filePathDisplay = filePath;
+	// 计算变更摘要
+	const diffInfo = useMemo(() => {
+		if (!diff || !diff.oldContent || !diff.newContent) return null;
+		return computeLineDiff(diff.oldContent, diff.newContent);
+	}, [diff]);
+
+	// 摘要文本
+	const summary = useMemo(() => {
+		if (toolCall.status !== "completed") return undefined;
+		if (diffInfo) {
+			const parts: string[] = [];
+			if (diffInfo.added > 0) parts.push(`+${diffInfo.added}`);
+			if (diffInfo.removed > 0) parts.push(`-${diffInfo.removed}`);
+			return parts.join(" ") || undefined;
+		}
+		if (isRead && toolCall.output) {
+			const content =
+				typeof toolCall.output === "string"
+					? toolCall.output
+					: JSON.stringify(toolCall.output);
+			const lineCount = content.split("\n").length;
+			return `${lineCount} 行`;
+		}
+		return undefined;
+	}, [toolCall.status, toolCall.output, diffInfo, isRead]);
+
+	// 变更行数摘要的颜色标签
+	const headerRight = diffInfo ? (
+		<span className="flex items-center gap-1 text-[10px] tabular-nums">
+			{diffInfo.added > 0 && (
+				<span className="text-emerald-600 dark:text-emerald-400">
+					+{diffInfo.added}
+				</span>
+			)}
+			{diffInfo.removed > 0 && (
+				<span className="text-red-500 dark:text-red-400">
+					-{diffInfo.removed}
+				</span>
+			)}
+		</span>
+	) : undefined;
 
 	return (
-		<div className="rounded-lg border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
-			{/* 头部 */}
-			<button
-				onClick={() => setExpanded(!expanded)}
-				className="w-full flex items-center gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800/60 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-			>
-				<Icon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-				<span className="text-xs text-zinc-500">{actionLabel}</span>
-				<code className="flex-1 text-xs font-mono text-zinc-700 dark:text-zinc-300 truncate">
-					{fileName}
-				</code>
-				<StatusDot status={toolCall.status} />
-				<ChevronDown
-					className={`w-3 h-3 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-				/>
-			</button>
+		<ToolCardShell
+			icon={Icon}
+			label={actionLabel}
+			title={fileName}
+			status={toolCall.status}
+			isError={toolCall.isError}
+			durationMs={toolCall.durationMs}
+			summary={!diffInfo ? summary : undefined}
+			headerRight={headerRight}
+		>
+			{/* 完整路径 */}
+			<p className="mb-1.5 rounded-md bg-zinc-50 px-2.5 py-1 font-mono text-[10px] text-zinc-400 dark:bg-zinc-800/50">
+				{filePath}
+			</p>
 
-			{/* 展开内容 */}
-			{expanded ? (
-				<div className="border-t border-zinc-200 dark:border-zinc-700/50">
-					{/* 完整路径 */}
-					<p className="px-3 py-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/30">
-						{filePathDisplay}
-					</p>
+			{/* Read 输出：代码块风格 */}
+			{isRead && toolCall.output != null && (
+				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
+					<pre className="max-h-48 overflow-y-auto bg-zinc-50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/50 dark:text-zinc-400">
+						{(typeof toolCall.output === "string"
+							? toolCall.output
+							: JSON.stringify(toolCall.output, null, 2)
+						).slice(0, 3000)}
+						{((typeof toolCall.output === "string"
+							? toolCall.output
+							: JSON.stringify(toolCall.output, null, 2)
+						).length > 3000) && "\n\n... (内容已截断)"}
+					</pre>
+				</div>
+			)}
 
-					{/* Read 输出 */}
-					{isRead && toolCall.output != null && (
-						<pre className="px-3 py-2 text-xs font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-900/5 dark:bg-black/20 max-h-40 overflow-y-auto whitespace-pre-wrap">
-							{typeof toolCall.output === 'string'
-								? toolCall.output.slice(0, 2000)
-								: JSON.stringify(toolCall.output, null, 2).slice(0, 2000)}
+			{/* Edit/Write：Unified Diff 视图 */}
+			{(isEdit || isWrite) && diff && (
+				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
+					{/* 写入且无旧内容 → 新文件 */}
+					{isWrite && !diff.oldContent && diff.newContent && (
+						<pre className="max-h-56 overflow-y-auto bg-emerald-50/50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-emerald-700 scrollbar-thin dark:bg-emerald-900/10 dark:text-emerald-400">
+							{diff.newContent.slice(0, 3000)}
 						</pre>
 					)}
 
-					{/* Edit/Write diff */}
-					{(isEdit || isWrite) && diff && (
-						<div className="px-3 py-2 space-y-1">
-							{diff.oldContent && (
-								<div className="text-xs">
-									<div className="text-red-500/70 font-mono text-[10px] mb-0.5">- 旧内容</div>
-									<pre className="bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300 px-2 py-1 rounded text-[11px] max-h-24 overflow-y-auto whitespace-pre-wrap">
-										{diff.oldContent.slice(0, 1000)}
-									</pre>
+					{/* 有旧有新 → 行级 diff */}
+					{diff.oldContent && diff.newContent && diffInfo && (
+						<div className="max-h-56 overflow-y-auto scrollbar-thin">
+							{diffInfo.lines.map((line, i) => (
+								<div
+									key={`${line.type}-${i}`}
+									className={`flex font-mono text-[11px] leading-[1.6] ${
+										line.type === "add"
+											? "bg-emerald-50/60 text-emerald-700 dark:bg-emerald-900/15 dark:text-emerald-400"
+											: line.type === "remove"
+												? "bg-red-50/60 text-red-600 dark:bg-red-900/15 dark:text-red-400"
+												: "text-zinc-500 dark:text-zinc-400"
+									}`}
+								>
+									<span className="w-6 shrink-0 select-none px-1 text-right text-[10px] text-zinc-400/60">
+										{line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
+									</span>
+									<span className="flex-1 whitespace-pre-wrap break-all px-2 py-px">
+										{line.content}
+									</span>
 								</div>
-							)}
-							{diff.newContent && (
-								<div className="text-xs">
-									<div className="text-emerald-500/70 font-mono text-[10px] mb-0.5">+ 新内容</div>
-									<pre className="bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded text-[11px] max-h-24 overflow-y-auto whitespace-pre-wrap">
-										{diff.newContent.slice(0, 1000)}
-									</pre>
-								</div>
-							)}
+							))}
 						</div>
 					)}
 				</div>
-			) : null}
-		</div>
-	);
-}
+			)}
 
-function StatusDot({ status }: { status: SessionToolCall['status'] }) {
-	if (status === 'running') {
-		return <div className="w-2 h-2 rounded-full bg-[#D96C46] animate-pulse shrink-0" />;
-	}
-	if (status === 'completed') {
-		return <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />;
-	}
-	if (status === 'error') {
-		return <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />;
-	}
-	return <div className="w-2 h-2 rounded-full bg-zinc-300 shrink-0" />;
+			{/* Edit/Write 但没有 diff 的情况 → 显示 raw output */}
+			{(isEdit || isWrite) && !diff && toolCall.output != null && (
+				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
+					<pre className="max-h-40 overflow-y-auto bg-zinc-50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/50 dark:text-zinc-400">
+						{(typeof toolCall.output === "string"
+							? toolCall.output
+							: JSON.stringify(toolCall.output, null, 2)
+						).slice(0, 2000)}
+					</pre>
+				</div>
+			)}
+		</ToolCardShell>
+	);
 }

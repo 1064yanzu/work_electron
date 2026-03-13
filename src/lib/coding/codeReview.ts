@@ -51,7 +51,10 @@ export async function startCodeReview(
 		});
 
 		if (!result.isGitRepo) {
-			return { success: false, error: "当前目录不是 Git 仓库，无法进行代码审查。" };
+			return {
+				success: false,
+				error: "当前目录不是 Git 仓库，无法进行代码审查。",
+			};
 		}
 
 		if (!result.status) {
@@ -87,7 +90,10 @@ function buildReviewPrompt(branch: string, files: GitFileStatus[]): string {
 	};
 
 	const fileList = files
-		.map((f) => `  - [${statusLabels[f.status]}] ${f.path}${f.staged ? " (已暂存)" : ""}`)
+		.map(
+			(f) =>
+				`  - [${statusLabels[f.status]}] ${f.path}${f.staged ? " (已暂存)" : ""}`,
+		)
 		.join("\n");
 
 	return `请对当前分支 \`${branch}\` 的代码变更进行审查。

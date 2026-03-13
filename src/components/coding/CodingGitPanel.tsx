@@ -5,11 +5,10 @@
 import { GitBranch, Loader2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { refreshGitWorkspaceData } from "../../lib/coding/gitWorkspaceData";
-import {
-	useCodingWorkspaceSelector,
-} from "../../lib/stores/codingWorkspaceStore";
+import { useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
 import { useDiffStoreSelector } from "../../lib/stores/diffStore";
 import { GitChangesSection } from "./git/GitChangesSection";
+import { GitCommitPanel } from "./git/GitCommitPanel";
 import { GitOverviewHeader } from "./git/GitOverviewHeader";
 import { GitRecentCommitList } from "./git/GitRecentCommitList";
 import {
@@ -93,6 +92,7 @@ export function CodingGitPanel() {
 				summary={summary}
 				refreshing={refreshing}
 				onRefresh={handleRefresh}
+				projectPath={projectPath ?? ""}
 			/>
 
 			<div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -101,7 +101,14 @@ export function CodingGitPanel() {
 					activeFilter={activeFilter}
 					onFilterChange={setActiveFilter}
 					pendingDiffPaths={pendingDiffPaths}
+					projectPath={projectPath ?? ""}
 				/>
+				{projectPath && (
+					<GitCommitPanel
+						projectPath={projectPath}
+						stagedSection={sections.find((s) => s.id === "staged")}
+					/>
+				)}
 				<GitRecentCommitList commits={gitHistory} />
 			</div>
 		</div>

@@ -91,7 +91,7 @@ export interface CodingLayoutState {
 	leftPanelVisible: boolean;
 	rightPanelVisible: boolean;
 	terminalVisible: boolean;
-	rightPanelTab: "changes" | "activity" | "context" | "file";
+	rightPanelTab: "git" | "session-changes" | "terminal-log";
 	centerPanelMode: CenterPanelMode;
 }
 
@@ -151,28 +151,31 @@ function loadLayout(): CodingLayoutState {
 		const raw = localStorage.getItem(LAYOUT_KEY);
 		if (raw) {
 			const parsed = JSON.parse(raw) as Partial<CodingLayoutState>;
-			// 迁移旧 tab 值：git → changes, memory → context
-			let tab: string = (parsed.rightPanelTab as string) ?? "changes";
-			if (tab === "git") tab = "changes";
-			if (tab === "memory") tab = "context";
+			// 迁移旧 tab 值到新 3-tab 体系
+			let tab: string = (parsed.rightPanelTab as string) ?? "git";
+			if (tab === "changes") tab = "git";
+			if (tab === "activity") tab = "terminal-log";
+			if (tab === "context") tab = "git";
+			if (tab === "file") tab = "session-changes";
+			if (tab === "memory") tab = "git";
 			return {
-					leftPanelVisible: parsed.leftPanelVisible ?? true,
-					rightPanelVisible: parsed.rightPanelVisible ?? true,
-					terminalVisible: parsed.terminalVisible ?? false,
-					rightPanelTab: tab as CodingLayoutState["rightPanelTab"],
-					centerPanelMode: parsed.centerPanelMode ?? "chat",
-				};
-			}
-		} catch {
+				leftPanelVisible: parsed.leftPanelVisible ?? true,
+				rightPanelVisible: parsed.rightPanelVisible ?? true,
+				terminalVisible: parsed.terminalVisible ?? false,
+				rightPanelTab: tab as CodingLayoutState["rightPanelTab"],
+				centerPanelMode: parsed.centerPanelMode ?? "chat",
+			};
+		}
+	} catch {
 		// ignore
 	}
 	return {
 		leftPanelVisible: true,
-			rightPanelVisible: true,
-			terminalVisible: false,
-			rightPanelTab: "changes",
-			centerPanelMode: "chat",
-		};
+		rightPanelVisible: true,
+		terminalVisible: false,
+		rightPanelTab: "git",
+		centerPanelMode: "chat",
+	};
 }
 
 class CodingWorkspaceStore {
@@ -186,20 +189,20 @@ class CodingWorkspaceStore {
 		gitBranches: [],
 		gitHistory: [],
 		contextFiles: [],
-			layout: loadLayout(),
-			recentProjects: loadRecentProjects(),
-			selectedFilePath: null,
-			selectedFilePreview: {
-				path: null,
-				content: "",
-				truncated: false,
-				loading: false,
-				error: null,
-			},
-			fileSearchQuery: "",
-			centerPanelTabs: [],
-			activeCenterTabId: null,
-		};
+		layout: loadLayout(),
+		recentProjects: loadRecentProjects(),
+		selectedFilePath: null,
+		selectedFilePreview: {
+			path: null,
+			content: "",
+			truncated: false,
+			loading: false,
+			error: null,
+		},
+		fileSearchQuery: "",
+		centerPanelTabs: [],
+		activeCenterTabId: null,
+	};
 
 	private listeners = new Set<() => void>();
 
@@ -256,22 +259,22 @@ class CodingWorkspaceStore {
 			fileTree: [],
 			fileTreeLoading: true,
 			gitStatus: null,
-				gitBranches: [],
-				gitHistory: [],
-				contextFiles: [],
-				recentProjects,
-				selectedFilePath: null,
-				selectedFilePreview: {
-					path: null,
-					content: "",
-					truncated: false,
-					loading: false,
-					error: null,
-				},
-				fileSearchQuery: "",
-				centerPanelTabs: [],
-				activeCenterTabId: null,
-			};
+			gitBranches: [],
+			gitHistory: [],
+			contextFiles: [],
+			recentProjects,
+			selectedFilePath: null,
+			selectedFilePreview: {
+				path: null,
+				content: "",
+				truncated: false,
+				loading: false,
+				error: null,
+			},
+			fileSearchQuery: "",
+			centerPanelTabs: [],
+			activeCenterTabId: null,
+		};
 
 		this.persistRecentProjects();
 		this.emit();
@@ -287,21 +290,21 @@ class CodingWorkspaceStore {
 			fileTree: [],
 			fileTreeLoading: false,
 			gitStatus: null,
-				gitBranches: [],
-				gitHistory: [],
-				contextFiles: [],
-				selectedFilePath: null,
-				selectedFilePreview: {
-					path: null,
-					content: "",
-					truncated: false,
-					loading: false,
-					error: null,
-				},
-				fileSearchQuery: "",
-				centerPanelTabs: [],
-				activeCenterTabId: null,
-			};
+			gitBranches: [],
+			gitHistory: [],
+			contextFiles: [],
+			selectedFilePath: null,
+			selectedFilePreview: {
+				path: null,
+				content: "",
+				truncated: false,
+				loading: false,
+				error: null,
+			},
+			fileSearchQuery: "",
+			centerPanelTabs: [],
+			activeCenterTabId: null,
+		};
 		this.emit();
 	};
 
@@ -309,9 +312,7 @@ class CodingWorkspaceStore {
 	removeRecentProject = (path: string) => {
 		this.state = {
 			...this.state,
-			recentProjects: this.state.recentProjects.filter(
-				(p) => p.path !== path,
-			),
+			recentProjects: this.state.recentProjects.filter((p) => p.path !== path),
 		};
 		this.persistRecentProjects();
 		this.emit();
@@ -334,54 +335,54 @@ class CodingWorkspaceStore {
 		this.emit();
 	};
 
-		setSelectedFile = (filePath: string | null) => {
-			this.state = {
-				...this.state,
-				selectedFilePath: filePath,
-				selectedFilePreview: {
-					path: filePath,
-					content: "",
-					truncated: false,
-					loading: Boolean(filePath),
-					error: null,
-				},
-			};
-			this.emit();
+	setSelectedFile = (filePath: string | null) => {
+		this.state = {
+			...this.state,
+			selectedFilePath: filePath,
+			selectedFilePreview: {
+				path: filePath,
+				content: "",
+				truncated: false,
+				loading: Boolean(filePath),
+				error: null,
+			},
 		};
+		this.emit();
+	};
 
-		setSelectedFilePreview = (input: {
-			path: string;
-			content: string;
-			truncated: boolean;
-		}) => {
-			this.state = {
-				...this.state,
-				selectedFilePath: input.path,
-				selectedFilePreview: {
-					path: input.path,
-					content: input.content,
-					truncated: input.truncated,
-					loading: false,
-					error: null,
-				},
-			};
-			this.emit();
+	setSelectedFilePreview = (input: {
+		path: string;
+		content: string;
+		truncated: boolean;
+	}) => {
+		this.state = {
+			...this.state,
+			selectedFilePath: input.path,
+			selectedFilePreview: {
+				path: input.path,
+				content: input.content,
+				truncated: input.truncated,
+				loading: false,
+				error: null,
+			},
 		};
+		this.emit();
+	};
 
-		setSelectedFilePreviewError = (path: string, error: string) => {
-			this.state = {
-				...this.state,
-				selectedFilePath: path,
-				selectedFilePreview: {
-					path,
-					content: "",
-					truncated: false,
-					loading: false,
-					error,
-				},
-			};
-			this.emit();
+	setSelectedFilePreviewError = (path: string, error: string) => {
+		this.state = {
+			...this.state,
+			selectedFilePath: path,
+			selectedFilePreview: {
+				path,
+				content: "",
+				truncated: false,
+				loading: false,
+				error,
+			},
 		};
+		this.emit();
+	};
 
 	setFileSearchQuery = (query: string) => {
 		this.state = { ...this.state, fileSearchQuery: query };
@@ -419,9 +420,7 @@ class CodingWorkspaceStore {
 	removeContextFile = (filePath: string) => {
 		this.state = {
 			...this.state,
-			contextFiles: this.state.contextFiles.filter(
-				(f) => f.path !== filePath,
-			),
+			contextFiles: this.state.contextFiles.filter((f) => f.path !== filePath),
 		};
 		this.emit();
 	};
@@ -471,10 +470,14 @@ class CodingWorkspaceStore {
 		this.emit();
 	};
 
-		setRightPanelTab = (tab: CodingLayoutState["rightPanelTab"]) => {
-			if (this.state.layout.rightPanelTab === tab) return;
-			const layout = { ...this.state.layout, rightPanelTab: tab, rightPanelVisible: true };
-			this.state = { ...this.state, layout };
+	setRightPanelTab = (tab: CodingLayoutState["rightPanelTab"]) => {
+		if (this.state.layout.rightPanelTab === tab) return;
+		const layout = {
+			...this.state.layout,
+			rightPanelTab: tab,
+			rightPanelVisible: true,
+		};
+		this.state = { ...this.state, layout };
 		this.persistLayout();
 		this.emit();
 	};
@@ -493,14 +496,19 @@ class CodingWorkspaceStore {
 
 	/** 在中间面板打开一个文件 Tab（已存在则激活，不存在则新建） */
 	openCenterTab = (filePath: string, opts?: { highlightLine?: number }) => {
-		const existing = this.state.centerPanelTabs.find((t) => t.filePath === filePath);
+		const existing = this.state.centerPanelTabs.find(
+			(t) => t.filePath === filePath,
+		);
 		if (existing) {
 			// 已打开 → 激活，可更新高亮行
-			const tabs = opts?.highlightLine != null
-				? this.state.centerPanelTabs.map((t) =>
-					t.id === existing.id ? { ...t, highlightLine: opts.highlightLine } : t,
-				)
-				: this.state.centerPanelTabs;
+			const tabs =
+				opts?.highlightLine != null
+					? this.state.centerPanelTabs.map((t) =>
+							t.id === existing.id
+								? { ...t, highlightLine: opts.highlightLine }
+								: t,
+						)
+					: this.state.centerPanelTabs;
 			this.state = {
 				...this.state,
 				centerPanelTabs: tabs,
@@ -509,7 +517,9 @@ class CodingWorkspaceStore {
 			};
 		} else {
 			const fileName = filePath.split(/[\\/]/).pop() || filePath;
-			const ext = fileName.includes(".") ? fileName.split(".").pop()?.toLowerCase() || "" : "";
+			const ext = fileName.includes(".")
+				? fileName.split(".").pop()?.toLowerCase() || ""
+				: "";
 			const newTab: CenterPanelTab = {
 				id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
 				filePath,
@@ -536,7 +546,9 @@ class CodingWorkspaceStore {
 
 		if (activeId === tabId) {
 			// 关闭的是当前激活的 tab：切换到相邻 tab 或回到 chat
-			const closedIndex = this.state.centerPanelTabs.findIndex((t) => t.id === tabId);
+			const closedIndex = this.state.centerPanelTabs.findIndex(
+				(t) => t.id === tabId,
+			);
 			if (tabs.length > 0) {
 				const newIdx = Math.min(closedIndex, tabs.length - 1);
 				activeId = tabs[newIdx].id;
@@ -593,7 +605,10 @@ export function useCodingWorkspaceSelector<T>(
 
 	const getSnapshot = useCallback(() => {
 		const nextState = codingWorkspaceStore.getState();
-		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+		if (
+			lastStateRef.current === nextState &&
+			lastSelectedRef.current !== null
+		) {
 			return lastSelectedRef.current;
 		}
 

@@ -71,3 +71,33 @@ export async function invalidateCliCache(
 ): Promise<{ success: boolean }> {
 	return invoke("cli_invalidate_cache", { backend });
 }
+
+// ─── Claude Code Auth ──────────────────────────────────────────
+
+export async function getClaudeCodeAuthStatus(): Promise<{
+	isLoggedIn: boolean;
+	authMethod: "oauth" | "api_key" | "env_key" | "none";
+	email?: string;
+	model?: string;
+	mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+}> {
+	return invoke("claude_code_auth_status", {});
+}
+
+// ─── User CLI Config Sync ──────────────────────────────────────
+
+export interface UserCliConfig {
+	claude?: {
+		model?: string;
+		mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+		permissions?: string[];
+	};
+	codex?: {
+		model?: string;
+		provider?: string;
+	};
+}
+
+export async function readUserCliConfig(): Promise<UserCliConfig> {
+	return invoke("coding_read_user_cli_config", {});
+}

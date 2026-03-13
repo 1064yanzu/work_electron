@@ -92,9 +92,7 @@ export function buildGitSections(status: GitStatusInfo | null): GitSection[] {
 		}
 	}
 
-	return (
-		Object.keys(SECTION_META) as GitSectionId[]
-	).map((id) => ({
+	return (Object.keys(SECTION_META) as GitSectionId[]).map((id) => ({
 		id,
 		title: SECTION_META[id].title,
 		description: SECTION_META[id].description,
@@ -128,19 +126,40 @@ export function buildGitSummaryStats(input: {
 export function getStatusToken(kind: GitChangeKind) {
 	switch (kind) {
 		case "added":
-			return { label: "A", tone: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" };
+			return {
+				label: "A",
+				tone: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20",
+			};
 		case "deleted":
-			return { label: "D", tone: "text-red-600 bg-red-500/10 border-red-500/20" };
+			return {
+				label: "D",
+				tone: "text-red-600 bg-red-500/10 border-red-500/20",
+			};
 		case "renamed":
-			return { label: "R", tone: "text-sky-600 bg-sky-500/10 border-sky-500/20" };
+			return {
+				label: "R",
+				tone: "text-sky-600 bg-sky-500/10 border-sky-500/20",
+			};
 		case "copied":
-			return { label: "C", tone: "text-cyan-600 bg-cyan-500/10 border-cyan-500/20" };
+			return {
+				label: "C",
+				tone: "text-cyan-600 bg-cyan-500/10 border-cyan-500/20",
+			};
 		case "untracked":
-			return { label: "U", tone: "text-zinc-600 bg-zinc-500/10 border-zinc-500/20 dark:text-zinc-300" };
+			return {
+				label: "U",
+				tone: "text-zinc-600 bg-zinc-500/10 border-zinc-500/20 dark:text-zinc-300",
+			};
 		case "conflicted":
-			return { label: "!", tone: "text-orange-600 bg-orange-500/10 border-orange-500/20" };
+			return {
+				label: "!",
+				tone: "text-orange-600 bg-orange-500/10 border-orange-500/20",
+			};
 		default:
-			return { label: "M", tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" };
+			return {
+				label: "M",
+				tone: "text-amber-600 bg-amber-500/10 border-amber-500/20",
+			};
 	}
 }
 

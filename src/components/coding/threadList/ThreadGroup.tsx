@@ -20,6 +20,7 @@ interface ThreadGroupProps {
 	onToggleExpanded: () => void;
 	onSwitchThread: (thread: CodingThread) => void;
 	onImportExternal: (meta: ExternalThreadMeta) => void;
+	onResumeExternal?: (meta: ExternalThreadMeta) => void;
 	onEditTitleChange: (value: string) => void;
 	onCommitRename: () => void;
 	onCancelRename: () => void;
@@ -46,6 +47,7 @@ export function ThreadGroup({
 	onToggleExpanded,
 	onSwitchThread,
 	onImportExternal,
+	onResumeExternal,
 	onEditTitleChange,
 	onCommitRename,
 	onCancelRename,
@@ -119,6 +121,7 @@ export function ThreadGroup({
 										thread={item.meta}
 										isImporting={importingId === item.meta.id}
 										onClick={() => onImportExternal(item.meta)}
+										onResume={onResumeExternal ? () => onResumeExternal(item.meta) : undefined}
 									/>
 								),
 							)}

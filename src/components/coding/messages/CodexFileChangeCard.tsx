@@ -66,11 +66,11 @@ export function CodexFileChangeCard({ toolCall }: CodexFileChangeCardProps) {
 			: `${fileCount} 个文件`;
 
 	return (
-		<div className="rounded-lg border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
+		<div className="group -mx-2 px-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
 			{/* 头部 */}
 			<button
 				onClick={() => setExpanded(!expanded)}
-				className="w-full flex items-center gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800/60 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+				className="w-full flex items-center gap-2 py-1.5 text-left"
 			>
 				<FilePen className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
 				<span className="text-xs text-zinc-500">文件变更</span>
@@ -80,13 +80,13 @@ export function CodexFileChangeCard({ toolCall }: CodexFileChangeCardProps) {
 				<PatchStatusBadge status={patchStatus} />
 				<StatusDot status={toolCall.status} />
 				<ChevronDown
-					className={`w-3 h-3 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+					className={`w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-all ${expanded ? 'rotate-180 opacity-100' : ''}`}
 				/>
 			</button>
 
 			{/* 展开内容 */}
 			{expanded && (
-				<div className="border-t border-zinc-200 dark:border-zinc-700/50">
+				<div className="pb-2 pt-1">
 					{/* 文件变更列表 */}
 					{changes.length > 0 && (
 						<div className="px-3 py-2 space-y-1">
@@ -115,7 +115,7 @@ export function CodexFileChangeCard({ toolCall }: CodexFileChangeCardProps) {
 
 					{/* Diff 预览 */}
 					{diff && diff.newContent && (
-						<div className="border-t border-zinc-200 dark:border-zinc-700/50 px-3 py-2">
+						<div className="pb-2 pt-1">
 							<div className="text-[10px] text-zinc-400 mb-1">Diff 预览</div>
 							{diff.oldContent && diff.oldContent !== "(变更前内容不可用)" && (
 								<pre className="bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300 px-2 py-1 rounded text-[11px] max-h-20 overflow-y-auto whitespace-pre-wrap mb-1">

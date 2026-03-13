@@ -35,7 +35,7 @@ export function CodingDiffStatusBar() {
 	if (!stats) return null;
 
 	const handleReviewClick = () => {
-		codingWorkspaceStore.setRightPanelTab('changes');
+		codingWorkspaceStore.setRightPanelTab('session-changes');
 	};
 
 	return (

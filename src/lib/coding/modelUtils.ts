@@ -3,14 +3,11 @@
  * 统一 CodingInputActions 和 CodingChatInput 中的模型名称显示
  */
 
-/** 常见模型名简化映射 */
+/** 常见模型名简化映射（Codex 系列不再硬编码，从用户 CLI 配置读取） */
 const MODEL_NAME_MAP: Record<string, string> = {
 	'claude-sonnet-4-6': 'Sonnet 4.6',
 	'claude-opus-4-6': 'Opus 4.6',
 	'claude-haiku-4-5': 'Haiku 4.5',
-	'gpt-5-codex': 'GPT-5 Codex',
-	'gpt-5.4': 'GPT-5.4',
-	'gpt-5-mini': 'GPT-5 Mini',
 	'o3': 'o3',
 	'o4-mini': 'o4 Mini',
 };

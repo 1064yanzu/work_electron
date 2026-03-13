@@ -60,6 +60,7 @@ import { getCloudNodeClient } from "../cloud-node/service";
 import { createTerminalHandlers } from "./handlers/terminal";
 import { createCodingHandlers } from "./handlers/coding";
 import { createCodexSessionHandlers } from "./handlers/codexSession";
+import { createClaudeCodeSessionHandlers } from "./handlers/claudeCodeSession";
 import { createCliHistoryHandlers } from "./handlers/cliHistory";
 import { createCliBinaryHandlers } from "./handlers/cliBinary";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
@@ -174,6 +175,11 @@ export function registerIpcHandlers({
 
 	// Codex Session handlers (Codex 后端)
 	const codexSessionHandlers = createCodexSessionHandlers({
+		getMainWindow: () => mainWindowRef,
+	});
+
+	// Claude Code CLI Session handlers (Claude Code 后端)
+	const claudeCodeSessionHandlers = createClaudeCodeSessionHandlers({
 		getMainWindow: () => mainWindowRef,
 	});
 
@@ -734,6 +740,7 @@ export function registerIpcHandlers({
 	ipcMain.handle("coding_select_directory", codingHandlers.coding_select_directory);
 	ipcMain.handle("coding_read_file_tree", codingHandlers.coding_read_file_tree);
 	ipcMain.handle("coding_git_status", codingHandlers.coding_git_status);
+	ipcMain.handle("coding_git_history", codingHandlers.coding_git_history);
 	ipcMain.handle("coding_git_branches", codingHandlers.coding_git_branches);
 	ipcMain.handle("coding_read_file", codingHandlers.coding_read_file);
 	ipcMain.handle(
@@ -760,6 +767,19 @@ export function registerIpcHandlers({
 	ipcMain.handle("coding_revert_file", codingHandlers.coding_revert_file);
 	ipcMain.handle("coding_watch_start", codingHandlers.coding_watch_start);
 	ipcMain.handle("coding_watch_stop", codingHandlers.coding_watch_stop);
+	// Git 写操作
+	ipcMain.handle("coding_git_add", codingHandlers.coding_git_add);
+	ipcMain.handle("coding_git_unstage", codingHandlers.coding_git_unstage);
+	ipcMain.handle("coding_git_commit", codingHandlers.coding_git_commit);
+	ipcMain.handle("coding_git_push", codingHandlers.coding_git_push);
+	ipcMain.handle("coding_git_pull", codingHandlers.coding_git_pull);
+	ipcMain.handle("coding_git_checkout", codingHandlers.coding_git_checkout);
+	ipcMain.handle(
+		"coding_git_create_branch",
+		codingHandlers.coding_git_create_branch,
+	);
+	ipcMain.handle("coding_git_stash", codingHandlers.coding_git_stash);
+	ipcMain.handle("coding_git_discard", codingHandlers.coding_git_discard);
 
 	// ==================
 	// Codex Session (Codex 后端)
@@ -769,6 +789,18 @@ export function registerIpcHandlers({
 	ipcMain.handle("codex_session_start", codexSessionHandlers.codex_session_start);
 	ipcMain.handle("codex_session_abort", codexSessionHandlers.codex_session_abort);
 	ipcMain.handle("codex_runtime_control", codexSessionHandlers.codex_runtime_control);
+
+	// ==================
+	// Claude Code CLI Session (Claude Code 后端)
+	// ==================
+	ipcMain.handle("claude_code_check_available", claudeCodeSessionHandlers.claude_code_check_available);
+	ipcMain.handle("claude_code_get_capabilities", claudeCodeSessionHandlers.claude_code_get_capabilities);
+	ipcMain.handle("claude_code_session_start", claudeCodeSessionHandlers.claude_code_session_start);
+	ipcMain.handle("claude_code_session_abort", claudeCodeSessionHandlers.claude_code_session_abort);
+	ipcMain.handle("claude_code_runtime_control", claudeCodeSessionHandlers.claude_code_runtime_control);
+	ipcMain.handle("claude_code_permission_respond", claudeCodeSessionHandlers.claude_code_permission_respond);
+	ipcMain.handle("claude_code_auth_status", claudeCodeSessionHandlers.claude_code_auth_status);
+	ipcMain.handle("coding_read_user_cli_config", claudeCodeSessionHandlers.coding_read_user_cli_config);
 
 	// ==================
 	// CLI History Sync (CLI 历史同步)

@@ -56,6 +56,8 @@ type CodingThreadUpdates = Partial<
 		| 'lastRunStatus'
 		| 'lastRunSummary'
 		| 'diffStats'
+		| 'source'
+		| 'externalThreadId'
 	>
 >;
 
@@ -272,10 +274,12 @@ class CodingThreadStore {
 		recentProjects: RecentCodingProject[],
 		searchQuery = '',
 		externalThreads: ExternalThreadMeta[] = [],
+		localThreadsOverride?: CodingThread[],
 	): CodingProjectThreadGroup[] {
 		const query = searchQuery.trim().toLowerCase();
+		const localThreads = localThreadsOverride ?? this.state.threads;
 
-		// 已导入的外部线程 ID 集合（用于去重）
+		// 已导入的外部线程 ID 集合（用于去重，始终基于全量本地线程）
 		const importedExternalKeys = new Set(
 			this.state.threads
 				.filter((t) => t.externalThreadId && t.source)
@@ -303,7 +307,7 @@ class CodingThreadStore {
 			});
 		}
 
-		for (const thread of this.state.threads) {
+		for (const thread of localThreads) {
 			const existing = groups.get(thread.projectPath);
 			if (existing) {
 				existing.threads.push(thread);

@@ -1,28 +1,54 @@
 /**
- * Claude Code Session Manager
- * 通过 AgentSdkClient 与 Claude Code CLI 子进程通信
+ * Claude Code CLI Session Manager
+ *
+ * 直接通过 IPC 调用后端 claudeCodeSession handler，
+ * 后端会 spawn 用户本地的 `claude` CLI 二进制文件。
+ *
+ * 参照 codexSessionManager.ts 的模式实现，
+ * 与旧版 SDK 模式（AgentSdkClient）完全解耦。
  */
 
-import {
-	AgentSdkClient,
-	createSdkClient,
-	type AgentSdkEventPayload,
-} from '../agent/sdkClient';
-import type { UIEvent } from '../agent/streamState';
-import { codingSessionStore } from '../stores/codingSessionStore';
-import type { ICodingSessionManager, SessionSendOptions } from './types';
-import { applyModeToPayload } from './modeConfig';
-import { buildPromptWithContextFiles } from './contextPrompt';
-import { processUIEvents } from './eventMapper';
-import type { RuntimeControlAction } from '../../../electron/shared/coding-workspace';
+import type {
+	ClaudeCodeApprovalMode,
+	RuntimeControlAction,
+} from "../../../electron/shared/coding-workspace";
+import { invoke } from "../tauriCompat";
+import { listen, type UnlistenFn } from "../tauriEventCompat";
+import type { UIEvent } from "../agent/streamState";
+import { codingSessionStore } from "../stores/codingSessionStore";
+import type { ICodingSessionManager, SessionSendOptions } from "./types";
+import { buildPromptWithContextFiles } from "./contextPrompt";
+import { processUIEvents } from "./eventMapper";
+
+/**
+ * 后端 claudeCodeSession 通过 IPC 发送的事件结构
+ */
+interface ClaudeCodeSessionEvent {
+	runId: string;
+	type: "ui_events" | "done" | "error" | "stderr" | "session_init" | "permission_request";
+	events?: UIEvent[];
+	sessionId?: string;
+	result?: unknown;
+	content?: string;
+	isError?: boolean;
+	usage?: {
+		inputTokens: number;
+		outputTokens: number;
+		costUsd?: number;
+	};
+	// 权限请求专用字段
+	requestId?: string;
+	toolName?: string;
+	toolInput?: Record<string, unknown>;
+	description?: string;
+	timeoutMs?: number;
+}
 
 export class ClaudeCodeSessionManager implements ICodingSessionManager {
-	private client: AgentSdkClient;
-	readonly backend = 'claude-code' as const;
-
-	constructor() {
-		this.client = createSdkClient();
-	}
+	private unlisten: UnlistenFn | null = null;
+	private runId: string | null = null;
+	private sessionId: string | null = null;
+	readonly backend = "claude-code" as const;
 
 	async send(prompt: string, options: SessionSendOptions): Promise<void> {
 		const promptWithContext = buildPromptWithContextFiles(
@@ -31,189 +57,176 @@ export class ClaudeCodeSessionManager implements ICodingSessionManager {
 		);
 
 		// 1. 创建 assistant 占位消息
-		codingSessionStore.createAssistantMessage('claude-code');
+		codingSessionStore.createAssistantMessage("claude-code");
 
-		// 2. 注册事件回调
-		await this.client.startListening((payload: AgentSdkEventPayload) => {
-			// 只处理当前 run 的事件
-			if (!this.client.isCurrentRun(payload)) return;
-			this.handleEvent(payload);
-		});
-
-		// 3. 构建 SDK payload
-			const modePayload = applyModeToPayload(
-				{
-					prompt: promptWithContext,
-					model: options.model || 'claude-sonnet-4-20250514',
-					cwd: options.cwd,
-					interactive_approval: true,
-				system_prompt: options.workspaceContext || undefined,
+		// 2. 注册 IPC 事件监听
+		this.unlisten = await listen<ClaudeCodeSessionEvent>(
+			"claude-code-session-event",
+			(event) => {
+				if (event.payload.runId !== this.runId) return;
+				this.handleEvent(event.payload);
 			},
-			options.mode,
 		);
 
-		if (options.approvalMode) {
-			modePayload.permission_mode = options.approvalMode;
-		}
-
-		// 4. 启动 SDK 运行
+		// 3. 启动 Claude Code CLI 会话
 		try {
-				const startPayload = {
-					...modePayload,
-					prompt: modePayload.prompt || promptWithContext,
-					model: modePayload.model || 'claude-sonnet-4-20250514',
-				} as import('../agent/sdkClient').AgentStartPayload;
-
-			// resume_session_id 存在于 IPC schema 但不在 AgentStartPayload 类型中
-			if (options.resumeSessionId) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				(startPayload as any).resume_session_id = options.resumeSessionId;
-			}
-
-			const runId = await this.client.start(startPayload);
-			codingSessionStore.setRunId(runId);
-		} catch (err) {
-			codingSessionStore.setStatus('error');
+			console.log(
+				`[ClaudeCodeSessionManager] sending with model: ${options.model || "(default)"}, cwd: ${options.cwd}`,
+			);
+			this.runId = await invoke<string>("claude_code_session_start", {
+				prompt: promptWithContext,
+				cwd: options.cwd,
+				model: options.model,
+				permissionMode:
+					(options.approvalMode as ClaudeCodeApprovalMode | undefined) ??
+					"default",
+				systemPrompt: options.workspaceContext || undefined,
+				resumeSessionId: options.resumeSessionId || undefined,
+			});
+			codingSessionStore.setRunId(this.runId);
+		} catch (error) {
+			codingSessionStore.setStatus("error");
 			codingSessionStore.finalizeStreamingMessage();
-			throw err;
+			this.cleanup();
+			throw error;
 		}
 	}
 
-	private handleEvent(payload: AgentSdkEventPayload): void {
-		switch (payload.type) {
-			case 'transformed': {
-				// 批量 UIEvent
-				if (payload.events && Array.isArray(payload.events)) {
-					processUIEvents(payload.events as UIEvent[]);
+	private handleEvent(event: ClaudeCodeSessionEvent): void {
+		switch (event.type) {
+			case "session_init":
+				if (event.sessionId) {
+					this.sessionId = event.sessionId;
+					codingSessionStore.setSdkSessionId(event.sessionId);
 				}
 				break;
-			}
 
-			case 'interaction_request': {
-				// 权限请求
-				if (payload.request) {
+			case "ui_events":
+				// 批量 UIEvent 直接透传给 eventMapper
+				if (event.events && Array.isArray(event.events)) {
+					processUIEvents(event.events);
+				}
+				break;
+
+			case "done":
+				if (event.usage) {
+					codingSessionStore.updateUsage({
+						inputTokens: event.usage.inputTokens,
+						outputTokens: event.usage.outputTokens,
+						costUsd: event.usage.costUsd ?? 0,
+					});
+				}
+				codingSessionStore.finalizeThinking();
+				codingSessionStore.setStatus("completed");
+				codingSessionStore.finalizeStreamingMessage();
+				this.cleanup();
+				break;
+
+			case "error":
+				if (event.content) {
+					codingSessionStore.appendText(`\n\n**错误**: ${event.content}`);
+				}
+				codingSessionStore.setStatus("error");
+				codingSessionStore.finalizeStreamingMessage();
+				this.cleanup();
+				break;
+
+			case "stderr":
+				if (event.content) {
+					// 内部日志仅写入 console，不暴露给用户
+					console.debug('[Claude CLI stderr]', event.content);
+					// 仅真正的错误才展示在聊天流中
+					if (event.isError) {
+						codingSessionStore.addSystemMessage(event.content);
+					}
+				}
+				break;
+
+			case "permission_request":
+				if (event.requestId && event.toolName) {
 					codingSessionStore.setPermission({
-						requestId: payload.request.requestId,
-						toolName: payload.request.toolName,
-						toolInput: payload.request.toolInput,
-						description: payload.request.description,
-						expiresAt: payload.request.expiresAt,
+						requestId: event.requestId,
+						toolName: event.toolName,
+						toolInput: event.toolInput ?? {},
+						description: event.description,
+						expiresAt: Date.now() + (event.timeoutMs ?? 60000),
 					});
 				}
 				break;
-			}
-
-			case 'done': {
-				// 尝试从 result 中提取 token 用量
-				this.extractUsageFromResult(payload.result);
-				codingSessionStore.setStatus('completed');
-				codingSessionStore.finalizeStreamingMessage();
-				this.client.stopListening();
-				break;
-			}
-
-			case 'error': {
-				const errorMsg = payload.error || '未知错误';
-				codingSessionStore.appendText(`\n\n**错误**: ${errorMsg}`);
-				codingSessionStore.setStatus('error');
-				codingSessionStore.finalizeStreamingMessage();
-				this.client.stopListening();
-				break;
-			}
-
-			case 'sdk_message':
-			case 'stderr':
-				// 可选：日志输出
-				break;
-		}
-	}
-
-	/**
-	 * 从 SDK result 载荷中提取 token 用量数据
-	 */
-	private extractUsageFromResult(result: unknown): void {
-		if (!result || typeof result !== 'object') return;
-		const r = result as Record<string, unknown>;
-		const usage = r.usage as Record<string, unknown> | undefined;
-		if (!usage) return;
-
-		const toNum = (v: unknown): number => {
-			const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
-			return Number.isFinite(n) ? n : 0;
-		};
-
-		const inputTokens =
-			toNum(usage.prompt_tokens) ||
-			toNum(usage.input_tokens) ||
-			toNum(usage.inputTokens) ||
-			0;
-		const outputTokens =
-			toNum(usage.completion_tokens) ||
-			toNum(usage.output_tokens) ||
-			toNum(usage.outputTokens) ||
-			0;
-		const costUsd =
-			toNum(r.total_cost_usd) ||
-			toNum(r.totalCostUsd) ||
-			0;
-
-		if (inputTokens > 0 || outputTokens > 0) {
-			codingSessionStore.updateUsage({
-				inputTokens,
-				outputTokens,
-				costUsd,
-			});
 		}
 	}
 
 	async abort(): Promise<void> {
-		await this.client.abort();
-		codingSessionStore.setStatus('idle');
+		codingSessionStore.setPermission(null);
+		if (this.runId) {
+			await invoke("claude_code_session_abort", { runId: this.runId });
+		}
+		codingSessionStore.setStatus("idle");
 		codingSessionStore.finalizeStreamingMessage();
-		this.client.stopListening();
+		this.cleanup();
 	}
 
 	async resume(sessionId: string): Promise<void> {
+		this.sessionId = sessionId;
 		codingSessionStore.setSdkSessionId(sessionId);
 	}
 
-	async control(action: RuntimeControlAction): Promise<{ success: boolean; error?: string }> {
-		switch (action.type) {
-			case 'set_model':
-				return this.client.control({
-					action: 'set_model',
-					model: action.model,
-				});
-			case 'set_approval_mode':
-				return this.client.control({
-					action: 'set_permission_mode',
-					mode: action.approvalMode,
-				});
-			case 'interrupt':
-				return this.client.control({ action: 'interrupt' });
-			case 'resume':
-				if (action.sessionId) {
-					codingSessionStore.setSdkSessionId(action.sessionId);
-				}
+	async control(
+		action: RuntimeControlAction,
+	): Promise<{ success: boolean; error?: string }> {
+		if (!this.runId) {
+			if (action.type === "resume" && action.sessionId) {
+				this.sessionId = action.sessionId;
+				codingSessionStore.setSdkSessionId(action.sessionId);
 				return { success: true };
-			case 'rewind':
-				return { success: false, error: 'Claude Code 当前未暴露 rewind 运行时控制。' };
+			}
+			return {
+				success: false,
+				error: "当前没有运行中的 Claude Code 会话。",
+			};
+		}
+
+		try {
+			return await invoke<{ success: boolean; error?: string }>(
+				"claude_code_runtime_control",
+				{ runId: this.runId, action },
+			);
+		} catch (err) {
+			return {
+				success: false,
+				error: err instanceof Error ? err.message : String(err),
+			};
 		}
 	}
 
-	async resolvePermission(requestId: string, allow: boolean, message?: string): Promise<void> {
-		await this.client.resolveInteraction(requestId, {
-			behavior: allow ? 'allow' : 'deny',
-			message,
-		});
+	async resolvePermission(
+		requestId: string,
+		allow: boolean,
+		_message?: string,
+	): Promise<void> {
+		if (this.runId) {
+			await invoke("claude_code_permission_respond", {
+				runId: this.runId,
+				requestId,
+				allow,
+			});
+		}
 		codingSessionStore.resolvePermission();
 	}
 
 	dispose(): void {
-		this.client.dispose();
+		this.cleanup();
 	}
 
 	getSessionId(): string | null {
-		return codingSessionStore.getState().sdkSessionId;
+		return this.sessionId;
+	}
+
+	private cleanup(): void {
+		if (this.unlisten) {
+			this.unlisten();
+			this.unlisten = null;
+		}
+		this.runId = null;
 	}
 }

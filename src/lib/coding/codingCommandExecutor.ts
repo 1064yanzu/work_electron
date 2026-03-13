@@ -88,11 +88,11 @@ export async function executeCodingCommand(
 				context.onOpenSettings?.("aiCoding");
 				return { success: true };
 			case "open_memory_panel":
-				return openRightPanelTab("context");
+				return openRightPanelTab("git");
 			case "open_activity_panel":
-				return openRightPanelTab("activity");
+				return openRightPanelTab("terminal-log");
 			case "open_context_panel":
-				return openRightPanelTab("context");
+				return openRightPanelTab("git");
 			case "pick_context_files":
 				return executePickContextFiles(context);
 			// ── 新增命令 ──
@@ -124,7 +124,7 @@ export async function executeCodingCommand(
 }
 
 function openRightPanelTab(
-	tab: "changes" | "activity" | "context" | "file",
+	tab: "git" | "session-changes" | "terminal-log",
 ): CommandResult {
 	codingWorkspaceStore.setRightPanelTab(tab);
 	return { success: true };
@@ -137,7 +137,7 @@ async function executePickContextFiles(
 		return { success: false, error: "请先打开一个项目。" };
 	}
 	const result = await pickAndAttachContextFiles(context.projectPath);
-	codingWorkspaceStore.setRightPanelTab("context");
+	codingWorkspaceStore.setRightPanelTab("git");
 	if (result.added === 0 && result.skipped === 0) {
 		return { success: false, error: "未选择任何文件。" };
 	}

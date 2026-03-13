@@ -1,4 +1,4 @@
-import { Bot, RefreshCcw, Save } from "lucide-react";
+import { Bot, Download, RefreshCcw, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
 	BackendCapabilityMatrix,
@@ -15,10 +15,13 @@ import {
 import {
 	detectCliBinary,
 	getCodingBackendCapabilities,
+	getClaudeCodeAuthStatus,
 	invalidateCliCache,
+	readUserCliConfig,
 } from "../../../lib/coding/runtimeApi";
 import { Select } from "../../ui/Select";
 import { toast } from "../../ui/Toast";
+import { ClaudeAuthStatusCard } from "../components/ClaudeAuthStatusCard";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsPageContainer,
@@ -62,6 +65,15 @@ export function AICodingSettings() {
 		"claude-code": null,
 		codex: null,
 	});
+	const [claudeAuthStatus, setClaudeAuthStatus] = useState<{
+		isLoggedIn: boolean;
+		authMethod: "oauth" | "api_key" | "env_key" | "none";
+		email?: string;
+		model?: string;
+		mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+	} | null>(null);
+	const [authLoading, setAuthLoading] = useState(false);
+	const [syncingCli, setSyncingCli] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -95,6 +107,21 @@ export function AICodingSettings() {
 		void load();
 	}, [load]);
 
+	// 首次加载后，如果 Codex 默认模型为空，自动从本地 CLI 配置同步
+	useEffect(() => {
+		if (!loading && !settings.codexDefaultModel) {
+			void handleSyncFromCli(true);
+		}
+	}, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	useEffect(() => {
+		setAuthLoading(true);
+		getClaudeCodeAuthStatus()
+			.then((status) => setClaudeAuthStatus(status))
+			.catch(() => setClaudeAuthStatus(null))
+			.finally(() => setAuthLoading(false));
+	}, []);
+
 	const codexModelCatalogText = useMemo(
 		() => settings.codexModelCatalog.join("\n"),
 		[settings.codexModelCatalog],
@@ -115,6 +142,54 @@ export function AICodingSettings() {
 		}
 	}, [load, settings]);
 
+	const handleSyncFromCli = useCallback(async (silent = false) => {
+		setSyncingCli(true);
+		try {
+			const cliConfig = await readUserCliConfig();
+			let synced = 0;
+			setSettings((current) => {
+				const next = { ...current };
+				if (cliConfig.claude?.model && !current.claudeDefaultModel) {
+					next.claudeDefaultModel = cliConfig.claude.model;
+					synced++;
+				}
+				if (cliConfig.codex?.model && !current.codexDefaultModel) {
+					next.codexDefaultModel = cliConfig.codex.model;
+					synced++;
+				}
+				return next;
+			});
+			const hasAnything = cliConfig.claude ?? cliConfig.codex;
+			if (!silent) {
+				if (!hasAnything) {
+					toast.error("未找到本地 CLI 配置文件（~/.claude/settings.json 或 ~/.codex/config.toml）");
+				} else if (synced === 0) {
+					toast.success("已检测到 CLI 配置，当前设置已是最新，无需同步");
+				} else {
+					toast.success(`已从本地 CLI 配置同步 ${synced} 项设置，请点击保存生效`);
+				}
+			} else if (synced > 0) {
+				// 静默模式下自动保存同步到的配置
+				const updatesToSave: Partial<AICodingSettings> = {};
+				if (cliConfig.codex?.model) {
+					updatesToSave.codexDefaultModel = cliConfig.codex.model;
+				}
+				if (cliConfig.claude?.model) {
+					updatesToSave.claudeDefaultModel = cliConfig.claude.model;
+				}
+				if (Object.keys(updatesToSave).length > 0) {
+					await setAICodingSettings(updatesToSave);
+				}
+			}
+		} catch (error) {
+			if (!silent) {
+				toast.error(error instanceof Error ? error.message : String(error));
+			}
+		} finally {
+			setSyncingCli(false);
+		}
+	}, []);
+
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 			<SettingsPanelHeader
@@ -123,6 +198,16 @@ export function AICodingSettings() {
 				description="配置工作台默认后端、模型、审批策略与 workspace memory。"
 				actions={
 					<>
+						<button
+							type="button"
+							onClick={() => void handleSyncFromCli()}
+							disabled={syncingCli || loading}
+							title="读取 ~/.claude/settings.json 与 ~/.codex/config.toml，同步已检测到的模型等配置"
+							className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+						>
+							<Download className={`h-4 w-4 ${syncingCli ? "animate-pulse" : ""}`} />
+							从 CLI 同步
+						</button>
 						<button
 							type="button"
 							onClick={() => void load()}
@@ -224,6 +309,10 @@ export function AICodingSettings() {
 					</p>
 				</div>
 			</BackendSection>
+
+			{settings.defaultBackend === "claude-code" && (
+				<ClaudeAuthStatusCard status={claudeAuthStatus} loading={authLoading} />
+			)}
 
 			<SettingsSectionCard className="p-5">
 				<div className="flex items-start justify-between gap-4">

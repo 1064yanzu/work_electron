@@ -6,28 +6,34 @@ import { dialog } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
 import type { CodingApprovalMode } from "../../../shared/coding-workspace";
 import {
-  getGitBranches,
-  getGitHistory,
-  getGitStatus,
-  isGitRepo,
-  readFileContent,
-  readFileTree,
+	getGitBranches,
+	getGitHistory,
+	getGitStatus,
+	isGitRepo,
+	readFileContent,
+	readFileTree,
+	gitAdd,
+	gitUnstage,
+	gitCommit,
+	gitPush,
+	gitPull,
+	gitCheckout,
+	gitCreateBranch,
+	gitStash,
+	gitDiscard,
 } from "../../services/codingService";
 import {
-  revertFileContent,
-  writeFileContent,
+	revertFileContent,
+	writeFileContent,
 } from "../../services/codingFileWriteService";
+import { startWatching, stopWatching } from "../../services/fileWatcherService";
 import {
-  startWatching,
-  stopWatching,
-} from "../../services/fileWatcherService";
-import {
-  getAllBackendCapabilityMatrices,
-  getBackendCapabilityMatrix,
-  getCodingWorkspaceProfile,
-  readCodingWorkspaceMemory,
-  updateCodingWorkspaceProfile,
-  writeCodingWorkspaceMemory,
+	getAllBackendCapabilityMatrices,
+	getBackendCapabilityMatrix,
+	getCodingWorkspaceProfile,
+	readCodingWorkspaceMemory,
+	updateCodingWorkspaceProfile,
+	writeCodingWorkspaceMemory,
 } from "../../services/codingWorkspaceService";
 
 export function createCodingHandlers() {
@@ -200,6 +206,83 @@ export function createCodingHandlers() {
 			input: { path: string },
 		) => {
 			return stopWatching(input.path);
+		},
+
+		// ==================
+		// Git 写操作
+		// ==================
+
+		coding_git_add: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; files: string[] },
+		) => {
+			return gitAdd(input.dirPath, input.files);
+		},
+
+		coding_git_unstage: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; files: string[] },
+		) => {
+			return gitUnstage(input.dirPath, input.files);
+		},
+
+		coding_git_commit: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; message: string; amend?: boolean },
+		) => {
+			return gitCommit(input.dirPath, input.message, {
+				amend: input.amend,
+			});
+		},
+
+		coding_git_push: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; remote?: string; branch?: string },
+		) => {
+			return gitPush(input.dirPath, input.remote, input.branch);
+		},
+
+		coding_git_pull: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; remote?: string; branch?: string },
+		) => {
+			return gitPull(input.dirPath, input.remote, input.branch);
+		},
+
+		coding_git_checkout: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; branch: string },
+		) => {
+			return gitCheckout(input.dirPath, input.branch);
+		},
+
+		coding_git_create_branch: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; branchName: string; startPoint?: string },
+		) => {
+			return gitCreateBranch(
+				input.dirPath,
+				input.branchName,
+				input.startPoint,
+			);
+		},
+
+		coding_git_stash: async (
+			_event: IpcMainInvokeEvent,
+			input: {
+				dirPath: string;
+				action: "push" | "pop" | "list";
+				message?: string;
+			},
+		) => {
+			return gitStash(input.dirPath, input.action, input.message);
+		},
+
+		coding_git_discard: async (
+			_event: IpcMainInvokeEvent,
+			input: { dirPath: string; files: string[] },
+		) => {
+			return gitDiscard(input.dirPath, input.files);
 		},
 	};
 }

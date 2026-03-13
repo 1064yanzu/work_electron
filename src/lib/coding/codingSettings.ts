@@ -52,7 +52,7 @@ export interface AICodingSettings {
 /** 模型 fallback 列表（当 capability.modelCatalog 为空时使用） */
 export const FALLBACK_MODEL_CATALOG: Record<CodingBackendId, string[]> = {
 	"claude-code": ["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5"],
-	codex: ["gpt-5-codex", "gpt-5.4", "o3", "o4-mini"],
+	codex: [],
 };
 
 export const DEFAULT_AI_CODING_SETTINGS: AICodingSettings = {
@@ -62,9 +62,9 @@ export const DEFAULT_AI_CODING_SETTINGS: AICodingSettings = {
 	claudeDefaultApprovalMode: "acceptEdits",
 	claudeCliPath: "",
 	claudeProxyMode: "transparent",
-	codexDefaultModel: "gpt-5-codex",
+	codexDefaultModel: "",
 	codexDefaultApprovalMode: "on-request",
-	codexModelCatalog: ["gpt-5-codex", "gpt-5.4", "o3", "o4-mini"],
+	codexModelCatalog: [],
 	codexCliPath: "",
 	editorFontSize: 13,
 	editorShowMinimap: true,
@@ -156,7 +156,7 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 				? claudeProxyMode
 				: DEFAULT_AI_CODING_SETTINGS.claudeProxyMode,
 		codexDefaultModel:
-			typeof codexDefaultModel === "string" && codexDefaultModel.trim()
+			typeof codexDefaultModel === "string"
 				? codexDefaultModel.trim()
 				: DEFAULT_AI_CODING_SETTINGS.codexDefaultModel,
 		codexDefaultApprovalMode:
@@ -220,7 +220,7 @@ export async function setAICodingSettings(
 	if (updates.claudeProxyMode) {
 		tasks.push(setConfig(CONFIG_KEYS.claudeProxyMode, updates.claudeProxyMode));
 	}
-	if (updates.codexDefaultModel) {
+	if (updates.codexDefaultModel != null) {
 		tasks.push(setConfig(CONFIG_KEYS.codexDefaultModel, updates.codexDefaultModel));
 	}
 	if (updates.codexDefaultApprovalMode) {

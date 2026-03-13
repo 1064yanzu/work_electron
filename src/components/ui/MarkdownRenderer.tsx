@@ -417,7 +417,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
 	return (
 		<div
-			className={`prose prose-zinc dark:prose-invert max-w-none ${className}`}
+			className={`max-w-none ${className}`}
 		>
 			<ReactMarkdown
 				remarkPlugins={remarkPlugins}

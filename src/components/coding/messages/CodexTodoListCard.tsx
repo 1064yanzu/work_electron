@@ -27,10 +27,10 @@ export function CodexTodoListCard({ toolCall }: CodexTodoListCardProps) {
 		: `${completedCount}/${totalCount} 已完成`;
 
 	return (
-		<div className="rounded-lg border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
+		<div className="group -mx-2 px-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
 			<button
 				onClick={() => setExpanded(!expanded)}
-				className="w-full flex items-center gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800/60 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+				className="w-full flex items-center gap-2 py-1.5 text-left"
 			>
 				<ListChecks className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
 				<span className="text-xs text-zinc-500">待办列表</span>
@@ -39,12 +39,12 @@ export function CodexTodoListCard({ toolCall }: CodexTodoListCardProps) {
 				</span>
 				<StatusDot status={toolCall.status} />
 				<ChevronDown
-					className={`w-3 h-3 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+					className={`w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-all ${expanded ? 'rotate-180 opacity-100' : ''}`}
 				/>
 			</button>
 
 			{expanded && items.length > 0 && (
-				<div className="border-t border-zinc-200 dark:border-zinc-700/50 px-3 py-2 space-y-1">
+				<div className="pb-2 pt-1 space-y-1">
 					{items.map((item, i) => (
 						<div
 							key={i}
