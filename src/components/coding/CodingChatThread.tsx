@@ -99,92 +99,121 @@ function MessageBubble({
 		);
 	}
 
+	// 用户消息 — Codex 风格：轻量区分，无气泡
+	if (isUser) {
+		return (
+			<div className="group relative">
+				<div className="flex items-start gap-3">
+					{/* 左侧小竖条标识 */}
+					<div className="shrink-0 w-0.5 mt-1 self-stretch rounded-full bg-zinc-300 dark:bg-zinc-600" />
+					{/* 消息内容 */}
+					<div className="flex-1 min-w-0 py-1">
+						<p className="text-sm text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed">
+							{message.content}
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// 统计文件相关工具调用
+	const fileReadCount = message.toolCalls.filter(
+		(tc) => tc.name === 'Read' || tc.name === 'Glob' || tc.name === 'Grep' || tc.name === 'list_dir' || tc.name === 'read_file'
+	).length;
+	const fileWriteTools = message.toolCalls.filter(
+		(tc) => tc.name === 'Edit' || tc.name === 'Write' || tc.name === 'FileChange' || tc.name === 'apply_patch'
+	);
+
 	return (
-		<div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-			{/* 头像 */}
-			<div
-				className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-					isUser
-						? 'bg-zinc-200 dark:bg-zinc-700'
-						: 'bg-[#D96C46]/10'
-				}`}
-			>
-				{isUser ? (
-					<User className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-				) : (
-					<Bot className="w-3.5 h-3.5 text-[#D96C46]" />
-				)}
-			</div>
+		<div className="space-y-2">
+			{/* 思考过程 */}
+			{message.thinkingBlocks.length > 0 && (
+				<ThinkingPanel blocks={message.thinkingBlocks} />
+			)}
 
-			{/* 消息内容 */}
-			<div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>
-				{/* 思考过程 */}
-				{!isUser && message.thinkingBlocks.length > 0 && (
-					<ThinkingPanel blocks={message.thinkingBlocks} />
-				)}
+			{/* 文件浏览行内提示（聚合显示） */}
+			{fileReadCount > 0 && (
+				<div className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 py-1">
+					<span className="inline-block w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+					已浏览 {fileReadCount} 个文件
+				</div>
+			)}
 
-				{/* 工具调用 */}
-				{!isUser && message.toolCalls.length > 0 && (
-					<div className="space-y-2 mb-3">
-						{message.toolCalls.map((tc) => (
-							<ToolCallCard
-								key={tc.id}
-								toolCall={tc}
-								onAskUserAnswer={onAskUserAnswer}
-							/>
-						))}
+			{/* 工具调用 */}
+			{message.toolCalls.length > 0 && (
+				<div className="space-y-2">
+					{message.toolCalls.map((tc) => (
+						<ToolCallCard
+							key={tc.id}
+							toolCall={tc}
+							onAskUserAnswer={onAskUserAnswer}
+						/>
+					))}
+				</div>
+			)}
+
+			{/* 文件变更行内汇总 */}
+			{fileWriteTools.length > 0 && (
+				<div className="space-y-0.5 py-1">
+					{fileWriteTools.map((tc) => {
+						const filePath = (tc.input?.file_path || tc.input?.path || '') as string;
+						const fileName = filePath.split('/').pop() || '文件';
+						return (
+							<div key={tc.id} className="flex items-center gap-2 text-xs">
+								<span className={`inline-block w-1.5 h-1.5 rounded-full ${
+									tc.status === 'completed' ? 'bg-green-500' : tc.status === 'error' ? 'bg-red-500' : 'bg-amber-400'
+								}`} />
+								<span className="text-zinc-500 dark:text-zinc-400">
+									{tc.name === 'Write' ? '已创建' : '已编辑'}
+								</span>
+								<span className="font-mono text-zinc-700 dark:text-zinc-300 truncate max-w-[300px]">
+									{fileName}
+								</span>
+							</div>
+						);
+					})}
+				</div>
+			)}
+
+			{/* 子代理活动 */}
+			{message.subagents.length > 0 && (
+				<div className="space-y-2">
+					{message.subagents.map((sa) => (
+						<SubagentCard key={sa.id} subagent={sa} />
+					))}
+				</div>
+			)}
+
+			{/* 团队协作信息 */}
+			{message.team && <TeamPanel team={message.team} />}
+
+			{/* 任务通知 */}
+			{message.notifications.length > 0 && (
+				<div className="space-y-1">
+					{message.notifications.map((n) => (
+						<NotificationCard key={n.id} notification={n} />
+					))}
+				</div>
+			)}
+
+			{/* 文本内容 — 扁平化无边框 */}
+			{message.content && (
+				<div className="prose prose-sm dark:prose-invert prose-zinc max-w-none">
+					<MarkdownRenderer content={message.content} />
+				</div>
+			)}
+
+			{/* 流式输出指示 */}
+			{message.isStreaming && !message.content && message.toolCalls.length === 0 && (
+				<div className="flex items-center gap-1 mt-1.5">
+					<div className="flex gap-0.5">
+						<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse" />
+						<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse [animation-delay:100ms]" />
+						<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse [animation-delay:200ms]" />
 					</div>
-				)}
-
-				{/* 子代理活动 */}
-				{!isUser && message.subagents.length > 0 && (
-					<div className="space-y-2 mb-3">
-						{message.subagents.map((sa) => (
-							<SubagentCard key={sa.id} subagent={sa} />
-						))}
-					</div>
-				)}
-
-				{/* 团队协作信息 */}
-				{!isUser && message.team && <TeamPanel team={message.team} />}
-
-				{/* 任务通知 */}
-				{!isUser && message.notifications.length > 0 && (
-					<div className="space-y-1 mb-2">
-						{message.notifications.map((n) => (
-							<NotificationCard key={n.id} notification={n} />
-						))}
-					</div>
-				)}
-
-				{/* 文本内容 */}
-				{message.content && (
-					<div
-						className={`inline-block max-w-full text-left ${
-							isUser
-								? 'bg-[#D96C46] text-white rounded-2xl rounded-tr-md px-4 py-2.5'
-								: 'prose prose-sm dark:prose-invert prose-zinc max-w-none'
-						}`}
-					>
-						{isUser ? (
-							<p className="text-sm whitespace-pre-wrap">{message.content}</p>
-						) : (
-							<MarkdownRenderer content={message.content} />
-						)}
-					</div>
-				)}
-
-				{/* 流式输出指示 */}
-				{message.isStreaming && !message.content && message.toolCalls.length === 0 && (
-					<div className="flex items-center gap-1 mt-1.5">
-						<div className="flex gap-0.5">
-							<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse" />
-							<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse [animation-delay:100ms]" />
-							<div className="w-1.5 h-1.5 rounded-full bg-[#D96C46] animate-pulse [animation-delay:200ms]" />
-						</div>
-					</div>
-				)}
-			</div>
+				</div>
+			)}
 		</div>
 	);
 }

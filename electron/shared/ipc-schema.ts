@@ -44,6 +44,12 @@ import type {
 	WorkspaceMemoryWriteInput,
 	WorkspaceProfileUpdateInput,
 } from "./coding-workspace";
+import type {
+	CliHistoryListParams,
+	CliHistoryReadParams,
+	CliHistoryReadResult,
+	ExternalThreadMeta,
+} from "./external-history-types";
 import type { RemoteGatewayScope } from "./remote-control-schema";
 
 type RemoteChannelId =
@@ -61,6 +67,17 @@ type RemoteSessionState =
 	| "aborted"
 	| "error";
 type CloudNodeRoutingMode = "cloud_only" | "prefer_desktop" | "auto";
+
+/** CLI 二进制检测结果（跨平台） */
+type CliDetectionSource = "user_configured" | "system_detected" | "sdk_bundled" | "not_found";
+export interface CliDetectionResult {
+	backend: "claude-code" | "codex";
+	path: string | null;
+	source: CliDetectionSource;
+	version: string | null;
+	detectedAt: number;
+	error?: string;
+}
 
 export type IPCSchema = {
 	// ==================
@@ -1588,8 +1605,34 @@ export type IPCSchema = {
 				behind: number;
 				files: Array<{
 					path: string;
-					status: "modified" | "added" | "deleted" | "renamed" | "untracked";
+					absolutePath?: string;
+					status:
+						| "modified"
+						| "added"
+						| "deleted"
+						| "renamed"
+						| "untracked"
+						| "copied"
+						| "conflicted";
 					staged: boolean;
+					indexStatus?:
+						| "modified"
+						| "added"
+						| "deleted"
+						| "renamed"
+						| "untracked"
+						| "copied"
+						| "conflicted";
+					workingTreeStatus?:
+						| "modified"
+						| "added"
+						| "deleted"
+						| "renamed"
+						| "untracked"
+						| "copied"
+						| "conflicted";
+					originalPath?: string;
+					originalAbsolutePath?: string;
 				}>;
 			} | null;
 		};
@@ -1604,6 +1647,20 @@ export type IPCSchema = {
 				current: boolean;
 				remote?: string;
 				lastCommit?: string;
+			}>;
+		};
+	};
+	/** 获取 Git 最近提交历史 */
+	coding_git_history: {
+		input: { path: string; limit?: number };
+		output: {
+			isGitRepo: boolean;
+			commits: Array<{
+				hash: string;
+				shortHash: string;
+				subject: string;
+				authorName: string;
+				timestamp: number;
 			}>;
 		};
 	};
@@ -1668,8 +1725,10 @@ export type IPCSchema = {
 		input: {
 			prompt: string;
 			cwd: string;
-			mode?: 'suggest' | 'auto-edit' | 'full-auto';
 			model?: string;
+			approvalMode?: 'untrusted' | 'on-failure' | 'on-request' | 'never';
+			resumeSessionId?: string;
+			workspaceContext?: string;
 		};
 		output: string; // runId
 	};
@@ -1685,6 +1744,55 @@ export type IPCSchema = {
 	codex_runtime_control: {
 		input: { runId: string; action: RuntimeControlAction };
 		output: { success: boolean; error?: string };
+	};
+
+	// ==================
+	// CLI Binary Detection（CLI 二进制检测）
+	// ==================
+	/** 检测指定后端的 CLI 二进制路径和版本 */
+	cli_detect_binary: {
+		input: { backend: "claude-code" | "codex"; userConfiguredPath?: string };
+		output: CliDetectionResult;
+	};
+	/** 清除 CLI 检测缓存（保存设置后调用） */
+	cli_invalidate_cache: {
+		input: { backend?: "claude-code" | "codex" };
+		output: { success: boolean };
+	};
+
+	// ==================
+	// CLI History Sync（CLI 历史同步）
+	// ==================
+	/** 列出 Codex CLI 历史线程 */
+	cli_history_codex_list: {
+		input: CliHistoryListParams;
+		output: {
+			available: boolean;
+			threads: ExternalThreadMeta[];
+		};
+	};
+	/** 读取 Codex CLI 完整会话 */
+	cli_history_codex_read: {
+		input: CliHistoryReadParams;
+		output: CliHistoryReadResult | null;
+	};
+	/** 列出 Claude Code CLI 历史会话 */
+	cli_history_claude_code_list: {
+		input: CliHistoryListParams;
+		output: {
+			available: boolean;
+			threads: ExternalThreadMeta[];
+		};
+	};
+	/** 读取 Claude Code CLI 完整会话 */
+	cli_history_claude_code_read: {
+		input: CliHistoryReadParams;
+		output: CliHistoryReadResult | null;
+	};
+	/** 检查 CLI 历史可用性 */
+	cli_history_check_available: {
+		input: Record<string, never>;
+		output: { codex: boolean; claudeCode: boolean };
 	};
 };
 

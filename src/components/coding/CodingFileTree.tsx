@@ -60,7 +60,7 @@ export const CodingFileTree = forwardRef(function CodingFileTree(
 
 	// 构建快速查找映射
 	const gitStatusMap = gitFiles
-		? new Map(gitFiles.map((f) => [f.path, f]))
+		? new Map(gitFiles.map((f) => [f.absolutePath ?? f.path, f]))
 		: new Map<string, GitFileStatus>();
 
 	const pendingDiffPaths = new Set(
@@ -253,6 +253,10 @@ function getGitStatusIndicator(status?: GitFileStatus["status"]): StatusIndicato
 			return { letter: "D", color: "text-red-500", textColor: "text-red-500/70", title: "已删除" };
 		case "renamed":
 			return { letter: "R", color: "text-blue-500", textColor: "text-blue-600 dark:text-blue-400", title: "已重命名" };
+		case "copied":
+			return { letter: "C", color: "text-cyan-500", textColor: "text-cyan-600 dark:text-cyan-400", title: "已复制" };
+		case "conflicted":
+			return { letter: "!", color: "text-orange-500", textColor: "text-orange-600 dark:text-orange-400", title: "存在冲突" };
 		case "untracked":
 			return { letter: "U", color: "text-zinc-400", textColor: "text-zinc-500", title: "未跟踪" };
 		default:
@@ -265,6 +269,9 @@ function getFileIconColor(filename: string, gitStatus?: GitFileStatus["status"])
 	if (gitStatus === "added") return "text-emerald-500";
 	if (gitStatus === "modified") return "text-amber-500";
 	if (gitStatus === "deleted") return "text-red-500/50";
+	if (gitStatus === "renamed") return "text-sky-500";
+	if (gitStatus === "copied") return "text-cyan-500";
+	if (gitStatus === "conflicted") return "text-orange-500";
 
 	// 按文件类型给予语义化颜色
 	const ext = filename.split(".").pop()?.toLowerCase() || "";

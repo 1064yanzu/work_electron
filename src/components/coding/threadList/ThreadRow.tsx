@@ -1,5 +1,6 @@
 import { MoreHorizontal } from 'lucide-react';
 import type { CodingThread } from '../../../lib/stores/codingThreadTypes';
+import { ExternalThreadBadge } from './ExternalThreadBadge';
 import { formatRelativeTime, hasDiffStats } from './threadListUtils';
 
 interface ThreadRowProps {
@@ -28,6 +29,7 @@ export function ThreadRow({
 	const diffStats = thread.diffStats ?? { additions: 0, deletions: 0 };
 	const showDiff = hasDiffStats(diffStats);
 	const isRunning = thread.status === 'running';
+	const sourceBadge = thread.source && thread.source !== 'local' ? thread.source : null;
 
 	return (
 		<div
@@ -63,8 +65,11 @@ export function ThreadRow({
 						className="w-full border-b border-[#D96C46] bg-transparent text-[13px] font-medium outline-none"
 					/>
 				) : (
-					<div className="truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
-						{thread.title}
+					<div className="flex items-center gap-1.5">
+						{sourceBadge && <ExternalThreadBadge source={sourceBadge} />}
+						<span className="truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+							{thread.title}
+						</span>
 					</div>
 				)}
 			</div>

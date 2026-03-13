@@ -25,8 +25,34 @@ export interface GitStatusInfo {
   behind: number;
   files: Array<{
     path: string;
-    status: "modified" | "added" | "deleted" | "renamed" | "untracked";
+    absolutePath?: string;
+    status:
+      | "modified"
+      | "added"
+      | "deleted"
+      | "renamed"
+      | "untracked"
+      | "copied"
+      | "conflicted";
     staged: boolean;
+    indexStatus?:
+      | "modified"
+      | "added"
+      | "deleted"
+      | "renamed"
+      | "untracked"
+      | "copied"
+      | "conflicted";
+    workingTreeStatus?:
+      | "modified"
+      | "added"
+      | "deleted"
+      | "renamed"
+      | "untracked"
+      | "copied"
+      | "conflicted";
+    originalPath?: string;
+    originalAbsolutePath?: string;
   }>;
 }
 
@@ -36,6 +62,14 @@ export interface GitBranchInfo {
   current: boolean;
   remote?: string;
   lastCommit?: string;
+}
+
+export interface GitCommitInfo {
+  hash: string;
+  shortHash: string;
+  subject: string;
+  authorName: string;
+  timestamp: number;
 }
 
 // 默认忽略的目录/文件模式
@@ -189,10 +223,9 @@ export async function isGitRepo(dirPath: string): Promise<boolean> {
 
 /** Get git status for a directory */
 export async function getGitStatus(dirPath: string): Promise<GitStatusInfo> {
-  const branchOutput = await gitExec(dirPath, [
-    "branch",
-    "--show-current",
-  ]);
+  const branchOutput = await gitExec(dirPath, ["branch", "--show-current"]);
+  const detachedHead =
+    !branchOutput && (await gitExec(dirPath, ["rev-parse", "--short", "HEAD"]));
 
   // Get ahead/behind counts
   let ahead = 0;
@@ -223,37 +256,48 @@ export async function getGitStatus(dirPath: string): Promise<GitStatusInfo> {
     for (const line of statusOutput.split("\n")) {
       if (!line) continue;
       const xy = line.substring(0, 2);
-      const filePath = line.substring(3);
+      const rawPath = line.substring(3);
+      const parsedPath =
+        rawPath.includes(" -> ") ? rawPath.split(" -> ") : [rawPath];
+      const originalPath = parsedPath.length > 1 ? parsedPath[0] : undefined;
+      const filePath = parsedPath.length > 1 ? parsedPath[1] : parsedPath[0];
 
-      const indexStatus = xy[0];
-      const wtStatus = xy[1];
+      const indexCode = xy[0];
+      const worktreeCode = xy[1];
+      const isConflict = isConflictStatus(xy);
+      const indexStatus = isConflict
+        ? ("conflicted" as const)
+        : mapGitStatusCode(indexCode);
+      const workingTreeStatus =
+        xy === "??"
+          ? "untracked"
+          : isConflict
+            ? ("conflicted" as const)
+            : mapGitStatusCode(worktreeCode);
+      const primaryStatus =
+        indexStatus ?? workingTreeStatus ?? ("modified" as const);
+      const staged =
+        indexStatus !== undefined &&
+        indexStatus !== "untracked" &&
+        indexStatus !== "conflicted";
 
-      let status: GitStatusInfo["files"][0]["status"] = "modified";
-      let staged = false;
-
-      // Determine status from index (X) and worktree (Y) indicators
-      if (xy === "??") {
-        status = "untracked";
-      } else if (indexStatus === "A" || wtStatus === "A") {
-        status = "added";
-        staged = indexStatus === "A";
-      } else if (indexStatus === "D" || wtStatus === "D") {
-        status = "deleted";
-        staged = indexStatus === "D";
-      } else if (indexStatus === "R" || wtStatus === "R") {
-        status = "renamed";
-        staged = indexStatus === "R";
-      } else if (indexStatus === "M" || wtStatus === "M") {
-        status = "modified";
-        staged = indexStatus === "M";
-      }
-
-      files.push({ path: filePath, status, staged });
+      files.push({
+        path: filePath,
+        absolutePath: path.resolve(dirPath, filePath),
+        status: primaryStatus,
+        staged,
+        indexStatus,
+        workingTreeStatus,
+        originalPath,
+        originalAbsolutePath: originalPath
+          ? path.resolve(dirPath, originalPath)
+          : undefined,
+      });
     }
   }
 
   return {
-    branch: branchOutput || "HEAD",
+    branch: branchOutput || detachedHead || "HEAD",
     ahead,
     behind,
     files,
@@ -293,6 +337,37 @@ export async function getGitBranches(dirPath: string): Promise<GitBranchInfo[]> 
   return branches;
 }
 
+/** Get git commit history */
+export async function getGitHistory(
+  dirPath: string,
+  limit = 12,
+): Promise<GitCommitInfo[]> {
+  const output = await gitExec(dirPath, [
+    "log",
+    `-n`,
+    String(limit),
+    "--date=unix",
+    "--pretty=format:%H%x09%h%x09%an%x09%at%x09%s",
+  ]);
+
+  if (!output) return [];
+
+  return output
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [hash, shortHash, authorName, timestamp, ...subjectParts] =
+        line.split("\t");
+      return {
+        hash,
+        shortHash,
+        authorName,
+        timestamp: Number(timestamp || 0) * 1000,
+        subject: subjectParts.join("\t"),
+      };
+    });
+}
+
 /** Read a single file's content */
 export async function readFileContent(
   filePath: string,
@@ -305,4 +380,37 @@ export async function readFileContent(
     content: truncated ? content.slice(0, maxSize) : content,
     truncated,
   };
+}
+
+function mapGitStatusCode(code: string):
+  | "modified"
+  | "added"
+  | "deleted"
+  | "renamed"
+  | "untracked"
+  | "copied"
+  | "conflicted"
+  | undefined {
+  switch (code) {
+    case "M":
+      return "modified";
+    case "A":
+      return "added";
+    case "D":
+      return "deleted";
+    case "R":
+      return "renamed";
+    case "C":
+      return "copied";
+    case "U":
+      return "conflicted";
+    case "?":
+      return "untracked";
+    default:
+      return undefined;
+  }
+}
+
+function isConflictStatus(xy: string): boolean {
+  return new Set(["DD", "AU", "UD", "UA", "DU", "AA", "UU"]).has(xy);
 }

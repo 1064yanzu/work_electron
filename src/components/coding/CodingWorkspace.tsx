@@ -27,6 +27,12 @@ import {
 import { createThreadFromWorkspaceProfile, syncThreadWorkspaceProfile } from '../../lib/coding/threadFactory';
 import { codingRuntimeStore } from '../../lib/stores/codingRuntimeStore';
 import { startFileWatcher, stopFileWatcher } from '../../lib/coding/fileWatcherBridge';
+import {
+	loadFileTree,
+	loadGitBranches,
+	loadGitHistory,
+	loadGitStatus,
+} from '../../lib/coding/gitWorkspaceData';
 import { CodingToolbar } from './CodingToolbar';
 import { CodingFileExplorer } from './CodingFileExplorer';
 import { CodingChatThread } from './CodingChatThread';
@@ -37,6 +43,8 @@ import { CodingHome } from './CodingHome';
 import { CenterPanelTabs } from './CenterPanelTabs';
 import { CodeViewerPanel } from './codeViewer/CodeViewerPanel';
 import { QuickFileSearchModal } from './QuickFileSearchModal';
+import { CodingDiffStatusBar } from './CodingDiffStatusBar';
+import { CodingStatusBar } from './CodingStatusBar';
 import type { SettingsTabId } from '../Settings/types';
 
 // 终端面板懒加载（复用已有组件）
@@ -115,6 +123,7 @@ export default function CodingWorkspace({
 					void loadFileTree(thread.projectPath);
 					void loadGitStatus(thread.projectPath);
 					void loadGitBranches(thread.projectPath);
+					void loadGitHistory(thread.projectPath);
 					// 启动文件系统监听
 					void startFileWatcher(thread.projectPath);
 					return;
@@ -139,6 +148,7 @@ export default function CodingWorkspace({
 				void loadFileTree(projectPath);
 				void loadGitStatus(projectPath);
 				void loadGitBranches(projectPath);
+				void loadGitHistory(projectPath);
 				// 启动文件系统监听
 				void startFileWatcher(projectPath);
 			}
@@ -177,6 +187,7 @@ export default function CodingWorkspace({
 			void loadFileTree(thread.projectPath);
 			void loadGitStatus(thread.projectPath);
 			void loadGitBranches(thread.projectPath);
+			void loadGitHistory(thread.projectPath);
 			// 切换文件监听到新项目
 			void startFileWatcher(thread.projectPath);
 		},
@@ -463,6 +474,7 @@ export default function CodingWorkspace({
 											) : (
 												<>
 													<CodingChatThread onResolvePermission={handleResolvePermission} />
+													<CodingDiffStatusBar />
 													<CodingChatInput
 														onSend={handleSendMessage}
 														onAbort={handleAbort}
@@ -515,48 +527,9 @@ export default function CodingWorkspace({
 					)}
 				</PanelGroup>
 			</div>
+
+			{/* 底部状态栏 */}
+			<CodingStatusBar />
 		</div>
 	);
-}
-
-// === 数据加载辅助函数 ===
-
-async function loadFileTree(projectPath: string) {
-	try {
-		codingWorkspaceStore.setFileTreeLoading(true);
-		const result = await window.electronAPI.invoke('coding_read_file_tree', {
-			path: projectPath,
-			maxDepth: 5,
-		});
-		codingWorkspaceStore.setFileTree(result.tree as FileTreeNode[], result.isGitRepo);
-	} catch (error) {
-		console.error('[CodingWorkspace] 加载文件树失败:', error);
-		codingWorkspaceStore.setFileTreeLoading(false);
-	}
-}
-
-async function loadGitStatus(projectPath: string) {
-	try {
-		const result = await window.electronAPI.invoke('coding_git_status', {
-			path: projectPath,
-		});
-		if (result.isGitRepo && result.status) {
-			codingWorkspaceStore.setGitStatus(result.status);
-		}
-	} catch (error) {
-		console.error('[CodingWorkspace] 加载 Git 状态失败:', error);
-	}
-}
-
-async function loadGitBranches(projectPath: string) {
-	try {
-		const result = await window.electronAPI.invoke('coding_git_branches', {
-			path: projectPath,
-		});
-		if (result.isGitRepo) {
-			codingWorkspaceStore.setGitBranches(result.branches);
-		}
-	} catch (error) {
-		console.error('[CodingWorkspace] 加载 Git 分支失败:', error);
-	}
 }

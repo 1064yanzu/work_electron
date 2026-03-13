@@ -3,14 +3,17 @@
  * 管理多个 CodingThread 的 CRUD、持久化（localStorage）、当前活跃线程切换
  */
 
-import { useSyncExternalStore } from 'react';
-import type { CodingThread, CodingThreadPersist } from './codingThreadTypes';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
+import type { CodingThread, CodingThreadPersist, CodingThreadSource } from './codingThreadTypes';
 import type { CodingBackend, CodingMode } from './codingAgentStore';
 import type { RecentCodingProject } from './codingWorkspaceStore';
 import type {
 	BackendCapabilityMatrix,
 	CodingApprovalMode,
 } from '../../../electron/shared/coding-workspace';
+import type { ExternalThreadMeta } from '../../../electron/shared/external-history-types';
+import { DEFAULT_AI_CODING_SETTINGS } from '../coding/codingSettings';
+import { normalizePath, findMatchingPathKey } from '../coding/pathUtils';
 
 // === Constants ===
 
@@ -29,6 +32,8 @@ export interface CodingProjectThreadGroup {
 	projectPath: string;
 	projectName: string;
 	threads: CodingThread[];
+	/** 尚未导入的外部 CLI 历史线程 */
+	externalThreads: ExternalThreadMeta[];
 	hasThreads: boolean;
 	lastActivityAt: number;
 }
@@ -65,11 +70,15 @@ function extractProjectName(projectPath: string): string {
 }
 
 function getDefaultModel(backend: CodingBackend): string {
-	return backend === 'codex' ? 'gpt-5-codex' : 'claude-sonnet-4-6';
+	return backend === 'codex'
+		? DEFAULT_AI_CODING_SETTINGS.codexDefaultModel
+		: DEFAULT_AI_CODING_SETTINGS.claudeDefaultModel;
 }
 
 function getDefaultApprovalMode(backend: CodingBackend): CodingApprovalMode {
-	return backend === 'codex' ? 'on-request' : 'acceptEdits';
+	return backend === 'codex'
+		? DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode
+		: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode;
 }
 
 function normalizeThread(thread: CodingThreadPersist): CodingThread {
@@ -152,6 +161,9 @@ class CodingThreadStore {
 			approvalMode?: CodingApprovalMode;
 			workspaceProfileId?: string;
 			capabilitiesSnapshot?: BackendCapabilityMatrix;
+			source?: CodingThreadSource;
+			externalThreadId?: string;
+			forkedFrom?: string;
 		},
 	): CodingThread {
 		const now = Date.now();
@@ -172,6 +184,9 @@ class CodingThreadStore {
 			codingMode: options?.codingMode || 'code',
 			status: 'idle',
 			diffStats: { additions: 0, deletions: 0 },
+			source: options?.source || 'local',
+			externalThreadId: options?.externalThreadId,
+			forkedFrom: options?.forkedFrom,
 		};
 
 		this.state = {
@@ -256,8 +271,17 @@ class CodingThreadStore {
 	getProjectGroups(
 		recentProjects: RecentCodingProject[],
 		searchQuery = '',
+		externalThreads: ExternalThreadMeta[] = [],
 	): CodingProjectThreadGroup[] {
 		const query = searchQuery.trim().toLowerCase();
+
+		// 已导入的外部线程 ID 集合（用于去重）
+		const importedExternalKeys = new Set(
+			this.state.threads
+				.filter((t) => t.externalThreadId && t.source)
+				.map((t) => `${t.source}-${t.externalThreadId}`),
+		);
+
 		const groups = new Map<
 			string,
 			{
@@ -265,6 +289,7 @@ class CodingThreadStore {
 				projectName: string;
 				recentLastOpenedAt: number;
 				threads: CodingThread[];
+				externalThreads: ExternalThreadMeta[];
 			}
 		>();
 
@@ -274,6 +299,7 @@ class CodingThreadStore {
 				projectName: project.name,
 				recentLastOpenedAt: project.lastOpenedAt,
 				threads: [],
+				externalThreads: [],
 			});
 		}
 
@@ -290,12 +316,37 @@ class CodingThreadStore {
 				projectName: thread.projectName,
 				recentLastOpenedAt: 0,
 				threads: [thread],
+				externalThreads: [],
 			});
+		}
+
+		// 合并外部 CLI 历史到对应的项目分组（跳过已导入的）
+		for (const ext of externalThreads) {
+			const key = `${ext.source}-${ext.id}`;
+			if (importedExternalKeys.has(key)) continue;
+
+			// 使用规范化路径匹配已有分组
+			const matchingKey = findMatchingPathKey(groups, ext.cwd);
+			if (matchingKey) {
+				const existing = groups.get(matchingKey);
+				if (existing) {
+					existing.externalThreads.push(ext);
+				}
+			} else {
+				groups.set(normalizePath(ext.cwd), {
+					projectPath: ext.cwd,
+					projectName: ext.projectName || extractProjectName(ext.cwd),
+					recentLastOpenedAt: 0,
+					threads: [],
+					externalThreads: [ext],
+				});
+			}
 		}
 
 		return Array.from(groups.values())
 			.map((group) => {
 				const threads = [...group.threads].sort((a, b) => b.updatedAt - a.updatedAt);
+				const extThreads = [...group.externalThreads].sort((a, b) => b.updatedAt - a.updatedAt);
 				const projectMatched =
 					query.length === 0 ||
 					group.projectName.toLowerCase().includes(query) ||
@@ -303,18 +354,24 @@ class CodingThreadStore {
 				const visibleThreads = projectMatched || query.length === 0
 					? threads
 					: threads.filter((thread) => thread.title.toLowerCase().includes(query));
-				if (!projectMatched && visibleThreads.length === 0) {
+				const visibleExternal = projectMatched || query.length === 0
+					? extThreads
+					: extThreads.filter((ext) => ext.title.toLowerCase().includes(query));
+
+				if (!projectMatched && visibleThreads.length === 0 && visibleExternal.length === 0) {
 					return null;
 				}
+
+				const latestLocalAt = visibleThreads[0]?.updatedAt ?? threads[0]?.updatedAt ?? 0;
+				const latestExternalAt = visibleExternal[0]?.updatedAt ?? 0;
 
 				return {
 					projectPath: group.projectPath,
 					projectName: group.projectName,
 					threads: visibleThreads,
-					hasThreads: group.threads.length > 0,
-					lastActivityAt: visibleThreads[0]?.updatedAt
-						?? threads[0]?.updatedAt
-						?? group.recentLastOpenedAt,
+					externalThreads: visibleExternal,
+					hasThreads: group.threads.length > 0 || group.externalThreads.length > 0,
+					lastActivityAt: Math.max(latestLocalAt, latestExternalAt, group.recentLastOpenedAt),
 				} satisfies CodingProjectThreadGroup;
 			})
 			.filter((group): group is CodingProjectThreadGroup => group !== null)
@@ -329,9 +386,26 @@ export const codingThreadStore = new CodingThreadStore();
 export function useCodingThreadSelector<T>(
 	selector: (state: CodingThreadState) => T,
 ): T {
+	const selectorRef = useRef(selector);
+	const lastStateRef = useRef<CodingThreadState | null>(null);
+	const lastSelectedRef = useRef<T | null>(null);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(() => {
+		const nextState = codingThreadStore.getState();
+		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+			return lastSelectedRef.current;
+		}
+
+		const nextSelected = selectorRef.current(nextState);
+		lastStateRef.current = nextState;
+		lastSelectedRef.current = nextSelected;
+		return nextSelected;
+	}, []);
+
 	return useSyncExternalStore(
 		codingThreadStore.subscribe,
-		() => selector(codingThreadStore.getState()),
-		() => selector(codingThreadStore.getState()),
+		getSnapshot,
+		getSnapshot,
 	);
 }

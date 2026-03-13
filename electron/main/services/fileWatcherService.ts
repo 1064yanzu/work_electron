@@ -24,6 +24,15 @@ const DEFAULT_IGNORED: (string | RegExp)[] = [
 	"**/target/**",
 	"**/*.pyc",
 	"**/.ipo/**",
+	"**/.trae/**",
+	"**/session-env/**",
+	"**/logs/**",
+	"**/dist-electron/**",
+	"**/.vite/**",
+	"**/.vite-temp/**",
+	"**/tmp/**",
+	"**/temp/**",
+	"**/projects/**",
 ];
 
 // 文件变更事件类型
@@ -48,31 +57,39 @@ export function setFileWatcherMainWindow(win: BrowserWindow | null) {
 	mainWindow = win;
 }
 
+function shouldUsePolling(projectPath: string) {
+	return process.platform === "darwin" && projectPath.startsWith("/Volumes/");
+}
+
 /**
  * 开始监听项目目录
  */
-export function startWatching(
+export async function startWatching(
 	projectPath: string,
 	options?: { ignored?: string[] },
-): { success: boolean; error?: string } {
+): Promise<{ success: boolean; error?: string }> {
 	// 如果已经在监听，先停止
 	if (watchers.has(projectPath)) {
-		stopWatching(projectPath);
+		await stopWatching(projectPath);
 	}
 
 	try {
 		const ignored = [...DEFAULT_IGNORED, ...(options?.ignored || [])];
+		const usePolling = shouldUsePolling(projectPath);
 
 		const watcherOptions: ChokidarOptions = {
 			ignored,
 			persistent: true,
 			ignoreInitial: true,
-			depth: 10,
+			depth: 5,
 			awaitWriteFinish: {
 				stabilityThreshold: 300,
 				pollInterval: 100,
 			},
 			ignorePermissionErrors: true,
+			usePolling,
+			interval: usePolling ? 800 : undefined,
+			binaryInterval: usePolling ? 1200 : undefined,
 		};
 
 		const watcher = new FSWatcher(watcherOptions);
@@ -104,16 +121,16 @@ export function startWatching(
 /**
  * 停止监听项目目录
  */
-export function stopWatching(
+export async function stopWatching(
 	projectPath: string,
-): { success: boolean; error?: string } {
+): Promise<{ success: boolean; error?: string }> {
 	const watcher = watchers.get(projectPath);
 	if (!watcher) {
 		return { success: true };
 	}
 
 	try {
-		void watcher.close();
+		await watcher.close();
 		watchers.delete(projectPath);
 
 		// 清理防抖定时器
@@ -137,7 +154,7 @@ export function stopWatching(
  */
 export function stopAllWatchers() {
 	for (const [path] of watchers) {
-		stopWatching(path);
+		void stopWatching(path);
 	}
 }
 

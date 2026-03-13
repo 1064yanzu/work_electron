@@ -7,10 +7,8 @@
 
 import { invoke } from "../tauriCompat";
 import { listen } from "../tauriEventCompat";
-import {
-	codingWorkspaceStore,
-	type FileTreeNode,
-} from "../stores/codingWorkspaceStore";
+import { codingWorkspaceStore } from "../stores/codingWorkspaceStore";
+import { loadFileTree, loadGitStatus } from "./gitWorkspaceData";
 
 // 文件变更事件载荷（与后端 fileWatcherService 对应）
 interface FileChangePayload {
@@ -24,6 +22,8 @@ interface FileChangePayload {
 
 /** 事件监听取消函数 */
 let unlistenFn: (() => void) | null = null;
+/** 当前已在主进程注册监听的项目路径 */
+let activeWatchedProjectPath: string | null = null;
 
 /**
  * 启动文件监听
@@ -31,12 +31,17 @@ let unlistenFn: (() => void) | null = null;
  * 2. 注册渲染进程事件监听，接收变更通知
  */
 export async function startFileWatcher(projectPath: string): Promise<void> {
+	if (activeWatchedProjectPath === projectPath && unlistenFn) {
+		return;
+	}
+
 	// 先停止之前的监听
 	await stopFileWatcher();
 
 	// 通知主进程开始监听
 	try {
 		await invoke("coding_watch_start", { path: projectPath });
+		activeWatchedProjectPath = projectPath;
 	} catch (err) {
 		console.error("[FileWatcherBridge] 启动监听失败:", err);
 		return;
@@ -66,13 +71,13 @@ export async function stopFileWatcher(): Promise<void> {
 	}
 
 	// 通知主进程停止
-	const projectPath = codingWorkspaceStore.getState().projectPath;
-	if (projectPath) {
+	if (activeWatchedProjectPath) {
 		try {
-			await invoke("coding_watch_stop", { path: projectPath });
+			await invoke("coding_watch_stop", { path: activeWatchedProjectPath });
 		} catch {
 			// 忽略（可能已经停止了）
 		}
+		activeWatchedProjectPath = null;
 	}
 }
 
@@ -119,14 +124,7 @@ function handleFileChanges(payload: FileChangePayload) {
 
 async function refreshFileTree(projectPath: string) {
 	try {
-		const result = await window.electronAPI.invoke("coding_read_file_tree", {
-			path: projectPath,
-			maxDepth: 5,
-		});
-		codingWorkspaceStore.setFileTree(
-			result.tree as FileTreeNode[],
-			result.isGitRepo,
-		);
+		await loadFileTree(projectPath);
 	} catch (err) {
 		console.error("[FileWatcherBridge] 刷新文件树失败:", err);
 	}
@@ -134,12 +132,7 @@ async function refreshFileTree(projectPath: string) {
 
 async function refreshGitStatus(projectPath: string) {
 	try {
-		const result = await window.electronAPI.invoke("coding_git_status", {
-			path: projectPath,
-		});
-		if (result.isGitRepo && result.status) {
-			codingWorkspaceStore.setGitStatus(result.status);
-		}
+		await loadGitStatus(projectPath);
 	} catch (err) {
 		console.error("[FileWatcherBridge] 刷新 Git 状态失败:", err);
 	}

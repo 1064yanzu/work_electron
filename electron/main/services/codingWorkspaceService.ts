@@ -14,6 +14,7 @@ import type {
 	WorkspaceProfileUpdateInput,
 } from "../../shared/coding-workspace";
 import { findCodexBinary } from "./codexService";
+import { detectCliBinary } from "./cliBinaryDetector";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,7 +24,8 @@ const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-6";
 const DEFAULT_CODEX_MODEL = "gpt-5-codex";
 const DEFAULT_CODEX_MODEL_CATALOG = [
 	"gpt-5-codex",
-	"gpt-5",
+	"gpt-5.4",
+	"o3",
 	"o4-mini",
 ];
 const MAX_INSTRUCTION_BYTES = 64 * 1024;
@@ -305,8 +307,10 @@ async function runCommand(binary: string, args: string[]): Promise<string | null
 }
 
 async function detectClaudeCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
-	const binaryPath = (await runCommand("bash", ["-lc", "command -v claude || true"]))?.trim() || null;
-	const version = binaryPath ? await runCommand(binaryPath, ["--version"]) : null;
+	const cliInfo = await detectCliBinary("claude-code");
+	const binaryPath = cliInfo.path;
+	const version = cliInfo.version;
+	const cliSourceLabel = cliInfo.source === "sdk_bundled" ? "（SDK 内嵌）" : "";
 	const capabilities: BackendCapabilityFlags = {
 		resume: true,
 		rewind: false,
@@ -320,7 +324,7 @@ async function detectClaudeCapabilityMatrix(): Promise<BackendCapabilityMatrix> 
 		backend: "claude-code",
 		available: Boolean(binaryPath),
 		binaryPath,
-		version,
+		version: version ? `${version}${cliSourceLabel}` : null,
 		detectedAt: Date.now(),
 		capabilities,
 		unsupportedReasons: {
@@ -333,7 +337,7 @@ async function detectClaudeCapabilityMatrix(): Promise<BackendCapabilityMatrix> 
 }
 
 async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
-	const binaryPath = findCodexBinary();
+	const binaryPath = await findCodexBinary();
 	const version = binaryPath ? await runCommand(binaryPath, ["--version"]) : null;
 	const helpText = binaryPath ? await runCommand(binaryPath, ["exec", "--help"]) : null;
 	const capabilities: BackendCapabilityFlags = {

@@ -7,6 +7,7 @@ import type {
 	WorkspaceProfileUpdateInput,
 	CodingWorkspaceProfile,
 } from "../../../electron/shared/coding-workspace";
+import type { CliDetectionResult } from "../../../electron/shared/ipc-schema";
 import { invoke } from "../tauriCompat";
 
 export async function getWorkspaceProfile(
@@ -54,4 +55,19 @@ export async function controlCodexRuntime(input: {
 	action: RuntimeControlAction;
 }): Promise<{ success: boolean; error?: string }> {
 	return invoke("codex_runtime_control", input);
+}
+
+// ─── CLI Binary Detection ─────────────────────────────────────
+
+export async function detectCliBinary(
+	backend: "claude-code" | "codex",
+	userConfiguredPath?: string,
+): Promise<CliDetectionResult> {
+	return invoke("cli_detect_binary", { backend, userConfiguredPath });
+}
+
+export async function invalidateCliCache(
+	backend?: "claude-code" | "codex",
+): Promise<{ success: boolean }> {
+	return invoke("cli_invalidate_cache", { backend });
 }

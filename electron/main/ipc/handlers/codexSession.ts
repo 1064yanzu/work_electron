@@ -29,7 +29,7 @@ function emitCodexEvent(
 export function createCodexSessionHandlers(deps: CodexHandlerDeps) {
 	return {
 		codex_check_available: async (_event: IpcMainInvokeEvent) => {
-			const binary = findCodexBinary();
+			const binary = await findCodexBinary();
 			return { available: !!binary, path: binary };
 		},
 
@@ -48,7 +48,7 @@ export function createCodexSessionHandlers(deps: CodexHandlerDeps) {
 				workspaceContext?: string;
 			},
 		) => {
-			const binary = findCodexBinary();
+			const binary = await findCodexBinary();
 			if (!binary) {
 				throw new Error("Codex CLI 未找到，请先安装 codex。");
 			}

@@ -7,6 +7,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { CodingApprovalMode } from "../../../shared/coding-workspace";
 import {
   getGitBranches,
+  getGitHistory,
   getGitStatus,
   isGitRepo,
   readFileContent,
@@ -97,6 +98,24 @@ export function createCodingHandlers() {
 			return {
 				isGitRepo: true,
 				branches,
+			};
+		},
+
+		coding_git_history: async (
+			_event: IpcMainInvokeEvent,
+			input: { path: string; limit?: number },
+		) => {
+			const isRepo = await isGitRepo(input.path);
+			if (!isRepo) {
+				return {
+					isGitRepo: false,
+					commits: [],
+				};
+			}
+			const commits = await getGitHistory(input.path, input.limit ?? 12);
+			return {
+				isGitRepo: true,
+				commits,
 			};
 		},
 

@@ -4,6 +4,7 @@ import type {
 	CodingBackendId,
 } from "../../../electron/shared/coding-workspace";
 import type { CodingThread } from "../stores/codingThreadTypes";
+import { FALLBACK_MODEL_CATALOG } from "./codingSettings";
 
 export type SlashCommandCategory =
 	| "session"
@@ -39,6 +40,8 @@ export interface CodingSlashCommand {
 	prompt?: string;
 	/** 限定命令可用的后端；为空或 undefined 表示所有后端 */
 	backends?: CodingBackendId[];
+	/** 隐藏命令（开发中或占位），不在用户可见列表中显示 */
+	hidden?: boolean;
 	getOptions?: (context: SlashCommandContext) => SlashCommandOption[];
 	getDisabledReason?: (context: SlashCommandContext) => string | undefined;
 }
@@ -155,6 +158,7 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		category: "session",
 		type: "action",
 		backends: ["claude-code"],
+		hidden: true,
 		getDisabledReason: (context) => {
 			const capability = getRuntimeCapability(context);
 			return capability?.unsupportedReasons?.rewind || "当前版本暂不支持 rewind。";
@@ -168,7 +172,10 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "submenu",
 		getOptions: (context) => {
 			const capability = getRuntimeCapability(context);
-			const models = capability?.modelCatalog ?? [];
+			const catalogModels = capability?.modelCatalog ?? [];
+			const models = catalogModels.length > 0
+				? catalogModels
+				: FALLBACK_MODEL_CATALOG[context.currentBackend] ?? [];
 			return models.map((model) => ({
 				id: model,
 				label: model,
@@ -301,6 +308,119 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		actionId: "open_settings",
 	},
+	// ── 新增命令 ──
+	{
+		id: "new",
+		name: "新建线程",
+		description: "创建一个新的编程线程。",
+		category: "session",
+		type: "action",
+		actionId: "new_thread",
+		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+	},
+	{
+		id: "rename",
+		name: "重命名线程",
+		description: "修改当前线程的标题。",
+		category: "session",
+		type: "action",
+		actionId: "rename_thread",
+		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+	},
+	{
+		id: "fork",
+		name: "分叉会话",
+		description: "从当前会话状态分叉出一个新线程，保留完整上下文。",
+		category: "session",
+		type: "action",
+		actionId: "fork_session",
+		getDisabledReason: (context) => {
+			if (!context.thread) return "请先进入一个线程。";
+			if (!context.projectPath) return "请先打开一个项目。";
+			return undefined;
+		},
+	},
+	{
+		id: "copy",
+		name: "复制最后输出",
+		description: "将最后一条 AI 回复内容复制到剪贴板。",
+		category: "inspect",
+		type: "action",
+		actionId: "copy_last_output",
+		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+	},
+	{
+		id: "plan",
+		name: "进入 Plan 模式",
+		description: "切换到只读规划模式，等效于 /mode plan。",
+		category: "runtime",
+		type: "action",
+		actionId: "set_mode_plan",
+		getDisabledReason: getSubmenuCommandDisabledReason,
+	},
+	{
+		id: "review",
+		name: "代码审查",
+		description: "基于当前 Git 变更发起 AI 代码审查。",
+		category: "session",
+		type: "action",
+		actionId: "start_review",
+		getDisabledReason: (context) => {
+			if (!context.thread) return "请先进入一个线程。";
+			if (!context.projectPath) return "请先打开一个项目。";
+			return undefined;
+		},
+	},
+	{
+		id: "init",
+		name: "初始化配置",
+		description: "为当前项目生成后端配置文件（CLAUDE.md / AGENTS.md）。",
+		category: "workspace",
+		type: "action",
+		actionId: "init_config",
+		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+	},
+	{
+		id: "mcp",
+		name: "MCP 面板",
+		description: "打开 MCP 服务器管理面板（开发中）。",
+		category: "inspect",
+		type: "action",
+		actionId: "open_mcp_panel",
+		hidden: true,
+	},
+	{
+		id: "ps",
+		name: "列出终端",
+		description: "查看当前所有活跃终端实例。",
+		category: "inspect",
+		type: "action",
+		actionId: "list_terminals",
+	},
+	{
+		id: "clean",
+		name: "清理终端",
+		description: "停止并销毁所有终端实例。",
+		category: "inspect",
+		type: "action",
+		actionId: "clean_terminals",
+	},
+	{
+		id: "theme",
+		name: "切换主题",
+		description: "切换编辑器代码高亮主题。",
+		category: "workspace",
+		type: "submenu",
+		actionId: "set_theme",
+		getOptions: () => [
+			{ id: "github-dark", label: "GitHub Dark", description: "深色主题", value: "github-dark", actionId: "set_theme" },
+			{ id: "github-light", label: "GitHub Light", description: "浅色主题", value: "github-light", actionId: "set_theme" },
+			{ id: "one-dark-pro", label: "One Dark Pro", description: "深色主题", value: "one-dark-pro", actionId: "set_theme" },
+			{ id: "dracula", label: "Dracula", description: "深色主题", value: "dracula", actionId: "set_theme" },
+			{ id: "vitesse-dark", label: "Vitesse Dark", description: "深色主题", value: "vitesse-dark", actionId: "set_theme" },
+			{ id: "vitesse-light", label: "Vitesse Light", description: "浅色主题", value: "vitesse-light", actionId: "set_theme" },
+		],
+	},
 ];
 
 export function filterSlashCommands(
@@ -311,6 +431,8 @@ export function filterSlashCommands(
 	const currentBackend = _context.currentBackend;
 	return codingSlashCommands
 		.filter((command) => {
+			// 过滤隐藏命令
+			if (command.hidden) return false;
 			// 按后端过滤
 			if (command.backends && command.backends.length > 0) {
 				if (!command.backends.includes(currentBackend)) return false;

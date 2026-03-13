@@ -9,9 +9,12 @@ const CONFIG_KEYS = {
 	workspaceMemoryPolicy: "aiCoding.workspaceMemoryPolicy",
 	claudeDefaultModel: "aiCoding.claude.defaultModel",
 	claudeDefaultApprovalMode: "aiCoding.claude.defaultApprovalMode",
+	claudeCliPath: "aiCoding.claude.cliPath",
+	claudeProxyMode: "aiCoding.claude.proxyMode",
 	codexDefaultModel: "aiCoding.codex.defaultModel",
 	codexDefaultApprovalMode: "aiCoding.codex.defaultApprovalMode",
 	codexModelCatalog: "aiCoding.codex.modelCatalog",
+	codexCliPath: "aiCoding.codex.cliPath",
 	// 编辑器/工作区设置
 	editorFontSize: "aiCoding.editor.fontSize",
 	editorShowMinimap: "aiCoding.editor.showMinimap",
@@ -28,9 +31,13 @@ export interface AICodingSettings {
 	workspaceMemoryPolicy: "manual" | "always";
 	claudeDefaultModel: string;
 	claudeDefaultApprovalMode: CodingApprovalMode;
+	claudeCliPath: string;
+	/** Claude Code API 路由模式: proxy=通过本地代理(支持多Provider), transparent=直接使用用户自己的Claude配置 */
+	claudeProxyMode: "proxy" | "transparent";
 	codexDefaultModel: string;
 	codexDefaultApprovalMode: CodingApprovalMode;
 	codexModelCatalog: string[];
+	codexCliPath: string;
 	// 编辑器/工作区设置
 	editorFontSize: number;
 	editorShowMinimap: boolean;
@@ -42,14 +49,23 @@ export interface AICodingSettings {
 	autoAcceptDiffs: boolean;
 }
 
+/** 模型 fallback 列表（当 capability.modelCatalog 为空时使用） */
+export const FALLBACK_MODEL_CATALOG: Record<CodingBackendId, string[]> = {
+	"claude-code": ["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5"],
+	codex: ["gpt-5-codex", "gpt-5.4", "o3", "o4-mini"],
+};
+
 export const DEFAULT_AI_CODING_SETTINGS: AICodingSettings = {
 	defaultBackend: "claude-code",
 	workspaceMemoryPolicy: "always",
 	claudeDefaultModel: "claude-sonnet-4-6",
 	claudeDefaultApprovalMode: "acceptEdits",
+	claudeCliPath: "",
+	claudeProxyMode: "transparent",
 	codexDefaultModel: "gpt-5-codex",
 	codexDefaultApprovalMode: "on-request",
-	codexModelCatalog: ["gpt-5-codex", "gpt-5", "o4-mini"],
+	codexModelCatalog: ["gpt-5-codex", "gpt-5.4", "o3", "o4-mini"],
+	codexCliPath: "",
 	editorFontSize: 13,
 	editorShowMinimap: true,
 	fileTreeAutoRefreshMs: 500,
@@ -83,9 +99,12 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 		workspaceMemoryPolicy,
 		claudeDefaultModel,
 		claudeDefaultApprovalMode,
+		claudeCliPath,
+		claudeProxyMode,
 		codexDefaultModel,
 		codexDefaultApprovalMode,
 		codexModelCatalog,
+		codexCliPath,
 		editorFontSize,
 		editorShowMinimap,
 		fileTreeAutoRefreshMs,
@@ -98,9 +117,12 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 		getConfig(CONFIG_KEYS.workspaceMemoryPolicy),
 		getConfig(CONFIG_KEYS.claudeDefaultModel),
 		getConfig(CONFIG_KEYS.claudeDefaultApprovalMode),
+		getConfig(CONFIG_KEYS.claudeCliPath),
+		getConfig(CONFIG_KEYS.claudeProxyMode),
 		getConfig(CONFIG_KEYS.codexDefaultModel),
 		getConfig(CONFIG_KEYS.codexDefaultApprovalMode),
 		getConfig(CONFIG_KEYS.codexModelCatalog),
+		getConfig(CONFIG_KEYS.codexCliPath),
 		getConfig(CONFIG_KEYS.editorFontSize),
 		getConfig(CONFIG_KEYS.editorShowMinimap),
 		getConfig(CONFIG_KEYS.fileTreeAutoRefreshMs),
@@ -127,6 +149,12 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 			typeof claudeDefaultApprovalMode === "string" && claudeDefaultApprovalMode.trim()
 				? (claudeDefaultApprovalMode as CodingApprovalMode)
 				: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode,
+		claudeCliPath:
+			typeof claudeCliPath === "string" ? claudeCliPath : DEFAULT_AI_CODING_SETTINGS.claudeCliPath,
+		claudeProxyMode:
+			claudeProxyMode === "proxy" || claudeProxyMode === "transparent"
+				? claudeProxyMode
+				: DEFAULT_AI_CODING_SETTINGS.claudeProxyMode,
 		codexDefaultModel:
 			typeof codexDefaultModel === "string" && codexDefaultModel.trim()
 				? codexDefaultModel.trim()
@@ -137,6 +165,8 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 				: DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode,
 		codexModelCatalog:
 			parseStringArray(codexModelCatalog) ?? DEFAULT_AI_CODING_SETTINGS.codexModelCatalog,
+		codexCliPath:
+			typeof codexCliPath === "string" ? codexCliPath : DEFAULT_AI_CODING_SETTINGS.codexCliPath,
 		editorFontSize:
 			typeof editorFontSize === "number" && editorFontSize >= 8 && editorFontSize <= 32
 				? editorFontSize
@@ -184,6 +214,12 @@ export async function setAICodingSettings(
 	if (updates.claudeDefaultApprovalMode) {
 		tasks.push(setConfig(CONFIG_KEYS.claudeDefaultApprovalMode, updates.claudeDefaultApprovalMode));
 	}
+	if (updates.claudeCliPath != null) {
+		tasks.push(setConfig(CONFIG_KEYS.claudeCliPath, updates.claudeCliPath));
+	}
+	if (updates.claudeProxyMode) {
+		tasks.push(setConfig(CONFIG_KEYS.claudeProxyMode, updates.claudeProxyMode));
+	}
 	if (updates.codexDefaultModel) {
 		tasks.push(setConfig(CONFIG_KEYS.codexDefaultModel, updates.codexDefaultModel));
 	}
@@ -192,6 +228,9 @@ export async function setAICodingSettings(
 	}
 	if (updates.codexModelCatalog) {
 		tasks.push(setConfig(CONFIG_KEYS.codexModelCatalog, JSON.stringify(updates.codexModelCatalog)));
+	}
+	if (updates.codexCliPath != null) {
+		tasks.push(setConfig(CONFIG_KEYS.codexCliPath, updates.codexCliPath));
 	}
 	if (updates.editorFontSize != null) {
 		tasks.push(setConfig(CONFIG_KEYS.editorFontSize, updates.editorFontSize));

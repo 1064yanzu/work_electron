@@ -76,6 +76,7 @@ export class CodexSessionManager implements ICodingSessionManager {
 		);
 
 			try {
+				console.log(`[CodexSessionManager] sending with model: ${options.model || "(default)"}, cwd: ${options.cwd}`);
 				this.runId = await invoke<string>("codex_session_start", {
 					prompt: promptWithContext,
 					cwd: options.cwd,

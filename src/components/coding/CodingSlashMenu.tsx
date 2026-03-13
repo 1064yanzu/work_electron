@@ -77,9 +77,31 @@ export function CodingSlashMenu({
 	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 	const listRef = useRef<HTMLDivElement>(null);
 
+	const groupedCommands = useMemo(() => {
+		if (submenuCommand) return null;
+		const groups = new Map<string, CodingSlashCommand[]>();
+		for (const entry of entries) {
+			if (isOption(entry)) continue;
+			const bucket = groups.get(entry.category) ?? [];
+			bucket.push(entry);
+			groups.set(entry.category, bucket);
+		}
+		return Array.from(groups.entries());
+	}, [entries, submenuCommand]);
+
+	// 按分组渲染的实际视觉顺序展平，用于键盘导航
+	const displayOrder = useMemo<Array<CodingSlashCommand | SlashCommandOption>>(() => {
+		if (submenuCommand || !groupedCommands) return entries;
+		const ordered: Array<CodingSlashCommand | SlashCommandOption> = [];
+		for (const [, commands] of groupedCommands) {
+			ordered.push(...commands);
+		}
+		return ordered;
+	}, [entries, groupedCommands, submenuCommand]);
+
 	useEffect(() => {
 		setSelectedIndex(0);
-	}, [query, submenuCommandId, entries.length]);
+	}, [query, submenuCommandId, displayOrder.length]);
 
 	useEffect(() => {
 		const element = itemRefs.current[selectedIndex];
@@ -98,20 +120,20 @@ export function CodingSlashMenu({
 
 	const handleKeyDown = useCallback(
 		(event: KeyboardEvent) => {
-			if (entries.length === 0) return;
+			if (displayOrder.length === 0) return;
 			switch (event.key) {
 				case 'ArrowDown':
 					event.preventDefault();
-					setSelectedIndex((index) => (index + 1) % entries.length);
+					setSelectedIndex((index) => (index + 1) % displayOrder.length);
 					break;
 				case 'ArrowUp':
 					event.preventDefault();
-					setSelectedIndex((index) => (index - 1 + entries.length) % entries.length);
+					setSelectedIndex((index) => (index - 1 + displayOrder.length) % displayOrder.length);
 					break;
 				case 'Enter':
 				case 'Tab':
 					event.preventDefault();
-					handleSubmit(entries[selectedIndex]);
+					handleSubmit(displayOrder[selectedIndex]);
 					break;
 				case 'Escape':
 					event.preventDefault();
@@ -119,25 +141,13 @@ export function CodingSlashMenu({
 					break;
 			}
 		},
-		[entries, selectedIndex, handleSubmit, onClose],
+		[displayOrder, selectedIndex, handleSubmit, onClose],
 	);
 
 	useEffect(() => {
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [handleKeyDown]);
-
-	const groupedCommands = useMemo(() => {
-		if (submenuCommand) return null;
-		const groups = new Map<string, CodingSlashCommand[]>();
-		for (const entry of entries) {
-			if (isOption(entry)) continue;
-			const bucket = groups.get(entry.category) ?? [];
-			bucket.push(entry);
-			groups.set(entry.category, bucket);
-		}
-		return Array.from(groups.entries());
-	}, [entries, submenuCommand]);
 
 	let flatIndex = 0;
 
@@ -224,7 +234,7 @@ export function CodingSlashMenu({
 													<div className="mt-0.5 truncate text-[11px] text-zinc-400">{entry.description}</div>
 													{disabledReason && <div className="mt-1 text-[10px] text-amber-500">{disabledReason}</div>}
 												</div>
-												<div className="shrink-0 text-[10px] text-zinc-400">{entry.type === 'prompt' ? '插入' : entry.type === 'submenu' ? '选择' : '执行'}</div>
+												<div className="shrink-0 text-[10px]">{entry.type === 'prompt' ? <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">插入</span> : entry.type === 'submenu' ? <span className="text-zinc-400">选择</span> : <span className="text-zinc-400">执行</span>}</div>
 											</button>
 										);
 									})}

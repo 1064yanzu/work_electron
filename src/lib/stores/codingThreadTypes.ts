@@ -16,6 +16,9 @@ export interface DiffStats {
 	deletions: number;
 }
 
+/** 线程来源标识 */
+export type CodingThreadSource = 'local' | 'codex-cli' | 'claude-code-cli';
+
 /** 编程线程 */
 export interface CodingThread {
 	id: string;
@@ -57,6 +60,12 @@ export interface CodingThread {
 	lastRunSummary?: string;
 	/** Diff 统计 */
 	diffStats?: DiffStats;
+	/** 线程来源标识：本地创建还是从 CLI 历史导入 */
+	source?: CodingThreadSource;
+	/** 外部 CLI 的原始线程/会话 ID */
+	externalThreadId?: string;
+	/** 从哪个线程分叉而来 */
+	forkedFrom?: string;
 }
 
 /** 线程持久化数据（不含消息体） */

@@ -140,3 +140,4 @@ export const diffStore = {
 
 export const useDiffStore = createUseStore(store);
 export const useDiffStoreSelector = createUseStoreSelector(store);
+export const useDiffSelector = useDiffStoreSelector;

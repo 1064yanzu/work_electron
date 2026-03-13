@@ -60,6 +60,8 @@ import { getCloudNodeClient } from "../cloud-node/service";
 import { createTerminalHandlers } from "./handlers/terminal";
 import { createCodingHandlers } from "./handlers/coding";
 import { createCodexSessionHandlers } from "./handlers/codexSession";
+import { createCliHistoryHandlers } from "./handlers/cliHistory";
+import { createCliBinaryHandlers } from "./handlers/cliBinary";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -174,6 +176,12 @@ export function registerIpcHandlers({
 	const codexSessionHandlers = createCodexSessionHandlers({
 		getMainWindow: () => mainWindowRef,
 	});
+
+	// CLI History handlers (CLI 历史同步)
+	const cliHistoryHandlers = createCliHistoryHandlers();
+
+	// CLI Binary Detection handlers (CLI 二进制检测)
+	const cliBinaryHandlers = createCliBinaryHandlers();
 
 	// ==================
 	// 系统命令
@@ -762,5 +770,20 @@ export function registerIpcHandlers({
 	ipcMain.handle("codex_session_abort", codexSessionHandlers.codex_session_abort);
 	ipcMain.handle("codex_runtime_control", codexSessionHandlers.codex_runtime_control);
 
-	logger.info({ msg: "IPC handlers registered", count: 115 });
+	// ==================
+	// CLI History Sync (CLI 历史同步)
+	// ==================
+	ipcMain.handle("cli_history_codex_list", cliHistoryHandlers.cli_history_codex_list);
+	ipcMain.handle("cli_history_codex_read", cliHistoryHandlers.cli_history_codex_read);
+	ipcMain.handle("cli_history_claude_code_list", cliHistoryHandlers.cli_history_claude_code_list);
+	ipcMain.handle("cli_history_claude_code_read", cliHistoryHandlers.cli_history_claude_code_read);
+	ipcMain.handle("cli_history_check_available", cliHistoryHandlers.cli_history_check_available);
+
+	// ==================
+	// CLI Binary Detection (CLI 二进制检测)
+	// ==================
+	ipcMain.handle("cli_detect_binary", cliBinaryHandlers.cli_detect_binary);
+	ipcMain.handle("cli_invalidate_cache", cliBinaryHandlers.cli_invalidate_cache);
+
+	logger.info({ msg: "IPC handlers registered", count: 122 });
 }

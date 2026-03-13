@@ -61,10 +61,30 @@ export function createUseStore<T>(store: ReadableStoreApi<T>) {
 export function createUseStoreSelector<T>(store: ReadableStoreApi<T>) {
 	return function useStoreSelector<R>(selector: (state: T) => R): R {
 		const selectorRef = useRef(selector);
+		const lastStateRef = useRef<T | null>(null);
+		const lastSelectedRef = useRef<R | null>(null);
 		selectorRef.current = selector;
 
 		const getSnapshot = useCallback(
-			() => selectorRef.current(store.getState()),
+			() => {
+				const nextState = store.getState();
+				if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+					return lastSelectedRef.current;
+				}
+
+				const nextSelected = selectorRef.current(nextState);
+				if (
+					lastStateRef.current === nextState &&
+					lastSelectedRef.current !== null &&
+					Object.is(lastSelectedRef.current, nextSelected)
+				) {
+					return lastSelectedRef.current;
+				}
+
+				lastStateRef.current = nextState;
+				lastSelectedRef.current = nextSelected;
+				return nextSelected;
+			},
 			[],
 		);
 

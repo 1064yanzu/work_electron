@@ -16,6 +16,11 @@ import type {
 	TeamActivity,
 	TeammateInfo,
 } from './codingSessionTypes';
+import {
+	saveSnapshotToStorage,
+	loadSnapshotFromStorage,
+	deleteSnapshotFromStorage,
+} from './sessionSnapshotPersistence';
 
 // === State ===
 
@@ -66,12 +71,24 @@ const sessionSnapshots = new Map<string, SessionSnapshot>();
 
 /** 保存当前 session 状态为指定线程的快照 */
 function saveSnapshot(threadId: string) {
-	sessionSnapshots.set(threadId, { ...store.getState() });
+	const snapshot = { ...store.getState() };
+	sessionSnapshots.set(threadId, snapshot);
+	// 异步持久化到 localStorage
+	saveSnapshotToStorage(threadId, snapshot);
 }
 
 /** 从快照恢复指定线程的 session 状态 */
 function loadSnapshot(threadId: string): boolean {
-	const snapshot = sessionSnapshots.get(threadId);
+	// 优先从内存加载
+	let snapshot = sessionSnapshots.get(threadId);
+	if (!snapshot) {
+		// 内存未命中，从 localStorage 恢复
+		const persisted = loadSnapshotFromStorage(threadId);
+		if (persisted) {
+			snapshot = persisted;
+			sessionSnapshots.set(threadId, persisted);
+		}
+	}
 	if (!snapshot) return false;
 	store.setState(() => snapshot);
 	return true;
@@ -92,6 +109,7 @@ function switchToThread(currentThreadId: string | null, targetThreadId: string) 
 /** 删除指定线程的快照 */
 function deleteSnapshot(threadId: string) {
 	sessionSnapshots.delete(threadId);
+	deleteSnapshotFromStorage(threadId);
 }
 
 /** 获取指定线程的快照（不切换） */
@@ -461,6 +479,12 @@ function clear() {
 	store.setState(() => initialState);
 }
 
+/** 直接保存外部快照到指定线程（不影响当前活跃 session） */
+function saveExternalSnapshot(threadId: string, state: CodingSessionState) {
+	sessionSnapshots.set(threadId, state);
+	saveSnapshotToStorage(threadId, state);
+}
+
 // === 导出 ===
 
 export const codingSessionStore = {
@@ -493,6 +517,7 @@ export const codingSessionStore = {
 	switchToThread,
 	deleteSnapshot,
 	getSnapshot,
+	saveExternalSnapshot,
 };
 
 export const useCodingSessionStore = createUseStore(store);

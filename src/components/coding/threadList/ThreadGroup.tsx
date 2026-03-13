@@ -1,9 +1,11 @@
 import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
+import type { ExternalThreadMeta } from '../../../../electron/shared/external-history-types';
 import type {
 	CodingProjectThreadGroup,
 } from '../../../lib/stores/codingThreadStore';
 import type { CodingThread } from '../../../lib/stores/codingThreadTypes';
 import { ThreadRow } from './ThreadRow';
+import { ExternalThreadRow } from './ExternalThreadRow';
 
 interface ThreadGroupProps {
 	group: CodingProjectThreadGroup;
@@ -13,16 +15,23 @@ interface ThreadGroupProps {
 	expanded: boolean;
 	editingId: string | null;
 	editTitle: string;
+	importingId: string | null;
 	onToggleCollapse: () => void;
 	onToggleExpanded: () => void;
 	onSwitchThread: (thread: CodingThread) => void;
+	onImportExternal: (meta: ExternalThreadMeta) => void;
 	onEditTitleChange: (value: string) => void;
 	onCommitRename: () => void;
 	onCancelRename: () => void;
 	onOpenMenu: (threadId: string, position: { x: number; y: number }) => void;
 }
 
-const MAX_VISIBLE_THREADS = 3;
+/** 统一的显示条目（本地线程和外部 CLI 历史混合排序） */
+type DisplayItem =
+	| { kind: 'local'; thread: CodingThread }
+	| { kind: 'external'; meta: ExternalThreadMeta };
+
+const MAX_VISIBLE = 5;
 
 export function ThreadGroup({
 	group,
@@ -32,19 +41,33 @@ export function ThreadGroup({
 	expanded,
 	editingId,
 	editTitle,
+	importingId,
 	onToggleCollapse,
 	onToggleExpanded,
 	onSwitchThread,
+	onImportExternal,
 	onEditTitleChange,
 	onCommitRename,
 	onCancelRename,
 	onOpenMenu,
 }: ThreadGroupProps) {
 	const isCollapsed = searchActive ? false : collapsed;
-	const visibleThreads = searchActive || expanded
-		? group.threads
-		: group.threads.slice(0, MAX_VISIBLE_THREADS);
-	const hiddenCount = Math.max(0, group.threads.length - MAX_VISIBLE_THREADS);
+
+	// 统一排序：本地线程 + 外部线程按时间混合
+	const allItems: DisplayItem[] = [
+		...group.threads.map((t) => ({ kind: 'local' as const, thread: t })),
+		...group.externalThreads.map((m) => ({ kind: 'external' as const, meta: m })),
+	].sort((a, b) => {
+		const aTime = a.kind === 'local' ? a.thread.updatedAt : a.meta.updatedAt;
+		const bTime = b.kind === 'local' ? b.thread.updatedAt : b.meta.updatedAt;
+		return bTime - aTime;
+	});
+
+	const visibleItems = searchActive || expanded
+		? allItems
+		: allItems.slice(0, MAX_VISIBLE);
+	const hiddenCount = Math.max(0, allItems.length - MAX_VISIBLE);
+	const totalCount = allItems.length;
 
 	return (
 		<section>
@@ -58,6 +81,7 @@ export function ThreadGroup({
 						{group.projectName}
 					</div>
 				</div>
+				<span className="mr-1 text-[11px] text-zinc-400">{totalCount}</span>
 				{isCollapsed ? (
 					<ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
 				) : (
@@ -67,35 +91,44 @@ export function ThreadGroup({
 
 			{!isCollapsed && (
 				<div className="space-y-0.5 pl-6">
-					{group.threads.length === 0 ? (
-						<div className="px-2 py-1.5 text-[13px] text-zinc-400">无线程</div>
+					{allItems.length === 0 ? (
+						<div className="px-2 py-1.5 text-[13px] text-zinc-400">无会话</div>
 					) : (
 						<>
-							{visibleThreads.map((thread) => (
-								<ThreadRow
-									key={thread.id}
-									thread={thread}
-									active={thread.id === activeThreadId}
-									isEditing={editingId === thread.id}
-									editTitle={editTitle}
-									onEditTitleChange={onEditTitleChange}
-									onEditTitleCommit={onCommitRename}
-									onEditTitleCancel={onCancelRename}
-									onActivate={() => onSwitchThread(thread)}
-									onOpenMenu={(position) => {
-										if (editingId !== thread.id) {
-											onOpenMenu(thread.id, position);
-										}
-									}}
-								/>
-							))}
+							{visibleItems.map((item) =>
+								item.kind === 'local' ? (
+									<ThreadRow
+										key={item.thread.id}
+										thread={item.thread}
+										active={item.thread.id === activeThreadId}
+										isEditing={editingId === item.thread.id}
+										editTitle={editTitle}
+										onEditTitleChange={onEditTitleChange}
+										onEditTitleCommit={onCommitRename}
+										onEditTitleCancel={onCancelRename}
+										onActivate={() => onSwitchThread(item.thread)}
+										onOpenMenu={(position) => {
+											if (editingId !== item.thread.id) {
+												onOpenMenu(item.thread.id, position);
+											}
+										}}
+									/>
+								) : (
+									<ExternalThreadRow
+										key={`${item.meta.source}-${item.meta.id}`}
+										thread={item.meta}
+										isImporting={importingId === item.meta.id}
+										onClick={() => onImportExternal(item.meta)}
+									/>
+								),
+							)}
 
 							{!searchActive && hiddenCount > 0 && (
 								<button
 									onClick={onToggleExpanded}
 									className="ml-2 rounded-md px-2 py-1 text-[12px] text-zinc-400 transition-colors hover:bg-white/40 hover:text-zinc-600 dark:hover:bg-white/[0.04] dark:hover:text-zinc-300"
 								>
-									{expanded ? '收起' : `展开显示 (${hiddenCount})`}
+									{expanded ? '收起' : `展开更多 (${hiddenCount})`}
 								</button>
 							)}
 						</>

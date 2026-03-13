@@ -3,7 +3,7 @@
  * 管理编程工作区的全局状态：项目路径、文件树、Git 状态、布局状态、最近项目、上下文文件
  * 注意：消息/对话状态已迁移到 codingSessionStore.ts
  */
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 
 // 文件树节点（与后端 codingService 保持一致）
 export interface FileTreeNode {
@@ -14,11 +14,25 @@ export interface FileTreeNode {
 	size?: number;
 }
 
+export type GitChangeKind =
+	| "modified"
+	| "added"
+	| "deleted"
+	| "renamed"
+	| "untracked"
+	| "copied"
+	| "conflicted";
+
 // Git 文件状态
 export interface GitFileStatus {
 	path: string;
-	status: "modified" | "added" | "deleted" | "renamed" | "untracked";
+	absolutePath?: string;
+	status: GitChangeKind;
 	staged: boolean;
+	indexStatus?: GitChangeKind;
+	workingTreeStatus?: GitChangeKind;
+	originalPath?: string;
+	originalAbsolutePath?: string;
 }
 
 // Git 状态
@@ -35,6 +49,14 @@ export interface GitBranchInfo {
 	current: boolean;
 	remote?: string;
 	lastCommit?: string;
+}
+
+export interface GitCommitInfo {
+	hash: string;
+	shortHash: string;
+	subject: string;
+	authorName: string;
+	timestamp: number;
 }
 
 // 附加到对话的上下文文件
@@ -69,7 +91,7 @@ export interface CodingLayoutState {
 	leftPanelVisible: boolean;
 	rightPanelVisible: boolean;
 	terminalVisible: boolean;
-	rightPanelTab: "changes" | "git" | "activity" | "memory" | "context" | "file";
+	rightPanelTab: "changes" | "activity" | "context" | "file";
 	centerPanelMode: CenterPanelMode;
 }
 
@@ -95,6 +117,7 @@ interface CodingWorkspaceState {
 	// Git 状态
 	gitStatus: GitStatusInfo | null;
 	gitBranches: GitBranchInfo[];
+	gitHistory: GitCommitInfo[];
 	// 附加的上下文文件
 	contextFiles: ContextFile[];
 	// 布局状态
@@ -128,11 +151,15 @@ function loadLayout(): CodingLayoutState {
 		const raw = localStorage.getItem(LAYOUT_KEY);
 		if (raw) {
 			const parsed = JSON.parse(raw) as Partial<CodingLayoutState>;
+			// 迁移旧 tab 值：git → changes, memory → context
+			let tab: string = (parsed.rightPanelTab as string) ?? "changes";
+			if (tab === "git") tab = "changes";
+			if (tab === "memory") tab = "context";
 			return {
 					leftPanelVisible: parsed.leftPanelVisible ?? true,
 					rightPanelVisible: parsed.rightPanelVisible ?? true,
 					terminalVisible: parsed.terminalVisible ?? false,
-					rightPanelTab: parsed.rightPanelTab ?? "changes",
+					rightPanelTab: tab as CodingLayoutState["rightPanelTab"],
 					centerPanelMode: parsed.centerPanelMode ?? "chat",
 				};
 			}
@@ -157,6 +184,7 @@ class CodingWorkspaceStore {
 		fileTreeLoading: false,
 		gitStatus: null,
 		gitBranches: [],
+		gitHistory: [],
 		contextFiles: [],
 			layout: loadLayout(),
 			recentProjects: loadRecentProjects(),
@@ -229,6 +257,7 @@ class CodingWorkspaceStore {
 			fileTreeLoading: true,
 			gitStatus: null,
 				gitBranches: [],
+				gitHistory: [],
 				contextFiles: [],
 				recentProjects,
 				selectedFilePath: null,
@@ -259,6 +288,7 @@ class CodingWorkspaceStore {
 			fileTreeLoading: false,
 			gitStatus: null,
 				gitBranches: [],
+				gitHistory: [],
 				contextFiles: [],
 				selectedFilePath: null,
 				selectedFilePreview: {
@@ -367,6 +397,11 @@ class CodingWorkspaceStore {
 
 	setGitBranches = (branches: GitBranchInfo[]) => {
 		this.state = { ...this.state, gitBranches: branches };
+		this.emit();
+	};
+
+	setGitHistory = (history: GitCommitInfo[]) => {
+		this.state = { ...this.state, gitHistory: history };
 		this.emit();
 	};
 
@@ -551,9 +586,26 @@ export const codingWorkspaceStore = new CodingWorkspaceStore();
 export function useCodingWorkspaceSelector<T>(
 	selector: (state: CodingWorkspaceState) => T,
 ): T {
+	const selectorRef = useRef(selector);
+	const lastStateRef = useRef<CodingWorkspaceState | null>(null);
+	const lastSelectedRef = useRef<T | null>(null);
+	selectorRef.current = selector;
+
+	const getSnapshot = useCallback(() => {
+		const nextState = codingWorkspaceStore.getState();
+		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+			return lastSelectedRef.current;
+		}
+
+		const nextSelected = selectorRef.current(nextState);
+		lastStateRef.current = nextState;
+		lastSelectedRef.current = nextSelected;
+		return nextSelected;
+	}, []);
+
 	return useSyncExternalStore(
 		codingWorkspaceStore.subscribe,
-		() => selector(codingWorkspaceStore.getState()),
-		() => selector(codingWorkspaceStore.getState()),
+		getSnapshot,
+		getSnapshot,
 	);
 }

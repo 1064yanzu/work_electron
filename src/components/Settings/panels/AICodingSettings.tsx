@@ -5,13 +5,18 @@ import type {
 	CodingApprovalMode,
 	CodingBackendId,
 } from "../../../../electron/shared/coding-workspace";
+import type { CliDetectionResult } from "../../../../electron/shared/ipc-schema";
 import {
 	DEFAULT_AI_CODING_SETTINGS,
 	getAICodingSettings,
 	setAICodingSettings,
 	type AICodingSettings,
 } from "../../../lib/coding/codingSettings";
-import { getCodingBackendCapabilities } from "../../../lib/coding/runtimeApi";
+import {
+	detectCliBinary,
+	getCodingBackendCapabilities,
+	invalidateCliCache,
+} from "../../../lib/coding/runtimeApi";
 import { Select } from "../../ui/Select";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
@@ -53,6 +58,10 @@ export function AICodingSettings() {
 	});
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [cliDetection, setCliDetection] = useState<Record<CodingBackendId, CliDetectionResult | null>>({
+		"claude-code": null,
+		codex: null,
+	});
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -69,6 +78,12 @@ export function AICodingSettings() {
 					modelCatalog: nextSettings.codexModelCatalog,
 				},
 			});
+			// 并行检测两个后端的 CLI
+			const [claudeDetection, codexDetection] = await Promise.all([
+				detectCliBinary("claude-code", nextSettings.claudeCliPath || undefined),
+				detectCliBinary("codex", nextSettings.codexCliPath || undefined),
+			]);
+			setCliDetection({ "claude-code": claudeDetection, codex: codexDetection });
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : String(error));
 		} finally {
@@ -89,6 +104,8 @@ export function AICodingSettings() {
 		setSaving(true);
 		try {
 			await setAICodingSettings(settings);
+			// 保存后清除 CLI 检测缓存，使下次检测使用最新的配置路径
+			await invalidateCliCache();
 			toast.success("AI 编程设置已保存");
 			await load();
 		} catch (error) {
@@ -178,7 +195,35 @@ export function AICodingSettings() {
 					}))
 				}
 				approvalOptions={CLAUDE_APPROVAL_OPTIONS}
-			/>
+				cliPath={settings.claudeCliPath}
+				onCliPathChange={(value) =>
+					setSettings((current) => ({ ...current, claudeCliPath: value }))
+				}
+				cliDetection={cliDetection["claude-code"]}
+			>
+				<div className="mt-4">
+					<Field label="API 路由模式">
+						<Select
+							value={settings.claudeProxyMode}
+							onChange={(event) =>
+								setSettings((current) => ({
+									...current,
+									claudeProxyMode: event.target.value as "proxy" | "transparent",
+								}))
+							}
+							options={[
+								{ value: "transparent", label: "透明模式（使用用户自己的 Claude 配置）" },
+								{ value: "proxy", label: "代理模式（通过本地代理，支持多 Provider 路由）" },
+							]}
+						/>
+					</Field>
+					<p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+						{settings.claudeProxyMode === "transparent"
+							? "CLI 将使用您自己的 API key、base URL 和配置文件，不做任何拦截。"
+							: "所有 API 流量通过本地代理转发，支持多 Provider 模型路由和场景覆盖。"}
+					</p>
+				</div>
+			</BackendSection>
 
 			<SettingsSectionCard className="p-5">
 				<div className="flex items-start justify-between gap-4">
@@ -221,7 +266,7 @@ export function AICodingSettings() {
 								setSettings((current) => ({
 									...current,
 									codexModelCatalog: event.target.value
-										.split(/\r?\n|,/) 
+										.split(/\r?\n|,/)
 										.map((item) => item.trim())
 										.filter(Boolean),
 								}))
@@ -230,6 +275,19 @@ export function AICodingSettings() {
 							className={`${INPUT_CLASSNAME} min-h-[144px] py-3 font-mono text-[12px] leading-6`}
 						/>
 					</Field>
+				</div>
+				<div className="mt-4">
+					<Field label="CLI 路径">
+						<input
+							value={settings.codexCliPath}
+							onChange={(event) =>
+								setSettings((current) => ({ ...current, codexCliPath: event.target.value }))
+							}
+							placeholder="留空自动检测"
+							className={`${INPUT_CLASSNAME} font-mono text-xs`}
+						/>
+					</Field>
+					<CliDetectionInfo detection={cliDetection.codex} />
 				</div>
 			</SettingsSectionCard>
 
@@ -349,6 +407,10 @@ function BackendSection({
 	approvalValue,
 	onApprovalChange,
 	approvalOptions,
+	cliPath,
+	onCliPathChange,
+	cliDetection,
+	children,
 }: {
 	title: string;
 	capability: BackendCapabilityMatrix | null;
@@ -357,6 +419,10 @@ function BackendSection({
 	onApprovalChange: (value: CodingApprovalMode) => void;
 	approvalValue: CodingApprovalMode;
 	approvalOptions: Array<{ value: CodingApprovalMode; label: string }>;
+	cliPath?: string;
+	onCliPathChange?: (value: string) => void;
+	cliDetection?: CliDetectionResult | null;
+	children?: ReactNode;
 }) {
 	return (
 		<SettingsSectionCard className="p-5">
@@ -379,6 +445,20 @@ function BackendSection({
 					/>
 				</Field>
 			</div>
+			{onCliPathChange && (
+				<div className="mt-4">
+					<Field label="CLI 路径">
+						<input
+							value={cliPath ?? ""}
+							onChange={(event) => onCliPathChange(event.target.value)}
+							placeholder="留空自动检测"
+							className={`${INPUT_CLASSNAME} font-mono text-xs`}
+						/>
+					</Field>
+					<CliDetectionInfo detection={cliDetection ?? null} />
+				</div>
+			)}
+			{children}
 		</SettingsSectionCard>
 	);
 }
@@ -411,6 +491,46 @@ function formatBackendMeta(capability: BackendCapabilityMatrix | null): string {
 	if (!capability) return "尚未检测到 CLI 能力";
 	if (!capability.available) return capability.error || "当前环境不可用";
 	return [capability.version, capability.binaryPath].filter(Boolean).join(" · ");
+}
+
+const CLI_SOURCE_LABELS: Record<string, string> = {
+	user_configured: "用户配置",
+	system_detected: "系统检测",
+	sdk_bundled: "SDK 内嵌",
+	not_found: "未检测到",
+};
+
+function CliDetectionInfo({ detection }: { detection: CliDetectionResult | null }) {
+	if (!detection) return null;
+	const sourceLabel = CLI_SOURCE_LABELS[detection.source] ?? detection.source;
+	const found = detection.source !== "not_found";
+	return (
+		<div className="mt-1.5 space-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+			<div className="flex items-center gap-1.5">
+				<span
+					className={`inline-block h-1.5 w-1.5 rounded-full ${
+						found ? "bg-emerald-500" : "bg-red-400"
+					}`}
+				/>
+				<span className="font-medium">{sourceLabel}</span>
+				{detection.version && (
+					<span className="text-zinc-400 dark:text-zinc-500">
+						v{detection.version}
+					</span>
+				)}
+			</div>
+			{detection.path && (
+				<div className="truncate font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
+					{detection.path}
+				</div>
+			)}
+			{detection.error && (
+				<div className="text-red-500 dark:text-red-400">
+					{detection.error}
+				</div>
+			)}
+		</div>
+	);
 }
 
 const INPUT_CLASSNAME =

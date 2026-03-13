@@ -2,7 +2,7 @@
  * 编程工作区 - 对话输入框
  * 支持 @文件提及、斜杠命令、模式指示器、发送/停止按钮、状态控制
  */
-import { ArrowUp, AtSign, X, Square } from 'lucide-react';
+import { ArrowUp, AtSign, X, Square, Plus } from 'lucide-react';
 import {
 	useCallback,
 	useEffect,
@@ -27,9 +27,11 @@ import {
 } from '../../lib/coding/codingSlashCommands';
 import { parseSlashInput } from '../../lib/coding/slashInput';
 import { executeCodingCommand, type CommandContext } from '../../lib/coding/codingCommandExecutor';
+import { pickAndAttachContextFiles } from '../../lib/coding/contextFiles';
 import { toast } from '../ui/Toast';
 import type { SettingsTabId } from '../Settings/types';
 import { useBackendCapabilities } from '../../hooks/useBackendCapabilities';
+import { formatModelName } from '../../lib/coding/modelUtils';
 
 interface CodingChatInputProps {
 	onSend: (content: string) => void;
@@ -123,11 +125,16 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 							? 'backend'
 							: entry.actionId === 'set_model'
 								? 'model'
-								: 'approvalMode']: entry.value,
+								: entry.actionId === 'set_theme'
+									? 'theme'
+									: 'approvalMode']: entry.value,
 				});
 				if (!result.success && result.error) {
 					toast.error(result.error);
 					return;
+				}
+				if (result.message) {
+					toast.success(result.message);
 				}
 				setShowSlashMenu(false);
 				setValue('');
@@ -151,6 +158,9 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 					toast.error(result.error);
 					return;
 				}
+				if (result.message) {
+					toast.success(result.message);
+				}
 				setShowSlashMenu(false);
 				setValue('');
 				return;
@@ -160,6 +170,7 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 				setValue(entry.prompt);
 				setShowSlashMenu(false);
 				textareaRef.current?.focus();
+				toast.info('已插入提示，按 Enter 发送');
 			}
 		},
 		[activeThreadId, onOpenSettings, projectPath],
@@ -172,6 +183,18 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 	const handleRemoveContext = useCallback((path: string) => {
 		codingWorkspaceStore.removeContextFile(path);
 	}, []);
+
+	const handleAddFile = useCallback(async () => {
+		if (!projectPath) {
+			toast.error('请先打开一个项目。');
+			return;
+		}
+		await pickAndAttachContextFiles(projectPath);
+	}, [projectPath]);
+
+	const modelLabel = activeThread?.model
+		? formatModelName(activeThread.model)
+		: null;
 
 	const modeLabel = isCodex ? 'Codex' : codingMode === 'code' ? 'Code' : codingMode === 'plan' ? 'Plan' : 'Ask';
 	const modeColor = isCodex
@@ -239,6 +262,15 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 						/>
 					)}
 
+					{/* + 附加文件按钮 */}
+					<button
+						onClick={handleAddFile}
+						className="shrink-0 self-center flex items-center justify-center h-7 w-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-zinc-400 dark:text-zinc-500 transition-colors"
+						title="附加文件 (@)"
+					>
+						<Plus className="h-4 w-4" />
+					</button>
+
 					{/* 模式指示器 */}
 					<span className={`shrink-0 self-center rounded px-1.5 py-0.5 text-[10px] font-bold ${modeColor}`}>
 						{modeLabel}
@@ -289,7 +321,20 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 				</div>
 
 				<div className="flex items-center justify-between mt-1.5 px-1">
-					<span className="text-[10px] text-zinc-400">{isRunning ? '运行中' : ''}</span>
+					<div className="flex items-center gap-2">
+						{/* 模型标识 */}
+						{modelLabel && (
+							<span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-0.5">
+								{modelLabel}
+							</span>
+						)}
+						{isRunning && (
+							<span className="text-[10px] text-zinc-400 flex items-center gap-1">
+								<span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+								运行中
+							</span>
+						)}
+					</div>
 					{(usage.inputTokens > 0 || usage.outputTokens > 0) && (
 						<span className="text-[10px] text-zinc-400 tabular-nums">
 							{formatTokenCount(usage.inputTokens + usage.outputTokens)} tokens

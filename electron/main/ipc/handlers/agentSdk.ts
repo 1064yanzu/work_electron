@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { createRequire } from "node:module";
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
+import { detectCliBinary, resolveSdkBundledCli } from "../../services/cliBinaryDetector";
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
@@ -80,7 +80,6 @@ export function createAgentSdkHandlers(options: {
 	logger: Logger;
 	db: DbContext;
 }) {
-	const require = createRequire(import.meta.url);
 	const logger = options.logger;
 
 	let cachedAgentModelSettings: { loadedAt: number; settings: any } | null =
@@ -233,11 +232,27 @@ export function createAgentSdkHandlers(options: {
 					} catch {}
 				};
 
+				// 优先使用用户本地安装的 Claude CLI，fallback 到 SDK 内嵌版本
 				let pathToClaudeCodeExecutable: string | undefined;
-				try {
-					const p = require.resolve("@anthropic-ai/claude-agent-sdk/cli.js");
-					if (fs.existsSync(p)) pathToClaudeCodeExecutable = p;
-				} catch {}
+				{
+					const userCliPathRow = await options.db.client.execute({
+						sql: "SELECT value FROM app_config WHERE key = ?",
+						args: ["aiCoding.claude.cliPath"],
+					});
+					const userCliPath = userCliPathRow.rows.length > 0
+						? (userCliPathRow.rows[0].value as string)?.trim()
+						: undefined;
+
+					const cliInfo = await detectCliBinary("claude-code", {
+						userConfiguredPath: userCliPath || undefined,
+					});
+
+					if (cliInfo.path) {
+						pathToClaudeCodeExecutable = cliInfo.path;
+					} else {
+						pathToClaudeCodeExecutable = resolveSdkBundledCli() ?? undefined;
+					}
+				}
 
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
@@ -246,36 +261,44 @@ export function createAgentSdkHandlers(options: {
 				const userPath = await resolveUserPathFromShell(userShell);
 				const resolvedPath = userPath || process.env.PATH;
 
-				// Force Claude Code to ignore the user's global Claude config (which may enable OAuth/first-party
-				// routing that bypasses ANTHROPIC_BASE_URL). Point config dir at the per-run sandbox so the CLI
-				// follows env-based Anthropic API settings deterministically.
-				const claudeConfigDir = cwd;
+				// 读取 Claude Code 代理模式设置：proxy | transparent
+				const proxyModeRow = await options.db.client.execute({
+					sql: "SELECT value FROM app_config WHERE key = ?",
+					args: ["aiCoding.claude.proxyMode"],
+				});
+				const proxyMode = (proxyModeRow.rows.length > 0
+					? (proxyModeRow.rows[0].value as string)?.trim()
+					: null) || "transparent";
+				const isTransparentMode = proxyMode === "transparent";
 
-				// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself for
-				// Anthropic Messages endpoints, and telemetry uses `${ANTHROPIC_BASE_URL}/api/event_logging/batch`.
-				// If we append "/v1" here, telemetry becomes "/v1/api/event_logging/batch" (noisy) and may trigger
-				// fallback behavior.
-				const anthropicBaseUrl = (
-					await options.getAnthropicBaseUrl()
-				).replace(/\/v1\/?$/i, "");
+				let claudeConfigDir: string | undefined;
+				let anthropicBaseUrl: string | undefined;
+				let anthropicApiKey: string | undefined;
 
-				// The CLI requires an Anthropic-looking API key to follow the normal Anthropic client path.
-				// This key is only used against our local proxy; it is never forwarded upstream as a real secret.
-				const anthropicApiKeyRaw =
-					typeof process.env.ANTHROPIC_API_KEY === "string"
-						? process.env.ANTHROPIC_API_KEY.trim()
-						: "";
-				const anthropicApiKey =
-					anthropicApiKeyRaw ||
-					"sk-ant-api03-dummy000000000000000000000000000000000000";
+				if (isTransparentMode) {
+					// 透明模式：不覆盖用户的 Claude 配置，让 CLI 使用用户自己的 API key 和 base URL
+					console.log("[agent_sdk] Transparent mode: using user's own Claude configuration");
+				} else {
+					// 代理模式：通过本地代理路由所有 API 流量（支持多 Provider 转发和模型路由）
+					claudeConfigDir = cwd;
 
-				// Claude Code 对 ANTHROPIC_API_KEY 有"显式批准"机制：在非交互模式下，如果 key 未被批准，
-				// CLI 可能会继续走 firstParty 路径，从而绕过 ANTHROPIC_BASE_URL。
-				// 我们将 per-run sandbox 作为 CLAUDE_CONFIG_DIR，并在其中写入 settings.json 自动批准该 key，
-				// 以确保推理流量可稳定经过本地 Anthropic Proxy（从而触发子代理场景→模型替换逻辑）。
-				try {
-					await writeClaudeConfigSettings({ claudeConfigDir, anthropicApiKey });
-				} catch {}
+					// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
+					anthropicBaseUrl = (
+						await options.getAnthropicBaseUrl()
+					).replace(/\/v1\/?$/i, "");
+
+					const anthropicApiKeyRaw =
+						typeof process.env.ANTHROPIC_API_KEY === "string"
+							? process.env.ANTHROPIC_API_KEY.trim()
+							: "";
+					anthropicApiKey =
+						anthropicApiKeyRaw ||
+						"sk-ant-api03-dummy000000000000000000000000000000000000";
+
+					try {
+						await writeClaudeConfigSettings({ claudeConfigDir, anthropicApiKey });
+					} catch {}
+				}
 
 				logger.info({
 					msg: "agent_sdk start",
@@ -283,9 +306,9 @@ export function createAgentSdkHandlers(options: {
 					runId,
 					cwd,
 					model: input.model,
-					anthropicBaseUrl,
-					anthropicApiKeyPresent: Boolean(anthropicApiKeyRaw),
-					claudeConfigDir,
+					proxyMode,
+					anthropicBaseUrl: anthropicBaseUrl ?? "(transparent - user config)",
+					claudeConfigDir: claudeConfigDir ?? "(transparent - user config)",
 					pathToClaudeCodeExecutable,
 					allowed_tools: input.allowed_tools,
 					has_system_prompt: !!input.system_prompt,
@@ -1137,22 +1160,29 @@ export function createAgentSdkHandlers(options: {
 								if (typeof v === "string") env[k] = v;
 							}
 
-							// Avoid inheriting user account/session routing that could bypass our proxy.
-							delete env.ANTHROPIC_AUTH_TOKEN;
-							delete env.CLAUDE_CODE_OAUTH_TOKEN;
-							delete env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR;
-							delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN;
-							delete env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
-							delete env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
-
 							if (resolvedPath) env.PATH = resolvedPath;
 
-							env.CLAUDE_CONFIG_DIR = claudeConfigDir;
-							// CRITICAL: do NOT append "/v1" here. The CLI constructs "/v1/messages" internally.
-							env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
-							env.ANTHROPIC_API_KEY = anthropicApiKey;
-							// Some CLI code paths look at this name instead.
-							env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
+							if (isTransparentMode) {
+								// 透明模式：保留用户环境中的所有 Claude/Anthropic 配置
+								// 不覆盖 ANTHROPIC_BASE_URL、ANTHROPIC_API_KEY、CLAUDE_CONFIG_DIR
+								console.log("[agent_sdk] Transparent mode env: keeping user's original config");
+							} else {
+								// 代理模式：覆盖环境变量以路由流量到本地代理
+								// Avoid inheriting user account/session routing that could bypass our proxy.
+								delete env.ANTHROPIC_AUTH_TOKEN;
+								delete env.CLAUDE_CODE_OAUTH_TOKEN;
+								delete env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR;
+								delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN;
+								delete env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
+								delete env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
+
+								if (claudeConfigDir) env.CLAUDE_CONFIG_DIR = claudeConfigDir;
+								// CRITICAL: do NOT append "/v1" here. The CLI constructs "/v1/messages" internally.
+								if (anthropicBaseUrl) env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
+								if (anthropicApiKey) env.ANTHROPIC_API_KEY = anthropicApiKey;
+								// Some CLI code paths look at this name instead.
+								if (anthropicBaseUrl) env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
+							}
 
 							// Reduce background noise during debugging.
 							env.DISABLE_TELEMETRY = "1";

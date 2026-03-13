@@ -1,40 +1,22 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { promisify } from "node:util";
 import type { CodexApprovalMode } from "../../shared/coding-workspace";
+import { detectCliBinary, type DetectOptions } from "./cliBinaryDetector";
 
 const execFileAsync = promisify(execFile);
 
-export function findCodexBinary(): string | null {
-	const globalPaths = [
-		"/usr/local/bin/codex",
-		"/opt/homebrew/bin/codex",
-		path.join(process.env.HOME || "", ".local/bin/codex"),
-		path.join(process.env.HOME || "", ".npm-global/bin/codex"),
-	];
-
-	for (const candidate of globalPaths) {
-		try {
-			if (fs.existsSync(candidate)) return candidate;
-		} catch {
-			// ignore
-		}
-	}
-
-	try {
-		const result = require("child_process")
-			.execSync("command -v codex 2>/dev/null", { encoding: "utf-8" })
-			.trim();
-		if (result && fs.existsSync(result)) return result;
-	} catch {
-		// ignore
-	}
-
-	return null;
+/**
+ * 异步检测 Codex CLI 二进制路径（跨平台）。
+ * 内部委托给统一的 cliBinaryDetector 服务。
+ */
+export async function findCodexBinary(
+	options?: DetectOptions,
+): Promise<string | null> {
+	const result = await detectCliBinary("codex", options);
+	return result.path;
 }
 
-export async function getCodexVersion(binary = findCodexBinary()): Promise<string | null> {
+export async function getCodexVersion(binary?: string | null): Promise<string | null> {
 	if (!binary) return null;
 	try {
 		const { stdout } = await execFileAsync(binary, ["--version"], {
@@ -150,8 +132,9 @@ function buildApprovalArgs(approvalMode?: CodexApprovalMode): string[] {
 function buildCodexArgs(options: CodexSessionOptions): string[] {
 	const prompt = buildPrompt(options.prompt, options.workspaceContext);
 	const baseArgs = ["--json", "--skip-git-repo-check"];
-	if (options.model) {
-		baseArgs.push("-m", options.model);
+	const modelId = options.model?.trim();
+	if (modelId) {
+		baseArgs.push("-m", modelId);
 	}
 	baseArgs.push(...buildApprovalArgs(options.approvalMode));
 
@@ -363,6 +346,15 @@ export function spawnCodexSession(
 	onEvent: (event: CodexOutputEvent) => void,
 ): ChildProcess {
 	const args = buildCodexArgs(options);
+
+	// 诊断日志：记录最终传给 CLI 的参数
+	console.log(`[codex] spawn binary: ${binary}`);
+	console.log(`[codex] spawn args: ${JSON.stringify(args)}`);
+	console.log(`[codex] model param: ${options.model?.trim() || "(none - using CLI default)"}`);
+	console.log(`[codex] cwd: ${options.cwd}`);
+	console.log(`[codex] OPENAI_BASE_URL: ${process.env.OPENAI_BASE_URL || "(not set)"}`);
+	console.log(`[codex] CODEX_API_KEY present: ${!!process.env.CODEX_API_KEY || !!process.env.OPENAI_API_KEY}`);
+
 	const proc = spawn(binary, args, {
 		cwd: options.cwd,
 		env: {
@@ -408,6 +400,16 @@ export function spawnCodexSession(
 		for (const line of lines) {
 			const text = line.trim();
 			if (!text) continue;
+			// 检测模型不匹配：当 API 报告的模型与用户选择不同时给出诊断
+			const modelMismatch = text.match(/(?:model|for model)\s+(\S+)/i);
+			if (modelMismatch?.[1] && options.model?.trim() && modelMismatch[1] !== options.model.trim()) {
+				console.warn(`[codex] 模型不匹配: 用户选择 "${options.model.trim()}" 但 CLI 请求 "${modelMismatch[1]}"`);
+				onEvent({
+					type: "stderr",
+					content: `⚠ 模型不匹配: 您选择了 "${options.model.trim()}"，但 Codex CLI 实际请求了 "${modelMismatch[1]}"。请检查 Codex CLI 配置 (~/.codex/config.toml) 或 API 端点。`,
+					isError: true,
+				});
+			}
 			onEvent({ type: "stderr", content: text, isError: text.includes("ERROR") });
 		}
 	});
