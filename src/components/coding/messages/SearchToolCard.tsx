@@ -82,7 +82,7 @@ export function SearchToolCard({ toolCall }: SearchToolCardProps) {
 	);
 
 	const summary =
-		toolCall.status === "completed" ? `${results.length} 个结果` : undefined;
+		toolCall.status === "completed" ? `${results.length} 个匹配` : undefined;
 
 	return (
 		<ToolCardShell

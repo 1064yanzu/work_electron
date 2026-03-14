@@ -152,7 +152,9 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 								? 'model'
 								: entry.actionId === 'set_theme'
 									? 'theme'
-									: 'approvalMode']: entry.value,
+									: entry.actionId === 'set_reasoning_effort'
+										? 'reasoningEffort'
+										: 'approvalMode']: entry.value,
 				});
 				if (!result.success && result.error) {
 					toast.error(result.error);

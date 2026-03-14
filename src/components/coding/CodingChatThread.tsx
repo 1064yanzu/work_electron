@@ -253,18 +253,7 @@ function AssistantMessage({
 
 			{/* 文本内容 — 无背景扁平渲染，自定义排版 */}
 			{hasContent && (
-				<div className="coding-assistant-message text-[13.5px] leading-[1.75] text-zinc-800 dark:text-zinc-200">
-					<MarkdownRenderer
-						content={message.content}
-						isStreaming={message.isStreaming}
-					/>
-					{/* 流式光标 */}
-					{message.isStreaming && (
-						<span className="inline-flex items-center ml-0.5 align-middle">
-							<span className="w-[2.5px] h-[15px] rounded-full bg-[#D96C46] animate-pulse" />
-						</span>
-					)}
-				</div>
+				<AssistantTextContent content={message.content} isStreaming={message.isStreaming} />
 			)}
 
 			{/* 流式等待指示（无内容也无工具调用时） */}
@@ -304,3 +293,45 @@ function EmptyState() {
 		</div>
 	);
 }
+
+/* ── Assistant 文本内容（过滤冗余工具声明） ───────────── */
+
+/** 工具使用声明文本的匹配模式 */
+const TOOL_NOISE_PATTERNS = [
+	/^使用工具[:：]\s*.+$/gm,
+	/^Tool[:：]?\s*\w+$/gm,
+	/^Running tool[:：]?\s*.+$/gm,
+	/^Calling[:：]?\s*\w+$/gm,
+	/^Using tool[:：]?\s*.+$/gm,
+];
+
+function cleanAssistantToolNoise(content: string): string {
+	let cleaned = content;
+	for (const pattern of TOOL_NOISE_PATTERNS) {
+		cleaned = cleaned.replace(pattern, "");
+	}
+	// 清理多余的连续空行（最多保留 2 个换行符）
+	cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+	return cleaned.trim();
+}
+
+function AssistantTextContent({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+	const cleanedContent = useMemo(() => cleanAssistantToolNoise(content), [content]);
+
+	if (!cleanedContent) return null;
+
+	return (
+		<div className="coding-assistant-message text-[13.5px] leading-[1.75] text-zinc-800 dark:text-zinc-200">
+			<MarkdownRenderer
+				content={cleanedContent}
+				isStreaming={isStreaming}
+			/>
+			{isStreaming && (
+				<span className="inline-flex items-center ml-0.5 align-middle">
+					<span className="w-[2.5px] h-[15px] rounded-full bg-[#D96C46] animate-pulse" />
+				</span>
+			)}
+		</div>
+	);
+}
+

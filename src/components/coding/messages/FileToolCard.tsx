@@ -1,7 +1,7 @@
 /**
  * 文件工具卡片 - Read/Edit/Write/Patch/MultiEdit
- * 折叠态：图标 + 动作 + 文件名 + 变更行数摘要
- * 展开态：Read 显示代码内容, Edit/Write 显示 unified diff
+ * 折叠态：图标 + 动作标签 + 文件名 + 变更行数摘要
+ * 展开态：subtitle 显示完整路径，Read 显示代码内容, Edit/Write 显示 unified diff
  */
 import { FileCode, FilePen, FilePlus, FileSearch } from "lucide-react";
 import { useMemo } from "react";
@@ -56,15 +56,13 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 	const isWrite = toolCall.name === "Write";
 
 	const Icon = isRead ? FileCode : isEdit ? FilePen : isWrite ? FilePlus : FileSearch;
-
-	// 构建含动作的 title（Zed 风格）
-	const actionPrefix = isRead
-		? "读取"
+	const iconColor = isRead
+		? "text-blue-500 dark:text-blue-400"
 		: isEdit
-			? "编辑"
+			? "text-amber-500 dark:text-amber-400"
 			: isWrite
-				? "创建"
-				: toolCall.name;
+				? "text-emerald-500 dark:text-emerald-400"
+				: undefined;
 
 	// Read 工具：如果有 offset/limit 参数，显示行范围
 	const lineRange = (() => {
@@ -72,10 +70,10 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 		const offset = toolCall.input.offset as number | undefined;
 		const limit = toolCall.input.limit as number | undefined;
 		if (offset != null && limit != null) {
-			return ` (行 ${offset}-${offset + limit})`;
+			return ` (${offset}-${offset + limit})`;
 		}
 		if (offset != null) {
-			return ` (从行 ${offset})`;
+			return ` (从 ${offset})`;
 		}
 		if (limit != null) {
 			return ` (前 ${limit} 行)`;
@@ -83,7 +81,16 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 		return "";
 	})();
 
-	const title = `${actionPrefix} ${fileName}${lineRange}`;
+	// 动作标签
+	const actionLabel = isRead
+		? "读取"
+		: isEdit
+			? "编辑"
+			: isWrite
+				? "创建"
+				: toolCall.name;
+
+	const title = `${fileName}${lineRange}`;
 
 	// diff 关联
 	const diffId = toolCall.diffId;
@@ -119,14 +126,14 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 
 	// 变更行数摘要的颜色标签
 	const headerRight = diffInfo ? (
-		<span className="flex items-center gap-1 text-[10px] tabular-nums">
+		<span className="flex items-center gap-1.5 text-[10px] tabular-nums">
 			{diffInfo.added > 0 && (
-				<span className="text-emerald-600 dark:text-emerald-400">
+				<span className="rounded bg-emerald-500/10 px-1 py-px font-medium text-emerald-600 dark:text-emerald-400">
 					+{diffInfo.added}
 				</span>
 			)}
 			{diffInfo.removed > 0 && (
-				<span className="text-red-500 dark:text-red-400">
+				<span className="rounded bg-red-500/10 px-1 py-px font-medium text-red-500 dark:text-red-400">
 					-{diffInfo.removed}
 				</span>
 			)}
@@ -136,22 +143,20 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 	return (
 		<ToolCardShell
 			icon={Icon}
+			label={actionLabel}
 			title={title}
+			subtitle={filePath !== fileName ? filePath : undefined}
 			status={toolCall.status}
 			isError={toolCall.isError}
 			durationMs={toolCall.durationMs}
 			summary={!diffInfo ? summary : undefined}
 			headerRight={headerRight}
+			iconColor={iconColor}
 		>
-			{/* 完整路径 */}
-			<p className="mb-1.5 rounded-md bg-zinc-50 px-2.5 py-1 font-mono text-[10px] text-zinc-400 dark:bg-zinc-800/50">
-				{filePath}
-			</p>
-
 			{/* Read 输出：代码块风格 */}
 			{isRead && toolCall.output != null && (
-				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
-					<pre className="max-h-48 overflow-y-auto bg-zinc-50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/50 dark:text-zinc-400">
+				<div className="overflow-hidden rounded-md border border-zinc-200/50 dark:border-zinc-700/30">
+					<pre className="max-h-48 overflow-y-auto bg-zinc-50/80 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/40 dark:text-zinc-400">
 						{(typeof toolCall.output === "string"
 							? toolCall.output
 							: JSON.stringify(toolCall.output, null, 2)
@@ -166,10 +171,10 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 
 			{/* Edit/Write：Unified Diff 视图 */}
 			{(isEdit || isWrite) && diff && (
-				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
+				<div className="overflow-hidden rounded-md border border-zinc-200/50 dark:border-zinc-700/30">
 					{/* 写入且无旧内容 → 新文件 */}
 					{isWrite && !diff.oldContent && diff.newContent && (
-						<pre className="max-h-56 overflow-y-auto bg-emerald-50/50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-emerald-700 scrollbar-thin dark:bg-emerald-900/10 dark:text-emerald-400">
+						<pre className="max-h-56 overflow-y-auto bg-emerald-50/40 px-3 py-2 font-mono text-[11px] leading-[1.6] text-emerald-700 scrollbar-thin dark:bg-emerald-900/10 dark:text-emerald-400">
 							{diff.newContent.slice(0, 3000)}
 						</pre>
 					)}
@@ -182,9 +187,9 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 									key={`${line.type}-${i}`}
 									className={`flex font-mono text-[11px] leading-[1.6] ${
 										line.type === "add"
-											? "bg-emerald-50/60 text-emerald-700 dark:bg-emerald-900/15 dark:text-emerald-400"
+											? "bg-emerald-50/50 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400"
 											: line.type === "remove"
-												? "bg-red-50/60 text-red-600 dark:bg-red-900/15 dark:text-red-400"
+												? "bg-red-50/50 text-red-600 dark:bg-red-900/10 dark:text-red-400"
 												: "text-zinc-500 dark:text-zinc-400"
 									}`}
 								>
@@ -203,8 +208,8 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 
 			{/* Edit/Write 但没有 diff 的情况 → 显示 raw output */}
 			{(isEdit || isWrite) && !diff && toolCall.output != null && (
-				<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
-					<pre className="max-h-40 overflow-y-auto bg-zinc-50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/50 dark:text-zinc-400">
+				<div className="overflow-hidden rounded-md border border-zinc-200/50 dark:border-zinc-700/30">
+					<pre className="max-h-40 overflow-y-auto bg-zinc-50/80 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/40 dark:text-zinc-400">
 						{(typeof toolCall.output === "string"
 							? toolCall.output
 							: JSON.stringify(toolCall.output, null, 2)

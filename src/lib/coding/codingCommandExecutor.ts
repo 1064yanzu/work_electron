@@ -118,6 +118,10 @@ export async function executeCodingCommand(
 				return executeCleanTerminals();
 			case "set_theme":
 				return executeSetTheme(payload?.theme as string);
+			case "set_reasoning_effort":
+				return executeSetReasoningEffort(context, payload?.reasoningEffort as string);
+			case "open_feedback":
+				return { success: true, message: "感谢您的反馈意愿！反馈功能即将上线。" };
 			default:
 				return { success: false, error: `未知命令: ${actionId}` };
 		}
@@ -426,4 +430,16 @@ async function executeSetTheme(theme?: string): Promise<CommandResult> {
 	const { setAICodingSettings } = await import("./codingSettings");
 	await setAICodingSettings({ highlightTheme: theme });
 	return { success: true, message: `代码高亮主题已切换为: ${theme}` };
+}
+
+async function executeSetReasoningEffort(
+	_context: CommandContext,
+	effort?: string,
+): Promise<CommandResult> {
+	if (!effort || !["low", "medium", "high"].includes(effort)) {
+		return { success: false, error: "请通过 /thinking 子菜单选择思考深度（低/中/高）。" };
+	}
+	codingAgentStore.setCodexReasoningEffort(effort as "low" | "medium" | "high");
+	const effortLabels: Record<string, string> = { low: "低", medium: "中", high: "高" };
+	return { success: true, message: `Codex 思考深度已设置为: ${effortLabels[effort]}` };
 }

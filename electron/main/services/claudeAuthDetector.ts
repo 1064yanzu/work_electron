@@ -1,10 +1,11 @@
 /**
- * Claude Code 认证状态检测
+ * Claude Code 认证状态检测 + 用户本地 CLI 配置读取
  *
- * 读取用户本机的 Claude Code 认证信息，包括：
- * - 环境变量 ANTHROPIC_API_KEY
+ * 读取用户本机的 CLI 配置信息：
+ * - Claude Code: ~/.claude/settings.json (model, mcpServers, permissions)
+ * - Codex:       ~/.codex/config.toml   (model, provider, reasoning_effort, approval_policy, sandbox_mode, etc.)
+ * - 环境变量 ANTHROPIC_API_KEY / OPENAI_API_KEY
  * - ~/.claude.json 中的 OAuth 账号信息
- * - ~/.claude/settings.json 中的 model / mcpServers
  */
 
 import fsp from "node:fs/promises";
@@ -157,7 +158,7 @@ export async function getClaudeAuthStatus(): Promise<ClaudeAuthStatus> {
 	};
 }
 
-// ─── 用户本机 CLI 配置读取 ─────────────────────────────────────
+// ─── 用户本机 CLI 配置读取（增强版） ──────────────────────────────
 
 export interface UserCliConfig {
 	claude?: {
@@ -168,13 +169,46 @@ export interface UserCliConfig {
 	codex?: {
 		model?: string;
 		provider?: string;
+		/** Codex 思考程度 */
+		reasoningEffort?: "low" | "medium" | "high";
+		/** 审批策略 */
+		approvalPolicy?: string;
+		/** 沙盒模式 */
+		sandboxMode?: string;
+		/** 是否禁用响应存储 */
+		disableResponseStorage?: boolean;
+		/** 自动审批超时 */
+		autoApproveTimeoutMs?: number;
+		/** 通知命令 */
+		notifyCommand?: string;
 	};
+}
+
+/**
+ * 简单 TOML 键值提取（避免引入第三方 TOML 库）
+ * 支持 key = "value" / key = true / key = 123 格式
+ */
+function extractTomlString(raw: string, key: string): string | undefined {
+	const match = raw.match(new RegExp(`^\\s*${key}\\s*=\\s*"([^"]*)"`, "m"));
+	return match?.[1];
+}
+
+function extractTomlBool(raw: string, key: string): boolean | undefined {
+	const match = raw.match(new RegExp(`^\\s*${key}\\s*=\\s*(true|false)`, "m"));
+	if (!match) return undefined;
+	return match[1] === "true";
+}
+
+function extractTomlNumber(raw: string, key: string): number | undefined {
+	const match = raw.match(new RegExp(`^\\s*${key}\\s*=\\s*(\\d+)`, "m"));
+	if (!match) return undefined;
+	return Number.parseInt(match[1], 10);
 }
 
 /**
  * 读取用户本机 CLI 配置文件，返回可用于同步到 app 设置的偏好数据。
  * - Claude Code: ~/.claude/settings.json (model, mcpServers, permissions)
- * - Codex:       ~/.codex/config.toml   (model, provider)
+ * - Codex:       ~/.codex/config.toml   (model, provider, reasoning_effort, approval_policy, ...)
  */
 export async function readUserCliConfig(): Promise<UserCliConfig> {
 	const homeDir = app.getPath("home");
@@ -212,13 +246,28 @@ export async function readUserCliConfig(): Promise<UserCliConfig> {
 			path.join(homeDir, ".codex", "config.toml"),
 			"utf-8",
 		);
-		// 简单的 TOML key = value 解析（无需第三方库）
-		const model = raw.match(/^\s*model\s*=\s*"([^"]+)"/m)?.[1];
-		const provider = raw.match(/^\s*provider\s*=\s*"([^"]+)"/m)?.[1];
-		if (model ?? provider) {
+
+		const model = extractTomlString(raw, "model");
+		const provider = extractTomlString(raw, "provider");
+		const reasoningEffort = extractTomlString(raw, "reasoning_effort");
+		const approvalPolicy = extractTomlString(raw, "approval_policy");
+		const sandboxMode = extractTomlString(raw, "sandbox_mode");
+		const disableResponseStorage = extractTomlBool(raw, "disable_response_storage");
+		const autoApproveTimeoutMs = extractTomlNumber(raw, "auto_approve_timeout_ms");
+		const notifyCommand = extractTomlString(raw, "notify_command");
+
+		if (model ?? provider ?? reasoningEffort ?? approvalPolicy) {
 			result.codex = {};
 			if (model) result.codex.model = model;
 			if (provider) result.codex.provider = provider;
+			if (reasoningEffort && ["low", "medium", "high"].includes(reasoningEffort)) {
+				result.codex.reasoningEffort = reasoningEffort as "low" | "medium" | "high";
+			}
+			if (approvalPolicy) result.codex.approvalPolicy = approvalPolicy;
+			if (sandboxMode) result.codex.sandboxMode = sandboxMode;
+			if (disableResponseStorage != null) result.codex.disableResponseStorage = disableResponseStorage;
+			if (autoApproveTimeoutMs != null) result.codex.autoApproveTimeoutMs = autoApproveTimeoutMs;
+			if (notifyCommand) result.codex.notifyCommand = notifyCommand;
 		}
 	} catch {
 		// 文件不存在或解析失败时忽略

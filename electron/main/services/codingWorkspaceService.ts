@@ -335,6 +335,33 @@ async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
 	const binaryPath = await findCodexBinary();
 	const version = binaryPath ? await runCommand(binaryPath, ["--version"]) : null;
 	const helpText = binaryPath ? await runCommand(binaryPath, ["exec", "--help"]) : null;
+
+	// 从本地 CLI 配置读取默认值
+	let configModel: string | undefined;
+	try {
+		const { readUserCliConfig } = await import("./claudeAuthDetector");
+		const cliConfig = await readUserCliConfig();
+		configModel = cliConfig.codex?.model;
+	} catch {
+		// 忽略配置读取失败
+	}
+
+	// 从 exec --help 输出中尝试解析可用模型列表
+	const modelCatalog: string[] = [];
+	if (helpText) {
+		// 尝试匹配 --model / -m 后面的合法值列表
+		const modelMatch = helpText.match(/-m,?\s+--model\s+<[^>]*>\s+\[possible values:\s*([^\]]+)\]/i);
+		if (modelMatch?.[1]) {
+			const models = modelMatch[1].split(",").map((m) => m.trim()).filter(Boolean);
+			modelCatalog.push(...models);
+		}
+	}
+
+	// 如果 configModel 不在 catalog 中但存在，补充到列表头部
+	if (configModel && !modelCatalog.includes(configModel)) {
+		modelCatalog.unshift(configModel);
+	}
+
 	const capabilities: BackendCapabilityFlags = {
 		resume: Boolean(helpText?.includes("exec resume")),
 		rewind: false,
@@ -356,8 +383,8 @@ async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
 			setModelWhileRunning: "Codex exec 运行中不支持在线切换模型。",
 			rewind: "Codex CLI 当前没有暴露可供桌面端调用的 rewind 控制。",
 		},
-		defaultModel: DEFAULT_CODEX_MODEL,
-		modelCatalog: DEFAULT_CODEX_MODEL_CATALOG,
+		defaultModel: configModel || DEFAULT_CODEX_MODEL,
+		modelCatalog: modelCatalog.length > 0 ? modelCatalog : DEFAULT_CODEX_MODEL_CATALOG,
 		error: binaryPath ? undefined : "未检测到 Codex CLI。",
 	};
 }

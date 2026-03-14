@@ -13,8 +13,16 @@ import {
 	parseDiffStats,
 } from '../utils/diffUtils';
 
-/** 文件操作工具集合 */
-const FILE_WRITE_TOOLS = new Set(['Edit', 'Write', 'Patch', 'MultiEdit']);
+/** 文件操作工具集合（包含 Claude Code CLI 原始名称和内部名称） */
+const FILE_WRITE_TOOLS = new Set([
+	'Edit', 'Write', 'Patch', 'MultiEdit',
+	// Claude Code CLI 原始名称
+	'file_editor', 'text_editor', 'str_replace_editor',
+	'text_editor_20250124', 'text_editor_20241022',
+	'edit_file', 'file_edit', 'apply_diff', 'replace_in_file',
+	'insert_code_in_file', 'write_file', 'create_file', 'file_write',
+	'save_file', 'apply_patch', 'file_patch',
+]);
 
 /** 处理单个 UIEvent */
 export function processUIEvent(event: UIEvent): void {
