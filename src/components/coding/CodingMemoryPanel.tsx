@@ -1,6 +1,9 @@
 import { Loader2, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { codingRuntimeStore, useCodingRuntimeSelector } from "../../lib/stores/codingRuntimeStore";
+import {
+	codingRuntimeStore,
+	useCodingRuntimeSelector,
+} from "../../lib/stores/codingRuntimeStore";
 import { useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
 import { toast } from "../ui/Toast";
 
@@ -14,7 +17,9 @@ const TAB_LABELS: Record<MemoryTab, string> = {
 
 export function CodingMemoryPanel() {
 	const projectPath = useCodingWorkspaceSelector((state) => state.projectPath);
-	const workspaceMemory = useCodingRuntimeSelector((state) => state.workspaceMemory);
+	const workspaceMemory = useCodingRuntimeSelector(
+		(state) => state.workspaceMemory,
+	);
 	const loading = useCodingRuntimeSelector((state) => state.loading);
 	const [activeTab, setActiveTab] = useState<MemoryTab>("workspace");
 	const [drafts, setDrafts] = useState<Record<MemoryTab, string>>({
@@ -33,7 +38,10 @@ export function CodingMemoryPanel() {
 		});
 	}, [workspaceMemory]);
 
-	const sources = useMemo(() => workspaceMemory?.sources ?? [], [workspaceMemory]);
+	const sources = useMemo(
+		() => workspaceMemory?.sources ?? [],
+		[workspaceMemory],
+	);
 
 	const handleSave = async () => {
 		if (!projectPath) return;
@@ -61,7 +69,11 @@ export function CodingMemoryPanel() {
 	}
 
 	if (!workspaceMemory) {
-		return <div className="px-4 py-12 text-center text-xs text-zinc-400">当前项目还没有 workspace memory</div>;
+		return (
+			<div className="px-4 py-12 text-center text-xs text-zinc-400">
+				当前项目还没有 workspace memory
+			</div>
+		);
 	}
 
 	return (
@@ -82,7 +94,11 @@ export function CodingMemoryPanel() {
 						disabled={savingTab !== null}
 						className="ml-auto inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
 					>
-						{savingTab === activeTab ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+						{savingTab === activeTab ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Save className="h-3.5 w-3.5" />
+						)}
 						保存
 					</button>
 				</div>
@@ -91,16 +107,24 @@ export function CodingMemoryPanel() {
 				<textarea
 					value={drafts[activeTab]}
 					onChange={(event) =>
-						setDrafts((current) => ({ ...current, [activeTab]: event.target.value }))
+						setDrafts((current) => ({
+							...current,
+							[activeTab]: event.target.value,
+						}))
 					}
 					className="h-full w-full resize-none bg-transparent px-4 py-3 text-[12px] leading-6 text-zinc-800 outline-none dark:text-zinc-200"
 				/>
 			</div>
 			<div className="border-t border-black/[0.04] px-3 py-2 dark:border-white/[0.04]">
-				<div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">合并来源</div>
+				<div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+					合并来源
+				</div>
 				<div className="max-h-24 space-y-1 overflow-y-auto">
 					{sources.map((source) => (
-						<div key={source.path} className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+						<div
+							key={source.path}
+							className="truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+						>
 							{source.label}
 						</div>
 					))}

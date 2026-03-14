@@ -1,7 +1,4 @@
-import {
-	ChevronDown,
-	ChevronRight,
-} from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
@@ -34,7 +31,9 @@ export function ThoughtInline({
 }) {
 	const [open, setOpen] = useState(Boolean(isStreaming));
 	const [liveDurationMs, setLiveDurationMs] = useState(0);
-	const streamStartedAtRef = useRef<number | null>(isStreaming ? Date.now() : null);
+	const streamStartedAtRef = useRef<number | null>(
+		isStreaming ? Date.now() : null,
+	);
 	const prevStreamingRef = useRef(Boolean(isStreaming));
 
 	useEffect(() => {

@@ -30,13 +30,15 @@ function HighlightedDiffLineInner({
 
 		const id = ++requestRef.current;
 
-		highlightLine(content, language, theme as BundledTheme).then((result) => {
-			if (id !== requestRef.current) return;
-			setTokens(result);
-		}).catch(() => {
-			if (id !== requestRef.current) return;
-			setTokens(null);
-		});
+		highlightLine(content, language, theme as BundledTheme)
+			.then((result) => {
+				if (id !== requestRef.current) return;
+				setTokens(result);
+			})
+			.catch(() => {
+				if (id !== requestRef.current) return;
+				setTokens(null);
+			});
 	}, [content, language, theme]);
 
 	// 纯文本降级

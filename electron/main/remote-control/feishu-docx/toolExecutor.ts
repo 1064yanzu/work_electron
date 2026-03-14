@@ -15,7 +15,10 @@ function asRecord(input: unknown): Record<string, unknown> {
 	return input as Record<string, unknown>;
 }
 
-function optionalString(obj: Record<string, unknown>, key: string): string | undefined {
+function optionalString(
+	obj: Record<string, unknown>,
+	key: string,
+): string | undefined {
 	const value = obj[key];
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
@@ -30,7 +33,10 @@ function requiredString(obj: Record<string, unknown>, key: string): string {
 	return value;
 }
 
-function optionalNumber(obj: Record<string, unknown>, key: string): number | undefined {
+function optionalNumber(
+	obj: Record<string, unknown>,
+	key: string,
+): number | undefined {
 	const value = obj[key];
 	if (typeof value === "number" && Number.isFinite(value)) {
 		return value;
@@ -46,7 +52,10 @@ function requiredNumber(obj: Record<string, unknown>, key: string): number {
 	return value;
 }
 
-function requiredArray(obj: Record<string, unknown>, key: string): Array<Record<string, unknown>> {
+function requiredArray(
+	obj: Record<string, unknown>,
+	key: string,
+): Array<Record<string, unknown>> {
 	const value = obj[key];
 	if (!Array.isArray(value)) {
 		throw new Error(`缺少必填数组参数: ${key}`);
@@ -54,7 +63,10 @@ function requiredArray(obj: Record<string, unknown>, key: string): Array<Record<
 	return value as Array<Record<string, unknown>>;
 }
 
-function requiredStringArray(obj: Record<string, unknown>, key: string): string[] {
+function requiredStringArray(
+	obj: Record<string, unknown>,
+	key: string,
+): string[] {
 	const value = obj[key];
 	if (!Array.isArray(value)) {
 		throw new Error(`缺少必填字符串数组参数: ${key}`);
@@ -69,7 +81,10 @@ function requiredStringArray(obj: Record<string, unknown>, key: string): string[
 	return parsed;
 }
 
-function requiredObject(obj: Record<string, unknown>, key: string): Record<string, unknown> {
+function requiredObject(
+	obj: Record<string, unknown>,
+	key: string,
+): Record<string, unknown> {
 	const value = obj[key];
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error(`缺少必填对象参数: ${key}`);
@@ -97,7 +112,9 @@ export class FeishuDocxToolExecutor {
 	async executeTool(toolName: string, rawArgs: unknown): Promise<unknown> {
 		const args = asRecord(rawArgs ?? {});
 		const typedName = toolName as FeishuDocxToolName;
-		const toolDef = FEISHU_DOCX_TOOL_REGISTRY.find((item) => item.name === typedName);
+		const toolDef = FEISHU_DOCX_TOOL_REGISTRY.find(
+			(item) => item.name === typedName,
+		);
 		if (!toolDef) {
 			throw new Error(`未知工具: ${toolName}`);
 		}
@@ -105,11 +122,19 @@ export class FeishuDocxToolExecutor {
 		if (WRITE_TOOLS.has(typedName) && !this.config.enableDocWriteOps) {
 			throw new Error("当前配置禁止文档写操作（enableDocWriteOps=false）");
 		}
-		if (typedName === "drive_delete_doc_file" && !this.config.enableDocFileDelete) {
+		if (
+			typedName === "drive_delete_doc_file" &&
+			!this.config.enableDocFileDelete
+		) {
 			throw new Error("当前配置禁止文档级删除（enableDocFileDelete=false）");
 		}
-		if (typedName === "docs_get_content_legacy" && !this.config.enableLegacyDocsRead) {
-			throw new Error("当前配置关闭旧 Docs 读取兼容（enableLegacyDocsRead=false）");
+		if (
+			typedName === "docs_get_content_legacy" &&
+			!this.config.enableLegacyDocsRead
+		) {
+			throw new Error(
+				"当前配置关闭旧 Docs 读取兼容（enableLegacyDocsRead=false）",
+			);
 		}
 
 		const client = createFeishuDocxClient(this.config);

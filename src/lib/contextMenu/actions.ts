@@ -13,7 +13,10 @@ export function buildProjectContextMenu(ctx: {
 	return [
 		{ label: "打开项目", onClick: ctx.onOpen },
 		{ label: "重命名", onClick: ctx.onRename },
-		{ label: ctx.isArchived ? "取消归档" : "归档项目", onClick: ctx.onToggleArchive },
+		{
+			label: ctx.isArchived ? "取消归档" : "归档项目",
+			onClick: ctx.onToggleArchive,
+		},
 		{ label: "在文件管理器中显示", onClick: ctx.onReveal },
 		{ separator: true, label: "" as string, onClick: () => {} },
 		{ label: "删除项目", onClick: ctx.onDelete, danger: true },
@@ -33,9 +36,11 @@ export function buildDocumentTabContextMenu(ctx: {
 		{ label: "关闭其他", onClick: ctx.onCloseOthers },
 		{ label: "关闭右侧", onClick: ctx.onCloseRight },
 	];
-	if (ctx.onCopyPath) items.push({ label: "复制文档路径", onClick: ctx.onCopyPath });
+	if (ctx.onCopyPath)
+		items.push({ label: "复制文档路径", onClick: ctx.onCopyPath });
 	if (ctx.onMove) items.push({ label: "移动到...", onClick: ctx.onMove });
-	if (ctx.onDelete) items.push({ label: "删除文档", onClick: ctx.onDelete, danger: true });
+	if (ctx.onDelete)
+		items.push({ label: "删除文档", onClick: ctx.onDelete, danger: true });
 	return items;
 }
 
@@ -54,8 +59,10 @@ export function buildFileItemContextMenu(ctx: {
 	const items: ContextMenuItem[] = [{ label: "打开", onClick: ctx.onOpen }];
 	if (ctx.onRename) items.push({ label: "重命名", onClick: ctx.onRename });
 	if (ctx.onMove) items.push({ label: "移动到...", onClick: ctx.onMove });
-	if (ctx.onCopyPath) items.push({ label: "复制路径", onClick: ctx.onCopyPath });
-	if (ctx.onReveal) items.push({ label: "在文件管理器中显示", onClick: ctx.onReveal });
+	if (ctx.onCopyPath)
+		items.push({ label: "复制路径", onClick: ctx.onCopyPath });
+	if (ctx.onReveal)
+		items.push({ label: "在文件管理器中显示", onClick: ctx.onReveal });
 	if (ctx.onSetTags) items.push({ label: "标签管理", onClick: ctx.onSetTags });
 	if (ctx.canSetScope && ctx.onSetGlobal) {
 		items.push({ label: "设为全局可见", onClick: ctx.onSetGlobal });
@@ -63,7 +70,8 @@ export function buildFileItemContextMenu(ctx: {
 	if (ctx.canSetScope && ctx.onSetProject) {
 		items.push({ label: "设为项目内可见", onClick: ctx.onSetProject });
 	}
-	if (ctx.onDelete) items.push({ label: "删除", onClick: ctx.onDelete, danger: true });
+	if (ctx.onDelete)
+		items.push({ label: "删除", onClick: ctx.onDelete, danger: true });
 	return items;
 }
 

@@ -326,8 +326,7 @@ export default function CodingWorkspace({
 				const agentState = codingAgentStore.getState();
 				await manager.send(content, {
 					cwd: effectiveProjectPath,
-					mode:
-						activeThread?.codingMode || agentState.codingMode,
+					mode: activeThread?.codingMode || agentState.codingMode,
 					contextFiles: codingWorkspaceStore.getState().contextFiles,
 					resumeSessionId:
 						codingSessionStore.getState().sdkSessionId ?? undefined,
@@ -404,9 +403,11 @@ export default function CodingWorkspace({
 			if (!meta.cwd) return;
 
 			// 找到或创建该项目的线程
-			const existingThread = codingThreadStore.getState().threads.find(
-				(t) => t.projectPath === meta.cwd && t.backend === "claude-code",
-			);
+			const existingThread = codingThreadStore
+				.getState()
+				.threads.find(
+					(t) => t.projectPath === meta.cwd && t.backend === "claude-code",
+				);
 
 			let targetThreadId: string;
 
@@ -444,8 +445,7 @@ export default function CodingWorkspace({
 			const exists = codingThreadStore
 				.getState()
 				.threads.find(
-					(t) =>
-						t.externalThreadId === meta.id && t.source === meta.source,
+					(t) => t.externalThreadId === meta.id && t.source === meta.source,
 				);
 			if (exists) {
 				handleSwitchThread(exists.id);
@@ -600,7 +600,7 @@ export default function CodingWorkspace({
 													<CodeViewerPanel tab={activeFileTab} />
 												</div>
 											) : (
-												<>
+												<div className="flex flex-col flex-1 overflow-hidden relative">
 													<CodingChatThread
 														onResolvePermission={handleResolvePermission}
 													/>
@@ -611,7 +611,7 @@ export default function CodingWorkspace({
 														isRunning={isRunning}
 														onOpenSettings={onOpenSettings}
 													/>
-												</>
+												</div>
 											)}
 										</>
 									)}

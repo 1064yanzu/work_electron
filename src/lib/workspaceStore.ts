@@ -29,9 +29,21 @@ import { researchStore } from "./stores/researchStore";
 import { tabStore } from "./stores/tabStore";
 
 // 重新导出子 Store，方便渐进迁移
-export { layoutStore, useLayoutStore, useLayoutStoreSelector } from "./stores/layoutStore";
-export { editorStore, useEditorStore, useEditorStoreSelector } from "./stores/editorStore";
-export { researchStore, useResearchStore, useResearchStoreSelector } from "./stores/researchStore";
+export {
+	layoutStore,
+	useLayoutStore,
+	useLayoutStoreSelector,
+} from "./stores/layoutStore";
+export {
+	editorStore,
+	useEditorStore,
+	useEditorStoreSelector,
+} from "./stores/editorStore";
+export {
+	researchStore,
+	useResearchStore,
+	useResearchStoreSelector,
+} from "./stores/researchStore";
 export { tabStore, useTabStore, useTabStoreSelector } from "./stores/tabStore";
 
 // 核心工作区状态（保留在此文件中）
@@ -50,9 +62,12 @@ class WorkspaceStore {
 	// 缓存聚合状态，避免 useSyncExternalStore 因引用不同而无限重渲染
 	private cachedAggregatedState: WorkspaceState | null = null;
 	private lastCoreState: CoreWorkspaceState | null = null;
-	private lastLayoutState: ReturnType<typeof layoutStore.getState> | null = null;
-	private lastEditorState: ReturnType<typeof editorStore.getState> | null = null;
-	private lastResearchState: ReturnType<typeof researchStore.getState> | null = null;
+	private lastLayoutState: ReturnType<typeof layoutStore.getState> | null =
+		null;
+	private lastEditorState: ReturnType<typeof editorStore.getState> | null =
+		null;
+	private lastResearchState: ReturnType<typeof researchStore.getState> | null =
+		null;
 	private lastTabState: ReturnType<typeof tabStore.getState> | null = null;
 
 	getState = (): WorkspaceState => {
@@ -151,11 +166,11 @@ class WorkspaceStore {
 				contexts: state.contexts.map((c) =>
 					c.id === contextId
 						? {
-							...c,
-							filePath: result.path,
-							size: result.size,
-							mimeType: "text/plain",
-						}
+								...c,
+								filePath: result.path,
+								size: result.size,
+								mimeType: "text/plain",
+							}
 						: c,
 				),
 			}));
@@ -404,15 +419,23 @@ class WorkspaceStore {
 		researchStore.addResearchStep(step);
 	}
 
-	updateResearchStep(stepId: string, updates: Parameters<typeof researchStore.updateResearchStep>[1]) {
+	updateResearchStep(
+		stepId: string,
+		updates: Parameters<typeof researchStore.updateResearchStep>[1],
+	) {
 		researchStore.updateResearchStep(stepId, updates);
 	}
 
-	addResearchSource(source: Parameters<typeof researchStore.addResearchSource>[0]) {
+	addResearchSource(
+		source: Parameters<typeof researchStore.addResearchSource>[0],
+	) {
 		researchStore.addResearchSource(source);
 	}
 
-	updateResearchStatus(status: Parameters<typeof researchStore.updateResearchStatus>[0], summary?: string) {
+	updateResearchStatus(
+		status: Parameters<typeof researchStore.updateResearchStatus>[0],
+		summary?: string,
+	) {
 		researchStore.updateResearchStatus(status, summary);
 	}
 

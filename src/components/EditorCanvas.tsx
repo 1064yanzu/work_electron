@@ -16,7 +16,10 @@ import { buildEditorBlankContextMenu } from "../lib/contextMenu/actions";
 import { debugUiLog, debugUiWarn } from "../lib/debug/uiDebug";
 import { EVENTS, events } from "../lib/events";
 import { measureNextPaint } from "../lib/performance/devMetrics";
-import { useWorkspaceStoreSelector, workspaceStore } from "../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../lib/workspaceStore";
 import { tabStore } from "../lib/stores/tabStore";
 import { diffStore } from "../lib/stores/diffStore";
 import { type OutputAsset, OutputType } from "../types";
@@ -88,7 +91,7 @@ export default function EditorCanvas({
 	const openedDocs = useWorkspaceStoreSelector((state) => state.openedDocs);
 	const activeDocId = useWorkspaceStoreSelector((state) => state.activeDocId);
 	const activeDocCache = useWorkspaceStoreSelector((state) =>
-		activeDocId ? state.docCache[activeDocId] ?? null : null,
+		activeDocId ? (state.docCache[activeDocId] ?? null) : null,
 	);
 	const tabs = useWorkspaceStoreSelector((state) => state.tabs);
 	const activeTabId = useWorkspaceStoreSelector((state) => state.activeTabId);
@@ -109,7 +112,7 @@ export default function EditorCanvas({
 	);
 	const activeSourceData = useWorkspaceStoreSelector((state) =>
 		activeSourceTab?.sourceId
-			? state.sourceReadCache[activeSourceTab.sourceId] ?? null
+			? (state.sourceReadCache[activeSourceTab.sourceId] ?? null)
 			: null,
 	);
 
@@ -120,7 +123,9 @@ export default function EditorCanvas({
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const docCacheSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const docCacheSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 	const titleSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
 		null,
 	);
@@ -569,7 +574,9 @@ export default function EditorCanvas({
 			}
 
 			setOutputs((prev) => prev.filter((item) => !ids.includes(item.id)));
-			setSelectedOutput((prev) => (prev && ids.includes(prev.id) ? null : prev));
+			setSelectedOutput((prev) =>
+				prev && ids.includes(prev.id) ? null : prev,
+			);
 			replaceEditorBuffer((prev) => {
 				if (
 					selectedOutputRef.current &&
@@ -580,7 +587,8 @@ export default function EditorCanvas({
 				return prev;
 			});
 
-			const label = ids.length === 1 ? "文档已删除" : `已删除 ${ids.length} 篇文档`;
+			const label =
+				ids.length === 1 ? "文档已删除" : `已删除 ${ids.length} 篇文档`;
 			toast.show(label, {
 				type: "warning",
 				duration: 5000,
@@ -1198,7 +1206,8 @@ export default function EditorCanvas({
 		if (!contextMenu) return [];
 		if (contextMenu.type === "blank") {
 			return buildEditorBlankContextMenu({
-				onCreate: () => void handleCreateNew(OutputType.Article, "未命名文档", ""),
+				onCreate: () =>
+					void handleCreateNew(OutputType.Article, "未命名文档", ""),
 				onPaste: async () => {
 					const text = await navigator.clipboard.readText();
 					if (!text.trim()) return;
@@ -1409,7 +1418,9 @@ export default function EditorCanvas({
 				onToggleSelectAll={handleToggleSelectAll}
 				onRequestBulkDeleteConfirm={() => setShowBulkDeleteConfirm(true)}
 				isBulkDeleting={isBulkDeleting}
-				onCreateNew={() => handleCreateNew(OutputType.Article, "未命名文档", "")}
+				onCreateNew={() =>
+					handleCreateNew(OutputType.Article, "未命名文档", "")
+				}
 				onSelectOutput={handleSelectOutput}
 				isSelectedForManage={isSelectedForManage}
 				onToggleManageSelection={toggleManageSelection}

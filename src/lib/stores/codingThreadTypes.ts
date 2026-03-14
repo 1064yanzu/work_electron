@@ -3,12 +3,12 @@
  * 支持多线程并行编程的核心数据模型
  */
 
-import type { SessionStatus } from './codingSessionTypes';
-import type { CodingBackend, CodingMode } from './codingAgentStore';
+import type { SessionStatus } from "./codingSessionTypes";
+import type { CodingBackend, CodingMode } from "./codingAgentStore";
 import type {
 	CodingApprovalMode,
 	BackendCapabilityMatrix,
-} from '../../../electron/shared/coding-workspace';
+} from "../../../electron/shared/coding-workspace";
 
 /** Diff 统计信息 */
 export interface DiffStats {
@@ -17,7 +17,7 @@ export interface DiffStats {
 }
 
 /** 线程来源标识 */
-export type CodingThreadSource = 'local' | 'codex-cli' | 'claude-code-cli';
+export type CodingThreadSource = "local" | "codex-cli" | "claude-code-cli";
 
 /** 编程线程 */
 export interface CodingThread {
@@ -69,4 +69,4 @@ export interface CodingThread {
 }
 
 /** 线程持久化数据（不含消息体） */
-export type CodingThreadPersist = Omit<CodingThread, 'status'>;
+export type CodingThreadPersist = Omit<CodingThread, "status">;

@@ -26,7 +26,9 @@ function toStringOrUndefined(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function safeParseJson(raw: string | undefined): Record<string, unknown> | null {
+function safeParseJson(
+	raw: string | undefined,
+): Record<string, unknown> | null {
 	if (!raw) return null;
 	try {
 		return asRecord(JSON.parse(raw));
@@ -51,12 +53,15 @@ function parseInteractiveSummary(content: Record<string, unknown> | null): {
 	if (!content) return {};
 	const title = toStringOrUndefined(content.title);
 	const elements = Array.isArray(content.elements)
-		? content.elements.map((item) => {
-			const line = asRecord(item);
-			return toStringOrUndefined(line?.text) || toStringOrUndefined(line?.tag);
-		})
-		.filter(Boolean)
-		.join(" / ")
+		? content.elements
+				.map((item) => {
+					const line = asRecord(item);
+					return (
+						toStringOrUndefined(line?.text) || toStringOrUndefined(line?.tag)
+					);
+				})
+				.filter(Boolean)
+				.join(" / ")
 		: undefined;
 	return {
 		title,
@@ -64,7 +69,10 @@ function parseInteractiveSummary(content: Record<string, unknown> | null): {
 	};
 }
 
-function buildSummary(messageType: string, content: Record<string, unknown> | null): {
+function buildSummary(
+	messageType: string,
+	content: Record<string, unknown> | null,
+): {
 	title?: string;
 	summary?: string;
 } {
@@ -98,7 +106,9 @@ function buildSummary(messageType: string, content: Record<string, unknown> | nu
 		case "merge_forward":
 			return {
 				title: "合并转发消息",
-				summary: toStringOrUndefined(content.content) || "Merged and Forwarded Message",
+				summary:
+					toStringOrUndefined(content.content) ||
+					"Merged and Forwarded Message",
 			};
 		case "interactive":
 			return parseInteractiveSummary(content);
@@ -129,9 +139,13 @@ export class FeishuShareMessageContextService {
 		return this.supportedTypes.has(messageType);
 	}
 
-	buildContext(message: IncomingShareMessage): FeishuBufferedShareContext | null {
+	buildContext(
+		message: IncomingShareMessage,
+	): FeishuBufferedShareContext | null {
 		const messageId = toStringOrUndefined(message.message_id);
-		const messageType = toStringOrUndefined(message.message_type)?.toLowerCase();
+		const messageType = toStringOrUndefined(
+			message.message_type,
+		)?.toLowerCase();
 		if (!messageId || !messageType) return null;
 		if (!this.isContextMessageType(messageType)) return null;
 		const content = safeParseJson(message.content);
@@ -163,4 +177,3 @@ export class FeishuShareMessageContextService {
 		return lines.join("\n");
 	}
 }
-

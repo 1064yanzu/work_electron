@@ -157,195 +157,192 @@ export function ImageGenSettings() {
 				}
 			/>
 
-				{/* 提供商选择 */}
-				<div className="space-y-3">
-					<h4 className="font-medium text-text-primary">生图提供商</h4>
+			{/* 提供商选择 */}
+			<div className="space-y-3">
+				<h4 className="font-medium text-text-primary">生图提供商</h4>
+				<div className="relative">
+					<select
+						value={config.providerId}
+						onChange={(e) => handleChange("providerId", e.target.value)}
+						className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+					>
+						<option value="">选择提供商...</option>
+						{enabledProviders.map((provider) => (
+							<option key={provider.id} value={provider.id}>
+								{provider.name}
+							</option>
+						))}
+					</select>
+					<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+				</div>
+				<p className="text-xs text-text-muted">
+					推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。
+				</p>
+			</div>
+
+			{/* 模型选择 - 下拉框 */}
+			<div className="space-y-3">
+				<h4 className="font-medium text-text-primary">生图模型</h4>
+				{config.providerId && availableModels.length > 0 ? (
 					<div className="relative">
 						<select
-							value={config.providerId}
-							onChange={(e) => handleChange("providerId", e.target.value)}
+							value={config.model}
+							onChange={(e) => handleChange("model", e.target.value)}
 							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
 						>
-							<option value="">选择提供商...</option>
-							{enabledProviders.map((provider) => (
-								<option key={provider.id} value={provider.id}>
-									{provider.name}
+							<option value="">选择模型...</option>
+							{availableModels.map((model: string) => (
+								<option key={model} value={model}>
+									{model}
 								</option>
 							))}
 						</select>
 						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
 					</div>
-					<p className="text-xs text-text-muted">
-						推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API
-						的服务。
-					</p>
-				</div>
+				) : config.providerId ? (
+					<>
+						<input
+							type="text"
+							value={config.model}
+							onChange={(e) => handleChange("model", e.target.value)}
+							placeholder="输入生图模型 ID，如 dall-e-3, flux.1-schnell"
+							className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+						/>
+						<p className="text-xs text-text-muted">
+							该提供商暂无预设模型，请手动输入支持的生图模型 ID。
+						</p>
+					</>
+				) : (
+					<div className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-500">
+						请先选择提供商
+					</div>
+				)}
+			</div>
 
-				{/* 模型选择 - 下拉框 */}
-				<div className="space-y-3">
-					<h4 className="font-medium text-text-primary">生图模型</h4>
-					{config.providerId && availableModels.length > 0 ? (
+			{/* 图片比例选择 */}
+			<div className="space-y-3">
+				<h4 className="font-medium text-text-primary">图片比例</h4>
+				<div className="flex flex-wrap gap-2">
+					{ASPECT_RATIO_GROUPS.map((group) => (
+						<div key={group.label} className="flex items-center gap-1">
+							<span className="text-xs text-zinc-400 mr-1">{group.label}:</span>
+							{group.options.map((option) => (
+								<button
+									key={option.value}
+									onClick={() => handleChange("defaultSize", option.value)}
+									className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+										config.defaultSize === option.value
+											? "bg-zinc-900 text-white"
+											: "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+									}`}
+								>
+									{option.label}
+								</button>
+							))}
+						</div>
+					))}
+				</div>
+			</div>
+
+			{/* 提示词模板 */}
+			<div className="space-y-3">
+				<h4 className="font-medium text-text-primary flex items-center gap-2">
+					<Wand2 className="w-4 h-4" />
+					提示词模板
+				</h4>
+				<textarea
+					value={config.promptTemplate}
+					onChange={(e) => handleChange("promptTemplate", e.target.value)}
+					rows={4}
+					placeholder="使用 {text} 作为选中文字的占位符"
+					className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none font-mono"
+				/>
+				<div className="flex items-center justify-between">
+					<p className="text-xs text-text-muted">
+						<code className="px-1.5 py-0.5 bg-zinc-100 rounded text-zinc-600">
+							{"{text}"}
+						</code>{" "}
+						将替换为选中的文字
+					</p>
+					<button
+						onClick={() =>
+							handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
+						}
+						className="text-xs text-primary hover:underline"
+					>
+						恢复默认
+					</button>
+				</div>
+			</div>
+
+			{/* 负向提示词 */}
+			<div className="space-y-3">
+				<h4 className="font-medium text-text-primary">负向提示词（可选）</h4>
+				<textarea
+					value={config.negativePrompt || ""}
+					onChange={(e) => handleChange("negativePrompt", e.target.value)}
+					rows={2}
+					placeholder="low quality, blurry, distorted, watermark, text"
+					className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none"
+				/>
+				<p className="text-xs text-text-muted">
+					指定不希望出现在图像中的元素。部分模型支持此参数。
+				</p>
+			</div>
+
+			{/* 高级选项 */}
+			<div className="space-y-4 pt-4 border-t border-border">
+				<h4 className="font-medium text-text-primary">高级选项</h4>
+				<div className="grid grid-cols-2 gap-4">
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							图片质量
+						</label>
 						<div className="relative">
 							<select
-								value={config.model}
-								onChange={(e) => handleChange("model", e.target.value)}
+								value={config.quality || "standard"}
+								onChange={(e) => handleChange("quality", e.target.value)}
 								className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
 							>
-								<option value="">选择模型...</option>
-								{availableModels.map((model: string) => (
-									<option key={model} value={model}>
-										{model}
-									</option>
-								))}
+								<option value="standard">标准</option>
+								<option value="hd">高清 (HD)</option>
 							</select>
 							<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
 						</div>
-					) : config.providerId ? (
-						<>
-							<input
-								type="text"
-								value={config.model}
-								onChange={(e) => handleChange("model", e.target.value)}
-								placeholder="输入生图模型 ID，如 dall-e-3, flux.1-schnell"
-								className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-							/>
-							<p className="text-xs text-text-muted">
-								该提供商暂无预设模型，请手动输入支持的生图模型 ID。
-							</p>
-						</>
-					) : (
-						<div className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-500">
-							请先选择提供商
+					</div>
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							图片风格
+						</label>
+						<div className="relative">
+							<select
+								value={config.style || "natural"}
+								onChange={(e) => handleChange("style", e.target.value)}
+								className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
+							>
+								<option value="natural">自然</option>
+								<option value="vivid">鲜艳</option>
+							</select>
+							<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
 						</div>
-					)}
-				</div>
-
-				{/* 图片比例选择 */}
-				<div className="space-y-3">
-					<h4 className="font-medium text-text-primary">图片比例</h4>
-					<div className="flex flex-wrap gap-2">
-						{ASPECT_RATIO_GROUPS.map((group) => (
-							<div key={group.label} className="flex items-center gap-1">
-								<span className="text-xs text-zinc-400 mr-1">
-									{group.label}:
-								</span>
-								{group.options.map((option) => (
-									<button
-										key={option.value}
-										onClick={() => handleChange("defaultSize", option.value)}
-										className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-											config.defaultSize === option.value
-												? "bg-zinc-900 text-white"
-												: "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-										}`}
-									>
-										{option.label}
-									</button>
-								))}
-							</div>
-						))}
 					</div>
 				</div>
+			</div>
 
-				{/* 提示词模板 */}
-				<div className="space-y-3">
-					<h4 className="font-medium text-text-primary flex items-center gap-2">
-						<Wand2 className="w-4 h-4" />
-						提示词模板
-					</h4>
-					<textarea
-						value={config.promptTemplate}
-						onChange={(e) => handleChange("promptTemplate", e.target.value)}
-						rows={4}
-						placeholder="使用 {text} 作为选中文字的占位符"
-						className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none font-mono"
-					/>
-					<div className="flex items-center justify-between">
-						<p className="text-xs text-text-muted">
-							<code className="px-1.5 py-0.5 bg-zinc-100 rounded text-zinc-600">
-								{"{text}"}
-							</code>{" "}
-							将替换为选中的文字
-						</p>
-						<button
-							onClick={() =>
-								handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
-							}
-							className="text-xs text-primary hover:underline"
-						>
-							恢复默认
-						</button>
-					</div>
-				</div>
-
-				{/* 负向提示词 */}
-				<div className="space-y-3">
-					<h4 className="font-medium text-text-primary">负向提示词（可选）</h4>
-					<textarea
-						value={config.negativePrompt || ""}
-						onChange={(e) => handleChange("negativePrompt", e.target.value)}
-						rows={2}
-						placeholder="low quality, blurry, distorted, watermark, text"
-						className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none"
-					/>
-					<p className="text-xs text-text-muted">
-						指定不希望出现在图像中的元素。部分模型支持此参数。
+			{/* 状态提示 */}
+			{!config.providerId || !config.model ? (
+				<div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+					<p className="text-sm text-amber-800">
+						⚠️ 请配置提供商和模型后才能使用生图功能。
 					</p>
 				</div>
-
-				{/* 高级选项 */}
-				<div className="space-y-4 pt-4 border-t border-border">
-					<h4 className="font-medium text-text-primary">高级选项</h4>
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								图片质量
-							</label>
-							<div className="relative">
-								<select
-									value={config.quality || "standard"}
-									onChange={(e) => handleChange("quality", e.target.value)}
-									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-								>
-									<option value="standard">标准</option>
-									<option value="hd">高清 (HD)</option>
-								</select>
-								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-							</div>
-						</div>
-						<div>
-							<label className="text-sm text-text-secondary mb-1.5 block">
-								图片风格
-							</label>
-							<div className="relative">
-								<select
-									value={config.style || "natural"}
-									onChange={(e) => handleChange("style", e.target.value)}
-									className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-								>
-									<option value="natural">自然</option>
-									<option value="vivid">鲜艳</option>
-								</select>
-								<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-							</div>
-						</div>
-					</div>
+			) : (
+				<div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+					<p className="text-sm text-emerald-800">
+						✅ 配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
+					</p>
 				</div>
-
-				{/* 状态提示 */}
-				{!config.providerId || !config.model ? (
-					<div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-						<p className="text-sm text-amber-800">
-							⚠️ 请配置提供商和模型后才能使用生图功能。
-						</p>
-					</div>
-				) : (
-					<div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-						<p className="text-sm text-emerald-800">
-							✅ 配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
-						</p>
-					</div>
-				)}
+			)}
 		</SettingsPageContainer>
 	);
 }

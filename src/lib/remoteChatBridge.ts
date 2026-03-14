@@ -99,7 +99,9 @@ function getChatSessionById(sessionId: string): ChatSession | null {
 	);
 }
 
-function findChatSessionByAgentSessionId(agentSessionId: string): ChatSession | null {
+function findChatSessionByAgentSessionId(
+	agentSessionId: string,
+): ChatSession | null {
 	if (!agentSessionId) return null;
 	return (
 		chatStore
@@ -175,7 +177,8 @@ function parseRemoteConfig(configJson: unknown): {
 	if (obj.source !== "remote-control") return null;
 	const remoteSessionId =
 		typeof obj.remoteSessionId === "string" ? obj.remoteSessionId.trim() : "";
-	const channelId = typeof obj.channelId === "string" ? obj.channelId.trim() : "";
+	const channelId =
+		typeof obj.channelId === "string" ? obj.channelId.trim() : "";
 	const peerName = typeof obj.peerName === "string" ? obj.peerName.trim() : "";
 	const peerId = typeof obj.peerId === "string" ? obj.peerId.trim() : "";
 	const taskId = typeof obj.taskId === "string" ? obj.taskId.trim() : "";
@@ -219,7 +222,8 @@ export function useRemoteChatBridge(): void {
 		}): ChatSession => {
 			const { remoteSessionId, agentSessionId, title } = input;
 			if (agentSessionId) {
-				const mappedByAgent = agentSessionToChatSessionRef.current.get(agentSessionId);
+				const mappedByAgent =
+					agentSessionToChatSessionRef.current.get(agentSessionId);
 				if (mappedByAgent) {
 					const existing = getChatSessionById(mappedByAgent);
 					if (existing) {
@@ -235,7 +239,10 @@ export function useRemoteChatBridge(): void {
 				}
 				const existingByAgent = findChatSessionByAgentSessionId(agentSessionId);
 				if (existingByAgent) {
-					agentSessionToChatSessionRef.current.set(agentSessionId, existingByAgent.id);
+					agentSessionToChatSessionRef.current.set(
+						agentSessionId,
+						existingByAgent.id,
+					);
 					if (remoteSessionId) {
 						remoteSessionToChatSessionRef.current.set(
 							remoteSessionId,
@@ -247,7 +254,8 @@ export function useRemoteChatBridge(): void {
 			}
 
 			if (remoteSessionId) {
-				const mappedByRemote = remoteSessionToChatSessionRef.current.get(remoteSessionId);
+				const mappedByRemote =
+					remoteSessionToChatSessionRef.current.get(remoteSessionId);
 				if (mappedByRemote) {
 					const existing = getChatSessionById(mappedByRemote);
 					if (existing) return existing;
@@ -277,7 +285,8 @@ export function useRemoteChatBridge(): void {
 			const session = getChatSessionById(chatSessionId);
 			if (!session) return;
 			try {
-				const messages = await loadAgentSessionMessagesAsChatMessages(agentSessionId);
+				const messages =
+					await loadAgentSessionMessagesAsChatMessages(agentSessionId);
 				if (!getChatSessionById(chatSessionId)) return;
 				chatStore.replaceSessionMessages(chatSessionId, messages);
 			} catch (error) {
@@ -291,20 +300,29 @@ export function useRemoteChatBridge(): void {
 			try {
 				const sessions = await listAgentSessions("active");
 				if (disposed) return;
-				const mirrorLimit = force ? INITIAL_MIRROR_LIMIT : INCREMENTAL_MIRROR_LIMIT;
+				const mirrorLimit = force
+					? INITIAL_MIRROR_LIMIT
+					: INCREMENTAL_MIRROR_LIMIT;
 				const remoteSessions = sessions
 					.map((session) => {
 						const meta = parseRemoteConfig(session.config_json);
 						if (!meta) return null;
 						return { session, meta };
 					})
-					.filter((item): item is { session: any; meta: NonNullable<ReturnType<typeof parseRemoteConfig>> } => Boolean(item))
-						.sort(
-							(a, b) =>
-								parseTimestamp(b.session.updated_at) -
-								parseTimestamp(a.session.updated_at),
-						)
-						.slice(0, mirrorLimit);
+					.filter(
+						(
+							item,
+						): item is {
+							session: any;
+							meta: NonNullable<ReturnType<typeof parseRemoteConfig>>;
+						} => Boolean(item),
+					)
+					.sort(
+						(a, b) =>
+							parseTimestamp(b.session.updated_at) -
+							parseTimestamp(a.session.updated_at),
+					)
+					.slice(0, mirrorLimit);
 
 				let maxUpdatedAt = lastSyncedAtRef.current;
 				let hydratedCount = 0;
@@ -321,13 +339,14 @@ export function useRemoteChatBridge(): void {
 						remoteSessionId: item.meta.remoteSessionId,
 						agentSessionId,
 						title:
-							typeof item.session.title === "string" && item.session.title.trim()
+							typeof item.session.title === "string" &&
+							item.session.title.trim()
 								? item.session.title.trim()
 								: buildRemoteSessionTitle(
-									item.meta.channelId || "feishu",
-									item.meta.peerName,
-									item.meta.peerId,
-								),
+										item.meta.channelId || "feishu",
+										item.meta.peerName,
+										item.meta.peerId,
+									),
 					});
 					chatStore.setSessionAgentSessionId(chatSession.id, agentSessionId);
 
@@ -339,18 +358,21 @@ export function useRemoteChatBridge(): void {
 						// 按 updated_at 已降序，后续更旧，直接提前结束。
 						break;
 					}
-						if (activeRunByAgentSessionRef.current.has(agentSessionId) && !force) {
-							continue;
-						}
-						if (force && hydratedCount >= INITIAL_HYDRATION_LIMIT) {
-							continue;
-						}
-						hydrateTargets.push({
-							agentSessionId,
-							chatSessionId: chatSession.id,
-						});
-						if (force) hydratedCount += 1;
+					if (
+						activeRunByAgentSessionRef.current.has(agentSessionId) &&
+						!force
+					) {
+						continue;
 					}
+					if (force && hydratedCount >= INITIAL_HYDRATION_LIMIT) {
+						continue;
+					}
+					hydrateTargets.push({
+						agentSessionId,
+						chatSessionId: chatSession.id,
+					});
+					if (force) hydratedCount += 1;
+				}
 				const maxConcurrentHydration = 4;
 				for (
 					let index = 0;
@@ -370,7 +392,10 @@ export function useRemoteChatBridge(): void {
 						),
 					);
 				}
-				lastSyncedAtRef.current = Math.max(lastSyncedAtRef.current, maxUpdatedAt);
+				lastSyncedAtRef.current = Math.max(
+					lastSyncedAtRef.current,
+					maxUpdatedAt,
+				);
 			} catch (error) {
 				console.warn("[RemoteChatBridge] 远程会话增量同步失败:", error);
 			} finally {
@@ -387,11 +412,15 @@ export function useRemoteChatBridge(): void {
 				sandboxDir: binding.sandboxDir,
 				blocks: buildRunBlocks(binding),
 			};
-			chatStore.updateMessage(binding.chatSessionId, binding.assistantMessageId, {
-				content: binding.textParts.join(""),
-				metadata: metadataBase,
-				...overrides,
-			});
+			chatStore.updateMessage(
+				binding.chatSessionId,
+				binding.assistantMessageId,
+				{
+					content: binding.textParts.join(""),
+					metadata: metadataBase,
+					...overrides,
+				},
+			);
 		};
 
 		const setup = async () => {
@@ -401,7 +430,10 @@ export function useRemoteChatBridge(): void {
 				const settings = await getPerformanceTuning();
 				remoteSyncIntervalMs = settings.remoteSyncIntervalMs;
 			} catch (error) {
-				console.warn("[RemoteChatBridge] 加载性能设置失败，使用默认同步间隔:", error);
+				console.warn(
+					"[RemoteChatBridge] 加载性能设置失败，使用默认同步间隔:",
+					error,
+				);
 			}
 
 			const handleWindowFocus = () => {
@@ -428,7 +460,9 @@ export function useRemoteChatBridge(): void {
 					if (!runId) return;
 					if (activeRunsRef.current.has(runId)) return;
 
-					const taskId = String(payload.taskId || `remote-${payload.sessionId}`);
+					const taskId = String(
+						payload.taskId || `remote-${payload.sessionId}`,
+					);
 					const session = ensureRemoteChatSession({
 						remoteSessionId: payload.sessionId,
 						agentSessionId: payload.agentSessionId,
@@ -439,14 +473,23 @@ export function useRemoteChatBridge(): void {
 						),
 					});
 					if (payload.agentSessionId) {
-						chatStore.setSessionAgentSessionId(session.id, payload.agentSessionId);
+						chatStore.setSessionAgentSessionId(
+							session.id,
+							payload.agentSessionId,
+						);
 						agentSessionToChatSessionRef.current.set(
 							payload.agentSessionId,
 							session.id,
 						);
-						activeRunByAgentSessionRef.current.set(payload.agentSessionId, runId);
+						activeRunByAgentSessionRef.current.set(
+							payload.agentSessionId,
+							runId,
+						);
 						if (payload.persistedByMain) {
-							void hydrateAgentSessionMessages(payload.agentSessionId, session.id);
+							void hydrateAgentSessionMessages(
+								payload.agentSessionId,
+								session.id,
+							);
 						}
 					}
 
@@ -574,7 +617,9 @@ export function useRemoteChatBridge(): void {
 									output: uiEvent.output,
 									error: uiEvent.isError ? "工具调用失败" : undefined,
 								});
-								for (const path of extractImagePathsFromOutput(uiEvent.output)) {
+								for (const path of extractImagePathsFromOutput(
+									uiEvent.output,
+								)) {
 									binding.imagePaths.add(path);
 								}
 								changed = true;

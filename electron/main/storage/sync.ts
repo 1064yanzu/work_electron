@@ -57,7 +57,10 @@ async function getProjectSlug(
 	return slugifyName(name);
 }
 
-async function getSourceThemes(db: DbContext, sourceId: string): Promise<Theme[]> {
+async function getSourceThemes(
+	db: DbContext,
+	sourceId: string,
+): Promise<Theme[]> {
 	const rows = await db.client.execute({
 		sql: `SELECT t.id, t.name, t.slug, t.created_at, t.updated_at
       FROM file_themes ft
@@ -150,12 +153,12 @@ export async function syncSourceToVault(
 		folder_id: row.folder_id as string | undefined,
 		source_type: (row.source_type as Source["source_type"]) || "manual",
 		origin_type:
-			((row.origin_type as Source["origin_type"]) ||
-				(source_typeToOriginType((row.source_type as string) || "manual") as
-					| "manual"
-					| "web_clip"
-					| "import"
-					| "agent_output")),
+			(row.origin_type as Source["origin_type"]) ||
+			(source_typeToOriginType((row.source_type as string) || "manual") as
+				| "manual"
+				| "web_clip"
+				| "import"
+				| "agent_output"),
 		category: (row.category as Source["category"]) || "article",
 		storage_path: row.storage_path as string | undefined,
 		is_deleted: Number(row.is_deleted ?? 0) === 1,
@@ -188,7 +191,11 @@ export async function syncSourceToVault(
 	}
 
 	const fileStem = `${sanitizeFileStem(source.title)}-${source.id.slice(0, 8)}`;
-	const targetBasePath = path.join(settings.vault_root, relativeDir, `${fileStem}.md`);
+	const targetBasePath = path.join(
+		settings.vault_root,
+		relativeDir,
+		`${fileStem}.md`,
+	);
 	const finalPath = await resolveUniquePath(
 		targetBasePath,
 		settings,
@@ -284,10 +291,18 @@ export async function syncOutputToVault(
 
 	const relativeDir =
 		output.scope === "project" && output.project_id
-			? path.join("Projects", await getProjectSlug(db, output.project_id), "Docs")
+			? path.join(
+					"Projects",
+					await getProjectSlug(db, output.project_id),
+					"Docs",
+				)
 			: "Global/Shared";
 	const fileStem = `${sanitizeFileStem(output.title)}-${output.id.slice(0, 8)}`;
-	const targetBasePath = path.join(settings.vault_root, relativeDir, `${fileStem}.md`);
+	const targetBasePath = path.join(
+		settings.vault_root,
+		relativeDir,
+		`${fileStem}.md`,
+	);
 	const finalPath = await resolveUniquePath(
 		targetBasePath,
 		settings,

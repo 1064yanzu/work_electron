@@ -23,7 +23,7 @@ export function createCliHistoryHandlers() {
 		/** 列出 Codex CLI 历史线程 */
 		cli_history_codex_list: async (
 			_event: IpcMainInvokeEvent,
-			input: CliHistoryListParams
+			input: CliHistoryListParams,
 		) => {
 			const available = await isCodexHistoryAvailable();
 			if (!available) {
@@ -36,7 +36,7 @@ export function createCliHistoryHandlers() {
 		/** 读取 Codex CLI 完整会话 */
 		cli_history_codex_read: async (
 			_event: IpcMainInvokeEvent,
-			input: CliHistoryReadParams
+			input: CliHistoryReadParams,
 		) => {
 			const result = await readCodexThread(input.threadId, input.maxMessages);
 			return result;
@@ -45,7 +45,7 @@ export function createCliHistoryHandlers() {
 		/** 列出 Claude Code CLI 历史会话 */
 		cli_history_claude_code_list: async (
 			_event: IpcMainInvokeEvent,
-			input: CliHistoryListParams
+			input: CliHistoryListParams,
 		) => {
 			const available = await isClaudeCodeHistoryAvailable();
 			if (!available) {
@@ -58,11 +58,11 @@ export function createCliHistoryHandlers() {
 		/** 读取 Claude Code CLI 完整会话 */
 		cli_history_claude_code_read: async (
 			_event: IpcMainInvokeEvent,
-			input: CliHistoryReadParams
+			input: CliHistoryReadParams,
 		) => {
 			const result = await readClaudeCodeSession(
 				input.threadId,
-				input.maxMessages
+				input.maxMessages,
 			);
 			return result;
 		},

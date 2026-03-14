@@ -49,7 +49,8 @@ function parseSourceRowToFileRecord(
 		tags: parseJsonArray(row.tags),
 		themes,
 		storage_path: (row.storage_path as string) || undefined,
-		origin_type: ((row.origin_type as string) || "manual") as FileRecord["origin_type"],
+		origin_type: ((row.origin_type as string) ||
+			"manual") as FileRecord["origin_type"],
 		source_type: (row.source_type as FileRecord["source_type"]) || "manual",
 		updated_at: toNumber(row.updated_at),
 		created_at: toNumber(row.created_at),
@@ -137,7 +138,9 @@ async function listSourceFiles(
 	);
 
 	if (input.tags && input.tags.length > 0) {
-		result = result.filter((record) => hasAllTokens(record.tags, input.tags || []));
+		result = result.filter((record) =>
+			hasAllTokens(record.tags, input.tags || []),
+		);
 	}
 	if (input.themes && input.themes.length > 0) {
 		result = result.filter((record) =>
@@ -168,10 +171,14 @@ async function listOutputFiles(
 	sql += " ORDER BY updated_at DESC";
 
 	const rows = await db.client.execute({ sql, args });
-	let result = rows.rows.map((row) => parseOutputRowToFileRecord(row as OutputRow));
+	let result = rows.rows.map((row) =>
+		parseOutputRowToFileRecord(row as OutputRow),
+	);
 
 	if (input.tags && input.tags.length > 0) {
-		result = result.filter((record) => hasAllTokens(record.tags, input.tags || []));
+		result = result.filter((record) =>
+			hasAllTokens(record.tags, input.tags || []),
+		);
 	}
 	return result;
 }
@@ -184,13 +191,13 @@ async function fetchSingleRecord(
 	const list =
 		entityType === "source"
 			? await listSourceFiles(db, {
-				entity_type: "source",
-				include_deleted: true,
-			})
+					entity_type: "source",
+					include_deleted: true,
+				})
 			: await listOutputFiles(db, {
-				entity_type: "output",
-				include_deleted: true,
-			});
+					entity_type: "output",
+					include_deleted: true,
+				});
 	return list.find((record) => record.id === id) || null;
 }
 

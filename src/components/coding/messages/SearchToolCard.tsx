@@ -1,7 +1,7 @@
 /**
- * 搜索工具卡片 - Glob/Grep 结构化结果展示
- * 折叠态：模式 + 结果数
- * 展开态：结构化文件列表
+ * 搜索工具卡片 - Glob/Grep 紧凑内联展示
+ * 折叠态：icon + Glob/Grep + pattern + 结果数
+ * 展开态：文件列表
  */
 import { Search, FolderSearch, FileText } from "lucide-react";
 import { useMemo } from "react";
@@ -16,17 +16,18 @@ interface ParsedSearchResult {
 	filePath: string;
 	fileName: string;
 	directory: string;
-	/** Grep 时的匹配行 */
 	matchLines?: string[];
 }
 
 /** 解析搜索结果为结构化数据 */
-function parseSearchOutput(output: string, isGlob: boolean): ParsedSearchResult[] {
+function parseSearchOutput(
+	output: string,
+	isGlob: boolean,
+): ParsedSearchResult[] {
 	if (!output.trim()) return [];
 	const lines = output.split("\n").filter(Boolean);
 
 	if (isGlob) {
-		// Glob: 每行一个文件路径
 		return lines.slice(0, 100).map((line) => {
 			const trimmed = line.trim();
 			const parts = trimmed.split("/");
@@ -38,7 +39,6 @@ function parseSearchOutput(output: string, isGlob: boolean): ParsedSearchResult[
 		});
 	}
 
-	// Grep: 尝试解析 file:line:content 格式
 	const fileMap = new Map<string, string[]>();
 	for (const line of lines.slice(0, 200)) {
 		const match = line.match(/^(.+?):(\d+:)?(.*)$/);
@@ -48,7 +48,6 @@ function parseSearchOutput(output: string, isGlob: boolean): ParsedSearchResult[
 			if (!fileMap.has(fp)) fileMap.set(fp, []);
 			fileMap.get(fp)?.push(content.trim());
 		} else {
-			// 非标准输出，直接当文件路径
 			fileMap.set(line.trim(), []);
 		}
 	}
@@ -66,7 +65,9 @@ function parseSearchOutput(output: string, isGlob: boolean): ParsedSearchResult[
 
 export function SearchToolCard({ toolCall }: SearchToolCardProps) {
 	const isGlob = toolCall.name === "Glob";
-	const pattern = (toolCall.input.pattern || toolCall.input.query || "") as string;
+	const pattern = (toolCall.input.pattern ||
+		toolCall.input.query ||
+		"") as string;
 	const Icon = isGlob ? FolderSearch : Search;
 
 	const output = useMemo(() => {
@@ -87,15 +88,14 @@ export function SearchToolCard({ toolCall }: SearchToolCardProps) {
 	return (
 		<ToolCardShell
 			icon={Icon}
-			label={isGlob ? "文件搜索" : "内容搜索"}
+			label={isGlob ? "Glob" : "Grep"}
 			title={pattern}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 			summary={summary}
 		>
 			{results.length > 0 ? (
-				<div className="max-h-56 overflow-y-auto rounded-lg border border-zinc-200/60 scrollbar-thin dark:border-zinc-700/40">
+				<div className="max-h-56 overflow-y-auto rounded-md border border-zinc-200/60 scrollbar-thin dark:border-zinc-700/40">
 					{results.map((result, i) => (
 						<div
 							key={`${result.filePath}-${i}`}
@@ -113,7 +113,6 @@ export function SearchToolCard({ toolCall }: SearchToolCardProps) {
 										</span>
 									)}
 								</div>
-								{/* Grep 匹配行预览 */}
 								{result.matchLines && result.matchLines.length > 0 && (
 									<div className="mt-0.5 space-y-px">
 										{result.matchLines.map((line, j) => (
@@ -132,7 +131,7 @@ export function SearchToolCard({ toolCall }: SearchToolCardProps) {
 				</div>
 			) : (
 				output && (
-					<div className="overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/40">
+					<div className="overflow-hidden rounded-md border border-zinc-200/60 dark:border-zinc-700/40">
 						<pre className="max-h-40 overflow-y-auto bg-zinc-50 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/50 dark:text-zinc-400">
 							{output.slice(0, 3000)}
 						</pre>

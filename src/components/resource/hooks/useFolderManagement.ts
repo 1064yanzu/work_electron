@@ -9,7 +9,10 @@ import {
 	updateFolder,
 } from "../../../lib/api";
 import { queryKeys, useFoldersQuery } from "../../../lib/query";
-import { useWorkspaceStoreSelector, workspaceStore } from "../../../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../../../lib/workspaceStore";
 import type { Folder, Source } from "../../../types";
 import { toast } from "../../ui/Toast";
 

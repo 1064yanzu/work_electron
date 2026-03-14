@@ -7,7 +7,9 @@ function getFileName(filePath: string): string {
 	return filePath.split(/[\\/]/).pop() || filePath;
 }
 
-export async function selectContextFiles(projectPath: string | null): Promise<string[]> {
+export async function selectContextFiles(
+	projectPath: string | null,
+): Promise<string[]> {
 	if (!projectPath) return [];
 	const result = await invoke<{ paths: string[] }>("coding_select_files", {
 		project_path: projectPath,
@@ -53,7 +55,9 @@ export async function attachContextFiles(paths: string[]): Promise<{
 	return { added, skipped };
 }
 
-export async function pickAndAttachContextFiles(projectPath: string | null): Promise<{
+export async function pickAndAttachContextFiles(
+	projectPath: string | null,
+): Promise<{
 	added: number;
 	skipped: number;
 }> {

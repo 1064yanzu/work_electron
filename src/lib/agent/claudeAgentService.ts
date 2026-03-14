@@ -211,7 +211,16 @@ function buildAllowedTools(
 
 	// Plan 模式（计划确认前）：只读工具 + AskUserQuestion
 	if (codingMode === "plan") {
-		return ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "AskUserQuestion", "Skill", "Task"];
+		return [
+			"Read",
+			"Glob",
+			"Grep",
+			"WebSearch",
+			"WebFetch",
+			"AskUserQuestion",
+			"Skill",
+			"Task",
+		];
 	}
 
 	// Code 模式：完整工具集
@@ -518,9 +527,7 @@ export class ClaudeAgentService {
 				? multiAgentMode
 				: configMultiAgentMode === "subagent_only" ||
 						configMultiAgentMode === "teammate_preferred"
-					? (configMultiAgentMode as
-							| "subagent_only"
-							| "teammate_preferred")
+					? (configMultiAgentMode as "subagent_only" | "teammate_preferred")
 					: "hybrid";
 		const resolvedMaxTeammates = Math.max(
 			1,
@@ -532,8 +539,7 @@ export class ClaudeAgentService {
 		const resolvedTeammateMode =
 			teammateMode === "tmux" || teammateMode === "in-process"
 				? teammateMode
-				: configTeammateMode === "tmux" ||
-						configTeammateMode === "in-process"
+				: configTeammateMode === "tmux" || configTeammateMode === "in-process"
 					? (configTeammateMode as "tmux" | "in-process")
 					: "auto";
 		const teammateBudgetRaw =
@@ -1395,15 +1401,13 @@ export class ClaudeAgentService {
 										subagent_context_mode: resolvedSubagentContextMode,
 										context_budget: resolvedContextBudget,
 										enable_tool_search: resolvedEnableToolSearch,
-										experimental_multi_agent:
-											resolvedExperimentalMultiAgent,
+										experimental_multi_agent: resolvedExperimentalMultiAgent,
 										multi_agent_mode: resolvedMultiAgentMode,
 										max_teammates: resolvedMaxTeammates,
 										teammate_mode: resolvedTeammateMode,
 										teammate_budget: resolvedTeammateBudget,
 										leader_summary_model: resolvedLeaderSummaryModel,
-										teammate_execution_model:
-											resolvedTeammateExecutionModel,
+										teammate_execution_model: resolvedTeammateExecutionModel,
 									},
 								});
 								this.activeRunId = runId;

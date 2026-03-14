@@ -22,13 +22,16 @@ interface TabDef {
 
 const TABS: TabDef[] = [
 	{ id: "git", icon: GitBranch, label: "Git", tooltip: "Git 状态与变更" },
-	{ id: "activity-log", icon: Activity, label: "活动", tooltip: "AI 工具调用历史" },
+	{
+		id: "activity-log",
+		icon: Activity,
+		label: "活动",
+		tooltip: "AI 工具调用历史",
+	},
 ];
 
 export function CodingChangesPanel() {
-	const rawTab = useCodingWorkspaceSelector(
-		(s) => s.layout.rightPanelTab,
-	);
+	const rawTab = useCodingWorkspaceSelector((s) => s.layout.rightPanelTab);
 	// 兼容旧 Tab 值
 	const activeTab: RightPanelTab =
 		rawTab === "session-changes" || rawTab === "terminal-log"
@@ -53,11 +56,7 @@ export function CodingChangesPanel() {
 
 			{/* Tab 内容区 */}
 			<div className="flex-1 overflow-hidden">
-				{activeTab === "git" ? (
-					<CodingGitPanel />
-				) : (
-					<CodingActivityLog />
-				)}
+				{activeTab === "git" ? <CodingGitPanel /> : <CodingActivityLog />}
 			</div>
 		</div>
 	);

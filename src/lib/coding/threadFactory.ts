@@ -1,15 +1,27 @@
-import type { BackendCapabilityMatrix, CodingWorkspaceProfile } from "../../../electron/shared/coding-workspace";
+import type {
+	BackendCapabilityMatrix,
+	CodingWorkspaceProfile,
+} from "../../../electron/shared/coding-workspace";
 import { codingThreadStore } from "../stores/codingThreadStore";
-import { getCodingBackendCapabilities, getWorkspaceProfile, updateWorkspaceProfile } from "./runtimeApi";
+import {
+	getCodingBackendCapabilities,
+	getWorkspaceProfile,
+	updateWorkspaceProfile,
+} from "./runtimeApi";
 import { getAICodingSettings } from "./codingSettings";
 
 async function getProfileAndCapability(
 	projectPath: string,
-): Promise<{ profile: CodingWorkspaceProfile; capability: BackendCapabilityMatrix | null }> {
+): Promise<{
+	profile: CodingWorkspaceProfile;
+	capability: BackendCapabilityMatrix | null;
+}> {
 	const profile = await getWorkspaceProfile(projectPath);
 	let capability: BackendCapabilityMatrix | null = null;
 	try {
-		capability = (await getCodingBackendCapabilities(profile.defaultBackend)) as BackendCapabilityMatrix;
+		capability = (await getCodingBackendCapabilities(
+			profile.defaultBackend,
+		)) as BackendCapabilityMatrix;
 	} catch {
 		capability = null;
 	}
@@ -36,7 +48,9 @@ export async function createThreadFromWorkspaceProfile(projectPath: string) {
 			defaultApprovalMode,
 			memoryPolicy: settings.workspaceMemoryPolicy,
 		});
-		capability = (await getCodingBackendCapabilities(defaultBackend)) as BackendCapabilityMatrix;
+		capability = (await getCodingBackendCapabilities(
+			defaultBackend,
+		)) as BackendCapabilityMatrix;
 	}
 	return codingThreadStore.createThread(projectPath, {
 		backend: profile.defaultBackend,
@@ -48,7 +62,10 @@ export async function createThreadFromWorkspaceProfile(projectPath: string) {
 	});
 }
 
-export async function syncThreadWorkspaceProfile(threadId: string, projectPath: string) {
+export async function syncThreadWorkspaceProfile(
+	threadId: string,
+	projectPath: string,
+) {
 	const { profile, capability } = await getProfileAndCapability(projectPath);
 	codingThreadStore.updateThread(threadId, {
 		backend: profile.defaultBackend,

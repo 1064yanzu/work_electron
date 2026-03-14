@@ -64,8 +64,7 @@ export function extractFeishuApiErrorInfo(error: unknown): FeishuApiErrorInfo {
 		toStringOrUndefined(data?.message) ??
 		toStringOrUndefined(rawError?.message);
 	let logId =
-		toStringOrUndefined(data?.log_id) ??
-		toStringOrUndefined(rawError?.log_id);
+		toStringOrUndefined(data?.log_id) ?? toStringOrUndefined(rawError?.log_id);
 
 	if (!code || !msg || !message || !logId) {
 		walkUnknownTree(error, (node) => {
@@ -80,8 +79,7 @@ export function extractFeishuApiErrorInfo(error: unknown): FeishuApiErrorInfo {
 			}
 			if (!logId) {
 				logId =
-					toStringOrUndefined(node.log_id) ??
-					toStringOrUndefined(node.logId);
+					toStringOrUndefined(node.log_id) ?? toStringOrUndefined(node.logId);
 			}
 		});
 	}

@@ -54,9 +54,10 @@ export function CodingModeSelector() {
 	useEffect(() => {
 		if (isCodex || !containerRef.current) return;
 		const index = modes.findIndex((m) => m.value === currentMode);
-		const buttons = containerRef.current.querySelectorAll<HTMLButtonElement>(
-			"[data-mode-button]",
-		);
+		const buttons =
+			containerRef.current.querySelectorAll<HTMLButtonElement>(
+				"[data-mode-button]",
+			);
 		const target = buttons[index];
 		if (!target) return;
 
@@ -66,13 +67,20 @@ export function CodingModeSelector() {
 		});
 	}, [currentMode, isCodex]);
 
-	const handleSelect = useCallback((mode: CodingMode) => {
-		codingAgentStore.setCodingMode(mode);
-		void executeCodingCommand("set_mode", {
-			threadId: activeThreadId,
-			projectPath,
-		}, { mode });
-	}, [activeThreadId, projectPath]);
+	const handleSelect = useCallback(
+		(mode: CodingMode) => {
+			codingAgentStore.setCodingMode(mode);
+			void executeCodingCommand(
+				"set_mode",
+				{
+					threadId: activeThreadId,
+					projectPath,
+				},
+				{ mode },
+			);
+		},
+		[activeThreadId, projectPath],
+	);
 
 	// Codex 后端不支持 Code/Plan/Ask 模式切换
 	if (isCodex) return null;

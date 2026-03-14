@@ -3,13 +3,18 @@
 
 import { MessageSquare, X } from "lucide-react";
 import { memo, useCallback } from "react";
-import { codingWorkspaceStore, useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
+import {
+	codingWorkspaceStore,
+	useCodingWorkspaceSelector,
+} from "../../lib/stores/codingWorkspaceStore";
 import { cn } from "../../lib/utils";
 
 function CenterPanelTabsInner() {
 	const tabs = useCodingWorkspaceSelector((s) => s.centerPanelTabs);
 	const activeTabId = useCodingWorkspaceSelector((s) => s.activeCenterTabId);
-	const centerMode = useCodingWorkspaceSelector((s) => s.layout.centerPanelMode);
+	const centerMode = useCodingWorkspaceSelector(
+		(s) => s.layout.centerPanelMode,
+	);
 
 	const handleSwitchToChat = useCallback(() => {
 		codingWorkspaceStore.setCenterPanelMode("chat");

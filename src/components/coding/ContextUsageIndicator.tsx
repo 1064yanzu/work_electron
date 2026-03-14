@@ -51,7 +51,10 @@ export function ContextUsageIndicator({
 	const dashOffset = circumference * (1 - ratio);
 
 	return (
-		<span className="inline-flex items-center gap-1" title={`上下文: ${formatTokens(totalTokens)} / ${formatTokens(contextLimit)}`}>
+		<span
+			className="inline-flex items-center gap-1"
+			title={`上下文: ${formatTokens(totalTokens)} / ${formatTokens(contextLimit)}`}
+		>
 			{/* 圆环 */}
 			<svg width={size} height={size} className="shrink-0 -rotate-90">
 				{/* 背景圆 */}

@@ -29,7 +29,10 @@ export function buildInteractionApprovalCard(params: {
 	toolInput?: Record<string, unknown>;
 	message?: string;
 }): string {
-	const inputPreview = clampText(stringifyToolInput(params.toolInput), MAX_PREVIEW_LEN);
+	const inputPreview = clampText(
+		stringifyToolInput(params.toolInput),
+		MAX_PREVIEW_LEN,
+	);
 
 	const card = {
 		config: {
@@ -42,36 +45,36 @@ export function buildInteractionApprovalCard(params: {
 			},
 			template: "orange",
 		},
-			elements: [
-				{
-					tag: "div",
-					text: {
-						tag: "plain_text",
-						content: `工具名称: ${params.toolName}\n请求ID: ${params.requestId}`,
-					},
+		elements: [
+			{
+				tag: "div",
+				text: {
+					tag: "plain_text",
+					content: `工具名称: ${params.toolName}\n请求ID: ${params.requestId}`,
 				},
-				...(inputPreview
-					? [
-							{
-								tag: "div",
-								text: {
-									tag: "plain_text",
-									content: `参数预览:\n${inputPreview}`,
-								},
+			},
+			...(inputPreview
+				? [
+						{
+							tag: "div",
+							text: {
+								tag: "plain_text",
+								content: `参数预览:\n${inputPreview}`,
 							},
-						]
-					: []),
-				...(params.message
-					? [
-							{
-								tag: "div",
-								text: {
-									tag: "plain_text",
-									content: `说明: ${params.message}`,
-								},
+						},
+					]
+				: []),
+			...(params.message
+				? [
+						{
+							tag: "div",
+							text: {
+								tag: "plain_text",
+								content: `说明: ${params.message}`,
 							},
-						]
-					: []),
+						},
+					]
+				: []),
 			{
 				tag: "hr",
 			},
@@ -109,7 +112,8 @@ export function buildInteractionApprovalCard(params: {
 				elements: [
 					{
 						tag: "plain_text",
-						content: "或使用命令: /approve requestId 或 /reject requestId <reason>",
+						content:
+							"或使用命令: /approve requestId 或 /reject requestId <reason>",
 					},
 				],
 			},

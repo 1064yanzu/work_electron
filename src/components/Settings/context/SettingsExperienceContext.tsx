@@ -33,8 +33,8 @@ export function SettingsExperienceProvider({
 	const [mode, setModeState] = useState<SettingsExperienceMode>(() =>
 		getSettingsExperienceMode(),
 	);
-	const [technicalGroupExpanded, setTechnicalGroupExpandedState] = useState(() =>
-		getTechnicalGroupExpandedPreference(),
+	const [technicalGroupExpanded, setTechnicalGroupExpandedState] = useState(
+		() => getTechnicalGroupExpandedPreference(),
 	);
 
 	const setMode = useCallback((nextMode: SettingsExperienceMode) => {

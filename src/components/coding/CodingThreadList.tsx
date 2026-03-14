@@ -22,10 +22,7 @@ interface CodingThreadListProps {
 	onSwitchThread?: (threadId: string) => void;
 	onNewThread?: () => void;
 	/** 续接外部 CLI 会话的回调 */
-	onResumeSession?: (
-		sessionId: string,
-		meta: ExternalThreadMeta,
-	) => void;
+	onResumeSession?: (sessionId: string, meta: ExternalThreadMeta) => void;
 	/** 导入外部 CLI 会话的回调 */
 	onImportSession?: (meta: ExternalThreadMeta) => void;
 }
@@ -64,8 +61,7 @@ export function CodingThreadList({
 
 	// 首次挂载或距上次同步超过 30 秒时自动同步外部历史
 	useEffect(() => {
-		const { lastSyncAt, syncStatus: status } =
-			externalHistoryStore.getState();
+		const { lastSyncAt, syncStatus: status } = externalHistoryStore.getState();
 		if (status === "syncing") return;
 		const stale = !lastSyncAt || Date.now() - lastSyncAt > 30_000;
 		if (stale) {
@@ -76,8 +72,7 @@ export function CodingThreadList({
 
 		// 定时轮询外部历史（每 60 秒）
 		const interval = setInterval(() => {
-			const { syncStatus: currentStatus } =
-				externalHistoryStore.getState();
+			const { syncStatus: currentStatus } = externalHistoryStore.getState();
 			if (currentStatus !== "syncing") {
 				void externalHistoryStore.syncAll({ limit: 30 });
 			}
@@ -120,7 +115,13 @@ export function CodingThreadList({
 				allExternalThreads,
 				sourceFilter !== "all" ? filteredLocalThreads : undefined,
 			),
-		[recentProjects, searchQuery, filteredLocalThreads, allExternalThreads, sourceFilter],
+		[
+			recentProjects,
+			searchQuery,
+			filteredLocalThreads,
+			allExternalThreads,
+			sourceFilter,
+		],
 	);
 
 	const handleSync = useCallback(() => {
@@ -257,9 +258,7 @@ export function CodingThreadList({
 			</div>
 			<div className="flex-1 overflow-y-auto px-2 py-3">
 				{!hasAnyContent && projectGroups.length === 0 ? (
-					<div className="px-2 py-2 text-[13px] text-zinc-400">
-						无会话
-					</div>
+					<div className="px-2 py-2 text-[13px] text-zinc-400">无会话</div>
 				) : (
 					<div className="space-y-3">
 						{projectGroups.map((group) => (
@@ -268,27 +267,21 @@ export function CodingThreadList({
 								group={group}
 								activeThreadId={activeThreadId}
 								searchActive={Boolean(searchQuery.trim())}
-								collapsed={Boolean(
-									collapsedProjects[group.projectPath],
-								)}
-								expanded={Boolean(
-									expandedProjects[group.projectPath],
-								)}
+								collapsed={Boolean(collapsedProjects[group.projectPath])}
+								expanded={Boolean(expandedProjects[group.projectPath])}
 								editingId={editingId}
 								editTitle={editTitle}
 								importingId={importingId}
 								onToggleCollapse={() => {
 									setCollapsedProjects((current) => ({
 										...current,
-										[group.projectPath]:
-											!current[group.projectPath],
+										[group.projectPath]: !current[group.projectPath],
 									}));
 								}}
 								onToggleExpanded={() => {
 									setExpandedProjects((current) => ({
 										...current,
-										[group.projectPath]:
-											!current[group.projectPath],
+										[group.projectPath]: !current[group.projectPath],
 									}));
 								}}
 								onSwitchThread={handleSwitch}

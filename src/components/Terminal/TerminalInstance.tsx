@@ -59,7 +59,8 @@ export function TerminalInstance({
 			cursorBlink: true,
 			cursorStyle: "bar",
 			fontSize: 13,
-			fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
+			fontFamily:
+				'"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
 			lineHeight: 1.4,
 			theme: darkTheme,
 			scrollback: 10000,

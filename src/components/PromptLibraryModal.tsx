@@ -91,10 +91,11 @@ function PromptCard({
 				draggable
 				onDragStart={(e) => onDragStart(e, prompt.id)}
 				className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 border cursor-grab active:cursor-grabbing
-                    ${isSelected
-						? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
-						: "bg-white/60 dark:bg-zinc-900/60 border-transparent hover:bg-white dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm"
-					}`}
+                    ${
+											isSelected
+												? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+												: "bg-white/60 dark:bg-zinc-900/60 border-transparent hover:bg-white dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm"
+										}`}
 				onClick={onSelect}
 				onMouseEnter={() => setIsHovered(true)}
 				onMouseLeave={() => setIsHovered(false)}
@@ -154,10 +155,11 @@ function PromptCard({
 			draggable
 			onDragStart={(e) => onDragStart(e, prompt.id)}
 			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
-                ${isSelected
-					? "bg-white dark:bg-zinc-800 ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
-					: "bg-white dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
-				}`}
+                ${
+									isSelected
+										? "bg-white dark:bg-zinc-800 ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
+										: "bg-white dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
+								}`}
 			onClick={onSelect}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
@@ -168,7 +170,9 @@ function PromptCard({
 					{prompt.icon || "📝"}
 				</div>
 				{/* 操作按钮 - 始终占位但悬停时显示 */}
-				<div className={`flex gap-0.5 transition-all duration-200 ${isHovered || isSelected ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}`}>
+				<div
+					className={`flex gap-0.5 transition-all duration-200 ${isHovered || isSelected ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}`}
+				>
 					<button
 						onClick={handleCopy}
 						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
@@ -298,15 +302,15 @@ export function PromptLibraryModal({
 			prompt
 				? { ...prompt }
 				: {
-					name: "",
-					shortDescription: "",
-					content: "",
-					folderId:
-						activeFolderId === "uncategorized"
-							? undefined
-							: activeFolderId || undefined,
-					icon: "📝",
-				},
+						name: "",
+						shortDescription: "",
+						content: "",
+						folderId:
+							activeFolderId === "uncategorized"
+								? undefined
+								: activeFolderId || undefined,
+						icon: "📝",
+					},
 		);
 		setIsEditing(true);
 	};
@@ -438,9 +442,10 @@ export function PromptLibraryModal({
 							onDragOver={(e) => handleDragOver(e, null)}
 							onDragLeave={handleDragLeave}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
-								${activeFolderId === null
-									? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-									: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+								${
+									activeFolderId === null
+										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
@@ -476,10 +481,11 @@ export function PromptLibraryModal({
 										onDrop={(e) => handleDrop(e, folder.id)}
 										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group cursor-pointer
 										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
-										${activeFolderId === folder.id
+										${
+											activeFolderId === folder.id
 												? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
 												: "text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
-											}`}
+										}`}
 									>
 										<div
 											onClick={() => setActiveFolderId(folder.id)}
@@ -576,9 +582,10 @@ export function PromptLibraryModal({
 							onDrop={(e) => handleDrop(e, undefined)}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
 								${dragOverFolderId === "uncategorized" ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
-								${activeFolderId === "uncategorized"
-									? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-									: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+								${
+									activeFolderId === "uncategorized"
+										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
@@ -846,9 +853,9 @@ export function PromptLibraryModal({
 															setEditingPrompt((prev) =>
 																prev
 																	? {
-																		...prev,
-																		folderId: e.target.value || undefined,
-																	}
+																			...prev,
+																			folderId: e.target.value || undefined,
+																		}
 																	: null,
 															)
 														}
@@ -873,9 +880,9 @@ export function PromptLibraryModal({
 															setEditingPrompt((prev) =>
 																prev
 																	? {
-																		...prev,
-																		shortDescription: e.target.value,
-																	}
+																			...prev,
+																			shortDescription: e.target.value,
+																		}
 																	: null,
 															)
 														}

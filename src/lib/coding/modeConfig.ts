@@ -3,23 +3,40 @@
  * 将 Code/Plan/Ask 三种 UI 模式映射为 Claude Agent SDK 的具体参数
  */
 
-import type { AgentStartPayload } from '../agent/sdkClient';
+import type { AgentStartPayload } from "../agent/sdkClient";
 
 /** Code 模式：自主编码，完整工具集 */
 const CODE_MODE_TOOLS = [
-	'Read', 'Write', 'Edit', 'Glob', 'Grep',
-	'Bash', 'WebSearch', 'WebFetch',
-	'NotebookEdit', 'TodoRead', 'TodoWrite',
+	"Read",
+	"Write",
+	"Edit",
+	"Glob",
+	"Grep",
+	"Bash",
+	"WebSearch",
+	"WebFetch",
+	"NotebookEdit",
+	"TodoRead",
+	"TodoWrite",
 ] as const;
 
 /** Plan 模式：先规划再执行，只读 + AskUserQuestion */
 const PLAN_MODE_TOOLS = [
-	'Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'AskUserQuestion',
+	"Read",
+	"Glob",
+	"Grep",
+	"WebSearch",
+	"WebFetch",
+	"AskUserQuestion",
 ] as const;
 
 /** Ask 模式：只回答问题，只读工具 */
 const ASK_MODE_TOOLS = [
-	'Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch',
+	"Read",
+	"Glob",
+	"Grep",
+	"WebSearch",
+	"WebFetch",
 ] as const;
 
 export interface ModeConfig {
@@ -29,25 +46,28 @@ export interface ModeConfig {
 }
 
 /** 根据编码模式获取 SDK 配置 */
-export function getModeConfig(mode: 'code' | 'plan' | 'ask'): ModeConfig {
+export function getModeConfig(mode: "code" | "plan" | "ask"): ModeConfig {
 	switch (mode) {
-		case 'code':
+		case "code":
 			return {
-				permissionMode: 'acceptEdits',
+				permissionMode: "acceptEdits",
 				allowedTools: [...CODE_MODE_TOOLS],
-				systemPromptSuffix: 'You are operating in CODE mode. Execute tasks autonomously with full tool access.',
+				systemPromptSuffix:
+					"You are operating in CODE mode. Execute tasks autonomously with full tool access.",
 			};
-		case 'plan':
+		case "plan":
 			return {
-				permissionMode: 'plan',
+				permissionMode: "plan",
 				allowedTools: [...PLAN_MODE_TOOLS],
-				systemPromptSuffix: 'You are operating in PLAN mode. First analyze and create a step-by-step plan. Use read-only tools for research. Do NOT modify files until the plan is approved.',
+				systemPromptSuffix:
+					"You are operating in PLAN mode. First analyze and create a step-by-step plan. Use read-only tools for research. Do NOT modify files until the plan is approved.",
 			};
-		case 'ask':
+		case "ask":
 			return {
-				permissionMode: 'plan',
+				permissionMode: "plan",
 				allowedTools: [...ASK_MODE_TOOLS],
-				systemPromptSuffix: 'You are operating in ASK mode. Only answer questions and provide analysis. Do NOT modify any files or execute any commands.',
+				systemPromptSuffix:
+					"You are operating in ASK mode. Only answer questions and provide analysis. Do NOT modify any files or execute any commands.",
 			};
 	}
 }
@@ -55,7 +75,7 @@ export function getModeConfig(mode: 'code' | 'plan' | 'ask'): ModeConfig {
 /** 将 ModeConfig 合并到 SDK payload */
 export function applyModeToPayload(
 	payload: Partial<AgentStartPayload>,
-	mode: 'code' | 'plan' | 'ask',
+	mode: "code" | "plan" | "ask",
 ): Partial<AgentStartPayload> {
 	const config = getModeConfig(mode);
 	return {

@@ -9,12 +9,17 @@ export interface SearchMatch {
 	endCol: number;
 }
 
-export function useCodeViewerState(lines: string[], externalHighlightLine?: number) {
+export function useCodeViewerState(
+	lines: string[],
+	externalHighlightLine?: number,
+) {
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeMatchIndex, setActiveMatchIndex] = useState(0);
 	const [highlightedLines, setHighlightedLines] = useState<Set<number>>(() => {
-		return externalHighlightLine != null ? new Set([externalHighlightLine]) : new Set();
+		return externalHighlightLine != null
+			? new Set([externalHighlightLine])
+			: new Set();
 	});
 
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -80,7 +85,10 @@ export function useCodeViewerState(lines: string[], externalHighlightLine?: numb
 		// 每行高度约 24px（text-[12px] leading-6）
 		const lineHeight = 24;
 		const targetTop = (lineNumber - 1) * lineHeight;
-		container.scrollTo({ top: targetTop - container.clientHeight / 3, behavior: "smooth" });
+		container.scrollTo({
+			top: targetTop - container.clientHeight / 3,
+			behavior: "smooth",
+		});
 	}, []);
 
 	return {

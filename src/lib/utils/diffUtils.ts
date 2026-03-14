@@ -28,7 +28,10 @@ export interface DiffHunk {
 /**
  * 生成两段文本的行级 diff
  */
-export function generateDiff(oldContent: string, newContent: string): DiffLine[] {
+export function generateDiff(
+	oldContent: string,
+	newContent: string,
+): DiffLine[] {
 	const changes: Change[] = diffLines(oldContent, newContent);
 	const result: DiffLine[] = [];
 	let oldLine = 1;
@@ -153,7 +156,10 @@ export function inferLanguage(filePath: string): string {
  * @param lines 全部 diff 行
  * @param contextLines 上下文行数（变更行前后保留的 unchanged 行数）
  */
-export function groupIntoHunks(lines: DiffLine[], contextLines = 3): DiffHunk[] {
+export function groupIntoHunks(
+	lines: DiffLine[],
+	contextLines = 3,
+): DiffHunk[] {
 	const hunks: DiffHunk[] = [];
 	const changedIndices: number[] = [];
 
@@ -171,7 +177,10 @@ export function groupIntoHunks(lines: DiffLine[], contextLines = 3): DiffHunk[] 
 
 	for (let i = 1; i < changedIndices.length; i++) {
 		const nextStart = Math.max(0, changedIndices[i] - contextLines);
-		const nextEnd = Math.min(lines.length - 1, changedIndices[i] + contextLines);
+		const nextEnd = Math.min(
+			lines.length - 1,
+			changedIndices[i] + contextLines,
+		);
 
 		if (nextStart <= hunkEnd + 1) {
 			// 合并相邻的 hunks
@@ -179,8 +188,12 @@ export function groupIntoHunks(lines: DiffLine[], contextLines = 3): DiffHunk[] 
 		} else {
 			// 保存当前 hunk 并开始新的
 			const hunkLines = lines.slice(hunkStart, hunkEnd + 1);
-			const firstOld = hunkLines.find((l) => l.oldLineNumber !== undefined)?.oldLineNumber || 1;
-			const firstNew = hunkLines.find((l) => l.newLineNumber !== undefined)?.newLineNumber || 1;
+			const firstOld =
+				hunkLines.find((l) => l.oldLineNumber !== undefined)?.oldLineNumber ||
+				1;
+			const firstNew =
+				hunkLines.find((l) => l.newLineNumber !== undefined)?.newLineNumber ||
+				1;
 			hunks.push({
 				startOld: firstOld,
 				startNew: firstNew,
@@ -193,8 +206,10 @@ export function groupIntoHunks(lines: DiffLine[], contextLines = 3): DiffHunk[] 
 
 	// 最后一个 hunk
 	const hunkLines = lines.slice(hunkStart, hunkEnd + 1);
-	const firstOld = hunkLines.find((l) => l.oldLineNumber !== undefined)?.oldLineNumber || 1;
-	const firstNew = hunkLines.find((l) => l.newLineNumber !== undefined)?.newLineNumber || 1;
+	const firstOld =
+		hunkLines.find((l) => l.oldLineNumber !== undefined)?.oldLineNumber || 1;
+	const firstNew =
+		hunkLines.find((l) => l.newLineNumber !== undefined)?.newLineNumber || 1;
 	hunks.push({
 		startOld: firstOld,
 		startNew: firstNew,
@@ -207,7 +222,10 @@ export function groupIntoHunks(lines: DiffLine[], contextLines = 3): DiffHunk[] 
 /**
  * 截取 diff 行用于预览（最多显示指定行数的变更）
  */
-export function truncateDiffForPreview(lines: DiffLine[], maxChangedLines = 10): {
+export function truncateDiffForPreview(
+	lines: DiffLine[],
+	maxChangedLines = 10,
+): {
 	lines: DiffLine[];
 	truncated: boolean;
 	totalChangedLines: number;
@@ -234,5 +252,9 @@ export function truncateDiffForPreview(lines: DiffLine[], maxChangedLines = 10):
 		}
 	}
 
-	return { lines: truncatedLines, truncated: changedCount < totalChangedLines, totalChangedLines };
+	return {
+		lines: truncatedLines,
+		truncated: changedCount < totalChangedLines,
+		totalChangedLines,
+	};
 }

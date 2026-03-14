@@ -23,10 +23,7 @@ export type AgentScenario =
 	| "debugging" // 调试
 	| "custom"; // 自定义
 
-export type MultiAgentMode =
-	| "subagent_only"
-	| "hybrid"
-	| "teammate_preferred";
+export type MultiAgentMode = "subagent_only" | "hybrid" | "teammate_preferred";
 
 export type TeammateSpawnMode = "auto" | "tmux" | "in-process";
 

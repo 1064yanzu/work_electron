@@ -1,9 +1,6 @@
 // 资料侧边栏模态框组件
 
-import {
-	Folder as FolderIcon,
-	Paperclip,
-} from "lucide-react";
+import { Folder as FolderIcon, Paperclip } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import type { Folder, Source } from "../../types";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
@@ -311,10 +308,11 @@ export function ResourceModals({
 								onClick={() =>
 									setSingleSourceMoveTargetId(UNASSIGNED_FOLDER_ID)
 								}
-								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
-									? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-									: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-									}`}
+								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
+										? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+										: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+								}`}
 							>
 								<FolderIcon className="w-4 h-4 shrink-0" />
 								<span className="text-sm font-medium">未归类</span>
@@ -324,10 +322,11 @@ export function ResourceModals({
 								<button
 									key={opt.id}
 									onClick={() => setSingleSourceMoveTargetId(opt.id)}
-									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${singleSourceMoveTargetId === opt.id
-										? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-										: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-										}`}
+									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+										singleSourceMoveTargetId === opt.id
+											? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+											: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
 									<FolderIcon className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -371,10 +370,11 @@ export function ResourceModals({
 							<button
 								key={tab}
 								onClick={() => setActiveTab(tab)}
-								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${activeTab === tab
-									? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-800 dark:text-zinc-100"
-									: "text-zinc-500"
-									}`}
+								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+									activeTab === tab
+										? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-800 dark:text-zinc-100"
+										: "text-zinc-500"
+								}`}
 							>
 								{tab === "web" ? "网页" : tab === "text" ? "笔记" : "文件"}
 							</button>

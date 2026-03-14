@@ -333,11 +333,13 @@ export function WebPreviewCard({
 		savedHashRef.current = hash;
 
 		// 异步保存
-		managedModeStore.saveArtifact(sandboxDir, content, kind, title).then((filePath) => {
-			if (filePath) {
-				debugUiLog("[WebPreviewCard] Auto-saved artifact to:", filePath);
-			}
-		});
+		managedModeStore
+			.saveArtifact(sandboxDir, content, kind, title)
+			.then((filePath) => {
+				if (filePath) {
+					debugUiLog("[WebPreviewCard] Auto-saved artifact to:", filePath);
+				}
+			});
 	}, [isStreaming, sandboxDir, kind, html, jsx, title]);
 
 	// 构建预览文档 (复用原有逻辑)

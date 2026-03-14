@@ -2,7 +2,8 @@ import os from "node:os";
 import WebSocket from "ws";
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
-import {	AgentSdkExecutor,
+import {
+	AgentSdkExecutor,
 	type AgentSdkHandlersLike,
 } from "../remote-control/core/agentSdkExecutor";
 import type { AgentSdkBusEvent } from "../remote-control/core/agentSdkEventBus";
@@ -26,7 +27,9 @@ type RunContext = {
 };
 
 function sanitizeRelayUrl(input: string): string {
-	return String(input || "").trim().replace(/\/$/, "");
+	return String(input || "")
+		.trim()
+		.replace(/\/$/, "");
 }
 
 function toWsUrl(relayUrl: string): string {
@@ -140,7 +143,10 @@ export class CloudNodeClient {
 	private scheduleReconnect(): void {
 		if (!this.started || !this.config.enabled) return;
 		this.clearReconnectTimer();
-		const delay = Math.min(30000, 1000 * 2 ** Math.min(this.reconnectAttempts, 6));
+		const delay = Math.min(
+			30000,
+			1000 * 2 ** Math.min(this.reconnectAttempts, 6),
+		);
 		this.reconnectTimer = setTimeout(() => {
 			void this.connect();
 		}, delay);
@@ -169,7 +175,9 @@ export class CloudNodeClient {
 		return "gpt-4o";
 	}
 
-	private async handleRunStart(message: Extract<CloudNodeIncomingMessage, { type: "node.run.start" }>): Promise<void> {
+	private async handleRunStart(
+		message: Extract<CloudNodeIncomingMessage, { type: "node.run.start" }>,
+	): Promise<void> {
 		const requestId = String(message.request_id || "").trim();
 		const sessionId = String(message.session_id || "").trim();
 		const prompt = String(message.payload?.prompt || "").trim();
@@ -194,7 +202,8 @@ export class CloudNodeClient {
 
 		try {
 			const model =
-				typeof message.payload?.model === "string" && message.payload.model.trim()
+				typeof message.payload?.model === "string" &&
+				message.payload.model.trim()
 					? message.payload.model.trim()
 					: await this.resolveActiveModel();
 			const cwd =
@@ -231,7 +240,9 @@ export class CloudNodeClient {
 		}
 	}
 
-	private async handleRunAbort(message: Extract<CloudNodeIncomingMessage, { type: "node.run.abort" }>): Promise<void> {
+	private async handleRunAbort(
+		message: Extract<CloudNodeIncomingMessage, { type: "node.run.abort" }>,
+	): Promise<void> {
 		const runId = String(message.run_id || "").trim();
 		const requestId = String(message.request_id || "").trim();
 		if (!runId || !requestId) return;
@@ -249,11 +260,16 @@ export class CloudNodeClient {
 	}
 
 	private async handleInteractionResolve(
-		message: Extract<CloudNodeIncomingMessage, { type: "node.interaction.resolve" }>,
+		message: Extract<
+			CloudNodeIncomingMessage,
+			{ type: "node.interaction.resolve" }
+		>,
 	): Promise<void> {
 		const runId = String(message.run_id || "").trim();
 		const requestId = String(message.request_id || "").trim();
-		const interactionRequestId = String(message.interaction_request_id || "").trim();
+		const interactionRequestId = String(
+			message.interaction_request_id || "",
+		).trim();
 		if (!runId || !requestId || !interactionRequestId) return;
 		const success = await this.executor.resolveInteraction({
 			runId,
@@ -688,7 +704,9 @@ export class CloudNodeClient {
 			relayUrl,
 			nodeId: payload.node_id,
 			nodeToken: payload.node_token,
-			nodeName: String(input.node_name || this.config.nodeName || "desktop-node"),
+			nodeName: String(
+				input.node_name || this.config.nodeName || "desktop-node",
+			),
 		};
 		await this.setConfig(next);
 		return {

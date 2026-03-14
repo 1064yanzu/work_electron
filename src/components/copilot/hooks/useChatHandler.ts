@@ -120,9 +120,7 @@ export function useChatHandler({
 				// 收集文档内容
 				if (isUpdatingDoc || isCreatingDoc) {
 					// 提取标记之间的内容
-					const startMarker = isUpdatingDoc
-						? ":::update-doc"
-						: ":::create-doc";
+					const startMarker = isUpdatingDoc ? ":::update-doc" : ":::create-doc";
 					const startIndex = accumulatedContent.indexOf(startMarker);
 					if (startIndex !== -1) {
 						const contentAfterMarker = accumulatedContent.slice(
@@ -131,19 +129,14 @@ export function useChatHandler({
 						const endIndex = contentAfterMarker.indexOf(":::");
 						if (endIndex !== -1) {
 							// 找到结束标记
-							docContentBuffer = contentAfterMarker
-								.slice(0, endIndex)
-								.trim();
+							docContentBuffer = contentAfterMarker.slice(0, endIndex).trim();
 
 							// 触发完成事件
 							if (isUpdatingDoc) {
 								// 计算 Diff 统计
 								const originalContent =
 									workspaceStore.getActiveDocContent() || "";
-								const changes = diffLines(
-									originalContent,
-									docContentBuffer,
-								);
+								const changes = diffLines(originalContent, docContentBuffer);
 								let additions = 0;
 								let deletions = 0;
 								changes.forEach((part) => {
@@ -159,33 +152,25 @@ export function useChatHandler({
 									"当前文档";
 
 								// 更新消息 metadata
-								chatStore.updateMessage(
-									session.id,
-									assistantMessage.id,
-									{
-										metadata: {
-											fileUpdates: [
-												{
-													fileName: docTitle,
-													type: "update",
-													additions,
-													deletions,
-												},
-											],
-										},
+								chatStore.updateMessage(session.id, assistantMessage.id, {
+									metadata: {
+										fileUpdates: [
+											{
+												fileName: docTitle,
+												type: "update",
+												additions,
+												deletions,
+											},
+										],
 									},
-								);
+								});
 
 								events.emit(EVENTS.AI_DOC_UPDATE_END, {
-									originalContent:
-										workspaceStore.getActiveDocContent(),
+									originalContent: workspaceStore.getActiveDocContent(),
 									suggestedContent: docContentBuffer,
-									prompt:
-										command?.name || content.slice(0, 50),
+									prompt: command?.name || content.slice(0, 50),
 								});
-								debugLog(
-									"[CopilotSidebar] AI 完成文档修改",
-								);
+								debugLog("[CopilotSidebar] AI 完成文档修改");
 							} else if (isCreatingDoc) {
 								// 解析 create-doc 内容
 								const lines = docContentBuffer.split("\n");
@@ -195,22 +180,13 @@ export function useChatHandler({
 
 								for (let i = 0; i < lines.length; i++) {
 									const line = lines[i].trim();
-									if (
-										line.startsWith("标题:") ||
-										line.startsWith("标题：")
-									) {
-										title = line.replace(
-											/^标题[:：]\s*/,
-											"",
-										);
+									if (line.startsWith("标题:") || line.startsWith("标题：")) {
+										title = line.replace(/^标题[:：]\s*/, "");
 									} else if (
 										line.startsWith("摘要:") ||
 										line.startsWith("摘要：")
 									) {
-										summary = line.replace(
-											/^摘要[:：]\s*/,
-											"",
-										);
+										summary = line.replace(/^摘要[:：]\s*/, "");
 									} else if (
 										line.startsWith("内容:") ||
 										line.startsWith("内容：")
@@ -227,38 +203,30 @@ export function useChatHandler({
 								const changes = diffLines("", docContent);
 								let additions = 0;
 								changes.forEach((part) => {
-									if (part.added)
-										additions += part.count || 0;
+									if (part.added) additions += part.count || 0;
 								});
 
 								// 更新消息 metadata
-								chatStore.updateMessage(
-									session.id,
-									assistantMessage.id,
-									{
-										metadata: {
-											fileUpdates: [
-												{
-													fileName: title,
-													type: "create",
-													additions,
-													deletions: 0,
-												},
-											],
-										},
+								chatStore.updateMessage(session.id, assistantMessage.id, {
+									metadata: {
+										fileUpdates: [
+											{
+												fileName: title,
+												type: "create",
+												additions,
+												deletions: 0,
+											},
+										],
 									},
-								);
+								});
 
 								queueCreateProposal({
 									title,
 									summary,
 									content: docContent,
-									prompt:
-										command?.name || content.slice(0, 50),
+									prompt: command?.name || content.slice(0, 50),
 								});
-								debugLog(
-									"[CopilotSidebar] AI 完成新文档创建",
-								);
+								debugLog("[CopilotSidebar] AI 完成新文档创建");
 							}
 
 							isUpdatingDoc = false;
@@ -267,10 +235,7 @@ export function useChatHandler({
 							// 还没有结束标记，继续收集
 							docContentBuffer = contentAfterMarker.trim();
 							if (isUpdatingDoc) {
-								events.emit(
-									EVENTS.AI_DOC_UPDATE_STREAM,
-									docContentBuffer,
-								);
+								events.emit(EVENTS.AI_DOC_UPDATE_STREAM, docContentBuffer);
 							}
 						}
 					}
@@ -282,8 +247,7 @@ export function useChatHandler({
 				// 处理 update-doc 协议
 				// 1. 如果正在更新，显示 PENDING
 				if (isUpdatingDoc) {
-					const startIdx =
-						accumulatedContent.indexOf(":::update-doc");
+					const startIdx = accumulatedContent.indexOf(":::update-doc");
 					if (startIdx !== -1) {
 						// 保留协议前的内容 + 正在修改的占位符
 						displayContent =
@@ -293,8 +257,7 @@ export function useChatHandler({
 				}
 				// 2. 如果正在创建，显示 PENDING
 				else if (isCreatingDoc) {
-					const startIdx =
-						accumulatedContent.indexOf(":::create-doc");
+					const startIdx = accumulatedContent.indexOf(":::create-doc");
 					if (startIdx !== -1) {
 						// 保留协议前的内容 + 正在创建的占位符
 						displayContent =
@@ -305,14 +268,8 @@ export function useChatHandler({
 				// 3. 如果协议已完成，将协议块替换为 DONE 占位符（保留前后文本）
 				else {
 					displayContent = displayContent
-						.replace(
-							/:::update-doc[\s\S]*?:::/g,
-							"\n<<<AI_UPDATE_DONE>>>\n",
-						)
-						.replace(
-							/:::create-doc[\s\S]*?:::/g,
-							"\n<<<AI_CREATE_DONE>>>\n",
-						);
+						.replace(/:::update-doc[\s\S]*?:::/g, "\n<<<AI_UPDATE_DONE>>>\n")
+						.replace(/:::create-doc[\s\S]*?:::/g, "\n<<<AI_CREATE_DONE>>>\n");
 
 					// 清理可能的残留
 					if (
@@ -320,14 +277,8 @@ export function useChatHandler({
 						displayContent.includes(":::create-doc")
 					) {
 						displayContent = displayContent
-							.replace(
-								/:::update-doc[\s\S]*/g,
-								"\n<<<AI_UPDATE_PENDING>>>",
-							)
-							.replace(
-								/:::create-doc[\s\S]*/g,
-								"\n<<<AI_CREATE_PENDING>>>",
-							);
+							.replace(/:::update-doc[\s\S]*/g, "\n<<<AI_UPDATE_PENDING>>>")
+							.replace(/:::create-doc[\s\S]*/g, "\n<<<AI_CREATE_PENDING>>>");
 					}
 				}
 
@@ -359,9 +310,7 @@ export function useChatHandler({
 					);
 
 					// 尝试提取内容
-					const startMarker = isUpdatingDoc
-						? ":::update-doc"
-						: ":::create-doc";
+					const startMarker = isUpdatingDoc ? ":::update-doc" : ":::create-doc";
 					const startIdx = accumulatedContent.indexOf(startMarker);
 
 					if (startIdx !== -1) {
@@ -370,25 +319,19 @@ export function useChatHandler({
 							startIdx + startMarker.length,
 						);
 						// 去除末尾可能的未完成标记 (如 ":" 或 "::")
-						extractedContent = extractedContent
-							.replace(/(:+)$/, "")
-							.trim();
+						extractedContent = extractedContent.replace(/(:+)$/, "").trim();
 						docContentBuffer = extractedContent;
 
 						// 执行完成逻辑
 						if (isUpdatingDoc) {
 							const originalContent =
 								workspaceStore.getActiveDocContent() || "";
-							const changes = diffLines(
-								originalContent,
-								docContentBuffer,
-							);
+							const changes = diffLines(originalContent, docContentBuffer);
 							let additions = 0;
 							let deletions = 0;
 							changes.forEach((part) => {
 								if (part.added) additions += part.count || 0;
-								if (part.removed)
-									deletions += part.count || 0;
+								if (part.removed) deletions += part.count || 0;
 							});
 
 							const state = workspaceStore.getState();
@@ -397,26 +340,21 @@ export function useChatHandler({
 									state.docCache[state.activeDocId]?.title) ||
 								"当前文档";
 
-							chatStore.updateMessage(
-								session.id,
-								assistantMessage.id,
-								{
-									metadata: {
-										fileUpdates: [
-											{
-												fileName: docTitle,
-												type: "update",
-												additions,
-												deletions,
-											},
-										],
-									},
+							chatStore.updateMessage(session.id, assistantMessage.id, {
+								metadata: {
+									fileUpdates: [
+										{
+											fileName: docTitle,
+											type: "update",
+											additions,
+											deletions,
+										},
+									],
 								},
-							);
+							});
 
 							events.emit(EVENTS.AI_DOC_UPDATE_END, {
-								originalContent:
-									workspaceStore.getActiveDocContent(),
+								originalContent: workspaceStore.getActiveDocContent(),
 								suggestedContent: docContentBuffer,
 								prompt: command?.name || content.slice(0, 50),
 							});
@@ -428,22 +366,13 @@ export function useChatHandler({
 
 							for (let i = 0; i < lines.length; i++) {
 								const line = lines[i].trim();
-								if (
-									line.startsWith("标题:") ||
-									line.startsWith("标题：")
-								) {
-									title = line.replace(
-										/^标题[:：]\s*/,
-										"",
-									);
+								if (line.startsWith("标题:") || line.startsWith("标题：")) {
+									title = line.replace(/^标题[:：]\s*/, "");
 								} else if (
 									line.startsWith("摘要:") ||
 									line.startsWith("摘要：")
 								) {
-									summary = line.replace(
-										/^摘要[:：]\s*/,
-										"",
-									);
+									summary = line.replace(/^摘要[:：]\s*/, "");
 								} else if (
 									line.startsWith("内容:") ||
 									line.startsWith("内容：")
@@ -462,22 +391,18 @@ export function useChatHandler({
 								if (part.added) additions += part.count || 0;
 							});
 
-							chatStore.updateMessage(
-								session.id,
-								assistantMessage.id,
-								{
-									metadata: {
-										fileUpdates: [
-											{
-												fileName: title,
-												type: "create",
-												additions,
-												deletions: 0,
-											},
-										],
-									},
+							chatStore.updateMessage(session.id, assistantMessage.id, {
+								metadata: {
+									fileUpdates: [
+										{
+											fileName: title,
+											type: "create",
+											additions,
+											deletions: 0,
+										},
+									],
 								},
-							);
+							});
 
 							queueCreateProposal({
 								title,
@@ -494,25 +419,13 @@ export function useChatHandler({
 
 				// 1. 将完整的协议块替换为 DONE 占位符
 				finalContent = finalContent
-					.replace(
-						/:::update-doc[\s\S]*?:::?/g,
-						"\n<<<AI_UPDATE_DONE>>>\n",
-					)
-					.replace(
-						/:::create-doc[\s\S]*?:::?/g,
-						"\n<<<AI_CREATE_DONE>>>\n",
-					);
+					.replace(/:::update-doc[\s\S]*?:::?/g, "\n<<<AI_UPDATE_DONE>>>\n")
+					.replace(/:::create-doc[\s\S]*?:::?/g, "\n<<<AI_CREATE_DONE>>>\n");
 
 				// 2. 清理可能的未闭合残留（兜底）
 				finalContent = finalContent
-					.replace(
-						/:::update-doc[\s\S]*/g,
-						"\n<<<AI_UPDATE_DONE>>>\n",
-					)
-					.replace(
-						/:::create-doc[\s\S]*/g,
-						"\n<<<AI_CREATE_DONE>>>\n",
-					);
+					.replace(/:::update-doc[\s\S]*/g, "\n<<<AI_UPDATE_DONE>>>\n")
+					.replace(/:::create-doc[\s\S]*/g, "\n<<<AI_CREATE_DONE>>>\n");
 
 				chatStore.updateMessage(session.id, assistantMessage.id, {
 					content: finalContent,
@@ -532,16 +445,12 @@ export function useChatHandler({
 				chatStore.setStatus("idle");
 
 				// 调试：打印 AI 完整响应
-				debugLog(
-					"[CopilotSidebar] AI 完整响应:",
-					accumulatedRawContent,
-				);
+				debugLog("[CopilotSidebar] AI 完整响应:", accumulatedRawContent);
 
 				// 兼容旧的写入协议
 				const { writeContent } = parseWriteContent(accumulatedContent);
 				if (writeContent && !isUpdatingDoc && !isCreatingDoc) {
-					const editorContent =
-						workspaceStore.getActiveDocContent();
+					const editorContent = workspaceStore.getActiveDocContent();
 					events.emit(EVENTS.AI_WRITE_TO_OUTPUT, {
 						content: editorContent
 							? editorContent + "\n\n" + writeContent

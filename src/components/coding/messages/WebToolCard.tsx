@@ -1,7 +1,6 @@
 /**
- * Web 工具卡片 - WebSearch/WebFetch 结果展示
- * 折叠态：URL/查询 + 状态
- * 展开态：Markdown 渲染结果
+ * Web 工具卡片 - WebSearch/WebFetch 紧凑内联展示
+ * 折叠态：Globe icon + 搜索/获取 + URL/query
  */
 import { Globe, ExternalLink } from "lucide-react";
 import { useMemo } from "react";
@@ -25,9 +24,8 @@ export function WebToolCard({ toolCall }: WebToolCardProps) {
 		return "";
 	}, [toolCall.output]);
 
-	const label = isSearch ? "搜索" : "获取";
+	const label = isSearch ? "WebSearch" : "WebFetch";
 
-	// URL 检测
 	const isUrl = !isSearch && query.startsWith("http");
 
 	const headerRight = isUrl ? (
@@ -49,20 +47,17 @@ export function WebToolCard({ toolCall }: WebToolCardProps) {
 			title={query}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 			headerRight={headerRight}
 			iconColor="text-blue-500"
 		>
-			{/* 查询提示（WebFetch 的 prompt） */}
 			{prompt && (
 				<p className="mb-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
 					{prompt}
 				</p>
 			)}
 
-			{/* 输出：使用 Markdown 渲染 */}
 			{output && (
-				<div className="max-h-64 overflow-y-auto rounded-lg border border-zinc-200/60 bg-white/50 px-3 py-2 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/30">
+				<div className="max-h-64 overflow-y-auto rounded-md border border-zinc-200/60 bg-white/50 px-3 py-2 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/30">
 					<div className="prose prose-sm prose-zinc max-w-none dark:prose-invert">
 						<MarkdownRenderer
 							content={output.slice(0, 4000)}

@@ -25,18 +25,22 @@ export function ThinkingPanel({ blocks }: ThinkingPanelProps) {
 	const totalContent = blocks.map((b) => b.content).join("");
 
 	return (
-		<div className={`rounded-lg overflow-hidden transition-colors ${
-			isAnyStreaming
-				? "bg-zinc-100/80 dark:bg-zinc-800/60 animate-[pulse_3s_ease-in-out_infinite]"
-				: "bg-zinc-100/70 dark:bg-zinc-800/50"
-		}`}>
+		<div
+			className={`rounded-lg overflow-hidden transition-colors ${
+				isAnyStreaming
+					? "bg-zinc-100/80 dark:bg-zinc-800/60 animate-[pulse_3s_ease-in-out_infinite]"
+					: "bg-zinc-100/70 dark:bg-zinc-800/50"
+			}`}
+		>
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
 				className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-700/40 cursor-pointer"
 			>
 				<Lightbulb className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
-				<span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Thinking</span>
+				<span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
+					Thinking
+				</span>
 				{isAnyStreaming && (
 					<span className="h-1.5 w-1.5 rounded-full bg-[#D96C46] animate-pulse shrink-0" />
 				)}

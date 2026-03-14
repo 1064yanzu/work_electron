@@ -7,24 +7,27 @@ import {
 	Plus,
 	Terminal,
 	Trash2,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ExternalThreadMeta } from '../../../electron/shared/external-history-types';
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ExternalThreadMeta } from "../../../electron/shared/external-history-types";
 import {
 	codingThreadStore,
 	useCodingThreadSelector,
-} from '../../lib/stores/codingThreadStore';
-import { useCodingWorkspaceSelector } from '../../lib/stores/codingWorkspaceStore';
-import type { CodingThread } from '../../lib/stores/codingThreadTypes';
-import { createThreadFromWorkspaceProfile, syncThreadWorkspaceProfile } from '../../lib/coding/threadFactory';
-import { importExternalThread } from '../../lib/coding/historyImporter';
+} from "../../lib/stores/codingThreadStore";
+import { useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
+import type { CodingThread } from "../../lib/stores/codingThreadTypes";
+import {
+	createThreadFromWorkspaceProfile,
+	syncThreadWorkspaceProfile,
+} from "../../lib/coding/threadFactory";
+import { importExternalThread } from "../../lib/coding/historyImporter";
 import {
 	externalHistoryStore,
 	useExternalHistorySelector,
-} from '../../lib/stores/externalHistoryStore';
-import { ContextMenuPortal } from '../ui/DropdownPortal';
-import { ExternalThreadBadge } from './threadList/ExternalThreadBadge';
-import { formatRelativeTime } from './threadList/threadListUtils';
+} from "../../lib/stores/externalHistoryStore";
+import { ContextMenuPortal } from "../ui/DropdownPortal";
+import { ExternalThreadBadge } from "./threadList/ExternalThreadBadge";
+import { formatRelativeTime } from "./threadList/threadListUtils";
 
 interface CodingHomeProps {
 	onOpenThread?: (threadId: string) => void;
@@ -32,8 +35,8 @@ interface CodingHomeProps {
 
 /** 统一的最近会话条目 */
 type RecentItem =
-	| { kind: 'local'; thread: CodingThread }
-	| { kind: 'external'; meta: ExternalThreadMeta };
+	| { kind: "local"; thread: CodingThread }
+	| { kind: "external"; meta: ExternalThreadMeta };
 
 const MAX_RECENT = 8;
 
@@ -41,13 +44,15 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 	const threads = useCodingThreadSelector((s) => s.threads);
 	const recentProjects = useCodingWorkspaceSelector((s) => s.recentProjects);
 	const codexThreads = useExternalHistorySelector((s) => s.codexThreads);
-	const claudeCodeThreads = useExternalHistorySelector((s) => s.claudeCodeThreads);
+	const claudeCodeThreads = useExternalHistorySelector(
+		(s) => s.claudeCodeThreads,
+	);
 	const [contextMenu, setContextMenu] = useState<{
 		threadId: string;
 		position: { x: number; y: number };
 	} | null>(null);
 	const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
-	const [editTitle, setEditTitle] = useState('');
+	const [editTitle, setEditTitle] = useState("");
 	const [importingId, setImportingId] = useState<string | null>(null);
 
 	const latestProject = recentProjects[0] ?? null;
@@ -75,14 +80,16 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 		);
 
 		const items: RecentItem[] = [
-			...threads.map((t) => ({ kind: 'local' as const, thread: t })),
-			...allExternal.map((m) => ({ kind: 'external' as const, meta: m })),
+			...threads.map((t) => ({ kind: "local" as const, thread: t })),
+			...allExternal.map((m) => ({ kind: "external" as const, meta: m })),
 		];
 
 		return items
 			.sort((a, b) => {
-				const aTime = a.kind === 'local' ? a.thread.updatedAt : a.meta.updatedAt;
-				const bTime = b.kind === 'local' ? b.thread.updatedAt : b.meta.updatedAt;
+				const aTime =
+					a.kind === "local" ? a.thread.updatedAt : a.meta.updatedAt;
+				const bTime =
+					b.kind === "local" ? b.thread.updatedAt : b.meta.updatedAt;
 				return bTime - aTime;
 			})
 			.slice(0, MAX_RECENT);
@@ -90,13 +97,16 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 
 	const handleNewThread = useCallback(async () => {
 		try {
-			const result = await window.electronAPI.invoke('coding_select_directory', {});
+			const result = await window.electronAPI.invoke(
+				"coding_select_directory",
+				{},
+			);
 			if (result?.path) {
 				const thread = await createThreadFromWorkspaceProfile(result.path);
 				onOpenThread?.(thread.id);
 			}
 		} catch (error) {
-			console.error('[CodingHome] 选择目录失败:', error);
+			console.error("[CodingHome] 选择目录失败:", error);
 		}
 	}, [onOpenThread]);
 
@@ -120,7 +130,7 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 					onOpenThread?.(thread.id);
 				}
 			} catch (err) {
-				console.error('[CodingHome] 导入外部线程失败:', err);
+				console.error("[CodingHome] 导入外部线程失败:", err);
 			} finally {
 				setImportingId(null);
 			}
@@ -149,10 +159,12 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 
 	const handleFinishRename = useCallback(() => {
 		if (editingThreadId && editTitle.trim()) {
-			codingThreadStore.updateThread(editingThreadId, { title: editTitle.trim() });
+			codingThreadStore.updateThread(editingThreadId, {
+				title: editTitle.trim(),
+			});
 		}
 		setEditingThreadId(null);
-		setEditTitle('');
+		setEditTitle("");
 	}, [editingThreadId, editTitle]);
 
 	return (
@@ -174,12 +186,16 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 					}}
 					className="mt-3 inline-flex items-center gap-1 text-4xl text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
 				>
-					<span>{latestProject?.name ?? '选择项目'}</span>
+					<span>{latestProject?.name ?? "选择项目"}</span>
 					<ChevronDown className="mt-1 h-5 w-5" />
 				</button>
 
 				<div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-					<ActionChip icon={Plus} label="新会话" onClick={() => void handleNewThread()} />
+					<ActionChip
+						icon={Plus}
+						label="新会话"
+						onClick={() => void handleNewThread()}
+					/>
 					{latestProject && (
 						<ActionChip
 							icon={FolderOpen}
@@ -200,23 +216,26 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 					</div>
 					<div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-900/70">
 						{recentItems.map((item) =>
-							item.kind === 'local' ? (
+							item.kind === "local" ? (
 								<LocalThreadRow
 									key={item.thread.id}
 									thread={item.thread}
 									editingThreadId={editingThreadId}
 									editTitle={editTitle}
-									onOpen={() => editingThreadId !== item.thread.id && handleOpenLocalThread(item.thread)}
+									onOpen={() =>
+										editingThreadId !== item.thread.id &&
+										handleOpenLocalThread(item.thread)
+									}
 									onContextMenu={(position) => {
 										setEditingThreadId(null);
-										setEditTitle('');
+										setEditTitle("");
 										setContextMenu({ threadId: item.thread.id, position });
 									}}
 									onEditTitleChange={setEditTitle}
 									onFinishRename={handleFinishRename}
 									onCancelRename={() => {
 										setEditingThreadId(null);
-										setEditTitle('');
+										setEditTitle("");
 									}}
 								/>
 							) : (
@@ -239,7 +258,9 @@ export function CodingHome({ onOpenThread }: CodingHomeProps) {
 			>
 				<button
 					onClick={() => {
-						const thread = contextMenu ? codingThreadStore.getThread(contextMenu.threadId) : null;
+						const thread = contextMenu
+							? codingThreadStore.getThread(contextMenu.threadId)
+							: null;
 						if (thread) handleStartRename(thread);
 					}}
 					className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -302,7 +323,8 @@ function LocalThreadRow({
 	onCancelRename: () => void;
 }) {
 	const isEditing = editingThreadId === thread.id;
-	const sourceBadge = thread.source && thread.source !== 'local' ? thread.source : null;
+	const sourceBadge =
+		thread.source && thread.source !== "local" ? thread.source : null;
 
 	return (
 		<div
@@ -324,8 +346,8 @@ function LocalThreadRow({
 						onChange={(event) => onEditTitleChange(event.target.value)}
 						onBlur={onFinishRename}
 						onKeyDown={(event) => {
-							if (event.key === 'Enter') onFinishRename();
-							if (event.key === 'Escape') onCancelRename();
+							if (event.key === "Enter") onFinishRename();
+							if (event.key === "Escape") onCancelRename();
 						}}
 						onClick={(event) => event.stopPropagation()}
 						className="w-full border-b border-[#D96C46] bg-transparent text-sm font-medium outline-none"
@@ -376,7 +398,7 @@ function ExternalSessionRow({
 		<div
 			onClick={isImporting ? undefined : onImport}
 			className={`group flex cursor-pointer items-center gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/70 ${
-				isImporting ? 'opacity-50 pointer-events-none' : ''
+				isImporting ? "opacity-50 pointer-events-none" : ""
 			}`}
 		>
 			<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
@@ -394,7 +416,7 @@ function ExternalSessionRow({
 				</div>
 			</div>
 			<div className="shrink-0 text-[11px] tabular-nums text-zinc-400">
-				{isImporting ? '导入中...' : formatRelativeTime(meta.updatedAt)}
+				{isImporting ? "导入中..." : formatRelativeTime(meta.updatedAt)}
 			</div>
 		</div>
 	);

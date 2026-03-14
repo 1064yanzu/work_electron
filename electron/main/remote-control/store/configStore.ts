@@ -23,9 +23,7 @@ const VALID_GROUP_POLICIES: RemoteGroupPolicy[] = [
 	"open",
 ];
 
-function mergeStringArray(
-	raw: unknown,
-): string[] | undefined {
+function mergeStringArray(raw: unknown): string[] | undefined {
 	if (!Array.isArray(raw)) return undefined;
 	return raw
 		.filter((v): v is string => typeof v === "string")
@@ -43,13 +41,19 @@ function mergeCommonChannelFields(
 ): void {
 	if (typeof raw.enabled === "boolean") target.enabled = raw.enabled;
 
-	if (typeof raw.dmPolicy === "string" && VALID_DM_POLICIES.includes(raw.dmPolicy as RemoteDmPolicy)) {
+	if (
+		typeof raw.dmPolicy === "string" &&
+		VALID_DM_POLICIES.includes(raw.dmPolicy as RemoteDmPolicy)
+	) {
 		target.dmPolicy = raw.dmPolicy;
 	}
 	const allowFrom = mergeStringArray(raw.allowFrom);
 	if (allowFrom) target.allowFrom = allowFrom;
 
-	if (typeof raw.groupPolicy === "string" && VALID_GROUP_POLICIES.includes(raw.groupPolicy as RemoteGroupPolicy)) {
+	if (
+		typeof raw.groupPolicy === "string" &&
+		VALID_GROUP_POLICIES.includes(raw.groupPolicy as RemoteGroupPolicy)
+	) {
 		target.groupPolicy = raw.groupPolicy;
 	}
 	const groupAllowFrom = mergeStringArray(raw.groupAllowFrom);
@@ -80,14 +84,20 @@ function mergeConfig(
 		// ─── 飞书 ───
 		if (isObject(channels.feishu)) {
 			const feishu = channels.feishu as Record<string, unknown>;
-			mergeCommonChannelFields(feishu, next.channels.feishu as unknown as Record<string, unknown>);
+			mergeCommonChannelFields(
+				feishu,
+				next.channels.feishu as unknown as Record<string, unknown>,
+			);
 			if (typeof feishu.appId === "string")
 				next.channels.feishu.appId = feishu.appId;
 			if (typeof feishu.appSecret === "string")
 				next.channels.feishu.appSecret = feishu.appSecret;
 			if (feishu.domain === "feishu" || feishu.domain === "lark")
 				next.channels.feishu.domain = feishu.domain;
-			if (feishu.connectionMode === "websocket" || feishu.connectionMode === "webhook")
+			if (
+				feishu.connectionMode === "websocket" ||
+				feishu.connectionMode === "webhook"
+			)
 				next.channels.feishu.connectionMode = feishu.connectionMode;
 			if (typeof feishu.webhookPath === "string")
 				next.channels.feishu.webhookPath = feishu.webhookPath;
@@ -114,12 +124,10 @@ function mergeConfig(
 				next.channels.feishu.enableDocWriteOps = feishu.enableDocWriteOps;
 			}
 			if (typeof feishu.enableDocFileDelete === "boolean") {
-				next.channels.feishu.enableDocFileDelete =
-					feishu.enableDocFileDelete;
+				next.channels.feishu.enableDocFileDelete = feishu.enableDocFileDelete;
 			}
 			if (typeof feishu.enableLegacyDocsRead === "boolean") {
-				next.channels.feishu.enableLegacyDocsRead =
-					feishu.enableLegacyDocsRead;
+				next.channels.feishu.enableLegacyDocsRead = feishu.enableLegacyDocsRead;
 			}
 			if (typeof feishu.enableDocCommandFallback === "boolean") {
 				next.channels.feishu.enableDocCommandFallback =
@@ -130,7 +138,10 @@ function mergeConfig(
 		// ─── Telegram ───
 		if (isObject(channels.telegram)) {
 			const tg = channels.telegram as Record<string, unknown>;
-			mergeCommonChannelFields(tg, next.channels.telegram as unknown as Record<string, unknown>);
+			mergeCommonChannelFields(
+				tg,
+				next.channels.telegram as unknown as Record<string, unknown>,
+			);
 			if (typeof tg.botToken === "string")
 				next.channels.telegram.botToken = tg.botToken;
 		}
@@ -138,7 +149,10 @@ function mergeConfig(
 		// ─── Slack ───
 		if (isObject(channels.slack)) {
 			const sl = channels.slack as Record<string, unknown>;
-			mergeCommonChannelFields(sl, next.channels.slack as unknown as Record<string, unknown>);
+			mergeCommonChannelFields(
+				sl,
+				next.channels.slack as unknown as Record<string, unknown>,
+			);
 			if (typeof sl.botToken === "string")
 				next.channels.slack.botToken = sl.botToken;
 			if (typeof sl.appToken === "string")
@@ -150,7 +164,10 @@ function mergeConfig(
 		// ─── Discord ───
 		if (isObject(channels.discord)) {
 			const dc = channels.discord as Record<string, unknown>;
-			mergeCommonChannelFields(dc, next.channels.discord as unknown as Record<string, unknown>);
+			mergeCommonChannelFields(
+				dc,
+				next.channels.discord as unknown as Record<string, unknown>,
+			);
 			if (typeof dc.botToken === "string")
 				next.channels.discord.botToken = dc.botToken;
 			if (typeof dc.applicationId === "string")
@@ -197,7 +214,7 @@ function mergeConfig(
 }
 
 export class RemoteControlConfigStore {
-	constructor(private readonly db: DbContext) { }
+	constructor(private readonly db: DbContext) {}
 
 	async load(): Promise<RemoteControlConfig> {
 		const row = await this.db.client.execute({

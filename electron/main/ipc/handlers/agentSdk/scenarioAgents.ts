@@ -79,9 +79,7 @@ function scenarioLabel(scenario: string, customName?: string | null): string {
  * 从子代理描述中自动提取触发关键词
  * 用于用户没有配置 triggerKeywords 时的备用匹配
  */
-function extractTriggerKeywordsFromDescription(
-	description: string,
-): string[] {
+function extractTriggerKeywordsFromDescription(description: string): string[] {
 	const keywords: string[] = [];
 	const desc = description.toLowerCase();
 
@@ -317,15 +315,7 @@ function toolsForScenario(
 				"WebFetch",
 			];
 		case "debugging":
-			return [
-				"Read",
-				"Edit",
-				"Bash",
-				"Grep",
-				"Glob",
-				"WebSearch",
-				"WebFetch",
-			];
+			return ["Read", "Edit", "Bash", "Grep", "Glob", "WebSearch", "WebFetch"];
 		case "writing":
 			return includeSkills
 				? ["Skill", "Read", "Glob", "Grep", "Write", "WebSearch", "WebFetch"]
@@ -522,9 +512,7 @@ export function buildSubagentPolicyAppend(opts: {
 			`已安装技能（节选）：${opts.enabledSkills.slice(0, MAX_SKILLS).join(", ")}`,
 		);
 		if (opts.enabledSkills.length > MAX_SKILLS) {
-			lines.push(
-				`（还有 ${opts.enabledSkills.length - MAX_SKILLS} 个已省略）`,
-			);
+			lines.push(`（还有 ${opts.enabledSkills.length - MAX_SKILLS} 个已省略）`);
 		}
 		lines.push("");
 	}

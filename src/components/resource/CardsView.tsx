@@ -316,17 +316,14 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 												className="w-full object-contain"
 												onError={(e) => {
 													console.error("图片加载失败:", imageSrc);
-													(e.target as HTMLImageElement).style.display =
-														"none";
+													(e.target as HTMLImageElement).style.display = "none";
 												}}
 											/>
 										) : (
 											<div className="aspect-[4/5] flex items-center justify-center">
 												<div className="text-center">
 													<ImageIcon className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-													<p className="text-xs text-zinc-400">
-														图片加载中...
-													</p>
+													<p className="text-xs text-zinc-400">图片加载中...</p>
 												</div>
 											</div>
 										)}

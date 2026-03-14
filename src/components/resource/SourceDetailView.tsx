@@ -18,7 +18,13 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useState,
+} from "react";
 import { getSourceDetail, updateNote, updateSource } from "../../lib/api";
 import { EVENTS, events } from "../../lib/events";
 import { invoke } from "../../lib/tauriCompat";
@@ -49,14 +55,10 @@ export interface SourceDetailViewHandle {
 	handleCloseDetail: () => void;
 }
 
-export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailViewProps>(
-	function SourceDetailView(
-		{
-			fetchSources,
-			onDeleteSource,
-		},
-		ref,
-	) {
+export const SourceDetailView = forwardRef<
+	SourceDetailViewHandle,
+	SourceDetailViewProps
+>(function SourceDetailView({ fetchSources, onDeleteSource }, ref) {
 	const previewSource = useWorkspaceStoreSelector(
 		(state) => state.previewSource,
 	);
@@ -125,11 +127,15 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 	);
 
 	// 暴露方法给父组件
-	useImperativeHandle(ref, () => ({
-		handleOpenDetail,
-		handleOpenResearchSource,
-		handleCloseDetail,
-	}), [handleOpenDetail, handleOpenResearchSource, handleCloseDetail]);
+	useImperativeHandle(
+		ref,
+		() => ({
+			handleOpenDetail,
+			handleOpenResearchSource,
+			handleCloseDetail,
+		}),
+		[handleOpenDetail, handleOpenResearchSource, handleCloseDetail],
+	);
 
 	// 当 previewSource 改变时自动加载详情数据
 	useEffect(() => {
@@ -137,7 +143,12 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 		// 只有 Source 类型需要加载详情，ResearchSource 不需要
 		if (!("kind" in previewSource)) return;
 		// 如果已经有对应的详情数据，跳过
-		if (sourceDetail && "id" in previewSource && sourceDetail.source?.id === previewSource.id) return;
+		if (
+			sourceDetail &&
+			"id" in previewSource &&
+			sourceDetail.source?.id === previewSource.id
+		)
+			return;
 
 		const source = previewSource as Source;
 		setIsLoadingDetail(true);
@@ -453,16 +464,16 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 									<Clock className="w-3 h-3" />
 									{isSource
 										? new Date(
-											(previewSource as Source).created_at,
-										).toLocaleDateString("zh-CN")
+												(previewSource as Source).created_at,
+											).toLocaleDateString("zh-CN")
 										: new Date(
-											(previewSource as ResearchSource).timestamp,
-										).toLocaleDateString("zh-CN")}
+												(previewSource as ResearchSource).timestamp,
+											).toLocaleDateString("zh-CN")}
 								</span>
 								{/* 来源标记 */}
 								{isSource &&
 									(previewSource as Source).source_type ===
-									SourceOrigin.BrowserClip && (
+										SourceOrigin.BrowserClip && (
 										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
 											<Globe className="w-2.5 h-2.5" />
 											浏览器剪存
@@ -470,7 +481,7 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 									)}
 								{isSource &&
 									(previewSource as Source).source_type ===
-									SourceOrigin.WebSearch && (
+										SourceOrigin.WebSearch && (
 										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
 											<Search className="w-2.5 h-2.5" />
 											网络搜索
@@ -478,7 +489,7 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 									)}
 								{isSource &&
 									(previewSource as Source).source_type ===
-									SourceOrigin.Import && (
+										SourceOrigin.Import && (
 										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
@@ -635,22 +646,22 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 											}
 										})()
 									) : // ResearchSource
-										(previewSource as ResearchSource).content ? (
-											<article className="prose prose-zinc dark:prose-invert max-w-none select-text">
-												<MarkdownRenderer
-													content={(previewSource as ResearchSource).content!}
-													className="text-base leading-relaxed"
-												/>
-											</article>
-										) : (previewSource as ResearchSource).snippet ? (
-											<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed select-text">
-												{(previewSource as ResearchSource).snippet}
-											</p>
-										) : (
-											<p className="text-sm text-zinc-400 text-center py-8">
-												暂无内容
-											</p>
-										)}
+									(previewSource as ResearchSource).content ? (
+										<article className="prose prose-zinc dark:prose-invert max-w-none select-text">
+											<MarkdownRenderer
+												content={(previewSource as ResearchSource).content!}
+												className="text-base leading-relaxed"
+											/>
+										</article>
+									) : (previewSource as ResearchSource).snippet ? (
+										<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed select-text">
+											{(previewSource as ResearchSource).snippet}
+										</p>
+									) : (
+										<p className="text-sm text-zinc-400 text-center py-8">
+											暂无内容
+										</p>
+									)}
 								</>
 							)}
 						</div>
@@ -672,9 +683,9 @@ export const SourceDetailView = forwardRef<SourceDetailViewHandle, SourceDetailV
 										source.title,
 										sourceDetail.note
 											? {
-												content: sourceDetail.note.content,
-												content_html: sourceDetail.note.content_html,
-											}
+													content: sourceDetail.note.content,
+													content_html: sourceDetail.note.content_html,
+												}
 											: undefined,
 									);
 								}}

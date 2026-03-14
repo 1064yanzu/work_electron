@@ -17,20 +17,23 @@ import {
 	ShieldAlert,
 	AlertCircle,
 	CheckCircle2,
-} from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { CodingModeSelector } from '../copilot/coding/CodingModeSelector';
-import { CodingBackendSelector } from '../copilot/coding/CodingBackendSelector';
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CodingModeSelector } from "../copilot/coding/CodingModeSelector";
+import { CodingBackendSelector } from "../copilot/coding/CodingBackendSelector";
 import {
 	codingWorkspaceStore,
 	useCodingWorkspaceSelector,
-} from '../../lib/stores/codingWorkspaceStore';
-import { useCodingSessionSelector } from '../../lib/stores/codingSessionStore';
-import { codingThreadStore, useCodingThreadSelector } from '../../lib/stores/codingThreadStore';
-import type { SessionStatus } from '../../lib/stores/codingSessionTypes';
-import { DropdownPortal } from '../ui/DropdownPortal';
-import type { SettingsTabId } from '../Settings/types';
-import { useBackendCapabilities } from '../../hooks/useBackendCapabilities';
+} from "../../lib/stores/codingWorkspaceStore";
+import { useCodingSessionSelector } from "../../lib/stores/codingSessionStore";
+import {
+	codingThreadStore,
+	useCodingThreadSelector,
+} from "../../lib/stores/codingThreadStore";
+import type { SessionStatus } from "../../lib/stores/codingSessionTypes";
+import { DropdownPortal } from "../ui/DropdownPortal";
+import type { SettingsTabId } from "../Settings/types";
+import { useBackendCapabilities } from "../../hooks/useBackendCapabilities";
 
 interface CodingToolbarProps {
 	onBack: () => void;
@@ -39,23 +42,40 @@ interface CodingToolbarProps {
 }
 
 /** 状态指示器配置 */
-const STATUS_CONFIG: Record<SessionStatus, { icon: React.ElementType; label: string; color: string }> = {
-	idle: { icon: Circle, label: '就绪', color: 'text-zinc-400' },
-	running: { icon: Loader2, label: '运行中', color: 'text-[#D96C46]' },
-	awaiting_permission: { icon: ShieldAlert, label: '等待审批', color: 'text-amber-500' },
-	paused: { icon: Circle, label: '暂停', color: 'text-amber-500' },
-	error: { icon: AlertCircle, label: '错误', color: 'text-red-500' },
-	completed: { icon: CheckCircle2, label: '已完成', color: 'text-emerald-500' },
+const STATUS_CONFIG: Record<
+	SessionStatus,
+	{ icon: React.ElementType; label: string; color: string }
+> = {
+	idle: { icon: Circle, label: "就绪", color: "text-zinc-400" },
+	running: { icon: Loader2, label: "运行中", color: "text-[#D96C46]" },
+	awaiting_permission: {
+		icon: ShieldAlert,
+		label: "等待审批",
+		color: "text-amber-500",
+	},
+	paused: { icon: Circle, label: "暂停", color: "text-amber-500" },
+	error: { icon: AlertCircle, label: "错误", color: "text-red-500" },
+	completed: { icon: CheckCircle2, label: "已完成", color: "text-emerald-500" },
 };
 
-export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToolbarProps) {
+export function CodingToolbar({
+	onBack,
+	onOpenSettings,
+	onNewThread,
+}: CodingToolbarProps) {
 	const projectName = useCodingWorkspaceSelector((s) => s.projectName);
 	const isGitRepo = useCodingWorkspaceSelector((s) => s.isGitRepo);
 	const gitStatus = useCodingWorkspaceSelector((s) => s.gitStatus);
 	const gitBranches = useCodingWorkspaceSelector((s) => s.gitBranches);
-	const leftPanelVisible = useCodingWorkspaceSelector((s) => s.layout.leftPanelVisible);
-	const rightPanelVisible = useCodingWorkspaceSelector((s) => s.layout.rightPanelVisible);
-	const terminalVisible = useCodingWorkspaceSelector((s) => s.layout.terminalVisible);
+	const leftPanelVisible = useCodingWorkspaceSelector(
+		(s) => s.layout.leftPanelVisible,
+	);
+	const rightPanelVisible = useCodingWorkspaceSelector(
+		(s) => s.layout.rightPanelVisible,
+	);
+	const terminalVisible = useCodingWorkspaceSelector(
+		(s) => s.layout.terminalVisible,
+	);
 
 	const sessionStatus = useCodingSessionSelector((s) => s.status);
 	const usage = useCodingSessionSelector((s) => s.usage);
@@ -68,7 +88,7 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 
 	const [branchMenuOpen, setBranchMenuOpen] = useState(false);
 	const [isEditingTitle, setIsEditingTitle] = useState(false);
-	const [editTitle, setEditTitle] = useState('');
+	const [editTitle, setEditTitle] = useState("");
 	const branchMenuRef = useRef<HTMLDivElement>(null);
 	const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,7 +108,9 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 
 	const handleFinishEditTitle = useCallback(() => {
 		if (activeThreadId && editTitle.trim()) {
-			codingThreadStore.updateThread(activeThreadId, { title: editTitle.trim() });
+			codingThreadStore.updateThread(activeThreadId, {
+				title: editTitle.trim(),
+			});
 		}
 		setIsEditingTitle(false);
 	}, [activeThreadId, editTitle]);
@@ -121,8 +143,8 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 							onChange={(e) => setEditTitle(e.target.value)}
 							onBlur={handleFinishEditTitle}
 							onKeyDown={(e) => {
-								if (e.key === 'Enter') handleFinishEditTitle();
-								if (e.key === 'Escape') setIsEditingTitle(false);
+								if (e.key === "Enter") handleFinishEditTitle();
+								if (e.key === "Escape") setIsEditingTitle(false);
 							}}
 							className="px-2 py-1 text-sm font-medium text-zinc-800 dark:text-zinc-200 bg-transparent border-b border-[#D96C46] outline-none max-w-[180px]"
 						/>
@@ -179,8 +201,8 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 									key={branch.name}
 									className={`flex items-center gap-2 px-3 py-2 text-xs font-mono cursor-default ${
 										branch.current
-											? 'bg-[#D96C46]/5 text-[#D96C46]'
-											: 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+											? "bg-[#D96C46]/5 text-[#D96C46]"
+											: "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
 									}`}
 								>
 									<GitBranch className="w-3 h-3 shrink-0" />
@@ -201,13 +223,20 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 			<div className="flex-1" />
 
 			{/* 后端选择器 */}
-			<div className={sessionStatus === 'running' ? 'opacity-50 pointer-events-none' : ''}>
+			<div
+				className={
+					sessionStatus === "running" ? "opacity-50 pointer-events-none" : ""
+				}
+			>
 				<CodingBackendSelector />
 			</div>
 
 			{/* 后端版本标识 */}
 			{version && (
-				<span className="text-[10px] text-zinc-400 tabular-nums hidden sm:inline" title={`${isCodex ? 'Codex' : 'Claude Code'} ${version}`}>
+				<span
+					className="text-[10px] text-zinc-400 tabular-nums hidden sm:inline"
+					title={`${isCodex ? "Codex" : "Claude Code"} ${version}`}
+				>
 					v{version}
 				</span>
 			)}
@@ -235,10 +264,12 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 			)}
 
 			{/* Session 状态指示器 */}
-			{sessionStatus !== 'idle' && (
-				<div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${statusConfig.color}`}>
+			{sessionStatus !== "idle" && (
+				<div
+					className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${statusConfig.color}`}
+				>
 					<StatusIcon
-						className={`w-3 h-3 ${sessionStatus === 'running' ? 'animate-spin' : ''}`}
+						className={`w-3 h-3 ${sessionStatus === "running" ? "animate-spin" : ""}`}
 					/>
 					<span className="hidden sm:inline">{statusConfig.label}</span>
 				</div>
@@ -255,8 +286,8 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 				onClick={() => codingWorkspaceStore.toggleLeftPanel()}
 				className={`p-1.5 rounded-lg transition-colors ${
 					leftPanelVisible
-						? 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-						: 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+						? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+						: "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
 				}`}
 				title="切换文件面板 (⌘B)"
 			>
@@ -266,8 +297,8 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 				onClick={() => codingWorkspaceStore.toggleTerminal()}
 				className={`p-1.5 rounded-lg transition-colors ${
 					terminalVisible
-						? 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-						: 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+						? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+						: "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
 				}`}
 				title="切换终端 (⌃`)"
 			>
@@ -277,8 +308,8 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 				onClick={() => codingWorkspaceStore.toggleRightPanel()}
 				className={`p-1.5 rounded-lg transition-colors ${
 					rightPanelVisible
-						? 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-						: 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+						? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+						: "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
 				}`}
 				title="切换变更面板 (⌘J)"
 			>
@@ -287,11 +318,11 @@ export function CodingToolbar({ onBack, onOpenSettings, onNewThread }: CodingToo
 
 			{/* 设置 */}
 			{onOpenSettings && (
-					<button
-						onClick={() => onOpenSettings('aiCoding')}
-						className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-						title="设置"
-					>
+				<button
+					onClick={() => onOpenSettings("aiCoding")}
+					className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+					title="设置"
+				>
 					<Settings className="w-4 h-4" />
 				</button>
 			)}

@@ -25,7 +25,13 @@ import { processUIEvents } from "./eventMapper";
  */
 interface ClaudeCodeSessionEvent {
 	runId: string;
-	type: "ui_events" | "done" | "error" | "stderr" | "session_init" | "permission_request";
+	type:
+		| "ui_events"
+		| "done"
+		| "error"
+		| "stderr"
+		| "session_init"
+		| "permission_request";
 	events?: UIEvent[];
 	sessionId?: string;
 	result?: unknown;
@@ -134,7 +140,7 @@ export class ClaudeCodeSessionManager implements ICodingSessionManager {
 			case "stderr":
 				if (event.content) {
 					// 内部日志仅写入 console，不暴露给用户
-					console.debug('[Claude CLI stderr]', event.content);
+					console.debug("[Claude CLI stderr]", event.content);
 					// 仅真正的错误才展示在聊天流中
 					if (event.isError) {
 						codingSessionStore.addSystemMessage(event.content);

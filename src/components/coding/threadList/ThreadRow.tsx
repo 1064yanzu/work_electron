@@ -1,7 +1,7 @@
-import { MoreHorizontal } from 'lucide-react';
-import type { CodingThread } from '../../../lib/stores/codingThreadTypes';
-import { ExternalThreadBadge } from './ExternalThreadBadge';
-import { formatRelativeTime, hasDiffStats } from './threadListUtils';
+import { MoreHorizontal } from "lucide-react";
+import type { CodingThread } from "../../../lib/stores/codingThreadTypes";
+import { ExternalThreadBadge } from "./ExternalThreadBadge";
+import { formatRelativeTime, hasDiffStats } from "./threadListUtils";
 
 interface ThreadRowProps {
 	thread: CodingThread;
@@ -28,8 +28,9 @@ export function ThreadRow({
 }: ThreadRowProps) {
 	const diffStats = thread.diffStats ?? { additions: 0, deletions: 0 };
 	const showDiff = hasDiffStats(diffStats);
-	const isRunning = thread.status === 'running';
-	const sourceBadge = thread.source && thread.source !== 'local' ? thread.source : null;
+	const isRunning = thread.status === "running";
+	const sourceBadge =
+		thread.source && thread.source !== "local" ? thread.source : null;
 
 	return (
 		<div
@@ -42,12 +43,14 @@ export function ThreadRow({
 			}}
 			className={`group flex cursor-pointer items-center gap-2 px-2 py-1.5 transition-colors ${
 				active
-					? 'bg-white/70 text-zinc-900 dark:bg-white/[0.06] dark:text-zinc-100'
-					: 'text-zinc-700 hover:bg-white/40 dark:text-zinc-300 dark:hover:bg-white/[0.04]'
+					? "bg-white/70 text-zinc-900 dark:bg-white/[0.06] dark:text-zinc-100"
+					: "text-zinc-700 hover:bg-white/40 dark:text-zinc-300 dark:hover:bg-white/[0.04]"
 			}`}
 		>
 			<div className="flex w-2 shrink-0 justify-center">
-				{isRunning && <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-[#D96C46] animate-pulse" />}
+				{isRunning && (
+					<span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-[#D96C46] animate-pulse" />
+				)}
 			</div>
 
 			<div className="min-w-0 flex-1">
@@ -58,8 +61,8 @@ export function ThreadRow({
 						onChange={(event) => onEditTitleChange(event.target.value)}
 						onBlur={onEditTitleCommit}
 						onKeyDown={(event) => {
-							if (event.key === 'Enter') onEditTitleCommit();
-							if (event.key === 'Escape') onEditTitleCancel();
+							if (event.key === "Enter") onEditTitleCommit();
+							if (event.key === "Escape") onEditTitleCancel();
 						}}
 						onClick={(event) => event.stopPropagation()}
 						className="w-full border-b border-[#D96C46] bg-transparent text-[13px] font-medium outline-none"
@@ -78,15 +81,19 @@ export function ThreadRow({
 				{showDiff && (
 					<div className="flex items-center gap-1 font-mono">
 						{diffStats.additions > 0 && (
-							<span className="text-emerald-600 dark:text-emerald-400">+{diffStats.additions}</span>
+							<span className="text-emerald-600 dark:text-emerald-400">
+								+{diffStats.additions}
+							</span>
 						)}
 						{diffStats.deletions > 0 && (
-							<span className="text-rose-500 dark:text-rose-400">-{diffStats.deletions}</span>
+							<span className="text-rose-500 dark:text-rose-400">
+								-{diffStats.deletions}
+							</span>
 						)}
 					</div>
 				)}
 				<span className="text-zinc-400">
-				{formatRelativeTime(thread.updatedAt)}
+					{formatRelativeTime(thread.updatedAt)}
 				</span>
 			</div>
 

@@ -55,31 +55,67 @@ export interface CodingSlashCommand {
 function getOptionScore(option: SlashCommandOption, query: string): number {
 	const q = query.toLowerCase().trim();
 	if (!q) return 0;
-	const fields = [option.id, option.label, option.description, option.value].map((value) =>
-		value.toLowerCase(),
-	);
+	const fields = [
+		option.id,
+		option.label,
+		option.description,
+		option.value,
+	].map((value) => value.toLowerCase());
 	if (fields[0] === q) return 100;
 	if (fields[0].startsWith(q)) return 80;
 	if (fields[1].startsWith(q)) return 70;
 	if (fields[3].startsWith(q)) return 60;
-	if (fields[0].includes(q) || fields[1].includes(q) || fields[3].includes(q)) return 40;
+	if (fields[0].includes(q) || fields[1].includes(q) || fields[3].includes(q))
+		return 40;
 	if (fields[2].includes(q)) return 10;
 	return -1;
 }
 
-const CLAUDE_APPROVAL_OPTIONS: Array<{ value: CodingApprovalMode; label: string; description: string }> = [
-	{ value: "default", label: "default", description: "遵循 Claude 默认权限策略" },
-	{ value: "acceptEdits", label: "acceptEdits", description: "允许文件修改，命令仍受控" },
+const CLAUDE_APPROVAL_OPTIONS: Array<{
+	value: CodingApprovalMode;
+	label: string;
+	description: string;
+}> = [
+	{
+		value: "default",
+		label: "default",
+		description: "遵循 Claude 默认权限策略",
+	},
+	{
+		value: "acceptEdits",
+		label: "acceptEdits",
+		description: "允许文件修改，命令仍受控",
+	},
 	{ value: "dontAsk", label: "dontAsk", description: "尽量减少运行前确认" },
 	{ value: "plan", label: "plan", description: "只读规划模式" },
-	{ value: "bypassPermissions", label: "bypassPermissions", description: "绕过权限确认，仅适合隔离环境" },
+	{
+		value: "bypassPermissions",
+		label: "bypassPermissions",
+		description: "绕过权限确认，仅适合隔离环境",
+	},
 ];
 
-const CODEX_APPROVAL_OPTIONS: Array<{ value: CodingApprovalMode; label: string; description: string }> = [
-	{ value: "untrusted", label: "untrusted", description: "仅对白名单命令免审批" },
-	{ value: "on-request", label: "on-request", description: "运行时按需请求批准" },
+const CODEX_APPROVAL_OPTIONS: Array<{
+	value: CodingApprovalMode;
+	label: string;
+	description: string;
+}> = [
+	{
+		value: "untrusted",
+		label: "untrusted",
+		description: "仅对白名单命令免审批",
+	},
+	{
+		value: "on-request",
+		label: "on-request",
+		description: "运行时按需请求批准",
+	},
 	{ value: "never", label: "never", description: "不再请求批准，失败直接返回" },
-	{ value: "on-failure", label: "on-failure", description: "失败时再请求批准（兼容旧策略）" },
+	{
+		value: "on-failure",
+		label: "on-failure",
+		description: "失败时再请求批准（兼容旧策略）",
+	},
 ];
 
 export const CATEGORY_LABELS: Record<SlashCommandCategory, string> = {
@@ -153,7 +189,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "Plus",
 		actionId: "new_thread",
-		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+		getDisabledReason: (context) =>
+			!context.projectPath ? "请先打开一个项目。" : undefined,
 	},
 	{
 		id: "clear",
@@ -163,7 +200,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "Trash2",
 		actionId: "clear_conversation",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "compact",
@@ -173,7 +211,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "prompt",
 		iconName: "Minimize2",
 		prompt: "请基于当前线程内容压缩上下文，只保留后续继续开发必须的信息。",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "resume",
@@ -187,7 +226,9 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 			if (!context.thread) return "请先进入一个线程。";
 			const capability = getRuntimeCapability(context);
 			if (!capability?.capabilities.resume) {
-				return capability?.unsupportedReasons?.resume || "当前后端不支持 resume。";
+				return (
+					capability?.unsupportedReasons?.resume || "当前后端不支持 resume。"
+				);
 			}
 			if (!context.thread.sdkSessionId && !context.thread.runtimeSessionId) {
 				return "当前线程还没有可恢复的会话 ID。";
@@ -203,7 +244,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "PenLine",
 		actionId: "rename_thread",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "fork",
@@ -231,18 +273,21 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		getOptions: (context) => {
 			const capability = getRuntimeCapability(context);
 			const catalogModels = capability?.modelCatalog ?? [];
-			const models = catalogModels.length > 0
-				? catalogModels
-				: FALLBACK_MODEL_CATALOG[context.currentBackend] ?? [];
+			const models =
+				catalogModels.length > 0
+					? catalogModels
+					: (FALLBACK_MODEL_CATALOG[context.currentBackend] ?? []);
 			return models.map((model) => ({
 				id: model,
 				label: model,
-				description: context.thread?.model === model ? "当前正在使用" : "切换到该模型",
+				description:
+					context.thread?.model === model ? "当前正在使用" : "切换到该模型",
 				value: model,
 				actionId: "set_model",
 				disabledReason:
 					context.isRunning && !capability?.capabilities.setModelWhileRunning
-						? capability?.unsupportedReasons?.setModelWhileRunning || "运行中不能切换。"
+						? capability?.unsupportedReasons?.setModelWhileRunning ||
+							"运行中不能切换。"
 						: undefined,
 			}));
 		},
@@ -256,16 +301,30 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "submenu",
 		iconName: "Layers",
 		getOptions: (context) => {
-			const entries: Array<{ backend: CodingBackendId; label: string; description: string }> = [
-				{ backend: "claude-code", label: "Claude Code", description: "Agent SDK + Claude Code CLI" },
-				{ backend: "codex", label: "Codex", description: "Codex CLI exec / resume JSON 事件流" },
+			const entries: Array<{
+				backend: CodingBackendId;
+				label: string;
+				description: string;
+			}> = [
+				{
+					backend: "claude-code",
+					label: "Claude Code",
+					description: "Agent SDK + Claude Code CLI",
+				},
+				{
+					backend: "codex",
+					label: "Codex",
+					description: "Codex CLI exec / resume JSON 事件流",
+				},
 			];
 			return entries.map((entry) => {
 				const capability = context.capabilities[entry.backend];
 				return {
 					id: entry.backend,
 					label: entry.label,
-					description: capability?.available ? entry.description : capability?.error || "未检测到后端",
+					description: capability?.available
+						? entry.description
+						: capability?.error || "未检测到后端",
 					value: entry.backend,
 					actionId: "set_backend",
 					disabledReason: !capability?.available
@@ -287,7 +346,10 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		iconName: "ShieldCheck",
 		getOptions: (context) => {
 			const capability = getRuntimeCapability(context);
-			const options = context.currentBackend === "codex" ? CODEX_APPROVAL_OPTIONS : CLAUDE_APPROVAL_OPTIONS;
+			const options =
+				context.currentBackend === "codex"
+					? CODEX_APPROVAL_OPTIONS
+					: CLAUDE_APPROVAL_OPTIONS;
 			return options.map((option) => ({
 				id: option.value,
 				label: option.label,
@@ -295,8 +357,11 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 				value: option.value,
 				actionId: "set_approval_mode",
 				disabledReason:
-					context.isRunning && !capability?.capabilities.interactiveApproval && context.currentBackend === "codex"
-						? capability?.unsupportedReasons?.interactiveApproval || "运行中无法切换。"
+					context.isRunning &&
+					!capability?.capabilities.interactiveApproval &&
+					context.currentBackend === "codex"
+						? capability?.unsupportedReasons?.interactiveApproval ||
+							"运行中无法切换。"
 						: undefined,
 			}));
 		},
@@ -310,9 +375,27 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "submenu",
 		iconName: "ToggleLeft",
 		getOptions: () => [
-			{ id: "code", label: "Code", description: "自主编码", value: "code", actionId: "set_mode" },
-			{ id: "plan", label: "Plan", description: "先规划再执行", value: "plan", actionId: "set_mode" },
-			{ id: "ask", label: "Ask", description: "只分析与回答", value: "ask", actionId: "set_mode" },
+			{
+				id: "code",
+				label: "Code",
+				description: "自主编码",
+				value: "code",
+				actionId: "set_mode",
+			},
+			{
+				id: "plan",
+				label: "Plan",
+				description: "先规划再执行",
+				value: "plan",
+				actionId: "set_mode",
+			},
+			{
+				id: "ask",
+				label: "Ask",
+				description: "只分析与回答",
+				value: "ask",
+				actionId: "set_mode",
+			},
 		],
 		getDisabledReason: getSubmenuCommandDisabledReason,
 	},
@@ -325,9 +408,27 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		iconName: "Brain",
 		backends: ["codex"],
 		getOptions: () => [
-			{ id: "low", label: "低", description: "快速响应，较少推理", value: "low", actionId: "set_reasoning_effort" },
-			{ id: "medium", label: "中", description: "平衡速度和推理", value: "medium", actionId: "set_reasoning_effort" },
-			{ id: "high", label: "高", description: "深度推理，较慢但更准确", value: "high", actionId: "set_reasoning_effort" },
+			{
+				id: "low",
+				label: "低",
+				description: "快速响应，较少推理",
+				value: "low",
+				actionId: "set_reasoning_effort",
+			},
+			{
+				id: "medium",
+				label: "中",
+				description: "平衡速度和推理",
+				value: "medium",
+				actionId: "set_reasoning_effort",
+			},
+			{
+				id: "high",
+				label: "高",
+				description: "深度推理，较慢但更准确",
+				value: "high",
+				actionId: "set_reasoning_effort",
+			},
 		],
 		getDisabledReason: getSubmenuCommandDisabledReason,
 	},
@@ -351,7 +452,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "FilePlus",
 		actionId: "pick_context_files",
-		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+		getDisabledReason: (context) =>
+			!context.projectPath ? "请先打开一个项目。" : undefined,
 	},
 	{
 		id: "context",
@@ -361,7 +463,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "FileText",
 		actionId: "open_context_panel",
-		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+		getDisabledReason: (context) =>
+			!context.projectPath ? "请先打开一个项目。" : undefined,
 	},
 
 	// ── 检查 ──
@@ -386,8 +489,10 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		category: "inspect",
 		type: "prompt",
 		iconName: "FileDiff",
-		prompt: "请基于当前仓库的真实 git diff 总结本线程已产生的改动，并指出潜在风险。",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		prompt:
+			"请基于当前仓库的真实 git diff 总结本线程已产生的改动，并指出潜在风险。",
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "copy",
@@ -397,7 +502,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "Copy",
 		actionId: "copy_last_output",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "status",
@@ -407,7 +513,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "Activity",
 		actionId: "open_activity_panel",
-		getDisabledReason: (context) => (!context.thread ? "请先进入一个线程。" : undefined),
+		getDisabledReason: (context) =>
+			!context.thread ? "请先进入一个线程。" : undefined,
 	},
 	{
 		id: "ps",
@@ -437,7 +544,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "BrainCircuit",
 		actionId: "open_memory_panel",
-		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+		getDisabledReason: (context) =>
+			!context.projectPath ? "请先打开一个项目。" : undefined,
 	},
 	{
 		id: "init",
@@ -447,7 +555,8 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		type: "action",
 		iconName: "FileDown",
 		actionId: "init_config",
-		getDisabledReason: (context) => (!context.projectPath ? "请先打开一个项目。" : undefined),
+		getDisabledReason: (context) =>
+			!context.projectPath ? "请先打开一个项目。" : undefined,
 	},
 	{
 		id: "settings",
@@ -467,12 +576,48 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		iconName: "Palette",
 		actionId: "set_theme",
 		getOptions: () => [
-			{ id: "github-dark", label: "GitHub Dark", description: "深色主题", value: "github-dark", actionId: "set_theme" },
-			{ id: "github-light", label: "GitHub Light", description: "浅色主题", value: "github-light", actionId: "set_theme" },
-			{ id: "one-dark-pro", label: "One Dark Pro", description: "深色主题", value: "one-dark-pro", actionId: "set_theme" },
-			{ id: "dracula", label: "Dracula", description: "深色主题", value: "dracula", actionId: "set_theme" },
-			{ id: "vitesse-dark", label: "Vitesse Dark", description: "深色主题", value: "vitesse-dark", actionId: "set_theme" },
-			{ id: "vitesse-light", label: "Vitesse Light", description: "浅色主题", value: "vitesse-light", actionId: "set_theme" },
+			{
+				id: "github-dark",
+				label: "GitHub Dark",
+				description: "深色主题",
+				value: "github-dark",
+				actionId: "set_theme",
+			},
+			{
+				id: "github-light",
+				label: "GitHub Light",
+				description: "浅色主题",
+				value: "github-light",
+				actionId: "set_theme",
+			},
+			{
+				id: "one-dark-pro",
+				label: "One Dark Pro",
+				description: "深色主题",
+				value: "one-dark-pro",
+				actionId: "set_theme",
+			},
+			{
+				id: "dracula",
+				label: "Dracula",
+				description: "深色主题",
+				value: "dracula",
+				actionId: "set_theme",
+			},
+			{
+				id: "vitesse-dark",
+				label: "Vitesse Dark",
+				description: "深色主题",
+				value: "vitesse-dark",
+				actionId: "set_theme",
+			},
+			{
+				id: "vitesse-light",
+				label: "Vitesse Light",
+				description: "浅色主题",
+				value: "vitesse-light",
+				actionId: "set_theme",
+			},
 		],
 	},
 
@@ -500,7 +645,9 @@ export const codingSlashCommands: CodingSlashCommand[] = [
 		hidden: true,
 		getDisabledReason: (context) => {
 			const capability = getRuntimeCapability(context);
-			return capability?.unsupportedReasons?.rewind || "当前版本暂不支持 rewind。";
+			return (
+				capability?.unsupportedReasons?.rewind || "当前版本暂不支持 rewind。"
+			);
 		},
 	},
 ];
@@ -523,15 +670,22 @@ export function filterSlashCommands(
 		})
 		.map((command) => ({ command, score: getCommandScore(command, q) }))
 		.filter((entry) => (q ? entry.score >= 0 : true))
-		.sort((a, b) => b.score - a.score || a.command.id.localeCompare(b.command.id, "zh-CN"))
+		.sort(
+			(a, b) =>
+				b.score - a.score || a.command.id.localeCompare(b.command.id, "zh-CN"),
+		)
 		.map((entry) => ({
 			...entry.command,
 			getDisabledReason: entry.command.getDisabledReason,
 		}));
 }
 
-export function getSlashCommandById(commandId: string): CodingSlashCommand | null {
-	return codingSlashCommands.find((command) => command.id === commandId) ?? null;
+export function getSlashCommandById(
+	commandId: string,
+): CodingSlashCommand | null {
+	return (
+		codingSlashCommands.find((command) => command.id === commandId) ?? null
+	);
 }
 
 export function getSlashCommandDisabledReason(
@@ -556,6 +710,10 @@ export function filterSlashCommandOptions(
 	return options
 		.map((option) => ({ option, score: getOptionScore(option, q) }))
 		.filter((entry) => (q ? entry.score >= 0 : true))
-		.sort((a, b) => b.score - a.score || a.option.label.localeCompare(b.option.label, "zh-CN"))
+		.sort(
+			(a, b) =>
+				b.score - a.score ||
+				a.option.label.localeCompare(b.option.label, "zh-CN"),
+		)
 		.map((entry) => entry.option);
 }

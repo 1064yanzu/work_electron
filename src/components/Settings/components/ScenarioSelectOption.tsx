@@ -49,7 +49,9 @@ export function ScenarioSelectOption({
 				renderOption(option)
 			) : (
 				<div className="flex items-center gap-2 overflow-hidden">
-					{option.icon && <option.icon className="w-4 h-4 opacity-60 shrink-0" />}
+					{option.icon && (
+						<option.icon className="w-4 h-4 opacity-60 shrink-0" />
+					)}
 					<div className="min-w-0">
 						<div className="font-medium truncate">{option.label}</div>
 						{option.subLabel && (

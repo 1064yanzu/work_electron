@@ -1,6 +1,9 @@
 // CopilotSidebar 共享类型
 
-import type { ChatMessage as ChatMessageType, ChatStatus } from "../../lib/chat/types";
+import type {
+	ChatMessage as ChatMessageType,
+	ChatStatus,
+} from "../../lib/chat/types";
 
 /**
  * chatStore 实例包装类型，将 zustand 选择器返回值与 actions 合并
@@ -48,10 +51,7 @@ export interface ChatStoreLike {
 		messages: ChatMessageType[],
 	) => void;
 	updateSessionTitle: (sessionId: string, title: string) => void;
-	setSessionAgentSessionId: (
-		sessionId: string,
-		agentSessionId: string,
-	) => void;
+	setSessionAgentSessionId: (sessionId: string, agentSessionId: string) => void;
 	setSessionSdkSessionId: (
 		sessionId: string,
 		sdkSessionId: string | undefined,

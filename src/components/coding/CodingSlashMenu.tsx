@@ -37,8 +37,15 @@ import {
 	Wrench,
 	XCircle,
 	type LucideIcon,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+} from "lucide-react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type RefObject,
+} from "react";
 import {
 	CATEGORY_LABELS,
 	CATEGORY_ORDER,
@@ -50,8 +57,8 @@ import {
 	type CodingSlashCommand,
 	type SlashCommandContext,
 	type SlashCommandOption,
-} from '../../lib/coding/codingSlashCommands';
-import { DropdownPortal } from '../ui/DropdownPortal';
+} from "../../lib/coding/codingSlashCommands";
+import { DropdownPortal } from "../ui/DropdownPortal";
 
 interface CodingSlashMenuProps {
 	anchorRef: RefObject<HTMLElement | null>;
@@ -100,8 +107,10 @@ function getCommandIcon(command: CodingSlashCommand): LucideIcon {
 	return Wrench;
 }
 
-function isOption(entry: CodingSlashCommand | SlashCommandOption): entry is SlashCommandOption {
-	return 'value' in entry;
+function isOption(
+	entry: CodingSlashCommand | SlashCommandOption,
+): entry is SlashCommandOption {
+	return "value" in entry;
 }
 
 function getEntryKey(entry: CodingSlashCommand | SlashCommandOption): string {
@@ -125,9 +134,13 @@ export function CodingSlashMenu({
 	onSelect,
 	onClose,
 }: CodingSlashMenuProps) {
-	const submenuCommand = submenuCommandId ? getSlashCommandById(submenuCommandId) : null;
-	const entries = useMemo<Array<CodingSlashCommand | SlashCommandOption>>(() => {
-		if (submenuCommand?.type === 'submenu') {
+	const submenuCommand = submenuCommandId
+		? getSlashCommandById(submenuCommandId)
+		: null;
+	const entries = useMemo<
+		Array<CodingSlashCommand | SlashCommandOption>
+	>(() => {
+		if (submenuCommand?.type === "submenu") {
 			return filterSlashCommandOptions(
 				getSlashCommandOptions(submenuCommand, context),
 				query,
@@ -149,13 +162,15 @@ export function CodingSlashMenu({
 			groups.set(entry.category, bucket);
 		}
 		// 按 CATEGORY_ORDER 排序
-		return CATEGORY_ORDER
-			.filter((cat) => groups.has(cat))
-			.map((cat) => [cat, groups.get(cat)!] as [string, CodingSlashCommand[]]);
+		return CATEGORY_ORDER.filter((cat) => groups.has(cat)).map(
+			(cat) => [cat, groups.get(cat)!] as [string, CodingSlashCommand[]],
+		);
 	}, [entries, submenuCommand]);
 
 	// 按分组渲染的实际视觉顺序展平，用于键盘导航
-	const displayOrder = useMemo<Array<CodingSlashCommand | SlashCommandOption>>(() => {
+	const displayOrder = useMemo<
+		Array<CodingSlashCommand | SlashCommandOption>
+	>(() => {
 		if (submenuCommand || !groupedCommands) return entries;
 		const ordered: Array<CodingSlashCommand | SlashCommandOption> = [];
 		for (const [, commands] of groupedCommands) {
@@ -171,7 +186,7 @@ export function CodingSlashMenu({
 	useEffect(() => {
 		const element = itemRefs.current[selectedIndex];
 		if (element && listRef.current) {
-			element.scrollIntoView({ block: 'nearest' });
+			element.scrollIntoView({ block: "nearest" });
 		}
 	}, [selectedIndex]);
 
@@ -187,20 +202,22 @@ export function CodingSlashMenu({
 		(event: KeyboardEvent) => {
 			if (displayOrder.length === 0) return;
 			switch (event.key) {
-				case 'ArrowDown':
+				case "ArrowDown":
 					event.preventDefault();
 					setSelectedIndex((index) => (index + 1) % displayOrder.length);
 					break;
-				case 'ArrowUp':
+				case "ArrowUp":
 					event.preventDefault();
-					setSelectedIndex((index) => (index - 1 + displayOrder.length) % displayOrder.length);
+					setSelectedIndex(
+						(index) => (index - 1 + displayOrder.length) % displayOrder.length,
+					);
 					break;
-				case 'Enter':
-				case 'Tab':
+				case "Enter":
+				case "Tab":
 					event.preventDefault();
 					handleSubmit(displayOrder[selectedIndex]);
 					break;
-				case 'Escape':
+				case "Escape":
 					event.preventDefault();
 					onClose();
 					break;
@@ -210,8 +227,8 @@ export function CodingSlashMenu({
 	);
 
 	useEffect(() => {
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [handleKeyDown]);
 
 	let flatIndex = 0;
@@ -229,13 +246,19 @@ export function CodingSlashMenu({
 				{/* 子菜单头部 */}
 				{submenuCommand && (
 					<div className="border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
-						<span className="font-medium text-xs text-zinc-700 dark:text-zinc-300">/{submenuCommand.id}</span>
-						<span className="ml-2 text-[11px] text-zinc-400">{submenuCommand.description}</span>
+						<span className="font-medium text-xs text-zinc-700 dark:text-zinc-300">
+							/{submenuCommand.id}
+						</span>
+						<span className="ml-2 text-[11px] text-zinc-400">
+							{submenuCommand.description}
+						</span>
 					</div>
 				)}
 
 				{entries.length === 0 ? (
-					<div className="px-4 py-5 text-center text-sm text-zinc-400">没有可用命令</div>
+					<div className="px-4 py-5 text-center text-sm text-zinc-400">
+						没有可用命令
+					</div>
 				) : (
 					<div ref={listRef} className="max-h-[340px] overflow-y-auto py-1">
 						{submenuCommand
@@ -255,14 +278,22 @@ export function CodingSlashMenu({
 											onMouseEnter={() => setSelectedIndex(idx)}
 											className={`mx-1 flex w-[calc(100%-8px)] items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
 												selected
-													? 'bg-[#D96C46]/8 text-zinc-900 dark:text-zinc-100'
-													: 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/[0.04]'
-											} ${disabledReason ? 'opacity-40' : ''}`}
+													? "bg-[#D96C46]/8 text-zinc-900 dark:text-zinc-100"
+													: "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/[0.04]"
+											} ${disabledReason ? "opacity-40" : ""}`}
 										>
 											<div className="min-w-0 flex-1">
-												<div className="text-[13px] font-medium">{isOption(entry) ? entry.label : entry.name}</div>
-												<div className="mt-0.5 truncate text-[11px] text-zinc-400">{entry.description}</div>
-												{disabledReason && <div className="mt-0.5 text-[10px] text-amber-500">{disabledReason}</div>}
+												<div className="text-[13px] font-medium">
+													{isOption(entry) ? entry.label : entry.name}
+												</div>
+												<div className="mt-0.5 truncate text-[11px] text-zinc-400">
+													{entry.description}
+												</div>
+												{disabledReason && (
+													<div className="mt-0.5 text-[10px] text-amber-500">
+														{disabledReason}
+													</div>
+												)}
 											</div>
 										</button>
 									);
@@ -271,13 +302,20 @@ export function CodingSlashMenu({
 								groupedCommands?.map(([category, commands], groupIdx) => (
 									<div key={category}>
 										{/* 分类标题 — Codex 风格：简洁的文字标签 */}
-										<div className={`px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 ${groupIdx > 0 ? 'border-t border-zinc-100 dark:border-zinc-800 mt-0.5 pt-2' : ''}`}>
-											{CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category}
+										<div
+											className={`px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 ${groupIdx > 0 ? "border-t border-zinc-100 dark:border-zinc-800 mt-0.5 pt-2" : ""}`}
+										>
+											{CATEGORY_LABELS[
+												category as keyof typeof CATEGORY_LABELS
+											] ?? category}
 										</div>
 										{commands.map((entry) => {
 											const idx = flatIndex++;
 											const Icon = getCommandIcon(entry);
-											const disabledReason = getEntryDisabledReason(entry, context);
+											const disabledReason = getEntryDisabledReason(
+												entry,
+												context,
+											);
 											const selected = idx === selectedIndex;
 											return (
 												<button
@@ -290,17 +328,21 @@ export function CodingSlashMenu({
 													onMouseEnter={() => setSelectedIndex(idx)}
 													className={`mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
 														selected
-															? 'bg-[#D96C46]/8 text-zinc-800 dark:text-zinc-100'
-															: 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/[0.04]'
-													} ${disabledReason ? 'opacity-40' : ''}`}
+															? "bg-[#D96C46]/8 text-zinc-800 dark:text-zinc-100"
+															: "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-white/[0.04]"
+													} ${disabledReason ? "opacity-40" : ""}`}
 												>
 													{/* 语义图标 */}
-													<Icon className={`h-4 w-4 shrink-0 ${selected ? 'text-[#D96C46]' : 'text-zinc-400 dark:text-zinc-500'}`} />
+													<Icon
+														className={`h-4 w-4 shrink-0 ${selected ? "text-[#D96C46]" : "text-zinc-400 dark:text-zinc-500"}`}
+													/>
 
 													{/* 命令名 + 斜杠 ID */}
 													<div className="min-w-0 flex-1">
 														<div className="flex items-center gap-1.5">
-															<span className="text-[13px] font-medium">{entry.name}</span>
+															<span className="text-[13px] font-medium">
+																{entry.name}
+															</span>
 															{entry.description && (
 																<span className="hidden sm:inline truncate text-[11px] text-zinc-400 dark:text-zinc-500">
 																	{entry.description}
@@ -314,16 +356,20 @@ export function CodingSlashMenu({
 														{/* 命令来源标签 */}
 														{entry.sourceTag && (
 															<span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-																{entry.sourceTag === 'personal' ? '个人' : '系统'}
+																{entry.sourceTag === "personal"
+																	? "个人"
+																	: "系统"}
 															</span>
 														)}
 														{/* 类型标签 */}
-														{entry.type === 'prompt' ? (
+														{entry.type === "prompt" ? (
 															<span className="rounded bg-blue-100/80 px-1 py-px text-[9px] font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
 																插入
 															</span>
-														) : entry.type === 'submenu' ? (
-															<span className="text-[10px] text-zinc-400">▸</span>
+														) : entry.type === "submenu" ? (
+															<span className="text-[10px] text-zinc-400">
+																▸
+															</span>
 														) : null}
 													</div>
 												</button>

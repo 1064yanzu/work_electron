@@ -71,19 +71,26 @@ export function useSandboxFilesBinding({
 			if (matched) return matched;
 		}
 
-		const sessionAgentSessionId = String(activeSession?.agentSessionId || "").trim();
+		const sessionAgentSessionId = String(
+			activeSession?.agentSessionId || "",
+		).trim();
 		if (!sessionAgentSessionId) return null;
 
 		const currentTaskSessionId = String(
 			(currentTask?.metadata as any)?.sessionId || "",
 		).trim();
-		if (currentTaskSessionId && currentTaskSessionId === sessionAgentSessionId) {
+		if (
+			currentTaskSessionId &&
+			currentTaskSessionId === sessionAgentSessionId
+		) {
 			return currentTask;
 		}
 
 		return (
 			taskHistory.find((t) => {
-				const taskSessionId = String((t?.metadata as any)?.sessionId || "").trim();
+				const taskSessionId = String(
+					(t?.metadata as any)?.sessionId || "",
+				).trim();
 				return taskSessionId === sessionAgentSessionId;
 			}) || null
 		);
@@ -91,7 +98,8 @@ export function useSandboxFilesBinding({
 
 	useEffect(() => {
 		const explicitSandboxDir =
-			(boundTask?.metadata?.sandboxDir as string | undefined) || sessionSandboxDir;
+			(boundTask?.metadata?.sandboxDir as string | undefined) ||
+			sessionSandboxDir;
 		if (explicitSandboxDir) {
 			setFallbackSandboxDir(undefined);
 			fallbackResolvedKeyRef.current = null;

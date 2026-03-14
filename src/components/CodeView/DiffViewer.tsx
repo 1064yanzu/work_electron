@@ -1,18 +1,19 @@
 // DiffViewer - 完整 Diff 视图（中间面板标签页）
 // 基于 react-diff-viewer-continued 实现的全功能 diff 视图
 
-import {
-	Check,
-	Columns2,
-	FileText,
-	Rows3,
-	X,
-} from "lucide-react";
+import { Check, Columns2, FileText, Rows3, X } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
-import { type FileDiff, useDiffStoreSelector } from "../../lib/stores/diffStore";
+import {
+	type FileDiff,
+	useDiffStoreSelector,
+} from "../../lib/stores/diffStore";
 import { acceptDiff, rejectDiff } from "../../lib/coding/diffActions";
-import { formatFilePath, generateDiff, parseDiffStats } from "../../lib/utils/diffUtils";
+import {
+	formatFilePath,
+	generateDiff,
+	parseDiffStats,
+} from "../../lib/utils/diffUtils";
 import { cn } from "../../lib/utils";
 import { useDiffHighlight } from "./useDiffHighlight";
 
@@ -258,8 +259,10 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 						<span
 							className={cn(
 								"text-xs font-medium px-2.5 py-1 rounded-lg",
-								diff.status === "accepted" && "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20",
-								diff.status === "rejected" && "text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
+								diff.status === "accepted" &&
+									"text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20",
+								diff.status === "rejected" &&
+									"text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
 							)}
 						>
 							{diff.status === "accepted" ? "已接受" : "已拒绝"}

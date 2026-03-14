@@ -7,7 +7,10 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
-import { detectCliBinary, resolveSdkBundledCli } from "../../services/cliBinaryDetector";
+import {
+	detectCliBinary,
+	resolveSdkBundledCli,
+} from "../../services/cliBinaryDetector";
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
@@ -239,9 +242,10 @@ export function createAgentSdkHandlers(options: {
 						sql: "SELECT value FROM app_config WHERE key = ?",
 						args: ["aiCoding.claude.cliPath"],
 					});
-					const userCliPath = userCliPathRow.rows.length > 0
-						? (userCliPathRow.rows[0].value as string)?.trim()
-						: undefined;
+					const userCliPath =
+						userCliPathRow.rows.length > 0
+							? (userCliPathRow.rows[0].value as string)?.trim()
+							: undefined;
 
 					const cliInfo = await detectCliBinary("claude-code", {
 						userConfiguredPath: userCliPath || undefined,
@@ -266,9 +270,10 @@ export function createAgentSdkHandlers(options: {
 					sql: "SELECT value FROM app_config WHERE key = ?",
 					args: ["aiCoding.claude.proxyMode"],
 				});
-				const proxyMode = (proxyModeRow.rows.length > 0
-					? (proxyModeRow.rows[0].value as string)?.trim()
-					: null) || "transparent";
+				const proxyMode =
+					(proxyModeRow.rows.length > 0
+						? (proxyModeRow.rows[0].value as string)?.trim()
+						: null) || "transparent";
 				const isTransparentMode = proxyMode === "transparent";
 
 				let claudeConfigDir: string | undefined;
@@ -277,15 +282,18 @@ export function createAgentSdkHandlers(options: {
 
 				if (isTransparentMode) {
 					// 透明模式：不覆盖用户的 Claude 配置，让 CLI 使用用户自己的 API key 和 base URL
-					console.log("[agent_sdk] Transparent mode: using user's own Claude configuration");
+					console.log(
+						"[agent_sdk] Transparent mode: using user's own Claude configuration",
+					);
 				} else {
 					// 代理模式：通过本地代理路由所有 API 流量（支持多 Provider 转发和模型路由）
 					claudeConfigDir = cwd;
 
 					// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
-					anthropicBaseUrl = (
-						await options.getAnthropicBaseUrl()
-					).replace(/\/v1\/?$/i, "");
+					anthropicBaseUrl = (await options.getAnthropicBaseUrl()).replace(
+						/\/v1\/?$/i,
+						"",
+					);
 
 					const anthropicApiKeyRaw =
 						typeof process.env.ANTHROPIC_API_KEY === "string"
@@ -296,7 +304,10 @@ export function createAgentSdkHandlers(options: {
 						"sk-ant-api03-dummy000000000000000000000000000000000000";
 
 					try {
-						await writeClaudeConfigSettings({ claudeConfigDir, anthropicApiKey });
+						await writeClaudeConfigSettings({
+							claudeConfigDir,
+							anthropicApiKey,
+						});
 					} catch {}
 				}
 
@@ -618,8 +629,7 @@ export function createAgentSdkHandlers(options: {
 						"压缩后必须保留：任务目标、硬性约束、当前进度、未完成事项、协作策略。",
 					].join("\n"),
 					runtimeMetadata,
-					experimentalMultiAgentEnabled:
-						multiAgentRuntime.experimentalEnabled,
+					experimentalMultiAgentEnabled: multiAgentRuntime.experimentalEnabled,
 				});
 				const allowedToolsForRun = uniqStrings(
 					multiAgentRuntime.experimentalEnabled &&
@@ -1152,7 +1162,7 @@ export function createAgentSdkHandlers(options: {
 									"parent-session-id":
 										multiAgentRuntime.parentSessionId || null,
 									"teammate-mode": multiAgentRuntime.teammateMode,
-							  }
+								}
 							: undefined,
 						env: (() => {
 							const env: Record<string, string> = {};
@@ -1165,7 +1175,9 @@ export function createAgentSdkHandlers(options: {
 							if (isTransparentMode) {
 								// 透明模式：保留用户环境中的所有 Claude/Anthropic 配置
 								// 不覆盖 ANTHROPIC_BASE_URL、ANTHROPIC_API_KEY、CLAUDE_CONFIG_DIR
-								console.log("[agent_sdk] Transparent mode env: keeping user's original config");
+								console.log(
+									"[agent_sdk] Transparent mode env: keeping user's original config",
+								);
 							} else {
 								// 代理模式：覆盖环境变量以路由流量到本地代理
 								// Avoid inheriting user account/session routing that could bypass our proxy.
@@ -1181,7 +1193,8 @@ export function createAgentSdkHandlers(options: {
 								if (anthropicBaseUrl) env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
 								if (anthropicApiKey) env.ANTHROPIC_API_KEY = anthropicApiKey;
 								// Some CLI code paths look at this name instead.
-								if (anthropicBaseUrl) env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
+								if (anthropicBaseUrl)
+									env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
 							}
 
 							// Reduce background noise during debugging.
@@ -1620,8 +1633,7 @@ export function createAgentSdkHandlers(options: {
 									? {
 											input_tokens: accumulatedInputTokens,
 											output_tokens: accumulatedOutputTokens,
-											cache_read_input_tokens:
-												accumulatedCacheReadInputTokens,
+											cache_read_input_tokens: accumulatedCacheReadInputTokens,
 											cache_creation_input_tokens:
 												accumulatedCacheCreationInputTokens,
 										}
@@ -1638,26 +1650,25 @@ export function createAgentSdkHandlers(options: {
 					emit(options.getMainWindow, {
 						runId,
 						type: "done",
-							result: {
-								type: "result",
-								subtype: "success",
-								is_error: false,
-								result: "",
-								usage:
-									accumulatedInputTokens > 0 ||
-									accumulatedOutputTokens > 0 ||
-									accumulatedCacheReadInputTokens > 0 ||
-									accumulatedCacheCreationInputTokens > 0
-										? {
-												input_tokens: accumulatedInputTokens,
-												output_tokens: accumulatedOutputTokens,
-												cache_read_input_tokens:
-													accumulatedCacheReadInputTokens,
-												cache_creation_input_tokens:
-													accumulatedCacheCreationInputTokens,
-											}
-										: undefined,
-							},
+						result: {
+							type: "result",
+							subtype: "success",
+							is_error: false,
+							result: "",
+							usage:
+								accumulatedInputTokens > 0 ||
+								accumulatedOutputTokens > 0 ||
+								accumulatedCacheReadInputTokens > 0 ||
+								accumulatedCacheCreationInputTokens > 0
+									? {
+											input_tokens: accumulatedInputTokens,
+											output_tokens: accumulatedOutputTokens,
+											cache_read_input_tokens: accumulatedCacheReadInputTokens,
+											cache_creation_input_tokens:
+												accumulatedCacheCreationInputTokens,
+										}
+									: undefined,
+						},
 					});
 				}
 			} catch (e) {

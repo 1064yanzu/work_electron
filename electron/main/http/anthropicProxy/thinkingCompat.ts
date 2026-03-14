@@ -28,7 +28,11 @@ function tryParseThoughtJsonString(input: string): unknown | null {
 	const text = input.trim();
 	if (!text) return null;
 	if (!/^(?:\{|\[)/.test(text)) return null;
-	if (!/"(?:thinking|reasoning|reasoning_content|reasoning_text|thought|text|content)"/i.test(text)) {
+	if (
+		!/"(?:thinking|reasoning|reasoning_content|reasoning_text|thought|text|content)"/i.test(
+			text,
+		)
+	) {
 		return null;
 	}
 	try {
@@ -59,7 +63,9 @@ function collectTextsFromThoughtValue(value: unknown, depth = 0): string[] {
 	if (typeof value !== "object") return [];
 
 	const out: string[] = [];
-	for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+	for (const [key, nested] of Object.entries(
+		value as Record<string, unknown>,
+	)) {
 		const normalizedKey = key.toLowerCase().trim();
 		if (
 			normalizedKey === "text" ||
@@ -76,7 +82,9 @@ function collectTextsFromThoughtValue(value: unknown, depth = 0): string[] {
 	return out;
 }
 
-function extractThoughtFragmentsFromCarrier(carrier: unknown): ThoughtFragment[] {
+function extractThoughtFragmentsFromCarrier(
+	carrier: unknown,
+): ThoughtFragment[] {
 	if (!carrier || typeof carrier !== "object") return [];
 	const record = carrier as Record<string, unknown>;
 	const out: ThoughtFragment[] = [];
@@ -93,7 +101,9 @@ function extractThoughtFragmentsFromCarrier(carrier: unknown): ThoughtFragment[]
 	return out;
 }
 
-function dedupeThoughtFragments(fragments: ThoughtFragment[]): ThoughtFragment[] {
+function dedupeThoughtFragments(
+	fragments: ThoughtFragment[],
+): ThoughtFragment[] {
 	const seen = new Set<string>();
 	const out: ThoughtFragment[] = [];
 	for (const fragment of fragments) {

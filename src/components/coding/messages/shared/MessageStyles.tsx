@@ -15,8 +15,7 @@ export const MARKDOWN_CONTENT_CLASSES =
 	"text-[13.5px] leading-[1.7] text-zinc-800 dark:text-zinc-200 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:mb-3 [&_ol]:mb-3 [&_li]:mb-1";
 
 /** 系统消息分隔线样式 */
-export const SYSTEM_DIVIDER_CLASSES =
-	"flex items-center gap-3 py-1";
+export const SYSTEM_DIVIDER_CLASSES = "flex items-center gap-3 py-1";
 
 /** 流式输出光标动画 */
 export function StreamingCursor() {

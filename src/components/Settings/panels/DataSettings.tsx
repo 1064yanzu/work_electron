@@ -103,12 +103,13 @@ export function DataSettings() {
 	const [dataStats, setDataStats] = useState<DataStats | null>(null);
 	const [dataDir, setDataDir] = useState<string>("");
 	const [dbPath, setDbPath] = useState<string>("");
-	const [storageSettings, setStorageSettings] = useState<StorageSettings | null>(
-		null,
-	);
+	const [storageSettings, setStorageSettings] =
+		useState<StorageSettings | null>(null);
 	const [themes, setThemes] = useState<Theme[]>([]);
 	const [newThemeName, setNewThemeName] = useState("");
-	const [themeBeingRenamed, setThemeBeingRenamed] = useState<Theme | null>(null);
+	const [themeBeingRenamed, setThemeBeingRenamed] = useState<Theme | null>(
+		null,
+	);
 	const [renameThemeName, setRenameThemeName] = useState("");
 
 	// UI 状态
@@ -394,18 +395,19 @@ export function DataSettings() {
 
 				const stats = [
 					(data.sources?.length || data?.data?.sources?.length) &&
-					`${data.sources?.length || data?.data?.sources?.length} 条资料`,
+						`${data.sources?.length || data?.data?.sources?.length} 条资料`,
 					(data.notes?.length || data?.data?.notes?.length) &&
-					`${data.notes?.length || data?.data?.notes?.length} 条笔记`,
+						`${data.notes?.length || data?.data?.notes?.length} 条笔记`,
 					(data.outputs?.length ||
 						data.output_assets?.length ||
 						data?.data?.outputs?.length ||
 						data?.data?.output_assets?.length) &&
-					`${data.outputs?.length ||
-					data.output_assets?.length ||
-					data?.data?.outputs?.length ||
-					data?.data?.output_assets?.length
-					} 篇文稿`,
+						`${
+							data.outputs?.length ||
+							data.output_assets?.length ||
+							data?.data?.outputs?.length ||
+							data?.data?.output_assets?.length
+						} 篇文稿`,
 				]
 					.filter(Boolean)
 					.join("、");
@@ -559,20 +561,22 @@ export function DataSettings() {
 					<nav className="space-y-1">
 						<button
 							onClick={() => setActiveSection("storage")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "storage"
-								? "bg-primary/10 text-primary"
-								: "text-zinc-600 hover:bg-zinc-100"
-								}`}
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+								activeSection === "storage"
+									? "bg-primary/10 text-primary"
+									: "text-zinc-600 hover:bg-zinc-100"
+							}`}
 						>
 							<HardDrive className="w-4 h-4" />
 							数据目录
 						</button>
 						<button
 							onClick={() => setActiveSection("webdav")}
-							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === "webdav"
-								? "bg-primary/10 text-primary"
-								: "text-zinc-600 hover:bg-zinc-100"
-								}`}
+							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+								activeSection === "webdav"
+									? "bg-primary/10 text-primary"
+									: "text-zinc-600 hover:bg-zinc-100"
+							}`}
 						>
 							<Cloud className="w-4 h-4" />
 							WebDAV
@@ -665,7 +669,8 @@ export function DataSettings() {
 													value={storageSettings.conflict_strategy}
 													onChange={(e) =>
 														void saveStorageConfig({
-															conflict_strategy: e.target.value as StorageSettings["conflict_strategy"],
+															conflict_strategy: e.target
+																.value as StorageSettings["conflict_strategy"],
 														})
 													}
 													variant="inline"
@@ -698,7 +703,9 @@ export function DataSettings() {
 											</div>
 											<div className="space-y-2">
 												{themes.length === 0 ? (
-													<div className="text-xs text-zinc-400">暂无主题目录</div>
+													<div className="text-xs text-zinc-400">
+														暂无主题目录
+													</div>
 												) : (
 													themes.map((theme) => (
 														<div
@@ -771,7 +778,7 @@ export function DataSettings() {
 												<div className="text-2xl font-semibold text-zinc-800">
 													{formatSize(
 														(dataStats.database_size ?? 0) +
-														(dataStats.media_size ?? 0),
+															(dataStats.media_size ?? 0),
 													)}
 												</div>
 												<div className="text-xs text-zinc-400 mt-1">总占用</div>
@@ -877,7 +884,9 @@ export function DataSettings() {
 													label="备份间隔"
 													action={
 														<Select
-															value={String(syncConfig.local_backup_interval ?? 60)}
+															value={String(
+																syncConfig.local_backup_interval ?? 60,
+															)}
 															onChange={(e) =>
 																saveConfig({
 																	local_backup_interval: parseInt(
@@ -903,7 +912,9 @@ export function DataSettings() {
 													description="超出后自动删除旧备份"
 													action={
 														<Select
-															value={String(syncConfig.local_backup_max_count ?? 10)}
+															value={String(
+																syncConfig.local_backup_max_count ?? 10,
+															)}
 															onChange={(e) =>
 																saveConfig({
 																	local_backup_max_count: parseInt(
@@ -1149,29 +1160,33 @@ export function DataSettings() {
 													onChange={(e) => handleUrlChange(e.target.value)}
 													placeholder="https://dav.example.com/dav/"
 													disabled={!syncConfig.webdav_enabled}
-													className={`w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white disabled:opacity-50 transition-all ${!urlValidation.valid
-														? "ring-2 ring-red-200 bg-red-50/30"
-														: ""
-														}`}
+													className={`w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white disabled:opacity-50 transition-all ${
+														!urlValidation.valid
+															? "ring-2 ring-red-200 bg-red-50/30"
+															: ""
+													}`}
 												/>
 												{urlValidation.message && (
 													<div
-														className={`mt-2 p-2.5 rounded-lg flex items-start gap-2 ${urlValidation.valid
-															? "bg-amber-50/50 border border-amber-100"
-															: "bg-red-50/50 border border-red-100"
-															}`}
+														className={`mt-2 p-2.5 rounded-lg flex items-start gap-2 ${
+															urlValidation.valid
+																? "bg-amber-50/50 border border-amber-100"
+																: "bg-red-50/50 border border-red-100"
+														}`}
 													>
 														<AlertCircle
-															className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${urlValidation.valid
-																? "text-amber-600"
-																: "text-red-600"
-																}`}
+															className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${
+																urlValidation.valid
+																	? "text-amber-600"
+																	: "text-red-600"
+															}`}
 														/>
 														<span
-															className={`text-xs leading-relaxed ${urlValidation.valid
-																? "text-amber-900"
-																: "text-red-900"
-																}`}
+															className={`text-xs leading-relaxed ${
+																urlValidation.valid
+																	? "text-amber-900"
+																	: "text-red-900"
+															}`}
 														>
 															{urlValidation.message}
 														</span>

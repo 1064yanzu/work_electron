@@ -6,9 +6,9 @@ import { useCallback, useRef, useSyncExternalStore } from "react";
 import type {
 	ExternalThreadMeta,
 	ExternalThreadSource,
-} from '../../../electron/shared/external-history-types';
+} from "../../../electron/shared/external-history-types";
 import { invoke as desktopInvoke } from "../tauriCompat";
-import { pathsEqual } from '../coding/pathUtils';
+import { pathsEqual } from "../coding/pathUtils";
 
 async function invoke<T>(command: string, args?: Record<string, unknown>) {
 	return desktopInvoke<T>(command, args);
@@ -16,7 +16,7 @@ async function invoke<T>(command: string, args?: Record<string, unknown>) {
 
 export interface ExternalHistoryState {
 	/** 同步状态 */
-	syncStatus: 'idle' | 'syncing' | 'error';
+	syncStatus: "idle" | "syncing" | "error";
 	/** 上次同步时间 */
 	lastSyncAt: number | null;
 	/** 同步错误信息 */
@@ -32,7 +32,7 @@ export interface ExternalHistoryState {
 type Listener = () => void;
 
 const initialState: ExternalHistoryState = {
-	syncStatus: 'idle',
+	syncStatus: "idle",
 	lastSyncAt: null,
 	syncError: null,
 	codexThreads: [],
@@ -66,8 +66,10 @@ export const externalHistoryStore = {
 	/** 检查 CLI 后端可用性 */
 	async checkAvailability(): Promise<{ codex: boolean; claudeCode: boolean }> {
 		try {
-			const result = await invoke('cli_history_check_available', {});
-			setState({ availability: result as { codex: boolean; claudeCode: boolean } });
+			const result = await invoke("cli_history_check_available", {});
+			setState({
+				availability: result as { codex: boolean; claudeCode: boolean },
+			});
 			return result as { codex: boolean; claudeCode: boolean };
 		} catch {
 			return { codex: false, claudeCode: false };
@@ -76,7 +78,7 @@ export const externalHistoryStore = {
 
 	/** 同步所有 CLI 历史 */
 	async syncAll(options?: { cwd?: string; limit?: number }): Promise<void> {
-		setState({ syncStatus: 'syncing', syncError: null });
+		setState({ syncStatus: "syncing", syncError: null });
 
 		try {
 			const params = {
@@ -86,35 +88,39 @@ export const externalHistoryStore = {
 
 			// 并行获取两个后端的历史
 			const [codexResult, claudeResult] = await Promise.allSettled([
-				invoke('cli_history_codex_list', params),
-				invoke('cli_history_claude_code_list', params),
+				invoke("cli_history_codex_list", params),
+				invoke("cli_history_claude_code_list", params),
 			]);
 
 			const codexThreads =
-				codexResult.status === 'fulfilled'
-					? ((codexResult.value as { threads: ExternalThreadMeta[] }).threads ?? [])
+				codexResult.status === "fulfilled"
+					? ((codexResult.value as { threads: ExternalThreadMeta[] }).threads ??
+						[])
 					: [];
 
 			const claudeCodeThreads =
-				claudeResult.status === 'fulfilled'
-					? ((claudeResult.value as { threads: ExternalThreadMeta[] }).threads ?? [])
+				claudeResult.status === "fulfilled"
+					? ((claudeResult.value as { threads: ExternalThreadMeta[] })
+							.threads ?? [])
 					: [];
 
 			setState({
-				syncStatus: 'idle',
+				syncStatus: "idle",
 				lastSyncAt: Date.now(),
 				codexThreads,
 				claudeCodeThreads,
 				availability: {
-					codex: codexResult.status === 'fulfilled' &&
+					codex:
+						codexResult.status === "fulfilled" &&
 						(codexResult.value as { available: boolean }).available,
-					claudeCode: claudeResult.status === 'fulfilled' &&
+					claudeCode:
+						claudeResult.status === "fulfilled" &&
 						(claudeResult.value as { available: boolean }).available,
 				},
 			});
 		} catch (err) {
 			setState({
-				syncStatus: 'error',
+				syncStatus: "error",
 				syncError: err instanceof Error ? err.message : String(err),
 			});
 		}
@@ -128,14 +134,16 @@ export const externalHistoryStore = {
 
 	/** 按项目过滤外部线程（使用路径规范化比较） */
 	getThreadsByProject(cwd: string): ExternalThreadMeta[] {
-		return externalHistoryStore.getAllThreads().filter(
-			(t) => pathsEqual(t.cwd, cwd)
-		);
+		return externalHistoryStore
+			.getAllThreads()
+			.filter((t) => pathsEqual(t.cwd, cwd));
 	},
 
 	/** 按来源过滤外部线程 */
 	getThreadsBySource(source: ExternalThreadSource): ExternalThreadMeta[] {
-		return source === 'codex-cli' ? state.codexThreads : state.claudeCodeThreads;
+		return source === "codex-cli"
+			? state.codexThreads
+			: state.claudeCodeThreads;
 	},
 
 	/** 清空缓存 */
@@ -145,7 +153,9 @@ export const externalHistoryStore = {
 };
 
 // React hook
-export function useExternalHistorySelector<T>(selector: (state: ExternalHistoryState) => T): T {
+export function useExternalHistorySelector<T>(
+	selector: (state: ExternalHistoryState) => T,
+): T {
 	const selectorRef = useRef(selector);
 	const lastStateRef = useRef<ExternalHistoryState | null>(null);
 	const lastSelectedRef = useRef<T | null>(null);
@@ -153,7 +163,10 @@ export function useExternalHistorySelector<T>(selector: (state: ExternalHistoryS
 
 	const getSnapshot = useCallback(() => {
 		const nextState = externalHistoryStore.getState();
-		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+		if (
+			lastStateRef.current === nextState &&
+			lastSelectedRef.current !== null
+		) {
 			return lastSelectedRef.current;
 		}
 

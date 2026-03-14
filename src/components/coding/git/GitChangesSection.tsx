@@ -15,7 +15,11 @@ import {
 	gitUnstageFiles,
 } from "../../../lib/coding/gitWorkspaceData";
 import { cn } from "../../../lib/utils";
-import type { GitSection, GitSectionId, GitSectionEntry } from "./gitPanelUtils";
+import type {
+	GitSection,
+	GitSectionId,
+	GitSectionEntry,
+} from "./gitPanelUtils";
 import { getStatusToken } from "./gitPanelUtils";
 
 interface GitChangesSectionProps {
@@ -48,8 +52,7 @@ export function GitChangesSection({
 			return sections.filter((section) => section.entries.length > 0);
 		}
 		return sections.filter(
-			(section) =>
-				section.id === activeFilter && section.entries.length > 0,
+			(section) => section.id === activeFilter && section.entries.length > 0,
 		);
 	}, [activeFilter, sections]);
 
@@ -162,9 +165,7 @@ export function GitChangesSection({
 												{section.id === "staged" ? (
 													<button
 														type="button"
-														onClick={(e) =>
-															void handleUnstage(e, allPaths)
-														}
+														onClick={(e) => void handleUnstage(e, allPaths)}
 														className="rounded-lg border border-zinc-200 bg-white px-2 py-0.5 text-[10px] text-zinc-500 hover:border-amber-300 hover:text-amber-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
 														title="全部取消暂存"
 													>
@@ -173,9 +174,7 @@ export function GitChangesSection({
 												) : (
 													<button
 														type="button"
-														onClick={(e) =>
-															void handleStage(e, allPaths)
-														}
+														onClick={(e) => void handleStage(e, allPaths)}
 														className="rounded-lg border border-zinc-200 bg-white px-2 py-0.5 text-[10px] text-zinc-500 hover:border-emerald-300 hover:text-emerald-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
 														title="全部暂存"
 													>

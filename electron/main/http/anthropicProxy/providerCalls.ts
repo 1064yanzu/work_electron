@@ -204,15 +204,13 @@ function toOpenAICompatibleTools(
 	});
 }
 
-function toOpenAIResponsesTools(
-	anthropicReq: AnthropicRequest,
-):
+function toOpenAIResponsesTools(anthropicReq: AnthropicRequest):
 	| Array<{
 			type: "function";
 			name: string;
 			description?: string;
 			parameters: unknown;
-		}>
+	  }>
 	| undefined {
 	const compatTools = toOpenAICompatibleTools(anthropicReq);
 	if (!compatTools?.length) return undefined;
@@ -240,8 +238,11 @@ function getProviderTemplateId(provider: ProviderConfig): string {
 	const fromMetadata =
 		provider.metadata &&
 		typeof provider.metadata === "object" &&
-		typeof (provider.metadata as { templateId?: unknown }).templateId === "string"
-			? String((provider.metadata as { templateId?: unknown }).templateId).trim()
+		typeof (provider.metadata as { templateId?: unknown }).templateId ===
+			"string"
+			? String(
+					(provider.metadata as { templateId?: unknown }).templateId,
+				).trim()
 			: "";
 	return fromMetadata.toLowerCase();
 }
@@ -302,7 +303,6 @@ function mergeStreamingFragment(prev: string, incoming: string): string {
 	if (overlap > 0) return prev + incoming.slice(overlap);
 	return prev + incoming;
 }
-
 
 function mergeStreamingFragmentWithDelta(prev: string, incoming: string) {
 	const next = mergeStreamingFragment(prev, incoming);
@@ -485,7 +485,9 @@ export async function callProvider(
 				status: responsesUpstream.status,
 				error: errorText,
 			});
-			throw new Error(`OpenAI Responses API error: ${responsesUpstream.status} ${errorText}`.trim());
+			throw new Error(
+				`OpenAI Responses API error: ${responsesUpstream.status} ${errorText}`.trim(),
+			);
 		}
 
 		return translateResponsesToAnthropic(
@@ -783,7 +785,6 @@ async function readSseStream(
 	}
 }
 
-
 type ResponsesTextBlockState = {
 	key: string;
 	index: number;
@@ -892,7 +893,11 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			);
 			return;
 		}
-		const message = translateResponsesToAnthropic(messageId, model, fallbackJson);
+		const message = translateResponsesToAnthropic(
+			messageId,
+			model,
+			fallbackJson,
+		);
 		emitAnthropicMessageContentBlocks(res, message.content, 0);
 		writeSseEvent(res, "message_delta", {
 			type: "message_delta",
@@ -1088,7 +1093,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			(typeof item.id === "string" && item.id) ||
 			`tool_${toolCalls.size}`;
 		const state = getToolState(String(key));
-		if (typeof item.call_id === "string" && item.call_id) state.id = item.call_id;
+		if (typeof item.call_id === "string" && item.call_id)
+			state.id = item.call_id;
 		else if (typeof item.id === "string" && item.id) state.id = item.id;
 		if (typeof item.name === "string" && item.name) state.name = item.name;
 		if (typeof item.arguments === "string" && item.arguments) {
@@ -1138,7 +1144,9 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			pendingStopReason ||
 			getOpenAIResponsesStopReason(finalResponse, toolCalls.size > 0);
 		const completionTokens =
-			typeof lastUsage?.output_tokens === "number" ? lastUsage.output_tokens : 0;
+			typeof lastUsage?.output_tokens === "number"
+				? lastUsage.output_tokens
+				: 0;
 		writeSseEvent(res, "message_delta", {
 			type: "message_delta",
 			delta: { stop_reason: stopReason },
@@ -1179,10 +1187,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				return;
 			}
 
-			if (
-				eventType.includes("reasoning") ||
-				eventType.includes("thinking")
-			) {
+			if (eventType.includes("reasoning") || eventType.includes("thinking")) {
 				const source: ThoughtSource = eventType.includes("reasoning")
 					? "reasoning"
 					: "thinking";
@@ -1201,7 +1206,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				eventType === "response.content_part.added" ||
 				eventType === "response.content_part.done"
 			) {
-				const part = event.part && typeof event.part === "object" ? event.part : null;
+				const part =
+					event.part && typeof event.part === "object" ? event.part : null;
 				if (!part) return;
 				const partType = typeof part.type === "string" ? part.type : "";
 				const partText =
@@ -1225,7 +1231,9 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			}
 
 			if (eventType === "response.function_call_arguments.delta") {
-				const key = String(event.item_id || event.output_index || `tool_${toolCalls.size}`);
+				const key = String(
+					event.item_id || event.output_index || `tool_${toolCalls.size}`,
+				);
 				const state = getToolState(key);
 				if (typeof event.delta === "string" && event.delta) {
 					state.args = mergeStreamingFragment(state.args, event.delta);
@@ -1235,7 +1243,9 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			}
 
 			if (eventType === "response.function_call_arguments.done") {
-				const key = String(event.item_id || event.output_index || `tool_${toolCalls.size}`);
+				const key = String(
+					event.item_id || event.output_index || `tool_${toolCalls.size}`,
+				);
 				const state = getToolState(key);
 				const finalArgs =
 					typeof event.delta === "string"
@@ -1254,20 +1264,25 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				eventType === "response.output_item.added" ||
 				eventType === "response.output_item.done"
 			) {
-				const item = event.item && typeof event.item === "object" ? event.item : null;
+				const item =
+					event.item && typeof event.item === "object" ? event.item : null;
 				if (!item) return;
 				const itemType = typeof item.type === "string" ? item.type : "";
 				const itemKey = String(
 					event.item_id ||
-					((typeof item.call_id === "string" && item.call_id) ||
-						(typeof item.id === "string" && item.id) ||
-						`item_${event.output_index || 0}`),
+						(typeof item.call_id === "string" && item.call_id) ||
+							(typeof item.id === "string" && item.id) ||
+						`item_${event.output_index || 0}`,
 				);
 				if (itemType === "function_call") {
 					hydrateToolCallFromItem(item, itemKey);
 					return;
 				}
-				if (itemType === "message" || itemType === "output_text" || itemType === "text") {
+				if (
+					itemType === "message" ||
+					itemType === "output_text" ||
+					itemType === "text"
+				) {
 					hydrateMessageItem(item, itemKey);
 				}
 				return;

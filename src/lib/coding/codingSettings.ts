@@ -77,7 +77,10 @@ export const DEFAULT_AI_CODING_SETTINGS: AICodingSettings = {
 
 function parseStringArray(value: unknown): string[] | null {
 	if (Array.isArray(value)) {
-		return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+		return value.filter(
+			(item): item is string =>
+				typeof item === "string" && item.trim().length > 0,
+		);
 	}
 	if (typeof value === "string" && value.trim()) {
 		try {
@@ -146,11 +149,14 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 				? claudeDefaultModel.trim()
 				: DEFAULT_AI_CODING_SETTINGS.claudeDefaultModel,
 		claudeDefaultApprovalMode:
-			typeof claudeDefaultApprovalMode === "string" && claudeDefaultApprovalMode.trim()
+			typeof claudeDefaultApprovalMode === "string" &&
+			claudeDefaultApprovalMode.trim()
 				? (claudeDefaultApprovalMode as CodingApprovalMode)
 				: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode,
 		claudeCliPath:
-			typeof claudeCliPath === "string" ? claudeCliPath : DEFAULT_AI_CODING_SETTINGS.claudeCliPath,
+			typeof claudeCliPath === "string"
+				? claudeCliPath
+				: DEFAULT_AI_CODING_SETTINGS.claudeCliPath,
 		claudeProxyMode:
 			claudeProxyMode === "proxy" || claudeProxyMode === "transparent"
 				? claudeProxyMode
@@ -160,15 +166,21 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 				? codexDefaultModel.trim()
 				: DEFAULT_AI_CODING_SETTINGS.codexDefaultModel,
 		codexDefaultApprovalMode:
-			typeof codexDefaultApprovalMode === "string" && codexDefaultApprovalMode.trim()
+			typeof codexDefaultApprovalMode === "string" &&
+			codexDefaultApprovalMode.trim()
 				? (codexDefaultApprovalMode as CodingApprovalMode)
 				: DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode,
 		codexModelCatalog:
-			parseStringArray(codexModelCatalog) ?? DEFAULT_AI_CODING_SETTINGS.codexModelCatalog,
+			parseStringArray(codexModelCatalog) ??
+			DEFAULT_AI_CODING_SETTINGS.codexModelCatalog,
 		codexCliPath:
-			typeof codexCliPath === "string" ? codexCliPath : DEFAULT_AI_CODING_SETTINGS.codexCliPath,
+			typeof codexCliPath === "string"
+				? codexCliPath
+				: DEFAULT_AI_CODING_SETTINGS.codexCliPath,
 		editorFontSize:
-			typeof editorFontSize === "number" && editorFontSize >= 8 && editorFontSize <= 32
+			typeof editorFontSize === "number" &&
+			editorFontSize >= 8 &&
+			editorFontSize <= 32
 				? editorFontSize
 				: DEFAULT_AI_CODING_SETTINGS.editorFontSize,
 		editorShowMinimap:
@@ -176,7 +188,9 @@ export async function getAICodingSettings(): Promise<AICodingSettings> {
 				? editorShowMinimap
 				: DEFAULT_AI_CODING_SETTINGS.editorShowMinimap,
 		fileTreeAutoRefreshMs:
-			typeof fileTreeAutoRefreshMs === "number" && fileTreeAutoRefreshMs >= 100 && fileTreeAutoRefreshMs <= 10000
+			typeof fileTreeAutoRefreshMs === "number" &&
+			fileTreeAutoRefreshMs >= 100 &&
+			fileTreeAutoRefreshMs <= 10000
 				? fileTreeAutoRefreshMs
 				: DEFAULT_AI_CODING_SETTINGS.fileTreeAutoRefreshMs,
 		terminalDefaultShell:
@@ -206,13 +220,25 @@ export async function setAICodingSettings(
 		tasks.push(setConfig(CONFIG_KEYS.defaultBackend, updates.defaultBackend));
 	}
 	if (updates.workspaceMemoryPolicy) {
-		tasks.push(setConfig(CONFIG_KEYS.workspaceMemoryPolicy, updates.workspaceMemoryPolicy));
+		tasks.push(
+			setConfig(
+				CONFIG_KEYS.workspaceMemoryPolicy,
+				updates.workspaceMemoryPolicy,
+			),
+		);
 	}
 	if (updates.claudeDefaultModel) {
-		tasks.push(setConfig(CONFIG_KEYS.claudeDefaultModel, updates.claudeDefaultModel));
+		tasks.push(
+			setConfig(CONFIG_KEYS.claudeDefaultModel, updates.claudeDefaultModel),
+		);
 	}
 	if (updates.claudeDefaultApprovalMode) {
-		tasks.push(setConfig(CONFIG_KEYS.claudeDefaultApprovalMode, updates.claudeDefaultApprovalMode));
+		tasks.push(
+			setConfig(
+				CONFIG_KEYS.claudeDefaultApprovalMode,
+				updates.claudeDefaultApprovalMode,
+			),
+		);
 	}
 	if (updates.claudeCliPath != null) {
 		tasks.push(setConfig(CONFIG_KEYS.claudeCliPath, updates.claudeCliPath));
@@ -221,13 +247,25 @@ export async function setAICodingSettings(
 		tasks.push(setConfig(CONFIG_KEYS.claudeProxyMode, updates.claudeProxyMode));
 	}
 	if (updates.codexDefaultModel != null) {
-		tasks.push(setConfig(CONFIG_KEYS.codexDefaultModel, updates.codexDefaultModel));
+		tasks.push(
+			setConfig(CONFIG_KEYS.codexDefaultModel, updates.codexDefaultModel),
+		);
 	}
 	if (updates.codexDefaultApprovalMode) {
-		tasks.push(setConfig(CONFIG_KEYS.codexDefaultApprovalMode, updates.codexDefaultApprovalMode));
+		tasks.push(
+			setConfig(
+				CONFIG_KEYS.codexDefaultApprovalMode,
+				updates.codexDefaultApprovalMode,
+			),
+		);
 	}
 	if (updates.codexModelCatalog) {
-		tasks.push(setConfig(CONFIG_KEYS.codexModelCatalog, JSON.stringify(updates.codexModelCatalog)));
+		tasks.push(
+			setConfig(
+				CONFIG_KEYS.codexModelCatalog,
+				JSON.stringify(updates.codexModelCatalog),
+			),
+		);
 	}
 	if (updates.codexCliPath != null) {
 		tasks.push(setConfig(CONFIG_KEYS.codexCliPath, updates.codexCliPath));
@@ -236,19 +274,30 @@ export async function setAICodingSettings(
 		tasks.push(setConfig(CONFIG_KEYS.editorFontSize, updates.editorFontSize));
 	}
 	if (updates.editorShowMinimap != null) {
-		tasks.push(setConfig(CONFIG_KEYS.editorShowMinimap, updates.editorShowMinimap));
+		tasks.push(
+			setConfig(CONFIG_KEYS.editorShowMinimap, updates.editorShowMinimap),
+		);
 	}
 	if (updates.fileTreeAutoRefreshMs != null) {
-		tasks.push(setConfig(CONFIG_KEYS.fileTreeAutoRefreshMs, updates.fileTreeAutoRefreshMs));
+		tasks.push(
+			setConfig(
+				CONFIG_KEYS.fileTreeAutoRefreshMs,
+				updates.fileTreeAutoRefreshMs,
+			),
+		);
 	}
 	if (updates.terminalDefaultShell != null) {
-		tasks.push(setConfig(CONFIG_KEYS.terminalDefaultShell, updates.terminalDefaultShell));
+		tasks.push(
+			setConfig(CONFIG_KEYS.terminalDefaultShell, updates.terminalDefaultShell),
+		);
 	}
 	if (updates.highlightTheme != null) {
 		tasks.push(setConfig(CONFIG_KEYS.highlightTheme, updates.highlightTheme));
 	}
 	if (updates.fileWatcherEnabled != null) {
-		tasks.push(setConfig(CONFIG_KEYS.fileWatcherEnabled, updates.fileWatcherEnabled));
+		tasks.push(
+			setConfig(CONFIG_KEYS.fileWatcherEnabled, updates.fileWatcherEnabled),
+		);
 	}
 	if (updates.autoAcceptDiffs != null) {
 		tasks.push(setConfig(CONFIG_KEYS.autoAcceptDiffs, updates.autoAcceptDiffs));

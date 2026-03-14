@@ -20,7 +20,10 @@ function toCloudNodeConfig(raw: unknown): CloudNodeConfig {
 	if (typeof input.nodeToken === "string") fallback.nodeToken = input.nodeToken;
 	if (typeof input.nodeName === "string") fallback.nodeName = input.nodeName;
 	if (typeof input.heartbeatSec === "number") {
-		fallback.heartbeatSec = Math.max(5, Math.min(120, Math.floor(input.heartbeatSec)));
+		fallback.heartbeatSec = Math.max(
+			5,
+			Math.min(120, Math.floor(input.heartbeatSec)),
+		);
 	}
 	if (
 		typeof input.routingMode === "string" &&
@@ -32,7 +35,8 @@ function toCloudNodeConfig(raw: unknown): CloudNodeConfig {
 	fallback.relayUrl = String(fallback.relayUrl || "").trim();
 	fallback.nodeId = String(fallback.nodeId || "").trim();
 	fallback.nodeToken = String(fallback.nodeToken || "").trim();
-	fallback.nodeName = String(fallback.nodeName || "desktop-node").trim() || "desktop-node";
+	fallback.nodeName =
+		String(fallback.nodeName || "desktop-node").trim() || "desktop-node";
 	return fallback;
 }
 
@@ -45,7 +49,9 @@ export class CloudNodeConfigStore {
 			args: [CLOUD_NODE_CONFIG_KEY],
 		});
 		const value = row.rows[0]?.value;
-		const parsed = parseJsonSafely<unknown>(typeof value === "string" ? value : null);
+		const parsed = parseJsonSafely<unknown>(
+			typeof value === "string" ? value : null,
+		);
 		return toCloudNodeConfig(parsed);
 	}
 
@@ -53,7 +59,11 @@ export class CloudNodeConfigStore {
 		await this.db.client.execute({
 			sql: `INSERT INTO app_config (key, value, updated_at) VALUES (?, ?, ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-			args: [CLOUD_NODE_CONFIG_KEY, JSON.stringify(toCloudNodeConfig(config)), Date.now()],
+			args: [
+				CLOUD_NODE_CONFIG_KEY,
+				JSON.stringify(toCloudNodeConfig(config)),
+				Date.now(),
+			],
 		});
 	}
 }

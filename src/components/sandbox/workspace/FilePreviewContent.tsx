@@ -277,7 +277,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						className={cn(
 							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all focus-ring active:scale-95",
 							!canCopyContent &&
-							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
+								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
 						title="复制内容 (⌘C)"
 						aria-label="复制内容"
@@ -308,7 +308,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						className={cn(
 							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all focus-ring active:scale-95",
 							!canDownload &&
-							"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
+								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-zinc-500",
 						)}
 						title="下载文件 (⌘D)"
 						aria-label="下载文件"

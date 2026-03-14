@@ -115,7 +115,9 @@ class CodingRuntimeStore {
 				CodingBackendId,
 				BackendCapabilityMatrix
 			>;
-			this.setState({ capabilities: await this.mergeCapabilities(capabilityMap) });
+			this.setState({
+				capabilities: await this.mergeCapabilities(capabilityMap),
+			});
 		} catch (error) {
 			this.setState({
 				error: error instanceof Error ? error.message : String(error),
@@ -139,9 +141,9 @@ class CodingRuntimeStore {
 			profile,
 			workspaceMemory: this.state.workspaceMemory
 				? {
-					...this.state.workspaceMemory,
-					profile,
-				}
+						...this.state.workspaceMemory,
+						profile,
+					}
 				: null,
 		});
 	}

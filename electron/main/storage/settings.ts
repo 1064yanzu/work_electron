@@ -92,7 +92,9 @@ export async function assertDirectoryWritable(dirPath: string): Promise<void> {
 	await fs.unlink(probePath);
 }
 
-export async function getStorageSettings(db: DbContext): Promise<StorageSettings> {
+export async function getStorageSettings(
+	db: DbContext,
+): Promise<StorageSettings> {
 	const defaults = getDefaultStorageSettings();
 	const raw = await readConfigValue(db, STORAGE_SETTINGS_KEY);
 	if (!raw) {
@@ -155,7 +157,11 @@ export async function updateStorageSettings(
 			? { obsidian_wiki_links: Boolean(updates.obsidian_wiki_links) }
 			: {}),
 		...(updates.conflict_strategy !== undefined
-			? { conflict_strategy: normalizeConflictStrategy(updates.conflict_strategy) }
+			? {
+					conflict_strategy: normalizeConflictStrategy(
+						updates.conflict_strategy,
+					),
+				}
 			: {}),
 		...(updates.last_migrated_at !== undefined
 			? { last_migrated_at: updates.last_migrated_at }

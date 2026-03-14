@@ -16,7 +16,10 @@ import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { useNavigation } from "./hooks/useNavigation";
-import { useManagedModeStoreSelector, managedModeStore } from "./lib/managedModeStore";
+import {
+	useManagedModeStoreSelector,
+	managedModeStore,
+} from "./lib/managedModeStore";
 import { useTerminalStoreSelector } from "./lib/stores/terminalStore";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
@@ -53,9 +56,7 @@ const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
 });
-const TerminalPanel = lazy(
-	() => import("./components/Terminal/TerminalPanel"),
-);
+const TerminalPanel = lazy(() => import("./components/Terminal/TerminalPanel"));
 
 function PanelLoadingFallback() {
 	return (
@@ -198,8 +199,8 @@ export default function App() {
 		<MouseDragProvider>
 			{isInDashboard ? (
 				<Suspense fallback={<PanelLoadingFallback />}>
-						<Dashboard
-							onOpenSettings={() => handleOpenSettings()}
+					<Dashboard
+						onOpenSettings={() => handleOpenSettings()}
 						onOpenProject={(projectId) => {
 							navigateToProject(projectId);
 						}}
@@ -210,11 +211,11 @@ export default function App() {
 				</Suspense>
 			) : isInCoding ? (
 				<Suspense fallback={<PanelLoadingFallback />}>
-						<CodingWorkspace
+					<CodingWorkspace
 						projectPath={currentCodingProjectPath}
 						threadId={currentCodingThreadId}
 						onBack={navigateToDashboard}
-							onOpenSettings={handleOpenSettings}
+						onOpenSettings={handleOpenSettings}
 					/>
 				</Suspense>
 			) : (
@@ -233,8 +234,8 @@ export default function App() {
 						>
 							<PanelShell>
 								<Suspense fallback={<PanelLoadingFallback />}>
-										<ResourceSidebar
-											onOpenSettings={() => handleOpenSettings()}
+									<ResourceSidebar
+										onOpenSettings={() => handleOpenSettings()}
 									/>
 								</Suspense>
 							</PanelShell>
@@ -347,11 +348,11 @@ export default function App() {
 			{/* Global Settings Modal - Always rendered */}
 			{isSettingsOpen ? (
 				<Suspense fallback={null}>
-						<SettingsModal
-							isOpen={isSettingsOpen}
-							onClose={() => setIsSettingsOpen(false)}
-							initialTab={settingsInitialTab}
-						/>
+					<SettingsModal
+						isOpen={isSettingsOpen}
+						onClose={() => setIsSettingsOpen(false)}
+						initialTab={settingsInitialTab}
+					/>
 				</Suspense>
 			) : null}
 		</MouseDragProvider>

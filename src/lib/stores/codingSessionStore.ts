@@ -4,7 +4,11 @@
  * 与 codingWorkspaceStore 解耦，后者专注于项目/文件/布局管理
  */
 
-import { createStore, createUseStore, createUseStoreSelector } from './createStore';
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 import type {
 	CodingSessionMessage,
 	SessionPermissionRequest,
@@ -15,12 +19,12 @@ import type {
 	TaskNotification,
 	TeamActivity,
 	TeammateInfo,
-} from './codingSessionTypes';
+} from "./codingSessionTypes";
 import {
 	saveSnapshotToStorage,
 	loadSnapshotFromStorage,
 	deleteSnapshotFromStorage,
-} from './sessionSnapshotPersistence';
+} from "./sessionSnapshotPersistence";
 
 // === State ===
 
@@ -51,7 +55,7 @@ export type SessionSnapshot = CodingSessionState;
 const initialState: CodingSessionState = {
 	sdkSessionId: null,
 	runId: null,
-	status: 'idle',
+	status: "idle",
 	messages: [],
 	streamingMessageId: null,
 	pendingPermission: null,
@@ -95,7 +99,10 @@ function loadSnapshot(threadId: string): boolean {
 }
 
 /** 切换到指定线程：保存当前快照 → 加载目标快照（或初始化） */
-function switchToThread(currentThreadId: string | null, targetThreadId: string) {
+function switchToThread(
+	currentThreadId: string | null,
+	targetThreadId: string,
+) {
 	// 保存当前线程快照
 	if (currentThreadId) {
 		saveSnapshot(currentThreadId);
@@ -119,7 +126,7 @@ function getSnapshot(threadId: string): SessionSnapshot | undefined {
 
 // === Helper: 生成唯一 ID ===
 
-function genId(prefix = 'msg') {
+function genId(prefix = "msg") {
 	return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -130,7 +137,7 @@ function addUserMessage(content: string): string {
 	const id = genId();
 	const message: CodingSessionMessage = {
 		id,
-		role: 'user',
+		role: "user",
 		timestamp: Date.now(),
 		content,
 		isStreaming: false,
@@ -147,13 +154,13 @@ function addUserMessage(content: string): string {
 }
 
 /** 创建 assistant 占位消息（开始流式输出时调用） */
-function createAssistantMessage(backend: 'claude-code' | 'codex'): string {
+function createAssistantMessage(backend: "claude-code" | "codex"): string {
 	const id = genId();
 	const message: CodingSessionMessage = {
 		id,
-		role: 'assistant',
+		role: "assistant",
 		timestamp: Date.now(),
-		content: '',
+		content: "",
 		isStreaming: true,
 		thinkingBlocks: [],
 		toolCalls: [],
@@ -165,7 +172,7 @@ function createAssistantMessage(backend: 'claude-code' | 'codex'): string {
 		...s,
 		messages: [...s.messages, message],
 		streamingMessageId: id,
-		status: 'running',
+		status: "running",
 	}));
 	return id;
 }
@@ -177,15 +184,13 @@ function appendText(content: string) {
 	store.setState((s) => ({
 		...s,
 		messages: s.messages.map((m) =>
-			m.id === streamingMessageId
-				? { ...m, content: m.content + content }
-				: m,
+			m.id === streamingMessageId ? { ...m, content: m.content + content } : m,
 		),
 	}));
 }
 
 /** 追加/更新思考块 */
-function appendThinking(content: string, title = '思考过程') {
+function appendThinking(content: string, title = "思考过程") {
 	const { streamingMessageId } = store.getState();
 	if (!streamingMessageId) return;
 	store.setState((s) => ({
@@ -202,7 +207,7 @@ function appendThinking(content: string, title = '思考过程') {
 				};
 			} else {
 				blocks.push({
-					id: genId('think'),
+					id: genId("think"),
 					content,
 					title,
 					isStreaming: true,
@@ -233,7 +238,9 @@ function finalizeThinking() {
 }
 
 /** 添加工具调用记录 */
-function addToolCall(toolCall: Omit<SessionToolCall, 'isError'> & { isError?: boolean }) {
+function addToolCall(
+	toolCall: Omit<SessionToolCall, "isError"> & { isError?: boolean },
+) {
 	const { streamingMessageId } = store.getState();
 	if (!streamingMessageId) return;
 	const tc: SessionToolCall = {
@@ -291,7 +298,11 @@ function setPermission(request: SessionPermissionRequest | null) {
 	store.setState((s) => ({
 		...s,
 		pendingPermission: request,
-		status: request ? 'awaiting_permission' : s.status === 'awaiting_permission' ? 'running' : s.status,
+		status: request
+			? "awaiting_permission"
+			: s.status === "awaiting_permission"
+				? "running"
+				: s.status,
 	}));
 }
 
@@ -300,7 +311,7 @@ function resolvePermission() {
 	store.setState((s) => ({
 		...s,
 		pendingPermission: null,
-		status: s.status === 'awaiting_permission' ? 'running' : s.status,
+		status: s.status === "awaiting_permission" ? "running" : s.status,
 	}));
 }
 
@@ -319,9 +330,7 @@ function finalizeStreamingMessage(durationMs?: number) {
 							...b,
 							isStreaming: false,
 						})),
-						metadata: m.metadata
-							? { ...m.metadata, durationMs }
-							: undefined,
+						metadata: m.metadata ? { ...m.metadata, durationMs } : undefined,
 					}
 				: m,
 		),
@@ -331,10 +340,10 @@ function finalizeStreamingMessage(durationMs?: number) {
 
 /** 添加系统消息 */
 function addSystemMessage(content: string) {
-	const id = genId('sys');
+	const id = genId("sys");
 	const message: CodingSessionMessage = {
 		id,
-		role: 'system',
+		role: "system",
 		timestamp: Date.now(),
 		content,
 		isStreaming: false,
@@ -418,7 +427,11 @@ function updateTeammate(name: string, updates: Partial<TeammateInfo>) {
 	);
 	// 如果成员不存在，添加到列表
 	if (!currentTeam.teammates.find((t) => t.name === name)) {
-		updatedTeammates.push({ name, status: 'running', ...updates } as TeammateInfo);
+		updatedTeammates.push({
+			name,
+			status: "running",
+			...updates,
+		} as TeammateInfo);
 	}
 	const updatedTeam = { ...currentTeam, teammates: updatedTeammates };
 
@@ -434,12 +447,14 @@ function updateTeammate(name: string, updates: Partial<TeammateInfo>) {
 }
 
 /** 添加任务通知（到当前流式消息） */
-function addNotification(notification: Omit<TaskNotification, 'id' | 'timestamp'>) {
+function addNotification(
+	notification: Omit<TaskNotification, "id" | "timestamp">,
+) {
 	const { streamingMessageId } = store.getState();
 	if (!streamingMessageId) return;
 	const full: TaskNotification = {
 		...notification,
-		id: genId('notif'),
+		id: genId("notif"),
 		timestamp: Date.now(),
 	};
 	store.setState((s) => ({
@@ -464,9 +479,7 @@ function appendToolUseSummary(toolCallIds: string[], summary: string) {
 				? {
 						...m,
 						toolCalls: m.toolCalls.map((tc) =>
-							idSet.has(tc.id)
-								? { ...tc, output: summary }
-								: tc,
+							idSet.has(tc.id) ? { ...tc, output: summary } : tc,
 						),
 					}
 				: m,

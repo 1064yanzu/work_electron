@@ -19,7 +19,10 @@ import {
 	type ClaudeCodeOutputEvent,
 	type ClaudeCodeSessionOptions,
 } from "../../services/claudeCodeService";
-import { getClaudeAuthStatus, readUserCliConfig } from "../../services/claudeAuthDetector";
+import {
+	getClaudeAuthStatus,
+	readUserCliConfig,
+} from "../../services/claudeAuthDetector";
 import { interactionBroker } from "./agentSdk/interactionBroker";
 
 /** 统一的会话 handle，内部使用 */
@@ -135,11 +138,10 @@ export function createClaudeCodeSessionHandlers(deps: ClaudeCodeHandlerDeps) {
 				};
 
 				// SDK 模式不需要 binary，传空字符串
-				const abortController = await spawnClaudeCodeSessionSdk(
-					"",
-					options,
-					{ onEvent, onPermissionRequest },
-				);
+				const abortController = await spawnClaudeCodeSessionSdk("", options, {
+					onEvent,
+					onPermissionRequest,
+				});
 				activeSessions.set(runId, {
 					abort: () => abortController.abort(),
 				});
@@ -153,9 +155,7 @@ export function createClaudeCodeSessionHandlers(deps: ClaudeCodeHandlerDeps) {
 			// Fallback: CLI spawn 模式
 			const binary = await findClaudeCodeBinary();
 			if (!binary) {
-				throw new Error(
-					"Claude Code CLI 未找到，请先安装 Claude Code。",
-				);
+				throw new Error("Claude Code CLI 未找到，请先安装 Claude Code。");
 			}
 
 			const proc = spawnClaudeCodeSession(binary, options, onEvent);

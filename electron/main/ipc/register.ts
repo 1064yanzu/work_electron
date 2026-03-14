@@ -737,7 +737,10 @@ export function registerIpcHandlers({
 	// ==================
 	// Coding Workspace (AI 编程工作区)
 	// ==================
-	ipcMain.handle("coding_select_directory", codingHandlers.coding_select_directory);
+	ipcMain.handle(
+		"coding_select_directory",
+		codingHandlers.coding_select_directory,
+	);
 	ipcMain.handle("coding_read_file_tree", codingHandlers.coding_read_file_tree);
 	ipcMain.handle("coding_select_files", codingHandlers.coding_select_files);
 	ipcMain.handle("coding_git_status", codingHandlers.coding_git_status);
@@ -785,38 +788,95 @@ export function registerIpcHandlers({
 	// ==================
 	// Codex Session (Codex 后端)
 	// ==================
-	ipcMain.handle("codex_check_available", codexSessionHandlers.codex_check_available);
-	ipcMain.handle("codex_get_capabilities", codexSessionHandlers.codex_get_capabilities);
-	ipcMain.handle("codex_session_start", codexSessionHandlers.codex_session_start);
-	ipcMain.handle("codex_session_abort", codexSessionHandlers.codex_session_abort);
-	ipcMain.handle("codex_runtime_control", codexSessionHandlers.codex_runtime_control);
+	ipcMain.handle(
+		"codex_check_available",
+		codexSessionHandlers.codex_check_available,
+	);
+	ipcMain.handle(
+		"codex_get_capabilities",
+		codexSessionHandlers.codex_get_capabilities,
+	);
+	ipcMain.handle(
+		"codex_session_start",
+		codexSessionHandlers.codex_session_start,
+	);
+	ipcMain.handle(
+		"codex_session_abort",
+		codexSessionHandlers.codex_session_abort,
+	);
+	ipcMain.handle(
+		"codex_runtime_control",
+		codexSessionHandlers.codex_runtime_control,
+	);
 
 	// ==================
 	// Claude Code CLI Session (Claude Code 后端)
 	// ==================
-	ipcMain.handle("claude_code_check_available", claudeCodeSessionHandlers.claude_code_check_available);
-	ipcMain.handle("claude_code_get_capabilities", claudeCodeSessionHandlers.claude_code_get_capabilities);
-	ipcMain.handle("claude_code_session_start", claudeCodeSessionHandlers.claude_code_session_start);
-	ipcMain.handle("claude_code_session_abort", claudeCodeSessionHandlers.claude_code_session_abort);
-	ipcMain.handle("claude_code_runtime_control", claudeCodeSessionHandlers.claude_code_runtime_control);
-	ipcMain.handle("claude_code_permission_respond", claudeCodeSessionHandlers.claude_code_permission_respond);
-	ipcMain.handle("claude_code_auth_status", claudeCodeSessionHandlers.claude_code_auth_status);
-	ipcMain.handle("coding_read_user_cli_config", claudeCodeSessionHandlers.coding_read_user_cli_config);
+	ipcMain.handle(
+		"claude_code_check_available",
+		claudeCodeSessionHandlers.claude_code_check_available,
+	);
+	ipcMain.handle(
+		"claude_code_get_capabilities",
+		claudeCodeSessionHandlers.claude_code_get_capabilities,
+	);
+	ipcMain.handle(
+		"claude_code_session_start",
+		claudeCodeSessionHandlers.claude_code_session_start,
+	);
+	ipcMain.handle(
+		"claude_code_session_abort",
+		claudeCodeSessionHandlers.claude_code_session_abort,
+	);
+	ipcMain.handle(
+		"claude_code_runtime_control",
+		claudeCodeSessionHandlers.claude_code_runtime_control,
+	);
+	ipcMain.handle(
+		"claude_code_permission_respond",
+		claudeCodeSessionHandlers.claude_code_permission_respond,
+	);
+	ipcMain.handle(
+		"claude_code_auth_status",
+		claudeCodeSessionHandlers.claude_code_auth_status,
+	);
+	ipcMain.handle(
+		"coding_read_user_cli_config",
+		claudeCodeSessionHandlers.coding_read_user_cli_config,
+	);
 
 	// ==================
 	// CLI History Sync (CLI 历史同步)
 	// ==================
-	ipcMain.handle("cli_history_codex_list", cliHistoryHandlers.cli_history_codex_list);
-	ipcMain.handle("cli_history_codex_read", cliHistoryHandlers.cli_history_codex_read);
-	ipcMain.handle("cli_history_claude_code_list", cliHistoryHandlers.cli_history_claude_code_list);
-	ipcMain.handle("cli_history_claude_code_read", cliHistoryHandlers.cli_history_claude_code_read);
-	ipcMain.handle("cli_history_check_available", cliHistoryHandlers.cli_history_check_available);
+	ipcMain.handle(
+		"cli_history_codex_list",
+		cliHistoryHandlers.cli_history_codex_list,
+	);
+	ipcMain.handle(
+		"cli_history_codex_read",
+		cliHistoryHandlers.cli_history_codex_read,
+	);
+	ipcMain.handle(
+		"cli_history_claude_code_list",
+		cliHistoryHandlers.cli_history_claude_code_list,
+	);
+	ipcMain.handle(
+		"cli_history_claude_code_read",
+		cliHistoryHandlers.cli_history_claude_code_read,
+	);
+	ipcMain.handle(
+		"cli_history_check_available",
+		cliHistoryHandlers.cli_history_check_available,
+	);
 
 	// ==================
 	// CLI Binary Detection (CLI 二进制检测)
 	// ==================
 	ipcMain.handle("cli_detect_binary", cliBinaryHandlers.cli_detect_binary);
-	ipcMain.handle("cli_invalidate_cache", cliBinaryHandlers.cli_invalidate_cache);
+	ipcMain.handle(
+		"cli_invalidate_cache",
+		cliBinaryHandlers.cli_invalidate_cache,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 122 });
 }

@@ -54,15 +54,18 @@ export function useSourceDragDrop({
 		[sources, debugLog],
 	);
 
-	const handleDragEnd = useCallback((e: React.DragEvent) => {
-		// 拖拽结束时清理状态
-		debugLog("[Drag] 拖拽结束, dropEffect:", e.dataTransfer.dropEffect);
-		// 延迟清理，确保 drop 事件能获取到 draggedSourceId
-		setTimeout(() => {
-			setDraggedSourceId(null);
-			setDragOverFolderId(null);
-		}, 100);
-	}, [debugLog]);
+	const handleDragEnd = useCallback(
+		(e: React.DragEvent) => {
+			// 拖拽结束时清理状态
+			debugLog("[Drag] 拖拽结束, dropEffect:", e.dataTransfer.dropEffect);
+			// 延迟清理，确保 drop 事件能获取到 draggedSourceId
+			setTimeout(() => {
+				setDraggedSourceId(null);
+				setDragOverFolderId(null);
+			}, 100);
+		},
+		[debugLog],
+	);
 
 	const handleFolderDragOver = useCallback(
 		(e: React.DragEvent, folderId: string) => {
@@ -128,15 +131,18 @@ export function useSourceDragDrop({
 	);
 
 	// 容器级别的 drop 处理（处理拖拽到空白区域）
-	const handleContainerDragOver = useCallback((e: React.DragEvent) => {
-		debugLog("[Drag] handleContainerDragOver 被调用");
-		// 允许 drop
-		if (e.dataTransfer.types.includes("application/x-source-id")) {
-			e.preventDefault();
-			e.dataTransfer.dropEffect = "move";
-			debugLog("[Drag] 容器 dragover，允许 drop");
-		}
-	}, [debugLog]);
+	const handleContainerDragOver = useCallback(
+		(e: React.DragEvent) => {
+			debugLog("[Drag] handleContainerDragOver 被调用");
+			// 允许 drop
+			if (e.dataTransfer.types.includes("application/x-source-id")) {
+				e.preventDefault();
+				e.dataTransfer.dropEffect = "move";
+				debugLog("[Drag] 容器 dragover，允许 drop");
+			}
+		},
+		[debugLog],
+	);
 
 	const handleContainerDrop = useCallback(
 		(e: React.DragEvent) => {

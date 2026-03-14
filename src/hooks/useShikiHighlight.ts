@@ -90,18 +90,20 @@ export function useShikiHighlight(
 		Promise.all([
 			highlightCode(code, language, theme as BundledTheme),
 			highlightToTokens(code, language, theme as BundledTheme),
-		]).then(([htmlResult, tokensResult]) => {
-			// 只接受最新请求的结果
-			if (requestId !== requestIdRef.current) return;
-			setHtml(htmlResult);
-			setTokens(tokensResult);
-			setLoading(false);
-		}).catch(() => {
-			if (requestId !== requestIdRef.current) return;
-			setHtml("");
-			setTokens(null);
-			setLoading(false);
-		});
+		])
+			.then(([htmlResult, tokensResult]) => {
+				// 只接受最新请求的结果
+				if (requestId !== requestIdRef.current) return;
+				setHtml(htmlResult);
+				setTokens(tokensResult);
+				setLoading(false);
+			})
+			.catch(() => {
+				if (requestId !== requestIdRef.current) return;
+				setHtml("");
+				setTokens(null);
+				setLoading(false);
+			});
 	}, [code, language, theme]);
 
 	return useMemo(
@@ -135,15 +137,17 @@ export function useShikiTokens(
 		const requestId = ++requestIdRef.current;
 		setLoading(true);
 
-		highlightToTokens(code, language, theme as BundledTheme).then((result) => {
-			if (requestId !== requestIdRef.current) return;
-			setTokens(result);
-			setLoading(false);
-		}).catch(() => {
-			if (requestId !== requestIdRef.current) return;
-			setTokens(null);
-			setLoading(false);
-		});
+		highlightToTokens(code, language, theme as BundledTheme)
+			.then((result) => {
+				if (requestId !== requestIdRef.current) return;
+				setTokens(result);
+				setLoading(false);
+			})
+			.catch(() => {
+				if (requestId !== requestIdRef.current) return;
+				setTokens(null);
+				setLoading(false);
+			});
 	}, [code, language, theme]);
 
 	return useMemo(() => ({ tokens, loading, theme }), [tokens, loading, theme]);

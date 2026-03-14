@@ -59,19 +59,35 @@ export function CodingChatThread({
 	);
 
 	if (messages.length === 0) {
-		return <EmptyState />;
+		// The EmptyState component is now rendered conditionally inside the main return.
+		// This `if` block is no longer needed.
 	}
 
 	return (
-		<div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
-			<div className="mx-auto max-w-3xl px-5 py-6 space-y-5">
-				{messages.map((message) => (
-					<MessageBubble
-						key={message.id}
-						message={message}
-						onAskUserAnswer={handleAskUserAnswer}
-					/>
-				))}
+		<div
+			ref={scrollRef}
+			className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin dark:bg-[#0d0d12]"
+		>
+			<div className="mx-auto max-w-3xl w-full min-h-full pb-8 px-4 py-6">
+				{messages.length === 0 ? (
+					<div className="flex h-full flex-col items-center justify-center pt-20 text-center text-zinc-400">
+						<Bot className="mb-4 h-12 w-12 opacity-20" />
+						<p className="text-sm">Hi, 我是智能编码助手。</p>
+						<p className="mt-2 text-xs opacity-60">
+							询问代码详情，按 / 使用工具，或者直接让我帮你写代码。
+						</p>
+					</div>
+				) : (
+					<div className="flex flex-col gap-5">
+						{messages.map((msg, i) => (
+							<MessageBubble
+								key={`${msg.id}-${i}`}
+								message={msg}
+								onAskUserAnswer={handleAskUserAnswer}
+							/>
+						))}
+					</div>
+				)}
 			</div>
 
 			{/* 权限审批卡片（仅 Claude Code，排除 AskUserQuestion） */}
@@ -118,7 +134,10 @@ function cleanUserMessageContent(content: string): string {
 	// 格式：Attached project context files:\n\nFile: xxx\nLanguage: xxx\n```...```\n\nUser request:\n{实际内容}
 	const userRequestMarker = "\nUser request:\n";
 	const markerIdx = content.indexOf(userRequestMarker);
-	if (markerIdx !== -1 && content.startsWith("Attached project context files:")) {
+	if (
+		markerIdx !== -1 &&
+		content.startsWith("Attached project context files:")
+	) {
 		return content.slice(markerIdx + userRequestMarker.length).trim();
 	}
 	return content;
@@ -151,7 +170,9 @@ function MessageBubble({
 	}
 
 	// Assistant 消息 — 扁平渲染
-	return <AssistantMessage message={message} onAskUserAnswer={onAskUserAnswer} />;
+	return (
+		<AssistantMessage message={message} onAskUserAnswer={onAskUserAnswer} />
+	);
 }
 
 /* ── 系统消息分隔线 ────────────────────────────────────────── */
@@ -171,14 +192,17 @@ function SystemDivider({ content }: { content: string }) {
 /* ── 用户消息（右对齐） ──────────────────────────────────── */
 
 function UserMessage({ content }: { content: string }) {
-	const cleanedContent = useMemo(() => cleanUserMessageContent(content), [content]);
+	const cleanedContent = useMemo(
+		() => cleanUserMessageContent(content),
+		[content],
+	);
 
 	return (
 		<div className="group relative flex justify-end">
 			<div className="flex items-start gap-3 max-w-[85%]">
 				{/* 内容区 — 右对齐，浅灰底色使其与 AI 回复一眼可区分 */}
-				<div className="min-w-0 rounded-2xl bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5">
-					<div className="text-[13.5px] leading-[1.7] text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap break-words">
+				<div className="min-w-0 rounded-2xl bg-zinc-50 border border-black/[0.03] shadow-sm dark:bg-zinc-800/60 dark:border-white/[0.03] px-4 py-2.5">
+					<div className="text-[14px] leading-[1.6] text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words">
 						{cleanedContent}
 					</div>
 				</div>
@@ -213,9 +237,7 @@ function AssistantMessage({
 	return (
 		<div className="space-y-2.5">
 			{/* 思考过程 */}
-			{hasThinking && (
-				<ThinkingPanel blocks={message.thinkingBlocks} />
-			)}
+			{hasThinking && <ThinkingPanel blocks={message.thinkingBlocks} />}
 
 			{/* 工具调用 — 紧凑列表 */}
 			{hasToolCalls && (
@@ -253,7 +275,10 @@ function AssistantMessage({
 
 			{/* 文本内容 — 无背景扁平渲染，自定义排版 */}
 			{hasContent && (
-				<AssistantTextContent content={message.content} isStreaming={message.isStreaming} />
+				<AssistantTextContent
+					content={message.content}
+					isStreaming={message.isStreaming}
+				/>
 			)}
 
 			{/* 流式等待指示（无内容也无工具调用时） */}
@@ -271,28 +296,6 @@ function AssistantMessage({
 }
 
 /* ── 空状态 ────────────────────────────────────────────── */
-
-function EmptyState() {
-	return (
-		<div className="flex-1 flex items-center justify-center">
-			<div className="text-center max-w-md mx-auto px-4">
-				<div className="w-16 h-16 rounded-2xl bg-[#D96C46]/10 flex items-center justify-center mx-auto mb-6">
-					<Bot className="w-8 h-8 text-[#D96C46]" />
-				</div>
-				<h3 className="text-lg font-serif font-medium text-zinc-800 dark:text-zinc-200 mb-2">
-					开始编程对话
-				</h3>
-				<p className="text-sm text-zinc-400 leading-relaxed">
-					描述你想要实现的功能，AI 会通过 Claude Code CLI
-					自主分析项目结构并编写代码。 输入{" "}
-					<span className="font-mono text-[#D96C46]">/</span> 查看斜杠命令， 或{" "}
-					<span className="font-mono text-[#D96C46]">@</span>{" "}
-					附加文件作为上下文。
-				</p>
-			</div>
-		</div>
-	);
-}
 
 /* ── Assistant 文本内容（过滤冗余工具声明） ───────────── */
 
@@ -315,17 +318,23 @@ function cleanAssistantToolNoise(content: string): string {
 	return cleaned.trim();
 }
 
-function AssistantTextContent({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
-	const cleanedContent = useMemo(() => cleanAssistantToolNoise(content), [content]);
+function AssistantTextContent({
+	content,
+	isStreaming,
+}: {
+	content: string;
+	isStreaming?: boolean;
+}) {
+	const cleanedContent = useMemo(
+		() => cleanAssistantToolNoise(content),
+		[content],
+	);
 
 	if (!cleanedContent) return null;
 
 	return (
 		<div className="coding-assistant-message text-[13.5px] leading-[1.75] text-zinc-800 dark:text-zinc-200">
-			<MarkdownRenderer
-				content={cleanedContent}
-				isStreaming={isStreaming}
-			/>
+			<MarkdownRenderer content={cleanedContent} isStreaming={isStreaming} />
 			{isStreaming && (
 				<span className="inline-flex items-center ml-0.5 align-middle">
 					<span className="w-[2.5px] h-[15px] rounded-full bg-[#D96C46] animate-pulse" />
@@ -334,4 +343,3 @@ function AssistantTextContent({ content, isStreaming }: { content: string; isStr
 		</div>
 	);
 }
-

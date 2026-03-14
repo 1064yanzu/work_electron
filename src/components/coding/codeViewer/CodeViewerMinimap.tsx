@@ -46,11 +46,15 @@ function CodeViewerMinimapInner({
 
 	// 实际渲染高度
 	const renderedHeight = Math.min(totalLines * LINE_HEIGHT, MAX_MINIMAP_HEIGHT);
-	const scale = totalLines > 0 ? renderedHeight / (totalLines * LINE_HEIGHT) : 1;
+	const scale =
+		totalLines > 0 ? renderedHeight / (totalLines * LINE_HEIGHT) : 1;
 
 	// 可视区域指示器位置
 	const viewportTop = visibleStart * LINE_HEIGHT * scale;
-	const viewportHeight = Math.max((visibleEnd - visibleStart) * LINE_HEIGHT * scale, 8);
+	const viewportHeight = Math.max(
+		(visibleEnd - visibleStart) * LINE_HEIGHT * scale,
+		8,
+	);
 
 	const handleClick = useCallback(
 		(e: React.MouseEvent) => {
@@ -78,7 +82,14 @@ function CodeViewerMinimapInner({
 				className="absolute inset-0"
 				ref={(canvas) => {
 					if (!canvas) return;
-					renderMinimapCanvas(canvas, lines, tokens, scale, matchLineSet, highlightedLines);
+					renderMinimapCanvas(
+						canvas,
+						lines,
+						tokens,
+						scale,
+						matchLineSet,
+						highlightedLines,
+					);
 				}}
 			/>
 
@@ -133,7 +144,12 @@ function renderMinimapCanvas(
 				ctx.fillStyle = token.color || "#888";
 				const tokenWidth = token.content.length * charW;
 				if (x + tokenWidth > w) break;
-				ctx.fillRect(x, y + 0.5, Math.min(tokenWidth, w - x), Math.max(lineH - 1, 0.5));
+				ctx.fillRect(
+					x,
+					y + 0.5,
+					Math.min(tokenWidth, w - x),
+					Math.max(lineH - 1, 0.5),
+				);
 				x += tokenWidth;
 			}
 		} else {
@@ -142,7 +158,12 @@ function renderMinimapCanvas(
 			const indent = lines[i].length - lines[i].trimStart().length;
 			if (contentLen > 0) {
 				ctx.fillStyle = "#888888";
-				ctx.fillRect(2 + indent * charW, y + 0.5, Math.min(contentLen * charW, w - 4), Math.max(lineH - 1, 0.5));
+				ctx.fillRect(
+					2 + indent * charW,
+					y + 0.5,
+					Math.min(contentLen * charW, w - 4),
+					Math.max(lineH - 1, 0.5),
+				);
 			}
 		}
 	}

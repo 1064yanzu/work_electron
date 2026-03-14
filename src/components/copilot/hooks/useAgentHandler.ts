@@ -11,9 +11,7 @@ import {
 	startPersistentSession,
 } from "../../../lib/agent/persistence";
 import { agentStore } from "../../../lib/agent/store";
-import {
-	chatStore as chatStoreInstance,
-} from "../../../lib/chat/store";
+import { chatStore as chatStoreInstance } from "../../../lib/chat/store";
 import {
 	filterThoughtBlocksForPersistence,
 	StreamBlocksBuilder,
@@ -21,9 +19,7 @@ import {
 import type { ChatMessageBlock } from "../../../lib/chat/types";
 import { createMessage } from "../../../lib/chat/types";
 import { EVENTS, events } from "../../../lib/events";
-import {
-	getChatSystemPromptWithBudget,
-} from "../../../lib/prompts";
+import { getChatSystemPromptWithBudget } from "../../../lib/prompts";
 import { workspaceStore } from "../../../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context/conversationMessages";
 import { isSdkSessionId } from "../../../lib/agent/context/sessionId";
@@ -99,7 +95,9 @@ export function useAgentHandler({
 		}
 
 		// 创建或获取用户消息
-		let userMessage: NonNullable<ChatStoreLike["activeSession"]>["messages"][number];
+		let userMessage: NonNullable<
+			ChatStoreLike["activeSession"]
+		>["messages"][number];
 		if (!skipUserMessage) {
 			// 正常情况：创建新的用户消息
 			userMessage = createMessage("user", userTextForChat);
@@ -159,9 +157,7 @@ export function useAgentHandler({
 			// 如果任务步骤（TodoWrite）已生成，用专门的 task_list 卡片承接
 			if (currentTaskId) {
 				const task = agentStore.getState().currentTask;
-				const todos = task?.metadata
-					? (task.metadata as any).todos
-					: undefined;
+				const todos = task?.metadata ? (task.metadata as any).todos : undefined;
 				const hasTodos = Array.isArray(todos) && todos.length > 0;
 				if (hasTodos) {
 					blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
@@ -193,25 +189,21 @@ export function useAgentHandler({
 			const taskImagePaths = getTaskImageArtifactPaths(
 				agentStore.getState().currentTask?.artifacts,
 			);
-			const blocks: ChatMessageBlock[] = streamBuilder
-				.getBlocks()
-				.map((b) => {
-					if (b.type !== "text") return b;
-					return {
-						type: "text",
-						text: replaceDataImageMarkdownWithPaths(
-							normalizeRuntimeText(b.text),
-							taskImagePaths,
-						),
-					} as const;
-				});
+			const blocks: ChatMessageBlock[] = streamBuilder.getBlocks().map((b) => {
+				if (b.type !== "text") return b;
+				return {
+					type: "text",
+					text: replaceDataImageMarkdownWithPaths(
+						normalizeRuntimeText(b.text),
+						taskImagePaths,
+					),
+				} as const;
+			});
 
 			// Keep Todo list card after completion
 			if (currentTaskId) {
 				const task = agentStore.getState().currentTask;
-				const todos = task?.metadata
-					? (task.metadata as any).todos
-					: undefined;
+				const todos = task?.metadata ? (task.metadata as any).todos : undefined;
 				const hasTodos = Array.isArray(todos) && todos.length > 0;
 				if (hasTodos) {
 					blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
@@ -399,9 +391,8 @@ export function useAgentHandler({
 				streamBuilder.flushParser();
 				const finalRawText = rawText || getStreamText();
 				const forcedFinalState = agentStore.getState();
-				const forcedTokenUsage = (
-					forcedFinalState.currentTask?.metadata as any
-				)?.tokenUsage as
+				const forcedTokenUsage = (forcedFinalState.currentTask?.metadata as any)
+					?.tokenUsage as
 					| {
 							promptTokens: number;
 							completionTokens: number;
@@ -501,12 +492,13 @@ export function useAgentHandler({
 				hasActiveDoc,
 			});
 			const systemPrompt = chatPromptWithBudget.prompt;
-			const conversationMessagesForAgent =
-				buildConversationMessagesForAgentRun({
+			const conversationMessagesForAgent = buildConversationMessagesForAgentRun(
+				{
 					sessionMessages: session.messages,
 					currentUserMessage: userMessage,
 					skipUserMessage,
-				});
+				},
+			);
 			const conversationContext = buildAgentConversationContext(
 				conversationMessagesForAgent,
 				content,
@@ -532,8 +524,7 @@ export function useAgentHandler({
 					if (!content && ctx.sourceId) {
 						try {
 							const detail = await getSourceDetail(ctx.sourceId);
-							content =
-								detail.note?.content || detail.source.description || "";
+							content = detail.note?.content || detail.source.description || "";
 							debugLog(
 								"[CopilotSidebar] 加载资料内容:",
 								ctx.title,
@@ -782,9 +773,7 @@ export function useAgentHandler({
 				const paths = Array.isArray(output?.image_paths)
 					? (output.image_paths as string[])
 					: [];
-				return paths.some(
-					(p) => typeof p === "string" && p.trim().length > 0,
-				);
+				return paths.some((p) => typeof p === "string" && p.trim().length > 0);
 			});
 
 			// 如果有图片生成但没有文本，使用空白或简短提示；否则使用默认失败消息
@@ -799,9 +788,7 @@ export function useAgentHandler({
 			});
 			const result = replaceDataImageMarkdownWithPaths(
 				normalizeRuntimeText(protocol.displayContent),
-				getTaskImageArtifactPaths(
-					agentStore.getState().currentTask?.artifacts,
-				),
+				getTaskImageArtifactPaths(agentStore.getState().currentTask?.artifacts),
 			);
 
 			// Agent 模式下我们总是走"流式消息"，但这会导致 create-doc / update-doc 协议没有被执行。
@@ -996,8 +983,7 @@ export function useAgentHandler({
 				watchdogTimer = null;
 			}
 			if (forcedFinalized) return;
-			const errorMessage =
-				error instanceof Error ? error.message : "未知错误";
+			const errorMessage = error instanceof Error ? error.message : "未知错误";
 			const taskId = currentTaskId || null;
 			const errorState = agentStore.getState();
 			const assistantMessage = createMessage(

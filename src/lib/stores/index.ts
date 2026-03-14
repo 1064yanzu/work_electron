@@ -19,17 +19,33 @@ export type {
 } from "./types";
 
 // 工厂函数
-export { createStore, createUseStore, createUseStoreSelector } from "./createStore";
+export {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 export type { StoreApi } from "./createStore";
 
 // 布局 Store
-export { layoutStore, useLayoutStore, useLayoutStoreSelector } from "./layoutStore";
+export {
+	layoutStore,
+	useLayoutStore,
+	useLayoutStoreSelector,
+} from "./layoutStore";
 
 // 编辑器 Store
-export { editorStore, useEditorStore, useEditorStoreSelector } from "./editorStore";
+export {
+	editorStore,
+	useEditorStore,
+	useEditorStoreSelector,
+} from "./editorStore";
 
 // 研究 Store
-export { researchStore, useResearchStore, useResearchStoreSelector } from "./researchStore";
+export {
+	researchStore,
+	useResearchStore,
+	useResearchStoreSelector,
+} from "./researchStore";
 
 // 标签页 Store
 export { tabStore, useTabStore, useTabStoreSelector } from "./tabStore";

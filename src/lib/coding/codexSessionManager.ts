@@ -75,14 +75,20 @@ export class CodexSessionManager implements ICodingSessionManager {
 			},
 		);
 
-			try {
-				console.log(`[CodexSessionManager] sending with model: ${options.model || "(default)"}, cwd: ${options.cwd}`);
-				console.log(`[CodexSessionManager] codex options: reasoningEffort=${options.codexReasoningEffort || "(default)"}, planMode=${options.codexPlanMode ?? false}`);
-				this.runId = await invoke<string>("codex_session_start", {
-					prompt: promptWithContext,
-					cwd: options.cwd,
-					model: options.model,
-				approvalMode: (options.approvalMode as CodingApprovalMode | undefined) ?? "on-request",
+		try {
+			console.log(
+				`[CodexSessionManager] sending with model: ${options.model || "(default)"}, cwd: ${options.cwd}`,
+			);
+			console.log(
+				`[CodexSessionManager] codex options: reasoningEffort=${options.codexReasoningEffort || "(default)"}, planMode=${options.codexPlanMode ?? false}`,
+			);
+			this.runId = await invoke<string>("codex_session_start", {
+				prompt: promptWithContext,
+				cwd: options.cwd,
+				model: options.model,
+				approvalMode:
+					(options.approvalMode as CodingApprovalMode | undefined) ??
+					"on-request",
 				resumeSessionId: options.resumeSessionId,
 				workspaceContext: options.workspaceContext,
 				reasoningEffort: options.codexReasoningEffort,
@@ -295,7 +301,9 @@ export class CodexSessionManager implements ICodingSessionManager {
 		codingSessionStore.setSdkSessionId(sessionId);
 	}
 
-	async control(action: RuntimeControlAction): Promise<{ success: boolean; error?: string }> {
+	async control(
+		action: RuntimeControlAction,
+	): Promise<{ success: boolean; error?: string }> {
 		if (!this.runId) {
 			if (action.type === "resume" && action.sessionId) {
 				this.sessionId = action.sessionId;

@@ -2,17 +2,17 @@
  * CodingHome 页面的 CLI 历史会话区域
  * 展示从 Codex CLI / Claude Code CLI 同步来的最近会话
  */
-import { Terminal } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ExternalThreadMeta } from '../../../electron/shared/external-history-types';
+import { Terminal } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ExternalThreadMeta } from "../../../electron/shared/external-history-types";
 import {
 	externalHistoryStore,
 	useExternalHistorySelector,
-} from '../../lib/stores/externalHistoryStore';
-import { importExternalThread } from '../../lib/coding/historyImporter';
-import { codingThreadStore } from '../../lib/stores/codingThreadStore';
-import { ExternalThreadBadge } from './threadList/ExternalThreadBadge';
-import { formatRelativeTime } from './threadList/threadListUtils';
+} from "../../lib/stores/externalHistoryStore";
+import { importExternalThread } from "../../lib/coding/historyImporter";
+import { codingThreadStore } from "../../lib/stores/codingThreadStore";
+import { ExternalThreadBadge } from "./threadList/ExternalThreadBadge";
+import { formatRelativeTime } from "./threadList/threadListUtils";
 
 interface RecentCliSessionsProps {
 	onOpenThread?: (threadId: string) => void;
@@ -23,7 +23,9 @@ const MAX_DISPLAY = 4;
 export function RecentCliSessions({ onOpenThread }: RecentCliSessionsProps) {
 	const availability = useExternalHistorySelector((s) => s.availability);
 	const codexThreads = useExternalHistorySelector((s) => s.codexThreads);
-	const claudeCodeThreads = useExternalHistorySelector((s) => s.claudeCodeThreads);
+	const claudeCodeThreads = useExternalHistorySelector(
+		(s) => s.claudeCodeThreads,
+	);
 	const [importingId, setImportingId] = useState<string | null>(null);
 
 	const hasAnyBackend = availability.codex || availability.claudeCode;
@@ -53,7 +55,7 @@ export function RecentCliSessions({ onOpenThread }: RecentCliSessionsProps) {
 					onOpenThread?.(thread.id);
 				}
 			} catch (err) {
-				console.error('[RecentCliSessions] 导入外部线程失败:', err);
+				console.error("[RecentCliSessions] 导入外部线程失败:", err);
 			} finally {
 				setImportingId(null);
 			}
@@ -78,7 +80,7 @@ export function RecentCliSessions({ onOpenThread }: RecentCliSessionsProps) {
 						key={`${session.source}-${session.id}`}
 						onClick={() => void handleImport(session)}
 						className={`group flex cursor-pointer items-center gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/70 ${
-							importingId === session.id ? 'opacity-60 pointer-events-none' : ''
+							importingId === session.id ? "opacity-60 pointer-events-none" : ""
 						}`}
 					>
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">

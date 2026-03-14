@@ -4,7 +4,9 @@ import type { FeishuDocxExecutionConfig } from "./types";
 const MCP_PROTOCOL_VERSION = "2024-11-05";
 
 function envBool(key: string, fallback: boolean): boolean {
-	const raw = String(process.env[key] || "").trim().toLowerCase();
+	const raw = String(process.env[key] || "")
+		.trim()
+		.toLowerCase();
 	if (!raw) return fallback;
 	return raw === "1" || raw === "true" || raw === "yes";
 }
@@ -22,14 +24,22 @@ function buildConfigFromEnv(): FeishuDocxExecutionConfig {
 		domain: domainRaw === "lark" ? "lark" : "feishu",
 		enableDocWriteOps: envBool("REMOTE_FEISHU_ENABLE_DOC_WRITE_OPS", true),
 		enableDocFileDelete: envBool("REMOTE_FEISHU_ENABLE_DOC_FILE_DELETE", false),
-		enableLegacyDocsRead: envBool("REMOTE_FEISHU_ENABLE_LEGACY_DOCS_READ", true),
+		enableLegacyDocsRead: envBool(
+			"REMOTE_FEISHU_ENABLE_LEGACY_DOCS_READ",
+			true,
+		),
 	};
 }
 
-function toErrorPayload(error: unknown): { code: number; message: string; data?: unknown } {
+function toErrorPayload(error: unknown): {
+	code: number;
+	message: string;
+	data?: unknown;
+} {
 	if (error && typeof error === "object") {
 		const record = error as Record<string, unknown>;
-		const message = typeof record.message === "string" ? record.message : "unknown error";
+		const message =
+			typeof record.message === "string" ? record.message : "unknown error";
 		return {
 			code: -32000,
 			message,
@@ -54,7 +64,10 @@ export function startFeishuDocxMcpServerFromEnv(): void {
 
 	let buffer = Buffer.alloc(0);
 	process.stdin.on("data", async (chunk: Buffer | string) => {
-		buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, "utf8")]);
+		buffer = Buffer.concat([
+			buffer,
+			Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, "utf8"),
+		]);
 		while (true) {
 			const marker = buffer.indexOf("\r\n\r\n");
 			if (marker < 0) break;

@@ -2,9 +2,9 @@
  * 子代理活动卡片
  * 显示 spawn 的子代理：类型 + 状态指示 + summary 摘要
  */
-import { Bot, ChevronDown, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import { useState } from 'react';
-import type { SubagentActivity } from '../../../lib/stores/codingSessionTypes';
+import { Bot, ChevronDown, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { useState } from "react";
+import type { SubagentActivity } from "../../../lib/stores/codingSessionTypes";
 
 interface SubagentCardProps {
 	subagent: SubagentActivity;
@@ -13,26 +13,26 @@ interface SubagentCardProps {
 const STATUS_MAP = {
 	running: {
 		icon: Loader2,
-		label: '运行中',
-		color: 'text-[#D96C46]',
-		bg: 'bg-[#D96C46]/5',
-		border: 'border-[#D96C46]/20',
+		label: "运行中",
+		color: "text-[#D96C46]",
+		bg: "bg-[#D96C46]/5",
+		border: "border-[#D96C46]/20",
 		animate: true,
 	},
 	completed: {
 		icon: CheckCircle2,
-		label: '已完成',
-		color: 'text-emerald-500',
-		bg: 'bg-emerald-50 dark:bg-emerald-900/10',
-		border: 'border-emerald-200/50 dark:border-emerald-700/30',
+		label: "已完成",
+		color: "text-emerald-500",
+		bg: "bg-emerald-50 dark:bg-emerald-900/10",
+		border: "border-emerald-200/50 dark:border-emerald-700/30",
 		animate: false,
 	},
 	stopped: {
 		icon: XCircle,
-		label: '已停止',
-		color: 'text-zinc-400',
-		bg: 'bg-zinc-50 dark:bg-zinc-800/50',
-		border: 'border-zinc-200/50 dark:border-zinc-700/30',
+		label: "已停止",
+		color: "text-zinc-400",
+		bg: "bg-zinc-50 dark:bg-zinc-800/50",
+		border: "border-zinc-200/50 dark:border-zinc-700/30",
 		animate: false,
 	},
 } as const;
@@ -43,7 +43,9 @@ export function SubagentCard({ subagent }: SubagentCardProps) {
 	const StatusIcon = cfg.icon;
 
 	return (
-		<div className={`rounded-lg border ${cfg.border} ${cfg.bg} overflow-hidden`}>
+		<div
+			className={`rounded-lg border ${cfg.border} ${cfg.bg} overflow-hidden`}
+		>
 			<button
 				onClick={() => setExpanded(!expanded)}
 				className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
@@ -59,12 +61,12 @@ export function SubagentCard({ subagent }: SubagentCardProps) {
 				)}
 				<div className="flex-1" />
 				<StatusIcon
-					className={`w-3 h-3 ${cfg.color} shrink-0 ${cfg.animate ? 'animate-spin' : ''}`}
+					className={`w-3 h-3 ${cfg.color} shrink-0 ${cfg.animate ? "animate-spin" : ""}`}
 				/>
 				<span className={`text-[10px] ${cfg.color}`}>{cfg.label}</span>
 				{(subagent.summary || subagent.transcriptPath) && (
 					<ChevronDown
-						className={`w-3 h-3 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+						className={`w-3 h-3 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
 					/>
 				)}
 			</button>

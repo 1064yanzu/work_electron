@@ -996,13 +996,15 @@ export default function CopilotSidebar() {
 					>
 						{chatMode === "agent" ? (
 							<>
-								<span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-									codingMode === "ask"
-										? "bg-blue-500"
-										: codingMode === "plan"
-											? "bg-amber-500"
-											: "bg-emerald-500"
-								}`} />
+								<span
+									className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+										codingMode === "ask"
+											? "bg-blue-500"
+											: codingMode === "plan"
+												? "bg-amber-500"
+												: "bg-emerald-500"
+									}`}
+								/>
 								{codingMode === "ask"
 									? "问答模式"
 									: codingMode === "plan"

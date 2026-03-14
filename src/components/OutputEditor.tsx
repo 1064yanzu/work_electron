@@ -47,7 +47,10 @@ export function OutputEditor() {
 	};
 
 	const handleDelete = async (id: string) => {
-		const confirmed = await confirmDialog.warning("确定删除该文档吗？", "删除文档");
+		const confirmed = await confirmDialog.warning(
+			"确定删除该文档吗？",
+			"删除文档",
+		);
 		if (!confirmed) return;
 		try {
 			await deleteOutputAsset(id);

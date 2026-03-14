@@ -3,7 +3,10 @@ import type { DragEvent, MouseEvent } from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fileList, fileMove } from "../lib/api";
 import { buildDocumentTabContextMenu } from "../lib/contextMenu/actions";
-import { useWorkspaceStoreSelector, workspaceStore } from "../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../lib/workspaceStore";
 import { isInteractiveTypingTarget } from "./editor/list/documentListMeta";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { ContextMenu } from "./ui/ContextMenu";
@@ -45,8 +48,12 @@ const DocumentTabItem = memo(function DocumentTabItem({
 	onDragOver: (e: DragEvent, index: number) => void;
 	onDragLeave: () => void;
 }) {
-	const label = useWorkspaceStoreSelector((state) => state.docCache[docId]?.title) || "未命名文档";
-	const dirty = useWorkspaceStoreSelector((state) => Boolean(state.docCache[docId]?.dirty));
+	const label =
+		useWorkspaceStoreSelector((state) => state.docCache[docId]?.title) ||
+		"未命名文档";
+	const dirty = useWorkspaceStoreSelector((state) =>
+		Boolean(state.docCache[docId]?.dirty),
+	);
 	const isDragging = dragIndex === index;
 	const isDropTarget = dropIndex === index && dragIndex !== index;
 
@@ -65,8 +72,7 @@ const DocumentTabItem = memo(function DocumentTabItem({
 					? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
 					: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
 				isDragging && "opacity-40 scale-95",
-				isDropTarget &&
-					"border-primary/50 bg-primary/5 dark:bg-primary/10",
+				isDropTarget && "border-primary/50 bg-primary/5 dark:bg-primary/10",
 			)}
 		>
 			<div
@@ -265,18 +271,15 @@ export default function DocumentTabs({
 	]);
 
 	// --- 拖拽事件处理 ---
-	const handleDragStart = useCallback(
-		(e: React.DragEvent, index: number) => {
-			setDragIndex(index);
-			e.dataTransfer.effectAllowed = "move";
-			e.dataTransfer.setData("text/plain", String(index));
-			// 半透明拖拽效果
-			if (e.currentTarget instanceof HTMLElement) {
-				e.currentTarget.style.opacity = "0.4";
-			}
-		},
-		[],
-	);
+	const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+		setDragIndex(index);
+		e.dataTransfer.effectAllowed = "move";
+		e.dataTransfer.setData("text/plain", String(index));
+		// 半透明拖拽效果
+		if (e.currentTarget instanceof HTMLElement) {
+			e.currentTarget.style.opacity = "0.4";
+		}
+	}, []);
 
 	const handleDragEnd = useCallback(
 		(e: React.DragEvent) => {
@@ -330,7 +333,11 @@ export default function DocumentTabs({
 						onClose={closeCurrentDoc}
 						onContextMenu={(e, targetDocId) => {
 							e.preventDefault();
-							setContextMenu({ x: e.clientX, y: e.clientY, docId: targetDocId });
+							setContextMenu({
+								x: e.clientX,
+								y: e.clientY,
+								docId: targetDocId,
+							});
 						}}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}

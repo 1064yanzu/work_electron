@@ -3,21 +3,25 @@
  * 管理多个 CodingThread 的 CRUD、持久化（localStorage）、当前活跃线程切换
  */
 
-import { useCallback, useRef, useSyncExternalStore } from 'react';
-import type { CodingThread, CodingThreadPersist, CodingThreadSource } from './codingThreadTypes';
-import type { CodingBackend, CodingMode } from './codingAgentStore';
-import type { RecentCodingProject } from './codingWorkspaceStore';
+import { useCallback, useRef, useSyncExternalStore } from "react";
+import type {
+	CodingThread,
+	CodingThreadPersist,
+	CodingThreadSource,
+} from "./codingThreadTypes";
+import type { CodingBackend, CodingMode } from "./codingAgentStore";
+import type { RecentCodingProject } from "./codingWorkspaceStore";
 import type {
 	BackendCapabilityMatrix,
 	CodingApprovalMode,
-} from '../../../electron/shared/coding-workspace';
-import type { ExternalThreadMeta } from '../../../electron/shared/external-history-types';
-import { DEFAULT_AI_CODING_SETTINGS } from '../coding/codingSettings';
-import { normalizePath, findMatchingPathKey } from '../coding/pathUtils';
+} from "../../../electron/shared/coding-workspace";
+import type { ExternalThreadMeta } from "../../../electron/shared/external-history-types";
+import { DEFAULT_AI_CODING_SETTINGS } from "../coding/codingSettings";
+import { normalizePath, findMatchingPathKey } from "../coding/pathUtils";
 
 // === Constants ===
 
-const STORAGE_KEY = 'ipo-coding-threads';
+const STORAGE_KEY = "ipo-coding-threads";
 
 // === State ===
 
@@ -41,23 +45,23 @@ export interface CodingProjectThreadGroup {
 type CodingThreadUpdates = Partial<
 	Pick<
 		CodingThread,
-		| 'title'
-		| 'codingMode'
-		| 'backend'
-		| 'providerId'
-		| 'model'
-		| 'approvalMode'
-		| 'workspaceProfileId'
-		| 'capabilitiesSnapshot'
-		| 'status'
-		| 'sdkSessionId'
-		| 'runtimeSessionId'
-		| 'lastRunAt'
-		| 'lastRunStatus'
-		| 'lastRunSummary'
-		| 'diffStats'
-		| 'source'
-		| 'externalThreadId'
+		| "title"
+		| "codingMode"
+		| "backend"
+		| "providerId"
+		| "model"
+		| "approvalMode"
+		| "workspaceProfileId"
+		| "capabilitiesSnapshot"
+		| "status"
+		| "sdkSessionId"
+		| "runtimeSessionId"
+		| "lastRunAt"
+		| "lastRunStatus"
+		| "lastRunSummary"
+		| "diffStats"
+		| "source"
+		| "externalThreadId"
 	>
 >;
 
@@ -68,29 +72,29 @@ function genThreadId(): string {
 }
 
 function extractProjectName(projectPath: string): string {
-	return projectPath.split('/').pop() || projectPath;
+	return projectPath.split("/").pop() || projectPath;
 }
 
 function getDefaultModel(backend: CodingBackend): string {
-	return backend === 'codex'
+	return backend === "codex"
 		? DEFAULT_AI_CODING_SETTINGS.codexDefaultModel
 		: DEFAULT_AI_CODING_SETTINGS.claudeDefaultModel;
 }
 
 function getDefaultApprovalMode(backend: CodingBackend): CodingApprovalMode {
-	return backend === 'codex'
+	return backend === "codex"
 		? DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode
 		: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode;
 }
 
 function normalizeThread(thread: CodingThreadPersist): CodingThread {
-	const backend = thread.backend ?? 'claude-code';
+	const backend = thread.backend ?? "claude-code";
 	return {
 		...thread,
 		backend,
 		model: thread.model ?? getDefaultModel(backend),
 		approvalMode: thread.approvalMode ?? getDefaultApprovalMode(backend),
-		status: 'idle',
+		status: "idle",
 		diffStats: thread.diffStats ?? { additions: 0, deletions: 0 },
 	};
 }
@@ -110,7 +114,9 @@ function loadThreads(): CodingThread[] {
 function persistThreads(threads: CodingThread[]) {
 	try {
 		// 只持久化元数据，不存 status
-		const data: CodingThreadPersist[] = threads.map(({ status: _status, ...rest }) => rest);
+		const data: CodingThreadPersist[] = threads.map(
+			({ status: _status, ...rest }) => rest,
+		);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 	} catch {
 		// ignore
@@ -143,7 +149,9 @@ class CodingThreadStore {
 	/** 获取当前活跃线程 */
 	getActiveThread(): CodingThread | null {
 		if (!this.state.activeThreadId) return null;
-		return this.state.threads.find((t) => t.id === this.state.activeThreadId) ?? null;
+		return (
+			this.state.threads.find((t) => t.id === this.state.activeThreadId) ?? null
+		);
 	}
 
 	/** 按 ID 获取线程 */
@@ -170,7 +178,7 @@ class CodingThreadStore {
 	): CodingThread {
 		const now = Date.now();
 		const projectName = extractProjectName(projectPath);
-		const backend = options?.backend || 'claude-code';
+		const backend = options?.backend || "claude-code";
 		const thread: CodingThread = {
 			id: genThreadId(),
 			title: options?.title || projectName,
@@ -183,10 +191,10 @@ class CodingThreadStore {
 			approvalMode: options?.approvalMode || getDefaultApprovalMode(backend),
 			workspaceProfileId: options?.workspaceProfileId,
 			capabilitiesSnapshot: options?.capabilitiesSnapshot,
-			codingMode: options?.codingMode || 'code',
-			status: 'idle',
+			codingMode: options?.codingMode || "code",
+			status: "idle",
 			diffStats: { additions: 0, deletions: 0 },
-			source: options?.source || 'local',
+			source: options?.source || "local",
 			externalThreadId: options?.externalThreadId,
 			forkedFrom: options?.forkedFrom,
 		};
@@ -226,7 +234,8 @@ class CodingThreadStore {
 					? {
 							...t,
 							...updates,
-							diffStats: updates.diffStats ?? t.diffStats ?? { additions: 0, deletions: 0 },
+							diffStats: updates.diffStats ??
+								t.diffStats ?? { additions: 0, deletions: 0 },
 							updatedAt: Date.now(),
 						}
 					: t,
@@ -272,7 +281,7 @@ class CodingThreadStore {
 
 	getProjectGroups(
 		recentProjects: RecentCodingProject[],
-		searchQuery = '',
+		searchQuery = "",
 		externalThreads: ExternalThreadMeta[] = [],
 		localThreadsOverride?: CodingThread[],
 	): CodingProjectThreadGroup[] {
@@ -349,24 +358,39 @@ class CodingThreadStore {
 
 		return Array.from(groups.values())
 			.map((group) => {
-				const threads = [...group.threads].sort((a, b) => b.updatedAt - a.updatedAt);
-				const extThreads = [...group.externalThreads].sort((a, b) => b.updatedAt - a.updatedAt);
+				const threads = [...group.threads].sort(
+					(a, b) => b.updatedAt - a.updatedAt,
+				);
+				const extThreads = [...group.externalThreads].sort(
+					(a, b) => b.updatedAt - a.updatedAt,
+				);
 				const projectMatched =
 					query.length === 0 ||
 					group.projectName.toLowerCase().includes(query) ||
 					group.projectPath.toLowerCase().includes(query);
-				const visibleThreads = projectMatched || query.length === 0
-					? threads
-					: threads.filter((thread) => thread.title.toLowerCase().includes(query));
-				const visibleExternal = projectMatched || query.length === 0
-					? extThreads
-					: extThreads.filter((ext) => ext.title.toLowerCase().includes(query));
+				const visibleThreads =
+					projectMatched || query.length === 0
+						? threads
+						: threads.filter((thread) =>
+								thread.title.toLowerCase().includes(query),
+							);
+				const visibleExternal =
+					projectMatched || query.length === 0
+						? extThreads
+						: extThreads.filter((ext) =>
+								ext.title.toLowerCase().includes(query),
+							);
 
-				if (!projectMatched && visibleThreads.length === 0 && visibleExternal.length === 0) {
+				if (
+					!projectMatched &&
+					visibleThreads.length === 0 &&
+					visibleExternal.length === 0
+				) {
 					return null;
 				}
 
-				const latestLocalAt = visibleThreads[0]?.updatedAt ?? threads[0]?.updatedAt ?? 0;
+				const latestLocalAt =
+					visibleThreads[0]?.updatedAt ?? threads[0]?.updatedAt ?? 0;
 				const latestExternalAt = visibleExternal[0]?.updatedAt ?? 0;
 
 				return {
@@ -374,8 +398,13 @@ class CodingThreadStore {
 					projectName: group.projectName,
 					threads: visibleThreads,
 					externalThreads: visibleExternal,
-					hasThreads: group.threads.length > 0 || group.externalThreads.length > 0,
-					lastActivityAt: Math.max(latestLocalAt, latestExternalAt, group.recentLastOpenedAt),
+					hasThreads:
+						group.threads.length > 0 || group.externalThreads.length > 0,
+					lastActivityAt: Math.max(
+						latestLocalAt,
+						latestExternalAt,
+						group.recentLastOpenedAt,
+					),
 				} satisfies CodingProjectThreadGroup;
 			})
 			.filter((group): group is CodingProjectThreadGroup => group !== null)
@@ -397,7 +426,10 @@ export function useCodingThreadSelector<T>(
 
 	const getSnapshot = useCallback(() => {
 		const nextState = codingThreadStore.getState();
-		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+		if (
+			lastStateRef.current === nextState &&
+			lastSelectedRef.current !== null
+		) {
 			return lastSelectedRef.current;
 		}
 

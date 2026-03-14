@@ -2,10 +2,10 @@
  * CLI 历史线程分组
  * 展示从外部 CLI 同步来的线程列表
  */
-import { ChevronDown, ChevronRight, Terminal } from 'lucide-react';
-import { useState } from 'react';
-import type { ExternalThreadMeta } from '../../../../electron/shared/external-history-types';
-import { ExternalThreadRow } from './ExternalThreadRow';
+import { ChevronDown, ChevronRight, Terminal } from "lucide-react";
+import { useState } from "react";
+import type { ExternalThreadMeta } from "../../../../electron/shared/external-history-types";
+import { ExternalThreadRow } from "./ExternalThreadRow";
 
 interface ExternalThreadGroupProps {
 	threads: ExternalThreadMeta[];
@@ -61,7 +61,7 @@ export function ExternalThreadGroup({
 							onClick={() => setExpanded((e) => !e)}
 							className="ml-2 rounded-md px-2 py-1 text-[12px] text-zinc-400 transition-colors hover:bg-white/40 hover:text-zinc-600 dark:hover:bg-white/[0.04] dark:hover:text-zinc-300"
 						>
-							{expanded ? '收起' : `展开显示 (${hiddenCount})`}
+							{expanded ? "收起" : `展开显示 (${hiddenCount})`}
 						</button>
 					)}
 				</div>

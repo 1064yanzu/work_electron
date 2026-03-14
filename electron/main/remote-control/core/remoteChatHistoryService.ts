@@ -198,7 +198,9 @@ export class RemoteChatHistoryService {
 		});
 	}
 
-	private buildBlocksForContext(ctx: PersistRunContext): Array<Record<string, unknown>> {
+	private buildBlocksForContext(
+		ctx: PersistRunContext,
+	): Array<Record<string, unknown>> {
 		const blocks: Array<Record<string, unknown>> = [];
 		for (const toolCallId of ctx.toolOrder) {
 			const block = ctx.toolsById.get(toolCallId);
@@ -405,10 +407,7 @@ export class RemoteChatHistoryService {
 			role: "assistant",
 			content: input.content,
 			metadata,
-			blocks: [
-				{ type: "text", text: input.content },
-				...blocks,
-			],
+			blocks: [{ type: "text", text: input.content }, ...blocks],
 		});
 	}
 

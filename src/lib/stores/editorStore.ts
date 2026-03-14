@@ -1,6 +1,10 @@
 // 编辑器状态管理 - 文档编辑、多标签、AI 审查等
 
-import { createStore, createUseStore, createUseStoreSelector } from "./createStore";
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 import type { AIReviewState, DocCacheItem, EditorState } from "./types";
 
 const initialAIReview: AIReviewState = {
@@ -236,7 +240,11 @@ function startAIReview(
 }
 
 // 开始 AI 新建文档提案（create-doc）
-function startAICreateProposal(title: string, summary: string, content: string) {
+function startAICreateProposal(
+	title: string,
+	summary: string,
+	content: string,
+) {
 	store.setState((state) => ({
 		...state,
 		aiReview: {

@@ -1,11 +1,14 @@
 // 资料侧边栏 - 主容器（组合各子模块）
 
+import { ArrowLeft, Search, Settings } from "lucide-react";
 import {
-	ArrowLeft,
-	Search,
-	Settings,
-} from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+	Suspense,
+	lazy,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	fileDelete,
@@ -35,7 +38,10 @@ import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
 
 // Extracted hooks
-import { UNASSIGNED_FOLDER_ID, useFolderManagement } from "./hooks/useFolderManagement";
+import {
+	UNASSIGNED_FOLDER_ID,
+	useFolderManagement,
+} from "./hooks/useFolderManagement";
 import { useSourceDragDrop } from "./hooks/useSourceDragDrop";
 import { useSourceImport } from "./hooks/useSourceImport";
 import { useSourceSelection } from "./hooks/useSourceSelection";
@@ -44,7 +50,10 @@ import { useSourceSelection } from "./hooks/useSourceSelection";
 import { CardsView } from "./CardsView";
 import { ResearchView } from "./ResearchView";
 import { ResourceModals } from "./ResourceModals";
-import { SourceDetailView, type SourceDetailViewHandle } from "./SourceDetailView";
+import {
+	SourceDetailView,
+	type SourceDetailViewHandle,
+} from "./SourceDetailView";
 import { SourceListView } from "./SourceListView";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
@@ -114,10 +123,7 @@ export default function ResourceSidebar({
 		};
 		document.addEventListener("visibilitychange", handleVisibilityChange);
 		return () => {
-			document.removeEventListener(
-				"visibilitychange",
-				handleVisibilityChange,
-			);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
 		};
 	}, []);
 
@@ -529,10 +535,11 @@ export default function ResourceSidebar({
 					<button
 						key={tab}
 						onClick={() => setLeftSidebarView(tab)}
-						className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${isActive
-							? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm"
-							: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
-							}`}
+						className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+							isActive
+								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm"
+								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
+						}`}
 					>
 						{tab === "sources" ? "资料" : "卡片"}
 					</button>
@@ -552,7 +559,9 @@ export default function ResourceSidebar({
 			onDrop={dragDrop.handleContainerDrop}
 		>
 			<DragAndDropImportUI
-				isDragging={sourceImport.dragImport.isDragging && !dragDrop.draggedSourceId}
+				isDragging={
+					sourceImport.dragImport.isDragging && !dragDrop.draggedSourceId
+				}
 				queue={sourceImport.dragImport.queue}
 				queueStatus={sourceImport.dragImport.queueStatus}
 				onStart={sourceImport.handleStartDragImport}
@@ -592,7 +601,8 @@ export default function ResourceSidebar({
 			) : null}
 
 			{/* 文件夹右键菜单 */}
-			{folderMgmt.folderContextMenu && computedFolderContextMenuItems.length > 0 ? (
+			{folderMgmt.folderContextMenu &&
+			computedFolderContextMenuItems.length > 0 ? (
 				<ContextMenu
 					x={folderMgmt.folderContextMenu.x}
 					y={folderMgmt.folderContextMenu.y}

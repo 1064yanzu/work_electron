@@ -17,11 +17,13 @@ export function computeLineStats(
 	newContent: string,
 ): DiffLineStats {
 	if (!oldContent && !newContent) return { additions: 0, deletions: 0 };
-	if (!oldContent) return { additions: newContent.split('\n').length, deletions: 0 };
-	if (!newContent) return { additions: 0, deletions: oldContent.split('\n').length };
+	if (!oldContent)
+		return { additions: newContent.split("\n").length, deletions: 0 };
+	if (!newContent)
+		return { additions: 0, deletions: oldContent.split("\n").length };
 
-	const oldLines = oldContent.split('\n');
-	const newLines = newContent.split('\n');
+	const oldLines = oldContent.split("\n");
+	const newLines = newContent.split("\n");
 
 	// 构建行出现次数 map
 	const oldMap = new Map<string, number>();

@@ -12,10 +12,7 @@ function toUserIdType(value: unknown): FeishuUserIdType | undefined {
 export class FeishuDocxApiAdapter {
 	constructor(private readonly client: Lark.Client) {}
 
-	async docxCreateDocument(input: {
-		title?: string;
-		folder_token?: string;
-	}) {
+	async docxCreateDocument(input: { title?: string; folder_token?: string }) {
 		return this.client.docx.v1.document.create({
 			data: {
 				title: input.title,

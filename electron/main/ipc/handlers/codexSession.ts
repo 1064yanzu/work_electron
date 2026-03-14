@@ -68,12 +68,16 @@ export function createCodexSessionHandlers(deps: CodexHandlerDeps) {
 				planMode: input.planMode,
 			};
 
-			const proc = spawnCodexSession(binary, options, (event: CodexOutputEvent) => {
-				emitCodexEvent(win, runId, event);
-				if (event.type === "done" || event.type === "error") {
-					activeSessions.delete(runId);
-				}
-			});
+			const proc = spawnCodexSession(
+				binary,
+				options,
+				(event: CodexOutputEvent) => {
+					emitCodexEvent(win, runId, event);
+					if (event.type === "done" || event.type === "error") {
+						activeSessions.delete(runId);
+					}
+				},
+			);
 
 			activeSessions.set(runId, proc);
 			return runId;

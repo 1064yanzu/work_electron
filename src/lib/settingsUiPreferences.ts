@@ -47,4 +47,3 @@ export function setTechnicalGroupExpandedPreference(expanded: boolean) {
 		// ignore
 	}
 }
-

@@ -204,7 +204,9 @@ async function insertSource(
 			input.project_id ?? null,
 			input.folder_id ?? null,
 			input.source_type,
-			input.origin_type ?? sourceTypeToOriginType(input.source_type) ?? "manual",
+			input.origin_type ??
+				sourceTypeToOriginType(input.source_type) ??
+				"manual",
 			input.category,
 			input.description ?? null,
 			input.thumbnail ?? null,

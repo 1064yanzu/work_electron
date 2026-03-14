@@ -1,5 +1,11 @@
 import { Bot, Download, RefreshCcw, Save } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	type ReactNode,
+} from "react";
 import type {
 	BackendCapabilityMatrix,
 	CodingApprovalMode,
@@ -29,7 +35,10 @@ import {
 	SettingsSectionTitle,
 } from "../ui/SettingsPrimitives";
 
-const CLAUDE_APPROVAL_OPTIONS: Array<{ value: CodingApprovalMode; label: string }> = [
+const CLAUDE_APPROVAL_OPTIONS: Array<{
+	value: CodingApprovalMode;
+	label: string;
+}> = [
 	{ value: "default", label: "default" },
 	{ value: "acceptEdits", label: "acceptEdits" },
 	{ value: "dontAsk", label: "dontAsk" },
@@ -37,7 +46,10 @@ const CLAUDE_APPROVAL_OPTIONS: Array<{ value: CodingApprovalMode; label: string 
 	{ value: "bypassPermissions", label: "bypassPermissions" },
 ];
 
-const CODEX_APPROVAL_OPTIONS: Array<{ value: CodingApprovalMode; label: string }> = [
+const CODEX_APPROVAL_OPTIONS: Array<{
+	value: CodingApprovalMode;
+	label: string;
+}> = [
 	{ value: "untrusted", label: "untrusted" },
 	{ value: "on-request", label: "on-request" },
 	{ value: "on-failure", label: "on-failure" },
@@ -54,14 +66,20 @@ const HIGHLIGHT_THEME_OPTIONS = [
 ];
 
 export function AICodingSettings() {
-	const [settings, setSettings] = useState<AICodingSettings>(DEFAULT_AI_CODING_SETTINGS);
-	const [capabilities, setCapabilities] = useState<Record<CodingBackendId, BackendCapabilityMatrix | null>>({
+	const [settings, setSettings] = useState<AICodingSettings>(
+		DEFAULT_AI_CODING_SETTINGS,
+	);
+	const [capabilities, setCapabilities] = useState<
+		Record<CodingBackendId, BackendCapabilityMatrix | null>
+	>({
 		"claude-code": null,
 		codex: null,
 	});
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [cliDetection, setCliDetection] = useState<Record<CodingBackendId, CliDetectionResult | null>>({
+	const [cliDetection, setCliDetection] = useState<
+		Record<CodingBackendId, CliDetectionResult | null>
+	>({
 		"claude-code": null,
 		codex: null,
 	});
@@ -70,7 +88,12 @@ export function AICodingSettings() {
 		authMethod: "oauth" | "api_key" | "env_key" | "none";
 		email?: string;
 		model?: string;
-		mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+		mcpServers?: Array<{
+			name: string;
+			command?: string;
+			url?: string;
+			type?: string;
+		}>;
 	} | null>(null);
 	const [authLoading, setAuthLoading] = useState(false);
 	const [syncingCli, setSyncingCli] = useState(false);
@@ -80,7 +103,9 @@ export function AICodingSettings() {
 		try {
 			const [nextSettings, nextCapabilities] = await Promise.all([
 				getAICodingSettings(),
-				getCodingBackendCapabilities() as Promise<Record<CodingBackendId, BackendCapabilityMatrix>>,
+				getCodingBackendCapabilities() as Promise<
+					Record<CodingBackendId, BackendCapabilityMatrix>
+				>,
 			]);
 			setSettings(nextSettings);
 			setCapabilities({
@@ -95,7 +120,10 @@ export function AICodingSettings() {
 				detectCliBinary("claude-code", nextSettings.claudeCliPath || undefined),
 				detectCliBinary("codex", nextSettings.codexCliPath || undefined),
 			]);
-			setCliDetection({ "claude-code": claudeDetection, codex: codexDetection });
+			setCliDetection({
+				"claude-code": claudeDetection,
+				codex: codexDetection,
+			});
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : String(error));
 		} finally {
@@ -162,11 +190,15 @@ export function AICodingSettings() {
 			const hasAnything = cliConfig.claude ?? cliConfig.codex;
 			if (!silent) {
 				if (!hasAnything) {
-					toast.error("未找到本地 CLI 配置文件（~/.claude/settings.json 或 ~/.codex/config.toml）");
+					toast.error(
+						"未找到本地 CLI 配置文件（~/.claude/settings.json 或 ~/.codex/config.toml）",
+					);
 				} else if (synced === 0) {
 					toast.success("已检测到 CLI 配置，当前设置已是最新，无需同步");
 				} else {
-					toast.success(`已从本地 CLI 配置同步 ${synced} 项设置，请点击保存生效`);
+					toast.success(
+						`已从本地 CLI 配置同步 ${synced} 项设置，请点击保存生效`,
+					);
 				}
 			} else if (synced > 0) {
 				// 静默模式下自动保存同步到的配置
@@ -205,7 +237,9 @@ export function AICodingSettings() {
 							title="读取 ~/.claude/settings.json 与 ~/.codex/config.toml，同步已检测到的模型等配置"
 							className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
 						>
-							<Download className={`h-4 w-4 ${syncingCli ? "animate-pulse" : ""}`} />
+							<Download
+								className={`h-4 w-4 ${syncingCli ? "animate-pulse" : ""}`}
+							/>
 							从 CLI 同步
 						</button>
 						<button
@@ -213,7 +247,9 @@ export function AICodingSettings() {
 							onClick={() => void load()}
 							className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
 						>
-							<RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+							<RefreshCcw
+								className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+							/>
 							刷新
 						</button>
 						<button
@@ -253,7 +289,9 @@ export function AICodingSettings() {
 							onChange={(event) =>
 								setSettings((current) => ({
 									...current,
-									workspaceMemoryPolicy: event.target.value as "manual" | "always",
+									workspaceMemoryPolicy: event.target.value as
+										| "manual"
+										| "always",
 								}))
 							}
 							options={[
@@ -293,12 +331,20 @@ export function AICodingSettings() {
 							onChange={(event) =>
 								setSettings((current) => ({
 									...current,
-									claudeProxyMode: event.target.value as "proxy" | "transparent",
+									claudeProxyMode: event.target.value as
+										| "proxy"
+										| "transparent",
 								}))
 							}
 							options={[
-								{ value: "transparent", label: "透明模式（使用用户自己的 Claude 配置）" },
-								{ value: "proxy", label: "代理模式（通过本地代理，支持多 Provider 路由）" },
+								{
+									value: "transparent",
+									label: "透明模式（使用用户自己的 Claude 配置）",
+								},
+								{
+									value: "proxy",
+									label: "代理模式（通过本地代理，支持多 Provider 路由）",
+								},
 							]}
 						/>
 					</Field>
@@ -329,7 +375,10 @@ export function AICodingSettings() {
 						<input
 							value={settings.codexDefaultModel}
 							onChange={(event) =>
-								setSettings((current) => ({ ...current, codexDefaultModel: event.target.value }))
+								setSettings((current) => ({
+									...current,
+									codexDefaultModel: event.target.value,
+								}))
 							}
 							className={INPUT_CLASSNAME}
 						/>
@@ -340,7 +389,8 @@ export function AICodingSettings() {
 							onChange={(event) =>
 								setSettings((current) => ({
 									...current,
-									codexDefaultApprovalMode: event.target.value as CodingApprovalMode,
+									codexDefaultApprovalMode: event.target
+										.value as CodingApprovalMode,
 								}))
 							}
 							options={CODEX_APPROVAL_OPTIONS}
@@ -370,7 +420,10 @@ export function AICodingSettings() {
 						<input
 							value={settings.codexCliPath}
 							onChange={(event) =>
-								setSettings((current) => ({ ...current, codexCliPath: event.target.value }))
+								setSettings((current) => ({
+									...current,
+									codexCliPath: event.target.value,
+								}))
 							}
 							placeholder="留空自动检测"
 							className={`${INPUT_CLASSNAME} font-mono text-xs`}
@@ -393,7 +446,10 @@ export function AICodingSettings() {
 							onChange={(event) =>
 								setSettings((current) => ({
 									...current,
-									editorFontSize: Math.max(8, Math.min(32, Number(event.target.value) || 13)),
+									editorFontSize: Math.max(
+										8,
+										Math.min(32, Number(event.target.value) || 13),
+									),
 								}))
 							}
 							className={INPUT_CLASSNAME}
@@ -424,7 +480,10 @@ export function AICodingSettings() {
 							onChange={(event) =>
 								setSettings((current) => ({
 									...current,
-									fileTreeAutoRefreshMs: Math.max(100, Math.min(10000, Number(event.target.value) || 500)),
+									fileTreeAutoRefreshMs: Math.max(
+										100,
+										Math.min(10000, Number(event.target.value) || 500),
+									),
 								}))
 							}
 							className={INPUT_CLASSNAME}
@@ -434,7 +493,10 @@ export function AICodingSettings() {
 						<input
 							value={settings.terminalDefaultShell}
 							onChange={(event) =>
-								setSettings((current) => ({ ...current, terminalDefaultShell: event.target.value }))
+								setSettings((current) => ({
+									...current,
+									terminalDefaultShell: event.target.value,
+								}))
 							}
 							placeholder="留空使用系统默认"
 							className={INPUT_CLASSNAME}
@@ -518,18 +580,26 @@ function BackendSection({
 			<div className="flex items-start justify-between gap-4">
 				<div>
 					<SettingsSectionTitle>{title}</SettingsSectionTitle>
-					<div className="text-sm text-zinc-500 dark:text-zinc-400">{formatBackendMeta(capability)}</div>
+					<div className="text-sm text-zinc-500 dark:text-zinc-400">
+						{formatBackendMeta(capability)}
+					</div>
 				</div>
 				<CapabilityPill capability={capability} />
 			</div>
 			<div className="mt-4 grid gap-4 md:grid-cols-2">
 				<Field label="默认模型">
-					<input value={modelValue} onChange={(event) => onModelChange(event.target.value)} className={INPUT_CLASSNAME} />
+					<input
+						value={modelValue}
+						onChange={(event) => onModelChange(event.target.value)}
+						className={INPUT_CLASSNAME}
+					/>
 				</Field>
 				<Field label="默认审批模式">
 					<Select
 						value={approvalValue}
-						onChange={(event) => onApprovalChange(event.target.value as CodingApprovalMode)}
+						onChange={(event) =>
+							onApprovalChange(event.target.value as CodingApprovalMode)
+						}
 						options={approvalOptions}
 					/>
 				</Field>
@@ -555,13 +625,19 @@ function BackendSection({
 function Field({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<label className="block space-y-2">
-			<div className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">{label}</div>
+			<div className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+				{label}
+			</div>
 			{children}
 		</label>
 	);
 }
 
-function CapabilityPill({ capability }: { capability: BackendCapabilityMatrix | null }) {
+function CapabilityPill({
+	capability,
+}: {
+	capability: BackendCapabilityMatrix | null;
+}) {
 	const available = capability?.available === true;
 	return (
 		<div
@@ -579,7 +655,9 @@ function CapabilityPill({ capability }: { capability: BackendCapabilityMatrix | 
 function formatBackendMeta(capability: BackendCapabilityMatrix | null): string {
 	if (!capability) return "尚未检测到 CLI 能力";
 	if (!capability.available) return capability.error || "当前环境不可用";
-	return [capability.version, capability.binaryPath].filter(Boolean).join(" · ");
+	return [capability.version, capability.binaryPath]
+		.filter(Boolean)
+		.join(" · ");
 }
 
 const CLI_SOURCE_LABELS: Record<string, string> = {
@@ -589,7 +667,11 @@ const CLI_SOURCE_LABELS: Record<string, string> = {
 	not_found: "未检测到",
 };
 
-function CliDetectionInfo({ detection }: { detection: CliDetectionResult | null }) {
+function CliDetectionInfo({
+	detection,
+}: {
+	detection: CliDetectionResult | null;
+}) {
 	if (!detection) return null;
 	const sourceLabel = CLI_SOURCE_LABELS[detection.source] ?? detection.source;
 	const found = detection.source !== "not_found";
@@ -614,9 +696,7 @@ function CliDetectionInfo({ detection }: { detection: CliDetectionResult | null 
 				</div>
 			)}
 			{detection.error && (
-				<div className="text-red-500 dark:text-red-400">
-					{detection.error}
-				</div>
+				<div className="text-red-500 dark:text-red-400">{detection.error}</div>
 			)}
 		</div>
 	);

@@ -58,7 +58,7 @@ function decodeProjectPath(encoded: string): string {
 /** 从 JSONL 文件中快速提取元数据（不读取完整内容） */
 async function extractSessionMeta(
 	filePath: string,
-	projectDir: string
+	projectDir: string,
 ): Promise<ExternalThreadMeta | null> {
 	const fileStream = createReadStream(filePath, { encoding: "utf-8" });
 	const rl = readline.createInterface({
@@ -117,7 +117,11 @@ async function extractSessionMeta(
 			}
 
 			// 提取首条用户消息
-			if (!firstUserMessage && entry.type === "user" && entry.message?.role === "user") {
+			if (
+				!firstUserMessage &&
+				entry.type === "user" &&
+				entry.message?.role === "user"
+			) {
 				const content = extractContentFromMessage(entry.message);
 				if (content) firstUserMessage = content.slice(0, 200);
 			}
@@ -159,7 +163,7 @@ async function extractSessionMeta(
  * 列出 Claude Code CLI 的历史会话
  */
 export async function listClaudeCodeSessions(
-	params: CliHistoryListParams = {}
+	params: CliHistoryListParams = {},
 ): Promise<ExternalThreadMeta[]> {
 	const { limit = 50, cwd, search } = params;
 
@@ -180,9 +184,7 @@ export async function listClaudeCodeSessions(
 	} else {
 		// 扫描所有项目目录
 		const entries = await fs.readdir(projectsDir, { withFileTypes: true });
-		projectDirs = entries
-			.filter((e) => e.isDirectory())
-			.map((e) => e.name);
+		projectDirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
 	}
 
 	for (const projDir of projectDirs) {
@@ -233,7 +235,7 @@ export async function listClaudeCodeSessions(
  */
 export async function readClaudeCodeSession(
 	sessionId: string,
-	maxMessages = 200
+	maxMessages = 200,
 ): Promise<CliHistoryReadResult | null> {
 	// 在所有项目目录下查找 session 文件
 	const filePath = await findSessionFile(sessionId);
@@ -260,7 +262,7 @@ async function findSessionFile(sessionId: string): Promise<string | null> {
 			const candidate = path.join(
 				projectsDir,
 				entry.name,
-				`${sessionId}.jsonl`
+				`${sessionId}.jsonl`,
 			);
 			try {
 				await fs.access(candidate);
@@ -309,7 +311,7 @@ interface ClaudeCodeContent {
  */
 async function parseClaudeCodeSession(
 	filePath: string,
-	maxMessages: number
+	maxMessages: number,
 ): Promise<ExternalSessionMessage[]> {
 	const messages: ExternalSessionMessage[] = [];
 
@@ -351,8 +353,9 @@ async function parseClaudeCodeSession(
 					});
 				}
 			} else if (msg.role === "assistant") {
-				const { text, thinking, toolCalls } =
-					extractAssistantContent(msg.content);
+				const { text, thinking, toolCalls } = extractAssistantContent(
+					msg.content,
+				);
 				if (text || toolCalls.length > 0) {
 					messages.push({
 						id: entry.uuid || `cc_${messages.length}`,
@@ -374,9 +377,7 @@ async function parseClaudeCodeSession(
 }
 
 /** 从 message 中提取文本内容 */
-function extractContentFromMessage(msg: {
-	content: unknown;
-}): string {
+function extractContentFromMessage(msg: { content: unknown }): string {
 	if (typeof msg.content === "string") return msg.content;
 
 	if (Array.isArray(msg.content)) {

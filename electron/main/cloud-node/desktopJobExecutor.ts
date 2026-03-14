@@ -71,7 +71,10 @@ export class DesktopJobExecutor {
 	}
 
 	private buildBackupId(ts = Date.now()): string {
-		return `backup_${new Date(ts).toISOString().replace(/[-:T.Z]/g, "").slice(0, 14)}.json`;
+		return `backup_${new Date(ts)
+			.toISOString()
+			.replace(/[-:T.Z]/g, "")
+			.slice(0, 14)}.json`;
 	}
 
 	async startBackup(): Promise<BackupResult> {
@@ -96,9 +99,7 @@ export class DesktopJobExecutor {
 				success: false,
 				error_code: "CAPABILITY_NOT_AVAILABLE",
 				error_message:
-					error instanceof Error
-						? error.message
-						: "本地备份执行失败",
+					error instanceof Error ? error.message : "本地备份执行失败",
 			};
 		}
 	}
@@ -144,9 +145,7 @@ export class DesktopJobExecutor {
 				success: false,
 				error_code: "CAPABILITY_NOT_AVAILABLE",
 				error_message:
-					error instanceof Error
-						? error.message
-						: "本地恢复执行失败",
+					error instanceof Error ? error.message : "本地恢复执行失败",
 			};
 		}
 	}

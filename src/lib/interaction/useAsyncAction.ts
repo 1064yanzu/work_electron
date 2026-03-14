@@ -40,4 +40,3 @@ export function useAsyncAction<TArgs extends unknown[], TResult>(
 		error: state.error,
 	};
 }
-

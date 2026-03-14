@@ -11,7 +11,9 @@ import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { Toggle } from "../components/Toggle";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
-const SOURCE_REFRESH_OPTIONS = [2000, 5000, 10000, 15000, 30000, 60000] as const;
+const SOURCE_REFRESH_OPTIONS = [
+	2000, 5000, 10000, 15000, 30000, 60000,
+] as const;
 const REMOTE_SYNC_OPTIONS = [5000, 10000, 15000, 30000, 60000, 120000] as const;
 
 function formatMs(ms: number) {
@@ -74,19 +76,25 @@ export function PerformanceSettings() {
 
 				<div className="grid gap-4 sm:grid-cols-3">
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">资料刷新</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							资料刷新
+						</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{formatMs(settings.sourceAutoRefreshMs)}
 						</div>
 					</div>
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">远程同步</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							远程同步
+						</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{formatMs(settings.remoteSyncIntervalMs)}
 						</div>
 					</div>
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">调试日志</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							调试日志
+						</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{settings.enableUiDebugLogs ? "已启用" : "默认关闭"}
 						</div>
@@ -138,7 +146,8 @@ export function PerformanceSettings() {
 					))}
 				</select>
 				<p className="text-xs text-text-muted">
-					当前值：{formatMs(settings.sourceAutoRefreshMs)}。值越小越实时，但会增加 IPC 压力。
+					当前值：{formatMs(settings.sourceAutoRefreshMs)}
+					。值越小越实时，但会增加 IPC 压力。
 				</p>
 			</div>
 
@@ -161,7 +170,8 @@ export function PerformanceSettings() {
 					))}
 				</select>
 				<p className="text-xs text-text-muted">
-					当前值：{formatMs(settings.remoteSyncIntervalMs)}。值越小越实时，但会增加后台同步开销。
+					当前值：{formatMs(settings.remoteSyncIntervalMs)}
+					。值越小越实时，但会增加后台同步开销。
 				</p>
 			</div>
 

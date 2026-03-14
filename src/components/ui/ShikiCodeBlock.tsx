@@ -41,9 +41,7 @@ function ShikiCodeBlockInner({
 		<div
 			className={cn(
 				"relative group my-3 rounded-xl overflow-hidden ring-1",
-				isDark
-					? "ring-zinc-800 bg-[#0d1117]"
-					: "ring-zinc-200 bg-white",
+				isDark ? "ring-zinc-800 bg-[#0d1117]" : "ring-zinc-200 bg-white",
 				className,
 			)}
 		>
@@ -121,19 +119,14 @@ function ShikiCodeBlockInner({
 									</span>
 								)}
 								<span className="flex-1 whitespace-pre-wrap break-all">
-									{lineTokens.length > 0 ? (
-										lineTokens.map((token, tokenIdx) => (
-											<span
-												key={tokenIdx}
-												style={{ color: token.color }}
-											>
-												{token.content}
-											</span>
-										))
-									) : (
-										// 空行
-										"\n"
-									)}
+									{lineTokens.length > 0
+										? lineTokens.map((token, tokenIdx) => (
+												<span key={tokenIdx} style={{ color: token.color }}>
+													{token.content}
+												</span>
+											))
+										: // 空行
+											"\n"}
 								</span>
 							</div>
 						))}
@@ -150,7 +143,7 @@ function ShikiCodeBlockInner({
 										{tokens.length + 1}
 									</span>
 								)}
-								<span className="flex-1">{" "}</span>
+								<span className="flex-1"> </span>
 							</div>
 						)}
 					</div>

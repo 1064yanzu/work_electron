@@ -10,14 +10,22 @@ import {
 	X,
 } from "lucide-react";
 import { memo, useMemo } from "react";
-import { type FileDiff, diffStore, useDiffStoreSelector } from "../../lib/stores/diffStore";
+import {
+	type FileDiff,
+	diffStore,
+	useDiffStoreSelector,
+} from "../../lib/stores/diffStore";
 import {
 	acceptAllDiffs,
 	acceptDiff,
 	rejectAllDiffs,
 	rejectDiff,
 } from "../../lib/coding/diffActions";
-import { formatFilePath, generateDiff, parseDiffStats } from "../../lib/utils/diffUtils";
+import {
+	formatFilePath,
+	generateDiff,
+	parseDiffStats,
+} from "../../lib/utils/diffUtils";
 import { cn } from "../../lib/utils";
 import { EVENTS, events } from "../../lib/events";
 
@@ -122,8 +130,10 @@ function DiffSummaryItem({
 				<span
 					className={cn(
 						"flex items-center w-5 h-5 rounded-full justify-center flex-shrink-0",
-						diff.status === "accepted" && "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
-						diff.status === "rejected" && "text-red-400 bg-red-50 dark:bg-red-900/20",
+						diff.status === "accepted" &&
+							"text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
+						diff.status === "rejected" &&
+							"text-red-400 bg-red-50 dark:bg-red-900/20",
 					)}
 				>
 					{diff.status === "accepted" ? (
@@ -163,7 +173,14 @@ function DiffSummaryInner({ rootPath }: DiffSummaryProps) {
 			else if (diff.status === "rejected") rejected++;
 		}
 
-		return { totalAdditions, totalDeletions, pending, accepted, rejected, total: diffList.length };
+		return {
+			totalAdditions,
+			totalDeletions,
+			pending,
+			accepted,
+			rejected,
+			total: diffList.length,
+		};
 	}, [diffList]);
 
 	if (diffList.length === 0) return null;

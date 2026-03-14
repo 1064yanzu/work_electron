@@ -115,7 +115,7 @@ export function Modal({
 			<div
 				className={cn(
 					"absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm",
-					isClosing ? "animate-fade-out" : "animate-fade-in"
+					isClosing ? "animate-fade-out" : "animate-fade-in",
 				)}
 			/>
 

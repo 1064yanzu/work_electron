@@ -234,8 +234,7 @@ export const agentModelSettingsStore = {
 			maxTurns:
 				settings.teammateBudget?.maxTurns ??
 				state.contextRuntime?.teammateBudget?.maxTurns ??
-				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget
-					?.maxTurns ??
+				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget?.maxTurns ??
 				12,
 			maxThinkingTokens:
 				settings.teammateBudget?.maxThinkingTokens ??

@@ -35,84 +35,84 @@ interface ToolCallCardProps {
  */
 const TOOL_NAME_ALIASES: Record<string, string> = {
 	// Bash / 命令执行
-	"exec_command": "Bash",
-	"bash": "Bash",
-	"execute_command": "Bash",
-	"run_command": "Bash",
-	"shell": "Bash",
-	"terminal": "Bash",
+	exec_command: "Bash",
+	bash: "Bash",
+	execute_command: "Bash",
+	run_command: "Bash",
+	shell: "Bash",
+	terminal: "Bash",
 
 	// stdin 写入 → 也当作 Bash 展示
-	"write_stdin": "Bash",
+	write_stdin: "Bash",
 
 	// 文件读取
-	"read_file": "Read",
-	"file_read": "Read",
-	"read": "Read",
-	"View": "Read",
-	"view_file": "Read",
-	"cat_file": "Read",
+	read_file: "Read",
+	file_read: "Read",
+	read: "Read",
+	View: "Read",
+	view_file: "Read",
+	cat_file: "Read",
 
 	// 文件编辑
-	"file_editor": "Edit",
-	"text_editor": "Edit",
-	"str_replace_editor": "Edit",
-	"edit_file": "Edit",
-	"file_edit": "Edit",
-	"apply_diff": "Edit",
-	"replace_in_file": "Edit",
-	"insert_code_in_file": "Edit",
+	file_editor: "Edit",
+	text_editor: "Edit",
+	str_replace_editor: "Edit",
+	edit_file: "Edit",
+	file_edit: "Edit",
+	apply_diff: "Edit",
+	replace_in_file: "Edit",
+	insert_code_in_file: "Edit",
 
 	// text_editor 带版本号的变体
-	"text_editor_20250124": "Edit",
-	"text_editor_20241022": "Edit",
+	text_editor_20250124: "Edit",
+	text_editor_20241022: "Edit",
 
 	// 文件写入
-	"write_file": "Write",
-	"create_file": "Write",
-	"file_write": "Write",
-	"save_file": "Write",
+	write_file: "Write",
+	create_file: "Write",
+	file_write: "Write",
+	save_file: "Write",
 
 	// 文件补丁
-	"patch": "Patch",
-	"apply_patch": "Patch",
-	"file_patch": "Patch",
+	patch: "Patch",
+	apply_patch: "Patch",
+	file_patch: "Patch",
 
 	// 多文件编辑
-	"multi_edit": "MultiEdit",
-	"batch_edit": "MultiEdit",
+	multi_edit: "MultiEdit",
+	batch_edit: "MultiEdit",
 
 	// 搜索
-	"glob": "Glob",
-	"find_files": "Glob",
-	"list_files": "Glob",
-	"file_search": "Glob",
-	"list_directory": "Glob",
-	"grep": "Grep",
-	"search": "Grep",
-	"ripgrep": "Grep",
-	"search_files": "Grep",
+	glob: "Glob",
+	find_files: "Glob",
+	list_files: "Glob",
+	file_search: "Glob",
+	list_directory: "Glob",
+	grep: "Grep",
+	search: "Grep",
+	ripgrep: "Grep",
+	search_files: "Grep",
 
 	// Web
-	"web_search": "WebSearch",
-	"WebSearch": "WebSearch",
-	"web_fetch": "WebFetch",
-	"fetch_url": "WebFetch",
-	"WebFetch": "WebFetch",
+	web_search: "WebSearch",
+	WebSearch: "WebSearch",
+	web_fetch: "WebFetch",
+	fetch_url: "WebFetch",
+	WebFetch: "WebFetch",
 
 	// Agent
-	"dispatch_agent": "Agent",
-	"spawn_agent": "Agent",
-	"Agent": "Agent",
+	dispatch_agent: "Agent",
+	spawn_agent: "Agent",
+	Agent: "Agent",
 
 	// 用户交互
-	"ask_user": "AskUserQuestion",
-	"AskUserQuestion": "AskUserQuestion",
+	ask_user: "AskUserQuestion",
+	AskUserQuestion: "AskUserQuestion",
 
 	// Codex 特有
-	"FileChange": "FileChange",
-	"TodoList": "TodoList",
-	"update_plan": "TodoList",
+	FileChange: "FileChange",
+	TodoList: "TodoList",
+	update_plan: "TodoList",
 };
 
 /**
@@ -135,19 +135,40 @@ function normalizeToolName(rawName: string): string {
 	}
 
 	// 智能推断：包含关键词
-	if (lower.includes("bash") || lower.includes("exec") || lower.includes("command") || lower.includes("shell")) {
+	if (
+		lower.includes("bash") ||
+		lower.includes("exec") ||
+		lower.includes("command") ||
+		lower.includes("shell")
+	) {
 		return "Bash";
 	}
-	if (lower.includes("read") || lower.includes("view") || lower.includes("cat")) {
+	if (
+		lower.includes("read") ||
+		lower.includes("view") ||
+		lower.includes("cat")
+	) {
 		return "Read";
 	}
-	if (lower.includes("edit") || lower.includes("replace") || lower.includes("str_replace")) {
+	if (
+		lower.includes("edit") ||
+		lower.includes("replace") ||
+		lower.includes("str_replace")
+	) {
 		return "Edit";
 	}
-	if (lower.includes("write") || lower.includes("create") || lower.includes("save")) {
+	if (
+		lower.includes("write") ||
+		lower.includes("create") ||
+		lower.includes("save")
+	) {
 		return "Write";
 	}
-	if (lower.includes("grep") || lower.includes("search") || lower.includes("find")) {
+	if (
+		lower.includes("grep") ||
+		lower.includes("search") ||
+		lower.includes("find")
+	) {
 		return "Grep";
 	}
 
@@ -170,7 +191,8 @@ function buildSmartTitle(toolCall: SessionToolCall): string {
 
 	const displayName = normalizeToolName(toolCall.name);
 	if (candidate && typeof candidate === "string") {
-		const display = candidate.length > 80 ? `${candidate.slice(0, 80)}…` : candidate;
+		const display =
+			candidate.length > 80 ? `${candidate.slice(0, 80)}…` : candidate;
 		return `${displayName} ${display}`;
 	}
 	return displayName;
@@ -197,7 +219,10 @@ export function ToolCallCard({ toolCall, onAskUserAnswer }: ToolCallCardProps) {
 	// AskUserQuestion 交互卡片
 	if (normalized === "AskUserQuestion") {
 		return (
-			<AskUserQuestionCard toolCall={normalizedToolCall} onAnswer={onAskUserAnswer} />
+			<AskUserQuestionCard
+				toolCall={normalizedToolCall}
+				onAnswer={onAskUserAnswer}
+			/>
 		);
 	}
 
@@ -259,7 +284,8 @@ function McpToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 
 	const output = useMemo(() => {
 		if (typeof toolCall.output === "string") return toolCall.output;
-		if (toolCall.output != null) return JSON.stringify(toolCall.output, null, 2);
+		if (toolCall.output != null)
+			return JSON.stringify(toolCall.output, null, 2);
 		return "";
 	}, [toolCall.output]);
 
@@ -276,22 +302,21 @@ function McpToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 			title={toolName}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 			iconColor="text-violet-500"
 		>
-			<div className="space-y-2">
+			<div className="space-y-1.5">
 				{inputStr && (
 					<div>
-						<div className="mb-0.5 text-[10px] font-medium text-zinc-400">输入</div>
-						<pre className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
+						<div className="mb-0.5 text-[10px] text-zinc-400">输入</div>
+						<pre className="max-h-32 overflow-y-auto rounded-md border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
 							{inputStr.slice(0, 2000)}
 						</pre>
 					</div>
 				)}
 				{output && (
 					<div>
-						<div className="mb-0.5 text-[10px] font-medium text-zinc-400">输出</div>
-						<pre className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
+						<div className="mb-0.5 text-[10px] text-zinc-400">输出</div>
+						<pre className="max-h-32 overflow-y-auto rounded-md border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
 							{output.slice(0, 2000)}
 						</pre>
 					</div>
@@ -306,7 +331,8 @@ function McpToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 function GenericToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 	const output = useMemo(() => {
 		if (typeof toolCall.output === "string") return toolCall.output;
-		if (toolCall.output != null) return JSON.stringify(toolCall.output, null, 2);
+		if (toolCall.output != null)
+			return JSON.stringify(toolCall.output, null, 2);
 		return "";
 	}, [toolCall.output]);
 
@@ -321,24 +347,24 @@ function GenericToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 	return (
 		<ToolCardShell
 			icon={Wrench}
+			label={normalizeToolName(toolCall.name)}
 			title={smartTitle}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 		>
-			<div className="space-y-2">
+			<div className="space-y-1.5">
 				{inputStr && (
 					<div>
-						<div className="mb-0.5 text-[10px] font-medium text-zinc-400">输入</div>
-						<pre className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
+						<div className="mb-0.5 text-[10px] text-zinc-400">输入</div>
+						<pre className="max-h-32 overflow-y-auto rounded-md border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
 							{inputStr.slice(0, 2000)}
 						</pre>
 					</div>
 				)}
 				{output && (
 					<div>
-						<div className="mb-0.5 text-[10px] font-medium text-zinc-400">输出</div>
-						<pre className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
+						<div className="mb-0.5 text-[10px] text-zinc-400">输出</div>
+						<pre className="max-h-32 overflow-y-auto rounded-md border border-zinc-200/60 bg-zinc-50 px-2.5 py-1.5 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:border-zinc-700/40 dark:bg-zinc-900/50 dark:text-zinc-400">
 							{output.slice(0, 2000)}
 						</pre>
 					</div>

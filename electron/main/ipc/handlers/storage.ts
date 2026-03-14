@@ -29,14 +29,15 @@ export function createStorageHandlers(db: DbContext) {
 
 		let migration:
 			| {
-				backup_path: string;
-				sources: number;
-				outputs: number;
-			}
+					backup_path: string;
+					sources: number;
+					outputs: number;
+			  }
 			| undefined;
 		const shouldMigrate =
 			Boolean(input.migrate_existing) ||
-			(current.vault_root !== next.vault_root && input.migrate_existing !== false);
+			(current.vault_root !== next.vault_root &&
+				input.migrate_existing !== false);
 		if (shouldMigrate) {
 			migration = await migrateAllRecordsToVault(db);
 		}
@@ -47,7 +48,9 @@ export function createStorageHandlers(db: DbContext) {
 		};
 	};
 
-	const storage_pick_directory: Handler<"storage_pick_directory"> = async () => {
+	const storage_pick_directory: Handler<
+		"storage_pick_directory"
+	> = async () => {
 		const result = await dialog.showOpenDialog({
 			properties: ["openDirectory", "createDirectory"],
 			title: "选择 Vault 根目录",
@@ -58,15 +61,16 @@ export function createStorageHandlers(db: DbContext) {
 		return { path: result.filePaths[0] };
 	};
 
-	const storage_reveal_vault_root: Handler<"storage_reveal_vault_root"> =
-		async () => {
-			const settings = await getStorageSettings(db);
-			const error = await shell.openPath(settings.vault_root);
-			if (error) {
-				return { success: false, error };
-			}
-			return { success: true };
-		};
+	const storage_reveal_vault_root: Handler<
+		"storage_reveal_vault_root"
+	> = async () => {
+		const settings = await getStorageSettings(db);
+		const error = await shell.openPath(settings.vault_root);
+		if (error) {
+			return { success: false, error };
+		}
+		return { success: true };
+	};
 
 	const project_reveal_directory: Handler<"project_reveal_directory"> = async (
 		_event,

@@ -260,11 +260,7 @@ export function createCodingHandlers() {
 			_event: IpcMainInvokeEvent,
 			input: { dirPath: string; branchName: string; startPoint?: string },
 		) => {
-			return gitCreateBranch(
-				input.dirPath,
-				input.branchName,
-				input.startPoint,
-			);
+			return gitCreateBranch(input.dirPath, input.branchName, input.startPoint);
 		},
 
 		coding_git_stash: async (

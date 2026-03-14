@@ -180,8 +180,7 @@ export function ModelSettings() {
 
 	// 删除服务商
 	const handleDelete = useCallback(async () => {
-		if (!selected)
-			return;
+		if (!selected) return;
 		const confirmed = await confirmDialog.danger(
 			`确定要删除服务商 "${selected.name}" 吗？`,
 			"删除服务商",
@@ -297,10 +296,11 @@ export function ModelSettings() {
 						<div
 							key={provider.id}
 							onClick={() => setSelectedId(provider.id)}
-							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${selectedId === provider.id
+							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+								selectedId === provider.id
 									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
 									: "hover:bg-white/60"
-								}`}
+							}`}
 						>
 							<div
 								className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm ${provider.color} overflow-hidden`}
@@ -337,7 +337,6 @@ export function ModelSettings() {
 			<div className="flex-1 overflow-y-auto bg-white">
 				{selected ? (
 					<div className="p-8 max-w-2xl">
-
 						{/* 标题栏 */}
 						<div className="flex items-center justify-between mb-10 pr-10">
 							<div className="flex items-center gap-3">
@@ -453,7 +452,6 @@ export function ModelSettings() {
 								</p>
 							)}
 						</div>
-
 
 						{(selected.providerType === ProviderType.OpenAi ||
 							selected.providerType === ProviderType.Custom) && (

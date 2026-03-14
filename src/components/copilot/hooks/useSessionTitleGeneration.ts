@@ -22,11 +22,7 @@ export function useSessionTitleGeneration({
 	const generatingRef = useRef<Set<string>>(new Set());
 
 	const generateSessionTitle = useCallback(
-		async (
-			sessionId: string,
-			firstMessage: string,
-			fallbackModel?: string,
-		) => {
+		async (sessionId: string, firstMessage: string, fallbackModel?: string) => {
 			if (generatingRef.current.has(sessionId)) return;
 
 			try {
@@ -35,10 +31,7 @@ export function useSessionTitleGeneration({
 				// 1. 获取配置的生成模型
 				const configModel = await getConfig("title_generation_model");
 				const modelToUse =
-					configModel ||
-					fallbackModel ||
-					enabledModels[0]?.id ||
-					"gpt-4o-mini";
+					configModel || fallbackModel || enabledModels[0]?.id || "gpt-4o-mini";
 
 				debugLog(
 					`[CopilotSidebar] 开始为会话 ${sessionId.slice(0, 6)}... 生成标题，使用模型: ${modelToUse}`,
@@ -58,9 +51,7 @@ export function useSessionTitleGeneration({
 
 				// 3. 校验结果
 				if (title) {
-					title = title
-						.replace(/^["'《]|^标题[:：]\s*|["'》]$/g, "")
-						.trim();
+					title = title.replace(/^["'《]|^标题[:：]\s*|["'》]$/g, "").trim();
 					if (title.length > 20) {
 						title = title.slice(0, 20);
 					}
@@ -76,10 +67,7 @@ export function useSessionTitleGeneration({
 					(s) => s.id === sessionId,
 				);
 				if (currentSession?.title === "新对话") {
-					chatStore.updateSessionTitle(
-						sessionId,
-						firstMessage.slice(0, 15),
-					);
+					chatStore.updateSessionTitle(sessionId, firstMessage.slice(0, 15));
 				}
 			} finally {
 				generatingRef.current.delete(sessionId);
@@ -103,8 +91,7 @@ export function useSessionTitleGeneration({
 					const needsGeneration =
 						!session.title ||
 						session.title === "新对话" ||
-						(session.title === defaultTruncated &&
-							firstMsg.length > 15) ||
+						(session.title === defaultTruncated && firstMsg.length > 15) ||
 						/^对话 \d{1,2}月\d{1,2}日/.test(session.title);
 
 					if (needsGeneration) {

@@ -21,7 +21,9 @@ export function getScopeBadge(scope?: "global" | "project"): ScopeBadgeMeta {
 	};
 }
 
-export function formatDocumentDate(date: string | number | undefined | null): string {
+export function formatDocumentDate(
+	date: string | number | undefined | null,
+): string {
 	if (!date) return "未知日期";
 	const d = new Date(date);
 	if (Number.isNaN(d.getTime())) return "未知日期";

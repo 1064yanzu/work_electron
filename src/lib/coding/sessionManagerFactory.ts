@@ -4,10 +4,10 @@
  * 每个线程拥有独立的 manager 实例
  */
 
-import type { ICodingSessionManager } from './types';
-import { ClaudeCodeSessionManager } from './claudeCodeSessionManager';
-import { CodexSessionManager } from './codexSessionManager';
-import type { CodingBackend } from '../stores/codingAgentStore';
+import type { ICodingSessionManager } from "./types";
+import { ClaudeCodeSessionManager } from "./claudeCodeSessionManager";
+import { CodexSessionManager } from "./codexSessionManager";
+import type { CodingBackend } from "../stores/codingAgentStore";
 
 /** threadId → manager 实例 */
 const managers = new Map<string, ICodingSessionManager>();
@@ -15,9 +15,9 @@ const managers = new Map<string, ICodingSessionManager>();
 /** 创建指定后端的 manager */
 function createManager(backend: CodingBackend): ICodingSessionManager {
 	switch (backend) {
-		case 'claude-code':
+		case "claude-code":
 			return new ClaudeCodeSessionManager();
-		case 'codex':
+		case "codex":
 			return new CodexSessionManager();
 	}
 }
@@ -28,8 +28,8 @@ export function getOrCreateSessionManager(
 	backend?: CodingBackend,
 ): ICodingSessionManager {
 	// 兼容旧的无 threadId 调用（fallback 到默认 key）
-	const key = threadId || '__default__';
-	const requestedBackend = backend || 'claude-code';
+	const key = threadId || "__default__";
+	const requestedBackend = backend || "claude-code";
 
 	const existing = managers.get(key);
 	if (existing) {
@@ -49,7 +49,7 @@ export function getOrCreateSessionManager(
 
 /** 释放指定线程的 manager */
 export function disposeSessionManager(threadId?: string): void {
-	const key = threadId || '__default__';
+	const key = threadId || "__default__";
 	const manager = managers.get(key);
 	if (manager) {
 		manager.dispose();
@@ -66,7 +66,9 @@ export function disposeAll(): void {
 }
 
 /** 获取当前 manager（不创建） */
-export function getCurrentSessionManager(threadId?: string): ICodingSessionManager | null {
-	const key = threadId || '__default__';
+export function getCurrentSessionManager(
+	threadId?: string,
+): ICodingSessionManager | null {
+	const key = threadId || "__default__";
 	return managers.get(key) ?? null;
 }

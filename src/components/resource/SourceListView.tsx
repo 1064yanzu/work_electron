@@ -25,7 +25,12 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
-import { type Folder, type Source, SourceOrigin, SourceType } from "../../types";
+import {
+	type Folder,
+	type Source,
+	SourceOrigin,
+	SourceType,
+} from "../../types";
 import { ResourceSidebarHeader } from "./sidebar/ResourceSidebarHeader";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
 
@@ -252,10 +257,11 @@ export function SourceListView({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ${index === breadcrumbPath.length - 1
-								? "text-zinc-800 dark:text-zinc-200 font-medium"
-								: "text-zinc-500 dark:text-zinc-400"
-								}`}
+							className={`px-1.5 py-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ${
+								index === breadcrumbPath.length - 1
+									? "text-zinc-800 dark:text-zinc-200 font-medium"
+									: "text-zinc-500 dark:text-zinc-400"
+							}`}
 						>
 							{item.name}
 						</button>
@@ -315,10 +321,7 @@ export function SourceListView({
 									folder_id: folder.id,
 								})
 									.then((count) => {
-										debugLog(
-											"[MouseDrag] 移动成功 (grid), 影响行数:",
-											count,
-										);
+										debugLog("[MouseDrag] 移动成功 (grid), 影响行数:", count);
 										// 立即从当前视图移除该资料
 										setSources((prev) =>
 											prev.filter((s) => s.id !== dragItem.sourceId),
@@ -338,16 +341,18 @@ export function SourceListView({
 								setDragOverFolderId(null);
 							}
 						}}
-						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-all duration-200 border relative ${isDragOver
-							? "bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/50 scale-[1.02]"
-							: "bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-900/10 dark:to-orange-900/10 hover:from-amber-100/80 hover:to-orange-100/60 dark:hover:from-amber-900/20 dark:hover:to-orange-900/15 border-amber-200/50 dark:border-amber-800/30 hover:shadow-[0_4px_16px_rgba(251,191,36,0.08)] hover:-translate-y-0.5"
-							}`}
+						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-all duration-200 border relative ${
+							isDragOver
+								? "bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/50 scale-[1.02]"
+								: "bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-900/10 dark:to-orange-900/10 hover:from-amber-100/80 hover:to-orange-100/60 dark:hover:from-amber-900/20 dark:hover:to-orange-900/15 border-amber-200/50 dark:border-amber-800/30 hover:shadow-[0_4px_16px_rgba(251,191,36,0.08)] hover:-translate-y-0.5"
+						}`}
 					>
 						<div
-							className={`w-10 h-10 rounded-xl flex items-center justify-center pointer-events-none transition-colors duration-200 ${isDragOver
-								? "bg-blue-200 dark:bg-blue-800/50"
-								: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
-								}`}
+							className={`w-10 h-10 rounded-xl flex items-center justify-center pointer-events-none transition-colors duration-200 ${
+								isDragOver
+									? "bg-blue-200 dark:bg-blue-800/50"
+									: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
+							}`}
 						>
 							<FolderIcon
 								className={`w-5 h-5 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
@@ -429,16 +434,18 @@ export function SourceListView({
 							setDragOverFolderId(null);
 						}
 					}}
-					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-all duration-200 ${isDragOver
-						? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
-						: "hover:bg-amber-50/70 dark:hover:bg-amber-900/10 hover:pl-3"
-						}`}
+					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-all duration-200 ${
+						isDragOver
+							? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
+							: "hover:bg-amber-50/70 dark:hover:bg-amber-900/10 hover:pl-3"
+					}`}
 				>
 					<div
-						className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 pointer-events-none transition-colors duration-200 ${isDragOver
-							? "bg-blue-200 dark:bg-blue-800/50"
-							: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
-							}`}
+						className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 pointer-events-none transition-colors duration-200 ${
+							isDragOver
+								? "bg-blue-200 dark:bg-blue-800/50"
+								: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
+						}`}
 					>
 						<FolderIcon
 							className={`w-4 h-4 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
@@ -487,7 +494,9 @@ export function SourceListView({
 		(source: Source) => {
 			const isSelected = selectedIdSet.has(source.id);
 			const cardBase =
-				viewMode === "grid" ? "p-3 flex flex-col" : "p-2 flex items-center gap-3";
+				viewMode === "grid"
+					? "p-3 flex flex-col"
+					: "p-2 flex items-center gap-3";
 			const cardState = selectionMode
 				? isSelected
 					? "ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
@@ -495,7 +504,8 @@ export function SourceListView({
 				: viewMode === "grid"
 					? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-white dark:bg-zinc-800/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
 					: "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 hover:pl-3";
-			const isDraggingThis = isMouseDragging && dragItem?.sourceId === source.id;
+			const isDraggingThis =
+				isMouseDragging && dragItem?.sourceId === source.id;
 			return (
 				<div
 					key={source.id}
@@ -536,10 +546,11 @@ export function SourceListView({
 								e.stopPropagation();
 								toggleSelection(source.id);
 							}}
-							className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${isSelected
-								? "bg-blue-600 text-white"
-								: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
-								}`}
+							className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${
+								isSelected
+									? "bg-blue-600 text-white"
+									: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
+							}`}
 						>
 							{isSelected ? (
 								<CheckSquare className="w-4 h-4" />
@@ -662,10 +673,11 @@ export function SourceListView({
 						<button
 							onClick={handleBulkAddToContext}
 							disabled={selectedSources.length === 0}
-							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
-								? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
-								: "bg-zinc-900 text-white hover:bg-zinc-800"
-								}`}
+							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+								selectedSources.length === 0
+									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
+									: "bg-zinc-900 text-white hover:bg-zinc-800"
+							}`}
 						>
 							添加到 AI 上下文
 						</button>
@@ -679,20 +691,22 @@ export function SourceListView({
 								setIsMoveFolderModalOpen(true);
 							}}
 							disabled={selectedSources.length === 0}
-							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
-								? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
-								: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-								}`}
+							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+								selectedSources.length === 0
+									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
+									: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+							}`}
 						>
 							移动
 						</button>
 						<button
 							onClick={handleDeleteSelected}
 							disabled={selectedSources.length === 0}
-							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedSources.length === 0
-								? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
-								: "bg-red-50 text-red-600 hover:bg-red-100"
-								}`}
+							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+								selectedSources.length === 0
+									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
+									: "bg-red-50 text-red-600 hover:bg-red-100"
+							}`}
 						>
 							删除
 						</button>
@@ -836,18 +850,13 @@ export function SourceListView({
 							if (folderElement) {
 								const folderId = folderElement.getAttribute("data-folder-id");
 								if (folderId) {
-									debugLog(
-										"[Drag] 在列表容器 drop，找到文件夹:",
-										folderId,
-									);
+									debugLog("[Drag] 在列表容器 drop，找到文件夹:", folderId);
 									handleFolderDrop(e, folderId);
 									return;
 								}
 							}
 
-							debugLog(
-								"[Drag] 在列表容器 drop，未找到文件夹，移动到未归类",
-							);
+							debugLog("[Drag] 在列表容器 drop，未找到文件夹，移动到未归类");
 							handleFolderDrop(e, UNASSIGNED_FOLDER_ID);
 						}}
 					>
@@ -883,12 +892,10 @@ export function SourceListView({
 									);
 								})}
 							</div>
-							) : (
-								sources.map((source) => (
-									<div key={source.id}>
-										{renderSourceCard(source)}
-									</div>
-								))
+						) : (
+							sources.map((source) => (
+								<div key={source.id}>{renderSourceCard(source)}</div>
+							))
 						)}
 					</div>
 				)}

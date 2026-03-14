@@ -71,7 +71,10 @@ export function createTerminalHandlers(deps: {
 		return { success: ok };
 	};
 
-	const terminal_destroy: Handler<"terminal_destroy"> = async (_event, input) => {
+	const terminal_destroy: Handler<"terminal_destroy"> = async (
+		_event,
+		input,
+	) => {
 		// 清理监听
 		dataUnsubscribers.get(input.id)?.();
 		dataUnsubscribers.delete(input.id);

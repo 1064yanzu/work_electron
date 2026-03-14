@@ -1,6 +1,10 @@
 // 标签页状态管理 - 多标签系统（支持文档和资料阅读）
 
-import { createStore, createUseStore, createUseStoreSelector } from "./createStore";
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 import type { TabItem, TabState } from "./types";
 
 const initialTabState: TabState = {
@@ -71,8 +75,7 @@ function closeTab(tabId: string) {
 		const closedTab = state.tabs.find((t) => t.id === tabId);
 		let newSourceReadCache = state.sourceReadCache;
 		if (closedTab?.type === "source" && closedTab.sourceId) {
-			const { [closedTab.sourceId]: removed, ...rest } =
-				state.sourceReadCache;
+			const { [closedTab.sourceId]: removed, ...rest } = state.sourceReadCache;
 			newSourceReadCache = rest;
 		}
 

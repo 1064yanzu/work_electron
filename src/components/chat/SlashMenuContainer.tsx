@@ -1,12 +1,7 @@
 // 斜杠命令二级菜单容器
 // 整合一级菜单（类型选择）和二级菜单（具体命令）
 
-import {
-	ArrowLeft,
-	ChevronRight,
-	Plus,
-	Zap,
-} from "lucide-react";
+import { ArrowLeft, ChevronRight, Plus, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomPromptStore } from "../../lib/customPromptStore";
 import { useSkillsStore } from "../../lib/skillsStore";
@@ -258,7 +253,13 @@ export function SlashMenuContainer({
 			default:
 				return [];
 		}
-	}, [selectedCategory, dynamicCommands, customPrompts, customFolders, enabledSkills]);
+	}, [
+		selectedCategory,
+		dynamicCommands,
+		customPrompts,
+		customFolders,
+		enabledSkills,
+	]);
 
 	// 获取类别标题和颜色
 	const getCategoryInfo = useCallback(() => {
@@ -434,7 +435,9 @@ export function SlashMenuContainer({
 				</div>
 				<div className="flex items-center gap-2">
 					{Icon && (
-						<div className={`w-5 h-5 rounded-md flex items-center justify-center ${gradient}`}>
+						<div
+							className={`w-5 h-5 rounded-md flex items-center justify-center ${gradient}`}
+						>
 							<Icon className="w-3 h-3" />
 						</div>
 					)}
@@ -552,8 +555,9 @@ function GroupSection({
 					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-[#fafafa] dark:hover:bg-[#333]/60 transition-colors duration-100 cursor-pointer select-none"
 				>
 					<ChevronRight
-						className={`w-3 h-3 text-[#ccc] dark:text-[#555] transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"
-							}`}
+						className={`w-3 h-3 text-[#ccc] dark:text-[#555] transition-transform duration-150 ${
+							isCollapsed ? "" : "rotate-90"
+						}`}
 					/>
 					<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
 						{group.name}
@@ -585,17 +589,15 @@ function GroupSection({
 								onMouseEnter={() => onHoverCommand(command.id)}
 								className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left cursor-pointer select-none
                   transition-all duration-[120ms] ease-out
-                  ${isSelected
-										? "bg-[#f3f3f3] dark:bg-[#363636]"
-										: ""
-									}`}
+                  ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}`}
 							>
 								{/* 图标 */}
 								<div
 									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
-                    ${isSelected
-											? "bg-white dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-											: "bg-[#f5f5f5] dark:bg-[#363636]"
+                    ${
+											isSelected
+												? "bg-white dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+												: "bg-[#f5f5f5] dark:bg-[#363636]"
 										}`}
 								>
 									<command.icon
@@ -608,9 +610,10 @@ function GroupSection({
 								<div className="flex-1 min-w-0">
 									<div
 										className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
-                      ${isSelected
-												? "text-[#1a1a1a] dark:text-[#eee]"
-												: "text-[#666] dark:text-[#999]"
+                      ${
+												isSelected
+													? "text-[#1a1a1a] dark:text-[#eee]"
+													: "text-[#666] dark:text-[#999]"
 											}`}
 									>
 										{command.name}

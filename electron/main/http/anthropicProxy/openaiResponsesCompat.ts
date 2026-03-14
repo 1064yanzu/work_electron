@@ -88,7 +88,9 @@ export function isOpenAIResponsesProvider(provider: ProviderConfig) {
 	return getOpenAIEndpointType(provider) === "responses";
 }
 
-function extractInstructions(anthropicReq: AnthropicRequest): string | undefined {
+function extractInstructions(
+	anthropicReq: AnthropicRequest,
+): string | undefined {
 	if (!anthropicReq.system) return undefined;
 	if (typeof anthropicReq.system === "string") {
 		const trimmed = anthropicReq.system.trim();
@@ -128,7 +130,10 @@ export function toOpenAIResponsesRequest(params: {
 	for (const message of openaiMessages) {
 		if (message.role === "system") continue;
 		if (message.role === "user") {
-			input.push({ role: "user", content: stringifyMessageContent(message.content) });
+			input.push({
+				role: "user",
+				content: stringifyMessageContent(message.content),
+			});
 			continue;
 		}
 		if (message.role === "assistant") {
@@ -184,14 +189,18 @@ function collectTextFromContent(content: unknown): string {
 		.join("");
 }
 
-export function getOpenAIResponsesItemText(item: OpenAIResponsesOutputItem): string {
+export function getOpenAIResponsesItemText(
+	item: OpenAIResponsesOutputItem,
+): string {
 	return (
 		(typeof item.text === "string" && item.text) ||
 		collectTextFromContent(item.content)
 	);
 }
 
-export function getOpenAIResponsesToolCallId(item: OpenAIResponsesOutputItem): string {
+export function getOpenAIResponsesToolCallId(
+	item: OpenAIResponsesOutputItem,
+): string {
 	return item.call_id || item.id || `call_${crypto.randomUUID()}`;
 }
 
@@ -219,7 +228,10 @@ export function getOpenAIResponsesErrorMessage(
 	if (typeof event.error?.message === "string" && event.error.message) {
 		return event.error.message;
 	}
-	if (typeof event.response?.error?.message === "string" && event.response.error.message) {
+	if (
+		typeof event.response?.error?.message === "string" &&
+		event.response.error.message
+	) {
 		return event.response.error.message;
 	}
 	return "Responses stream error";
@@ -291,7 +303,11 @@ export function translateResponsesToAnthropic(
 			});
 			continue;
 		}
-		if (itemType === "message" || itemType === "output_text" || itemType === "text") {
+		if (
+			itemType === "message" ||
+			itemType === "output_text" ||
+			itemType === "text"
+		) {
 			const text = getOpenAIResponsesItemText(item);
 			if (text) {
 				content.push({ type: "text", text });
@@ -299,7 +315,11 @@ export function translateResponsesToAnthropic(
 		}
 	}
 
-	if (content.length === 0 && typeof parsed.output_text === "string" && parsed.output_text) {
+	if (
+		content.length === 0 &&
+		typeof parsed.output_text === "string" &&
+		parsed.output_text
+	) {
 		content.push({ type: "text", text: parsed.output_text });
 	}
 

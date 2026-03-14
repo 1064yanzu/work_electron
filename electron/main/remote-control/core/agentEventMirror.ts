@@ -31,7 +31,7 @@ export class AgentEventMirror {
 	private readonly streamBufferByRun = new Map<string, StreamBuffer>();
 	private readonly lastOutboundByRun = new Map<string, OutboundFingerprint>();
 
-	constructor(private readonly deps: AgentEventMirrorDeps) { }
+	constructor(private readonly deps: AgentEventMirrorDeps) {}
 
 	private flushBuffer(runId: string): string {
 		const buffer = this.streamBufferByRun.get(runId);
@@ -74,7 +74,11 @@ export class AgentEventMirror {
 		if (!normalized) return;
 		const prev = this.lastOutboundByRun.get(runId);
 		const now = nowTs();
-		if (prev && prev.fingerprint === normalized && now - prev.timestamp < 20_000) {
+		if (
+			prev &&
+			prev.fingerprint === normalized &&
+			now - prev.timestamp < 20_000
+		) {
 			return;
 		}
 		this.lastOutboundByRun.set(runId, {
@@ -116,7 +120,9 @@ export class AgentEventMirror {
 					const cardJson = buildInteractionApprovalCard({
 						requestId: event.request.requestId,
 						toolName: event.request.toolName,
-						toolInput: event.request.toolInput as Record<string, unknown> | undefined,
+						toolInput: event.request.toolInput as
+							| Record<string, unknown>
+							| undefined,
 					});
 
 					// 发送交互卡片
@@ -177,15 +183,16 @@ export class AgentEventMirror {
 					continue;
 				}
 				// 工具结果
-				if (item.type === "tool_result" && typeof item.tool_use_id === "string") {
-					const resultPreview = typeof item.content === "string"
-						? clampString(item.content, 300)
-						: "";
+				if (
+					item.type === "tool_result" &&
+					typeof item.tool_use_id === "string"
+				) {
+					const resultPreview =
+						typeof item.content === "string"
+							? clampString(item.content, 300)
+							: "";
 					if (resultPreview) {
-						await this.sendRunMessage(
-							runId,
-							`📋 工具结果: ${resultPreview}`,
-						);
+						await this.sendRunMessage(runId, `📋 工具结果: ${resultPreview}`);
 					}
 					continue;
 				}
@@ -218,15 +225,12 @@ export class AgentEventMirror {
 			const tail = this.flushBuffer(runId);
 			const resultText =
 				typeof (event.result as Record<string, unknown> | undefined)?.result ===
-					"string"
+				"string"
 					? ((event.result as Record<string, unknown>).result as string)
 					: "";
 
 			if (resultText.trim()) {
-				await this.sendRunMessage(
-					runId,
-					clampString(resultText, 2000),
-				);
+				await this.sendRunMessage(runId, clampString(resultText, 2000));
 			} else if (tail) {
 				// 没有result但有buffer内容,发送buffer
 				await this.sendRunMessage(runId, tail);

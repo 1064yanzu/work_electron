@@ -321,7 +321,7 @@ const ArtifactRow = memo(function ArtifactRow({
 				className={cn(
 					"flex items-start gap-2 px-3 py-2",
 					isPreviewable &&
-					"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
+						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
 				)}
 				onClick={isPreviewable ? togglePreview : undefined}
 			>
@@ -684,7 +684,7 @@ const ToolCallRow = memo(function ToolCallRow({
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
 					hasDetails &&
-					"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
@@ -1064,19 +1064,14 @@ function ContextControl({
 		};
 		sdkSessionId?: string;
 	};
-	const {
-		agentRole,
-		teamId,
-		delegationMode,
-		teammateMode,
-		maxTeammates,
-	} = (task.metadata || {}) as {
-		agentRole?: string;
-		teamId?: string;
-		delegationMode?: string;
-		teammateMode?: string;
-		maxTeammates?: number;
-	};
+	const { agentRole, teamId, delegationMode, teammateMode, maxTeammates } =
+		(task.metadata || {}) as {
+			agentRole?: string;
+			teamId?: string;
+			delegationMode?: string;
+			teammateMode?: string;
+			maxTeammates?: number;
+		};
 	const [isCompacting, setIsCompacting] = React.useState(false);
 	const [compactResult, setCompactResult] = React.useState<string | null>(null);
 
@@ -1128,13 +1123,11 @@ function ContextControl({
 							tokenUsage?.cacheCreationInputTokens ||
 							tokenUsage?.costUsd !== undefined) && (
 							<span className="text-[10px] text-zinc-500 leading-none mt-1">
-								cache read {(
-									tokenUsage?.cacheReadInputTokens || 0
-								).toLocaleString()}
+								cache read{" "}
+								{(tokenUsage?.cacheReadInputTokens || 0).toLocaleString()}
 								{" · "}
-								cache create {(
-									tokenUsage?.cacheCreationInputTokens || 0
-								).toLocaleString()}
+								cache create{" "}
+								{(tokenUsage?.cacheCreationInputTokens || 0).toLocaleString()}
 								{tokenUsage?.costUsd !== undefined
 									? ` · $${tokenUsage.costUsd.toFixed(4)}`
 									: ""}
@@ -1163,10 +1156,11 @@ function ContextControl({
 					<button
 						onClick={handleCompact}
 						disabled={isCompacting || !sdkSessionId}
-						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${isCompacting
-							? "bg-zinc-100 text-zinc-400 cursor-wait"
-							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
-							}`}
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+							isCompacting
+								? "bg-zinc-100 text-zinc-400 cursor-wait"
+								: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+						}`}
 						title="执行 /compact 命令压缩历史"
 					>
 						{isCompacting ? (

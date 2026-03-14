@@ -62,21 +62,19 @@ export function parsePostContent(content: string): {
 			}
 		}
 
-			return {
-				// 仅保留真实可提取文本；避免用占位文案触发误命令。
-				textContent: textContent.trim(),
-				imageKeys,
-			};
-		} catch {
-			return { textContent: "", imageKeys: [] };
-		}
+		return {
+			// 仅保留真实可提取文本；避免用占位文案触发误命令。
+			textContent: textContent.trim(),
+			imageKeys,
+		};
+	} catch {
+		return { textContent: "", imageKeys: [] };
 	}
+}
 
 // ─── 目标类型推断 ────────────────────────────────────────────
 
-export function normalizeTargetType(
-	targetId: string,
-): "chat_id" | "open_id" {
+export function normalizeTargetType(targetId: string): "chat_id" | "open_id" {
 	if (targetId.startsWith("oc_") || targetId.startsWith("chat_"))
 		return "chat_id";
 	return "open_id";
@@ -128,10 +126,7 @@ export function stripBotMention(
 
 const SENDER_NAME_TTL_MS = 10 * 60 * 1000; // 10 分钟
 const CONTACT_SCOPE_COOLDOWN_MS = 30 * 60 * 1000; // 30 分钟
-const senderNameCache = new Map<
-	string,
-	{ name: string; expireAt: number }
->();
+const senderNameCache = new Map<string, { name: string; expireAt: number }>();
 let contactScopeBlockedUntil = 0;
 let contactScopeLastHintAt = 0;
 
@@ -162,7 +157,14 @@ export async function resolveSenderName(
 		});
 
 		const data = res?.data as
-			| { user?: { name?: string; display_name?: string; nickname?: string; en_name?: string } }
+			| {
+					user?: {
+						name?: string;
+						display_name?: string;
+						nickname?: string;
+						en_name?: string;
+					};
+			  }
 			| undefined;
 		const name =
 			data?.user?.name ||
@@ -209,10 +211,10 @@ export async function fetchBotOpenId(
 ): Promise<string | undefined> {
 	try {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- bot API exists at runtime but not in SDK types
-		const res: Record<string, unknown> = await (client as any).bot.botInfo.list();
-		const data = res?.data as
-			| { bot?: { open_id?: string } }
-			| undefined;
+		const res: Record<string, unknown> = await (
+			client as any
+		).bot.botInfo.list();
+		const data = res?.data as { bot?: { open_id?: string } } | undefined;
 		return data?.bot?.open_id ?? undefined;
 	} catch (err) {
 		log?.(`feishu: 获取 bot open_id 失败: ${String(err)}`);
@@ -226,10 +228,7 @@ export async function fetchBotOpenId(
  * 将 Markdown 文本包装为飞书 Interactive Card JSON
  * 用于替代纯文本发送，提升消息可读性
  */
-export function buildMarkdownCard(
-	text: string,
-	title?: string,
-): string {
+export function buildMarkdownCard(text: string, title?: string): string {
 	const elements: Record<string, unknown>[] = [
 		{
 			tag: "markdown",
@@ -278,9 +277,7 @@ export class FeishuOutboundRateLimiter {
 	 */
 	async waitForSlot(): Promise<void> {
 		const now = Date.now();
-		this.timestamps = this.timestamps.filter(
-			(ts) => now - ts < this.windowMs,
-		);
+		this.timestamps = this.timestamps.filter((ts) => now - ts < this.windowMs);
 		if (this.timestamps.length >= this.maxPerWindow) {
 			const oldest = this.timestamps[0]!;
 			const waitMs = this.windowMs - (now - oldest) + 50; // +50ms 安全边距
@@ -305,11 +302,12 @@ export async function testFeishuCredentials(
 			appId,
 			appSecret,
 			appType: Lark.AppType.SelfBuild,
-			domain:
-				domain === "lark" ? Lark.Domain.Lark : Lark.Domain.Feishu,
+			domain: domain === "lark" ? Lark.Domain.Lark : Lark.Domain.Feishu,
 		});
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- bot API exists at runtime but not in SDK types
-		const res: Record<string, unknown> = await (client as any).bot.botInfo.list();
+		const res: Record<string, unknown> = await (
+			client as any
+		).bot.botInfo.list();
 		const code = (res as { code?: number })?.code;
 		if (code === 0) {
 			const data = res?.data as

@@ -27,7 +27,10 @@ export function SettingsSidebar({
 				设置
 			</div>
 
-			<nav className="flex-1 space-y-5 overflow-y-auto pr-1" aria-label="设置导航">
+			<nav
+				className="flex-1 space-y-5 overflow-y-auto pr-1"
+				aria-label="设置导航"
+			>
 				{SETTINGS_NAV_GROUPS.map((group) => (
 					<SettingsSidebarGroup
 						key={group.id}

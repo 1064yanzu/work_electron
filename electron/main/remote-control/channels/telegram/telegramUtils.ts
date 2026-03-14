@@ -10,7 +10,7 @@
  * https://core.telegram.org/bots/api#markdownv2-style
  */
 export function escapeMarkdownV2(text: string): string {
-    return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+	return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
 
 // ─── 消息分块 ────────────────────────────────────────────
@@ -20,33 +20,33 @@ export function escapeMarkdownV2(text: string): string {
  * 尽量在换行符处分割以保持可读性
  */
 export function chunkText(text: string, limit = 4096): string[] {
-    if (text.length <= limit) return [text];
+	if (text.length <= limit) return [text];
 
-    const chunks: string[] = [];
-    let remaining = text;
+	const chunks: string[] = [];
+	let remaining = text;
 
-    while (remaining.length > 0) {
-        if (remaining.length <= limit) {
-            chunks.push(remaining);
-            break;
-        }
+	while (remaining.length > 0) {
+		if (remaining.length <= limit) {
+			chunks.push(remaining);
+			break;
+		}
 
-        // 尝试在换行符处分割
-        let splitIndex = remaining.lastIndexOf("\n", limit);
-        if (splitIndex <= 0 || splitIndex < limit * 0.3) {
-            // 没找到合适的换行符，尝试在空格处分割
-            splitIndex = remaining.lastIndexOf(" ", limit);
-        }
-        if (splitIndex <= 0 || splitIndex < limit * 0.3) {
-            // 仍然没找到，强制在 limit 处切割
-            splitIndex = limit;
-        }
+		// 尝试在换行符处分割
+		let splitIndex = remaining.lastIndexOf("\n", limit);
+		if (splitIndex <= 0 || splitIndex < limit * 0.3) {
+			// 没找到合适的换行符，尝试在空格处分割
+			splitIndex = remaining.lastIndexOf(" ", limit);
+		}
+		if (splitIndex <= 0 || splitIndex < limit * 0.3) {
+			// 仍然没找到，强制在 limit 处切割
+			splitIndex = limit;
+		}
 
-        chunks.push(remaining.slice(0, splitIndex));
-        remaining = remaining.slice(splitIndex).trimStart();
-    }
+		chunks.push(remaining.slice(0, splitIndex));
+		remaining = remaining.slice(splitIndex).trimStart();
+	}
 
-    return chunks;
+	return chunks;
 }
 
 // ─── @bot 检测 ──────────────────────────────────────────
@@ -56,30 +56,28 @@ export function chunkText(text: string, limit = 4096): string[] {
  * Telegram 消息中的 entities 含有 bot_command 和 mention 类型
  */
 export function checkBotMentioned(
-    text: string,
-    entities: Array<{ type: string; offset: number; length: number }> | undefined,
-    botUsername: string | undefined,
+	text: string,
+	entities: Array<{ type: string; offset: number; length: number }> | undefined,
+	botUsername: string | undefined,
 ): boolean {
-    if (!entities || !botUsername) return false;
-    const lower = botUsername.toLowerCase();
-    return entities.some((e) => {
-        if (e.type !== "mention") return false;
-        const mention = text.slice(e.offset, e.offset + e.length);
-        return mention.toLowerCase() === `@${lower}`;
-    });
+	if (!entities || !botUsername) return false;
+	const lower = botUsername.toLowerCase();
+	return entities.some((e) => {
+		if (e.type !== "mention") return false;
+		const mention = text.slice(e.offset, e.offset + e.length);
+		return mention.toLowerCase() === `@${lower}`;
+	});
 }
 
 /**
  * 从消息文本中移除 @bot 的 mention
  */
 export function stripBotMention(
-    text: string,
-    botUsername: string | undefined,
+	text: string,
+	botUsername: string | undefined,
 ): string {
-    if (!botUsername) return text;
-    return text
-        .replace(new RegExp(`@${botUsername}\\s*`, "gi"), "")
-        .trim();
+	if (!botUsername) return text;
+	return text.replace(new RegExp(`@${botUsername}\\s*`, "gi"), "").trim();
 }
 
 // ─── 出站限流器 ────────────────────────────────────────
@@ -90,25 +88,23 @@ export function stripBotMention(
  * 这里做保守的全局限流
  */
 export class TelegramOutboundRateLimiter {
-    private readonly windowMs: number;
-    private readonly maxPerWindow: number;
-    private timestamps: number[] = [];
+	private readonly windowMs: number;
+	private readonly maxPerWindow: number;
+	private timestamps: number[] = [];
 
-    constructor(maxPerSecond = 25) {
-        this.windowMs = 1000;
-        this.maxPerWindow = maxPerSecond;
-    }
+	constructor(maxPerSecond = 25) {
+		this.windowMs = 1000;
+		this.maxPerWindow = maxPerSecond;
+	}
 
-    async waitForSlot(): Promise<void> {
-        const now = Date.now();
-        this.timestamps = this.timestamps.filter(
-            (ts) => now - ts < this.windowMs,
-        );
-        if (this.timestamps.length >= this.maxPerWindow) {
-            const oldest = this.timestamps[0]!;
-            const waitMs = this.windowMs - (now - oldest) + 50;
-            await new Promise((resolve) => setTimeout(resolve, waitMs));
-        }
-        this.timestamps.push(Date.now());
-    }
+	async waitForSlot(): Promise<void> {
+		const now = Date.now();
+		this.timestamps = this.timestamps.filter((ts) => now - ts < this.windowMs);
+		if (this.timestamps.length >= this.maxPerWindow) {
+			const oldest = this.timestamps[0]!;
+			const waitMs = this.windowMs - (now - oldest) + 50;
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+		}
+		this.timestamps.push(Date.now());
+	}
 }

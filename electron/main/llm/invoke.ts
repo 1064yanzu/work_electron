@@ -198,7 +198,10 @@ let providerCacheData: Provider[] = [];
 
 async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
 	const now = Date.now();
-	if (now - providerCacheTimestamp < PROVIDER_CACHE_TTL_MS && providerCacheData.length > 0) {
+	if (
+		now - providerCacheTimestamp < PROVIDER_CACHE_TTL_MS &&
+		providerCacheData.length > 0
+	) {
 		return providerCacheData;
 	}
 

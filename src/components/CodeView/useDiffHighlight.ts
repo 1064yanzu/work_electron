@@ -44,13 +44,15 @@ export function useDiffHighlight(
 		Promise.all([
 			highlightToTokens(oldContent, lang, theme),
 			highlightToTokens(newContent, lang, theme),
-		]).then(([oldTokens, newTokens]) => {
-			if (id !== requestRef.current) return;
-			setState({ oldTokens, newTokens, loaded: true });
-		}).catch(() => {
-			if (id !== requestRef.current) return;
-			setState({ oldTokens: null, newTokens: null, loaded: true });
-		});
+		])
+			.then(([oldTokens, newTokens]) => {
+				if (id !== requestRef.current) return;
+				setState({ oldTokens, newTokens, loaded: true });
+			})
+			.catch(() => {
+				if (id !== requestRef.current) return;
+				setState({ oldTokens: null, newTokens: null, loaded: true });
+			});
 	}, [oldContent, newContent, lang, theme]);
 
 	/**
@@ -67,7 +69,11 @@ export function useDiffHighlight(
 			}
 
 			// 尝试在 old/new tokens 中查找匹配此行内容的 token 行
-			const lineTokens = findTokensForLine(source, state.oldTokens, state.newTokens);
+			const lineTokens = findTokensForLine(
+				source,
+				state.oldTokens,
+				state.newTokens,
+			);
 
 			if (!lineTokens) {
 				return createElement("span", null, source);
@@ -77,7 +83,11 @@ export function useDiffHighlight(
 				"span",
 				null,
 				lineTokens.map((token, i) =>
-					createElement("span", { key: i, style: { color: token.color } }, token.content),
+					createElement(
+						"span",
+						{ key: i, style: { color: token.color } },
+						token.content,
+					),
 				),
 			);
 		},

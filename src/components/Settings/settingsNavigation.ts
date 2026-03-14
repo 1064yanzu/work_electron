@@ -14,7 +14,11 @@ import {
 	Zap,
 	type LucideIcon,
 } from "lucide-react";
-import type { SettingsExperienceMode, SettingsNavGroup, SettingsTabId } from "./types";
+import type {
+	SettingsExperienceMode,
+	SettingsNavGroup,
+	SettingsTabId,
+} from "./types";
 
 export interface SettingsNavItem {
 	id: SettingsTabId;
@@ -25,19 +29,97 @@ export interface SettingsNavItem {
 }
 
 export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
-	{ id: "dashboard", label: "使用统计", icon: BarChart3, group: "common", simpleMode: "full" },
-	{ id: "aiCoding", label: "AI 编程", icon: Bot, group: "common", simpleMode: "full" },
-	{ id: "models", label: "模型配置", icon: Sparkles, group: "common", simpleMode: "full" },
-	{ id: "prompts", label: "提示词配置", icon: MessageSquare, group: "common", simpleMode: "full" },
-	{ id: "imagegen", label: "AI 生图", icon: Image, group: "common", simpleMode: "full" },
-	{ id: "general", label: "常规设置", icon: SettingsIcon, group: "common", simpleMode: "full" },
-	{ id: "data", label: "数据与同步", icon: Database, group: "common", simpleMode: "full" },
-	{ id: "agent", label: "Agent 设置", icon: Shield, group: "technical", simpleMode: "summary" },
-	{ id: "skills", label: "Agent 技能", icon: Zap, group: "technical", simpleMode: "summary" },
-	{ id: "mcp", label: "MCP 配置", icon: Plug, group: "technical", simpleMode: "summary" },
-	{ id: "remoteControl", label: "远程控制", icon: Smartphone, group: "technical", simpleMode: "summary" },
-	{ id: "performance", label: "性能优化", icon: Gauge, group: "technical", simpleMode: "summary" },
-	{ id: "artifacts", label: "产物管理", icon: Archive, group: "technical", simpleMode: "summary" },
+	{
+		id: "dashboard",
+		label: "使用统计",
+		icon: BarChart3,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "aiCoding",
+		label: "AI 编程",
+		icon: Bot,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "models",
+		label: "模型配置",
+		icon: Sparkles,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "prompts",
+		label: "提示词配置",
+		icon: MessageSquare,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "imagegen",
+		label: "AI 生图",
+		icon: Image,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "general",
+		label: "常规设置",
+		icon: SettingsIcon,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "data",
+		label: "数据与同步",
+		icon: Database,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "agent",
+		label: "Agent 设置",
+		icon: Shield,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "skills",
+		label: "Agent 技能",
+		icon: Zap,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "mcp",
+		label: "MCP 配置",
+		icon: Plug,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "remoteControl",
+		label: "远程控制",
+		icon: Smartphone,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "performance",
+		label: "性能优化",
+		icon: Gauge,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "artifacts",
+		label: "产物管理",
+		icon: Archive,
+		group: "technical",
+		simpleMode: "summary",
+	},
 ];
 
 export const SETTINGS_NAV_GROUPS: Array<{

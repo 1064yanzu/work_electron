@@ -42,7 +42,9 @@ export function ContextPicker({
 			})),
 		];
 		const keyword = filterText.toLowerCase();
-		return allItems.filter((item) => item.title.toLowerCase().includes(keyword));
+		return allItems.filter((item) =>
+			item.title.toLowerCase().includes(keyword),
+		);
 	}, [sourcesQuery.data, outputsQuery.data, filterText]);
 
 	useEffect(() => {

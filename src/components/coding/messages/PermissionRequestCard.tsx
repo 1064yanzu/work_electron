@@ -32,26 +32,46 @@ function getToolIcon(toolName: string) {
 	if (name.includes("bash") || name.includes("cmd") || name.includes("exec")) {
 		return Terminal;
 	}
-	if (name.includes("write") || name.includes("edit") || name.includes("patch") || name.includes("create")) {
+	if (
+		name.includes("write") ||
+		name.includes("edit") ||
+		name.includes("patch") ||
+		name.includes("create")
+	) {
 		return FileEdit;
 	}
-	if (name.includes("read") || name.includes("view") || name.includes("str_replace")) {
+	if (
+		name.includes("read") ||
+		name.includes("view") ||
+		name.includes("str_replace")
+	) {
 		return Code2;
 	}
-	if (name.includes("web") || name.includes("fetch") || name.includes("http") || name.includes("url")) {
+	if (
+		name.includes("web") ||
+		name.includes("fetch") ||
+		name.includes("http") ||
+		name.includes("url")
+	) {
 		return Globe;
 	}
 	return Zap;
 }
 
 // 生成工具可读摘要
-function getToolSummary(toolName: string, toolInput: Record<string, unknown>): string | null {
+function getToolSummary(
+	toolName: string,
+	toolInput: Record<string, unknown>,
+): string | null {
 	const name = toolName.toLowerCase();
 
 	if (name === "bash" && typeof toolInput.command === "string") {
 		return toolInput.command.slice(0, 120);
 	}
-	if ((name.includes("write") || name.includes("create")) && typeof toolInput.path === "string") {
+	if (
+		(name.includes("write") || name.includes("create")) &&
+		typeof toolInput.path === "string"
+	) {
 		return toolInput.path;
 	}
 	if (name.includes("edit") && typeof toolInput.path === "string") {
@@ -86,7 +106,10 @@ export function PermissionRequestCard({
 	useEffect(() => {
 		if (resolved) return;
 		const interval = setInterval(() => {
-			const remaining = Math.max(0, Math.round((request.expiresAt - Date.now()) / 1000));
+			const remaining = Math.max(
+				0,
+				Math.round((request.expiresAt - Date.now()) / 1000),
+			);
 			setTimeRemaining(remaining);
 			if (remaining === 0) {
 				clearInterval(interval);
@@ -136,7 +159,9 @@ export function PermissionRequestCard({
 					)}
 					<span
 						className={`text-[11px] font-medium ${
-							isAllowed ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400"
+							isAllowed
+								? "text-emerald-600 dark:text-emerald-400"
+								: "text-zinc-400"
 						}`}
 					>
 						{isAllowed ? "已允许" : "已拒绝"}
@@ -222,9 +247,7 @@ export function PermissionRequestCard({
 					<ShieldCheck className="h-3 w-3" />
 					允许
 				</button>
-				<p className="ml-auto text-[10px] text-zinc-400">
-					超时将自动拒绝
-				</p>
+				<p className="ml-auto text-[10px] text-zinc-400">超时将自动拒绝</p>
 			</div>
 		</div>
 	);

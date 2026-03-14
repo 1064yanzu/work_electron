@@ -1875,7 +1875,12 @@ export type IPCSchema = {
 		output: {
 			claude?: {
 				model?: string;
-				mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+				mcpServers?: Array<{
+					name: string;
+					command?: string;
+					url?: string;
+					type?: string;
+				}>;
 				permissions?: string[];
 			};
 			codex?: {

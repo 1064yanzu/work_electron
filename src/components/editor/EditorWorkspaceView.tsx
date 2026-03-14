@@ -220,13 +220,13 @@ export function EditorWorkspaceView({
 						onContextMenu={onPreviewContextMenu}
 						className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:leading-[1.75] prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100"
 					>
-						<PreviewMarkdownContent content={previewContent} className={textClass} />
+						<PreviewMarkdownContent
+							content={previewContent}
+							className={textClass}
+						/>
 					</article>
 				) : (
-					<textarea
-						{...textareaProps}
-						placeholder="开始写作..."
-					/>
+					<textarea {...textareaProps} placeholder="开始写作..." />
 				)}
 			</div>
 		</div>

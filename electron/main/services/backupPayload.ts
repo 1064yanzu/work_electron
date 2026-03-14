@@ -125,7 +125,9 @@ async function getTableColumns(
 ): Promise<string[]> {
 	const cached = cache.get(table);
 	if (cached) return cached;
-	const rows = await db.client.execute(`PRAGMA table_info(${quoteIdentifier(table)})`);
+	const rows = await db.client.execute(
+		`PRAGMA table_info(${quoteIdentifier(table)})`,
+	);
 	const cols = rows.rows
 		.map((row) => String(row.name || ""))
 		.filter((name) => name.length > 0);
@@ -172,7 +174,9 @@ export async function collectFullBackupPayload(
 
 		if (rowCount <= LARGE_TABLE_THRESHOLD) {
 			// 小表全量导出
-			const rows = await db.client.execute(`SELECT * FROM ${quoteIdentifier(table)}`);
+			const rows = await db.client.execute(
+				`SELECT * FROM ${quoteIdentifier(table)}`,
+			);
 			tables[table] = rows.rows.map((row) => ({ ...(row as BackupRow) }));
 		} else {
 			// 大表分批导出，降低内存峰值

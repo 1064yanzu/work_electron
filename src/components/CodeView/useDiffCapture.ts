@@ -28,15 +28,15 @@ function isFileWriteToolCall(toolCall: ToolCall): boolean {
  */
 function extractFilePath(toolCall: ToolCall): string {
 	const input = toolCall.input || {};
-	return String(
-		input.file_path || input.path || input.file || "",
-	).trim();
+	return String(input.file_path || input.path || input.file || "").trim();
 }
 
 /**
  * 从 Edit 类工具中提取 old_string 和 new_string
  */
-function extractEditStrings(toolCall: ToolCall): { oldString: string; newString: string } | null {
+function extractEditStrings(
+	toolCall: ToolCall,
+): { oldString: string; newString: string } | null {
 	const input = toolCall.input || {};
 	const oldString = input.old_string || input.oldString;
 	const newString = input.new_string || input.newString;
@@ -61,9 +61,12 @@ function extractWriteContent(toolCall: ToolCall): string | null {
  */
 async function readFileContent(filePath: string): Promise<string | null> {
 	try {
-		const content = await (window as any).electronAPI?.invoke("read_file_utf8", {
-			path: filePath,
-		});
+		const content = await (window as any).electronAPI?.invoke(
+			"read_file_utf8",
+			{
+				path: filePath,
+			},
+		);
 		return typeof content === "string" ? content : null;
 	} catch {
 		return null;
@@ -158,10 +161,7 @@ export function useDiffCapture() {
 	// 当任务完成时清理已处理记录（为下一个任务做准备）
 	useEffect(() => {
 		const unsubscribe = agentStore.onEvent((event) => {
-			if (
-				event.type === "task_completed" ||
-				event.type === "task_error"
-			) {
+			if (event.type === "task_completed" || event.type === "task_error") {
 				// 不清除 diff 数据（用户可能还需要查看），只清除处理记录
 				processedIds.current.clear();
 			}

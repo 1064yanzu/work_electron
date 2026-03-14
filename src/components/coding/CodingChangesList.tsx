@@ -45,9 +45,7 @@ export function CodingChangesList() {
 		return (
 			<div className="flex flex-col items-center justify-center h-full px-4 py-12">
 				<FileDiff className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mb-3" />
-				<p className="text-xs text-zinc-400 text-center">
-					暂无文件变更
-				</p>
+				<p className="text-xs text-zinc-400 text-center">暂无文件变更</p>
 				<p className="text-[10px] text-zinc-400/60 text-center mt-1">
 					AI 编辑文件后变更将显示在这里
 				</p>
@@ -133,9 +131,7 @@ function DiffFileItem({ diff }: { diff: FileDiffType }) {
 		>
 			<StatusIcon
 				className={`w-3.5 h-3.5 shrink-0 ${
-					diff.toolName === "Write"
-						? "text-emerald-500"
-						: "text-amber-500"
+					diff.toolName === "Write" ? "text-emerald-500" : "text-amber-500"
 				}`}
 			/>
 

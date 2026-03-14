@@ -110,14 +110,15 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 						{currentResearch.steps.map((step) => (
 							<div
 								key={step.id}
-								className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${step.status === "running"
-									? "bg-blue-50 dark:bg-blue-900/20"
-									: step.status === "completed"
-										? "bg-green-50/50 dark:bg-green-900/10"
-										: step.status === "error"
-											? "bg-red-50/50 dark:bg-red-900/10"
-											: "bg-zinc-50 dark:bg-zinc-800/50"
-									}`}
+								className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+									step.status === "running"
+										? "bg-blue-50 dark:bg-blue-900/20"
+										: step.status === "completed"
+											? "bg-green-50/50 dark:bg-green-900/10"
+											: step.status === "error"
+												? "bg-red-50/50 dark:bg-red-900/10"
+												: "bg-zinc-50 dark:bg-zinc-800/50"
+								}`}
 							>
 								<div className="mt-0.5">{getStepIcon(step)}</div>
 								<div className="flex-1 min-w-0">

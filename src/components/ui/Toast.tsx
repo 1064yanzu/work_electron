@@ -218,7 +218,10 @@ function ToastItemView({
 			{item.duration > 0 ? (
 				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-100 dark:bg-zinc-800">
 					<div
-						className={cn("h-full transition-[width] duration-75", styles.progress)}
+						className={cn(
+							"h-full transition-[width] duration-75",
+							styles.progress,
+						)}
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
@@ -256,7 +259,9 @@ class ToastAPI {
 			onAction: options.onAction,
 			actionVariant: options.actionVariant ?? "default",
 		};
-		window.dispatchEvent(new CustomEvent(TOAST_EVENT_NAME, { detail: payload }));
+		window.dispatchEvent(
+			new CustomEvent(TOAST_EVENT_NAME, { detail: payload }),
+		);
 	}
 
 	success(message: string, duration = 3000) {

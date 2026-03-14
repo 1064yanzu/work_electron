@@ -25,11 +25,11 @@ export function StatusDot({ status, size = "sm" }: StatusDotProps) {
 		);
 	}
 	if (status === "error") {
-		return (
-			<div className={`${sizeClass} rounded-full bg-red-500 shrink-0`} />
-		);
+		return <div className={`${sizeClass} rounded-full bg-red-500 shrink-0`} />;
 	}
 	return (
-		<div className={`${sizeClass} rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0`} />
+		<div
+			className={`${sizeClass} rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0`}
+		/>
 	);
 }

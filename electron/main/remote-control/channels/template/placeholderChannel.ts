@@ -9,7 +9,7 @@ export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 	constructor(
 		public readonly id: "generic_webhook",
 		private readonly logger: Logger,
-	) { }
+	) {}
 
 	async start(ctx: RemoteChannelContext): Promise<void> {
 		ctx.onStatusPatch({
@@ -19,7 +19,7 @@ export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 		});
 	}
 
-	async stop(): Promise<void> { }
+	async stop(): Promise<void> {}
 
 	async send(message: RemoteOutboundMessage): Promise<void> {
 		this.logger.warn({

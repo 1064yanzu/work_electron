@@ -220,25 +220,24 @@ export function SlashPrimaryMenu({
 							onMouseEnter={() => setSelectedIndex(index)}
 							className={`w-full flex items-center gap-3 px-2.5 py-[9px] rounded-xl text-left cursor-pointer select-none
                 transition-all duration-[120ms] ease-out
-                ${isSelected
-									? "bg-[#f3f3f3] dark:bg-[#363636]"
-									: ""
-								}`}
+                ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}`}
 						>
 							{/* 图标容器 — 选中时用品牌色底 */}
 							<div
 								className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0
                   transition-all duration-[120ms] ease-out
-                  ${isSelected
-										? `${category.gradient} shadow-sm`
-										: "bg-[#f5f5f5] dark:bg-[#363636]"
+                  ${
+										isSelected
+											? `${category.gradient} shadow-sm`
+											: "bg-[#f5f5f5] dark:bg-[#363636]"
 									}`}
 							>
 								<category.icon
 									className={`w-[15px] h-[15px] transition-colors duration-[120ms]
-                    ${isSelected
-											? "" // gradient 类里已有颜色
-											: "text-[#999] dark:text-[#666]"
+                    ${
+											isSelected
+												? "" // gradient 类里已有颜色
+												: "text-[#999] dark:text-[#666]"
 										}`}
 								/>
 							</div>
@@ -248,9 +247,10 @@ export function SlashPrimaryMenu({
 								<div className="flex items-baseline gap-1.5">
 									<span
 										className={`text-[13px] font-medium leading-tight transition-colors duration-[120ms]
-                      ${isSelected
-												? "text-[#1a1a1a] dark:text-[#eee]"
-												: "text-[#666] dark:text-[#999]"
+                      ${
+												isSelected
+													? "text-[#1a1a1a] dark:text-[#eee]"
+													: "text-[#666] dark:text-[#999]"
 											}`}
 									>
 										{category.name}
@@ -263,9 +263,10 @@ export function SlashPrimaryMenu({
 								</div>
 								<p
 									className={`text-[11px] leading-tight mt-0.5 transition-colors duration-[120ms]
-                    ${isSelected
-											? "text-[#999] dark:text-[#777]"
-											: "text-[#bbb] dark:text-[#555]"
+                    ${
+											isSelected
+												? "text-[#999] dark:text-[#777]"
+												: "text-[#bbb] dark:text-[#555]"
 										}`}
 								>
 									{category.description}
@@ -275,9 +276,10 @@ export function SlashPrimaryMenu({
 							{/* chevron */}
 							<ChevronRight
 								className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-[120ms] ease-out
-                  ${isSelected
-										? "text-[#999] dark:text-[#666] translate-x-px opacity-100"
-										: "text-transparent opacity-0"
+                  ${
+										isSelected
+											? "text-[#999] dark:text-[#666] translate-x-px opacity-100"
+											: "text-transparent opacity-0"
 									}`}
 							/>
 						</div>

@@ -52,7 +52,10 @@ export function useNavigation(initialView: ViewType = "dashboard") {
 
 	/** 导航到编程工作区（可选参数：不传则进入线程首页） */
 	const navigateToCoding = useCallback((projectPath?: string) => {
-		debugUiLog("[useNavigation] 导航到编程工作区:", projectPath || "(线程首页)");
+		debugUiLog(
+			"[useNavigation] 导航到编程工作区:",
+			projectPath || "(线程首页)",
+		);
 		setNavState({ view: "coding", codingProjectPath: projectPath });
 	}, []);
 

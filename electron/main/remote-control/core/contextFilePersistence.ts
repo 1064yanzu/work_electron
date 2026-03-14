@@ -27,7 +27,9 @@ function normalizeFileName(raw: string, fallback: string): string {
 	const ext = extRaw ? extRaw.slice(0, 10) : ".md";
 	const baseRaw = extRaw ? input.slice(0, -extRaw.length) : input;
 	const base =
-		sanitizeFileNameSegment(baseRaw) || sanitizeFileNameSegment(fallback) || "doc";
+		sanitizeFileNameSegment(baseRaw) ||
+		sanitizeFileNameSegment(fallback) ||
+		"doc";
 	return `${base}${ext.startsWith(".") ? ext : `.${ext}`}`;
 }
 

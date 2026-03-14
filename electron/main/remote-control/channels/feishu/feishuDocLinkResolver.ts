@@ -135,7 +135,12 @@ export class FeishuDocLinkResolver {
 
 	private async fetchDocxContent(
 		documentId: string,
-	): Promise<{ ok: boolean; content?: string; detail?: string; code?: number }> {
+	): Promise<{
+		ok: boolean;
+		content?: string;
+		detail?: string;
+		code?: number;
+	}> {
 		const response = await this.client.docx.v1.document.rawContent({
 			path: { document_id: documentId },
 		});
@@ -368,7 +373,9 @@ export class FeishuDocLinkResolver {
 		return lines.join("\n");
 	}
 
-	private buildContextFiles(entries: DocPrefetchEntry[]): FeishuResolvedContextFile[] {
+	private buildContextFiles(
+		entries: DocPrefetchEntry[],
+	): FeishuResolvedContextFile[] {
 		const files: FeishuResolvedContextFile[] = [];
 		for (const [index, item] of entries.entries()) {
 			if (!item.content) continue;

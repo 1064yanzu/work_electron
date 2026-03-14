@@ -65,28 +65,28 @@ export function createUseStoreSelector<T>(store: ReadableStoreApi<T>) {
 		const lastSelectedRef = useRef<R | null>(null);
 		selectorRef.current = selector;
 
-		const getSnapshot = useCallback(
-			() => {
-				const nextState = store.getState();
-				if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
-					return lastSelectedRef.current;
-				}
+		const getSnapshot = useCallback(() => {
+			const nextState = store.getState();
+			if (
+				lastStateRef.current === nextState &&
+				lastSelectedRef.current !== null
+			) {
+				return lastSelectedRef.current;
+			}
 
-				const nextSelected = selectorRef.current(nextState);
-				if (
-					lastStateRef.current === nextState &&
-					lastSelectedRef.current !== null &&
-					Object.is(lastSelectedRef.current, nextSelected)
-				) {
-					return lastSelectedRef.current;
-				}
+			const nextSelected = selectorRef.current(nextState);
+			if (
+				lastStateRef.current === nextState &&
+				lastSelectedRef.current !== null &&
+				Object.is(lastSelectedRef.current, nextSelected)
+			) {
+				return lastSelectedRef.current;
+			}
 
-				lastStateRef.current = nextState;
-				lastSelectedRef.current = nextSelected;
-				return nextSelected;
-			},
-			[],
-		);
+			lastStateRef.current = nextState;
+			lastSelectedRef.current = nextSelected;
+			return nextSelected;
+		}, []);
 
 		return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 	};

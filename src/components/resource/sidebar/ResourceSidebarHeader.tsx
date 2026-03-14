@@ -98,10 +98,11 @@ export function ResourceSidebarHeader({
 					type="button"
 					onClick={onToggleSelectionMode}
 					aria-label={selectionMode ? "退出批量管理" : "进入批量管理"}
-					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring cursor-pointer ${selectionMode
+					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring cursor-pointer ${
+						selectionMode
 							? "text-primary bg-primary/10"
 							: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-						}`}
+					}`}
 				>
 					{selectionMode ? (
 						<CheckSquare className="w-3.5 h-3.5" />

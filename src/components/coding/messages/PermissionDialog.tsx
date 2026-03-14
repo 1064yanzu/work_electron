@@ -1,17 +1,23 @@
 /**
  * 权限审批浮窗 - 工具名、输入预览、Allow/Deny 按钮
  */
-import { ShieldAlert, Check, X } from 'lucide-react';
-import type { SessionPermissionRequest } from '../../../lib/stores/codingSessionTypes';
+import { ShieldAlert, Check, X } from "lucide-react";
+import type { SessionPermissionRequest } from "../../../lib/stores/codingSessionTypes";
 
 interface PermissionDialogProps {
 	request: SessionPermissionRequest;
 	onResolve: (requestId: string, allow: boolean) => void;
 }
 
-export function PermissionDialog({ request, onResolve }: PermissionDialogProps) {
+export function PermissionDialog({
+	request,
+	onResolve,
+}: PermissionDialogProps) {
 	const inputPreview = JSON.stringify(request.toolInput, null, 2);
-	const timeRemaining = Math.max(0, Math.round((request.expiresAt - Date.now()) / 1000));
+	const timeRemaining = Math.max(
+		0,
+		Math.round((request.expiresAt - Date.now()) / 1000),
+	);
 
 	return (
 		<div className="mx-4 mb-4 rounded-xl border border-amber-300/50 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-900/20 backdrop-blur-sm shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-200">

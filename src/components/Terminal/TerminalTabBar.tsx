@@ -18,13 +18,10 @@ export function TerminalTabBar() {
 		terminalStore.createTerminal();
 	}, []);
 
-	const handleClose = useCallback(
-		(e: React.MouseEvent, id: string) => {
-			e.stopPropagation();
-			terminalStore.destroyTerminal(id);
-		},
-		[],
-	);
+	const handleClose = useCallback((e: React.MouseEvent, id: string) => {
+		e.stopPropagation();
+		terminalStore.destroyTerminal(id);
+	}, []);
 
 	const handleSelect = useCallback((id: string) => {
 		terminalStore.setActiveTerminal(id);

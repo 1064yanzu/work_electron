@@ -10,7 +10,11 @@ interface BreadcrumbNavProps {
 	className?: string;
 }
 
-function BreadcrumbNavInner({ filePath, projectPath, className = "" }: BreadcrumbNavProps) {
+function BreadcrumbNavInner({
+	filePath,
+	projectPath,
+	className = "",
+}: BreadcrumbNavProps) {
 	const segments = useMemo(() => {
 		let displayPath = filePath;
 
@@ -29,7 +33,9 @@ function BreadcrumbNavInner({ filePath, projectPath, className = "" }: Breadcrum
 	if (segments.length === 0) return null;
 
 	return (
-		<nav className={`flex items-center gap-0.5 min-w-0 overflow-hidden ${className}`}>
+		<nav
+			className={`flex items-center gap-0.5 min-w-0 overflow-hidden ${className}`}
+		>
 			{segments.map((segment, idx) => {
 				const isLast = idx === segments.length - 1;
 				return (

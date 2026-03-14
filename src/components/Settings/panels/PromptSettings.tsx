@@ -474,122 +474,122 @@ export function PromptSettings() {
 				}
 			/>
 
-				{/* 提示词列表 */}
-				<div className="space-y-4">
-					{PROMPT_CONFIGS.map((config) => {
-						const isExpanded = expandedId === config.id;
-						const currentValue = prompts[config.id] || "";
-						const isModified = currentValue !== config.defaultValue;
+			{/* 提示词列表 */}
+			<div className="space-y-4">
+				{PROMPT_CONFIGS.map((config) => {
+					const isExpanded = expandedId === config.id;
+					const currentValue = prompts[config.id] || "";
+					const isModified = currentValue !== config.defaultValue;
 
-						return (
-							<div
-								key={config.id}
-								className={`rounded-xl border transition-all ${
-									isExpanded
-										? "border-zinc-300 dark:border-zinc-600 shadow-sm"
-										: "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-								}`}
+					return (
+						<div
+							key={config.id}
+							className={`rounded-xl border transition-all ${
+								isExpanded
+									? "border-zinc-300 dark:border-zinc-600 shadow-sm"
+									: "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+							}`}
+						>
+							{/* 折叠头部 */}
+							<button
+								onClick={() => toggleExpand(config.id)}
+								className="w-full flex items-center justify-between px-4 py-3 text-left"
 							>
-								{/* 折叠头部 */}
-								<button
-									onClick={() => toggleExpand(config.id)}
-									className="w-full flex items-center justify-between px-4 py-3 text-left"
-								>
-									<div className="flex items-center gap-3">
-										<div
-											className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-												isModified
-													? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-													: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-											}`}
-										>
-											<config.icon className="w-4 h-4" />
-										</div>
-										<div>
-											<div className="flex items-center gap-2">
-												<span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-													{config.label}
+								<div className="flex items-center gap-3">
+									<div
+										className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+											isModified
+												? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+												: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+										}`}
+									>
+										<config.icon className="w-4 h-4" />
+									</div>
+									<div>
+										<div className="flex items-center gap-2">
+											<span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+												{config.label}
+											</span>
+											{isModified && (
+												<span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+													已修改
 												</span>
-												{isModified && (
-													<span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
-														已修改
-													</span>
-												)}
-											</div>
-											<p className="text-xs text-zinc-500 mt-0.5">
-												{config.description}
+											)}
+										</div>
+										<p className="text-xs text-zinc-500 mt-0.5">
+											{config.description}
+										</p>
+									</div>
+								</div>
+								<div className="flex items-center gap-2">
+									{isExpanded ? (
+										<ChevronUp className="w-4 h-4 text-zinc-400" />
+									) : (
+										<ChevronDown className="w-4 h-4 text-zinc-400" />
+									)}
+								</div>
+							</button>
+
+							{/* 展开内容 */}
+							{isExpanded && (
+								<div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800">
+									<div className="pt-4 space-y-3">
+										<textarea
+											value={currentValue}
+											onChange={(e) =>
+												handlePromptChange(config.id, e.target.value)
+											}
+											placeholder={config.placeholder}
+											rows={12}
+											className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 resize-none font-mono leading-relaxed"
+										/>
+										<div className="flex items-center justify-between">
+											<p className="text-xs text-zinc-400">
+												{currentValue.length} 字符
 											</p>
+											<button
+												onClick={() => handleReset(config.id)}
+												disabled={!isModified}
+												className={`flex items-center gap-1 text-xs transition-colors ${
+													isModified
+														? "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+														: "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
+												}`}
+											>
+												<RotateCcw className="w-3 h-3" />
+												<span>恢复默认</span>
+											</button>
 										</div>
 									</div>
-									<div className="flex items-center gap-2">
-										{isExpanded ? (
-											<ChevronUp className="w-4 h-4 text-zinc-400" />
-										) : (
-											<ChevronDown className="w-4 h-4 text-zinc-400" />
-										)}
-									</div>
-								</button>
+								</div>
+							)}
+						</div>
+					);
+				})}
+			</div>
 
-								{/* 展开内容 */}
-								{isExpanded && (
-									<div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800">
-										<div className="pt-4 space-y-3">
-											<textarea
-												value={currentValue}
-												onChange={(e) =>
-													handlePromptChange(config.id, e.target.value)
-												}
-												placeholder={config.placeholder}
-												rows={12}
-												className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 resize-none font-mono leading-relaxed"
-											/>
-											<div className="flex items-center justify-between">
-												<p className="text-xs text-zinc-400">
-													{currentValue.length} 字符
-												</p>
-												<button
-													onClick={() => handleReset(config.id)}
-													disabled={!isModified}
-													className={`flex items-center gap-1 text-xs transition-colors ${
-														isModified
-															? "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-															: "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
-													}`}
-												>
-													<RotateCcw className="w-3 h-3" />
-													<span>恢复默认</span>
-												</button>
-											</div>
-										</div>
-									</div>
-								)}
-							</div>
-						);
-					})}
-				</div>
-
-				{/* 使用说明 */}
-				<div className="mt-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-					<h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-						使用说明
-					</h4>
-					<ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1.5">
-						<li>
-							• 提示词中可以使用变量占位符，如{" "}
-							<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
-								{"{message}"}
-							</code>
-							、
-							<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
-								{"{document}"}
-							</code>{" "}
-							等
-						</li>
-						<li>• 修改后需要点击「保存更改」按钮才会生效</li>
-						<li>• 点击「恢复默认」可以将单个提示词重置为默认值</li>
-						<li>• 提示词的质量直接影响 AI 的响应效果，请谨慎修改</li>
-					</ul>
-				</div>
+			{/* 使用说明 */}
+			<div className="mt-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+				<h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+					使用说明
+				</h4>
+				<ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1.5">
+					<li>
+						• 提示词中可以使用变量占位符，如{" "}
+						<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
+							{"{message}"}
+						</code>
+						、
+						<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
+							{"{document}"}
+						</code>{" "}
+						等
+					</li>
+					<li>• 修改后需要点击「保存更改」按钮才会生效</li>
+					<li>• 点击「恢复默认」可以将单个提示词重置为默认值</li>
+					<li>• 提示词的质量直接影响 AI 的响应效果，请谨慎修改</li>
+				</ul>
+			</div>
 		</SettingsPageContainer>
 	);
 }

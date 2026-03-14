@@ -104,9 +104,7 @@ export interface ClaudeCodeOutputEvent {
 
 // ─── CLI 参数构建 ──────────────────────────────────────────────────
 
-function mapPermissionMode(
-	mode?: ClaudeCodeApprovalMode,
-): string | undefined {
+function mapPermissionMode(mode?: ClaudeCodeApprovalMode): string | undefined {
 	if (!mode) return undefined;
 	// Claude Code CLI 接受的 --permission-mode 值
 	const modeMap: Record<string, string> = {
@@ -121,11 +119,7 @@ function mapPermissionMode(
 }
 
 function buildClaudeCodeArgs(options: ClaudeCodeSessionOptions): string[] {
-	const args: string[] = [
-		"--print",
-		"--output-format",
-		"stream-json",
-	];
+	const args: string[] = ["--print", "--output-format", "stream-json"];
 
 	// 模型
 	if (options.model?.trim()) {
@@ -175,10 +169,7 @@ function buildClaudeCodeArgs(options: ClaudeCodeSessionOptions): string[] {
 	}
 
 	// 预算限制
-	if (
-		typeof options.maxBudgetUsd === "number" &&
-		options.maxBudgetUsd > 0
-	) {
+	if (typeof options.maxBudgetUsd === "number" && options.maxBudgetUsd > 0) {
 		args.push("--max-budget-usd", String(options.maxBudgetUsd));
 	}
 
@@ -280,7 +271,10 @@ function isInternalStderrLine(text: string): boolean {
 	if (lower.includes("api_key") || lower.includes("apikey")) return true;
 
 	// Token + 认证上下文
-	if (lower.includes("token") && (lower.includes("auth") || lower.includes("bearer")))
+	if (
+		lower.includes("token") &&
+		(lower.includes("auth") || lower.includes("bearer"))
+	)
 		return true;
 
 	// CLI 加载信息
@@ -321,7 +315,9 @@ export function spawnClaudeCodeSession(
 
 	// 诊断日志
 	console.log(`[claude-code] spawn binary: ${binary}`);
-	console.log(`[claude-code] spawn args: ${JSON.stringify(args).slice(0, 500)}`);
+	console.log(
+		`[claude-code] spawn args: ${JSON.stringify(args).slice(0, 500)}`,
+	);
 	console.log(`[claude-code] model: ${options.model?.trim() || "(default)"}`);
 	console.log(`[claude-code] cwd: ${options.cwd}`);
 	console.log(
@@ -375,9 +371,7 @@ export function spawnClaudeCodeSession(
 
 			if (uiEvents.length > 0) {
 				// 检查是否包含 result 事件（表示完成）
-				const resultEvent = uiEvents.find(
-					(e: any) => e.type === "result",
-				);
+				const resultEvent = uiEvents.find((e: any) => e.type === "result");
 				if (resultEvent) {
 					emittedDone = true;
 					const usage = extractUsage(rawObj);
@@ -498,7 +492,9 @@ export async function spawnClaudeCodeSessionSdk(
 						.toString(36)
 						.slice(2, 8)}`;
 					const normalizedInput: Record<string, unknown> =
-						toolInput && typeof toolInput === "object" && !Array.isArray(toolInput)
+						toolInput &&
+						typeof toolInput === "object" &&
+						!Array.isArray(toolInput)
 							? (toolInput as Record<string, unknown>)
 							: {};
 					try {
@@ -518,13 +514,19 @@ export async function spawnClaudeCodeSessionSdk(
 			};
 
 			if (options.model?.trim()) queryOptions.model = options.model.trim();
-			if (options.permissionMode) queryOptions.permissionMode = options.permissionMode;
-			if (options.systemPrompt?.trim()) queryOptions.systemPrompt = options.systemPrompt.trim();
-			if (options.resumeSessionId?.trim()) queryOptions.resume = options.resumeSessionId.trim();
+			if (options.permissionMode)
+				queryOptions.permissionMode = options.permissionMode;
+			if (options.systemPrompt?.trim())
+				queryOptions.systemPrompt = options.systemPrompt.trim();
+			if (options.resumeSessionId?.trim())
+				queryOptions.resume = options.resumeSessionId.trim();
 			else if (options.continueSession) queryOptions.continue = true;
-			if (options.settingSources?.length) queryOptions.settingSources = options.settingSources;
-			if (options.allowedTools?.length) queryOptions.allowedTools = options.allowedTools;
-			if (options.disallowedTools?.length) queryOptions.disallowedTools = options.disallowedTools;
+			if (options.settingSources?.length)
+				queryOptions.settingSources = options.settingSources;
+			if (options.allowedTools?.length)
+				queryOptions.allowedTools = options.allowedTools;
+			if (options.disallowedTools?.length)
+				queryOptions.disallowedTools = options.disallowedTools;
 			if (options.maxTurns != null) queryOptions.maxTurns = options.maxTurns;
 			if (options.maxBudgetUsd != null && options.maxBudgetUsd > 0)
 				queryOptions.maxBudgetUsd = options.maxBudgetUsd;

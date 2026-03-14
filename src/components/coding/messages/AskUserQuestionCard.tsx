@@ -3,9 +3,9 @@
  * 渲染 Claude Code 的 AskUserQuestion 工具调用为交互式 UI
  * 支持单选/多选，选择后回传答案
  */
-import { HelpCircle, CheckCircle2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import type { SessionToolCall } from '../../../lib/stores/codingSessionTypes';
+import { HelpCircle, CheckCircle2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import type { SessionToolCall } from "../../../lib/stores/codingSessionTypes";
 
 interface AskUserQuestionOption {
 	label: string;
@@ -27,12 +27,15 @@ interface AskUserQuestionCardProps {
 	onAnswer?: (requestId: string, answers: Record<string, string>) => void;
 }
 
-export function AskUserQuestionCard({ toolCall, onAnswer }: AskUserQuestionCardProps) {
+export function AskUserQuestionCard({
+	toolCall,
+	onAnswer,
+}: AskUserQuestionCardProps) {
 	const input = toolCall.input as unknown as AskUserQuestionInput;
 	const questions = input?.questions ?? [];
 	const [selections, setSelections] = useState<Record<number, Set<number>>>({}); // questionIdx -> Set<optionIdx>
 	const [answered, setAnswered] = useState(false);
-	const isCompleted = toolCall.status === 'completed' || answered;
+	const isCompleted = toolCall.status === "completed" || answered;
 
 	const handleToggle = useCallback(
 		(questionIdx: number, optionIdx: number, multiSelect: boolean) => {
@@ -66,7 +69,7 @@ export function AskUserQuestionCard({ toolCall, onAnswer }: AskUserQuestionCardP
 			const selectedLabels = Array.from(selectedSet)
 				.map((optIdx) => question.options[optIdx]?.label)
 				.filter(Boolean);
-			answers[question.question] = selectedLabels.join(', ');
+			answers[question.question] = selectedLabels.join(", ");
 		}
 
 		onAnswer(toolCall.id, answers);
@@ -78,28 +81,34 @@ export function AskUserQuestionCard({ toolCall, onAnswer }: AskUserQuestionCardP
 	}
 
 	return (
-		<div className={`rounded-xl border overflow-hidden transition-all ${
-			isCompleted
-				? 'border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-900/10'
-				: 'border-blue-200 dark:border-blue-800/30 bg-blue-50/50 dark:bg-blue-900/10'
-		}`}>
-			{/* 头部 */}
-			<div className={`flex items-center gap-2 px-4 py-2.5 border-b ${
+		<div
+			className={`rounded-xl border overflow-hidden transition-all ${
 				isCompleted
-					? 'border-emerald-200/50 dark:border-emerald-700/30'
-					: 'border-blue-200/50 dark:border-blue-700/30'
-			}`}>
+					? "border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-900/10"
+					: "border-blue-200 dark:border-blue-800/30 bg-blue-50/50 dark:bg-blue-900/10"
+			}`}
+		>
+			{/* 头部 */}
+			<div
+				className={`flex items-center gap-2 px-4 py-2.5 border-b ${
+					isCompleted
+						? "border-emerald-200/50 dark:border-emerald-700/30"
+						: "border-blue-200/50 dark:border-blue-700/30"
+				}`}
+			>
 				{isCompleted ? (
 					<CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
 				) : (
 					<HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
 				)}
-				<span className={`text-sm font-medium ${
-					isCompleted
-						? 'text-emerald-800 dark:text-emerald-300'
-						: 'text-blue-800 dark:text-blue-300'
-				}`}>
-					{isCompleted ? '已回答' : '需要你的选择'}
+				<span
+					className={`text-sm font-medium ${
+						isCompleted
+							? "text-emerald-800 dark:text-emerald-300"
+							: "text-blue-800 dark:text-blue-300"
+					}`}
+				>
+					{isCompleted ? "已回答" : "需要你的选择"}
 				</span>
 			</div>
 
@@ -124,29 +133,43 @@ export function AskUserQuestionCard({ toolCall, onAnswer }: AskUserQuestionCardP
 								return (
 									<button
 										key={optIdx}
-										onClick={() => handleToggle(qIdx, optIdx, q.multiSelect ?? false)}
+										onClick={() =>
+											handleToggle(qIdx, optIdx, q.multiSelect ?? false)
+										}
 										disabled={isCompleted}
 										className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${
 											isCompleted
 												? isSelected
-													? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30'
-													: 'border-zinc-200 dark:border-zinc-700/50 opacity-50'
+													? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30"
+													: "border-zinc-200 dark:border-zinc-700/50 opacity-50"
 												: isSelected
-													? 'border-[#D96C46]/40 bg-[#D96C46]/5 ring-1 ring-[#D96C46]/20'
-													: 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'
+													? "border-[#D96C46]/40 bg-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
+													: "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800"
 										}`}
 									>
 										{/* 选择指示 */}
-										<div className={`shrink-0 w-4 h-4 mt-0.5 rounded-${q.multiSelect ? 'sm' : 'full'} border-2 flex items-center justify-center transition-all ${
-											isSelected
-												? isCompleted
-													? 'border-emerald-500 bg-emerald-500'
-													: 'border-[#D96C46] bg-[#D96C46]'
-												: 'border-zinc-300 dark:border-zinc-600'
-										}`}>
+										<div
+											className={`shrink-0 w-4 h-4 mt-0.5 rounded-${q.multiSelect ? "sm" : "full"} border-2 flex items-center justify-center transition-all ${
+												isSelected
+													? isCompleted
+														? "border-emerald-500 bg-emerald-500"
+														: "border-[#D96C46] bg-[#D96C46]"
+													: "border-zinc-300 dark:border-zinc-600"
+											}`}
+										>
 											{isSelected && (
-												<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-													<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+												<svg
+													className="w-2.5 h-2.5 text-white"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+													strokeWidth={3}
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														d="M5 13l4 4L19 7"
+													/>
 												</svg>
 											)}
 										</div>
@@ -174,7 +197,10 @@ export function AskUserQuestionCard({ toolCall, onAnswer }: AskUserQuestionCardP
 				<div className="px-4 py-3 border-t border-blue-200/50 dark:border-blue-700/30">
 					<button
 						onClick={handleSubmit}
-						disabled={Object.keys(selections).length === 0 || Object.values(selections).every((s) => s.size === 0)}
+						disabled={
+							Object.keys(selections).length === 0 ||
+							Object.values(selections).every((s) => s.size === 0)
+						}
 						className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#D96C46] hover:bg-[#c05e3b] active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
 					>
 						确认选择

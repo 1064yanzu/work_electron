@@ -1,4 +1,11 @@
-import type { Card, Folder, OutputAsset, Source, SourceDetail, Uuid } from "../../types";
+import type {
+	Card,
+	Folder,
+	OutputAsset,
+	Source,
+	SourceDetail,
+	Uuid,
+} from "../../types";
 import { safeInvoke } from "../tauriBridge";
 
 export async function listFolders(projectId?: Uuid | null): Promise<Folder[]> {

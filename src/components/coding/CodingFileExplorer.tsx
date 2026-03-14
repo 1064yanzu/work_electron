@@ -183,10 +183,14 @@ function filterTree(nodes: FileTreeNode[], query: string): FileTreeNode[] {
 				? filterTree(node.children, query)
 				: [];
 			// 如果目录名匹配或者有匹配的子节点，保留该目录
-			if (node.name.toLowerCase().includes(query) || filteredChildren.length > 0) {
+			if (
+				node.name.toLowerCase().includes(query) ||
+				filteredChildren.length > 0
+			) {
 				result.push({
 					...node,
-					children: filteredChildren.length > 0 ? filteredChildren : node.children,
+					children:
+						filteredChildren.length > 0 ? filteredChildren : node.children,
 				});
 			}
 		} else {

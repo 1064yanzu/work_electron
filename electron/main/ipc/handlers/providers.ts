@@ -6,7 +6,10 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { Provider, ProviderType } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
-import { resolveProviderApiKey, invalidateProviderCache } from "../../llm/invoke";
+import {
+	resolveProviderApiKey,
+	invalidateProviderCache,
+} from "../../llm/invoke";
 import {
 	getOpenAICompatibleAuthHeaders,
 	normalizeAnthropicBaseUrl,

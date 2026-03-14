@@ -99,7 +99,11 @@ export function SettingsRow({
 				)}
 			</div>
 			<div className="ml-4 flex items-center gap-3">
-				{value && <div className="text-sm text-zinc-500 dark:text-zinc-400">{value}</div>}
+				{value && (
+					<div className="text-sm text-zinc-500 dark:text-zinc-400">
+						{value}
+					</div>
+				)}
 				{action}
 			</div>
 		</div>

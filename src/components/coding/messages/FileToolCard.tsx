@@ -1,7 +1,6 @@
 /**
  * 文件工具卡片 - Read/Edit/Write/Patch/MultiEdit
- * 折叠态：图标 + 动作标签 + 文件名 + 变更行数摘要
- * 展开态：subtitle 显示完整路径，Read 显示代码内容, Edit/Write 显示 unified diff
+ * 紧凑内联样式：icon + 动作标签 + 文件名 + 变更行数摘要
  */
 import { FileCode, FilePen, FilePlus, FileSearch } from "lucide-react";
 import { useMemo } from "react";
@@ -23,11 +22,9 @@ function computeLineDiff(oldContent: string, newContent: string) {
 	let added = 0;
 	let removed = 0;
 
-	// 使用简单的 LCS 近似算法生成diff
 	const oldSet = new Set(oldLines);
 	const newSet = new Set(newLines);
 
-	// old 中有而 new 中没有的 → 删除
 	for (const line of oldLines) {
 		if (!newSet.has(line)) {
 			result.push({ type: "remove", content: line });
@@ -35,7 +32,6 @@ function computeLineDiff(oldContent: string, newContent: string) {
 		}
 	}
 
-	// new 中有而 old 中没有的 → 新增
 	for (const line of newLines) {
 		if (!oldSet.has(line)) {
 			result.push({ type: "add", content: line });
@@ -52,10 +48,19 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 	);
 	const fileName = filePath.split("/").pop() || filePath;
 	const isRead = toolCall.name === "Read";
-	const isEdit = toolCall.name === "Edit" || toolCall.name === "Patch" || toolCall.name === "MultiEdit";
+	const isEdit =
+		toolCall.name === "Edit" ||
+		toolCall.name === "Patch" ||
+		toolCall.name === "MultiEdit";
 	const isWrite = toolCall.name === "Write";
 
-	const Icon = isRead ? FileCode : isEdit ? FilePen : isWrite ? FilePlus : FileSearch;
+	const Icon = isRead
+		? FileCode
+		: isEdit
+			? FilePen
+			: isWrite
+				? FilePlus
+				: FileSearch;
 	const iconColor = isRead
 		? "text-blue-500 dark:text-blue-400"
 		: isEdit
@@ -83,11 +88,11 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 
 	// 动作标签
 	const actionLabel = isRead
-		? "读取"
+		? "Read"
 		: isEdit
-			? "编辑"
+			? "Edit"
 			: isWrite
-				? "创建"
+				? "Write"
 				: toolCall.name;
 
 	const title = `${fileName}${lineRange}`;
@@ -126,14 +131,14 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 
 	// 变更行数摘要的颜色标签
 	const headerRight = diffInfo ? (
-		<span className="flex items-center gap-1.5 text-[10px] tabular-nums">
+		<span className="flex items-center gap-1 text-[11px] tabular-nums font-mono">
 			{diffInfo.added > 0 && (
-				<span className="rounded bg-emerald-500/10 px-1 py-px font-medium text-emerald-600 dark:text-emerald-400">
+				<span className="text-emerald-600 dark:text-emerald-400">
 					+{diffInfo.added}
 				</span>
 			)}
 			{diffInfo.removed > 0 && (
-				<span className="rounded bg-red-500/10 px-1 py-px font-medium text-red-500 dark:text-red-400">
+				<span className="text-red-500 dark:text-red-400">
 					-{diffInfo.removed}
 				</span>
 			)}
@@ -148,7 +153,6 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 			subtitle={filePath !== fileName ? filePath : undefined}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 			summary={!diffInfo ? summary : undefined}
 			headerRight={headerRight}
 			iconColor={iconColor}
@@ -161,10 +165,10 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 							? toolCall.output
 							: JSON.stringify(toolCall.output, null, 2)
 						).slice(0, 3000)}
-						{((typeof toolCall.output === "string"
+						{(typeof toolCall.output === "string"
 							? toolCall.output
 							: JSON.stringify(toolCall.output, null, 2)
-						).length > 3000) && "\n\n... (内容已截断)"}
+						).length > 3000 && "\n\n... (内容已截断)"}
 					</pre>
 				</div>
 			)}
@@ -172,14 +176,12 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 			{/* Edit/Write：Unified Diff 视图 */}
 			{(isEdit || isWrite) && diff && (
 				<div className="overflow-hidden rounded-md border border-zinc-200/50 dark:border-zinc-700/30">
-					{/* 写入且无旧内容 → 新文件 */}
 					{isWrite && !diff.oldContent && diff.newContent && (
 						<pre className="max-h-56 overflow-y-auto bg-emerald-50/40 px-3 py-2 font-mono text-[11px] leading-[1.6] text-emerald-700 scrollbar-thin dark:bg-emerald-900/10 dark:text-emerald-400">
 							{diff.newContent.slice(0, 3000)}
 						</pre>
 					)}
 
-					{/* 有旧有新 → 行级 diff */}
 					{diff.oldContent && diff.newContent && diffInfo && (
 						<div className="max-h-56 overflow-y-auto scrollbar-thin">
 							{diffInfo.lines.map((line, i) => (
@@ -194,7 +196,11 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 									}`}
 								>
 									<span className="w-6 shrink-0 select-none px-1 text-right text-[10px] text-zinc-400/60">
-										{line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
+										{line.type === "add"
+											? "+"
+											: line.type === "remove"
+												? "-"
+												: " "}
 									</span>
 									<span className="flex-1 whitespace-pre-wrap break-all px-2 py-px">
 										{line.content}
@@ -206,7 +212,6 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 				</div>
 			)}
 
-			{/* Edit/Write 但没有 diff 的情况 → 显示 raw output */}
 			{(isEdit || isWrite) && !diff && toolCall.output != null && (
 				<div className="overflow-hidden rounded-md border border-zinc-200/50 dark:border-zinc-700/30">
 					<pre className="max-h-40 overflow-y-auto bg-zinc-50/80 px-3 py-2 font-mono text-[11px] leading-[1.6] text-zinc-600 scrollbar-thin dark:bg-zinc-900/40 dark:text-zinc-400">

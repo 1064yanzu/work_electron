@@ -11,7 +11,10 @@ export function normalizeMotionPreference(value: unknown): MotionPreference {
 }
 
 export function getSystemReducedMotion(): boolean {
-	if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+	if (
+		typeof window === "undefined" ||
+		typeof window.matchMedia !== "function"
+	) {
 		return false;
 	}
 	return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -26,7 +29,9 @@ export function resolveEffectiveMotionPreference(
 	return systemReduced ? "reduced" : "standard";
 }
 
-export function applyMotionPreferenceToDocument(preference: MotionPreference): void {
+export function applyMotionPreferenceToDocument(
+	preference: MotionPreference,
+): void {
 	if (typeof document === "undefined") return;
 	const effective = resolveEffectiveMotionPreference(preference);
 	const root = document.documentElement;
@@ -46,7 +51,10 @@ export function dispatchMotionPreferenceChange(
 export function subscribeSystemMotionPreference(
 	callback: () => void,
 ): () => void {
-	if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+	if (
+		typeof window === "undefined" ||
+		typeof window.matchMedia !== "function"
+	) {
 		return () => {};
 	}
 	const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -54,4 +62,3 @@ export function subscribeSystemMotionPreference(
 	media.addEventListener("change", handler);
 	return () => media.removeEventListener("change", handler);
 }
-

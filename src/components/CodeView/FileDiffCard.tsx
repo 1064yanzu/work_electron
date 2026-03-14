@@ -56,7 +56,10 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 	);
 
 	const displayPath = formatFilePath(diff.filePath, rootPath);
-	const diffLanguage = useMemo(() => inferLanguage(diff.filePath), [diff.filePath]);
+	const diffLanguage = useMemo(
+		() => inferLanguage(diff.filePath),
+		[diff.filePath],
+	);
 	const isCreate = !diff.oldContent;
 	const isPending = diff.status === "pending";
 	const isAccepted = diff.status === "accepted";
@@ -76,9 +79,12 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 		<div
 			className={cn(
 				"my-2 rounded-xl ring-1 transition-all overflow-hidden",
-				isPending && "ring-zinc-200 dark:ring-zinc-700/60 bg-white dark:bg-zinc-900",
-				isAccepted && "ring-emerald-200 dark:ring-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10",
-				isRejected && "ring-red-200 dark:ring-red-800/40 bg-red-50/20 dark:bg-red-950/10 opacity-60",
+				isPending &&
+					"ring-zinc-200 dark:ring-zinc-700/60 bg-white dark:bg-zinc-900",
+				isAccepted &&
+					"ring-emerald-200 dark:ring-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10",
+				isRejected &&
+					"ring-red-200 dark:ring-red-800/40 bg-red-50/20 dark:bg-red-950/10 opacity-60",
 			)}
 		>
 			{/* 头部：文件路径 + 统计 */}
@@ -150,7 +156,8 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								key={idx}
 								className={cn(
 									"flex",
-									line.type === "added" && "bg-emerald-50/70 dark:bg-emerald-950/20",
+									line.type === "added" &&
+										"bg-emerald-50/70 dark:bg-emerald-950/20",
 									line.type === "removed" && "bg-red-50/70 dark:bg-red-950/20",
 								)}
 							>
@@ -171,12 +178,18 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<span
 									className={cn(
 										"w-5 flex-shrink-0 text-center select-none",
-										line.type === "added" && "text-emerald-600 dark:text-emerald-400",
+										line.type === "added" &&
+											"text-emerald-600 dark:text-emerald-400",
 										line.type === "removed" && "text-red-500 dark:text-red-400",
-										line.type === "unchanged" && "text-zinc-300 dark:text-zinc-600",
+										line.type === "unchanged" &&
+											"text-zinc-300 dark:text-zinc-600",
 									)}
 								>
-									{line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
+									{line.type === "added"
+										? "+"
+										: line.type === "removed"
+											? "-"
+											: " "}
 								</span>
 								{/* 内容 - Shiki 高亮 */}
 								<HighlightedDiffLine

@@ -36,7 +36,9 @@ export async function acceptDiff(diffId: string): Promise<boolean> {
 		toast.error(`写入失败：${result?.error || "未知错误"}`);
 		return false;
 	} catch (err) {
-		toast.error(`写入失败：${err instanceof Error ? err.message : String(err)}`);
+		toast.error(
+			`写入失败：${err instanceof Error ? err.message : String(err)}`,
+		);
 		return false;
 	}
 }
@@ -62,7 +64,9 @@ export async function rejectDiff(diffId: string): Promise<boolean> {
 		toast.error(`还原失败：${result?.error || "未知错误"}`);
 		return false;
 	} catch (err) {
-		toast.error(`还原失败：${err instanceof Error ? err.message : String(err)}`);
+		toast.error(
+			`还原失败：${err instanceof Error ? err.message : String(err)}`,
+		);
 		return false;
 	}
 }
@@ -70,7 +74,10 @@ export async function rejectDiff(diffId: string): Promise<boolean> {
 /**
  * 批量接受所有 pending diff
  */
-export async function acceptAllDiffs(): Promise<{ accepted: number; failed: number }> {
+export async function acceptAllDiffs(): Promise<{
+	accepted: number;
+	failed: number;
+}> {
 	const diffs = Object.values(diffStore.getState().diffs).filter(
 		(d) => d.status === "pending",
 	);
@@ -96,7 +103,10 @@ export async function acceptAllDiffs(): Promise<{ accepted: number; failed: numb
 /**
  * 批量拒绝所有 pending diff
  */
-export async function rejectAllDiffs(): Promise<{ rejected: number; failed: number }> {
+export async function rejectAllDiffs(): Promise<{
+	rejected: number;
+	failed: number;
+}> {
 	const diffs = Object.values(diffStore.getState().diffs).filter(
 		(d) => d.status === "pending",
 	);

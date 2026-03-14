@@ -85,7 +85,9 @@ const ALIAS_TO_LANG: Record<string, BundledLanguage> = {
 /**
  * 将文件扩展名或语言别名映射为 shiki 语言 ID
  */
-export function mapLanguageId(extOrAlias: string): BundledLanguage | "plaintext" {
+export function mapLanguageId(
+	extOrAlias: string,
+): BundledLanguage | "plaintext" {
 	const key = extOrAlias.toLowerCase().replace(/^\./, "");
 
 	// 先查扩展名映射
@@ -101,7 +103,9 @@ export function mapLanguageId(extOrAlias: string): BundledLanguage | "plaintext"
 /**
  * 从文件路径提取扩展名并映射到 shiki 语言
  */
-export function mapLanguageFromPath(filePath: string): BundledLanguage | "plaintext" {
+export function mapLanguageFromPath(
+	filePath: string,
+): BundledLanguage | "plaintext" {
 	const parts = filePath.split(".");
 	if (parts.length < 2) {
 		// 无扩展名，检查文件名

@@ -79,7 +79,12 @@ export async function getClaudeCodeAuthStatus(): Promise<{
 	authMethod: "oauth" | "api_key" | "env_key" | "none";
 	email?: string;
 	model?: string;
-	mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+	mcpServers?: Array<{
+		name: string;
+		command?: string;
+		url?: string;
+		type?: string;
+	}>;
 }> {
 	return invoke("claude_code_auth_status", {});
 }
@@ -89,7 +94,12 @@ export async function getClaudeCodeAuthStatus(): Promise<{
 export interface UserCliConfig {
 	claude?: {
 		model?: string;
-		mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+		mcpServers?: Array<{
+			name: string;
+			command?: string;
+			url?: string;
+			type?: string;
+		}>;
 		permissions?: string[];
 	};
 	codex?: {

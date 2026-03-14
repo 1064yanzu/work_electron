@@ -3,10 +3,10 @@
  * 将会话快照序列化到 localStorage，支持大小限制和自动清理
  * 与 codingSessionStore 解耦，由后者调用本模块实现持久化
  */
-import type { CodingSessionState } from './codingSessionStore';
+import type { CodingSessionState } from "./codingSessionStore";
 
-const STORAGE_PREFIX = 'ipo-session-snapshot-';
-const INDEX_KEY = 'ipo-session-snapshot-index';
+const STORAGE_PREFIX = "ipo-session-snapshot-";
+const INDEX_KEY = "ipo-session-snapshot-index";
 
 /** 单个快照的最大大小（字节） */
 const MAX_SNAPSHOT_SIZE = 2 * 1024 * 1024; // 2MB
@@ -86,7 +86,7 @@ export function saveSnapshotToStorage(
 		const serializable = {
 			sdkSessionId: snapshot.sdkSessionId,
 			runId: null,
-			status: 'idle' as const,
+			status: "idle" as const,
 			messages: snapshot.messages.map((m) => ({
 				...m,
 				isStreaming: false,
@@ -120,7 +120,7 @@ export function saveSnapshotToStorage(
 		updateIndex(threadId, json.length);
 		return true;
 	} catch (err) {
-		console.warn('[SnapshotPersistence] 保存快照失败:', err);
+		console.warn("[SnapshotPersistence] 保存快照失败:", err);
 		return false;
 	}
 }
@@ -134,7 +134,7 @@ export function loadSnapshotFromStorage(
 		if (!json) return null;
 		return JSON.parse(json) as CodingSessionState;
 	} catch (err) {
-		console.warn('[SnapshotPersistence] 加载快照失败:', err);
+		console.warn("[SnapshotPersistence] 加载快照失败:", err);
 		return null;
 	}
 }

@@ -421,9 +421,7 @@ export async function gitUnstage(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		const args =
-			files.length > 0
-				? ["reset", "HEAD", "--", ...files]
-				: ["reset", "HEAD"];
+			files.length > 0 ? ["reset", "HEAD", "--", ...files] : ["reset", "HEAD"];
 		await gitExec(dirPath, args);
 		return { success: true };
 	} catch (err) {

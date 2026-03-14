@@ -1,11 +1,11 @@
 /**
- * Agent 工具卡片（使用统一 ToolCardShell）
- * 当 Claude Code 调用 Agent 工具（spawn 子代理）时展示
+ * Agent 工具卡片 - 紧凑内联样式
+ * 折叠态：Bot icon + Agent + agent name
  */
-import { Bot } from 'lucide-react';
-import type { SessionToolCall } from '../../../lib/stores/codingSessionTypes';
-import { ToolCardShell } from './shared/ToolCardShell';
-import { useMemo } from 'react';
+import { Bot } from "lucide-react";
+import type { SessionToolCall } from "../../../lib/stores/codingSessionTypes";
+import { ToolCardShell } from "./shared/ToolCardShell";
+import { useMemo } from "react";
 
 interface AgentToolCardProps {
 	toolCall: SessionToolCall;
@@ -14,17 +14,18 @@ interface AgentToolCardProps {
 export function AgentToolCard({ toolCall }: AgentToolCardProps) {
 	const input = toolCall.input;
 
-	const agentName = (input.name as string) || '子代理';
-	const description = (input.description as string) || '';
-	const prompt = (input.prompt as string) || '';
-	const subagentType = (input.subagent_type as string) || '';
+	const agentName = (input.name as string) || "子代理";
+	const description = (input.description as string) || "";
+	const prompt = (input.prompt as string) || "";
+	const subagentType = (input.subagent_type as string) || "";
 
 	const title = subagentType ? `${agentName} (${subagentType})` : agentName;
 
 	const output = useMemo(() => {
-		if (typeof toolCall.output === 'string') return toolCall.output;
-		if (toolCall.output != null) return JSON.stringify(toolCall.output, null, 2);
-		return '';
+		if (typeof toolCall.output === "string") return toolCall.output;
+		if (toolCall.output != null)
+			return JSON.stringify(toolCall.output, null, 2);
+		return "";
 	}, [toolCall.output]);
 
 	return (
@@ -34,7 +35,6 @@ export function AgentToolCard({ toolCall }: AgentToolCardProps) {
 			title={title}
 			status={toolCall.status}
 			isError={toolCall.isError}
-			durationMs={toolCall.durationMs}
 			iconColor="text-violet-500"
 		>
 			<div className="space-y-1.5">

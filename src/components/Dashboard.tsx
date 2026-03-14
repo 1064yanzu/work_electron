@@ -170,7 +170,10 @@ export default function Dashboard({
 	const handleToggleArchiveProject = useCallback(
 		async (project: Project) => {
 			try {
-				await updateProject({ id: project.id, is_archived: !project.is_archived });
+				await updateProject({
+					id: project.id,
+					is_archived: !project.is_archived,
+				});
 				await loadProjects();
 				toast.success(project.is_archived ? "已取消归档" : "已归档");
 			} catch (error) {
@@ -206,26 +209,27 @@ export default function Dashboard({
 
 	const projectContextMenuItems = contextMenu
 		? buildProjectContextMenu({
-			onOpen: () => handleOpenProject(contextMenu.project.id),
-			onRename: () => void handleRenameProject(contextMenu.project),
-			onToggleArchive: () => void handleToggleArchiveProject(contextMenu.project),
-			onDelete: () => void handleDeleteProject(contextMenu.project),
-			onReveal: async () => {
-				try {
-					const result = await revealProjectDirectory(contextMenu.project.id);
-					if (!result.success) {
-						toast.error(result.error || "打开目录失败");
-					} else {
-						toast.success("已在文件管理器中打开项目目录");
+				onOpen: () => handleOpenProject(contextMenu.project.id),
+				onRename: () => void handleRenameProject(contextMenu.project),
+				onToggleArchive: () =>
+					void handleToggleArchiveProject(contextMenu.project),
+				onDelete: () => void handleDeleteProject(contextMenu.project),
+				onReveal: async () => {
+					try {
+						const result = await revealProjectDirectory(contextMenu.project.id);
+						if (!result.success) {
+							toast.error(result.error || "打开目录失败");
+						} else {
+							toast.success("已在文件管理器中打开项目目录");
+						}
+					} catch (error) {
+						toast.error(
+							`打开目录失败: ${error instanceof Error ? error.message : String(error)}`,
+						);
 					}
-				} catch (error) {
-					toast.error(
-						`打开目录失败: ${error instanceof Error ? error.message : String(error)}`,
-					);
-				}
-			},
-			isArchived: contextMenu.project.is_archived,
-		})
+				},
+				isArchived: contextMenu.project.is_archived,
+			})
 		: [];
 
 	// overview（工作台）显示所有项目，recent（最近访问）显示有访问记录的项目
@@ -328,7 +332,7 @@ export default function Dashboard({
 										if (e.key === "ArrowDown") {
 											e.preventDefault();
 											setSearchSelectedIndex((prev) =>
-												Math.min(prev + 1, filteredProjects.length - 1)
+												Math.min(prev + 1, filteredProjects.length - 1),
 											);
 										} else if (e.key === "ArrowUp") {
 											e.preventDefault();
@@ -364,10 +368,12 @@ export default function Dashboard({
 													setShowSearch(false);
 												}}
 												onMouseEnter={() => prefetchProjectData(project.id)}
-												className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 group transition-colors cursor-pointer ${filteredProjects.indexOf(project) === searchSelectedIndex
-													? "bg-primary/10 dark:bg-primary/20"
-													: "hover:bg-[#F4F4F2] dark:hover:bg-zinc-800"
-													}`}
+												className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 group transition-colors cursor-pointer ${
+													filteredProjects.indexOf(project) ===
+													searchSelectedIndex
+														? "bg-primary/10 dark:bg-primary/20"
+														: "hover:bg-[#F4F4F2] dark:hover:bg-zinc-800"
+												}`}
 											>
 												<Folder
 													className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"
@@ -396,170 +402,174 @@ export default function Dashboard({
 
 				<div className="max-w-5xl mx-auto p-12 lg:p-16">
 					<>
-					{/* Header - Serif & Minimal */}
-					<header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-						<div>
-							<h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight mb-3 text-zinc-900 dark:text-zinc-50">
-								{greeting}, {username}
-							</h1>
-							<p className="text-zinc-400 font-sans text-sm">
-								准备好开始创作了吗？
-							</p>
-						</div>
-
-						{/* Minimal View Toggles */}
-						<div className="flex items-center gap-1 p-1 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg">
-							<button
-								onClick={() => setViewMode("grid")}
-								aria-label="网格视图"
-								className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
-							>
-								<LayoutGrid className="w-4 h-4" />
-							</button>
-							<button
-								onClick={() => setViewMode("list")}
-								aria-label="列表视图"
-								className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
-							>
-								<ListIcon className="w-4 h-4" />
-							</button>
-							<button
-								aria-label="搜索项目"
-								className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ml-1 hover:bg-white/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-150 active:scale-95"
-								onClick={() => setShowSearch(true)}
-							>
-								<Search className="w-4 h-4" />
-							</button>
-						</div>
-					</header>
-
-					{/* New Project Entry - Clean & Minimal */}
-					{activeTab === "overview" && (
-						<div
-							onClick={() => {
-								console.log("[Dashboard] 点击新建项目按钮");
-								setShowNewProject(true);
-							}}
-							className="group relative w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer mb-16 overflow-hidden hover:shadow-[0_12px_40px_-12px_rgba(217,108,70,0.15)] active:scale-[0.995]"
-						>
-							<div className="px-8 py-10 flex items-center justify-between">
-								<div>
-									<h2 className="text-2xl font-serif text-zinc-900 dark:text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
-										开始新项目
-									</h2>
-									<p className="text-zinc-400 text-sm font-sans group-hover:text-zinc-500 transition-colors">
-										创建空白文档或选择模板
-									</p>
-								</div>
-								<div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-110 transition-transform duration-300">
-									<Plus className="w-5 h-5" />
-								</div>
+						{/* Header - Serif & Minimal */}
+						<header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+							<div>
+								<h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight mb-3 text-zinc-900 dark:text-zinc-50">
+									{greeting}, {username}
+								</h1>
+								<p className="text-zinc-400 font-sans text-sm">
+									准备好开始创作了吗？
+								</p>
 							</div>
-						</div>
-					)}
 
-					{/* Projects Grid - Clean Cards */}
-					<div>
-						<div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-100 dark:border-zinc-800/50">
-							<h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-								{activeTab === "overview"
-									? "最近的项目"
-									: activeTab === "recent"
-										? "今天"
-										: "已归档"}
-							</h3>
-							<button
-								onClick={() => setShowNewProject(true)}
-								className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-1"
-							>
-								<Plus className="w-3 h-3" />
-								新建项目
-							</button>
-						</div>
-
-						{/* 新建项目对话框 */}
-						{showNewProject && (
-							<div
-								className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
-								onClick={() => setShowNewProject(false)}
-							>
-								<div
-									className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4"
-									onClick={(e) => e.stopPropagation()}
+							{/* Minimal View Toggles */}
+							<div className="flex items-center gap-1 p-1 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg">
+								<button
+									onClick={() => setViewMode("grid")}
+									aria-label="网格视图"
+									className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
 								>
-									<h3 className="font-serif text-xl mb-4 text-zinc-900 dark:text-white">
-										新建项目
-									</h3>
-									<input
-										autoFocus
-										type="text"
-										placeholder="项目名称"
-										value={newProjectName}
-										onChange={(e) => setNewProjectName(e.target.value)}
-										onKeyDown={(e) =>
-											e.key === "Enter" && handleCreateProject()
-										}
-										className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-800 dark:text-zinc-100 mb-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
-									/>
-									<div className="flex justify-end gap-2">
-										<button
-											onClick={() => setShowNewProject(false)}
-											className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700"
-										>
-											取消
-										</button>
-										<button
-											onClick={handleCreateProject}
-											className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90"
-										>
-											创建
-										</button>
+									<LayoutGrid className="w-4 h-4" />
+								</button>
+								<button
+									onClick={() => setViewMode("list")}
+									aria-label="列表视图"
+									className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-700/50"}`}
+								>
+									<ListIcon className="w-4 h-4" />
+								</button>
+								<button
+									aria-label="搜索项目"
+									className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ml-1 hover:bg-white/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-150 active:scale-95"
+									onClick={() => setShowSearch(true)}
+								>
+									<Search className="w-4 h-4" />
+								</button>
+							</div>
+						</header>
+
+						{/* New Project Entry - Clean & Minimal */}
+						{activeTab === "overview" && (
+							<div
+								onClick={() => {
+									console.log("[Dashboard] 点击新建项目按钮");
+									setShowNewProject(true);
+								}}
+								className="group relative w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer mb-16 overflow-hidden hover:shadow-[0_12px_40px_-12px_rgba(217,108,70,0.15)] active:scale-[0.995]"
+							>
+								<div className="px-8 py-10 flex items-center justify-between">
+									<div>
+										<h2 className="text-2xl font-serif text-zinc-900 dark:text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
+											开始新项目
+										</h2>
+										<p className="text-zinc-400 text-sm font-sans group-hover:text-zinc-500 transition-colors">
+											创建空白文档或选择模板
+										</p>
+									</div>
+									<div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-110 transition-transform duration-300">
+										<Plus className="w-5 h-5" />
 									</div>
 								</div>
 							</div>
 						)}
 
-						{isLoading ? (
-							<div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
-								{Array.from({ length: 6 }).map((_, i) => (
+						{/* Projects Grid - Clean Cards */}
+						<div>
+							<div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-100 dark:border-zinc-800/50">
+								<h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+									{activeTab === "overview"
+										? "最近的项目"
+										: activeTab === "recent"
+											? "今天"
+											: "已归档"}
+								</h3>
+								<button
+									onClick={() => setShowNewProject(true)}
+									className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-1"
+								>
+									<Plus className="w-3 h-3" />
+									新建项目
+								</button>
+							</div>
+
+							{/* 新建项目对话框 */}
+							{showNewProject && (
+								<div
+									className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+									onClick={() => setShowNewProject(false)}
+								>
 									<div
-										key={i}
-										className="rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 space-y-4 h-48 animate-in fade-in"
-										style={{ animationDelay: `${i * 50}ms` }}
+										className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4"
+										onClick={(e) => e.stopPropagation()}
 									>
-										<div className="flex items-start justify-between">
-											<div className="w-10 h-10 rounded-lg skeleton" />
-										</div>
-										<div className="space-y-2">
-											<div className="h-5 w-3/4 skeleton rounded" />
-											<div className="h-4 w-full skeleton rounded" />
-											<div className="h-4 w-2/3 skeleton rounded" />
-										</div>
-										<div className="flex items-center justify-between pt-2">
-											<div className="h-3 w-20 skeleton rounded" />
-											<div className="h-1.5 w-1.5 rounded-full skeleton" />
+										<h3 className="font-serif text-xl mb-4 text-zinc-900 dark:text-white">
+											新建项目
+										</h3>
+										<input
+											autoFocus
+											type="text"
+											placeholder="项目名称"
+											value={newProjectName}
+											onChange={(e) => setNewProjectName(e.target.value)}
+											onKeyDown={(e) =>
+												e.key === "Enter" && handleCreateProject()
+											}
+											className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-800 dark:text-zinc-100 mb-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
+										/>
+										<div className="flex justify-end gap-2">
+											<button
+												onClick={() => setShowNewProject(false)}
+												className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700"
+											>
+												取消
+											</button>
+											<button
+												onClick={handleCreateProject}
+												className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90"
+											>
+												创建
+											</button>
 										</div>
 									</div>
-								))}
-							</div>
-						) : (
-							<div
-								className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
-							>
-								{filteredProjects.map((project, idx) => (
-									<div
-										key={project.id}
-										onClick={() => {
-											console.log(
-												"[Dashboard] 点击项目卡片:",
-												project.id,
-												project.name,
-											);
-											handleOpenProject(project.id);
-										}}
-										onMouseEnter={() => prefetchProjectData(project.id)}
-										onContextMenu={(e) => handleProjectContextMenu(e, project)}
-										className={`
+								</div>
+							)}
+
+							{isLoading ? (
+								<div
+									className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
+								>
+									{Array.from({ length: 6 }).map((_, i) => (
+										<div
+											key={i}
+											className="rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 space-y-4 h-48 animate-in fade-in"
+											style={{ animationDelay: `${i * 50}ms` }}
+										>
+											<div className="flex items-start justify-between">
+												<div className="w-10 h-10 rounded-lg skeleton" />
+											</div>
+											<div className="space-y-2">
+												<div className="h-5 w-3/4 skeleton rounded" />
+												<div className="h-4 w-full skeleton rounded" />
+												<div className="h-4 w-2/3 skeleton rounded" />
+											</div>
+											<div className="flex items-center justify-between pt-2">
+												<div className="h-3 w-20 skeleton rounded" />
+												<div className="h-1.5 w-1.5 rounded-full skeleton" />
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<div
+									className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
+								>
+									{filteredProjects.map((project, idx) => (
+										<div
+											key={project.id}
+											onClick={() => {
+												console.log(
+													"[Dashboard] 点击项目卡片:",
+													project.id,
+													project.name,
+												);
+												handleOpenProject(project.id);
+											}}
+											onMouseEnter={() => prefetchProjectData(project.id)}
+											onContextMenu={(e) =>
+												handleProjectContextMenu(e, project)
+											}
+											className={`
                         group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 
                         hover:border-zinc-300 dark:hover:border-zinc-600
                         rounded-2xl p-6 cursor-pointer 
@@ -570,64 +580,64 @@ export default function Dashboard({
                         animate-in fade-in slide-in-from-bottom-4 
                         flex flex-col h-48 justify-between
                       `}
-										style={{
-											animationDelay: `${50 + idx * 30}ms`,
-											animationFillMode: "forwards",
-										}}
-									>
-										<div>
-											<div className="flex items-start justify-between mb-6">
-												<div
-													className="relative flex items-center justify-center w-10 h-10 rounded-lg border border-black/5 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform group-hover:scale-110 duration-500 ease-out"
-													style={{
-														backgroundColor: `${project.color}08`, // 极淡的背景色
-													}}
-												>
-													<Folder
-														className="w-5 h-5 transition-colors duration-300"
-														style={{ color: project.color }}
-													/>
+											style={{
+												animationDelay: `${50 + idx * 30}ms`,
+												animationFillMode: "forwards",
+											}}
+										>
+											<div>
+												<div className="flex items-start justify-between mb-6">
+													<div
+														className="relative flex items-center justify-center w-10 h-10 rounded-lg border border-black/5 dark:border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform group-hover:scale-110 duration-500 ease-out"
+														style={{
+															backgroundColor: `${project.color}08`, // 极淡的背景色
+														}}
+													>
+														<Folder
+															className="w-5 h-5 transition-colors duration-300"
+															style={{ color: project.color }}
+														/>
+													</div>
+													<div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-1 group-hover:translate-x-0">
+														<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
+															OPEN
+														</span>
+														<ChevronRight className="w-3 h-3 text-zinc-400" />
+													</div>
 												</div>
-												<div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-1 group-hover:translate-x-0">
-													<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
-														OPEN
-													</span>
-													<ChevronRight className="w-3 h-3 text-zinc-400" />
-												</div>
+												<h4 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-50 mb-3 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+													{project.name}
+												</h4>
+												<p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 font-sans font-normal tracking-wide">
+													{project.description || "暂无描述"}
+												</p>
 											</div>
-											<h4 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-50 mb-3 line-clamp-1 group-hover:text-primary transition-colors duration-300">
-												{project.name}
-											</h4>
-											<p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 font-sans font-normal tracking-wide">
-												{project.description || "暂无描述"}
+
+											<div className="flex items-center justify-between pt-4 mt-2 border-t border-zinc-50 dark:border-white/5">
+												<div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-sans tracking-wide">
+													{new Date(project.updated_at).toLocaleDateString(
+														"en-US",
+														{
+															month: "short",
+															day: "numeric",
+														},
+													)}
+												</div>
+												<div className="h-1.5 w-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 group-hover:bg-green-500 transition-colors duration-500" />
+											</div>
+										</div>
+									))}
+
+									{filteredProjects.length === 0 && (
+										<div className="col-span-full py-20 text-center">
+											<p className="font-serif text-zinc-400 text-lg italic">
+												暂无项目，点击上方创建新项目
 											</p>
 										</div>
-
-										<div className="flex items-center justify-between pt-4 mt-2 border-t border-zinc-50 dark:border-white/5">
-											<div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-sans tracking-wide">
-												{new Date(project.updated_at).toLocaleDateString(
-													"en-US",
-													{
-														month: "short",
-														day: "numeric",
-													},
-												)}
-											</div>
-											<div className="h-1.5 w-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 group-hover:bg-green-500 transition-colors duration-500" />
-										</div>
-									</div>
-								))}
-
-								{filteredProjects.length === 0 && (
-									<div className="col-span-full py-20 text-center">
-										<p className="font-serif text-zinc-400 text-lg italic">
-											暂无项目，点击上方创建新项目
-										</p>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
+									)}
+								</div>
+							)}
+						</div>
 					</>
 				</div>
 			</main>
@@ -662,10 +672,11 @@ function NavItem({
 			aria-label={label}
 			className={`
       w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative text-sm cursor-pointer
-      ${active
+      ${
+				active
 					? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/5"
 					: "text-zinc-500 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 hover:scale-[1.01] active:scale-[0.99]"
-				}
+			}
     `}
 		>
 			{/* 激活指示器 */}
@@ -676,7 +687,9 @@ function NavItem({
 				className={`w-4 h-4 transition-colors ${active ? "text-zinc-900 dark:text-white" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"}`}
 				strokeWidth={2}
 			/>
-			<span className={`font-medium hidden lg:block ${active ? "font-semibold" : ""}`}>
+			<span
+				className={`font-medium hidden lg:block ${active ? "font-semibold" : ""}`}
+			>
 				{label}
 			</span>
 			{badge && (

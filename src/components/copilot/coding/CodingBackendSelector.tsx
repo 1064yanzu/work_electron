@@ -3,20 +3,20 @@
  * 选择使用 Claude Code 还是 Codex 作为编码 Agent 后端
  */
 
-import { ChevronDown, Cpu, Sparkles } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { ChevronDown, Cpu, Sparkles } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import {
 	type CodingBackend,
 	codingAgentStore,
 	useCodingAgentSelector,
-} from '../../../lib/stores/codingAgentStore';
-import { useCodingSessionSelector } from '../../../lib/stores/codingSessionStore';
-import { useCodingThreadSelector } from '../../../lib/stores/codingThreadStore';
-import { useCodingWorkspaceSelector } from '../../../lib/stores/codingWorkspaceStore';
-import { useCodingRuntimeSelector } from '../../../lib/stores/codingRuntimeStore';
-import { executeCodingCommand } from '../../../lib/coding/codingCommandExecutor';
-import { DropdownPortal } from '../../ui/DropdownPortal';
-import { toast } from '../../ui/Toast';
+} from "../../../lib/stores/codingAgentStore";
+import { useCodingSessionSelector } from "../../../lib/stores/codingSessionStore";
+import { useCodingThreadSelector } from "../../../lib/stores/codingThreadStore";
+import { useCodingWorkspaceSelector } from "../../../lib/stores/codingWorkspaceStore";
+import { useCodingRuntimeSelector } from "../../../lib/stores/codingRuntimeStore";
+import { executeCodingCommand } from "../../../lib/coding/codingCommandExecutor";
+import { DropdownPortal } from "../../ui/DropdownPortal";
+import { toast } from "../../ui/Toast";
 
 const backends: Array<{
 	value: CodingBackend;
@@ -25,16 +25,16 @@ const backends: Array<{
 	description: string;
 }> = [
 	{
-		value: 'claude-code',
-		label: 'Claude Code',
+		value: "claude-code",
+		label: "Claude Code",
 		icon: Sparkles,
-		description: '本地执行，完整文件系统访问',
+		description: "本地执行，完整文件系统访问",
 	},
 	{
-		value: 'codex',
-		label: 'Codex',
+		value: "codex",
+		label: "Codex",
 		icon: Cpu,
-		description: '云端沙箱执行',
+		description: "云端沙箱执行",
 	},
 ];
 
@@ -52,7 +52,7 @@ export function CodingBackendSelector() {
 	const handleSelect = useCallback(
 		async (backend: CodingBackend) => {
 			const result = await executeCodingCommand(
-				'set_backend',
+				"set_backend",
 				{
 					threadId: activeThreadId,
 					projectPath,
@@ -83,7 +83,7 @@ export function CodingBackendSelector() {
 				<Icon className="w-3 h-3" />
 				<span>{currentItem.label}</span>
 				<ChevronDown
-					className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+					className={`w-2.5 h-2.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
 				/>
 			</button>
 
@@ -100,12 +100,11 @@ export function CodingBackendSelector() {
 						const BIcon = backend.icon;
 						const isActive = currentBackend === backend.value;
 						const capability = capabilities[backend.value];
-						const disabledReason =
-							!capability?.available
-								? capability?.error || '当前环境不可用'
-								: sessionStatus === 'running'
-									? '请先结束当前运行'
-									: undefined;
+						const disabledReason = !capability?.available
+							? capability?.error || "当前环境不可用"
+							: sessionStatus === "running"
+								? "请先结束当前运行"
+								: undefined;
 						return (
 							<button
 								key={backend.value}
@@ -113,16 +112,16 @@ export function CodingBackendSelector() {
 								onClick={() => void handleSelect(backend.value)}
 								disabled={Boolean(disabledReason)}
 								className={`w-full px-3 py-2 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
-									isActive ? 'bg-zinc-50 dark:bg-zinc-800/30' : ''
-								} ${disabledReason ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+									isActive ? "bg-zinc-50 dark:bg-zinc-800/30" : ""
+								} ${disabledReason ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 							>
 								<div className="flex items-start gap-2">
 									<BIcon
-										className={`mt-0.5 h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-zinc-400'}`}
+										className={`mt-0.5 h-3.5 w-3.5 ${isActive ? "text-primary" : "text-zinc-400"}`}
 									/>
 									<div>
 										<div
-											className={`text-[11px] font-medium ${isActive ? 'text-primary' : 'text-zinc-700 dark:text-zinc-300'}`}
+											className={`text-[11px] font-medium ${isActive ? "text-primary" : "text-zinc-700 dark:text-zinc-300"}`}
 										>
 											{backend.label}
 										</div>

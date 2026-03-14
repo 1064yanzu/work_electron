@@ -4,7 +4,7 @@
  */
 
 /** 外部线程来源标识 */
-export type ExternalThreadSource = 'codex-cli' | 'claude-code-cli';
+export type ExternalThreadSource = "codex-cli" | "claude-code-cli";
 
 /** 外部线程元信息（列表展示用） */
 export interface ExternalThreadMeta {
@@ -41,7 +41,7 @@ export interface ExternalThreadMeta {
 /** 外部会话消息（读取完整对话用） */
 export interface ExternalSessionMessage {
 	id: string;
-	role: 'user' | 'assistant' | 'system';
+	role: "user" | "assistant" | "system";
 	timestamp: number;
 	content: string;
 	/** 思考/推理内容 */
@@ -60,7 +60,7 @@ export interface ExternalToolCall {
 	name: string;
 	input: Record<string, unknown>;
 	output?: string;
-	status: 'completed' | 'error';
+	status: "completed" | "error";
 }
 
 /** CLI 历史列表请求参数 */

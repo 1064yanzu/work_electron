@@ -494,12 +494,15 @@ export async function getPerformanceTuning(
 		return cachedPerformanceTuning;
 	}
 	try {
-		const [sourceAutoRefreshMsRaw, remoteSyncIntervalMsRaw, enableUiDebugLogsRaw] =
-			await Promise.all([
-				getConfig(PERFORMANCE_CONFIG_KEYS.sourceAutoRefreshMs),
-				getConfig(PERFORMANCE_CONFIG_KEYS.remoteSyncIntervalMs),
-				getConfig(PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs),
-			]);
+		const [
+			sourceAutoRefreshMsRaw,
+			remoteSyncIntervalMsRaw,
+			enableUiDebugLogsRaw,
+		] = await Promise.all([
+			getConfig(PERFORMANCE_CONFIG_KEYS.sourceAutoRefreshMs),
+			getConfig(PERFORMANCE_CONFIG_KEYS.remoteSyncIntervalMs),
+			getConfig(PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs),
+		]);
 		cachedPerformanceTuning = {
 			sourceAutoRefreshMs: normalizeInterval(
 				sourceAutoRefreshMsRaw,
@@ -547,12 +550,18 @@ export async function setPerformanceTuning(
 	cachedPerformanceTuning = next;
 	cachedPerformanceTuningLoaded = true;
 	await Promise.all([
-		setConfig(PERFORMANCE_CONFIG_KEYS.sourceAutoRefreshMs, next.sourceAutoRefreshMs),
+		setConfig(
+			PERFORMANCE_CONFIG_KEYS.sourceAutoRefreshMs,
+			next.sourceAutoRefreshMs,
+		),
 		setConfig(
 			PERFORMANCE_CONFIG_KEYS.remoteSyncIntervalMs,
 			next.remoteSyncIntervalMs,
 		),
-		setConfig(PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs, next.enableUiDebugLogs),
+		setConfig(
+			PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs,
+			next.enableUiDebugLogs,
+		),
 	]);
 	return next;
 }

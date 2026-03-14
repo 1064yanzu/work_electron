@@ -6,7 +6,7 @@
 /** 单条对话消息 */
 export interface CodingSessionMessage {
 	id: string;
-	role: 'user' | 'assistant' | 'system';
+	role: "user" | "assistant" | "system";
 	timestamp: number;
 	content: string;
 	/** 是否正在流式输出 */
@@ -23,7 +23,7 @@ export interface CodingSessionMessage {
 	notifications: TaskNotification[];
 	/** 元数据 */
 	metadata?: {
-		backend: 'claude-code' | 'codex';
+		backend: "claude-code" | "codex";
 		model?: string;
 		durationMs?: number;
 	};
@@ -43,7 +43,7 @@ export interface SessionToolCall {
 	name: string;
 	input: Record<string, unknown>;
 	output?: unknown;
-	status: 'pending' | 'running' | 'completed' | 'error';
+	status: "pending" | "running" | "completed" | "error";
 	isError: boolean;
 	durationMs?: number;
 	/** 如果工具是 Edit/Write/Patch，关联的 diff ID */
@@ -52,12 +52,12 @@ export interface SessionToolCall {
 
 /** 会话运行状态 */
 export type SessionStatus =
-	| 'idle'
-	| 'running'
-	| 'awaiting_permission'
-	| 'paused'
-	| 'error'
-	| 'completed';
+	| "idle"
+	| "running"
+	| "awaiting_permission"
+	| "paused"
+	| "error"
+	| "completed";
 
 /** 权限审批请求 */
 export interface SessionPermissionRequest {
@@ -73,7 +73,7 @@ export interface SubagentActivity {
 	id: string;
 	agentId: string | null;
 	agentType: string | null;
-	status: 'running' | 'completed' | 'stopped';
+	status: "running" | "completed" | "stopped";
 	startedAt: number;
 	summary?: string;
 	transcriptPath?: string;
@@ -92,7 +92,7 @@ export interface TeamActivity {
 /** 团队成员信息 */
 export interface TeammateInfo {
 	name: string;
-	status: 'running' | 'idle' | 'completed';
+	status: "running" | "idle" | "completed";
 	taskSummary?: string;
 }
 

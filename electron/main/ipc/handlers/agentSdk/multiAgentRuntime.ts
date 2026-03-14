@@ -106,7 +106,9 @@ export function buildMultiAgentRuntime(input: {
 }
 
 function trimInline(text: string, maxChars: number): string {
-	const normalized = String(text || "").replace(/\s+/g, " ").trim();
+	const normalized = String(text || "")
+		.replace(/\s+/g, " ")
+		.trim();
 	if (!normalized) return "";
 	return normalized.length > maxChars
 		? `${normalized.slice(0, maxChars)}...`
@@ -179,7 +181,9 @@ export function buildLeaderCollaborationPrompt(input: {
 	return lines.join("\n");
 }
 
-export function buildRuntimeMetadata(runtime: MultiAgentRuntime): Record<string, unknown> {
+export function buildRuntimeMetadata(
+	runtime: MultiAgentRuntime,
+): Record<string, unknown> {
 	return {
 		agentRole: runtime.agentRole,
 		teamId: runtime.teamId,

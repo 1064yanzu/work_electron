@@ -128,7 +128,10 @@ function parseJsonArray(raw: string | null | undefined): unknown[] {
 function extractText(value: unknown): string {
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) {
-		return value.map((item) => extractText(item)).filter(Boolean).join("\n");
+		return value
+			.map((item) => extractText(item))
+			.filter(Boolean)
+			.join("\n");
 	}
 	if (value && typeof value === "object") {
 		const obj = value as Record<string, unknown>;
@@ -136,11 +139,17 @@ function extractText(value: unknown): string {
 		if (typeof obj.content === "string") return obj.content;
 		if (typeof obj.message === "string") return obj.message;
 		if (Array.isArray(obj.content)) {
-			const joined = obj.content.map((item) => extractText(item)).filter(Boolean).join("\n");
+			const joined = obj.content
+				.map((item) => extractText(item))
+				.filter(Boolean)
+				.join("\n");
 			if (joined) return joined;
 		}
 		if (Array.isArray(obj.parts)) {
-			const joined = obj.parts.map((item) => extractText(item)).filter(Boolean).join("\n");
+			const joined = obj.parts
+				.map((item) => extractText(item))
+				.filter(Boolean)
+				.join("\n");
 			if (joined) return joined;
 		}
 	}
@@ -151,8 +160,18 @@ function mapSessionState(status: string | null): string {
 	const normalized = asString(status, "active").toLowerCase();
 	if (normalized === "active" || normalized === "running") return "running";
 	if (normalized === "waiting_interaction") return "waiting_interaction";
-	if (normalized === "completed" || normalized === "done" || normalized === "success") return "completed";
-	if (normalized === "aborted" || normalized === "cancelled" || normalized === "canceled") return "aborted";
+	if (
+		normalized === "completed" ||
+		normalized === "done" ||
+		normalized === "success"
+	)
+		return "completed";
+	if (
+		normalized === "aborted" ||
+		normalized === "cancelled" ||
+		normalized === "canceled"
+	)
+		return "aborted";
 	if (normalized === "error" || normalized === "failed") return "error";
 	return "running";
 }
@@ -184,7 +203,9 @@ export class MigrationPullExecutor {
 		return this.executeResourceScope(input);
 	}
 
-	private async executeSessionScope(input: ExecuteInput): Promise<ExecuteResult> {
+	private async executeSessionScope(
+		input: ExecuteInput,
+	): Promise<ExecuteResult> {
 		if (!(await this.hasTable("agent_sessions"))) {
 			return { chunks: 0, records: 0 };
 		}
@@ -261,7 +282,9 @@ export class MigrationPullExecutor {
 		return { chunks: seq, records };
 	}
 
-	private async executeResourceScope(input: ExecuteInput): Promise<ExecuteResult> {
+	private async executeResourceScope(
+		input: ExecuteInput,
+	): Promise<ExecuteResult> {
 		const projectRows = await this.queryProjects();
 		const sourceRows = await this.querySources();
 		const noteRows = await this.queryNotes();
@@ -328,7 +351,10 @@ export class MigrationPullExecutor {
 		const projectChunks = splitBySize(mappedProjects, 100).map((rows) => ({
 			resource_projects: rows,
 		}));
-		const resourceChunks = splitBySize([...mappedSourceItems, ...mappedNoteItems], 100).map((rows) => ({
+		const resourceChunks = splitBySize(
+			[...mappedSourceItems, ...mappedNoteItems],
+			100,
+		).map((rows) => ({
 			resource_items: rows,
 		}));
 		const artifactChunks = splitBySize(mappedArtifacts, 100).map((rows) => ({
@@ -343,7 +369,10 @@ export class MigrationPullExecutor {
 		let seq = 0;
 		for (const chunk of allChunks) {
 			seq += 1;
-			const progress = Math.min(100, Math.floor((seq / allChunks.length) * 100));
+			const progress = Math.min(
+				100,
+				Math.floor((seq / allChunks.length) * 100),
+			);
 			await input.onChunk({
 				seq,
 				progress,
@@ -376,7 +405,9 @@ export class MigrationPullExecutor {
 		return exists;
 	}
 
-	private async queryAgentSessions(sessionId?: string): Promise<AgentSessionRow[]> {
+	private async queryAgentSessions(
+		sessionId?: string,
+	): Promise<AgentSessionRow[]> {
 		if (sessionId) {
 			const rows = await this.db.client.execute({
 				sql: "SELECT id, title, status, created_at, updated_at FROM agent_sessions WHERE id = ?",
@@ -390,7 +421,9 @@ export class MigrationPullExecutor {
 		return rows.rows as unknown as AgentSessionRow[];
 	}
 
-	private async queryAgentMessages(sessionId: string): Promise<AgentMessageRow[]> {
+	private async queryAgentMessages(
+		sessionId: string,
+	): Promise<AgentMessageRow[]> {
 		if (!(await this.hasTable("agent_messages"))) return [];
 		const rows = await this.db.client.execute({
 			sql: "SELECT id, session_id, task_id, role, content_json, created_at FROM agent_messages WHERE session_id = ? ORDER BY created_at ASC",
@@ -399,7 +432,9 @@ export class MigrationPullExecutor {
 		return rows.rows as unknown as AgentMessageRow[];
 	}
 
-	private async queryArtifactsBySession(sessionId: string): Promise<LocalArtifactRow[]> {
+	private async queryArtifactsBySession(
+		sessionId: string,
+	): Promise<LocalArtifactRow[]> {
 		if (!(await this.hasTable("artifacts"))) return [];
 		const rows = await this.db.client.execute({
 			sql: "SELECT id, session_id, file_name, file_path, file_type, description, created_at FROM artifacts WHERE session_id = ? ORDER BY created_at ASC",

@@ -3,13 +3,7 @@
  * 包含：启用/禁用开关、运行状态概览、模型信息
  */
 
-import {
-	Globe,
-	Radio,
-	Smartphone,
-	Users,
-	Zap,
-} from "lucide-react";
+import { Globe, Radio, Smartphone, Users, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getActiveModel, type RemoteRuntimeStatus } from "../../../../lib/api";
 import { SettingsSwitch } from "../../ui/SettingsPrimitives";
@@ -116,9 +110,7 @@ export function RemoteControlHeader({
 						>
 							<span
 								className={`h-1.5 w-1.5 rounded-full ${
-									enabled
-										? "bg-emerald-500 animate-pulse"
-										: "bg-zinc-400"
+									enabled ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
 								}`}
 							/>
 							{enabled ? "运行中" : "已关闭"}
@@ -144,22 +136,14 @@ export function RemoteControlHeader({
 						icon={Zap}
 						label="运行任务"
 						value={runtimeStatus?.active_runs ?? 0}
-						tone={
-							(runtimeStatus?.active_runs ?? 0) > 0
-								? "amber"
-								: "zinc"
-						}
+						tone={(runtimeStatus?.active_runs ?? 0) > 0 ? "amber" : "zinc"}
 					/>
 					<div className="h-10 w-px bg-zinc-200 dark:bg-zinc-700" />
 					<StatusPill
 						icon={Users}
 						label="待审配对"
 						value={runtimeStatus?.pending_pairings ?? 0}
-						tone={
-							(runtimeStatus?.pending_pairings ?? 0) > 0
-								? "rose"
-								: "zinc"
-						}
+						tone={(runtimeStatus?.pending_pairings ?? 0) > 0 ? "rose" : "zinc"}
 					/>
 					<div className="h-10 w-px bg-zinc-200 dark:bg-zinc-700" />
 					<StatusPill

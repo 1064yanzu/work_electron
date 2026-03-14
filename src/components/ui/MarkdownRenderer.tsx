@@ -265,11 +265,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				}
 
 				return (
-					<ShikiCodeBlock
-						code={code}
-						language={language}
-						maxHeight={600}
-					/>
+					<ShikiCodeBlock code={code} language={language} maxHeight={600} />
 				);
 			},
 			// 自定义段落
@@ -416,9 +412,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 	}, [isStreaming, sandboxDir]);
 
 	return (
-		<div
-			className={`max-w-none ${className}`}
-		>
+		<div className={`max-w-none ${className}`}>
 			<ReactMarkdown
 				remarkPlugins={remarkPlugins}
 				urlTransform={urlTransform}

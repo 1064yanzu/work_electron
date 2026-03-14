@@ -1,40 +1,33 @@
 /**
- * 统一工具卡片外壳 - Zed 风格增强版
+ * 统一工具卡片外壳 - Zed 风格圆角卡片
  *
- * 设计要点：
- * - 全宽浅灰圆角矩形背景 + 左侧状态色条（运行中/错误/完成）
- * - 图标 + 动作标签 + 文件路径/命令 + 摘要
- * - 折叠态单行，右侧有展开箭头；展开态内容区有左侧缩进线
- * - subtitle 支持二级信息（如完整路径）
+ * 每个工具调用展示为一个独立的圆角边框卡片：
+ * - 折叠态：icon | 工具名(加粗) | 文件/参数(等宽) | 右摘要 | 展开箭头
+ * - 展开态：卡片内下方区域展示详细内容
  */
-import { ChevronDown } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useState, type ReactNode, type ComponentType } from "react";
 import type { SessionToolCall } from "../../../../lib/stores/codingSessionTypes";
 
 interface ToolCardShellProps {
 	icon: ComponentType<{ className?: string }>;
-	/** 主题文本，如 "Read src/main.ts" 或 "$ npm run build" */
-	title: string;
-	/** 二级信息，如完整文件路径 */
-	subtitle?: string;
-	/** 动作标签（可选，如 "读取"、"编辑"），不传则不显示 */
+	/** 工具动作标签：Read / Edit / Bash / Grep 等 */
 	label?: string;
-	/** 摘要信息，如结果数、执行耗时 */
+	/** 主内容：文件名 / 命令摘要 */
+	title: string;
+	/** 二级说明（完整路径等） */
+	subtitle?: string;
+	/** 右侧摘要：行数 / 匹配数 */
 	summary?: string;
-	/** 状态 */
 	status: SessionToolCall["status"];
-	/** 错误信息 */
 	isError?: boolean;
-	/** 执行耗时(ms) */
-	durationMs?: number;
-	/** 展开的内容 */
 	children?: ReactNode;
-	/** 默认是否展开 */
 	defaultExpanded?: boolean;
-	/** 标题区域右侧的额外元素 */
+	/** 标题右侧自定义元素（diff 增删数字等）*/
 	headerRight?: ReactNode;
-	/** 图标颜色 class */
 	iconColor?: string;
+	/** 保留兼容 */
+	variant?: string;
 }
 
 export function ToolCardShell({
@@ -45,7 +38,6 @@ export function ToolCardShell({
 	summary,
 	status,
 	isError,
-	durationMs,
 	children,
 	defaultExpanded = false,
 	headerRight,
@@ -55,26 +47,6 @@ export function ToolCardShell({
 	const hasContent = children != null;
 	const isRunning = status === "running";
 
-	const durationLabel =
-		durationMs != null && durationMs > 0
-			? durationMs >= 1000
-				? `${(durationMs / 1000).toFixed(1)}s`
-				: `${durationMs}ms`
-			: null;
-
-	// 左侧状态色条颜色
-	const statusBarColor = isError
-		? "bg-red-400 dark:bg-red-500"
-		: isRunning
-			? "bg-[#D96C46] animate-pulse"
-			: "bg-transparent";
-
-	// 容器背景
-	const containerBg = isError
-		? "bg-red-50/50 dark:bg-red-950/15"
-		: "bg-zinc-50/80 dark:bg-zinc-800/40";
-
-	// 图标颜色默认跟随状态
 	const resolvedIconColor = iconColor
 		? iconColor
 		: isError
@@ -85,98 +57,75 @@ export function ToolCardShell({
 
 	return (
 		<div
-			className={`group/card relative flex overflow-hidden rounded-lg ${containerBg} transition-colors`}
+			className={`my-[3px] overflow-hidden rounded-xl border transition-colors ${
+				isError
+					? "border-red-200/80 bg-red-50/30 dark:border-red-900/30 dark:bg-red-950/10"
+					: isRunning
+						? "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800/60"
+						: "border-zinc-200/70 bg-zinc-50/60 dark:border-zinc-700/50 dark:bg-zinc-800/30"
+			}`}
 		>
-			{/* 左侧状态色条 */}
-			<div
-				className={`w-[3px] shrink-0 rounded-l-lg ${statusBarColor} transition-colors`}
-			/>
+			{/* 卡片头部 */}
+			<button
+				type="button"
+				onClick={() => hasContent && setExpanded((e) => !e)}
+				className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
+					hasContent
+						? "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
+						: "cursor-default"
+				}`}
+			>
+				{/* 工具图标 */}
+				<Icon
+					className={`h-[15px] w-[15px] shrink-0 ${resolvedIconColor}`}
+				/>
 
-			<div className="min-w-0 flex-1">
-				{/* 单行头部 */}
-				<button
-					type="button"
-					onClick={() => hasContent && setExpanded(!expanded)}
-					className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
-						hasContent
-							? "hover:bg-zinc-100/60 dark:hover:bg-zinc-700/30 cursor-pointer"
-							: "cursor-default"
-					}`}
-				>
-					{/* 工具图标 */}
-					<Icon className={`h-3.5 w-3.5 shrink-0 ${resolvedIconColor}`} />
-
-					{/* 动作标签（可选） */}
-					{label && (
-						<span className="shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-							{label}
-						</span>
-					)}
-
-					{/* 标题 — 文件路径或命令，等宽字体 */}
-					<span className="min-w-0 flex-1 truncate font-mono text-xs text-zinc-700 dark:text-zinc-300">
-						{title}
+				{/* 工具标签（加粗） */}
+				{label && (
+					<span className="shrink-0 text-[13px] font-semibold text-zinc-700 dark:text-zinc-200">
+						{label}
 					</span>
+				)}
 
-					{/* 自定义右侧内容（如 +N -N） */}
+				{/* 主内容（等宽字体） */}
+				<span className="min-w-0 flex-1 truncate font-mono text-[12px] text-zinc-500 dark:text-zinc-400">
+					{title}
+				</span>
+
+				{/* 右侧摘要区域 */}
+				<span className="ml-1 flex shrink-0 items-center gap-1.5">
 					{headerRight}
-
-					{/* 摘要 */}
 					{summary && (
-						<span className="shrink-0 rounded-md bg-zinc-200/50 px-1.5 py-0.5 text-[10px] tabular-nums text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">
+						<span className="tabular-nums text-[11px] text-zinc-400 dark:text-zinc-500">
 							{summary}
 						</span>
 					)}
-
-					{/* 耗时 */}
-					{durationLabel && !isRunning && (
-						<span className="shrink-0 text-[10px] tabular-nums text-zinc-400/70 dark:text-zinc-500/70">
-							{durationLabel}
-						</span>
-					)}
-
-					{/* 运行中指示 */}
+					{/* 运行中动画 */}
 					{isRunning && (
-						<span className="flex items-center gap-1 shrink-0">
-							<span className="h-1.5 w-1.5 rounded-full bg-[#D96C46] animate-pulse" />
-							<span className="text-[10px] text-[#D96C46]/80">运行中</span>
-						</span>
+						<span className="h-[5px] w-[5px] rounded-full bg-[#D96C46] animate-pulse" />
 					)}
-
-					{/* 错误标签 */}
-					{isError && (
-						<span className="shrink-0 rounded-md bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-500 dark:text-red-400">
-							错误
-						</span>
-					)}
-
 					{/* 展开箭头 */}
 					{hasContent && (
-						<ChevronDown
-							className={`h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform duration-150 ${
-								expanded ? "" : "-rotate-90"
+						<ChevronRight
+							className={`h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 transition-transform duration-150 ${
+								expanded ? "rotate-90" : ""
 							}`}
 						/>
 					)}
-				</button>
+				</span>
+			</button>
 
-				{/* 展开内容 */}
-				{expanded && hasContent && (
-					<div className="relative ml-3 mr-3 mb-2.5">
-						{/* 左侧缩进连接线 */}
-						<div className="absolute left-0 top-0 bottom-0 w-px bg-zinc-200/60 dark:bg-zinc-700/40" />
-						<div className="pl-4 pt-1.5">
-							{/* subtitle: 二级信息 */}
-							{subtitle && (
-								<p className="mb-1.5 truncate font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
-									{subtitle}
-								</p>
-							)}
-							{children}
-						</div>
-					</div>
-				)}
-			</div>
+			{/* 展开内容区域 */}
+			{expanded && hasContent && (
+				<div className="border-t border-zinc-200/60 px-3 py-2 dark:border-zinc-700/40">
+					{subtitle && (
+						<p className="mb-1.5 truncate font-mono text-[10px] text-zinc-400">
+							{subtitle}
+						</p>
+					)}
+					{children}
+				</div>
+			)}
 		</div>
 	);
 }

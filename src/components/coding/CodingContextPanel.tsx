@@ -12,11 +12,16 @@ import { toast } from "../ui/Toast";
 
 export function CodingContextPanel() {
 	const projectPath = useCodingWorkspaceSelector((state) => state.projectPath);
-	const contextFiles = useCodingWorkspaceSelector((state) => state.contextFiles);
-	const workspaceMemory = useCodingRuntimeSelector((state) => state.workspaceMemory);
+	const contextFiles = useCodingWorkspaceSelector(
+		(state) => state.contextFiles,
+	);
+	const workspaceMemory = useCodingRuntimeSelector(
+		(state) => state.workspaceMemory,
+	);
 	const activeThread = useCodingThreadSelector((state) =>
 		state.activeThreadId
-			? state.threads.find((thread) => thread.id === state.activeThreadId) ?? null
+			? (state.threads.find((thread) => thread.id === state.activeThreadId) ??
+				null)
 			: null,
 	);
 	const usage = useCodingSessionSelector((state) => state.usage);
@@ -55,7 +60,9 @@ export function CodingContextPanel() {
 			<div className="border-b border-black/[0.04] px-3 py-3 dark:border-white/[0.04]">
 				<div className="flex items-center justify-between gap-3">
 					<div>
-						<div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">当前上下文</div>
+						<div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
+							当前上下文
+						</div>
 						<div className="mt-1 text-[11px] text-zinc-400">
 							{activeThread?.model ?? "未激活线程"}
 						</div>
@@ -78,7 +85,10 @@ export function CodingContextPanel() {
 					label="Tokens"
 					value={formatTokenCount(usage.inputTokens + usage.outputTokens)}
 				/>
-				<MetricCard label="后端" value={activeThread?.backend === "codex" ? "Codex" : "Claude Code"} />
+				<MetricCard
+					label="后端"
+					value={activeThread?.backend === "codex" ? "Codex" : "Claude Code"}
+				/>
 				<MetricCard label="审批" value={activeThread?.approvalMode ?? "-"} />
 			</div>
 
@@ -103,11 +113,15 @@ export function CodingContextPanel() {
 										<div className="truncate text-[12px] font-medium text-zinc-900 dark:text-zinc-100">
 											{file.name}
 										</div>
-										<div className="mt-1 truncate font-mono text-[10px] text-zinc-400">{file.path}</div>
+										<div className="mt-1 truncate font-mono text-[10px] text-zinc-400">
+											{file.path}
+										</div>
 									</div>
 									<button
 										type="button"
-										onClick={() => codingWorkspaceStore.removeContextFile(file.path)}
+										onClick={() =>
+											codingWorkspaceStore.removeContextFile(file.path)
+										}
 										className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
 										title="移除文件"
 									>
@@ -128,19 +142,31 @@ export function CodingContextPanel() {
 						<div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
 							{Object.entries(sourceGroups).length > 0 ? (
 								Object.entries(sourceGroups).map(([kind, count]) => (
-									<div key={kind} className="rounded-xl bg-zinc-100/80 px-3 py-2 dark:bg-zinc-800/70">
-										<div className="truncate text-[10px] uppercase tracking-[0.14em] text-zinc-400">{kind}</div>
-										<div className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">{count}</div>
+									<div
+										key={kind}
+										className="rounded-xl bg-zinc-100/80 px-3 py-2 dark:bg-zinc-800/70"
+									>
+										<div className="truncate text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+											{kind}
+										</div>
+										<div className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+											{count}
+										</div>
 									</div>
 								))
 							) : (
-								<div className="col-span-2 py-2 text-xs text-zinc-400">未检测到额外 workspace 指令源</div>
+								<div className="col-span-2 py-2 text-xs text-zinc-400">
+									未检测到额外 workspace 指令源
+								</div>
 							)}
 						</div>
 						{workspaceMemory?.sources?.length ? (
 							<div className="mt-3 space-y-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
 								{workspaceMemory.sources.map((source) => (
-									<div key={source.path} className="truncate text-[11px] text-zinc-400">
+									<div
+										key={source.path}
+										className="truncate text-[11px] text-zinc-400"
+									>
 										{source.label}
 									</div>
 								))}
@@ -156,8 +182,12 @@ export function CodingContextPanel() {
 function MetricCard({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="rounded-2xl border border-zinc-200/80 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
-			<div className="text-[10px] uppercase tracking-[0.14em] text-zinc-400">{label}</div>
-			<div className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">{value}</div>
+			<div className="text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+				{label}
+			</div>
+			<div className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+				{value}
+			</div>
 		</div>
 	);
 }

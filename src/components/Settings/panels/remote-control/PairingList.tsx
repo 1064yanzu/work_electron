@@ -28,16 +28,18 @@ export function PairingList(props: {
 				<div className="mb-3 flex items-center justify-between">
 					<h5 className="text-sm font-medium text-text-primary">待审批配对</h5>
 					<span
-						className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${props.pending.length > 0
+						className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+							props.pending.length > 0
 								? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
 								: "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
-							}`}
+						}`}
 					>
 						<span
-							className={`h-1.5 w-1.5 rounded-full ${props.pending.length > 0
+							className={`h-1.5 w-1.5 rounded-full ${
+								props.pending.length > 0
 									? "bg-amber-500 animate-pulse"
 									: "bg-zinc-400"
-								}`}
+							}`}
 						/>
 						{props.pending.length} 条
 					</span>

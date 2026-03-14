@@ -9,10 +9,7 @@ import {
 	UploadCloud,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import {
-	gitCommit,
-	gitPush,
-} from "../../../lib/coding/gitWorkspaceData";
+import { gitCommit, gitPush } from "../../../lib/coding/gitWorkspaceData";
 import type { GitSection } from "./gitPanelUtils";
 
 interface GitCommitPanelProps {
@@ -46,7 +43,10 @@ export function GitCommitPanel({
 			const result = await gitCommit(projectPath, message.trim());
 			if (result.success) {
 				setMessage("");
-				showFeedback("success", `提交成功 ${result.hash ? `(${result.hash})` : ""}`);
+				showFeedback(
+					"success",
+					`提交成功 ${result.hash ? `(${result.hash})` : ""}`,
+				);
 			} else {
 				showFeedback("error", result.error ?? "提交失败");
 			}
@@ -71,7 +71,10 @@ export function GitCommitPanel({
 				setMessage("");
 				showFeedback("success", "提交并推送成功");
 			} else {
-				showFeedback("error", `提交成功，但推送失败: ${pushResult.error ?? ""}`);
+				showFeedback(
+					"error",
+					`提交成功，但推送失败: ${pushResult.error ?? ""}`,
+				);
 			}
 		} catch (err) {
 			showFeedback("error", err instanceof Error ? err.message : "操作失败");
@@ -108,10 +111,7 @@ export function GitCommitPanel({
 			{stagedSection && stagedSection.entries.length > 0 && (
 				<div className="mb-2 max-h-24 overflow-y-auto rounded-xl border border-black/[0.06] bg-white/60 px-2 py-1.5 scrollbar-thin dark:border-white/[0.06] dark:bg-white/[0.03]">
 					{stagedSection.entries.slice(0, 10).map((entry) => (
-						<div
-							key={entry.key}
-							className="flex items-center gap-1.5 py-0.5"
-						>
+						<div key={entry.key} className="flex items-center gap-1.5 py-0.5">
 							<CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
 							<span className="min-w-0 flex-1 truncate font-mono text-[10px] text-zinc-600 dark:text-zinc-400">
 								{entry.path}

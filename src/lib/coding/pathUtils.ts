@@ -6,9 +6,9 @@
 /** 规范化路径：移除尾部斜杠、统一分隔符 */
 export function normalizePath(path: string): string {
 	// 统一为 POSIX 分隔符
-	let normalized = path.replace(/\\/g, '/');
+	let normalized = path.replace(/\\/g, "/");
 	// 移除尾部斜杠（根路径 "/" 除外）
-	if (normalized.length > 1 && normalized.endsWith('/')) {
+	if (normalized.length > 1 && normalized.endsWith("/")) {
 		normalized = normalized.slice(0, -1);
 	}
 	return normalized;

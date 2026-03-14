@@ -156,8 +156,9 @@ export function createSyncHandlers(db: DbContext) {
 		input: Partial<Omit<SyncConfig, "id">>,
 	): Promise<SyncConfig> => {
 		const normalizedInput = (() => {
-			const maybeWrapped = (input as { config?: Partial<Omit<SyncConfig, "id">> })
-				.config;
+			const maybeWrapped = (
+				input as { config?: Partial<Omit<SyncConfig, "id">> }
+			).config;
 			if (maybeWrapped && typeof maybeWrapped === "object") {
 				return maybeWrapped;
 			}
@@ -408,7 +409,11 @@ export function createSyncHandlers(db: DbContext) {
 		input: { data: string; config: WebDavConfig },
 	): Promise<any> => {
 		try {
-			return await backupManager.backupToWebdav(event, input.data, input.config);
+			return await backupManager.backupToWebdav(
+				event,
+				input.data,
+				input.config,
+			);
 		} catch (error) {
 			throw toWebdavFriendlyError(error);
 		}
@@ -419,7 +424,10 @@ export function createSyncHandlers(db: DbContext) {
 		input: { config: WebDavConfig },
 	): Promise<string> => {
 		try {
-			const jsonData = await backupManager.restoreFromWebdav(event, input.config);
+			const jsonData = await backupManager.restoreFromWebdav(
+				event,
+				input.config,
+			);
 			const parsed = JSON.parse(jsonData || "{}");
 			await importBackupPayload(
 				db,

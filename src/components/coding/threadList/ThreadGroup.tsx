@@ -1,11 +1,9 @@
-import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
-import type { ExternalThreadMeta } from '../../../../electron/shared/external-history-types';
-import type {
-	CodingProjectThreadGroup,
-} from '../../../lib/stores/codingThreadStore';
-import type { CodingThread } from '../../../lib/stores/codingThreadTypes';
-import { ThreadRow } from './ThreadRow';
-import { ExternalThreadRow } from './ExternalThreadRow';
+import { ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
+import type { ExternalThreadMeta } from "../../../../electron/shared/external-history-types";
+import type { CodingProjectThreadGroup } from "../../../lib/stores/codingThreadStore";
+import type { CodingThread } from "../../../lib/stores/codingThreadTypes";
+import { ThreadRow } from "./ThreadRow";
+import { ExternalThreadRow } from "./ExternalThreadRow";
 
 interface ThreadGroupProps {
 	group: CodingProjectThreadGroup;
@@ -29,8 +27,8 @@ interface ThreadGroupProps {
 
 /** 统一的显示条目（本地线程和外部 CLI 历史混合排序） */
 type DisplayItem =
-	| { kind: 'local'; thread: CodingThread }
-	| { kind: 'external'; meta: ExternalThreadMeta };
+	| { kind: "local"; thread: CodingThread }
+	| { kind: "external"; meta: ExternalThreadMeta };
 
 const MAX_VISIBLE = 5;
 
@@ -57,17 +55,19 @@ export function ThreadGroup({
 
 	// 统一排序：本地线程 + 外部线程按时间混合
 	const allItems: DisplayItem[] = [
-		...group.threads.map((t) => ({ kind: 'local' as const, thread: t })),
-		...group.externalThreads.map((m) => ({ kind: 'external' as const, meta: m })),
+		...group.threads.map((t) => ({ kind: "local" as const, thread: t })),
+		...group.externalThreads.map((m) => ({
+			kind: "external" as const,
+			meta: m,
+		})),
 	].sort((a, b) => {
-		const aTime = a.kind === 'local' ? a.thread.updatedAt : a.meta.updatedAt;
-		const bTime = b.kind === 'local' ? b.thread.updatedAt : b.meta.updatedAt;
+		const aTime = a.kind === "local" ? a.thread.updatedAt : a.meta.updatedAt;
+		const bTime = b.kind === "local" ? b.thread.updatedAt : b.meta.updatedAt;
 		return bTime - aTime;
 	});
 
-	const visibleItems = searchActive || expanded
-		? allItems
-		: allItems.slice(0, MAX_VISIBLE);
+	const visibleItems =
+		searchActive || expanded ? allItems : allItems.slice(0, MAX_VISIBLE);
 	const hiddenCount = Math.max(0, allItems.length - MAX_VISIBLE);
 	const totalCount = allItems.length;
 
@@ -98,7 +98,7 @@ export function ThreadGroup({
 					) : (
 						<>
 							{visibleItems.map((item) =>
-								item.kind === 'local' ? (
+								item.kind === "local" ? (
 									<ThreadRow
 										key={item.thread.id}
 										thread={item.thread}
@@ -121,7 +121,11 @@ export function ThreadGroup({
 										thread={item.meta}
 										isImporting={importingId === item.meta.id}
 										onClick={() => onImportExternal(item.meta)}
-										onResume={onResumeExternal ? () => onResumeExternal(item.meta) : undefined}
+										onResume={
+											onResumeExternal
+												? () => onResumeExternal(item.meta)
+												: undefined
+										}
 									/>
 								),
 							)}
@@ -131,7 +135,7 @@ export function ThreadGroup({
 									onClick={onToggleExpanded}
 									className="ml-2 rounded-md px-2 py-1 text-[12px] text-zinc-400 transition-colors hover:bg-white/40 hover:text-zinc-600 dark:hover:bg-white/[0.04] dark:hover:text-zinc-300"
 								>
-									{expanded ? '收起' : `展开更多 (${hiddenCount})`}
+									{expanded ? "收起" : `展开更多 (${hiddenCount})`}
 								</button>
 							)}
 						</>

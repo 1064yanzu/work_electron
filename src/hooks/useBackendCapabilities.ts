@@ -3,16 +3,16 @@
  * 提供当前后端能力的便捷 hook，UI 组件用于动态启用/禁用功能
  */
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import type {
 	BackendCapabilityFlags,
 	BackendCapabilityMatrix,
 	CodingBackendId,
-} from '../../electron/shared/coding-workspace';
-import { useCodingRuntimeSelector } from '../lib/stores/codingRuntimeStore';
-import { useCodingAgentSelector } from '../lib/stores/codingAgentStore';
-import { useCodingThreadSelector } from '../lib/stores/codingThreadStore';
-import { codingThreadStore } from '../lib/stores/codingThreadStore';
+} from "../../electron/shared/coding-workspace";
+import { useCodingRuntimeSelector } from "../lib/stores/codingRuntimeStore";
+import { useCodingAgentSelector } from "../lib/stores/codingAgentStore";
+import { useCodingThreadSelector } from "../lib/stores/codingThreadStore";
+import { codingThreadStore } from "../lib/stores/codingThreadStore";
 
 export interface BackendCapabilities {
 	/** 当前活跃后端 ID */
@@ -42,7 +42,7 @@ export interface BackendCapabilities {
 	/** 是否支持工作区记忆 */
 	supportsWorkspaceMemory: boolean;
 	/** 工具事件粒度 */
-	toolEventGranularity: 'none' | 'coarse' | 'granular';
+	toolEventGranularity: "none" | "coarse" | "granular";
 	/** 模型目录 */
 	modelCatalog: string[];
 	/** 默认模型 */
@@ -56,7 +56,7 @@ const DEFAULT_FLAGS: BackendCapabilityFlags = {
 	setModelWhileRunning: false,
 	slashCommandSupport: false,
 	workspaceMemory: false,
-	toolEventGranularity: 'none',
+	toolEventGranularity: "none",
 };
 
 export function useBackendCapabilities(): BackendCapabilities {
@@ -81,8 +81,8 @@ export function useBackendCapabilities(): BackendCapabilities {
 			available: matrix?.available ?? false,
 			matrix,
 			flags,
-			isClaudeCode: backend === 'claude-code',
-			isCodex: backend === 'codex',
+			isClaudeCode: backend === "claude-code",
+			isCodex: backend === "codex",
 			version: matrix?.version ?? null,
 			supportsInteractiveApproval: flags.interactiveApproval,
 			supportsResume: flags.resume,

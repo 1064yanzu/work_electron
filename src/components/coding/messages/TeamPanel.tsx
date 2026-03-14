@@ -2,9 +2,12 @@
  * 团队协作面板
  * 显示 leader + teammates 列表，每个成员状态 + 任务摘要
  */
-import { Users, User, Loader2, Clock, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
-import type { TeamActivity, TeammateInfo } from '../../../lib/stores/codingSessionTypes';
+import { Users, User, Loader2, Clock, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import type {
+	TeamActivity,
+	TeammateInfo,
+} from "../../../lib/stores/codingSessionTypes";
 
 interface TeamPanelProps {
 	team: TeamActivity;
@@ -13,23 +16,23 @@ interface TeamPanelProps {
 const TEAMMATE_STATUS = {
 	running: {
 		icon: Loader2,
-		label: '工作中',
-		color: 'text-[#D96C46]',
-		dot: 'bg-[#D96C46]',
+		label: "工作中",
+		color: "text-[#D96C46]",
+		dot: "bg-[#D96C46]",
 		animate: true,
 	},
 	idle: {
 		icon: Clock,
-		label: '空闲',
-		color: 'text-amber-500',
-		dot: 'bg-amber-500',
+		label: "空闲",
+		color: "text-amber-500",
+		dot: "bg-amber-500",
 		animate: false,
 	},
 	completed: {
 		icon: CheckCircle2,
-		label: '已完成',
-		color: 'text-emerald-500',
-		dot: 'bg-emerald-500',
+		label: "已完成",
+		color: "text-emerald-500",
+		dot: "bg-emerald-500",
 		animate: false,
 	},
 } as const;
@@ -37,8 +40,12 @@ const TEAMMATE_STATUS = {
 export function TeamPanel({ team }: TeamPanelProps) {
 	const [expanded, setExpanded] = useState(true);
 
-	const runningCount = team.teammates.filter((t) => t.status === 'running').length;
-	const completedCount = team.teammates.filter((t) => t.status === 'completed').length;
+	const runningCount = team.teammates.filter(
+		(t) => t.status === "running",
+	).length;
+	const completedCount = team.teammates.filter(
+		(t) => t.status === "completed",
+	).length;
 
 	return (
 		<div className="rounded-lg border border-purple-200/50 dark:border-purple-700/30 bg-purple-50/50 dark:bg-purple-900/5 overflow-hidden mb-3">
@@ -93,7 +100,8 @@ export function TeamPanel({ team }: TeamPanelProps) {
 					)}
 					{team.teammateMode && (
 						<span className="text-[10px] text-zinc-400">
-							成员模式: <span className="text-zinc-500">{team.teammateMode}</span>
+							成员模式:{" "}
+							<span className="text-zinc-500">{team.teammateMode}</span>
 						</span>
 					)}
 				</div>
@@ -120,7 +128,7 @@ function TeammateRow({ teammate }: { teammate: TeammateInfo }) {
 				)}
 			</div>
 			<StatusIcon
-				className={`w-3 h-3 ${cfg.color} shrink-0 ${cfg.animate ? 'animate-spin' : ''}`}
+				className={`w-3 h-3 ${cfg.color} shrink-0 ${cfg.animate ? "animate-spin" : ""}`}
 			/>
 			<span className={`text-[10px] ${cfg.color} shrink-0`}>{cfg.label}</span>
 		</div>

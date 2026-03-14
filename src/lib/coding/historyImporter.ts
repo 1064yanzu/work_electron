@@ -7,16 +7,16 @@ import type {
 	ExternalThreadMeta,
 	ExternalSessionMessage,
 	CliHistoryReadResult,
-} from '../../../electron/shared/external-history-types';
+} from "../../../electron/shared/external-history-types";
 import type {
 	CodingSessionMessage,
 	SessionToolCall,
 	ThinkingBlock,
-} from '../stores/codingSessionTypes';
-import type { CodingThread } from '../stores/codingThreadTypes';
-import type { CodingSessionState } from '../stores/codingSessionStore';
-import { codingSessionStore } from '../stores/codingSessionStore';
-import { codingThreadStore } from '../stores/codingThreadStore';
+} from "../stores/codingSessionTypes";
+import type { CodingThread } from "../stores/codingThreadTypes";
+import type { CodingSessionState } from "../stores/codingSessionStore";
+import { codingSessionStore } from "../stores/codingSessionStore";
+import { codingThreadStore } from "../stores/codingThreadStore";
 import { invoke as desktopInvoke } from "../tauriCompat";
 
 async function invoke<T>(command: string, args?: Record<string, unknown>) {
@@ -27,26 +27,27 @@ async function invoke<T>(command: string, args?: Record<string, unknown>) {
  * 将外部线程导入为本地线程并加载历史消息
  */
 export async function importExternalThread(
-	meta: ExternalThreadMeta
+	meta: ExternalThreadMeta,
 ): Promise<CodingThread | null> {
 	// 读取完整会话内容
-	const command = meta.source === 'codex-cli'
-		? 'cli_history_codex_read'
-		: 'cli_history_claude_code_read';
+	const command =
+		meta.source === "codex-cli"
+			? "cli_history_codex_read"
+			: "cli_history_claude_code_read";
 
-	const result = await invoke(command, {
+	const result = (await invoke(command, {
 		threadId: meta.id,
 		maxMessages: 200,
-	}) as CliHistoryReadResult | null;
+	})) as CliHistoryReadResult | null;
 
 	if (!result) return null;
 
 	// 创建本地线程
-	const backend = meta.source === 'codex-cli' ? 'codex' : 'claude-code';
+	const backend = meta.source === "codex-cli" ? "codex" : "claude-code";
 	const thread = codingThreadStore.createThread(meta.cwd, {
 		title: meta.title,
-		backend: backend as 'codex' | 'claude-code',
-		model: meta.model || (backend === 'codex' ? '' : 'claude-sonnet-4-6'),
+		backend: backend as "codex" | "claude-code",
+		model: meta.model || (backend === "codex" ? "" : "claude-sonnet-4-6"),
 		source: meta.source,
 		externalThreadId: meta.id,
 	});
@@ -64,20 +65,21 @@ export async function importExternalThread(
  * 仅加载外部线程的消息（不创建新线程，用于预览）
  */
 export async function previewExternalThread(
-	meta: ExternalThreadMeta
+	meta: ExternalThreadMeta,
 ): Promise<CodingSessionMessage[]> {
-	const command = meta.source === 'codex-cli'
-		? 'cli_history_codex_read'
-		: 'cli_history_claude_code_read';
+	const command =
+		meta.source === "codex-cli"
+			? "cli_history_codex_read"
+			: "cli_history_claude_code_read";
 
-	const result = await invoke(command, {
+	const result = (await invoke(command, {
 		threadId: meta.id,
 		maxMessages: 100,
-	}) as CliHistoryReadResult | null;
+	})) as CliHistoryReadResult | null;
 
 	if (!result) return [];
 
-	const backend = meta.source === 'codex-cli' ? 'codex' : 'claude-code';
+	const backend = meta.source === "codex-cli" ? "codex" : "claude-code";
 	return convertExternalMessages(result.messages, backend);
 }
 
@@ -86,7 +88,7 @@ export async function previewExternalThread(
  */
 function convertExternalMessages(
 	messages: ExternalSessionMessage[],
-	backend: "codex" | "claude-code"
+	backend: "codex" | "claude-code",
 ): CodingSessionMessage[] {
 	return messages.map((msg, index) => {
 		const toolCalls: SessionToolCall[] = (msg.toolCalls || []).map((tc) => ({
@@ -94,17 +96,19 @@ function convertExternalMessages(
 			name: tc.name,
 			input: tc.input,
 			output: tc.output,
-			status: tc.status === 'error' ? 'error' : 'completed',
-			isError: tc.status === 'error',
+			status: tc.status === "error" ? "error" : "completed",
+			isError: tc.status === "error",
 		}));
 
 		const thinkingBlocks: ThinkingBlock[] = msg.thinking
-			? [{
-				id: `thinking_${msg.id}`,
-				content: msg.thinking,
-				title: backend === 'codex' ? 'Codex 思考' : 'Claude 思考',
-				isStreaming: false,
-			}]
+			? [
+					{
+						id: `thinking_${msg.id}`,
+						content: msg.thinking,
+						title: backend === "codex" ? "Codex 思考" : "Claude 思考",
+						isStreaming: false,
+					},
+				]
 			: [];
 
 		return {
@@ -118,7 +122,7 @@ function convertExternalMessages(
 			subagents: [],
 			notifications: [],
 			metadata: {
-				backend: backend as 'claude-code' | 'codex',
+				backend: backend as "claude-code" | "codex",
 			},
 		};
 	});
@@ -134,7 +138,7 @@ function saveMessagesAsSnapshot(
 	const snapshotState: CodingSessionState = {
 		sdkSessionId: null,
 		runId: null,
-		status: 'completed',
+		status: "completed",
 		messages,
 		streamingMessageId: null,
 		pendingPermission: null,

@@ -1,7 +1,16 @@
 // 研究状态管理 - 研究任务、步骤、资料
 
-import { createStore, createUseStore, createUseStoreSelector } from "./createStore";
-import type { ResearchSource, ResearchState, ResearchStep, ResearchTask } from "./types";
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
+import type {
+	ResearchSource,
+	ResearchState,
+	ResearchStep,
+	ResearchTask,
+} from "./types";
 
 const initialResearchState: ResearchState = {
 	currentResearch: null,
@@ -100,7 +109,10 @@ function addResearchSource(source: Omit<ResearchSource, "id" | "timestamp">) {
 }
 
 // 更新研究任务状态
-function updateResearchStatus(status: ResearchTask["status"], summary?: string) {
+function updateResearchStatus(
+	status: ResearchTask["status"],
+	summary?: string,
+) {
 	store.setState((state) => {
 		if (!state.currentResearch) return state;
 
@@ -111,9 +123,7 @@ function updateResearchStatus(status: ResearchTask["status"], summary?: string) 
 				status,
 				summary,
 				completedAt:
-					status === "completed" || status === "error"
-						? Date.now()
-						: undefined,
+					status === "completed" || status === "error" ? Date.now() : undefined,
 			},
 		};
 	});

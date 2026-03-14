@@ -121,7 +121,7 @@ export function AttachmentCard({
 				"cursor-default shadow-sm",
 				variant === "chip" ? "px-2.5 py-1.5" : "px-3 py-2",
 			)}
-			title={`${file.title}${meta ? `\n${meta}` : ''}`}
+			title={`${file.title}${meta ? `\n${meta}` : ""}`}
 		>
 			{/* 图标容器 */}
 			<div

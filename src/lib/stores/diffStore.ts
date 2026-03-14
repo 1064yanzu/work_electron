@@ -1,7 +1,11 @@
 // Diff 状态管理 - 管理 Agent 文件操作的 diff 数据
 // 当 Agent 执行 Edit/Write 工具时，生成并存储 diff 信息
 
-import { createStore, createUseStore, createUseStoreSelector } from "./createStore";
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 
 // 单个文件的 Diff 信息
 export interface FileDiff {
@@ -75,7 +79,8 @@ function acceptAll() {
 	store.setState((state) => {
 		const updated: Record<string, FileDiff> = {};
 		for (const [id, diff] of Object.entries(state.diffs)) {
-			updated[id] = diff.status === "pending" ? { ...diff, status: "accepted" } : diff;
+			updated[id] =
+				diff.status === "pending" ? { ...diff, status: "accepted" } : diff;
 		}
 		return { ...state, diffs: updated };
 	});
@@ -86,7 +91,8 @@ function rejectAll() {
 	store.setState((state) => {
 		const updated: Record<string, FileDiff> = {};
 		for (const [id, diff] of Object.entries(state.diffs)) {
-			updated[id] = diff.status === "pending" ? { ...diff, status: "rejected" } : diff;
+			updated[id] =
+				diff.status === "pending" ? { ...diff, status: "rejected" } : diff;
 		}
 		return { ...state, diffs: updated };
 	});
@@ -112,7 +118,12 @@ function getDiffByToolCallId(toolCallId: string): FileDiff | undefined {
 }
 
 // 获取所有 diff 的统计信息
-function getDiffStats(): { total: number; pending: number; accepted: number; rejected: number } {
+function getDiffStats(): {
+	total: number;
+	pending: number;
+	accepted: number;
+	rejected: number;
+} {
 	const state = store.getState();
 	const diffs = Object.values(state.diffs);
 	return {

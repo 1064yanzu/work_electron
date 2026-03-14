@@ -6,7 +6,12 @@ export interface ClaudeAuthStatus {
 	authMethod: "oauth" | "api_key" | "env_key" | "none";
 	email?: string;
 	model?: string;
-	mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+	mcpServers?: Array<{
+		name: string;
+		command?: string;
+		url?: string;
+		type?: string;
+	}>;
 }
 
 interface Props {
@@ -57,9 +62,13 @@ function AuthTypeLine({ status }: { status: ClaudeAuthStatus }) {
 		return (
 			<div className="flex items-center gap-2 text-sm">
 				<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
-				<span className="text-zinc-700 dark:text-zinc-200">已通过 Claude 账号登录</span>
+				<span className="text-zinc-700 dark:text-zinc-200">
+					已通过 Claude 账号登录
+				</span>
 				{status.email && (
-					<span className="text-xs text-zinc-400 dark:text-zinc-500">{status.email}</span>
+					<span className="text-xs text-zinc-400 dark:text-zinc-500">
+						{status.email}
+					</span>
 				)}
 			</div>
 		);
@@ -85,7 +94,12 @@ function McpServerList({
 	expanded,
 	onToggle,
 }: {
-	servers: Array<{ name: string; command?: string; url?: string; type?: string }>;
+	servers: Array<{
+		name: string;
+		command?: string;
+		url?: string;
+		type?: string;
+	}>;
 	expanded: boolean;
 	onToggle: () => void;
 }) {

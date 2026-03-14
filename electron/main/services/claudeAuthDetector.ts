@@ -106,20 +106,13 @@ export async function getClaudeAuthStatus(): Promise<ClaudeAuthStatus> {
 		const oauth = data.claudeAiOauth;
 		if (oauth?.accessToken) {
 			const nowSeconds = Date.now() / 1000;
-			if (
-				typeof oauth.expiresAt !== "number" ||
-				oauth.expiresAt > nowSeconds
-			) {
+			if (typeof oauth.expiresAt !== "number" || oauth.expiresAt > nowSeconds) {
 				hasOAuth = true;
 			}
 		}
 
 		// 检查账号对象字段
-		for (const key of [
-			"oauthAccount",
-			"primaryAccount",
-			"account",
-		] as const) {
+		for (const key of ["oauthAccount", "primaryAccount", "account"] as const) {
 			const val = data[key];
 			if (val && typeof val === "object") {
 				hasOAuth = true;
@@ -163,7 +156,12 @@ export async function getClaudeAuthStatus(): Promise<ClaudeAuthStatus> {
 export interface UserCliConfig {
 	claude?: {
 		model?: string;
-		mcpServers?: Array<{ name: string; command?: string; url?: string; type?: string }>;
+		mcpServers?: Array<{
+			name: string;
+			command?: string;
+			url?: string;
+			type?: string;
+		}>;
 		permissions?: string[];
 	};
 	codex?: {
@@ -222,7 +220,10 @@ export async function readUserCliConfig(): Promise<UserCliConfig> {
 		);
 		interface FullClaudeSettings {
 			model?: string;
-			mcpServers?: Record<string, { type?: string; command?: string; args?: string[]; url?: string }>;
+			mcpServers?: Record<
+				string,
+				{ type?: string; command?: string; args?: string[]; url?: string }
+			>;
 			permissions?: { allow?: string[]; deny?: string[] };
 		}
 		const data = JSON.parse(raw) as FullClaudeSettings;
@@ -230,7 +231,12 @@ export async function readUserCliConfig(): Promise<UserCliConfig> {
 		if (data.model) result.claude.model = data.model;
 		if (data.mcpServers) {
 			result.claude.mcpServers = Object.entries(data.mcpServers).map(
-				([name, cfg]) => ({ name, command: cfg.command, url: cfg.url, type: cfg.type }),
+				([name, cfg]) => ({
+					name,
+					command: cfg.command,
+					url: cfg.url,
+					type: cfg.type,
+				}),
 			);
 		}
 		if (data.permissions?.allow?.length) {
@@ -252,21 +258,35 @@ export async function readUserCliConfig(): Promise<UserCliConfig> {
 		const reasoningEffort = extractTomlString(raw, "reasoning_effort");
 		const approvalPolicy = extractTomlString(raw, "approval_policy");
 		const sandboxMode = extractTomlString(raw, "sandbox_mode");
-		const disableResponseStorage = extractTomlBool(raw, "disable_response_storage");
-		const autoApproveTimeoutMs = extractTomlNumber(raw, "auto_approve_timeout_ms");
+		const disableResponseStorage = extractTomlBool(
+			raw,
+			"disable_response_storage",
+		);
+		const autoApproveTimeoutMs = extractTomlNumber(
+			raw,
+			"auto_approve_timeout_ms",
+		);
 		const notifyCommand = extractTomlString(raw, "notify_command");
 
 		if (model ?? provider ?? reasoningEffort ?? approvalPolicy) {
 			result.codex = {};
 			if (model) result.codex.model = model;
 			if (provider) result.codex.provider = provider;
-			if (reasoningEffort && ["low", "medium", "high"].includes(reasoningEffort)) {
-				result.codex.reasoningEffort = reasoningEffort as "low" | "medium" | "high";
+			if (
+				reasoningEffort &&
+				["low", "medium", "high"].includes(reasoningEffort)
+			) {
+				result.codex.reasoningEffort = reasoningEffort as
+					| "low"
+					| "medium"
+					| "high";
 			}
 			if (approvalPolicy) result.codex.approvalPolicy = approvalPolicy;
 			if (sandboxMode) result.codex.sandboxMode = sandboxMode;
-			if (disableResponseStorage != null) result.codex.disableResponseStorage = disableResponseStorage;
-			if (autoApproveTimeoutMs != null) result.codex.autoApproveTimeoutMs = autoApproveTimeoutMs;
+			if (disableResponseStorage != null)
+				result.codex.disableResponseStorage = disableResponseStorage;
+			if (autoApproveTimeoutMs != null)
+				result.codex.autoApproveTimeoutMs = autoApproveTimeoutMs;
 			if (notifyCommand) result.codex.notifyCommand = notifyCommand;
 		}
 	} catch {

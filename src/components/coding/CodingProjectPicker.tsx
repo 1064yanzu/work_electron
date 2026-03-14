@@ -3,13 +3,7 @@
  * 在 Dashboard 的 "AI 编程" tab 下渲染
  * 提供：选择本地目录 + 最近项目列表
  */
-import {
-	Clock,
-	Code2,
-	FolderOpen,
-	Sparkles,
-	X,
-} from "lucide-react";
+import { Clock, Code2, FolderOpen, Sparkles, X } from "lucide-react";
 import { useCallback } from "react";
 import {
 	codingWorkspaceStore,
@@ -21,12 +15,17 @@ interface CodingProjectPickerProps {
 	onOpenCoding?: (projectPath: string) => void;
 }
 
-export function CodingProjectPicker({ onOpenCoding }: CodingProjectPickerProps) {
+export function CodingProjectPicker({
+	onOpenCoding,
+}: CodingProjectPickerProps) {
 	const recentProjects = useCodingWorkspaceSelector((s) => s.recentProjects);
 
 	const handleSelectDirectory = useCallback(async () => {
 		try {
-			const result = await window.electronAPI.invoke("coding_select_directory", {});
+			const result = await window.electronAPI.invoke(
+				"coding_select_directory",
+				{},
+			);
 			if (result?.path) {
 				onOpenCoding?.(result.path);
 			}

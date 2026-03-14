@@ -104,9 +104,7 @@ function TerminalLogEntry({
 			: null;
 
 	const commandDisplay =
-		call.command.length > 80
-			? `${call.command.slice(0, 80)}...`
-			: call.command;
+		call.command.length > 80 ? `${call.command.slice(0, 80)}...` : call.command;
 
 	const outputLineCount = call.output ? call.output.split("\n").length : 0;
 

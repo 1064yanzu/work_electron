@@ -2,11 +2,11 @@
  * CodingInputActions — 输入框附加功能栏
  * 包含：+ 附加按钮、模型选择器下拉菜单
  */
-import { useState, useRef } from 'react';
-import { Plus, ChevronDown } from 'lucide-react';
-import { useCodingThreadSelector } from '../../lib/stores/codingThreadStore';
-import { formatModelName } from '../../lib/coding/modelUtils';
-import { ModelSelectorDropdown } from './ModelSelectorDropdown';
+import { useState, useRef } from "react";
+import { Plus, ChevronDown } from "lucide-react";
+import { useCodingThreadSelector } from "../../lib/stores/codingThreadStore";
+import { formatModelName } from "../../lib/coding/modelUtils";
+import { ModelSelectorDropdown } from "./ModelSelectorDropdown";
 
 interface CodingInputActionsProps {
 	onAddFile?: () => void;
@@ -14,7 +14,7 @@ interface CodingInputActionsProps {
 
 export function CodingInputActions({ onAddFile }: CodingInputActionsProps) {
 	const activeThread = useCodingThreadSelector((s) =>
-		s.activeThreadId ? s.threads.find((t) => t.id === s.activeThreadId) : null
+		s.activeThreadId ? s.threads.find((t) => t.id === s.activeThreadId) : null,
 	);
 
 	const [showModelMenu, setShowModelMenu] = useState(false);
@@ -22,7 +22,7 @@ export function CodingInputActions({ onAddFile }: CodingInputActionsProps) {
 
 	const modelLabel = activeThread?.model
 		? formatModelName(activeThread.model)
-		: '选择模型';
+		: "选择模型";
 
 	return (
 		<div className="flex items-center gap-1.5">
@@ -42,7 +42,9 @@ export function CodingInputActions({ onAddFile }: CodingInputActionsProps) {
 				className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
 			>
 				{modelLabel}
-				<ChevronDown className={`h-3 w-3 transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
+				<ChevronDown
+					className={`h-3 w-3 transition-transform ${showModelMenu ? "rotate-180" : ""}`}
+				/>
 			</button>
 
 			{/* 模型选择下拉菜单 */}

@@ -686,15 +686,10 @@ class AgentExecutor {
 			("hybrid" as const);
 		const resolvedMaxTeammates = Math.max(
 			1,
-			Math.min(
-				8,
-				options.maxTeammates ?? runtimeConfig?.maxTeammates ?? 2,
-			),
+			Math.min(8, options.maxTeammates ?? runtimeConfig?.maxTeammates ?? 2),
 		);
 		const resolvedTeammateMode =
-			options.teammateMode ||
-			runtimeConfig?.teammateMode ||
-			("auto" as const);
+			options.teammateMode || runtimeConfig?.teammateMode || ("auto" as const);
 		const resolvedTeammateBudget = {
 			maxTurns:
 				options.teammateBudget?.maxTurns ??

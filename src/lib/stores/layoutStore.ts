@@ -1,6 +1,10 @@
 // 布局状态管理 - 视图模式、侧边栏可见性等
 
-import { createStore, createUseStore, createUseStoreSelector } from "./createStore";
+import {
+	createStore,
+	createUseStore,
+	createUseStoreSelector,
+} from "./createStore";
 import type { LayoutState } from "./types";
 
 const initialLayoutState: LayoutState = {

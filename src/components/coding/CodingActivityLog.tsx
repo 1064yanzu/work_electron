@@ -17,7 +17,13 @@ import {
 	ChevronRight,
 	ListChecks,
 } from "lucide-react";
-import { useMemo, useRef, useEffect, useState, type ComponentType } from "react";
+import {
+	useMemo,
+	useRef,
+	useEffect,
+	useState,
+	type ComponentType,
+} from "react";
 import { useCodingSessionSelector } from "../../lib/stores/codingSessionStore";
 import type { SessionToolCall } from "../../lib/stores/codingSessionTypes";
 
@@ -102,7 +108,10 @@ function extractDescription(tc: SessionToolCall): string {
 }
 
 /** 状态颜色 */
-function getStatusColor(status: SessionToolCall["status"], isError?: boolean): string {
+function getStatusColor(
+	status: SessionToolCall["status"],
+	isError?: boolean,
+): string {
 	if (isError) return "bg-red-500";
 	switch (status) {
 		case "running":
@@ -116,7 +125,10 @@ function getStatusColor(status: SessionToolCall["status"], isError?: boolean): s
 	}
 }
 
-function getIconColor(status: SessionToolCall["status"], isError?: boolean): string {
+function getIconColor(
+	status: SessionToolCall["status"],
+	isError?: boolean,
+): string {
 	if (isError) return "text-red-500";
 	switch (status) {
 		case "running":
@@ -129,7 +141,6 @@ function getIconColor(status: SessionToolCall["status"], isError?: boolean): str
 			return "text-zinc-400";
 	}
 }
-
 
 interface ActivityEntry {
 	id: string;
@@ -192,10 +203,7 @@ export function CodingActivityLog() {
 	}
 
 	return (
-		<div
-			ref={scrollRef}
-			className="h-full overflow-y-auto scrollbar-thin py-1"
-		>
+		<div ref={scrollRef} className="h-full overflow-y-auto scrollbar-thin py-1">
 			{entries.map((entry) => (
 				<ActivityLogEntry key={entry.id} entry={entry} />
 			))}

@@ -127,8 +127,13 @@ export class RemoteCommandRouter {
 		return { ok: true };
 	}
 
-	private buildFeishuDocxMcpServers(config: RemoteControlConfig):
-		| Record<string, { command: string; args?: string[]; env?: Record<string, string> }>
+	private buildFeishuDocxMcpServers(
+		config: RemoteControlConfig,
+	):
+		| Record<
+				string,
+				{ command: string; args?: string[]; env?: Record<string, string> }
+		  >
 		| undefined {
 		const credential = this.canUseFeishuDocx(config);
 		if (!credential.ok) return undefined;
@@ -320,10 +325,7 @@ export class RemoteCommandRouter {
 			}
 			case "doc_call": {
 				if (message.channel_id !== "feishu") {
-					await this.sendSystemReply(
-						message,
-						"仅 Feishu 通道支持 /doc.call。",
-					);
+					await this.sendSystemReply(message, "仅 Feishu 通道支持 /doc.call。");
 					return;
 				}
 				if (!config.channels.feishu.enableDocCommandFallback) {
@@ -346,7 +348,10 @@ export class RemoteCommandRouter {
 				}
 				const credential = this.canUseFeishuDocx(config);
 				if (!credential.ok) {
-					await this.sendSystemReply(message, credential.reason || "配置缺失。");
+					await this.sendSystemReply(
+						message,
+						credential.reason || "配置缺失。",
+					);
 					return;
 				}
 
@@ -420,9 +425,7 @@ export class RemoteCommandRouter {
 				let sandboxDir: string | undefined;
 				let agentSessionId: string | undefined;
 				try {
-					sandboxDir = await ensureRemoteSessionSandboxDir(
-						session.session_id,
-					);
+					sandboxDir = await ensureRemoteSessionSandboxDir(session.session_id);
 					const persistedContextFiles = await persistInboundContextFiles({
 						logger: this.deps.logger,
 						sandboxDir,
@@ -482,7 +485,9 @@ export class RemoteCommandRouter {
 							agentSessionId,
 							persistedByMain: true,
 							sandboxDir,
-							contextFiles: persistedContextFiles.map((file) => file.relativePath),
+							contextFiles: persistedContextFiles.map(
+								(file) => file.relativePath,
+							),
 						});
 					}
 
@@ -501,8 +506,7 @@ export class RemoteCommandRouter {
 							agentSessionId,
 							taskId,
 							sandboxDir,
-							errorText:
-								error instanceof Error ? error.message : String(error),
+							errorText: error instanceof Error ? error.message : String(error),
 						});
 					}
 					await this.sendSystemReply(

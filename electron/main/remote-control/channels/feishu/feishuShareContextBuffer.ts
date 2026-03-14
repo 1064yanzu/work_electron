@@ -46,7 +46,8 @@ export class FeishuShareContextBuffer {
 			const related = alive.filter((item) => {
 				const sourceId = item.context.messageId;
 				return Boolean(
-					(rootId && sourceId === rootId) || (parentId && sourceId === parentId),
+					(rootId && sourceId === rootId) ||
+						(parentId && sourceId === parentId),
 				);
 			});
 			if (related.length > 0) {
@@ -82,4 +83,3 @@ export class FeishuShareContextBuffer {
 		this.byConversation.clear();
 	}
 }
-

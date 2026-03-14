@@ -31,7 +31,9 @@ export interface CommandResult {
 }
 
 function getActiveThread(context: CommandContext) {
-	return context.threadId ? codingThreadStore.getThread(context.threadId) : null;
+	return context.threadId
+		? codingThreadStore.getThread(context.threadId)
+		: null;
 }
 
 async function applyRuntimeControl(
@@ -82,49 +84,52 @@ export async function executeCodingCommand(
 				context,
 				payload?.approvalMode as CodingApprovalMode,
 			);
-			case "resume_session":
-				return executeResume(context);
-			case "open_settings":
-				context.onOpenSettings?.("aiCoding");
-				return { success: true };
-			case "open_memory_panel":
-				return openRightPanelTab("git");
-			case "open_activity_panel":
-				return openRightPanelTab("terminal-log");
-			case "open_context_panel":
-				return openRightPanelTab("git");
-			case "pick_context_files":
-				return executePickContextFiles(context);
-			// ── 新增命令 ──
-			case "new_thread":
-				return executeNewThread(context);
-			case "rename_thread":
-				return executeRenameThread(context);
-			case "fork_session":
-				return executeForkSession(context);
-			case "copy_last_output":
-				return executeCopyLastOutput();
-			case "start_review":
-				return executeStartReview(context);
-			case "init_config":
-				return executeInitConfig(context);
-			case "set_mode_plan":
-				return executeSetMode(context, "plan");
-			case "open_mcp_panel":
-				return { success: true, message: "MCP 面板功能正在开发中，敬请期待。" };
-			case "list_terminals":
-				return executeListTerminals();
-			case "clean_terminals":
-				return executeCleanTerminals();
-			case "set_theme":
-				return executeSetTheme(payload?.theme as string);
-			case "set_reasoning_effort":
-				return executeSetReasoningEffort(context, payload?.reasoningEffort as string);
-			case "open_feedback":
-				return { success: true, message: "感谢您的反馈意愿！反馈功能即将上线。" };
-			default:
-				return { success: false, error: `未知命令: ${actionId}` };
-		}
+		case "resume_session":
+			return executeResume(context);
+		case "open_settings":
+			context.onOpenSettings?.("aiCoding");
+			return { success: true };
+		case "open_memory_panel":
+			return openRightPanelTab("git");
+		case "open_activity_panel":
+			return openRightPanelTab("terminal-log");
+		case "open_context_panel":
+			return openRightPanelTab("git");
+		case "pick_context_files":
+			return executePickContextFiles(context);
+		// ── 新增命令 ──
+		case "new_thread":
+			return executeNewThread(context);
+		case "rename_thread":
+			return executeRenameThread(context);
+		case "fork_session":
+			return executeForkSession(context);
+		case "copy_last_output":
+			return executeCopyLastOutput();
+		case "start_review":
+			return executeStartReview(context);
+		case "init_config":
+			return executeInitConfig(context);
+		case "set_mode_plan":
+			return executeSetMode(context, "plan");
+		case "open_mcp_panel":
+			return { success: true, message: "MCP 面板功能正在开发中，敬请期待。" };
+		case "list_terminals":
+			return executeListTerminals();
+		case "clean_terminals":
+			return executeCleanTerminals();
+		case "set_theme":
+			return executeSetTheme(payload?.theme as string);
+		case "set_reasoning_effort":
+			return executeSetReasoningEffort(
+				context,
+				payload?.reasoningEffort as string,
+			);
+		case "open_feedback":
+			return { success: true, message: "感谢您的反馈意愿！反馈功能即将上线。" };
+		default:
+			return { success: false, error: `未知命令: ${actionId}` };
+	}
 }
 
 function openRightPanelTab(
@@ -171,8 +176,15 @@ async function executeSetMode(
 	if (context.threadId) {
 		codingThreadStore.updateThread(context.threadId, { codingMode: mode });
 	}
-	const modeLabels: Record<string, string> = { code: "Code", plan: "Plan", ask: "Ask" };
-	return { success: true, message: `已切换到 ${modeLabels[mode] || mode} 模式` };
+	const modeLabels: Record<string, string> = {
+		code: "Code",
+		plan: "Plan",
+		ask: "Ask",
+	};
+	return {
+		success: true,
+		message: `已切换到 ${modeLabels[mode] || mode} 模式`,
+	};
 }
 
 async function executeSetBackend(
@@ -181,11 +193,15 @@ async function executeSetBackend(
 ): Promise<CommandResult> {
 	if (!backend) return { success: false, error: "缺少目标后端。" };
 	const capability = codingRuntimeStore.getState().capabilities[backend];
-	const defaultModel = capability?.defaultModel
-		?? (backend === "codex" ? DEFAULT_AI_CODING_SETTINGS.codexDefaultModel : DEFAULT_AI_CODING_SETTINGS.claudeDefaultModel);
-	const defaultApprovalMode = backend === "codex"
-		? DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode
-		: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode;
+	const defaultModel =
+		capability?.defaultModel ??
+		(backend === "codex"
+			? DEFAULT_AI_CODING_SETTINGS.codexDefaultModel
+			: DEFAULT_AI_CODING_SETTINGS.claudeDefaultModel);
+	const defaultApprovalMode =
+		backend === "codex"
+			? DEFAULT_AI_CODING_SETTINGS.codexDefaultApprovalMode
+			: DEFAULT_AI_CODING_SETTINGS.claudeDefaultApprovalMode;
 	codingAgentStore.setCodingBackend(backend);
 	if (context.threadId) {
 		codingThreadStore.updateThread(context.threadId, {
@@ -200,8 +216,14 @@ async function executeSetBackend(
 		defaultModel,
 		defaultApprovalMode,
 	});
-	const backendLabels: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex" };
-	return { success: true, message: `已切换到 ${backendLabels[backend] || backend} 后端` };
+	const backendLabels: Record<string, string> = {
+		"claude-code": "Claude Code",
+		codex: "Codex",
+	};
+	return {
+		success: true,
+		message: `已切换到 ${backendLabels[backend] || backend} 后端`,
+	};
 }
 
 async function executeSetModel(
@@ -257,15 +279,19 @@ async function executeResume(context: CommandContext): Promise<CommandResult> {
 	});
 	if (!result.success) return result;
 	codingThreadStore.updateThread(thread.id, {
-		runtimeSessionId: thread.backend === "codex" ? sessionId : thread.runtimeSessionId,
-		sdkSessionId: thread.backend === "claude-code" ? sessionId : thread.sdkSessionId,
+		runtimeSessionId:
+			thread.backend === "codex" ? sessionId : thread.runtimeSessionId,
+		sdkSessionId:
+			thread.backend === "claude-code" ? sessionId : thread.sdkSessionId,
 	});
 	return { success: true, message: "会话已恢复" };
 }
 
 // ── 新增命令执行函数 ──
 
-async function executeNewThread(context: CommandContext): Promise<CommandResult> {
+async function executeNewThread(
+	context: CommandContext,
+): Promise<CommandResult> {
 	if (!context.projectPath) {
 		return { success: false, error: "请先打开一个项目。" };
 	}
@@ -291,7 +317,9 @@ async function executeNewThread(context: CommandContext): Promise<CommandResult>
 	return { success: true, message: "已创建新线程。" };
 }
 
-async function executeRenameThread(context: CommandContext): Promise<CommandResult> {
+async function executeRenameThread(
+	context: CommandContext,
+): Promise<CommandResult> {
 	const thread = getActiveThread(context);
 	if (!thread) return { success: false, error: "当前没有活跃线程。" };
 
@@ -304,7 +332,9 @@ async function executeRenameThread(context: CommandContext): Promise<CommandResu
 	return { success: true, message: `线程已重命名为「${newTitle.trim()}」` };
 }
 
-async function executeForkSession(context: CommandContext): Promise<CommandResult> {
+async function executeForkSession(
+	context: CommandContext,
+): Promise<CommandResult> {
 	if (!context.threadId) {
 		return { success: false, error: "当前没有活跃线程。" };
 	}
@@ -312,7 +342,10 @@ async function executeForkSession(context: CommandContext): Promise<CommandResul
 		return { success: false, error: "请先打开一个项目。" };
 	}
 
-	const result = await forkCurrentSession(context.threadId, context.projectPath);
+	const result = await forkCurrentSession(
+		context.threadId,
+		context.projectPath,
+	);
 	if (!result.success) {
 		return { success: false, error: result.error };
 	}
@@ -327,7 +360,9 @@ async function executeForkSession(context: CommandContext): Promise<CommandResul
 async function executeCopyLastOutput(): Promise<CommandResult> {
 	const messages = codingSessionStore.getState().messages;
 	// 从后往前找最后一条 assistant 消息
-	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+	const lastAssistant = [...messages]
+		.reverse()
+		.find((m) => m.role === "assistant");
 	if (!lastAssistant) {
 		return { success: false, error: "没有找到 AI 回复消息。" };
 	}
@@ -345,7 +380,9 @@ async function executeCopyLastOutput(): Promise<CommandResult> {
 	}
 }
 
-async function executeStartReview(context: CommandContext): Promise<CommandResult> {
+async function executeStartReview(
+	context: CommandContext,
+): Promise<CommandResult> {
 	if (!context.projectPath) {
 		return { success: false, error: "请先打开一个项目。" };
 	}
@@ -355,7 +392,10 @@ async function executeStartReview(context: CommandContext): Promise<CommandResul
 
 	const reviewResult = await startCodeReview(context.projectPath);
 	if (!reviewResult.success || !reviewResult.prompt) {
-		return { success: false, error: reviewResult.error || "代码审查启动失败。" };
+		return {
+			success: false,
+			error: reviewResult.error || "代码审查启动失败。",
+		};
 	}
 
 	// 通过 session manager 发送 review prompt
@@ -382,7 +422,9 @@ async function executeStartReview(context: CommandContext): Promise<CommandResul
 	return { success: true };
 }
 
-async function executeInitConfig(context: CommandContext): Promise<CommandResult> {
+async function executeInitConfig(
+	context: CommandContext,
+): Promise<CommandResult> {
 	if (!context.projectPath) {
 		return { success: false, error: "请先打开一个项目。" };
 	}
@@ -395,7 +437,10 @@ async function executeInitConfig(context: CommandContext): Promise<CommandResult
 	}
 
 	const fileName = backend === "claude-code" ? "CLAUDE.md" : "AGENTS.md";
-	return { success: true, message: `已为当前项目创建 ${fileName} 配置文件: ${result.filePath}` };
+	return {
+		success: true,
+		message: `已为当前项目创建 ${fileName} 配置文件: ${result.filePath}`,
+	};
 }
 
 function executeListTerminals(): CommandResult {
@@ -405,10 +450,12 @@ function executeListTerminals(): CommandResult {
 	}
 
 	const lines = terminals.map(
-		(t, i) =>
-			`  ${i + 1}. [${t.id}] ${t.name} — PID: ${t.pid}, 目录: ${t.cwd}`,
+		(t, i) => `  ${i + 1}. [${t.id}] ${t.name} — PID: ${t.pid}, 目录: ${t.cwd}`,
 	);
-	return { success: true, message: `当前活跃终端 (${terminals.length} 个):\n${lines.join("\n")}` };
+	return {
+		success: true,
+		message: `当前活跃终端 (${terminals.length} 个):\n${lines.join("\n")}`,
+	};
 }
 
 async function executeCleanTerminals(): Promise<CommandResult> {
@@ -437,9 +484,19 @@ async function executeSetReasoningEffort(
 	effort?: string,
 ): Promise<CommandResult> {
 	if (!effort || !["low", "medium", "high"].includes(effort)) {
-		return { success: false, error: "请通过 /thinking 子菜单选择思考深度（低/中/高）。" };
+		return {
+			success: false,
+			error: "请通过 /thinking 子菜单选择思考深度（低/中/高）。",
+		};
 	}
 	codingAgentStore.setCodexReasoningEffort(effort as "low" | "medium" | "high");
-	const effortLabels: Record<string, string> = { low: "低", medium: "中", high: "高" };
-	return { success: true, message: `Codex 思考深度已设置为: ${effortLabels[effort]}` };
+	const effortLabels: Record<string, string> = {
+		low: "低",
+		medium: "中",
+		high: "高",
+	};
+	return {
+		success: true,
+		message: `Codex 思考深度已设置为: ${effortLabels[effort]}`,
+	};
 }

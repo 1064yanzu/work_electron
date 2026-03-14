@@ -10,14 +10,14 @@ import {
 	useLayoutEffect,
 	useRef,
 	useState,
-} from 'react';
-import { createPortal } from 'react-dom';
+} from "react";
+import { createPortal } from "react-dom";
 
 export type DropdownPlacement =
-	| 'bottom-start'
-	| 'bottom-end'
-	| 'top-start'
-	| 'top-end';
+	| "bottom-start"
+	| "bottom-end"
+	| "top-start"
+	| "top-end";
 
 export interface DropdownPortalProps {
 	/** 触发元素的 ref */
@@ -46,8 +46,8 @@ export function DropdownPortal({
 	anchorRef,
 	open,
 	onClose,
-	placement = 'bottom-start',
-	className = '',
+	placement = "bottom-start",
+	className = "",
 	minWidth,
 	width,
 	children,
@@ -70,7 +70,7 @@ export function DropdownPortal({
 		let left: number;
 
 		// 垂直位置
-		if (placement.startsWith('top')) {
+		if (placement.startsWith("top")) {
 			top = rect.top - dropdownHeight - 4;
 			// 如果上方空间不够，自动翻转到下方
 			if (top < 8) {
@@ -85,7 +85,7 @@ export function DropdownPortal({
 		}
 
 		// 水平位置
-		if (placement.endsWith('end')) {
+		if (placement.endsWith("end")) {
 			left = rect.right - dropdownWidth;
 			// 防止溢出左边
 			if (left < 8) {
@@ -123,11 +123,11 @@ export function DropdownPortal({
 	useEffect(() => {
 		if (!open) return;
 		const handleUpdate = () => updatePosition();
-		window.addEventListener('scroll', handleUpdate, true);
-		window.addEventListener('resize', handleUpdate);
+		window.addEventListener("scroll", handleUpdate, true);
+		window.addEventListener("resize", handleUpdate);
 		return () => {
-			window.removeEventListener('scroll', handleUpdate, true);
-			window.removeEventListener('resize', handleUpdate);
+			window.removeEventListener("scroll", handleUpdate, true);
+			window.removeEventListener("resize", handleUpdate);
 		};
 	}, [open, updatePosition]);
 
@@ -142,22 +142,22 @@ export function DropdownPortal({
 			if (anchorRef.current?.contains(target)) return;
 			onClose();
 		};
-		document.addEventListener('mousedown', handleMouseDown);
-		return () => document.removeEventListener('mousedown', handleMouseDown);
+		document.addEventListener("mousedown", handleMouseDown);
+		return () => document.removeEventListener("mousedown", handleMouseDown);
 	}, [open, onClose, anchorRef]);
 
 	// Esc 关闭
 	useEffect(() => {
 		if (!open) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
+			if (e.key === "Escape") {
 				e.preventDefault();
 				e.stopPropagation();
 				onClose();
 			}
 		};
-		document.addEventListener('keydown', handleKeyDown);
-		return () => document.removeEventListener('keydown', handleKeyDown);
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [open, onClose]);
 
 	if (!open) return null;
@@ -169,7 +169,7 @@ export function DropdownPortal({
 	return createPortal(
 		<div
 			ref={dropdownRef}
-			className={`fixed z-[9999] ${visible ? 'animate-in fade-in zoom-in-95 duration-150' : 'opacity-0'} ${className}`}
+			className={`fixed z-[9999] ${visible ? "animate-in fade-in zoom-in-95 duration-150" : "opacity-0"} ${className}`}
 			style={{
 				top: position.top,
 				left: position.left,
@@ -200,11 +200,13 @@ export interface ContextMenuPortalProps {
 export function ContextMenuPortal({
 	position: mousePos,
 	onClose,
-	className = '',
+	className = "",
 	children,
 }: ContextMenuPortalProps) {
 	const menuRef = useRef<HTMLDivElement>(null);
-	const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+	const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number }>(
+		{ top: 0, left: 0 },
+	);
 	const [visible, setVisible] = useState(false);
 
 	const updatePosition = useCallback(() => {
@@ -242,11 +244,11 @@ export function ContextMenuPortal({
 	useEffect(() => {
 		if (!mousePos) return;
 		const handleUpdate = () => updatePosition();
-		window.addEventListener('resize', handleUpdate);
-		window.addEventListener('scroll', handleUpdate, true);
+		window.addEventListener("resize", handleUpdate);
+		window.addEventListener("scroll", handleUpdate, true);
 		return () => {
-			window.removeEventListener('resize', handleUpdate);
-			window.removeEventListener('scroll', handleUpdate, true);
+			window.removeEventListener("resize", handleUpdate);
+			window.removeEventListener("scroll", handleUpdate, true);
 		};
 	}, [mousePos, updatePosition]);
 
@@ -257,21 +259,21 @@ export function ContextMenuPortal({
 			if (menuRef.current?.contains(e.target as Node)) return;
 			onClose();
 		};
-		document.addEventListener('mousedown', handleMouseDown);
-		return () => document.removeEventListener('mousedown', handleMouseDown);
+		document.addEventListener("mousedown", handleMouseDown);
+		return () => document.removeEventListener("mousedown", handleMouseDown);
 	}, [mousePos, onClose]);
 
 	// Esc 关闭
 	useEffect(() => {
 		if (!mousePos) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
+			if (e.key === "Escape") {
 				e.preventDefault();
 				onClose();
 			}
 		};
-		document.addEventListener('keydown', handleKeyDown);
-		return () => document.removeEventListener('keydown', handleKeyDown);
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [mousePos, onClose]);
 
 	if (!mousePos) return null;
@@ -279,7 +281,7 @@ export function ContextMenuPortal({
 	return createPortal(
 		<div
 			ref={menuRef}
-			className={`fixed z-[9999] ${visible ? 'animate-in fade-in zoom-in-95 duration-150' : 'opacity-0'} ${className}`}
+			className={`fixed z-[9999] ${visible ? "animate-in fade-in zoom-in-95 duration-150" : "opacity-0"} ${className}`}
 			style={{
 				top: adjustedPos.top,
 				left: adjustedPos.left,

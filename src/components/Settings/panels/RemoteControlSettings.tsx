@@ -133,7 +133,6 @@ export function RemoteControlSettings() {
 		void loadData();
 	}, [loadData]);
 
-
 	const saveConfig = useCallback(
 		async (updater: (draft: RemoteControlConfig) => RemoteControlConfig) => {
 			if (!config) return;
@@ -182,12 +181,13 @@ export function RemoteControlSettings() {
 
 	const refreshRuntime = useCallback(async () => {
 		try {
-			const [nextRuntime, nextSessions, pairings, cloudNode] = await Promise.all([
-				getRemoteControlRuntimeStatus(),
-				listRemoteSessions(20),
-				listRemotePairings(),
-				getCloudNodeStatus(),
-			]);
+			const [nextRuntime, nextSessions, pairings, cloudNode] =
+				await Promise.all([
+					getRemoteControlRuntimeStatus(),
+					listRemoteSessions(20),
+					listRemotePairings(),
+					getCloudNodeStatus(),
+				]);
 			setRuntime(nextRuntime);
 			setSessions(nextSessions);
 			setPendingPairings(pairings.pending_requests);
@@ -375,20 +375,36 @@ export function RemoteControlSettings() {
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
 						<div className="text-xs text-zinc-500 dark:text-zinc-400">状态</div>
 						<div className="mt-2 text-sm font-semibold text-text-primary">
-							{runtime?.enabled ? "运行中" : config.enabled ? "待启动" : "已关闭"}
+							{runtime?.enabled
+								? "运行中"
+								: config.enabled
+									? "待启动"
+									: "已关闭"}
 						</div>
 					</div>
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">已启用通道</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">{enabledChannels}</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							已启用通道
+						</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">
+							{enabledChannels}
+						</div>
 					</div>
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">待配对</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">{runtime?.pending_pairings ?? 0}</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							待配对
+						</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">
+							{runtime?.pending_pairings ?? 0}
+						</div>
 					</div>
 					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">活跃运行</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">{runtime?.active_runs ?? 0}</div>
+						<div className="text-xs text-zinc-500 dark:text-zinc-400">
+							活跃运行
+						</div>
+						<div className="mt-2 text-2xl font-semibold text-text-primary">
+							{runtime?.active_runs ?? 0}
+						</div>
 					</div>
 				</div>
 			</SettingsPageContainer>
@@ -696,7 +712,10 @@ export function RemoteControlSettings() {
 							max={300}
 							value={config.channels.feishu.attachmentMergeWindowSec}
 							onChange={(e) => {
-								const value = Math.max(5, Math.min(300, Number(e.target.value || 45)));
+								const value = Math.max(
+									5,
+									Math.min(300, Number(e.target.value || 45)),
+								);
 								void saveConfig((draft) => {
 									draft.channels.feishu.attachmentMergeWindowSec = value;
 									return draft;
@@ -707,7 +726,9 @@ export function RemoteControlSettings() {
 						/>
 					</label>
 					<div className="space-y-1">
-						<span className="text-sm text-text-secondary">文档链接预取（Docx/Wiki）</span>
+						<span className="text-sm text-text-secondary">
+							文档链接预取（Docx/Wiki）
+						</span>
 						<div className="flex h-[42px] items-center">
 							<SettingsSwitch
 								checked={config.channels.feishu.enableDocLinkPrefetch}
@@ -729,7 +750,8 @@ export function RemoteControlSettings() {
 							文档控制能力
 						</SettingsSectionTitle>
 						<p className="text-xs text-text-secondary">
-							仅作用于远程控制 Feishu 通道：优先 MCP 工具调用，支持 /doc.call 命令兜底。
+							仅作用于远程控制 Feishu 通道：优先 MCP 工具调用，支持 /doc.call
+							命令兜底。
 						</p>
 					</div>
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -775,7 +797,9 @@ export function RemoteControlSettings() {
 							/>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
-							<div className="text-sm text-text-secondary">启用旧 Docs 读取兼容</div>
+							<div className="text-sm text-text-secondary">
+								启用旧 Docs 读取兼容
+							</div>
 							<SettingsSwitch
 								checked={config.channels.feishu.enableLegacyDocsRead}
 								onChange={(next) => {
@@ -788,7 +812,9 @@ export function RemoteControlSettings() {
 							/>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900 md:col-span-2">
-							<div className="text-sm text-text-secondary">启用 /doc.call 兜底</div>
+							<div className="text-sm text-text-secondary">
+								启用 /doc.call 兜底
+							</div>
 							<SettingsSwitch
 								checked={config.channels.feishu.enableDocCommandFallback}
 								onChange={(next) => {
@@ -802,7 +828,8 @@ export function RemoteControlSettings() {
 						</div>
 					</div>
 					<div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-						需要的飞书权限：docx:document / docx:document:write_only / docs:document.content:read / drive:drive 或
+						需要的飞书权限：docx:document / docx:document:write_only /
+						docs:document.content:read / drive:drive 或
 						space:document:delete（删除能力）。
 					</div>
 				</div>
@@ -847,14 +874,18 @@ export function RemoteControlSettings() {
 			</SettingsSectionCard>
 
 			{/* ─── Telegram 通道 ─────────────────────────────── */}
-				{config.channels.telegram && "dmPolicy" in config.channels.telegram && (
-					<ChannelConfigCard
-						channelId="telegram"
-						title="Telegram 通道"
-						description="使用 Telegram Bot API 长轮询，无需公网 IP。"
-						icon={<Smartphone className="h-4.5 w-4.5 text-sky-600 dark:text-sky-400" />}
-						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "telegram")}
-						channelConfig={config.channels.telegram}
+			{config.channels.telegram && "dmPolicy" in config.channels.telegram && (
+				<ChannelConfigCard
+					channelId="telegram"
+					title="Telegram 通道"
+					description="使用 Telegram Bot API 长轮询，无需公网 IP。"
+					icon={
+						<Smartphone className="h-4.5 w-4.5 text-sky-600 dark:text-sky-400" />
+					}
+					runtimeChannel={runtime?.channels?.find(
+						(c) => c.channel_id === "telegram",
+					)}
+					channelConfig={config.channels.telegram}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={
@@ -881,14 +912,18 @@ export function RemoteControlSettings() {
 			)}
 
 			{/* ─── Slack 通道 ─────────────────────────────── */}
-				{config.channels.slack && "dmPolicy" in config.channels.slack && (
-					<ChannelConfigCard
-						channelId="slack"
-						title="Slack 通道"
-						description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
-						icon={<Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />}
-						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "slack")}
-						channelConfig={config.channels.slack}
+			{config.channels.slack && "dmPolicy" in config.channels.slack && (
+				<ChannelConfigCard
+					channelId="slack"
+					title="Slack 通道"
+					description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
+					icon={
+						<Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+					}
+					runtimeChannel={runtime?.channels?.find(
+						(c) => c.channel_id === "slack",
+					)}
+					channelConfig={config.channels.slack}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={
@@ -931,14 +966,18 @@ export function RemoteControlSettings() {
 			)}
 
 			{/* ─── Discord 通道 ─────────────────────────────── */}
-				{config.channels.discord && "dmPolicy" in config.channels.discord && (
-					<ChannelConfigCard
-						channelId="discord"
-						title="Discord 通道"
-						description="使用 Discord Gateway WebSocket，无需公网 IP。"
-						icon={<Wifi className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />}
-						runtimeChannel={runtime?.channels?.find((c) => c.channel_id === "discord")}
-						channelConfig={config.channels.discord}
+			{config.channels.discord && "dmPolicy" in config.channels.discord && (
+				<ChannelConfigCard
+					channelId="discord"
+					title="Discord 通道"
+					description="使用 Discord Gateway WebSocket，无需公网 IP。"
+					icon={
+						<Wifi className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+					}
+					runtimeChannel={runtime?.channels?.find(
+						(c) => c.channel_id === "discord",
+					)}
+					channelConfig={config.channels.discord}
 					saving={saving}
 					onSave={(updater) => void saveConfig(updater)}
 					credentialFields={
@@ -1210,7 +1249,11 @@ export function RemoteControlSettings() {
 							disabled={busyCloudBind || saving}
 							onClick={() => void handleCloudBind()}
 						>
-							{busyCloudBind ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+							{busyCloudBind ? (
+								<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<Link2 className="h-3.5 w-3.5" />
+							)}
 							绑定云节点
 						</Button>
 						<Button
@@ -1219,7 +1262,9 @@ export function RemoteControlSettings() {
 							disabled={busyCloudUnbind || saving}
 							onClick={() => void handleCloudUnbind()}
 						>
-							{busyCloudUnbind ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
+							{busyCloudUnbind ? (
+								<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+							) : null}
 							解绑节点
 						</Button>
 					</div>

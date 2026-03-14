@@ -124,7 +124,10 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 					typeof tc?.function?.arguments === "string" &&
 					tc.function.arguments
 				) {
-					existing.args = mergeStreamingFragment(existing.args, tc.function.arguments);
+					existing.args = mergeStreamingFragment(
+						existing.args,
+						tc.function.arguments,
+					);
 				}
 				toolCalls.set(idx, existing);
 			}

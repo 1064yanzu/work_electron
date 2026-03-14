@@ -46,7 +46,10 @@ class TerminalService {
 	/**
 	 * 创建终端实例
 	 */
-	createTerminal(id: string, options: TerminalCreateOptions = {}): TerminalInfo {
+	createTerminal(
+		id: string,
+		options: TerminalCreateOptions = {},
+	): TerminalInfo {
 		// 如果 id 已存在，先销毁旧的
 		if (this.terminals.has(id)) {
 			this.destroyTerminal(id);
@@ -169,7 +172,10 @@ class TerminalService {
 	/**
 	 * 注册终端退出回调
 	 */
-	onExit(id: string, callback: (exitCode: number, signal?: number) => void): () => void {
+	onExit(
+		id: string,
+		callback: (exitCode: number, signal?: number) => void,
+	): () => void {
 		const entry = this.terminals.get(id);
 		if (!entry) return () => {};
 		entry.exitCallbacks.add(callback);

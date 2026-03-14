@@ -143,7 +143,9 @@ export const ManagedArtifactPreviewPanel = memo(
 						<div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
 						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 px-1">
 							{totalArtifacts === 0 ? (
-								<span className="text-xs text-zinc-400 px-2 py-1">暂无产物</span>
+								<span className="text-xs text-zinc-400 px-2 py-1">
+									暂无产物
+								</span>
 							) : (
 								artifactFiles.map((artifact) => (
 									<button

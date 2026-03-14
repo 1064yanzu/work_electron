@@ -74,7 +74,9 @@ export function GitOverviewHeader({
 	projectPath,
 }: GitOverviewHeaderProps) {
 	const visibleBranches = getVisibleBranches(branches);
-	const [syncLoading, setSyncLoading] = useState<"pull" | "push" | "stash" | null>(null);
+	const [syncLoading, setSyncLoading] = useState<
+		"pull" | "push" | "stash" | null
+	>(null);
 	const [syncError, setSyncError] = useState<string | null>(null);
 	const [branchMenuOpen, setBranchMenuOpen] = useState(false);
 	const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -112,16 +114,19 @@ export function GitOverviewHeader({
 		}
 	}, [projectPath]);
 
-	const handleCheckout = useCallback(async (branchName: string) => {
-		setCheckoutLoading(branchName);
-		setBranchMenuOpen(false);
-		try {
-			const result = await gitCheckoutBranch(projectPath, branchName);
-			if (!result.success) setSyncError(result.error ?? "切换分支失败");
-		} finally {
-			setCheckoutLoading(null);
-		}
-	}, [projectPath]);
+	const handleCheckout = useCallback(
+		async (branchName: string) => {
+			setCheckoutLoading(branchName);
+			setBranchMenuOpen(false);
+			try {
+				const result = await gitCheckoutBranch(projectPath, branchName);
+				if (!result.success) setSyncError(result.error ?? "切换分支失败");
+			} finally {
+				setCheckoutLoading(null);
+			}
+		},
+		[projectPath],
+	);
 
 	const otherBranches = visibleBranches.filter((b) => !b.current);
 
@@ -146,7 +151,12 @@ export function GitOverviewHeader({
 								>
 									{status.branch}
 									{otherBranches.length > 0 && (
-										<ChevronDown className={cn("h-3.5 w-3.5 text-zinc-400 transition-transform", branchMenuOpen && "rotate-180")} />
+										<ChevronDown
+											className={cn(
+												"h-3.5 w-3.5 text-zinc-400 transition-transform",
+												branchMenuOpen && "rotate-180",
+											)}
+										/>
 									)}
 								</button>
 

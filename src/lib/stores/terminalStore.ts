@@ -49,7 +49,10 @@ class TerminalStore {
 	async createTerminal(cwd?: string): Promise<TerminalInstance | null> {
 		const id = `term-${Date.now()}-${++counter}`;
 		try {
-			const info = await invoke<TerminalInstance>("terminal_create", { id, cwd });
+			const info = await invoke<TerminalInstance>("terminal_create", {
+				id,
+				cwd,
+			});
 			const instance: TerminalInstance = {
 				id: info.id,
 				name: info.name,

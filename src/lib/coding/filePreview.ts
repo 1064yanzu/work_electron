@@ -13,21 +13,57 @@ export interface CodingFilePreviewResult {
 
 /** 图片文件扩展名集合 */
 const IMAGE_EXTENSIONS = new Set([
-	"png", "jpg", "jpeg", "gif", "webp", "ico", "bmp", "tiff", "tif", "avif",
+	"png",
+	"jpg",
+	"jpeg",
+	"gif",
+	"webp",
+	"ico",
+	"bmp",
+	"tiff",
+	"tif",
+	"avif",
 ]);
 
 /** 二进制文件扩展名集合（除图片外） */
 const BINARY_EXTENSIONS = new Set([
-	"woff", "woff2", "ttf", "otf", "eot",
-	"zip", "gz", "tar", "rar", "7z",
-	"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-	"mp3", "mp4", "wav", "avi", "mov", "flv", "wmv",
-	"exe", "dll", "so", "dylib",
-	"db", "sqlite", "sqlite3",
+	"woff",
+	"woff2",
+	"ttf",
+	"otf",
+	"eot",
+	"zip",
+	"gz",
+	"tar",
+	"rar",
+	"7z",
+	"pdf",
+	"doc",
+	"docx",
+	"xls",
+	"xlsx",
+	"ppt",
+	"pptx",
+	"mp3",
+	"mp4",
+	"wav",
+	"avi",
+	"mov",
+	"flv",
+	"wmv",
+	"exe",
+	"dll",
+	"so",
+	"dylib",
+	"db",
+	"sqlite",
+	"sqlite3",
 ]);
 
 /** 通过文件扩展名判断文件类型 */
-export function detectFileType(filePath: string): CodingFilePreviewResult["fileType"] {
+export function detectFileType(
+	filePath: string,
+): CodingFilePreviewResult["fileType"] {
 	const ext = filePath.split(".").pop()?.toLowerCase() || "";
 	if (ext === "svg") return "svg";
 	if (IMAGE_EXTENSIONS.has(ext)) return "image";

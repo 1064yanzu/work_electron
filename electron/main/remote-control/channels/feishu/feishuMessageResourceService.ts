@@ -46,7 +46,9 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 	return value as Record<string, unknown>;
 }
 
-function safeJsonParse(raw: string | undefined): Record<string, unknown> | null {
+function safeJsonParse(
+	raw: string | undefined,
+): Record<string, unknown> | null {
 	if (!raw) return null;
 	try {
 		return asRecord(JSON.parse(raw));
@@ -80,8 +82,12 @@ function parseContentType(headers: unknown): string | undefined {
 	return toStringOrUndefined(asRecord(headers)?.["content-type"]);
 }
 
-function parseFileNameFromContentDisposition(headers: unknown): string | undefined {
-	const disposition = toStringOrUndefined(asRecord(headers)?.["content-disposition"]);
+function parseFileNameFromContentDisposition(
+	headers: unknown,
+): string | undefined {
+	const disposition = toStringOrUndefined(
+		asRecord(headers)?.["content-disposition"],
+	);
 	if (!disposition) return undefined;
 	const utf8Match = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
 	if (utf8Match?.[1]) {
@@ -118,9 +124,13 @@ export class FeishuMessageResourceService {
 		private readonly logger: Logger,
 	) {}
 
-	private extractMeta(message: IncomingAttachmentMessage): AttachmentMeta | null {
+	private extractMeta(
+		message: IncomingAttachmentMessage,
+	): AttachmentMeta | null {
 		const messageId = toStringOrUndefined(message.message_id);
-		const messageTypeRaw = toStringOrUndefined(message.message_type)?.toLowerCase();
+		const messageTypeRaw = toStringOrUndefined(
+			message.message_type,
+		)?.toLowerCase();
 		if (!messageId || !messageTypeRaw) return null;
 		if (
 			messageTypeRaw !== "file" &&
@@ -152,7 +162,10 @@ export class FeishuMessageResourceService {
 	private extractTextFromBuffer(
 		meta: AttachmentMeta,
 		buffer: Buffer,
-	): Pick<FeishuBufferedAttachment, "extractStatus" | "extractedText" | "detail"> {
+	): Pick<
+		FeishuBufferedAttachment,
+		"extractStatus" | "extractedText" | "detail"
+	> {
 		if (meta.messageType !== "file") {
 			return {
 				extractStatus: "unsupported",
@@ -213,8 +226,11 @@ export class FeishuMessageResourceService {
 			const stream = resourceResp.getReadableStream();
 			const buffer = await streamToBuffer(stream);
 			const contentType = parseContentType(resourceResp.headers);
-			const contentLength = parseContentLength(resourceResp.headers) ?? buffer.byteLength;
-			const headerName = parseFileNameFromContentDisposition(resourceResp.headers);
+			const contentLength =
+				parseContentLength(resourceResp.headers) ?? buffer.byteLength;
+			const headerName = parseFileNameFromContentDisposition(
+				resourceResp.headers,
+			);
 			const fileName = meta.fileName || headerName;
 			const extraction = this.extractTextFromBuffer(
 				{

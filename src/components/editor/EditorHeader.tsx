@@ -94,7 +94,6 @@ export function EditorHeader({
 	density,
 	onToggleDensity,
 }: EditorHeaderProps) {
-
 	const saveLabel = isSaving
 		? "保存中…"
 		: hasUnsavedChanges

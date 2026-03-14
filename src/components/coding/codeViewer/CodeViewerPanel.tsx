@@ -2,12 +2,25 @@
 // 集成 Shiki 高亮、搜索、minimap、行高亮、面包屑导航
 // 支持图片/SVG/二进制文件预览
 
-import { FileCode2, Loader2, Paperclip, RefreshCcw, Search } from "lucide-react";
+import {
+	FileCode2,
+	Loader2,
+	Paperclip,
+	RefreshCcw,
+	Search,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShikiTokens } from "../../../hooks/useShikiHighlight";
-import { readCodingFilePreview, detectFileType } from "../../../lib/coding/filePreview";
+import {
+	readCodingFilePreview,
+	detectFileType,
+} from "../../../lib/coding/filePreview";
 import { inferLanguage } from "../../../lib/utils/diffUtils";
-import { codingWorkspaceStore, useCodingWorkspaceSelector, type CenterPanelTab } from "../../../lib/stores/codingWorkspaceStore";
+import {
+	codingWorkspaceStore,
+	useCodingWorkspaceSelector,
+	type CenterPanelTab,
+} from "../../../lib/stores/codingWorkspaceStore";
 import { toast } from "../../ui/Toast";
 import { BreadcrumbNav } from "./BreadcrumbNav";
 import { CodeViewerSearch } from "./CodeViewerSearch";
@@ -47,14 +60,19 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 				setLoading(false);
 			});
 
-		return () => { cancelled = true; };
+		return () => {
+			cancelled = true;
+		};
 	}, [tab.filePath]);
 
 	const fileType = useMemo(() => detectFileType(tab.filePath), [tab.filePath]);
 	const isMediaFile = fileType === "image" || fileType === "binary";
 	const language = useMemo(() => inferLanguage(tab.filePath), [tab.filePath]);
 	const lines = useMemo(() => content.split("\n"), [content]);
-	const { tokens: shikiTokens, loading: shikiLoading } = useShikiTokens(isMediaFile ? "" : content, language);
+	const { tokens: shikiTokens, loading: shikiLoading } = useShikiTokens(
+		isMediaFile ? "" : content,
+		language,
+	);
 
 	// 代码查看器状态
 	const viewer = useCodeViewerState(lines, tab.highlightLine);
@@ -69,7 +87,10 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 		if (!el) return;
 		const lineHeight = 24;
 		const start = Math.floor(el.scrollTop / lineHeight);
-		const end = Math.min(start + Math.ceil(el.clientHeight / lineHeight), lines.length);
+		const end = Math.min(
+			start + Math.ceil(el.clientHeight / lineHeight),
+			lines.length,
+		);
 		setVisibleRange({ start, end });
 	}, [lines.length]);
 
@@ -83,7 +104,10 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 
 	// 搜索匹配时自动滚动到当前匹配项
 	useEffect(() => {
-		if (viewer.matches.length > 0 && viewer.activeMatchIndex < viewer.matches.length) {
+		if (
+			viewer.matches.length > 0 &&
+			viewer.activeMatchIndex < viewer.matches.length
+		) {
 			const match = viewer.matches[viewer.activeMatchIndex];
 			scrollToLine(match.lineIndex + 1);
 		}
@@ -140,14 +164,18 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 		toast.success("文件已加入当前线程上下文");
 	}, [tab.filePath, tab.fileName, content]);
 
-	const handleMinimapClick = useCallback((lineNumber: number) => {
-		scrollToLine(lineNumber);
-	}, [scrollToLine]);
+	const handleMinimapClick = useCallback(
+		(lineNumber: number) => {
+			scrollToLine(lineNumber);
+		},
+		[scrollToLine],
+	);
 
 	// 构建搜索匹配行的 Set（用于高亮背景）
-	const activeMatchLine = viewer.matches.length > 0
-		? viewer.matches[viewer.activeMatchIndex]?.lineIndex
-		: -1;
+	const activeMatchLine =
+		viewer.matches.length > 0
+			? viewer.matches[viewer.activeMatchIndex]?.lineIndex
+			: -1;
 
 	if (loading) {
 		return (
@@ -172,7 +200,9 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 			<div className="flex h-full flex-col bg-white dark:bg-[#0d0d0d]">
 				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 px-3 py-2 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
 					<BreadcrumbNav filePath={tab.filePath} projectPath={projectPath} />
-					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">图片</span>
+					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+						图片
+					</span>
 				</div>
 				<div className="flex flex-1 items-center justify-center p-6 overflow-auto">
 					<img
@@ -197,7 +227,9 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 			<div className="flex h-full flex-col bg-white dark:bg-[#0d0d0d]">
 				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 px-3 py-2 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
 					<BreadcrumbNav filePath={tab.filePath} projectPath={projectPath} />
-					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">SVG</span>
+					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+						SVG
+					</span>
 				</div>
 				<div className="flex flex-1 items-center justify-center p-6 overflow-auto">
 					<div
@@ -214,7 +246,9 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center px-6 text-center bg-white dark:bg-[#0d0d0d]">
 				<FileCode2 className="mb-3 h-8 w-8 text-zinc-300 dark:text-zinc-600" />
-				<div className="text-sm font-medium text-zinc-500 dark:text-zinc-300">二进制文件</div>
+				<div className="text-sm font-medium text-zinc-500 dark:text-zinc-300">
+					二进制文件
+				</div>
 				<div className="mt-2 text-xs text-zinc-400">此文件无法作为文本预览</div>
 			</div>
 		);
@@ -230,7 +264,9 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 						{language}
 					</span>
 					{truncated && (
-						<span className="flex-shrink-0 text-[10px] text-amber-500">已截断</span>
+						<span className="flex-shrink-0 text-[10px] text-amber-500">
+							已截断
+						</span>
 					)}
 					<span className="flex-shrink-0 text-[10px] text-zinc-400 tabular-nums">
 						{lines.length} 行
@@ -281,15 +317,22 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 			{/* 代码内容 + minimap */}
 			<div className="flex flex-1 overflow-hidden">
 				{/* 代码区域 */}
-				<div ref={scrollRef} className="flex-1 overflow-auto" onScroll={handleScroll}>
+				<div
+					ref={scrollRef}
+					className="flex-1 overflow-auto"
+					onScroll={handleScroll}
+				>
 					<div className="min-w-full">
 						{lines.map((lineText, lineIdx) => {
 							const lineNumber = lineIdx + 1;
-							const lineTokens = (!shikiLoading && shikiTokens && lineIdx < shikiTokens.length)
-								? shikiTokens[lineIdx]
-								: null;
+							const lineTokens =
+								!shikiLoading && shikiTokens && lineIdx < shikiTokens.length
+									? shikiTokens[lineIdx]
+									: null;
 							const isHighlighted = viewer.highlightedLines.has(lineNumber);
-							const isMatchLine = viewer.matches.some((m) => m.lineIndex === lineIdx);
+							const isMatchLine = viewer.matches.some(
+								(m) => m.lineIndex === lineIdx,
+							);
 							const isActiveMatch = activeMatchLine === lineIdx;
 
 							return (
@@ -320,9 +363,18 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 									<pre className="overflow-x-auto px-3 py-0 text-[12px] leading-6 font-mono">
 										<code>
 											{lineTokens ? (
-												renderHighlightedLine(lineTokens, lineText, lineIdx, viewer.searchQuery, viewer.matches, viewer.activeMatchIndex)
+												renderHighlightedLine(
+													lineTokens,
+													lineText,
+													lineIdx,
+													viewer.searchQuery,
+													viewer.matches,
+													viewer.activeMatchIndex,
+												)
 											) : (
-												<span className="text-zinc-800 dark:text-zinc-200">{lineText || " "}</span>
+												<span className="text-zinc-800 dark:text-zinc-200">
+													{lineText || " "}
+												</span>
 											)}
 										</code>
 									</pre>
@@ -364,7 +416,9 @@ function renderHighlightedLine(
 	// 如果没有搜索或没有匹配，直接渲染 tokens
 	if (!searchQuery || matches.length === 0) {
 		return tokens.map((token, i) => (
-			<span key={i} style={{ color: token.color }}>{token.content}</span>
+			<span key={i} style={{ color: token.color }}>
+				{token.content}
+			</span>
 		));
 	}
 
@@ -375,7 +429,9 @@ function renderHighlightedLine(
 
 	if (lineMatches.length === 0) {
 		return tokens.map((token, i) => (
-			<span key={i} style={{ color: token.color }}>{token.content}</span>
+			<span key={i} style={{ color: token.color }}>
+				{token.content}
+			</span>
 		));
 	}
 
@@ -436,7 +492,9 @@ function renderHighlightedLine(
 		} else if (lastSplit === 0) {
 			// 没有匹配重叠，正常渲染
 			result.push(
-				<span key={ti} style={{ color: token.color }}>{token.content}</span>,
+				<span key={ti} style={{ color: token.color }}>
+					{token.content}
+				</span>,
 			);
 		}
 

@@ -271,7 +271,10 @@ export class RemoteControlOrchestrator {
 		const config = this.requireConfig();
 		const channelCfg = config.channels[channelId];
 		if ("textChunkLimit" in channelCfg) {
-			return Math.max(300, (channelCfg as { textChunkLimit: number }).textChunkLimit);
+			return Math.max(
+				300,
+				(channelCfg as { textChunkLimit: number }).textChunkLimit,
+			);
 		}
 		return 1500;
 	}

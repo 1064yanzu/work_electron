@@ -106,7 +106,12 @@ async function listInstructionFiles(
 			const fullPath = path.join(rootDir, entry.name);
 			if (entry.isDirectory()) {
 				collected.push(
-					...(await listInstructionFiles(fullPath, kind, labelPrefix, depth + 1)),
+					...(await listInstructionFiles(
+						fullPath,
+						kind,
+						labelPrefix,
+						depth + 1,
+					)),
 				);
 				continue;
 			}
@@ -123,7 +128,9 @@ async function listInstructionFiles(
 	}
 }
 
-async function collectRepoInstructionSources(projectPath: string): Promise<WorkspaceInstructionSource[]> {
+async function collectRepoInstructionSources(
+	projectPath: string,
+): Promise<WorkspaceInstructionSource[]> {
 	const singleFiles = [
 		{ name: "AGENTS.md", label: "AGENTS.md" },
 		{ name: "CLAUDE.md", label: "CLAUDE.md" },
@@ -191,9 +198,13 @@ function getDefaultModel(backend: CodingBackendId): string {
 	return backend === "codex" ? DEFAULT_CODEX_MODEL : DEFAULT_CLAUDE_MODEL;
 }
 
-async function buildWorkspaceProfile(projectPath: string): Promise<CodingWorkspaceProfile> {
+async function buildWorkspaceProfile(
+	projectPath: string,
+): Promise<CodingWorkspaceProfile> {
 	const layout = await ensureWorkspaceLayout(projectPath);
-	const persistedRaw = await readJsonFile<PersistedWorkspaceProfile>(layout.profileFile);
+	const persistedRaw = await readJsonFile<PersistedWorkspaceProfile>(
+		layout.profileFile,
+	);
 	const persisted = persistedRaw ?? {};
 	const now = Date.now();
 	const defaultBackend = persisted.defaultBackend ?? "claude-code";
@@ -223,7 +234,9 @@ async function buildWorkspaceProfile(projectPath: string): Promise<CodingWorkspa
 	return profile;
 }
 
-async function persistWorkspaceProfile(profile: CodingWorkspaceProfile): Promise<void> {
+async function persistWorkspaceProfile(
+	profile: CodingWorkspaceProfile,
+): Promise<void> {
 	await writeJsonFile(profile.manifest.profileFile, {
 		defaultBackend: profile.defaultBackend,
 		defaultModel: profile.defaultModel,
@@ -234,7 +247,9 @@ async function persistWorkspaceProfile(profile: CodingWorkspaceProfile): Promise
 	});
 }
 
-async function buildWorkspaceMemoryReadResult(projectPath: string): Promise<WorkspaceMemoryReadResult> {
+async function buildWorkspaceMemoryReadResult(
+	projectPath: string,
+): Promise<WorkspaceMemoryReadResult> {
 	const profile = await buildWorkspaceProfile(projectPath);
 	const repoSources = await collectRepoInstructionSources(projectPath);
 	const workspaceSources: WorkspaceInstructionSource[] = [
@@ -289,7 +304,10 @@ async function buildWorkspaceMemoryReadResult(projectPath: string): Promise<Work
 	};
 }
 
-async function runCommand(binary: string, args: string[]): Promise<string | null> {
+async function runCommand(
+	binary: string,
+	args: string[],
+): Promise<string | null> {
 	try {
 		const { stdout } = await execFileAsync(binary, args, {
 			timeout: 10000,
@@ -323,7 +341,8 @@ async function detectClaudeCapabilityMatrix(): Promise<BackendCapabilityMatrix> 
 		detectedAt: Date.now(),
 		capabilities,
 		unsupportedReasons: {
-			rewind: "当前 Claude Code CLI / SDK 未暴露可安全回退到历史转折点的运行时控制。",
+			rewind:
+				"当前 Claude Code CLI / SDK 未暴露可安全回退到历史转折点的运行时控制。",
 		},
 		defaultModel: DEFAULT_CLAUDE_MODEL,
 		modelCatalog: ["claude-sonnet-4-6", "claude-opus-4-1", "claude-haiku-4-5"],
@@ -333,8 +352,12 @@ async function detectClaudeCapabilityMatrix(): Promise<BackendCapabilityMatrix> 
 
 async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
 	const binaryPath = await findCodexBinary();
-	const version = binaryPath ? await runCommand(binaryPath, ["--version"]) : null;
-	const helpText = binaryPath ? await runCommand(binaryPath, ["exec", "--help"]) : null;
+	const version = binaryPath
+		? await runCommand(binaryPath, ["--version"])
+		: null;
+	const helpText = binaryPath
+		? await runCommand(binaryPath, ["exec", "--help"])
+		: null;
 
 	// 从本地 CLI 配置读取默认值
 	let configModel: string | undefined;
@@ -350,9 +373,14 @@ async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
 	const modelCatalog: string[] = [];
 	if (helpText) {
 		// 尝试匹配 --model / -m 后面的合法值列表
-		const modelMatch = helpText.match(/-m,?\s+--model\s+<[^>]*>\s+\[possible values:\s*([^\]]+)\]/i);
+		const modelMatch = helpText.match(
+			/-m,?\s+--model\s+<[^>]*>\s+\[possible values:\s*([^\]]+)\]/i,
+		);
 		if (modelMatch?.[1]) {
-			const models = modelMatch[1].split(",").map((m) => m.trim()).filter(Boolean);
+			const models = modelMatch[1]
+				.split(",")
+				.map((m) => m.trim())
+				.filter(Boolean);
 			modelCatalog.push(...models);
 		}
 	}
@@ -379,12 +407,14 @@ async function detectCodexCapabilityMatrix(): Promise<BackendCapabilityMatrix> {
 		detectedAt: Date.now(),
 		capabilities,
 		unsupportedReasons: {
-			interactiveApproval: "Codex CLI 通过 approval policy 预先配置权限，不支持逐条工具审批。",
+			interactiveApproval:
+				"Codex CLI 通过 approval policy 预先配置权限，不支持逐条工具审批。",
 			setModelWhileRunning: "Codex exec 运行中不支持在线切换模型。",
 			rewind: "Codex CLI 当前没有暴露可供桌面端调用的 rewind 控制。",
 		},
 		defaultModel: configModel || DEFAULT_CODEX_MODEL,
-		modelCatalog: modelCatalog.length > 0 ? modelCatalog : DEFAULT_CODEX_MODEL_CATALOG,
+		modelCatalog:
+			modelCatalog.length > 0 ? modelCatalog : DEFAULT_CODEX_MODEL_CATALOG,
 		error: binaryPath ? undefined : "未检测到 Codex CLI。",
 	};
 }
@@ -426,7 +456,10 @@ export async function updateCodingWorkspaceProfile(
 	const nextProfile: CodingWorkspaceProfile = {
 		...profile,
 		defaultBackend: nextBackend,
-		defaultModel: input.defaultModel ?? profile.defaultModel ?? getDefaultModel(nextBackend),
+		defaultModel:
+			input.defaultModel ??
+			profile.defaultModel ??
+			getDefaultModel(nextBackend),
 		defaultApprovalMode:
 			input.defaultApprovalMode ??
 			profile.defaultApprovalMode ??

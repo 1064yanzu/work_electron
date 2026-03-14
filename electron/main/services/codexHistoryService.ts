@@ -37,7 +37,7 @@ export async function isCodexHistoryAvailable(): Promise<boolean> {
  * 使用 SQLite 读取线程元数据（通过 better-sqlite3 或 sqlite3 命令行）
  */
 export async function listCodexThreads(
-	params: CliHistoryListParams = {}
+	params: CliHistoryListParams = {},
 ): Promise<ExternalThreadMeta[]> {
 	const { limit = 50, cwd, search } = params;
 
@@ -68,11 +68,7 @@ export async function listCodexThreads(
 	const sql = `SELECT id, title, cwd, model_provider, created_at, updated_at, tokens_used, first_user_message, git_branch, git_sha, approval_mode, source FROM threads ${whereClause} ORDER BY updated_at DESC LIMIT ${Math.max(1, Math.min(limit, 200))};`;
 
 	try {
-		const { stdout } = await execFileAsync("sqlite3", [
-			"-json",
-			dbPath,
-			sql,
-		]);
+		const { stdout } = await execFileAsync("sqlite3", ["-json", "-readonly", dbPath, sql]);
 
 		if (!stdout.trim()) return [];
 
@@ -117,7 +113,7 @@ export async function listCodexThreads(
  * 回退方案：从 session_index.jsonl 读取
  */
 async function listCodexThreadsFromIndex(
-	params: CliHistoryListParams = {}
+	params: CliHistoryListParams = {},
 ): Promise<ExternalThreadMeta[]> {
 	const { limit = 50 } = params;
 	const indexPath = path.join(CODEX_HOME, CODEX_SESSION_INDEX);
@@ -166,7 +162,7 @@ async function listCodexThreadsFromIndex(
  */
 export async function readCodexThread(
 	threadId: string,
-	maxMessages = 200
+	maxMessages = 200,
 ): Promise<CliHistoryReadResult | null> {
 	// 先从 SQLite 获取元数据（含 rollout_path）
 	const meta = await getCodexThreadMeta(threadId);
@@ -185,7 +181,7 @@ export async function readCodexThread(
 
 /** 从 SQLite 获取单个线程的元数据 */
 async function getCodexThreadMeta(
-	threadId: string
+	threadId: string,
 ): Promise<ExternalThreadMeta | null> {
 	const dbPath = path.join(CODEX_HOME, CODEX_DB_NAME);
 	try {
@@ -202,11 +198,7 @@ async function getCodexThreadMeta(
 	const sql = `SELECT id, title, cwd, model_provider, created_at, updated_at, tokens_used, first_user_message, git_branch, git_sha FROM threads WHERE id = '${safeThreadId}' LIMIT 1;`;
 
 	try {
-		const { stdout } = await execFileAsync("sqlite3", [
-			"-json",
-			dbPath,
-			sql,
-		]);
+		const { stdout } = await execFileAsync("sqlite3", ["-json", "-readonly", dbPath, sql]);
 		if (!stdout.trim()) return null;
 
 		const rows = JSON.parse(stdout);
@@ -233,9 +225,7 @@ async function getCodexThreadMeta(
 }
 
 /** 查找 Codex rollout 文件路径 */
-async function findCodexRolloutFile(
-	threadId: string
-): Promise<string | null> {
+async function findCodexRolloutFile(threadId: string): Promise<string | null> {
 	// 首先尝试从 SQLite 获取 rollout_path
 	const dbPath = path.join(CODEX_HOME, CODEX_DB_NAME);
 	try {
@@ -245,11 +235,7 @@ async function findCodexRolloutFile(
 
 		const safeId = threadId.replace(/'/g, "''").replace(/[\x00-\x1f]/g, "");
 		const sql = `SELECT rollout_path FROM threads WHERE id = '${safeId}' LIMIT 1;`;
-		const { stdout } = await execFileAsync("sqlite3", [
-			"-json",
-			dbPath,
-			sql,
-		]);
+		const { stdout } = await execFileAsync("sqlite3", ["-json", "-readonly", dbPath, sql]);
 
 		if (stdout.trim()) {
 			const rows = JSON.parse(stdout);
@@ -279,7 +265,7 @@ async function findCodexRolloutFile(
 /** 递归查找文件 */
 async function findFileRecursive(
 	dir: string,
-	filename: string
+	filename: string,
 ): Promise<string | null> {
 	try {
 		const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -301,7 +287,7 @@ async function findFileRecursive(
 /** 解析 Codex rollout JSONL 文件 */
 async function parseCodexRollout(
 	filePath: string,
-	maxMessages: number
+	maxMessages: number,
 ): Promise<ExternalSessionMessage[]> {
 	const messages: ExternalSessionMessage[] = [];
 
@@ -319,7 +305,9 @@ async function parseCodexRollout(
 
 		try {
 			const event = JSON.parse(line);
-			const parsed = parseCodexRolloutEvent(event, msgIndex) as (ExternalSessionMessage & { _isToolOutput?: boolean }) | null;
+			const parsed = parseCodexRolloutEvent(event, msgIndex) as
+				| (ExternalSessionMessage & { _isToolOutput?: boolean })
+				| null;
 			if (parsed) {
 				// 如果是 function_call_output，尝试合并到对应的 assistant 消息中
 				if (parsed._isToolOutput && parsed.toolCalls?.[0]) {
@@ -361,8 +349,11 @@ async function parseCodexRollout(
  */
 function parseCodexRolloutEvent(
 	event: Record<string, unknown>,
-	index: number
-): ExternalSessionMessage | ({ _isToolOutput: boolean; toolCalls: ExternalToolCall[] }) | null {
+	index: number,
+):
+	| ExternalSessionMessage
+	| { _isToolOutput: boolean; toolCalls: ExternalToolCall[] }
+	| null {
 	const type = event.type as string;
 	const timestamp = event.timestamp
 		? new Date(event.timestamp as string).getTime()
@@ -496,7 +487,9 @@ function extractContentText(content: unknown): string {
 		return content
 			.filter(
 				(c: Record<string, unknown>) =>
-					c.type === "input_text" || c.type === "output_text" || c.type === "text"
+					c.type === "input_text" ||
+					c.type === "output_text" ||
+					c.type === "text",
 			)
 			.map((c: Record<string, unknown>) => c.text || "")
 			.join("\n");

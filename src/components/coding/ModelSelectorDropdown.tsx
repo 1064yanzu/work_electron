@@ -2,16 +2,19 @@
  * ModelSelectorDropdown — 模型选择下拉菜单
  * 从 codingRuntimeStore 读取模型目录，支持 fallback 默认列表
  */
-import { type RefObject, useCallback, useMemo, useRef, useState } from 'react';
-import { Check, PenLine, Sparkles } from 'lucide-react';
-import { DropdownPortal } from '../ui/DropdownPortal';
-import { useBackendCapabilities } from '../../hooks/useBackendCapabilities';
-import { formatModelName } from '../../lib/coding/modelUtils';
-import { FALLBACK_MODEL_CATALOG } from '../../lib/coding/codingSettings';
-import { executeCodingCommand, type CommandContext } from '../../lib/coding/codingCommandExecutor';
-import { useCodingThreadSelector } from '../../lib/stores/codingThreadStore';
-import { useCodingWorkspaceSelector } from '../../lib/stores/codingWorkspaceStore';
-import { toast } from '../ui/Toast';
+import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
+import { Check, PenLine, Sparkles } from "lucide-react";
+import { DropdownPortal } from "../ui/DropdownPortal";
+import { useBackendCapabilities } from "../../hooks/useBackendCapabilities";
+import { formatModelName } from "../../lib/coding/modelUtils";
+import { FALLBACK_MODEL_CATALOG } from "../../lib/coding/codingSettings";
+import {
+	executeCodingCommand,
+	type CommandContext,
+} from "../../lib/coding/codingCommandExecutor";
+import { useCodingThreadSelector } from "../../lib/stores/codingThreadStore";
+import { useCodingWorkspaceSelector } from "../../lib/stores/codingWorkspaceStore";
+import { toast } from "../ui/Toast";
 
 interface ModelSelectorDropdownProps {
 	anchorRef: RefObject<HTMLElement | null>;
@@ -19,15 +22,19 @@ interface ModelSelectorDropdownProps {
 	onClose: () => void;
 }
 
-export function ModelSelectorDropdown({ anchorRef, open, onClose }: ModelSelectorDropdownProps) {
+export function ModelSelectorDropdown({
+	anchorRef,
+	open,
+	onClose,
+}: ModelSelectorDropdownProps) {
 	const { backend, modelCatalog, defaultModel } = useBackendCapabilities();
 	const activeThread = useCodingThreadSelector((s) =>
-		s.activeThreadId ? s.threads.find((t) => t.id === s.activeThreadId) : null
+		s.activeThreadId ? s.threads.find((t) => t.id === s.activeThreadId) : null,
 	);
 	const activeThreadId = useCodingThreadSelector((s) => s.activeThreadId);
 	const projectPath = useCodingWorkspaceSelector((s) => s.projectPath);
 	const [showCustomInput, setShowCustomInput] = useState(false);
-	const [customModel, setCustomModel] = useState('');
+	const [customModel, setCustomModel] = useState("");
 	const customInputRef = useRef<HTMLInputElement>(null);
 
 	const currentModel = activeThread?.model ?? defaultModel;
@@ -43,7 +50,7 @@ export function ModelSelectorDropdown({ anchorRef, open, onClose }: ModelSelecto
 				threadId: activeThreadId,
 				projectPath,
 			};
-			const result = await executeCodingCommand('set_model', ctx, { model });
+			const result = await executeCodingCommand("set_model", ctx, { model });
 			if (!result.success && result.error) {
 				toast.error(result.error);
 			} else if (result.message) {
@@ -58,7 +65,7 @@ export function ModelSelectorDropdown({ anchorRef, open, onClose }: ModelSelecto
 		const trimmed = customModel.trim();
 		if (!trimmed) return;
 		setShowCustomInput(false);
-		setCustomModel('');
+		setCustomModel("");
 		void handleSelect(trimmed);
 	}, [customModel, handleSelect]);
 
@@ -85,13 +92,17 @@ export function ModelSelectorDropdown({ anchorRef, open, onClose }: ModelSelecto
 								onClick={() => handleSelect(model)}
 								className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
 									isActive
-										? 'bg-[#D96C46]/8 text-[#D96C46]'
-										: 'text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+										? "bg-[#D96C46]/8 text-[#D96C46]"
+										: "text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"
 								}`}
 							>
 								<Sparkles className="h-3.5 w-3.5 shrink-0 opacity-50" />
-								<span className="flex-1 truncate">{formatModelName(model)}</span>
-								{isActive && <Check className="h-3.5 w-3.5 shrink-0 text-[#D96C46]" />}
+								<span className="flex-1 truncate">
+									{formatModelName(model)}
+								</span>
+								{isActive && (
+									<Check className="h-3.5 w-3.5 shrink-0 text-[#D96C46]" />
+								)}
 							</button>
 						);
 					})}
@@ -109,12 +120,12 @@ export function ModelSelectorDropdown({ anchorRef, open, onClose }: ModelSelecto
 								value={customModel}
 								onChange={(e) => setCustomModel(e.target.value)}
 								onKeyDown={(e) => {
-									if (e.key === 'Enter') {
+									if (e.key === "Enter") {
 										e.preventDefault();
 										handleCustomSubmit();
-									} else if (e.key === 'Escape') {
+									} else if (e.key === "Escape") {
 										setShowCustomInput(false);
-										setCustomModel('');
+										setCustomModel("");
 									}
 								}}
 								autoFocus

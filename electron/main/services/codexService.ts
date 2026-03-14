@@ -16,7 +16,9 @@ export async function findCodexBinary(
 	return result.path;
 }
 
-export async function getCodexVersion(binary?: string | null): Promise<string | null> {
+export async function getCodexVersion(
+	binary?: string | null,
+): Promise<string | null> {
 	if (!binary) return null;
 	try {
 		const { stdout } = await execFileAsync(binary, ["--version"], {
@@ -153,13 +155,7 @@ function buildCodexArgs(options: CodexSessionOptions): string[] {
 	}
 
 	if (options.resumeSessionId) {
-		return [
-			"exec",
-			"resume",
-			...baseArgs,
-			options.resumeSessionId,
-			prompt,
-		];
+		return ["exec", "resume", ...baseArgs, options.resumeSessionId, prompt];
 	}
 
 	return ["exec", ...baseArgs, "--cd", options.cwd, prompt];
@@ -212,16 +208,18 @@ function mapCodexEvent(raw: RawCodexEvent): CodexOutputEvent | null {
 				};
 			}
 			if (item.type === "mcp_tool_call") {
-				const qualifiedName = item.server && item.tool
-					? `${item.server}/${item.tool}`
-					: item.tool ?? "MCPTool";
+				const qualifiedName =
+					item.server && item.tool
+						? `${item.server}/${item.tool}`
+						: (item.tool ?? "MCPTool");
 				return {
 					type: "tool_start",
 					itemId: item.id,
 					toolName: qualifiedName,
-					toolInput: typeof item.arguments === "object" && item.arguments !== null
-						? item.arguments as Record<string, unknown>
-						: {},
+					toolInput:
+						typeof item.arguments === "object" && item.arguments !== null
+							? (item.arguments as Record<string, unknown>)
+							: {},
 				};
 			}
 			return null;
@@ -233,10 +231,16 @@ function mapCodexEvent(raw: RawCodexEvent): CodexOutputEvent | null {
 			return {
 				type: "tool_progress",
 				itemId: item.id,
-				toolName: item.type === "command_execution" ? "Bash"
-					: item.type === "file_change" ? "FileChange"
-					: item.type === "mcp_tool_call" ? (item.server && item.tool ? `${item.server}/${item.tool}` : "MCPTool")
-					: item.type ?? "Unknown",
+				toolName:
+					item.type === "command_execution"
+						? "Bash"
+						: item.type === "file_change"
+							? "FileChange"
+							: item.type === "mcp_tool_call"
+								? item.server && item.tool
+									? `${item.server}/${item.tool}`
+									: "MCPTool"
+								: (item.type ?? "Unknown"),
 			};
 		}
 
@@ -287,13 +291,15 @@ function mapCodexEvent(raw: RawCodexEvent): CodexOutputEvent | null {
 				};
 			}
 			if (item.type === "mcp_tool_call") {
-				const qualifiedName = item.server && item.tool
-					? `${item.server}/${item.tool}`
-					: item.tool ?? "MCPTool";
-				const resultText = item.result?.content
-					?.filter((c) => c.type === "text" && c.text)
-					.map((c) => c.text)
-					.join("\n") ?? "";
+				const qualifiedName =
+					item.server && item.tool
+						? `${item.server}/${item.tool}`
+						: (item.tool ?? "MCPTool");
+				const resultText =
+					item.result?.content
+						?.filter((c) => c.type === "text" && c.text)
+						.map((c) => c.text)
+						.join("\n") ?? "";
 				return {
 					type: "tool_end",
 					itemId: item.id,
@@ -337,10 +343,10 @@ function mapCodexEvent(raw: RawCodexEvent): CodexOutputEvent | null {
 				type: "done",
 				usage: raw.usage
 					? {
-						inputTokens: raw.usage.input_tokens ?? 0,
-						outputTokens: raw.usage.output_tokens ?? 0,
-						cachedInputTokens: raw.usage.cached_input_tokens ?? 0,
-					}
+							inputTokens: raw.usage.input_tokens ?? 0,
+							outputTokens: raw.usage.output_tokens ?? 0,
+							cachedInputTokens: raw.usage.cached_input_tokens ?? 0,
+						}
 					: undefined,
 			};
 		case "error":
@@ -364,10 +370,16 @@ export function spawnCodexSession(
 	// 诊断日志：记录最终传给 CLI 的参数
 	console.log(`[codex] spawn binary: ${binary}`);
 	console.log(`[codex] spawn args: ${JSON.stringify(args)}`);
-	console.log(`[codex] model param: ${options.model?.trim() || "(none - using CLI default)"}`);
+	console.log(
+		`[codex] model param: ${options.model?.trim() || "(none - using CLI default)"}`,
+	);
 	console.log(`[codex] cwd: ${options.cwd}`);
-	console.log(`[codex] OPENAI_BASE_URL: ${process.env.OPENAI_BASE_URL || "(not set)"}`);
-	console.log(`[codex] CODEX_API_KEY present: ${!!process.env.CODEX_API_KEY || !!process.env.OPENAI_API_KEY}`);
+	console.log(
+		`[codex] OPENAI_BASE_URL: ${process.env.OPENAI_BASE_URL || "(not set)"}`,
+	);
+	console.log(
+		`[codex] CODEX_API_KEY present: ${!!process.env.CODEX_API_KEY || !!process.env.OPENAI_API_KEY}`,
+	);
 
 	const proc = spawn(binary, args, {
 		cwd: options.cwd,
@@ -416,15 +428,25 @@ export function spawnCodexSession(
 			if (!text) continue;
 			// 检测模型不匹配：当 API 报告的模型与用户选择不同时给出诊断
 			const modelMismatch = text.match(/(?:model|for model)\s+(\S+)/i);
-			if (modelMismatch?.[1] && options.model?.trim() && modelMismatch[1] !== options.model.trim()) {
-				console.warn(`[codex] 模型不匹配: 用户选择 "${options.model.trim()}" 但 CLI 请求 "${modelMismatch[1]}"`);
+			if (
+				modelMismatch?.[1] &&
+				options.model?.trim() &&
+				modelMismatch[1] !== options.model.trim()
+			) {
+				console.warn(
+					`[codex] 模型不匹配: 用户选择 "${options.model.trim()}" 但 CLI 请求 "${modelMismatch[1]}"`,
+				);
 				onEvent({
 					type: "stderr",
 					content: `⚠ 模型不匹配: 您选择了 "${options.model.trim()}"，但 Codex CLI 实际请求了 "${modelMismatch[1]}"。请检查 Codex CLI 配置 (~/.codex/config.toml) 或 API 端点。`,
 					isError: true,
 				});
 			}
-			onEvent({ type: "stderr", content: text, isError: text.includes("ERROR") });
+			onEvent({
+				type: "stderr",
+				content: text,
+				isError: text.includes("ERROR"),
+			});
 		}
 	});
 
