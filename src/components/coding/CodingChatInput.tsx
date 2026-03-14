@@ -1,8 +1,9 @@
 /**
  * 编程工作区 - 对话输入框
- * 支持 @文件提及、斜杠命令、模式指示器、发送/停止按钮、状态控制
+ * 支持 @文件提及、斜杠命令、模式指示器、发送/停止按钮
+ * Codex 模式：底栏集成模型+思考深度下拉选择器（参考 Codex 官方样式）
  */
-import { ArrowUp, AtSign, X, Square, Plus } from 'lucide-react';
+import { ArrowUp, AtSign, X, Square, Plus, ChevronDown } from 'lucide-react';
 import {
 	useCallback,
 	useEffect,
@@ -11,7 +12,7 @@ import {
 	useState,
 	type KeyboardEvent,
 } from 'react';
-import { useCodingAgentSelector } from '../../lib/stores/codingAgentStore';
+import { useCodingAgentSelector, codingAgentStore } from '../../lib/stores/codingAgentStore';
 import {
 	codingWorkspaceStore,
 	useCodingWorkspaceSelector,
@@ -32,6 +33,7 @@ import { toast } from '../ui/Toast';
 import type { SettingsTabId } from '../Settings/types';
 import { useBackendCapabilities } from '../../hooks/useBackendCapabilities';
 import { formatModelName } from '../../lib/coding/modelUtils';
+import { ContextUsageIndicator } from './ContextUsageIndicator';
 
 interface CodingChatInputProps {
 	onSend: (content: string) => void;
@@ -40,11 +42,20 @@ interface CodingChatInputProps {
 	onOpenSettings?: (tab?: SettingsTabId) => void;
 }
 
+/** 思考深度标签映射 */
+const REASONING_LABELS: Record<string, string> = {
+	low: '低',
+	medium: '中',
+	high: '高',
+};
+
 export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSettings }: CodingChatInputProps) {
 	const [value, setValue] = useState('');
 	const [showSlashMenu, setShowSlashMenu] = useState(false);
+	const [showReasoningMenu, setShowReasoningMenu] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const inputShellRef = useRef<HTMLDivElement>(null);
+	const reasoningMenuRef = useRef<HTMLDivElement>(null);
 	const contextFiles = useCodingWorkspaceSelector((s) => s.contextFiles);
 	const codingMode = useCodingAgentSelector((s) => s.codingMode);
 	const sessionStatus = useCodingSessionSelector((s) => s.status);
@@ -56,6 +67,8 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 	const runtimeCapabilities = useCodingRuntimeSelector((s) => s.capabilities);
 	const projectPath = useCodingWorkspaceSelector((s) => s.projectPath);
 	const { isCodex } = useBackendCapabilities();
+	const codexReasoningEffort = useCodingAgentSelector((s) => s.codexReasoningEffort);
+	const codexPlanMode = useCodingAgentSelector((s) => s.codexPlanMode);
 
 	const isAwaitingPermission = sessionStatus === 'awaiting_permission';
 	const slashState = useMemo(() => parseSlashInput(value), [value]);
@@ -82,6 +95,18 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 			setShowSlashMenu(false);
 		}
 	}, [value]);
+
+	// 点击外部关闭思考深度菜单
+	useEffect(() => {
+		if (!showReasoningMenu) return;
+		const handleClickOutside = (e: MouseEvent) => {
+			if (reasoningMenuRef.current && !reasoningMenuRef.current.contains(e.target as Node)) {
+				setShowReasoningMenu(false);
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [showReasoningMenu]);
 
 	const handleSend = useCallback(() => {
 		const trimmed = value.trim();
@@ -271,11 +296,6 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 						<Plus className="h-4 w-4" />
 					</button>
 
-					{/* 模式指示器 */}
-					<span className={`shrink-0 self-center rounded px-1.5 py-0.5 text-[10px] font-bold ${modeColor}`}>
-						{modeLabel}
-					</span>
-
 					{/* 文本输入 */}
 					<textarea
 						ref={textareaRef}
@@ -320,14 +340,68 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 					)}
 				</div>
 
+				{/* 底栏：模型 + Codex控制 + 上下文占用 */}
 				<div className="flex items-center justify-between mt-1.5 px-1">
 					<div className="flex items-center gap-2">
+						{/* 模式指示器 */}
+						<span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${modeColor}`}>
+							{modeLabel}
+						</span>
+
 						{/* 模型标识 */}
 						{modelLabel && (
-							<span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-0.5">
+							<span className="text-[10px] text-zinc-400 dark:text-zinc-500">
 								{modelLabel}
 							</span>
 						)}
+
+						{/* Codex 思考深度下拉 - 参考 Codex 官方样式 */}
+						{isCodex && (
+							<div className="relative" ref={reasoningMenuRef}>
+								<button
+									onClick={() => setShowReasoningMenu(!showReasoningMenu)}
+									className="flex items-center gap-0.5 text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+								>
+									{REASONING_LABELS[codexReasoningEffort] || '中'}
+									<ChevronDown className="h-2.5 w-2.5" />
+								</button>
+								{showReasoningMenu && (
+									<div className="absolute bottom-full left-0 mb-1 py-1 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 z-30 min-w-[80px]">
+										{(["low", "medium", "high"] as const).map((level) => (
+											<button
+												key={level}
+												onClick={() => {
+													codingAgentStore.setCodexReasoningEffort(level);
+													setShowReasoningMenu(false);
+												}}
+												className={`w-full px-3 py-1 text-left text-[11px] transition-colors ${
+													codexReasoningEffort === level
+														? "bg-[#D96C46]/10 text-[#D96C46] font-medium"
+														: "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+												}`}
+											>
+												{REASONING_LABELS[level]}
+											</button>
+										))}
+									</div>
+								)}
+							</div>
+						)}
+
+						{/* Codex Plan 模式标签 */}
+						{isCodex && (
+							<button
+								onClick={() => codingAgentStore.setCodexPlanMode(!codexPlanMode)}
+								className={`text-[10px] px-1 py-0.5 rounded transition-colors ${
+									codexPlanMode
+										? "bg-[#D96C46]/10 text-[#D96C46] font-medium"
+										: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+								}`}
+							>
+								Plan
+							</button>
+						)}
+
 						{isRunning && (
 							<span className="text-[10px] text-zinc-400 flex items-center gap-1">
 								<span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -335,19 +409,14 @@ export function CodingChatInput({ onSend, onAbort, isRunning = false, onOpenSett
 							</span>
 						)}
 					</div>
-					{(usage.inputTokens > 0 || usage.outputTokens > 0) && (
-						<span className="text-[10px] text-zinc-400 tabular-nums">
-							{formatTokenCount(usage.inputTokens + usage.outputTokens)} tokens
-						</span>
-					)}
+
+					{/* 右侧：上下文占用指示 */}
+					<ContextUsageIndicator
+						inputTokens={usage.inputTokens}
+						outputTokens={usage.outputTokens}
+					/>
 				</div>
 			</div>
 		</div>
 	);
-}
-
-function formatTokenCount(count: number): string {
-	if (count < 1000) return String(count);
-	if (count < 1_000_000) return `${(count / 1000).toFixed(1)}K`;
-	return `${(count / 1_000_000).toFixed(2)}M`;
 }

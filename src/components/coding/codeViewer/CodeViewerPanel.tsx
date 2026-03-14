@@ -1,10 +1,11 @@
 // CodeViewerPanel - 专业级代码查看器主组件
 // 集成 Shiki 高亮、搜索、minimap、行高亮、面包屑导航
+// 支持图片/SVG/二进制文件预览
 
 import { FileCode2, Loader2, Paperclip, RefreshCcw, Search } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShikiTokens } from "../../../hooks/useShikiHighlight";
-import { readCodingFilePreview } from "../../../lib/coding/filePreview";
+import { readCodingFilePreview, detectFileType } from "../../../lib/coding/filePreview";
 import { inferLanguage } from "../../../lib/utils/diffUtils";
 import { codingWorkspaceStore, useCodingWorkspaceSelector, type CenterPanelTab } from "../../../lib/stores/codingWorkspaceStore";
 import { toast } from "../../ui/Toast";
@@ -49,9 +50,11 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 		return () => { cancelled = true; };
 	}, [tab.filePath]);
 
+	const fileType = useMemo(() => detectFileType(tab.filePath), [tab.filePath]);
+	const isMediaFile = fileType === "image" || fileType === "binary";
 	const language = useMemo(() => inferLanguage(tab.filePath), [tab.filePath]);
 	const lines = useMemo(() => content.split("\n"), [content]);
-	const { tokens: shikiTokens, loading: shikiLoading } = useShikiTokens(content, language);
+	const { tokens: shikiTokens, loading: shikiLoading } = useShikiTokens(isMediaFile ? "" : content, language);
 
 	// 代码查看器状态
 	const viewer = useCodeViewerState(lines, tab.highlightLine);
@@ -159,6 +162,60 @@ function CodeViewerPanelInner({ tab }: CodeViewerPanelProps) {
 			<div className="flex h-full flex-col items-center justify-center px-6 text-center">
 				<FileCode2 className="mb-3 h-8 w-8 text-red-400" />
 				<div className="text-sm text-red-500">{error}</div>
+			</div>
+		);
+	}
+
+	// 图片文件预览
+	if (fileType === "image") {
+		return (
+			<div className="flex h-full flex-col bg-white dark:bg-[#0d0d0d]">
+				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 px-3 py-2 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
+					<BreadcrumbNav filePath={tab.filePath} projectPath={projectPath} />
+					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">图片</span>
+				</div>
+				<div className="flex flex-1 items-center justify-center p-6 overflow-auto">
+					<img
+						src={`local-file://${tab.filePath}`}
+						alt={tab.fileName}
+						className="max-w-full max-h-[70vh] rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 object-contain"
+						onError={(e) => {
+							const target = e.target as HTMLImageElement;
+							if (target.src.startsWith("local-file://")) {
+								target.src = `file://${tab.filePath}`;
+							}
+						}}
+					/>
+				</div>
+			</div>
+		);
+	}
+
+	// SVG 预览
+	if (fileType === "svg") {
+		return (
+			<div className="flex h-full flex-col bg-white dark:bg-[#0d0d0d]">
+				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 px-3 py-2 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
+					<BreadcrumbNav filePath={tab.filePath} projectPath={projectPath} />
+					<span className="flex-shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">SVG</span>
+				</div>
+				<div className="flex flex-1 items-center justify-center p-6 overflow-auto">
+					<div
+						className="max-w-full max-h-[70vh] [&>svg]:max-w-full [&>svg]:max-h-[70vh]"
+						dangerouslySetInnerHTML={{ __html: content }}
+					/>
+				</div>
+			</div>
+		);
+	}
+
+	// 二进制文件提示
+	if (fileType === "binary") {
+		return (
+			<div className="flex h-full flex-col items-center justify-center px-6 text-center bg-white dark:bg-[#0d0d0d]">
+				<FileCode2 className="mb-3 h-8 w-8 text-zinc-300 dark:text-zinc-600" />
+				<div className="text-sm font-medium text-zinc-500 dark:text-zinc-300">二进制文件</div>
+				<div className="mt-2 text-xs text-zinc-400">此文件无法作为文本预览</div>
 			</div>
 		);
 	}

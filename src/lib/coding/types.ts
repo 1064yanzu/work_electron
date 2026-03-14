@@ -7,6 +7,7 @@ import type {
 	CodingApprovalMode,
 	RuntimeControlAction,
 } from '../../../electron/shared/coding-workspace';
+import type { CodexReasoningEffort } from '../stores/codingAgentStore';
 
 /** 发送消息时的选项 */
 export interface SessionSendOptions {
@@ -24,6 +25,10 @@ export interface SessionSendOptions {
 	approvalMode?: CodingApprovalMode;
 	/** workspace/memory 合并后的注入上下文 */
 	workspaceContext?: string;
+	/** Codex 特有：思考程度 */
+	codexReasoningEffort?: CodexReasoningEffort;
+	/** Codex 特有：Plan 模式 */
+	codexPlanMode?: boolean;
 }
 
 /** Session Manager 接口 */

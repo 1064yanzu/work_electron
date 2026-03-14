@@ -1,9 +1,9 @@
 /**
- * Codex 待办列表卡片 - 展示 todo_list 事件的待办项
+ * Codex 待办列表卡片 - 使用统一 ToolCardShell（Zed 风格）
  */
-import { ListChecks, ChevronDown, Check, Circle } from 'lucide-react';
-import { useState } from 'react';
+import { ListChecks, Check, Circle } from 'lucide-react';
 import type { SessionToolCall } from '../../../lib/stores/codingSessionTypes';
+import { ToolCardShell } from './shared/ToolCardShell';
 
 interface CodexTodoListCardProps {
 	toolCall: SessionToolCall;
@@ -15,36 +15,28 @@ interface TodoItem {
 }
 
 export function CodexTodoListCard({ toolCall }: CodexTodoListCardProps) {
-	const [expanded, setExpanded] = useState(true);
-
 	const output = toolCall.output as { items?: TodoItem[] } | undefined;
 	const items: TodoItem[] = output?.items ?? [];
 	const completedCount = items.filter((t) => t.completed).length;
 	const totalCount = items.length;
 
 	const summary = totalCount === 0
-		? '待办列表'
-		: `${completedCount}/${totalCount} 已完成`;
+		? undefined
+		: `${completedCount}/${totalCount}`;
 
 	return (
-		<div className="group -mx-2 px-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-			<button
-				onClick={() => setExpanded(!expanded)}
-				className="w-full flex items-center gap-2 py-1.5 text-left"
-			>
-				<ListChecks className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-				<span className="text-xs text-zinc-500">待办列表</span>
-				<span className="flex-1 text-xs text-zinc-700 dark:text-zinc-300">
-					{summary}
-				</span>
-				<StatusDot status={toolCall.status} />
-				<ChevronDown
-					className={`w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-all ${expanded ? 'rotate-180 opacity-100' : ''}`}
-				/>
-			</button>
-
-			{expanded && items.length > 0 && (
-				<div className="pb-2 pt-1 space-y-1">
+		<ToolCardShell
+			icon={ListChecks}
+			label="待办列表"
+			title={totalCount > 0 ? `${completedCount}/${totalCount} 已完成` : '待办列表'}
+			status={toolCall.status}
+			isError={toolCall.isError}
+			durationMs={toolCall.durationMs}
+			summary={summary}
+			defaultExpanded={true}
+		>
+			{items.length > 0 && (
+				<div className="space-y-1">
 					{items.map((item, i) => (
 						<div
 							key={i}
@@ -82,19 +74,6 @@ export function CodexTodoListCard({ toolCall }: CodexTodoListCardProps) {
 					)}
 				</div>
 			)}
-		</div>
+		</ToolCardShell>
 	);
-}
-
-function StatusDot({ status }: { status: SessionToolCall['status'] }) {
-	if (status === 'running') {
-		return <div className="w-2 h-2 rounded-full bg-[#D96C46] animate-pulse shrink-0" />;
-	}
-	if (status === 'completed') {
-		return <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />;
-	}
-	if (status === 'error') {
-		return <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />;
-	}
-	return <div className="w-2 h-2 rounded-full bg-zinc-300 shrink-0" />;
 }

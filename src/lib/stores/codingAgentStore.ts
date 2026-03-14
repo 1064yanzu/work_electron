@@ -11,6 +11,9 @@ export type CodingMode = "code" | "plan" | "ask";
 // 编码后端
 export type CodingBackend = "claude-code" | "codex";
 
+// Codex 思考程度
+export type CodexReasoningEffort = "low" | "medium" | "high";
+
 // Plan 模式中的步骤
 export interface PlanStep {
 	id: string;
@@ -28,6 +31,10 @@ interface CodingAgentState {
 	pendingPlan: PlanStep[] | null;
 	/** Plan 是否已被用户确认 */
 	planApproved: boolean;
+	/** Codex 思考程度：low | medium | high */
+	codexReasoningEffort: CodexReasoningEffort;
+	/** Codex Plan 模式 */
+	codexPlanMode: boolean;
 }
 
 const STORAGE_KEY = "ipo-coding-agent-state";
@@ -42,6 +49,8 @@ function loadState(): CodingAgentState {
 				codingBackend: parsed.codingBackend || "claude-code",
 				pendingPlan: null,
 				planApproved: false,
+				codexReasoningEffort: parsed.codexReasoningEffort || "high",
+				codexPlanMode: parsed.codexPlanMode ?? false,
 			};
 		}
 	} catch {
@@ -52,6 +61,8 @@ function loadState(): CodingAgentState {
 		codingBackend: "claude-code",
 		pendingPlan: null,
 		planApproved: false,
+		codexReasoningEffort: "high",
+		codexPlanMode: false,
 	};
 }
 
@@ -77,6 +88,8 @@ class CodingAgentStore {
 				JSON.stringify({
 					codingMode: this.state.codingMode,
 					codingBackend: this.state.codingBackend,
+					codexReasoningEffort: this.state.codexReasoningEffort,
+					codexPlanMode: this.state.codexPlanMode,
 				}),
 			);
 		} catch {
@@ -115,6 +128,20 @@ class CodingAgentStore {
 
 	rejectPlan = () => {
 		this.state = { ...this.state, pendingPlan: null, planApproved: false };
+		this.emit();
+	};
+
+	setCodexReasoningEffort = (effort: CodexReasoningEffort) => {
+		if (this.state.codexReasoningEffort === effort) return;
+		this.state = { ...this.state, codexReasoningEffort: effort };
+		this.persist();
+		this.emit();
+	};
+
+	setCodexPlanMode = (enabled: boolean) => {
+		if (this.state.codexPlanMode === enabled) return;
+		this.state = { ...this.state, codexPlanMode: enabled };
+		this.persist();
 		this.emit();
 	};
 }

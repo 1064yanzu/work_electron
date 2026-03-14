@@ -1783,6 +1783,8 @@ export type IPCSchema = {
 			approvalMode?: "untrusted" | "on-failure" | "on-request" | "never";
 			resumeSessionId?: string;
 			workspaceContext?: string;
+			reasoningEffort?: "low" | "medium" | "high";
+			planMode?: boolean;
 		};
 		output: string; // runId
 	};

@@ -323,16 +323,22 @@ export default function CodingWorkspace({
 
 			try {
 				// 3. 通过 manager 发送到 CLI 子进程
+				const agentState = codingAgentStore.getState();
 				await manager.send(content, {
 					cwd: effectiveProjectPath,
 					mode:
-						activeThread?.codingMode || codingAgentStore.getState().codingMode,
+						activeThread?.codingMode || agentState.codingMode,
 					contextFiles: codingWorkspaceStore.getState().contextFiles,
 					resumeSessionId:
 						codingSessionStore.getState().sdkSessionId ?? undefined,
 					model: activeThread?.model,
 					approvalMode: activeThread?.approvalMode,
 					workspaceContext: workspaceMemory?.mergedInstructions,
+					// Codex 特有参数（仅 Codex 后端时传递）
+					...(backend === "codex" && {
+						codexReasoningEffort: agentState.codexReasoningEffort,
+						codexPlanMode: agentState.codexPlanMode,
+					}),
 				});
 				if (activeThreadId) {
 					codingThreadStore.updateThread(activeThreadId, {

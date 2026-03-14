@@ -739,6 +739,7 @@ export function registerIpcHandlers({
 	// ==================
 	ipcMain.handle("coding_select_directory", codingHandlers.coding_select_directory);
 	ipcMain.handle("coding_read_file_tree", codingHandlers.coding_read_file_tree);
+	ipcMain.handle("coding_select_files", codingHandlers.coding_select_files);
 	ipcMain.handle("coding_git_status", codingHandlers.coding_git_status);
 	ipcMain.handle("coding_git_history", codingHandlers.coding_git_history);
 	ipcMain.handle("coding_git_branches", codingHandlers.coding_git_branches);

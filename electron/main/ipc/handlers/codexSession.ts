@@ -46,6 +46,8 @@ export function createCodexSessionHandlers(deps: CodexHandlerDeps) {
 				approvalMode?: "untrusted" | "on-failure" | "on-request" | "never";
 				resumeSessionId?: string;
 				workspaceContext?: string;
+				reasoningEffort?: "low" | "medium" | "high";
+				planMode?: boolean;
 			},
 		) => {
 			const binary = await findCodexBinary();
@@ -62,6 +64,8 @@ export function createCodexSessionHandlers(deps: CodexHandlerDeps) {
 				approvalMode: input.approvalMode,
 				resumeSessionId: input.resumeSessionId,
 				workspaceContext: input.workspaceContext,
+				reasoningEffort: input.reasoningEffort,
+				planMode: input.planMode,
 			};
 
 			const proc = spawnCodexSession(binary, options, (event: CodexOutputEvent) => {

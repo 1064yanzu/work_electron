@@ -1,18 +1,17 @@
 /**
  * 编程工作区 - 右侧面板容器
- * 3 个精准 Tab：Git / 文件变更 / 终端日志
+ * 2 个精准 Tab：Git 状态 / 活动日志
  */
-import { GitBranch, FileDiff, TerminalSquare } from "lucide-react";
+import { GitBranch, Activity } from "lucide-react";
 import { type ElementType } from "react";
 import {
 	codingWorkspaceStore,
 	useCodingWorkspaceSelector,
 } from "../../lib/stores/codingWorkspaceStore";
 import { CodingGitPanel } from "./CodingGitPanel";
-import { CodingChangesList } from "./CodingChangesList";
-import { CodingTerminalLogPanel } from "./CodingTerminalLogPanel";
+import { CodingActivityLog } from "./CodingActivityLog";
 
-type RightPanelTab = "git" | "session-changes" | "terminal-log";
+type RightPanelTab = "git" | "activity-log";
 
 interface TabDef {
 	id: RightPanelTab;
@@ -23,14 +22,18 @@ interface TabDef {
 
 const TABS: TabDef[] = [
 	{ id: "git", icon: GitBranch, label: "Git", tooltip: "Git 状态与变更" },
-	{ id: "session-changes", icon: FileDiff, label: "变更", tooltip: "本次会话的文件变更" },
-	{ id: "terminal-log", icon: TerminalSquare, label: "终端", tooltip: "AI 执行的命令输出" },
+	{ id: "activity-log", icon: Activity, label: "活动", tooltip: "AI 工具调用历史" },
 ];
 
 export function CodingChangesPanel() {
-	const activeTab = useCodingWorkspaceSelector(
+	const rawTab = useCodingWorkspaceSelector(
 		(s) => s.layout.rightPanelTab,
-	) as RightPanelTab;
+	);
+	// 兼容旧 Tab 值
+	const activeTab: RightPanelTab =
+		rawTab === "session-changes" || rawTab === "terminal-log"
+			? "activity-log"
+			: (rawTab as RightPanelTab);
 
 	return (
 		<div className="h-full flex flex-col bg-[#FAFAFA] dark:bg-[#111111]">
@@ -40,7 +43,7 @@ export function CodingChangesPanel() {
 					<TabButton
 						key={tab.id}
 						active={activeTab === tab.id}
-						onClick={() => codingWorkspaceStore.setRightPanelTab(tab.id)}
+						onClick={() => codingWorkspaceStore.setRightPanelTab(tab.id as any)}
 						icon={tab.icon}
 						label={tab.label}
 						tooltip={tab.tooltip}
@@ -52,11 +55,9 @@ export function CodingChangesPanel() {
 			<div className="flex-1 overflow-hidden">
 				{activeTab === "git" ? (
 					<CodingGitPanel />
-				) : activeTab === "session-changes" ? (
-					<CodingChangesList />
-				) : activeTab === "terminal-log" ? (
-					<CodingTerminalLogPanel />
-				) : null}
+				) : (
+					<CodingActivityLog />
+				)}
 			</div>
 		</div>
 	);

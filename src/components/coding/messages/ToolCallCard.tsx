@@ -142,7 +142,7 @@ function McpToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 	);
 }
 
-/** 通用工具卡片（Fallback） */
+/** 通用工具卡片（Fallback） - 从 input 中智能提取展示信息 */
 function GenericToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 	const output = useMemo(() => {
 		if (typeof toolCall.output === "string") return toolCall.output;
@@ -157,10 +157,30 @@ function GenericToolCard({ toolCall }: { toolCall: SessionToolCall }) {
 		return JSON.stringify(toolCall.input, null, 2);
 	}, [toolCall.input]);
 
+	// 智能提取 title：优先使用语义化字段
+	const smartTitle = useMemo(() => {
+		const input = toolCall.input;
+		// 尝试常见的语义字段作为标题补充
+		const candidate =
+			(input.pattern as string) ||
+			(input.query as string) ||
+			(input.file_path as string) ||
+			(input.path as string) ||
+			(input.name as string) ||
+			(input.command as string) ||
+			(input.url as string) ||
+			(input.content as string);
+		if (candidate && typeof candidate === "string") {
+			const display = candidate.length > 80 ? `${candidate.slice(0, 80)}...` : candidate;
+			return `${toolCall.name} ${display}`;
+		}
+		return toolCall.name;
+	}, [toolCall.name, toolCall.input]);
+
 	return (
 		<ToolCardShell
 			icon={Wrench}
-			title={toolCall.name}
+			title={smartTitle}
 			status={toolCall.status}
 			isError={toolCall.isError}
 			durationMs={toolCall.durationMs}

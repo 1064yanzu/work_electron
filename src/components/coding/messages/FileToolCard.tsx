@@ -56,13 +56,34 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 	const isWrite = toolCall.name === "Write";
 
 	const Icon = isRead ? FileCode : isEdit ? FilePen : isWrite ? FilePlus : FileSearch;
-	const actionLabel = isRead
+
+	// 构建含动作的 title（Zed 风格）
+	const actionPrefix = isRead
 		? "读取"
 		: isEdit
 			? "编辑"
 			: isWrite
 				? "创建"
 				: toolCall.name;
+
+	// Read 工具：如果有 offset/limit 参数，显示行范围
+	const lineRange = (() => {
+		if (!isRead) return "";
+		const offset = toolCall.input.offset as number | undefined;
+		const limit = toolCall.input.limit as number | undefined;
+		if (offset != null && limit != null) {
+			return ` (行 ${offset}-${offset + limit})`;
+		}
+		if (offset != null) {
+			return ` (从行 ${offset})`;
+		}
+		if (limit != null) {
+			return ` (前 ${limit} 行)`;
+		}
+		return "";
+	})();
+
+	const title = `${actionPrefix} ${fileName}${lineRange}`;
 
 	// diff 关联
 	const diffId = toolCall.diffId;
@@ -115,8 +136,7 @@ export function FileToolCard({ toolCall }: FileToolCardProps) {
 	return (
 		<ToolCardShell
 			icon={Icon}
-			label={actionLabel}
-			title={fileName}
+			title={title}
 			status={toolCall.status}
 			isError={toolCall.isError}
 			durationMs={toolCall.durationMs}

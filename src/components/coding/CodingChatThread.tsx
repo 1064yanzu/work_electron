@@ -3,7 +3,7 @@
  * 参考 Claude Code / Codex 的设计语言：扁平化、紧凑、高信息密度
  */
 import { Bot, User } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCodingSessionSelector } from "../../lib/stores/codingSessionStore";
 import type { CodingSessionMessage } from "../../lib/stores/codingSessionTypes";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
@@ -90,6 +90,40 @@ export function CodingChatThread({
 	);
 }
 
+/* ── 系统消息过滤 ─────────────────────────────────────────── */
+
+/** 判断系统消息是否应该隐藏 */
+function shouldHideSystemMessage(content: string): boolean {
+	if (!content) return true;
+	const lower = content.toLowerCase();
+	// 过滤包含敏感/内部信息的系统消息
+	if (lower.includes("system prompt")) return true;
+	if (lower.includes("anthropic_api_key")) return true;
+	if (lower.includes("api_key") || lower.includes("apikey")) return true;
+	if (lower.includes("oauth") || lower.includes("credential")) return true;
+	if (lower.includes("loading model")) return true;
+	// 过滤 Agent.md / CLAUDE.md 等上下文加载通知
+	if (/agents?\.md/i.test(content)) return true;
+	if (/claude\.md/i.test(content)) return true;
+	if (lower.includes("context file") && lower.includes("loaded")) return true;
+	// 过滤内部日志格式
+	if (/^\[?\d{4}-\d{2}-\d{2}/.test(content)) return true;
+	return false;
+}
+
+/** 从用户消息中清理上下文文件展开内容，只保留用户原始输入 */
+function cleanUserMessageContent(content: string): string {
+	if (!content) return content;
+	// 检测 buildPromptWithContextFiles 的格式
+	// 格式：Attached project context files:\n\nFile: xxx\nLanguage: xxx\n```...```\n\nUser request:\n{实际内容}
+	const userRequestMarker = "\nUser request:\n";
+	const markerIdx = content.indexOf(userRequestMarker);
+	if (markerIdx !== -1 && content.startsWith("Attached project context files:")) {
+		return content.slice(markerIdx + userRequestMarker.length).trim();
+	}
+	return content;
+}
+
 /* ── 消息渲染 ────────────────────────────────────────────── */
 
 function MessageBubble({
@@ -105,12 +139,13 @@ function MessageBubble({
 	const isUser = message.role === "user";
 	const isSystem = message.role === "system";
 
-	// 系统消息 — 紧凑分隔线样式
+	// 系统消息 — 过滤后以紧凑分隔线展示
 	if (isSystem) {
+		if (shouldHideSystemMessage(message.content)) return null;
 		return <SystemDivider content={message.content} />;
 	}
 
-	// 用户消息 — 带微背景圆角卡片 + 用户图标
+	// 用户消息 — 右对齐，头像在右
 	if (isUser) {
 		return <UserMessage content={message.content} />;
 	}
@@ -133,21 +168,23 @@ function SystemDivider({ content }: { content: string }) {
 	);
 }
 
-/* ── 用户消息 ────────────────────────────────────────────── */
+/* ── 用户消息（右对齐） ──────────────────────────────────── */
 
 function UserMessage({ content }: { content: string }) {
+	const cleanedContent = useMemo(() => cleanUserMessageContent(content), [content]);
+
 	return (
-		<div className="group relative">
-			<div className="flex items-start gap-3">
-				{/* 用户头像 */}
-				<div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80">
-					<User className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-				</div>
-				{/* 内容区 */}
-				<div className="flex-1 min-w-0 rounded-2xl bg-zinc-100/70 dark:bg-zinc-800/50 px-4 py-2.5">
-					<div className="text-[13.5px] leading-[1.7] text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap">
-						{content}
+		<div className="group relative flex justify-end">
+			<div className="flex items-start gap-3 max-w-[85%]">
+				{/* 内容区 — 右对齐，浅灰底色使其与 AI 回复一眼可区分 */}
+				<div className="min-w-0 rounded-2xl bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5">
+					<div className="text-[13.5px] leading-[1.7] text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap break-words">
+						{cleanedContent}
 					</div>
+				</div>
+				{/* 用户头像 — 右侧 */}
+				<div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700">
+					<User className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
 				</div>
 			</div>
 		</div>

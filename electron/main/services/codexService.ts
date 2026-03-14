@@ -36,6 +36,10 @@ export interface CodexSessionOptions {
 	approvalMode?: CodexApprovalMode;
 	resumeSessionId?: string;
 	workspaceContext?: string;
+	/** Codex 思考程度：low | medium | high */
+	reasoningEffort?: "low" | "medium" | "high";
+	/** Codex Plan 模式：先出方案再执行 */
+	planMode?: boolean;
 }
 
 export interface CodexOutputEvent {
@@ -137,6 +141,16 @@ function buildCodexArgs(options: CodexSessionOptions): string[] {
 		baseArgs.push("-m", modelId);
 	}
 	baseArgs.push(...buildApprovalArgs(options.approvalMode));
+
+	// Codex 特有：思考程度
+	if (options.reasoningEffort) {
+		baseArgs.push("--reasoning-effort", options.reasoningEffort);
+	}
+
+	// Codex 特有：Plan 模式
+	if (options.planMode) {
+		baseArgs.push("--plan");
+	}
 
 	if (options.resumeSessionId) {
 		return [

@@ -77,6 +77,7 @@ export class CodexSessionManager implements ICodingSessionManager {
 
 			try {
 				console.log(`[CodexSessionManager] sending with model: ${options.model || "(default)"}, cwd: ${options.cwd}`);
+				console.log(`[CodexSessionManager] codex options: reasoningEffort=${options.codexReasoningEffort || "(default)"}, planMode=${options.codexPlanMode ?? false}`);
 				this.runId = await invoke<string>("codex_session_start", {
 					prompt: promptWithContext,
 					cwd: options.cwd,
@@ -84,6 +85,8 @@ export class CodexSessionManager implements ICodingSessionManager {
 				approvalMode: (options.approvalMode as CodingApprovalMode | undefined) ?? "on-request",
 				resumeSessionId: options.resumeSessionId,
 				workspaceContext: options.workspaceContext,
+				reasoningEffort: options.codexReasoningEffort,
+				planMode: options.codexPlanMode,
 			});
 			codingSessionStore.setRunId(this.runId);
 		} catch (error) {
