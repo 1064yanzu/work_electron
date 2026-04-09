@@ -61,6 +61,19 @@ export function createStorageHandlers(db: DbContext) {
 		return { path: result.filePaths[0] };
 	};
 
+	const system_pick_directory: Handler<
+		"system_pick_directory"
+	> = async (_event, input) => {
+		const result = await dialog.showOpenDialog({
+			properties: ["openDirectory", "createDirectory"],
+			title: input?.title || "选择系统目录",
+		});
+		if (result.canceled || result.filePaths.length === 0) {
+			return { path: null };
+		}
+		return { path: result.filePaths[0] };
+	};
+
 	const storage_reveal_vault_root: Handler<
 		"storage_reveal_vault_root"
 	> = async () => {
@@ -104,6 +117,7 @@ export function createStorageHandlers(db: DbContext) {
 		storage_get_settings,
 		storage_update_settings,
 		storage_pick_directory,
+		system_pick_directory,
 		storage_reveal_vault_root,
 		project_reveal_directory,
 	};

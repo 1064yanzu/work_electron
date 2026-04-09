@@ -476,6 +476,10 @@ export function registerIpcHandlers({
 		storageHandlers.storage_pick_directory,
 	);
 	ipcMain.handle(
+		"system_pick_directory",
+		storageHandlers.system_pick_directory,
+	);
+	ipcMain.handle(
 		"storage_reveal_vault_root",
 		storageHandlers.storage_reveal_vault_root,
 	);

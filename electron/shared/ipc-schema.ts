@@ -1266,7 +1266,11 @@ export type IPCSchema = {
 		};
 	};
 	storage_pick_directory: {
-		input: Record<string, never>;
+		input: undefined;
+		output: { path: string | null };
+	};
+	system_pick_directory: {
+		input: { title?: string };
 		output: { path: string | null };
 	};
 	storage_reveal_vault_root: {

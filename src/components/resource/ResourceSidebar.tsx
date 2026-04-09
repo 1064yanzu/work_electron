@@ -55,16 +55,23 @@ import {
 	type SourceDetailViewHandle,
 } from "./SourceDetailView";
 import { SourceListView } from "./SourceListView";
+import { SidebarRail } from "../layout/SidebarRail";
+import { ThreadsView } from "./ThreadsView";
+import { ProjectFilesView } from "./ProjectFilesView";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
 const WebSearchModule = lazy(() => import("../WebSearchModule"));
 
 interface ResourceSidebarProps {
 	onOpenSettings: () => void;
+	onNavigateHome: () => void;
+	onNavigateWorkbench: () => void;
 }
 
 export default function ResourceSidebar({
 	onOpenSettings,
+	onNavigateHome,
+	onNavigateWorkbench,
 }: ResourceSidebarProps) {
 	const [sources, setSources] = useState<Source[]>([]);
 	const [rawSources, setRawSources] = useState<Source[]>([]);
@@ -527,38 +534,21 @@ export default function ResourceSidebar({
 	]);
 
 	// --- View tabs ---
-	const renderViewTabs = () => (
-		<div className="flex items-center gap-1 rounded-full bg-zinc-100 dark:bg-zinc-800 p-1">
-			{(["sources", "cards"] as const).map((tab) => {
-				const isActive = leftSidebarView === tab;
-				return (
-					<button
-						key={tab}
-						onClick={() => setLeftSidebarView(tab)}
-						className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-							isActive
-								? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm"
-								: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
-						}`}
-					>
-						{tab === "sources" ? "资料" : "卡片"}
-					</button>
-				);
-			})}
-		</div>
-	);
+	const renderViewTabs = () => null;
 
 	const computedContextMenuItems = sourceContextMenuItems();
 	const computedFolderContextMenuItems = folderContextMenuItems();
 
 	return (
-		<aside
-			data-resource-sidebar
-			className="flex-1 bg-white dark:bg-zinc-900 flex flex-col h-full font-sans min-w-0 relative"
-			onDragOver={dragDrop.handleContainerDragOver}
-			onDrop={dragDrop.handleContainerDrop}
-		>
-			<DragAndDropImportUI
+		<div className="flex flex-row h-full w-full min-w-0">
+			<SidebarRail onOpenSettings={onOpenSettings} onNavigateHome={onNavigateHome} />
+			<aside
+				data-resource-sidebar
+				className="flex-1 bg-[#FDFDFC] dark:bg-zinc-900 flex flex-col h-full font-sans min-w-0 relative"
+				onDragOver={dragDrop.handleContainerDragOver}
+				onDrop={dragDrop.handleContainerDrop}
+			>
+				<DragAndDropImportUI
 				isDragging={
 					sourceImport.dragImport.isDragging && !dragDrop.draggedSourceId
 				}
@@ -648,6 +638,10 @@ export default function ResourceSidebar({
 					viewTabs={renderViewTabs()}
 					onOpenSettings={onOpenSettings}
 				/>
+			) : leftSidebarView === "threads" ? (
+				<ThreadsView onNavigateWorkbench={onNavigateWorkbench} />
+			) : leftSidebarView === "files" ? (
+				<ProjectFilesView />
 			) : leftSidebarView === "websearch" ? (
 				<div className="flex flex-col h-full">
 					{/* Header */}
@@ -787,6 +781,7 @@ export default function ResourceSidebar({
 				setSelectedFile={setSelectedFile}
 				handleCreateSource={handleCreateSource}
 			/>
-		</aside>
+			</aside>
+		</div>
 	);
 }

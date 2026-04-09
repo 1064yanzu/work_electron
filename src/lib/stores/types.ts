@@ -100,7 +100,9 @@ export interface LayoutState {
 		| "detail"
 		| "agent"
 		| "cards"
-		| "websearch";
+		| "websearch"
+		| "threads"
+		| "files";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 }

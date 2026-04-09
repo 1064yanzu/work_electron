@@ -1,0 +1,199 @@
+import { useEffect, useState, useCallback } from "react";
+import { ChevronDown, ChevronRight, File, Folder, FolderOpen, RefreshCcw } from "lucide-react";
+import { safeInvoke } from "../../lib/tauriBridge";
+import { sessionStore } from "../../lib/agent/sessionManager";
+import { cn } from "../../lib/utils";
+
+interface FileEntry {
+	path: string;
+	name: string;
+	isDir: boolean;
+	size?: number;
+}
+
+export function ProjectFilesView() {
+	const [projectPath, setProjectPath] = useState<string | null>(null);
+	const [entries, setEntries] = useState<FileEntry[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
+
+	// 获取项目路径
+	useEffect(() => {
+		const updatePath = () => {
+			const session = sessionStore.getCurrentSession();
+			if (session?.cwd) {
+				setProjectPath(session.cwd);
+			} else {
+				setProjectPath(null);
+				setEntries([]);
+			}
+		};
+
+		updatePath();
+		const unsubscribe = sessionStore.subscribe(updatePath);
+		return () => unsubscribe();
+	}, []);
+
+	const loadDir = useCallback(async (dirPath: string) => {
+		try {
+			const res = await safeInvoke<any[]>("list_files_safe", { path: dirPath });
+			// Folders first
+			const mapped = res.map((r) => ({
+				path: r.path,
+				name: r.name,
+				isDir: r.is_dir,
+				size: r.size,
+			}));
+			return mapped.sort((a, b) => {
+				if (a.isDir === b.isDir) return a.name.localeCompare(b.name);
+				return a.isDir ? -1 : 1;
+			});
+		} catch (e) {
+			console.error("Failed to read dir:", dirPath, e);
+			return [];
+		}
+	}, []);
+
+	const refreshRoot = useCallback(async () => {
+		if (!projectPath) return;
+		setIsLoading(true);
+		const rootEntries = await loadDir(projectPath);
+		setEntries(rootEntries);
+		setIsLoading(false);
+	}, [projectPath, loadDir]);
+
+	useEffect(() => {
+		void refreshRoot();
+	}, [refreshRoot]);
+
+	const toggleDir = async (entry: FileEntry) => {
+		if (!entry.isDir) return;
+
+		setExpandedDirs((prev) => {
+			const next = new Set(prev);
+			if (next.has(entry.path)) {
+				next.delete(entry.path);
+			} else {
+				next.add(entry.path);
+			}
+			return next;
+		});
+	};
+
+	const renderTree = (items: FileEntry[], level = 0) => {
+		return items.map((item) => {
+			const isExpanded = expandedDirs.has(item.path);
+
+			return (
+				<div key={item.path}>
+					<button
+						onClick={() => toggleDir(item)}
+						className={cn(
+							"flex items-center w-full px-2 py-1.5 text-left group hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors",
+							level === 0 ? "text-[13px]" : "text-[13px]",
+						)}
+						style={{ paddingLeft: `${Math.max(0.5, level * 0.75 + 0.5)}rem` }}
+					>
+						<span className="w-4 h-4 mr-1 flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300">
+							{item.isDir ? (
+								isExpanded ? (
+									<ChevronDown className="w-3.5 h-3.5" />
+								) : (
+									<ChevronRight className="w-3.5 h-3.5" />
+								)
+							) : (
+								<span className="w-1.5" />
+							)}
+						</span>
+						<span className="mr-2 shrink-0 text-zinc-400 group-hover:text-zinc-500">
+							{item.isDir ? (
+								isExpanded ? (
+									<FolderOpen className="w-4 h-4 text-[#D96C46]/80" />
+								) : (
+									<Folder className="w-4 h-4 text-[#D96C46]/80" />
+								)
+							) : (
+								<File className="w-4 h-4 text-zinc-400" />
+							)}
+						</span>
+						<span className={cn("truncate", item.isDir ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-600 dark:text-zinc-400")}>
+							{item.name}
+						</span>
+					</button>
+
+					{item.isDir && isExpanded && (
+						<DirChildrenLoader dirPath={item.path} loadDir={loadDir} renderTree={(children) => renderTree(children, level + 1)} />
+					)}
+				</div>
+			);
+		});
+	};
+
+	return (
+		<div className="flex flex-col h-full bg-transparent">
+			{/* Header */}
+			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-zinc-100 dark:border-white/[0.05]">
+				<h2 className="font-semibold text-[13px] text-zinc-500 uppercase tracking-widest">
+					Files
+				</h2>
+				<button
+					onClick={refreshRoot}
+					className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+					title="Refresh"
+				>
+					<RefreshCcw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+				</button>
+			</div>
+
+			{/* List */}
+			<div className="flex-1 overflow-y-auto scrollbar-hide py-2">
+				{projectPath === null ? (
+					<div className="text-center py-10 px-6 mt-10">
+						<Folder className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-4" />
+						<p className="text-sm text-zinc-500 font-medium">无工作路径</p>
+						<p className="text-xs text-zinc-400 mt-2">请先到线程列表中选择或创建一个线程</p>
+					</div>
+				) : entries.length === 0 && !isLoading ? (
+					<div className="text-center py-10 px-6 mt-10">
+						<p className="text-sm text-zinc-500 font-medium">文件夹为空</p>
+					</div>
+				) : (
+					<div className="pb-6">{renderTree(entries, 0)}</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
+// 延迟加载子目录组件
+function DirChildrenLoader({
+	dirPath,
+	loadDir,
+	renderTree,
+}: {
+	dirPath: string;
+	loadDir: (path: string) => Promise<FileEntry[]>;
+	renderTree: (items: FileEntry[]) => React.ReactNode;
+}) {
+	const [children, setChildren] = useState<FileEntry[]>([]);
+	const [loaded, setLoaded] = useState(false);
+
+	useEffect(() => {
+		let cancelled = false;
+		loadDir(dirPath).then((res) => {
+			if (!cancelled) {
+				setChildren(res);
+				setLoaded(true);
+			}
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [dirPath, loadDir]);
+
+	if (!loaded) {
+		return <div className="pl-6 py-1.5 text-[11px] text-zinc-400/50 animate-pulse">Loading...</div>;
+	}
+
+	return <>{renderTree(children)}</>;
+}

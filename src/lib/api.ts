@@ -591,6 +591,10 @@ export async function pickStorageDirectory(): Promise<{ path: string | null }> {
 	return await safeInvoke("storage_pick_directory");
 }
 
+export async function pickSystemDirectory(title?: string): Promise<{ path: string | null }> {
+	return await safeInvoke("system_pick_directory", { title });
+}
+
 export async function revealVaultRoot(): Promise<{
 	success: boolean;
 	error?: string;

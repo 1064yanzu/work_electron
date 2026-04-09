@@ -1,5 +1,4 @@
 import {
-	History,
 	Loader2,
 	MessageSquare,
 	MoreHorizontal,
@@ -16,7 +15,6 @@ interface CopilotHeaderProps {
 	onCloseMoreMenu: () => void;
 	onOpenPromptLibrary: () => void;
 	onNewSession: () => void;
-	onOpenHistory: () => void;
 }
 
 export function CopilotHeader({
@@ -27,7 +25,6 @@ export function CopilotHeader({
 	onCloseMoreMenu,
 	onOpenPromptLibrary,
 	onNewSession,
-	onOpenHistory,
 }: CopilotHeaderProps) {
 	return (
 		<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
@@ -56,15 +53,6 @@ export function CopilotHeader({
 					size="sm"
 				>
 					<Plus className="w-4.5 h-4.5" />
-				</IconButton>
-				<IconButton
-					onClick={onOpenHistory}
-					aria-label="查看对话历史"
-					title="查看对话历史"
-					variant="ghost"
-					size="sm"
-				>
-					<History className="w-4.5 h-4.5" />
 				</IconButton>
 				<div className="relative">
 					<IconButton

@@ -109,11 +109,6 @@ const LazyPromptLibraryModal = lazy(async () => {
 	return { default: mod.PromptLibraryModal };
 });
 
-const LazyChatHistory = lazy(async () => {
-	const mod = await import("./chat/ChatHistory");
-	return { default: mod.ChatHistory };
-});
-
 const respondToPermission =
 	permissionStore.respondToPermission.bind(permissionStore);
 const resolveAskUserQuestion =
@@ -173,7 +168,6 @@ export default function CopilotSidebar() {
 	const planModeEnabled = usePlanModeSelector((s) => s.enabled);
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
-	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const {
 		pendingCreateProposals,
 		setActiveProposalId,
@@ -660,7 +654,6 @@ export default function CopilotSidebar() {
 
 	const { handleNewSession, handleDeleteSession } = useCopilotActions({
 		chatStore,
-		onCloseHistory: () => setIsHistoryOpen(false),
 	});
 
 	// 重新生成消息
@@ -781,46 +774,18 @@ export default function CopilotSidebar() {
 					</div>
 				</div>
 			)}
-			{/* 历史记录面板 */}
-			{isHistoryOpen && (
-				<div className="absolute inset-0 z-50 bg-white dark:bg-zinc-900">
-					<Suspense
-						fallback={
-							<div className="h-full flex items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
-								正在加载对话历史...
-							</div>
-						}
-					>
-						<LazyChatHistory
-							sessions={chatStore.sessions}
-							activeSessionId={chatStore.activeSessionId}
-							onSelectSession={(id) => {
-								chatStore.setActiveSession(id);
-								setIsHistoryOpen(false);
-							}}
-							onDeleteSession={(sessionId) => {
-								void handleDeleteSession(sessionId);
-							}}
-							onRenameSession={chatStore.updateSessionTitle}
-							onNewSession={handleNewSession}
-							onClose={() => setIsHistoryOpen(false)}
-						/>
-					</Suspense>
-				</div>
-			)}
 
 			<CopilotHeader
 				isAgentExecuting={isAgentExecuting}
 				agentTaskType={agentCurrentTask?.type}
 				isMoreMenuOpen={isMoreMenuOpen}
-				onToggleMoreMenu={() => setIsMoreMenuOpen((prev) => !prev)}
+				onToggleMoreMenu={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
 				onCloseMoreMenu={() => setIsMoreMenuOpen(false)}
 				onOpenPromptLibrary={() => {
 					setIsPromptLibraryOpen(true);
 					setIsMoreMenuOpen(false);
 				}}
 				onNewSession={handleNewSession}
-				onOpenHistory={() => setIsHistoryOpen(true)}
 			/>
 
 			<CopilotStatusArea

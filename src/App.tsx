@@ -93,6 +93,7 @@ export default function App() {
 	const {
 		navigateToDashboard,
 		navigateToProject,
+		navigateToWorkbench,
 		isInDashboard,
 		currentProjectId,
 		currentDocId,
@@ -217,6 +218,8 @@ export default function App() {
 								<Suspense fallback={<PanelLoadingFallback />}>
 									<ResourceSidebar
 										onOpenSettings={() => handleOpenSettings()}
+										onNavigateHome={() => navigateToDashboard()}
+										onNavigateWorkbench={() => navigateToWorkbench()}
 									/>
 								</Suspense>
 							</PanelShell>
