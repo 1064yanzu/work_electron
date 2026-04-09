@@ -10,7 +10,7 @@ interface ThreadsViewProps {
 
 export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	const [sessions, setSessions] = useState<AgentSession[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery] = useState("");
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
 		new Set(),
 	);

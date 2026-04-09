@@ -2,7 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight, File, Folder, FolderOpen, RefreshCcw } from "lucide-react";
 import { safeInvoke } from "../../lib/tauriBridge";
 import { sessionStore } from "../../lib/agent/sessionManager";
+import { workspaceStore } from "../../lib/workspaceStore";
+import { managedModeStore } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
+import { toast } from "../ui/Toast";
 
 interface FileEntry {
 	path: string;
@@ -67,17 +70,43 @@ export function ProjectFilesView() {
 	}, [refreshRoot]);
 
 	const toggleDir = async (entry: FileEntry) => {
-		if (!entry.isDir) return;
-
-		setExpandedDirs((prev) => {
-			const next = new Set(prev);
-			if (next.has(entry.path)) {
-				next.delete(entry.path);
-			} else {
-				next.add(entry.path);
+		if (entry.isDir) {
+			setExpandedDirs((prev) => {
+				const next = new Set(prev);
+				if (next.has(entry.path)) {
+					next.delete(entry.path);
+				} else {
+					next.add(entry.path);
+				}
+				return next;
+			});
+		} else {
+			setIsLoading(true);
+			try {
+				const res = await safeInvoke<{ content: string; encoding: string; size?: number }>(
+					"read_file_safe",
+					{ payload: { path: entry.path } },
+				);
+				console.log("[ProjectFilesView] open project file", {
+					path: entry.path,
+					title: entry.name,
+					contentLength: res?.content?.length ?? -1,
+					size: res?.size ?? -1,
+				});
+				workspaceStore.openProjectFile(entry.path, entry.name, res.content);
+				
+				// 强制切换到多标签编辑器视图
+				if (managedModeStore.getState().isActive) {
+					managedModeStore.disableManagedMode();
+				}
+				workspaceStore.setMainView("editor");
+			} catch (e) {
+				console.error("Failed to read file:", entry.path, e);
+				toast.error("无法读取文件内容");
+			} finally {
+				setIsLoading(false);
 			}
-			return next;
-		});
+		}
 	};
 
 	const renderTree = (items: FileEntry[], level = 0) => {

@@ -5,7 +5,44 @@ import {
 	createUseStore,
 	createUseStoreSelector,
 } from "./createStore";
-import type { AIReviewState, DocCacheItem, EditorState } from "./types";
+import type {
+	AIReviewState,
+	ActiveFileSession,
+	DocCacheItem,
+	EditorState,
+} from "./types";
+
+function createDocCacheItem(params: {
+	docId: string;
+	title: string;
+	content: string;
+	kind: DocCacheItem["kind"];
+	snapshot?: string;
+}): DocCacheItem {
+	return {
+		id: params.docId,
+		title: params.title,
+		content: params.content,
+		kind: params.kind,
+		filePath: params.kind === "project_file" ? params.docId : undefined,
+		dirty: false,
+		lastSynced: Date.now(),
+		snapshot: params.snapshot,
+	};
+}
+
+function createActiveFileSession(
+	docId: string,
+	title: string,
+	content: string,
+): ActiveFileSession {
+	return {
+		path: docId,
+		title,
+		content,
+		openedAt: Date.now(),
+	};
+}
 
 const initialAIReview: AIReviewState = {
 	isReviewing: false,
@@ -21,6 +58,7 @@ const initialEditorState: EditorState = {
 	openedDocs: [],
 	activeDocId: null,
 	docCache: {},
+	activeFileSession: null,
 	aiReview: initialAIReview,
 };
 
@@ -43,23 +81,72 @@ function openDoc(docId: string, title: string, content: string) {
 		const newOpenedDocs = isAlreadyOpen
 			? state.openedDocs
 			: [...state.openedDocs, docId];
+		const existingDoc = state.docCache[docId];
+		const nextDocCacheItem =
+			existingDoc && existingDoc.dirty
+				? {
+						...existingDoc,
+						title,
+					}
+				: createDocCacheItem({
+						docId,
+						title,
+						content,
+						kind: "output",
+						snapshot: existingDoc?.snapshot,
+					});
 
 		const newDocCache = {
 			...state.docCache,
-			[docId]: state.docCache[docId] || {
-				id: docId,
-				title,
-				content,
-				dirty: false,
-				lastSynced: Date.now(),
-			},
+			[docId]: nextDocCacheItem,
 		};
 
 		return {
 			...state,
 			openedDocs: newOpenedDocs,
 			activeDocId: docId,
+			editorContent: nextDocCacheItem.content,
 			docCache: newDocCache,
+			activeFileSession: null,
+		};
+	});
+}
+
+function openProjectFile(filePath: string, title: string, content: string) {
+	store.setState((state) => {
+		const isAlreadyOpen = state.openedDocs.includes(filePath);
+		const newOpenedDocs = isAlreadyOpen
+			? state.openedDocs
+			: [...state.openedDocs, filePath];
+		const existingDoc = state.docCache[filePath];
+		const nextDocCacheItem =
+			existingDoc && existingDoc.dirty
+				? {
+						...existingDoc,
+						title,
+					}
+				: createDocCacheItem({
+						docId: filePath,
+						title,
+						content,
+						kind: "project_file",
+						snapshot: existingDoc?.snapshot,
+					});
+
+		return {
+			...state,
+			openedDocs: newOpenedDocs,
+			activeDocId: filePath,
+			editorContent: nextDocCacheItem.content,
+			docCache: {
+				...state.docCache,
+				[filePath]: nextDocCacheItem,
+			},
+			activeFileSession: createActiveFileSession(
+				filePath,
+				title,
+				nextDocCacheItem.content,
+			),
 		};
 	});
 }
@@ -78,22 +165,40 @@ function closeDoc(docId: string) {
 					? newOpenedDocs[newOpenedDocs.length - 1]
 					: null;
 		}
+		const nextActiveDoc = newActiveDocId ? newDocCache[newActiveDocId] : null;
 
 		return {
 			...state,
 			openedDocs: newOpenedDocs,
 			activeDocId: newActiveDocId,
+			editorContent: nextActiveDoc?.content || "",
 			docCache: newDocCache,
+			activeFileSession:
+				nextActiveDoc?.kind === "project_file" && newActiveDocId
+					? createActiveFileSession(
+							newActiveDocId,
+							nextActiveDoc.title,
+							nextActiveDoc.content,
+						)
+					: null,
 		};
 	});
 }
 
 // 切换激活文档
 function setActiveDoc(docId: string) {
-	store.setState((state) => ({
-		...state,
-		activeDocId: docId,
-	}));
+	store.setState((state) => {
+		const targetDoc = state.docCache[docId];
+		return {
+			...state,
+			activeDocId: docId,
+			editorContent: targetDoc?.content || state.editorContent,
+			activeFileSession:
+				targetDoc?.kind === "project_file"
+					? createActiveFileSession(docId, targetDoc.title, targetDoc.content)
+					: null,
+		};
+	});
 }
 
 // 重排文档标签顺序（拖拽排序）
@@ -129,6 +234,15 @@ function updateDocCache(docId: string, content: string, dirty = true) {
 					dirty,
 				},
 			},
+			editorContent:
+				state.activeDocId === docId ? content : state.editorContent,
+			activeFileSession:
+				state.activeFileSession?.path === docId
+					? {
+							...state.activeFileSession,
+							content,
+						}
+					: state.activeFileSession,
 		};
 	});
 }
@@ -362,6 +476,7 @@ function resetOnProjectChange() {
 		openedDocs: [],
 		activeDocId: null,
 		docCache: {},
+		activeFileSession: null,
 		aiReview: initialAIReview,
 	}));
 }
@@ -373,6 +488,7 @@ export const editorStore = {
 	setEditorContent,
 	setEditorSelection,
 	openDoc,
+	openProjectFile,
 	closeDoc,
 	setActiveDoc,
 	reorderDocs,

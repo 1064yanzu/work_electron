@@ -8,13 +8,15 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { cn } from "../../lib/utils";
 import type { EditorDensity } from "./useEditorUiPrefs";
+import { FileTypePreview, isMarkdownPreviewFile } from "./FileTypePreview";
 
 interface EditorWorkspaceViewProps {
 	editorMode: "edit" | "preview" | "split";
 	selectedTitle: string;
+	previewFileName: string;
+	titleEditable: boolean;
 	editorContent: string;
 	onTitleChange: (title: string) => void;
 	onContentChange: (content: string) => void;
@@ -42,39 +44,34 @@ function useThrottledPreview(value: string, delayMs: number) {
 	return throttled;
 }
 
-const PreviewMarkdownContent = memo(function PreviewMarkdownContent({
-	content,
-	className,
-}: {
-	content: string;
-	className: string;
-}) {
-	return <MarkdownRenderer content={content} className={className} />;
-});
-
 const EditorPreviewPane = memo(function EditorPreviewPane({
 	title,
+	fileName,
 	content,
-	className,
+	density,
 	emptyText,
 }: {
 	title: string;
+	fileName: string;
 	content: string;
-	className: string;
+	density: EditorDensity;
 	emptyText: string;
 }) {
+	const isMarkdownPreview = isMarkdownPreviewFile(fileName);
+
 	return (
 		<>
-			<h1 className="text-[34px] leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mb-5">
-				{title || "无标题"}
-			</h1>
-			<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:leading-[1.75] prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100">
-				{content ? (
-					<PreviewMarkdownContent content={content} className={className} />
-				) : (
-					<p className="text-zinc-600 dark:text-zinc-300">{emptyText}</p>
-				)}
-			</article>
+			{isMarkdownPreview ? (
+				<h1 className="text-[34px] leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mb-5">
+					{title || "无标题"}
+				</h1>
+			) : null}
+			<FileTypePreview
+				fileName={fileName}
+				content={content}
+				density={density}
+				emptyText={emptyText}
+			/>
 		</>
 	);
 });
@@ -82,6 +79,8 @@ const EditorPreviewPane = memo(function EditorPreviewPane({
 export function EditorWorkspaceView({
 	editorMode,
 	selectedTitle,
+	previewFileName,
+	titleEditable,
 	editorContent,
 	onTitleChange,
 	onContentChange,
@@ -110,6 +109,13 @@ export function EditorWorkspaceView({
 	const previewContent = isComposing
 		? compositionPreviewContent
 		: throttledPreviewContent;
+	const isMarkdownPreview = isMarkdownPreviewFile(previewFileName);
+	const editorPlaceholder = isMarkdownPreview
+		? "开始写作 Markdown..."
+		: "开始编辑文件内容...";
+	const splitPreviewEmptyText = isMarkdownPreview
+		? "在左侧输入 Markdown 内容，这里会实时预览。"
+		: "文件内容为空。";
 	const isCompact = density === "compact";
 	const maxWidthSplit = isCompact ? "max-w-3xl" : "max-w-2xl";
 	const maxWidthSingle = isCompact ? "max-w-5xl" : "max-w-4xl";
@@ -168,13 +174,14 @@ export function EditorWorkspaceView({
 							onBlur={onEditorBlur}
 							className={cn(titleInputClass, "text-[34px] leading-tight mb-5")}
 							placeholder="无标题"
+							readOnly={!titleEditable}
 							style={{ boxShadow: "none" }}
 						/>
 						<textarea
 							{...textareaProps}
 							onScroll={onTextareaScroll}
 							className={cn(textareaProps.className, "font-mono")}
-							placeholder="开始写作 Markdown..."
+							placeholder={editorPlaceholder}
 						/>
 					</div>
 				</section>
@@ -191,9 +198,10 @@ export function EditorWorkspaceView({
 					>
 						<EditorPreviewPane
 							title={selectedTitle}
+							fileName={previewFileName}
 							content={previewContent}
-							className={textClass}
-							emptyText="在左侧输入 Markdown 内容，这里会实时预览。"
+							density={density}
+							emptyText={splitPreviewEmptyText}
 						/>
 					</div>
 				</section>
@@ -209,22 +217,29 @@ export function EditorWorkspaceView({
 					value={selectedTitle}
 					onChange={(e) => onTitleChange(e.target.value)}
 					onBlur={onEditorBlur}
-					className={cn(titleInputClass, "text-[40px] leading-tight mb-7")}
+					className={cn(
+						titleInputClass,
+						isMarkdownPreview
+							? "text-[40px] leading-tight mb-7"
+							: "text-[18px] leading-tight mb-4 font-medium text-zinc-600 dark:text-zinc-300",
+					)}
 					placeholder="无标题"
 					style={{ boxShadow: "none" }}
-					readOnly={editorMode === "preview"}
+					readOnly={editorMode === "preview" || !titleEditable}
 				/>
 
 				{editorMode === "preview" ? (
-					<article
+					<div
 						onContextMenu={onPreviewContextMenu}
-						className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:leading-[1.75] prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100"
+						className="max-w-none"
 					>
-						<PreviewMarkdownContent
+						<FileTypePreview
+							fileName={previewFileName}
 							content={previewContent}
-							className={textClass}
+							density={density}
+							emptyText="文件内容为空。"
 						/>
-					</article>
+					</div>
 				) : (
 					<textarea {...textareaProps} placeholder="开始写作..." />
 				)}

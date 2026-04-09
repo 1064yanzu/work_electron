@@ -652,7 +652,7 @@ export default function CopilotSidebar() {
 		}
 	};
 
-	const { handleNewSession, handleDeleteSession } = useCopilotActions({
+	const { handleNewSession } = useCopilotActions({
 		chatStore,
 	});
 

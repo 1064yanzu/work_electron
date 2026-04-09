@@ -35,6 +35,7 @@ interface EditorHeaderProps {
 	onCopy: () => void;
 	onExport: () => void;
 	onDelete: () => void;
+	canSave: boolean;
 	selectedOutput: boolean;
 	isSaving: boolean;
 	hasUnsavedChanges: boolean;
@@ -43,6 +44,7 @@ interface EditorHeaderProps {
 	onToggleFocusMode: () => void;
 	density: EditorDensity;
 	onToggleDensity: () => void;
+	showFormattingTools?: boolean;
 }
 
 interface IconBtnProps {
@@ -85,6 +87,7 @@ export function EditorHeader({
 	onCopy,
 	onExport,
 	onDelete,
+	canSave,
 	selectedOutput,
 	isSaving,
 	hasUnsavedChanges,
@@ -93,6 +96,7 @@ export function EditorHeader({
 	onToggleFocusMode,
 	density,
 	onToggleDensity,
+	showFormattingTools = true,
 }: EditorHeaderProps) {
 	const saveLabel = isSaving
 		? "保存中…"
@@ -157,7 +161,7 @@ export function EditorHeader({
 			{/* Spacer */}
 			<div className="flex-1 min-w-0" />
 
-			{editorMode !== "preview" && !focusMode ? (
+			{editorMode !== "preview" && !focusMode && showFormattingTools ? (
 				<div className="hidden lg:flex items-center shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/88 dark:bg-zinc-900/78 p-0.5">
 					<IconBtn
 						label="粗体"
@@ -207,7 +211,7 @@ export function EditorHeader({
 				<button
 					type="button"
 					onClick={onSave}
-					disabled={!selectedOutput || isSaving || !hasUnsavedChanges}
+					disabled={!canSave || isSaving || !hasUnsavedChanges}
 					className={cn(
 						"focus-ring min-h-11 px-3.5 rounded-xl border inline-flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
 						hasUnsavedChanges

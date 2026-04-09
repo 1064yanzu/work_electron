@@ -59,9 +59,18 @@ export interface DocCacheItem {
 	id: string;
 	title: string;
 	content: string;
+	kind: "output" | "project_file";
+	filePath?: string;
 	dirty: boolean; // 是否有未保存修改
 	lastSynced: number; // 最后同步时间戳
 	snapshot?: string; // 快照（用于撤销 AI 修改）
+}
+
+export interface ActiveFileSession {
+	path: string;
+	title: string;
+	content: string;
+	openedAt: number;
 }
 
 // 标签页类型
@@ -119,6 +128,8 @@ export interface EditorState {
 	activeDocId: string | null;
 	// 文档缓存
 	docCache: Record<string, DocCacheItem>;
+	// 当前激活的项目文件会话
+	activeFileSession: ActiveFileSession | null;
 	// AI 审查状态
 	aiReview: AIReviewState;
 }

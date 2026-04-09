@@ -109,12 +109,16 @@ class WorkspaceStore {
 
 	subscribe = (listener: () => void) => {
 		this.listeners.add(listener);
+		const notify = () => {
+			this.cachedAggregatedState = null;
+			listener();
+		};
 		// 同时订阅所有子 Store，以便在任何 Store 变化时通知聚合监听器
 		const unsubs = [
-			layoutStore.subscribe(listener),
-			editorStore.subscribe(listener),
-			researchStore.subscribe(listener),
-			tabStore.subscribe(listener),
+			layoutStore.subscribe(notify),
+			editorStore.subscribe(notify),
+			researchStore.subscribe(notify),
+			tabStore.subscribe(notify),
 		];
 		return () => {
 			this.listeners.delete(listener);
@@ -465,6 +469,10 @@ class WorkspaceStore {
 
 	openDoc(docId: string, title: string, content: string) {
 		editorStore.openDoc(docId, title, content);
+	}
+
+	openProjectFile(filePath: string, title: string, content: string) {
+		editorStore.openProjectFile(filePath, title, content);
 	}
 
 	closeDoc(docId: string) {

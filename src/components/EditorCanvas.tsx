@@ -12,6 +12,7 @@ import {
 	listOutputAssets,
 	updateOutputAsset,
 } from "../lib/api";
+import { safeInvoke } from "../lib/tauriBridge";
 import { buildEditorBlankContextMenu } from "../lib/contextMenu/actions";
 import { debugUiLog, debugUiWarn } from "../lib/debug/uiDebug";
 import { EVENTS, events } from "../lib/events";
@@ -31,6 +32,7 @@ import { EditorDialogs } from "./editor/EditorDialogs";
 import { EditorDocumentListView } from "./editor/EditorDocumentListView";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorStatusBar } from "./editor/EditorStatusBar";
+import { isMarkdownPreviewFile } from "./editor/FileTypePreview";
 import { useEditorUiPrefs } from "./editor/useEditorUiPrefs";
 import { EditorWorkspaceView } from "./editor/EditorWorkspaceView";
 import InlineReviewRenderer from "./InlineReviewRenderer";
@@ -44,6 +46,29 @@ interface EditorCanvasProps {
 	onBack?: () => void;
 	projectId?: string;
 	initialDocId?: string;
+}
+
+function isPhysicalDocId(docId: string | null | undefined): docId is string {
+	if (!docId) return false;
+	return docId.startsWith("/") || /^[a-zA-Z]:\\/.test(docId);
+}
+
+function getPreviewFileName(params: {
+	selectedOutput: OutputAsset | null;
+	activeFileSession: { path: string; title: string } | null;
+	activeDocId: string | null;
+	currentEditorTitle: string;
+}) {
+	if (params.selectedOutput) {
+		return `${params.selectedOutput.title || "未命名文档"}.md`;
+	}
+	if (params.activeFileSession?.title) {
+		return params.activeFileSession.title;
+	}
+	if (params.activeDocId) {
+		return params.activeDocId.split(/[/\\]/).pop() || params.activeDocId;
+	}
+	return params.currentEditorTitle || "document.txt";
 }
 
 export default function EditorCanvas({
@@ -90,13 +115,35 @@ export default function EditorCanvas({
 
 	const openedDocs = useWorkspaceStoreSelector((state) => state.openedDocs);
 	const activeDocId = useWorkspaceStoreSelector((state) => state.activeDocId);
+	const storeEditorContent = useWorkspaceStoreSelector(
+		(state) => state.editorContent,
+	);
 	const activeDocCache = useWorkspaceStoreSelector((state) =>
 		activeDocId ? (state.docCache[activeDocId] ?? null) : null,
 	);
 	const tabs = useWorkspaceStoreSelector((state) => state.tabs);
 	const activeTabId = useWorkspaceStoreSelector((state) => state.activeTabId);
 	const aiReview = useWorkspaceStoreSelector((state) => state.aiReview);
+	const activeFileSession = useWorkspaceStoreSelector(
+		(state) => state.activeFileSession,
+	);
 	const activeDocCacheContent = activeDocCache?.content;
+	const isPhysicalFileVisible = Boolean(
+		activeFileSession &&
+			activeDocId &&
+			activeFileSession.path === activeDocId &&
+			activeDocCache?.kind === "project_file",
+	);
+	const canSaveCurrentContent = Boolean(selectedOutput || isPhysicalFileVisible);
+	const currentEditorTitle =
+		selectedOutput?.title || activeFileSession?.title || activeDocCache?.title || "";
+	const previewFileName = getPreviewFileName({
+		selectedOutput,
+		activeFileSession,
+		activeDocId,
+		currentEditorTitle,
+	});
+	const isMarkdownEditingExperience = isMarkdownPreviewFile(previewFileName);
 	const closeTab = workspaceStore.closeTab.bind(workspaceStore);
 	const closeDoc = workspaceStore.closeDoc.bind(workspaceStore);
 	const openDoc = workspaceStore.openDoc.bind(workspaceStore);
@@ -195,11 +242,13 @@ export default function EditorCanvas({
 	}, []);
 
 	const hasUnsavedChanges = useMemo(() => {
-		if (!selectedOutput) return false;
-		// 优先使用 lastSavedContentRef，如果为空则回退到 selectedOutput.content
-		const savedContent = lastSavedContentRef.current || selectedOutput.content;
+		if (!selectedOutput && !isPhysicalFileVisible) return false;
+		const fallbackSavedContent = selectedOutput
+			? selectedOutput.content
+			: activeDocCache?.content || "";
+		const savedContent = lastSavedContentRef.current || fallbackSavedContent;
 		return editorContent !== savedContent;
-	}, [editorContent, selectedOutput, lastSavedAt]);
+	}, [activeDocCache?.content, editorContent, isPhysicalFileVisible, selectedOutput, lastSavedAt]);
 
 	const lastSavedLabel = useMemo(() => {
 		if (!lastSavedAt) return "";
@@ -224,6 +273,33 @@ export default function EditorCanvas({
 	useEffect(() => {
 		editorContentRef.current = editorContent;
 	}, [editorContent]);
+
+	useEffect(() => {
+		if (storeEditorContent === editorContentRef.current) return;
+		setEditorContent(storeEditorContent);
+	}, [storeEditorContent]);
+
+	useEffect(() => {
+		if (!activeDocId || activeDocCache?.kind !== "project_file") return;
+		setSelectedOutput(null);
+		if (editorContentRef.current === activeDocCache.content) return;
+		setEditorContent(activeDocCache.content);
+		console.log("[EditorCanvas] project file sync", {
+			docId: activeDocId,
+			title: activeDocCache.title,
+			cacheLength: activeDocCache.content.length,
+			storeLength: storeEditorContent.length,
+			localLength: editorContentRef.current.length,
+			previewFileName,
+		});
+	}, [
+		activeDocCache?.content,
+		activeDocCache?.kind,
+		activeDocCache?.title,
+		activeDocId,
+		previewFileName,
+		storeEditorContent.length,
+	]);
 
 	// 监听打开 diff 视图事件
 	useEffect(() => {
@@ -261,12 +337,19 @@ export default function EditorCanvas({
 					setLastSavedAt(Date.now());
 				}
 			}
+		} else if (isPhysicalDocId(activeDocId)) {
+			// Physical file selected
+			if (lastSavedDocIdRef.current !== activeDocId) {
+				lastSavedDocIdRef.current = activeDocId;
+				lastSavedContentRef.current = workspaceStore.getState().docCache[activeDocId]?.content || "";
+				setLastSavedAt(Date.now());
+			}
 		} else {
 			lastSavedDocIdRef.current = null;
 			lastSavedContentRef.current = "";
 			setLastSavedAt(null);
 		}
-	}, [selectedOutput?.id]); // 只监听 id 变化
+	}, [selectedOutput?.id, activeDocId]); // 监听 id 和 activeDocId 变化
 
 	useEffect(() => {
 		setSelectedForManage((prev) =>
@@ -342,6 +425,11 @@ export default function EditorCanvas({
 				setOutputs(filtered);
 
 				if (filtered.length === 0) {
+					if (activeFileSession?.path && activeFileSession.content !== undefined) {
+						setSelectedOutput(null);
+						replaceEditorBuffer(activeFileSession.content);
+						return;
+					}
 					setSelectedOutput(null);
 					replaceEditorBuffer("");
 					return;
@@ -390,6 +478,13 @@ export default function EditorCanvas({
 					);
 					return;
 				}
+                
+                // Fallback: check if we are dealing with a physical file
+				if (activeFileSession?.path && activeFileSession.content !== undefined) {
+					setSelectedOutput(null);
+					replaceEditorBuffer(activeFileSession.content);
+					return;
+				}
 
 				// 默认不自动打开任一文档：保持文档列表视图，让用户手动选择
 				debugUiLog("[EditorCanvas] no auto select fallback; show list view");
@@ -399,7 +494,7 @@ export default function EditorCanvas({
 				console.error("[EditorCanvas] 获取文档失败:", error);
 			}
 		},
-		[projectId, initialDocId, openDoc],
+		[projectId, initialDocId, openDoc, activeFileSession?.content, activeFileSession?.path],
 	); // 移除 selectedOutput?.id 依赖
 
 	// 只在组件挂载和 projectId 变化时加载文档列表
@@ -416,8 +511,30 @@ export default function EditorCanvas({
 		// 使用 ref 获取最新值，避免闭包问题
 		const currentOutput = selectedOutputRef.current;
 		const currentContent = editorContentRef.current;
+		// Danger! We are flushing the pending changes for the DOCUMENT WE WERE ON
+        // That is lastSavedDocIdRef, NOT the new activeDocId (which may have already flipped!)
+		const documentToSave = lastSavedDocIdRef.current;
 
 		if (!currentOutput) {
+            // Handling physical files save
+            if (isPhysicalDocId(documentToSave)) {
+                const savedContent = lastSavedContentRef.current;
+                if (currentContent === savedContent) return;
+
+                isSavingRef.current = true;
+                setIsSaving(true);
+                try {
+                    await safeInvoke("write_file_safe", { path: documentToSave, content: currentContent });
+                    lastSavedContentRef.current = currentContent;
+                    updateDocCache(documentToSave, currentContent, false);
+                    setLastSavedAt(Date.now());
+                } catch (error) {
+                    console.error("[EditorCanvas] Physical flushPendingSave error", error);
+                } finally {
+                    isSavingRef.current = false;
+                    setIsSaving(false);
+                }
+            }
 			return;
 		}
 		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 currentOutput.content
@@ -516,7 +633,9 @@ export default function EditorCanvas({
 		if (!activeDocId) return;
 
 		// 如果当前选中的文档已经是 activeDocId，不需要切换
-		if (selectedOutput?.id === activeDocId) return;
+		if (selectedOutput?.id === activeDocId) {
+            return;
+        }
 
 		// 从 outputs 列表中查找目标文档
 		const targetDoc = outputs.find((o) => o.id === activeDocId);
@@ -527,8 +646,22 @@ export default function EditorCanvas({
 				setSelectedOutput(targetDoc);
 				replaceEditorBuffer(targetDoc.content);
 			});
-		}
-	}, [activeDocId, outputs, selectedOutput?.id, flushPendingSaveImmediately]);
+		} else {
+            if (activeFileSession?.path === activeDocId) {
+                flushPendingSaveImmediately().then(() => {
+                    setSelectedOutput(null);
+                    replaceEditorBuffer(activeFileSession.content);
+                });
+            }
+        }
+	}, [
+		activeDocId,
+		activeFileSession?.openedAt,
+		activeFileSession?.path,
+		outputs,
+		selectedOutput?.id,
+		flushPendingSaveImmediately,
+	]);
 
 	const toggleManageSelection = useCallback((id: string) => {
 		setSelectedForManage((prev) => {
@@ -667,11 +800,16 @@ export default function EditorCanvas({
 			clearTimeout(saveTimeoutRef.current);
 		}
 
-		if (!selectedOutput) {
+		if (!selectedOutput && !isPhysicalDocId(activeDocId)) {
 			return;
 		}
-		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 selectedOutput.content
-		const savedContent = lastSavedContentRef.current || selectedOutput.content;
+		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 selectedOutput.content 或物理文件缓存
+		const physicalSavedContent = isPhysicalDocId(activeDocId)
+			? (workspaceStore.getState().docCache[activeDocId]?.content ?? "")
+			: "";
+		const savedContent =
+			lastSavedContentRef.current ||
+			(selectedOutput ? selectedOutput.content : physicalSavedContent);
 		if (editorContent === savedContent) {
 			return;
 		}
@@ -707,7 +845,8 @@ export default function EditorCanvas({
 	}, []);
 
 	useEffect(() => {
-		if (!activeDocId || !selectedOutput || selectedOutput.id !== activeDocId) {
+        const isPhysical = isPhysicalDocId(activeDocId);
+		if (!activeDocId || (!isPhysical && (!selectedOutput || selectedOutput.id !== activeDocId))) {
 			return;
 		}
 		if (editorContent === activeDocCacheContent) {
@@ -840,7 +979,7 @@ export default function EditorCanvas({
 			return;
 		}
 
-		if (!selectedOutput) {
+		if (!selectedOutput && !isPhysicalFileVisible) {
 			try {
 				const newAsset = await createOutputAsset({
 					title: "AI 分析报告 " + new Date().toLocaleTimeString(),
@@ -864,7 +1003,7 @@ export default function EditorCanvas({
 	};
 
 	const handleManualSave = useCallback(async () => {
-		if (!selectedOutput) return;
+		if (!canSaveCurrentContent) return;
 		try {
 			await flushPendingSaveImmediately();
 			toast.success("保存成功");
@@ -872,7 +1011,7 @@ export default function EditorCanvas({
 			console.error("[EditorCanvas] 手动保存失败", error);
 			toast.error("保存失败，请稍后重试");
 		}
-	}, [flushPendingSaveImmediately, selectedOutput]);
+	}, [canSaveCurrentContent, flushPendingSaveImmediately]);
 
 	const handleTitleChange = useCallback(
 		(newTitle: string) => {
@@ -1302,8 +1441,10 @@ export default function EditorCanvas({
 
 				closeDoc(docId);
 
-				// 如果关闭的是当前选中的文档，切换到其他文档或空状态
-				if (selectedOutput?.id === docId) {
+				// 如果关闭的是当前选中的文档/文件，切换到其他文档或空状态
+				const isClosingSelectedOutput = selectedOutput?.id === docId;
+				const isClosingSelectedProjectFile = activeFileSession?.path === docId;
+				if (isClosingSelectedOutput || isClosingSelectedProjectFile) {
 					if (openedDocs.length > 1) {
 						const remainingDocs = openedDocs.filter((id) => id !== docId);
 						const nextDocId = remainingDocs[remainingDocs.length - 1];
@@ -1311,6 +1452,10 @@ export default function EditorCanvas({
 						if (nextDoc) {
 							setSelectedOutput(nextDoc);
 							replaceEditorBuffer(nextDoc.content);
+						} else {
+							const nextCachedDoc = workspaceStore.getState().docCache[nextDocId];
+							setSelectedOutput(null);
+							replaceEditorBuffer(nextCachedDoc?.content || "");
 						}
 					} else {
 						setSelectedOutput(null);
@@ -1319,7 +1464,7 @@ export default function EditorCanvas({
 				}
 			})();
 		},
-		[closeDoc, selectedOutput, openedDocs, outputs],
+		[activeFileSession?.path, closeDoc, selectedOutput, openedDocs, outputs],
 	);
 
 	// AI 审查处理
@@ -1479,7 +1624,15 @@ export default function EditorCanvas({
 			<EditorHeader
 				editorMode={editorMode}
 				onSetEditorMode={setEditorMode}
-				onBackToList={() => void handleSelectOutput(null)}
+				onBackToList={() => {
+					if (isPhysicalFileVisible) {
+						if (activeDocId) {
+							handleCloseDoc(activeDocId, hasUnsavedChanges);
+						}
+						return;
+					}
+					void handleSelectOutput(null);
+				}}
 				onInsertMarkdown={insertMarkdown}
 				onAiPolish={() =>
 					events.emit(EVENTS.AI_REQUEST, {
@@ -1494,6 +1647,7 @@ export default function EditorCanvas({
 					if (!selectedOutput) return;
 					setDeleteConfirm(selectedOutput);
 				}}
+				canSave={canSaveCurrentContent}
 				selectedOutput={Boolean(selectedOutput)}
 				isSaving={isSaving}
 				hasUnsavedChanges={hasUnsavedChanges}
@@ -1517,7 +1671,9 @@ export default function EditorCanvas({
 				) : (
 					<EditorWorkspaceView
 						editorMode={editorMode}
-						selectedTitle={selectedOutput?.title || ""}
+						selectedTitle={currentEditorTitle}
+						previewFileName={previewFileName}
+						titleEditable={Boolean(selectedOutput)}
 						editorContent={editorContent}
 						onTitleChange={handleTitleChange}
 						onContentChange={handleEditorContentChange}
@@ -1556,7 +1712,7 @@ export default function EditorCanvas({
 					note={activeSourceData.note}
 					onClose={() => closeTab(activeSourceTab.id)}
 				/>
-			) : !selectedOutput ? (
+			) : !selectedOutput && !isPhysicalFileVisible ? (
 				renderDocumentList()
 			) : (
 				renderEditor()
