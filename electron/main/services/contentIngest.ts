@@ -151,24 +151,34 @@ function extractMetaFromHtml(html: string, baseUrl: string): MetaExtract {
 
 function guessKindFromExtension(ext: string): SourceKind {
 	const e = ext.replace(/^\./, "").toLowerCase();
-	if (["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(e)) {
-		return "document";
-	}
-	if (
-		["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "tif", "tiff"].includes(
-			e,
-		)
-	) {
-		return "image";
-	}
-	if (["mp3", "wav", "m4a", "aac", "flac"].includes(e)) return "audio";
+	// PDF 独立类型
+	if (e === "pdf") return "pdf";
+	// 演示文稿
+	if (["ppt", "pptx", "key", "odp"].includes(e)) return "presentation";
+	// 表格
+	if (["xls", "xlsx", "csv", "numbers", "ods"].includes(e)) return "spreadsheet";
+	// 文档
+	if (["doc", "docx", "odt", "rtf", "pages"].includes(e)) return "document";
+	// 图片
+	if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "tif", "tiff", "ico", "heic", "heif", "avif"].includes(e)) return "image";
+	// 音频
+	if (["mp3", "wav", "m4a", "aac", "flac", "ogg", "wma", "opus"].includes(e)) return "audio";
+	// 视频
+	if (["mp4", "mov", "avi", "mkv", "webm", "wmv", "flv", "m4v"].includes(e)) return "video";
+	// 代码/脚本
+	if (["js", "ts", "jsx", "tsx", "py", "go", "rs", "java", "c", "cpp", "h", "hpp", "swift", "kt", "rb", "php", "sh", "bash", "zsh", "ps1", "json", "yaml", "yml", "toml", "xml", "css", "scss", "less", "sass", "sql", "graphql", "proto", "lua", "r", "dart", "vue", "svelte"].includes(e)) return "code";
+	// 压缩包
+	if (["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "tgz", "dmg", "iso"].includes(e)) return "archive";
+	// Markdown 归为 text
+	if (["md", "markdown", "txt", "log", "ini", "cfg", "conf", "env"].includes(e)) return "text";
 	return "text";
 }
 
 function guessCategoryForKind(kind: SourceKind): SourceCategory {
-	if (kind === "document") return "document";
+	if (kind === "document" || kind === "pdf" || kind === "spreadsheet" || kind === "presentation") return "document";
 	if (kind === "image") return "image";
 	if (kind === "audio") return "audio";
+	if (kind === "video") return "video";
 	return "article";
 }
 
@@ -399,6 +409,24 @@ async function ingestLocalFile(
 			const md = `![${baseName}](${fileUrl})`;
 			const html = `<figure><img src="${fileUrl}" alt="${baseName}" /><figcaption>${baseName}</figcaption></figure>`;
 			return { contentText: md, contentHtml: html };
+		}
+
+		// 视频文件：嵌入视频播放器标记
+		if (kind === "video") {
+			const html = `<div data-type="video" data-src="${fileUrl}"><video src="${fileUrl}" controls style="max-width:100%"></video></div>`;
+			return { contentText: baseName, contentHtml: html };
+		}
+
+		// 音频文件：嵌入音频播放器标记
+		if (kind === "audio") {
+			const html = `<div data-type="audio" data-src="${fileUrl}"><audio src="${fileUrl}" controls style="width:100%"></audio></div>`;
+			return { contentText: baseName, contentHtml: html };
+		}
+
+		// 演示文稿/表格/压缩包：记录文件引用
+		if (kind === "presentation" || kind === "spreadsheet" || kind === "archive") {
+			const html = `<div data-type="${kind}" data-src="${fileUrl}">${baseName}</div>`;
+			return { contentText: baseName, contentHtml: html };
 		}
 
 		const raw = await fs.readFile(absPath, "utf-8");

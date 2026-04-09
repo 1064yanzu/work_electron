@@ -559,6 +559,13 @@ export interface PermissionRequest {
 	reason?: string; // 请求原因
 	createdAt: number; // 创建时间
 	expiresAt: number; // 过期时间（超时自动拒绝）
+	/** Scope information — whether the operation targets files outside the sandbox */
+	scope?: {
+		insideSandbox: boolean;
+		targetPath?: string;
+		destructiveLevel?: "safe" | "moderate" | "dangerous";
+		reason?: string;
+	};
 }
 
 // 权限响应

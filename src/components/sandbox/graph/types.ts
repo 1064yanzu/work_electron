@@ -43,6 +43,8 @@ export type ToolNodeData = {
 	isSubagent?: boolean;
 	subagentType?: string;
 	lastActivity?: string;
+	inputSummary?: string;
+	outputSummary?: string;
 };
 
 export type ArtifactNodeData = {
@@ -61,15 +63,34 @@ export type LaneNodeData = {
 	label: string;
 };
 
+export type SwarmOverviewNodeData = {
+	kind: "swarm_overview";
+	totalAgents: number;
+	completedAgents: number;
+	runningAgents: number;
+	failedAgents: number;
+};
+
+export type PhaseDividerNodeData = {
+	kind: "phase_divider";
+	label: string;
+	phaseIndex: number;
+	gapMs?: number;
+};
+
 export type TaskGraphNode = Node<TaskNodeData, "task">;
 export type ToolGraphNode = Node<ToolNodeData, "tool">;
 export type ArtifactGraphNode = Node<ArtifactNodeData, "artifact">;
 export type LaneGraphNode = Node<LaneNodeData, "lane">;
+export type SwarmOverviewGraphNode = Node<SwarmOverviewNodeData, "swarm_overview">;
+export type PhaseDividerGraphNode = Node<PhaseDividerNodeData, "phase_divider">;
 export type ExecutionGraphNode =
 	| TaskGraphNode
 	| ToolGraphNode
 	| ArtifactGraphNode
-	| LaneGraphNode;
+	| LaneGraphNode
+	| SwarmOverviewGraphNode
+	| PhaseDividerGraphNode;
 
 export type ExecutionGraphBuild = {
 	nodes: ExecutionGraphNode[];

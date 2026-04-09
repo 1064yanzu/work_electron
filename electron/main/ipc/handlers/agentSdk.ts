@@ -7,10 +7,7 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
-import {
-	detectCliBinary,
-	resolveSdkBundledCli,
-} from "../../services/cliBinaryDetector";
+
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
@@ -44,9 +41,15 @@ import {
 import {
 	guessDefaultReadableFilePath,
 	resolveToolFilePath,
+	resolveToolFilePathEx,
+	isSensitivePath,
+	isSystemWriteBlocked,
 	rewriteBashCommandForMissingFile,
 	rewritePathsDeep,
 } from "./agentSdk/fileResolver";
+import {
+	analyzeBashCommand,
+} from "./agentSdk/bashAnalyzer";
 import {
 	type AgentModelSettingsLike,
 	matchScenarioAgentForPrompt,
@@ -235,29 +238,6 @@ export function createAgentSdkHandlers(options: {
 					} catch {}
 				};
 
-				// 优先使用用户本地安装的 Claude CLI，fallback 到 SDK 内嵌版本
-				let pathToClaudeCodeExecutable: string | undefined;
-				{
-					const userCliPathRow = await options.db.client.execute({
-						sql: "SELECT value FROM app_config WHERE key = ?",
-						args: ["aiCoding.claude.cliPath"],
-					});
-					const userCliPath =
-						userCliPathRow.rows.length > 0
-							? (userCliPathRow.rows[0].value as string)?.trim()
-							: undefined;
-
-					const cliInfo = await detectCliBinary("claude-code", {
-						userConfiguredPath: userCliPath || undefined,
-					});
-
-					if (cliInfo.path) {
-						pathToClaudeCodeExecutable = cliInfo.path;
-					} else {
-						pathToClaudeCodeExecutable = resolveSdkBundledCli() ?? undefined;
-					}
-				}
-
 				const cwd =
 					input.cwd && input.cwd.trim() ? input.cwd.trim() : process.cwd();
 				const userShell =
@@ -265,51 +245,29 @@ export function createAgentSdkHandlers(options: {
 				const userPath = await resolveUserPathFromShell(userShell);
 				const resolvedPath = userPath || process.env.PATH;
 
-				// 读取 Claude Code 代理模式设置：proxy | transparent
-				const proxyModeRow = await options.db.client.execute({
-					sql: "SELECT value FROM app_config WHERE key = ?",
-					args: ["aiCoding.claude.proxyMode"],
-				});
-				const proxyMode =
-					(proxyModeRow.rows.length > 0
-						? (proxyModeRow.rows[0].value as string)?.trim()
-						: null) || "transparent";
-				const isTransparentMode = proxyMode === "transparent";
+				// 代理模式：通过本地代理路由所有 API 流量（支持多 Provider 转发和模型路由）
+				const claudeConfigDir: string = cwd;
 
-				let claudeConfigDir: string | undefined;
-				let anthropicBaseUrl: string | undefined;
-				let anthropicApiKey: string | undefined;
+				// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
+				const anthropicBaseUrl = (await options.getAnthropicBaseUrl()).replace(
+					/\/v1\/?$/i,
+					"",
+				);
 
-				if (isTransparentMode) {
-					// 透明模式：不覆盖用户的 Claude 配置，让 CLI 使用用户自己的 API key 和 base URL
-					console.log(
-						"[agent_sdk] Transparent mode: using user's own Claude configuration",
-					);
-				} else {
-					// 代理模式：通过本地代理路由所有 API 流量（支持多 Provider 转发和模型路由）
-					claudeConfigDir = cwd;
+				const anthropicApiKeyRaw =
+					typeof process.env.ANTHROPIC_API_KEY === "string"
+						? process.env.ANTHROPIC_API_KEY.trim()
+						: "";
+				const anthropicApiKey =
+					anthropicApiKeyRaw ||
+					"sk-ant-api03-dummy000000000000000000000000000000000000";
 
-					// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
-					anthropicBaseUrl = (await options.getAnthropicBaseUrl()).replace(
-						/\/v1\/?$/i,
-						"",
-					);
-
-					const anthropicApiKeyRaw =
-						typeof process.env.ANTHROPIC_API_KEY === "string"
-							? process.env.ANTHROPIC_API_KEY.trim()
-							: "";
-					anthropicApiKey =
-						anthropicApiKeyRaw ||
-						"sk-ant-api03-dummy000000000000000000000000000000000000";
-
-					try {
-						await writeClaudeConfigSettings({
-							claudeConfigDir,
-							anthropicApiKey,
-						});
-					} catch {}
-				}
+				try {
+					await writeClaudeConfigSettings({
+						claudeConfigDir,
+						anthropicApiKey,
+					});
+				} catch {}
 
 				logger.info({
 					msg: "agent_sdk start",
@@ -317,10 +275,8 @@ export function createAgentSdkHandlers(options: {
 					runId,
 					cwd,
 					model: input.model,
-					proxyMode,
-					anthropicBaseUrl: anthropicBaseUrl ?? "(transparent - user config)",
-					claudeConfigDir: claudeConfigDir ?? "(transparent - user config)",
-					pathToClaudeCodeExecutable,
+					anthropicBaseUrl,
+					claudeConfigDir,
 					allowed_tools: input.allowed_tools,
 					has_system_prompt: !!input.system_prompt,
 					interactive_approval:
@@ -700,11 +656,30 @@ export function createAgentSdkHandlers(options: {
 						? contextPolicy
 						: "balanced";
 
+				// Fix: SDK uses import.meta.url to resolve cli.js at runtime. When the SDK
+				// gets bundled into dist-electron/sdk-*.js, import.meta.url points to
+				// dist-electron/ instead of node_modules/, causing "Cannot find module
+				// dist-electron/cli.js". Passing pathToClaudeCodeExecutable explicitly
+				// bypasses the import.meta.url lookup entirely.
+				const sdkCliPath = (() => {
+					const appRoot = process.env.APP_ROOT ?? "";
+					if (!appRoot) return undefined;
+					const candidate = path.join(
+						appRoot,
+						"node_modules",
+						"@anthropic-ai",
+						"claude-agent-sdk",
+						"cli.js",
+					);
+					return fs.existsSync(candidate) ? candidate : undefined;
+				})();
+
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
 					options: {
 						abortController,
 						cwd,
+						pathToClaudeCodeExecutable: sdkCliPath,
 						model: String(input.model ?? ""),
 						resume: resumeSessionId,
 						resumeSessionAt,
@@ -1147,7 +1122,6 @@ export function createAgentSdkHandlers(options: {
 								: undefined,
 						plugins: plugins.length > 0 ? plugins : undefined,
 						sandbox: sandboxSettings as any,
-						pathToClaudeCodeExecutable,
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
 						// 默认 user+project，可由 UI/调用方覆盖
 						settingSources: settingSources as any,
@@ -1156,6 +1130,7 @@ export function createAgentSdkHandlers(options: {
 							: { type: "preset", preset: "claude_code" },
 						extraArgs: multiAgentRuntime.experimentalEnabled
 							? {
+									"agent-id": runId,
 									"team-name": multiAgentRuntime.teamId,
 									"agent-name": "leader",
 									"agent-type": "leader",
@@ -1172,30 +1147,21 @@ export function createAgentSdkHandlers(options: {
 
 							if (resolvedPath) env.PATH = resolvedPath;
 
-							if (isTransparentMode) {
-								// 透明模式：保留用户环境中的所有 Claude/Anthropic 配置
-								// 不覆盖 ANTHROPIC_BASE_URL、ANTHROPIC_API_KEY、CLAUDE_CONFIG_DIR
-								console.log(
-									"[agent_sdk] Transparent mode env: keeping user's original config",
-								);
-							} else {
-								// 代理模式：覆盖环境变量以路由流量到本地代理
-								// Avoid inheriting user account/session routing that could bypass our proxy.
-								delete env.ANTHROPIC_AUTH_TOKEN;
-								delete env.CLAUDE_CODE_OAUTH_TOKEN;
-								delete env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR;
-								delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN;
-								delete env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
-								delete env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
+							// 代理模式：覆盖环境变量以路由流量到本地代理
+							// Avoid inheriting user account/session routing that could bypass our proxy.
+							delete env.ANTHROPIC_AUTH_TOKEN;
+							delete env.CLAUDE_CODE_OAUTH_TOKEN;
+							delete env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR;
+							delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN;
+							delete env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
+							delete env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
 
-								if (claudeConfigDir) env.CLAUDE_CONFIG_DIR = claudeConfigDir;
-								// CRITICAL: do NOT append "/v1" here. The CLI constructs "/v1/messages" internally.
-								if (anthropicBaseUrl) env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
-								if (anthropicApiKey) env.ANTHROPIC_API_KEY = anthropicApiKey;
-								// Some CLI code paths look at this name instead.
-								if (anthropicBaseUrl)
-									env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
-							}
+							env.CLAUDE_CONFIG_DIR = claudeConfigDir;
+							// CRITICAL: do NOT append "/v1" here. The CLI constructs "/v1/messages" internally.
+							env.ANTHROPIC_BASE_URL = anthropicBaseUrl;
+							env.ANTHROPIC_API_KEY = anthropicApiKey;
+							// Some CLI code paths look at this name instead.
+							env.CLAUDE_CODE_API_BASE_URL = anthropicBaseUrl;
 
 							// Reduce background noise during debugging.
 							env.DISABLE_TELEMETRY = "1";
@@ -1214,6 +1180,7 @@ export function createAgentSdkHandlers(options: {
 						systemPrompt: buildCustomSystemPrompt({
 							cwd,
 							model: String(input.model ?? ""),
+							availableTools: allowedToolsForRun,
 							appendContent: [
 								input.system_prompt,
 								subagentPolicyAppend,
@@ -1229,18 +1196,8 @@ export function createAgentSdkHandlers(options: {
 							toolInput: any,
 							extra: any,
 						) => {
-							// 【调试】记录每个工具调用 - 非常醒目的日志
 							console.log(
-								`\n★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★`,
-							);
-							console.log(
-								`★ [canUseTool CALLED] Tool='${toolName}', AgentID='${(extra as any)?.agentID || "main"}'`,
-							);
-							console.log(
-								`★ Input: ${JSON.stringify(toolInput || {}).slice(0, 200)}`,
-							);
-							console.log(
-								`★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n`,
+								`[canUseTool] Tool='${toolName}', AgentID='${(extra as any)?.agentID || "main"}', Input=${JSON.stringify(toolInput || {}).slice(0, 200)}`,
 							);
 							if (abortController.signal.aborted || extra?.signal?.aborted) {
 								return {
@@ -1263,10 +1220,19 @@ export function createAgentSdkHandlers(options: {
 									? { ...(toolInput as Record<string, unknown>) }
 									: {};
 
-							// Repair common file-path mistakes for file tools (especially Read).
-							// The SDK tools expect a real file path, but the LLM sometimes passes a title.
-							// We try to resolve it within the task cwd to avoid repeated <tool_use_error>.
+							// 跟踪工具操作的范围信息（用于前端 UI 展示）
+							let toolScope: {
+								insideSandbox: boolean;
+								targetPath?: string;
+								destructiveLevel?: "safe" | "moderate" | "dangerous";
+								reason?: string;
+							} | undefined;
+
 							const toolLower = String(toolName || "").toLowerCase();
+
+							// ============================================================
+							// 文件工具路径解析 — 支持全局文件访问
+							// ============================================================
 							if (
 								(toolLower === "read" ||
 									toolLower === "glob" ||
@@ -1297,40 +1263,80 @@ export function createAgentSdkHandlers(options: {
 								if (key) {
 									const rawPath = String(inputAny[key] || "").trim();
 									if (rawPath) {
-										console.log(
-											`[agent_sdk] Tool ${toolName}: attempting to resolve path '${rawPath}' in cwd='${cwd}'`,
-										);
-										const resolved = await resolveToolFilePath({
-											cwd,
-											rawPath,
-										});
-										if (resolved && resolved !== rawPath) {
-											stderr(
-												`[agent_sdk] Auto-resolved ${toolName} input '${rawPath}' -> '${resolved}'`,
-											);
-											// Keep existing key shape, but also provide file_path for robustness.
-											rewrittenInput = {
-												...inputAny,
-												[key]: resolved,
-												file_path: resolved,
+										// 敏感路径检查 — 硬拒绝
+										if (isSensitivePath(rawPath)) {
+											return {
+												behavior: "deny",
+												message: `访问被拒绝：该路径包含敏感信息 (${rawPath})`,
 											};
 										}
+
+										// 使用支持全局访问的路径解析
+										const resolved = await resolveToolFilePathEx({
+											cwd,
+											rawPath,
+											allowGlobal: true,
+										});
+
+										if (resolved && resolved.path !== rawPath) {
+											stderr(
+												`[agent_sdk] Resolved ${toolName} path '${rawPath}' -> '${resolved.path}' (sandbox=${resolved.insideSandbox})`,
+											);
+											rewrittenInput = {
+												...inputAny,
+												[key]: resolved.path,
+												file_path: resolved.path,
+											};
+										}
+
 										if (!resolved) {
 											stderr(
-												`[agent_sdk] Failed to resolve ${toolName} path '${rawPath}' within cwd='${cwd}'`,
+												`[agent_sdk] Failed to resolve ${toolName} path '${rawPath}'`,
 											);
 											return {
 												behavior: "deny",
 												message:
-													`Path not found in agent workspace. Only use files under cwd=${cwd}. ` +
-													`Try Glob to list files, then Read using that path.`,
+													`文件路径未找到: ${rawPath}。请使用 Glob 工具查找文件，或使用完整的绝对路径。`,
 											};
+										}
+
+										// 写入操作的额外安全检查
+										const isWriteOp = toolLower === "write" || toolLower === "edit";
+										if (isWriteOp && isSystemWriteBlocked(resolved.path)) {
+											return {
+												behavior: "deny",
+												message: `系统目录写入被禁止: ${resolved.path}`,
+											};
+										}
+
+										// 设置 scope 信息
+										toolScope = {
+											insideSandbox: resolved.insideSandbox,
+											targetPath: resolved.path,
+											destructiveLevel: isWriteOp
+												? resolved.insideSandbox ? "safe" : "moderate"
+												: "safe",
+											reason: isWriteOp && !resolved.insideSandbox
+												? `写入沙盒外文件: ${resolved.path}`
+												: undefined,
+										};
+
+										// 读取操作 — 全局自动通过（无需审批）
+										if (!isWriteOp) {
+											toolScope = undefined;
+										}
+
+										// 沙盒内写入 — 自动通过
+										if (isWriteOp && resolved.insideSandbox) {
+											toolScope = undefined;
 										}
 									}
 								}
 							}
 
-							// Repair common Bash reads like: cat "title..."
+							// ============================================================
+							// Bash 命令分析 — 智能权限判断
+							// ============================================================
 							if (
 								toolLower === "bash" &&
 								toolInput &&
@@ -1338,24 +1344,45 @@ export function createAgentSdkHandlers(options: {
 								typeof (rewrittenInput as any).command === "string"
 							) {
 								const cmd = String((rewrittenInput as any).command || "");
+
+								// 修复缺失文件的 Bash 命令
 								const rewritten = await rewriteBashCommandForMissingFile({
 									cwd,
 									command: cmd,
 								});
 								if (rewritten && rewritten !== cmd) {
 									stderr(
-										`[agent_sdk] Auto-rewrote Bash command for missing file: '${cmd}' -> '${rewritten}'`,
+										`[agent_sdk] Auto-rewrote Bash command: '${cmd}' -> '${rewritten}'`,
 									);
 									rewrittenInput = {
 										...(rewrittenInput as any),
 										command: rewritten,
 									};
 								}
+
+								// 分析 Bash 命令安全性
+								const finalCmd = String((rewrittenInput as any).command || cmd);
+								const analysis = analyzeBashCommand(finalCmd, cwd);
+								stderr(
+									`[agent_sdk] Bash analysis: readOnly=${analysis.isReadOnly}, destructive=${analysis.destructiveLevel}, outsideSandbox=${analysis.targetsOutsideSandbox}, reason='${analysis.reason}'`,
+								);
+
+								toolScope = {
+									insideSandbox: !analysis.targetsOutsideSandbox,
+									targetPath: analysis.targetPaths[0],
+									destructiveLevel: analysis.destructiveLevel,
+									reason: analysis.reason,
+								};
+
+								// 安全命令 — 自动通过
+								if (analysis.isReadOnly && analysis.destructiveLevel === "safe") {
+									toolScope = undefined;
+								}
 							}
 
-							// Skills often take file paths as arguments and validate them internally.
-							// When the model passes a title instead of a real path, Skill can fail with
-							// "<tool_use_error>File does not exist.</tool_use_error>" and get stuck retrying.
+							// ============================================================
+							// Skill 工具路径重写
+							// ============================================================
 							if (
 								toolLower === "skill" &&
 								rewrittenInput &&
@@ -1366,14 +1393,12 @@ export function createAgentSdkHandlers(options: {
 									value: rewrittenInput,
 								});
 								if (rewritten !== rewrittenInput) {
-									stderr(
-										"[agent_sdk] Auto-rewrote Skill input paths within cwd",
-									);
+									stderr("[agent_sdk] Auto-rewrote Skill input paths within cwd");
 									rewrittenInput = rewritten as Record<string, unknown>;
 								}
 							}
 
-							// AskUserQuestion 不支持在 subagent 内触发，直接拒绝并让主代理继续。
+							// AskUserQuestion 不支持在 subagent 内触发
 							if (
 								toolName === "AskUserQuestion" &&
 								typeof extra?.agentID === "string" &&
@@ -1386,6 +1411,9 @@ export function createAgentSdkHandlers(options: {
 								};
 							}
 
+							// ============================================================
+							// 非交互模式 — 全部自动通过（AskUserQuestion 除外）
+							// ============================================================
 							if (!interactiveApproval) {
 								if (toolName === "AskUserQuestion") {
 									return {
@@ -1396,6 +1424,17 @@ export function createAgentSdkHandlers(options: {
 								return { behavior: "allow", updatedInput: rewrittenInput };
 							}
 
+							// ============================================================
+							// 智能自动通过判断
+							// ============================================================
+							// toolScope 为空表示操作是安全的（读取/沙盒内写入），直接通过
+							if (!toolScope) {
+								return { behavior: "allow", updatedInput: rewrittenInput };
+							}
+
+							// ============================================================
+							// 需要用户审批 — 发送交互请求
+							// ============================================================
 							const requestId = randomUUID();
 							const timeoutMs = 55_000;
 							const toolUseId =
@@ -1425,6 +1464,8 @@ export function createAgentSdkHandlers(options: {
 									? extra.suggestions
 									: undefined,
 								expiresAt: Date.now() + timeoutMs,
+								// 附带范围信息给前端
+								scope: toolScope,
 							};
 							emit(options.getMainWindow, {
 								runId,

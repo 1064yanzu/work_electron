@@ -49,9 +49,6 @@ const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
 );
-const CodingWorkspace = lazy(
-	() => import("./components/coding/CodingWorkspace"),
-);
 const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
@@ -96,13 +93,9 @@ export default function App() {
 	const {
 		navigateToDashboard,
 		navigateToProject,
-		navigateToCoding,
 		isInDashboard,
-		isInCoding,
 		currentProjectId,
 		currentDocId,
-		currentCodingProjectPath,
-		currentCodingThreadId,
 	} = useNavigation("dashboard");
 
 	// 同步当前项目到工作区
@@ -204,18 +197,6 @@ export default function App() {
 						onOpenProject={(projectId) => {
 							navigateToProject(projectId);
 						}}
-						onOpenCoding={(projectPath) => {
-							navigateToCoding(projectPath);
-						}}
-					/>
-				</Suspense>
-			) : isInCoding ? (
-				<Suspense fallback={<PanelLoadingFallback />}>
-					<CodingWorkspace
-						projectPath={currentCodingProjectPath}
-						threadId={currentCodingThreadId}
-						onBack={navigateToDashboard}
-						onOpenSettings={handleOpenSettings}
 					/>
 				</Suspense>
 			) : (

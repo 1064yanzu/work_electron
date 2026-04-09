@@ -1,7 +1,6 @@
 import {
 	ChevronRight,
 	Clock,
-	Code2,
 	Folder,
 	FolderOpen,
 	LayoutGrid,
@@ -32,13 +31,11 @@ import { toast } from "./ui/Toast";
 interface DashboardProps {
 	onOpenSettings: () => void;
 	onOpenProject?: (projectId: string) => void;
-	onOpenCoding?: (projectPath?: string) => void;
 }
 
 export default function Dashboard({
 	onOpenSettings,
 	onOpenProject,
-	onOpenCoding,
 }: DashboardProps) {
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [activeTab, setActiveTab] = useState("overview");
@@ -280,15 +277,6 @@ export default function Dashboard({
 						onClick={() => setActiveTab("archived")}
 					/>
 
-					{/* 分隔线 */}
-					<div className="!my-3 border-t border-black/[0.04] dark:border-white/[0.04]" />
-
-					<NavItem
-						icon={Code2}
-						label="AI 编程"
-						active={false}
-						onClick={() => onOpenCoding?.()}
-					/>
 				</nav>
 
 				{/* Sidebar Footer */}

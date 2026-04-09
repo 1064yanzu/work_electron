@@ -58,11 +58,8 @@ import { getRemoteControlOrchestrator } from "../remote-control/core/service";
 import { createCloudNodeHandlers } from "./handlers/cloudNode";
 import { getCloudNodeClient } from "../cloud-node/service";
 import { createTerminalHandlers } from "./handlers/terminal";
-import { createCodingHandlers } from "./handlers/coding";
-import { createCodexSessionHandlers } from "./handlers/codexSession";
-import { createClaudeCodeSessionHandlers } from "./handlers/claudeCodeSession";
-import { createCliHistoryHandlers } from "./handlers/cliHistory";
-import { createCliBinaryHandlers } from "./handlers/cliBinary";
+import { createWorktreeHandlers } from "./handlers/worktree";
+
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -170,24 +167,9 @@ export function registerIpcHandlers({
 		getMainWindow: () => mainWindowRef,
 	});
 
-	// Coding Workspace handlers (AI 编程工作区)
-	const codingHandlers = createCodingHandlers();
+	// Worktree handlers (Git Worktree 沙盒隔离)
+	const worktreeHandlers = createWorktreeHandlers({ logger });
 
-	// Codex Session handlers (Codex 后端)
-	const codexSessionHandlers = createCodexSessionHandlers({
-		getMainWindow: () => mainWindowRef,
-	});
-
-	// Claude Code CLI Session handlers (Claude Code 后端)
-	const claudeCodeSessionHandlers = createClaudeCodeSessionHandlers({
-		getMainWindow: () => mainWindowRef,
-	});
-
-	// CLI History handlers (CLI 历史同步)
-	const cliHistoryHandlers = createCliHistoryHandlers();
-
-	// CLI Binary Detection handlers (CLI 二进制检测)
-	const cliBinaryHandlers = createCliBinaryHandlers();
 
 	// ==================
 	// 系统命令
@@ -735,148 +717,13 @@ export function registerIpcHandlers({
 	ipcMain.handle("terminal_list", terminalHandlers.terminal_list);
 
 	// ==================
-	// Coding Workspace (AI 编程工作区)
+	// Git Worktree (沙盒隔离)
 	// ==================
-	ipcMain.handle(
-		"coding_select_directory",
-		codingHandlers.coding_select_directory,
-	);
-	ipcMain.handle("coding_read_file_tree", codingHandlers.coding_read_file_tree);
-	ipcMain.handle("coding_select_files", codingHandlers.coding_select_files);
-	ipcMain.handle("coding_git_status", codingHandlers.coding_git_status);
-	ipcMain.handle("coding_git_history", codingHandlers.coding_git_history);
-	ipcMain.handle("coding_git_branches", codingHandlers.coding_git_branches);
-	ipcMain.handle("coding_read_file", codingHandlers.coding_read_file);
-	ipcMain.handle(
-		"coding_workspace_profile_get",
-		codingHandlers.coding_workspace_profile_get,
-	);
-	ipcMain.handle(
-		"coding_workspace_profile_update",
-		codingHandlers.coding_workspace_profile_update,
-	);
-	ipcMain.handle(
-		"coding_workspace_memory_read",
-		codingHandlers.coding_workspace_memory_read,
-	);
-	ipcMain.handle(
-		"coding_workspace_memory_write",
-		codingHandlers.coding_workspace_memory_write,
-	);
-	ipcMain.handle(
-		"coding_backend_capabilities_get",
-		codingHandlers.coding_backend_capabilities_get,
-	);
-	ipcMain.handle("coding_write_file", codingHandlers.coding_write_file);
-	ipcMain.handle("coding_revert_file", codingHandlers.coding_revert_file);
-	ipcMain.handle("coding_watch_start", codingHandlers.coding_watch_start);
-	ipcMain.handle("coding_watch_stop", codingHandlers.coding_watch_stop);
-	// Git 写操作
-	ipcMain.handle("coding_git_add", codingHandlers.coding_git_add);
-	ipcMain.handle("coding_git_unstage", codingHandlers.coding_git_unstage);
-	ipcMain.handle("coding_git_commit", codingHandlers.coding_git_commit);
-	ipcMain.handle("coding_git_push", codingHandlers.coding_git_push);
-	ipcMain.handle("coding_git_pull", codingHandlers.coding_git_pull);
-	ipcMain.handle("coding_git_checkout", codingHandlers.coding_git_checkout);
-	ipcMain.handle(
-		"coding_git_create_branch",
-		codingHandlers.coding_git_create_branch,
-	);
-	ipcMain.handle("coding_git_stash", codingHandlers.coding_git_stash);
-	ipcMain.handle("coding_git_discard", codingHandlers.coding_git_discard);
+	ipcMain.handle("worktree_create", worktreeHandlers.worktree_create);
+	ipcMain.handle("worktree_list", worktreeHandlers.worktree_list);
+	ipcMain.handle("worktree_merge", worktreeHandlers.worktree_merge);
+	ipcMain.handle("worktree_remove", worktreeHandlers.worktree_remove);
+	ipcMain.handle("worktree_diff", worktreeHandlers.worktree_diff);
 
-	// ==================
-	// Codex Session (Codex 后端)
-	// ==================
-	ipcMain.handle(
-		"codex_check_available",
-		codexSessionHandlers.codex_check_available,
-	);
-	ipcMain.handle(
-		"codex_get_capabilities",
-		codexSessionHandlers.codex_get_capabilities,
-	);
-	ipcMain.handle(
-		"codex_session_start",
-		codexSessionHandlers.codex_session_start,
-	);
-	ipcMain.handle(
-		"codex_session_abort",
-		codexSessionHandlers.codex_session_abort,
-	);
-	ipcMain.handle(
-		"codex_runtime_control",
-		codexSessionHandlers.codex_runtime_control,
-	);
-
-	// ==================
-	// Claude Code CLI Session (Claude Code 后端)
-	// ==================
-	ipcMain.handle(
-		"claude_code_check_available",
-		claudeCodeSessionHandlers.claude_code_check_available,
-	);
-	ipcMain.handle(
-		"claude_code_get_capabilities",
-		claudeCodeSessionHandlers.claude_code_get_capabilities,
-	);
-	ipcMain.handle(
-		"claude_code_session_start",
-		claudeCodeSessionHandlers.claude_code_session_start,
-	);
-	ipcMain.handle(
-		"claude_code_session_abort",
-		claudeCodeSessionHandlers.claude_code_session_abort,
-	);
-	ipcMain.handle(
-		"claude_code_runtime_control",
-		claudeCodeSessionHandlers.claude_code_runtime_control,
-	);
-	ipcMain.handle(
-		"claude_code_permission_respond",
-		claudeCodeSessionHandlers.claude_code_permission_respond,
-	);
-	ipcMain.handle(
-		"claude_code_auth_status",
-		claudeCodeSessionHandlers.claude_code_auth_status,
-	);
-	ipcMain.handle(
-		"coding_read_user_cli_config",
-		claudeCodeSessionHandlers.coding_read_user_cli_config,
-	);
-
-	// ==================
-	// CLI History Sync (CLI 历史同步)
-	// ==================
-	ipcMain.handle(
-		"cli_history_codex_list",
-		cliHistoryHandlers.cli_history_codex_list,
-	);
-	ipcMain.handle(
-		"cli_history_codex_read",
-		cliHistoryHandlers.cli_history_codex_read,
-	);
-	ipcMain.handle(
-		"cli_history_claude_code_list",
-		cliHistoryHandlers.cli_history_claude_code_list,
-	);
-	ipcMain.handle(
-		"cli_history_claude_code_read",
-		cliHistoryHandlers.cli_history_claude_code_read,
-	);
-	ipcMain.handle(
-		"cli_history_check_available",
-		cliHistoryHandlers.cli_history_check_available,
-	);
-
-	// ==================
-	// CLI Binary Detection (CLI 二进制检测)
-	// ==================
-	ipcMain.handle("cli_detect_binary", cliBinaryHandlers.cli_detect_binary);
-	ipcMain.handle(
-		"cli_invalidate_cache",
-		cliBinaryHandlers.cli_invalidate_cache,
-	);
-
-	logger.info({ msg: "IPC handlers registered", count: 122 });
+	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

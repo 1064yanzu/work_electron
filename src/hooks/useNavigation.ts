@@ -3,16 +3,12 @@ import { chatStore } from "../lib/chat/store";
 import { debugUiLog } from "../lib/debug/uiDebug";
 import { managedModeStore } from "../lib/managedModeStore";
 
-export type ViewType = "dashboard" | "workbench" | "coding";
+export type ViewType = "dashboard" | "workbench";
 
 export interface NavigationState {
 	view: ViewType;
 	projectId?: string;
 	docId?: string;
-	/** 编程工作区：项目路径（可选，线程化后由 threadStore 管理） */
-	codingProjectPath?: string;
-	/** 编程工作区：直接导航到指定线程 */
-	codingThreadId?: string;
 }
 
 /**
@@ -50,34 +46,14 @@ export function useNavigation(initialView: ViewType = "dashboard") {
 		setNavState({ view: "workbench", projectId });
 	}, []);
 
-	/** 导航到编程工作区（可选参数：不传则进入线程首页） */
-	const navigateToCoding = useCallback((projectPath?: string) => {
-		debugUiLog(
-			"[useNavigation] 导航到编程工作区:",
-			projectPath || "(线程首页)",
-		);
-		setNavState({ view: "coding", codingProjectPath: projectPath });
-	}, []);
-
-	/** 直接导航到指定线程 */
-	const navigateToCodingThread = useCallback((threadId: string) => {
-		debugUiLog("[useNavigation] 导航到编程线程:", threadId);
-		setNavState({ view: "coding", codingThreadId: threadId });
-	}, []);
-
 	return {
 		navState,
 		navigateToDashboard,
 		navigateToWorkbench,
 		navigateToProject,
-		navigateToCoding,
-		navigateToCodingThread,
 		isInDashboard: navState.view === "dashboard",
 		isInWorkbench: navState.view === "workbench",
-		isInCoding: navState.view === "coding",
 		currentProjectId: navState.projectId,
 		currentDocId: navState.docId,
-		currentCodingProjectPath: navState.codingProjectPath,
-		currentCodingThreadId: navState.codingThreadId,
 	};
 }

@@ -1,5 +1,6 @@
 import { invoke } from "./tauriCompat";
 import { listen } from "./tauriEventCompat";
+import { formatErrorForDisplay, type LlmErrorDetail } from "./chat/api";
 
 export interface StreamOptions {
 	onChunk: (chunk: string) => void;
@@ -11,6 +12,29 @@ interface StreamChunk {
 	content: string;
 	done: boolean;
 	channel?: "text" | "thought";
+}
+
+/**
+ * 尝试从流式内容中解析结构化 LLM 错误
+ */
+function tryParseErrorContent(content: string): LlmErrorDetail | null {
+	if (!content) return null;
+	try {
+		const parsed = JSON.parse(content);
+		if (parsed?.__llm_error__ === true) {
+			return {
+				code: parsed.code || "unknown",
+				title: parsed.title || "调用失败",
+				message: parsed.message || "AI 服务调用时发生了意外错误。",
+				suggestion: parsed.suggestion || "请重试或检查配置。",
+				httpStatus: parsed.httpStatus,
+				rawError: parsed.rawError || content,
+			};
+		}
+	} catch {
+		// 不是 JSON
+	}
+	return null;
 }
 
 /**
@@ -30,7 +54,13 @@ export async function streamLLMResponse(
 			const chunk = event.payload;
 
 			if (chunk.done) {
-				options.onComplete();
+				// 检查是否是结构化错误
+				const errorDetail = tryParseErrorContent(chunk.content);
+				if (errorDetail) {
+					options.onError(formatErrorForDisplay(errorDetail));
+				} else {
+					options.onComplete();
+				}
 				if (unlisten) unlisten();
 			} else {
 				options.onChunk(chunk.content);

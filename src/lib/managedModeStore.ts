@@ -80,7 +80,7 @@ export interface ManagedModeState {
 // ==================== 初始状态 ====================
 
 const initialState: ManagedModeState = {
-	isActive: false,
+	isActive: true,
 	files: [],
 	selectedFileId: null,
 	ui: {

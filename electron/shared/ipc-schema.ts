@@ -36,21 +36,6 @@ import type {
 	UpdateSourcePayload,
 	UpsertProviderPayload,
 } from "./types";
-import type {
-	BackendCapabilityMatrix,
-	ClaudeCodeApprovalMode,
-	CodingWorkspaceProfile,
-	RuntimeControlAction,
-	WorkspaceMemoryReadResult,
-	WorkspaceMemoryWriteInput,
-	WorkspaceProfileUpdateInput,
-} from "./coding-workspace";
-import type {
-	CliHistoryListParams,
-	CliHistoryReadParams,
-	CliHistoryReadResult,
-	ExternalThreadMeta,
-} from "./external-history-types";
 import type { RemoteGatewayScope } from "./remote-control-schema";
 
 type RemoteChannelId =
@@ -68,21 +53,6 @@ type RemoteSessionState =
 	| "aborted"
 	| "error";
 type CloudNodeRoutingMode = "cloud_only" | "prefer_desktop" | "auto";
-
-/** CLI 二进制检测结果（跨平台） */
-type CliDetectionSource =
-	| "user_configured"
-	| "system_detected"
-	| "sdk_bundled"
-	| "not_found";
-export interface CliDetectionResult {
-	backend: "claude-code" | "codex";
-	path: string | null;
-	source: CliDetectionSource;
-	version: string | null;
-	detectedAt: number;
-	error?: string;
-}
 
 export type IPCSchema = {
 	// ==================
@@ -1573,370 +1543,51 @@ export type IPCSchema = {
 	};
 
 	// ==================
-	// Coding Workspace（AI 编程工作区）
+	// Git Worktree 沙盒隔离
 	// ==================
-	/** 选择项目目录（弹出系统文件夹选择器） */
-	coding_select_directory: {
-		input: Record<string, never>;
-		output: { path: string | null };
-	};
-	/** 选择上下文文件（弹出系统文件选择器） */
-	coding_select_files: {
-		input: { project_path?: string };
-		output: { paths: string[] };
-	};
-	/** 递归读取文件树 */
-	coding_read_file_tree: {
-		input: { path: string; maxDepth?: number };
+	/** 创建 worktree */
+	worktree_create: {
+		input: { repoPath: string; branchName?: string };
 		output: {
-			tree: Array<{
-				name: string;
-				path: string;
-				type: "file" | "directory";
-				children?: unknown[];
-				size?: number;
-			}>;
-			isGitRepo: boolean;
+			worktreePath: string;
+			branchName: string;
+			isGitWorktree: boolean;
+			createdAt: number;
 		};
 	};
-	/** 获取 Git 状态 */
-	coding_git_status: {
-		input: { path: string };
+	/** 列出所有 worktree */
+	worktree_list: {
+		input: { repoPath: string };
+		output: Array<{
+			worktreePath: string;
+			branchName: string;
+			head: string;
+			isMain: boolean;
+		}>;
+	};
+	/** 合并 worktree 变更回主分支 */
+	worktree_merge: {
+		input: { repoPath: string; worktreePath: string };
 		output: {
-			isGitRepo: boolean;
-			status: {
-				branch: string;
-				ahead: number;
-				behind: number;
-				files: Array<{
-					path: string;
-					absolutePath?: string;
-					status:
-						| "modified"
-						| "added"
-						| "deleted"
-						| "renamed"
-						| "untracked"
-						| "copied"
-						| "conflicted";
-					staged: boolean;
-					indexStatus?:
-						| "modified"
-						| "added"
-						| "deleted"
-						| "renamed"
-						| "untracked"
-						| "copied"
-						| "conflicted";
-					workingTreeStatus?:
-						| "modified"
-						| "added"
-						| "deleted"
-						| "renamed"
-						| "untracked"
-						| "copied"
-						| "conflicted";
-					originalPath?: string;
-					originalAbsolutePath?: string;
-				}>;
-			} | null;
+			success: boolean;
+			method: "merge" | "cherry-pick" | "patch";
+			message: string;
+			conflicts?: string[];
 		};
 	};
-	/** 获取 Git 分支列表 */
-	coding_git_branches: {
-		input: { path: string };
+	/** 删除 worktree */
+	worktree_remove: {
+		input: { repoPath: string; worktreePath: string };
+		output: { success: boolean; message: string };
+	};
+	/** 获取 worktree 相对于主分支的 diff */
+	worktree_diff: {
+		input: { repoPath: string; worktreePath: string };
 		output: {
-			isGitRepo: boolean;
-			branches: Array<{
-				name: string;
-				current: boolean;
-				remote?: string;
-				lastCommit?: string;
-			}>;
+			diff: string;
+			changedFiles: string[];
+			stat: string;
 		};
-	};
-	/** 获取 Git 最近提交历史 */
-	coding_git_history: {
-		input: { path: string; limit?: number };
-		output: {
-			isGitRepo: boolean;
-			commits: Array<{
-				hash: string;
-				shortHash: string;
-				subject: string;
-				authorName: string;
-				timestamp: number;
-			}>;
-		};
-	};
-	/** git add - 暂存文件 */
-	coding_git_add: {
-		input: { dirPath: string; files: string[] };
-		output: { success: boolean; error?: string };
-	};
-	/** git reset HEAD - 取消暂存 */
-	coding_git_unstage: {
-		input: { dirPath: string; files: string[] };
-		output: { success: boolean; error?: string };
-	};
-	/** git commit - 提交 */
-	coding_git_commit: {
-		input: { dirPath: string; message: string; amend?: boolean };
-		output: { success: boolean; hash?: string; error?: string };
-	};
-	/** git push - 推送到远程 */
-	coding_git_push: {
-		input: { dirPath: string; remote?: string; branch?: string };
-		output: { success: boolean; error?: string };
-	};
-	/** git pull - 从远程拉取 */
-	coding_git_pull: {
-		input: { dirPath: string; remote?: string; branch?: string };
-		output: { success: boolean; error?: string };
-	};
-	/** git checkout - 切换分支 */
-	coding_git_checkout: {
-		input: { dirPath: string; branch: string };
-		output: { success: boolean; error?: string };
-	};
-	/** git checkout -b - 创建新分支 */
-	coding_git_create_branch: {
-		input: { dirPath: string; branchName: string; startPoint?: string };
-		output: { success: boolean; error?: string };
-	};
-	/** git stash - 暂存工作区 */
-	coding_git_stash: {
-		input: {
-			dirPath: string;
-			action: "push" | "pop" | "list";
-			message?: string;
-		};
-		output: { success: boolean; output?: string; error?: string };
-	};
-	/** git checkout -- files - 丢弃工作区变更 */
-	coding_git_discard: {
-		input: { dirPath: string; files: string[] };
-		output: { success: boolean; error?: string };
-	};
-	/** 读取单个文件内容 */
-	coding_read_file: {
-		input: { path: string; maxSize?: number };
-		output: { content: string; truncated: boolean };
-	};
-	coding_workspace_profile_get: {
-		input: { project_path: string };
-		output: CodingWorkspaceProfile;
-	};
-	coding_workspace_profile_update: {
-		input: WorkspaceProfileUpdateInput;
-		output: CodingWorkspaceProfile;
-	};
-	coding_workspace_memory_read: {
-		input: { project_path: string };
-		output: WorkspaceMemoryReadResult;
-	};
-	coding_workspace_memory_write: {
-		input: WorkspaceMemoryWriteInput;
-		output: WorkspaceMemoryReadResult;
-	};
-	coding_backend_capabilities_get: {
-		input: { backend?: "claude-code" | "codex" };
-		output:
-			| BackendCapabilityMatrix
-			| Record<"claude-code" | "codex", BackendCapabilityMatrix>;
-	};
-	/** 将 diff newContent 写入磁盘 */
-	coding_write_file: {
-		input: { path: string; content: string; createDirs?: boolean };
-		output: { success: boolean; error?: string };
-	};
-	/** 将 diff oldContent 还原到磁盘 */
-	coding_revert_file: {
-		input: { path: string; content: string };
-		output: { success: boolean; error?: string };
-	};
-	/** 开始监听项目文件变更 */
-	coding_watch_start: {
-		input: { path: string; ignored?: string[] };
-		output: { success: boolean; error?: string };
-	};
-	/** 停止监听项目文件变更 */
-	coding_watch_stop: {
-		input: { path: string };
-		output: { success: boolean; error?: string };
-	};
-
-	// ==================
-	// Codex Session（AI 编程工作区 - Codex 后端）
-	// ==================
-	/** 检查 Codex CLI 是否可用 */
-	codex_check_available: {
-		input: Record<string, never>;
-		output: { available: boolean; path: string | null };
-	};
-	/** 启动 Codex 会话 */
-	codex_session_start: {
-		input: {
-			prompt: string;
-			cwd: string;
-			model?: string;
-			approvalMode?: "untrusted" | "on-failure" | "on-request" | "never";
-			resumeSessionId?: string;
-			workspaceContext?: string;
-			reasoningEffort?: "low" | "medium" | "high";
-			planMode?: boolean;
-		};
-		output: string; // runId
-	};
-	/** 中止 Codex 会话 */
-	codex_session_abort: {
-		input: { runId: string };
-		output: { success: boolean };
-	};
-	codex_get_capabilities: {
-		input: Record<string, never>;
-		output: BackendCapabilityMatrix;
-	};
-	codex_runtime_control: {
-		input: { runId: string; action: RuntimeControlAction };
-		output: { success: boolean; error?: string };
-	};
-
-	// ==================
-	// Claude Code CLI Session（AI 编程工作区 - Claude Code 后端）
-	// ==================
-	/** 检查 Claude Code CLI 是否可用 */
-	claude_code_check_available: {
-		input: Record<string, never>;
-		output: { available: boolean; path: string | null };
-	};
-	claude_code_get_capabilities: {
-		input: Record<string, never>;
-		output: BackendCapabilityMatrix;
-	};
-	/** 启动 Claude Code CLI 会话 */
-	claude_code_session_start: {
-		input: {
-			prompt: string;
-			cwd: string;
-			model?: string;
-			permissionMode?: ClaudeCodeApprovalMode;
-			systemPrompt?: string;
-			allowedTools?: string[];
-			disallowedTools?: string[];
-			additionalDirectories?: string[];
-			mcpConfig?: string;
-			resumeSessionId?: string;
-			continueSession?: boolean;
-			maxTurns?: number;
-			maxBudgetUsd?: number;
-			settingSources?: string[];
-			betas?: string[];
-			agents?: Record<string, unknown>;
-			dangerouslySkipPermissions?: boolean;
-			extraArgs?: string[];
-		};
-		output: string; // runId
-	};
-	/** 中止 Claude Code CLI 会话 */
-	claude_code_session_abort: {
-		input: { runId: string };
-		output: { success: boolean };
-	};
-	/** Claude Code CLI 运行时控制 */
-	claude_code_runtime_control: {
-		input: { runId: string; action: RuntimeControlAction };
-		output: { success: boolean; error?: string };
-	};
-	/** Claude Code 交互式权限审批响应 */
-	claude_code_permission_respond: {
-		input: { runId: string; requestId: string; allow: boolean };
-		output: { success: boolean };
-	};
-	/** 读取 ~/.claude.json 和 ~/.claude/settings.json 的认证与配置状态 */
-	claude_code_auth_status: {
-		input: Record<string, never>;
-		output: {
-			isLoggedIn: boolean;
-			authMethod: "oauth" | "api_key" | "env_key" | "none";
-			email?: string;
-			model?: string;
-			mcpServers?: Array<{
-				name: string;
-				command?: string;
-				url?: string;
-				type?: string;
-			}>;
-		};
-	};
-	/** 读取用户本机 CLI 配置（Claude Code + Codex）用于同步到应用设置 */
-	coding_read_user_cli_config: {
-		input: Record<string, never>;
-		output: {
-			claude?: {
-				model?: string;
-				mcpServers?: Array<{
-					name: string;
-					command?: string;
-					url?: string;
-					type?: string;
-				}>;
-				permissions?: string[];
-			};
-			codex?: {
-				model?: string;
-				provider?: string;
-			};
-		};
-	};
-
-	// ==================
-	// CLI Binary Detection（CLI 二进制检测）
-	// ==================
-	/** 检测指定后端的 CLI 二进制路径和版本 */
-	cli_detect_binary: {
-		input: { backend: "claude-code" | "codex"; userConfiguredPath?: string };
-		output: CliDetectionResult;
-	};
-	/** 清除 CLI 检测缓存（保存设置后调用） */
-	cli_invalidate_cache: {
-		input: { backend?: "claude-code" | "codex" };
-		output: { success: boolean };
-	};
-
-	// ==================
-	// CLI History Sync（CLI 历史同步）
-	// ==================
-	/** 列出 Codex CLI 历史线程 */
-	cli_history_codex_list: {
-		input: CliHistoryListParams;
-		output: {
-			available: boolean;
-			threads: ExternalThreadMeta[];
-		};
-	};
-	/** 读取 Codex CLI 完整会话 */
-	cli_history_codex_read: {
-		input: CliHistoryReadParams;
-		output: CliHistoryReadResult | null;
-	};
-	/** 列出 Claude Code CLI 历史会话 */
-	cli_history_claude_code_list: {
-		input: CliHistoryListParams;
-		output: {
-			available: boolean;
-			threads: ExternalThreadMeta[];
-		};
-	};
-	/** 读取 Claude Code CLI 完整会话 */
-	cli_history_claude_code_read: {
-		input: CliHistoryReadParams;
-		output: CliHistoryReadResult | null;
-	};
-	/** 检查 CLI 历史可用性 */
-	cli_history_check_available: {
-		input: Record<string, never>;
-		output: { codex: boolean; claudeCode: boolean };
 	};
 };
 

@@ -31,6 +31,7 @@ import {
 	SourceOrigin,
 	SourceType,
 } from "../../types";
+import { getSourceTypeConfig } from "../../lib/sourceTypeConfig";
 import { ResourceSidebarHeader } from "./sidebar/ResourceSidebarHeader";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
 
@@ -169,20 +170,9 @@ export function SourceListView({
 	});
 
 	const getIconForSource = useCallback((kind: SourceType) => {
-		switch (kind) {
-			case SourceType.Web:
-				return <Globe className="w-4 h-4" />;
-			case SourceType.Audio:
-				return <span className="w-4 h-4">🎤</span>;
-			case SourceType.Document:
-				return <FileText className="w-4 h-4" />;
-			case SourceType.Text:
-				return <span className="w-4 h-4">T</span>;
-			case SourceType.Image:
-				return <span className="w-4 h-4">🖼</span>;
-			default:
-				return <FileText className="w-4 h-4" />;
-		}
+		const config = getSourceTypeConfig(kind);
+		const Icon = config.icon;
+		return <Icon className={`w-4 h-4 ${config.iconColor}`} />;
 	}, []);
 
 	const handleToggleViewMode = useCallback(() => {
@@ -209,20 +199,7 @@ export function SourceListView({
 	}, [sources.length, viewMode]);
 
 	const getKindColor = useCallback((kind: SourceType) => {
-		switch (kind) {
-			case SourceType.Web:
-				return "bg-blue-500";
-			case SourceType.Audio:
-				return "bg-purple-500";
-			case SourceType.Document:
-				return "bg-orange-500";
-			case SourceType.Text:
-				return "bg-green-500";
-			case SourceType.Image:
-				return "bg-pink-500";
-			default:
-				return "bg-zinc-500";
-		}
+		return getSourceTypeConfig(kind).dotColor;
 	}, []);
 
 	const getScopeLabel = useCallback((source: Source) => {

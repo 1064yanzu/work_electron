@@ -1,10 +1,13 @@
-// Token 消耗显示组件 - 参考 Cherry Studio 样式
-// 显示格式: Tokens: 总数 ↑输入 ↓输出
+// Token 消耗显示组件
+// 显示格式: Tokens: 总数 ↑输入 ↓输出 [cache信息] [费用]
 
 interface TokenDisplayProps {
 	promptTokens: number;
 	completionTokens: number;
 	totalTokens: number;
+	cacheReadInputTokens?: number;
+	cacheCreationInputTokens?: number;
+	costUsd?: number;
 	className?: string;
 }
 
@@ -25,6 +28,9 @@ export function TokenDisplay({
 	promptTokens,
 	completionTokens,
 	totalTokens,
+	cacheReadInputTokens,
+	cacheCreationInputTokens,
+	costUsd,
 	className = "",
 }: TokenDisplayProps) {
 	// 如果没有 token 数据，不显示
@@ -32,9 +38,13 @@ export function TokenDisplay({
 		return null;
 	}
 
+	const hasCacheInfo =
+		(cacheReadInputTokens && cacheReadInputTokens > 0) ||
+		(cacheCreationInputTokens && cacheCreationInputTokens > 0);
+
 	return (
 		<div
-			className={`flex items-center gap-1.5 text-xs text-text-muted select-none ${className}`}
+			className={`flex items-center gap-1.5 text-xs text-text-muted select-none flex-wrap ${className}`}
 		>
 			<span className="opacity-60">Tokens:</span>
 			<span className="font-mono">{formatTokenCount(totalTokens)}</span>
@@ -44,6 +54,21 @@ export function TokenDisplay({
 			<span className="text-orange-500/70 font-mono">
 				↓{formatTokenCount(completionTokens)}
 			</span>
+			{hasCacheInfo && (
+				<span className="text-blue-400/70 font-mono">
+					{cacheReadInputTokens && cacheReadInputTokens > 0
+						? `⚡${formatTokenCount(cacheReadInputTokens)}`
+						: null}
+					{cacheCreationInputTokens && cacheCreationInputTokens > 0
+						? ` +${formatTokenCount(cacheCreationInputTokens)}`
+						: null}
+				</span>
+			)}
+			{costUsd !== undefined && costUsd > 0 && (
+				<span className="text-violet-400/70 font-mono">
+					${costUsd < 0.01 ? costUsd.toFixed(4) : costUsd.toFixed(2)}
+				</span>
+			)}
 		</div>
 	);
 }

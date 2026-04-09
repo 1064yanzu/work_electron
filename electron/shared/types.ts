@@ -7,7 +7,7 @@
 // ==================
 
 /** 资料载体类型 */
-export type SourceKind = "web" | "document" | "audio" | "text" | "image";
+export type SourceKind = "web" | "document" | "audio" | "text" | "image" | "video" | "code" | "spreadsheet" | "presentation" | "pdf" | "archive";
 
 /** 资料来源 */
 export type SourceOrigin = "manual" | "browser_clip" | "web_search" | "import";
@@ -334,6 +334,8 @@ export interface InvokeLlmResult {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		cache_read_input_tokens?: number;
+		cache_creation_input_tokens?: number;
 	};
 }
 
@@ -352,6 +354,8 @@ export interface StreamChunk {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		cache_read_input_tokens?: number;
+		cache_creation_input_tokens?: number;
 	};
 }
 

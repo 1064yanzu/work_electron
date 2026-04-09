@@ -309,6 +309,7 @@ function ExecutionGraphInner({
 					onOpenArtifact={onOpenArtifact}
 					pinned={pinnedInspector}
 					onTogglePin={() => onPinnedInspectorChange?.(!pinnedInspector)}
+					onSelectNode={setSelectedNodeId}
 				/>
 			) : null}
 		</div>

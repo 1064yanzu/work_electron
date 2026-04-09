@@ -37,6 +37,9 @@ import {
 import { AGENT_STREAM_UPDATE_INTERVAL_MS } from "../constants";
 import type { ChatStoreLike } from "../types";
 import type { SlashCommand } from "../../chat/SlashCommand";
+import { planModeStore } from "../../../lib/agent/planModeStore";
+import { setPlan } from "../../../lib/agent/planModeStore";
+import { parsePlanFromAgentOutput } from "../../../lib/agent/planModePrompt";
 
 interface UseAgentHandlerOptions {
 	chatStore: ChatStoreLike;
@@ -720,6 +723,11 @@ export function useAgentHandler({
 					parentSdkSessionId: parentSdkSessionIdForRun,
 					documentContextInjected: true,
 					forcedSkillName: forcedSkillId, // 传递强制 skill 名称
+					planMode: planModeStore.getState().enabled,
+					confirmedPlan:
+						planModeStore.getState().currentPlan?.status === "confirmed"
+							? planModeStore.getState().currentPlan ?? undefined
+							: undefined,
 					onChunk, // 流式输出回调
 					onThoughtChunk: (chunk, meta) => {
 						touchActivity();
@@ -748,6 +756,15 @@ export function useAgentHandler({
 						blocks: buildSkillBlocks(),
 					},
 				});
+			}
+
+			// Plan Mode：如果启用了规划模式，尝试从 Agent 输出中解析计划
+			if (planModeStore.getState().enabled) {
+				const finalText = getStreamText();
+				const plan = parsePlanFromAgentOutput(finalText);
+				if (plan) {
+					setPlan(plan);
+				}
 			}
 
 			const finalState = agentStore.getState();

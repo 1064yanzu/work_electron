@@ -13,7 +13,7 @@ import {
 import { memo, useMemo, useState } from "react";
 import type { FileDiff } from "../../lib/stores/diffStore";
 import { diffStore } from "../../lib/stores/diffStore";
-import { acceptDiff, rejectDiff } from "../../lib/coding/diffActions";
+import { acceptDiff, rejectDiff } from "../../lib/agent/diffActions";
 import {
 	formatFilePath,
 	generateDiff,

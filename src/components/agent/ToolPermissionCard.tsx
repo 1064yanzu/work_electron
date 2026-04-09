@@ -2,10 +2,17 @@
  * Tool Permission Card Component
  *
  * 工具权限审批卡片,显示工具调用详情并提供允许/拒绝操作。
- * 采用简洁的设计风格,与 SkillCard 保持一致。
+ * 支持显示沙盒外操作警告和破坏性等级指示。
  */
 
-import { ChevronDown, ChevronRight, Shield } from "lucide-react";
+import {
+	AlertTriangle,
+	ChevronDown,
+	ChevronRight,
+	FolderOpen,
+	Shield,
+	ShieldAlert,
+} from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -26,7 +33,6 @@ interface ToolPermissionCardProps {
 function formatToolInput(input: Record<string, unknown>): string {
 	try {
 		const str = JSON.stringify(input, null, 2);
-		// 限制显示长度
 		if (str.length > 500) {
 			return str.slice(0, 500) + "\n... (truncated)";
 		}
@@ -55,6 +61,45 @@ function getToolDescription(toolName: string): string {
 }
 
 /**
+ * 获取破坏性等级样式
+ */
+function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
+	switch (level) {
+		case "dangerous":
+			return {
+				ring: "ring-2 ring-red-300/60 dark:ring-red-700/40",
+				iconBg: "bg-red-50 dark:bg-red-900/20",
+				iconColor: "text-red-600 dark:text-red-400",
+				badge: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300",
+				badgeText: "高危",
+				buttonBg:
+					"bg-red-500 hover:bg-red-600 text-white",
+			};
+		case "moderate":
+			return {
+				ring: "ring-2 ring-amber-200/60 dark:ring-amber-700/40",
+				iconBg: "bg-amber-50 dark:bg-amber-900/20",
+				iconColor: "text-amber-600 dark:text-amber-400",
+				badge:
+					"bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+				badgeText: "沙盒外操作",
+				buttonBg:
+					"bg-amber-500 hover:bg-amber-600 text-white",
+			};
+		default:
+			return {
+				ring: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
+				iconBg: "bg-blue-50 dark:bg-blue-900/20",
+				iconColor: "text-blue-600 dark:text-blue-400",
+				badge: "",
+				badgeText: "",
+				buttonBg:
+					"bg-blue-500 hover:bg-blue-600 text-white",
+			};
+	}
+}
+
+/**
  * 工具权限卡片
  */
 export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
@@ -65,7 +110,13 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 	const [expanded, setExpanded] = useState(false);
 	const [remainingTime, setRemainingTime] = useState(30);
 
-	// 倒计时
+	const scope = request.scope;
+	const destructiveLevel = scope?.destructiveLevel ?? "safe";
+	const isOutsideSandbox = scope ? !scope.insideSandbox : false;
+	const levelStyle = getDestructiveLevelStyle(
+		isOutsideSandbox ? destructiveLevel : "safe",
+	);
+
 	useEffect(() => {
 		const interval = setInterval(() => {
 			const remaining = Math.max(
@@ -89,6 +140,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 		request.status === "submitting-deny";
 
 	const isUrgent = remainingTime <= 10;
+	const ShieldIcon = destructiveLevel === "dangerous" ? ShieldAlert : Shield;
 
 	return (
 		<div
@@ -97,7 +149,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 				"bg-white/80 dark:bg-zinc-900/60",
 				isUrgent
 					? "ring-2 ring-amber-200/50 dark:ring-amber-800/30"
-					: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
+					: levelStyle.ring,
 			)}
 		>
 			{/* 头部 */}
@@ -108,15 +160,15 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 							"p-1.5 rounded-lg transition-all duration-200",
 							isUrgent
 								? "bg-amber-50 dark:bg-amber-900/20"
-								: "bg-blue-50 dark:bg-blue-900/20",
+								: levelStyle.iconBg,
 						)}
 					>
-						<Shield
+						<ShieldIcon
 							className={cn(
 								"w-4 h-4 transition-colors",
 								isUrgent
 									? "text-amber-600 dark:text-amber-400"
-									: "text-blue-600 dark:text-blue-400",
+									: levelStyle.iconColor,
 							)}
 						/>
 					</div>
@@ -128,6 +180,19 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 							<span className="text-[11px] text-zinc-400">
 								{getToolDescription(request.toolName)}
 							</span>
+							{levelStyle.badgeText && (
+								<span
+									className={cn(
+										"inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium",
+										levelStyle.badge,
+									)}
+								>
+									{destructiveLevel === "dangerous" && (
+										<AlertTriangle className="w-2.5 h-2.5" />
+									)}
+									{levelStyle.badgeText}
+								</span>
+							)}
 						</div>
 					</div>
 				</div>
@@ -140,6 +205,35 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					{remainingTime}s
 				</div>
 			</div>
+
+			{/* 沙盒外操作警告 */}
+			{isOutsideSandbox && scope?.targetPath && (
+				<div
+					className={cn(
+						"mx-3 mb-2 px-2.5 py-2 rounded-lg flex items-start gap-2 text-xs",
+						destructiveLevel === "dangerous"
+							? "bg-red-50/80 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+							: "bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
+					)}
+				>
+					<FolderOpen className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+					<div className="min-w-0">
+						<div className="font-medium mb-0.5">
+							{destructiveLevel === "dangerous"
+								? "危险操作 — 此命令可能造成不可逆的修改"
+								: "此操作将修改沙盒外的文件"}
+						</div>
+						<div className="text-[11px] opacity-80 break-all font-mono">
+							{scope.targetPath}
+						</div>
+						{scope.reason && (
+							<div className="text-[11px] opacity-70 mt-0.5">
+								{scope.reason}
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 
 			{/* 参数预览 */}
 			<div className="px-3 pb-2">
@@ -182,7 +276,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					disabled={isSubmitting}
 					className={cn(
 						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-						"bg-blue-500 hover:bg-blue-600 text-white",
+						isOutsideSandbox ? levelStyle.buttonBg : "bg-blue-500 hover:bg-blue-600 text-white",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
 				>

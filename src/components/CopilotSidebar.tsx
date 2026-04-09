@@ -56,9 +56,6 @@ import {
 import { createMessage } from "../lib/chat/types";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
-import { CodingModeSelector } from "./copilot/coding/CodingModeSelector";
-import { CodingBackendSelector } from "./copilot/coding/CodingBackendSelector";
-import { useCodingAgentSelector } from "../lib/stores/codingAgentStore";
 import { useCopilotActions } from "./copilot/useCopilotActions";
 import {
 	useCopilotProposals,
@@ -74,6 +71,12 @@ import { toast } from "./ui/Toast";
 
 import { parseDocProtocolFinal } from "../lib/chat/docProtocol";
 import { useDiffCapture } from "./CodeView/useDiffCapture";
+import { PlanModeToggle } from "./agent/PlanModeToggle";
+import {
+	usePlanModeSelector,
+	togglePlanMode,
+} from "../lib/agent/planModeStore";
+import { onPlanModifyFeedback } from "../lib/agent/planModifyEvent";
 
 // 快捷操作按钮
 const chatActions = {
@@ -158,10 +161,16 @@ export default function CopilotSidebar() {
 		(state) => state.pending,
 	);
 
-	const [chatMode, setChatMode] = useState<"chat" | "agent">("chat");
-	const codingMode = useCodingAgentSelector((s) => s.codingMode);
+	const [chatMode, setChatMode] = useState<"chat" | "agent">("agent");
 	// 自动捕获文件操作的 diff 数据
 	useDiffCapture();
+
+	// 初始化时同步 managedModeStore（默认托管模式）
+	useEffect(() => {
+		managedModeStore.enableManagedMode();
+	}, []);
+	// Plan Mode 状态
+	const planModeEnabled = usePlanModeSelector((s) => s.enabled);
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -699,6 +708,14 @@ export default function CopilotSidebar() {
 		[chatStore.activeSession, handleSendMessage],
 	);
 
+	// 监听计划修改事件：用户在 PlanCard 中提交 feedback 后触发新一轮 Agent 请求
+	useEffect(() => {
+		return onPlanModifyFeedback((feedback) => {
+			const prefixed = `请根据以下反馈修改计划：\n\n${feedback}`;
+			handleSendMessage(prefixed);
+		});
+	}, [handleSendMessage]);
+
 	const messages = chatStore.activeSession?.messages || [];
 	const maxMessageWindowStart = Math.max(
 		0,
@@ -997,19 +1014,9 @@ export default function CopilotSidebar() {
 						{chatMode === "agent" ? (
 							<>
 								<span
-									className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-										codingMode === "ask"
-											? "bg-blue-500"
-											: codingMode === "plan"
-												? "bg-amber-500"
-												: "bg-emerald-500"
-									}`}
+									className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500"
 								/>
-								{codingMode === "ask"
-									? "问答模式"
-									: codingMode === "plan"
-										? "规划模式"
-										: "编码模式"}
+								Agent 模式
 							</>
 						) : (
 							"普通对话"
@@ -1017,11 +1024,14 @@ export default function CopilotSidebar() {
 					</div>
 				</div>
 
-				{/* 编码模式选择器 - 仅在 agent 模式下显示 */}
+				{/* Plan Mode 切换器 - 仅 agent 模式下显示 */}
 				{chatMode === "agent" && (
-					<div className="mb-2 flex items-center justify-between">
-						<CodingModeSelector />
-						<CodingBackendSelector />
+					<div className="px-0 pb-1.5">
+						<PlanModeToggle
+							planMode={planModeEnabled}
+							onToggle={() => togglePlanMode()}
+							disabled={isStreaming || isAgentExecuting}
+						/>
 					</div>
 				)}
 
@@ -1034,11 +1044,7 @@ export default function CopilotSidebar() {
 								? "研究进行中..."
 								: "Agent 执行中..."
 							: chatMode === "agent"
-								? codingMode === "ask"
-									? "Ask 模式：提出问题，我只回答不操作..."
-									: codingMode === "plan"
-										? "Plan 模式：描述目标，我会先制定计划..."
-										: "Code 模式：描述目标，我会自动编码..."
+								? "描述你的需求，Agent 会自动完成..."
 								: "输入消息，或用 / 唤起命令..."
 					}
 					model={activeModel || undefined}

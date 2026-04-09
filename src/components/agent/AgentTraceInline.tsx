@@ -33,7 +33,9 @@ import { InlineImage } from "../ui/InlineImage";
 import { WebPreviewCard } from "../chat/WebPreviewCard";
 import { SkillCard } from "./SkillCard";
 import { SubagentCard } from "./SubagentCard";
+import { SwarmCard, type SwarmAgentInfo } from "./SwarmCard";
 import TaskSteps from "./TaskSteps";
+import { AgentExecutionFlow } from "./AgentExecutionFlow";
 import { getCheckpoint, deleteCheckpoint } from "../../lib/agent/api";
 
 /**
@@ -838,6 +840,74 @@ const ToolCallRow = memo(function ToolCallRow({
 	);
 });
 
+/** 将 Task 类型的 ToolCall 转换为 SwarmAgentInfo */
+function toolCallToSwarmAgent(tc: ToolCall, index: number): SwarmAgentInfo {
+	const input = tc.input as Record<string, unknown> | undefined;
+	const subType =
+		typeof input?.subagent_type === "string"
+			? input.subagent_type
+			: typeof input?.agent_type === "string"
+				? input.agent_type
+				: "子代理";
+	const description =
+		typeof input?.description === "string" ? input.description : tc.description;
+	const activities = tc.subagentActivities || [];
+	const lastActivity =
+		activities.length > 0
+			? activities[activities.length - 1].content
+			: undefined;
+
+	return {
+		id: tc.id,
+		name: description || subType,
+		type: subType,
+		index: index + 1,
+		status:
+			tc.status === "cancelled"
+				? "error"
+				: (tc.status as SwarmAgentInfo["status"]),
+		progress: (tc.metadata?.progress as number) ?? undefined,
+		lastActivity,
+		duration: tc.duration,
+	};
+}
+
+/** 将 toolCalls 分组：连续的 Task 调用聚合为蜂群，其他保持原样 */
+function groupToolCallsForSwarm(
+	toolCalls: ToolCall[],
+): Array<{ type: "swarm"; calls: ToolCall[] } | { type: "single"; call: ToolCall }> {
+	const groups: Array<
+		{ type: "swarm"; calls: ToolCall[] } | { type: "single"; call: ToolCall }
+	> = [];
+
+	let currentSwarmBatch: ToolCall[] = [];
+
+	const flushSwarm = () => {
+		if (currentSwarmBatch.length >= 2) {
+			groups.push({ type: "swarm", calls: [...currentSwarmBatch] });
+		} else if (currentSwarmBatch.length === 1) {
+			groups.push({ type: "single", call: currentSwarmBatch[0] });
+		}
+		currentSwarmBatch = [];
+	};
+
+	for (const tc of toolCalls) {
+		const input = tc.input as Record<string, unknown> | undefined;
+		const subType = input?.subagent_type || input?.agent_type;
+		const isTaskSubagent = tc.name === "Task" && !!subType;
+
+		if (isTaskSubagent) {
+			currentSwarmBatch.push(tc);
+		} else {
+			flushSwarm();
+			groups.push({ type: "single", call: tc });
+		}
+	}
+	flushSwarm();
+
+	return groups;
+}
+
 export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 	// 使用选择器分开订阅，避免任何状态变化都触发重渲染
 	const currentTask = useAgentStoreSelector((s) => s.currentTask);
@@ -884,41 +954,46 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 	}, [task.status]);
 
 	return (
-		<div className="mt-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-			<button
-				onClick={() => setOpen((v) => !v)}
-				className="w-full flex items-center justify-between px-3 py-2.5 text-left"
-			>
-				<div className="flex items-center gap-2 min-w-0">
-					<div className="p-1.5 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-					</div>
-					<div className="min-w-0">
-						<div className="flex items-center gap-2">
-							<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
-								Agent 运行过程
-							</div>
-							<div className="text-[11px] text-zinc-400">{statusText}</div>
-							{isThisTaskExecuting ? (
-								<Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
-							) : null}
-						</div>
-						<div className="text-[11px] text-zinc-400 truncate">
-							工具 {task.toolCalls.length} · 产物 {task.artifacts.length}
-						</div>
-					</div>
-				</div>
-				<div className="text-zinc-400">
-					{open ? (
-						<ChevronDown className="w-4 h-4" />
-					) : (
-						<ChevronRight className="w-4 h-4" />
-					)}
-				</div>
-			</button>
+		<div className="mt-4 space-y-3">
+			{/* 新的执行流程可视化 */}
+			<AgentExecutionFlow task={task} isExecuting={isThisTaskExecuting} />
 
-			{open ? (
-				<div className="px-3 pb-3 space-y-3">
+			{/* 原有的详细信息面板 */}
+			<div className="rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+				<button
+					onClick={() => setOpen((v) => !v)}
+					className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+				>
+					<div className="flex items-center gap-2 min-w-0">
+						<div className="p-1.5 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
+							<Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+						</div>
+						<div className="min-w-0">
+							<div className="flex items-center gap-2">
+								<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+									详细信息
+								</div>
+								<div className="text-[11px] text-zinc-400">{statusText}</div>
+								{isThisTaskExecuting ? (
+									<Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+								) : null}
+							</div>
+							<div className="text-[11px] text-zinc-400 truncate">
+								工具 {task.toolCalls.length} · 产物 {task.artifacts.length}
+							</div>
+						</div>
+					</div>
+					<div className="text-zinc-400">
+						{open ? (
+							<ChevronDown className="w-4 h-4" />
+						) : (
+							<ChevronRight className="w-4 h-4" />
+						)}
+					</div>
+				</button>
+
+				{open ? (
+					<div className="px-3 pb-3 space-y-3">
 					{/* 思考过程 */}
 					{thinking ? (
 						<div className="w-full">
@@ -977,9 +1052,30 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 
 					{task.toolCalls.length > 0 ? (
 						<div className="space-y-2">
-							{task.toolCalls.slice(-8).map((tc) => (
-								<ToolCallRow key={tc.id} toolCall={tc} />
-							))}
+							{(() => {
+								const recentCalls = task.toolCalls.slice(-8);
+								const groups = groupToolCallsForSwarm(recentCalls);
+								return groups.map((group) => {
+									if (group.type === "swarm") {
+										const agents = group.calls.map((tc, i) =>
+											toolCallToSwarmAgent(tc, i),
+										);
+										const key = group.calls.map((c) => c.id).join("-");
+										return (
+											<SwarmCard
+												key={key}
+												agents={agents}
+											/>
+										);
+									}
+									return (
+										<ToolCallRow
+											key={group.call.id}
+											toolCall={group.call}
+										/>
+									);
+								});
+							})()}
 						</div>
 					) : (
 						<div className="px-3 py-3 text-xs text-zinc-400">
@@ -1046,6 +1142,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 					<ContextControl task={task} />
 				</div>
 			) : null}
+			</div>
 		</div>
 	);
 }
@@ -1057,6 +1154,8 @@ function ContextControl({
 }) {
 	const { tokenUsage, sdkSessionId } = (task.metadata || {}) as {
 		tokenUsage?: {
+			promptTokens: number;
+			completionTokens: number;
 			totalTokens: number;
 			cacheReadInputTokens?: number;
 			cacheCreationInputTokens?: number;
@@ -1118,6 +1217,11 @@ function ContextControl({
 						</span>
 						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-none">
 							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
+							{tokenUsage?.promptTokens !== undefined && tokenUsage?.completionTokens !== undefined && (
+								<span className="text-[10px] text-zinc-500 font-normal ml-1">
+									(↑{tokenUsage.promptTokens.toLocaleString()} ↓{tokenUsage.completionTokens.toLocaleString()})
+								</span>
+							)}
 						</span>
 						{(tokenUsage?.cacheReadInputTokens ||
 							tokenUsage?.cacheCreationInputTokens ||

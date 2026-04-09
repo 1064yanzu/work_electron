@@ -20,6 +20,8 @@ export function useSessionTitleGeneration({
 	debugLog,
 }: UseSessionTitleGenerationOptions) {
 	const generatingRef = useRef<Set<string>>(new Set());
+	// 记录曾经尝试过（无论成功还是失败）的会话 ID，避免重复触发
+	const attemptedRef = useRef<Set<string>>(new Set());
 
 	const generateSessionTitle = useCallback(
 		async (sessionId: string, firstMessage: string, fallbackModel?: string) => {
@@ -71,6 +73,8 @@ export function useSessionTitleGeneration({
 				}
 			} finally {
 				generatingRef.current.delete(sessionId);
+				// 无论成功还是失败，都标记为已尝试，避免后续补全循环重试
+				attemptedRef.current.add(sessionId);
 			}
 		},
 		[chatStore, enabledModels, debugLog],
@@ -84,6 +88,9 @@ export function useSessionTitleGeneration({
 
 			const sessions = chatStore.sessions;
 			for (const session of sessions) {
+				// 跳过本次生命周期内已尝试过的会话
+				if (attemptedRef.current.has(session.id)) continue;
+
 				if (session.messages.length > 0) {
 					const firstMsg = session.messages[0].content;
 					const defaultTruncated = firstMsg.slice(0, 15);
@@ -101,6 +108,9 @@ export function useSessionTitleGeneration({
 							session.model || activeModel || undefined,
 						);
 						await new Promise((resolve) => setTimeout(resolve, 500));
+					} else {
+						// 标题已经合适，标记为已处理，不需要重复检查
+						attemptedRef.current.add(session.id);
 					}
 				}
 			}
@@ -112,3 +122,4 @@ export function useSessionTitleGeneration({
 
 	return { generateSessionTitle };
 }
+

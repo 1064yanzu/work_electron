@@ -92,6 +92,9 @@ export default defineConfig({
 					build: {
 						rollupOptions: {
 							external: [
+								// Must be external: SDK uses import.meta.url to locate cli.js at
+								// runtime; bundling it would make the path point to dist-electron/.
+								"@anthropic-ai/claude-agent-sdk",
 								"@libsql/client",
 								"@libsql/darwin-arm64",
 								"@libsql/linux-x64",

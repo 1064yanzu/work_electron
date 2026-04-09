@@ -1,8 +1,11 @@
 import { AlertCircle, FolderOpen, RefreshCw, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getConfig, setConfig } from "../../../lib/config";
 import { openDirectory } from "../../../lib/dialogCompat";
+import { useSettingsStore } from "../../../lib/settingsStore";
 import { useSkillsStore } from "../../../lib/skillsStore";
 import { confirmDialog } from "../../ui/ConfirmDialog";
+import { Select } from "../../ui/Select";
 import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
@@ -12,14 +15,40 @@ import {
 
 export function SkillsSettings() {
 	const { showTechnicalSummaries } = useSettingsExperience();
+	const { providers } = useSettingsStore();
 	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
 		useSkillsStore();
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [skillLlmModel, setSkillLlmModel] = useState<string>("");
+
+	// 获取所有可用模型
+	const allModels = providers
+		.filter((p) => p.isEnabled)
+		.flatMap((p) => p.models.map((m) => ({ id: m, provider: p.name })));
 
 	useEffect(() => {
 		handleRefresh();
+		loadSkillConfig();
 	}, []);
+
+	const loadSkillConfig = async () => {
+		try {
+			const model = await getConfig("skill_llm_model");
+			if (model) setSkillLlmModel(model);
+		} catch {
+			// 配置读取失败，忽略
+		}
+	};
+
+	const handleSkillModelChange = async (newModel: string) => {
+		setSkillLlmModel(newModel);
+		try {
+			await setConfig("skill_llm_model", newModel);
+		} catch (err) {
+			console.error("保存 Skill 模型配置失败:", err);
+		}
+	};
 
 	const handleRefresh = async () => {
 		setIsLoading(true);
@@ -216,6 +245,30 @@ export function SkillsSettings() {
 						</div>
 					))
 				)}
+			</div>
+
+			{/* Skill LLM Model Config */}
+			<div className="space-y-4">
+				<h4 className="font-medium text-text-primary">Skill 执行模型</h4>
+				<div>
+					<label className="text-sm text-text-secondary mb-1.5 block">
+						技能内容生成模型
+					</label>
+					<Select
+						value={skillLlmModel}
+						onChange={(e) => handleSkillModelChange(e.target.value)}
+					>
+						<option value="">跟随当前活跃模型（默认）</option>
+						{allModels.map((model) => (
+							<option key={`${model.provider}-${model.id}`} value={model.id}>
+								{model.id} ({model.provider})
+							</option>
+						))}
+					</Select>
+					<p className="text-xs text-text-muted mt-1.5">
+						Skill 执行时用于生成内容的 LLM 模型。如果未选择，将使用当前活跃模型。建议选择稳定性好的模型以避免执行失败。
+					</p>
+				</div>
 			</div>
 
 			{/* Info */}

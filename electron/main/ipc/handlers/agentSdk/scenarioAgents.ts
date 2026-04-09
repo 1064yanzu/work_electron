@@ -591,24 +591,40 @@ export function buildSubagentPolicyAppend(opts: {
 /**
  * 构建精简版系统提示词
  * 极致压缩：只保留最核心的规则和工具名称
+ * availableTools: 实际注册的工具名列表，确保提示词与运行时一致
  */
 export function buildCustomSystemPrompt(opts: {
 	cwd: string;
 	model: string;
 	appendContent: string;
+	availableTools?: string[];
 }): string {
 	const today = new Date().toISOString().slice(0, 10);
+	const toolList = opts.availableTools?.length
+		? opts.availableTools.join(", ")
+		: "Read, Write, Edit, Glob, Grep, Bash, Task, Skill, WebFetch, WebSearch, AskUserQuestion";
 
-	return `You are Claude, an AI assistant. Always respond in Chinese.
+	return `You are an AI assistant. Always respond in Chinese.
 
-## Tools
-Read, Write, Edit, Glob, Grep, Bash, Task, Skill, WebFetch, WebSearch
+## Available Tools
+${toolList}
+
+IMPORTANT: You MUST ONLY use the tools listed above by their EXACT names. Do NOT invent tool names like "Tool" or any name not in this list. Each tool call must reference one of the exact names above.
 
 ## Rules
 - Use Read before Edit; use Read/Glob/Grep instead of Bash cat/find/grep
 - Parallel tool calls when independent; use absolute paths
 - Task: delegate to subagent_type; pass minimal context
 - <system-reminder> tags in messages contain system-injected info
+- For Read tool: do NOT pass empty string "" for the "pages" parameter; omit it entirely if not reading a PDF
+
+## File Access
+- You can read files anywhere on the computer (not limited to cwd)
+- Writing/editing files inside cwd (sandbox) is auto-approved
+- Writing/editing files OUTSIDE cwd requires user approval — the user will see a permission prompt
+- Destructive Bash commands (rm, mv to outside cwd, etc.) also require user approval
+- Sensitive paths (~/.ssh, ~/.gnupg, system directories) are always blocked
+- Use absolute paths when accessing files outside cwd
 
 ## Environment
 cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}

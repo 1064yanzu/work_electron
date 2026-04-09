@@ -8,12 +8,12 @@ import {
 	PinOff,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ToolArtifact, ToolCall } from "../../../lib/agent/types";
 import { EVENTS, events } from "../../../lib/events";
 import { cn } from "../../../lib/utils";
 import type { ExecutionGraphSource } from "./types";
-import { formatDuration, safeJson } from "./utils";
+import { formatDuration, getSubagentType, safeJson } from "./utils";
 
 interface GraphInspectorPanelProps {
 	selectedNodeId: string;
@@ -25,6 +25,7 @@ interface GraphInspectorPanelProps {
 	onOpenArtifact: (filePath: string) => void;
 	pinned: boolean;
 	onTogglePin: () => void;
+	onSelectNode?: (nodeId: string) => void;
 }
 
 export function GraphInspectorPanel({
@@ -37,6 +38,7 @@ export function GraphInspectorPanel({
 	onOpenArtifact,
 	pinned,
 	onTogglePin,
+	onSelectNode,
 }: GraphInspectorPanelProps) {
 	const [collapsed, setCollapsed] = useState(false);
 	const [copiedTag, setCopiedTag] = useState<"" | "input" | "output" | "path">(
@@ -53,6 +55,53 @@ export function GraphInspectorPanel({
 				String(a.metadata?.toolCallId || "").trim() === selectedToolCall.id,
 		);
 	}, [selectedToolCall, source.artifacts]);
+
+	// 当选中子代理节点时，找出同组的所有子代理（用于 Agent 切换器）
+	const siblingSubagents = useMemo(() => {
+		if (!selectedToolCall) return [];
+		const isSubagent = Boolean(getSubagentType(selectedToolCall));
+		if (!isSubagent) return [];
+
+		const allToolCalls = source.toolCalls || [];
+		// 按 startedAt 排序
+		const sorted = [...allToolCalls].sort((a, b) => {
+			const ta = typeof a.startedAt === "number" ? a.startedAt : Number.MAX_SAFE_INTEGER;
+			const tb = typeof b.startedAt === "number" ? b.startedAt : Number.MAX_SAFE_INTEGER;
+			return ta - tb;
+		});
+
+		// 找到当前选中的子代理在排序列表中的位置
+		const currentIdx = sorted.findIndex((tc) => tc.id === selectedToolCall.id);
+		if (currentIdx < 0) return [];
+
+		const currentStart = typeof selectedToolCall.startedAt === "number" ? selectedToolCall.startedAt : null;
+		if (currentStart === null) return [];
+
+		// 收集同组子代理（startedAt 差值 < 2000ms 的连续子代理）
+		const group: ToolCall[] = [selectedToolCall];
+
+		// 向前搜索
+		for (let i = currentIdx - 1; i >= 0; i--) {
+			const tc = sorted[i]!;
+			if (!getSubagentType(tc)) break;
+			const start = typeof tc.startedAt === "number" ? tc.startedAt : null;
+			if (start === null || Math.abs(start - currentStart) >= 2000) break;
+			group.unshift(tc);
+		}
+		// 向后搜索
+		for (let i = currentIdx + 1; i < sorted.length; i++) {
+			const tc = sorted[i]!;
+			if (!getSubagentType(tc)) break;
+			const start = typeof tc.startedAt === "number" ? tc.startedAt : null;
+			if (start === null || Math.abs(start - currentStart) >= 2000) break;
+			group.push(tc);
+		}
+
+		// 只有 2+ 个才显示切换器
+		return group.length >= 2 ? group : [];
+	}, [selectedToolCall, source.toolCalls]);
+
+	const switcherRef = useRef<HTMLDivElement>(null);
 
 	const title = selectedToolCall
 		? selectedToolCall.name
@@ -306,6 +355,47 @@ export function GraphInspectorPanel({
 						)}
 					</div>
 				)}
+
+				{/* 子代理切换器 — 当选中子代理且同组有 2+ 个时显示 */}
+				{!collapsed && siblingSubagents.length >= 2 && onSelectNode ? (
+					<div className="border-t border-zinc-200/60 dark:border-zinc-800/60 px-3 py-2.5">
+						<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+							同组 Agent ({siblingSubagents.length})
+						</div>
+						<div
+							ref={switcherRef}
+							className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5"
+						>
+							{siblingSubagents.map((tc, idx) => {
+								const isActive = tc.id === selectedNodeId;
+								const statusColor =
+									tc.status === "completed"
+										? "bg-emerald-500"
+										: tc.status === "running"
+											? "bg-primary animate-pulse"
+											: tc.status === "error"
+												? "bg-rose-500"
+												: "bg-zinc-400";
+								return (
+									<button
+										key={tc.id}
+										type="button"
+										onClick={() => onSelectNode(tc.id)}
+										className={cn(
+											"shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors",
+											isActive
+												? "bg-primary/15 text-primary ring-1 ring-primary/25"
+												: "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/50",
+										)}
+									>
+										<span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusColor)} />
+										#{idx + 1}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				) : null}
 			</div>
 		</div>
 	);

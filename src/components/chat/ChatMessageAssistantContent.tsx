@@ -6,6 +6,13 @@ import { FileChangeCard } from "./FileChangeCard";
 import { ProcessingCard } from "./ProcessingCard";
 import type { ChatWebPreviewData } from "./chatMessageDerivations";
 import { splitAssistantMessageContent } from "./chatMessageDerivations";
+import {
+	usePlanModeSelector,
+	confirmPlan,
+	rejectPlan,
+} from "../../lib/agent/planModeStore";
+import { emitPlanModifyFeedback } from "../../lib/agent/planModifyEvent";
+import { PlanCard } from "../agent/PlanCard";
 
 const LazyWebPreviewCard = lazy(async () => {
 	const mod = await import("./WebPreviewCard");
@@ -66,8 +73,25 @@ function ChatMessageAssistantContentImpl({
 		message.metadata?.fileUpdates,
 	]);
 
+	// Plan Mode：检测消息中是否包含 plan 代码块，并从 store 获取当前计划
+	const hasPlanBlock = message.content.includes("```plan");
+	const currentPlan = usePlanModeSelector((s) => s.currentPlan);
+	const showPlanCard = hasPlanBlock && currentPlan !== null;
+
 	return (
 		<div className="w-full pr-2">
+			{/* Plan Card - 当消息包含 plan 代码块且 store 中有计划时显示 */}
+			{showPlanCard && currentPlan && (
+				<div className="mb-3">
+					<PlanCard
+						plan={currentPlan}
+						onConfirm={() => confirmPlan()}
+						onReject={() => rejectPlan()}
+						onModify={(feedback) => emitPlanModifyFeedback(feedback)}
+					/>
+				</div>
+			)}
+
 			{streamingWebPreview ? (
 				<Suspense fallback={PREVIEW_LOADING_FALLBACK}>
 					<LazyWebPreviewCard

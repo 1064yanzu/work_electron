@@ -8,7 +8,7 @@ import {
 	type FileDiff,
 	useDiffStoreSelector,
 } from "../../lib/stores/diffStore";
-import { acceptDiff, rejectDiff } from "../../lib/coding/diffActions";
+import { acceptDiff, rejectDiff } from "../../lib/agent/diffActions";
 import {
 	formatFilePath,
 	generateDiff,

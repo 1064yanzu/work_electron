@@ -2,6 +2,7 @@
 // 显示待处理的权限请求，让用户确认或拒绝
 
 import {
+	AlertTriangle,
 	BookOpen,
 	Camera,
 	ChevronDown,
@@ -10,6 +11,7 @@ import {
 	ExternalLink,
 	FilePlus,
 	FileText,
+	FolderOpen,
 	Globe,
 	type LucideIcon,
 	Plug,
@@ -192,6 +194,39 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						</pre>
 					)}
 				</div>
+
+				{/* 沙盒外操作警告 */}
+				{request.scope && !request.scope.insideSandbox && (
+					<div
+						className={`mx-4 mb-3 px-3 py-2 rounded-lg flex items-start gap-2 text-xs ${
+							request.scope.destructiveLevel === "dangerous"
+								? "bg-red-50/80 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+								: "bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
+						}`}
+					>
+						<FolderOpen className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+						<div className="min-w-0">
+							<div className="font-medium mb-0.5 flex items-center gap-1">
+								{request.scope.destructiveLevel === "dangerous" && (
+									<AlertTriangle className="w-3 h-3" />
+								)}
+								{request.scope.destructiveLevel === "dangerous"
+									? "危险操作 — 此命令可能造成不可逆的修改"
+									: "此操作将修改沙盒外的文件"}
+							</div>
+							{request.scope.targetPath && (
+								<div className="text-[11px] opacity-80 break-all font-mono">
+									{request.scope.targetPath}
+								</div>
+							)}
+							{request.scope.reason && (
+								<div className="text-[11px] opacity-70 mt-0.5">
+									{request.scope.reason}
+								</div>
+							)}
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* 记住选择 */}

@@ -562,10 +562,24 @@ export class SkillExecutor {
 		attachedContexts?: Array<{ title: string; content: string }>,
 		onChunk?: (chunk: string) => void,
 	): Promise<string> {
-		const activeModel = settingsStore.getActiveModel();
-		if (!activeModel) {
+		// 优先使用 Skill 专用模型，回退到全局 activeModel
+		let modelToUse: string | null = null;
+		try {
+			const { getConfig } = await import("../config");
+			const skillModel = await getConfig("skill_llm_model");
+			if (typeof skillModel === "string" && skillModel.trim()) {
+				modelToUse = skillModel.trim();
+			}
+		} catch {
+			// 配置读取失败，忽略
+		}
+		if (!modelToUse) {
+			modelToUse = settingsStore.getActiveModel();
+		}
+		if (!modelToUse) {
 			throw new Error("请先配置并选择一个模型");
 		}
+		const activeModel = modelToUse;
 
 		// 构建用户资料
 		const attachedText = attachedContexts?.length

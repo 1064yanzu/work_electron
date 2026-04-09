@@ -17,12 +17,17 @@ import { getConfig } from "../config";
 import { isSdkSessionId } from "./context/sessionId";
 import { getMcpConfigForSdk } from "./mcpConfig";
 import { askUserQuestionStore } from "./askUserQuestionStore";
+import type { PlanData } from "./planModeStore";
+import {
+	buildPlanModeSystemPrompt,
+	buildPlanExecutionPrompt,
+	PLAN_MODE_ALLOWED_TOOLS,
+} from "./planModePrompt";
 import {
 	type ExternalPermissionDecision,
 	permissionStore,
 } from "./permissionStore";
 import { AgentStreamState, type UIEvent } from "./streamState";
-import { codingAgentStore } from "../stores/codingAgentStore";
 
 /**
  * Message types that our UI understands
@@ -180,6 +185,12 @@ export interface ClaudeAgentExecutionOptions {
 
 	/** Abort controller for cancellation */
 	abortController?: AbortController;
+
+	/** 是否以规划模式运行（仅输出计划，不执行修改操作） */
+	planMode?: boolean;
+
+	/** 已确认的计划，作为执行上下文注入 */
+	confirmedPlan?: PlanData;
 }
 
 /**
@@ -202,28 +213,7 @@ const DEFAULT_TOOLS = [
 function buildAllowedTools(
 	experimentalMultiAgent: boolean,
 	mode: "subagent_only" | "hybrid" | "teammate_preferred",
-	codingMode?: "code" | "plan" | "ask",
 ): string[] {
-	// Ask 模式：只允许只读工具
-	if (codingMode === "ask") {
-		return ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "AskUserQuestion"];
-	}
-
-	// Plan 模式（计划确认前）：只读工具 + AskUserQuestion
-	if (codingMode === "plan") {
-		return [
-			"Read",
-			"Glob",
-			"Grep",
-			"WebSearch",
-			"WebFetch",
-			"AskUserQuestion",
-			"Skill",
-			"Task",
-		];
-	}
-
-	// Code 模式：完整工具集
 	if (!experimentalMultiAgent || mode === "subagent_only") {
 		return [...DEFAULT_TOOLS];
 	}
@@ -320,6 +310,8 @@ export class ClaudeAgentService {
 			onComplete,
 			onTodoUpdate,
 			abortController = new AbortController(),
+			planMode,
+			confirmedPlan,
 		} = options;
 
 		// Use user-specified model, or fall back to settings, or default
@@ -583,14 +575,28 @@ export class ClaudeAgentService {
 			permissionModeForRun !== "plan"
 				? "delegate"
 				: permissionModeForRun;
-		const resolvedAllowedTools = buildAllowedTools(
-			resolvedExperimentalMultiAgent,
-			resolvedMultiAgentMode,
-			codingAgentStore.getState().codingMode,
-		);
+		const resolvedAllowedTools = planMode
+			? [...PLAN_MODE_ALLOWED_TOOLS]
+			: buildAllowedTools(
+					resolvedExperimentalMultiAgent,
+					resolvedMultiAgentMode,
+				);
 		const resolvedMcpServerLimit = resolveMcpServerLimitByToolSearchMode(
 			resolvedEnableToolSearch,
 		);
+
+		// 规划模式：构建最终 system prompt
+		const resolvedSystemPrompt = (() => {
+			const parts: string[] = [];
+			if (systemPrompt) parts.push(systemPrompt);
+			if (planMode) {
+				parts.push(buildPlanModeSystemPrompt());
+			}
+			if (confirmedPlan) {
+				parts.push(buildPlanExecutionPrompt(confirmedPlan));
+			}
+			return parts.length > 0 ? parts.join("\n\n") : undefined;
+		})();
 
 		let unlisten: (() => void) | null = null;
 		let runId: string | null = null;
@@ -837,6 +843,12 @@ export class ClaudeAgentService {
 							toolUseId?: unknown;
 							runId?: unknown;
 							expiresAt?: unknown;
+							scope?: {
+								insideSandbox?: boolean;
+								targetPath?: string;
+								destructiveLevel?: "safe" | "moderate" | "dangerous";
+								reason?: string;
+							};
 						};
 						const requestId =
 							typeof request.requestId === "string" ? request.requestId : "";
@@ -945,6 +957,14 @@ export class ClaudeAgentService {
 											: requestId,
 									toolName,
 									toolInput,
+									scope: request.scope?.insideSandbox != null
+										? {
+												insideSandbox: request.scope.insideSandbox,
+												targetPath: request.scope.targetPath,
+												destructiveLevel: request.scope.destructiveLevel,
+												reason: request.scope.reason,
+											}
+										: undefined,
 								});
 							await invoke("agent_sdk_resolve_interaction", {
 								runId,
@@ -1379,7 +1399,7 @@ export class ClaudeAgentService {
 										persist_session: persistSession,
 										permission_mode: resolvedPermissionModeForRun,
 										allowed_tools: resolvedAllowedTools,
-										system_prompt: systemPrompt,
+										system_prompt: resolvedSystemPrompt,
 										skills,
 										mcp_servers: mcpServers,
 										additional_directories:
@@ -1481,7 +1501,7 @@ export class ClaudeAgentService {
 					persist_session: persistSession,
 					permission_mode: resolvedPermissionModeForRun,
 					allowed_tools: resolvedAllowedTools,
-					system_prompt: systemPrompt,
+					system_prompt: resolvedSystemPrompt,
 					skills,
 					mcp_servers: mcpServers, // 传递 MCP 配置给 SDK
 					additional_directories:

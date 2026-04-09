@@ -154,9 +154,34 @@ async function ensureDir(dir: string) {
 }
 
 /**
+ * Compare SKILL.md modification times between source and destination.
+ * Returns true if source is newer than dest (or dest doesn't exist).
+ */
+async function isSkillNewer(
+	srcDir: string,
+	destDir: string,
+): Promise<boolean> {
+	const srcSkillMd = path.join(srcDir, "SKILL.md");
+	const destSkillMd = path.join(destDir, "SKILL.md");
+	try {
+		const [srcStat, destStat] = await Promise.all([
+			fsp.stat(srcSkillMd).catch(() => null),
+			fsp.stat(destSkillMd).catch(() => null),
+		]);
+		if (!srcStat) return false; // source has no SKILL.md — skip
+		if (!destStat) return true; // dest doesn't exist — needs sync
+		return srcStat.mtimeMs > destStat.mtimeMs;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * Claude Agent SDK 的 Skill tool 会扫描 cwd/.claude/skills（project settings）等目录。
  * 我们当前的技能库在 ~/.claude/skills（home）。为避免 SDK 执行 Skill 时提示"不可用"，
  * 在每次启动 agent 前，把 home skills 增量同步到 cwd/.claude/skills。
+ *
+ * 改进：对已存在的 skill，比较 SKILL.md 的修改时间，源更新时重新同步。
  */
 export async function syncSkillsToCwd(
 	cwd: string,
@@ -178,25 +203,45 @@ export async function syncSkillsToCwd(
 	try {
 		entries = await fsp.readdir(srcRoot, { withFileTypes: true });
 	} catch {
-		// 没有 home skills 目录就不做同步
 		stderr(`[agent_sdk_start] Home skills dir not found: ${srcRoot}`);
 		return;
 	}
 
+	const dirEntries = entries.filter((e) => e.isDirectory());
 	stderr(
-		`[agent_sdk_start] Syncing skills: src=${srcRoot} -> dest=${destRoot} (dirs=${entries.filter((e) => e.isDirectory()).length})`,
+		`[agent_sdk_start] Syncing skills: src=${srcRoot} -> dest=${destRoot} (dirs=${dirEntries.length})`,
 	);
 
-	for (const ent of entries) {
-		if (!ent.isDirectory()) continue;
+	let newCount = 0;
+	let updatedCount = 0;
+
+	for (const ent of dirEntries) {
 		const srcDir = path.join(srcRoot, ent.name);
 		const destDir = path.join(destRoot, ent.name);
+
+		let destExists = false;
 		try {
 			await fsp.access(destDir);
-			// 已存在则不覆盖，避免破坏 project 侧自定义
-			continue;
+			destExists = true;
 		} catch {
-			// dest 不存在 -> copy
+			// dest 不存在
+		}
+
+		if (destExists) {
+			// 检查是否有更新：比较 SKILL.md 的 mtime
+			const newer = await isSkillNewer(srcDir, destDir);
+			if (!newer) continue;
+
+			// 源更新 — 重新同步（删除旧的，复制新的）
+			try {
+				await fsp.rm(destDir, { recursive: true, force: true });
+			} catch {
+				// 删除失败就跳过
+				continue;
+			}
+			updatedCount++;
+		} else {
+			newCount++;
 		}
 
 		try {
@@ -210,6 +255,12 @@ export async function syncSkillsToCwd(
 				`[agent_sdk_start] Failed to sync skill '${ent.name}' to project skills dir. ${e instanceof Error ? e.message : String(e)}`,
 			);
 		}
+	}
+
+	if (newCount > 0 || updatedCount > 0) {
+		stderr(
+			`[agent_sdk_start] Skills sync complete: ${newCount} new, ${updatedCount} updated`,
+		);
 	}
 }
 

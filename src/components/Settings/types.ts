@@ -4,12 +4,12 @@ export type SettingsNavGroup = "common" | "technical";
 
 export type SettingsTabId =
 	| "dashboard"
-	| "aiCoding"
 	| "models"
 	| "prompts"
 	| "imagegen"
 	| "agent"
 	| "skills"
+	| "memory"
 	| "mcp"
 	| "remoteControl"
 	| "general"

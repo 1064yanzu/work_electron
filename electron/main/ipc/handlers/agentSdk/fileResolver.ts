@@ -4,9 +4,86 @@
  * File resolution utilities for the Agent SDK.
  * Handles loose filename matching, path rewriting, and Bash command rewriting
  * to help the LLM find files within the agent workspace (cwd).
+ *
+ * Supports global file access: paths outside the sandbox are resolved but
+ * flagged via `insideSandbox: false` so the permission layer can gate writes.
  */
 import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface ResolvedPath {
+	/** Resolved absolute path */
+	path: string;
+	/** Whether the path is inside the agent sandbox (cwd) */
+	insideSandbox: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Sensitive path protection
+// ---------------------------------------------------------------------------
+
+const HOME = os.homedir();
+
+/** Directories that should NEVER be accessible to the agent, even with user approval */
+const SENSITIVE_PATHS = [
+	path.join(HOME, ".ssh"),
+	path.join(HOME, ".gnupg"),
+	path.join(HOME, ".aws", "credentials"),
+	path.join(HOME, ".config", "gcloud"),
+	"/etc/shadow",
+	"/etc/passwd",
+	"/etc/sudoers",
+];
+
+/** Directory prefixes that are system-critical and should be blocked for writes */
+const SYSTEM_WRITE_BLOCKED_PREFIXES = [
+	"/System",
+	"/usr/bin",
+	"/usr/sbin",
+	"/sbin",
+	"/bin",
+	"/private/var/root",
+];
+
+export function isSensitivePath(p: string): boolean {
+	const resolved = path.resolve(p);
+	for (const sensitive of SENSITIVE_PATHS) {
+		if (
+			resolved === sensitive ||
+			resolved.startsWith(`${sensitive}${path.sep}`)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
+export function isSystemWriteBlocked(p: string): boolean {
+	const resolved = path.resolve(p);
+	for (const prefix of SYSTEM_WRITE_BLOCKED_PREFIXES) {
+		if (
+			resolved === prefix ||
+			resolved.startsWith(`${prefix}${path.sep}`)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
+export function isPathInsideCwd(filePath: string, cwd: string): boolean {
+	const resolved = path.resolve(filePath);
+	const cwdResolved = path.resolve(cwd);
+	return (
+		resolved === cwdResolved ||
+		resolved.startsWith(`${cwdResolved}${path.sep}`)
+	);
+}
 
 export const MAX_RESOLVE_SCAN_ENTRIES = 5000;
 
@@ -179,18 +256,20 @@ export async function guessDefaultReadableFilePath(
 	return scored[0]?.p || null;
 }
 
-export async function resolveToolFilePath(opts: {
+export async function resolveToolFilePathEx(opts: {
 	cwd: string;
 	rawPath: string;
-}): Promise<string | null> {
+	/** When true, allows paths outside cwd (returns insideSandbox=false) */
+	allowGlobal?: boolean;
+}): Promise<ResolvedPath | null> {
 	const raw = stripWrappingQuotes(String(opts.rawPath || "").trim());
 	if (!raw) return null;
 
 	const cwdResolved = path.resolve(opts.cwd);
+	const allowGlobal = opts.allowGlobal !== false; // default true
 
 	const unescapeCommon = (p: string): string =>
 		String(p || "")
-			// Convert escaped quotes like \" to "
 			.replace(/\\(["'])/g, "$1")
 			.trim();
 
@@ -204,38 +283,50 @@ export async function resolveToolFilePath(opts: {
 		return path.join(opts.cwd, ".claude", "skills", tail);
 	};
 
-	// 【修复】首先检查：如果路径是绝对路径且文件存在，直接返回
-	// 这解决了模型提供完整沙盒路径时的问题
+	const checkInsideCwd = (p: string): boolean => {
+		const resolved = path.resolve(p);
+		return (
+			resolved === cwdResolved ||
+			resolved.startsWith(`${cwdResolved}${path.sep}`)
+		);
+	};
+
+	// 首先检查：如果路径是绝对路径且文件存在
 	const rawClean = unescapeCommon(raw);
 	if (path.isAbsolute(rawClean)) {
 		const absoluteExists = await pathExists(rawClean);
 		console.log(
-			`[resolveToolFilePath] Absolute path check: raw='${rawClean}', exists=${absoluteExists}`,
+			`[resolveToolFilePathEx] Absolute path check: raw='${rawClean}', exists=${absoluteExists}`,
 		);
 		if (absoluteExists) {
 			const resolved = path.resolve(rawClean);
-			const withinCwd =
-				resolved === cwdResolved ||
-				resolved.startsWith(`${cwdResolved}${path.sep}`);
-			if (withinCwd) return rawClean;
+			const withinCwd = checkInsideCwd(resolved);
+			if (withinCwd) return { path: rawClean, insideSandbox: true };
 
-			// If model tries to read from ~/.claude/skills, rewrite to cwd/.claude/skills where we sync skills.
+			// Rewrite ~/.claude/skills to cwd/.claude/skills
 			const mapped = mapHomeSkillsToCwd(rawClean);
 			if (mapped && (await pathExists(mapped))) {
 				console.log(
-					`[resolveToolFilePath] Rewriting home skills path to cwd: '${rawClean}' -> '${mapped}'`,
+					`[resolveToolFilePathEx] Rewriting home skills path to cwd: '${rawClean}' -> '${mapped}'`,
 				);
-				return mapped;
+				return { path: mapped, insideSandbox: true };
 			}
 
-			// Disallow paths outside cwd to avoid SDK tool sandbox errors.
+			// 全局访问：路径在沙盒外，但文件存在
+			if (allowGlobal) {
+				console.log(
+					`[resolveToolFilePathEx] Global access: path='${rawClean}', insideSandbox=false`,
+				);
+				return { path: rawClean, insideSandbox: false };
+			}
+
 			console.log(
-				`[resolveToolFilePath] Absolute path exists but outside cwd; rejecting: raw='${rawClean}', cwd='${cwdResolved}'`,
+				`[resolveToolFilePathEx] Absolute path exists but outside cwd and global disabled; rejecting`,
 			);
 			return null;
 		}
 
-		// Absolute path doesn't exist; often the basename is correct but the path/quotes are wrong.
+		// Absolute path doesn't exist; try basename matching within cwd
 		const base = path.basename(rawClean);
 		if (base && base !== rawClean) {
 			const foundByBase = await findFileByLooseName({
@@ -244,64 +335,102 @@ export async function resolveToolFilePath(opts: {
 			});
 			if (foundByBase && (await pathExists(foundByBase))) {
 				console.log(
-					`[resolveToolFilePath] Absolute path missing; resolved by basename: raw='${rawClean}' -> '${foundByBase}'`,
+					`[resolveToolFilePathEx] Absolute path missing; resolved by basename: raw='${rawClean}' -> '${foundByBase}'`,
 				);
-				return foundByBase;
+				return { path: foundByBase, insideSandbox: true };
+			}
+		}
+
+		// 绝对路径不存在但可能是新文件 — 检查父目录是否存在
+		const parentDir = path.dirname(rawClean);
+		const parentExists = await pathExists(parentDir);
+		if (parentExists) {
+			const insideCwd = checkInsideCwd(rawClean);
+			if (insideCwd) {
+				return { path: rawClean, insideSandbox: true };
+			}
+			if (allowGlobal) {
+				console.log(
+					`[resolveToolFilePathEx] New file (global): path='${rawClean}', insideSandbox=false`,
+				);
+				return { path: rawClean, insideSandbox: false };
 			}
 		}
 	}
 
-	const isWithinCwd = (p: string) => {
-		const resolved = path.resolve(p);
-		return (
-			resolved === cwdResolved ||
-			resolved.startsWith(`${cwdResolved}${path.sep}`)
-		);
-	};
-
 	// 尝试作为相对于 cwd 的路径解析
 	const asAbsolute = path.isAbsolute(raw) ? raw : path.resolve(opts.cwd, raw);
 	const exists = await pathExists(asAbsolute);
-	const withinCwd = isWithinCwd(asAbsolute);
+	const withinCwd = checkInsideCwd(asAbsolute);
 	console.log(
-		`[resolveToolFilePath] Relative check: raw='${raw}', cwd='${cwdResolved}', asAbsolute='${asAbsolute}', exists=${exists}, withinCwd=${withinCwd}`,
+		`[resolveToolFilePathEx] Relative check: raw='${raw}', asAbsolute='${asAbsolute}', exists=${exists}, withinCwd=${withinCwd}`,
 	);
 
-	if (exists && withinCwd) return asAbsolute;
+	if (exists && withinCwd) return { path: asAbsolute, insideSandbox: true };
+	if (exists && !withinCwd && allowGlobal) {
+		return { path: asAbsolute, insideSandbox: false };
+	}
 
-	// 【修复】对于 Write 工具创建新文件：即使文件不存在，只要路径在 cwd 内且是合法路径，就允许
-	// 这样 Write 工具就可以创建新文件了
+	// 文件不存在但路径在 cwd 内 — 允许新文件创建
 	if (!exists && withinCwd) {
-		// 确保父目录存在或可以创建
 		const parentDir = path.dirname(asAbsolute);
 		const parentExists = await pathExists(parentDir);
 		if (parentExists || parentDir === cwdResolved) {
 			console.log(
-				`[resolveToolFilePath] New file path (for Write): raw='${raw}' -> '${asAbsolute}'`,
+				`[resolveToolFilePathEx] New file path (cwd): raw='${raw}' -> '${asAbsolute}'`,
 			);
-			return asAbsolute;
+			return { path: asAbsolute, insideSandbox: true };
 		}
 	}
 
-	// 模糊匹配：如果用户提供了文件名而非路径
-	const found = await findFileByLooseName({ rootDir: opts.cwd, query: raw });
-	console.log(`[resolveToolFilePath] Fuzzy search result: '${found}'`);
-	if (found && (await pathExists(found))) return found;
+	// 文件不存在但路径在 cwd 外 — 允许新文件创建（全局模式）
+	if (!exists && !withinCwd && allowGlobal) {
+		const parentDir = path.dirname(asAbsolute);
+		const parentExists = await pathExists(parentDir);
+		if (parentExists) {
+			return { path: asAbsolute, insideSandbox: false };
+		}
+	}
 
-	// If the model passed an absolute-ish string that doesn't exist, try matching by basename.
+	// 模糊匹配：如果用户提供了文件名而非路径（仅在 cwd 内搜索）
+	const found = await findFileByLooseName({ rootDir: opts.cwd, query: raw });
+	console.log(`[resolveToolFilePathEx] Fuzzy search result: '${found}'`);
+	if (found && (await pathExists(found))) {
+		return { path: found, insideSandbox: true };
+	}
+
+	// Basename fallback
 	const rawBase = path.basename(raw);
 	if (rawBase && rawBase !== raw) {
 		const foundByBase = await findFileByLooseName({
 			rootDir: opts.cwd,
 			query: rawBase,
 		});
-		if (foundByBase && (await pathExists(foundByBase))) return foundByBase;
+		if (foundByBase && (await pathExists(foundByBase))) {
+			return { path: foundByBase, insideSandbox: true };
+		}
 	}
 
 	console.log(
-		`[resolveToolFilePath] FAILED: Could not resolve path '${raw}' in cwd='${cwdResolved}'`,
+		`[resolveToolFilePathEx] FAILED: Could not resolve path '${raw}' in cwd='${cwdResolved}'`,
 	);
 	return null;
+}
+
+/**
+ * Legacy wrapper — returns just the path string (null if not found).
+ * Used by code paths that don't need sandbox scope info.
+ */
+export async function resolveToolFilePath(opts: {
+	cwd: string;
+	rawPath: string;
+}): Promise<string | null> {
+	const result = await resolveToolFilePathEx({
+		cwd: opts.cwd,
+		rawPath: opts.rawPath,
+		allowGlobal: true,
+	});
+	return result?.path ?? null;
 }
 
 // ---------------------------------------------------------------------------

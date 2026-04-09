@@ -20,7 +20,7 @@ import {
 	acceptDiff,
 	rejectAllDiffs,
 	rejectDiff,
-} from "../../lib/coding/diffActions";
+} from "../../lib/agent/diffActions";
 import {
 	formatFilePath,
 	generateDiff,

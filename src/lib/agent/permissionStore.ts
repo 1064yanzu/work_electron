@@ -171,6 +171,12 @@ class PermissionStore {
 		toolCallId: string;
 		toolName: string;
 		toolInput: Record<string, unknown>;
+		scope?: {
+			insideSandbox: boolean;
+			targetPath?: string;
+			destructiveLevel?: "safe" | "moderate" | "dangerous";
+			reason?: string;
+		};
 	}): Promise<ExternalPermissionDecision> {
 		const { policy, sessionRemembered } = this.state;
 		const toolType = this.mapSdkToolNameToToolType(input.toolName);
@@ -185,6 +191,10 @@ class PermissionStore {
 			policy,
 		);
 		request.id = input.requestId;
+		// 传递 scope 信息
+		if (input.scope) {
+			request.scope = input.scope;
+		}
 
 		if (remembered) {
 			return remembered === "allowed"

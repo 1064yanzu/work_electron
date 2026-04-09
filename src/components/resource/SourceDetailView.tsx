@@ -39,6 +39,7 @@ import {
 	SourceOrigin,
 	SourceType,
 } from "../../types";
+import { getSourceTypeConfig } from "../../lib/sourceTypeConfig";
 import DocumentViewer, { extractDocumentInfo } from "../ui/DocumentViewer";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { RichContentWithStyles } from "../ui/RichContentRenderer";
@@ -287,20 +288,7 @@ export const SourceDetailView = forwardRef<
 	}, []);
 
 	const getKindColor = useCallback((kind: SourceType) => {
-		switch (kind) {
-			case SourceType.Web:
-				return "bg-blue-500";
-			case SourceType.Audio:
-				return "bg-purple-500";
-			case SourceType.Document:
-				return "bg-orange-500";
-			case SourceType.Text:
-				return "bg-green-500";
-			case SourceType.Image:
-				return "bg-pink-500";
-			default:
-				return "bg-zinc-500";
-		}
+		return getSourceTypeConfig(kind).dotColor;
 	}, []);
 
 	const getScopeLabel = useCallback((source: Source) => {

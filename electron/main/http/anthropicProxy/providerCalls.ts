@@ -53,7 +53,7 @@ function sanitizeOpenAICompatibleToolName(name: unknown): string {
 	const trimmed = raw.trim();
 	const safe = trimmed.replace(/[^A-Za-z0-9_-]/g, "_");
 	const clipped = safe.slice(0, OPENAI_COMPAT_TOOL_NAME_MAX_LEN);
-	return clipped || "Tool";
+	return clipped || "unknown_tool";
 }
 
 function sanitizeOpenAICompatibleToolDescription(
@@ -343,7 +343,7 @@ function flattenToolHistoryForOpenAICompatible(
 			const toolCallId = (m as any).tool_call_id
 				? String((m as any).tool_call_id)
 				: "";
-			const toolName = toolCallIdToName.get(toolCallId) || "Tool";
+			const toolName = toolCallIdToName.get(toolCallId) || "unknown_tool";
 			const content =
 				typeof (m as any).content === "string" ? (m as any).content : "";
 			out.push({
@@ -1051,8 +1051,49 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		return state;
 	};
 
+	/**
+	 * 统一的工具调用 key 派生函数。
+	 * 确保 output_item.added / function_call_arguments.delta / done 等事件
+	 * 对同一个工具调用产生相同的 key，避免创建重复的 state 导致名称丢失。
+	 *
+	 * 优先级：event.item_id → item.id → 通过 output_index 查找已知 key → idx_N → tool_N
+	 * 注意：item.call_id 不能用于 key（它和 event.item_id 是不同的标识符）
+	 */
+	const outputIndexToToolKey = new Map<number, string>();
+
+	const deriveToolCallKey = (event: any, item?: Record<string, unknown> | null): string => {
+		if (typeof event.item_id === "string" && event.item_id) {
+			// 同时注册到 output_index 辅助索引
+			if (typeof event.output_index === "number") {
+				outputIndexToToolKey.set(event.output_index, event.item_id);
+			}
+			return event.item_id;
+		}
+		if (item && typeof item.id === "string" && item.id) {
+			if (typeof event.output_index === "number") {
+				outputIndexToToolKey.set(event.output_index, item.id);
+			}
+			return item.id;
+		}
+		// 通过 output_index 查找已知的 key（处理 item_id 在某些事件中缺失的情况）
+		if (typeof event.output_index === "number") {
+			const existing = outputIndexToToolKey.get(event.output_index);
+			if (existing) return existing;
+			const fallback = `idx_${event.output_index}`;
+			outputIndexToToolKey.set(event.output_index, fallback);
+			return fallback;
+		}
+		return `tool_${toolCalls.size}`;
+	};
+
 	const ensureToolCallBlock = (state: ResponsesToolCallState) => {
 		if (state.blockIndex !== null) return;
+		// 延迟创建 block 直到 name 可用。
+		// 当 function_call_arguments.delta 先于 output_item.added 到达时，
+		// state.name 还未被设置，此时不应创建 block，而是继续缓冲 args。
+		// name 将在 output_item.added 或 response.completed 时通过
+		// hydrateToolCallFromItem 设置，届时再创建 block 并 flush 所有缓冲 args。
+		if (!state.name) return;
 		stopTextBlockIfNeeded();
 		stopThoughtBlockIfNeeded();
 		state.blockIndex = nextBlockIndex++;
@@ -1062,7 +1103,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			content_block: {
 				type: "tool_use",
 				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-				name: state.name || "Tool",
+				name: state.name,
 				input: {},
 			},
 		});
@@ -1087,10 +1128,12 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		item: Record<string, unknown>,
 		keyHint?: string,
 	) => {
+		// key 派生优先级与 deriveToolCallKey 一致：item.id 优先于 item.call_id
+		// 因为 function_call_arguments.delta 事件中 event.item_id 对应的是 item.id
 		const key =
 			keyHint ||
-			(typeof item.call_id === "string" && item.call_id) ||
 			(typeof item.id === "string" && item.id) ||
+			(typeof item.call_id === "string" && item.call_id) ||
 			`tool_${toolCalls.size}`;
 		const state = getToolState(String(key));
 		if (typeof item.call_id === "string" && item.call_id)
@@ -1139,6 +1182,57 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		stopHeartbeat();
 		stopTextBlockIfNeeded();
 		stopThoughtBlockIfNeeded();
+
+		// 强制刷出所有延迟创建的 tool call blocks
+		// （处理 name 从未到达的极端情况，如流中断）
+		for (const state of toolCalls.values()) {
+			if (state.blockIndex !== null) continue;
+			if (!state.args && !state.name && !state.id) continue;
+			// 跳过无名工具调用（避免产生 unknown_tool 错误导致 SDK 报错）
+			const toolName = typeof state.name === "string" ? state.name.trim() : "";
+			if (!toolName) continue;
+			stopTextBlockIfNeeded();
+			stopThoughtBlockIfNeeded();
+			state.blockIndex = nextBlockIndex++;
+			// 清洗参数：移除空字符串可选参数
+			let sanitizedArgs = state.args;
+			try {
+				const parsed = JSON.parse(state.args || "{}");
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					const cleaned: Record<string, unknown> = {};
+					for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+						if (v === "") continue;
+						cleaned[k] = v;
+					}
+					sanitizedArgs = JSON.stringify(cleaned);
+				}
+			} catch {
+				// 保持原始 args
+			}
+			writeSseEvent(res, "content_block_start", {
+				type: "content_block_start",
+				index: state.blockIndex,
+				content_block: {
+					type: "tool_use",
+					id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+					name: toolName,
+					input: {},
+				},
+			});
+			const pendingArgs = sanitizedArgs.slice(state.sentArgsLength);
+			if (pendingArgs) {
+				writeSseEvent(res, "content_block_delta", {
+					type: "content_block_delta",
+					index: state.blockIndex,
+					delta: {
+						type: "input_json_delta",
+						partial_json: pendingArgs,
+					},
+				});
+				state.sentArgsLength = sanitizedArgs.length;
+			}
+		}
+
 		stopAllToolCallBlocksIfNeeded();
 		const stopReason =
 			pendingStopReason ||
@@ -1231,9 +1325,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			}
 
 			if (eventType === "response.function_call_arguments.delta") {
-				const key = String(
-					event.item_id || event.output_index || `tool_${toolCalls.size}`,
-				);
+				const key = deriveToolCallKey(event);
 				const state = getToolState(key);
 				if (typeof event.delta === "string" && event.delta) {
 					state.args = mergeStreamingFragment(state.args, event.delta);
@@ -1243,9 +1335,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			}
 
 			if (eventType === "response.function_call_arguments.done") {
-				const key = String(
-					event.item_id || event.output_index || `tool_${toolCalls.size}`,
-				);
+				const key = deriveToolCallKey(event);
 				const state = getToolState(key);
 				const finalArgs =
 					typeof event.delta === "string"
@@ -1268,12 +1358,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 					event.item && typeof event.item === "object" ? event.item : null;
 				if (!item) return;
 				const itemType = typeof item.type === "string" ? item.type : "";
-				const itemKey = String(
-					event.item_id ||
-						(typeof item.call_id === "string" && item.call_id) ||
-							(typeof item.id === "string" && item.id) ||
-						`item_${event.output_index || 0}`,
-				);
+				const itemKey = deriveToolCallKey(event, item);
 				if (itemType === "function_call") {
 					hydrateToolCallFromItem(item, itemKey);
 					return;
@@ -1297,7 +1382,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 					finalResponse.output.forEach((item, index) => {
 						if (!item || typeof item !== "object") return;
 						const key = String(
-							item.call_id || item.id || `final_item_${index}`,
+							item.id || item.call_id || `final_item_${index}`,
 						);
 						if (item.type === "function_call") {
 							hydrateToolCallFromItem(item as any, key);
@@ -1760,6 +1845,9 @@ export async function callProviderStream(
 
 	const startToolCallBlockIfNeeded = (state: StreamingToolCallState) => {
 		if (state.blockIndex !== null) return;
+		// 延迟创建 block 直到 name 可用，避免 unknown_tool
+		const toolName = typeof state.name === "string" ? state.name.trim() : "";
+		if (!toolName) return;
 		stopTextBlockIfNeeded();
 		stopThoughtBlockIfNeeded();
 		state.blockIndex = nextBlockIndex++;
@@ -1769,7 +1857,7 @@ export async function callProviderStream(
 			content_block: {
 				type: "tool_use",
 				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-				name: state.name || "Tool",
+				name: toolName,
 				input: {},
 			},
 		});
@@ -1806,12 +1894,17 @@ export async function callProviderStream(
 		stopTextBlockIfNeeded();
 		stopThoughtBlockIfNeeded();
 		const sorted = [...toolCalls.entries()].sort((a, b) => a[0] - b[0]);
+		let flushed = false;
 		for (const [_idx, state] of sorted) {
+			// 跳过无名工具调用
+			const toolName = typeof state.name === "string" ? state.name.trim() : "";
+			if (!toolName) continue;
 			startToolCallBlockIfNeeded(state);
 			emitToolCallArgsIfNeeded(state);
+			flushed = true;
 		}
 		stopAllToolCallBlocksIfNeeded();
-		return true;
+		return flushed;
 	};
 
 	const finalize = () => {

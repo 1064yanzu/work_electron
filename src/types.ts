@@ -31,6 +31,12 @@ export enum SourceType {
 	Audio = "audio",
 	Text = "text",
 	Image = "image",
+	Video = "video",
+	Code = "code",
+	Spreadsheet = "spreadsheet",
+	Presentation = "presentation",
+	Pdf = "pdf",
+	Archive = "archive",
 }
 
 // 资料来源（区分手动添加、浏览器剪存等）

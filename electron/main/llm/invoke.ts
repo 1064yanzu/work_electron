@@ -9,6 +9,7 @@ import {
 	normalizeAnthropicBaseUrl,
 	normalizeOpenAICompatibleBaseUrl,
 } from "./providerHttp";
+import { parseLlmError, formatLlmErrorForStream } from "./llmErrors";
 
 const DEFAULT_MODEL = "gpt-4o";
 
@@ -59,6 +60,8 @@ interface StreamChunk {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		cache_read_input_tokens?: number;
+		cache_creation_input_tokens?: number;
 	};
 }
 
@@ -75,6 +78,8 @@ interface LlmCallResult {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		cache_read_input_tokens?: number;
+		cache_creation_input_tokens?: number;
 	};
 }
 
@@ -304,8 +309,200 @@ export async function resolveProviderApiKey(
 	return keys[nextIndex];
 }
 
+/** 判断 provider 是否配置了 OpenAI Responses API 端点 */
+function isResponsesEndpoint(provider: Provider): boolean {
+	return provider.metadata?.openai_endpoint_type === "responses";
+}
+
 /**
- * 调用 OpenAI 兼容 API
+ * 调用 OpenAI Responses API（非流式）
+ * 端点: POST /v1/responses
+ * 文档: https://platform.openai.com/docs/api-reference/responses
+ */
+async function callOpenAIResponses(
+	provider: Provider,
+	model: string,
+	prompt: string,
+	apiKey: string | undefined,
+	context?: string[],
+	temperature?: number,
+): Promise<LlmCallResult> {
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		provider,
+		"https://api.openai.com",
+	);
+	const url = `${baseUrl}/responses`;
+
+	const contextMsg = buildContextMessage(context);
+	const transientStatus = new Set([429, 500, 502, 503, 504, 524]);
+	let response: Response | null = null;
+	let lastErrorText = "";
+
+	const body: Record<string, unknown> = {
+		model,
+		input: prompt,
+		temperature: temperature ?? 0.7,
+	};
+	if (contextMsg) {
+		body.instructions = contextMsg;
+	}
+
+	const MAX_RETRIES = 4;
+	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...getOpenAICompatibleAuthHeaders(provider, apiKey),
+			},
+			body: JSON.stringify(body),
+			signal: createTimeoutSignal(LLM_CALL_TIMEOUT_MS),
+		});
+
+		if (response.ok) break;
+		lastErrorText = await response.text();
+		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
+			// 指数退避：1s, 3s, 8s, 20s
+			const baseDelay = 1000;
+			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			await sleep(delay);
+			continue;
+		}
+		throw new Error(`LLM call failed: ${response.status} - ${lastErrorText}`);
+	}
+
+	if (!response || !response.ok) {
+		throw new Error(`LLM call failed: unknown - ${lastErrorText || "no response"}`);
+	}
+
+	const data = (await response.json()) as {
+		output?: Array<{
+			type: string;
+			content?: Array<{ type: string; text?: string }>;
+		}>;
+		usage?: {
+			input_tokens: number;
+			output_tokens: number;
+			total_tokens: number;
+		};
+	};
+
+	// output[0].content[0].text
+	const text =
+		data.output?.[0]?.content?.find((c) => c.type === "output_text")?.text ||
+		"";
+
+	const usage = data.usage
+		? {
+				prompt_tokens: data.usage.input_tokens,
+				completion_tokens: data.usage.output_tokens,
+				total_tokens: data.usage.total_tokens,
+			}
+		: undefined;
+
+	return { content: text, usage };
+}
+
+/**
+ * 调用 OpenAI Responses API（流式）
+ * SSE 事件: response.output_text.delta / response.done
+ */
+async function callOpenAIResponsesStream(opts: {
+	provider: Provider;
+	model: string;
+	prompt: string;
+	apiKey: string | undefined;
+	context?: string[];
+	temperature?: number;
+	onChunk: (
+		text: string,
+		channel?: "text" | "thought",
+		thoughtMeta?: StreamChunk["thoughtMeta"],
+	) => void;
+}): Promise<{ usage?: StreamChunk["usage"] }> {
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		opts.provider,
+		"https://api.openai.com",
+	);
+	const url = `${baseUrl}/responses`;
+
+	const contextMsg = buildContextMessage(opts.context);
+	const transientStatus = new Set([429, 500, 502, 503, 504, 524]);
+	let lastErrorText = "";
+
+	const body: Record<string, unknown> = {
+		model: opts.model,
+		input: opts.prompt,
+		temperature: opts.temperature ?? 0.7,
+		stream: true,
+	};
+	if (contextMsg) {
+		body.instructions = contextMsg;
+	}
+
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...getOpenAICompatibleAuthHeaders(opts.provider, opts.apiKey),
+			},
+			body: JSON.stringify(body),
+			signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+		});
+
+		if (!response.ok) {
+			lastErrorText = await response.text();
+			if (transientStatus.has(response.status) && attempt < 2) {
+				await sleep(500 * (attempt + 1) * (attempt + 1));
+				continue;
+			}
+			throw new Error(
+				`LLM call failed (stream): ${response.status} - ${lastErrorText}`,
+			);
+		}
+
+		if (!response.body) throw new Error("No response body for streaming");
+
+		let usage: StreamChunk["usage"] | undefined;
+
+		const parse = createSseParser((data) => {
+			if (data === "[DONE]") return;
+			try {
+				const json = JSON.parse(data) as any;
+				const eventType = json?.type as string | undefined;
+
+				if (eventType === "response.output_text.delta") {
+					// delta 字段即文本片段
+					const delta = typeof json.delta === "string" ? json.delta : "";
+					if (delta) opts.onChunk(delta, "text");
+				} else if (eventType === "response.done") {
+					// 从 response.done 事件提取 usage
+					const u = json?.response?.usage;
+					if (u && typeof u === "object") {
+						const inputT = Number(u.input_tokens ?? 0);
+						const outputT = Number(u.output_tokens ?? 0);
+						usage = {
+							prompt_tokens: inputT,
+							completion_tokens: outputT,
+							total_tokens: u.total_tokens ? Number(u.total_tokens) : inputT + outputT,
+						};
+					}
+				}
+			} catch {
+				// ignore malformed lines
+			}
+		});
+
+		await readTextStream(response.body, parse);
+		return { usage };
+	}
+
+	throw new Error(`LLM call failed (stream): unknown - ${lastErrorText}`);
+}
+
+/**
+ * 调用 OpenAI 兼容 API（chat/completions）
  */
 async function callOpenAICompatible(
 	provider: Provider,
@@ -336,7 +533,8 @@ async function callOpenAICompatible(
 
 	let response: Response | null = null;
 	let lastErrorText = "";
-	for (let attempt = 0; attempt < 3; attempt++) {
+	const MAX_RETRIES = 4;
+	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
 		response = await fetch(url, {
 			method: "POST",
 			headers: {
@@ -353,9 +551,11 @@ async function callOpenAICompatible(
 
 		if (response.ok) break;
 		lastErrorText = await response.text();
-		if (transientStatus.has(response.status) && attempt < 2) {
-			// Exponential-ish backoff for Cloudflare 524 / rate-limit / gateway errors
-			await sleep(500 * (attempt + 1) * (attempt + 1));
+		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
+			// 指数退避：1s, 3s, 8s, 20s
+			const baseDelay = 1000;
+			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			await sleep(delay);
 			continue;
 		}
 		throw new Error(`LLM call failed: ${response.status} - ${lastErrorText}`);
@@ -495,25 +695,41 @@ async function callAnthropic(
 		userContent = `${contextMsg}\n\n---\n\n${prompt}`;
 	}
 
-	const response = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"x-api-key": apiKey || "",
-			"anthropic-version": "2023-06-01",
-		},
-		body: JSON.stringify({
-			model,
-			messages: [{ role: "user", content: userContent }],
-			max_tokens: 4096,
-			temperature: temperature ?? 0.7,
-		}),
-		signal: createTimeoutSignal(LLM_CALL_TIMEOUT_MS),
-	});
+	const transientStatus = new Set([429, 500, 502, 503, 504, 524, 529]);
+	let response: Response | null = null;
+	let lastErrorText = "";
 
-	if (!response.ok) {
-		const error = await response.text();
-		throw new Error(`Anthropic call failed: ${response.status} - ${error}`);
+	const MAX_RETRIES = 4;
+	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-api-key": apiKey || "",
+				"anthropic-version": "2023-06-01",
+			},
+			body: JSON.stringify({
+				model,
+				messages: [{ role: "user", content: userContent }],
+				max_tokens: 4096,
+				temperature: temperature ?? 0.7,
+			}),
+			signal: createTimeoutSignal(LLM_CALL_TIMEOUT_MS),
+		});
+
+		if (response.ok) break;
+		lastErrorText = await response.text();
+		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
+			const baseDelay = 1000;
+			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			await sleep(delay);
+			continue;
+		}
+		throw new Error(`Anthropic call failed: ${response.status} - ${lastErrorText}`);
+	}
+
+	if (!response || !response.ok) {
+		throw new Error(`Anthropic call failed: unknown - ${lastErrorText || "no response"}`);
 	}
 
 	const data = (await response.json()) as {
@@ -521,6 +737,8 @@ async function callAnthropic(
 		usage?: {
 			input_tokens: number;
 			output_tokens: number;
+			cache_read_input_tokens?: number;
+			cache_creation_input_tokens?: number;
 		};
 	};
 
@@ -536,6 +754,8 @@ async function callAnthropic(
 					prompt_tokens: data.usage.input_tokens,
 					completion_tokens: data.usage.output_tokens,
 					total_tokens: data.usage.input_tokens + data.usage.output_tokens,
+					cache_read_input_tokens: data.usage.cache_read_input_tokens || undefined,
+					cache_creation_input_tokens: data.usage.cache_creation_input_tokens || undefined,
 				}
 			: undefined,
 	};
@@ -590,10 +810,21 @@ async function callAnthropicStream(opts: {
 	if (!response.body) throw new Error("No response body for streaming");
 
 	let usage: StreamChunk["usage"] | undefined;
+	// 分别跟踪 message_start 和 message_delta 中的 token 数据
+	let startInputTokens = 0;
+	let startCacheReadTokens = 0;
+	let startCacheCreationTokens = 0;
 	const blockKindByIndex = new Map<number, string>();
 	const parse = createSseParser((data) => {
 		try {
 			const json = JSON.parse(data) as any;
+			// message_start 包含 input_tokens 和 cache 相关 token
+			if (json?.type === "message_start" && json?.message?.usage) {
+				const u = json.message.usage;
+				startInputTokens = Number(u.input_tokens ?? 0);
+				startCacheReadTokens = Number(u.cache_read_input_tokens ?? 0);
+				startCacheCreationTokens = Number(u.cache_creation_input_tokens ?? 0);
+			}
 			if (json?.type === "content_block_start") {
 				const idx = typeof json?.index === "number" ? json.index : -1;
 				if (idx >= 0) {
@@ -636,13 +867,15 @@ async function callAnthropicStream(opts: {
 			) {
 				blockKindByIndex.delete(json.index);
 			}
+			// message_delta 只包含 output_tokens，需要合并 message_start 的 input_tokens
 			if (json?.type === "message_delta" && json?.usage) {
+				const outputTokens = Number(json.usage.output_tokens ?? 0);
 				usage = {
-					prompt_tokens: Number(json.usage.input_tokens ?? 0),
-					completion_tokens: Number(json.usage.output_tokens ?? 0),
-					total_tokens:
-						Number(json.usage.input_tokens ?? 0) +
-						Number(json.usage.output_tokens ?? 0),
+					prompt_tokens: startInputTokens,
+					completion_tokens: outputTokens,
+					total_tokens: startInputTokens + outputTokens,
+					cache_read_input_tokens: startCacheReadTokens || undefined,
+					cache_creation_input_tokens: startCacheCreationTokens || undefined,
 				};
 			}
 		} catch {
@@ -728,8 +961,56 @@ async function callOllamaStream(opts: {
 }
 
 /**
- * 非流式 LLM 调用
+ * 通过指定 Provider 调用 LLM（内部分流）
  */
+async function callProviderLlm(
+	db: DbContext,
+	provider: Provider,
+	model: string,
+	prompt: string,
+	context?: string[],
+	temperature?: number,
+): Promise<LlmCallResult> {
+	const resolvedApiKey = await resolveProviderApiKey(
+		db,
+		provider.id,
+		provider.api_key,
+	);
+
+	switch (provider.provider_type) {
+		case "anthropic":
+			return callAnthropic(
+				provider,
+				model,
+				prompt,
+				resolvedApiKey,
+				context,
+				temperature,
+			);
+		case "ollama":
+			return callOllama(provider, model, prompt, context, temperature);
+		default:
+			if (isResponsesEndpoint(provider)) {
+				return callOpenAIResponses(
+					provider,
+					model,
+					prompt,
+					resolvedApiKey,
+					context,
+					temperature,
+				);
+			}
+			return callOpenAICompatible(
+				provider,
+				model,
+				prompt,
+				resolvedApiKey,
+				context,
+				temperature,
+			);
+	}
+}
+
 export async function invokeLlm(
 	db: DbContext,
 	options: LlmCallOptions,
@@ -740,58 +1021,55 @@ export async function invokeLlm(
 		model = await getActiveModel(db);
 	}
 
-	// 查找 Provider
-	let provider = await findProviderForModel(db, model);
-	if (!provider) {
+	// 查找所有能用这个模型的 Provider（用于 fallback）
+	const allProviders = await getEnabledProviders(db);
+	const matchingProviders = allProviders.filter((p) =>
+		p.models.includes(model),
+	);
+
+	if (matchingProviders.length === 0) {
 		// 回退到活跃模型
 		const activeModel = await getActiveModel(db);
-		provider = await findProviderForModel(db, activeModel);
-		if (provider) {
+		const activeProviders = allProviders.filter((p) =>
+			p.models.includes(activeModel),
+		);
+		if (activeProviders.length > 0) {
 			model = activeModel;
+			matchingProviders.push(...activeProviders);
 		}
 	}
 
-	if (!provider) {
+	if (matchingProviders.length === 0) {
 		throw new Error(
 			`No enabled provider found for model: requested=${options.model} effective=${model}`,
 		);
 	}
 
-	const resolvedApiKey = await resolveProviderApiKey(
-		db,
-		provider.id,
-		provider.api_key,
-	);
-
-	// 根据 provider_type 分流
-	switch (provider.provider_type) {
-		case "anthropic":
-			return callAnthropic(
-				provider,
-				model,
-				options.prompt,
-				resolvedApiKey,
-				options.context,
-				options.temperature,
-			);
-		case "ollama":
-			return callOllama(
+	// 尝试主 Provider，失败后 fallback 到其他 Provider
+	let lastError: Error | null = null;
+	for (const provider of matchingProviders) {
+		try {
+			return await callProviderLlm(
+				db,
 				provider,
 				model,
 				options.prompt,
 				options.context,
 				options.temperature,
 			);
-		default:
-			return callOpenAICompatible(
-				provider,
-				model,
-				options.prompt,
-				resolvedApiKey,
-				options.context,
-				options.temperature,
-			);
+		} catch (err) {
+			lastError = err instanceof Error ? err : new Error(String(err));
+			// 如果还有其他 Provider 可用，继续尝试
+			if (matchingProviders.indexOf(provider) < matchingProviders.length - 1) {
+				console.warn(
+					`[invokeLlm] Provider ${provider.name} (${provider.id}) failed for model ${model}, trying next provider. Error: ${lastError.message}`,
+				);
+				continue;
+			}
+		}
 	}
+
+	throw lastError || new Error(`LLM call failed for model: ${model}`);
 }
 
 /**
@@ -870,16 +1148,29 @@ export async function invokeLlmStream(
 						});
 						break;
 					default: {
-						const res = await callOpenAICompatibleStream({
-							provider,
-							model,
-							prompt: options.prompt,
-							apiKey: resolvedApiKey,
-							context: options.context,
-							temperature: options.temperature,
-							onChunk,
-						});
-						usage = res.usage;
+						if (isResponsesEndpoint(provider)) {
+							const res = await callOpenAIResponsesStream({
+								provider,
+								model,
+								prompt: options.prompt,
+								apiKey: resolvedApiKey,
+								context: options.context,
+								temperature: options.temperature,
+								onChunk,
+							});
+							usage = res.usage;
+						} else {
+							const res = await callOpenAICompatibleStream({
+								provider,
+								model,
+								prompt: options.prompt,
+								apiKey: resolvedApiKey,
+								context: options.context,
+								temperature: options.temperature,
+								onChunk,
+							});
+							usage = res.usage;
+						}
 						break;
 					}
 				}
@@ -904,9 +1195,11 @@ export async function invokeLlmStream(
 				usage,
 			});
 		} catch (error) {
-			// 发送错误作为文本
+			// 解析错误并发送结构化错误信息
+			const errorInfo = parseLlmError(error instanceof Error ? error : String(error));
+			console.error(`[invokeLlmStream] ${errorInfo.title}: ${errorInfo.rawError}`);
 			const errorChunk: StreamChunk = {
-				content: `Error: ${error instanceof Error ? error.message : String(error)}`,
+				content: formatLlmErrorForStream(errorInfo),
 				done: true,
 			};
 			sendStreamChunk(mainWindow, errorChunk);

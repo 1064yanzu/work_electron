@@ -423,3 +423,78 @@ html[data-motion-preference="reduced"] *::after {
 		0 10px 15px -3px rgba(0, 0, 0, 0.5),
 		0 4px 6px -4px rgba(0, 0, 0, 0.4);
 }
+
+/* ============================================
+   运行图节点动画
+   ============================================ */
+
+/* 运行中节点脉冲光晕 */
+@keyframes graph-pulse-glow {
+	0%, 100% {
+		box-shadow:
+			0 0 0 0 rgba(217, 108, 70, 0.15),
+			0 10px 30px -18px rgba(0, 0, 0, 0.25);
+	}
+	50% {
+		box-shadow:
+			0 0 0 6px rgba(217, 108, 70, 0.08),
+			0 16px 50px -28px rgba(217, 108, 70, 0.35);
+	}
+}
+
+.graph-node-running {
+	animation: graph-pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* 状态指示灯呼吸效果 */
+@keyframes graph-indicator-breathe {
+	0%, 100% { opacity: 0.6; transform: scale(1); }
+	50% { opacity: 1; transform: scale(1.15); }
+}
+
+.graph-indicator-live {
+	animation: graph-indicator-breathe 1.8s ease-in-out infinite;
+}
+
+/* 环形进度旋转（蜂群总览） */
+@keyframes graph-ring-spin {
+	from { transform: rotate(-90deg); }
+	to { transform: rotate(270deg); }
+}
+
+.graph-ring-animated {
+	animation: graph-ring-spin 8s linear infinite;
+}
+
+/* 蜂群粒子飘动 */
+@keyframes graph-swarm-float {
+	0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+	33% { transform: translateY(-3px) scale(1.1); opacity: 1; }
+	66% { transform: translateY(2px) scale(0.95); opacity: 0.7; }
+}
+
+.graph-swarm-particle {
+	animation: graph-swarm-float 3s ease-in-out infinite;
+}
+
+.graph-swarm-particle:nth-child(2) { animation-delay: -1s; }
+.graph-swarm-particle:nth-child(3) { animation-delay: -2s; }
+
+/* 任务节点完成闪光 */
+@keyframes graph-success-shimmer {
+	0% { background-position: -200% center; }
+	100% { background-position: 200% center; }
+}
+
+.graph-success-shimmer {
+	background-image: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(16, 185, 129, 0.08) 45%,
+		rgba(16, 185, 129, 0.15) 50%,
+		rgba(16, 185, 129, 0.08) 55%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: graph-success-shimmer 3s ease-in-out infinite;
+}

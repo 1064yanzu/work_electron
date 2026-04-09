@@ -26,6 +26,13 @@ export interface ToolPermissionRequest {
 	status: ToolPermissionStatus;
 	createdAt: number;
 	expiresAt: number;
+	/** Scope information — shows whether the operation targets files outside the sandbox */
+	scope?: {
+		insideSandbox: boolean;
+		targetPath?: string;
+		destructiveLevel?: "safe" | "moderate" | "dangerous";
+		reason?: string;
+	};
 }
 
 /**

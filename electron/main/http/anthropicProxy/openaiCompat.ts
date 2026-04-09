@@ -11,6 +11,20 @@ import {
 	ThoughtDeltaNormalizer,
 } from "./thinkingCompat";
 
+/**
+ * 清洗工具输入参数：移除空字符串的可选参数（如 pages: ""），
+ * 避免下游校验失败。
+ */
+function sanitizeToolCallInput(parsed: unknown): unknown {
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return parsed;
+	const result: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+		if (value === "") continue;
+		result[key] = value;
+	}
+	return result;
+}
+
 function computeStringOverlap(prev: string, incoming: string): number {
 	const max = Math.min(prev.length, incoming.length);
 	for (let k = max; k > 0; k--) {
@@ -146,11 +160,16 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 
 	const tool_calls: OpenAIToolCall[] = Array.from(toolCalls.entries())
 		.sort((a, b) => a[0] - b[0])
+		.filter(([_i, tc]) => {
+			// 跳过无名工具调用（避免产生 unknown_tool 错误）
+			const name = typeof tc.name === "string" ? tc.name.trim() : "";
+			return name.length > 0;
+		})
 		.map(([_i, tc]) => ({
 			id: tc.id || `call_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`,
 			type: "function",
 			function: {
-				name: tc.name || "Tool",
+				name: tc.name!.trim(),
 				arguments: tc.args || "{}",
 			},
 		}));
@@ -159,10 +178,16 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 		| OpenAIResponse["choices"][0]["message"]["function_call"]
 		| undefined;
 	if (legacyFunctionCall.value) {
-		function_call = {
-			name: legacyFunctionCall.value.name || "Tool",
-			arguments: legacyFunctionCall.value.args || "{}",
-		};
+		const fcName = typeof legacyFunctionCall.value.name === "string"
+			? legacyFunctionCall.value.name.trim()
+			: "";
+		// 只在有有效名称时才发出 function_call
+		if (fcName) {
+			function_call = {
+				name: fcName,
+				arguments: legacyFunctionCall.value.args || "{}",
+			};
+		}
 	}
 
 	return {
@@ -326,16 +351,19 @@ export function translateToAnthropic(
 	// 工具调用
 	if (choice.message.tool_calls) {
 		for (const tc of choice.message.tool_calls) {
+			const toolName = typeof tc.function.name === "string" ? tc.function.name.trim() : "";
+			if (!toolName) continue; // 跳过无名工具调用
 			let input: unknown = {};
 			try {
-				input = JSON.parse(tc.function.arguments);
+				const parsed = JSON.parse(tc.function.arguments);
+				input = sanitizeToolCallInput(parsed);
 			} catch {
 				input = { _raw: tc.function.arguments };
 			}
 			content.push({
 				type: "tool_use",
 				id: tc.id,
-				name: tc.function.name,
+				name: toolName,
 				input,
 			});
 		}
@@ -346,20 +374,23 @@ export function translateToAnthropic(
 			name?: string;
 			arguments?: string;
 		};
-		const name = typeof fc?.name === "string" ? fc.name : "unknown";
-		const rawArgs = typeof fc?.arguments === "string" ? fc.arguments : "{}";
-		let input: unknown = {};
-		try {
-			input = JSON.parse(rawArgs);
-		} catch {
-			input = { _raw: rawArgs };
+		const name = typeof fc?.name === "string" ? fc.name.trim() : "";
+		if (name) {
+			const rawArgs = typeof fc?.arguments === "string" ? fc.arguments : "{}";
+			let input: unknown = {};
+			try {
+				const parsed = JSON.parse(rawArgs);
+				input = sanitizeToolCallInput(parsed);
+			} catch {
+				input = { _raw: rawArgs };
+			}
+			content.push({
+				type: "tool_use",
+				id: `call_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`,
+				name,
+				input,
+			});
 		}
-		content.push({
-			type: "tool_use",
-			id: `call_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`,
-			name,
-			input,
-		});
 	}
 
 	// 停止原因

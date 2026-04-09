@@ -21,8 +21,7 @@ import { buildRuntimeUserPrompt } from "./context/userPrompt";
 import { buildDocumentBudget } from "./context/documentBudget";
 import { managedModeStore } from "../managedModeStore";
 import { EVENTS, events } from "../events";
-import { codingAgentStore } from "../stores/codingAgentStore";
-import { getCodingModePrompt } from "./codingModePrompts";
+import { memoryStore } from "./memoryStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -560,6 +559,10 @@ class AgentExecutor {
 			parentSdkSessionId?: string;
 			/** 强制使用的 Agent Skill 名称 */
 			forcedSkillName?: string;
+			/** 是否启用规划模式 */
+			planMode?: boolean;
+			/** 已确认的计划（用于执行阶段） */
+			confirmedPlan?: import("./planModeStore").PlanData;
 			onChunk?: (chunk: string) => void;
 			onThoughtChunk?: (
 				chunk: string,
@@ -635,6 +638,16 @@ class AgentExecutor {
 
 		this.abortController = new AbortController();
 		options = options || {};
+
+		// 预加载与查询相关的记忆数据（异步，在 buildEnhancedPromptForRun 之前获取）
+		let memoryContext = "";
+		try {
+			const memories = await memoryStore.searchMemories(query, 5);
+			memoryContext = memoryStore.formatMemoriesAsContext(memories);
+		} catch (err) {
+			console.warn("[AgentExecutor] 加载记忆失败，忽略:", err);
+		}
+
 		const runtimeConfig = agentModelSettingsStore.getSettings().contextRuntime;
 		const resolvedContextPolicy =
 			options.contextPolicy ||
@@ -956,10 +969,10 @@ class AgentExecutor {
 		const buildEnhancedPromptForRun = () => {
 			let enhancedPrompt = systemPrompt || "";
 
-			// 注入编码模式 prompt（Code/Plan/Ask）
-			const currentCodingMode = codingAgentStore.getState().codingMode;
-			const codingModePrompt = getCodingModePrompt(currentCodingMode);
-			enhancedPrompt += `\n\n## Coding Mode\n${codingModePrompt}`;
+			// 注入记忆上下文到 system prompt
+			if (memoryContext) {
+				enhancedPrompt += `\n\n${memoryContext}`;
+			}
 
 			const promptMentionsDoc =
 				options?.documentContextInjected === true ||
@@ -1089,6 +1102,8 @@ class AgentExecutor {
 				},
 				leaderSummaryModel: resolvedLeaderSummaryModel,
 				teammateExecutionModel: resolvedTeammateExecutionModel,
+				planMode: options?.planMode,
+				confirmedPlan: options?.confirmedPlan,
 				abortController: this.abortController ?? undefined,
 
 				onChunk: (text) => {

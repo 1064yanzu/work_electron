@@ -461,10 +461,18 @@ export function useChatHandler({
 					});
 				}
 			},
-			onError: (error: string) => {
+			onError: (error: string, detail) => {
 				setAbortController(null);
 				streamBuilder.flushParser();
-				const errorContent = `⚠️ 错误: ${error}`;
+
+				// 使用结构化错误信息构建友好的显示内容
+				let errorContent: string;
+				if (detail) {
+					errorContent = `⚠️ **${detail.title}**\n\n${detail.message}\n\n> 💡 ${detail.suggestion}`;
+				} else {
+					errorContent = `⚠️ ${error}`;
+				}
+
 				chatStore.updateMessage(session.id, assistantMessage.id, {
 					content: errorContent,
 					isStreaming: false,
@@ -478,9 +486,19 @@ export function useChatHandler({
 							],
 							true,
 						),
+						errorDetail: detail
+							? {
+									code: detail.code,
+									title: detail.title,
+									httpStatus: detail.httpStatus,
+								}
+							: undefined,
 					},
 				});
-				chatStore.setStatus("error", error);
+				chatStore.setStatus(
+					"error",
+					detail ? detail.title : error,
+				);
 			},
 			onUsage: (usage) => {
 				// 将 token 使用数据保存到消息 metadata
@@ -491,6 +509,8 @@ export function useChatHandler({
 							promptTokens: usage.promptTokens,
 							completionTokens: usage.completionTokens,
 							totalTokens: usage.totalTokens,
+							cacheReadInputTokens: usage.cacheReadInputTokens,
+							cacheCreationInputTokens: usage.cacheCreationInputTokens,
 						},
 					},
 				});

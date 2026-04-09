@@ -104,6 +104,12 @@ export interface ChatMessage {
 		teammateMode?: string;
 		experimentalMultiAgent?: boolean;
 		maxTeammates?: number;
+		// LLM 调用错误详情
+		errorDetail?: {
+			code: string;
+			title: string;
+			httpStatus?: number;
+		};
 	};
 }
 

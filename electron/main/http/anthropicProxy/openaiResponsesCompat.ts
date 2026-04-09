@@ -104,13 +104,43 @@ function extractInstructions(
 	return text || undefined;
 }
 
-function parseToolArguments(raw: string | undefined) {
+function parseToolArguments(raw: string | undefined): Record<string, unknown> {
 	if (!raw) return {};
 	try {
-		return JSON.parse(raw);
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			return sanitizeToolInput(parsed as Record<string, unknown>);
+		}
+		return parsed ?? {};
 	} catch {
-		return { raw };
+		// 尝试修复常见 JSON 截断问题（如流中断导致的不完整 JSON）
+		const trimmed = raw.trim();
+		if (trimmed.startsWith("{") && !trimmed.endsWith("}")) {
+			try {
+				const repaired = JSON.parse(`${trimmed}}`);
+				if (repaired && typeof repaired === "object") {
+					return sanitizeToolInput(repaired as Record<string, unknown>);
+				}
+			} catch {
+				// 修复失败，回退
+			}
+		}
+		return { _raw: raw };
 	}
+}
+
+/**
+ * 清洗工具输入参数：移除空字符串的可选参数（如 pages: ""），
+ * 避免下游校验失败。
+ */
+function sanitizeToolInput(input: Record<string, unknown>): Record<string, unknown> {
+	const result: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(input)) {
+		// 移除空字符串的可选参数（常见于 OpenAI 模型生成的 pages/pattern 等）
+		if (value === "") continue;
+		result[key] = value;
+	}
+	return result;
 }
 
 function stringifyMessageContent(content: string | null | undefined) {
@@ -244,40 +274,50 @@ export async function readOpenAIResponsesStream(
 	const reader = body.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
+	try {
 		while (true) {
-			const idx = buffer.indexOf("\n\n");
-			if (idx === -1) break;
-			const raw = buffer.slice(0, idx);
-			buffer = buffer.slice(idx + 2);
-			const lines = raw.split(/\r?\n/);
-			const dataLines = lines
-				.filter((line) => line.startsWith("data:"))
-				.map((line) => line.slice("data:".length).trimStart());
-			const data = dataLines.join("\n").trim();
-			if (!data || data === "[DONE]") continue;
-			try {
-				await onEvent(JSON.parse(data) as OpenAIResponsesStreamEvent);
-			} catch {
-				continue;
+			const { value, done } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			while (true) {
+				const idx = buffer.indexOf("\n\n");
+				if (idx === -1) break;
+				const raw = buffer.slice(0, idx);
+				buffer = buffer.slice(idx + 2);
+				const lines = raw.split(/\r?\n/);
+				const dataLines = lines
+					.filter((line) => line.startsWith("data:"))
+					.map((line) => line.slice("data:".length).trimStart());
+				const data = dataLines.join("\n").trim();
+				if (!data || data === "[DONE]") continue;
+				let parsed: OpenAIResponsesStreamEvent;
+				try {
+					parsed = JSON.parse(data) as OpenAIResponsesStreamEvent;
+				} catch {
+					continue; // 仅跳过 JSON 解析失败的事件
+				}
+				await onEvent(parsed); // 回调异常向上传播（如 doneErr 终止信号）
 			}
 		}
-	}
-	const tail = buffer.trim();
-	if (!tail || tail === "[DONE]") return;
-	const lines = tail.split(/\r?\n/);
-	const dataLines = lines
-		.filter((line) => line.startsWith("data:"))
-		.map((line) => line.slice("data:".length).trimStart());
-	const data = dataLines.join("\n").trim();
-	if (!data || data === "[DONE]") return;
-	try {
-		await onEvent(JSON.parse(data) as OpenAIResponsesStreamEvent);
-	} catch {
-		// ignore invalid tail
+		// 处理缓冲区尾部
+		const tail = buffer.trim();
+		if (!tail || tail === "[DONE]") return;
+		const lines = tail.split(/\r?\n/);
+		const dataLines = lines
+			.filter((line) => line.startsWith("data:"))
+			.map((line) => line.slice("data:".length).trimStart());
+		const data = dataLines.join("\n").trim();
+		if (!data || data === "[DONE]") return;
+		let parsed: OpenAIResponsesStreamEvent;
+		try {
+			parsed = JSON.parse(data) as OpenAIResponsesStreamEvent;
+		} catch {
+			return; // 无效的尾部 JSON
+		}
+		await onEvent(parsed);
+	} finally {
+		// 确保 reader 被释放
+		try { reader.cancel(); } catch { /* ignore */ }
 	}
 }
 
@@ -294,11 +334,16 @@ export function translateResponsesToAnthropic(
 	for (const item of output) {
 		const itemType = typeof item?.type === "string" ? item.type : "";
 		if (itemType === "function_call") {
+			const toolName = typeof item.name === "string" ? item.name.trim() : "";
+			if (!toolName) {
+				// 跳过无效的工具调用（name 为空说明上游模型返回了损坏的 function_call）
+				continue;
+			}
 			hasToolUse = true;
 			content.push({
 				type: "tool_use",
 				id: getOpenAIResponsesToolCallId(item),
-				name: item.name || "Tool",
+				name: toolName,
 				input: parseToolArguments(item.arguments),
 			});
 			continue;

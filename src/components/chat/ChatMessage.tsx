@@ -384,6 +384,9 @@ function ChatMessageImpl({
 												message.metadata.tokenUsage.completionTokens
 											}
 											totalTokens={message.metadata.tokenUsage.totalTokens}
+											cacheReadInputTokens={message.metadata.tokenUsage.cacheReadInputTokens}
+											cacheCreationInputTokens={message.metadata.tokenUsage.cacheCreationInputTokens}
+											costUsd={message.metadata.tokenUsage.costUsd}
 										/>
 									)}
 								</div>

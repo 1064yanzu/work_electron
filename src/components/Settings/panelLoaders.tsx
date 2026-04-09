@@ -22,10 +22,6 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/DashboardSettings"),
 		"DashboardSettings",
 	),
-	aiCoding: toDefault(
-		() => import("./panels/AICodingSettings"),
-		"AICodingSettings",
-	),
 	models: toDefault(() => import("./panels/ModelSettings"), "ModelSettings"),
 	prompts: toDefault(() => import("./panels/PromptSettings"), "PromptSettings"),
 	imagegen: toDefault(
@@ -34,6 +30,7 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 	),
 	agent: toDefault(() => import("./panels/AgentSettings"), "AgentSettings"),
 	skills: toDefault(() => import("./panels/SkillsSettings"), "SkillsSettings"),
+	memory: toDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
 	mcp: toDefault(() => import("./panels/MCPSettings"), "MCPSettings"),
 	remoteControl: toDefault(
 		() => import("./panels/RemoteControlSettings"),

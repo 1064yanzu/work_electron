@@ -29,6 +29,13 @@ export type AgentSdkInteractionRequestPayload = {
 	blockedPath?: string;
 	suggestions?: unknown[];
 	expiresAt: number;
+	/** Scope information for the tool operation (sandbox vs global) */
+	scope?: {
+		insideSandbox: boolean;
+		targetPath?: string;
+		destructiveLevel?: "safe" | "moderate" | "dangerous";
+		reason?: string;
+	};
 };
 
 export type AgentSdkEventPayload = {

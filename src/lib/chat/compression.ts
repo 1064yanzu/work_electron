@@ -66,7 +66,7 @@ interface CompactMetadata {
 	tid?: string; // taskId
 	sd?: string; // sandboxDir
 	af?: Array<{ t: string; p: string; k?: "f" | "d"; s?: number }>; // attachedFiles
-	tu?: { p: number; c: number; t: number }; // tokenUsage
+	tu?: { p: number; c: number; t: number; cr?: number; cc?: number; cost?: number }; // tokenUsage
 	x?: Record<string, unknown>; // extra metadata (forward-compatible)
 }
 
@@ -359,6 +359,9 @@ function compactMessage(msg: ChatMessage): CompactMessage {
 				p: msg.metadata.tokenUsage.promptTokens,
 				c: msg.metadata.tokenUsage.completionTokens,
 				t: msg.metadata.tokenUsage.totalTokens,
+				cr: msg.metadata.tokenUsage.cacheReadInputTokens || undefined,
+				cc: msg.metadata.tokenUsage.cacheCreationInputTokens || undefined,
+				cost: msg.metadata.tokenUsage.costUsd || undefined,
 			};
 		}
 
@@ -432,6 +435,9 @@ function expandMessage(compact: CompactMessage): ChatMessage {
 				promptTokens: compact.md.tu.p,
 				completionTokens: compact.md.tu.c,
 				totalTokens: compact.md.tu.t,
+				cacheReadInputTokens: compact.md.tu.cr,
+				cacheCreationInputTokens: compact.md.tu.cc,
+				costUsd: compact.md.tu.cost,
 			};
 		}
 

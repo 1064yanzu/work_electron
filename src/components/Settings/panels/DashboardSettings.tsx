@@ -38,40 +38,50 @@ function useTokenStats() {
 		const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 		const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
+		const makeBucket = () => ({
+			total: 0,
+			prompt: 0,
+			completion: 0,
+			cacheRead: 0,
+			cacheCreation: 0,
+			cost: 0,
+		});
+
 		const stats = {
-			today: { total: 0, prompt: 0, completion: 0 },
-			week: { total: 0, prompt: 0, completion: 0 },
-			month: { total: 0, prompt: 0, completion: 0 },
-			all: { total: 0, prompt: 0, completion: 0 },
+			today: makeBucket(),
+			week: makeBucket(),
+			month: makeBucket(),
+			all: makeBucket(),
 		};
 
 		sessions.forEach((session) => {
 			session.messages.forEach((msg) => {
 				if (msg.metadata?.tokenUsage) {
-					const { totalTokens, promptTokens, completionTokens } =
-						msg.metadata.tokenUsage;
+					const {
+						totalTokens,
+						promptTokens,
+						completionTokens,
+						cacheReadInputTokens,
+						cacheCreationInputTokens,
+						costUsd,
+					} = msg.metadata.tokenUsage;
+
+					const addTo = (bucket: ReturnType<typeof makeBucket>) => {
+						bucket.total += totalTokens || 0;
+						bucket.prompt += promptTokens || 0;
+						bucket.completion += completionTokens || 0;
+						bucket.cacheRead += cacheReadInputTokens || 0;
+						bucket.cacheCreation += cacheCreationInputTokens || 0;
+						bucket.cost += costUsd || 0;
+					};
 
 					// 总计
-					stats.all.total += totalTokens || 0;
-					stats.all.prompt += promptTokens || 0;
-					stats.all.completion += completionTokens || 0;
+					addTo(stats.all);
 
 					// 按时间段统计
-					if (msg.timestamp >= oneDayAgo) {
-						stats.today.total += totalTokens || 0;
-						stats.today.prompt += promptTokens || 0;
-						stats.today.completion += completionTokens || 0;
-					}
-					if (msg.timestamp >= oneWeekAgo) {
-						stats.week.total += totalTokens || 0;
-						stats.week.prompt += promptTokens || 0;
-						stats.week.completion += completionTokens || 0;
-					}
-					if (msg.timestamp >= oneMonthAgo) {
-						stats.month.total += totalTokens || 0;
-						stats.month.prompt += promptTokens || 0;
-						stats.month.completion += completionTokens || 0;
-					}
+					if (msg.timestamp >= oneDayAgo) addTo(stats.today);
+					if (msg.timestamp >= oneWeekAgo) addTo(stats.week);
+					if (msg.timestamp >= oneMonthAgo) addTo(stats.month);
 				}
 			});
 		});
@@ -243,6 +253,8 @@ function TokenUsagePanel({
 	const promptPercent = total > 0 ? (currentStats.prompt / total) * 100 : 0;
 	const completionPercent =
 		total > 0 ? (currentStats.completion / total) * 100 : 0;
+	const hasCacheData = currentStats.cacheRead > 0 || currentStats.cacheCreation > 0;
+	const hasRealCost = currentStats.cost > 0;
 
 	return (
 		<div className="space-y-4">
@@ -283,11 +295,15 @@ function TokenUsagePanel({
 					</div>
 					<div className="text-right">
 						<div className="text-xs text-zinc-400 dark:text-zinc-500 mb-1">
-							预估花费
+							{hasRealCost ? "实际花费" : "预估花费"}
 						</div>
 						<div className="text-lg font-mono font-medium text-zinc-700 dark:text-zinc-300">
-							${(currentStats.total * 0.000002).toFixed(4)}
-							<span className="text-[10px] text-zinc-400 ml-1">(估算)</span>
+							${hasRealCost
+								? currentStats.cost.toFixed(4)
+								: (currentStats.total * 0.000002).toFixed(4)}
+							{!hasRealCost && (
+								<span className="text-[10px] text-zinc-400 ml-1">(估算)</span>
+							)}
 						</div>
 					</div>
 				</div>
@@ -305,7 +321,7 @@ function TokenUsagePanel({
 				</div>
 
 				{/* 详细数据 */}
-				<div className="grid grid-cols-2 gap-4">
+				<div className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}>
 					<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
 						<div className="flex items-center gap-2 mb-2">
 							<div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -339,6 +355,37 @@ function TokenUsagePanel({
 							</span>
 						</div>
 					</div>
+
+					{hasCacheData && (
+						<>
+							<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+								<div className="flex items-center gap-2 mb-2">
+									<div className="w-2 h-2 rounded-full bg-blue-500" />
+									<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+										Cache 命中
+									</span>
+								</div>
+								<div className="flex items-baseline gap-2">
+									<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+										{formatTokenCount(currentStats.cacheRead)}
+									</span>
+								</div>
+							</div>
+							<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+								<div className="flex items-center gap-2 mb-2">
+									<div className="w-2 h-2 rounded-full bg-violet-500" />
+									<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+										Cache 创建
+									</span>
+								</div>
+								<div className="flex items-baseline gap-2">
+									<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+										{formatTokenCount(currentStats.cacheCreation)}
+									</span>
+								</div>
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		</div>
