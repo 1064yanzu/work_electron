@@ -214,6 +214,53 @@ class MemoryStore {
 
 		return `## 相关记忆\n${lines.join("\n")}\n`;
 	}
+
+	// 清空所有记忆
+	async clearAll(): Promise<{ deleted: number }> {
+		try {
+			const result = await api.clearAllAgentMemories();
+			this.cache.clear();
+			this.searchCache.clear();
+			return result;
+		} catch (error) {
+			console.error("[MemoryStore] 清空记忆失败:", error);
+			throw error;
+		}
+	}
+
+	// 获取记忆统计
+	async getStats(): Promise<{
+		total: number;
+		byCategory: Record<string, number>;
+	}> {
+		try {
+			const result = await api.getAgentMemoryStats();
+			return {
+				total: result.total,
+				byCategory: result.by_category,
+			};
+		} catch (error) {
+			console.error("[MemoryStore] 获取统计失败:", error);
+			return { total: 0, byCategory: {} };
+		}
+	}
+
+	// 获取格式化的记忆上下文预览
+	async getMemoryContext(): Promise<{
+		context: string;
+		memoryCount: number;
+	}> {
+		try {
+			const result = await api.getAgentMemoryContext();
+			return {
+				context: result.context,
+				memoryCount: result.memory_count,
+			};
+		} catch (error) {
+			console.error("[MemoryStore] 获取记忆上下文失败:", error);
+			return { context: "", memoryCount: 0 };
+		}
+	}
 }
 
 // 单例导出

@@ -154,6 +154,8 @@ export function createAgentSdkHandlers(options: {
 		(async () => {
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
+				// 收集 stderr 关键错误信息，用于在 sawResult=false 时提供更有意义的错误
+				const stderrErrors: string[] = [];
 				const stderr = (data: string) => {
 					logger.info({
 						msg: "agent_sdk stderr",
@@ -162,6 +164,10 @@ export function createAgentSdkHandlers(options: {
 						data:
 							typeof data === "string" ? data.slice(0, 20000) : String(data),
 					});
+					// 收集关键错误信息
+					if (typeof data === "string" && /error|exception|fail|crash|closed/i.test(data)) {
+						stderrErrors.push(data.slice(0, 500));
+					}
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 				const emitLifecycleEvent = (event: Record<string, unknown>) => {
@@ -673,6 +679,33 @@ export function createAgentSdkHandlers(options: {
 					);
 					return fs.existsSync(candidate) ? candidate : undefined;
 				})();
+
+				// 构建记忆上下文注入到 systemPrompt（仅 Claude 模型启用）
+				let memoryContext = "";
+				const modelStr = String(input.model ?? "").toLowerCase();
+				const isClaudeModel =
+					modelStr.includes("claude") || modelStr.includes("anthropic") || modelStr === "";
+				if (isClaudeModel) {
+					try {
+						const { buildMemoryContextForAgent } = await import("./agentMemoryService");
+						memoryContext = await buildMemoryContextForAgent(options.db, {
+							limit: 10,
+							minRelevanceScore: 0.5,
+						});
+						// 限制长度，防止 systemPrompt 过长
+						if (memoryContext.length > 1000) {
+							memoryContext = memoryContext.substring(0, 1000) + "\n...";
+						}
+					} catch (memErr) {
+						logger.warn({
+							msg: "Failed to build memory context",
+							scope: "agent",
+							runId,
+							error: memErr instanceof Error ? memErr.message : String(memErr),
+						});
+						memoryContext = "";
+					}
+				}
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -1187,6 +1220,7 @@ export function createAgentSdkHandlers(options: {
 								buildLeaderCollaborationPrompt({
 									runtime: multiAgentRuntime,
 								}),
+								memoryContext,
 							]
 								.filter((s) => typeof s === "string" && s.trim())
 								.join("\n\n"),
@@ -1688,29 +1722,56 @@ export function createAgentSdkHandlers(options: {
 					}
 				}
 				if (!sawResult) {
-					emit(options.getMainWindow, {
-						runId,
-						type: "done",
-						result: {
-							type: "result",
-							subtype: "success",
-							is_error: false,
-							result: "",
-							usage:
-								accumulatedInputTokens > 0 ||
-								accumulatedOutputTokens > 0 ||
-								accumulatedCacheReadInputTokens > 0 ||
-								accumulatedCacheCreationInputTokens > 0
-									? {
-											input_tokens: accumulatedInputTokens,
-											output_tokens: accumulatedOutputTokens,
-											cache_read_input_tokens: accumulatedCacheReadInputTokens,
-											cache_creation_input_tokens:
-												accumulatedCacheCreationInputTokens,
-										}
-									: undefined,
-						},
-					});
+					// 检查是否有 SDK 内部错误（如 "Stream closed"），提供更有意义的错误信息
+					const hasStreamClosedError = stderrErrors.some((e) => /stream closed/i.test(e));
+					const hasCriticalError = stderrErrors.length > 0;
+
+					if (hasStreamClosedError || hasCriticalError) {
+						const errorSummary = hasStreamClosedError
+							? "Agent SDK 内部通信流已关闭，可能是模型响应格式不兼容导致。请尝试切换模型或重新运行。"
+							: `Agent 运行过程中出现错误: ${stderrErrors[0]?.slice(0, 200)}`;
+						logger.warn({
+							msg: "agent_sdk completed without result, stderr has errors",
+							scope: "agent",
+							runId,
+							stderrErrorCount: stderrErrors.length,
+							firstError: stderrErrors[0]?.slice(0, 300),
+						});
+						emit(options.getMainWindow, {
+							runId,
+							type: "error",
+							error: errorSummary,
+							retryable: true,
+							retryConfig: {
+								maxRetries: DEFAULT_RETRY_CONFIG.maxRetries,
+								baseDelayMs: DEFAULT_RETRY_CONFIG.baseDelayMs,
+							},
+						} as any);
+					} else {
+						emit(options.getMainWindow, {
+							runId,
+							type: "done",
+							result: {
+								type: "result",
+								subtype: "success",
+								is_error: false,
+								result: "",
+								usage:
+									accumulatedInputTokens > 0 ||
+									accumulatedOutputTokens > 0 ||
+									accumulatedCacheReadInputTokens > 0 ||
+									accumulatedCacheCreationInputTokens > 0
+										? {
+												input_tokens: accumulatedInputTokens,
+												output_tokens: accumulatedOutputTokens,
+												cache_read_input_tokens: accumulatedCacheReadInputTokens,
+												cache_creation_input_tokens:
+													accumulatedCacheCreationInputTokens,
+											}
+										: undefined,
+							},
+						});
+					}
 				}
 			} catch (e) {
 				const error = e instanceof Error ? e.message : String(e);
@@ -1736,6 +1797,25 @@ export function createAgentSdkHandlers(options: {
 						: undefined,
 				} as any);
 			} finally {
+				// 异步提取记忆（非阻塞）
+				try {
+					const { extractAndSaveMemories } = await import("./agentMemoryService");
+					const userPrompt = String(input.prompt ?? "");
+					if (userPrompt.trim()) {
+						extractAndSaveMemories(options.db, runId, [
+							{ role: "user", content: userPrompt },
+						]).catch((err) => {
+							logger.warn({
+								msg: "Failed to extract memories after agent run",
+								scope: "agent",
+								runId,
+								error: err instanceof Error ? err.message : String(err),
+							});
+						});
+					}
+				} catch {
+					// 静默失败
+				}
 				interactionBroker.clearRun(runId);
 				runRegistry.markCompleted(runId);
 			}

@@ -8,7 +8,6 @@ export type SettingsTabId =
 	| "prompts"
 	| "imagegen"
 	| "agent"
-	| "skills"
 	| "memory"
 	| "mcp"
 	| "remoteControl"

@@ -1138,6 +1138,89 @@ export type IPCSchema = {
 	};
 
 	// ==================
+	// Agent 记忆管理
+	// ==================
+	search_agent_memories: {
+		input: { query: string; limit?: number };
+		output: Array<{
+			id: string;
+			key: string;
+			content: string;
+			category?: string;
+			relevance_score: number;
+			created_at: number;
+			updated_at: number;
+			last_accessed_at?: number;
+			access_count: number;
+		}>;
+	};
+	create_agent_memory: {
+		input: { key: string; content: string; category?: string };
+		output: {
+			id: string;
+			key: string;
+			content: string;
+			category?: string;
+			relevance_score: number;
+			created_at: number;
+			updated_at: number;
+			access_count: number;
+		};
+	};
+	update_agent_memory: {
+		input: { id: string; content: string };
+		output: { success: boolean };
+	};
+	delete_agent_memory: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	get_agent_memory_by_key: {
+		input: { key: string };
+		output: {
+			id: string;
+			key: string;
+			content: string;
+			category?: string;
+			relevance_score: number;
+			created_at: number;
+			updated_at: number;
+			last_accessed_at?: number;
+			access_count: number;
+		} | null;
+	};
+	update_agent_memory_access_time: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	agent_get_memory_context: {
+		input: {
+			categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
+			limit?: number;
+			min_relevance_score?: number;
+		};
+		output: { context: string; memory_count: number };
+	};
+	agent_extract_memories: {
+		input: {
+			session_id: string;
+			messages: Array<{ role: "user" | "assistant"; content: string }>;
+		};
+		output: { saved: number; keys: string[] };
+	};
+	agent_clear_all_memories: {
+		input: Record<string, never>;
+		output: { deleted: number };
+	};
+	agent_get_memory_stats: {
+		input: Record<string, never>;
+		output: {
+			total: number;
+			by_category: Record<string, number>;
+		};
+	};
+
+	// ==================
 	// LLM 命令
 	// ==================
 	invoke_llm: {

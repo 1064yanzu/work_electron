@@ -1,17 +1,16 @@
 import {
-	Archive,
+	Package,
 	BarChart3,
 	Brain,
 	Database,
-	Gauge,
-	Image,
+	Activity,
+	Palette,
 	MessageSquare,
 	Plug,
 	Settings as SettingsIcon,
 	Shield,
 	Smartphone,
 	Sparkles,
-	Zap,
 	type LucideIcon,
 } from "lucide-react";
 import type {
@@ -53,7 +52,7 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	{
 		id: "imagegen",
 		label: "AI 生图",
-		icon: Image,
+		icon: Palette,
 		group: "common",
 		simpleMode: "full",
 	},
@@ -78,13 +77,7 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 		group: "technical",
 		simpleMode: "summary",
 	},
-	{
-		id: "skills",
-		label: "Agent 技能",
-		icon: Zap,
-		group: "technical",
-		simpleMode: "summary",
-	},
+
 	{
 		id: "memory",
 		label: "Agent 记忆",
@@ -109,14 +102,14 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	{
 		id: "performance",
 		label: "性能优化",
-		icon: Gauge,
+		icon: Activity,
 		group: "technical",
 		simpleMode: "summary",
 	},
 	{
 		id: "artifacts",
 		label: "产物管理",
-		icon: Archive,
+		icon: Package,
 		group: "technical",
 		simpleMode: "summary",
 	},

@@ -50,6 +50,11 @@ interface UseAgentHandlerOptions {
 	};
 	debugLog: (...args: unknown[]) => void;
 	debugWarn: (...args: unknown[]) => void;
+	onFirstUserMessage?: (
+		sessionId: string,
+		firstMessage: string,
+		fallbackModel?: string,
+	) => void;
 	queueCreateProposal: (payload: {
 		title: string;
 		summary: string;
@@ -65,6 +70,7 @@ export function useAgentHandler({
 	chatSettings,
 	debugLog,
 	debugWarn,
+	onFirstUserMessage,
 	queueCreateProposal,
 	setAbortController,
 }: UseAgentHandlerOptions) {
@@ -101,10 +107,18 @@ export function useAgentHandler({
 		let userMessage: NonNullable<
 			ChatStoreLike["activeSession"]
 		>["messages"][number];
+		const shouldGenerateTitle = !skipUserMessage && session.messages.length === 0;
 		if (!skipUserMessage) {
 			// 正常情况：创建新的用户消息
 			userMessage = createMessage("user", userTextForChat);
 			chatStore.addMessage(session.id, userMessage);
+			if (shouldGenerateTitle) {
+				onFirstUserMessage?.(
+					session.id,
+					content,
+					session.model || activeModel || undefined,
+				);
+			}
 			if (
 				chatSettings.persistEnabled &&
 				boundAgentSessionId &&
@@ -795,8 +809,16 @@ export function useAgentHandler({
 
 			// 如果有图片生成但没有文本，使用空白或简短提示；否则使用默认失败消息
 			const rawText = getStreamText();
-			const rawResult =
-				rawText || (hasImages ? "" : "任务已完成，但未能生成结果");
+			const rawResult = (() => {
+				if (rawText) return rawText;
+				if (hasImages) return "";
+				// 检查 agentStore 中是否有更详细的错误信息
+				const taskMeta = finalState.currentTask?.metadata as any;
+				const taskError = finalState.currentTask?.error;
+				if (taskError) return `⚠️ ${taskError}`;
+				if (taskMeta?.lastStderrError) return `⚠️ ${taskMeta.lastStderrError}`;
+				return "⚠️ 任务已完成，但未能生成文本结果。可能是模型响应格式不兼容，请尝试切换模型或重新发送。";
+			})();
 
 			const protocol = parseDocProtocolFinal(rawResult, {
 				activeDocContent: workspaceStore.getActiveDocContent() || "",
@@ -1003,9 +1025,22 @@ export function useAgentHandler({
 			const errorMessage = error instanceof Error ? error.message : "未知错误";
 			const taskId = currentTaskId || null;
 			const errorState = agentStore.getState();
+			// 构造用户友好的错误消息
+			const friendlyError = (() => {
+				if (/stream closed/i.test(errorMessage)) {
+					return "Agent 内部通信流已断开。这通常是因为所用模型与 Agent SDK 不完全兼容，建议切换到 Claude 系列模型重试。";
+				}
+				if (/aborted/i.test(errorMessage)) {
+					return "Agent 任务已取消。";
+				}
+				if (/timeout|timed out/i.test(errorMessage)) {
+					return "Agent 请求超时，请检查网络连接后重试。";
+				}
+				return errorMessage;
+			})();
 			const assistantMessage = createMessage(
 				"assistant",
-				`⚠️ Agent 执行失败: ${errorMessage}`,
+				`⚠️ Agent 执行失败: ${friendlyError}`,
 				{
 					isStreaming: false,
 					model: activeModel ?? undefined,

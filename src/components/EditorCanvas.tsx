@@ -34,6 +34,8 @@ import { EditorHeader } from "./editor/EditorHeader";
 import { EditorStatusBar } from "./editor/EditorStatusBar";
 import { useEditorUiPrefs } from "./editor/useEditorUiPrefs";
 import { EditorWorkspaceView } from "./editor/EditorWorkspaceView";
+import { isMarkdownPreviewFile, isBinaryPreviewFile } from "./editor/FileTypePreview";
+import { PhysicalFileViewer } from "./editor/PhysicalFileViewer";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
 import { DiffViewer } from "./CodeView/DiffViewer";
@@ -87,6 +89,7 @@ export default function EditorCanvas({
 	const [editorMode, setEditorMode] = useState<"edit" | "preview" | "split">(
 		"split",
 	);
+	const [userOverrodeMode, setUserOverrodeMode] = useState(false);
 	const [isManaging, setIsManaging] = useState(false);
 	const [selectedForManage, setSelectedForManage] = useState<string[]>([]);
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -239,6 +242,33 @@ export default function EditorCanvas({
 		});
 	}, []);
 
+	// 用户手动切换编辑模式时标记为手动覆盖
+	const handleUserSetEditorMode = useCallback(
+		(mode: "edit" | "preview" | "split") => {
+			setUserOverrodeMode(true);
+			setEditorMode(mode);
+		},
+		[],
+	);
+
+	// 根据文件类型自动决定编辑模式（仅在切换文件时触发，用户手动选择后不再自动切换）
+	useEffect(() => {
+		if (!isPhysicalFileVisible || !previewFileName) return;
+		if (userOverrodeMode) return;
+		if (isMarkdownPreviewFile(previewFileName)) {
+			setEditorMode("split");
+		} else if (isBinaryPreviewFile(previewFileName)) {
+			setEditorMode("preview");
+		} else {
+			setEditorMode("edit");
+		}
+	}, [isPhysicalFileVisible, previewFileName, userOverrodeMode]);
+
+	// 切换文件时重置手动覆盖标记
+	useEffect(() => {
+		setUserOverrodeMode(false);
+	}, [activeDocId]);
+
 	const hasUnsavedChanges = useMemo(() => {
 		if (!selectedOutput && !isPhysicalFileVisible) return false;
 		const fallbackSavedContent = selectedOutput
@@ -280,24 +310,10 @@ export default function EditorCanvas({
 	useEffect(() => {
 		if (!activeDocId || activeDocCache?.kind !== "project_file") return;
 		setSelectedOutput(null);
-		if (editorContentRef.current === activeDocCache.content) return;
-		setEditorContent(activeDocCache.content);
-		console.log("[EditorCanvas] project file sync", {
-			docId: activeDocId,
-			title: activeDocCache.title,
-			cacheLength: activeDocCache.content.length,
-			storeLength: storeEditorContent.length,
-			localLength: editorContentRef.current.length,
-			previewFileName,
-		});
-	}, [
-		activeDocCache?.content,
-		activeDocCache?.kind,
-		activeDocCache?.title,
-		activeDocId,
-		previewFileName,
-		storeEditorContent.length,
-	]);
+		const targetContent = activeDocCache.content ?? "";
+		if (editorContentRef.current === targetContent) return;
+		setEditorContent(targetContent);
+	}, [activeDocCache?.content, activeDocCache?.kind, activeDocId]);
 
 	// 监听打开 diff 视图事件
 	useEffect(() => {
@@ -1621,7 +1637,7 @@ export default function EditorCanvas({
 
 			<EditorHeader
 				editorMode={editorMode}
-				onSetEditorMode={setEditorMode}
+				onSetEditorMode={handleUserSetEditorMode}
 				onBackToList={() => {
 					if (isPhysicalFileVisible) {
 						if (activeDocId) {
@@ -1657,7 +1673,7 @@ export default function EditorCanvas({
 			/>
 
 			{/* 编辑器内容区 */}
-			<div className="flex-1 overflow-hidden min-h-0 bg-white dark:bg-[#1A1A1A]">
+			<div className="flex-1 overflow-hidden min-h-0 bg-transparent">
 				{/* AI 审查模式 */}
 				{aiReview.isReviewing && aiReview.type === "update" ? (
 					<InlineReviewRenderer
@@ -1666,9 +1682,18 @@ export default function EditorCanvas({
 						onAccept={handleAcceptAIReview}
 						onReject={handleRejectAIReview}
 					/>
+				) : isPhysicalFileVisible && previewFileName && !isMarkdownPreviewFile(previewFileName) ? (
+					/* 非 markdown 物理文件：直接从 store 取内容渲染，完全跳过本地 state 同步链 */
+					<PhysicalFileViewer
+						fileName={previewFileName}
+						content={activeDocCacheContent ?? storeEditorContent}
+						filePath={activeFileSession?.path}
+						density={density}
+						onContextMenu={handlePreviewContextMenu}
+					/>
 				) : (
 					<EditorWorkspaceView
-						editorMode={isPhysicalFileVisible ? "preview" : editorMode}
+						editorMode={editorMode}
 						selectedTitle={currentEditorTitle}
 						previewFileName={previewFileName}
 						titleEditable={Boolean(selectedOutput)}

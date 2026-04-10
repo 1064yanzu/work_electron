@@ -18,6 +18,11 @@ interface UseChatHandlerOptions {
 	chatStore: ChatStoreLike;
 	activeModel: string | null;
 	debugLog: (...args: unknown[]) => void;
+	onFirstUserMessage?: (
+		sessionId: string,
+		firstMessage: string,
+		fallbackModel?: string,
+	) => void;
 	queueCreateProposal: (payload: {
 		title: string;
 		summary: string;
@@ -31,6 +36,7 @@ export function useChatHandler({
 	chatStore,
 	activeModel,
 	debugLog,
+	onFirstUserMessage,
 	queueCreateProposal,
 	setAbortController,
 }: UseChatHandlerOptions) {
@@ -52,9 +58,17 @@ export function useChatHandler({
 		}
 
 		// 添加用户消息（只有在非重新生成时）
+		const shouldGenerateTitle = !skipUserMessage && session.messages.length === 0;
 		if (!skipUserMessage) {
 			const userMessage = createMessage("user", userTextForChat);
 			chatStore.addMessage(session.id, userMessage);
+			if (shouldGenerateTitle) {
+				onFirstUserMessage?.(
+					session.id,
+					content,
+					session.model || activeModel || undefined,
+				);
+			}
 		}
 
 		const streamBuilder = new StreamBlocksBuilder({

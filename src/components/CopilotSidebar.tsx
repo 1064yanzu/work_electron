@@ -435,7 +435,6 @@ export default function CopilotSidebar() {
 	// 会话标题自动生成
 	const { generateSessionTitle } = useSessionTitleGeneration({
 		chatStore,
-		activeModel,
 		enabledModels,
 		debugLog,
 	});
@@ -450,14 +449,13 @@ export default function CopilotSidebar() {
 		const session = chatStore.activeSession;
 		if (!session) return;
 
-		// 如果是第一条消息，生成标题
-		if (session.messages.length === 0) {
-			generateSessionTitle(session.id, query, activeModel);
-		}
-
 		// 添加用户消息到聊天
+		const shouldGenerateTitle = session.messages.length === 0;
 		const userMessage = createMessage("user", `[深度研究] ${query}`);
 		chatStore.addMessage(session.id, userMessage);
+		if (shouldGenerateTitle) {
+			void generateSessionTitle(session.id, query, session.model || activeModel);
+		}
 		chatStore.setStatus("streaming");
 
 		// 创建 abort controller
@@ -561,6 +559,9 @@ export default function CopilotSidebar() {
 		chatSettings,
 		debugLog,
 		debugWarn,
+		onFirstUserMessage: (sessionId, firstMessage, fallbackModel) => {
+			void generateSessionTitle(sessionId, firstMessage, fallbackModel);
+		},
 		queueCreateProposal,
 		setAbortController,
 	});
@@ -570,6 +571,9 @@ export default function CopilotSidebar() {
 		chatStore,
 		activeModel,
 		debugLog,
+		onFirstUserMessage: (sessionId, firstMessage, fallbackModel) => {
+			void generateSessionTitle(sessionId, firstMessage, fallbackModel);
+		},
 		queueCreateProposal,
 		setAbortController,
 	});
@@ -749,7 +753,7 @@ export default function CopilotSidebar() {
 	return (
 		<aside
 			data-copilot-sidebar
-			className="flex flex-col h-full font-sans relative bg-white dark:bg-zinc-900"
+			className="flex flex-col h-full font-sans relative bg-transparent"
 			{...dropZoneProps}
 		>
 			{/* 拖拽资料到 AI 对话的视觉提示 */}

@@ -252,6 +252,16 @@ export function EditorWorkspaceView({
 							filePath={filePath}
 						/>
 					</div>
+				) : !isMarkdownPreview && filePath ? (
+					<div onContextMenu={onPreviewContextMenu} className="max-w-none">
+						<FileTypePreview
+							fileName={previewFileName}
+							content={editorContent}
+							density={density}
+							emptyText="文件内容为空。"
+							filePath={filePath}
+						/>
+					</div>
 				) : (
 					<textarea {...textareaProps} placeholder="开始写作..." />
 				)}

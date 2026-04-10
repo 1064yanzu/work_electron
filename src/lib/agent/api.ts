@@ -522,6 +522,45 @@ export async function updateAgentMemoryAccessTime(id: string): Promise<void> {
 	return safeInvoke("update_agent_memory_access_time", { id });
 }
 
+// 获取格式化的记忆上下文（用于前端预览）
+export async function getAgentMemoryContext(options?: {
+	categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
+	limit?: number;
+	min_relevance_score?: number;
+}): Promise<{ context: string; memory_count: number }> {
+	return safeInvoke<{ context: string; memory_count: number }>(
+		"agent_get_memory_context",
+		options ?? {},
+	);
+}
+
+// 手动触发从会话提取记忆
+export async function extractAgentMemories(
+	sessionId: string,
+	messages: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<{ saved: number; keys: string[] }> {
+	return safeInvoke<{ saved: number; keys: string[] }>(
+		"agent_extract_memories",
+		{ session_id: sessionId, messages },
+	);
+}
+
+// 清空所有记忆
+export async function clearAllAgentMemories(): Promise<{ deleted: number }> {
+	return safeInvoke<{ deleted: number }>("agent_clear_all_memories", {});
+}
+
+// 获取记忆统计
+export async function getAgentMemoryStats(): Promise<{
+	total: number;
+	by_category: Record<string, number>;
+}> {
+	return safeInvoke<{ total: number; by_category: Record<string, number> }>(
+		"agent_get_memory_stats",
+		{},
+	);
+}
+
 // ==================== 任务检查点 API (断点续传) ====================
 
 // 检查点记录

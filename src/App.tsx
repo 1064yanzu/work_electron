@@ -15,6 +15,7 @@ import {
 import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
+import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
 import { useNavigation } from "./hooks/useNavigation";
 import {
 	useManagedModeStoreSelector,
@@ -190,6 +191,7 @@ export default function App() {
 	}, []);
 
 	return (
+		<GlobalContextMenuProvider>
 		<MouseDragProvider>
 			{isInDashboard ? (
 				<Suspense fallback={<PanelLoadingFallback />}>
@@ -340,5 +342,6 @@ export default function App() {
 				</Suspense>
 			) : null}
 		</MouseDragProvider>
+		</GlobalContextMenuProvider>
 	);
 }

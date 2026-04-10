@@ -1,11 +1,11 @@
 import {
-	Folder,
-	MessageSquare,
-	Library,
-	LayoutTemplate,
-	Settings,
+	FolderOpen,
+	MessagesSquare,
+	BookMarked,
+	LayoutGrid,
+	SlidersHorizontal,
 	Home,
-	Zap,
+	WandSparkles,
 } from "lucide-react";
 import { useWorkspaceStoreSelector, workspaceStore } from "../../lib/workspaceStore";
 
@@ -22,11 +22,11 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 		workspaceStore.setLeftSidebarView.bind(workspaceStore);
 
 	const navItems = [
-		{ id: "files", label: "文件", icon: Folder },
-		{ id: "threads", label: "线程", icon: MessageSquare },
-		{ id: "sources", label: "资料库", icon: Library },
-		{ id: "cards", label: "卡片", icon: LayoutTemplate },
-		{ id: "skills", label: "技能", icon: Zap },
+		{ id: "files", label: "文件", icon: FolderOpen },
+		{ id: "threads", label: "线程", icon: MessagesSquare },
+		{ id: "sources", label: "资料库", icon: BookMarked },
+		{ id: "cards", label: "卡片", icon: LayoutGrid },
+		{ id: "skills", label: "技能", icon: WandSparkles },
 	];
 
 	return (
@@ -49,7 +49,7 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 							}`}
 							title={item.label}
 						>
-							<item.icon className="w-5 h-5 mb-0.5" strokeWidth={isActive ? 2.5 : 2} />
+							<item.icon className="w-[22px] h-[22px] mb-0.5" strokeWidth={isActive ? 2 : 1.75} />
 							<span className="text-[10px] font-medium leading-tight select-none">
 								{item.label}
 							</span>
@@ -64,14 +64,14 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 					className="flex items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300"
 					title="返回首页"
 				>
-					<Home className="w-5 h-5" strokeWidth={2} />
+					<Home className="w-[22px] h-[22px]" strokeWidth={1.75} />
 				</button>
 				<button
 					onClick={onOpenSettings}
 					className="flex items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300"
 					title="设置"
 				>
-					<Settings className="w-5 h-5" strokeWidth={2} />
+					<SlidersHorizontal className="w-[22px] h-[22px]" strokeWidth={1.75} />
 				</button>
 			</div>
 		</div>

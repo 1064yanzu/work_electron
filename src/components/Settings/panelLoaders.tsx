@@ -29,7 +29,7 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		"ImageGenSettings",
 	),
 	agent: toDefault(() => import("./panels/AgentSettings"), "AgentSettings"),
-	skills: toDefault(() => import("./panels/SkillsSettings"), "SkillsSettings"),
+
 	memory: toDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
 	mcp: toDefault(() => import("./panels/MCPSettings"), "MCPSettings"),
 	remoteControl: toDefault(

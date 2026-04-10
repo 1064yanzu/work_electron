@@ -16,6 +16,7 @@ import {
 import type { Logger } from "../logging/types";
 import {
 	createAgentMemoryHandlers,
+	createAgentMemoryExtendedHandlers,
 	createAgentMessageHandlers,
 	createAgentNodeHandlers,
 	createAgentSessionHandlers,
@@ -146,6 +147,7 @@ export function registerIpcHandlers({
 	const agentToolCallHandlers = createAgentToolCallHandlers(db);
 	const agentMessageHandlers = createAgentMessageHandlers(db);
 	const agentMemoryHandlers = createAgentMemoryHandlers(db);
+	const agentMemoryExtHandlers = createAgentMemoryExtendedHandlers(db);
 
 	// Artifact handlers
 	const artifactHandlers = createArtifactHandlers(db);
@@ -662,6 +664,22 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"update_agent_memory_access_time",
 		agentMemoryHandlers.update_agent_memory_access_time,
+	);
+	ipcMain.handle(
+		"agent_get_memory_context",
+		agentMemoryExtHandlers.agent_get_memory_context,
+	);
+	ipcMain.handle(
+		"agent_extract_memories",
+		agentMemoryExtHandlers.agent_extract_memories,
+	);
+	ipcMain.handle(
+		"agent_clear_all_memories",
+		agentMemoryExtHandlers.agent_clear_all_memories,
+	);
+	ipcMain.handle(
+		"agent_get_memory_stats",
+		agentMemoryExtHandlers.agent_get_memory_stats,
 	);
 
 	// ==================

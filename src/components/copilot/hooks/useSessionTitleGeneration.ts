@@ -1,6 +1,6 @@
 // 会话标题自动生成 Hook
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { invokeLlm } from "../../../lib/chat/api";
 import { getConfig } from "../../../lib/config";
 import { getTitleGenerationPrompt } from "../../../lib/prompts";
@@ -8,14 +8,12 @@ import type { ChatStoreLike } from "../types";
 
 interface UseSessionTitleGenerationOptions {
 	chatStore: ChatStoreLike;
-	activeModel: string | null;
 	enabledModels: Array<{ id: string; provider: string }>;
 	debugLog: (...args: unknown[]) => void;
 }
 
 export function useSessionTitleGeneration({
 	chatStore,
-	activeModel,
 	enabledModels,
 	debugLog,
 }: UseSessionTitleGenerationOptions) {
@@ -25,7 +23,28 @@ export function useSessionTitleGeneration({
 
 	const generateSessionTitle = useCallback(
 		async (sessionId: string, firstMessage: string, fallbackModel?: string) => {
-			if (generatingRef.current.has(sessionId)) return;
+			if (!firstMessage.trim()) return;
+			if (
+				generatingRef.current.has(sessionId) ||
+				attemptedRef.current.has(sessionId)
+			) {
+				return;
+			}
+
+			const currentSession = chatStore.sessions.find((s) => s.id === sessionId);
+			if (!currentSession) return;
+
+			const fallbackTitle = firstMessage.trim().slice(0, 15);
+			const currentTitle = currentSession.title?.trim() || "";
+			const hasCustomTitle =
+				currentTitle.length > 0 &&
+				currentTitle !== "新对话" &&
+				currentTitle !== fallbackTitle &&
+				!/^对话 \d{1,2}月\d{1,2}日/.test(currentTitle);
+			if (hasCustomTitle) {
+				attemptedRef.current.add(sessionId);
+				return;
+			}
 
 			try {
 				generatingRef.current.add(sessionId);
@@ -80,46 +99,5 @@ export function useSessionTitleGeneration({
 		[chatStore, enabledModels, debugLog],
 	);
 
-	// 自动补全历史会话标题
-	useEffect(() => {
-		const backfillTitles = async () => {
-			// 延迟执行
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			const sessions = chatStore.sessions;
-			for (const session of sessions) {
-				// 跳过本次生命周期内已尝试过的会话
-				if (attemptedRef.current.has(session.id)) continue;
-
-				if (session.messages.length > 0) {
-					const firstMsg = session.messages[0].content;
-					const defaultTruncated = firstMsg.slice(0, 15);
-
-					const needsGeneration =
-						!session.title ||
-						session.title === "新对话" ||
-						(session.title === defaultTruncated && firstMsg.length > 15) ||
-						/^对话 \d{1,2}月\d{1,2}日/.test(session.title);
-
-					if (needsGeneration) {
-						await generateSessionTitle(
-							session.id,
-							firstMsg,
-							session.model || activeModel || undefined,
-						);
-						await new Promise((resolve) => setTimeout(resolve, 500));
-					} else {
-						// 标题已经合适，标记为已处理，不需要重复检查
-						attemptedRef.current.add(session.id);
-					}
-				}
-			}
-		};
-
-		backfillTitles();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [chatStore.sessions.length]);
-
 	return { generateSessionTitle };
 }
-

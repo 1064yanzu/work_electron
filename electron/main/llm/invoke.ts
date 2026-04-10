@@ -138,6 +138,153 @@ function createSseParser(
 	};
 }
 
+function tryParseJson(raw: string): any | null {
+	try {
+		return JSON.parse(raw);
+	} catch {
+		return null;
+	}
+}
+
+function extractTextPartsFromContent(content: unknown): string[] {
+	if (typeof content === "string") {
+		return content.trim() ? [content] : [];
+	}
+	if (!Array.isArray(content)) return [];
+
+	const result: string[] = [];
+	for (const item of content) {
+		if (!item || typeof item !== "object") continue;
+		const record = item as Record<string, unknown>;
+		const type = typeof record.type === "string" ? record.type : "";
+		const text =
+			typeof record.text === "string"
+				? record.text
+				: typeof record.output_text === "string"
+					? record.output_text
+					: "";
+		if (
+			text &&
+			(type === "text" ||
+				type === "output_text" ||
+				type === "input_text" ||
+				type === "")
+		) {
+			result.push(text);
+		}
+	}
+	return result;
+}
+
+function parseOpenAIStyleResult(raw: string): LlmCallResult {
+	const json = tryParseJson(raw);
+	if (json) {
+		const responseUsage = json?.usage;
+		if (Array.isArray(json?.output)) {
+			const text = json.output
+				.flatMap((item: any) => extractTextPartsFromContent(item?.content))
+				.join("");
+			const usage = responseUsage
+				? {
+						prompt_tokens: Number(responseUsage.input_tokens ?? 0),
+						completion_tokens: Number(responseUsage.output_tokens ?? 0),
+						total_tokens: Number(
+							responseUsage.total_tokens ??
+								Number(responseUsage.input_tokens ?? 0) +
+									Number(responseUsage.output_tokens ?? 0),
+						),
+					}
+				: undefined;
+			return { content: text, usage };
+		}
+
+		if (Array.isArray(json?.choices)) {
+			const text = json.choices
+				.flatMap((choice: any) => {
+					const messageContent = choice?.message?.content;
+					if (typeof messageContent === "string") return [messageContent];
+					return extractTextPartsFromContent(messageContent);
+				})
+				.join("");
+			const usage = responseUsage
+				? {
+						prompt_tokens: Number(responseUsage.prompt_tokens ?? 0),
+						completion_tokens: Number(responseUsage.completion_tokens ?? 0),
+						total_tokens: Number(
+							responseUsage.total_tokens ??
+								Number(responseUsage.prompt_tokens ?? 0) +
+									Number(responseUsage.completion_tokens ?? 0),
+						),
+					}
+				: undefined;
+			return { content: text, usage };
+		}
+	}
+
+	if (!raw.includes("data:")) {
+		throw new SyntaxError(`Unsupported LLM response: ${raw.slice(0, 200)}`);
+	}
+
+	let content = "";
+	let usage: LlmCallResult["usage"];
+	const parse = createSseParser((data) => {
+		if (data === "[DONE]") return;
+		const chunk = tryParseJson(data);
+		if (!chunk) return;
+
+		if (chunk?.type === "response.output_text.delta") {
+			if (typeof chunk.delta === "string") content += chunk.delta;
+		}
+
+		if (chunk?.type === "response.done") {
+			const responseUsage = chunk?.response?.usage;
+			if (responseUsage && typeof responseUsage === "object") {
+				const inputTokens = Number(responseUsage.input_tokens ?? 0);
+				const outputTokens = Number(responseUsage.output_tokens ?? 0);
+				usage = {
+					prompt_tokens: inputTokens,
+					completion_tokens: outputTokens,
+					total_tokens: Number(responseUsage.total_tokens ?? inputTokens + outputTokens),
+				};
+			}
+		}
+
+		if (Array.isArray(chunk?.choices)) {
+			for (const choice of chunk.choices) {
+				const deltaContent = choice?.delta?.content;
+				if (typeof deltaContent === "string") {
+					content += deltaContent;
+				}
+				const messageContent = choice?.message?.content;
+				if (typeof messageContent === "string") {
+					content += messageContent;
+				} else {
+					content += extractTextPartsFromContent(messageContent).join("");
+				}
+			}
+		}
+
+		if (chunk?.usage && typeof chunk.usage === "object") {
+			const promptTokens = Number(
+				chunk.usage.prompt_tokens ?? chunk.usage.input_tokens ?? 0,
+			);
+			const completionTokens = Number(
+				chunk.usage.completion_tokens ?? chunk.usage.output_tokens ?? 0,
+			);
+			usage = {
+				prompt_tokens: promptTokens,
+				completion_tokens: completionTokens,
+				total_tokens: Number(
+					chunk.usage.total_tokens ?? promptTokens + completionTokens,
+				),
+			};
+		}
+	});
+
+	parse(raw.endsWith("\n\n") ? raw : `${raw}\n\n`);
+	return { content, usage };
+}
+
 function collectThoughtTextFromUnknown(value: unknown): string[] {
 	if (!value) return [];
 	if (typeof value === "string") return value.trim() ? [value] : [];
@@ -375,32 +522,7 @@ async function callOpenAIResponses(
 		throw new Error(`LLM call failed: unknown - ${lastErrorText || "no response"}`);
 	}
 
-	const data = (await response.json()) as {
-		output?: Array<{
-			type: string;
-			content?: Array<{ type: string; text?: string }>;
-		}>;
-		usage?: {
-			input_tokens: number;
-			output_tokens: number;
-			total_tokens: number;
-		};
-	};
-
-	// output[0].content[0].text
-	const text =
-		data.output?.[0]?.content?.find((c) => c.type === "output_text")?.text ||
-		"";
-
-	const usage = data.usage
-		? {
-				prompt_tokens: data.usage.input_tokens,
-				completion_tokens: data.usage.output_tokens,
-				total_tokens: data.usage.total_tokens,
-			}
-		: undefined;
-
-	return { content: text, usage };
+	return parseOpenAIStyleResult(await response.text());
 }
 
 /**
@@ -567,19 +689,7 @@ async function callOpenAICompatible(
 		);
 	}
 
-	const data = (await response.json()) as {
-		choices: Array<{ message: { content: string } }>;
-		usage?: {
-			prompt_tokens: number;
-			completion_tokens: number;
-			total_tokens: number;
-		};
-	};
-
-	return {
-		content: data.choices[0]?.message?.content || "",
-		usage: data.usage,
-	};
+	return parseOpenAIStyleResult(await response.text());
 }
 
 async function callOpenAICompatibleStream(opts: {

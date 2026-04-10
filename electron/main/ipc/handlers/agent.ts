@@ -1052,3 +1052,65 @@ export function createAgentMemoryHandlers(db: DbContext) {
 		update_agent_memory_access_time: updateMemoryAccessTime,
 	};
 }
+
+// ==================
+// Memory Extended Handlers (记忆扩展功能)
+// ==================
+
+export function createAgentMemoryExtendedHandlers(db: DbContext) {
+	const getMemoryContext = async (
+		_event: IpcMainInvokeEvent,
+		input: {
+			categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
+			limit?: number;
+			min_relevance_score?: number;
+		},
+	): Promise<{ context: string; memory_count: number }> => {
+		const { buildMemoryContextForAgent } = await import("./agentMemoryService");
+		const context = await buildMemoryContextForAgent(db, {
+			categories: input.categories,
+			limit: input.limit,
+			minRelevanceScore: input.min_relevance_score,
+		});
+		// 统计记忆数（通过计算行数）
+		const lineCount = context
+			? context.split("\n").filter((l) => l.startsWith("- ")).length
+			: 0;
+		return { context, memory_count: lineCount };
+	};
+
+	const extractMemories = async (
+		_event: IpcMainInvokeEvent,
+		input: {
+			session_id: string;
+			messages: Array<{ role: "user" | "assistant"; content: string }>;
+		},
+	): Promise<{ saved: number; keys: string[] }> => {
+		const { extractAndSaveMemories } = await import("./agentMemoryService");
+		return extractAndSaveMemories(db, input.session_id, input.messages);
+	};
+
+	const clearAll = async (
+		_event: IpcMainInvokeEvent,
+		_input: Record<string, never>,
+	): Promise<{ deleted: number }> => {
+		const { clearAllMemories } = await import("./agentMemoryService");
+		return clearAllMemories(db);
+	};
+
+	const stats = async (
+		_event: IpcMainInvokeEvent,
+		_input: Record<string, never>,
+	): Promise<{ total: number; by_category: Record<string, number> }> => {
+		const { getMemoryStats } = await import("./agentMemoryService");
+		const result = await getMemoryStats(db);
+		return { total: result.total, by_category: result.byCategory };
+	};
+
+	return {
+		agent_get_memory_context: getMemoryContext,
+		agent_extract_memories: extractMemories,
+		agent_clear_all_memories: clearAll,
+		agent_get_memory_stats: stats,
+	};
+}

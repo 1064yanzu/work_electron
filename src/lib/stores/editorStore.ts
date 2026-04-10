@@ -119,19 +119,14 @@ function openProjectFile(filePath: string, title: string, content: string) {
 			? state.openedDocs
 			: [...state.openedDocs, filePath];
 		const existingDoc = state.docCache[filePath];
-		const nextDocCacheItem =
-			existingDoc && existingDoc.dirty
-				? {
-						...existingDoc,
-						title,
-					}
-				: createDocCacheItem({
-						docId: filePath,
-						title,
-						content,
-						kind: "project_file",
-						snapshot: existingDoc?.snapshot,
-					});
+		// 无论文件是否 dirty，始终用最新读取的内容和正确的 kind
+		const nextDocCacheItem = createDocCacheItem({
+			docId: filePath,
+			title,
+			content,
+			kind: "project_file",
+			snapshot: existingDoc?.snapshot,
+		});
 
 		return {
 			...state,

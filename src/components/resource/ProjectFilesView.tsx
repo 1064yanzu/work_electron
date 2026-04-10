@@ -7,6 +7,8 @@ import { managedModeStore } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
 import { toast } from "../ui/Toast";
 import { isBinaryPreviewFile, BINARY_CONTENT_MARKER } from "../editor/FileTypePreview";
+import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
+import { buildFileItemContextMenu, buildFolderItemContextMenu } from "../../lib/contextMenu/actions";
 
 interface FileEntry {
 	path: string;
@@ -20,6 +22,11 @@ export function ProjectFilesView() {
 	const [entries, setEntries] = useState<FileEntry[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		entry: FileEntry;
+	} | null>(null);
 
 	// 获取项目路径
 	useEffect(() => {
@@ -115,6 +122,55 @@ export function ProjectFilesView() {
 		}
 	};
 
+	const handleFileContextMenu = useCallback(
+		(e: React.MouseEvent, entry: FileEntry) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setContextMenu({ x: e.clientX, y: e.clientY, entry });
+		},
+		[],
+	);
+
+	const contextMenuItems: ContextMenuItem[] = contextMenu
+		? contextMenu.entry.isDir
+			? buildFolderItemContextMenu({
+					onCreateFile: () => {
+						toast.info("暂不支持在此处新建文件");
+					},
+					onCreateSubFolder: () => {
+						toast.info("暂不支持在此处新建文件夹");
+					},
+					onRename: () => {
+						toast.info("暂不支持在此处重命名");
+					},
+					onMove: () => {
+						toast.info("暂不支持在此处移动");
+					},
+					onReveal: () => {
+						void safeInvoke("reveal_file_safe", {
+							path: contextMenu.entry.path,
+						});
+					},
+					onDelete: () => {
+						toast.info("暂不支持在此处删除文件夹");
+					},
+				})
+			: buildFileItemContextMenu({
+					onOpen: () => {
+						void toggleDir(contextMenu.entry);
+					},
+					onCopyPath: () => {
+						void navigator.clipboard.writeText(contextMenu.entry.path);
+						toast.success("路径已复制");
+					},
+					onReveal: () => {
+						void safeInvoke("reveal_file_safe", {
+							path: contextMenu.entry.path,
+						});
+					},
+				})
+		: [];
+
 	const renderTree = (items: FileEntry[], level = 0) => {
 		return items.map((item) => {
 			const isExpanded = expandedDirs.has(item.path);
@@ -123,6 +179,7 @@ export function ProjectFilesView() {
 				<div key={item.path}>
 					<button
 						onClick={() => toggleDir(item)}
+						onContextMenu={(e) => handleFileContextMenu(e, item)}
 						className={cn(
 							"flex items-center w-full px-2 py-1.5 text-left group hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors",
 							level === 0 ? "text-[13px]" : "text-[13px]",
@@ -196,6 +253,16 @@ export function ProjectFilesView() {
 					<div className="pb-6">{renderTree(entries, 0)}</div>
 				)}
 			</div>
+
+			{/* 右键菜单 */}
+			{contextMenu && contextMenuItems.length > 0 && (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			)}
 		</div>
 	);
 }

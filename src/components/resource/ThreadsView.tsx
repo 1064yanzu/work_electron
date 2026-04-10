@@ -1,8 +1,11 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Plus, Search, ChevronDown, ChevronRight, MessageSquare, Folder, FolderOpen } from "lucide-react";
 import { sessionStore, AgentSession } from "../../lib/agent/sessionManager";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { pickSystemDirectory, getActiveModel } from "../../lib/api";
+import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
+import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
+import { toast } from "../ui/Toast";
 
 interface ThreadsViewProps {
 	onNavigateWorkbench?: () => void;
@@ -16,6 +19,11 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	);
 	const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 	const hasInitializedRef = useRef(false);
+	const [contextMenu, setContextMenu] = useState<{
+		x: number;
+		y: number;
+		session: AgentSession;
+	} | null>(null);
 
 	// 初始加载和状态订阅
 	useEffect(() => {
@@ -121,6 +129,47 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		onNavigateWorkbench?.();
 	};
 
+	const handleSessionContextMenu = useCallback(
+		(e: React.MouseEvent, session: AgentSession) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setContextMenu({ x: e.clientX, y: e.clientY, session });
+		},
+		[],
+	);
+
+	const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+		if (!contextMenu) return [];
+		const session = contextMenu.session;
+		return buildSessionContextMenu({
+			onOpen: () => handleSelectSession(session.id),
+			onRename: () => {
+				const newTitle = window.prompt(
+					"请输入新的线程标题",
+					session.title || "Untitled Chat",
+				);
+				if (newTitle?.trim()) {
+					sessionStore.updateSession(session.id, {
+						title: newTitle.trim(),
+					});
+					toast.success("已重命名");
+				}
+			},
+			onTogglePin: () => {
+				toast.info("置顶功能即将支持");
+			},
+			onExport: () => {
+				toast.info("导出功能即将支持");
+			},
+			onDelete: () => {
+				if (window.confirm(`确定要删除线程「${session.title || "Untitled"}」吗？`)) {
+					sessionStore.deleteSession(session.id);
+					toast.success("已删除线程");
+				}
+			},
+		});
+	}, [contextMenu]);
+
 	return (
 		<div className="flex flex-col h-full bg-transparent">
 			{/* Header */}
@@ -182,6 +231,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											<button
 												key={session.id}
 												onClick={() => handleSelectSession(session.id)}
+												onContextMenu={(e) => handleSessionContextMenu(e, session)}
 												className={`w-full flex items-center justify-between pl-4 pr-3 py-1.5 rounded-lg transition-all duration-200 text-left group ${
 													isActive
 														? "bg-transparent relative"
@@ -227,6 +277,16 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 					</div>
 				)}
 			</div>
+
+			{/* 右键菜单 */}
+			{contextMenu && contextMenuItems.length > 0 && (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={contextMenuItems}
+					onClose={() => setContextMenu(null)}
+				/>
+			)}
 		</div>
 	);
 }
