@@ -15,7 +15,7 @@ export function PanelShell({
 	return (
 		<div
 			className={cn(
-				"panel-shell h-full w-full overflow-hidden ring-1 ring-black/[0.02] dark:ring-white/[0.05]",
+				"panel-shell h-full w-full overflow-hidden",
 				variant === "center" && "panel-shell--center",
 				className,
 			)}

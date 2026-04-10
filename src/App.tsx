@@ -201,10 +201,10 @@ export default function App() {
 					/>
 				</Suspense>
 			) : (
-				<div className="h-screen w-screen bg-[#F9F9F8] dark:bg-[#0a0a0a] text-zinc-800 dark:text-zinc-200 font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-1.5 gap-1.5 animate-in fade-in zoom-in-95 duration-300">
+				<div className="h-screen w-screen bg-[#FAF9F7] dark:bg-[#111113] app-shell-texture app-shell-noise text-zinc-800 dark:text-zinc-200 font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 duration-300">
 					<PanelGroup
 						direction="horizontal"
-						className="gap-1.5"
+						className="gap-0"
 						autoSaveId="main_three_panel_layout_v2"
 					>
 						{/* Left Panel: Resources */}

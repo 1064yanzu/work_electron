@@ -6,6 +6,7 @@ import { workspaceStore } from "../../lib/workspaceStore";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
 import { toast } from "../ui/Toast";
+import { isBinaryPreviewFile, BINARY_CONTENT_MARKER } from "../editor/FileTypePreview";
 
 interface FileEntry {
 	path: string;
@@ -83,18 +84,23 @@ export function ProjectFilesView() {
 		} else {
 			setIsLoading(true);
 			try {
-				const res = await safeInvoke<{ content: string; encoding: string; size?: number }>(
-					"read_file_safe",
-					{ payload: { path: entry.path } },
-				);
-				console.log("[ProjectFilesView] open project file", {
-					path: entry.path,
-					title: entry.name,
-					contentLength: res?.content?.length ?? -1,
-					size: res?.size ?? -1,
-				});
-				workspaceStore.openProjectFile(entry.path, entry.name, res.content);
-				
+				if (isBinaryPreviewFile(entry.name)) {
+					// 二进制文件不读取内容，直接用路径打开
+					workspaceStore.openProjectFile(entry.path, entry.name, BINARY_CONTENT_MARKER);
+				} else {
+					const res = await safeInvoke<{ content: string; encoding: string; size?: number }>(
+						"read_file_safe",
+						{ payload: { path: entry.path } },
+					);
+					console.log("[ProjectFilesView] open project file", {
+						path: entry.path,
+						title: entry.name,
+						contentLength: res?.content?.length ?? -1,
+						size: res?.size ?? -1,
+					});
+					workspaceStore.openProjectFile(entry.path, entry.name, res.content);
+				}
+
 				// 强制切换到多标签编辑器视图
 				if (managedModeStore.getState().isActive) {
 					managedModeStore.disableManagedMode();

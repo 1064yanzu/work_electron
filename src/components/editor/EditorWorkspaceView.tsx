@@ -10,7 +10,7 @@ import {
 } from "react";
 import { cn } from "../../lib/utils";
 import type { EditorDensity } from "./useEditorUiPrefs";
-import { FileTypePreview, isMarkdownPreviewFile } from "./FileTypePreview";
+import { FileTypePreview, isMarkdownPreviewFile, isBinaryPreviewFile } from "./FileTypePreview";
 
 interface EditorWorkspaceViewProps {
 	editorMode: "edit" | "preview" | "split";
@@ -29,6 +29,7 @@ interface EditorWorkspaceViewProps {
 	editContainerRef: RefObject<HTMLDivElement>;
 	previewContainerRef: RefObject<HTMLDivElement>;
 	density: EditorDensity;
+	filePath?: string;
 }
 
 function useThrottledPreview(value: string, delayMs: number) {
@@ -50,12 +51,14 @@ const EditorPreviewPane = memo(function EditorPreviewPane({
 	content,
 	density,
 	emptyText,
+	filePath,
 }: {
 	title: string;
 	fileName: string;
 	content: string;
 	density: EditorDensity;
 	emptyText: string;
+	filePath?: string;
 }) {
 	const isMarkdownPreview = isMarkdownPreviewFile(fileName);
 
@@ -71,6 +74,7 @@ const EditorPreviewPane = memo(function EditorPreviewPane({
 				content={content}
 				density={density}
 				emptyText={emptyText}
+				filePath={filePath}
 			/>
 		</>
 	);
@@ -93,7 +97,11 @@ export function EditorWorkspaceView({
 	editContainerRef,
 	previewContainerRef,
 	density,
+	filePath,
 }: EditorWorkspaceViewProps) {
+	const isBinaryFile = isBinaryPreviewFile(previewFileName);
+	// 二进制文件强制使用 preview 模式
+	const effectiveEditorMode = isBinaryFile ? "preview" : editorMode;
 	const [isComposing, setIsComposing] = useState(false);
 	const [compositionPreviewContent, setCompositionPreviewContent] =
 		useState(editorContent);
@@ -156,7 +164,7 @@ export function EditorWorkspaceView({
 		],
 	);
 
-	if (editorMode === "split") {
+	if (effectiveEditorMode === "split") {
 		return (
 			<div className="flex h-full">
 				<section
@@ -202,6 +210,7 @@ export function EditorWorkspaceView({
 							content={previewContent}
 							density={density}
 							emptyText={splitPreviewEmptyText}
+							filePath={filePath}
 						/>
 					</div>
 				</section>
@@ -212,23 +221,25 @@ export function EditorWorkspaceView({
 	return (
 		<div className="h-full overflow-y-auto scrollbar-hide bg-white/72 dark:bg-zinc-950/35">
 			<div className={cn(maxWidthSingle, "mx-auto px-6 py-7 sm:px-8 sm:py-8")}>
-				<input
-					type="text"
-					value={selectedTitle}
-					onChange={(e) => onTitleChange(e.target.value)}
-					onBlur={onEditorBlur}
-					className={cn(
-						titleInputClass,
-						isMarkdownPreview
-							? "text-[40px] leading-tight mb-7"
-							: "text-[18px] leading-tight mb-4 font-medium text-zinc-600 dark:text-zinc-300",
-					)}
-					placeholder="无标题"
-					style={{ boxShadow: "none" }}
-					readOnly={editorMode === "preview" || !titleEditable}
-				/>
+				{!isBinaryFile && (
+					<input
+						type="text"
+						value={selectedTitle}
+						onChange={(e) => onTitleChange(e.target.value)}
+						onBlur={onEditorBlur}
+						className={cn(
+							titleInputClass,
+							isMarkdownPreview
+								? "text-[40px] leading-tight mb-7"
+								: "text-[18px] leading-tight mb-4 font-medium text-zinc-600 dark:text-zinc-300",
+						)}
+						placeholder="无标题"
+						style={{ boxShadow: "none" }}
+						readOnly={effectiveEditorMode === "preview" || !titleEditable}
+					/>
+				)}
 
-				{editorMode === "preview" ? (
+				{effectiveEditorMode === "preview" ? (
 					<div
 						onContextMenu={onPreviewContextMenu}
 						className="max-w-none"
@@ -238,6 +249,7 @@ export function EditorWorkspaceView({
 							content={previewContent}
 							density={density}
 							emptyText="文件内容为空。"
+							filePath={filePath}
 						/>
 					</div>
 				) : (

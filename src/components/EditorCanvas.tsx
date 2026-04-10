@@ -32,7 +32,6 @@ import { EditorDialogs } from "./editor/EditorDialogs";
 import { EditorDocumentListView } from "./editor/EditorDocumentListView";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorStatusBar } from "./editor/EditorStatusBar";
-import { isMarkdownPreviewFile } from "./editor/FileTypePreview";
 import { useEditorUiPrefs } from "./editor/useEditorUiPrefs";
 import { EditorWorkspaceView } from "./editor/EditorWorkspaceView";
 import InlineReviewRenderer from "./InlineReviewRenderer";
@@ -143,7 +142,6 @@ export default function EditorCanvas({
 		activeDocId,
 		currentEditorTitle,
 	});
-	const isMarkdownEditingExperience = isMarkdownPreviewFile(previewFileName);
 	const closeTab = workspaceStore.closeTab.bind(workspaceStore);
 	const closeDoc = workspaceStore.closeDoc.bind(workspaceStore);
 	const openDoc = workspaceStore.openDoc.bind(workspaceStore);
@@ -1670,7 +1668,7 @@ export default function EditorCanvas({
 					/>
 				) : (
 					<EditorWorkspaceView
-						editorMode={editorMode}
+						editorMode={isPhysicalFileVisible ? "preview" : editorMode}
 						selectedTitle={currentEditorTitle}
 						previewFileName={previewFileName}
 						titleEditable={Boolean(selectedOutput)}
@@ -1686,6 +1684,7 @@ export default function EditorCanvas({
 						editContainerRef={editContainerRef}
 						previewContainerRef={previewContainerRef}
 						density={density}
+						filePath={isPhysicalFileVisible ? activeFileSession?.path : undefined}
 					/>
 				)}
 			</div>

@@ -88,7 +88,6 @@ interface SourceListViewProps {
 	onOpenFolderModal: () => void;
 	setActiveTab: React.Dispatch<React.SetStateAction<"web" | "text" | "file">>;
 	setIsAddModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-	preloadWebSearchModule: () => void;
 
 	// View tabs
 	viewTabs: React.ReactNode;
@@ -140,7 +139,6 @@ export function SourceListView({
 	onOpenFolderModal,
 	setActiveTab,
 	setIsAddModalOpen,
-	preloadWebSearchModule,
 	viewTabs,
 	currentResearch,
 	uiDebugLogsEnabled,
@@ -880,16 +878,6 @@ export function SourceListView({
 
 			{/* Bottom Actions */}
 			<div className="p-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2 flex-wrap shrink-0">
-				<button
-					onClick={() => {
-						setLeftSidebarView("websearch");
-					}}
-					onMouseEnter={preloadWebSearchModule}
-					className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg text-xs font-medium text-white transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-				>
-					<Search className="w-3.5 h-3.5" />
-					网络搜索
-				</button>
 				<button
 					onClick={() => {
 						setActiveTab("text");

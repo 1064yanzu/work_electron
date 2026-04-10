@@ -14,11 +14,11 @@
 		--doc-toolbar: rgba(255, 255, 255, 0.78);
 		--doc-card: rgba(255, 255, 255, 0.96);
 		--doc-muted: #5f6470;
-		--panel-bg: rgba(255, 255, 255, 0.86);
-		--panel-bg-strong: rgba(255, 255, 255, 0.9);
-		--panel-border: rgba(15, 23, 42, 0.08);
-		--panel-ring: rgba(15, 23, 42, 0.04);
-		--panel-shadow: 0 8px 36px -18px rgba(15, 23, 42, 0.24);
+		--panel-bg: rgba(255, 255, 255, 0.72);
+		--panel-bg-strong: rgba(255, 255, 255, 0.78);
+		--panel-border: rgba(0, 0, 0, 0.06);
+		--panel-ring: rgba(0, 0, 0, 0.03);
+		--panel-shadow: none;
 		--interactive-ring: rgba(217, 108, 70, 0.35);
 	}
 
@@ -33,11 +33,11 @@
 		--doc-toolbar: rgba(20, 20, 23, 0.78);
 		--doc-card: rgba(30, 30, 35, 0.85);
 		--doc-muted: #aeb4c2;
-		--panel-bg: rgba(30, 30, 30, 0.9);
-		--panel-bg-strong: rgba(24, 24, 27, 0.92);
-		--panel-border: rgba(255, 255, 255, 0.08);
-		--panel-ring: rgba(255, 255, 255, 0.04);
-		--panel-shadow: 0 14px 50px -26px rgba(0, 0, 0, 0.6);
+		--panel-bg: rgba(24, 24, 27, 0.65);
+		--panel-bg-strong: rgba(24, 24, 27, 0.72);
+		--panel-border: rgba(255, 255, 255, 0.06);
+		--panel-ring: rgba(255, 255, 255, 0.03);
+		--panel-shadow: none;
 		--interactive-ring: rgba(224, 123, 82, 0.4);
 	}
 
@@ -139,16 +139,53 @@
 	@apply rounded-xl shadow-lg max-w-full;
 }
 
+/* 全局纹理背景 - Claude 风格 */
+.app-shell-texture {
+	background-image: 
+		radial-gradient(circle at 25% 25%, rgba(217, 108, 70, 0.03) 0%, transparent 50%),
+		radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.02) 0%, transparent 50%),
+		radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.015) 0%, transparent 60%);
+	background-size: 100% 100%;
+	background-attachment: fixed;
+}
+
+.dark .app-shell-texture {
+	background-image: 
+		radial-gradient(circle at 25% 25%, rgba(217, 108, 70, 0.04) 0%, transparent 50%),
+		radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+		radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.02) 0%, transparent 60%);
+}
+
+/* 添加微妙的噪点纹理 */
+.app-shell-noise::after {
+	content: "";
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0.015;
+	pointer-events: none;
+	z-index: 0;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+	background-repeat: repeat;
+	background-size: 256px 256px;
+}
+
+.dark .app-shell-noise::after {
+	opacity: 0.03;
+}
+
 .mid-center-panel {
 	background:
 		radial-gradient(
 			120% 120% at 100% 0%,
-			rgba(245, 158, 11, 0.06),
+			rgba(245, 158, 11, 0.03),
 			transparent 48%
 		),
 		radial-gradient(
 			100% 100% at 0% 100%,
-			rgba(59, 130, 246, 0.04),
+			rgba(59, 130, 246, 0.02),
 			transparent 52%
 		);
 }
@@ -157,12 +194,12 @@
 	background:
 		radial-gradient(
 			120% 120% at 100% 0%,
-			rgba(245, 158, 11, 0.08),
+			rgba(245, 158, 11, 0.05),
 			transparent 48%
 		),
 		radial-gradient(
 			100% 100% at 0% 100%,
-			rgba(59, 130, 246, 0.08),
+			rgba(59, 130, 246, 0.04),
 			transparent 52%
 		);
 }
@@ -196,11 +233,11 @@
 
 .panel-shell {
 	background-color: var(--panel-bg);
-	border: 1px solid var(--panel-border);
-	box-shadow: var(--panel-shadow);
+	border: none;
+	box-shadow: none;
 	backdrop-filter: blur(18px);
 	-webkit-backdrop-filter: blur(18px);
-	border-radius: 16px;
+	border-radius: 0;
 }
 
 .panel-shell--center {

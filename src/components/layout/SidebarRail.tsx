@@ -5,6 +5,7 @@ import {
 	LayoutTemplate,
 	Settings,
 	Home,
+	Zap,
 } from "lucide-react";
 import { useWorkspaceStoreSelector, workspaceStore } from "../../lib/workspaceStore";
 
@@ -25,10 +26,11 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 		{ id: "threads", label: "线程", icon: MessageSquare },
 		{ id: "sources", label: "资料库", icon: Library },
 		{ id: "cards", label: "卡片", icon: LayoutTemplate },
+		{ id: "skills", label: "技能", icon: Zap },
 	];
 
 	return (
-		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-white dark:bg-[#1E1E1E] border-r border-[#E6E4E2] dark:border-white/[0.02]">
+		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-transparent border-r border-black/[0.06] dark:border-white/[0.06]">
 			<div className="flex flex-col items-center gap-4 flex-1">
 				{navItems.map((item) => {
 					// We treat sub-views of materials (e.g. detail, research, websearch, agent) as belonging to 'sources' in the rail

@@ -111,7 +111,8 @@ export interface LayoutState {
 		| "cards"
 		| "websearch"
 		| "threads"
-		| "files";
+		| "files"
+		| "skills";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 }

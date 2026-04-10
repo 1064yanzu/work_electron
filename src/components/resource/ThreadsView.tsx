@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Plus, Search, ChevronDown, ChevronRight, MessageSquare, Folder, FolderOpen } from "lucide-react";
 import { sessionStore, AgentSession } from "../../lib/agent/sessionManager";
 import { managedModeStore } from "../../lib/managedModeStore";
@@ -15,6 +15,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		new Set(),
 	);
 	const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+	const hasInitializedRef = useRef(false);
 
 	// 初始加载和状态订阅
 	useEffect(() => {
@@ -64,10 +65,11 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 	// 首次加载自动展开所有包含会话的文件夹
 	useEffect(() => {
-		if (Object.keys(groupedSessions).length > 0 && expandedFolders.size === 0) {
+		if (!hasInitializedRef.current && Object.keys(groupedSessions).length > 0) {
 			setExpandedFolders(new Set(Object.keys(groupedSessions)));
+			hasInitializedRef.current = true;
 		}
-	}, [groupedSessions, expandedFolders.size]);
+	}, [groupedSessions]);
 
 	const toggleFolder = (folderName: string) => {
 		setExpandedFolders((prev) => {

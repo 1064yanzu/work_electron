@@ -58,6 +58,7 @@ import { SourceListView } from "./SourceListView";
 import { SidebarRail } from "../layout/SidebarRail";
 import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
+import { SkillsView } from "./SkillsView";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
 const WebSearchModule = lazy(() => import("../WebSearchModule"));
@@ -132,10 +133,6 @@ export default function ResourceSidebar({
 		return () => {
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 		};
-	}, []);
-
-	const preloadWebSearchModule = useCallback(() => {
-		void import("../WebSearchModule");
 	}, []);
 	const preloadAgentTaskPanel = useCallback(() => {
 		void import("../agent/AgentTaskPanel");
@@ -544,7 +541,7 @@ export default function ResourceSidebar({
 			<SidebarRail onOpenSettings={onOpenSettings} onNavigateHome={onNavigateHome} />
 			<aside
 				data-resource-sidebar
-				className="flex-1 bg-[#FDFDFC] dark:bg-zinc-900 flex flex-col h-full font-sans min-w-0 relative"
+				className="flex-1 bg-transparent flex flex-col h-full font-sans min-w-0 relative"
 				onDragOver={dragDrop.handleContainerDragOver}
 				onDrop={dragDrop.handleContainerDrop}
 			>
@@ -642,6 +639,8 @@ export default function ResourceSidebar({
 				<ThreadsView onNavigateWorkbench={onNavigateWorkbench} />
 			) : leftSidebarView === "files" ? (
 				<ProjectFilesView />
+			) : leftSidebarView === "skills" ? (
+				<SkillsView onNavigateWorkbench={onNavigateWorkbench} />
 			) : leftSidebarView === "websearch" ? (
 				<div className="flex flex-col h-full">
 					{/* Header */}
@@ -724,7 +723,6 @@ export default function ResourceSidebar({
 					onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
 					setActiveTab={setActiveTab}
 					setIsAddModalOpen={setIsAddModalOpen}
-					preloadWebSearchModule={preloadWebSearchModule}
 					viewTabs={renderViewTabs()}
 					currentResearch={currentResearch}
 					uiDebugLogsEnabled={uiDebugLogsEnabled}
