@@ -488,7 +488,7 @@ export async function searchAgentMemories(
 export async function createAgentMemory(
 	key: string,
 	content: string,
-	category: "preference" | "fact" | "task_result" | "user_habit",
+	category: "preference" | "fact" | "task_result" | "user_habit" | "instruction" | "context",
 ): Promise<MemoryRecord> {
 	return safeInvoke<MemoryRecord>("create_agent_memory", {
 		key,

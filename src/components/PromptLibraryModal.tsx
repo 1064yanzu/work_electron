@@ -31,6 +31,7 @@ import {
 } from "../lib/customPromptStore";
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { toast } from "./ui/Toast";
+import { Select } from "./ui/Select";
 
 // ============================================================================
 // Types & Constants
@@ -847,7 +848,7 @@ export function PromptLibraryModal({
 													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
 														文件夹
 													</label>
-													<select
+													<Select
 														value={editingPrompt?.folderId || ""}
 														onChange={(e) =>
 															setEditingPrompt((prev) =>
@@ -859,15 +860,14 @@ export function PromptLibraryModal({
 																	: null,
 															)
 														}
-														className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
-													>
-														<option value="">未分类</option>
-														{folders.map((f) => (
-															<option key={f.id} value={f.id}>
-																{f.name}
-															</option>
-														))}
-													</select>
+														options={[
+															{ value: "", label: "未分类" },
+															...folders.map((f) => ({
+																value: f.id,
+																label: f.name,
+															})),
+														]}
+													/>
 												</div>
 												<div className="space-y-2">
 													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">

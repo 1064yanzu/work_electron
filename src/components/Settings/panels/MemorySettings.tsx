@@ -31,6 +31,12 @@ const CATEGORY_CONFIG: Record<
 	MemoryCategory,
 	{ label: string; color: string; icon: string }
 > = {
+	instruction: {
+		label: "指令",
+		color:
+			"bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+		icon: "⚡",
+	},
 	preference: {
 		label: "偏好",
 		color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -41,6 +47,12 @@ const CATEGORY_CONFIG: Record<
 		color:
 			"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
 		icon: "📌",
+	},
+	context: {
+		label: "上下文",
+		color:
+			"bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+		icon: "🔗",
 	},
 	task_result: {
 		label: "历史结果",
@@ -57,8 +69,10 @@ const CATEGORY_CONFIG: Record<
 };
 
 const CATEGORY_OPTIONS: { value: MemoryCategory; label: string }[] = [
+	{ value: "instruction", label: "指令" },
 	{ value: "preference", label: "偏好" },
 	{ value: "fact", label: "事实" },
+	{ value: "context", label: "上下文" },
 	{ value: "task_result", label: "历史结果" },
 	{ value: "user_habit", label: "习惯" },
 ];

@@ -190,12 +190,21 @@ async function fetchSourcesWithNotes(
 	db: DbContext,
 	scopePath: string,
 ): Promise<SourceWithNote[]> {
+	// 查询策略：
+	// 1. scope 精确匹配（兼容未来可能的项目级 scope）
+	// 2. scope = 'global'（当前所有导入的文件都是全局 scope）
+	// 3. storage_path 前缀匹配（通过 vault 路径关联）
+	// 4. url 前缀匹配（通过 file:// URL 关联本地文件）
+	const fileUrlPrefix = `file://${scopePath}`;
 	const result = await db.client.execute({
 		sql: `SELECT s.id, s.title, s.kind, n.content
 			  FROM sources s
 			  JOIN notes n ON n.source_id = s.id
-			  WHERE s.scope = ? OR s.storage_path LIKE ?`,
-		args: [scopePath, `${scopePath}%`],
+			  WHERE s.scope = ?
+			     OR s.scope = 'global'
+			     OR s.storage_path LIKE ?
+			     OR s.url LIKE ?`,
+		args: [scopePath, `${scopePath}%`, `${fileUrlPrefix}%`],
 	});
 
 	return result.rows.map((row) => ({

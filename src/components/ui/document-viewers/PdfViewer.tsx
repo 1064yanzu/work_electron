@@ -1,6 +1,24 @@
-import { Download, FileWarning, Loader2, ZoomIn, ZoomOut } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	ChevronLeft,
+	ChevronRight,
+	Download,
+	FileWarning,
+	Loader2,
+	Maximize2,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
+import {
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
 import { safeInvoke } from "../../../lib/tauriBridge";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -13,15 +31,93 @@ interface PdfViewerProps {
 	className?: string;
 }
 
+/** 虚拟化单页：只有进入视口附近时才渲染 */
+const VirtualPage = memo(function VirtualPage({
+	pageNumber,
+	width,
+	scale,
+	onVisible,
+}: {
+	pageNumber: number;
+	width: number | undefined;
+	scale: number;
+	onVisible?: (pageNumber: number) => void;
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+	const [isVisible, setIsVisible] = useState(false);
+	const [wasVisible, setWasVisible] = useState(false);
+
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				const visible = entry.isIntersecting;
+				setIsVisible(visible);
+				if (visible) {
+					setWasVisible(true);
+					onVisible?.(pageNumber);
+				}
+			},
+			{ rootMargin: "300px 0px" },
+		);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [pageNumber, onVisible]);
+
+	const shouldRender = isVisible || wasVisible;
+	const estimatedHeight = (width || 600) * 1.414 * scale;
+
+	return (
+		<div
+			ref={ref}
+			data-page-container=""
+			className="bg-white shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)] rounded-sm relative"
+			style={{ minHeight: shouldRender ? undefined : estimatedHeight }}
+		>
+			{shouldRender ? (
+				<Page
+					pageNumber={pageNumber}
+					width={width}
+					scale={scale}
+					renderTextLayer={true}
+					renderAnnotationLayer={true}
+					loading={
+						<div
+							className="flex items-center justify-center"
+							style={{ height: estimatedHeight }}
+						>
+							<Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
+						</div>
+					}
+				/>
+			) : (
+				<div
+					className="flex items-center justify-center bg-zinc-50/50"
+					style={{ height: estimatedHeight }}
+				>
+					<span className="text-[11px] text-zinc-300">{pageNumber}</span>
+				</div>
+			)}
+		</div>
+	);
+});
+
 export default function PdfViewer({ src, className }: PdfViewerProps) {
 	const [numPages, setNumPages] = useState<number>(0);
 	const [scale, setScale] = useState<number>(1.0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-	const [documentFile, setDocumentFile] = useState<string | { data: Uint8Array } | null>(null);
+	const [documentFile, setDocumentFile] = useState<
+		string | { data: Uint8Array } | null
+	>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [jumpInput, setJumpInput] = useState("");
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const scrollRef = useRef<HTMLDivElement | null>(null);
 	const [pageWidth, setPageWidth] = useState<number>(0);
+
 	const isRemote = useMemo(
 		() =>
 			src.startsWith("http://") ||
@@ -37,6 +133,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 		setLoading(true);
 		setError(null);
 		setNumPages(0);
+		setCurrentPage(1);
 		setDocumentFile(null);
 		setDownloadUrl((prev) => {
 			if (prev) URL.revokeObjectURL(prev);
@@ -50,31 +147,32 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 		(async () => {
 			try {
-				const result = await safeInvoke<{ content: string; encoding: string }>(
-					"read_file_safe",
-					{
-						payload: { path: src, encoding: "base64" },
-					},
-				);
+				const result = await safeInvoke<{
+					content: string;
+					encoding: string;
+				}>("read_file_safe", {
+					payload: { path: src, encoding: "base64" },
+				});
 				if (cancelled) return;
 
 				const base64 = result?.content || "";
 				if (!base64) throw new Error("PDF 内容为空");
 
-				const binary = atob(base64);
-				const bytes = new Uint8Array(binary.length);
-				for (let i = 0; i < binary.length; i++) {
-					bytes[i] = binary.charCodeAt(i);
+				const binaryStr = atob(base64);
+				const len = binaryStr.length;
+				const bytes = new Uint8Array(len);
+				for (let i = 0; i < len; i++) {
+					bytes[i] = binaryStr.charCodeAt(i);
 				}
 
-					setDocumentFile({ data: bytes });
+				setDocumentFile({ data: bytes });
 				const blob = new Blob([bytes], { type: "application/pdf" });
 				const url = URL.createObjectURL(blob);
 				createdUrl = url;
 				setDownloadUrl(url);
 			} catch (e) {
 				if (cancelled) return;
-				console.error("[PDFViewer] Failed to load local pdf via backend:", e);
+				console.error("[PDFViewer] Failed to load local pdf:", e);
 				setError("PDF 文件读取失败");
 				setLoading(false);
 			}
@@ -89,12 +187,10 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 	useEffect(() => {
 		const node = containerRef.current;
 		if (!node) return;
-
 		const updateWidth = () => {
-			const nextWidth = Math.max(320, Math.floor(node.clientWidth - 24));
+			const nextWidth = Math.max(320, Math.floor(node.clientWidth - 32));
 			setPageWidth(nextWidth);
 		};
-
 		updateWidth();
 		const observer = new ResizeObserver(updateWidth);
 		observer.observe(node);
@@ -112,12 +208,66 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 	const onDocumentLoadError = useCallback((loadError: Error) => {
 		console.error("PDF 加载失败:", loadError);
-		setError(loadError?.message ? `PDF 加载失败：${loadError.message}` : "PDF 加载失败");
+		setError(
+			loadError?.message
+				? `PDF 加载失败：${loadError.message}`
+				: "PDF 加载失败",
+		);
 		setLoading(false);
 	}, []);
 
 	const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3.0));
-	const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
+	const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.3));
+	const fitWidth = () => setScale(1.0);
+
+	const handlePageVisible = useCallback((pageNumber: number) => {
+		setCurrentPage(pageNumber);
+	}, []);
+
+	const jumpToPage = useCallback(
+		(page: number) => {
+			if (page < 1 || page > numPages) return;
+			const scrollEl = scrollRef.current;
+			if (!scrollEl) return;
+			const pages = scrollEl.querySelectorAll("[data-page-container]");
+			const target = pages[page - 1] as HTMLElement | undefined;
+			target?.scrollIntoView({ behavior: "smooth", block: "start" });
+			setCurrentPage(page);
+		},
+		[numPages],
+	);
+
+	const handleJumpInputKeyDown = (
+		e: React.KeyboardEvent<HTMLInputElement>,
+	) => {
+		if (e.key === "Enter") {
+			const num = Number.parseInt(jumpInput, 10);
+			if (!Number.isNaN(num)) jumpToPage(num);
+			setJumpInput("");
+		}
+	};
+
+	// 键盘快捷键
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// 仅在没有焦点在 input 时处理
+			if (
+				e.target instanceof HTMLInputElement ||
+				e.target instanceof HTMLTextAreaElement
+			)
+				return;
+			if (e.key === "+" || e.key === "=") {
+				e.preventDefault();
+				zoomIn();
+			} else if (e.key === "-") {
+				e.preventDefault();
+				zoomOut();
+			}
+		};
+		const el = containerRef.current;
+		el?.addEventListener("keydown", handleKeyDown);
+		return () => el?.removeEventListener("keydown", handleKeyDown);
+	}, []);
 
 	if (error) {
 		return (
@@ -128,7 +278,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					href={src}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="mt-4 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg text-sm hover:opacity-90"
+					className="mt-4 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
 				>
 					在外部应用中打开
 				</a>
@@ -137,47 +287,94 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 	}
 
 	return (
-		<div className={`flex flex-col ${className || ""}`}>
-			<div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-white/88 dark:bg-zinc-900/88 backdrop-blur-md rounded-t-xl border-b border-zinc-200 dark:border-zinc-700">
-				<div className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[80px]">
-					{numPages ? `${numPages} 页` : "载入中..."}
+		<div
+			ref={containerRef}
+			className={`flex flex-col ${className || ""}`}
+			tabIndex={0}
+		>
+			{/* 工具栏 */}
+			<div className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 bg-white/92 dark:bg-zinc-900/92 backdrop-blur-md rounded-t-xl border-b border-zinc-200 dark:border-zinc-700">
+				{/* 页码导航 */}
+				<div className="flex items-center gap-0.5">
+					<button
+						onClick={() => jumpToPage(currentPage - 1)}
+						disabled={currentPage <= 1}
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						title="上一页"
+					>
+						<ChevronLeft className="w-3.5 h-3.5" />
+					</button>
+					<div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
+						<input
+							type="text"
+							value={jumpInput || (numPages ? String(currentPage) : "")}
+							onChange={(e) => setJumpInput(e.target.value)}
+							onKeyDown={handleJumpInputKeyDown}
+							onBlur={() => setJumpInput("")}
+							className="w-9 text-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+							disabled={!numPages}
+						/>
+						<span className="text-[11px]">/ {numPages || "..."}</span>
+					</div>
+					<button
+						onClick={() => jumpToPage(currentPage + 1)}
+						disabled={currentPage >= numPages}
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						title="下一页"
+					>
+						<ChevronRight className="w-3.5 h-3.5" />
+					</button>
 				</div>
-				<div className="flex items-center gap-2">
+
+				{/* 缩放控制 */}
+				<div className="flex items-center gap-0.5">
 					<button
 						onClick={zoomOut}
-						disabled={scale <= 0.5}
-						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						disabled={scale <= 0.3}
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						title="缩小 (-)"
 					>
-						<ZoomOut className="w-4 h-4" />
+						<ZoomOut className="w-3.5 h-3.5" />
 					</button>
-					<span className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[50px] text-center">
+					<span className="text-[11px] text-zinc-500 dark:text-zinc-400 min-w-[36px] text-center tabular-nums">
 						{Math.round(scale * 100)}%
 					</span>
 					<button
 						onClick={zoomIn}
 						disabled={scale >= 3.0}
-						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						title="放大 (+)"
 					>
-						<ZoomIn className="w-4 h-4" />
+						<ZoomIn className="w-3.5 h-3.5" />
+					</button>
+					<div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+					<button
+						onClick={fitWidth}
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+						title="适应宽度"
+					>
+						<Maximize2 className="w-3.5 h-3.5" />
 					</button>
 					<a
 						href={downloadUrl || src}
 						download
-						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ml-2"
+						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
 						title="下载"
 					>
-						<Download className="w-4 h-4" />
+						<Download className="w-3.5 h-3.5" />
 					</a>
 				</div>
 			</div>
 
+			{/* PDF 内容 */}
 			<div
-				ref={containerRef}
-				className="flex-1 overflow-auto bg-transparent rounded-b-xl px-3 py-2"
+				ref={scrollRef}
+				className="flex-1 overflow-auto bg-zinc-100/60 dark:bg-zinc-950/50 rounded-b-xl px-3 py-4"
 			>
 				{loading && (
-					<div className="flex items-center justify-center py-12">
-						<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+					<div className="flex flex-col items-center justify-center py-16 gap-3">
+						<Loader2 className="w-7 h-7 animate-spin text-zinc-300" />
+						<span className="text-xs text-zinc-400">正在加载 PDF...</span>
 					</div>
 				)}
 				{documentFile ? (
@@ -189,18 +386,13 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 						className="flex flex-col items-center gap-4"
 					>
 						{Array.from({ length: numPages }, (_, index) => (
-							<div
-								key={`pdf-page-${index + 1}`}
-								className="mb-4 last:mb-0 bg-white shadow-[0_12px_40px_-24px_rgba(0,0,0,0.35)]"
-							>
-								<Page
-									pageNumber={index + 1}
-									width={pageWidth || undefined}
-									scale={scale}
-									renderTextLayer={false}
-									renderAnnotationLayer={false}
-								/>
-							</div>
+							<VirtualPage
+								key={`page-${index + 1}`}
+								pageNumber={index + 1}
+								width={pageWidth || undefined}
+								scale={scale}
+								onVisible={handlePageVisible}
+							/>
 						))}
 					</Document>
 				) : null}

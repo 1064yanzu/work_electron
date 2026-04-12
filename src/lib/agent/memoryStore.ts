@@ -9,7 +9,9 @@ export type MemoryCategory =
 	| "preference"
 	| "fact"
 	| "task_result"
-	| "user_habit";
+	| "user_habit"
+	| "instruction"
+	| "context";
 
 // 记忆记录
 export interface Memory {
@@ -201,15 +203,17 @@ class MemoryStore {
 		}
 
 		const lines = memories.map((m) => {
-			const categoryLabel =
-				{
-					preference: "偏好",
-					fact: "事实",
-					task_result: "历史结果",
-					user_habit: "习惯",
-				}[m.category] || "记忆";
+			const categoryLabel: Record<string, string> = {
+				instruction: "指令",
+				preference: "偏好",
+				fact: "事实",
+				context: "上下文",
+				task_result: "历史结果",
+				user_habit: "习惯",
+			};
+			const label = categoryLabel[m.category] || "记忆";
 
-			return `[${categoryLabel}] ${m.key}: ${m.content}`;
+			return `[${label}] ${m.key}: ${m.content}`;
 		});
 
 		return `## 相关记忆\n${lines.join("\n")}\n`;

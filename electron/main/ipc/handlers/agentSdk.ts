@@ -689,13 +689,11 @@ export function createAgentSdkHandlers(options: {
 					try {
 						const { buildMemoryContextForAgent } = await import("./agentMemoryService");
 						memoryContext = await buildMemoryContextForAgent(options.db, {
-							limit: 10,
-							minRelevanceScore: 0.5,
+							limit: 30,
+							minRelevanceScore: 0.3,
+							query: String(input.prompt ?? ""),
+							maxChars: 3000,
 						});
-						// 限制长度，防止 systemPrompt 过长
-						if (memoryContext.length > 1000) {
-							memoryContext = memoryContext.substring(0, 1000) + "\n...";
-						}
 					} catch (memErr) {
 						logger.warn({
 							msg: "Failed to build memory context",
@@ -1797,14 +1795,22 @@ export function createAgentSdkHandlers(options: {
 						: undefined,
 				} as any);
 			} finally {
-				// 异步提取记忆（非阻塞）
+				// 异步提取记忆（非阻塞）— 启用 LLM 深度提取
 				try {
 					const { extractAndSaveMemories } = await import("./agentMemoryService");
 					const userPrompt = String(input.prompt ?? "");
 					if (userPrompt.trim()) {
-						extractAndSaveMemories(options.db, runId, [
-							{ role: "user", content: userPrompt },
-						]).catch((err) => {
+						const conversationMessages: Array<{
+							role: "user" | "assistant";
+							content: string;
+						}> = [{ role: "user", content: userPrompt }];
+
+						extractAndSaveMemories(
+							options.db,
+							runId,
+							conversationMessages,
+							{ useLlm: true },
+						).catch((err) => {
 							logger.warn({
 								msg: "Failed to extract memories after agent run",
 								scope: "agent",

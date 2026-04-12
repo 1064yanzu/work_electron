@@ -4,6 +4,7 @@ import { Folder as FolderIcon, Paperclip } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import type { Folder, Source } from "../../types";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
+import { Select } from "../ui/Select";
 
 interface ResourceModalsProps {
 	// 新建文件夹
@@ -166,18 +167,17 @@ export function ResourceModals({
 					<div className="text-xs text-zinc-500">
 						将 {selectedIds.length} 条资料移动到：
 					</div>
-					<select
+					<Select
 						value={moveFolderTargetId}
 						onChange={(e) => setMoveFolderTargetId(e.target.value)}
-						className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
-					>
-						<option value={UNASSIGNED_FOLDER_ID}>未归类</option>
-						{flatFolderOptions.map((opt) => (
-							<option key={opt.id} value={opt.id}>
-								{`${"—".repeat(opt.depth)}${opt.depth > 0 ? " " : ""}${opt.name}`}
-							</option>
-						))}
-					</select>
+						options={[
+							{ value: UNASSIGNED_FOLDER_ID, label: "未归类" },
+							...flatFolderOptions.map((opt) => ({
+								value: opt.id,
+								label: `${"—".repeat(opt.depth)}${opt.depth > 0 ? " " : ""}${opt.name}`,
+							})),
+						]}
+					/>
 					<div className="flex items-center justify-end gap-2">
 						<button
 							onClick={() => setIsMoveFolderModalOpen(false)}
@@ -254,19 +254,19 @@ export function ResourceModals({
 					<div className="text-xs text-zinc-500">
 						将「{moveFolderSource?.name}」移动到：
 					</div>
-					<select
+					<Select
 						value={moveFolderToTargetId}
 						onChange={(e) => setMoveFolderToTargetId(e.target.value)}
-						className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
-					>
-						<option value="">根目录</option>
-						{moveFolderSource &&
-							getAvailableParentFolders(moveFolderSource.id).map((opt) => (
-								<option key={opt.id} value={opt.id}>
-									{`${"—".repeat(opt.depth)}${opt.depth > 0 ? " " : ""}${opt.name}`}
-								</option>
-							))}
-					</select>
+						options={[
+							{ value: "", label: "根目录" },
+							...(moveFolderSource
+								? getAvailableParentFolders(moveFolderSource.id).map((opt) => ({
+										value: opt.id,
+										label: `${"—".repeat(opt.depth)}${opt.depth > 0 ? " " : ""}${opt.name}`,
+									}))
+								: []),
+						]}
+					/>
 					<div className="flex items-center justify-end gap-2">
 						<button
 							onClick={() => {

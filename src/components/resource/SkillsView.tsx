@@ -18,6 +18,7 @@ import { useSkillsStore } from "../../lib/skillsStore";
 import { openDirectory } from "../../lib/dialogCompat";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
+import { Select } from "../ui/Select";
 
 type FilterType = "all" | "system" | "custom" | "enabled";
 
@@ -176,16 +177,18 @@ export function SkillsView(_props: SkillsViewProps) {
 						</button>
 					)}
 				</div>
-				<select
+				<Select
 					value={filter}
 					onChange={(e) => setFilter(e.target.value as FilterType)}
-					className="px-3 py-2 text-xs bg-zinc-100/80 dark:bg-zinc-800/50 border-none rounded-lg text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
-				>
-					<option value="all">全部</option>
-					<option value="system">系统</option>
-					<option value="custom">自定义</option>
-					<option value="enabled">已启用</option>
-				</select>
+					variant="compact"
+					options={[
+						{ value: "all", label: "全部" },
+						{ value: "system", label: "系统" },
+						{ value: "custom", label: "自定义" },
+						{ value: "enabled", label: "已启用" },
+					]}
+					containerClassName="w-28"
+				/>
 			</div>
 
 			{/* Skills List */}

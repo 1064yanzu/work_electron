@@ -4,6 +4,7 @@ import { createSource } from "../../lib/api";
 import { smartWebSearch } from "../../lib/config";
 import type { WebSearchResult } from "../../types";
 import { toast } from "./Toast";
+import { Select } from "./Select";
 
 interface WebSearchPanelProps {
 	onClose: () => void;
@@ -88,15 +89,16 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 							/>
 						</div>
 
-						<select
+						<Select
 							value={engine}
 							onChange={(e) => setEngine(e.target.value as any)}
-							className="px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-						>
-							<option value="duckduckgo">DuckDuckGo</option>
-							<option value="google">Google</option>
-							<option value="bing">Bing</option>
-						</select>
+							options={[
+								{ value: "duckduckgo", label: "DuckDuckGo" },
+								{ value: "google", label: "Google" },
+								{ value: "bing", label: "Bing" },
+							]}
+							containerClassName="w-36"
+						/>
 
 						<button
 							onClick={handleSearch}
