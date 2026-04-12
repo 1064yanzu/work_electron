@@ -16,7 +16,6 @@ import {
 	ChevronRight,
 	ArrowLeft,
 	Info,
-	Sparkles,
 	FileText,
 	Clock,
 	Tag,
@@ -61,6 +60,7 @@ export function WikiView() {
 		isInitializing,
 		enabled,
 		error,
+		generationProgress,
 		enable,
 		rebuild,
 		createPage,
@@ -77,7 +77,7 @@ export function WikiView() {
 		null,
 	);
 	const [selectedPage, setSelectedPage] = useState<WikiPageItem | null>(null);
-	const [isGenerating, setIsGenerating] = useState(false);
+	const isGenerating = generationProgress?.is_generating ?? false;
 	const scopeLabel = useMemo(() => {
 		return threadTitle?.trim() || getScopeName(scopePath);
 	}, [scopePath, threadTitle]);
@@ -174,11 +174,10 @@ export function WikiView() {
 			type: "info",
 		});
 		if (!confirmed) return;
-		setIsGenerating(true);
 		try {
 			await generateWiki();
-		} finally {
-			setIsGenerating(false);
+		} catch {
+			// error 已在 useWiki 内部处理
 		}
 	};
 
@@ -250,7 +249,7 @@ export function WikiView() {
 						onClick={enable}
 						className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
 					>
-						<Sparkles className="w-4 h-4" />
+						<BookOpen className="w-4 h-4" />
 						建立 Wiki
 					</button>
 				</div>
@@ -424,7 +423,7 @@ export function WikiView() {
 						className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
 						title="AI 生成 Wiki 页面"
 					>
-						<Sparkles
+						<BookOpen
 							className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`}
 						/>
 					</button>
@@ -501,10 +500,45 @@ export function WikiView() {
 				</div>
 			) : null}
 
-			{isGenerating ? (
-				<div className="mx-3 mt-2 px-3 py-2 text-xs text-primary bg-primary/5 rounded-lg flex items-center gap-2">
-					<Sparkles className="w-3.5 h-3.5 animate-pulse" />
-					AI 正在分析源文件并生成知识页面，请稍候...
+			{isGenerating && generationProgress ? (
+				<div className="mx-3 mt-2 px-3 py-3 bg-primary/5 rounded-lg border border-primary/10">
+					<div className="flex items-center gap-2 mb-2">
+						<RefreshCw className="w-3.5 h-3.5 text-primary animate-spin" />
+						<span className="text-xs font-medium text-primary">
+							AI 正在生成 Wiki 页面
+						</span>
+					</div>
+					{/* 进度条 */}
+					{generationProgress.total_sources > 0 && (
+						<div className="mb-2">
+							<div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+								<div
+									className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+									style={{
+										width: `${Math.round((generationProgress.processed_sources / generationProgress.total_sources) * 100)}%`,
+									}}
+								/>
+							</div>
+						</div>
+					)}
+					{/* 状态文字 */}
+					<div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+						<span className="truncate max-w-[200px]">
+							{generationProgress.current_source_title
+								? `正在处理：${generationProgress.current_source_title}`
+								: "准备中..."}
+						</span>
+						<span className="flex-shrink-0 tabular-nums">
+							{generationProgress.processed_sources}/{generationProgress.total_sources} 源文件
+							{generationProgress.generated_pages > 0 &&
+								` · ${generationProgress.generated_pages} 页`}
+						</span>
+					</div>
+					{generationProgress.error && (
+						<div className="mt-1.5 text-[11px] text-red-500">
+							{generationProgress.error}
+						</div>
+					)}
 				</div>
 			) : null}
 

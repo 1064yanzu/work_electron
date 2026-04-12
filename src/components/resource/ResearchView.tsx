@@ -10,7 +10,7 @@ import {
 	Globe,
 	Loader2,
 	Search,
-	Sparkles,
+	Lightbulb,
 	X,
 } from "lucide-react";
 import { useCallback } from "react";
@@ -80,7 +80,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 				</button>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<Sparkles className="w-4 h-4 text-blue-500" />
+						<Lightbulb className="w-4 h-4 text-blue-500" />
 						<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
 							深度研究
 						</h2>

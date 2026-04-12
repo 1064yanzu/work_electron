@@ -4,7 +4,7 @@ import {
 	ChevronUp,
 	Loader2,
 	Search,
-	Sparkles,
+	Zap,
 	X,
 	XCircle,
 } from "lucide-react";
@@ -153,7 +153,7 @@ export function GraphTopToolbar({
 						active={filter === "all"}
 						label="全部"
 						onClick={() => onFilterChange("all")}
-						icon={<Sparkles className="w-3.5 h-3.5" />}
+						icon={<Zap className="w-3.5 h-3.5" />}
 					/>
 					<FilterButton
 						active={filter === "running"}
@@ -171,7 +171,7 @@ export function GraphTopToolbar({
 						active={filter === "artifact"}
 						label="产物"
 						onClick={() => onFilterChange("artifact")}
-						icon={<Sparkles className="w-3.5 h-3.5" />}
+						icon={<Zap className="w-3.5 h-3.5" />}
 					/>
 					<button
 						type="button"

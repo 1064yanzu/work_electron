@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 export function WelcomeScreen() {
 	return (
@@ -9,7 +9,7 @@ export function WelcomeScreen() {
 			{/* Welcome Hero */}
 			<div className="flex flex-col items-center text-center mb-10 z-10">
 				<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-black/20 flex items-center justify-center mb-6 ring-1 ring-white/50 dark:ring-white/10">
-					<Sparkles className="w-8 h-8 text-zinc-800 dark:text-zinc-100" />
+					<MessageCircle className="w-8 h-8 text-zinc-800 dark:text-zinc-100" />
 				</div>
 				<h3 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 mb-3 tracking-tight">
 					有什么可以帮您的？

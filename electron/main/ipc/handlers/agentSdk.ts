@@ -152,6 +152,8 @@ export function createAgentSdkHandlers(options: {
 		runRegistry.set(runId, { abortController });
 
 		(async () => {
+			// 收集 assistant 回复文本用于记忆提取（声明在 try 外层以便 finally 可访问）
+			const assistantTextParts: string[] = [];
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
 				// 收集 stderr 关键错误信息，用于在 sawResult=false 时提供更有意义的错误
@@ -580,16 +582,24 @@ export function createAgentSdkHandlers(options: {
 					}),
 					runtimeMetadata,
 				});
+				// 预声明记忆变量（供 lifecycle hooks 和 UserPromptSubmit hook 使用）
+				let memoryContextBuilder: ((currentPrompt: string) => Promise<string>) | null = null;
+				let coreMemoryContext = "";
+
 				const lifecycleHooks = createLifecycleHooks({
 					logger,
 					runId,
 					stderr,
 					emitLifecycleEvent,
-					sessionAdditionalContext: stableTaskSpine,
+					sessionAdditionalContext: [
+						stableTaskSpine,
+						coreMemoryContext,
+					].filter(Boolean).join("\n\n"),
 					preCompactAdditionalContext: [
 						stableTaskSpine,
 						"压缩后必须保留：任务目标、硬性约束、当前进度、未完成事项、协作策略。",
-					].join("\n"),
+						coreMemoryContext ? `以下是用户核心记忆，压缩后务必保留：\n${coreMemoryContext}` : "",
+					].filter(Boolean).join("\n"),
 					runtimeMetadata,
 					experimentalMultiAgentEnabled: multiAgentRuntime.experimentalEnabled,
 				});
@@ -680,20 +690,29 @@ export function createAgentSdkHandlers(options: {
 					return fs.existsSync(candidate) ? candidate : undefined;
 				})();
 
-				// 构建记忆上下文注入到 systemPrompt（仅 Claude 模型启用）
-				let memoryContext = "";
+				// 构建记忆上下文 — 用于 UserPromptSubmit hook 动态注入（每轮对话按当前 prompt 做相关性匹配）
 				const modelStr = String(input.model ?? "").toLowerCase();
 				const isClaudeModel =
 					modelStr.includes("claude") || modelStr.includes("anthropic") || modelStr === "";
 				if (isClaudeModel) {
 					try {
 						const { buildMemoryContextForAgent } = await import("./agentMemoryService");
-						memoryContext = await buildMemoryContextForAgent(options.db, {
-							limit: 30,
-							minRelevanceScore: 0.3,
-							query: String(input.prompt ?? ""),
-							maxChars: 3000,
+						// 预加载 instruction 类核心记忆（不随 prompt 变化）
+						coreMemoryContext = await buildMemoryContextForAgent(options.db, {
+							limit: 10,
+							minRelevanceScore: 0.5,
+							categories: ["instruction", "preference"],
+							maxChars: 1000,
 						});
+						// 构建一个可复用的 builder，在每轮 UserPromptSubmit 中按当前 prompt 匹配
+						memoryContextBuilder = async (currentPrompt: string) => {
+							return buildMemoryContextForAgent(options.db, {
+								limit: 30,
+								minRelevanceScore: 0.3,
+								query: currentPrompt,
+								maxChars: 3000,
+							});
+						};
 					} catch (memErr) {
 						logger.warn({
 							msg: "Failed to build memory context",
@@ -701,7 +720,6 @@ export function createAgentSdkHandlers(options: {
 							runId,
 							error: memErr instanceof Error ? memErr.message : String(memErr),
 						});
-						memoryContext = "";
 					}
 				}
 
@@ -1060,7 +1078,7 @@ export function createAgentSdkHandlers(options: {
 													(hookInput as any)?.agent_id ||
 													(hookInput as any)?.agent_type,
 											);
-											const maxAdditionalChars = 600;
+											const maxAdditionalChars = 4000; // 包含记忆上下文的合理上限
 											const additions: string[] = [];
 											const pushHint = (
 												fingerprint: string,
@@ -1084,6 +1102,20 @@ export function createAgentSdkHandlers(options: {
 												`上下文预算：max_context_chars=${contextBudget.max_context_chars}, max_files=${contextBudget.max_files}, max_file_chars=${contextBudget.max_file_chars}。`,
 											);
 											pushHint("stable-task-spine", stableTaskSpine);
+
+											// 动态注入记忆上下文 — 每轮根据当前 prompt 做相关性匹配
+											if (memoryContextBuilder && promptText.trim()) {
+												try {
+													const memCtx = await memoryContextBuilder(promptText);
+													if (memCtx.trim()) {
+														// 记忆不走去重，每轮都注入最新匹配的记忆
+														additions.push(memCtx.trim());
+													}
+												} catch {
+													// 记忆注入失败不影响主流程
+												}
+											}
+
 											if (multiAgentRuntime.experimentalEnabled) {
 												pushHint(
 													"multi-agent-policy",
@@ -1218,7 +1250,7 @@ export function createAgentSdkHandlers(options: {
 								buildLeaderCollaborationPrompt({
 									runtime: multiAgentRuntime,
 								}),
-								memoryContext,
+								// 记忆不再静态注入 systemPrompt，改为通过 UserPromptSubmit hook 每轮动态注入
 							]
 								.filter((s) => typeof s === "string" && s.trim())
 								.join("\n\n"),
@@ -1629,6 +1661,9 @@ export function createAgentSdkHandlers(options: {
 							? msgAny.message.content
 							: [];
 						for (const b of blocks) {
+							if (b?.type === "text" && typeof b.text === "string") {
+								assistantTextParts.push(b.text);
+							}
 							if (b?.type !== "tool_use") continue;
 							const id = String(b?.id || "");
 							const name = String(b?.name || "");
@@ -1804,6 +1839,15 @@ export function createAgentSdkHandlers(options: {
 							role: "user" | "assistant";
 							content: string;
 						}> = [{ role: "user", content: userPrompt }];
+						// 加入 assistant 回复以获得更完整的对话上下文
+						try {
+							const assistantText = assistantTextParts.join("\n").slice(0, 5000);
+							if (assistantText.trim()) {
+								conversationMessages.push({ role: "assistant", content: assistantText });
+							}
+						} catch {
+							// assistantTextParts 可能不在作用域内（try 块外）
+						}
 
 						extractAndSaveMemories(
 							options.db,

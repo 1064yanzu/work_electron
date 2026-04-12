@@ -1,4 +1,4 @@
-import { Bot, Loader2 } from "lucide-react";
+import { CircleUser, Loader2 } from "lucide-react";
 import { memo } from "react";
 import type { RefObject } from "react";
 import type { AskUserQuestionRequest } from "../../lib/agent/askUserQuestionStore";
@@ -102,7 +102,7 @@ function CopilotMessagePaneImpl({
 					{isWaitingForLLM && chatMode === "agent" && (
 						<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
 							<div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 dark:from-zinc-300 dark:to-zinc-500 flex items-center justify-center shrink-0 shadow-md">
-								<Bot className="w-4 h-4 text-white dark:text-zinc-900" />
+								<CircleUser className="w-4 h-4 text-white dark:text-zinc-900" />
 							</div>
 							<div className="flex-1 min-w-0">
 								<div className="inline-flex items-center gap-3 px-4 py-3 bg-surface dark:bg-zinc-800/50 rounded-2xl border border-border shadow-sm">

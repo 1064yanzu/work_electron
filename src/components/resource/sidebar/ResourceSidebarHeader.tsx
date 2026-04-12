@@ -5,7 +5,7 @@ import {
 	Grid,
 	List,
 	Settings,
-	Sparkles,
+	Zap,
 	Square,
 } from "lucide-react";
 import type React from "react";
@@ -56,7 +56,7 @@ export function ResourceSidebarHeader({
 							size="sm"
 							className="text-primary hover:text-primary"
 						>
-							<Sparkles className="w-4 h-4" />
+							<Zap className="w-4 h-4" />
 						</IconButton>
 						{currentResearch.status !== "completed" ? (
 							<span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />

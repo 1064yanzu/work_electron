@@ -1,5 +1,5 @@
 // 新文档提案组件 - AI 建议创建新文档时的确认卡片
-import { Check, FileText, Sparkles, X } from "lucide-react";
+import { Check, FilePlus2, FileText, X } from "lucide-react";
 
 interface DocCreationProposalProps {
 	title: string;
@@ -33,7 +33,7 @@ export default function DocCreationProposal({
 				<div className="px-6 py-4 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-zinc-200/50 dark:border-zinc-800/50">
 					<div className="flex items-center gap-3">
 						<div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
-							<Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+							<FilePlus2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div>
 							<h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">

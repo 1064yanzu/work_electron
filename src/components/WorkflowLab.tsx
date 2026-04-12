@@ -4,7 +4,7 @@ import {
 	Clock,
 	Play,
 	Plus,
-	Sparkles,
+	Workflow,
 	XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -98,7 +98,7 @@ export function WorkflowLab() {
 		<main className="flex-1 flex flex-col bg-panel-process border-r border-border relative h-full overflow-hidden">
 			<div className="p-4 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-sm z-10">
 				<div className="flex items-center gap-2 text-text-secondary">
-					<Sparkles className="w-5 h-5 text-primary" />
+					<Workflow className="w-5 h-5 text-primary" />
 					<h2 className="font-serif font-medium tracking-wide text-sm">
 						Process Lab
 					</h2>
@@ -114,7 +114,7 @@ export function WorkflowLab() {
 			<div className="flex-1 p-6 overflow-y-auto space-y-6">
 				{nodes.length === 0 && !loading && (
 					<div className="flex flex-col items-center justify-center h-full text-text-muted gap-4">
-						<Sparkles className="w-12 h-12 opacity-20" />
+						<Workflow className="w-12 h-12 opacity-20" />
 						<p>No workflow nodes active. Start a new process.</p>
 					</div>
 				)}
@@ -134,7 +134,7 @@ export function WorkflowLab() {
 												: "bg-gray-100 text-gray-600"
 										}`}
 									>
-										<Sparkles className="w-5 h-5" />
+										<Workflow className="w-5 h-5" />
 									</div>
 									<div>
 										<div className="font-medium text-text-primary">

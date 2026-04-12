@@ -6,9 +6,9 @@
  * Using subtle shadows, refined typography, and smooth transitions.
  */
 import {
-	Bot,
+	Cog,
 	Plus,
-	Sparkles,
+	Cpu,
 	Trash2,
 	Zap,
 	PenTool,
@@ -250,7 +250,7 @@ export function AgentModelScenarioSettings() {
 			{/* Header Section */}
 			<div className="flex flex-col gap-1">
 				<h4 className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
-					<Bot className="w-5 h-5 text-primary" />
+					<Cog className="w-5 h-5 text-primary" />
 					模型场景配置
 				</h4>
 				<p className="text-sm text-zinc-500">
@@ -293,7 +293,7 @@ export function AgentModelScenarioSettings() {
 						<div>
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-2 font-medium text-zinc-900 text-sm">
-									<Sparkles
+									<Cpu
 										className={`w-4 h-4 ${settings.enableSmartScenarioSwitch ? "text-primary" : "text-zinc-400"}`}
 									/>
 									智能场景推断

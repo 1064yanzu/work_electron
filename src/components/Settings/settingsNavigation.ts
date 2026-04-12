@@ -1,7 +1,7 @@
 import {
 	Package,
 	BarChart3,
-	Brain,
+	Cpu,
 	Database,
 	Activity,
 	Palette,
@@ -10,7 +10,6 @@ import {
 	Settings as SettingsIcon,
 	Shield,
 	Smartphone,
-	Sparkles,
 	type LucideIcon,
 } from "lucide-react";
 import type {
@@ -38,7 +37,7 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	{
 		id: "models",
 		label: "模型配置",
-		icon: Sparkles,
+		icon: Cpu,
 		group: "common",
 		simpleMode: "full",
 	},
@@ -81,7 +80,7 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	{
 		id: "memory",
 		label: "Agent 记忆",
-		icon: Brain,
+		icon: Database,
 		group: "technical",
 		simpleMode: "summary",
 	},

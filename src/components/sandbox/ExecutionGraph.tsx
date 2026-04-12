@@ -8,7 +8,7 @@ import {
 	ReactFlow,
 	ReactFlowProvider,
 } from "@xyflow/react";
-import { Sparkles } from "lucide-react";
+import { Workflow } from "lucide-react";
 import {
 	useCallback,
 	useEffect,
@@ -46,7 +46,7 @@ function EmptyGraph() {
 		<div className="flex-1 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900">
 			<div className="text-center space-y-2 max-w-md">
 				<div className="mx-auto w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
-					<Sparkles className="w-6 h-6 text-zinc-400" />
+					<Workflow className="w-6 h-6 text-zinc-400" />
 				</div>
 				<div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
 					暂无运行任务

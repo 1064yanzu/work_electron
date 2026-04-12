@@ -1,5 +1,5 @@
 import {
-	Bot,
+	Cog,
 	Clock,
 	Database,
 	Loader2,
@@ -476,7 +476,7 @@ export function AgentSettings() {
 		return (
 			<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 				<SettingsPanelHeader
-					icon={Bot}
+					icon={Cog}
 					title="Agent 设置"
 					description="Agent 权限、模型场景与检索。"
 				/>
@@ -522,7 +522,7 @@ export function AgentSettings() {
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
 			<SettingsPanelHeader
-				icon={Bot}
+				icon={Cog}
 				title="Agent 设置"
 				description="模型场景、权限与检索。"
 			/>
@@ -533,7 +533,7 @@ export function AgentSettings() {
 			{/* Claude Agent SDK 运行时配置 */}
 			<div className="space-y-4">
 				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Bot className="w-4 h-4" />
+					<Cog className="w-4 h-4" />
 					Claude Agent SDK
 				</h4>
 				<div className="space-y-3">

@@ -1,8 +1,8 @@
 import {
 	BarChart3,
-	Brain,
 	ChevronDown,
 	ChevronRight,
+	Database,
 	Edit3,
 	Eye,
 	Hash,
@@ -250,7 +250,7 @@ export function MemorySettings() {
 	return (
 		<SettingsPageContainer>
 			<SettingsPanelHeader
-				icon={Brain}
+				icon={Database}
 				title="Agent 记忆"
 				description="管理 Agent 的长期记忆，记忆会在 Agent 启动时自动注入上下文以提供个性化体验。"
 				actions={
@@ -371,7 +371,7 @@ export function MemorySettings() {
 				</div>
 			) : memories.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-16 text-zinc-400 dark:text-zinc-500">
-					<Brain className="w-10 h-10 mb-3 opacity-40" />
+					<Database className="w-10 h-10 mb-3 opacity-40" />
 					<p className="text-sm">暂无记忆数据</p>
 					<p className="text-xs mt-1">Agent 会在使用过程中自动积累记忆</p>
 				</div>

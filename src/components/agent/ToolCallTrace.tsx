@@ -1,5 +1,5 @@
 import {
-	Brain,
+	Activity,
 	Check,
 	CheckCircle2,
 	ChevronDown,
@@ -15,8 +15,8 @@ import {
 	Globe,
 	Image as ImageIcon,
 	Loader2,
+	PenLine,
 	Search,
-	Wand2,
 	XCircle,
 	Zap,
 } from "lucide-react";
@@ -58,7 +58,7 @@ const toolConfig: Record<
 		label: "Fetch URL",
 	},
 	llm_call: {
-		icon: Brain,
+		icon: Activity,
 		gradient:
 			"from-amber-500/10 via-orange-500/10 to-rose-500/10 border-amber-200/50 dark:border-amber-800/30",
 		iconColor: "text-amber-600 dark:text-amber-400",
@@ -72,7 +72,7 @@ const toolConfig: Record<
 		label: "Execute Code",
 	},
 	skill_call: {
-		icon: Wand2,
+		icon: PenLine,
 		gradient:
 			"from-purple-500/10 via-fuchsia-500/10 to-pink-500/10 border-purple-200/50 dark:border-purple-800/30",
 		iconColor: "text-purple-600 dark:text-purple-400",

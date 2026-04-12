@@ -8,7 +8,7 @@ import {
 	RefreshCw,
 	Search,
 	Server,
-	Sparkles,
+	Star,
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -380,7 +380,7 @@ export function ModelDiscoveryModal({
 							disabled={selectedModels.size === 0}
 							className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-sm font-medium shadow-lg shadow-zinc-500/20 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
 						>
-							<Sparkles className="w-4 h-4 text-yellow-300" />
+							<Star className="w-4 h-4 text-yellow-300" />
 							添加选中模型
 						</button>
 					</div>

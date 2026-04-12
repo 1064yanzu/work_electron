@@ -1,4 +1,4 @@
-import { Image, Loader2, Wand2 } from "lucide-react";
+import { Image, Loader2, Palette } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	getImageGenConfig,
@@ -240,7 +240,7 @@ export function ImageGenSettings() {
 			{/* 提示词模板 */}
 			<div className="space-y-3">
 				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Wand2 className="w-4 h-4" />
+					<Palette className="w-4 h-4" />
 					提示词模板
 				</h4>
 				<textarea

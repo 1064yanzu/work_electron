@@ -1,4 +1,4 @@
-import { Eye, RefreshCw, Sparkles, X } from "lucide-react";
+import { Eye, RefreshCw, Zap, X } from "lucide-react";
 import { IconButton } from "../../ui/Button";
 import { cn } from "../../../lib/utils";
 
@@ -44,7 +44,7 @@ export function ManagedCenterHeader({
 						title="运行图 (Alt+1)"
 						aria-label="切换到运行图"
 					>
-						<Sparkles className="w-4 h-4" />
+						<Zap className="w-4 h-4" />
 						运行图
 					</button>
 					<button

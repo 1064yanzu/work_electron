@@ -1,7 +1,7 @@
 // 流式思考展示组件
 // 实时展示 Agent 的思考过程，支持阶段切换和动画效果
 
-import { Brain, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, Loader } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import {
@@ -157,7 +157,7 @@ export default function StreamingThought() {
 				className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/50 dark:hover:bg-zinc-800/50 transition-colors"
 			>
 				<div className="relative">
-					<Brain
+					<Activity
 						className={cn(
 							"w-5 h-5 transition-colors",
 							isExecuting ? "text-blue-500" : "text-zinc-400",
@@ -175,7 +175,7 @@ export default function StreamingThought() {
 						</span>
 						{isExecuting && (
 							<span className="text-xs text-blue-500 flex items-center gap-1">
-								<Sparkles className="w-3 h-3 animate-pulse" />
+								<Loader className="w-3 h-3 animate-pulse" />
 								思考中...
 							</span>
 						)}

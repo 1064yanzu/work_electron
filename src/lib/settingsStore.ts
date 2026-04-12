@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Cpu } from "lucide-react";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
 	CORE_PROVIDER_IDS,
@@ -43,7 +43,7 @@ const mapBackendToUI = (backend: BackendProvider): UIProvider => {
 		templateId,
 		providerType: backend.provider_type,
 		name: backend.name,
-		icon: template?.icon ?? Sparkles,
+		icon: template?.icon ?? Cpu,
 		color: template?.color ?? "bg-zinc-500",
 		isEnabled: backend.is_enabled,
 		apiKey: backend.api_key || "",

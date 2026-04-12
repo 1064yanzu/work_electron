@@ -9,7 +9,7 @@ import {
 	MessageSquare,
 	Pencil,
 	Search,
-	Wand2,
+	Command,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -86,7 +86,7 @@ export const defaultCommands: SlashCommand[] = [
 		id: "generate",
 		name: "生成",
 		description: "AI 生成内容",
-		icon: Wand2,
+		icon: Command,
 		category: "action",
 		group: "操作",
 	},

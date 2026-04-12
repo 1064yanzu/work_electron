@@ -1,7 +1,7 @@
 // AI 助手侧边栏 - 重构版（支持 Agent 工具调用系统）
 
 import {
-	Bot,
+	CircleUser,
 	Check,
 	ChevronDown,
 	FileText,
@@ -972,7 +972,7 @@ export default function CopilotSidebar() {
 									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
 							}`}
 						>
-							<Bot className="w-3.5 h-3.5" />
+							<CircleUser className="w-3.5 h-3.5" />
 							托管
 						</button>
 					</div>

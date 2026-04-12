@@ -3,7 +3,6 @@
 
 import {
 	ArrowLeft,
-	Brain,
 	Camera,
 	CheckCircle2,
 	ChevronRight,
@@ -12,17 +11,19 @@ import {
 	FilePlus,
 	FileText,
 	FolderOpen,
+	GitBranch,
 	Globe,
 	Loader2,
+	MessageSquare,
 	Play,
 	Plug,
 	Search,
-	Sparkles,
 	Square,
 	Terminal,
 	Wrench,
 	X,
 	XCircle,
+	Zap,
 } from "lucide-react";
 import React from "react";
 import { agentExecutor } from "../../lib/agent/executor";
@@ -52,7 +53,7 @@ const ToolIconMap: Record<string, React.ElementType> = {
 	Terminal,
 	ExternalLink,
 	Camera,
-	Sparkles,
+	MessageSquare,
 	Wrench,
 };
 
@@ -99,7 +100,7 @@ function ToolCallCard({
 					"",
 			).trim() || undefined
 		: undefined;
-	const Icon = isSubagentCall ? Brain : getToolIcon(toolCall.type);
+	const Icon = isSubagentCall ? GitBranch : getToolIcon(toolCall.type);
 	const statusColors = {
 		pending: "bg-zinc-50 dark:bg-zinc-800/50",
 		running: "bg-blue-50 dark:bg-blue-900/20",
@@ -242,7 +243,7 @@ export default function AgentTaskPanel({
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
 				<div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
-					<Sparkles className="w-8 h-8 text-zinc-400" />
+					<Zap className="w-8 h-8 text-zinc-400" />
 				</div>
 				<h3 className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">
 					暂无 Agent 任务
@@ -297,7 +298,7 @@ export default function AgentTaskPanel({
 				)}
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<Sparkles className="w-4 h-4 text-blue-500" />
+						<Zap className="w-4 h-4 text-blue-500" />
 						<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
 							Agent 任务
 						</h2>

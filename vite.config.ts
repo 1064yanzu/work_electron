@@ -110,6 +110,12 @@ export default defineConfig({
 								// Native addon
 								"node-pty",
 							],
+							output: {
+								// 强制主进程使用 CJS 格式，避免 "type":"module" 导致
+								// ESM 输出后 electron 模块无法提供命名导出的问题
+								format: "cjs",
+								entryFileNames: "[name].js",
+							},
 						},
 					},
 				},

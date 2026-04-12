@@ -8,7 +8,7 @@ import {
 	Plus,
 	Search,
 	Settings,
-	Sparkles,
+	Compass,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -250,7 +250,7 @@ export default function Dashboard({
 				{/* ... sidebar content same as before but cleaner styles ... */}
 				<div className="flex items-center gap-3 mb-12 px-2">
 					<div className="w-8 h-8 bg-zinc-900 dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black shadow-sm shrink-0">
-						<Sparkles className="w-4 h-4" />
+						<Compass className="w-4 h-4" />
 					</div>
 					<span className="font-serif font-bold text-xl tracking-tight hidden lg:block text-zinc-900 dark:text-white">
 						Workbench

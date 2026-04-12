@@ -3,7 +3,7 @@ import {
 	MessageSquare,
 	MoreHorizontal,
 	Plus,
-	Sparkles,
+	MessagesSquare,
 } from "lucide-react";
 import { IconButton } from "../ui/Button";
 
@@ -30,7 +30,7 @@ export function CopilotHeader({
 		<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
 			<div className="flex items-center gap-3">
 				<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 dark:from-zinc-100 dark:to-zinc-300 flex items-center justify-center shadow-sm">
-					<Sparkles className="w-4 h-4 text-white dark:text-zinc-900" />
+					<MessagesSquare className="w-4 h-4 text-white dark:text-zinc-900" />
 				</div>
 				<div>
 					<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 tracking-tight">

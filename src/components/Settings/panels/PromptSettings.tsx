@@ -1,7 +1,5 @@
 import {
 	AlertCircle,
-	Bot,
-	Brain,
 	CheckCircle,
 	ChevronDown,
 	ChevronUp,
@@ -12,8 +10,9 @@ import {
 	RefreshCw,
 	RotateCcw,
 	Save,
+	ScrollText,
 	Search,
-	Sparkles,
+	UserCog,
 	Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -227,7 +226,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "agentSystem",
 		label: "Agent 系统提示词",
 		description: "Agent 核心循环的系统提示词。可用变量：{tools}、{context}",
-		icon: Bot,
+		icon: UserCog,
 		configKey: "prompt_agent_system",
 		defaultValue: DEFAULT_PROMPTS.agentSystem,
 		placeholder: "输入 Agent 系统提示词...",
@@ -237,7 +236,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "agentFormat",
 		label: "Agent 格式规范",
 		description: "Agent 输出格式控制，确保返回结构化 JSON。",
-		icon: Bot,
+		icon: UserCog,
 		configKey: "prompt_agent_format",
 		defaultValue: DEFAULT_PROMPTS.agentFormat,
 		placeholder: "输入格式规范提示词...",
@@ -290,7 +289,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "taskPlanning",
 		label: "任务规划",
 		description: "将复杂任务分解为可执行的子任务。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_task_planning",
 		defaultValue: DEFAULT_PROMPTS.taskPlanning,
 		placeholder: "输入任务规划提示词...",
@@ -300,7 +299,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "informationSynthesis",
 		label: "信息综合",
 		description: "基于收集的信息生成高质量的回答。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_information_synthesis",
 		defaultValue: DEFAULT_PROMPTS.informationSynthesis,
 		placeholder: "输入信息综合提示词...",
@@ -310,7 +309,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "contentImprovement",
 		label: "内容改进",
 		description: "根据反馈改进回答质量。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_content_improvement",
 		defaultValue: DEFAULT_PROMPTS.contentImprovement,
 		placeholder: "输入内容改进提示词...",
@@ -320,7 +319,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "chainOfThought",
 		label: "链式思考",
 		description: "智能推理引擎的思考过程提示词。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_chain_of_thought",
 		defaultValue: DEFAULT_PROMPTS.chainOfThought,
 		placeholder: "输入链式思考提示词...",
@@ -330,7 +329,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "decisionEngine",
 		label: "决策引擎",
 		description: "根据思考结果选择最佳行动。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_decision_engine",
 		defaultValue: DEFAULT_PROMPTS.decisionEngine,
 		placeholder: "输入决策引擎提示词...",
@@ -340,7 +339,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "selfReflection",
 		label: "自我反思",
 		description: "客观评估执行进度并提供改进建议。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_self_reflection",
 		defaultValue: DEFAULT_PROMPTS.selfReflection,
 		placeholder: "输入自我反思提示词...",
@@ -350,7 +349,7 @@ const PROMPT_CONFIGS: PromptConfig[] = [
 		id: "qualityAssessment",
 		label: "质量评估",
 		description: "客观评估输出内容的质量。",
-		icon: Brain,
+		icon: ScrollText,
 		configKey: "prompt_quality_assessment",
 		defaultValue: DEFAULT_PROMPTS.qualityAssessment,
 		placeholder: "输入质量评估提示词...",
@@ -446,7 +445,7 @@ export function PromptSettings() {
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 			<SettingsPanelHeader
-				icon={Sparkles}
+				icon={ScrollText}
 				title="提示词配置"
 				description="自定义提示词。"
 				actions={

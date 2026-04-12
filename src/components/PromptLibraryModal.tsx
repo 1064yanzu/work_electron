@@ -18,7 +18,7 @@ import {
 	MoreHorizontal,
 	Plus,
 	Search,
-	Sparkles,
+	BookMarked,
 	Trash2,
 	Upload,
 	X,
@@ -900,7 +900,7 @@ export function PromptLibraryModal({
 												提示词内容
 											</label>
 											<div className="text-xs text-zinc-400 flex items-center gap-1">
-												<Sparkles className="w-3 h-3" />
+												<BookMarked className="w-3 h-3" />
 												<span>支持 {"{变量名}"} 格式的占位符</span>
 											</div>
 										</div>

@@ -1,4 +1,4 @@
-import { AtSign, Hash, Paperclip, Sparkles, X } from "lucide-react";
+import { AtSign, Hash, Paperclip, Zap, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { type SlashCommand, SlashCommandMenu } from "./SlashCommandMenu";
 
@@ -254,7 +254,7 @@ export function EnhancedInput({
 							disabled={!inputValue.trim() && selectedContexts.length === 0}
 							className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 font-medium text-sm"
 						>
-							<Sparkles className="w-4 h-4" />
+							<Zap className="w-4 h-4" />
 							<span>发送</span>
 						</button>
 					</div>

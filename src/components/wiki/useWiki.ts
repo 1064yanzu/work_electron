@@ -1,8 +1,9 @@
 /**
  * Wiki 数据 Hook - 封装 Wiki 页面的增删改查
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "../../lib/tauriCompat";
+import { listen } from "../../lib/tauriEventCompat";
 
 export interface WikiPageItem {
 	id: string;
@@ -21,6 +22,17 @@ export interface WikiPageItem {
 	page_type?: string;
 	/** IDs of related pages, used for building graph edges */
 	related_page_ids?: string[];
+}
+
+/** 后端推送的生成进度 */
+export interface WikiGenerationProgress {
+	is_generating: boolean;
+	scope_path: string | null;
+	total_sources: number;
+	processed_sources: number;
+	generated_pages: number;
+	current_source_title: string | null;
+	error: string | null;
 }
 
 function buildInitialWikiMapContent(scopePath: string) {
@@ -50,6 +62,34 @@ export function useWiki(scopePath: string | null) {
 	const [enabled, setEnabled] = useState<boolean | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [isInitializing, setIsInitializing] = useState(false);
+	const [generationProgress, setGenerationProgress] =
+		useState<WikiGenerationProgress | null>(null);
+	const unlistenRef = useRef<(() => void) | null>(null);
+
+	// 监听后端推送的生成进度事件
+	useEffect(() => {
+		let cancelled = false;
+		listen<WikiGenerationProgress>("wiki_generation_progress", (event) => {
+			if (cancelled) return;
+			const status = event.payload;
+			setGenerationProgress(status);
+			// 生成完成时自动刷新页面列表
+			if (!status.is_generating && status.generated_pages > 0) {
+				loadPages();
+			}
+		}).then((unlisten) => {
+			if (cancelled) {
+				unlisten();
+			} else {
+				unlistenRef.current = unlisten;
+			}
+		}).catch(() => {});
+		return () => {
+			cancelled = true;
+			unlistenRef.current?.();
+			unlistenRef.current = null;
+		};
+	}, []);
 
 	const ensureInitialMap = useCallback(async () => {
 		if (!scopePath) return false;
@@ -324,6 +364,7 @@ export function useWiki(scopePath: string | null) {
 		isInitializing,
 		enabled,
 		error,
+		generationProgress,
 		enable,
 		disable,
 		rebuild,

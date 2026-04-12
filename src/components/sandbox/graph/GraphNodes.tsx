@@ -2,7 +2,6 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
 	AlertTriangle,
 	Archive,
-	Bot,
 	CheckCircle2,
 	ChevronRight,
 	CircleDot,
@@ -14,9 +13,9 @@ import {
 	Loader2,
 	Minus,
 	Music,
-	Sparkles,
+	MessageSquare,
 	Video,
-	Wand2,
+	PenLine,
 	Zap,
 } from "lucide-react";
 import { memo } from "react";
@@ -70,7 +69,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 						"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-900",
 						isActive && "from-primary/90 to-primary dark:from-primary dark:to-primary/80 text-white dark:text-white",
 					)}>
-						<Bot className="w-4 h-4" />
+						<GitBranch className="w-4 h-4" />
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
@@ -88,7 +87,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 								) : isCompleted ? (
 									<CheckCircle2 className="w-3 h-3" />
 								) : (
-									<Sparkles className="w-3 h-3" />
+									<MessageSquare className="w-3 h-3" />
 								)}
 								{pill.label}
 							</span>
@@ -105,7 +104,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 			<div className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-300">
 				<div className="flex items-center gap-2 flex-wrap">
 					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Wand2 className="w-3.5 h-3.5 text-primary" />
+						<PenLine className="w-3.5 h-3.5 text-primary" />
 						工具 {data.stats.toolsCompleted}/{data.stats.toolsTotal}
 					</span>
 					{data.stats.toolsFailed > 0 ? (
@@ -501,7 +500,7 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 				: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
 		)}>
 			{isMain
-				? <Bot className="w-3 h-3 opacity-60" />
+				? <GitBranch className="w-3 h-3 opacity-60" />
 				: <GitBranch className="w-3 h-3 opacity-60" />
 			}
 			{data.label}

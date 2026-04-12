@@ -1,4 +1,4 @@
-import { CheckCircle2, File, Loader2, Wand2, XCircle } from "lucide-react";
+import { CheckCircle2, File, Loader2, XCircle, Zap } from "lucide-react";
 import type { SkillExecution } from "../../lib/agent/SkillExecutor";
 import { cn } from "../../lib/utils";
 
@@ -98,7 +98,7 @@ export function SkillCard({
 										: "bg-zinc-50 dark:bg-zinc-800/50",
 							)}
 						>
-							<Wand2
+							<Zap
 								className={cn(
 									"w-4 h-4 transition-colors",
 									isActive
@@ -195,7 +195,7 @@ export function SkillCard({
 			{/* 头部 */}
 			<div className="flex items-center gap-2 px-3 py-2.5 bg-zinc-50/50 dark:bg-zinc-800/50 border-b border-zinc-200/50 dark:border-zinc-700/50">
 				<div className="p-1.5 rounded-lg bg-white dark:bg-zinc-900">
-					<Wand2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+					<Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
 				</div>
 				<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200 flex-1">
 					{skill.skillName} 执行中

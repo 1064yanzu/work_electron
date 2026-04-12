@@ -5,18 +5,17 @@
 
 import {
 	Archive,
-	Bot,
 	Code2,
 	Edit3,
 	Eye,
 	FileText,
 	FolderSearch,
+	GitBranch,
 	Globe,
 	MessageSquare,
 	PenLine,
 	Plug,
 	Search,
-	Sparkles,
 	Terminal,
 	Trash2,
 } from "lucide-react";
@@ -75,7 +74,7 @@ const toolPatterns: Array<{
 	},
 	{
 		test: (n) => /^(subagent|spawn|delegate|dispatch)/.test(n),
-		config: { icon: Bot, label: "子代理", color: "text-primary" },
+		config: { icon: GitBranch, label: "子代理", color: "text-primary" },
 	},
 	{
 		test: (n) => /^(compress|archive|zip|tar|pack)/.test(n),
@@ -92,7 +91,7 @@ const toolPatterns: Array<{
 ];
 
 const defaultConfig: ToolIconConfig = {
-	icon: Sparkles,
+	icon: MessageSquare,
 	label: "工具",
 	color: "text-zinc-500 dark:text-zinc-400",
 };

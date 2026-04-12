@@ -7,11 +7,11 @@ import {
 	FolderOpen,
 	Globe,
 	Loader2,
+	MessageSquare,
 	Pause,
 	Play,
 	RotateCcw,
 	Search,
-	Sparkles,
 	Wrench,
 	XCircle,
 	Zap,
@@ -142,7 +142,7 @@ const ToolIconMap: Record<string, React.ElementType> = {
 	BookOpen,
 	Globe,
 	FolderOpen,
-	Sparkles,
+	MessageSquare,
 	Wrench,
 };
 
@@ -282,7 +282,7 @@ const ArtifactRow = memo(function ArtifactRow({
 				? BookOpen
 				: artifact.type === "code" || isCodeFile
 					? Zap
-					: Sparkles;
+					: MessageSquare;
 
 	// 加载文件内容用于预览
 	const loadContentForPreview = async () => {
@@ -966,7 +966,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 				>
 					<div className="flex items-center gap-2 min-w-0">
 						<div className="p-1.5 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-							<Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+							<MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
 						</div>
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">

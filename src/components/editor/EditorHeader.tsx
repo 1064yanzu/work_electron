@@ -16,7 +16,7 @@ import {
 	Loader2,
 	Quote,
 	Save,
-	Sparkles,
+	PenLine,
 	Trash2,
 	ZoomIn,
 } from "lucide-react";
@@ -201,7 +201,7 @@ export function EditorHeader({
 					<IconBtn
 						label="AI 润色"
 						onClick={onAiPolish}
-						icon={<Sparkles className="w-4 h-4" />}
+						icon={<PenLine className="w-4 h-4" />}
 						active
 					/>
 				</div>

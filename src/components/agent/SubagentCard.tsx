@@ -1,8 +1,8 @@
 import {
 	AlertTriangle,
-	Brain,
 	ChevronDown,
 	ChevronRight,
+	GitBranch,
 	Layout,
 	Loader2,
 	Terminal,
@@ -95,7 +95,7 @@ export function SubagentCard({
 						)}
 					>
 						{isRunning ? (
-							<Brain className="w-4 h-4 animate-pulse" />
+							<GitBranch className="w-4 h-4 animate-pulse" />
 						) : isCompleted ? (
 							<Zap className="w-4 h-4" />
 						) : (
@@ -193,7 +193,7 @@ export function SubagentCard({
 									{step.phase === "executing" ? (
 										<Terminal className="w-3 h-3 text-amber-500" />
 									) : (
-										<Brain className="w-3 h-3 text-purple-500" />
+										<GitBranch className="w-3 h-3 text-purple-500" />
 									)}
 								</div>
 								<div className="flex-1 min-w-0 break-words text-zinc-600 dark:text-zinc-300 leading-relaxed">

@@ -9,7 +9,7 @@
  */
 
 import {
-	Brain,
+	Activity,
 	ChevronDown,
 	ChevronRight,
 	Edit3,
@@ -17,8 +17,8 @@ import {
 	FileText,
 	Globe,
 	Loader2,
+	MessageSquare,
 	Search,
-	Sparkles,
 	Terminal,
 	XCircle,
 } from "lucide-react";
@@ -395,7 +395,7 @@ function getReadableDescription(toolCall: ToolCall): {
 				"",
 		).trim();
 		return {
-			icon: Brain,
+			icon: Activity,
 			prefix: "子代理",
 			suffix: subagentType || toolCall.description,
 			detail: subagentType ? `subagent_type: ${subagentType}` : undefined,
@@ -539,7 +539,7 @@ function getReadableDescription(toolCall: ToolCall): {
 	// 思考
 	if (name.includes("think")) {
 		return {
-			icon: Brain,
+			icon: Activity,
 			prefix: "Thought for",
 			suffix: "1s",
 		};
@@ -555,7 +555,7 @@ function getReadableDescription(toolCall: ToolCall): {
 			input?.skill || input?.skillName || input?.name || toolCall.name || "",
 		);
 		return {
-			icon: Sparkles,
+			icon: MessageSquare,
 			prefix: "调用技能",
 			suffix: skillName,
 		};
@@ -565,14 +565,14 @@ function getReadableDescription(toolCall: ToolCall): {
 	if (type === "mcp_call") {
 		const mcpName = String(input?.name || input?.tool || toolCall.name || "");
 		return {
-			icon: Sparkles,
+			icon: MessageSquare,
 			prefix: mcpName || "MCP 调用",
 		};
 	}
 
 	// 默认
 	return {
-		icon: Sparkles,
+		icon: MessageSquare,
 		prefix: toolCall.name || "工具调用",
 	};
 }

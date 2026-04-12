@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, History, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Zap } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { buildFileItemContextMenu } from "../../../lib/contextMenu/actions";
 import type { SandboxFile } from "../../../lib/managedModeStore";
@@ -104,7 +104,7 @@ export const ManagedArtifactPreviewPanel = memo(
 				>
 					<div className="flex items-center justify-between">
 						<div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-							<Sparkles className="w-3.5 h-3.5" />
+							<Zap className="w-3.5 h-3.5" />
 							产物导航
 						</div>
 						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400">

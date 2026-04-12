@@ -1,4 +1,4 @@
-import { Activity, ChevronUp, Play, Plus, Sparkles } from "lucide-react";
+import { Activity, ChevronUp, GitBranchPlus, Play, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	createWorkflowNode,
@@ -177,7 +177,7 @@ export default function ProcessLab() {
 		<main className="flex-1 bg-panel-process dark:bg-gray-850 flex flex-col h-full font-sans min-w-0">
 			<div className="p-4 border-b border-border dark:border-gray-700 flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-2">
-					<Sparkles className="w-5 h-5 text-primary" />
+					<GitBranchPlus className="w-5 h-5 text-primary" />
 					<h2 className="font-serif font-medium text-sm tracking-wide text-text-secondary">
 						处理实验室
 					</h2>

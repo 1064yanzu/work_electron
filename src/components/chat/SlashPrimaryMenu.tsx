@@ -3,7 +3,7 @@ import {
 	FileText,
 	Folder,
 	MessageSquare,
-	Sparkles,
+	Command,
 	Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -53,7 +53,7 @@ export const slashCategories: SlashCategory[] = [
 		id: "agent_skill",
 		name: "Agent 技能",
 		description: "调用 Agent 技能",
-		icon: Sparkles,
+		icon: Command,
 		shortcut: "s",
 		gradient:
 			"bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",

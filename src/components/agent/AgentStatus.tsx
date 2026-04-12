@@ -2,8 +2,8 @@
 // 显示当前 Agent 任务的执行状态、工具调用进度等
 
 import {
+	Activity,
 	AlertCircle,
-	Brain,
 	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
@@ -24,7 +24,7 @@ const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 	kb_search_chunks: Search,
 	web_search: Globe,
 	fetch_url: FileText,
-	llm_call: Brain,
+	llm_call: Activity,
 	default: Wrench,
 };
 

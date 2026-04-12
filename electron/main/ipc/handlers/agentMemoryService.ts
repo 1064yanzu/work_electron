@@ -155,12 +155,25 @@ export async function buildMemoryContextForAgent(
 	const limit = Math.min(options?.limit ?? 30, 80);
 	const minScore = options?.minRelevanceScore ?? 0;
 	const maxChars = options?.maxChars ?? 3000;
+	const categories = options?.categories;
 
-	const sql = `SELECT * FROM agent_memories
-		WHERE relevance_score >= ?
-		ORDER BY relevance_score DESC, access_count DESC, updated_at DESC
-		LIMIT ?`;
-	const args: (string | number | null)[] = [minScore, limit];
+	let sql: string;
+	const args: (string | number | null)[] = [];
+
+	if (categories && categories.length > 0) {
+		const placeholders = categories.map(() => "?").join(", ");
+		sql = `SELECT * FROM agent_memories
+			WHERE relevance_score >= ? AND category IN (${placeholders})
+			ORDER BY relevance_score DESC, access_count DESC, updated_at DESC
+			LIMIT ?`;
+		args.push(minScore, ...categories, limit);
+	} else {
+		sql = `SELECT * FROM agent_memories
+			WHERE relevance_score >= ?
+			ORDER BY relevance_score DESC, access_count DESC, updated_at DESC
+			LIMIT ?`;
+		args.push(minScore, limit);
+	}
 
 	const rows = await db.client.execute({ sql, args });
 
