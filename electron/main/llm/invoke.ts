@@ -842,15 +842,22 @@ async function callAnthropic(
 		throw new Error(`Anthropic call failed: unknown - ${lastErrorText || "no response"}`);
 	}
 
-	const data = (await response.json()) as {
-		content: Array<{ type: string; text?: string }>;
+	// 先读取文本，再安全解析 —— 兼容某些代理/中继返回 SSE 格式的情况
+	const rawText = await response.text();
+	const data = tryParseJson(rawText) as {
+		content?: Array<{ type: string; text?: string }>;
 		usage?: {
 			input_tokens: number;
 			output_tokens: number;
 			cache_read_input_tokens?: number;
 			cache_creation_input_tokens?: number;
 		};
-	};
+	} | null;
+
+	// 如果不是合法 JSON（可能是 SSE 流格式），回退到通用 SSE 解析
+	if (!data || !Array.isArray(data.content)) {
+		return parseOpenAIStyleResult(rawText);
+	}
 
 	const textContent = data.content
 		.filter((c) => c.type === "text")

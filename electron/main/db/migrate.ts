@@ -1,5 +1,10 @@
 import type { DbContext } from "./client";
 import { initSql } from "./migrations/initSql";
+import {
+	wikiTablesSql,
+	wikiWorkspaceTablesSql,
+	ensureWikiColumns,
+} from "./migrations/addWikiTables";
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -186,4 +191,17 @@ export async function runMigrations(ctx: DbContext) {
 	} catch {
 		// 忽略索引创建错误
 	}
+
+	// Migration: Wiki 知识页面系统
+	await ctx.client.executeMultiple(wikiTablesSql);
+	await ctx.client.executeMultiple(wikiWorkspaceTablesSql);
+	await ensureWikiColumns(ctx.client);
+
+	// Migration: Wiki 页面类型字段
+	await safeAddColumn(
+		ctx,
+		"wiki_workspace_pages",
+		"page_type",
+		"TEXT DEFAULT 'entity'",
+	);
 }

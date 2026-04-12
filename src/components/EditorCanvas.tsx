@@ -54,6 +54,12 @@ function isPhysicalDocId(docId: string | null | undefined): docId is string {
 	return docId.startsWith("/") || /^[a-zA-Z]:\\/.test(docId);
 }
 
+function isBinaryPhysicalDocId(docId: string | null | undefined): docId is string {
+	if (!isPhysicalDocId(docId)) return false;
+	const fileName = docId.split(/[/\\]/).pop() || docId;
+	return isBinaryPreviewFile(fileName);
+}
+
 function getPreviewFileName(params: {
 	selectedOutput: OutputAsset | null;
 	activeFileSession: { path: string; title: string } | null;
@@ -136,7 +142,11 @@ export default function EditorCanvas({
 			activeFileSession.path === activeDocId &&
 			activeDocCache?.kind === "project_file",
 	);
-	const canSaveCurrentContent = Boolean(selectedOutput || isPhysicalFileVisible);
+	const isBinaryPhysicalFileVisible =
+		isPhysicalFileVisible && isBinaryPhysicalDocId(activeDocId);
+	const canSaveCurrentContent = Boolean(
+		selectedOutput || (isPhysicalFileVisible && !isBinaryPhysicalFileVisible),
+	);
 	const currentEditorTitle =
 		selectedOutput?.title || activeFileSession?.title || activeDocCache?.title || "";
 	const previewFileName = getPreviewFileName({
@@ -227,6 +237,7 @@ export default function EditorCanvas({
 
 	const handleEditorBlur = useCallback(() => {
 		if (!activeDocId) return;
+		if (isBinaryPhysicalDocId(activeDocId)) return;
 		syncEditorBufferToStore(activeDocId, editorContentRef.current, {
 			immediate: true,
 		});
@@ -532,6 +543,9 @@ export default function EditorCanvas({
 		if (!currentOutput) {
             // Handling physical files save
             if (isPhysicalDocId(documentToSave)) {
+				if (isBinaryPhysicalDocId(documentToSave)) {
+					return;
+				}
                 const savedContent = lastSavedContentRef.current;
                 if (currentContent === savedContent) return;
 
@@ -814,7 +828,10 @@ export default function EditorCanvas({
 			clearTimeout(saveTimeoutRef.current);
 		}
 
-		if (!selectedOutput && !isPhysicalDocId(activeDocId)) {
+		if (
+			!selectedOutput &&
+			(!isPhysicalDocId(activeDocId) || isBinaryPhysicalDocId(activeDocId))
+		) {
 			return;
 		}
 		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 selectedOutput.content 或物理文件缓存
@@ -860,6 +877,9 @@ export default function EditorCanvas({
 
 	useEffect(() => {
         const isPhysical = isPhysicalDocId(activeDocId);
+		if (isBinaryPhysicalDocId(activeDocId)) {
+			return;
+		}
 		if (!activeDocId || (!isPhysical && (!selectedOutput || selectedOutput.id !== activeDocId))) {
 			return;
 		}
@@ -1591,7 +1611,7 @@ export default function EditorCanvas({
 	const renderEditor = () => (
 		<div className="editor-shell flex flex-col h-full">
 			{/* 文档标签栏 */}
-			{!focusMode && (
+			{!focusMode && !isBinaryPhysicalFileVisible && (
 				<DocumentTabs
 					onNewDoc={handleNewDoc}
 					onCloseDoc={handleCloseDoc}
@@ -1635,42 +1655,44 @@ export default function EditorCanvas({
 					/>
 				))}
 
-			<EditorHeader
-				editorMode={editorMode}
-				onSetEditorMode={handleUserSetEditorMode}
-				onBackToList={() => {
-					if (isPhysicalFileVisible) {
-						if (activeDocId) {
-							handleCloseDoc(activeDocId, hasUnsavedChanges);
+			{!isBinaryPhysicalFileVisible ? (
+				<EditorHeader
+					editorMode={editorMode}
+					onSetEditorMode={handleUserSetEditorMode}
+					onBackToList={() => {
+						if (isPhysicalFileVisible) {
+							if (activeDocId) {
+								handleCloseDoc(activeDocId, hasUnsavedChanges);
+							}
+							return;
 						}
-						return;
+						void handleSelectOutput(null);
+					}}
+					onInsertMarkdown={insertMarkdown}
+					onAiPolish={() =>
+						events.emit(EVENTS.AI_REQUEST, {
+							type: "improve",
+							content: editorContent,
+						})
 					}
-					void handleSelectOutput(null);
-				}}
-				onInsertMarkdown={insertMarkdown}
-				onAiPolish={() =>
-					events.emit(EVENTS.AI_REQUEST, {
-						type: "improve",
-						content: editorContent,
-					})
-				}
-				onSave={handleManualSave}
-				onCopy={handleCopyCurrentDoc}
-				onExport={handleExportCurrentDoc}
-				onDelete={() => {
-					if (!selectedOutput) return;
-					setDeleteConfirm(selectedOutput);
-				}}
-				canSave={canSaveCurrentContent}
-				selectedOutput={Boolean(selectedOutput)}
-				isSaving={isSaving}
-				hasUnsavedChanges={hasUnsavedChanges}
-				lastSavedLabel={lastSavedLabel}
-				focusMode={focusMode}
-				onToggleFocusMode={toggleFocusMode}
-				density={density}
-				onToggleDensity={toggleDensity}
-			/>
+					onSave={handleManualSave}
+					onCopy={handleCopyCurrentDoc}
+					onExport={handleExportCurrentDoc}
+					onDelete={() => {
+						if (!selectedOutput) return;
+						setDeleteConfirm(selectedOutput);
+					}}
+					canSave={canSaveCurrentContent}
+					selectedOutput={Boolean(selectedOutput)}
+					isSaving={isSaving}
+					hasUnsavedChanges={hasUnsavedChanges}
+					lastSavedLabel={lastSavedLabel}
+					focusMode={focusMode}
+					onToggleFocusMode={toggleFocusMode}
+					density={density}
+					onToggleDensity={toggleDensity}
+				/>
+			) : null}
 
 			{/* 编辑器内容区 */}
 			<div className="flex-1 overflow-hidden min-h-0 bg-transparent">
@@ -1714,12 +1736,14 @@ export default function EditorCanvas({
 				)}
 			</div>
 
-			<EditorStatusBar
-				editorContentLength={editorContent.length}
-				isSaving={isSaving}
-				hasUnsavedChanges={hasUnsavedChanges}
-				lastSavedLabel={lastSavedLabel}
-			/>
+			{!isBinaryPhysicalFileVisible ? (
+				<EditorStatusBar
+					editorContentLength={editorContent.length}
+					isSaving={isSaving}
+					hasUnsavedChanges={hasUnsavedChanges}
+					lastSavedLabel={lastSavedLabel}
+				/>
+			) : null}
 		</div>
 	);
 

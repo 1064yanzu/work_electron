@@ -18,6 +18,7 @@ import {
 	type MemoryCategory,
 	memoryStore,
 } from "../../../lib/agent/memoryStore";
+import Select from "../../ui/Select";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
@@ -32,8 +33,7 @@ const CATEGORY_CONFIG: Record<
 > = {
 	preference: {
 		label: "偏好",
-		color:
-			"bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+		color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
 		icon: "💡",
 	},
 	fact: {
@@ -197,7 +197,8 @@ export function MemorySettings() {
 			try {
 				const result = await memoryStore.getMemoryContext();
 				setContextPreview(
-					result.context || "（当前无记忆数据，Agent 启动时不会注入记忆上下文）",
+					result.context ||
+						"（当前无记忆数据，Agent 启动时不会注入记忆上下文）",
 				);
 			} catch {
 				setContextPreview("加载失败");
@@ -267,9 +268,7 @@ export function MemorySettings() {
 			/>
 
 			{/* 统计卡片 */}
-			{stats && stats.total > 0 && (
-				<MemoryStatsBar stats={stats} />
-			)}
+			{stats && stats.total > 0 && <MemoryStatsBar stats={stats} />}
 
 			{/* 搜索栏 + 预览按钮 */}
 			<div className="flex gap-2">
@@ -360,33 +359,29 @@ export function MemorySettings() {
 				<div className="flex flex-col items-center justify-center py-16 text-zinc-400 dark:text-zinc-500">
 					<Brain className="w-10 h-10 mb-3 opacity-40" />
 					<p className="text-sm">暂无记忆数据</p>
-					<p className="text-xs mt-1">
-						Agent 会在使用过程中自动积累记忆
-					</p>
+					<p className="text-xs mt-1">Agent 会在使用过程中自动积累记忆</p>
 				</div>
 			) : (
 				<div className="space-y-4">
-					{Array.from(groupedMemories.entries()).map(
-						([category, items]) => (
-							<MemoryGroup
-								key={category}
-								category={category}
-								memories={items}
-								collapsed={collapsedGroups.has(category)}
-								onToggle={() => toggleGroup(category)}
-								editingId={editingId}
-								editContent={editContent}
-								onEditStart={(id, content) => {
-									setEditingId(id);
-									setEditContent(content);
-								}}
-								onEditCancel={() => setEditingId(null)}
-								onEditChange={setEditContent}
-								onEditSave={(id) => handleUpdate(id)}
-								onDelete={handleDelete}
-							/>
-						),
-					)}
+					{Array.from(groupedMemories.entries()).map(([category, items]) => (
+						<MemoryGroup
+							key={category}
+							category={category}
+							memories={items}
+							collapsed={collapsedGroups.has(category)}
+							onToggle={() => toggleGroup(category)}
+							editingId={editingId}
+							editContent={editContent}
+							onEditStart={(id, content) => {
+								setEditingId(id);
+								setEditContent(content);
+							}}
+							onEditCancel={() => setEditingId(null)}
+							onEditChange={setEditContent}
+							onEditSave={(id) => handleUpdate(id)}
+							onDelete={handleDelete}
+						/>
+					))}
 				</div>
 			)}
 		</SettingsPageContainer>
@@ -413,10 +408,7 @@ function MemoryStatsBar({
 				const count = stats.byCategory[key] ?? 0;
 				if (count === 0) return null;
 				return (
-					<div
-						key={key}
-						className="flex items-center gap-1"
-					>
+					<div key={key} className="flex items-center gap-1">
 						<span className="text-xs">{config.icon}</span>
 						<span className="text-xs text-zinc-500 dark:text-zinc-400">
 							{config.label}
@@ -471,19 +463,17 @@ function MemoryAddForm({
 					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
 						类别
 					</label>
-					<select
+					<Select
 						value={newCategory}
-						onChange={(e) =>
-							onCategoryChange(e.target.value as MemoryCategory)
-						}
-						className="w-full px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+						onChange={(e) => onCategoryChange(e.target.value as MemoryCategory)}
+						variant="compact"
 					>
 						{CATEGORY_OPTIONS.map((opt) => (
 							<option key={opt.value} value={opt.value}>
 								{opt.label}
 							</option>
 						))}
-					</select>
+					</Select>
 				</div>
 			</div>
 			<div>
@@ -611,9 +601,7 @@ function MemoryGroup({
 							memory={memory}
 							isEditing={editingId === memory.id}
 							editContent={editContent}
-							onEditStart={() =>
-								onEditStart(memory.id, memory.content)
-							}
+							onEditStart={() => onEditStart(memory.id, memory.content)}
 							onEditCancel={onEditCancel}
 							onEditChange={onEditChange}
 							onEditSave={() => onEditSave(memory.id)}

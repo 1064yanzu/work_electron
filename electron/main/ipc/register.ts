@@ -60,6 +60,8 @@ import { createCloudNodeHandlers } from "./handlers/cloudNode";
 import { getCloudNodeClient } from "../cloud-node/service";
 import { createTerminalHandlers } from "./handlers/terminal";
 import { createWorktreeHandlers } from "./handlers/worktree";
+import { createWikiHandlers } from "./handlers/wiki";
+import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
@@ -171,6 +173,16 @@ export function registerIpcHandlers({
 
 	// Worktree handlers (Git Worktree 沙盒隔离)
 	const worktreeHandlers = createWorktreeHandlers({ logger });
+
+	// Wiki handlers (知识 Wiki 页面)
+	const wikiHandlers = createWikiHandlers(db);
+
+	// Wiki AI 生成 handlers
+	const wikiGenHandlers = createWikiGenerationHandlers(db, {
+		get current() {
+			return mainWindowRef;
+		},
+	});
 
 
 	// ==================
@@ -746,6 +758,28 @@ export function registerIpcHandlers({
 	ipcMain.handle("worktree_merge", worktreeHandlers.worktree_merge);
 	ipcMain.handle("worktree_remove", worktreeHandlers.worktree_remove);
 	ipcMain.handle("worktree_diff", worktreeHandlers.worktree_diff);
+
+	// ==================
+	// Wiki 知识页面
+	// ==================
+	ipcMain.handle("wiki_list_pages", wikiHandlers.wiki_list_pages);
+	ipcMain.handle("wiki_get_page", wikiHandlers.wiki_get_page);
+	ipcMain.handle("wiki_create_page", wikiHandlers.wiki_create_page);
+	ipcMain.handle("wiki_update_page", wikiHandlers.wiki_update_page);
+	ipcMain.handle("wiki_delete_page", wikiHandlers.wiki_delete_page);
+	ipcMain.handle("wiki_search_pages", wikiHandlers.wiki_search_pages);
+	ipcMain.handle("wiki_count_pages", wikiHandlers.wiki_count_pages);
+	ipcMain.handle("wiki_is_enabled", wikiHandlers.wiki_is_enabled);
+	ipcMain.handle("wiki_enable", wikiHandlers.wiki_enable);
+	ipcMain.handle("wiki_disable", wikiHandlers.wiki_disable);
+	ipcMain.handle("wiki_rebuild", wikiHandlers.wiki_rebuild);
+
+	// Wiki AI 生成
+	ipcMain.handle("wiki_generate", wikiGenHandlers.wiki_generate);
+	ipcMain.handle(
+		"wiki_generation_status",
+		wikiGenHandlers.wiki_generation_status,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

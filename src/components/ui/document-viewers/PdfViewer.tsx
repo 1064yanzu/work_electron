@@ -1,17 +1,12 @@
-import {
-	ChevronLeft,
-	ChevronRight,
-	Download,
-	FileWarning,
-	Loader2,
-	ZoomIn,
-	ZoomOut,
-} from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Download, FileWarning, Loader2, ZoomIn, ZoomOut } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { safeInvoke } from "../../../lib/tauriBridge";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+	"pdfjs-dist/build/pdf.worker.min.mjs",
+	import.meta.url,
+).toString();
 
 interface PdfViewerProps {
 	src: string;
@@ -20,28 +15,38 @@ interface PdfViewerProps {
 
 export default function PdfViewer({ src, className }: PdfViewerProps) {
 	const [numPages, setNumPages] = useState<number>(0);
-	const [pageNumber, setPageNumber] = useState<number>(1);
 	const [scale, setScale] = useState<number>(1.0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
 	const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+	const [documentFile, setDocumentFile] = useState<string | { data: Uint8Array } | null>(null);
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [pageWidth, setPageWidth] = useState<number>(0);
+	const isRemote = useMemo(
+		() =>
+			src.startsWith("http://") ||
+			src.startsWith("https://") ||
+			src.startsWith("data:") ||
+			src.startsWith("blob:"),
+		[src],
+	);
 
 	useEffect(() => {
 		let cancelled = false;
 		let createdUrl: string | null = null;
-		setPdfData(null);
+		setLoading(true);
+		setError(null);
+		setNumPages(0);
+		setDocumentFile(null);
 		setDownloadUrl((prev) => {
 			if (prev) URL.revokeObjectURL(prev);
 			return null;
 		});
 
-		const isRemote =
-			src.startsWith("http://") ||
-			src.startsWith("https://") ||
-			src.startsWith("data:") ||
-			src.startsWith("blob:");
-		if (isRemote) return;
+		if (isRemote) {
+			setDocumentFile(src);
+			return;
+		}
 
 		(async () => {
 			try {
@@ -62,14 +67,16 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					bytes[i] = binary.charCodeAt(i);
 				}
 
-				setPdfData(bytes);
+					setDocumentFile({ data: bytes });
 				const blob = new Blob([bytes], { type: "application/pdf" });
 				const url = URL.createObjectURL(blob);
 				createdUrl = url;
 				setDownloadUrl(url);
 			} catch (e) {
 				if (cancelled) return;
-				console.warn("[PDFViewer] Failed to load local pdf via backend:", e);
+				console.error("[PDFViewer] Failed to load local pdf via backend:", e);
+				setError("PDF 文件读取失败");
+				setLoading(false);
 			}
 		})();
 
@@ -77,11 +84,27 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 			cancelled = true;
 			if (createdUrl) URL.revokeObjectURL(createdUrl);
 		};
-	}, [src]);
+	}, [isRemote, src]);
+
+	useEffect(() => {
+		const node = containerRef.current;
+		if (!node) return;
+
+		const updateWidth = () => {
+			const nextWidth = Math.max(320, Math.floor(node.clientWidth - 24));
+			setPageWidth(nextWidth);
+		};
+
+		updateWidth();
+		const observer = new ResizeObserver(updateWidth);
+		observer.observe(node);
+		return () => observer.disconnect();
+	}, [documentFile]);
 
 	const onDocumentLoadSuccess = useCallback(
 		({ numPages }: { numPages: number }) => {
 			setNumPages(numPages);
+			setError(null);
 			setLoading(false);
 		},
 		[],
@@ -89,13 +112,10 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 	const onDocumentLoadError = useCallback((loadError: Error) => {
 		console.error("PDF 加载失败:", loadError);
-		setError("PDF 加载失败");
+		setError(loadError?.message ? `PDF 加载失败：${loadError.message}` : "PDF 加载失败");
 		setLoading(false);
 	}, []);
 
-	const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
-	const goToNextPage = () =>
-		setPageNumber((prev) => Math.min(prev + 1, numPages));
 	const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3.0));
 	const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
 
@@ -118,25 +138,9 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 	return (
 		<div className={`flex flex-col ${className || ""}`}>
-			<div className="flex items-center justify-between px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-t-xl border-b border-zinc-200 dark:border-zinc-700">
-				<div className="flex items-center gap-2">
-					<button
-						onClick={goToPrevPage}
-						disabled={pageNumber <= 1}
-						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-					>
-						<ChevronLeft className="w-4 h-4" />
-					</button>
-					<span className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[80px] text-center">
-						{pageNumber} / {numPages || "..."}
-					</span>
-					<button
-						onClick={goToNextPage}
-						disabled={pageNumber >= numPages}
-						className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-					>
-						<ChevronRight className="w-4 h-4" />
-					</button>
+			<div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-white/88 dark:bg-zinc-900/88 backdrop-blur-md rounded-t-xl border-b border-zinc-200 dark:border-zinc-700">
+				<div className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[80px]">
+					{numPages ? `${numPages} 页` : "载入中..."}
 				</div>
 				<div className="flex items-center gap-2">
 					<button
@@ -167,27 +171,39 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-auto bg-zinc-50 dark:bg-zinc-900 rounded-b-xl p-4">
+			<div
+				ref={containerRef}
+				className="flex-1 overflow-auto bg-transparent rounded-b-xl px-3 py-2"
+			>
 				{loading && (
 					<div className="flex items-center justify-center py-12">
 						<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
 					</div>
 				)}
-				<Document
-					file={pdfData ? { data: pdfData } : src}
-					onLoadSuccess={onDocumentLoadSuccess}
-					onLoadError={onDocumentLoadError}
-					loading={null}
-					className="flex justify-center"
-				>
-					<Page
-						pageNumber={pageNumber}
-						scale={scale}
-						renderTextLayer={false}
-						renderAnnotationLayer={false}
-						className="shadow-lg rounded-lg overflow-hidden"
-					/>
-				</Document>
+				{documentFile ? (
+					<Document
+						file={documentFile}
+						onLoadSuccess={onDocumentLoadSuccess}
+						onLoadError={onDocumentLoadError}
+						loading={null}
+						className="flex flex-col items-center gap-4"
+					>
+						{Array.from({ length: numPages }, (_, index) => (
+							<div
+								key={`pdf-page-${index + 1}`}
+								className="mb-4 last:mb-0 bg-white shadow-[0_12px_40px_-24px_rgba(0,0,0,0.35)]"
+							>
+								<Page
+									pageNumber={index + 1}
+									width={pageWidth || undefined}
+									scale={scale}
+									renderTextLayer={false}
+									renderAnnotationLayer={false}
+								/>
+							</div>
+						))}
+					</Document>
+				) : null}
 			</div>
 		</div>
 	);

@@ -19,7 +19,7 @@ function normalizePathLike(value: string): string {
 	return path.replace(/\\/g, "/").replace(/\/+/g, "/");
 }
 
-function isPreviewableLocalImagePath(
+function isPreviewableLocalPath(
 	value: string,
 	sandboxDir?: string,
 ): boolean {
@@ -63,7 +63,7 @@ export function useAutoImageArtifactPreview({
 			const taskId = graphSource.id;
 			if (manualTakeoverTaskIdRef.current === taskId) return false;
 			const normalized = normalizePathLike(filePath);
-			if (!isPreviewableLocalImagePath(normalized, sandboxDir)) return false;
+			if (!isPreviewableLocalPath(normalized, sandboxDir)) return false;
 			void Promise.resolve(openArtifactInPreview(normalized));
 			return true;
 		},
@@ -79,9 +79,8 @@ export function useAutoImageArtifactPreview({
 		const currentSeen =
 			seenImagePathsByTaskRef.current.get(taskId) || new Set<string>();
 		const imagePaths = graphSource.artifacts
-			.filter((artifact) => artifact.type === "image")
 			.map((artifact) => String(artifact.url || "").trim())
-			.filter((path) => isPreviewableLocalImagePath(path, sandboxDir));
+			.filter((path) => isPreviewableLocalPath(path, sandboxDir));
 
 		const unseen = imagePaths.filter((path) => !currentSeen.has(path));
 		for (const path of imagePaths) currentSeen.add(path);

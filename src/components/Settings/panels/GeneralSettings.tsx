@@ -33,6 +33,7 @@ export function GeneralSettings() {
 	const [language, setLanguage] = useState<string>("zh-CN");
 	const [titleModel, setTitleModel] = useState<string>("");
 	const [imageExtractionModel, setImageExtractionModel] = useState<string>("");
+	const [wikiModel, setWikiModel] = useState<string>("");
 	const [searchStrategy, setSearchStrategyState] =
 		useState<SearchStrategy>("local_first");
 	const [searchMcpProvider, setSearchMcpProviderState] =
@@ -71,6 +72,9 @@ export function GeneralSettings() {
 
 			const imageModel = await getConfig("image_extraction_model");
 			if (imageModel) setImageExtractionModel(imageModel);
+
+			const wikiGenerationModel = await getConfig("wiki_generation_model");
+			if (wikiGenerationModel) setWikiModel(wikiGenerationModel);
 
 			const strategy = await getSearchStrategy();
 			setSearchStrategyState(strategy);
@@ -119,6 +123,15 @@ export function GeneralSettings() {
 			await setConfig("image_extraction_model", newModel);
 		} catch (error) {
 			console.error("保存图像信息提取模型失败:", error);
+		}
+	};
+
+	const handleWikiModelChange = async (newModel: string) => {
+		setWikiModel(newModel);
+		try {
+			await setConfig("wiki_generation_model", newModel);
+		} catch (error) {
+			console.error("保存 Wiki 模型失败:", error);
 		}
 	};
 
@@ -453,6 +466,26 @@ export function GeneralSettings() {
 						</Select>
 						<p className="text-xs text-text-muted mt-1.5">
 							用于图片导入后的信息提取与结构化整理。如果未选择，将尝试使用当前对话的模型。
+						</p>
+					</div>
+
+					<div>
+						<label className="text-sm text-text-secondary mb-1.5 block">
+							Wiki 生成模型
+						</label>
+						<Select
+							value={wikiModel}
+							onChange={(e) => handleWikiModelChange(e.target.value)}
+						>
+							<option value="">跟随当前对话模型 (默认)</option>
+							{allModels.map((model) => (
+								<option key={`${model.provider}-${model.id}-wiki`} value={model.id}>
+									{model.id} ({model.provider})
+								</option>
+							))}
+						</Select>
+						<p className="text-xs text-text-muted mt-1.5">
+							用于后续 Wiki 自动整理、知识地图扩写和页面生成。未选择时默认沿用当前对话模型。
 						</p>
 					</div>
 				</div>

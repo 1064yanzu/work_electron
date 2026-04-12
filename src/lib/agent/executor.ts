@@ -1358,6 +1358,25 @@ class AgentExecutor {
 										});
 									}
 								}
+
+								// 对非图片类文件写入（Write/Edit 工具）也触发沙箱刷新和自动预览
+								if (sandboxDir && imagePaths.length === 0) {
+									const currentArtifacts =
+										agentStore.getState().currentTask?.artifacts || [];
+									const latestArtifact = currentArtifacts.find(
+										(a) =>
+											a?.metadata?.toolCallId === resolvedToolCallId &&
+											(a.type === "file" || a.type === "code"),
+									);
+									if (latestArtifact?.url) {
+										await managedModeStore.scanSandboxDir(sandboxDir);
+										events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
+											toolCallId: resolvedToolCallId,
+											artifactUrl: latestArtifact.url,
+											autoPreview: true,
+										});
+									}
+								}
 							} catch {
 								// 静默失败
 							}

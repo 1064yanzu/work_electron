@@ -16,6 +16,7 @@ import { checkProviderApiKey, invokeLlm } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { ProviderType } from "../../../types";
 import { confirmDialog } from "../../ui/ConfirmDialog";
+import Select from "../../ui/Select";
 import { toast } from "../../ui/Toast";
 import {
 	CheckButton,
@@ -459,7 +460,7 @@ export function ModelSettings() {
 								<label className="mb-3 block text-sm font-medium text-zinc-700">
 									端点类型
 								</label>
-								<select
+								<Select
 									value={openaiEndpointType}
 									onChange={(e) =>
 										settingsStore.updateProvider(selected.id, {
@@ -469,11 +470,10 @@ export function ModelSettings() {
 											},
 										})
 									}
-									className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50 px-4 py-2.5 text-sm transition-all focus:border-zinc-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
 								>
 									<option value="chat_completions">兼容型</option>
 									<option value="responses">Responses</option>
-								</select>
+								</Select>
 							</div>
 						)}
 
@@ -695,17 +695,16 @@ export function ModelSettings() {
 						<label className="text-sm font-medium text-zinc-700 mb-2 block">
 							提供商类型
 						</label>
-						<select
+						<Select
 							value={providerType}
 							onChange={(e) => setProviderType(e.target.value as ProviderType)}
-							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
 						>
 							{Object.values(ProviderType).map((t) => (
 								<option key={t} value={t}>
 									{t}
 								</option>
 							))}
-						</select>
+						</Select>
 					</div>
 				</div>
 				<div className="flex justify-end gap-3 mt-8">

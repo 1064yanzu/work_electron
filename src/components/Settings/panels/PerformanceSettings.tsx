@@ -6,6 +6,7 @@ import {
 	type PerformanceTuning,
 } from "../../../lib/config";
 import { toast } from "../../ui/Toast";
+import Select from "../../ui/Select";
 import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import { Toggle } from "../components/Toggle";
@@ -129,14 +130,13 @@ export function PerformanceSettings() {
 
 			<div className="space-y-4">
 				<h4 className="font-medium text-text-primary">资料自动刷新间隔</h4>
-				<select
+				<Select
 					value={settings.sourceAutoRefreshMs}
 					onChange={(event) => {
 						void patchSettings({
 							sourceAutoRefreshMs: Number(event.target.value),
 						});
 					}}
-					className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
 					disabled={isSaving}
 				>
 					{SOURCE_REFRESH_OPTIONS.map((option) => (
@@ -144,7 +144,7 @@ export function PerformanceSettings() {
 							{formatMs(option)}
 						</option>
 					))}
-				</select>
+				</Select>
 				<p className="text-xs text-text-muted">
 					当前值：{formatMs(settings.sourceAutoRefreshMs)}
 					。值越小越实时，但会增加 IPC 压力。
@@ -153,14 +153,13 @@ export function PerformanceSettings() {
 
 			<div className="space-y-4">
 				<h4 className="font-medium text-text-primary">远程会话同步间隔</h4>
-				<select
+				<Select
 					value={settings.remoteSyncIntervalMs}
 					onChange={(event) => {
 						void patchSettings({
 							remoteSyncIntervalMs: Number(event.target.value),
 						});
 					}}
-					className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
 					disabled={isSaving}
 				>
 					{REMOTE_SYNC_OPTIONS.map((option) => (
@@ -168,7 +167,7 @@ export function PerformanceSettings() {
 							{formatMs(option)}
 						</option>
 					))}
-				</select>
+				</Select>
 				<p className="text-xs text-text-muted">
 					当前值：{formatMs(settings.remoteSyncIntervalMs)}
 					。值越小越实时，但会增加后台同步开销。

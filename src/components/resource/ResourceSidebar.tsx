@@ -59,6 +59,7 @@ import { SidebarRail } from "../layout/SidebarRail";
 import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
+import { WikiView } from "../wiki/WikiView";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
 const WebSearchModule = lazy(() => import("../WebSearchModule"));
@@ -641,6 +642,8 @@ export default function ResourceSidebar({
 				<ProjectFilesView />
 			) : leftSidebarView === "skills" ? (
 				<SkillsView onNavigateWorkbench={onNavigateWorkbench} />
+			) : leftSidebarView === "wiki" ? (
+				<WikiView />
 			) : leftSidebarView === "websearch" ? (
 				<div className="flex flex-col h-full">
 					{/* Header */}

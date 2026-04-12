@@ -112,7 +112,8 @@ export interface LayoutState {
 		| "websearch"
 		| "threads"
 		| "files"
-		| "skills";
+		| "skills"
+		| "wiki";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 }

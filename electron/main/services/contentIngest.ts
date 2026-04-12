@@ -401,8 +401,25 @@ async function ingestLocalFile(
 		}
 
 		if (ext === ".pdf") {
-			const html = `<div data-type="pdf" data-src="${fileUrl}"></div>`;
-			return { contentText: baseName, contentHtml: html };
+			try {
+				const { PDFParse } = await import("pdf-parse");
+				const pdfBuffer = await fs.readFile(absPath);
+				const pdf = new PDFParse({ data: new Uint8Array(pdfBuffer) });
+				const textResult = await pdf.getText();
+				await pdf.destroy();
+				const extractedText = textResult.text?.trim() || "";
+				const contentText = extractedText || baseName;
+				const previewText = extractedText
+					.slice(0, 500)
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;");
+				const html = `<div data-type="pdf" data-src="${fileUrl}"><p class="pdf-extract-preview">${previewText}${extractedText.length > 500 ? "..." : ""}</p></div>`;
+				return { contentText, contentHtml: html };
+			} catch (pdfErr) {
+				console.warn("[contentIngest] PDF text extraction failed:", pdfErr);
+				const html = `<div data-type="pdf" data-src="${fileUrl}"></div>`;
+				return { contentText: baseName, contentHtml: html };
+			}
 		}
 
 		if (kind === "image") {

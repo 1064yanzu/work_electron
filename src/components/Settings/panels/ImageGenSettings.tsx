@@ -1,4 +1,4 @@
-import { ChevronDown, Image, Loader2, Wand2 } from "lucide-react";
+import { Image, Loader2, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	getImageGenConfig,
@@ -7,6 +7,7 @@ import {
 } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
+import Select from "../../ui/Select";
 import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 // 比例预设（参考 Cherry Studio）
@@ -160,21 +161,17 @@ export function ImageGenSettings() {
 			{/* 提供商选择 */}
 			<div className="space-y-3">
 				<h4 className="font-medium text-text-primary">生图提供商</h4>
-				<div className="relative">
-					<select
-						value={config.providerId}
-						onChange={(e) => handleChange("providerId", e.target.value)}
-						className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-					>
-						<option value="">选择提供商...</option>
-						{enabledProviders.map((provider) => (
-							<option key={provider.id} value={provider.id}>
-								{provider.name}
-							</option>
-						))}
-					</select>
-					<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-				</div>
+				<Select
+					value={config.providerId}
+					onChange={(e) => handleChange("providerId", e.target.value)}
+				>
+					<option value="">选择提供商...</option>
+					{enabledProviders.map((provider) => (
+						<option key={provider.id} value={provider.id}>
+							{provider.name}
+						</option>
+					))}
+				</Select>
 				<p className="text-xs text-text-muted">
 					推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。
 				</p>
@@ -184,21 +181,17 @@ export function ImageGenSettings() {
 			<div className="space-y-3">
 				<h4 className="font-medium text-text-primary">生图模型</h4>
 				{config.providerId && availableModels.length > 0 ? (
-					<div className="relative">
-						<select
-							value={config.model}
-							onChange={(e) => handleChange("model", e.target.value)}
-							className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-						>
-							<option value="">选择模型...</option>
-							{availableModels.map((model: string) => (
-								<option key={model} value={model}>
-									{model}
-								</option>
-							))}
-						</select>
-						<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-					</div>
+					<Select
+						value={config.model}
+						onChange={(e) => handleChange("model", e.target.value)}
+					>
+						<option value="">选择模型...</option>
+						{availableModels.map((model: string) => (
+							<option key={model} value={model}>
+								{model}
+							</option>
+						))}
+					</Select>
 				) : config.providerId ? (
 					<>
 						<input
@@ -298,33 +291,25 @@ export function ImageGenSettings() {
 						<label className="text-sm text-text-secondary mb-1.5 block">
 							图片质量
 						</label>
-						<div className="relative">
-							<select
-								value={config.quality || "standard"}
-								onChange={(e) => handleChange("quality", e.target.value)}
-								className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-							>
-								<option value="standard">标准</option>
-								<option value="hd">高清 (HD)</option>
-							</select>
-							<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-						</div>
+						<Select
+							value={config.quality || "standard"}
+							onChange={(e) => handleChange("quality", e.target.value)}
+						>
+							<option value="standard">标准</option>
+							<option value="hd">高清 (HD)</option>
+						</Select>
 					</div>
 					<div>
 						<label className="text-sm text-text-secondary mb-1.5 block">
 							图片风格
 						</label>
-						<div className="relative">
-							<select
-								value={config.style || "natural"}
-								onChange={(e) => handleChange("style", e.target.value)}
-								className="w-full appearance-none px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all cursor-pointer"
-							>
-								<option value="natural">自然</option>
-								<option value="vivid">鲜艳</option>
-							</select>
-							<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-						</div>
+						<Select
+							value={config.style || "natural"}
+							onChange={(e) => handleChange("style", e.target.value)}
+						>
+							<option value="natural">自然</option>
+							<option value="vivid">鲜艳</option>
+						</Select>
 					</div>
 				</div>
 			</div>

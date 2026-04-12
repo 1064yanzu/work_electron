@@ -16,7 +16,7 @@ export function DocumentListSearchBar({
 	const hasQuery = query.trim().length > 0;
 
 	return (
-		<div className="space-y-2">
+		<div className="space-y-1.5">
 			<div className="relative group">
 				<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-700 dark:group-focus-within:text-zinc-300" />
 				<input
@@ -28,7 +28,7 @@ export function DocumentListSearchBar({
 					}}
 					placeholder="搜索文档标题、标签或类型..."
 					aria-label="搜索文档"
-					className="focus-ring w-full min-h-11 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/80 pl-10 pr-10 text-[15px] text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 transition-all duration-200 focus:border-zinc-400 dark:focus:border-zinc-500 focus:shadow-sm"
+					className="focus-ring w-full min-h-10 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/80 pl-10 pr-10 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 transition-all duration-200 focus:border-zinc-400 dark:focus:border-zinc-500 focus:shadow-sm"
 				/>
 				{hasQuery ? (
 					<button

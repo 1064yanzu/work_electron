@@ -6,6 +6,7 @@ import {
 	SlidersHorizontal,
 	Home,
 	WandSparkles,
+	BookOpen,
 } from "lucide-react";
 import { useWorkspaceStoreSelector, workspaceStore } from "../../lib/workspaceStore";
 
@@ -26,6 +27,7 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 		{ id: "threads", label: "线程", icon: MessagesSquare },
 		{ id: "sources", label: "资料库", icon: BookMarked },
 		{ id: "cards", label: "卡片", icon: LayoutGrid },
+		{ id: "wiki", label: "Wiki", icon: BookOpen },
 		{ id: "skills", label: "技能", icon: WandSparkles },
 	];
 

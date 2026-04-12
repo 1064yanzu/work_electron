@@ -1676,6 +1676,167 @@ export type IPCSchema = {
 			stat: string;
 		};
 	};
+
+	// ==================
+	// Wiki 知识页面
+	// ==================
+	/** 列出线程工作目录对应的 Wiki 页面 */
+	wiki_list_pages: {
+		input: { scope_path: string; limit?: number; offset?: number };
+		output: Array<{
+			id: string;
+			scope_path: string;
+			title: string;
+			slug: string;
+			content: string;
+			summary: string;
+			tags: string[];
+			related_page_ids: string[];
+			page_type: string;
+			confidence: number;
+			reference_count: number;
+			last_updated_by: string;
+			created_at: number;
+			updated_at: number;
+		}>;
+	};
+	/** 获取单个 Wiki 页面 */
+	wiki_get_page: {
+		input: { page_id: string };
+		output: {
+			id: string;
+			scope_path: string;
+			title: string;
+			slug: string;
+			content: string;
+			summary: string;
+			tags: string[];
+			related_page_ids: string[];
+			page_type: string;
+			confidence: number;
+			reference_count: number;
+			last_updated_by: string;
+			created_at: number;
+			updated_at: number;
+		} | null;
+	};
+	/** 创建 Wiki 页面 */
+	wiki_create_page: {
+		input: {
+			scope_path: string;
+			title: string;
+			content: string;
+			summary?: string;
+			tags?: string[];
+			related_page_ids?: string[];
+			page_type?: string;
+			confidence?: number;
+		};
+		output: {
+			id: string;
+			scope_path: string;
+			title: string;
+			slug: string;
+			content: string;
+			summary: string;
+			tags: string[];
+			related_page_ids: string[];
+			page_type: string;
+			confidence: number;
+			created_at: number;
+			updated_at: number;
+		};
+	};
+	/** 更新 Wiki 页面 */
+	wiki_update_page: {
+		input: {
+			page_id: string;
+			title?: string;
+			content?: string;
+			summary?: string;
+			tags?: string[];
+			related_page_ids?: string[];
+			page_type?: string;
+			confidence?: number;
+		};
+		output: {
+			id: string;
+			scope_path: string;
+			title: string;
+			slug: string;
+			content: string;
+			summary: string;
+			tags: string[];
+			related_page_ids: string[];
+			page_type: string;
+			confidence: number;
+			created_at: number;
+			updated_at: number;
+		} | null;
+	};
+	/** 删除 Wiki 页面 */
+	wiki_delete_page: {
+		input: { page_id: string };
+		output: { success: boolean };
+	};
+	/** 搜索 Wiki 页面 */
+	wiki_search_pages: {
+		input: { scope_path: string; query: string; limit?: number };
+		output: Array<{
+			id: string;
+			scope_path: string;
+			title: string;
+			slug: string;
+			content: string;
+			summary: string;
+			tags: string[];
+			confidence: number;
+			updated_at: number;
+		}>;
+	};
+	/** 统计 Wiki 页面数量 */
+	wiki_count_pages: {
+		input: { scope_path: string };
+		output: { count: number };
+	};
+	/** 检查当前线程工作目录的 Wiki 是否启用 */
+	wiki_is_enabled: {
+		input: { scope_path: string };
+		output: { enabled: boolean };
+	};
+	/** 启用/初始化当前线程工作目录的 Wiki */
+	wiki_enable: {
+		input: { scope_path: string };
+		output: { success: boolean };
+	};
+	/** 禁用当前线程工作目录的 Wiki */
+	wiki_disable: {
+		input: { scope_path: string };
+		output: { success: boolean };
+	};
+	/** 重建当前线程工作目录的 Wiki 目录与默认地图 */
+	wiki_rebuild: {
+		input: { scope_path: string };
+		output: { success: boolean; created_map: boolean };
+	};
+	/** AI 生成 Wiki 页面（从知识库源文件提取知识） */
+	wiki_generate: {
+		input: { scope_path: string; model?: string };
+		output: { success: boolean; generated_pages: number };
+	};
+	/** 查询 Wiki 生成状态 */
+	wiki_generation_status: {
+		input: Record<string, never>;
+		output: {
+			is_generating: boolean;
+			scope_path: string | null;
+			total_sources: number;
+			processed_sources: number;
+			generated_pages: number;
+			current_source_title: string | null;
+			error: string | null;
+		};
+	};
 };
 
 export type IPCChannel = keyof IPCSchema;
