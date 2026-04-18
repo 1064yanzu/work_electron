@@ -1702,7 +1702,7 @@ export type IPCSchema = {
 	};
 	/** 获取单个 Wiki 页面 */
 	wiki_get_page: {
-		input: { page_id: string };
+		input: { scope_path: string; page_id: string };
 		output: {
 			id: string;
 			scope_path: string;
@@ -1750,6 +1750,7 @@ export type IPCSchema = {
 	/** 更新 Wiki 页面 */
 	wiki_update_page: {
 		input: {
+			scope_path: string;
 			page_id: string;
 			title?: string;
 			content?: string;
@@ -1776,7 +1777,7 @@ export type IPCSchema = {
 	};
 	/** 删除 Wiki 页面 */
 	wiki_delete_page: {
-		input: { page_id: string };
+		input: { scope_path: string; page_id: string };
 		output: { success: boolean };
 	};
 	/** 搜索 Wiki 页面 */
@@ -1835,6 +1836,7 @@ export type IPCSchema = {
 			generated_pages: number;
 			current_source_title: string | null;
 			error: string | null;
+			warnings?: string[];
 		};
 	};
 };

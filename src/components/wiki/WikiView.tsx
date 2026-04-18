@@ -61,6 +61,7 @@ export function WikiView() {
 		enabled,
 		error,
 		generationProgress,
+		clearGenerationProgress,
 		enable,
 		rebuild,
 		createPage,
@@ -168,7 +169,7 @@ export function WikiView() {
 		const confirmed = await confirmDialog.show({
 			title: "AI 生成 Wiki",
 			message:
-				"将扫描当前目录下的所有源文件（PDF、文档等），使用 AI 自动提取知识点并生成 Wiki 页面。已有页面不会被覆盖。",
+				"将直接扫描当前工作目录中的文件（PDF、Markdown、TXT、DOCX 等），使用 AI 自动提取知识点并生成 Wiki 页面。只需把文件放入目录即可，无需导入。已处理过的文件不会重复处理。",
 			confirmText: "开始生成",
 			cancelText: "取消",
 			type: "info",
@@ -539,6 +540,48 @@ export function WikiView() {
 							{generationProgress.error}
 						</div>
 					)}
+				</div>
+			) : null}
+
+			{/* 生成完成后的结果提示 */}
+			{!isGenerating && generationProgress && (generationProgress.error || (generationProgress.generated_pages > 0) || (generationProgress.warnings && generationProgress.warnings.length > 0)) ? (
+				<div className={`mx-3 mt-2 px-3 py-2.5 rounded-lg border ${
+					generationProgress.error && generationProgress.generated_pages === 0
+						? "bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40"
+						: generationProgress.generated_pages > 0
+							? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40"
+							: "bg-amber-50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
+				}`}>
+					{generationProgress.generated_pages > 0 && (
+						<div className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">
+							已生成 {generationProgress.generated_pages} 个 Wiki 页面
+						</div>
+					)}
+					{generationProgress.error && (
+						<div className="text-xs text-red-600 dark:text-red-400">
+							{generationProgress.error}
+						</div>
+					)}
+					{generationProgress.warnings && generationProgress.warnings.length > 0 && (
+						<div className="mt-1 space-y-0.5">
+							{generationProgress.warnings.slice(0, 5).map((w, i) => (
+								<div key={i} className="text-[11px] text-amber-600 dark:text-amber-400">
+									• {w}
+								</div>
+							))}
+							{generationProgress.warnings.length > 5 && (
+								<div className="text-[11px] text-amber-500">
+									...还有 {generationProgress.warnings.length - 5} 条警告
+								</div>
+							)}
+						</div>
+					)}
+					<button
+						onClick={() => clearGenerationProgress()}
+						className="mt-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline"
+					>
+						关闭
+					</button>
 				</div>
 			) : null}
 

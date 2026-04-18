@@ -33,6 +33,7 @@ export interface WikiGenerationProgress {
 	generated_pages: number;
 	current_source_title: string | null;
 	error: string | null;
+	warnings?: string[];
 }
 
 function buildInitialWikiMapContent(scopePath: string) {
@@ -65,6 +66,7 @@ export function useWiki(scopePath: string | null) {
 	const [generationProgress, setGenerationProgress] =
 		useState<WikiGenerationProgress | null>(null);
 	const unlistenRef = useRef<(() => void) | null>(null);
+	const loadPagesRef = useRef<() => Promise<void>>(async () => {});
 
 	// 监听后端推送的生成进度事件
 	useEffect(() => {
@@ -75,7 +77,7 @@ export function useWiki(scopePath: string | null) {
 			setGenerationProgress(status);
 			// 生成完成时自动刷新页面列表
 			if (!status.is_generating && status.generated_pages > 0) {
-				loadPages();
+				loadPagesRef.current();
 			}
 		}).then((unlisten) => {
 			if (cancelled) {
@@ -144,6 +146,9 @@ export function useWiki(scopePath: string | null) {
 			setLoading(false);
 		}
 	}, [scopePath]);
+
+	// 保持 ref 与最新 loadPages 同步，供事件监听器使用
+	loadPagesRef.current = loadPages;
 
 	// 启用 Wiki
 	const enable = useCallback(async () => {
@@ -237,8 +242,10 @@ export function useWiki(scopePath: string | null) {
 				related_page_ids?: string[];
 			},
 		) => {
+			if (!scopePath) return null;
 			try {
 				const result = await invoke<WikiPageItem | null>("wiki_update_page", {
+					scope_path: scopePath,
 					page_id: pageId,
 					...input,
 				});
@@ -249,20 +256,21 @@ export function useWiki(scopePath: string | null) {
 				return null;
 			}
 		},
-		[loadPages],
+		[scopePath, loadPages],
 	);
 
 	// 删除页面
 	const deletePage = useCallback(
 		async (pageId: string) => {
+			if (!scopePath) return;
 			try {
-				await invoke("wiki_delete_page", { page_id: pageId });
+				await invoke("wiki_delete_page", { scope_path: scopePath, page_id: pageId });
 				await loadPages();
 			} catch (e: any) {
 				setError(e?.message || "删除失败");
 			}
 		},
-		[loadPages],
+		[scopePath, loadPages],
 	);
 
 	// 搜索
@@ -358,6 +366,10 @@ export function useWiki(scopePath: string | null) {
 		}
 	}, []);
 
+	const clearGenerationProgress = useCallback(() => {
+		setGenerationProgress(null);
+	}, []);
+
 	return {
 		pages,
 		loading,
@@ -365,6 +377,7 @@ export function useWiki(scopePath: string | null) {
 		enabled,
 		error,
 		generationProgress,
+		clearGenerationProgress,
 		enable,
 		disable,
 		rebuild,

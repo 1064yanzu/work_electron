@@ -1,43 +1,38 @@
 /**
- * Wiki 知识页面生成服务
- * 基于 LLM 从已有资料（sources + notes）自动提取知识点并生成 Wiki 页面
+ * Wiki 知识页面生成服务（文件系统驱动版）
+ *
+ * 替代原来从 DB 查询 sources+notes 的逻辑，改为直接扫描目录中的文件。
+ * 仍需 DbContext 参数——仅用于 invokeLlm 的 provider 配置查找。
  */
+import path from "node:path";
 import type { BrowserWindow } from "electron";
 import type { DbContext } from "../db/client";
 import { invokeLlm } from "../llm/invoke";
+import type { WikiPageInput, ExtractedPage, ExtractionResponse } from "./wiki/types";
+import {
+	getWikiRoot,
+	ensureWikiStructure,
+	listAllPages,
+	readSchema,
+	writeSchema,
+} from "./wiki/wikiFs";
+import { rebuildIndex, appendLog } from "./wiki/indexLog";
+import {
+	scanSourceFiles,
+	filterNewSources,
+	extractFileContent,
+	computeFileHash,
+	markSourceProcessed,
+} from "./wiki/sourceScanner";
 import {
 	createWikiPage,
 	updateWikiPage,
 	listWikiPages,
-	type WikiPageInput,
 } from "./wikiService";
 
 // ---------------------------------------------------------------------------
 // 类型定义
 // ---------------------------------------------------------------------------
-
-/** 从数据库查询出的资料 + 笔记内容 */
-interface SourceWithNote {
-	id: string;
-	title: string;
-	kind: string;
-	content: string;
-}
-
-/** LLM 返回的单个知识页面结构 */
-interface ExtractedPage {
-	title: string;
-	page_type: "entity" | "concept" | "summary" | "workflow";
-	summary: string;
-	content: string;
-	tags: string[];
-	related_titles: string[];
-}
-
-/** LLM 提取响应 */
-interface ExtractionResponse {
-	pages: ExtractedPage[];
-}
 
 /** 生成状态（模块级） */
 export interface GenerationStatus {
@@ -48,6 +43,8 @@ export interface GenerationStatus {
 	generated_pages: number;
 	current_source_title: string | null;
 	error: string | null;
+	/** 详细的错误/警告列表，帮助用户诊断问题 */
+	warnings: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +59,7 @@ let generationStatus: GenerationStatus = {
 	generated_pages: 0,
 	current_source_title: null,
 	error: null,
+	warnings: [],
 };
 
 export function getGenerationStatus(): GenerationStatus {
@@ -81,7 +79,26 @@ function resetStatus(scopePath: string, totalSources: number): void {
 		generated_pages: 0,
 		current_source_title: null,
 		error: null,
+		warnings: [],
 	};
+}
+
+// ---------------------------------------------------------------------------
+// 内容质量检查
+// ---------------------------------------------------------------------------
+
+const MIN_MEANINGFUL_CONTENT_LENGTH = 50;
+
+/**
+ * 检查内容是否有足够的文本量来进行知识提取。
+ */
+function isContentMeaningful(content: string): boolean {
+	const trimmed = content.trim();
+	if (trimmed.length < MIN_MEANINGFUL_CONTENT_LENGTH) return false;
+	const printableCount = [...trimmed].filter(
+		(ch) => ch.charCodeAt(0) >= 32 || ch === "\n" || ch === "\t",
+	).length;
+	return printableCount / trimmed.length > 0.7;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,18 +153,13 @@ ${truncated}
 // JSON 解析（容错）
 // ---------------------------------------------------------------------------
 
-/**
- * 尝试从 LLM 响应中解析 JSON。
- * LLM 有时会在 JSON 前后附加 Markdown 代码围栏或解释文字，
- * 因此先尝试直接解析，失败后用正则提取。
- */
 function parseExtractionJson(raw: string): ExtractionResponse {
 	// 1. 直接解析
 	try {
 		const parsed = JSON.parse(raw);
 		if (isValidExtractionResponse(parsed)) return parsed;
 	} catch {
-		// 继续尝试提取
+		// 继续尝试
 	}
 
 	// 2. 提取代码围栏中的 JSON
@@ -172,7 +184,6 @@ function parseExtractionJson(raw: string): ExtractionResponse {
 		}
 	}
 
-	// 无法提取有效 JSON
 	return { pages: [] };
 }
 
@@ -183,37 +194,8 @@ function isValidExtractionResponse(obj: unknown): obj is ExtractionResponse {
 }
 
 // ---------------------------------------------------------------------------
-// 数据库查询
+// 读取配置模型
 // ---------------------------------------------------------------------------
-
-async function fetchSourcesWithNotes(
-	db: DbContext,
-	scopePath: string,
-): Promise<SourceWithNote[]> {
-	// 查询策略：
-	// 1. scope 精确匹配（兼容未来可能的项目级 scope）
-	// 2. scope = 'global'（当前所有导入的文件都是全局 scope）
-	// 3. storage_path 前缀匹配（通过 vault 路径关联）
-	// 4. url 前缀匹配（通过 file:// URL 关联本地文件）
-	const fileUrlPrefix = `file://${scopePath}`;
-	const result = await db.client.execute({
-		sql: `SELECT s.id, s.title, s.kind, n.content
-			  FROM sources s
-			  JOIN notes n ON n.source_id = s.id
-			  WHERE s.scope = ?
-			     OR s.scope = 'global'
-			     OR s.storage_path LIKE ?
-			     OR s.url LIKE ?`,
-		args: [scopePath, `${scopePath}%`, `${fileUrlPrefix}%`],
-	});
-
-	return result.rows.map((row) => ({
-		id: String(row.id),
-		title: String(row.title || ""),
-		kind: String(row.kind || ""),
-		content: String(row.content || ""),
-	}));
-}
 
 async function readConfigModel(db: DbContext): Promise<string> {
 	const result = await db.client.execute({
@@ -236,17 +218,17 @@ function sendProgress(
 }
 
 // ---------------------------------------------------------------------------
-// 核心生成流程
+// 核心生成流程（文件系统驱动）
 // ---------------------------------------------------------------------------
 
 /**
- * 从已有资料生成 Wiki 页面的主入口。
+ * 从目录中的文件生成 Wiki 页面的主入口。
  *
- * @param db        数据库上下文
- * @param scopePath 工作目录路径（用于隔离 Wiki 页面）
+ * @param db        数据库上下文（仅用于 invokeLlm provider 配置）
+ * @param scopePath 工作目录路径
  * @param mainWindow 可选，Electron 主窗口（用于发送进度事件）
- * @param model     可选，指定 LLM 模型。未提供时从 app_config 读取，再回退到默认。
- * @returns 生成的页面 ID 列表
+ * @param model     可选，指定 LLM 模型
+ * @returns 生成的页面 slug 列表
  */
 export async function generateWikiFromSources(
 	db: DbContext,
@@ -255,55 +237,169 @@ export async function generateWikiFromSources(
 	model?: string,
 ): Promise<string[]> {
 	const win = mainWindow ?? null;
+	const normalizedPath = path.resolve(scopePath);
 
-	// 1. 获取符合条件的资料
-	const sources = await fetchSourcesWithNotes(db, scopePath);
+	// 0. 确保 Wiki 结构存在
+	await ensureWikiStructure(normalizedPath);
+	const wikiRoot = getWikiRoot(normalizedPath);
+	const schema = await readSchema(wikiRoot);
 
-	if (sources.length === 0) {
+	// 1. 扫描源文件
+	console.log(
+		`[wikiGeneration] Scanning source files in: ${normalizedPath}`,
+	);
+	const allFiles = await scanSourceFiles(normalizedPath, schema);
+
+	console.log(
+		`[wikiGeneration] Found ${allFiles.length} total files in directory`,
+	);
+
+	if (allFiles.length === 0) {
+		resetStatus(normalizedPath, 0);
+		setGenerationStatus({
+			is_generating: false,
+			error:
+				"当前目录中没有找到可处理的文件（支持 PDF、Markdown、TXT、DOCX、HTML）。请将文件放入工作目录后重试。",
+		});
+		sendProgress(win, getGenerationStatus());
 		return [];
 	}
 
-	// 2. 确定使用的模型
+	// 2. 增量过滤：只处理新增/修改的文件
+	const newFiles = await filterNewSources(allFiles, schema);
+
+	console.log(
+		`[wikiGeneration] ${newFiles.length} new/modified files to process (${allFiles.length - newFiles.length} already processed)`,
+	);
+
+	if (newFiles.length === 0) {
+		resetStatus(normalizedPath, 0);
+		setGenerationStatus({
+			is_generating: false,
+			error:
+				"所有文件都已处理过。如需重新处理，请修改文件或删除 .llm-wiki/.schema.json 中的对应记录。",
+		});
+		sendProgress(win, getGenerationStatus());
+		return [];
+	}
+
+	// 3. 提取文件内容并过滤
+	type SourceWithContent = { path: string; name: string; content: string; size: number };
+	const meaningfulSources: SourceWithContent[] = [];
+	const skippedSources: string[] = [];
+
+	for (const file of newFiles) {
+		try {
+			const content = await extractFileContent(file.path);
+			if (isContentMeaningful(content)) {
+				meaningfulSources.push({
+					path: file.path,
+					name: file.name,
+					content,
+					size: file.size,
+				});
+			} else {
+				skippedSources.push(file.name);
+				// 即使内容不可用，也标记为已处理，避免重复尝试
+				const hash = await computeFileHash(file.path).catch(() => "unknown");
+				markSourceProcessed(schema, file.path, hash, file.size);
+			}
+		} catch (err) {
+			console.warn(`[wikiGeneration] Failed to extract content from ${file.name}:`, err);
+			skippedSources.push(file.name);
+		}
+	}
+
+	console.log(
+		`[wikiGeneration] ${meaningfulSources.length} sources with meaningful content, ` +
+			`${skippedSources.length} skipped`,
+	);
+
+	if (meaningfulSources.length === 0) {
+		resetStatus(normalizedPath, 0);
+		setGenerationStatus({
+			is_generating: false,
+			error:
+				`找到 ${newFiles.length} 个新文件，但都无法提取有效文本内容。` +
+				`可能原因：PDF 为扫描版（图片型）、文档加密、或文本提取失败。`,
+		});
+		await writeSchema(wikiRoot, schema);
+		sendProgress(win, getGenerationStatus());
+		return [];
+	}
+
+	// 4. 确定使用的模型
 	let effectiveModel = model || "";
 	if (!effectiveModel) {
 		effectiveModel = await readConfigModel(db);
 	}
+	if (!effectiveModel) {
+		try {
+			const activeModelResult = await db.client.execute({
+				sql: "SELECT value FROM app_config WHERE key = 'active_model'",
+				args: [],
+			});
+			if (activeModelResult.rows.length > 0) {
+				effectiveModel = String(activeModelResult.rows[0].value || "");
+			}
+		} catch {
+			// ignore
+		}
+	}
 
-	// 3. 初始化状态
-	resetStatus(scopePath, sources.length);
+	console.log(
+		`[wikiGeneration] Using model: "${effectiveModel}" (empty = invokeLlm will use active model fallback)`,
+	);
+
+	// 5. 初始化状态
+	resetStatus(normalizedPath, meaningfulSources.length);
+	if (skippedSources.length > 0) {
+		setGenerationStatus({
+			warnings: [
+				`跳过了 ${skippedSources.length} 个内容太短或无法识别的文件`,
+			],
+		});
+	}
 	sendProgress(win, getGenerationStatus());
 
-	// 记录所有新建页面的 ID，以及 title -> id 映射（用于后续关联）
-	const createdPageIds: string[] = [];
-	const titleToIdMap = new Map<string, string>();
-	// 记录每个页面声明的 related_titles（用于第二轮关联）
+	// 6. 逐文件提取并创建页面
+	const createdSlugs: string[] = [];
+	const titleToSlugMap = new Map<string, string>();
 	const pageRelatedTitles = new Map<string, string[]>();
+	let sourceErrors = 0;
 
-	// 4. 逐资料提取并创建页面
-	for (let i = 0; i < sources.length; i++) {
-		const source = sources[i];
+	for (let i = 0; i < meaningfulSources.length; i++) {
+		const source = meaningfulSources[i];
 
 		setGenerationStatus({
 			processed_sources: i,
-			current_source_title: source.title,
+			current_source_title: source.name,
 		});
 		sendProgress(win, getGenerationStatus());
-
-		// 跳过空内容
-		if (!source.content.trim()) {
-			continue;
-		}
 
 		try {
 			const extracted = await extractPagesFromSource(
 				db,
-				source,
+				{ title: source.name, content: source.content },
 				effectiveModel,
 			);
 
+			if (extracted.length === 0) {
+				console.log(
+					`[wikiGeneration] No pages extracted from "${source.name}" (LLM returned empty)`,
+				);
+				const currentWarnings = getGenerationStatus().warnings || [];
+				setGenerationStatus({
+					warnings: [
+						...currentWarnings,
+						`"${source.name}" 未提取到知识点`,
+					],
+				});
+			}
+
 			for (const page of extracted) {
 				try {
-					const wikiInput: WikiPageInput = {
+					const pageInput: WikiPageInput = {
 						title: page.title,
 						content: page.content,
 						summary: page.summary,
@@ -312,17 +408,21 @@ export async function generateWikiFromSources(
 						confidence: 0.7,
 					};
 
-					const created = await createWikiPage(db, scopePath, wikiInput, "ai");
+					const created = await createWikiPage(
+						normalizedPath,
+						pageInput,
+						"ai",
+					);
 
-					createdPageIds.push(created.id);
-					titleToIdMap.set(page.title, created.id);
+					createdSlugs.push(created.slug);
+					titleToSlugMap.set(page.title, created.slug);
 
 					if (page.related_titles && page.related_titles.length > 0) {
-						pageRelatedTitles.set(created.id, page.related_titles);
+						pageRelatedTitles.set(created.slug, page.related_titles);
 					}
 
 					setGenerationStatus({
-						generated_pages: createdPageIds.length,
+						generated_pages: createdSlugs.length,
 					});
 					sendProgress(win, getGenerationStatus());
 				} catch (pageErr) {
@@ -330,30 +430,66 @@ export async function generateWikiFromSources(
 						`[wikiGeneration] 创建页面失败 "${page.title}":`,
 						pageErr,
 					);
-					// 单个页面失败不中断整体流程
 				}
 			}
+
+			// 标记源文件为已处理
+			const hash = await computeFileHash(source.path).catch(() => "unknown");
+			markSourceProcessed(schema, source.path, hash, source.size);
 		} catch (sourceErr) {
+			sourceErrors++;
+			const errMsg =
+				sourceErr instanceof Error
+					? sourceErr.message
+					: String(sourceErr);
 			console.warn(
-				`[wikiGeneration] 处理资料失败 "${source.title}":`,
+				`[wikiGeneration] 处理文件失败 "${source.name}":`,
 				sourceErr,
 			);
-			// 单个资料失败不中断整体流程
+			const currentWarnings = getGenerationStatus().warnings || [];
+			setGenerationStatus({
+				warnings: [
+					...currentWarnings,
+					`"${source.name}" 处理失败: ${errMsg.slice(0, 100)}`,
+				],
+			});
+			sendProgress(win, getGenerationStatus());
 		}
 	}
 
-	// 5. 第二轮：关联 related_page_ids
-	await resolveRelatedPages(db, titleToIdMap, pageRelatedTitles, scopePath);
+	// 7. 关联 related_page_ids
+	await resolveRelatedPages(normalizedPath, titleToSlugMap, pageRelatedTitles);
 
-	// 6. 标记完成
+	// 8. 保存 schema（更新已处理文件记录）
+	await writeSchema(wikiRoot, schema);
+
+	// 9. 重建 index.md 和追加日志
+	const allPages = await listAllPages(wikiRoot, normalizedPath);
+	const displayName = path.basename(normalizedPath) || normalizedPath;
+	await rebuildIndex(wikiRoot, allPages, displayName);
+	await appendLog(
+		wikiRoot,
+		"ingest",
+		`处理 ${meaningfulSources.length} 个文件，生成 ${createdSlugs.length} 个页面`,
+	);
+
+	// 10. 标记完成
+	const finalError =
+		createdSlugs.length === 0
+			? sourceErrors > 0
+				? `所有 ${sourceErrors} 个文件处理都失败了，请检查 LLM 配置是否正确（Provider 是否启用、API Key 是否有效）`
+				: "LLM 未能从文件中提取出知识点，可能需要更丰富的文档内容"
+			: null;
+
 	setGenerationStatus({
 		is_generating: false,
-		processed_sources: sources.length,
+		processed_sources: meaningfulSources.length,
 		current_source_title: null,
+		error: finalError,
 	});
 	sendProgress(win, getGenerationStatus());
 
-	return createdPageIds;
+	return createdSlugs;
 }
 
 // ---------------------------------------------------------------------------
@@ -362,16 +498,40 @@ export async function generateWikiFromSources(
 
 async function extractPagesFromSource(
 	db: DbContext,
-	source: SourceWithNote,
+	source: { title: string; content: string },
 	model: string,
 ): Promise<ExtractedPage[]> {
 	const prompt = buildExtractionPrompt(source.title, source.content);
 
-	const result = await invokeLlm(db, {
-		model,
-		prompt,
-		temperature: 0.3,
-	});
+	console.log(
+		`[wikiGeneration] Calling LLM for source "${source.title}" (content length: ${source.content.length})`,
+	);
+
+	let result: { content: string };
+	try {
+		result = await invokeLlm(db, {
+			model,
+			prompt,
+			temperature: 0.3,
+		});
+	} catch (err) {
+		const errMsg = err instanceof Error ? err.message : String(err);
+		console.error(
+			`[wikiGeneration] LLM call failed for "${source.title}": ${errMsg}`,
+		);
+		throw new Error(`LLM 调用失败: ${errMsg}`);
+	}
+
+	if (!result.content || !result.content.trim()) {
+		console.warn(
+			`[wikiGeneration] LLM returned empty content for "${source.title}"`,
+		);
+		return [];
+	}
+
+	console.log(
+		`[wikiGeneration] LLM response for "${source.title}": ${result.content.slice(0, 200)}...`,
+	);
 
 	const extraction = parseExtractionJson(result.content);
 	return validateExtractedPages(extraction.pages);
@@ -381,7 +541,6 @@ async function extractPagesFromSource(
 // 校验与标签构建
 // ---------------------------------------------------------------------------
 
-/** 过滤掉不合法的页面条目 */
 function validateExtractedPages(pages: unknown[]): ExtractedPage[] {
 	if (!Array.isArray(pages)) return [];
 
@@ -395,7 +554,6 @@ function validateExtractedPages(pages: unknown[]): ExtractedPage[] {
 		const summary = typeof p.summary === "string" ? p.summary.trim() : "";
 		const pageType = typeof p.page_type === "string" ? p.page_type : "concept";
 
-		// 必须有标题和内容
 		if (!title || !content) continue;
 
 		const tags = Array.isArray(p.tags)
@@ -421,7 +579,6 @@ function validateExtractedPages(pages: unknown[]): ExtractedPage[] {
 	return valid;
 }
 
-/** 将 page_type 合并到 tags 列表中 */
 function buildTags(page: ExtractedPage): string[] {
 	const tags = new Set(page.tags);
 	tags.add(page.page_type);
@@ -429,51 +586,50 @@ function buildTags(page: ExtractedPage): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// 关联解析：将 related_titles 映射为 related_page_ids
+// 关联解析：将 related_titles 映射为 related_page_ids（slugs）
 // ---------------------------------------------------------------------------
 
 async function resolveRelatedPages(
-	db: DbContext,
-	titleToIdMap: Map<string, string>,
-	pageRelatedTitles: Map<string, string[]>,
 	scopePath: string,
+	titleToSlugMap: Map<string, string>,
+	pageRelatedTitles: Map<string, string[]>,
 ): Promise<void> {
 	if (pageRelatedTitles.size === 0) return;
 
-	// 加载该 scope 下所有已有页面，补充 title -> id 映射
-	const existingPages = await listWikiPages(db, scopePath, {
+	// 加载所有已有页面，补充 title -> slug 映射
+	const existingPages = await listWikiPages(scopePath, {
 		limit: 10000,
 		offset: 0,
 	});
-	const fullTitleMap = new Map<string, string>(titleToIdMap);
+	const fullTitleMap = new Map<string, string>(titleToSlugMap);
 	for (const existing of existingPages) {
 		if (!fullTitleMap.has(existing.title)) {
-			fullTitleMap.set(existing.title, existing.id);
+			fullTitleMap.set(existing.title, existing.slug);
 		}
 	}
 
 	// 逐页面更新 related_page_ids
-	for (const [pageId, relatedTitles] of Array.from(
+	for (const [pageSlug, relatedTitles] of Array.from(
 		pageRelatedTitles.entries(),
 	)) {
-		const resolvedIds: string[] = [];
+		const resolvedSlugs: string[] = [];
 		for (const relTitle of relatedTitles) {
-			const matchedId = fullTitleMap.get(relTitle);
-			if (matchedId && matchedId !== pageId) {
-				resolvedIds.push(matchedId);
+			const matchedSlug = fullTitleMap.get(relTitle);
+			if (matchedSlug && matchedSlug !== pageSlug) {
+				resolvedSlugs.push(matchedSlug);
 			}
 		}
 
-		if (resolvedIds.length > 0) {
+		if (resolvedSlugs.length > 0) {
 			try {
 				await updateWikiPage(
-					db,
-					pageId,
-					{ related_page_ids: resolvedIds },
+					scopePath,
+					pageSlug,
+					{ related_page_ids: resolvedSlugs },
 					"ai",
 				);
 			} catch (err) {
-				console.warn(`[wikiGeneration] 更新关联失败 pageId=${pageId}:`, err);
+				console.warn(`[wikiGeneration] 更新关联失败 slug=${pageSlug}:`, err);
 			}
 		}
 	}

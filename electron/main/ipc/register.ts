@@ -174,8 +174,8 @@ export function registerIpcHandlers({
 	// Worktree handlers (Git Worktree 沙盒隔离)
 	const worktreeHandlers = createWorktreeHandlers({ logger });
 
-	// Wiki handlers (知识 Wiki 页面)
-	const wikiHandlers = createWikiHandlers(db);
+	// Wiki handlers (知识 Wiki 页面 — 文件系统驱动，不需要 db)
+	const wikiHandlers = createWikiHandlers();
 
 	// Wiki AI 生成 handlers
 	const wikiGenHandlers = createWikiGenerationHandlers(db, {

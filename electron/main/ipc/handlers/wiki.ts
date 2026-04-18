@@ -1,9 +1,9 @@
 /**
- * Wiki 知识页面 IPC Handlers
+ * Wiki 知识页面 IPC Handlers（文件系统驱动版）
+ * 不再依赖 DbContext，所有操作通过文件系统完成
  */
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
-import type { DbContext } from "../../db/client";
 import {
 	createWikiPage,
 	updateWikiPage,
@@ -23,12 +23,12 @@ type Handler<K extends keyof IPCSchema> = (
 	input: IPCSchema[K]["input"],
 ) => Promise<IPCSchema[K]["output"]>;
 
-export function createWikiHandlers(db: DbContext) {
+export function createWikiHandlers() {
 	const wiki_list_pages: Handler<"wiki_list_pages"> = async (
 		_event,
 		input,
 	) => {
-		const pages = await listWikiPages(db, input.scope_path, {
+		const pages = await listWikiPages(input.scope_path, {
 			limit: input.limit,
 			offset: input.offset,
 		});
@@ -51,7 +51,7 @@ export function createWikiHandlers(db: DbContext) {
 	};
 
 	const wiki_get_page: Handler<"wiki_get_page"> = async (_event, input) => {
-		const page = await getWikiPage(db, input.page_id);
+		const page = await getWikiPage(input.scope_path, input.page_id);
 		if (!page) return null;
 		return {
 			id: page.id,
@@ -76,7 +76,6 @@ export function createWikiHandlers(db: DbContext) {
 		input,
 	) => {
 		const page = await createWikiPage(
-			db,
 			input.scope_path,
 			{
 				title: input.title,
@@ -110,7 +109,7 @@ export function createWikiHandlers(db: DbContext) {
 		input,
 	) => {
 		const page = await updateWikiPage(
-			db,
+			input.scope_path,
 			input.page_id,
 			{
 				title: input.title,
@@ -144,7 +143,7 @@ export function createWikiHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		await deleteWikiPage(db, input.page_id);
+		await deleteWikiPage(input.scope_path, input.page_id);
 		return { success: true };
 	};
 
@@ -152,7 +151,7 @@ export function createWikiHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		const pages = await searchWikiPages(db, input.scope_path, input.query, {
+		const pages = await searchWikiPages(input.scope_path, input.query, {
 			limit: input.limit,
 		});
 		return pages.map((p) => ({
@@ -172,7 +171,7 @@ export function createWikiHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		const count = await countWikiPages(db, input.scope_path);
+		const count = await countWikiPages(input.scope_path);
 		return { count };
 	};
 
@@ -180,22 +179,22 @@ export function createWikiHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		const enabled = await isWikiEnabled(db, input.scope_path);
+		const enabled = await isWikiEnabled(input.scope_path);
 		return { enabled };
 	};
 
 	const wiki_enable: Handler<"wiki_enable"> = async (_event, input) => {
-		await enableWiki(db, input.scope_path);
+		await enableWiki(input.scope_path);
 		return { success: true };
 	};
 
 	const wiki_disable: Handler<"wiki_disable"> = async (_event, input) => {
-		await disableWiki(db, input.scope_path);
+		await disableWiki(input.scope_path);
 		return { success: true };
 	};
 
 	const wiki_rebuild: Handler<"wiki_rebuild"> = async (_event, input) => {
-		const result = await rebuildWikiWorkspace(db, input.scope_path);
+		const result = await rebuildWikiWorkspace(input.scope_path);
 		return { success: true, created_map: result.created_map };
 	};
 

@@ -20,18 +20,37 @@ export function createWikiGenerationHandlers(
 ) {
 	const wiki_generate: Handler<"wiki_generate"> = async (_event, input) => {
 		try {
+			console.log(
+				`[wiki_generate] Starting generation for scope: ${input.scope_path}`,
+			);
 			const pageIds = await generateWikiFromSources(
 				db,
 				input.scope_path,
 				mainWindowRef.current,
 				input.model,
 			);
+			console.log(
+				`[wiki_generate] Completed. Generated ${pageIds.length} pages`,
+			);
 			return {
-				success: true,
+				success: pageIds.length > 0,
 				generated_pages: pageIds.length,
 			};
 		} catch (err) {
-			console.error("[wiki_generate] Generation failed:", err);
+			const errMsg =
+				err instanceof Error ? err.message : String(err);
+			console.error("[wiki_generate] Generation failed:", errMsg);
+			// 也通过进度事件通知前端
+			const { setGenerationStatus, getGenerationStatus: getStatus } =
+				await import("../../kb/wikiGeneration");
+			setGenerationStatus({
+				is_generating: false,
+				error: `生成失败: ${errMsg}`,
+			});
+			mainWindowRef.current?.webContents.send(
+				"wiki_generation_progress",
+				getStatus(),
+			);
 			return {
 				success: false,
 				generated_pages: 0,
