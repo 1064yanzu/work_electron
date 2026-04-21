@@ -34,6 +34,8 @@ function getChannelLabel(channelId: RemoteChannelId): string {
 		telegram: "Telegram",
 		slack: "Slack",
 		discord: "Discord",
+		qqbot: "QQ Bot",
+		wechat: "个人微信",
 		generic_webhook: "Webhook",
 	};
 	return labels[channelId] ?? channelId;

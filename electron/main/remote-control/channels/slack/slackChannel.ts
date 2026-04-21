@@ -1,6 +1,12 @@
 /**
  * Slack 远程控制渠道插件
  * 使用 @slack/bolt（Socket Mode，无需公网 URL）
+ *
+ * 阶段 3：接入 SDK 能力
+ * - streaming（chat.update）
+ * - typing（reactions.add "hourglass_flowing_sand"）
+ * - interactive（Block Kit actions + block_actions 回调）
+ * - persistent dedupe + sequential delivery
  */
 
 import { App, LogLevel } from "@slack/bolt";
@@ -9,10 +15,21 @@ import type {
 	RemoteChannelPlugin,
 	RemoteChannelContext,
 } from "../../core/channel-plugin";
+import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegistry";
 import type {
 	RemoteOutboundMessage,
 	RemoteSlackConfig,
 } from "../../core/types";
+import {
+	createSequentialQueue,
+	getChannelDedupe,
+	parseApprovalCallback,
+	type ChannelActions,
+	type ChannelDedupe,
+	type ChannelStreamingFactory,
+	type ChannelTypingFactory,
+	type SequentialQueue,
+} from "../../sdk";
 import {
 	chunkText,
 	stripBotMention,
@@ -20,14 +37,21 @@ import {
 	resolveUserName,
 	SlackOutboundRateLimiter,
 } from "./slackUtils";
+import { createSlackStreamingFactory } from "./slackStreaming";
+import { createSlackTypingFactory } from "./slackTyping";
 
 export class SlackChannelPlugin implements RemoteChannelPlugin {
 	readonly id = "slack" as const;
+	streaming: ChannelStreamingFactory | null = null;
+	typing: ChannelTypingFactory | null = null;
+	actions: ChannelActions | null = null;
 
 	private app: App | null = null;
 	private ctx: RemoteChannelContext | null = null;
 	private botUserId: string | undefined;
 	private rateLimiter = new SlackOutboundRateLimiter();
+	private readonly outboundQueue: SequentialQueue = createSequentialQueue();
+	private readonly persistentDedupe: ChannelDedupe = getChannelDedupe("slack");
 
 	constructor(private readonly logger: Logger) {}
 
@@ -83,6 +107,101 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 				);
 			});
 
+			// 注册 block_actions 回调（按钮点击）
+			this.app.action(/.*/, async ({ body, ack }) => {
+				await ack();
+				if (body.type !== "block_actions") return;
+				await this.handleBlockActions(body);
+			});
+
+			// ─── 能力工厂 ───
+			const features = config.features;
+			this.streaming = createSlackStreamingFactory({
+				app: this.app,
+				logger: this.logger,
+				enabled: () => (features?.streaming.mode ?? "edit") !== "off",
+			});
+			this.typing = createSlackTypingFactory({
+				app: this.app,
+				logger: this.logger,
+				enabled: () => features?.typing.enabled !== false,
+			});
+
+			const app = this.app;
+			this.actions = {
+				send: async () => ({}),
+				edit: async (params) => {
+					await app.client.chat
+						.update({
+							channel: params.targetId,
+							ts: params.messageId,
+							text: params.text ?? "",
+						})
+						.catch(() => {});
+				},
+				delete: async (params) => {
+					await app.client.chat
+						.delete({
+							channel: params.targetId,
+							ts: params.messageId,
+						})
+						.catch(() => {});
+				},
+				react: async (params) => {
+					await app.client.reactions
+						.add({
+							channel: params.targetId,
+							timestamp: params.messageId,
+							name: params.emoji,
+						})
+						.catch(() => {});
+					return {};
+				},
+				unreact: async (params) => {
+					await app.client.reactions
+						.remove({
+							channel: params.targetId,
+							timestamp: params.messageId,
+							name: params.emojiOrReactionId,
+						})
+						.catch(() => {});
+				},
+				pin: async (params) => {
+					await app.client.pins
+						.add({
+							channel: params.targetId,
+							timestamp: params.messageId,
+						})
+						.catch(() => {});
+					return {};
+				},
+				unpin: async (params) => {
+					await app.client.pins
+						.remove({
+							channel: params.targetId,
+							timestamp: params.messageId,
+						})
+						.catch(() => {});
+				},
+			};
+
+			updateChannelCapabilityEntry({
+				channelId: "slack",
+				status: "sdk",
+				capabilities: {
+					text: true,
+					card: false,
+					streaming: (features?.streaming.mode ?? "edit") !== "off",
+					typing: features?.typing.enabled !== false,
+					interactive: features?.interactive.enabled !== false,
+					editMessage: true,
+					deleteMessage: true,
+					reactions: true,
+					pin: true,
+					media: false,
+				},
+			});
+
 			// 启动 Socket Mode
 			await this.app.start();
 			this.logger.info({ msg: "slack: Socket Mode 已启动" });
@@ -110,6 +229,10 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 		}
 		this.ctx = null;
 		this.botUserId = undefined;
+		this.streaming = null;
+		this.typing = null;
+		this.actions = null;
+		await this.persistentDedupe.flush().catch(() => {});
 	}
 
 	// ─── 消息处理 ────────────────────────────────────────
@@ -128,6 +251,14 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 		// im = DM, channel/group = 群组/频道
 		const isGroup = msg.channel_type !== "im";
 		const senderId = msg.user;
+
+		// 持久化去重
+		if (config.features?.dedupe.persistent !== false) {
+			const fresh = await this.persistentDedupe.checkAndRecord(
+				`inbound:${msg.channel}:${msg.ts}`,
+			);
+			if (!fresh) return;
+		}
 
 		// 群组消息需要 @bot
 		if (isGroup && config.requireMention) {
@@ -165,6 +296,43 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 		});
 	}
 
+	/**
+	 * block_actions 事件处理（按钮点击）。
+	 */
+	private async handleBlockActions(body: {
+		user?: { id?: string; name?: string };
+		channel?: { id?: string };
+		actions?: Array<{ action_id?: string; value?: string }>;
+		message?: { ts?: string };
+	}): Promise<void> {
+		const action = body.actions?.[0];
+		if (!action?.action_id) return;
+		const approval = parseApprovalCallback(action.action_id, action.value);
+		let commandText: string;
+		if (approval) {
+			commandText =
+				approval.action === "approve"
+					? `/approve ${approval.requestId}`
+					: `/reject ${approval.requestId}`;
+		} else {
+			commandText = `/${action.action_id}`;
+		}
+		const senderId = body.user?.id ?? "unknown";
+		const channel = body.channel?.id ?? "unknown";
+
+		await this.ctx?.onInboundMessage({
+			channel_id: "slack",
+			peer_id: senderId,
+			peer_name: body.user?.name,
+			sender_id: senderId,
+			sender_name: body.user?.name,
+			is_group: true,
+			text: commandText,
+			message_id: body.message?.ts,
+			target_id: channel,
+		});
+	}
+
 	// ─── 发送消息 ────────────────────────────────────────
 
 	async send(message: RemoteOutboundMessage): Promise<void> {
@@ -173,32 +341,46 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 			return;
 		}
 
-		const chunks = chunkText(
-			message.text,
-			this.ctx?.config.channels.slack.textChunkLimit ?? 3000,
-		);
+		const config = this.ctx?.config.channels.slack;
+		const sequentialEnabled = config?.features?.sequential_delivery !== false;
 
-		for (const chunk of chunks) {
-			await this.rateLimiter.waitForSlot();
-			try {
-				await this.app.client.chat.postMessage({
-					channel: message.target_id,
-					text: chunk,
-					mrkdwn: true,
-					...(message.reply_to_message_id
-						? { thread_ts: message.reply_to_message_id }
-						: {}),
-				});
-			} catch (err) {
-				this.logger.error({
-					msg: "slack: 发送消息失败",
-					channel: message.target_id,
-					error: String(err),
-				});
+		const doSend = async () => {
+			const app = this.app;
+			if (!app) return;
+
+			const chunks = chunkText(
+				message.text,
+				this.ctx?.config.channels.slack.textChunkLimit ?? 3000,
+			);
+
+			for (const chunk of chunks) {
+				await this.rateLimiter.waitForSlot();
+				try {
+					await app.client.chat.postMessage({
+						channel: message.target_id,
+						text: chunk,
+						mrkdwn: true,
+						...(message.reply_to_message_id
+							? { thread_ts: message.reply_to_message_id }
+							: {}),
+					});
+				} catch (err) {
+					this.logger.error({
+						msg: "slack: 发送消息失败",
+						channel: message.target_id,
+						error: String(err),
+					});
+				}
 			}
-		}
 
-		this.ctx?.onStatusPatch({ last_outbound_at: Date.now() });
+			this.ctx?.onStatusPatch({ last_outbound_at: Date.now() });
+		};
+
+		if (sequentialEnabled) {
+			await this.outboundQueue(message.target_id, doSend);
+		} else {
+			await doSend();
+		}
 	}
 
 	// ─── 连接测试 ────────────────────────────────────────

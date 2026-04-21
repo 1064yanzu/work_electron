@@ -58,7 +58,8 @@ export function useChatHandler({
 		}
 
 		// 添加用户消息（只有在非重新生成时）
-		const shouldGenerateTitle = !skipUserMessage && session.messages.length === 0;
+		const shouldGenerateTitle =
+			!skipUserMessage && session.messages.length === 0;
 		if (!skipUserMessage) {
 			const userMessage = createMessage("user", userTextForChat);
 			chatStore.addMessage(session.id, userMessage);
@@ -509,10 +510,7 @@ export function useChatHandler({
 							: undefined,
 					},
 				});
-				chatStore.setStatus(
-					"error",
-					detail ? detail.title : error,
-				);
+				chatStore.setStatus("error", detail ? detail.title : error);
 			},
 			onUsage: (usage) => {
 				// 将 token 使用数据保存到消息 metadata

@@ -3,19 +3,24 @@ import type {
 	RemoteChannelPlugin,
 	RemoteChannelContext,
 } from "../../core/channel-plugin";
-import type { RemoteOutboundMessage } from "../../core/types";
+import type { RemoteChannelId, RemoteOutboundMessage } from "../../core/types";
 
+/**
+ * 占位渠道插件 —— 用于尚未完整实现的渠道（qqbot、wechat、generic_webhook）
+ * 启动时直接报「待接入实现」，但保持类型完整、orchestrator 能正常管理生命周期。
+ */
 export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 	constructor(
-		public readonly id: "generic_webhook",
+		public readonly id: RemoteChannelId,
 		private readonly logger: Logger,
+		private readonly note?: string,
 	) {}
 
 	async start(ctx: RemoteChannelContext): Promise<void> {
 		ctx.onStatusPatch({
 			running: true,
 			connected: false,
-			last_error: "模板通道，尚未接入具体平台实现",
+			last_error: this.note ?? "该渠道尚未实现，仅保留配置占位",
 		});
 	}
 
@@ -32,7 +37,7 @@ export class PlaceholderChannelPlugin implements RemoteChannelPlugin {
 	async testConnection(): Promise<{ ok: boolean; message: string }> {
 		return {
 			ok: false,
-			message: "模板通道，暂未实现",
+			message: this.note ?? "该渠道尚未实现",
 		};
 	}
 }

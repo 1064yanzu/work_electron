@@ -133,9 +133,7 @@ export class FeishuDocLinkResolver {
 		return candidates;
 	}
 
-	private async fetchDocxContent(
-		documentId: string,
-	): Promise<{
+	private async fetchDocxContent(documentId: string): Promise<{
 		ok: boolean;
 		content?: string;
 		detail?: string;

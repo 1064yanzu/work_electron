@@ -33,8 +33,7 @@ const CATEGORY_CONFIG: Record<
 > = {
 	instruction: {
 		label: "指令",
-		color:
-			"bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+		color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 		icon: "⚡",
 	},
 	preference: {
@@ -50,8 +49,7 @@ const CATEGORY_CONFIG: Record<
 	},
 	context: {
 		label: "上下文",
-		color:
-			"bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+		color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
 		icon: "🔗",
 	},
 	task_result: {

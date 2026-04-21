@@ -16,9 +16,12 @@ import {
  * 避免下游校验失败。
  */
 function sanitizeToolCallInput(parsed: unknown): unknown {
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return parsed;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+		return parsed;
 	const result: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+	for (const [key, value] of Object.entries(
+		parsed as Record<string, unknown>,
+	)) {
 		if (value === "") continue;
 		result[key] = value;
 	}
@@ -178,9 +181,10 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 		| OpenAIResponse["choices"][0]["message"]["function_call"]
 		| undefined;
 	if (legacyFunctionCall.value) {
-		const fcName = typeof legacyFunctionCall.value.name === "string"
-			? legacyFunctionCall.value.name.trim()
-			: "";
+		const fcName =
+			typeof legacyFunctionCall.value.name === "string"
+				? legacyFunctionCall.value.name.trim()
+				: "";
 		// 只在有有效名称时才发出 function_call
 		if (fcName) {
 			function_call = {
@@ -351,7 +355,8 @@ export function translateToAnthropic(
 	// 工具调用
 	if (choice.message.tool_calls) {
 		for (const tc of choice.message.tool_calls) {
-			const toolName = typeof tc.function.name === "string" ? tc.function.name.trim() : "";
+			const toolName =
+				typeof tc.function.name === "string" ? tc.function.name.trim() : "";
 			if (!toolName) continue; // 跳过无名工具调用
 			let input: unknown = {};
 			try {

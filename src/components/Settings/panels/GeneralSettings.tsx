@@ -479,13 +479,17 @@ export function GeneralSettings() {
 						>
 							<option value="">跟随当前对话模型 (默认)</option>
 							{allModels.map((model) => (
-								<option key={`${model.provider}-${model.id}-wiki`} value={model.id}>
+								<option
+									key={`${model.provider}-${model.id}-wiki`}
+									value={model.id}
+								>
 									{model.id} ({model.provider})
 								</option>
 							))}
 						</Select>
 						<p className="text-xs text-text-muted mt-1.5">
-							用于后续 Wiki 自动整理、知识地图扩写和页面生成。未选择时默认沿用当前对话模型。
+							用于后续 Wiki
+							自动整理、知识地图扩写和页面生成。未选择时默认沿用当前对话模型。
 						</p>
 					</div>
 				</div>

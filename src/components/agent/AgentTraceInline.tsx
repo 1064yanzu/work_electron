@@ -875,7 +875,9 @@ function toolCallToSwarmAgent(tc: ToolCall, index: number): SwarmAgentInfo {
 /** 将 toolCalls 分组：连续的 Task 调用聚合为蜂群，其他保持原样 */
 function groupToolCallsForSwarm(
 	toolCalls: ToolCall[],
-): Array<{ type: "swarm"; calls: ToolCall[] } | { type: "single"; call: ToolCall }> {
+): Array<
+	{ type: "swarm"; calls: ToolCall[] } | { type: "single"; call: ToolCall }
+> {
 	const groups: Array<
 		{ type: "swarm"; calls: ToolCall[] } | { type: "single"; call: ToolCall }
 	> = [];
@@ -994,154 +996,146 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 
 				{open ? (
 					<div className="px-3 pb-3 space-y-3">
-					{/* 思考过程 */}
-					{thinking ? (
-						<div className="w-full">
-							<button
-								onClick={() => setThinkingOpen((v) => !v)}
-								className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded"
-							>
-								<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
-									{thinkingOpen ? (
-										<ChevronDown className="w-3.5 h-3.5" />
-									) : (
-										<ChevronRight className="w-3.5 h-3.5" />
-									)}
-								</span>
-								<span className="text-sm text-zinc-500 dark:text-zinc-400">
-									思考过程
-								</span>
-							</button>
-							{thinkingOpen ? (
-								<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
-									<div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-										{thinking}
-									</div>
-								</div>
-							) : null}
-						</div>
-					) : null}
-
-					{/* 暂停/恢复按钮 */}
-					{canPause || canResume ? (
-						<div className="flex gap-2">
-							{canPause ? (
+						{/* 思考过程 */}
+						{thinking ? (
+							<div className="w-full">
 								<button
-									onClick={() => pauseTask()}
-									className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200"
+									onClick={() => setThinkingOpen((v) => !v)}
+									className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded"
 								>
-									<Pause className="w-3.5 h-3.5" />
-									暂停
-								</button>
-							) : null}
-							{canResume ? (
-								<button
-									onClick={() => resumeTask()}
-									className="flex-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-white"
-								>
-									<Play className="w-3.5 h-3.5" />
-									继续
-								</button>
-							) : null}
-						</div>
-					) : null}
-
-					{task.steps && task.steps.length > 0 ? (
-						<TaskSteps steps={task.steps} />
-					) : null}
-
-					{task.toolCalls.length > 0 ? (
-						<div className="space-y-2">
-							{(() => {
-								const recentCalls = task.toolCalls.slice(-8);
-								const groups = groupToolCallsForSwarm(recentCalls);
-								return groups.map((group) => {
-									if (group.type === "swarm") {
-										const agents = group.calls.map((tc, i) =>
-											toolCallToSwarmAgent(tc, i),
-										);
-										const key = group.calls.map((c) => c.id).join("-");
-										return (
-											<SwarmCard
-												key={key}
-												agents={agents}
-											/>
-										);
-									}
-									return (
-										<ToolCallRow
-											key={group.call.id}
-											toolCall={group.call}
-										/>
-									);
-								});
-							})()}
-						</div>
-					) : (
-						<div className="px-3 py-3 text-xs text-zinc-400">
-							尚未开始工具调用
-						</div>
-					)}
-
-					{/* 只显示非资料库检索的 Artifacts（资料库检索的结果已经在工具调用中显示了） */}
-					{(() => {
-						// 过滤掉来自资料库检索的 Artifacts（通过 metadata 判断）
-						const nonKbArtifacts = task.artifacts.filter((a) => {
-							// 如果 artifact 的 metadata 中有 chunkId 或 sourceId，说明来自资料库检索
-							const isFromKb = a.metadata?.chunkId || a.metadata?.sourceId;
-							return !isFromKb;
-						});
-
-						return nonKbArtifacts.length > 0 ? (
-							<div className="space-y-2">
-								<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 px-1">
-									产物预览 ({nonKbArtifacts.length})
-								</div>
-								{nonKbArtifacts.slice(0, 6).map((a) => (
-									<div key={a.id}>
-										{a.type === "image" ? (
-											<ArtifactRow artifact={a} />
+									<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+										{thinkingOpen ? (
+											<ChevronDown className="w-3.5 h-3.5" />
 										) : (
-											<button
-												onClick={() =>
-													setArtifactPreview(
-														artifactPreview === a.id ? null : a.id,
-													)
-												}
-												className="w-full"
-											>
-												<ArtifactRow artifact={a} />
-											</button>
+											<ChevronRight className="w-3.5 h-3.5" />
 										)}
-										{artifactPreview === a.id && a.content ? (
-											<div className="mt-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 ring-1 ring-black/5 dark:ring-white/10">
-												<div className="text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
-													{a.content.slice(0, 1000)}
-													{a.content.length > 1000 ? "..." : ""}
-												</div>
-											</div>
-										) : null}
+									</span>
+									<span className="text-sm text-zinc-500 dark:text-zinc-400">
+										思考过程
+									</span>
+								</button>
+								{thinkingOpen ? (
+									<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+										<div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+											{thinking}
+										</div>
 									</div>
-								))}
+								) : null}
 							</div>
-						) : null;
-					})()}
+						) : null}
 
-					{task.error ? (
-						<div className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-xs text-red-600 dark:text-red-400">
-							{task.error}
-						</div>
-					) : null}
+						{/* 暂停/恢复按钮 */}
+						{canPause || canResume ? (
+							<div className="flex gap-2">
+								{canPause ? (
+									<button
+										onClick={() => pauseTask()}
+										className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200"
+									>
+										<Pause className="w-3.5 h-3.5" />
+										暂停
+									</button>
+								) : null}
+								{canResume ? (
+									<button
+										onClick={() => resumeTask()}
+										className="flex-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-white"
+									>
+										<Play className="w-3.5 h-3.5" />
+										继续
+									</button>
+								) : null}
+							</div>
+						) : null}
 
-					{/* 断点续传：任务失败时显示继续按钮 */}
-					{task.status === "error" && (
-						<ResumeFromCheckpointButton taskId={task.id} />
-					)}
+						{task.steps && task.steps.length > 0 ? (
+							<TaskSteps steps={task.steps} />
+						) : null}
 
-					{/* Context Control & Status */}
-					<ContextControl task={task} />
-				</div>
-			) : null}
+						{task.toolCalls.length > 0 ? (
+							<div className="space-y-2">
+								{(() => {
+									const recentCalls = task.toolCalls.slice(-8);
+									const groups = groupToolCallsForSwarm(recentCalls);
+									return groups.map((group) => {
+										if (group.type === "swarm") {
+											const agents = group.calls.map((tc, i) =>
+												toolCallToSwarmAgent(tc, i),
+											);
+											const key = group.calls.map((c) => c.id).join("-");
+											return <SwarmCard key={key} agents={agents} />;
+										}
+										return (
+											<ToolCallRow key={group.call.id} toolCall={group.call} />
+										);
+									});
+								})()}
+							</div>
+						) : (
+							<div className="px-3 py-3 text-xs text-zinc-400">
+								尚未开始工具调用
+							</div>
+						)}
+
+						{/* 只显示非资料库检索的 Artifacts（资料库检索的结果已经在工具调用中显示了） */}
+						{(() => {
+							// 过滤掉来自资料库检索的 Artifacts（通过 metadata 判断）
+							const nonKbArtifacts = task.artifacts.filter((a) => {
+								// 如果 artifact 的 metadata 中有 chunkId 或 sourceId，说明来自资料库检索
+								const isFromKb = a.metadata?.chunkId || a.metadata?.sourceId;
+								return !isFromKb;
+							});
+
+							return nonKbArtifacts.length > 0 ? (
+								<div className="space-y-2">
+									<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 px-1">
+										产物预览 ({nonKbArtifacts.length})
+									</div>
+									{nonKbArtifacts.slice(0, 6).map((a) => (
+										<div key={a.id}>
+											{a.type === "image" ? (
+												<ArtifactRow artifact={a} />
+											) : (
+												<button
+													onClick={() =>
+														setArtifactPreview(
+															artifactPreview === a.id ? null : a.id,
+														)
+													}
+													className="w-full"
+												>
+													<ArtifactRow artifact={a} />
+												</button>
+											)}
+											{artifactPreview === a.id && a.content ? (
+												<div className="mt-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 ring-1 ring-black/5 dark:ring-white/10">
+													<div className="text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+														{a.content.slice(0, 1000)}
+														{a.content.length > 1000 ? "..." : ""}
+													</div>
+												</div>
+											) : null}
+										</div>
+									))}
+								</div>
+							) : null;
+						})()}
+
+						{task.error ? (
+							<div className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-xs text-red-600 dark:text-red-400">
+								{task.error}
+							</div>
+						) : null}
+
+						{/* 断点续传：任务失败时显示继续按钮 */}
+						{task.status === "error" && (
+							<ResumeFromCheckpointButton taskId={task.id} />
+						)}
+
+						{/* Context Control & Status */}
+						<ContextControl task={task} />
+					</div>
+				) : null}
 			</div>
 		</div>
 	);
@@ -1217,11 +1211,13 @@ function ContextControl({
 						</span>
 						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-none">
 							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
-							{tokenUsage?.promptTokens !== undefined && tokenUsage?.completionTokens !== undefined && (
-								<span className="text-[10px] text-zinc-500 font-normal ml-1">
-									(↑{tokenUsage.promptTokens.toLocaleString()} ↓{tokenUsage.completionTokens.toLocaleString()})
-								</span>
-							)}
+							{tokenUsage?.promptTokens !== undefined &&
+								tokenUsage?.completionTokens !== undefined && (
+									<span className="text-[10px] text-zinc-500 font-normal ml-1">
+										(↑{tokenUsage.promptTokens.toLocaleString()} ↓
+										{tokenUsage.completionTokens.toLocaleString()})
+									</span>
+								)}
 						</span>
 						{(tokenUsage?.cacheReadInputTokens ||
 							tokenUsage?.cacheCreationInputTokens ||

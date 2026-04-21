@@ -69,14 +69,14 @@ const DocumentTabItem = memo(function DocumentTabItem({
 			className={cn(
 				"group flex items-center gap-1 rounded-xl border min-h-11 px-1.5 py-1 shrink-0 transition-all duration-150",
 				isActive
-					? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm"
-					: "bg-transparent border-transparent hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
+					? "bg-[#faf9f5] dark:bg-[#1e1d1b] border-[#e8e6dc] dark:border-[#30302e] shadow-sm"
+					: "bg-transparent border-transparent hover:bg-[#f0eee6] dark:hover:bg-[#30302e]",
 				isDragging && "opacity-40 scale-95",
 				isDropTarget && "border-primary/50 bg-primary/5 dark:bg-primary/10",
 			)}
 		>
 			<div
-				className="flex items-center justify-center w-4 h-4 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
+				className="flex items-center justify-center w-4 h-4 text-[#d1cfc5] dark:text-[#4a4845] opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
 				aria-hidden="true"
 			>
 				<GripVertical className="w-3 h-3" />

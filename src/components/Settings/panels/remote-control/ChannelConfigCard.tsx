@@ -16,9 +16,14 @@ import {
 } from "../../ui/SettingsPrimitives";
 import {
 	testRemoteChannel,
+	type RemoteChannelFeatureConfig,
 	type RemoteControlConfig,
 	type RemoteChannelStatus,
 } from "../../../../lib/api";
+import {
+	ChannelFeatureToggles,
+	DEFAULT_CHANNEL_FEATURES,
+} from "./ChannelFeatureToggles";
 
 // ─── helper ──────────────────────────────────────────────
 
@@ -44,6 +49,7 @@ type CommonChannelConfig = {
 	requireMention: boolean;
 	textChunkLimit: number;
 	rateLimitPerMinute: number;
+	features?: RemoteChannelFeatureConfig;
 };
 
 type ChannelConfigCardProps = {
@@ -313,6 +319,20 @@ export function ChannelConfigCard({
 						/>
 					</label>
 				</div>
+
+				{/* 能力开关（streaming / typing / 交互 / 去重 / 顺序） */}
+				<ChannelFeatureToggles
+					value={channelConfig.features}
+					onChange={(next) => {
+						onSave((draft) => {
+							(draft.channels[channelId] as CommonChannelConfig).features =
+								next;
+							return draft;
+						});
+					}}
+					fallback={DEFAULT_CHANNEL_FEATURES}
+					disabled={saving}
+				/>
 
 				{/* 运行状态 + 连通测试 */}
 				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">

@@ -266,7 +266,8 @@ export function SkillsSettings() {
 						))}
 					</Select>
 					<p className="text-xs text-text-muted mt-1.5">
-						Skill 执行时用于生成内容的 LLM 模型。如果未选择，将使用当前活跃模型。建议选择稳定性好的模型以避免执行失败。
+						Skill 执行时用于生成内容的 LLM
+						模型。如果未选择，将使用当前活跃模型。建议选择稳定性好的模型以避免执行失败。
 					</p>
 				</div>
 			</div>

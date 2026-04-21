@@ -7,7 +7,18 @@
 // ==================
 
 /** 资料载体类型 */
-export type SourceKind = "web" | "document" | "audio" | "text" | "image" | "video" | "code" | "spreadsheet" | "presentation" | "pdf" | "archive";
+export type SourceKind =
+	| "web"
+	| "document"
+	| "audio"
+	| "text"
+	| "image"
+	| "video"
+	| "code"
+	| "spreadsheet"
+	| "presentation"
+	| "pdf"
+	| "archive";
 
 /** 资料来源 */
 export type SourceOrigin = "manual" | "browser_clip" | "web_search" | "import";

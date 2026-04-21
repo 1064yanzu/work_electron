@@ -161,10 +161,9 @@ function normalizePlanStep(raw: unknown, index: number): PlanStep | null {
 export function buildPlanExecutionPrompt(plan: PlanData): string {
 	const stepsText = plan.steps
 		.map((step, i) => {
-			const filesNote =
-				step.estimatedFiles?.length
-					? `\n   Files: ${step.estimatedFiles.join(", ")}`
-					: "";
+			const filesNote = step.estimatedFiles?.length
+				? `\n   Files: ${step.estimatedFiles.join(", ")}`
+				: "";
 			return `${i + 1}. **${step.title}**\n   ${step.description}${filesNote}`;
 		})
 		.join("\n\n");

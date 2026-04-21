@@ -5,6 +5,8 @@ import { FeishuChannelPlugin } from "../channels/feishu/feishuChannel";
 import { TelegramChannelPlugin } from "../channels/telegram/telegramChannel";
 import { SlackChannelPlugin } from "../channels/slack/slackChannel";
 import { DiscordChannelPlugin } from "../channels/discord/discordChannel";
+import { QqbotChannelPlugin } from "../channels/qqbot/qqbotChannel";
+import { WechatChannelPlugin } from "../channels/wechat/wechatChannel";
 import { PlaceholderChannelPlugin } from "../channels/template/placeholderChannel";
 import {
 	AgentSdkExecutor,
@@ -14,6 +16,10 @@ import { AgentEventMirror } from "./agentEventMirror";
 import type { AgentSdkBusEvent } from "./agentSdkEventBus";
 import { subscribeAgentSdkBusEvent } from "./agentSdkEventBus";
 import type { RemoteChannelPlugin } from "./channel-plugin";
+import {
+	type ChannelCapabilityEntry,
+	listChannelCapabilityEntries,
+} from "./channelCapabilityRegistry";
 import { RemoteCommandRouter } from "./commandRouter";
 import type {
 	RemoteChannelId,
@@ -76,9 +82,15 @@ export class RemoteControlOrchestrator {
 		this.channels.set("telegram", new TelegramChannelPlugin(logger));
 		this.channels.set("slack", new SlackChannelPlugin(logger));
 		this.channels.set("discord", new DiscordChannelPlugin(logger));
+		this.channels.set("qqbot", new QqbotChannelPlugin(logger));
+		this.channels.set("wechat", new WechatChannelPlugin(logger));
 		this.channels.set(
 			"generic_webhook",
-			new PlaceholderChannelPlugin("generic_webhook", logger),
+			new PlaceholderChannelPlugin(
+				"generic_webhook",
+				logger,
+				"模板通道，后续接入通用 Webhook",
+			),
 		);
 
 		for (const channelId of this.channels.keys()) {
@@ -109,6 +121,19 @@ export class RemoteControlOrchestrator {
 			router: this.router,
 			sendToChannel: async (message) => {
 				await this.sendToChannel(message);
+			},
+			resolveChannelCapabilities: (channelId) => {
+				const plugin = this.channels.get(channelId);
+				return {
+					streaming:
+						plugin?.streaming && plugin.streaming.isEnabled()
+							? (params) => plugin.streaming!.openSession(params)
+							: null,
+					typing:
+						plugin?.typing && plugin.typing.isEnabled()
+							? (params) => plugin.typing!.openSession(params)
+							: null,
+				};
 			},
 		});
 	}
@@ -386,6 +411,10 @@ export class RemoteControlOrchestrator {
 
 	async listChannels(): Promise<RemoteChannelRuntimeStatus[]> {
 		return [...this.channelStatus.values()];
+	}
+
+	listChannelCapabilities(): ChannelCapabilityEntry[] {
+		return listChannelCapabilityEntries();
 	}
 
 	listSessions(limit = 50) {

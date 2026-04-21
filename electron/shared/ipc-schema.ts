@@ -43,7 +43,59 @@ type RemoteChannelId =
 	| "telegram"
 	| "slack"
 	| "discord"
+	| "qqbot"
+	| "wechat"
 	| "generic_webhook";
+
+/**
+ * 渠道能力开关（SDK 阶段 1 起启用）。
+ * - streaming.mode: off/edit/card（card 仅飞书）
+ * - typing/interactive/dedupe.persistent/sequential_delivery：开关
+ */
+type RemoteChannelFeatureConfig = {
+	streaming: { mode: "off" | "edit" | "card" };
+	typing: { enabled: boolean };
+	interactive: { enabled: boolean };
+	dedupe: { persistent: boolean };
+	sequential_delivery: boolean;
+};
+
+/** QQ Bot 渠道配置（阶段 5 启用） */
+type RemoteQqbotIpc = {
+	enabled: boolean;
+	appId?: string;
+	clientSecret?: string;
+	environment: "prod" | "sandbox";
+	enableGuild: boolean;
+	enableGroup: boolean;
+	enableC2c: boolean;
+	dmPolicy: "pairing" | "allowlist" | "open";
+	allowFrom: string[];
+	groupPolicy: "disabled" | "allowlist" | "open";
+	groupAllowFrom: string[];
+	requireMention: boolean;
+	textChunkLimit: number;
+	rateLimitPerMinute: number;
+	features?: RemoteChannelFeatureConfig;
+};
+
+/** 个人微信渠道（阶段 6 启用，实验特性） */
+type RemoteWechatIpc = {
+	enabled: boolean;
+	puppet: "xp" | "padlocal" | "service";
+	token?: string;
+	endpoint?: string;
+	enableDm: boolean;
+	enableGroup: boolean;
+	allowFrom: string[];
+	groupAllowFrom: string[];
+	requireMention: boolean;
+	textChunkLimit: number;
+	rateLimitPerMinute: number;
+	features?: RemoteChannelFeatureConfig;
+	acknowledgedRisk: boolean;
+};
+
 type RemotePairingStatus = "pending" | "approved" | "rejected" | "revoked";
 type RemotePairingRecordStatus = "approved" | "revoked";
 type RemoteSessionState =
@@ -655,6 +707,7 @@ export type IPCSchema = {
 					enableDocCommandFallback: boolean;
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
+					features?: RemoteChannelFeatureConfig;
 				};
 				telegram: {
 					enabled: boolean;
@@ -666,6 +719,7 @@ export type IPCSchema = {
 					requireMention: boolean;
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
+					features?: RemoteChannelFeatureConfig;
 				};
 				slack: {
 					enabled: boolean;
@@ -679,6 +733,7 @@ export type IPCSchema = {
 					requireMention: boolean;
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
+					features?: RemoteChannelFeatureConfig;
 				};
 				discord: {
 					enabled: boolean;
@@ -691,7 +746,10 @@ export type IPCSchema = {
 					requireMention: boolean;
 					textChunkLimit: number;
 					rateLimitPerMinute: number;
+					features?: RemoteChannelFeatureConfig;
 				};
+				qqbot: RemoteQqbotIpc;
+				wechat: RemoteWechatIpc;
 				generic_webhook: { enabled: boolean; note?: string };
 			};
 			security: {
@@ -734,6 +792,7 @@ export type IPCSchema = {
 						enableDocCommandFallback: boolean;
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
+						features?: RemoteChannelFeatureConfig;
 					};
 					telegram: {
 						enabled: boolean;
@@ -745,6 +804,7 @@ export type IPCSchema = {
 						requireMention: boolean;
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
+						features?: RemoteChannelFeatureConfig;
 					};
 					slack: {
 						enabled: boolean;
@@ -758,6 +818,7 @@ export type IPCSchema = {
 						requireMention: boolean;
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
+						features?: RemoteChannelFeatureConfig;
 					};
 					discord: {
 						enabled: boolean;
@@ -770,7 +831,10 @@ export type IPCSchema = {
 						requireMention: boolean;
 						textChunkLimit: number;
 						rateLimitPerMinute: number;
+						features?: RemoteChannelFeatureConfig;
 					};
+					qqbot: RemoteQqbotIpc;
+					wechat: RemoteWechatIpc;
 					generic_webhook: { enabled: boolean; note?: string };
 				};
 				security: {
@@ -817,6 +881,26 @@ export type IPCSchema = {
 			last_inbound_at?: number;
 			last_outbound_at?: number;
 			last_error?: string;
+		}>;
+	};
+	list_remote_channel_capabilities: {
+		input: Record<string, never>;
+		output: Array<{
+			channel: RemoteChannelId;
+			label: string;
+			status: "legacy" | "sdk" | "placeholder";
+			capabilities: {
+				text: boolean;
+				card: boolean;
+				streaming: boolean;
+				typing: boolean;
+				interactive: boolean;
+				editMessage: boolean;
+				deleteMessage: boolean;
+				reactions: boolean;
+				pin: boolean;
+				media: boolean;
+			};
 		}>;
 	};
 	list_remote_pairings: {
@@ -891,6 +975,41 @@ export type IPCSchema = {
 			source: string;
 			message: string;
 		}>;
+	};
+	feishu_begin_app_registration: {
+		input: { domain?: "feishu" | "lark" };
+		output: {
+			sessionId: string;
+			deviceCode: string;
+			qrUrl: string;
+			qrDataUrl: string;
+			userCode: string;
+			intervalSec: number;
+			expireInSec: number;
+		};
+	};
+	feishu_poll_app_registration: {
+		input: {
+			deviceCode: string;
+			currentDomain: "feishu" | "lark";
+			intervalSec: number;
+		};
+		output:
+			| {
+					status: "pending";
+					domain: "feishu" | "lark";
+					intervalSec: number;
+			  }
+			| {
+					status: "success";
+					appId: string;
+					appSecret: string;
+					domain: "feishu" | "lark";
+					openId?: string;
+			  }
+			| { status: "access_denied" }
+			| { status: "expired" }
+			| { status: "error"; message: string };
 	};
 	cloud_node_get_status: {
 		input: Record<string, never>;
@@ -1698,6 +1817,9 @@ export type IPCSchema = {
 			last_updated_by: string;
 			created_at: number;
 			updated_at: number;
+			sources: string[];
+			status: "active" | "stub" | "needs-update" | "deprecated";
+			aliases: string[];
 		}>;
 	};
 	/** 获取单个 Wiki 页面 */
@@ -1718,6 +1840,9 @@ export type IPCSchema = {
 			last_updated_by: string;
 			created_at: number;
 			updated_at: number;
+			sources: string[];
+			status: "active" | "stub" | "needs-update" | "deprecated";
+			aliases: string[];
 		} | null;
 	};
 	/** 创建 Wiki 页面 */
@@ -1731,6 +1856,9 @@ export type IPCSchema = {
 			related_page_ids?: string[];
 			page_type?: string;
 			confidence?: number;
+			sources?: string[];
+			status?: "active" | "stub" | "needs-update" | "deprecated";
+			aliases?: string[];
 		};
 		output: {
 			id: string;
@@ -1745,6 +1873,9 @@ export type IPCSchema = {
 			confidence: number;
 			created_at: number;
 			updated_at: number;
+			sources: string[];
+			status: "active" | "stub" | "needs-update" | "deprecated";
+			aliases: string[];
 		};
 	};
 	/** 更新 Wiki 页面 */
@@ -1759,6 +1890,9 @@ export type IPCSchema = {
 			related_page_ids?: string[];
 			page_type?: string;
 			confidence?: number;
+			sources?: string[];
+			status?: "active" | "stub" | "needs-update" | "deprecated";
+			aliases?: string[];
 		};
 		output: {
 			id: string;
@@ -1773,6 +1907,9 @@ export type IPCSchema = {
 			confidence: number;
 			created_at: number;
 			updated_at: number;
+			sources: string[];
+			status: "active" | "stub" | "needs-update" | "deprecated";
+			aliases: string[];
 		} | null;
 	};
 	/** 删除 Wiki 页面 */
@@ -1820,6 +1957,11 @@ export type IPCSchema = {
 		input: { scope_path: string };
 		output: { success: boolean; created_map: boolean };
 	};
+	/** 获取 Wiki 页面对应的物理文件绝对路径（供文档编辑器打开真实 .md 文件） */
+	wiki_get_page_file_path: {
+		input: { scope_path: string; page_id: string };
+		output: { path: string | null };
+	};
 	/** AI 生成 Wiki 页面（从知识库源文件提取知识） */
 	wiki_generate: {
 		input: { scope_path: string; model?: string };
@@ -1831,12 +1973,86 @@ export type IPCSchema = {
 		output: {
 			is_generating: boolean;
 			scope_path: string | null;
+			/** 生成管线阶段：preflight/scanning/filtering/extracting/llm/linking/finalizing/idle */
+			phase:
+				| "idle"
+				| "preflight"
+				| "scanning"
+				| "filtering"
+				| "extracting"
+				| "llm"
+				| "linking"
+				| "finalizing";
 			total_sources: number;
 			processed_sources: number;
 			generated_pages: number;
 			current_source_title: string | null;
 			error: string | null;
 			warnings?: string[];
+			/** 本轮中被跳过的文件数（内容无法提取 / 提取失败 / LLM 返回空） */
+			skipped_count?: number;
+			/** schema 累计跳过的文件数（跨轮次，用于 UI 决定是否展示「重试跳过的文件」按钮） */
+			total_skipped_in_schema?: number;
+		};
+	};
+	/** 查询 Wiki schema 的统计信息（处理/跳过/实际页面数） */
+	wiki_schema_stats: {
+		input: { scope_path: string };
+		output: {
+			processed_count: number;
+			skipped_count: number;
+			real_page_count: number;
+			has_knowledge_map: boolean;
+			skipped_files: Array<{
+				path: string;
+				name: string;
+				reason: string;
+				reason_detail?: string;
+				skipped_at: number;
+			}>;
+		};
+	};
+	/** 清空 skipped_sources：让下次生成时重新尝试这些文件 */
+	wiki_reset_skipped_sources: {
+		input: { scope_path: string };
+		output: { cleared: number };
+	};
+	/** 清空 processed_sources：让下次生成时重新处理所有文件（不影响已生成的页面） */
+	wiki_reset_processed_sources: {
+		input: { scope_path: string };
+		output: { cleared: number };
+	};
+	/** Wiki 健康检查（Karpathy lint pattern）：孤儿 / stub / 断链 / frontmatter 缺失 / 未摄入源 */
+	wiki_lint: {
+		input: { scope_path: string };
+		output: {
+			scope_path: string;
+			total_pages: number;
+			issues: Array<{
+				kind:
+					| "orphan"
+					| "stub"
+					| "broken-link"
+					| "frontmatter-missing"
+					| "source-no-sources";
+				page_slug: string;
+				page_title: string;
+				detail: string;
+			}>;
+			counts: {
+				orphan: number;
+				stub: number;
+				"broken-link": number;
+				"frontmatter-missing": number;
+				"source-no-sources": number;
+			};
+			un_ingested_sources: Array<{
+				path: string;
+				name: string;
+				size: number;
+			}>;
+			suggestions: string[];
+			ran_at: number;
 		};
 	};
 };

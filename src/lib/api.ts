@@ -591,7 +591,9 @@ export async function pickStorageDirectory(): Promise<{ path: string | null }> {
 	return await safeInvoke("storage_pick_directory");
 }
 
-export async function pickSystemDirectory(title?: string): Promise<{ path: string | null }> {
+export async function pickSystemDirectory(
+	title?: string,
+): Promise<{ path: string | null }> {
 	return await safeInvoke("system_pick_directory", { title });
 }
 
@@ -931,6 +933,27 @@ export async function updateArtifactSettings(
 
 // ==================== 远程控制 ====================
 
+/**
+ * 渠道通用能力开关（阶段 3 启用，阶段 4 UI 暴露给用户）。
+ * 与 electron/main/remote-control/core/types.ts 的 RemoteChannelFeatureConfig 对齐。
+ */
+export interface RemoteChannelFeatureConfig {
+	streaming: {
+		/** off: 关闭流式；edit: 通过 editMessage 编辑实现；card: 飞书 CardKit 卡片流式 */
+		mode: "off" | "edit" | "card";
+	};
+	typing: {
+		enabled: boolean;
+	};
+	interactive: {
+		enabled: boolean;
+	};
+	dedupe: {
+		persistent: boolean;
+	};
+	sequential_delivery: boolean;
+}
+
 export interface RemoteControlConfig {
 	enabled: boolean;
 	channels: {
@@ -957,6 +980,7 @@ export interface RemoteControlConfig {
 			enableDocCommandFallback: boolean;
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
 		};
 		telegram: {
 			enabled: boolean;
@@ -968,6 +992,7 @@ export interface RemoteControlConfig {
 			requireMention: boolean;
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
 		};
 		slack: {
 			enabled: boolean;
@@ -981,6 +1006,7 @@ export interface RemoteControlConfig {
 			requireMention: boolean;
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
 		};
 		discord: {
 			enabled: boolean;
@@ -993,6 +1019,39 @@ export interface RemoteControlConfig {
 			requireMention: boolean;
 			textChunkLimit: number;
 			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
+		};
+		qqbot?: {
+			enabled: boolean;
+			appId?: string;
+			clientSecret?: string;
+			environment: "prod" | "sandbox";
+			enableGuild: boolean;
+			enableGroup: boolean;
+			enableC2c: boolean;
+			dmPolicy: "pairing" | "allowlist" | "open";
+			allowFrom: string[];
+			groupPolicy: "disabled" | "allowlist" | "open";
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
+		};
+		wechat?: {
+			enabled: boolean;
+			puppet: "xp" | "padlocal" | "service";
+			token?: string;
+			endpoint?: string;
+			enableDm: boolean;
+			enableGroup: boolean;
+			allowFrom: string[];
+			groupAllowFrom: string[];
+			requireMention: boolean;
+			textChunkLimit: number;
+			rateLimitPerMinute: number;
+			features?: RemoteChannelFeatureConfig;
+			acknowledgedRisk: boolean;
 		};
 		generic_webhook: { enabled: boolean; note?: string };
 	};
@@ -1006,6 +1065,29 @@ export interface RemoteControlConfig {
 		host: string;
 		requirePairing: boolean;
 	};
+}
+
+/**
+ * 渠道能力矩阵条目（对应 channelCapabilityRegistry）。
+ */
+export interface RemoteChannelCapabilities {
+	text: boolean;
+	card: boolean;
+	streaming: boolean;
+	typing: boolean;
+	interactive: boolean;
+	editMessage: boolean;
+	deleteMessage: boolean;
+	reactions: boolean;
+	pin: boolean;
+	media: boolean;
+}
+
+export interface RemoteChannelCapabilityEntry {
+	channel: string;
+	label: string;
+	status: "legacy" | "sdk" | "placeholder";
+	capabilities: RemoteChannelCapabilities;
 }
 
 export interface RemoteChannelStatus {
@@ -1084,6 +1166,12 @@ export async function listRemoteChannels(): Promise<RemoteChannelStatus[]> {
 	return await safeInvoke("list_remote_channels");
 }
 
+export async function listRemoteChannelCapabilities(): Promise<
+	RemoteChannelCapabilityEntry[]
+> {
+	return await safeInvoke("list_remote_channel_capabilities");
+}
+
 export async function listRemotePairings(): Promise<{
 	pending_requests: RemotePairingRequest[];
 	records: RemotePairingRecord[];
@@ -1148,6 +1236,45 @@ export async function listRemoteEventLogs(
 	limit = 50,
 ): Promise<RemoteEventLog[]> {
 	return await safeInvoke("list_remote_event_logs", { limit });
+}
+
+// ─── 飞书 · 扫码创建应用（OAuth Device Code Flow）───────────
+
+export interface FeishuBeginAppRegistrationResult {
+	sessionId: string;
+	deviceCode: string;
+	qrUrl: string;
+	qrDataUrl: string;
+	userCode: string;
+	intervalSec: number;
+	expireInSec: number;
+}
+
+export type FeishuPollAppRegistrationResult =
+	| { status: "pending"; domain: "feishu" | "lark"; intervalSec: number }
+	| {
+			status: "success";
+			appId: string;
+			appSecret: string;
+			domain: "feishu" | "lark";
+			openId?: string;
+	  }
+	| { status: "access_denied" }
+	| { status: "expired" }
+	| { status: "error"; message: string };
+
+export async function beginFeishuAppRegistration(
+	domain: "feishu" | "lark" = "feishu",
+): Promise<FeishuBeginAppRegistrationResult> {
+	return await safeInvoke("feishu_begin_app_registration", { domain });
+}
+
+export async function pollFeishuAppRegistration(params: {
+	deviceCode: string;
+	currentDomain: "feishu" | "lark";
+	intervalSec: number;
+}): Promise<FeishuPollAppRegistrationResult> {
+	return await safeInvoke("feishu_poll_app_registration", params);
 }
 
 export type CloudNodeRoutingMode = "cloud_only" | "prefer_desktop" | "auto";

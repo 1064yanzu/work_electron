@@ -37,8 +37,7 @@ export function createWikiGenerationHandlers(
 				generated_pages: pageIds.length,
 			};
 		} catch (err) {
-			const errMsg =
-				err instanceof Error ? err.message : String(err);
+			const errMsg = err instanceof Error ? err.message : String(err);
 			console.error("[wiki_generate] Generation failed:", errMsg);
 			// 也通过进度事件通知前端
 			const { setGenerationStatus, getGenerationStatus: getStatus } =

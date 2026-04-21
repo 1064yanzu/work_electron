@@ -13,6 +13,8 @@ import {
 	getWikiRoot,
 	listAllPages,
 	readPage,
+	readSchema,
+	writeSchema,
 	writePage,
 	deletePageFile,
 	searchPages as fsSearchPages,
@@ -21,6 +23,10 @@ import {
 	disableWikiDir,
 } from "./wiki/wikiFs";
 import { rebuildIndex, appendLog } from "./wiki/indexLog";
+import {
+	resetSkippedSources,
+	resetProcessedSources,
+} from "./wiki/sourceScanner";
 
 // Re-export types for backward compatibility
 export type { WikiPage, WikiPageInput };
@@ -90,6 +96,9 @@ export async function updateWikiPage(
 			page_type: input.page_type ?? existing.page_type,
 			confidence: input.confidence ?? existing.confidence,
 			last_updated_by: updatedBy,
+			sources: input.sources ?? existing.sources,
+			status: input.status ?? existing.status,
+			aliases: input.aliases ?? existing.aliases,
 		},
 		pageSlug,
 	);
@@ -204,7 +213,7 @@ export async function rebuildWikiWorkspace(
 			summary: "当前线程工作目录的 Wiki 入口与结构地图",
 			content: buildKnowledgeMapContent(displayName),
 			tags: ["map", "index"],
-			page_type: "summary",
+			page_type: "map",
 			last_updated_by: "system",
 		});
 		createdMap = true;
@@ -217,6 +226,112 @@ export async function rebuildWikiWorkspace(
 	await appendLog(wikiRoot, "rebuild", "重建 Wiki 结构");
 
 	return { created_map: createdMap };
+}
+
+// ---------------------------------------------------------------------------
+// Schema 诊断与重置
+// ---------------------------------------------------------------------------
+
+export interface WikiSchemaStats {
+	/** 成功生成过页面的源文件数量 */
+	processed_count: number;
+	/** 被跳过（无法提取 / LLM 未返回）的源文件数量 */
+	skipped_count: number;
+	/** 磁盘上实际存在的 Wiki 页面数量（不含知识地图） */
+	real_page_count: number;
+	/** 磁盘上的知识地图页面是否存在 */
+	has_knowledge_map: boolean;
+	/** 跳过的文件列表（用于 UI 展示前若干个） */
+	skipped_files: Array<{
+		path: string;
+		name: string;
+		reason: string;
+		reason_detail?: string;
+		skipped_at: number;
+	}>;
+}
+
+/**
+ * 读取 schema 的统计数据，供 UI 展示诊断面板使用
+ */
+export async function getWikiSchemaStats(
+	scopePath: string,
+): Promise<WikiSchemaStats> {
+	const normalizedPath = normalizeScopePath(scopePath);
+	const wikiRoot = getWikiRoot(normalizedPath);
+	const schema = await readSchema(wikiRoot);
+	const allPages = await listAllPages(wikiRoot, normalizedPath);
+
+	const realPages = allPages.filter(
+		(p) => p.slug !== "知识地图" && p.title !== "知识地图",
+	);
+	const hasMap = allPages.some(
+		(p) => p.slug === "知识地图" || p.title === "知识地图",
+	);
+
+	const skippedEntries = Object.entries(schema.skipped_sources || {});
+	const skippedFiles = skippedEntries
+		.sort(([, a], [, b]) => b.skipped_at - a.skipped_at)
+		.slice(0, 50)
+		.map(([filePath, entry]) => ({
+			path: filePath,
+			name: path.basename(filePath),
+			reason: entry.reason,
+			reason_detail: entry.reason_detail,
+			skipped_at: entry.skipped_at,
+		}));
+
+	return {
+		processed_count: Object.keys(schema.processed_sources).length,
+		skipped_count: skippedEntries.length,
+		real_page_count: realPages.length,
+		has_knowledge_map: hasMap,
+		skipped_files: skippedFiles,
+	};
+}
+
+/**
+ * 清空 skipped_sources。下次点击「生成 Wiki」时，这些文件会作为新文件重新尝试。
+ * 返回被清空的数量。
+ */
+export async function resetWikiSkippedSources(
+	scopePath: string,
+): Promise<number> {
+	const normalizedPath = normalizeScopePath(scopePath);
+	const wikiRoot = getWikiRoot(normalizedPath);
+	const schema = await readSchema(wikiRoot);
+	const count = resetSkippedSources(schema);
+	if (count > 0) {
+		await writeSchema(wikiRoot, schema);
+		await appendLog(
+			wikiRoot,
+			"rebuild",
+			`清空 ${count} 条跳过记录（将重试这些文件）`,
+		);
+	}
+	return count;
+}
+
+/**
+ * 清空 processed_sources。下次点击「生成 Wiki」时，所有文件都会被重新处理。
+ * 不会影响磁盘上已经生成的 Wiki 页面。
+ */
+export async function resetWikiProcessedSources(
+	scopePath: string,
+): Promise<number> {
+	const normalizedPath = normalizeScopePath(scopePath);
+	const wikiRoot = getWikiRoot(normalizedPath);
+	const schema = await readSchema(wikiRoot);
+	const count = resetProcessedSources(schema);
+	if (count > 0) {
+		await writeSchema(wikiRoot, schema);
+		await appendLog(
+			wikiRoot,
+			"rebuild",
+			`清空 ${count} 条已处理记录（将重新处理所有文件）`,
+		);
+	}
+	return count;
 }
 
 // ---------------------------------------------------------------------------

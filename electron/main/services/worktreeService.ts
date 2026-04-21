@@ -105,8 +105,7 @@ async function gitExec(
 			maxBuffer: 10 * 1024 * 1024, // 10MB，diff 可能很大
 		});
 	} catch (err: unknown) {
-		const msg =
-			err instanceof Error ? err.message : String(err);
+		const msg = err instanceof Error ? err.message : String(err);
 		throw new Error(`git ${args[0]} 失败: ${msg}`);
 	}
 }
@@ -161,16 +160,10 @@ class WorktreeService {
 		try {
 			await gitExec(["rev-parse", "--verify", branch], repoPath);
 			// 分支已存在，用 --checkout
-			await gitExec(
-				["worktree", "add", worktreePath, branch],
-				repoPath,
-			);
+			await gitExec(["worktree", "add", worktreePath, branch], repoPath);
 		} catch {
 			// 分支不存在，创建新分支
-			await gitExec(
-				["worktree", "add", "-b", branch, worktreePath],
-				repoPath,
-			);
+			await gitExec(["worktree", "add", "-b", branch, worktreePath], repoPath);
 		}
 
 		this.logger.info({ msg: "git worktree 创建成功", worktreePath, branch });
@@ -298,7 +291,11 @@ class WorktreeService {
 	): Promise<WorktreeDiff> {
 		const isGit = await isGitRepo(worktreePath);
 		if (!isGit) {
-			return { diff: "", changedFiles: [], stat: "非 git worktree，无法获取 diff" };
+			return {
+				diff: "",
+				changedFiles: [],
+				stat: "非 git worktree，无法获取 diff",
+			};
 		}
 
 		// 获取主分支名
@@ -384,9 +381,7 @@ class WorktreeService {
 					["diff", "--name-only", "--diff-filter=U"],
 					repoPath,
 				);
-				const conflicts = conflictFiles
-					.split("\n")
-					.filter(Boolean);
+				const conflicts = conflictFiles.split("\n").filter(Boolean);
 
 				// 中止 merge，让调用方决定如何处理
 				await gitExec(["merge", "--abort"], repoPath);
@@ -468,13 +463,13 @@ class WorktreeService {
 			// 删除对应分支
 			if (branchToDelete && branchToDelete.startsWith("ipo-agent-")) {
 				try {
-					await gitExec(
-						["branch", "-D", branchToDelete],
-						repoPath,
-					);
+					await gitExec(["branch", "-D", branchToDelete], repoPath);
 					this.logger.info({ msg: "已删除分支", branch: branchToDelete });
 				} catch {
-					this.logger.warn({ msg: "删除分支失败（可能已不存在）", branch: branchToDelete });
+					this.logger.warn({
+						msg: "删除分支失败（可能已不存在）",
+						branch: branchToDelete,
+					});
 				}
 			}
 		} else {

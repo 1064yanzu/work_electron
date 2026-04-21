@@ -82,7 +82,10 @@ export type TaskGraphNode = Node<TaskNodeData, "task">;
 export type ToolGraphNode = Node<ToolNodeData, "tool">;
 export type ArtifactGraphNode = Node<ArtifactNodeData, "artifact">;
 export type LaneGraphNode = Node<LaneNodeData, "lane">;
-export type SwarmOverviewGraphNode = Node<SwarmOverviewNodeData, "swarm_overview">;
+export type SwarmOverviewGraphNode = Node<
+	SwarmOverviewNodeData,
+	"swarm_overview"
+>;
 export type PhaseDividerGraphNode = Node<PhaseDividerNodeData, "phase_divider">;
 export type ExecutionGraphNode =
 	| TaskGraphNode

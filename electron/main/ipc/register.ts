@@ -184,7 +184,6 @@ export function registerIpcHandlers({
 		},
 	});
 
-
 	// ==================
 	// 系统命令
 	// ==================
@@ -359,6 +358,10 @@ export function registerIpcHandlers({
 		remoteControlHandlers.list_remote_channels,
 	);
 	ipcMain.handle(
+		"list_remote_channel_capabilities",
+		remoteControlHandlers.list_remote_channel_capabilities,
+	);
+	ipcMain.handle(
 		"list_remote_pairings",
 		remoteControlHandlers.list_remote_pairings,
 	);
@@ -389,6 +392,14 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"list_remote_event_logs",
 		remoteControlHandlers.list_remote_event_logs,
+	);
+	ipcMain.handle(
+		"feishu_begin_app_registration",
+		remoteControlHandlers.feishu_begin_app_registration,
+	);
+	ipcMain.handle(
+		"feishu_poll_app_registration",
+		remoteControlHandlers.feishu_poll_app_registration,
 	);
 	ipcMain.handle(
 		"cloud_node_get_status",
@@ -773,6 +784,20 @@ export function registerIpcHandlers({
 	ipcMain.handle("wiki_enable", wikiHandlers.wiki_enable);
 	ipcMain.handle("wiki_disable", wikiHandlers.wiki_disable);
 	ipcMain.handle("wiki_rebuild", wikiHandlers.wiki_rebuild);
+	ipcMain.handle(
+		"wiki_get_page_file_path",
+		wikiHandlers.wiki_get_page_file_path,
+	);
+	ipcMain.handle("wiki_schema_stats", wikiHandlers.wiki_schema_stats);
+	ipcMain.handle(
+		"wiki_reset_skipped_sources",
+		wikiHandlers.wiki_reset_skipped_sources,
+	);
+	ipcMain.handle(
+		"wiki_reset_processed_sources",
+		wikiHandlers.wiki_reset_processed_sources,
+	);
+	ipcMain.handle("wiki_lint", wikiHandlers.wiki_lint);
 
 	// Wiki AI 生成
 	ipcMain.handle("wiki_generate", wikiGenHandlers.wiki_generate);

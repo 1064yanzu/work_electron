@@ -1061,7 +1061,10 @@ async function streamOpenAIResponsesToAnthropic(params: {
 	 */
 	const outputIndexToToolKey = new Map<number, string>();
 
-	const deriveToolCallKey = (event: any, item?: Record<string, unknown> | null): string => {
+	const deriveToolCallKey = (
+		event: any,
+		item?: Record<string, unknown> | null,
+	): string => {
 		if (typeof event.item_id === "string" && event.item_id) {
 			// 同时注册到 output_index 辅助索引
 			if (typeof event.output_index === "number") {
@@ -1200,7 +1203,9 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				const parsed = JSON.parse(state.args || "{}");
 				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
 					const cleaned: Record<string, unknown> = {};
-					for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+					for (const [k, v] of Object.entries(
+						parsed as Record<string, unknown>,
+					)) {
 						if (v === "") continue;
 						cleaned[k] = v;
 					}

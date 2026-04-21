@@ -50,6 +50,11 @@ const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
 );
+const WikiGraphFullscreen = lazy(() =>
+	import("./components/wiki/WikiGraphFullscreen").then((m) => ({
+		default: m.WikiGraphFullscreen,
+	})),
+);
 const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
@@ -192,156 +197,160 @@ export default function App() {
 
 	return (
 		<GlobalContextMenuProvider>
-		<MouseDragProvider>
-			{isInDashboard ? (
-				<Suspense fallback={<PanelLoadingFallback />}>
-					<Dashboard
-						onOpenSettings={() => handleOpenSettings()}
-						onOpenProject={(projectId) => {
-							navigateToProject(projectId);
-						}}
-					/>
-				</Suspense>
-			) : (
-				<div className="h-screen w-screen bg-[#FAF9F7] dark:bg-[#111113] app-shell-texture app-shell-noise text-zinc-800 dark:text-zinc-200 font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 duration-300">
-					<PanelGroup
-						direction="horizontal"
-						className="gap-0"
-						autoSaveId="main_three_panel_layout_v2"
-					>
-						{/* Left Panel: Resources */}
-						<Panel
-							defaultSize={20}
-							minSize={15}
-							maxSize={50}
-							className="overflow-hidden"
+			<MouseDragProvider>
+				{isInDashboard ? (
+					<Suspense fallback={<PanelLoadingFallback />}>
+						<Dashboard
+							onOpenSettings={() => handleOpenSettings()}
+							onOpenProject={(projectId) => {
+								navigateToProject(projectId);
+							}}
+						/>
+					</Suspense>
+				) : (
+					<div className="h-screen w-screen bg-[#f5f4ed] dark:bg-[#141413] app-shell-texture app-shell-noise text-[#4d4c48] dark:text-[#b0aea5] font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 duration-300">
+						<PanelGroup
+							direction="horizontal"
+							className="gap-0"
+							autoSaveId="main_three_panel_layout_v2"
 						>
-							<PanelShell>
-								<Suspense fallback={<PanelLoadingFallback />}>
-									<ResourceSidebar
-										onOpenSettings={() => handleOpenSettings()}
-										onNavigateHome={() => navigateToDashboard()}
-										onNavigateWorkbench={() => navigateToWorkbench()}
-									/>
-								</Suspense>
-							</PanelShell>
-						</Panel>
-
-						<ResizeHandle />
-
-						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
-						<Panel
-							defaultSize={rightSidebarVisible ? 55 : 80}
-							minSize={30}
-							className="overflow-hidden"
-						>
-							<PanelShell
-								variant="center"
-								className="mid-center-panel relative"
+							{/* Left Panel: Resources */}
+							<Panel
+								defaultSize={20}
+								minSize={15}
+								maxSize={50}
+								className="overflow-hidden"
 							>
-								<PanelGroup
-									direction="vertical"
-									className="h-full"
-									autoSaveId="center_vertical_split"
+								<PanelShell>
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<ResourceSidebar
+											onOpenSettings={() => handleOpenSettings()}
+											onNavigateHome={() => navigateToDashboard()}
+											onNavigateWorkbench={() => navigateToWorkbench()}
+										/>
+									</Suspense>
+								</PanelShell>
+							</Panel>
+
+							<ResizeHandle />
+
+							{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
+							<Panel
+								defaultSize={rightSidebarVisible ? 55 : 80}
+								minSize={30}
+								className="overflow-hidden"
+							>
+								<PanelShell
+									variant="center"
+									className="mid-center-panel relative"
 								>
-									{/* 主内容区 */}
+									<PanelGroup
+										direction="vertical"
+										className="h-full"
+										autoSaveId="center_vertical_split"
+									>
+										{/* 主内容区 */}
+										<Panel
+											defaultSize={terminalVisible ? 65 : 100}
+											minSize={20}
+											className="overflow-hidden"
+										>
+											{isManagedMode ? (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<SandboxWorkspace
+														onExitManagedMode={() =>
+															managedModeStore.disableManagedMode()
+														}
+													/>
+												</Suspense>
+											) : activeMainView === "browser" ? (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<BrowserPanel />
+												</Suspense>
+											) : activeMainView === "wiki-graph" ? (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<WikiGraphFullscreen />
+												</Suspense>
+											) : (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<EditorCanvas
+														projectId={currentProjectId}
+														initialDocId={currentDocId}
+														onBack={() => {
+															navigateToDashboard();
+														}}
+													/>
+												</Suspense>
+											)}
+										</Panel>
+
+										{/* 终端面板 - 仅在可见时渲染 */}
+										{terminalVisible && (
+											<>
+												<ResizeHandle direction="vertical" />
+												<Panel
+													defaultSize={35}
+													minSize={10}
+													maxSize={80}
+													className="overflow-hidden"
+												>
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<TerminalPanel />
+													</Suspense>
+												</Panel>
+											</>
+										)}
+									</PanelGroup>
+								</PanelShell>
+							</Panel>
+
+							{rightSidebarVisible && (
+								<>
+									<ResizeHandle onDragging={handleRightResizeHandleDragging} />
 									<Panel
-										defaultSize={terminalVisible ? 65 : 100}
-										minSize={20}
+										ref={rightPanelRef}
+										defaultSize={25}
+										minSize={5}
+										maxSize={50}
+										onResize={handleRightPanelResize}
 										className="overflow-hidden"
 									>
-										{isManagedMode ? (
+										<PanelShell>
 											<Suspense fallback={<PanelLoadingFallback />}>
-												<SandboxWorkspace
-													onExitManagedMode={() =>
-														managedModeStore.disableManagedMode()
-													}
-												/>
+												<CopilotSidebar />
 											</Suspense>
-										) : activeMainView === "browser" ? (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<BrowserPanel />
-											</Suspense>
-										) : (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<EditorCanvas
-													projectId={currentProjectId}
-													initialDocId={currentDocId}
-													onBack={() => {
-														navigateToDashboard();
-													}}
-												/>
-											</Suspense>
-										)}
+										</PanelShell>
 									</Panel>
+								</>
+							)}
+						</PanelGroup>
 
-									{/* 终端面板 - 仅在可见时渲染 */}
-									{terminalVisible && (
-										<>
-											<ResizeHandle direction="vertical" />
-											<Panel
-												defaultSize={35}
-												minSize={10}
-												maxSize={80}
-												className="overflow-hidden"
-											>
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<TerminalPanel />
-												</Suspense>
-											</Panel>
-										</>
-									)}
-								</PanelGroup>
-							</PanelShell>
-						</Panel>
-
-						{rightSidebarVisible && (
-							<>
-								<ResizeHandle onDragging={handleRightResizeHandleDragging} />
-								<Panel
-									ref={rightPanelRef}
-									defaultSize={25}
-									minSize={5}
-									maxSize={50}
-									onResize={handleRightPanelResize}
-									className="overflow-hidden"
-								>
-									<PanelShell>
-										<Suspense fallback={<PanelLoadingFallback />}>
-											<CopilotSidebar />
-										</Suspense>
-									</PanelShell>
-								</Panel>
-							</>
+						{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
+						{!rightSidebarVisible && (
+							<button
+								type="button"
+								onClick={handleShowRightSidebar}
+								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#faf9f5]/95 dark:bg-[#1e1d1b]/95 backdrop-blur-xl hover:bg-[#f5f4ed] dark:hover:bg-[#30302e] text-[#5e5d59] dark:text-[#b0aea5] rounded-2xl shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px] dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px] hover:shadow-[#e8e6dc_0px_0px_0px_0px,#c2c0b6_0px_0px_0px_1px] transition-[transform,box-shadow,background-color,color] duration-200 active:scale-[0.98]"
+								title="打开 AI 对话 (⌘L)"
+							>
+								<MessageCircle className="w-4 h-4" />
+								<span className="text-sm font-medium">AI 对话</span>
+							</button>
 						)}
-					</PanelGroup>
+					</div>
+				)}
 
-					{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
-					{!rightSidebarVisible && (
-						<button
-							type="button"
-							onClick={handleShowRightSidebar}
-							className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-[#1E1E1E]/90 backdrop-blur-xl hover:bg-white dark:hover:bg-[#2a2a2a] text-zinc-600 dark:text-zinc-300 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)] border border-black/[0.06] dark:border-white/[0.08] ring-1 ring-black/[0.02] transition-[transform,box-shadow,background-color,color,border-color] duration-200 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98]"
-							title="打开 AI 对话 (⌘L)"
-						>
-							<MessageCircle className="w-4 h-4" />
-							<span className="text-sm font-medium">AI 对话</span>
-						</button>
-					)}
-				</div>
-			)}
-
-			{/* Global Settings Modal - Always rendered */}
-			{isSettingsOpen ? (
-				<Suspense fallback={null}>
-					<SettingsModal
-						isOpen={isSettingsOpen}
-						onClose={() => setIsSettingsOpen(false)}
-						initialTab={settingsInitialTab}
-					/>
-				</Suspense>
-			) : null}
-		</MouseDragProvider>
+				{/* Global Settings Modal - Always rendered */}
+				{isSettingsOpen ? (
+					<Suspense fallback={null}>
+						<SettingsModal
+							isOpen={isSettingsOpen}
+							onClose={() => setIsSettingsOpen(false)}
+							initialTab={settingsInitialTab}
+						/>
+					</Suspense>
+				) : null}
+			</MouseDragProvider>
 		</GlobalContextMenuProvider>
 	);
 }

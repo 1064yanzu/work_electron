@@ -10,7 +10,11 @@ import {
 } from "react";
 import { cn } from "../../lib/utils";
 import type { EditorDensity } from "./useEditorUiPrefs";
-import { FileTypePreview, isMarkdownPreviewFile, isBinaryPreviewFile } from "./FileTypePreview";
+import {
+	FileTypePreview,
+	isMarkdownPreviewFile,
+	isBinaryPreviewFile,
+} from "./FileTypePreview";
 
 interface EditorWorkspaceViewProps {
 	editorMode: "edit" | "preview" | "split";
@@ -240,10 +244,7 @@ export function EditorWorkspaceView({
 				)}
 
 				{effectiveEditorMode === "preview" ? (
-					<div
-						onContextMenu={onPreviewContextMenu}
-						className="max-w-none"
-					>
+					<div onContextMenu={onPreviewContextMenu} className="max-w-none">
 						<FileTypePreview
 							fileName={previewFileName}
 							content={previewContent}

@@ -19,10 +19,7 @@ function normalizePathLike(value: string): string {
 	return path.replace(/\\/g, "/").replace(/\/+/g, "/");
 }
 
-function isPreviewableLocalPath(
-	value: string,
-	sandboxDir?: string,
-): boolean {
+function isPreviewableLocalPath(value: string, sandboxDir?: string): boolean {
 	const path = normalizePathLike(value);
 	if (!path) return false;
 	if (path.startsWith("data:image/")) return false;

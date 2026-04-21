@@ -1,5 +1,13 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Plus, Search, ChevronDown, ChevronRight, MessageSquare, Folder, FolderOpen } from "lucide-react";
+import {
+	Plus,
+	Search,
+	ChevronDown,
+	ChevronRight,
+	MessageSquare,
+	Folder,
+	FolderOpen,
+} from "lucide-react";
 import { sessionStore, AgentSession } from "../../lib/agent/sessionManager";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { pickSystemDirectory, getActiveModel } from "../../lib/api";
@@ -105,13 +113,13 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		try {
 			const { path } = await pickSystemDirectory("选择新线程工作目录");
 			if (!path) return;
-			
-			const model = await getActiveModel() || "claude-3-5-sonnet-20241022";
+
+			const model = (await getActiveModel()) || "claude-3-5-sonnet-20241022";
 			const newSession = sessionStore.createSession({
 				model,
 				cwd: path,
 			});
-			
+
 			sessionStore.setCurrentSession(newSession.id);
 			managedModeStore.enableManagedMode();
 			onNavigateWorkbench?.();
@@ -162,7 +170,9 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				toast.info("导出功能即将支持");
 			},
 			onDelete: () => {
-				if (window.confirm(`确定要删除线程「${session.title || "Untitled"}」吗？`)) {
+				if (
+					window.confirm(`确定要删除线程「${session.title || "Untitled"}」吗？`)
+				) {
 					sessionStore.deleteSession(session.id);
 					toast.success("已删除线程");
 				}
@@ -231,7 +241,9 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											<button
 												key={session.id}
 												onClick={() => handleSelectSession(session.id)}
-												onContextMenu={(e) => handleSessionContextMenu(e, session)}
+												onContextMenu={(e) =>
+													handleSessionContextMenu(e, session)
+												}
 												className={`w-full flex items-center justify-between pl-4 pr-3 py-1.5 rounded-lg transition-all duration-200 text-left group ${
 													isActive
 														? "bg-transparent relative"

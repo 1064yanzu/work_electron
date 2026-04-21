@@ -61,9 +61,10 @@ export function createStorageHandlers(db: DbContext) {
 		return { path: result.filePaths[0] };
 	};
 
-	const system_pick_directory: Handler<
-		"system_pick_directory"
-	> = async (_event, input) => {
+	const system_pick_directory: Handler<"system_pick_directory"> = async (
+		_event,
+		input,
+	) => {
 		const result = await dialog.showOpenDialog({
 			properties: ["openDirectory", "createDirectory"],
 			title: input?.title || "选择系统目录",

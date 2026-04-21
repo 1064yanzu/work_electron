@@ -3,19 +3,25 @@ import { MessageCircle } from "lucide-react";
 export function WelcomeScreen() {
 	return (
 		<div className="flex flex-col h-full items-center justify-center -mt-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10 transition-all">
-			{/* Ambient Glow Effects */}
-			<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gradient-to-tr from-violet-200/30 to-blue-200/30 dark:from-violet-900/10 dark:to-blue-900/10 rounded-full blur-[80px] pointer-events-none" />
+			{/* 暖色调氛围光晕 */}
+			<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] bg-[#c96442]/[0.04] dark:bg-[#c96442]/[0.06] rounded-full blur-[80px] pointer-events-none" />
 
-			{/* Welcome Hero */}
+			{/* 欢迎主区域 */}
 			<div className="flex flex-col items-center text-center mb-10 z-10">
-				<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-black/20 flex items-center justify-center mb-6 ring-1 ring-white/50 dark:ring-white/10">
-					<MessageCircle className="w-8 h-8 text-zinc-800 dark:text-zinc-100" />
+				{/* 图标容器 — 暖色调 */}
+				<div className="w-14 h-14 rounded-2xl bg-[#faf9f5] dark:bg-[#1e1d1b] border border-[#e8e6dc] dark:border-[#30302e] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] flex items-center justify-center mb-6">
+					<MessageCircle
+						className="w-7 h-7 text-[#c96442]"
+						strokeWidth={1.75}
+					/>
 				</div>
-				<h3 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 mb-3 tracking-tight">
+				{/* 标题 — serif 字体，Claude 风格 */}
+				<h3 className="text-[1.4rem] font-serif font-medium text-[#141413] dark:text-[#faf9f5] mb-3 leading-tight tracking-tight">
 					有什么可以帮您的？
 				</h3>
-				<p className="text-base text-zinc-500 dark:text-zinc-400 max-w-[280px] leading-relaxed">
-					我可以帮您深度研究、分析资料、撰写内容，也是您的全能 AI 助手。
+				{/* 副标题 */}
+				<p className="text-[0.875rem] text-[#87867f] dark:text-[#5e5d59] max-w-[260px] leading-relaxed">
+					深度研究、分析资料、撰写内容，您的全能 AI 助手。
 				</p>
 			</div>
 		</div>

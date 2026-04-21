@@ -1,9 +1,4 @@
-import {
-	Copy,
-	ClipboardPaste,
-	TextSelect,
-	RotateCcw,
-} from "lucide-react";
+import { Copy, ClipboardPaste, TextSelect, RotateCcw } from "lucide-react";
 import { createElement } from "react";
 import type { ContextMenuItem } from "../../components/ui/ContextMenu";
 

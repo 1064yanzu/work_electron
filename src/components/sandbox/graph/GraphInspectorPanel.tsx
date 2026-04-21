@@ -65,8 +65,10 @@ export function GraphInspectorPanel({
 		const allToolCalls = source.toolCalls || [];
 		// 按 startedAt 排序
 		const sorted = [...allToolCalls].sort((a, b) => {
-			const ta = typeof a.startedAt === "number" ? a.startedAt : Number.MAX_SAFE_INTEGER;
-			const tb = typeof b.startedAt === "number" ? b.startedAt : Number.MAX_SAFE_INTEGER;
+			const ta =
+				typeof a.startedAt === "number" ? a.startedAt : Number.MAX_SAFE_INTEGER;
+			const tb =
+				typeof b.startedAt === "number" ? b.startedAt : Number.MAX_SAFE_INTEGER;
 			return ta - tb;
 		});
 
@@ -74,7 +76,10 @@ export function GraphInspectorPanel({
 		const currentIdx = sorted.findIndex((tc) => tc.id === selectedToolCall.id);
 		if (currentIdx < 0) return [];
 
-		const currentStart = typeof selectedToolCall.startedAt === "number" ? selectedToolCall.startedAt : null;
+		const currentStart =
+			typeof selectedToolCall.startedAt === "number"
+				? selectedToolCall.startedAt
+				: null;
 		if (currentStart === null) return [];
 
 		// 收集同组子代理（startedAt 差值 < 2000ms 的连续子代理）
@@ -388,7 +393,12 @@ export function GraphInspectorPanel({
 												: "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/50",
 										)}
 									>
-										<span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusColor)} />
+										<span
+											className={cn(
+												"w-1.5 h-1.5 rounded-full shrink-0",
+												statusColor,
+											)}
+										/>
 										#{idx + 1}
 									</button>
 								);

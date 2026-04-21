@@ -157,10 +157,7 @@ async function ensureDir(dir: string) {
  * Compare SKILL.md modification times between source and destination.
  * Returns true if source is newer than dest (or dest doesn't exist).
  */
-async function isSkillNewer(
-	srcDir: string,
-	destDir: string,
-): Promise<boolean> {
+async function isSkillNewer(srcDir: string, destDir: string): Promise<boolean> {
 	const srcSkillMd = path.join(srcDir, "SKILL.md");
 	const destSkillMd = path.join(destDir, "SKILL.md");
 	try {

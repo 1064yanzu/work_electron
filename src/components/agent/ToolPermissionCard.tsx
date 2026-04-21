@@ -72,8 +72,7 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 				iconColor: "text-red-600 dark:text-red-400",
 				badge: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300",
 				badgeText: "高危",
-				buttonBg:
-					"bg-red-500 hover:bg-red-600 text-white",
+				buttonBg: "bg-red-500 hover:bg-red-600 text-white",
 			};
 		case "moderate":
 			return {
@@ -83,8 +82,7 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 				badge:
 					"bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
 				badgeText: "沙盒外操作",
-				buttonBg:
-					"bg-amber-500 hover:bg-amber-600 text-white",
+				buttonBg: "bg-amber-500 hover:bg-amber-600 text-white",
 			};
 		default:
 			return {
@@ -93,8 +91,7 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 				iconColor: "text-blue-600 dark:text-blue-400",
 				badge: "",
 				badgeText: "",
-				buttonBg:
-					"bg-blue-500 hover:bg-blue-600 text-white",
+				buttonBg: "bg-blue-500 hover:bg-blue-600 text-white",
 			};
 	}
 }
@@ -158,9 +155,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					<div
 						className={cn(
 							"p-1.5 rounded-lg transition-all duration-200",
-							isUrgent
-								? "bg-amber-50 dark:bg-amber-900/20"
-								: levelStyle.iconBg,
+							isUrgent ? "bg-amber-50 dark:bg-amber-900/20" : levelStyle.iconBg,
 						)}
 					>
 						<ShieldIcon
@@ -276,7 +271,9 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					disabled={isSubmitting}
 					className={cn(
 						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-						isOutsideSandbox ? levelStyle.buttonBg : "bg-blue-500 hover:bg-blue-600 text-white",
+						isOutsideSandbox
+							? levelStyle.buttonBg
+							: "bg-blue-500 hover:bg-blue-600 text-white",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
 				>

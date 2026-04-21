@@ -129,9 +129,7 @@ export function SkillsView(_props: SkillsViewProps) {
 						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
 						title="刷新"
 					>
-						<RefreshCw
-							className={cn("w-4 h-4", isLoading && "animate-spin")}
-						/>
+						<RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
 					</button>
 					<button
 						onClick={handleImport}

@@ -957,14 +957,15 @@ export class ClaudeAgentService {
 											: requestId,
 									toolName,
 									toolInput,
-									scope: request.scope?.insideSandbox != null
-										? {
-												insideSandbox: request.scope.insideSandbox,
-												targetPath: request.scope.targetPath,
-												destructiveLevel: request.scope.destructiveLevel,
-												reason: request.scope.reason,
-											}
-										: undefined,
+									scope:
+										request.scope?.insideSandbox != null
+											? {
+													insideSandbox: request.scope.insideSandbox,
+													targetPath: request.scope.targetPath,
+													destructiveLevel: request.scope.destructiveLevel,
+													reason: request.scope.reason,
+												}
+											: undefined,
 								});
 							await invoke("agent_sdk_resolve_interaction", {
 								runId,

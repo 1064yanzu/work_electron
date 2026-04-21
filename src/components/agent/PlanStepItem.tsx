@@ -134,20 +134,18 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 				)}
 
 				{/* 预估文件列表 */}
-				{expanded &&
-					step.estimatedFiles &&
-					step.estimatedFiles.length > 0 && (
-						<div className="mt-2 flex flex-wrap gap-1.5 pl-5">
-							{step.estimatedFiles.map((file) => (
-								<span
-									key={file}
-									className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate"
-								>
-									{file}
-								</span>
-							))}
-						</div>
-					)}
+				{expanded && step.estimatedFiles && step.estimatedFiles.length > 0 && (
+					<div className="mt-2 flex flex-wrap gap-1.5 pl-5">
+						{step.estimatedFiles.map((file) => (
+							<span
+								key={file}
+								className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate"
+							>
+								{file}
+							</span>
+						))}
+					</div>
+				)}
 			</div>
 
 			{/* 状态图标 */}

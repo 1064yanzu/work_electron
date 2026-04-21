@@ -244,7 +244,9 @@ function parseOpenAIStyleResult(raw: string): LlmCallResult {
 				usage = {
 					prompt_tokens: inputTokens,
 					completion_tokens: outputTokens,
-					total_tokens: Number(responseUsage.total_tokens ?? inputTokens + outputTokens),
+					total_tokens: Number(
+						responseUsage.total_tokens ?? inputTokens + outputTokens,
+					),
 				};
 			}
 		}
@@ -519,7 +521,9 @@ async function callOpenAIResponses(
 	}
 
 	if (!response || !response.ok) {
-		throw new Error(`LLM call failed: unknown - ${lastErrorText || "no response"}`);
+		throw new Error(
+			`LLM call failed: unknown - ${lastErrorText || "no response"}`,
+		);
 	}
 
 	return parseOpenAIStyleResult(await response.text());
@@ -607,7 +611,9 @@ async function callOpenAIResponsesStream(opts: {
 						usage = {
 							prompt_tokens: inputT,
 							completion_tokens: outputT,
-							total_tokens: u.total_tokens ? Number(u.total_tokens) : inputT + outputT,
+							total_tokens: u.total_tokens
+								? Number(u.total_tokens)
+								: inputT + outputT,
 						};
 					}
 				}
@@ -835,11 +841,15 @@ async function callAnthropic(
 			await sleep(delay);
 			continue;
 		}
-		throw new Error(`Anthropic call failed: ${response.status} - ${lastErrorText}`);
+		throw new Error(
+			`Anthropic call failed: ${response.status} - ${lastErrorText}`,
+		);
 	}
 
 	if (!response || !response.ok) {
-		throw new Error(`Anthropic call failed: unknown - ${lastErrorText || "no response"}`);
+		throw new Error(
+			`Anthropic call failed: unknown - ${lastErrorText || "no response"}`,
+		);
 	}
 
 	// 先读取文本，再安全解析 —— 兼容某些代理/中继返回 SSE 格式的情况
@@ -871,8 +881,10 @@ async function callAnthropic(
 					prompt_tokens: data.usage.input_tokens,
 					completion_tokens: data.usage.output_tokens,
 					total_tokens: data.usage.input_tokens + data.usage.output_tokens,
-					cache_read_input_tokens: data.usage.cache_read_input_tokens || undefined,
-					cache_creation_input_tokens: data.usage.cache_creation_input_tokens || undefined,
+					cache_read_input_tokens:
+						data.usage.cache_read_input_tokens || undefined,
+					cache_creation_input_tokens:
+						data.usage.cache_creation_input_tokens || undefined,
 				}
 			: undefined,
 	};
@@ -1313,8 +1325,12 @@ export async function invokeLlmStream(
 			});
 		} catch (error) {
 			// 解析错误并发送结构化错误信息
-			const errorInfo = parseLlmError(error instanceof Error ? error : String(error));
-			console.error(`[invokeLlmStream] ${errorInfo.title}: ${errorInfo.rawError}`);
+			const errorInfo = parseLlmError(
+				error instanceof Error ? error : String(error),
+			);
+			console.error(
+				`[invokeLlmStream] ${errorInfo.title}: ${errorInfo.rawError}`,
+			);
 			const errorChunk: StreamChunk = {
 				content: formatLlmErrorForStream(errorInfo),
 				done: true,

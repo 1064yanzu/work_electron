@@ -1,10 +1,21 @@
 /**
- * FeishuChannelCard — 飞书渠道专属配置卡片
- * 提取自 RemoteControlSettings，减轻主文件体积
+ * FeishuChannelCard — 飞书通道专属配置卡片
+ *
+ * 原本一部分字段内联在 RemoteControlSettings.tsx 里。此文件整合完整字段：
+ *   - 凭证：appId / appSecret
+ *   - 运行参数：domain / connectionMode / dmPolicy / groupPolicy
+ *   - Allowlist：DM / 群
+ *   - 限流 & 分片 & requireMention
+ *   - 附件合并 & 文档链接预取
+ *   - 文档控制能力（Docx MCP / 写操作 / 删除 / 兼容 / 兜底）
+ *   - 能力开关（streaming / typing / 交互 / 去重 / 顺序）
+ *   - 运行状态条 + 连通测试
+ *
+ * 签名与其他 ChannelCard 对齐（channelConfig / runtimeChannel / saving / onSave）。
  */
 
-import { Link2, MessageSquare, Wifi } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Link2, MessageSquareMore, Wifi } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "../../../ui/Button";
 import { Select } from "../../../ui/Select";
 import { toast } from "../../../ui/Toast";
@@ -17,8 +28,26 @@ import {
 	type RemoteChannelStatus,
 	type RemoteControlConfig,
 } from "../../../../lib/api";
+import {
+	ChannelFeatureToggles,
+	DEFAULT_FEISHU_FEATURES,
+} from "./ChannelFeatureToggles";
+import { StatusDot } from "./StatusDot";
 
-// ─── helpers ──────────────────────────────────────────────
+const INPUT_CLASS =
+	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+
+type FeishuChannelConfig = RemoteControlConfig["channels"]["feishu"];
+
+type FeishuChannelCardProps = {
+	channelConfig: FeishuChannelConfig;
+	runtimeChannel?: RemoteChannelStatus;
+	saving: boolean;
+	onSave: (
+		updater: (draft: RemoteControlConfig) => RemoteControlConfig,
+	) => void;
+};
+
 function splitAllowList(raw: string): string[] {
 	return raw
 		.split(/[\n,]/g)
@@ -30,20 +59,8 @@ function joinAllowList(items: string[]): string {
 	return items.join("\n");
 }
 
-const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
-
-type FeishuChannelCardProps = {
-	config: RemoteControlConfig;
-	runtimeChannel: RemoteChannelStatus | null;
-	saving: boolean;
-	onSave: (
-		updater: (draft: RemoteControlConfig) => RemoteControlConfig,
-	) => void;
-};
-
 export function FeishuChannelCard({
-	config,
+	channelConfig,
 	runtimeChannel,
 	saving,
 	onSave,
@@ -51,15 +68,15 @@ export function FeishuChannelCard({
 	const [busyTest, setBusyTest] = useState(false);
 
 	const allowFromDraft = useMemo(
-		() => joinAllowList(config.channels.feishu.allowFrom ?? []),
-		[config.channels.feishu.allowFrom],
+		() => joinAllowList(channelConfig.allowFrom ?? []),
+		[channelConfig.allowFrom],
 	);
 	const groupAllowFromDraft = useMemo(
-		() => joinAllowList(config.channels.feishu.groupAllowFrom ?? []),
-		[config.channels.feishu.groupAllowFrom],
+		() => joinAllowList(channelConfig.groupAllowFrom ?? []),
+		[channelConfig.groupAllowFrom],
 	);
 
-	const handleTest = async () => {
+	const handleTest = useCallback(async () => {
 		setBusyTest(true);
 		try {
 			const result = await testRemoteChannel("feishu");
@@ -72,19 +89,18 @@ export function FeishuChannelCard({
 		} finally {
 			setBusyTest(false);
 		}
-	};
+	}, []);
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
-			{/* 顶部装饰线 */}
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 opacity-60" />
+			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d6b9] via-[#00b6ed] to-[#465bff] opacity-70" />
 
 			<div className="p-5 space-y-5">
-				{/* 标题行 */}
-				<div className="flex items-center justify-between">
+				{/* 标题 + 开关 */}
+				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3">
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/15 to-indigo-500/15 dark:from-blue-500/25 dark:to-indigo-500/25">
-							<MessageSquare className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00d6b9]/20 to-[#465bff]/15">
+							<MessageSquareMore className="h-4.5 w-4.5 text-[#0089ff] dark:text-[#4aaaff]" />
 						</div>
 						<div>
 							<SettingsSectionTitle className="mb-0">
@@ -96,7 +112,7 @@ export function FeishuChannelCard({
 						</div>
 					</div>
 					<SettingsSwitch
-						checked={config.channels.feishu.enabled}
+						checked={channelConfig.enabled}
 						onChange={(next) => {
 							onSave((draft) => {
 								draft.channels.feishu.enabled = next;
@@ -107,12 +123,12 @@ export function FeishuChannelCard({
 					/>
 				</div>
 
-				{/* 凭证区域 */}
+				{/* 凭证 */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 					<label className="space-y-1.5 text-sm">
 						<span className="text-text-secondary font-medium">App ID</span>
 						<input
-							value={config.channels.feishu.appId ?? ""}
+							value={channelConfig.appId ?? ""}
 							onChange={(e) => {
 								const value = e.target.value;
 								onSave((draft) => {
@@ -128,7 +144,7 @@ export function FeishuChannelCard({
 						<span className="text-text-secondary font-medium">App Secret</span>
 						<input
 							type="password"
-							value={config.channels.feishu.appSecret ?? ""}
+							value={channelConfig.appSecret ?? ""}
 							onChange={(e) => {
 								const value = e.target.value;
 								onSave((draft) => {
@@ -142,14 +158,14 @@ export function FeishuChannelCard({
 					</label>
 				</div>
 
-				{/* 策略配置 */}
+				{/* 运行参数 */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 					<div className="space-y-1.5">
 						<span className="text-sm text-text-secondary font-medium">
 							域名
 						</span>
 						<Select
-							value={config.channels.feishu.domain}
+							value={channelConfig.domain}
 							onChange={(e) => {
 								const value = e.target.value as "feishu" | "lark";
 								onSave((draft) => {
@@ -168,7 +184,7 @@ export function FeishuChannelCard({
 							连接模式
 						</span>
 						<Select
-							value={config.channels.feishu.connectionMode}
+							value={channelConfig.connectionMode}
 							onChange={(e) => {
 								const value = e.target.value as "websocket" | "webhook";
 								onSave((draft) => {
@@ -187,7 +203,7 @@ export function FeishuChannelCard({
 							DM 策略
 						</span>
 						<Select
-							value={config.channels.feishu.dmPolicy}
+							value={channelConfig.dmPolicy}
 							onChange={(e) => {
 								const value = e.target.value as
 									| "pairing"
@@ -210,7 +226,7 @@ export function FeishuChannelCard({
 							群策略
 						</span>
 						<Select
-							value={config.channels.feishu.groupPolicy}
+							value={channelConfig.groupPolicy}
 							onChange={(e) => {
 								const value = e.target.value as
 									| "disabled"
@@ -230,7 +246,7 @@ export function FeishuChannelCard({
 					</div>
 				</div>
 
-				{/* 白名单 */}
+				{/* Allowlists */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 					<label className="space-y-1.5 text-sm">
 						<span className="text-text-secondary font-medium">
@@ -246,7 +262,7 @@ export function FeishuChannelCard({
 								});
 							}}
 							rows={3}
-							className={INPUT_CLASS + " resize-none"}
+							className={`${INPUT_CLASS} resize-none`}
 						/>
 					</label>
 					<label className="space-y-1.5 text-sm">
@@ -263,12 +279,12 @@ export function FeishuChannelCard({
 								});
 							}}
 							rows={3}
-							className={INPUT_CLASS + " resize-none"}
+							className={`${INPUT_CLASS} resize-none`}
 						/>
 					</label>
 				</div>
 
-				{/* 限流 & 分块 & @ 提及 */}
+				{/* 速率 + 分片 + mention */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 					<label className="space-y-1.5 text-sm">
 						<span className="text-text-secondary font-medium">
@@ -277,7 +293,7 @@ export function FeishuChannelCard({
 						<input
 							type="number"
 							min={300}
-							value={config.channels.feishu.textChunkLimit}
+							value={channelConfig.textChunkLimit}
 							onChange={(e) => {
 								const value = Math.max(300, Number(e.target.value || 1800));
 								onSave((draft) => {
@@ -296,7 +312,7 @@ export function FeishuChannelCard({
 							type="number"
 							min={1}
 							max={120}
-							value={config.channels.feishu.rateLimitPerMinute}
+							value={channelConfig.rateLimitPerMinute}
 							onChange={(e) => {
 								const value = Math.max(1, Number(e.target.value || 20));
 								onSave((draft) => {
@@ -307,42 +323,39 @@ export function FeishuChannelCard({
 							className={INPUT_CLASS}
 						/>
 					</label>
-					<div className="space-y-1.5">
-						<span className="text-sm text-text-secondary font-medium">
+					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-sm font-medium text-text-secondary">
 							要求 @ 提及
-						</span>
-						<div className="flex h-[42px] items-center">
-							<SettingsSwitch
-								checked={config.channels.feishu.requireMention}
-								onChange={(next) => {
-									onSave((draft) => {
-										draft.channels.feishu.requireMention = next;
-										return draft;
-									});
-								}}
-								disabled={saving}
-							/>
 						</div>
+						<SettingsSwitch
+							checked={channelConfig.requireMention}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.requireMention = next;
+									return draft;
+								});
+							}}
+							disabled={saving}
+						/>
 					</div>
 				</div>
 
+				{/* 附件合并 + 文档预取 */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-					<div className="space-y-1.5">
-						<span className="text-sm text-text-secondary font-medium">
+					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-sm font-medium text-text-secondary">
 							附件与命令合并
-						</span>
-						<div className="flex h-[42px] items-center">
-							<SettingsSwitch
-								checked={config.channels.feishu.enableAttachmentMerge}
-								onChange={(next) => {
-									onSave((draft) => {
-										draft.channels.feishu.enableAttachmentMerge = next;
-										return draft;
-									});
-								}}
-								disabled={saving}
-							/>
 						</div>
+						<SettingsSwitch
+							checked={channelConfig.enableAttachmentMerge}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableAttachmentMerge = next;
+									return draft;
+								});
+							}}
+							disabled={saving}
+						/>
 					</div>
 					<label className="space-y-1.5 text-sm">
 						<span className="text-text-secondary font-medium">
@@ -352,7 +365,7 @@ export function FeishuChannelCard({
 							type="number"
 							min={5}
 							max={300}
-							value={config.channels.feishu.attachmentMergeWindowSec}
+							value={channelConfig.attachmentMergeWindowSec}
 							onChange={(e) => {
 								const value = Math.max(
 									5,
@@ -363,28 +376,117 @@ export function FeishuChannelCard({
 									return draft;
 								});
 							}}
-							className={INPUT_CLASS}
-							disabled={!config.channels.feishu.enableAttachmentMerge}
+							disabled={!channelConfig.enableAttachmentMerge}
+							className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
 						/>
 					</label>
-					<div className="space-y-1.5">
-						<span className="text-sm text-text-secondary font-medium">
-							文档链接预取（Docx/Wiki）
-						</span>
-						<div className="flex h-[42px] items-center">
-							<SettingsSwitch
-								checked={config.channels.feishu.enableDocLinkPrefetch}
-								onChange={(next) => {
-									onSave((draft) => {
-										draft.channels.feishu.enableDocLinkPrefetch = next;
-										return draft;
-									});
-								}}
-								disabled={saving}
-							/>
+					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+						<div className="text-sm font-medium text-text-secondary">
+							文档链接预取
 						</div>
+						<SettingsSwitch
+							checked={channelConfig.enableDocLinkPrefetch}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableDocLinkPrefetch = next;
+									return draft;
+								});
+							}}
+							disabled={saving}
+						/>
 					</div>
 				</div>
+
+				{/* 文档控制能力 */}
+				<div className="space-y-3 rounded-2xl border border-zinc-200/70 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+					<div>
+						<SettingsSectionTitle className="mb-0.5 text-base">
+							文档控制能力
+						</SettingsSectionTitle>
+						<p className="text-xs text-text-secondary leading-relaxed">
+							优先 MCP 工具调用，支持 /doc.call 命令兜底
+						</p>
+					</div>
+					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+						<DocToggle
+							label="启用 Docx MCP"
+							checked={channelConfig.enableDocxMcp}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableDocxMcp = next;
+									return draft;
+								});
+							}}
+							saving={saving}
+						/>
+						<DocToggle
+							label="允许写操作"
+							checked={channelConfig.enableDocWriteOps}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableDocWriteOps = next;
+									return draft;
+								});
+							}}
+							saving={saving}
+						/>
+						<DocToggle
+							label="允许文档级删除（高风险）"
+							checked={channelConfig.enableDocFileDelete}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableDocFileDelete = next;
+									return draft;
+								});
+							}}
+							saving={saving}
+							danger
+						/>
+						<DocToggle
+							label="启用旧 Docs 读取兼容"
+							checked={channelConfig.enableLegacyDocsRead}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableLegacyDocsRead = next;
+									return draft;
+								});
+							}}
+							saving={saving}
+						/>
+						<DocToggle
+							label="启用 /doc.call 兜底"
+							checked={channelConfig.enableDocCommandFallback}
+							onChange={(next) => {
+								onSave((draft) => {
+									draft.channels.feishu.enableDocCommandFallback = next;
+									return draft;
+								});
+							}}
+							saving={saving}
+							span2
+						/>
+					</div>
+					<div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+						需要的飞书权限：<code>docx:document</code> /{" "}
+						<code>docx:document:write_only</code> /{" "}
+						<code>docs:document.content:read</code> / <code>drive:drive</code>{" "}
+						或 <code>space:document:delete</code>
+					</div>
+				</div>
+
+				{/* 能力开关 */}
+				<ChannelFeatureToggles
+					value={channelConfig.features}
+					onChange={(next) => {
+						onSave((draft) => {
+							draft.channels.feishu.features = next;
+							return draft;
+						});
+					}}
+					allowCardStreaming
+					fallback={DEFAULT_FEISHU_FEATURES}
+					disabled={saving}
+				/>
 
 				{/* 运行状态条 */}
 				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
@@ -397,12 +499,10 @@ export function FeishuChannelCard({
 								: "bg-zinc-500/10 text-zinc-500"
 						}`}
 					>
-						<span
-							className={`h-1.5 w-1.5 rounded-full ${
-								runtimeChannel?.running
-									? "bg-emerald-500 animate-pulse"
-									: "bg-zinc-400"
-							}`}
+						<StatusDot
+							tone={runtimeChannel?.running ? "emerald" : "zinc"}
+							pulse={!!runtimeChannel?.running}
+							size="xs"
 						/>
 						{runtimeChannel?.running ? "运行中" : "未运行"}
 					</span>
@@ -437,6 +537,39 @@ export function FeishuChannelCard({
 					</div>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+function DocToggle({
+	label,
+	checked,
+	onChange,
+	saving,
+	danger = false,
+	span2 = false,
+}: {
+	label: string;
+	checked: boolean;
+	onChange: (next: boolean) => void;
+	saving: boolean;
+	danger?: boolean;
+	span2?: boolean;
+}) {
+	return (
+		<div
+			className={`flex items-center justify-between rounded-xl border bg-white px-3 py-2 transition-colors ${
+				danger
+					? "border-rose-200/70 dark:border-rose-900/40 dark:bg-zinc-900"
+					: "border-zinc-200/80 dark:border-zinc-800 dark:bg-zinc-900"
+			} ${span2 ? "md:col-span-2" : ""}`}
+		>
+			<div
+				className={`text-sm font-medium ${danger ? "text-rose-600 dark:text-rose-400" : "text-text-secondary"}`}
+			>
+				{label}
+			</div>
+			<SettingsSwitch checked={checked} onChange={onChange} disabled={saving} />
 		</div>
 	);
 }

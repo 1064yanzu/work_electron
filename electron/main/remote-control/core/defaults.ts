@@ -1,7 +1,22 @@
-import type { RemoteControlConfig } from "./types";
+import type { RemoteChannelFeatureConfig, RemoteControlConfig } from "./types";
 
 export const REMOTE_CONTROL_CONFIG_KEY = "remote.control.config";
 export const REMOTE_CONTROL_PAIRINGS_KEY = "remote.control.pairings";
+
+/** 默认渠道能力开关 —— 启用流式、typing、按钮、持久化去重、顺序投递。 */
+export const DEFAULT_CHANNEL_FEATURES: RemoteChannelFeatureConfig = {
+	streaming: { mode: "edit" },
+	typing: { enabled: true },
+	interactive: { enabled: true },
+	dedupe: { persistent: true },
+	sequential_delivery: true,
+};
+
+/** 飞书默认开启 streaming card。 */
+export const DEFAULT_FEISHU_FEATURES: RemoteChannelFeatureConfig = {
+	...DEFAULT_CHANNEL_FEATURES,
+	streaming: { mode: "card" },
+};
 
 export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 	enabled: false,
@@ -29,6 +44,7 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 			enableDocCommandFallback: true,
 			textChunkLimit: 1800,
 			rateLimitPerMinute: 20,
+			features: DEFAULT_FEISHU_FEATURES,
 		},
 		telegram: {
 			enabled: false,
@@ -40,6 +56,7 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 			requireMention: true,
 			textChunkLimit: 4000,
 			rateLimitPerMinute: 20,
+			features: DEFAULT_CHANNEL_FEATURES,
 		},
 		slack: {
 			enabled: false,
@@ -53,6 +70,7 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 			requireMention: true,
 			textChunkLimit: 3000,
 			rateLimitPerMinute: 20,
+			features: DEFAULT_CHANNEL_FEATURES,
 		},
 		discord: {
 			enabled: false,
@@ -65,6 +83,45 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 			requireMention: true,
 			textChunkLimit: 1800,
 			rateLimitPerMinute: 20,
+			features: DEFAULT_CHANNEL_FEATURES,
+		},
+		qqbot: {
+			enabled: false,
+			appId: "",
+			clientSecret: "",
+			environment: "prod",
+			enableGuild: true,
+			enableGroup: true,
+			enableC2c: true,
+			dmPolicy: "pairing",
+			allowFrom: [],
+			groupPolicy: "disabled",
+			groupAllowFrom: [],
+			requireMention: true,
+			textChunkLimit: 1500,
+			rateLimitPerMinute: 20,
+			features: DEFAULT_CHANNEL_FEATURES,
+		},
+		wechat: {
+			enabled: false,
+			puppet: "xp",
+			token: "",
+			endpoint: "",
+			enableDm: true,
+			enableGroup: false,
+			allowFrom: [],
+			groupAllowFrom: [],
+			requireMention: true,
+			textChunkLimit: 1200,
+			rateLimitPerMinute: 10,
+			features: {
+				streaming: { mode: "off" },
+				typing: { enabled: false },
+				interactive: { enabled: false },
+				dedupe: { persistent: true },
+				sequential_delivery: true,
+			},
+			acknowledgedRisk: false,
 		},
 		generic_webhook: {
 			enabled: false,

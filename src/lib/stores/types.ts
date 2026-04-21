@@ -101,7 +101,7 @@ export interface AIReviewState {
 // 布局状态
 export interface LayoutState {
 	// 中间栏主视图模式
-	activeMainView: "editor" | "browser";
+	activeMainView: "editor" | "browser" | "wiki-graph";
 	// 左边栏视图模式
 	leftSidebarView:
 		| "sources"

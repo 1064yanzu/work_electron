@@ -3,9 +3,6 @@ import { cn } from "../../lib/utils";
 
 interface ResizeHandleProps {
 	onDragging?: (isDragging: boolean) => void;
-	/**
-	 * 方向
-	 */
 	direction?: "horizontal" | "vertical";
 }
 
@@ -24,21 +21,31 @@ export default function ResizeHandle({
 				isHorizontal ? "w-px cursor-col-resize" : "h-px cursor-row-resize",
 			)}
 		>
-			{/* 默认细线 */}
+			{/* 暖色调细线分隔 */}
 			<div
 				className={cn(
-					"absolute transition-all duration-150",
+					"absolute transition-all duration-200",
 					isHorizontal
-						? "inset-y-0 w-px bg-zinc-200 dark:bg-zinc-800 group-hover:w-0.5 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700"
-						: "inset-x-0 h-px bg-zinc-200 dark:bg-zinc-800 group-hover:h-0.5 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700",
-					"group-data-[resize-handle-active]:bg-primary",
+						? [
+								"inset-y-0 w-px",
+								"bg-[#e8e6dc] dark:bg-[#30302e]",
+								"group-hover:w-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-[#4a4845]",
+							]
+						: [
+								"inset-x-0 h-px",
+								"bg-[#e8e6dc] dark:bg-[#30302e]",
+								"group-hover:h-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-[#4a4845]",
+							],
+					"group-data-[resize-handle-active]:bg-[#c96442] dark:group-data-[resize-handle-active]:bg-[#c96442]",
 				)}
 			/>
 			{/* 透明热区，方便拖拽 */}
 			<div
 				className={cn(
 					"absolute",
-					isHorizontal ? "inset-y-0 w-3 -left-[6px]" : "inset-x-0 h-3 -top-[6px]",
+					isHorizontal
+						? "inset-y-0 w-3 -left-[6px]"
+						: "inset-x-0 h-3 -top-[6px]",
 				)}
 			/>
 		</PanelResizeHandle>

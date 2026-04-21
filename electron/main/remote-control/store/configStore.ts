@@ -4,6 +4,7 @@ import {
 	REMOTE_CONTROL_CONFIG_KEY,
 } from "../core/defaults";
 import type {
+	RemoteChannelFeatureConfig,
 	RemoteControlConfig,
 	RemoteDmPolicy,
 	RemoteGroupPolicy,
@@ -22,6 +23,7 @@ const VALID_GROUP_POLICIES: RemoteGroupPolicy[] = [
 	"allowlist",
 	"open",
 ];
+const VALID_STREAMING_MODES = new Set(["off", "edit", "card"]);
 
 function mergeStringArray(raw: unknown): string[] | undefined {
 	if (!Array.isArray(raw)) return undefined;
@@ -29,6 +31,43 @@ function mergeStringArray(raw: unknown): string[] | undefined {
 		.filter((v): v is string => typeof v === "string")
 		.map((v) => v.trim())
 		.filter(Boolean);
+}
+
+/**
+ * 合并 features 字段；跳过不认识或越界的值。
+ */
+function mergeChannelFeatures(
+	raw: unknown,
+	fallback: RemoteChannelFeatureConfig | undefined,
+): RemoteChannelFeatureConfig | undefined {
+	const base = fallback
+		? (structuredClone(fallback) as RemoteChannelFeatureConfig)
+		: undefined;
+	if (!isObject(raw) || !base) return base;
+
+	if (isObject(raw.streaming)) {
+		const mode = (raw.streaming as Record<string, unknown>).mode;
+		if (typeof mode === "string" && VALID_STREAMING_MODES.has(mode)) {
+			base.streaming.mode =
+				mode as RemoteChannelFeatureConfig["streaming"]["mode"];
+		}
+	}
+	if (isObject(raw.typing)) {
+		const enabled = (raw.typing as Record<string, unknown>).enabled;
+		if (typeof enabled === "boolean") base.typing.enabled = enabled;
+	}
+	if (isObject(raw.interactive)) {
+		const enabled = (raw.interactive as Record<string, unknown>).enabled;
+		if (typeof enabled === "boolean") base.interactive.enabled = enabled;
+	}
+	if (isObject(raw.dedupe)) {
+		const persistent = (raw.dedupe as Record<string, unknown>).persistent;
+		if (typeof persistent === "boolean") base.dedupe.persistent = persistent;
+	}
+	if (typeof raw.sequential_delivery === "boolean") {
+		base.sequential_delivery = raw.sequential_delivery;
+	}
+	return base;
 }
 
 /**
@@ -65,6 +104,13 @@ function mergeCommonChannelFields(
 		target.textChunkLimit = raw.textChunkLimit;
 	if (typeof raw.rateLimitPerMinute === "number")
 		target.rateLimitPerMinute = raw.rateLimitPerMinute;
+
+	// features 能力开关
+	const mergedFeatures = mergeChannelFeatures(
+		raw.features,
+		target.features as RemoteChannelFeatureConfig | undefined,
+	);
+	if (mergedFeatures) target.features = mergedFeatures;
 }
 
 // ─── 核心 mergeConfig ───────────────────────────────────
@@ -172,6 +218,63 @@ function mergeConfig(
 				next.channels.discord.botToken = dc.botToken;
 			if (typeof dc.applicationId === "string")
 				next.channels.discord.applicationId = dc.applicationId;
+		}
+
+		// ─── QQ Bot ───
+		if (isObject(channels.qqbot)) {
+			const qb = channels.qqbot as Record<string, unknown>;
+			mergeCommonChannelFields(
+				qb,
+				next.channels.qqbot as unknown as Record<string, unknown>,
+			);
+			if (typeof qb.appId === "string") next.channels.qqbot.appId = qb.appId;
+			if (typeof qb.clientSecret === "string")
+				next.channels.qqbot.clientSecret = qb.clientSecret;
+			if (qb.environment === "prod" || qb.environment === "sandbox")
+				next.channels.qqbot.environment = qb.environment;
+			if (typeof qb.enableGuild === "boolean")
+				next.channels.qqbot.enableGuild = qb.enableGuild;
+			if (typeof qb.enableGroup === "boolean")
+				next.channels.qqbot.enableGroup = qb.enableGroup;
+			if (typeof qb.enableC2c === "boolean")
+				next.channels.qqbot.enableC2c = qb.enableC2c;
+		}
+
+		// ─── WeChat ───
+		if (isObject(channels.wechat)) {
+			const wc = channels.wechat as Record<string, unknown>;
+			if (typeof wc.enabled === "boolean")
+				next.channels.wechat.enabled = wc.enabled;
+			if (
+				wc.puppet === "xp" ||
+				wc.puppet === "padlocal" ||
+				wc.puppet === "service"
+			)
+				next.channels.wechat.puppet = wc.puppet;
+			if (typeof wc.token === "string") next.channels.wechat.token = wc.token;
+			if (typeof wc.endpoint === "string")
+				next.channels.wechat.endpoint = wc.endpoint;
+			if (typeof wc.enableDm === "boolean")
+				next.channels.wechat.enableDm = wc.enableDm;
+			if (typeof wc.enableGroup === "boolean")
+				next.channels.wechat.enableGroup = wc.enableGroup;
+			if (typeof wc.requireMention === "boolean")
+				next.channels.wechat.requireMention = wc.requireMention;
+			if (typeof wc.textChunkLimit === "number")
+				next.channels.wechat.textChunkLimit = wc.textChunkLimit;
+			if (typeof wc.rateLimitPerMinute === "number")
+				next.channels.wechat.rateLimitPerMinute = wc.rateLimitPerMinute;
+			if (typeof wc.acknowledgedRisk === "boolean")
+				next.channels.wechat.acknowledgedRisk = wc.acknowledgedRisk;
+			const allowFrom = mergeStringArray(wc.allowFrom);
+			if (allowFrom) next.channels.wechat.allowFrom = allowFrom;
+			const groupAllowFrom = mergeStringArray(wc.groupAllowFrom);
+			if (groupAllowFrom) next.channels.wechat.groupAllowFrom = groupAllowFrom;
+			const mergedFeatures = mergeChannelFeatures(
+				wc.features,
+				next.channels.wechat.features,
+			);
+			if (mergedFeatures) next.channels.wechat.features = mergedFeatures;
 		}
 
 		// ─── generic_webhook (placeholder) ───

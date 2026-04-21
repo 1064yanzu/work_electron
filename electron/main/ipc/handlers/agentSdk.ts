@@ -47,9 +47,7 @@ import {
 	rewriteBashCommandForMissingFile,
 	rewritePathsDeep,
 } from "./agentSdk/fileResolver";
-import {
-	analyzeBashCommand,
-} from "./agentSdk/bashAnalyzer";
+import { analyzeBashCommand } from "./agentSdk/bashAnalyzer";
 import {
 	type AgentModelSettingsLike,
 	matchScenarioAgentForPrompt,
@@ -167,7 +165,10 @@ export function createAgentSdkHandlers(options: {
 							typeof data === "string" ? data.slice(0, 20000) : String(data),
 					});
 					// 收集关键错误信息
-					if (typeof data === "string" && /error|exception|fail|crash|closed/i.test(data)) {
+					if (
+						typeof data === "string" &&
+						/error|exception|fail|crash|closed/i.test(data)
+					) {
 						stderrErrors.push(data.slice(0, 500));
 					}
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });
@@ -583,7 +584,9 @@ export function createAgentSdkHandlers(options: {
 					runtimeMetadata,
 				});
 				// 预声明记忆变量（供 lifecycle hooks 和 UserPromptSubmit hook 使用）
-				let memoryContextBuilder: ((currentPrompt: string) => Promise<string>) | null = null;
+				let memoryContextBuilder:
+					| ((currentPrompt: string) => Promise<string>)
+					| null = null;
 				let coreMemoryContext = "";
 
 				const lifecycleHooks = createLifecycleHooks({
@@ -591,15 +594,18 @@ export function createAgentSdkHandlers(options: {
 					runId,
 					stderr,
 					emitLifecycleEvent,
-					sessionAdditionalContext: [
-						stableTaskSpine,
-						coreMemoryContext,
-					].filter(Boolean).join("\n\n"),
+					sessionAdditionalContext: [stableTaskSpine, coreMemoryContext]
+						.filter(Boolean)
+						.join("\n\n"),
 					preCompactAdditionalContext: [
 						stableTaskSpine,
 						"压缩后必须保留：任务目标、硬性约束、当前进度、未完成事项、协作策略。",
-						coreMemoryContext ? `以下是用户核心记忆，压缩后务必保留：\n${coreMemoryContext}` : "",
-					].filter(Boolean).join("\n"),
+						coreMemoryContext
+							? `以下是用户核心记忆，压缩后务必保留：\n${coreMemoryContext}`
+							: "",
+					]
+						.filter(Boolean)
+						.join("\n"),
 					runtimeMetadata,
 					experimentalMultiAgentEnabled: multiAgentRuntime.experimentalEnabled,
 				});
@@ -693,10 +699,14 @@ export function createAgentSdkHandlers(options: {
 				// 构建记忆上下文 — 用于 UserPromptSubmit hook 动态注入（每轮对话按当前 prompt 做相关性匹配）
 				const modelStr = String(input.model ?? "").toLowerCase();
 				const isClaudeModel =
-					modelStr.includes("claude") || modelStr.includes("anthropic") || modelStr === "";
+					modelStr.includes("claude") ||
+					modelStr.includes("anthropic") ||
+					modelStr === "";
 				if (isClaudeModel) {
 					try {
-						const { buildMemoryContextForAgent } = await import("./agentMemoryService");
+						const { buildMemoryContextForAgent } = await import(
+							"./agentMemoryService"
+						);
 						// 预加载 instruction 类核心记忆（不随 prompt 变化）
 						coreMemoryContext = await buildMemoryContextForAgent(options.db, {
 							limit: 10,
@@ -1285,12 +1295,14 @@ export function createAgentSdkHandlers(options: {
 									: {};
 
 							// 跟踪工具操作的范围信息（用于前端 UI 展示）
-							let toolScope: {
-								insideSandbox: boolean;
-								targetPath?: string;
-								destructiveLevel?: "safe" | "moderate" | "dangerous";
-								reason?: string;
-							} | undefined;
+							let toolScope:
+								| {
+										insideSandbox: boolean;
+										targetPath?: string;
+										destructiveLevel?: "safe" | "moderate" | "dangerous";
+										reason?: string;
+								  }
+								| undefined;
 
 							const toolLower = String(toolName || "").toLowerCase();
 
@@ -1359,13 +1371,13 @@ export function createAgentSdkHandlers(options: {
 											);
 											return {
 												behavior: "deny",
-												message:
-													`文件路径未找到: ${rawPath}。请使用 Glob 工具查找文件，或使用完整的绝对路径。`,
+												message: `文件路径未找到: ${rawPath}。请使用 Glob 工具查找文件，或使用完整的绝对路径。`,
 											};
 										}
 
 										// 写入操作的额外安全检查
-										const isWriteOp = toolLower === "write" || toolLower === "edit";
+										const isWriteOp =
+											toolLower === "write" || toolLower === "edit";
 										if (isWriteOp && isSystemWriteBlocked(resolved.path)) {
 											return {
 												behavior: "deny",
@@ -1378,11 +1390,14 @@ export function createAgentSdkHandlers(options: {
 											insideSandbox: resolved.insideSandbox,
 											targetPath: resolved.path,
 											destructiveLevel: isWriteOp
-												? resolved.insideSandbox ? "safe" : "moderate"
+												? resolved.insideSandbox
+													? "safe"
+													: "moderate"
 												: "safe",
-											reason: isWriteOp && !resolved.insideSandbox
-												? `写入沙盒外文件: ${resolved.path}`
-												: undefined,
+											reason:
+												isWriteOp && !resolved.insideSandbox
+													? `写入沙盒外文件: ${resolved.path}`
+													: undefined,
 										};
 
 										// 读取操作 — 全局自动通过（无需审批）
@@ -1439,7 +1454,10 @@ export function createAgentSdkHandlers(options: {
 								};
 
 								// 安全命令 — 自动通过
-								if (analysis.isReadOnly && analysis.destructiveLevel === "safe") {
+								if (
+									analysis.isReadOnly &&
+									analysis.destructiveLevel === "safe"
+								) {
 									toolScope = undefined;
 								}
 							}
@@ -1457,7 +1475,9 @@ export function createAgentSdkHandlers(options: {
 									value: rewrittenInput,
 								});
 								if (rewritten !== rewrittenInput) {
-									stderr("[agent_sdk] Auto-rewrote Skill input paths within cwd");
+									stderr(
+										"[agent_sdk] Auto-rewrote Skill input paths within cwd",
+									);
 									rewrittenInput = rewritten as Record<string, unknown>;
 								}
 							}
@@ -1756,7 +1776,9 @@ export function createAgentSdkHandlers(options: {
 				}
 				if (!sawResult) {
 					// 检查是否有 SDK 内部错误（如 "Stream closed"），提供更有意义的错误信息
-					const hasStreamClosedError = stderrErrors.some((e) => /stream closed/i.test(e));
+					const hasStreamClosedError = stderrErrors.some((e) =>
+						/stream closed/i.test(e),
+					);
 					const hasCriticalError = stderrErrors.length > 0;
 
 					if (hasStreamClosedError || hasCriticalError) {
@@ -1797,7 +1819,8 @@ export function createAgentSdkHandlers(options: {
 										? {
 												input_tokens: accumulatedInputTokens,
 												output_tokens: accumulatedOutputTokens,
-												cache_read_input_tokens: accumulatedCacheReadInputTokens,
+												cache_read_input_tokens:
+													accumulatedCacheReadInputTokens,
 												cache_creation_input_tokens:
 													accumulatedCacheCreationInputTokens,
 											}
@@ -1832,7 +1855,9 @@ export function createAgentSdkHandlers(options: {
 			} finally {
 				// 异步提取记忆（非阻塞）— 启用 LLM 深度提取
 				try {
-					const { extractAndSaveMemories } = await import("./agentMemoryService");
+					const { extractAndSaveMemories } = await import(
+						"./agentMemoryService"
+					);
 					const userPrompt = String(input.prompt ?? "");
 					if (userPrompt.trim()) {
 						const conversationMessages: Array<{
@@ -1841,20 +1866,22 @@ export function createAgentSdkHandlers(options: {
 						}> = [{ role: "user", content: userPrompt }];
 						// 加入 assistant 回复以获得更完整的对话上下文
 						try {
-							const assistantText = assistantTextParts.join("\n").slice(0, 5000);
+							const assistantText = assistantTextParts
+								.join("\n")
+								.slice(0, 5000);
 							if (assistantText.trim()) {
-								conversationMessages.push({ role: "assistant", content: assistantText });
+								conversationMessages.push({
+									role: "assistant",
+									content: assistantText,
+								});
 							}
 						} catch {
 							// assistantTextParts 可能不在作用域内（try 块外）
 						}
 
-						extractAndSaveMemories(
-							options.db,
-							runId,
-							conversationMessages,
-							{ useLlm: true },
-						).catch((err) => {
+						extractAndSaveMemories(options.db, runId, conversationMessages, {
+							useLlm: true,
+						}).catch((err) => {
 							logger.warn({
 								msg: "Failed to extract memories after agent run",
 								scope: "agent",

@@ -16,7 +16,12 @@ import {
 	enableWiki,
 	disableWiki,
 	rebuildWikiWorkspace,
+	getWikiSchemaStats,
+	resetWikiSkippedSources,
+	resetWikiProcessedSources,
 } from "../../kb/wikiService";
+import { resolvePageFilePath } from "../../kb/wiki/wikiFs";
+import { runWikiLint } from "../../kb/wiki/lintService";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -24,10 +29,7 @@ type Handler<K extends keyof IPCSchema> = (
 ) => Promise<IPCSchema[K]["output"]>;
 
 export function createWikiHandlers() {
-	const wiki_list_pages: Handler<"wiki_list_pages"> = async (
-		_event,
-		input,
-	) => {
+	const wiki_list_pages: Handler<"wiki_list_pages"> = async (_event, input) => {
 		const pages = await listWikiPages(input.scope_path, {
 			limit: input.limit,
 			offset: input.offset,
@@ -47,6 +49,9 @@ export function createWikiHandlers() {
 			last_updated_by: p.last_updated_by,
 			created_at: p.created_at,
 			updated_at: p.updated_at,
+			sources: p.sources,
+			status: p.status,
+			aliases: p.aliases,
 		}));
 	};
 
@@ -68,6 +73,9 @@ export function createWikiHandlers() {
 			last_updated_by: page.last_updated_by,
 			created_at: page.created_at,
 			updated_at: page.updated_at,
+			sources: page.sources,
+			status: page.status,
+			aliases: page.aliases,
 		};
 	};
 
@@ -85,6 +93,9 @@ export function createWikiHandlers() {
 				related_page_ids: input.related_page_ids,
 				page_type: input.page_type,
 				confidence: input.confidence,
+				sources: input.sources,
+				status: input.status,
+				aliases: input.aliases,
 			},
 			"user",
 		);
@@ -101,6 +112,9 @@ export function createWikiHandlers() {
 			confidence: page.confidence,
 			created_at: page.created_at,
 			updated_at: page.updated_at,
+			sources: page.sources,
+			status: page.status,
+			aliases: page.aliases,
 		};
 	};
 
@@ -119,6 +133,9 @@ export function createWikiHandlers() {
 				related_page_ids: input.related_page_ids,
 				page_type: input.page_type,
 				confidence: input.confidence,
+				sources: input.sources,
+				status: input.status,
+				aliases: input.aliases,
 			},
 			"user",
 		);
@@ -136,6 +153,9 @@ export function createWikiHandlers() {
 			confidence: page.confidence,
 			created_at: page.created_at,
 			updated_at: page.updated_at,
+			sources: page.sources,
+			status: page.status,
+			aliases: page.aliases,
 		};
 	};
 
@@ -175,10 +195,7 @@ export function createWikiHandlers() {
 		return { count };
 	};
 
-	const wiki_is_enabled: Handler<"wiki_is_enabled"> = async (
-		_event,
-		input,
-	) => {
+	const wiki_is_enabled: Handler<"wiki_is_enabled"> = async (_event, input) => {
 		const enabled = await isWikiEnabled(input.scope_path);
 		return { enabled };
 	};
@@ -198,6 +215,39 @@ export function createWikiHandlers() {
 		return { success: true, created_map: result.created_map };
 	};
 
+	const wiki_get_page_file_path: Handler<"wiki_get_page_file_path"> = async (
+		_event,
+		input,
+	) => {
+		const absPath = await resolvePageFilePath(input.scope_path, input.page_id);
+		return { path: absPath };
+	};
+
+	const wiki_schema_stats: Handler<"wiki_schema_stats"> = async (
+		_event,
+		input,
+	) => {
+		return getWikiSchemaStats(input.scope_path);
+	};
+
+	const wiki_reset_skipped_sources: Handler<
+		"wiki_reset_skipped_sources"
+	> = async (_event, input) => {
+		const cleared = await resetWikiSkippedSources(input.scope_path);
+		return { cleared };
+	};
+
+	const wiki_reset_processed_sources: Handler<
+		"wiki_reset_processed_sources"
+	> = async (_event, input) => {
+		const cleared = await resetWikiProcessedSources(input.scope_path);
+		return { cleared };
+	};
+
+	const wiki_lint: Handler<"wiki_lint"> = async (_event, input) => {
+		return runWikiLint(input.scope_path);
+	};
+
 	return {
 		wiki_list_pages,
 		wiki_get_page,
@@ -210,5 +260,10 @@ export function createWikiHandlers() {
 		wiki_enable,
 		wiki_disable,
 		wiki_rebuild,
+		wiki_get_page_file_path,
+		wiki_schema_stats,
+		wiki_reset_skipped_sources,
+		wiki_reset_processed_sources,
+		wiki_lint,
 	};
 }

@@ -16,7 +16,12 @@ import { cn } from "../../lib/utils";
 import { PlanStepItem, type PlanStep } from "./PlanStepItem";
 
 /** 计划整体状态 */
-type PlanStatus = "draft" | "confirmed" | "executing" | "completed" | "rejected";
+type PlanStatus =
+	| "draft"
+	| "confirmed"
+	| "executing"
+	| "completed"
+	| "rejected";
 
 interface PlanCardProps {
 	plan: {
@@ -31,10 +36,7 @@ interface PlanCardProps {
 }
 
 /** 状态标签配置 */
-const STATUS_LABEL: Record<
-	PlanStatus,
-	{ text: string; className: string }
-> = {
+const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	draft: {
 		text: "待确认",
 		className:
@@ -47,8 +49,7 @@ const STATUS_LABEL: Record<
 	},
 	executing: {
 		text: "执行中",
-		className:
-			"bg-[#D96C46]/10 dark:bg-[#D96C46]/20 text-[#D96C46]",
+		className: "bg-[#D96C46]/10 dark:bg-[#D96C46]/20 text-[#D96C46]",
 	},
 	completed: {
 		text: "已完成",
@@ -57,8 +58,7 @@ const STATUS_LABEL: Record<
 	},
 	rejected: {
 		text: "已拒绝",
-		className:
-			"bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+		className: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
 	},
 };
 
@@ -106,7 +106,12 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 	);
 }
 
-export function PlanCard({ plan, onConfirm, onReject, onModify }: PlanCardProps) {
+export function PlanCard({
+	plan,
+	onConfirm,
+	onReject,
+	onModify,
+}: PlanCardProps) {
 	const [modifyMode, setModifyMode] = useState(false);
 	const [feedback, setFeedback] = useState("");
 
@@ -175,9 +180,7 @@ export function PlanCard({ plan, onConfirm, onReject, onModify }: PlanCardProps)
 			</div>
 
 			{/* 进度条（执行中或已完成时显示） */}
-			{(isExecuting || isCompleted) && (
-				<PlanProgressBar steps={plan.steps} />
-			)}
+			{(isExecuting || isCompleted) && <PlanProgressBar steps={plan.steps} />}
 
 			{/* 步骤列表 */}
 			<div className="relative z-10 px-1 py-2 space-y-0.5 max-h-80 overflow-y-auto">

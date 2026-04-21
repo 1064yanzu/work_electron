@@ -1,7 +1,9 @@
 import type { AgentSdkBusEvent } from "./agentSdkEventBus";
-import type { RemoteOutboundMessage } from "./types";
+import type { RemoteChannelId, RemoteOutboundMessage } from "./types";
 import type { RemoteSessionStore } from "../store/sessionStore";
 import type { RemoteCommandRouter } from "./commandRouter";
+import type { ChannelStreamingSession, ChannelTypingSession } from "../sdk";
+import { mergeStreamingText } from "../sdk";
 import { clampString, nowTs } from "./utils";
 
 type StreamBuffer = {
@@ -12,6 +14,17 @@ type StreamBuffer = {
 type OutboundFingerprint = {
 	fingerprint: string;
 	timestamp: number;
+};
+
+/**
+ * 每个 agent run 对应的流式态：
+ * - 有 streamingSession: 走 SDK 流式卡片（飞书），文本从 deltas 拼起来流式推送
+ * - 无 streamingSession: 走老路径 chunk 发送
+ */
+type RunStreamingState = {
+	session: ChannelStreamingSession;
+	accumulated: string;
+	typing?: ChannelTypingSession;
 };
 
 function normalizeOutboundText(text: string): string {
@@ -25,13 +38,105 @@ export type AgentEventMirrorDeps = {
 	sessionStore: RemoteSessionStore;
 	router: RemoteCommandRouter;
 	sendToChannel: (message: RemoteOutboundMessage) => Promise<void>;
+	/**
+	 * 渠道能力解析 —— orchestrator 注入。
+	 * 返回某渠道的 streaming / typing 工厂（不支持时为 null）。
+	 */
+	resolveChannelCapabilities?: (channelId: RemoteChannelId) => {
+		streaming:
+			| ((params: {
+					targetId: string;
+					threadId?: string;
+					replyToMessageId?: string;
+			  }) => ChannelStreamingSession)
+			| null;
+		typing:
+			| ((params: {
+					targetId: string;
+					anchorMessageId?: string;
+			  }) => ChannelTypingSession)
+			| null;
+		activeModelNote?: () => string | undefined;
+	};
 };
 
 export class AgentEventMirror {
 	private readonly streamBufferByRun = new Map<string, StreamBuffer>();
 	private readonly lastOutboundByRun = new Map<string, OutboundFingerprint>();
+	private readonly streamingByRun = new Map<string, RunStreamingState>();
 
 	constructor(private readonly deps: AgentEventMirrorDeps) {}
+
+	/**
+	 * 给定 runId：如有 streaming 支持则开启 streaming session（同时尝试开启 typing）。
+	 * 没有支持则返回 null，继续走老路径 chunk 发送。
+	 */
+	private async ensureStreaming(
+		runId: string,
+		firstUserMessageId?: string,
+	): Promise<RunStreamingState | null> {
+		const existing = this.streamingByRun.get(runId);
+		if (existing) return existing;
+		if (!this.deps.resolveChannelCapabilities) return null;
+		const session = this.deps.sessionStore.getByRunId(runId);
+		if (!session) return null;
+		const caps = this.deps.resolveChannelCapabilities(session.channel_id);
+		if (!caps.streaming) return null;
+		try {
+			const streamingSession = caps.streaming({
+				targetId: session.target_id,
+				replyToMessageId: firstUserMessageId,
+			});
+			await streamingSession.start({ title: "AI 助手" });
+			let typingSession: ChannelTypingSession | undefined;
+			if (caps.typing && firstUserMessageId) {
+				try {
+					typingSession = caps.typing({
+						targetId: session.target_id,
+						anchorMessageId: firstUserMessageId,
+					});
+					await typingSession.start();
+				} catch {
+					typingSession = undefined;
+				}
+			}
+			const state: RunStreamingState = {
+				session: streamingSession,
+				accumulated: "",
+				typing: typingSession,
+			};
+			this.streamingByRun.set(runId, state);
+			return state;
+		} catch (error) {
+			// streaming 启动失败就彻底 fallback 到 chunk 老路径
+			// 不抛出，不影响 agent 运行
+			this.deps.sessionStore.getByRunId(runId);
+			void error;
+			return null;
+		}
+	}
+
+	private async closeStreaming(
+		runId: string,
+		finalText?: string,
+		note?: string,
+	): Promise<void> {
+		const state = this.streamingByRun.get(runId);
+		if (!state) return;
+		this.streamingByRun.delete(runId);
+		try {
+			await state.session.close(finalText, note ? { note } : undefined);
+		} catch {
+			// 关闭失败静默
+		}
+		if (state.typing) {
+			try {
+				await state.typing.stop();
+			} catch {
+				// typing 清理静默
+			}
+		}
+	}
 
 	private flushBuffer(runId: string): string {
 		const buffer = this.streamBufferByRun.get(runId);
@@ -211,10 +316,26 @@ export class AgentEventMirror {
 			}
 			if (deltas.length > 0) {
 				this.deps.sessionStore.updateStateByRun(runId, "running");
-				for (const delta of deltas) {
-					const flushed = this.appendBuffer(runId, delta);
-					if (flushed) {
-						await this.sendRunMessage(runId, flushed);
+
+				// 优先尝试 streaming session（飞书等支持 streaming 的渠道）
+				const streaming = await this.ensureStreaming(runId);
+
+				if (streaming) {
+					// 边生成边 update 同一张卡片
+					for (const delta of deltas) {
+						streaming.accumulated = mergeStreamingText(
+							streaming.accumulated,
+							streaming.accumulated + delta,
+						);
+						await streaming.session.update(streaming.accumulated);
+					}
+				} else {
+					// 老路径：chunk 拼接后分段发送
+					for (const delta of deltas) {
+						const flushed = this.appendBuffer(runId, delta);
+						if (flushed) {
+							await this.sendRunMessage(runId, flushed);
+						}
 					}
 				}
 			}
@@ -222,6 +343,7 @@ export class AgentEventMirror {
 		}
 
 		if (event.type === "done") {
+			const streaming = this.streamingByRun.get(runId);
 			const tail = this.flushBuffer(runId);
 			const resultText =
 				typeof (event.result as Record<string, unknown> | undefined)?.result ===
@@ -229,7 +351,13 @@ export class AgentEventMirror {
 					? ((event.result as Record<string, unknown>).result as string)
 					: "";
 
-			if (resultText.trim()) {
+			if (streaming) {
+				// streaming 路径：把最终文本喂给 close 做一次收尾
+				const finalText = resultText.trim()
+					? clampString(resultText, 4000)
+					: streaming.accumulated || tail;
+				await this.closeStreaming(runId, finalText, undefined);
+			} else if (resultText.trim()) {
 				await this.sendRunMessage(runId, clampString(resultText, 2000));
 			} else if (tail) {
 				// 没有result但有buffer内容,发送buffer
@@ -243,12 +371,21 @@ export class AgentEventMirror {
 		}
 
 		if (event.type === "error") {
+			const streaming = this.streamingByRun.get(runId);
 			const tail = this.flushBuffer(runId);
-			if (tail) {
+			if (tail && !streaming) {
 				await this.sendRunMessage(runId, tail);
 			}
 			const errorText = event.error || "Unknown error";
-			await this.sendRunMessage(runId, `\n[error] ${errorText}`);
+			if (streaming) {
+				await this.closeStreaming(
+					runId,
+					`${streaming.accumulated}\n\n[error] ${errorText}`,
+					undefined,
+				);
+			} else {
+				await this.sendRunMessage(runId, `\n[error] ${errorText}`);
+			}
 			this.deps.sessionStore.updateStateByRun(runId, "error", errorText);
 			this.deps.sessionStore.removeByRunId(runId);
 			this.lastOutboundByRun.delete(runId);

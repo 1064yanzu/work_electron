@@ -25,7 +25,9 @@ export const PhysicalFileViewer = memo(function PhysicalFileViewer({
 			<div
 				className={cn(
 					"mx-auto",
-					isPdf ? "max-w-none px-3 py-3 sm:px-4 sm:py-4" : "max-w-[920px] px-5 py-5 sm:px-6 sm:py-6",
+					isPdf
+						? "max-w-none px-3 py-3 sm:px-4 sm:py-4"
+						: "max-w-[920px] px-5 py-5 sm:px-6 sm:py-6",
 				)}
 			>
 				<div onContextMenu={onContextMenu} className="max-w-none">

@@ -133,7 +133,9 @@ function parseToolArguments(raw: string | undefined): Record<string, unknown> {
  * 清洗工具输入参数：移除空字符串的可选参数（如 pages: ""），
  * 避免下游校验失败。
  */
-function sanitizeToolInput(input: Record<string, unknown>): Record<string, unknown> {
+function sanitizeToolInput(
+	input: Record<string, unknown>,
+): Record<string, unknown> {
 	const result: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(input)) {
 		// 移除空字符串的可选参数（常见于 OpenAI 模型生成的 pages/pattern 等）
@@ -317,7 +319,11 @@ export async function readOpenAIResponsesStream(
 		await onEvent(parsed);
 	} finally {
 		// 确保 reader 被释放
-		try { reader.cancel(); } catch { /* ignore */ }
+		try {
+			reader.cancel();
+		} catch {
+			/* ignore */
+		}
 	}
 }
 

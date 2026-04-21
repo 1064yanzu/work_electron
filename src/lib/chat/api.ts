@@ -133,10 +133,7 @@ function parseLegacyError(content: string): LlmErrorDetail {
 		};
 	}
 
-	if (
-		lowerContent.includes("timeout") ||
-		lowerContent.includes("timed out")
-	) {
+	if (lowerContent.includes("timeout") || lowerContent.includes("timed out")) {
 		return {
 			code: "timeout",
 			title: "请求超时",
@@ -154,8 +151,7 @@ function parseLegacyError(content: string): LlmErrorDetail {
 			code: "no_provider",
 			title: "未找到可用的 AI 服务",
 			message: "没有找到已启用的 AI 服务商。",
-			suggestion:
-				"请前往「设置 → AI 服务」配置并启用至少一个 Provider。",
+			suggestion: "请前往「设置 → AI 服务」配置并启用至少一个 Provider。",
 			rawError: content,
 		};
 	}
@@ -214,10 +210,8 @@ export async function invokeLlmWithCallback(
 						promptTokens: chunk.usage.prompt_tokens,
 						completionTokens: chunk.usage.completion_tokens,
 						totalTokens: chunk.usage.total_tokens,
-						cacheReadInputTokens:
-							chunk.usage.cache_read_input_tokens,
-						cacheCreationInputTokens:
-							chunk.usage.cache_creation_input_tokens,
+						cacheReadInputTokens: chunk.usage.cache_read_input_tokens,
+						cacheCreationInputTokens: chunk.usage.cache_creation_input_tokens,
 					});
 				}
 

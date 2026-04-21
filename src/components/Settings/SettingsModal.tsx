@@ -86,7 +86,7 @@ export function SettingsModal({
 						}
 					/>
 
-					<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-background/80 dark:bg-zinc-950">
+					<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-zinc-950">
 						<button
 							ref={closeButtonRef}
 							onClick={handleClose}

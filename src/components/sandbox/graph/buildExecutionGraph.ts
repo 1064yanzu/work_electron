@@ -8,10 +8,22 @@ import {
 import { getSubagentType } from "./utils";
 
 /** 从工具调用的 input 生成简短摘要 */
-function summarizeInput(input: Record<string, any> | undefined, maxLen = 80): string | undefined {
+function summarizeInput(
+	input: Record<string, any> | undefined,
+	maxLen = 80,
+): string | undefined {
 	if (!input || typeof input !== "object") return undefined;
 	// 常见字段优先级
-	const candidates = ["command", "path", "file_path", "url", "query", "prompt", "content", "description"];
+	const candidates = [
+		"command",
+		"path",
+		"file_path",
+		"url",
+		"query",
+		"prompt",
+		"content",
+		"description",
+	];
 	for (const key of candidates) {
 		const val = input[key];
 		if (typeof val === "string" && val.trim()) {
@@ -39,7 +51,8 @@ function summarizeOutput(output: any, maxLen = 80): string | undefined {
 	}
 	if (typeof output === "object") {
 		// 常见 output 结构
-		const text = output.content || output.result || output.message || output.text;
+		const text =
+			output.content || output.result || output.message || output.text;
 		if (typeof text === "string" && text.trim().length > 2) {
 			const clean = text.trim().replace(/\n/g, " ");
 			return clean.length > maxLen ? `${clean.slice(0, maxLen)}…` : clean;
@@ -99,10 +112,15 @@ function detectParallelGroups(
 			// 检查与组内前一个子代理的时间差
 			const prevIdx = currentGroup.indices[currentGroup.indices.length - 1]!;
 			const prevTc = orderedToolCalls[prevIdx]!;
-			const prevStart = typeof prevTc.startedAt === "number" ? prevTc.startedAt : null;
+			const prevStart =
+				typeof prevTc.startedAt === "number" ? prevTc.startedAt : null;
 			const curStart = typeof tc.startedAt === "number" ? tc.startedAt : null;
 
-			if (prevStart !== null && curStart !== null && Math.abs(curStart - prevStart) < threshold) {
+			if (
+				prevStart !== null &&
+				curStart !== null &&
+				Math.abs(curStart - prevStart) < threshold
+			) {
 				currentGroup.indices.push(i);
 			} else {
 				// 时间差太大，结束当前组，开始新组
@@ -358,15 +376,21 @@ export function buildExecutionGraph(
 		// 并行组内不插入
 		if (indexToGroup.has(i) || indexToGroup.has(i - 1)) continue;
 
-		const prevEnd = typeof prevTc.completedAt === "number" ? prevTc.completedAt : (typeof prevTc.startedAt === "number" && prevTc.duration ? prevTc.startedAt + prevTc.duration : null);
-		const curStart = typeof curTc.startedAt === "number" ? curTc.startedAt : null;
+		const prevEnd =
+			typeof prevTc.completedAt === "number"
+				? prevTc.completedAt
+				: typeof prevTc.startedAt === "number" && prevTc.duration
+					? prevTc.startedAt + prevTc.duration
+					: null;
+		const curStart =
+			typeof curTc.startedAt === "number" ? curTc.startedAt : null;
 
 		if (prevEnd !== null && curStart !== null) {
 			const gapMs = curStart - prevEnd;
 			if (gapMs >= PHASE_GAP_THRESHOLD) {
 				phaseCount++;
 				const prevX = toolXById.get(prevTc.id) ?? ROOT_X;
-				const curX = toolXById.get(curTc.id) ?? (prevX + X_STEP);
+				const curX = toolXById.get(curTc.id) ?? prevX + X_STEP;
 				const dividerX = (prevX + curX) / 2;
 				const dividerY = ROOT_Y - 30;
 				const dividerId = `phase-${phaseCount}`;
@@ -401,9 +425,10 @@ export function buildExecutionGraph(
 		}
 
 		// 放在 TaskNode 右侧（forkSource 的右上方）
-		const forkX = group.forkSourceId === taskNodeId
-			? ROOT_X
-			: (toolXById.get(group.forkSourceId) ?? ROOT_X);
+		const forkX =
+			group.forkSourceId === taskNodeId
+				? ROOT_X
+				: (toolXById.get(group.forkSourceId) ?? ROOT_X);
 		const swarmX = forkX + X_STEP * 0.5;
 		const swarmY = ROOT_Y - Y_STEP * 0.7;
 

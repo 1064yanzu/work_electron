@@ -16,10 +16,13 @@ import {
 	ChevronRight,
 	ArrowLeft,
 	Info,
+	AlertTriangle,
 	FileText,
 	Clock,
 	Tag,
 	RotateCcw,
+	ExternalLink,
+	ShieldCheck,
 } from "lucide-react";
 import { useWiki, type WikiPageItem } from "./useWiki";
 import { WikiPageEditor } from "./WikiPageEditor";
@@ -27,6 +30,7 @@ import { WikiContentRenderer } from "./WikiContentRenderer";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { sessionStore } from "../../lib/agent/sessionManager";
 import { WikiGraphPanel } from "./WikiGraphPanel";
+import { WikiLintPanel } from "./WikiLintPanel";
 
 type WikiViewMode = "list" | "detail" | "create" | "edit";
 
@@ -34,6 +38,62 @@ function getScopeName(scopePath: string | null): string {
 	if (!scopePath) return "";
 	const parts = scopePath.split(/[/\\]/).filter(Boolean);
 	return parts[parts.length - 1] || scopePath;
+}
+
+/** 根据后端 phase 字段返回状态标题 */
+function getPhaseLabel(phase?: string): string {
+	switch (phase) {
+		case "preflight":
+			return "校验 LLM 配置";
+		case "scanning":
+			return "扫描工作目录";
+		case "filtering":
+			return "对比已处理文件";
+		case "extracting":
+			return "提取文件文本";
+		case "llm":
+			return "AI 生成 Wiki 页面";
+		case "linking":
+			return "关联相关页面";
+		case "finalizing":
+			return "写入索引与日志";
+		default:
+			return "准备中";
+	}
+}
+
+/** 进度条旁单文件动词，用于「正在处理：xxx.pdf」 */
+function getPhaseVerb(phase?: string): string {
+	switch (phase) {
+		case "extracting":
+			return "正在读取";
+		case "llm":
+			return "正在分析";
+		default:
+			return "处理中";
+	}
+}
+
+/** 没有 current_source_title 时的占位提示 */
+function getPhaseHint(phase?: string): string {
+	switch (phase) {
+		case "preflight":
+			return "正在校验模型与 Provider…";
+		case "scanning":
+			return "正在列出目录文件…";
+		case "filtering":
+			return "正在比对文件哈希…";
+		case "extracting":
+			return "准备提取文本…";
+		case "llm":
+			return "准备调用 LLM…";
+		case "linking":
+			return "整理页面关联…";
+		case "finalizing":
+			return "写入索引…";
+		default:
+			return "准备中…";
+	}
 }
 
 export function WikiView() {
@@ -69,7 +129,16 @@ export function WikiView() {
 		deletePage,
 		searchPages,
 		generateWiki,
+		openInEditor,
 		refresh,
+		schemaStats,
+		loadSchemaStats,
+		resetSkippedSources,
+		resetProcessedSources,
+		lintReport,
+		lintLoading,
+		runLint,
+		clearLintReport,
 	} = useWiki(scopePath);
 
 	const [viewMode, setViewMode] = useState<WikiViewMode>("list");
@@ -177,8 +246,47 @@ export function WikiView() {
 		if (!confirmed) return;
 		try {
 			await generateWiki();
+			await loadSchemaStats();
 		} catch {
 			// error 已在 useWiki 内部处理
+		}
+	};
+
+	const handleRetrySkipped = async () => {
+		const skippedCount = schemaStats?.skipped_count ?? 0;
+		if (skippedCount === 0) return;
+		const confirmed = await confirmDialog.show({
+			title: "重试跳过的文件",
+			message:
+				`将清空「跳过列表」中的 ${skippedCount} 条记录，下次点击「生成 Wiki」时这些文件会被重新尝试。` +
+				`如果它们仍然是扫描版 PDF 或无法提取文本，会再次被跳过。`,
+			confirmText: "清空并准备重试",
+			cancelText: "取消",
+			type: "warning",
+		});
+		if (!confirmed) return;
+		const cleared = await resetSkippedSources();
+		if (cleared > 0) {
+			clearGenerationProgress();
+		}
+	};
+
+	const handleResetProcessed = async () => {
+		const processedCount = schemaStats?.processed_count ?? 0;
+		if (processedCount === 0) return;
+		const confirmed = await confirmDialog.show({
+			title: "重置已处理记录",
+			message:
+				`将清空「已处理」名单中的 ${processedCount} 条记录。下次点击「生成 Wiki」时所有文件都会被重新处理。` +
+				`已存在的 Wiki 页面不会被删除。`,
+			confirmText: "重置并准备重新生成",
+			cancelText: "取消",
+			type: "warning",
+		});
+		if (!confirmed) return;
+		const cleared = await resetProcessedSources();
+		if (cleared > 0) {
+			clearGenerationProgress();
 		}
 	};
 
@@ -208,7 +316,8 @@ export function WikiView() {
 						暂无线程工作目录
 					</h3>
 					<p className="text-sm text-zinc-500 dark:text-zinc-400 text-center leading-relaxed max-w-[260px]">
-						Wiki 跟随当前线程的工作目录。请先在线程列表中选择一个线程，再整理该目录下的结构化知识。
+						Wiki
+						跟随当前线程的工作目录。请先在线程列表中选择一个线程，再整理该目录下的结构化知识。
 					</p>
 				</div>
 			</div>
@@ -290,9 +399,16 @@ export function WikiView() {
 					</div>
 					<div className="flex items-center gap-1">
 						<button
+							onClick={() => openInEditor(selectedPage.id, selectedPage.title)}
+							className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+							title="在文档编辑器中打开（支持分屏预览、语法高亮、完整 Markdown 编辑）"
+						>
+							<ExternalLink className="w-4 h-4" />
+						</button>
+						<button
 							onClick={() => setViewMode("edit")}
 							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-							title="编辑"
+							title="快速编辑"
 						>
 							<Pencil className="w-4 h-4" />
 						</button>
@@ -406,8 +522,18 @@ export function WikiView() {
 						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
 						title="刷新"
 					>
-						<RefreshCw
-							className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+						<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+					</button>
+					<button
+						onClick={runLint}
+						disabled={
+							loading || isInitializing || lintLoading || pages.length === 0
+						}
+						className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+						title="Wiki 健康检查（孤儿页 / stub / 断链 / 未摄入源）"
+					>
+						<ShieldCheck
+							className={`w-4 h-4 ${lintLoading ? "animate-pulse" : ""}`}
 						/>
 					</button>
 					<button
@@ -488,6 +614,97 @@ export function WikiView() {
 				</div>
 			)}
 
+			{/* Schema 诊断：检测到跳过记录或数据不一致 */}
+			{!isGenerating &&
+				schemaStats &&
+				(schemaStats.skipped_count > 0 ||
+					(schemaStats.processed_count > 0 &&
+						schemaStats.real_page_count === 0)) && (
+					<div className="mx-3 mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-3">
+						<div className="flex items-start gap-2 mb-2">
+							<AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+							<div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed flex-1">
+								{schemaStats.processed_count > 0 &&
+								schemaStats.real_page_count === 0 ? (
+									<>
+										<strong>检测到数据不一致</strong>：schema 中标记了{" "}
+										{schemaStats.processed_count}{" "}
+										个文件为「已处理」，但工作目录下尚未生成任何 Wiki 页面。
+										{schemaStats.skipped_count > 0 && (
+											<>
+												<br />
+												另有 {schemaStats.skipped_count} 个文件曾被跳过。
+											</>
+										)}
+										<br />
+										<span className="text-amber-600/80 dark:text-amber-400/70 mt-1 block">
+											这通常是旧版本（v1）遗留：当时「无法提取内容」的文件被错误地标记成了「已处理」。
+											点击下方按钮重置后再次生成即可。
+										</span>
+									</>
+								) : (
+									<>
+										<strong>
+											有 {schemaStats.skipped_count} 个文件曾被跳过
+										</strong>
+										（内容无法提取 / LLM
+										未返回知识点）。如需重新尝试（例如更换模型、修复 PDF
+										后），点击下方按钮清空跳过记录。
+									</>
+								)}
+							</div>
+						</div>
+
+						{schemaStats.skipped_files.length > 0 && (
+							<div className="mb-2 max-h-32 overflow-y-auto rounded border border-amber-200/40 dark:border-amber-800/30 bg-white/40 dark:bg-amber-950/40 p-1.5">
+								{schemaStats.skipped_files.slice(0, 10).map((f) => (
+									<div
+										key={f.path}
+										className="text-[11px] text-amber-700/90 dark:text-amber-300/90 py-0.5 px-1 truncate"
+										title={f.reason_detail || f.reason}
+									>
+										• {f.name}
+										<span className="text-amber-500/70 ml-1">
+											（{f.reason_detail || f.reason}）
+										</span>
+									</div>
+								))}
+								{schemaStats.skipped_files.length > 10 && (
+									<div className="text-[10px] text-amber-500 px-1">
+										...还有 {schemaStats.skipped_files.length - 10} 个
+									</div>
+								)}
+							</div>
+						)}
+
+						<div className="flex flex-wrap items-center gap-1.5">
+							{schemaStats.skipped_count > 0 && (
+								<button
+									onClick={handleRetrySkipped}
+									className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-white dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+								>
+									重试跳过的 {schemaStats.skipped_count} 个文件
+								</button>
+							)}
+							{schemaStats.processed_count > 0 &&
+								schemaStats.real_page_count === 0 && (
+									<button
+										onClick={handleResetProcessed}
+										className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-white dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+									>
+										重置 {schemaStats.processed_count} 条已处理记录
+									</button>
+								)}
+							<button
+								onClick={() => loadSchemaStats()}
+								className="px-2.5 py-1 text-[11px] font-medium text-amber-600/70 dark:text-amber-400/70 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
+							>
+								刷新诊断
+							</button>
+						</div>
+					</div>
+				)}
+
 			{/* Error */}
 			{error && (
 				<div className="mx-3 mt-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg">
@@ -497,7 +714,7 @@ export function WikiView() {
 
 			{isInitializing ? (
 				<div className="mx-3 mt-2 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-					正在初始化知识地图...
+					正在初始化 Wiki 结构...
 				</div>
 			) : null}
 
@@ -506,34 +723,41 @@ export function WikiView() {
 					<div className="flex items-center gap-2 mb-2">
 						<RefreshCw className="w-3.5 h-3.5 text-primary animate-spin" />
 						<span className="text-xs font-medium text-primary">
-							AI 正在生成 Wiki 页面
+							{getPhaseLabel(generationProgress.phase)}
 						</span>
 					</div>
 					{/* 进度条 */}
-					{generationProgress.total_sources > 0 && (
-						<div className="mb-2">
-							<div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-								<div
-									className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
-									style={{
-										width: `${Math.round((generationProgress.processed_sources / generationProgress.total_sources) * 100)}%`,
-									}}
-								/>
+					{generationProgress.total_sources > 0 &&
+						(generationProgress.phase === "extracting" ||
+							generationProgress.phase === "llm") && (
+							<div className="mb-2">
+								<div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+									<div
+										className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+										style={{
+											width: `${Math.round((generationProgress.processed_sources / generationProgress.total_sources) * 100)}%`,
+										}}
+									/>
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 					{/* 状态文字 */}
 					<div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
 						<span className="truncate max-w-[200px]">
 							{generationProgress.current_source_title
-								? `正在处理：${generationProgress.current_source_title}`
-								: "准备中..."}
+								? `${getPhaseVerb(generationProgress.phase)}：${generationProgress.current_source_title}`
+								: getPhaseHint(generationProgress.phase)}
 						</span>
-						<span className="flex-shrink-0 tabular-nums">
-							{generationProgress.processed_sources}/{generationProgress.total_sources} 源文件
-							{generationProgress.generated_pages > 0 &&
-								` · ${generationProgress.generated_pages} 页`}
-						</span>
+						{generationProgress.total_sources > 0 &&
+						(generationProgress.phase === "extracting" ||
+							generationProgress.phase === "llm") ? (
+							<span className="flex-shrink-0 tabular-nums">
+								{generationProgress.processed_sources}/
+								{generationProgress.total_sources}
+								{generationProgress.generated_pages > 0 &&
+									` · ${generationProgress.generated_pages} 页`}
+							</span>
+						) : null}
 					</div>
 					{generationProgress.error && (
 						<div className="mt-1.5 text-[11px] text-red-500">
@@ -544,14 +768,21 @@ export function WikiView() {
 			) : null}
 
 			{/* 生成完成后的结果提示 */}
-			{!isGenerating && generationProgress && (generationProgress.error || (generationProgress.generated_pages > 0) || (generationProgress.warnings && generationProgress.warnings.length > 0)) ? (
-				<div className={`mx-3 mt-2 px-3 py-2.5 rounded-lg border ${
-					generationProgress.error && generationProgress.generated_pages === 0
-						? "bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40"
-						: generationProgress.generated_pages > 0
-							? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40"
-							: "bg-amber-50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
-				}`}>
+			{!isGenerating &&
+			generationProgress &&
+			(generationProgress.error ||
+				generationProgress.generated_pages > 0 ||
+				(generationProgress.warnings &&
+					generationProgress.warnings.length > 0)) ? (
+				<div
+					className={`mx-3 mt-2 px-3 py-2.5 rounded-lg border ${
+						generationProgress.error && generationProgress.generated_pages === 0
+							? "bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40"
+							: generationProgress.generated_pages > 0
+								? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40"
+								: "bg-amber-50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
+					}`}
+				>
 					{generationProgress.generated_pages > 0 && (
 						<div className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">
 							已生成 {generationProgress.generated_pages} 个 Wiki 页面
@@ -562,20 +793,24 @@ export function WikiView() {
 							{generationProgress.error}
 						</div>
 					)}
-					{generationProgress.warnings && generationProgress.warnings.length > 0 && (
-						<div className="mt-1 space-y-0.5">
-							{generationProgress.warnings.slice(0, 5).map((w, i) => (
-								<div key={i} className="text-[11px] text-amber-600 dark:text-amber-400">
-									• {w}
-								</div>
-							))}
-							{generationProgress.warnings.length > 5 && (
-								<div className="text-[11px] text-amber-500">
-									...还有 {generationProgress.warnings.length - 5} 条警告
-								</div>
-							)}
-						</div>
-					)}
+					{generationProgress.warnings &&
+						generationProgress.warnings.length > 0 && (
+							<div className="mt-1 space-y-0.5">
+								{generationProgress.warnings.slice(0, 5).map((w, i) => (
+									<div
+										key={i}
+										className="text-[11px] text-amber-600 dark:text-amber-400"
+									>
+										• {w}
+									</div>
+								))}
+								{generationProgress.warnings.length > 5 && (
+									<div className="text-[11px] text-amber-500">
+										...还有 {generationProgress.warnings.length - 5} 条警告
+									</div>
+								)}
+							</div>
+						)}
 					<button
 						onClick={() => clearGenerationProgress()}
 						className="mt-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline"
@@ -592,6 +827,17 @@ export function WikiView() {
 					onOpenPage={openPage}
 				/>
 			) : null}
+
+			{lintReport && (
+				<WikiLintPanel
+					report={lintReport}
+					onDismiss={clearLintReport}
+					onOpenPage={(slug) => {
+						const p = pages.find((x) => x.slug === slug || x.id === slug);
+						if (p) openPage(p);
+					}}
+				/>
+			)}
 
 			{/* Page List */}
 			<div className="flex-1 overflow-y-auto">
@@ -619,12 +865,11 @@ export function WikiView() {
 											<h4 className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
 												{page.title}
 											</h4>
-											{page.page_type &&
-												page.page_type !== "entity" && (
-													<span className="px-1.5 py-0.5 text-[9px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded uppercase tracking-wider flex-shrink-0">
-														{page.page_type}
-													</span>
-												)}
+											{page.page_type && page.page_type !== "entity" && (
+												<span className="px-1.5 py-0.5 text-[9px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded uppercase tracking-wider flex-shrink-0">
+													{page.page_type}
+												</span>
+											)}
 										</div>
 										{page.summary && (
 											<p className="text-xs text-zinc-500 dark:text-zinc-400 truncate pl-5.5 ml-[22px]">

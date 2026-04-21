@@ -66,10 +66,7 @@ export function isSensitivePath(p: string): boolean {
 export function isSystemWriteBlocked(p: string): boolean {
 	const resolved = path.resolve(p);
 	for (const prefix of SYSTEM_WRITE_BLOCKED_PREFIXES) {
-		if (
-			resolved === prefix ||
-			resolved.startsWith(`${prefix}${path.sep}`)
-		) {
+		if (resolved === prefix || resolved.startsWith(`${prefix}${path.sep}`)) {
 			return true;
 		}
 	}
@@ -80,8 +77,7 @@ export function isPathInsideCwd(filePath: string, cwd: string): boolean {
 	const resolved = path.resolve(filePath);
 	const cwdResolved = path.resolve(cwd);
 	return (
-		resolved === cwdResolved ||
-		resolved.startsWith(`${cwdResolved}${path.sep}`)
+		resolved === cwdResolved || resolved.startsWith(`${cwdResolved}${path.sep}`)
 	);
 }
 

@@ -1,5 +1,10 @@
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
+import {
+	beginAppRegistration,
+	initAppRegistration,
+	pollAppRegistrationOnce,
+} from "../../remote-control/channels/feishu/appRegistration";
 import { getRemoteControlOrchestrator } from "../../remote-control/core/service";
 import type {
 	RemoteChannelId,
@@ -17,6 +22,8 @@ const REMOTE_CHANNEL_IDS: RemoteChannelId[] = [
 	"telegram",
 	"slack",
 	"discord",
+	"qqbot",
+	"wechat",
 	"generic_webhook",
 ];
 
@@ -77,6 +84,12 @@ export function createRemoteControlHandlers() {
 
 	const list_remote_channels: Handler<"list_remote_channels"> = async () => {
 		return getRemoteControlOrchestrator().listChannels();
+	};
+
+	const list_remote_channel_capabilities: Handler<
+		"list_remote_channel_capabilities"
+	> = async () => {
+		return getRemoteControlOrchestrator().listChannelCapabilities();
 	};
 
 	const list_remote_pairings: Handler<"list_remote_pairings"> = async () => {
@@ -160,11 +173,30 @@ export function createRemoteControlHandlers() {
 		return getRemoteControlOrchestrator().listEventLogs(limit);
 	};
 
+	const feishu_begin_app_registration: Handler<
+		"feishu_begin_app_registration"
+	> = async (_event, input) => {
+		const domain = input.domain ?? "feishu";
+		await initAppRegistration(domain);
+		return beginAppRegistration(domain);
+	};
+
+	const feishu_poll_app_registration: Handler<
+		"feishu_poll_app_registration"
+	> = async (_event, input) => {
+		return pollAppRegistrationOnce({
+			deviceCode: input.deviceCode,
+			currentDomain: input.currentDomain,
+			intervalSec: input.intervalSec,
+		});
+	};
+
 	return {
 		get_remote_control_config,
 		set_remote_control_config,
 		get_remote_control_runtime_status,
 		list_remote_channels,
+		list_remote_channel_capabilities,
 		list_remote_pairings,
 		approve_remote_pairing,
 		reject_remote_pairing,
@@ -173,5 +205,7 @@ export function createRemoteControlHandlers() {
 		terminate_remote_session,
 		test_remote_channel,
 		list_remote_event_logs,
+		feishu_begin_app_registration,
+		feishu_poll_app_registration,
 	};
 }

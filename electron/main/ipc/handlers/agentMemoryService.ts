@@ -189,7 +189,9 @@ export async function buildMemoryContextForAgent(
 		const lastAccess = m.last_accessed_at || m.updated_at;
 		const daysSinceAccess = (nowMs - lastAccess) / ONE_DAY_MS;
 		const decayFactor =
-			daysSinceAccess > 30 ? Math.max(0.3, 1 - (daysSinceAccess - 30) / 180) : 1;
+			daysSinceAccess > 30
+				? Math.max(0.3, 1 - (daysSinceAccess - 30) / 180)
+				: 1;
 		let effectiveScore = m.relevance_score * decayFactor;
 
 		// 如果提供了查询，对相关记忆加权
@@ -262,11 +264,11 @@ export async function buildMemoryContextForAgent(
 
 	// 按优先级排序分类
 	const sortedCategories = Array.from(grouped.entries()).sort(
-		([a], [b]) =>
-			(categoryPriority[a] ?? 99) - (categoryPriority[b] ?? 99),
+		([a], [b]) => (categoryPriority[a] ?? 99) - (categoryPriority[b] ?? 99),
 	);
 
-	let result = "## 用户长期记忆\n以下是用户的历史偏好和重要信息，务必在回答中参考并遵守：\n\n";
+	let result =
+		"## 用户长期记忆\n以下是用户的历史偏好和重要信息，务必在回答中参考并遵守：\n\n";
 	for (const [cat, items] of sortedCategories) {
 		const label = categoryLabels[cat] || "其他";
 		const section = `### ${label}\n${items.join("\n")}\n\n`;
@@ -297,9 +299,7 @@ function extractByRules(messages: ConversationMessage[]): ExtractedMemory[] {
 	const extracted: ExtractedMemory[] = [];
 	const seenKeys = new Set<string>();
 
-	const userMessages = messages
-		.filter((m) => m.role === "user")
-		.slice(-15);
+	const userMessages = messages.filter((m) => m.role === "user").slice(-15);
 
 	for (const msg of userMessages) {
 		const text = msg.content;
@@ -410,7 +410,10 @@ export async function extractMemoriesWithLlm(
 		// 构建对话摘要（截断到合理长度）
 		const conversationText = messages
 			.slice(-20)
-			.map((m) => `【${m.role === "user" ? "用户" : "助手"}】${m.content.slice(0, 500)}`)
+			.map(
+				(m) =>
+					`【${m.role === "user" ? "用户" : "助手"}】${m.content.slice(0, 500)}`,
+			)
 			.join("\n\n");
 
 		if (conversationText.length < 20) {
@@ -427,7 +430,10 @@ export async function extractMemoriesWithLlm(
 
 		return parseLlmExtractionResult(result.content);
 	} catch (err) {
-		console.warn("[MemoryService] LLM extraction failed, falling back to rules:", err);
+		console.warn(
+			"[MemoryService] LLM extraction failed, falling back to rules:",
+			err,
+		);
 		return [];
 	}
 }
@@ -621,10 +627,7 @@ export async function searchMemories(
 	}
 
 	// 构建多条件 OR 查询
-	const conditions = words.flatMap(() => [
-		`content LIKE ?`,
-		`key LIKE ?`,
-	]);
+	const conditions = words.flatMap(() => [`content LIKE ?`, `key LIKE ?`]);
 	const args = words.flatMap((w) => [`%${w}%`, `%${w}%`]);
 
 	const rows = await db.client.execute({
@@ -689,9 +692,7 @@ export async function getAllMemories(
 	return rows.rows.map(mapRow);
 }
 
-export async function getMemoryStats(
-	db: DbContext,
-): Promise<{
+export async function getMemoryStats(db: DbContext): Promise<{
 	total: number;
 	byCategory: Record<string, number>;
 }> {

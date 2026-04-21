@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "../../lib/tauriCompat";
 import { listen } from "../../lib/tauriEventCompat";
+import { workspaceStore } from "../../lib/workspaceStore";
+import { managedModeStore } from "../../lib/managedModeStore";
 
 export interface WikiPageItem {
 	id: string;
@@ -18,27 +20,87 @@ export interface WikiPageItem {
 	last_updated_by: string;
 	created_at: number;
 	updated_at: number;
-	/** entity | concept | summary | workflow */
+	/** entity | concept | summary | workflow | source | comparison | map */
 	page_type?: string;
 	/** IDs of related pages, used for building graph edges */
 	related_page_ids?: string[];
+	/** 溯源文件路径列表（Karpathy pattern：sources） */
+	sources?: string[];
+	/** 页面状态：active | stub | needs-update | deprecated */
+	status?: "active" | "stub" | "needs-update" | "deprecated";
+	/** 别名列表，用于跨文档检索 */
+	aliases?: string[];
 }
 
 /** 后端推送的生成进度 */
 export interface WikiGenerationProgress {
 	is_generating: boolean;
 	scope_path: string | null;
+	phase?:
+		| "idle"
+		| "preflight"
+		| "scanning"
+		| "filtering"
+		| "extracting"
+		| "llm"
+		| "linking"
+		| "finalizing";
 	total_sources: number;
 	processed_sources: number;
 	generated_pages: number;
 	current_source_title: string | null;
 	error: string | null;
 	warnings?: string[];
+	/** 本轮被跳过的文件数 */
+	skipped_count?: number;
+	/** schema 累计的跳过文件数（跨轮次） */
+	total_skipped_in_schema?: number;
+}
+
+export interface WikiSchemaStatsInfo {
+	processed_count: number;
+	skipped_count: number;
+	real_page_count: number;
+	has_knowledge_map: boolean;
+	skipped_files: Array<{
+		path: string;
+		name: string;
+		reason: string;
+		reason_detail?: string;
+		skipped_at: number;
+	}>;
+}
+
+export type WikiLintIssueKind =
+	| "orphan"
+	| "stub"
+	| "broken-link"
+	| "frontmatter-missing"
+	| "source-no-sources";
+
+export interface WikiLintIssueItem {
+	kind: WikiLintIssueKind;
+	page_slug: string;
+	page_title: string;
+	detail: string;
+}
+
+export interface WikiLintReportData {
+	scope_path: string;
+	total_pages: number;
+	issues: WikiLintIssueItem[];
+	counts: Record<WikiLintIssueKind, number>;
+	un_ingested_sources: Array<{
+		path: string;
+		name: string;
+		size: number;
+	}>;
+	suggestions: string[];
+	ran_at: number;
 }
 
 function buildInitialWikiMapContent(scopePath: string) {
-	const scopeName =
-		scopePath.split(/[/\\]/).filter(Boolean).pop() || scopePath;
+	const scopeName = scopePath.split(/[/\\]/).filter(Boolean).pop() || scopePath;
 	return `# 知识地图
 
 当前线程工作目录：\`${scopeName}\`
@@ -79,13 +141,15 @@ export function useWiki(scopePath: string | null) {
 			if (!status.is_generating && status.generated_pages > 0) {
 				loadPagesRef.current();
 			}
-		}).then((unlisten) => {
-			if (cancelled) {
-				unlisten();
-			} else {
-				unlistenRef.current = unlisten;
-			}
-		}).catch(() => {});
+		})
+			.then((unlisten) => {
+				if (cancelled) {
+					unlisten();
+				} else {
+					unlistenRef.current = unlisten;
+				}
+			})
+			.catch(() => {});
 		return () => {
 			cancelled = true;
 			unlistenRef.current?.();
@@ -264,7 +328,10 @@ export function useWiki(scopePath: string | null) {
 		async (pageId: string) => {
 			if (!scopePath) return;
 			try {
-				await invoke("wiki_delete_page", { scope_path: scopePath, page_id: pageId });
+				await invoke("wiki_delete_page", {
+					scope_path: scopePath,
+					page_id: pageId,
+				});
 				await loadPages();
 			} catch (e: any) {
 				setError(e?.message || "删除失败");
@@ -304,7 +371,8 @@ export function useWiki(scopePath: string | null) {
 	useEffect(() => {
 		if (!enabled || !scopePath || loading || pages.length > 0) return;
 		let cancelled = false;
-		setIsInitializing(true);
+		// 不设 isInitializing —— 该状态专给用户主动触发的 enable / rebuild。
+		// 自动补齐知识地图是后台轻量操作，不应阻塞 UI 显示「正在初始化」横幅。
 		void (async () => {
 			try {
 				const created = await ensureInitialMap();
@@ -314,10 +382,6 @@ export function useWiki(scopePath: string | null) {
 			} catch (e: any) {
 				if (!cancelled) {
 					setError(e?.message || "初始化知识地图失败");
-				}
-			} finally {
-				if (!cancelled) {
-					setIsInitializing(false);
 				}
 			}
 		})();
@@ -331,7 +395,7 @@ export function useWiki(scopePath: string | null) {
 		async (model?: string) => {
 			if (!scopePath) return { success: false, generated_pages: 0 };
 			try {
-				setIsInitializing(true);
+				// 仅使用 generationProgress 驱动的 isGenerating 状态，不污染 isInitializing
 				setError(null);
 				const result = await invoke<{
 					success: boolean;
@@ -342,11 +406,41 @@ export function useWiki(scopePath: string | null) {
 			} catch (e: any) {
 				setError(e?.message || "AI 生成失败");
 				return { success: false, generated_pages: 0 };
-			} finally {
-				setIsInitializing(false);
 			}
 		},
 		[scopePath, loadPages],
+	);
+
+	// 在文档编辑器中打开 Wiki 页面对应的物理文件
+	const openInEditor = useCallback(
+		async (pageId: string, title: string) => {
+			if (!scopePath) return false;
+			try {
+				const result = await invoke<{ path: string | null }>(
+					"wiki_get_page_file_path",
+					{ scope_path: scopePath, page_id: pageId },
+				);
+				const absPath = result?.path;
+				if (!absPath) {
+					setError("未找到对应的物理文件，可能已被删除");
+					return false;
+				}
+				const fileRes = await invoke<{
+					content: string;
+					encoding?: string;
+				}>("read_file_safe", { payload: { path: absPath } });
+				workspaceStore.openProjectFile(absPath, title, fileRes?.content || "");
+				if (managedModeStore.getState().isActive) {
+					managedModeStore.disableManagedMode();
+				}
+				workspaceStore.setMainView("editor");
+				return true;
+			} catch (e: any) {
+				setError(e?.message || "在编辑器中打开失败");
+				return false;
+			}
+		},
+		[scopePath],
 	);
 
 	// 查询生成状态
@@ -370,6 +464,91 @@ export function useWiki(scopePath: string | null) {
 		setGenerationProgress(null);
 	}, []);
 
+	// schema 诊断数据：处理/跳过/实际页面数
+	const [schemaStats, setSchemaStats] = useState<WikiSchemaStatsInfo | null>(
+		null,
+	);
+
+	// Wiki lint 报告
+	const [lintReport, setLintReport] = useState<WikiLintReportData | null>(null);
+	const [lintLoading, setLintLoading] = useState(false);
+
+	const runLint = useCallback(async () => {
+		if (!scopePath) return null;
+		setLintLoading(true);
+		try {
+			const report = await invoke<WikiLintReportData>("wiki_lint", {
+				scope_path: scopePath,
+			});
+			setLintReport(report);
+			return report;
+		} catch (e: any) {
+			setError(e?.message || "Wiki 健康检查失败");
+			return null;
+		} finally {
+			setLintLoading(false);
+		}
+	}, [scopePath]);
+
+	const clearLintReport = useCallback(() => {
+		setLintReport(null);
+	}, []);
+
+	const loadSchemaStats = useCallback(async () => {
+		if (!scopePath) {
+			setSchemaStats(null);
+			return null;
+		}
+		try {
+			const stats = await invoke<WikiSchemaStatsInfo>("wiki_schema_stats", {
+				scope_path: scopePath,
+			});
+			setSchemaStats(stats);
+			return stats;
+		} catch {
+			setSchemaStats(null);
+			return null;
+		}
+	}, [scopePath]);
+
+	useEffect(() => {
+		if (enabled) {
+			void loadSchemaStats();
+		} else {
+			setSchemaStats(null);
+		}
+	}, [enabled, loadSchemaStats]);
+
+	const resetSkippedSources = useCallback(async () => {
+		if (!scopePath) return 0;
+		try {
+			const result = await invoke<{ cleared: number }>(
+				"wiki_reset_skipped_sources",
+				{ scope_path: scopePath },
+			);
+			await loadSchemaStats();
+			return result.cleared;
+		} catch (e: any) {
+			setError(e?.message || "重置跳过记录失败");
+			return 0;
+		}
+	}, [scopePath, loadSchemaStats]);
+
+	const resetProcessedSources = useCallback(async () => {
+		if (!scopePath) return 0;
+		try {
+			const result = await invoke<{ cleared: number }>(
+				"wiki_reset_processed_sources",
+				{ scope_path: scopePath },
+			);
+			await loadSchemaStats();
+			return result.cleared;
+		} catch (e: any) {
+			setError(e?.message || "重置已处理记录失败");
+			return 0;
+		}
+	}, [scopePath, loadSchemaStats]);
+
 	return {
 		pages,
 		loading,
@@ -387,6 +566,15 @@ export function useWiki(scopePath: string | null) {
 		searchPages,
 		generateWiki,
 		getGenerationStatus,
+		openInEditor,
 		refresh: loadPages,
+		schemaStats,
+		loadSchemaStats,
+		resetSkippedSources,
+		resetProcessedSources,
+		lintReport,
+		lintLoading,
+		runLint,
+		clearLintReport,
 	};
 }

@@ -8,14 +8,7 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import {
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -237,9 +230,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 		[numPages],
 	);
 
-	const handleJumpInputKeyDown = (
-		e: React.KeyboardEvent<HTMLInputElement>,
-	) => {
+	const handleJumpInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			const num = Number.parseInt(jumpInput, 10);
 			if (!Number.isNaN(num)) jumpToPage(num);

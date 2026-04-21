@@ -509,7 +509,7 @@ export function ChatInput({
 			/>
 
 			{/* 主输入区域 */}
-			<div className="bg-zinc-50 dark:bg-zinc-800/80 rounded-[20px] border border-zinc-200/80 dark:border-zinc-700/60 focus-within:border-zinc-300 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+			<div className="bg-[#faf9f5] dark:bg-[#1e1d1b] rounded-[20px] border border-[#e8e6dc] dark:border-[#30302e] focus-within:border-[#d1cfc5] dark:focus-within:border-[#4a4845] transition-all duration-200 shadow-[rgba(0,0,0,0.04)_0px_1px_8px]">
 				{/* 上下文附件条 */}
 				{contexts.length > 0 ? (
 					<div className="px-4 pt-3 pb-1">
@@ -542,7 +542,7 @@ export function ChatInput({
 							))}
 						</div>
 						{/* 附件与输入区分割线 */}
-						<div className="mt-2 border-t border-zinc-200/60 dark:border-zinc-700/40" />
+						<div className="mt-2 border-t border-[#f0eee6] dark:border-[#30302e]/60" />
 					</div>
 				) : null}
 
@@ -565,13 +565,13 @@ export function ChatInput({
 						placeholder={placeholder}
 						disabled={disabled}
 						rows={1}
-						className="w-full px-5 py-4 bg-transparent text-[14px] text-zinc-800 dark:text-zinc-200 placeholder-zinc-400/80 dark:placeholder-zinc-500 resize-none focus:outline-none disabled:opacity-50 min-h-[72px] leading-relaxed"
+						className="w-full px-5 py-4 bg-transparent text-[14px] text-[#141413] dark:text-[#b0aea5] placeholder-[#b0aea5]/80 dark:placeholder-[#5e5d59] resize-none focus:outline-none disabled:opacity-50 min-h-[72px] leading-relaxed"
 						style={{ maxHeight: "200px" }}
 					/>
 				</div>
 
 				{/* 底部工具栏 — 分割线 + 宽松布局 */}
-				<div className="mx-4 border-t border-zinc-200/50 dark:border-zinc-700/30" />
+				<div className="mx-4 border-t border-[#f0eee6] dark:border-[#30302e]/50" />
 				<div className="flex items-center justify-between px-3 py-2.5">
 					{/* 左侧：圆形按钮组 */}
 					<div className="flex items-center gap-1">
@@ -579,7 +579,7 @@ export function ChatInput({
 						<button
 							onClick={() => fileInputRef.current?.click()}
 							aria-label="添加附件"
-							className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200/80 dark:border-zinc-600/60 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-500 transition-all duration-150 cursor-pointer active:scale-95"
+							className="w-9 h-9 flex items-center justify-center rounded-full border border-[#e8e6dc] dark:border-[#30302e] text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] hover:border-[#d1cfc5] dark:hover:border-[#4a4845] transition-all duration-150 cursor-pointer active:scale-95"
 							title="添加附件"
 						>
 							<Plus className="w-4 h-4" />
@@ -590,7 +590,7 @@ export function ChatInput({
 							onClick={() => setValue("/")}
 							onMouseEnter={prefetchChatContext}
 							aria-label="命令菜单"
-							className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200/80 dark:border-zinc-600/60 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-500 transition-all duration-150 cursor-pointer active:scale-95"
+							className="w-9 h-9 flex items-center justify-center rounded-full border border-[#e8e6dc] dark:border-[#30302e] text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] hover:border-[#d1cfc5] dark:hover:border-[#4a4845] transition-all duration-150 cursor-pointer active:scale-95"
 							title="命令菜单 (/)"
 						>
 							<AtSign className="w-4 h-4" />
@@ -614,8 +614,8 @@ export function ChatInput({
 								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
 								className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-full transition-all duration-150 cursor-pointer ${
 									isModelSelectorOpen
-										? "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100"
-										: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
+										? "bg-[#f0eee6] dark:bg-[#30302e] text-[#141413] dark:text-[#faf9f5]"
+										: "text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e]"
 								}`}
 							>
 								<ChevronUp
@@ -632,7 +632,7 @@ export function ChatInput({
 					<div className="flex items-center gap-2">
 						<button
 							aria-label="语音输入"
-							className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-300 hover:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+							className="w-9 h-9 flex items-center justify-center rounded-full text-[#d1cfc5] hover:text-[#87867f] dark:hover:text-[#87867f] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] transition-all duration-150 cursor-pointer active:scale-95"
 							title="语音输入"
 						>
 							<Mic className="w-4 h-4" />
@@ -645,8 +645,8 @@ export function ChatInput({
 							aria-label="发送消息"
 							className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 cursor-pointer active:scale-90 ${
 								value.trim() || selectedChips.length > 0
-									? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-									: "bg-zinc-200/80 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 disabled:cursor-not-allowed"
+									? "bg-[#c96442] hover:bg-[#b5573a] text-[#faf9f5] shadow-[#c96442_0px_0px_0px_0px,#c96442_0px_0px_0px_1px]"
+									: "bg-[#f0eee6] dark:bg-[#30302e] text-[#d1cfc5] dark:text-[#5e5d59] disabled:cursor-not-allowed"
 							}`}
 						>
 							<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
@@ -656,15 +656,15 @@ export function ChatInput({
 			</div>
 
 			{/* 快捷键提示 */}
-			<div className="flex items-center justify-center gap-5 mt-2.5 text-[10px] text-zinc-300 dark:text-zinc-600 select-none">
+			<div className="flex items-center justify-center gap-5 mt-2.5 text-[10px] text-[#d1cfc5] dark:text-[#4a4845] select-none">
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-white dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60 rounded text-[9px] font-sans text-zinc-400 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-[#faf9f5] dark:bg-[#30302e]/60 border border-[#e8e6dc] dark:border-[#30302e] rounded text-[9px] font-sans text-[#b0aea5] shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 						/
 					</kbd>
 					命令
 				</span>
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-white dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60 rounded text-[9px] font-sans text-zinc-400 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-[#faf9f5] dark:bg-[#30302e]/60 border border-[#e8e6dc] dark:border-[#30302e] rounded text-[9px] font-sans text-[#b0aea5] shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 						↵
 					</kbd>
 					发送

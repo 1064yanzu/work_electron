@@ -99,9 +99,9 @@ const READ_ONLY_COMMANDS = new Set([
 	"uniq",
 	"cut",
 	"awk",
-	"sed",   // sed without -i is read-only, handled separately
+	"sed", // sed without -i is read-only, handled separately
 	"tr",
-	"tee",   // tee writes to a file, handled separately
+	"tee", // tee writes to a file, handled separately
 	"jq",
 	"yq",
 	"python3",

@@ -66,7 +66,14 @@ interface CompactMetadata {
 	tid?: string; // taskId
 	sd?: string; // sandboxDir
 	af?: Array<{ t: string; p: string; k?: "f" | "d"; s?: number }>; // attachedFiles
-	tu?: { p: number; c: number; t: number; cr?: number; cc?: number; cost?: number }; // tokenUsage
+	tu?: {
+		p: number;
+		c: number;
+		t: number;
+		cr?: number;
+		cc?: number;
+		cost?: number;
+	}; // tokenUsage
 	x?: Record<string, unknown>; // extra metadata (forward-compatible)
 }
 

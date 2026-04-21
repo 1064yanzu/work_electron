@@ -1,0 +1,163 @@
+/**
+ * ChannelNav — 通道左侧选择器
+ *
+ * 每条通道展示：
+ *   - 图标（通道品牌色）
+ *   - 名称 + 副标题
+ *   - 运行状态小圆点（emerald/pulse / zinc / rose）
+ *   - 启用开关（无需进入详情即可开启）
+ *
+ * 选中态：暖色 ring + 左侧强调条。
+ */
+
+import type { LucideIcon } from "lucide-react";
+import { Lock } from "lucide-react";
+import { cn } from "../../../../lib/utils";
+import { SettingsSwitch } from "../../ui/SettingsPrimitives";
+import { StatusDot } from "./StatusDot";
+
+export type ChannelNavItem = {
+	id: string;
+	label: string;
+	description?: string;
+	icon: LucideIcon;
+	accent: string;
+	iconBg: string;
+	enabled: boolean;
+	running?: boolean;
+	connected?: boolean;
+	hasError?: boolean;
+	/** 实验特性等特殊标签 */
+	badge?: { text: string; tone: "amber" | "sky" | "zinc" };
+	/** 未启用前置条件（例如微信需勾选风险声明） */
+	locked?: boolean;
+	lockedHint?: string;
+};
+
+export function ChannelNav({
+	items,
+	activeId,
+	onSelect,
+	onToggleEnabled,
+	saving,
+	className,
+}: {
+	items: ChannelNavItem[];
+	activeId: string;
+	onSelect: (id: string) => void;
+	onToggleEnabled: (id: string, next: boolean) => void;
+	saving: boolean;
+	className?: string;
+}) {
+	return (
+		<nav
+			className={cn(
+				"flex flex-col gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/70 p-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)] dark:border-zinc-800 dark:bg-zinc-900/50",
+				className,
+			)}
+			aria-label="通道选择"
+		>
+			{items.map((item) => {
+				const Icon = item.icon;
+				const isActive = item.id === activeId;
+				const tone = item.hasError
+					? "rose"
+					: item.connected && item.enabled
+						? "emerald"
+						: item.enabled
+							? "amber"
+							: "zinc";
+				const pulse = item.enabled && item.connected;
+				return (
+					<button
+						key={item.id}
+						type="button"
+						onClick={() => onSelect(item.id)}
+						className={cn(
+							"group relative flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
+							isActive
+								? "bg-white ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:bg-zinc-900 dark:ring-primary/50"
+								: "hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40",
+						)}
+					>
+						{/* 左侧强调条 */}
+						<span
+							className={cn(
+								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+								isActive
+									? "bg-primary opacity-100"
+									: "bg-primary opacity-0 group-hover:opacity-40",
+							)}
+						/>
+
+						{/* 图标 */}
+						<span
+							className={cn(
+								"relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br",
+								item.iconBg,
+								!item.enabled ? "opacity-60 saturate-50" : "",
+							)}
+						>
+							<Icon className={cn("h-4 w-4", item.accent)} strokeWidth={1.8} />
+							<span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-white dark:bg-zinc-900">
+								<StatusDot tone={tone} pulse={pulse} size="xs" />
+							</span>
+						</span>
+
+						{/* 文案 */}
+						<div className="min-w-0 flex-1">
+							<div className="flex items-center gap-1.5">
+								<span className="truncate text-sm font-medium text-text-primary">
+									{item.label}
+								</span>
+								{item.badge ? (
+									<span
+										className={cn(
+											"inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+											item.badge.tone === "amber"
+												? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+												: item.badge.tone === "sky"
+													? "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
+													: "bg-zinc-500/10 text-zinc-500",
+										)}
+									>
+										{item.badge.text}
+									</span>
+								) : null}
+							</div>
+							{item.description ? (
+								<div className="mt-0.5 truncate text-[11px] leading-relaxed text-text-muted">
+									{item.description}
+								</div>
+							) : null}
+						</div>
+
+						{/* 右侧：锁定提示或开关 */}
+						<div
+							className="flex-shrink-0"
+							onClick={(e) => e.stopPropagation()}
+							onKeyDown={(e) => e.stopPropagation()}
+							role="presentation"
+						>
+							{item.locked ? (
+								<span
+									className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400"
+									title={item.lockedHint}
+								>
+									<Lock className="h-3 w-3" />
+									已锁定
+								</span>
+							) : (
+								<SettingsSwitch
+									checked={item.enabled}
+									onChange={(next) => onToggleEnabled(item.id, next)}
+									disabled={saving}
+								/>
+							)}
+						</div>
+					</button>
+				);
+			})}
+		</nav>
+	);
+}

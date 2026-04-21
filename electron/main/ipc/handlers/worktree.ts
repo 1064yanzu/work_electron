@@ -15,10 +15,7 @@ type Handler<K extends keyof IPCSchema> = (
 export function createWorktreeHandlers(deps: { logger: Logger }) {
 	const service = getWorktreeService(deps.logger);
 
-	const worktree_create: Handler<"worktree_create"> = async (
-		_event,
-		input,
-	) => {
+	const worktree_create: Handler<"worktree_create"> = async (_event, input) => {
 		const result = await service.createWorktree(
 			input.repoPath,
 			input.branchName,
@@ -34,10 +31,7 @@ export function createWorktreeHandlers(deps: { logger: Logger }) {
 		return service.mergeWorktree(input.repoPath, input.worktreePath);
 	};
 
-	const worktree_remove: Handler<"worktree_remove"> = async (
-		_event,
-		input,
-	) => {
+	const worktree_remove: Handler<"worktree_remove"> = async (_event, input) => {
 		return service.removeWorktree(input.repoPath, input.worktreePath);
 	};
 

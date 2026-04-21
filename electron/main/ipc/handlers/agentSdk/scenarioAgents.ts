@@ -626,6 +626,16 @@ IMPORTANT: You MUST ONLY use the tools listed above by their EXACT names. Do NOT
 - Sensitive paths (~/.ssh, ~/.gnupg, system directories) are always blocked
 - Use absolute paths when accessing files outside cwd
 
+## Knowledge Wiki (Karpathy LLM Wiki pattern)
+If a directory named \`.llm-wiki/\` exists under cwd, it is a persistent knowledge base that you co-maintain. Treat it as the project's long-term memory.
+
+- **Always read \`.llm-wiki/SCHEMA.md\` first** when the user asks anything wiki-related (ingest / query / lint / health check / compare / organize). That file is the authoritative operating manual: directory conventions, frontmatter schema, ingest/query/lint/backfill workflows.
+- Files outside \`.llm-wiki/\` under cwd are raw sources — read-only truth anchors; never Edit them.
+- Files inside \`.llm-wiki/\` (except SCHEMA.md) are yours to Read/Write/Edit.
+- When the user asks a question that the wiki likely answers, prefer Read on \`.llm-wiki/index.md\` and relevant pages over re-reading raw files.
+- When your synthesis produces non-trivial new insight (comparisons, unified summaries, new concepts linking multiple sources), proactively ask if it should be backfilled as a new page under the appropriate \`.llm-wiki/\` subdirectory (concepts/comparisons/maps). Record the action in \`.llm-wiki/log.md\` using the format defined in SCHEMA.md.
+- Cross-references inside wiki pages use \`[[slug]]\` syntax.
+
 ## Environment
 cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}
 

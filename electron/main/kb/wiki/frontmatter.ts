@@ -49,12 +49,8 @@ export function parseFrontmatter(raw: string): {
 		};
 	}
 
-	const yamlBlock = trimmed.slice(
-		FRONTMATTER_DELIMITER.length + 1,
-		secondIdx,
-	);
-	const bodyStart =
-		secondIdx + 1 + FRONTMATTER_DELIMITER.length;
+	const yamlBlock = trimmed.slice(FRONTMATTER_DELIMITER.length + 1, secondIdx);
+	const bodyStart = secondIdx + 1 + FRONTMATTER_DELIMITER.length;
 	const content = trimmed.slice(bodyStart).replace(/^\n+/, "");
 
 	const parsed = parseYamlLite(yamlBlock);
@@ -71,6 +67,9 @@ export function parseFrontmatter(raw: string): {
 			last_updated_by: String(parsed.last_updated_by || "auto"),
 			created_at: Number(parsed.created_at || 0),
 			updated_at: Number(parsed.updated_at || 0),
+			sources: parseStringArray(parsed.sources),
+			status: normalizeStatus(parsed.status),
+			aliases: parseStringArray(parsed.aliases),
 		},
 		content,
 	};
@@ -97,11 +96,20 @@ export function serializeFrontmatter(
 	for (const tag of fm.tags) {
 		lines.push(`  - ${yamlQuote(tag)}`);
 	}
+	lines.push("aliases:");
+	for (const alias of fm.aliases) {
+		lines.push(`  - ${yamlQuote(alias)}`);
+	}
 	lines.push("related_pages:");
 	for (const rp of fm.related_pages) {
 		lines.push(`  - ${yamlQuote(rp)}`);
 	}
+	lines.push("sources:");
+	for (const src of fm.sources) {
+		lines.push(`  - ${yamlQuote(src)}`);
+	}
 	lines.push(`confidence: ${fm.confidence}`);
+	lines.push(`status: ${yamlQuote(fm.status)}`);
 	lines.push(`last_updated_by: ${yamlQuote(fm.last_updated_by)}`);
 	lines.push(`created_at: ${fm.created_at}`);
 	lines.push(`updated_at: ${fm.updated_at}`);
@@ -138,6 +146,9 @@ export function getPageDir(pageType: string): string {
 		entity: "entities",
 		concept: "concepts",
 		workflow: "workflows",
+		source: "sources",
+		comparison: "comparisons",
+		map: "maps",
 	};
 	return dirMap[pageType] || "";
 }
@@ -158,7 +169,25 @@ function createEmptyFrontmatter(): WikiFrontmatter {
 		last_updated_by: "auto",
 		created_at: 0,
 		updated_at: 0,
+		sources: [],
+		status: "active",
+		aliases: [],
 	};
+}
+
+function normalizeStatus(
+	val: unknown,
+): "active" | "stub" | "needs-update" | "deprecated" {
+	const s = String(val || "").toLowerCase();
+	if (
+		s === "active" ||
+		s === "stub" ||
+		s === "needs-update" ||
+		s === "deprecated"
+	) {
+		return s;
+	}
+	return "active";
 }
 
 /**
@@ -239,10 +268,7 @@ function yamlUnquote(value: string): string {
 		(trimmed.startsWith('"') && trimmed.endsWith('"')) ||
 		(trimmed.startsWith("'") && trimmed.endsWith("'"))
 	) {
-		return trimmed
-			.slice(1, -1)
-			.replace(/\\"/g, '"')
-			.replace(/\\\\/g, "\\");
+		return trimmed.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
 	}
 	return trimmed;
 }

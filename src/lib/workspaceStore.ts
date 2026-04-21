@@ -375,7 +375,7 @@ class WorkspaceStore {
 	}
 
 	// 设置主视图模式 -> layoutStore
-	setMainView(view: "editor" | "browser") {
+	setMainView(view: "editor" | "browser" | "wiki-graph") {
 		layoutStore.setMainView(view);
 	}
 

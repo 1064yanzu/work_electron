@@ -54,21 +54,32 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 			<Handle type="source" position={Position.Right} className="opacity-0" />
 
 			{/* 顶部状态渐变条 */}
-			<div className={cn(
-				"h-[3px] rounded-t-2xl transition-colors duration-500",
-				isActive && "bg-gradient-to-r from-primary/60 via-primary to-primary/60",
-				isCompleted && "bg-gradient-to-r from-emerald-400/50 via-emerald-500/70 to-emerald-400/50",
-				data.status === "error" && "bg-gradient-to-r from-rose-400/50 via-rose-500/70 to-rose-400/50",
-				!isActive && !isCompleted && data.status !== "error" && "bg-gradient-to-r from-zinc-200/50 via-zinc-300/50 to-zinc-200/50 dark:from-zinc-700/50 dark:via-zinc-600/50 dark:to-zinc-700/50",
-			)} />
+			<div
+				className={cn(
+					"h-[3px] rounded-t-2xl transition-colors duration-500",
+					isActive &&
+						"bg-gradient-to-r from-primary/60 via-primary to-primary/60",
+					isCompleted &&
+						"bg-gradient-to-r from-emerald-400/50 via-emerald-500/70 to-emerald-400/50",
+					data.status === "error" &&
+						"bg-gradient-to-r from-rose-400/50 via-rose-500/70 to-rose-400/50",
+					!isActive &&
+						!isCompleted &&
+						data.status !== "error" &&
+						"bg-gradient-to-r from-zinc-200/50 via-zinc-300/50 to-zinc-200/50 dark:from-zinc-700/50 dark:via-zinc-600/50 dark:to-zinc-700/50",
+				)}
+			/>
 
 			<div className="px-4 py-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
 				<div className="flex items-start gap-3">
-					<div className={cn(
-						"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm",
-						"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-900",
-						isActive && "from-primary/90 to-primary dark:from-primary dark:to-primary/80 text-white dark:text-white",
-					)}>
+					<div
+						className={cn(
+							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm",
+							"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-900",
+							isActive &&
+								"from-primary/90 to-primary dark:from-primary dark:to-primary/80 text-white dark:text-white",
+						)}
+					>
 						<GitBranch className="w-4 h-4" />
 					</div>
 					<div className="min-w-0 flex-1">
@@ -130,14 +141,12 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 	const isCompleted = data.status === "completed";
 	const isError = data.status === "error";
 
-	const toolIconCfg = getToolIconConfig(data.isSubagent ? "subagent" : data.name);
+	const toolIconCfg = getToolIconConfig(
+		data.isSubagent ? "subagent" : data.name,
+	);
 	const ToolIcon = toolIconCfg.icon;
 
-	const accent = data.isSubagent
-		? "warm"
-		: isError
-			? "rose"
-			: "zinc";
+	const accent = data.isSubagent ? "warm" : isError ? "rose" : "zinc";
 	const borderCls =
 		accent === "warm"
 			? "border-primary/35 dark:border-primary/30"
@@ -210,7 +219,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 							</span>
 							{/* 工具分类标签 */}
 							{!data.isSubagent && (
-								<span className={cn("text-[10px] font-medium", toolIconCfg.color)}>
+								<span
+									className={cn("text-[10px] font-medium", toolIconCfg.color)}
+								>
 									{toolIconCfg.label}
 								</span>
 							)}
@@ -241,13 +252,17 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 							<div className="mt-1.5 space-y-1">
 								{data.inputSummary && (
 									<div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50/60 dark:bg-zinc-900/40 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
-										<span className="text-zinc-400 dark:text-zinc-500 mr-0.5">→</span>
+										<span className="text-zinc-400 dark:text-zinc-500 mr-0.5">
+											→
+										</span>
 										{data.inputSummary}
 									</div>
 								)}
 								{data.outputSummary && (
 									<div className="text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
-										<span className="text-emerald-400 dark:text-emerald-500 mr-0.5">←</span>
+										<span className="text-emerald-400 dark:text-emerald-500 mr-0.5">
+											←
+										</span>
 										{data.outputSummary}
 									</div>
 								)}
@@ -278,13 +293,49 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 /** 产物类型图标映射 */
 function getArtifactIcon(artifactType: string) {
 	switch (artifactType) {
-		case "image": return { icon: FileImage, color: "text-pink-600 dark:text-pink-400", bg: "from-pink-50 to-fuchsia-50 dark:from-pink-900/20 dark:to-fuchsia-900/20" };
-		case "code": return { icon: Code2, color: "text-teal-600 dark:text-teal-400", bg: "from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20" };
-		case "video": return { icon: Video, color: "text-indigo-600 dark:text-indigo-400", bg: "from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20" };
-		case "audio": return { icon: Music, color: "text-purple-600 dark:text-purple-400", bg: "from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20" };
-		case "spreadsheet": return { icon: FileSpreadsheet, color: "text-cyan-600 dark:text-cyan-400", bg: "from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20" };
-		case "document": case "pdf": return { icon: FileText, color: "text-orange-600 dark:text-orange-400", bg: "from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20" };
-		default: return { icon: Archive, color: "text-zinc-600 dark:text-zinc-300", bg: "from-zinc-50 to-stone-50 dark:from-zinc-900/30 dark:to-zinc-800/30" };
+		case "image":
+			return {
+				icon: FileImage,
+				color: "text-pink-600 dark:text-pink-400",
+				bg: "from-pink-50 to-fuchsia-50 dark:from-pink-900/20 dark:to-fuchsia-900/20",
+			};
+		case "code":
+			return {
+				icon: Code2,
+				color: "text-teal-600 dark:text-teal-400",
+				bg: "from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20",
+			};
+		case "video":
+			return {
+				icon: Video,
+				color: "text-indigo-600 dark:text-indigo-400",
+				bg: "from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20",
+			};
+		case "audio":
+			return {
+				icon: Music,
+				color: "text-purple-600 dark:text-purple-400",
+				bg: "from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20",
+			};
+		case "spreadsheet":
+			return {
+				icon: FileSpreadsheet,
+				color: "text-cyan-600 dark:text-cyan-400",
+				bg: "from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20",
+			};
+		case "document":
+		case "pdf":
+			return {
+				icon: FileText,
+				color: "text-orange-600 dark:text-orange-400",
+				bg: "from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20",
+			};
+		default:
+			return {
+				icon: Archive,
+				color: "text-zinc-600 dark:text-zinc-300",
+				bg: "from-zinc-50 to-stone-50 dark:from-zinc-900/30 dark:to-zinc-800/30",
+			};
 	}
 }
 
@@ -308,10 +359,13 @@ const ArtifactNode = memo(function ArtifactNode(
 			<Handle type="target" position={Position.Top} className="opacity-0" />
 			<div className="px-3.5 py-3">
 				<div className="flex items-start gap-3">
-					<div className={cn(
-						"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10",
-						"bg-gradient-to-br", artCfg.bg,
-					)}>
+					<div
+						className={cn(
+							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10",
+							"bg-gradient-to-br",
+							artCfg.bg,
+						)}
+					>
 						<ArtIcon className={cn("w-4 h-4", artCfg.color)} />
 					</div>
 					<div className="min-w-0 flex-1">
@@ -340,9 +394,13 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 ) {
 	const { data, selected } = props;
 	const { totalAgents, completedAgents, runningAgents, failedAgents } = data;
-	const pending = Math.max(0, totalAgents - completedAgents - runningAgents - failedAgents);
+	const pending = Math.max(
+		0,
+		totalAgents - completedAgents - runningAgents - failedAgents,
+	);
 	const hasRunning = runningAgents > 0;
-	const allDone = completedAgents + failedAgents === totalAgents && totalAgents > 0;
+	const allDone =
+		completedAgents + failedAgents === totalAgents && totalAgents > 0;
 
 	// 环形进度 SVG 参数
 	const radius = 28;
@@ -357,7 +415,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 	const runningLen = circumference * runningPct;
 	const failedLen = circumference * failedPct;
 	const completedOffset = 0;
-	const runningOffset = -(completedLen);
+	const runningOffset = -completedLen;
 	const failedOffset = -(completedLen + runningLen);
 
 	return (
@@ -397,13 +455,18 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 				<div className="flex items-center gap-3">
 					{/* 环形进度 */}
 					<div className="relative shrink-0 w-16 h-16">
-						<svg viewBox="0 0 70 70" className={cn(
-							"w-full h-full -rotate-90 transition-transform",
-							hasRunning && "graph-ring-animated",
-						)}>
+						<svg
+							viewBox="0 0 70 70"
+							className={cn(
+								"w-full h-full -rotate-90 transition-transform",
+								hasRunning && "graph-ring-animated",
+							)}
+						>
 							{/* 底圈 */}
 							<circle
-								cx="35" cy="35" r={radius}
+								cx="35"
+								cy="35"
+								r={radius}
 								fill="none"
 								stroke="rgba(148,163,184,0.18)"
 								strokeWidth={stroke}
@@ -411,7 +474,9 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 							{/* 完成段 */}
 							{completedLen > 0 && (
 								<circle
-									cx="35" cy="35" r={radius}
+									cx="35"
+									cy="35"
+									r={radius}
 									fill="none"
 									stroke="#10b981"
 									strokeWidth={stroke}
@@ -424,7 +489,9 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 							{/* 运行段 */}
 							{runningLen > 0 && (
 								<circle
-									cx="35" cy="35" r={radius}
+									cx="35"
+									cy="35"
+									r={radius}
 									fill="none"
 									stroke="#D96C46"
 									strokeWidth={stroke}
@@ -437,7 +504,9 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 							{/* 失败段 */}
 							{failedLen > 0 && (
 								<circle
-									cx="35" cy="35" r={radius}
+									cx="35"
+									cy="35"
+									r={radius}
 									fill="none"
 									stroke="#f43f5e"
 									strokeWidth={stroke}
@@ -492,17 +561,20 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 	const { data } = props;
 	const isMain = data.laneId === "main";
 	return (
-		<div className={cn(
-			"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
-			"text-[11px] font-medium backdrop-blur-sm",
-			isMain
-				? "border-zinc-200/70 dark:border-zinc-700/70 bg-white/80 dark:bg-zinc-900/70 text-zinc-600 dark:text-zinc-300"
-				: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
-		)}>
-			{isMain
-				? <GitBranch className="w-3 h-3 opacity-60" />
-				: <GitBranch className="w-3 h-3 opacity-60" />
-			}
+		<div
+			className={cn(
+				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
+				"text-[11px] font-medium backdrop-blur-sm",
+				isMain
+					? "border-zinc-200/70 dark:border-zinc-700/70 bg-white/80 dark:bg-zinc-900/70 text-zinc-600 dark:text-zinc-300"
+					: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
+			)}
+		>
+			{isMain ? (
+				<GitBranch className="w-3 h-3 opacity-60" />
+			) : (
+				<GitBranch className="w-3 h-3 opacity-60" />
+			)}
 			{data.label}
 		</div>
 	);

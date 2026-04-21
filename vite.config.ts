@@ -109,6 +109,10 @@ export default defineConfig({
 								"zlib-sync",
 								// Native addon
 								"node-pty",
+								// PDF 解析依赖 pdf.worker.mjs 通过 import.meta.url 定位同级 worker 文件
+								// 打平进 dist-electron 后路径失效，必须保留为外部 require
+								"pdf-parse",
+								"pdfjs-dist",
 							],
 							output: {
 								// 强制主进程使用 CJS 格式，避免 "type":"module" 导致

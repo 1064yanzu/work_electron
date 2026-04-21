@@ -454,7 +454,11 @@ export default function CopilotSidebar() {
 		const userMessage = createMessage("user", `[深度研究] ${query}`);
 		chatStore.addMessage(session.id, userMessage);
 		if (shouldGenerateTitle) {
-			void generateSessionTitle(session.id, query, session.model || activeModel);
+			void generateSessionTitle(
+				session.id,
+				query,
+				session.model || activeModel,
+			);
 		}
 		chatStore.setStatus("streaming");
 
@@ -982,9 +986,7 @@ export default function CopilotSidebar() {
 					>
 						{chatMode === "agent" ? (
 							<>
-								<span
-									className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500"
-								/>
+								<span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500" />
 								Agent 模式
 							</>
 						) : (

@@ -56,7 +56,7 @@ export function DocumentListHeader({
 						}
 						title={viewMode === "grid" ? "列表视图" : "卡片视图"}
 					>
-							{viewMode === "grid" ? (
+						{viewMode === "grid" ? (
 							<LayoutList className="w-4 h-4" />
 						) : (
 							<LayoutGrid className="w-4 h-4" />

@@ -22,8 +22,8 @@ export function SettingsSidebar({
 		useSettingsExperience();
 
 	return (
-		<aside className="w-[248px] shrink-0 border-r border-border bg-surface/90 px-4 py-5 backdrop-blur-sm">
-			<div className="mb-5 px-1 text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
+		<aside className="w-[248px] shrink-0 border-r border-[#e8e6dc] dark:border-[#30302e] bg-[#f5f4ed]/85 dark:bg-[#1e1d1b]/85 px-4 py-6 backdrop-blur-sm">
+			<div className="mb-6 px-2 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-[#87867f] dark:text-[#5e5d59]">
 				设置
 			</div>
 

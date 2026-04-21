@@ -6,11 +6,21 @@ import type {
 	RemoteChannelPlugin,
 	RemoteChannelContext,
 } from "../../core/channel-plugin";
+import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegistry";
 import type {
 	RemoteInboundMessage,
 	RemoteInboundContextFile,
 	RemoteOutboundMessage,
 } from "../../core/types";
+import {
+	createSequentialQueue,
+	getChannelDedupe,
+	type ChannelActions,
+	type ChannelDedupe,
+	type ChannelStreamingFactory,
+	type ChannelTypingFactory,
+	type SequentialQueue,
+} from "../../sdk";
 import {
 	parseTextContent,
 	normalizeTargetType,
@@ -30,6 +40,9 @@ import { FeishuShareMessageContextService } from "./feishuShareMessageContextSer
 import { FeishuShareContextBuffer } from "./feishuShareContextBuffer";
 import { parseCardAction } from "./feishuCardBuilder";
 import { extractLocalImagePathsFromText } from "./feishuOutboundImageExtractor";
+import { createFeishuStreamingFactory } from "./feishuStreamingCard";
+import { createFeishuTypingFactory } from "./feishuTyping";
+import { createFeishuActions } from "./feishuActions";
 
 // ─── 消息事件类型 ──────────────────────────────────────────
 
@@ -168,6 +181,9 @@ function normalizeOutboundTextForDedupe(text: string): string {
 
 export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	readonly id = "feishu" as const;
+	streaming: ChannelStreamingFactory | null = null;
+	typing: ChannelTypingFactory | null = null;
+	actions: ChannelActions | null = null;
 	private ctx: RemoteChannelContext | null = null;
 	private client: Lark.Client | null = null;
 	private wsClient: Lark.WSClient | null = null;
@@ -182,6 +198,8 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		string,
 		{ text: string; timestamp: number }
 	>();
+	private readonly outboundQueue: SequentialQueue = createSequentialQueue();
+	private readonly persistentDedupe: ChannelDedupe = getChannelDedupe("feishu");
 	private messageResourceService: FeishuMessageResourceService | null = null;
 	private shareMessageContextService: FeishuShareMessageContextService | null =
 		null;
@@ -204,6 +222,22 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		if (this.dedupe.has(messageId)) return false;
 		this.dedupe.set(messageId, now);
 		return true;
+	}
+
+	/**
+	 * 持久化去重：进程重启后依然能拦截重复消息。
+	 * - 先查内存快路径；命中则直接拒绝
+	 * - 未命中时 checkAndRecord 落地磁盘（原子）
+	 *
+	 * 仅在 features.dedupe.persistent 开启时使用；否则走内存版 touchDedupe。
+	 */
+	private async touchPersistentDedupe(messageId: string): Promise<boolean> {
+		const feishu = this.ctx?.config.channels.feishu;
+		const persistent = feishu?.features?.dedupe.persistent !== false;
+		// 先走内存，快路径命中立即返回
+		if (!this.touchDedupe(messageId)) return false;
+		if (!persistent) return true;
+		return this.persistentDedupe.checkAndRecord(`inbound:${messageId}`);
 	}
 
 	private touchTextCommandDedupe(
@@ -289,7 +323,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		const event = this.unwrapEventPayload(payload) as FeishuMessageEvent;
 		const message = event.message;
 		if (!message?.message_id || !message.chat_id) return;
-		if (!this.touchDedupe(message.message_id)) return;
+		if (!(await this.touchPersistentDedupe(message.message_id))) return;
 		this.inboundMergeBuffer.cleanupExpired();
 		this.shareContextBuffer.cleanupExpired();
 		this.cleanupDocLinkBuffer();
@@ -795,6 +829,76 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.inboundMergeBuffer.clear();
 		this.shareContextBuffer.clear();
 
+		// ─── 初始化 SDK 工厂（streaming / typing / actions） ───
+		const features = feishu.features;
+		this.streaming = createFeishuStreamingFactory({
+			client: this.client,
+			credentials: {
+				appId: feishu.appId,
+				appSecret: feishu.appSecret,
+				domain: feishu.domain,
+			},
+			logger: this.logger,
+			enabled: () => (feishu.features?.streaming.mode ?? "card") !== "off",
+			resolveReceiveIdType: (targetId) => {
+				const kind = normalizeTargetType(targetId);
+				if (
+					kind === "chat_id" ||
+					kind === "open_id" ||
+					kind === "user_id" ||
+					kind === "union_id" ||
+					kind === "email"
+				) {
+					return kind;
+				}
+				return "chat_id";
+			},
+		});
+		this.typing = createFeishuTypingFactory({
+			client: this.client,
+			logger: this.logger,
+			enabled: () => feishu.features?.typing.enabled !== false,
+		});
+		this.actions = createFeishuActions({
+			client: this.client,
+			sendTextLegacy: async (message) => {
+				await this.sendText({
+					channel_id: "feishu",
+					target_id: message.targetId,
+					text: message.text ?? "",
+					reply_to_message_id: message.replyToMessageId,
+				});
+			},
+			sendCardLegacy: async (message) => {
+				await this.sendCard({
+					channel_id: "feishu",
+					target_id: message.targetId,
+					text: message.cardJson ?? "",
+					reply_to_message_id: message.replyToMessageId,
+					use_card: true,
+				});
+			},
+			logger: this.logger,
+		});
+
+		// ─── 能力注册表上报 ───
+		updateChannelCapabilityEntry({
+			channelId: "feishu",
+			status: "sdk",
+			capabilities: {
+				text: true,
+				card: true,
+				streaming: (features?.streaming.mode ?? "card") !== "off",
+				typing: features?.typing.enabled !== false,
+				interactive: features?.interactive.enabled !== false,
+				editMessage: true,
+				deleteMessage: true,
+				reactions: true,
+				pin: true,
+				media: true,
+			},
+		});
+
 		// 获取 bot 自身的 open_id（用于精确 @bot 检测）
 		this.botOpenId = await fetchBotOpenId(this.client, (msg) =>
 			this.logger.info({ msg }),
@@ -847,11 +951,16 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.messageResourceService = null;
 		this.shareMessageContextService = null;
 		this.docLinkResolver = null;
+		this.streaming = null;
+		this.typing = null;
+		this.actions = null;
 		this.inboundMergeBuffer.clear();
 		this.shareContextBuffer.clear();
 		this.docLinkMergeBuffer.clear();
 		this.textCommandDedupe.clear();
 		this.outboundTextDedupe.clear();
+		// 持久化去重不清理，跨启动有效
+		await this.persistentDedupe.flush().catch(() => {});
 		this.ctx = null;
 	}
 
@@ -1001,58 +1110,70 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			throw new Error("Feishu channel not initialized");
 		}
 
-		// 等待限流器放行
-		await this.outboundLimiter.waitForSlot();
-		// 普通消息统一走 text，避免 markdown 卡片语法导致 230099 发送失败。
-		// 仅审批等显式 use_card 场景才使用 interactive；失败后自动降级文本。
-		if (message.use_card) {
-			try {
-				await this.sendCard(message);
-			} catch (error) {
-				const info = extractFeishuApiErrorInfo(error);
-				this.logger.warn({
-					msg: "feishu interactive card send failed, fallback to text",
-					code: info.code,
-					error:
-						info.msg ||
-						info.message ||
-						(error instanceof Error ? error.message : String(error)),
-				});
-				const fallbackText = buildCardSendFallbackText(message.text);
-				await this.sendText({
-					...message,
-					text: fallbackText,
-					use_card: false,
-				});
-			}
-		} else {
-			const { imagePaths, cleanedText } = extractLocalImagePathsFromText(
-				message.text,
-			);
-			const outboundText =
-				imagePaths.length > 0 && !cleanedText.trim()
-					? "图片结果如下："
-					: cleanedText;
+		// 按会话串行投递；同一 target_id 的多条消息严格按顺序到达。
+		const feishu = this.ctx?.config.channels.feishu;
+		const sequentialEnabled = feishu?.features?.sequential_delivery !== false;
 
-			if (imagePaths.length > 0) {
-				await this.sendTextAndLocalImages(message, outboundText, imagePaths);
-			} else if (outboundText.trim()) {
-				if (this.touchOutboundTextDedupe(message.target_id, outboundText)) {
-					await this.sendText({ ...message, text: outboundText });
-				} else {
-					this.logger.info({
-						msg: "feishu duplicate outbound text skipped",
-						targetId: message.target_id,
-						textPreview: outboundText.slice(0, 100),
+		const doSend = async () => {
+			// 等待限流器放行
+			await this.outboundLimiter.waitForSlot();
+			// 普通消息统一走 text，避免 markdown 卡片语法导致 230099 发送失败。
+			// 仅审批等显式 use_card 场景才使用 interactive；失败后自动降级文本。
+			if (message.use_card) {
+				try {
+					await this.sendCard(message);
+				} catch (error) {
+					const info = extractFeishuApiErrorInfo(error);
+					this.logger.warn({
+						msg: "feishu interactive card send failed, fallback to text",
+						code: info.code,
+						error:
+							info.msg ||
+							info.message ||
+							(error instanceof Error ? error.message : String(error)),
+					});
+					const fallbackText = buildCardSendFallbackText(message.text);
+					await this.sendText({
+						...message,
+						text: fallbackText,
+						use_card: false,
 					});
 				}
-			}
-		}
+			} else {
+				const { imagePaths, cleanedText } = extractLocalImagePathsFromText(
+					message.text,
+				);
+				const outboundText =
+					imagePaths.length > 0 && !cleanedText.trim()
+						? "图片结果如下："
+						: cleanedText;
 
-		this.ctx?.onStatusPatch({
-			last_outbound_at: Date.now(),
-			connected: true,
-		});
+				if (imagePaths.length > 0) {
+					await this.sendTextAndLocalImages(message, outboundText, imagePaths);
+				} else if (outboundText.trim()) {
+					if (this.touchOutboundTextDedupe(message.target_id, outboundText)) {
+						await this.sendText({ ...message, text: outboundText });
+					} else {
+						this.logger.info({
+							msg: "feishu duplicate outbound text skipped",
+							targetId: message.target_id,
+							textPreview: outboundText.slice(0, 100),
+						});
+					}
+				}
+			}
+
+			this.ctx?.onStatusPatch({
+				last_outbound_at: Date.now(),
+				connected: true,
+			});
+		};
+
+		if (sequentialEnabled) {
+			await this.outboundQueue(message.target_id, doSend);
+		} else {
+			await doSend();
+		}
 	}
 
 	// ─── 连接测试 ───────────────────────────────────────

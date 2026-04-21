@@ -143,7 +143,9 @@ const ToolCallChain = memo(function ToolCallChain({
 				<span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
 					工具调用链
 				</span>
-				<span className="ml-auto text-[10px] text-zinc-400">{toolCalls.length} 次</span>
+				<span className="ml-auto text-[10px] text-zinc-400">
+					{toolCalls.length} 次
+				</span>
 			</div>
 			<div className="flex items-center gap-1.5 flex-wrap">
 				{recentCalls.map((call, idx) => (
@@ -271,12 +273,15 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 	}, [task.steps]);
 
 	// 计算工具调用统计
-	const toolStats = useMemo(() => ({
-		total: task.toolCalls.length,
-		completed: task.toolCalls.filter((t) => t.status === "completed").length,
-		running: task.toolCalls.filter((t) => t.status === "running").length,
-		failed: task.toolCalls.filter((t) => t.status === "error").length,
-	}), [task.toolCalls]);
+	const toolStats = useMemo(
+		() => ({
+			total: task.toolCalls.length,
+			completed: task.toolCalls.filter((t) => t.status === "completed").length,
+			running: task.toolCalls.filter((t) => t.status === "running").length,
+			failed: task.toolCalls.filter((t) => t.status === "error").length,
+		}),
+		[task.toolCalls],
+	);
 
 	// 如果没有步骤，不显示
 	if (!task.steps || task.steps.length === 0) {
@@ -307,7 +312,10 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						{task.title}
 					</p>
 				</div>
-				<OverallProgressRing progress={overallProgress} isRunning={isExecuting} />
+				<OverallProgressRing
+					progress={overallProgress}
+					isRunning={isExecuting}
+				/>
 			</div>
 
 			<div className="p-4 space-y-4">

@@ -284,7 +284,7 @@ function ChatMessageImpl({
 								<AttachmentList files={message.metadata.attachedFiles} />
 							)}
 						{/* 消息气泡 */}
-						<div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-zinc-700 dark:selection:bg-zinc-300 select-text">
+						<div className="bg-[#141413] dark:bg-[#faf9f5] text-[#faf9f5] dark:text-[#141413] rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-[#30302e] dark:selection:bg-[#e8e6dc] select-text">
 							<div className="whitespace-pre-wrap break-words">
 								{message.content}
 							</div>
@@ -309,15 +309,15 @@ function ChatMessageImpl({
 										{codeBlocks.map((block, idx) => (
 											<div
 												key={idx}
-												className="flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-lg p-1 ring-1 ring-zinc-200 dark:ring-zinc-700"
+												className="flex items-center gap-1 bg-[#faf9f5] dark:bg-[#1e1d1b] rounded-lg p-1 ring-1 ring-[#e8e6dc] dark:ring-[#30302e]"
 											>
-												<span className="text-[10px] text-zinc-500 px-1.5 font-mono font-medium uppercase">
+												<span className="text-[10px] text-[#87867f] px-1.5 font-mono font-medium uppercase">
 													{block.language || "code"}
 												</span>
-												<div className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" />
+												<div className="h-3 w-px bg-[#e8e6dc] dark:bg-[#30302e]" />
 												<button
 													onClick={() => handleCopyCodeBlock(idx)}
-													className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded transition-colors"
+													className="p-1.5 text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] rounded transition-colors"
 													title="复制代码"
 												>
 													<Copy className="w-3 h-3" />
@@ -328,7 +328,7 @@ function ChatMessageImpl({
 													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
 														appliedBlocks.has(idx)
 															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-															: "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+															: "text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e]"
 													}`}
 													title="应用代码到编辑器"
 												>
@@ -384,8 +384,12 @@ function ChatMessageImpl({
 												message.metadata.tokenUsage.completionTokens
 											}
 											totalTokens={message.metadata.tokenUsage.totalTokens}
-											cacheReadInputTokens={message.metadata.tokenUsage.cacheReadInputTokens}
-											cacheCreationInputTokens={message.metadata.tokenUsage.cacheCreationInputTokens}
+											cacheReadInputTokens={
+												message.metadata.tokenUsage.cacheReadInputTokens
+											}
+											cacheCreationInputTokens={
+												message.metadata.tokenUsage.cacheCreationInputTokens
+											}
 											costUsd={message.metadata.tokenUsage.costUsd}
 										/>
 									)}

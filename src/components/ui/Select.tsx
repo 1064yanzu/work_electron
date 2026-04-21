@@ -116,7 +116,8 @@ function SelectComponent(
 			(triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current =
 				el;
 			if (typeof ref === "function") ref(el);
-			else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+			else if (ref)
+				(ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
 		},
 		[ref],
 	);
@@ -129,7 +130,10 @@ function SelectComponent(
 		if (options && options.length > 0) return options;
 		const parsed: SelectOption[] = [];
 		Children.forEach(children, (child) => {
-			if (isValidElement(child) && (child.type === "option" || child.type === "optgroup")) {
+			if (
+				isValidElement(child) &&
+				(child.type === "option" || child.type === "optgroup")
+			) {
 				if (child.type === "optgroup") {
 					// 解析 optgroup 中的 option
 					Children.forEach(
@@ -265,7 +269,11 @@ function SelectComponent(
 				}
 				setActiveIndex((prev) => {
 					let next = prev + 1;
-					while (next < resolvedOptions.length && resolvedOptions[next]?.disabled) next++;
+					while (
+						next < resolvedOptions.length &&
+						resolvedOptions[next]?.disabled
+					)
+						next++;
 					return next >= resolvedOptions.length ? prev : next;
 				});
 				return;

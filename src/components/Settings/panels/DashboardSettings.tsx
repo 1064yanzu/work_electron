@@ -253,7 +253,8 @@ function TokenUsagePanel({
 	const promptPercent = total > 0 ? (currentStats.prompt / total) * 100 : 0;
 	const completionPercent =
 		total > 0 ? (currentStats.completion / total) * 100 : 0;
-	const hasCacheData = currentStats.cacheRead > 0 || currentStats.cacheCreation > 0;
+	const hasCacheData =
+		currentStats.cacheRead > 0 || currentStats.cacheCreation > 0;
 	const hasRealCost = currentStats.cost > 0;
 
 	return (
@@ -298,7 +299,8 @@ function TokenUsagePanel({
 							{hasRealCost ? "实际花费" : "预估花费"}
 						</div>
 						<div className="text-lg font-mono font-medium text-zinc-700 dark:text-zinc-300">
-							${hasRealCost
+							$
+							{hasRealCost
 								? currentStats.cost.toFixed(4)
 								: (currentStats.total * 0.000002).toFixed(4)}
 							{!hasRealCost && (
@@ -321,7 +323,9 @@ function TokenUsagePanel({
 				</div>
 
 				{/* 详细数据 */}
-				<div className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}>
+				<div
+					className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}
+				>
 					<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
 						<div className="flex items-center gap-2 mb-2">
 							<div className="w-2 h-2 rounded-full bg-emerald-500" />

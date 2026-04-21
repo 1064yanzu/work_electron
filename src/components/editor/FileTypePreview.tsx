@@ -80,11 +80,7 @@ const CodePreview = memo(function CodePreview({
 		density === "compact" ? "text-[12px] leading-6" : "text-[13px] leading-7";
 
 	if (!content) {
-		return (
-			<p className="text-zinc-500 dark:text-zinc-400">
-				文件内容为空。
-			</p>
-		);
+		return <p className="text-zinc-500 dark:text-zinc-400">文件内容为空。</p>;
 	}
 
 	return (
@@ -135,7 +131,10 @@ const CodePreview = memo(function CodePreview({
 const ImagePreview = memo(function ImagePreview({
 	filePath,
 	fileName,
-}: { filePath: string; fileName: string }) {
+}: {
+	filePath: string;
+	fileName: string;
+}) {
 	const src = convertFileSrc(filePath);
 	return (
 		<div className="flex flex-col items-center justify-center gap-4 p-6">
@@ -154,7 +153,9 @@ const ImagePreview = memo(function ImagePreview({
 					}
 				}}
 			/>
-			<span className="text-xs text-zinc-400 dark:text-zinc-500">{fileName}</span>
+			<span className="text-xs text-zinc-400 dark:text-zinc-500">
+				{fileName}
+			</span>
 		</div>
 	);
 });
@@ -162,7 +163,10 @@ const ImagePreview = memo(function ImagePreview({
 const VideoPreview = memo(function VideoPreview({
 	filePath,
 	fileName,
-}: { filePath: string; fileName: string }) {
+}: {
+	filePath: string;
+	fileName: string;
+}) {
 	const src = convertFileSrc(filePath);
 	return (
 		<div className="flex flex-col items-center gap-4 p-6">
@@ -173,7 +177,9 @@ const VideoPreview = memo(function VideoPreview({
 			>
 				您的浏览器不支持视频播放
 			</video>
-			<span className="text-xs text-zinc-400 dark:text-zinc-500">{fileName}</span>
+			<span className="text-xs text-zinc-400 dark:text-zinc-500">
+				{fileName}
+			</span>
 		</div>
 	);
 });
@@ -181,16 +187,31 @@ const VideoPreview = memo(function VideoPreview({
 const AudioPreview = memo(function AudioPreview({
 	filePath,
 	fileName,
-}: { filePath: string; fileName: string }) {
+}: {
+	filePath: string;
+	fileName: string;
+}) {
 	const src = convertFileSrc(filePath);
 	return (
 		<div className="flex flex-col items-center gap-4 p-10">
 			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 dark:from-purple-500/30 dark:to-pink-500/30 flex items-center justify-center">
-				<svg className="w-8 h-8 text-purple-500 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-					<path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+				<svg
+					className="w-8 h-8 text-purple-500 dark:text-purple-400"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					strokeWidth={1.5}
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+					/>
 				</svg>
 			</div>
-			<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{fileName}</span>
+			<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+				{fileName}
+			</span>
 			<audio src={src} controls className="w-full max-w-md">
 				您的浏览器不支持音频播放
 			</audio>
@@ -201,12 +222,25 @@ const AudioPreview = memo(function AudioPreview({
 const PdfPreview = memo(function PdfPreview({
 	filePath,
 	fileName,
-}: { filePath: string; fileName: string }) {
+}: {
+	filePath: string;
+	fileName: string;
+}) {
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-2 p-1">
 			<div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-				<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-					<path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+				<svg
+					className="w-4 h-4"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					strokeWidth={1.5}
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+					/>
 				</svg>
 				{fileName}
 			</div>
@@ -222,7 +256,10 @@ const PdfPreview = memo(function PdfPreview({
 const CsvPreview = memo(function CsvPreview({
 	content,
 	fileName,
-}: { content: string; fileName: string }) {
+}: {
+	content: string;
+	fileName: string;
+}) {
 	const rows = useMemo(() => {
 		const separator = /\.tsv$/i.test(fileName) ? "\t" : ",";
 		return content
@@ -294,16 +331,30 @@ const CsvPreview = memo(function CsvPreview({
 
 const ExcelPlaceholder = memo(function ExcelPlaceholder({
 	fileName,
-}: { fileName: string }) {
+}: {
+	fileName: string;
+}) {
 	return (
 		<div className="flex flex-col items-center gap-4 p-10 text-center">
 			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 dark:from-emerald-500/30 dark:to-teal-500/30 flex items-center justify-center">
-				<svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-					<path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M12 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M21.375 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M12 17.25v-5.25" />
+				<svg
+					className="w-8 h-8 text-emerald-600 dark:text-emerald-400"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					strokeWidth={1.5}
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M12 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M21.375 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M12 17.25v-5.25"
+					/>
 				</svg>
 			</div>
 			<div>
-				<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{fileName}</p>
+				<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+					{fileName}
+				</p>
 				<p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
 					Excel 文件无法在此预览，请使用 Excel 或 WPS 等工具打开
 				</p>
@@ -314,12 +365,24 @@ const ExcelPlaceholder = memo(function ExcelPlaceholder({
 
 const BinaryNotAvailable = memo(function BinaryNotAvailable({
 	fileName,
-}: { fileName: string }) {
+}: {
+	fileName: string;
+}) {
 	return (
 		<div className="flex flex-col items-center gap-3 p-10 text-center">
 			<div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-				<svg className="w-7 h-7 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-					<path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+				<svg
+					className="w-7 h-7 text-zinc-400 dark:text-zinc-500"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					strokeWidth={1.5}
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+					/>
 				</svg>
 			</div>
 			<p className="text-sm text-zinc-500 dark:text-zinc-400">{fileName}</p>
@@ -343,19 +406,22 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 1. 图片
 	if (isImageFile(fileName)) {
-		if (filePath) return <ImagePreview filePath={filePath} fileName={fileName} />;
+		if (filePath)
+			return <ImagePreview filePath={filePath} fileName={fileName} />;
 		return <BinaryNotAvailable fileName={fileName} />;
 	}
 
 	// 2. 视频
 	if (isVideoFile(fileName)) {
-		if (filePath) return <VideoPreview filePath={filePath} fileName={fileName} />;
+		if (filePath)
+			return <VideoPreview filePath={filePath} fileName={fileName} />;
 		return <BinaryNotAvailable fileName={fileName} />;
 	}
 
 	// 3. 音频
 	if (isAudioFile(fileName)) {
-		if (filePath) return <AudioPreview filePath={filePath} fileName={fileName} />;
+		if (filePath)
+			return <AudioPreview filePath={filePath} fileName={fileName} />;
 		return <BinaryNotAvailable fileName={fileName} />;
 	}
 
@@ -383,7 +449,9 @@ export const FileTypePreview = memo(function FileTypePreview({
 	// 7. Markdown
 	if (isMarkdownPreviewFile(fileName)) {
 		const textClass =
-			density === "compact" ? "text-[14px] leading-[1.65]" : "text-base leading-[1.75]";
+			density === "compact"
+				? "text-[14px] leading-[1.65]"
+				: "text-base leading-[1.75]";
 		return (
 			<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:leading-[1.75] prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100">
 				<MarkdownRenderer content={content} className={textClass} />
@@ -393,7 +461,9 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 8. 代码
 	if (isCodeLikeFile(fileName)) {
-		return <CodePreview fileName={fileName} content={content} density={density} />;
+		return (
+			<CodePreview fileName={fileName} content={content} density={density} />
+		);
 	}
 
 	// 9. 纯文本

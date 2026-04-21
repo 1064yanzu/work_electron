@@ -107,7 +107,8 @@ export function useAgentHandler({
 		let userMessage: NonNullable<
 			ChatStoreLike["activeSession"]
 		>["messages"][number];
-		const shouldGenerateTitle = !skipUserMessage && session.messages.length === 0;
+		const shouldGenerateTitle =
+			!skipUserMessage && session.messages.length === 0;
 		if (!skipUserMessage) {
 			// 正常情况：创建新的用户消息
 			userMessage = createMessage("user", userTextForChat);
@@ -740,7 +741,7 @@ export function useAgentHandler({
 					planMode: planModeStore.getState().enabled,
 					confirmedPlan:
 						planModeStore.getState().currentPlan?.status === "confirmed"
-							? planModeStore.getState().currentPlan ?? undefined
+							? (planModeStore.getState().currentPlan ?? undefined)
 							: undefined,
 					onChunk, // 流式输出回调
 					onThoughtChunk: (chunk, meta) => {

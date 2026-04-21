@@ -83,9 +83,7 @@ const userNameCache = new Map<string, { name: string; expireAt: number }>();
 export async function resolveUserName(
 	webClient: {
 		users: {
-			info: (opts: {
-				user: string;
-			}) => Promise<{
+			info: (opts: { user: string }) => Promise<{
 				user?: { real_name?: string; display_name?: string; name?: string };
 			}>;
 		};

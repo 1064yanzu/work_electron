@@ -154,12 +154,9 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				"w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-200",
 				agent.status === "running" &&
 					"bg-[#D96C46]/[0.04] dark:bg-[#D96C46]/[0.06]",
-				agent.status === "completed" &&
-					"opacity-60 hover:opacity-80",
-				agent.status === "error" &&
-					"bg-red-50/50 dark:bg-red-900/10",
-				agent.status === "pending" &&
-					"opacity-50",
+				agent.status === "completed" && "opacity-60 hover:opacity-80",
+				agent.status === "error" && "bg-red-50/50 dark:bg-red-900/10",
+				agent.status === "pending" && "opacity-50",
 				onClick
 					? "cursor-pointer hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
 					: "cursor-default",
@@ -194,16 +191,15 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 					className={cn(
 						"text-[10px] font-medium",
 						agent.status === "running" && "text-[#D96C46]",
-						agent.status === "completed" && "text-emerald-600 dark:text-emerald-400",
+						agent.status === "completed" &&
+							"text-emerald-600 dark:text-emerald-400",
 						agent.status === "error" && "text-red-600 dark:text-red-400",
 						agent.status === "pending" && "text-zinc-400",
 					)}
 				>
 					{statusLabel(agent.status)}
 				</span>
-				{dur && (
-					<span className="text-[10px] text-zinc-400">{dur}</span>
-				)}
+				{dur && <span className="text-[10px] text-zinc-400">{dur}</span>}
 			</div>
 		</button>
 	);
@@ -230,9 +226,12 @@ export const SwarmCard = memo(function SwarmCard({
 	}, [agents]);
 
 	const hasAnyRunning = stats.running > 0;
-	const allDone = stats.completed + stats.errored === stats.total && stats.total > 0;
+	const allDone =
+		stats.completed + stats.errored === stats.total && stats.total > 0;
 	const needsExpand = agents.length > DEFAULT_VISIBLE_COUNT;
-	const visibleAgents = expanded ? agents : agents.slice(0, DEFAULT_VISIBLE_COUNT);
+	const visibleAgents = expanded
+		? agents
+		: agents.slice(0, DEFAULT_VISIBLE_COUNT);
 
 	// 底部汇总文字
 	const summaryText = useMemo(() => {
@@ -310,9 +309,7 @@ export const SwarmCard = memo(function SwarmCard({
 						{hasAnyRunning && (
 							<Loader2 className="w-3 h-3 animate-spin text-[#D96C46]" />
 						)}
-						{allDone && (
-							<CheckCircle2 className="w-3 h-3 text-emerald-500" />
-						)}
+						{allDone && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
 						<span className={cn(hasAnyRunning && "text-[#D96C46] font-medium")}>
 							{summaryText}
 						</span>

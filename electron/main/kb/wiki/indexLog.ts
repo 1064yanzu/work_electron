@@ -32,8 +32,8 @@ export async function rebuildIndex(
 	};
 
 	for (const page of pages) {
-		// 跳过知识地图（它是特殊页面）
-		if (page.slug === "知识地图" || page.slug === "知识地图") continue;
+		// 跳过知识地图（它是特殊页面，单独在「入口」区域展示）
+		if (page.slug === "知识地图" || page.title === "知识地图") continue;
 
 		const type = page.page_type || "other";
 		if (type in groups) {
@@ -110,7 +110,7 @@ export async function rebuildIndex(
 	}
 
 	const totalPageCount = pages.filter(
-		(p) => p.slug !== "知识地图",
+		(p) => p.slug !== "知识地图" && p.title !== "知识地图",
 	).length;
 	lines.push("---");
 	lines.push("");

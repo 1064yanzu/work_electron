@@ -8,14 +8,20 @@ import {
 	Blocks,
 	BookOpen,
 } from "lucide-react";
-import { useWorkspaceStoreSelector, workspaceStore } from "../../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../../lib/workspaceStore";
 
 interface SidebarRailProps {
 	onOpenSettings: () => void;
 	onNavigateHome: () => void;
 }
 
-export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps) {
+export function SidebarRail({
+	onOpenSettings,
+	onNavigateHome,
+}: SidebarRailProps) {
 	const leftSidebarView = useWorkspaceStoreSelector(
 		(state) => state.leftSidebarView,
 	);
@@ -32,27 +38,40 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 	];
 
 	return (
-		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-transparent border-r border-black/[0.06] dark:border-white/[0.06]">
-			<div className="flex flex-col items-center gap-4 flex-1">
+		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-transparent border-r border-[#f0eee6] dark:border-[#30302e]">
+			<div className="flex flex-col items-center gap-1 flex-1">
 				{navItems.map((item) => {
-					// We treat sub-views of materials (e.g. detail, research, websearch, agent) as belonging to 'sources' in the rail
-					const isSourceSubView = ["detail", "research", "websearch", "agent"].includes(leftSidebarView);
+					const isSourceSubView = [
+						"detail",
+						"research",
+						"websearch",
+						"agent",
+					].includes(leftSidebarView);
 					const isActive =
-						leftSidebarView === item.id || (item.id === "sources" && isSourceSubView);
+						leftSidebarView === item.id ||
+						(item.id === "sources" && isSourceSubView);
 
 					return (
 						<button
 							key={item.id}
-							onClick={() => setLeftSidebarView(item.id as any)}
-							className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ${
+							onClick={() =>
+								setLeftSidebarView(
+									item.id as Parameters<typeof setLeftSidebarView>[0],
+								)
+							}
+							className={[
+								"flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
 								isActive
-									? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground"
-									: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-							}`}
+									? "bg-[#c96442]/10 dark:bg-[#c96442]/15 text-[#c96442] dark:text-[#c96442]"
+									: "text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e]",
+							].join(" ")}
 							title={item.label}
 						>
-							<item.icon className="w-[22px] h-[22px] mb-0.5" strokeWidth={isActive ? 2 : 1.75} />
-							<span className="text-[10px] font-medium leading-tight select-none">
+							<item.icon
+								className="w-[20px] h-[20px] mb-0.5"
+								strokeWidth={isActive ? 2 : 1.75}
+							/>
+							<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
 								{item.label}
 							</span>
 						</button>
@@ -60,20 +79,20 @@ export function SidebarRail({ onOpenSettings, onNavigateHome }: SidebarRailProps
 				})}
 			</div>
 
-			<div className="mt-auto flex flex-col items-center gap-2">
+			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-[#f0eee6] dark:border-[#30302e] w-full">
 				<button
 					onClick={onNavigateHome}
-					className="flex items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300"
+					className="flex items-center justify-center w-12 h-12 rounded-xl text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] transition-all duration-200"
 					title="返回首页"
 				>
-					<Home className="w-[22px] h-[22px]" strokeWidth={1.75} />
+					<Home className="w-[20px] h-[20px]" strokeWidth={1.75} />
 				</button>
 				<button
 					onClick={onOpenSettings}
-					className="flex items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300"
+					className="flex items-center justify-center w-12 h-12 rounded-xl text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] transition-all duration-200"
 					title="设置"
 				>
-					<SlidersHorizontal className="w-[22px] h-[22px]" strokeWidth={1.75} />
+					<SlidersHorizontal className="w-[20px] h-[20px]" strokeWidth={1.75} />
 				</button>
 			</div>
 		</div>

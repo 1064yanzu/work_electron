@@ -1,14 +1,27 @@
 import { useEffect, useState, useCallback } from "react";
-import { ChevronDown, ChevronRight, File, Folder, FolderOpen, RefreshCcw } from "lucide-react";
+import {
+	ChevronDown,
+	ChevronRight,
+	File,
+	Folder,
+	FolderOpen,
+	RefreshCcw,
+} from "lucide-react";
 import { safeInvoke } from "../../lib/tauriBridge";
 import { sessionStore } from "../../lib/agent/sessionManager";
 import { workspaceStore } from "../../lib/workspaceStore";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
 import { toast } from "../ui/Toast";
-import { isBinaryPreviewFile, BINARY_CONTENT_MARKER } from "../editor/FileTypePreview";
+import {
+	isBinaryPreviewFile,
+	BINARY_CONTENT_MARKER,
+} from "../editor/FileTypePreview";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
-import { buildFileItemContextMenu, buildFolderItemContextMenu } from "../../lib/contextMenu/actions";
+import {
+	buildFileItemContextMenu,
+	buildFolderItemContextMenu,
+} from "../../lib/contextMenu/actions";
 
 interface FileEntry {
 	path: string;
@@ -93,12 +106,17 @@ export function ProjectFilesView() {
 			try {
 				if (isBinaryPreviewFile(entry.name)) {
 					// 二进制文件不读取内容，直接用路径打开
-					workspaceStore.openProjectFile(entry.path, entry.name, BINARY_CONTENT_MARKER);
-				} else {
-					const res = await safeInvoke<{ content: string; encoding: string; size?: number }>(
-						"read_file_safe",
-						{ payload: { path: entry.path } },
+					workspaceStore.openProjectFile(
+						entry.path,
+						entry.name,
+						BINARY_CONTENT_MARKER,
 					);
+				} else {
+					const res = await safeInvoke<{
+						content: string;
+						encoding: string;
+						size?: number;
+					}>("read_file_safe", { payload: { path: entry.path } });
 					console.log("[ProjectFilesView] open project file", {
 						path: entry.path,
 						title: entry.name,
@@ -208,13 +226,24 @@ export function ProjectFilesView() {
 								<File className="w-4 h-4 text-zinc-400" />
 							)}
 						</span>
-						<span className={cn("truncate", item.isDir ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-600 dark:text-zinc-400")}>
+						<span
+							className={cn(
+								"truncate",
+								item.isDir
+									? "text-zinc-800 dark:text-zinc-200"
+									: "text-zinc-600 dark:text-zinc-400",
+							)}
+						>
 							{item.name}
 						</span>
 					</button>
 
 					{item.isDir && isExpanded && (
-						<DirChildrenLoader dirPath={item.path} loadDir={loadDir} renderTree={(children) => renderTree(children, level + 1)} />
+						<DirChildrenLoader
+							dirPath={item.path}
+							loadDir={loadDir}
+							renderTree={(children) => renderTree(children, level + 1)}
+						/>
 					)}
 				</div>
 			);
@@ -233,7 +262,9 @@ export function ProjectFilesView() {
 					className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
 					title="Refresh"
 				>
-					<RefreshCcw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+					<RefreshCcw
+						className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
+					/>
 				</button>
 			</div>
 
@@ -243,7 +274,9 @@ export function ProjectFilesView() {
 					<div className="text-center py-10 px-6 mt-10">
 						<Folder className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-4" />
 						<p className="text-sm text-zinc-500 font-medium">无工作路径</p>
-						<p className="text-xs text-zinc-400 mt-2">请先到线程列表中选择或创建一个线程</p>
+						<p className="text-xs text-zinc-400 mt-2">
+							请先到线程列表中选择或创建一个线程
+						</p>
 					</div>
 				) : entries.length === 0 && !isLoading ? (
 					<div className="text-center py-10 px-6 mt-10">
@@ -294,7 +327,11 @@ function DirChildrenLoader({
 	}, [dirPath, loadDir]);
 
 	if (!loaded) {
-		return <div className="pl-6 py-1.5 text-[11px] text-zinc-400/50 animate-pulse">Loading...</div>;
+		return (
+			<div className="pl-6 py-1.5 text-[11px] text-zinc-400/50 animate-pulse">
+				Loading...
+			</div>
+		);
 	}
 
 	return <>{renderTree(children)}</>;

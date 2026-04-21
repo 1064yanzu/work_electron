@@ -34,43 +34,86 @@ const toolPatterns: Array<{
 }> = [
 	{
 		test: (n) => /^(bash|execute_command|run_command|shell)/.test(n),
-		config: { icon: Terminal, label: "命令", color: "text-amber-600 dark:text-amber-400" },
+		config: {
+			icon: Terminal,
+			label: "命令",
+			color: "text-amber-600 dark:text-amber-400",
+		},
 	},
 	{
 		test: (n) => /^(read_file|file_read|cat)/.test(n),
-		config: { icon: FileText, label: "读取", color: "text-blue-600 dark:text-blue-400" },
+		config: {
+			icon: FileText,
+			label: "读取",
+			color: "text-blue-600 dark:text-blue-400",
+		},
 	},
 	{
 		test: (n) => /^(write_file|file_write|create_file|save_file)/.test(n),
-		config: { icon: PenLine, label: "写入", color: "text-emerald-600 dark:text-emerald-400" },
+		config: {
+			icon: PenLine,
+			label: "写入",
+			color: "text-emerald-600 dark:text-emerald-400",
+		},
 	},
 	{
 		test: (n) => /^(edit_file|file_edit|replace|patch|multi_edit)/.test(n),
-		config: { icon: Edit3, label: "编辑", color: "text-orange-600 dark:text-orange-400" },
+		config: {
+			icon: Edit3,
+			label: "编辑",
+			color: "text-orange-600 dark:text-orange-400",
+		},
 	},
 	{
 		test: (n) => /^(delete_file|file_delete|remove|rm)/.test(n),
-		config: { icon: Trash2, label: "删除", color: "text-rose-600 dark:text-rose-400" },
+		config: {
+			icon: Trash2,
+			label: "删除",
+			color: "text-rose-600 dark:text-rose-400",
+		},
 	},
 	{
-		test: (n) => /^(search|grep|find|ripgrep|glob|list_dir|directory_tree|ls)/.test(n),
-		config: { icon: FolderSearch, label: "搜索", color: "text-violet-600 dark:text-violet-400" },
+		test: (n) =>
+			/^(search|grep|find|ripgrep|glob|list_dir|directory_tree|ls)/.test(n),
+		config: {
+			icon: FolderSearch,
+			label: "搜索",
+			color: "text-violet-600 dark:text-violet-400",
+		},
 	},
 	{
 		test: (n) => /^(web_search|tavily|brave_search|google_search)/.test(n),
-		config: { icon: Search, label: "网络搜索", color: "text-sky-600 dark:text-sky-400" },
+		config: {
+			icon: Search,
+			label: "网络搜索",
+			color: "text-sky-600 dark:text-sky-400",
+		},
 	},
 	{
-		test: (n) => /^(browser|navigate|screenshot|page_|click|scroll|fetch_url)/.test(n),
-		config: { icon: Globe, label: "浏览器", color: "text-indigo-600 dark:text-indigo-400" },
+		test: (n) =>
+			/^(browser|navigate|screenshot|page_|click|scroll|fetch_url)/.test(n),
+		config: {
+			icon: Globe,
+			label: "浏览器",
+			color: "text-indigo-600 dark:text-indigo-400",
+		},
 	},
 	{
 		test: (n) => /^(view|preview|inspect|look)/.test(n),
-		config: { icon: Eye, label: "查看", color: "text-cyan-600 dark:text-cyan-400" },
+		config: {
+			icon: Eye,
+			label: "查看",
+			color: "text-cyan-600 dark:text-cyan-400",
+		},
 	},
 	{
-		test: (n) => /^(chat|ask|send_message|message|llm|anthropic|openai)/.test(n),
-		config: { icon: MessageSquare, label: "对话", color: "text-purple-600 dark:text-purple-400" },
+		test: (n) =>
+			/^(chat|ask|send_message|message|llm|anthropic|openai)/.test(n),
+		config: {
+			icon: MessageSquare,
+			label: "对话",
+			color: "text-purple-600 dark:text-purple-400",
+		},
 	},
 	{
 		test: (n) => /^(subagent|spawn|delegate|dispatch)/.test(n),
@@ -78,15 +121,27 @@ const toolPatterns: Array<{
 	},
 	{
 		test: (n) => /^(compress|archive|zip|tar|pack)/.test(n),
-		config: { icon: Archive, label: "压缩", color: "text-zinc-600 dark:text-zinc-400" },
+		config: {
+			icon: Archive,
+			label: "压缩",
+			color: "text-zinc-600 dark:text-zinc-400",
+		},
 	},
 	{
 		test: (n) => /^(code|compile|build|test|lint|format|typecheck)/.test(n),
-		config: { icon: Code2, label: "代码", color: "text-teal-600 dark:text-teal-400" },
+		config: {
+			icon: Code2,
+			label: "代码",
+			color: "text-teal-600 dark:text-teal-400",
+		},
 	},
 	{
 		test: (n) => /^mcp_/.test(n),
-		config: { icon: Plug, label: "MCP", color: "text-fuchsia-600 dark:text-fuchsia-400" },
+		config: {
+			icon: Plug,
+			label: "MCP",
+			color: "text-fuchsia-600 dark:text-fuchsia-400",
+		},
 	},
 ];
 
