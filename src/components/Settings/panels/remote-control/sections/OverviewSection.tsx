@@ -38,27 +38,12 @@ type StatusTileProps = {
 	pulse?: boolean;
 };
 
-const TONE_CLASS: Record<StatusTileTone, { wrap: string; icon: string }> = {
-	emerald: {
-		wrap: "from-emerald-500/10 to-emerald-500/5 ring-emerald-500/15",
-		icon: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15",
-	},
-	amber: {
-		wrap: "from-amber-500/10 to-amber-500/5 ring-amber-500/15",
-		icon: "text-amber-600 dark:text-amber-400 bg-amber-500/15",
-	},
-	rose: {
-		wrap: "from-rose-500/10 to-rose-500/5 ring-rose-500/15",
-		icon: "text-rose-600 dark:text-rose-400 bg-rose-500/15",
-	},
-	sky: {
-		wrap: "from-sky-500/10 to-sky-500/5 ring-sky-500/15",
-		icon: "text-sky-600 dark:text-sky-400 bg-sky-500/15",
-	},
-	zinc: {
-		wrap: "from-zinc-200/40 to-zinc-100/20 ring-zinc-200/60 dark:from-zinc-800/40 dark:to-zinc-900/20 dark:ring-zinc-800/70",
-		icon: "text-zinc-500 bg-zinc-500/10 dark:text-zinc-400",
-	},
+const TONE_ICON_CLASS: Record<StatusTileTone, string> = {
+	emerald: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
+	amber: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
+	rose: "text-rose-600 dark:text-rose-400 bg-rose-500/10",
+	sky: "text-sky-500 dark:text-sky-400 bg-sky-500/10",
+	zinc: "text-zinc-500 bg-zinc-100 dark:text-zinc-400 dark:bg-zinc-800",
 };
 
 function StatusTile({
@@ -69,22 +54,17 @@ function StatusTile({
 	tone,
 	pulse = false,
 }: StatusTileProps) {
-	const t = TONE_CLASS[tone];
+	const iconCls = TONE_ICON_CLASS[tone];
 	return (
-		<div
-			className={cn(
-				"relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 ring-1 transition-transform duration-200 hover:-translate-y-[1px]",
-				t.wrap,
-			)}
-		>
+		<div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
 			<div className="flex items-start gap-3">
 				<div
 					className={cn(
-						"relative flex h-10 w-10 items-center justify-center rounded-xl",
-						t.icon,
+						"relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
+						iconCls,
 					)}
 				>
-					<Icon className="h-4.5 w-4.5" strokeWidth={1.8} />
+					<Icon className="h-4 w-4" strokeWidth={1.8} />
 					{pulse ? (
 						<span className="absolute -right-0.5 -top-0.5">
 							<StatusDot tone={tone} pulse size="xs" />
@@ -95,11 +75,14 @@ function StatusTile({
 					<div className="text-[11px] font-medium uppercase tracking-wider text-text-muted">
 						{label}
 					</div>
-					<div className="mt-1 truncate text-[22px] font-semibold leading-none text-text-primary tabular-nums">
-						{value}
+					<div
+						className="mt-1 text-lg font-semibold leading-tight text-text-primary tabular-nums"
+						title={String(value)}
+					>
+						<span className="block truncate">{value}</span>
 					</div>
 					{hint ? (
-						<div className="mt-1 text-[11px] text-text-muted">{hint}</div>
+						<div className="mt-0.5 truncate text-[11px] text-text-muted">{hint}</div>
 					) : null}
 				</div>
 			</div>
@@ -144,11 +127,10 @@ export function OverviewSection({
 	return (
 		<div className="space-y-6">
 			{/* 全局开关卡 */}
-			<SettingsSectionCard className="relative overflow-hidden p-5">
-				<div className="absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-violet-500/[0.03] dark:from-primary/[0.08]" />
-				<div className="relative flex flex-wrap items-center justify-between gap-4">
+			<SettingsSectionCard className="p-5">
+				<div className="flex flex-wrap items-center justify-between gap-4">
 					<div className="flex items-start gap-3">
-						<div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 shadow-sm">
+						<div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
 							<Radio className="h-5 w-5 text-primary" strokeWidth={1.8} />
 							{enabled ? (
 								<span className="absolute -right-1 -top-1">

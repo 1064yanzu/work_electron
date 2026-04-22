@@ -11,6 +11,7 @@ import type {
 	RemoteControlConfig,
 } from "../../remote-control/core/types";
 import type { RemoteGatewayScope } from "../../../shared/remote-control-schema";
+import type { Logger } from "../../logging/types";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -60,7 +61,8 @@ function toRemoteControlConfig(
 	};
 }
 
-export function createRemoteControlHandlers() {
+export function createRemoteControlHandlers(deps?: { logger?: Logger }) {
+	const logger = deps?.logger;
 	const get_remote_control_config: Handler<
 		"get_remote_control_config"
 	> = async () => {
@@ -177,18 +179,35 @@ export function createRemoteControlHandlers() {
 		"feishu_begin_app_registration"
 	> = async (_event, input) => {
 		const domain = input.domain ?? "feishu";
+		logger?.info({ msg: `feishu_begin_app_registration: domain=${domain}` });
 		await initAppRegistration(domain);
-		return beginAppRegistration(domain);
+		const result = await beginAppRegistration(domain);
+		logger?.info({
+			msg: `feishu_begin_app_registration: got deviceCode=${result.deviceCode} intervalSec=${result.intervalSec} expireInSec=${result.expireInSec}`,
+		});
+		return result;
 	};
 
 	const feishu_poll_app_registration: Handler<
 		"feishu_poll_app_registration"
 	> = async (_event, input) => {
-		return pollAppRegistrationOnce({
+		const outcome = await pollAppRegistrationOnce({
 			deviceCode: input.deviceCode,
 			currentDomain: input.currentDomain,
 			intervalSec: input.intervalSec,
 		});
+		// 只记录非 pending 状态，避免日志刷屏
+		if (outcome.status !== "pending") {
+			logger?.info({
+				msg: `feishu_poll_app_registration: status=${outcome.status}`,
+				outcome: JSON.stringify(outcome),
+			});
+		} else {
+			logger?.info({
+				msg: `feishu_poll_app_registration: pending domain=${outcome.domain}`,
+			});
+		}
+		return outcome;
 	};
 
 	return {

@@ -1,5 +1,6 @@
 import {
 	AlertCircle,
+	Archive,
 	CheckCircle2,
 	Clock,
 	Cloud,
@@ -9,6 +10,7 @@ import {
 	EyeOff,
 	HardDrive,
 	RefreshCw,
+	RotateCcw,
 	ShieldAlert,
 	Trash2,
 	Upload,
@@ -958,7 +960,7 @@ export function DataSettings() {
 														{isBackingUpToLocal ? (
 															<RefreshCw className="w-4 h-4 animate-spin" />
 														) : (
-															<Download className="w-4 h-4" />
+															<Archive className="w-4 h-4" />
 														)}
 														立即备份
 													</button>
@@ -999,7 +1001,7 @@ export function DataSettings() {
 												onClick={handleImport}
 												className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors"
 											>
-												<Upload className="w-4 h-4" />
+												<RotateCcw className="w-4 h-4" />
 												恢复
 											</button>
 										</div>

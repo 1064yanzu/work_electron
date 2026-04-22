@@ -137,7 +137,7 @@ export function registerIpcHandlers({
 		logger,
 		db,
 	});
-	const remoteControlHandlers = createRemoteControlHandlers();
+	const remoteControlHandlers = createRemoteControlHandlers({ logger });
 	const cloudNodeHandlers = createCloudNodeHandlers();
 	getRemoteControlOrchestrator().bindAgentSdkHandlers(agentSdkHandlers);
 	getCloudNodeClient().bindAgentSdkHandlers(agentSdkHandlers);

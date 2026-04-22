@@ -4,6 +4,7 @@ import {
 	Download,
 	Maximize2,
 	RefreshCw,
+	RotateCcw,
 	X,
 	ZoomIn,
 	ZoomOut,
@@ -191,7 +192,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
 				title="重置"
 			>
-				<RefreshCw className="w-3.5 h-3.5" />
+				<RotateCcw className="w-3.5 h-3.5" />
 			</button>
 			<button
 				onClick={handleZoomIn}
@@ -313,7 +314,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 								onClick={handleReset}
 								className="p-2 hover:bg-zinc-100 rounded-full"
 							>
-								<RefreshCw className="w-4 h-4" />
+								<RotateCcw className="w-4 h-4" />
 							</button>
 							<button
 								onClick={handleZoomIn}

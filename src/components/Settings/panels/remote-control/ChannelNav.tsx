@@ -69,12 +69,16 @@ export function ChannelNav({
 							: "zinc";
 				const pulse = item.enabled && item.connected;
 				return (
-					<button
+					<div
 						key={item.id}
-						type="button"
+						role="button"
+						tabIndex={0}
 						onClick={() => onSelect(item.id)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") onSelect(item.id);
+						}}
 						className={cn(
-							"group relative flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
+							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
 							isActive
 								? "bg-white ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:bg-zinc-900 dark:ring-primary/50"
 								: "hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40",
@@ -155,7 +159,7 @@ export function ChannelNav({
 								/>
 							)}
 						</div>
-					</button>
+					</div>
 				);
 			})}
 		</nav>

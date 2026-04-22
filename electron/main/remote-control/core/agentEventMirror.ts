@@ -64,6 +64,8 @@ export class AgentEventMirror {
 	private readonly streamBufferByRun = new Map<string, StreamBuffer>();
 	private readonly lastOutboundByRun = new Map<string, OutboundFingerprint>();
 	private readonly streamingByRun = new Map<string, RunStreamingState>();
+	/** 标记曾经尝试启动 streaming 但失败的 runId，避免每个 token 都重试创建新卡片 */
+	private readonly streamingFailedRuns = new Set<string>();
 
 	constructor(private readonly deps: AgentEventMirrorDeps) {}
 
@@ -77,6 +79,8 @@ export class AgentEventMirror {
 	): Promise<RunStreamingState | null> {
 		const existing = this.streamingByRun.get(runId);
 		if (existing) return existing;
+		// 此 run 已确认无法启动 streaming，不再重试
+		if (this.streamingFailedRuns.has(runId)) return null;
 		if (!this.deps.resolveChannelCapabilities) return null;
 		const session = this.deps.sessionStore.getByRunId(runId);
 		if (!session) return null;
@@ -109,8 +113,8 @@ export class AgentEventMirror {
 			return state;
 		} catch (error) {
 			// streaming 启动失败就彻底 fallback 到 chunk 老路径
-			// 不抛出，不影响 agent 运行
-			this.deps.sessionStore.getByRunId(runId);
+			// 标记此 run 已失败，避免每个 token delta 都重试创建新卡片
+			this.streamingFailedRuns.add(runId);
 			void error;
 			return null;
 		}
@@ -124,6 +128,7 @@ export class AgentEventMirror {
 		const state = this.streamingByRun.get(runId);
 		if (!state) return;
 		this.streamingByRun.delete(runId);
+		this.streamingFailedRuns.delete(runId);
 		try {
 			await state.session.close(finalText, note ? { note } : undefined);
 		} catch {
@@ -272,52 +277,25 @@ export class AgentEventMirror {
 			return;
 		}
 
-		// 处理工具调用事件
+		// 处理 transformed 事件：包含 text_delta / tool_use / tool_result 等
 		if (event.type === "transformed" && Array.isArray(event.events)) {
-			for (const item of event.events as Array<Record<string, unknown>>) {
-				// 工具开始调用
-				if (item.type === "tool_use" && typeof item.name === "string") {
-					const toolName = item.name;
-					const inputPreview = item.input
-						? clampString(JSON.stringify(item.input), 200)
-						: "";
-					await this.sendRunMessage(
-						runId,
-						`🔧 调用工具: ${toolName}${inputPreview ? `\n参数: ${inputPreview}` : ""}`,
-					);
-					continue;
-				}
-				// 工具结果
-				if (
-					item.type === "tool_result" &&
-					typeof item.tool_use_id === "string"
-				) {
-					const resultPreview =
-						typeof item.content === "string"
-							? clampString(item.content, 300)
-							: "";
-					if (resultPreview) {
-						await this.sendRunMessage(runId, `📋 工具结果: ${resultPreview}`);
-					}
-					continue;
-				}
-			}
-		}
-
-		if (event.type === "transformed" && Array.isArray(event.events)) {
+			const items = event.events as Array<Record<string, unknown>>;
 			const deltas: string[] = [];
-			for (const item of event.events as Array<Record<string, unknown>>) {
+
+			for (const item of items) {
 				if (item.type === "text_delta" && typeof item.content === "string") {
 					deltas.push(item.content);
-				}
-				if (item.type === "thought_delta" && typeof item.content === "string") {
+				} else if (
+					item.type === "thought_delta" &&
+					typeof item.content === "string"
+				) {
 					deltas.push(`\n[thinking] ${item.content}`);
 				}
 			}
+
+			// 文本 delta：优先走 streaming session，否则 chunk 累积
 			if (deltas.length > 0) {
 				this.deps.sessionStore.updateStateByRun(runId, "running");
-
-				// 优先尝试 streaming session（飞书等支持 streaming 的渠道）
 				const streaming = await this.ensureStreaming(runId);
 
 				if (streaming) {
@@ -335,6 +313,34 @@ export class AgentEventMirror {
 						const flushed = this.appendBuffer(runId, delta);
 						if (flushed) {
 							await this.sendRunMessage(runId, flushed);
+						}
+					}
+				}
+			}
+
+			// 工具调用通知：仅在非 streaming 模式下发送（避免干扰卡片流式体验）
+			const isStreaming = this.streamingByRun.has(runId);
+			if (!isStreaming) {
+				for (const item of items) {
+					if (item.type === "tool_use" && typeof item.name === "string") {
+						const toolName = item.name;
+						const inputPreview = item.input
+							? clampString(JSON.stringify(item.input), 200)
+							: "";
+						await this.sendRunMessage(
+							runId,
+							`🔧 调用工具: ${toolName}${inputPreview ? `\n参数: ${inputPreview}` : ""}`,
+						);
+					} else if (
+						item.type === "tool_result" &&
+						typeof item.tool_use_id === "string"
+					) {
+						const resultPreview =
+							typeof item.content === "string"
+								? clampString(item.content, 300)
+								: "";
+						if (resultPreview) {
+							await this.sendRunMessage(runId, `📋 工具结果: ${resultPreview}`);
 						}
 					}
 				}
@@ -367,6 +373,8 @@ export class AgentEventMirror {
 			this.deps.sessionStore.updateStateByRun(runId, "completed");
 			this.deps.sessionStore.removeByRunId(runId);
 			this.lastOutboundByRun.delete(runId);
+			this.streamBufferByRun.delete(runId);
+			this.streamingFailedRuns.delete(runId);
 			return;
 		}
 
@@ -389,6 +397,8 @@ export class AgentEventMirror {
 			this.deps.sessionStore.updateStateByRun(runId, "error", errorText);
 			this.deps.sessionStore.removeByRunId(runId);
 			this.lastOutboundByRun.delete(runId);
+			this.streamBufferByRun.delete(runId);
+			this.streamingFailedRuns.delete(runId);
 		}
 	}
 }

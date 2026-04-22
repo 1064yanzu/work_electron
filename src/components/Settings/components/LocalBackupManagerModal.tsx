@@ -12,7 +12,7 @@ import {
 import { confirmDialog } from "../../ui/ConfirmDialog";
 import { Modal } from "../../ui/Modal";
 import { toast } from "../../ui/Toast";
-import { RefreshCw, Trash2, Download, AlertCircle } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw, AlertCircle } from "lucide-react";
 
 interface LocalBackupManagerModalProps {
 	isOpen: boolean;
@@ -280,7 +280,7 @@ export function LocalBackupManagerModal({
 										{isRestoring === backup.fileName ? (
 											<RefreshCw className="w-4 h-4 animate-spin" />
 										) : (
-											<Download className="w-4 h-4" />
+											<RotateCcw className="w-4 h-4" />
 										)}
 									</button>
 									<button

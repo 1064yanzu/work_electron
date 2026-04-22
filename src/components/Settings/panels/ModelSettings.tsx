@@ -9,6 +9,7 @@ import {
 	RefreshCw,
 	Search,
 	Settings,
+	Wifi,
 	Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -584,7 +585,7 @@ export function ModelSettings() {
 																	{testingModel === model ? (
 																		<Loader2 className="w-4 h-4 animate-spin" />
 																	) : (
-																		<Settings className="w-4 h-4" />
+																		<Wifi className="w-4 h-4" />
 																	)}
 																</button>
 																{isManaging && (

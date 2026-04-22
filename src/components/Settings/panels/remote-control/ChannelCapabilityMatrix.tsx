@@ -118,9 +118,10 @@ export function ChannelCapabilityMatrix() {
 				<div>
 					<SettingsSectionTitle className="mb-1">能力矩阵</SettingsSectionTitle>
 					<p className="text-sm text-text-secondary">
-						每个渠道当前支持的能力一览。SDK 状态代表已迁移到新
-						ChannelPluginSDK； Legacy 状态代表尚未迁移但运行良好；Placeholder
-						代表占位，尚未实装。
+						各渠道当前支持能力一览。
+						<span className="text-emerald-600 dark:text-emerald-400 font-medium">SDK</span>：已迁移到新 ChannelPluginSDK；
+						<span className="text-amber-600 dark:text-amber-400 font-medium"> Legacy</span>：未迁移但运行良好；
+						<span className="text-zinc-500 font-medium"> Placeholder</span>：占位，尚未实装。
 					</p>
 				</div>
 				<Button

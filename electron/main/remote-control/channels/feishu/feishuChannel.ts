@@ -64,6 +64,8 @@ type FeishuMessageEvent = {
 		root_id?: string;
 		parent_id?: string;
 		mentions?: FeishuMention[];
+		/** 消息创建时间（Unix ms 字符串，飞书部分接口返回） */
+		create_time?: string;
 	};
 };
 
@@ -207,6 +209,8 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	private reconnectAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 	private stopped = false;
+	/** WebSocket 建连时间（ms），用于过滤积压的历史消息 */
+	private connectedAt = 0;
 
 	constructor(private readonly logger: Logger) {}
 
@@ -323,6 +327,22 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		const event = this.unwrapEventPayload(payload) as FeishuMessageEvent;
 		const message = event.message;
 		if (!message?.message_id || !message.chat_id) return;
+
+		// 过滤积压的历史消息：WebSocket 建连后会重放积压消息，
+		// 若消息创建时间早于建连时间（留 10 秒宽容），跳过以防止同时触发多个 Agent。
+		if (this.connectedAt > 0 && message.create_time) {
+			const msgTs = Number(message.create_time);
+			if (!Number.isNaN(msgTs) && msgTs < this.connectedAt - 10_000) {
+				this.logger.info({
+					msg: `feishu: skipping backlog message (created before connection)`,
+					messageId: message.message_id,
+					msgTs,
+					connectedAt: this.connectedAt,
+				});
+				return;
+			}
+		}
+
 		if (!(await this.touchPersistentDedupe(message.message_id))) return;
 		this.inboundMergeBuffer.cleanupExpired();
 		this.shareContextBuffer.cleanupExpired();
@@ -726,6 +746,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 
 		try {
 			this.wsClient.start({ eventDispatcher: dispatcher });
+			this.connectedAt = Date.now();
 			ctx.onStatusPatch({
 				connected: true,
 				running: true,

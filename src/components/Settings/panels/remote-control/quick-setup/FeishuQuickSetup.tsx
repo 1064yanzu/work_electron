@@ -62,12 +62,18 @@ export function FeishuQuickSetup({
 	const [applied, setApplied] = useState(false);
 	const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	// 防止 React StrictMode 双重挂载导致两次 beginAppRegistration
+	const startedRef = useRef(false);
+	// 防止陈旧的 start() 响应覆盖较新一次的状态
+	const startIdRef = useRef(0);
 
 	const start = useCallback(async () => {
+		const id = ++startIdRef.current;
 		setStatus({ kind: "loading" });
 		setApplied(false);
 		try {
 			const begin = await beginFeishuAppRegistration("feishu");
+			if (startIdRef.current !== id) return;
 			setStatus({
 				kind: "ready",
 				begin,
@@ -76,6 +82,7 @@ export function FeishuQuickSetup({
 				intervalSec: begin.intervalSec,
 			});
 		} catch (error) {
+			if (startIdRef.current !== id) return;
 			setStatus({
 				kind: "failed",
 				message: error instanceof Error ? error.message : String(error),
@@ -84,6 +91,8 @@ export function FeishuQuickSetup({
 	}, []);
 
 	useEffect(() => {
+		if (startedRef.current) return;
+		startedRef.current = true;
 		void start();
 	}, [start]);
 
@@ -210,8 +219,8 @@ export function FeishuQuickSetup({
 		<div className="space-y-5">
 			{/* 标题区 */}
 			<div className="flex items-start gap-3">
-				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#00d6b9]/20 to-[#465bff]/15">
-					<ScanLine className="h-5 w-5 text-[#0089ff]" strokeWidth={1.8} />
+				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-sky-500/10">
+					<ScanLine className="h-5 w-5 text-sky-500" strokeWidth={1.8} />
 				</div>
 				<div>
 					<h3 className="text-base font-semibold text-text-primary">
@@ -226,7 +235,7 @@ export function FeishuQuickSetup({
 			</div>
 
 			{/* 主体内容：按 status 分支 */}
-			<div className="rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50/70 to-white p-6 dark:border-zinc-800 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-xl border border-zinc-200/70 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
 				{status.kind === "loading" ? <LoadingView /> : null}
 
 				{status.kind === "ready" ? (
