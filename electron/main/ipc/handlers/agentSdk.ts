@@ -7,6 +7,7 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
+import { isWikiDirExists } from "../../kb/wiki/wikiFs";
 
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { createLifecycleHooks } from "./agentSdk/hooksFactory";
@@ -334,6 +335,14 @@ export function createAgentSdkHandlers(options: {
 
 				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
 				await syncSkillsToCwd(cwd, stderr);
+
+				// 验证 wiki_scope_path（需要实际存在 .llm-wiki/ 目录才生效）
+				const resolvedWikiScopePath =
+					input.wiki_scope_path && input.wiki_scope_path.trim()
+						? (await isWikiDirExists(input.wiki_scope_path.trim()))
+							? input.wiki_scope_path.trim()
+							: undefined
+						: undefined;
 
 				const interactiveApproval =
 					typeof input.interactive_approval === "boolean"
@@ -1147,19 +1156,55 @@ export function createAgentSdkHandlers(options: {
 												}
 											}
 
+											// === LLM Wiki 主动注入（Karpathy 最佳实践）===
+											// wiki 是 raw materials 的"编译版本"，是首要知识源。
+											// 在每轮上下文里注入 index.md，让 Agent 随时知道 wiki 里有什么，
+											// 避免写作/查询任务绕过 wiki 直接走 skill 或训练数据。
+											if (resolvedWikiScopePath && !inSubagentContext) {
+												try {
+													const wikiIndexPath = path.join(
+														resolvedWikiScopePath,
+														".llm-wiki",
+														"index.md",
+													);
+													const indexContent = await fsp.readFile(
+														wikiIndexPath,
+														"utf-8",
+													);
+													if (indexContent.trim()) {
+														// 截断防止占用过多 context
+														const cappedIndex =
+															indexContent.length > 3000
+																? `${indexContent.slice(0, 3000)}\n...(index.md 已截断，完整内容请用 Read 工具读取)`
+																: indexContent;
+														pushHint(
+															"wiki-index",
+															`## 你的知识 Wiki 目录（Karpathy LLM Wiki）\n以下是 \`${resolvedWikiScopePath}/.llm-wiki/index.md\` 的内容。这是你的原始资料的**LLM 编译版本**，是回答用户问题、执行写作任务的**首要知识源**。\n\n当用户说"根据材料"时，这里的 wiki 页面就是那些材料。写作/分析前先读相关 wiki 页面，而不是依赖训练数据。\n\n${cappedIndex}`,
+														);
+													}
+												} catch {
+													// index.md 不存在或读取失败，跳过注入
+												}
+											}
+
 											if (
 												!inSubagentContext &&
 												isLikelyWritingTask(promptText)
 											) {
+												const hasWiki = Boolean(resolvedWikiScopePath);
 												if (preferredWritingSkill) {
 													pushHint(
 														"writing-skill-preferred",
-														`这是写作任务：请先调用 Skill 工具（skill=\"${preferredWritingSkill}\"）生成初稿/框架，再根据需要整理为最终输出。`,
+														hasWiki
+															? `这是写作任务，且你有知识 Wiki：**先读 wiki 相关页面（从 index.md 导航）获取材料，再调用 Skill（skill="${preferredWritingSkill}"）生成输出**，最后根据 wiki 内容填充细节。`
+															: `这是写作任务：请先调用 Skill 工具（skill="${preferredWritingSkill}"）生成初稿/框架，再根据需要整理为最终输出。`,
 													);
 												} else if (enabledSkills.length > 0) {
 													pushHint(
 														"writing-skill-any",
-														`这是写作任务：如果有合适技能，请先调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`,
+														hasWiki
+															? `这是写作任务，且你有知识 Wiki：先读 wiki 相关页面，再视需要调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`
+															: `这是写作任务：如果有合适技能，请先调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`,
 													);
 												}
 
@@ -1189,10 +1234,19 @@ export function createAgentSdkHandlers(options: {
 							],
 						},
 						permissionMode: permissionModeForRun as any,
-						additionalDirectories:
-							additionalDirectories.length > 0
-								? additionalDirectories
-								: undefined,
+						additionalDirectories: (() => {
+							const dirs = [...additionalDirectories];
+							// 把 wiki scope 目录加入 additionalDirectories，
+							// 让 SDK 的文件工具能正确解析该目录下的相对路径，
+							// 且读取 raw sources 时不会因路径解析失败被拒绝。
+							if (
+								resolvedWikiScopePath &&
+								!dirs.includes(resolvedWikiScopePath)
+							) {
+								dirs.push(resolvedWikiScopePath);
+							}
+							return dirs.length > 0 ? dirs : undefined;
+						})(),
 						plugins: plugins.length > 0 ? plugins : undefined,
 						sandbox: sandboxSettings as any,
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
@@ -1254,6 +1308,7 @@ export function createAgentSdkHandlers(options: {
 							cwd,
 							model: String(input.model ?? ""),
 							availableTools: allowedToolsForRun,
+							wikiScopePath: resolvedWikiScopePath,
 							appendContent: [
 								input.system_prompt,
 								subagentPolicyAppend,
@@ -1408,6 +1463,30 @@ export function createAgentSdkHandlers(options: {
 										// 沙盒内写入 — 自动通过
 										if (isWriteOp && resolved.insideSandbox) {
 											toolScope = undefined;
+										}
+
+										// Wiki 目录写入 — 自动通过
+										// Karpathy LLM Wiki 模式：agent 是 wiki 页面的维护者，
+										// 必须能自由写入 .llm-wiki/（ingest 一次可更新 10-15 个页面），
+										// 如果每次都弹审批会完全阻断 ingest/backfill 工作流。
+										// 注意：只自动通过 .llm-wiki/ 目录，raw sources 仍需审批。
+										if (isWriteOp && resolvedWikiScopePath && toolScope) {
+											const wikiDir = path.join(
+												resolvedWikiScopePath,
+												".llm-wiki",
+											);
+											const normalizedTarget = path.normalize(
+												resolved.path,
+											);
+											const normalizedWikiDir = path.normalize(wikiDir);
+											if (
+												normalizedTarget === normalizedWikiDir ||
+												normalizedTarget.startsWith(
+													normalizedWikiDir + path.sep,
+												)
+											) {
+												toolScope = undefined;
+											}
 										}
 									}
 								}

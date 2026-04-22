@@ -24,6 +24,7 @@ import { workspaceStore } from "../../../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context/conversationMessages";
 import { isSdkSessionId } from "../../../lib/agent/context/sessionId";
 import { getSourceDetail } from "../../../lib/api";
+import { sessionStore } from "../../../lib/agent/sessionManager";
 import {
 	parseDocProtocolFinal,
 	buildAgentConversationContext,
@@ -726,6 +727,8 @@ export function useAgentHandler({
 					attachedFiles, // 传递文件路径
 					conversationSessionId: session.id,
 					sandboxKey: boundAgentSessionId || session.id,
+					wikiScopePath:
+						sessionStore.getCurrentSession()?.cwd || undefined,
 					resumeSessionId: (() => {
 						if (!session.sdkSessionId) return undefined;
 						if (isSdkSessionId(session.sdkSessionId))

@@ -95,6 +95,9 @@ export interface ClaudeAgentExecutionOptions {
 	/** Working directory for file operations */
 	workingDirectory?: string;
 
+	/** Project root / wiki scope path (actual user folder, may differ from sandbox workingDirectory) */
+	wikiScopePath?: string;
+
 	/** Resume an existing Claude Agent SDK session (enables SDK context management across turns) */
 	resumeSessionId?: string;
 
@@ -278,6 +281,7 @@ export class ClaudeAgentService {
 			prompt,
 			systemPrompt,
 			workingDirectory,
+			wikiScopePath,
 			resumeSessionId,
 			persistSession,
 			forkSession,
@@ -1496,6 +1500,7 @@ export class ClaudeAgentService {
 					prompt,
 					model,
 					cwd: workingDirectory,
+					wiki_scope_path: wikiScopePath,
 					resume_session_id: isSdkSessionId(resumeSessionId)
 						? resumeSessionId
 						: undefined,

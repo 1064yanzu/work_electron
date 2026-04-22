@@ -598,6 +598,7 @@ export function buildCustomSystemPrompt(opts: {
 	model: string;
 	appendContent: string;
 	availableTools?: string[];
+	wikiScopePath?: string;
 }): string {
 	const today = new Date().toISOString().slice(0, 10);
 	const toolList = opts.availableTools?.length
@@ -621,20 +622,30 @@ IMPORTANT: You MUST ONLY use the tools listed above by their EXACT names. Do NOT
 ## File Access
 - You can read files anywhere on the computer (not limited to cwd)
 - Writing/editing files inside cwd (sandbox) is auto-approved
-- Writing/editing files OUTSIDE cwd requires user approval — the user will see a permission prompt
+${opts.wikiScopePath ? `- Writing/editing files inside \`${opts.wikiScopePath}/.llm-wiki/\` is also auto-approved (wiki maintenance)` : ""}
+- Writing/editing files OUTSIDE cwd (and outside wiki dir) requires user approval — the user will see a permission prompt
 - Destructive Bash commands (rm, mv to outside cwd, etc.) also require user approval
 - Sensitive paths (~/.ssh, ~/.gnupg, system directories) are always blocked
 - Use absolute paths when accessing files outside cwd
 
 ## Knowledge Wiki (Karpathy LLM Wiki pattern)
-If a directory named \`.llm-wiki/\` exists under cwd, it is a persistent knowledge base that you co-maintain. Treat it as the project's long-term memory.
+${(() => {
+		if (!opts.wikiScopePath) {
+			return "No wiki detected for this project (no `.llm-wiki/` directory found).";
+		}
+		const wikiPath = `${opts.wikiScopePath}/.llm-wiki`;
+		return `**IMPORTANT — 这个项目有知识 Wiki（Karpathy LLM Wiki 模式）**
 
-- **Always read \`.llm-wiki/SCHEMA.md\` first** when the user asks anything wiki-related (ingest / query / lint / health check / compare / organize). That file is the authoritative operating manual: directory conventions, frontmatter schema, ingest/query/lint/backfill workflows.
-- Files outside \`.llm-wiki/\` under cwd are raw sources — read-only truth anchors; never Edit them.
-- Files inside \`.llm-wiki/\` (except SCHEMA.md) are yours to Read/Write/Edit.
-- When the user asks a question that the wiki likely answers, prefer Read on \`.llm-wiki/index.md\` and relevant pages over re-reading raw files.
-- When your synthesis produces non-trivial new insight (comparisons, unified summaries, new concepts linking multiple sources), proactively ask if it should be backfilled as a new page under the appropriate \`.llm-wiki/\` subdirectory (concepts/comparisons/maps). Record the action in \`.llm-wiki/log.md\` using the format defined in SCHEMA.md.
-- Cross-references inside wiki pages use \`[[slug]]\` syntax.
+Wiki 位置：\`${wikiPath}/\`
+这是原始材料的 **LLM 编译版本**，是你回答问题、执行写作/分析任务的**首要知识源**。
+
+### 核心工作规范
+- 用户说"根据材料"、"基于资料"或任何涉及项目内容的写作/问答任务：**先读 \`${wikiPath}/index.md\` 找到相关页面，再读 2-5 个相关页面**，然后基于 wiki 内容回答或写作
+- wiki 优先于 skill、优先于训练数据；**不要在未读 wiki 的情况下生成关于项目内容的输出**
+- 维护：新摄入文件 → ingest 工作流；回答后有新综合 → backfill 工作流；定期 lint 检查
+- Wiki 文件用绝对路径访问（\`${wikiPath}/index.md\` 等）；SCHEMA.md 包含完整操作手册
+- 交叉引用使用 \`[[slug]]\` 语法；每次操作追加到 \`${wikiPath}/log.md\``;
+	})()}
 
 ## Environment
 cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}

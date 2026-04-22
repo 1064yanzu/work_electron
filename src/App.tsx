@@ -36,6 +36,7 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "./lib/workspaceStore";
+import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 
@@ -77,10 +78,10 @@ export default function App() {
 		useState<SettingsTabId>("models");
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");
-	const activeMainView = useWorkspaceStoreSelector(
+	const activeMainView = useLayoutStoreSelector(
 		(state) => state.activeMainView,
 	);
-	const rightSidebarVisible = useWorkspaceStoreSelector(
+	const rightSidebarVisible = useLayoutStoreSelector(
 		(state) => state.rightSidebarVisible,
 	);
 	const toggleRightSidebar =
@@ -255,21 +256,21 @@ export default function App() {
 											minSize={20}
 											className="overflow-hidden"
 										>
-											{isManagedMode ? (
+											{activeMainView === "wiki-graph" ? (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<WikiGraphFullscreen />
+												</Suspense>
+											) : activeMainView === "browser" ? (
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<BrowserPanel />
+												</Suspense>
+											) : isManagedMode ? (
 												<Suspense fallback={<PanelLoadingFallback />}>
 													<SandboxWorkspace
 														onExitManagedMode={() =>
 															managedModeStore.disableManagedMode()
 														}
 													/>
-												</Suspense>
-											) : activeMainView === "browser" ? (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<BrowserPanel />
-												</Suspense>
-											) : activeMainView === "wiki-graph" ? (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<WikiGraphFullscreen />
 												</Suspense>
 											) : (
 												<Suspense fallback={<PanelLoadingFallback />}>

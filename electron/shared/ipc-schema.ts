@@ -1195,6 +1195,8 @@ export type IPCSchema = {
 			leader_summary_model?: string;
 			/** Optional teammate execution model hint */
 			teammate_execution_model?: string;
+			/** Project root directory (actual user folder, separate from sandbox cwd). Used to locate .llm-wiki/ */
+			wiki_scope_path?: string;
 		};
 		output: string;
 	};
