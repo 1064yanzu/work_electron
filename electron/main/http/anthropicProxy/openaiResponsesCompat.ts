@@ -78,14 +78,60 @@ function getProviderMetadata(provider: ProviderConfig) {
 
 export function getOpenAIEndpointType(
 	provider: ProviderConfig,
+	model?: string,
 ): OpenAIEndpointType {
 	const metadata = getProviderMetadata(provider);
+	const modelEndpointTypes =
+		metadata?.model_endpoint_types &&
+		typeof metadata.model_endpoint_types === "object" &&
+		!Array.isArray(metadata.model_endpoint_types)
+			? (metadata.model_endpoint_types as Record<string, unknown>)
+			: null;
+	const modelEndpointType =
+		typeof model === "string" && model.trim()
+			? modelEndpointTypes?.[model.trim()]
+			: undefined;
+	if (modelEndpointType === "responses") return "responses";
+	if (modelEndpointType === "chat_completions") return "chat_completions";
+
 	const value = metadata?.openai_endpoint_type;
 	return value === "responses" ? "responses" : "chat_completions";
 }
 
-export function isOpenAIResponsesProvider(provider: ProviderConfig) {
-	return getOpenAIEndpointType(provider) === "responses";
+export function getOpenAIEndpointResolution(
+	provider: ProviderConfig,
+	model?: string,
+): {
+	type: OpenAIEndpointType;
+	source: "model" | "provider";
+} {
+	const metadata = getProviderMetadata(provider);
+	const modelEndpointTypes =
+		metadata?.model_endpoint_types &&
+		typeof metadata.model_endpoint_types === "object" &&
+		!Array.isArray(metadata.model_endpoint_types)
+			? (metadata.model_endpoint_types as Record<string, unknown>)
+			: null;
+	const modelEndpointType =
+		typeof model === "string" && model.trim()
+			? modelEndpointTypes?.[model.trim()]
+			: undefined;
+
+	if (
+		modelEndpointType === "responses" ||
+		modelEndpointType === "chat_completions"
+	) {
+		return { type: modelEndpointType, source: "model" };
+	}
+
+	return { type: getOpenAIEndpointType(provider), source: "provider" };
+}
+
+export function isOpenAIResponsesProvider(
+	provider: ProviderConfig,
+	model?: string,
+) {
+	return getOpenAIEndpointType(provider, model) === "responses";
 }
 
 function extractInstructions(

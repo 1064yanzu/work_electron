@@ -344,9 +344,24 @@ export const settingsStore = {
 		const provider = currentProviders.find((p) => p.id === providerId);
 		if (!provider) return;
 
+		const metadata = { ...(provider.metadata || {}) };
+		const modelEndpointTypes =
+			metadata.model_endpoint_types &&
+			typeof metadata.model_endpoint_types === "object" &&
+			!Array.isArray(metadata.model_endpoint_types)
+				? { ...(metadata.model_endpoint_types as Record<string, unknown>) }
+				: {};
+		delete modelEndpointTypes[modelName];
+		if (Object.keys(modelEndpointTypes).length > 0) {
+			metadata.model_endpoint_types = modelEndpointTypes;
+		} else {
+			delete metadata.model_endpoint_types;
+		}
+
 		const updated = {
 			...provider,
 			models: provider.models.filter((model) => model !== modelName),
+			metadata,
 		};
 		await this.updateProvider(providerId, updated);
 	},

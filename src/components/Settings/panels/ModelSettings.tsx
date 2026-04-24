@@ -38,6 +38,32 @@ import {
 	openUrl,
 } from "../utils";
 
+type EndpointType = "chat_completions" | "responses";
+type ModelEndpointSelection = "inherit" | EndpointType;
+
+function isEndpointConfigurableProvider(providerType: ProviderType) {
+	return (
+		providerType === ProviderType.OpenAi ||
+		providerType === ProviderType.Custom ||
+		providerType === ProviderType.Deepseek
+	);
+}
+
+function getModelEndpointTypes(
+	metadata: Record<string, unknown> | undefined,
+): Record<string, EndpointType> {
+	const raw = metadata?.model_endpoint_types;
+	if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+
+	const result: Record<string, EndpointType> = {};
+	for (const [model, value] of Object.entries(raw)) {
+		if (value === "chat_completions" || value === "responses") {
+			result[model] = value;
+		}
+	}
+	return result;
+}
+
 export function ModelSettings() {
 	const { providers, settingsStore } = useSettingsStore();
 
@@ -72,6 +98,11 @@ export function ModelSettings() {
 		selected?.metadata?.openai_endpoint_type === "responses"
 			? "responses"
 			: "chat_completions";
+	const modelEndpointTypes = getModelEndpointTypes(
+		selected?.metadata as Record<string, unknown> | undefined,
+	);
+	const canConfigureEndpoint =
+		!!selected && isEndpointConfigurableProvider(selected.providerType);
 	const docsUrl = template?.docsUrl;
 	const modelsUrl = template?.modelsUrl;
 	const filtered = providers.filter((p) =>
@@ -212,6 +243,31 @@ export function ModelSettings() {
 	const handleRemoveModel = useCallback(
 		(model: string) => {
 			if (selected) settingsStore.removeModel(selected.id, model);
+		},
+		[selected, settingsStore],
+	);
+
+	const handleModelEndpointChange = useCallback(
+		(model: string, value: ModelEndpointSelection) => {
+			if (!selected) return;
+			const metadata = {
+				...(selected.metadata || {}),
+			} as Record<string, unknown>;
+			const nextModelEndpointTypes = getModelEndpointTypes(metadata);
+
+			if (value === "inherit") {
+				delete nextModelEndpointTypes[model];
+			} else {
+				nextModelEndpointTypes[model] = value;
+			}
+
+			if (Object.keys(nextModelEndpointTypes).length > 0) {
+				metadata.model_endpoint_types = nextModelEndpointTypes;
+			} else {
+				delete metadata.model_endpoint_types;
+			}
+
+			settingsStore.updateProvider(selected.id, { metadata });
 		},
 		[selected, settingsStore],
 	);
@@ -455,11 +511,10 @@ export function ModelSettings() {
 							)}
 						</div>
 
-						{(selected.providerType === ProviderType.OpenAi ||
-							selected.providerType === ProviderType.Custom) && (
+						{canConfigureEndpoint && (
 							<div className="mb-8">
 								<label className="mb-3 block text-sm font-medium text-zinc-700">
-									端点类型
+									默认端点类型
 								</label>
 								<Select
 									value={openaiEndpointType}
@@ -475,6 +530,9 @@ export function ModelSettings() {
 									<option value="chat_completions">兼容型</option>
 									<option value="responses">Responses</option>
 								</Select>
+								<p className="mt-2 text-xs text-zinc-400">
+									未单独配置的模型会继承此默认端点类型。
+								</p>
 							</div>
 						)}
 
@@ -546,7 +604,7 @@ export function ModelSettings() {
 															key={model}
 															className={`flex items-center justify-between px-4 py-3 group hover:bg-white transition-colors ${idx !== models.length - 1 ? "border-b border-zinc-100" : ""}`}
 														>
-															<div className="flex items-center gap-3">
+															<div className="flex min-w-0 flex-1 items-center gap-3">
 																<div
 																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm bg-white border border-zinc-200 overflow-hidden`}
 																>
@@ -566,15 +624,39 @@ export function ModelSettings() {
 																		</div>
 																	)}
 																</div>
-																<span className="text-sm text-zinc-800 font-medium">
+																<span className="truncate text-sm text-zinc-800 font-medium">
 																	{model}
 																</span>
-																<div className="flex gap-1">
+																<div className="flex shrink-0 gap-1">
 																	{getModelBadges(model).map((b) => (
 																		<ModelBadge key={b} type={b} />
 																	))}
 																</div>
 															</div>
+															{canConfigureEndpoint && (
+																<div className="mx-3 w-36 shrink-0">
+																	<Select
+																		variant="compact"
+																		containerClassName="w-full"
+																		value={
+																			modelEndpointTypes[model] ?? "inherit"
+																		}
+																		onChange={(e) =>
+																			handleModelEndpointChange(
+																				model,
+																				e.target
+																					.value as ModelEndpointSelection,
+																			)
+																		}
+																	>
+																		<option value="inherit">继承默认</option>
+																		<option value="chat_completions">
+																			兼容型
+																		</option>
+																		<option value="responses">Responses</option>
+																	</Select>
+																</div>
+															)}
 															<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 																<button
 																	onClick={() => handleTestModel(model)}

@@ -19,6 +19,10 @@ export function AgentBlocksInline({
 	isStreaming?: boolean;
 }) {
 	const nodes: ReactNode[] = [];
+	const activeStreamingThoughtIndex = getActiveStreamingThoughtIndex(
+		blocks,
+		isStreaming,
+	);
 
 	const replaceProtocolWithMarker = (
 		raw: string,
@@ -140,7 +144,7 @@ export function AgentBlocksInline({
 					durationMs={b.durationMs}
 					source={b.source}
 					truncated={b.truncated}
-					isStreaming={isStreaming}
+					isStreaming={i === activeStreamingThoughtIndex}
 				/>,
 			);
 			continue;
@@ -207,4 +211,23 @@ export function AgentBlocksInline({
 			{!isStreaming && <DiffSummary />}
 		</div>
 	);
+}
+
+function getActiveStreamingThoughtIndex(
+	blocks: ChatMessageBlock[],
+	isStreaming: boolean,
+): number | null {
+	if (!isStreaming) return null;
+
+	for (let i = blocks.length - 1; i >= 0; i--) {
+		const block = blocks[i];
+		if (!block) continue;
+		if (block.type === "text" && !block.text.trim()) continue;
+		if (block.type === "thought") {
+			return block.content.trim() ? i : null;
+		}
+		return null;
+	}
+
+	return null;
 }

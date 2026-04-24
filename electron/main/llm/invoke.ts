@@ -459,8 +459,26 @@ export async function resolveProviderApiKey(
 }
 
 /** 判断 provider 是否配置了 OpenAI Responses API 端点 */
-function isResponsesEndpoint(provider: Provider): boolean {
-	return provider.metadata?.openai_endpoint_type === "responses";
+function getOpenAIEndpointTypeForModel(
+	provider: Provider,
+	model: string,
+): "chat_completions" | "responses" {
+	const modelEndpointTypes =
+		provider.metadata?.model_endpoint_types &&
+		typeof provider.metadata.model_endpoint_types === "object" &&
+		!Array.isArray(provider.metadata.model_endpoint_types)
+			? (provider.metadata.model_endpoint_types as Record<string, unknown>)
+			: null;
+	const modelEndpointType = modelEndpointTypes?.[model];
+	if (modelEndpointType === "responses") return "responses";
+	if (modelEndpointType === "chat_completions") return "chat_completions";
+	return provider.metadata?.openai_endpoint_type === "responses"
+		? "responses"
+		: "chat_completions";
+}
+
+function isResponsesEndpoint(provider: Provider, model: string): boolean {
+	return getOpenAIEndpointTypeForModel(provider, model) === "responses";
 }
 
 /**
@@ -1119,7 +1137,7 @@ async function callProviderLlm(
 		case "ollama":
 			return callOllama(provider, model, prompt, context, temperature);
 		default:
-			if (isResponsesEndpoint(provider)) {
+			if (isResponsesEndpoint(provider, model)) {
 				return callOpenAIResponses(
 					provider,
 					model,
@@ -1277,7 +1295,7 @@ export async function invokeLlmStream(
 						});
 						break;
 					default: {
-						if (isResponsesEndpoint(provider)) {
+						if (isResponsesEndpoint(provider, model)) {
 							const res = await callOpenAIResponsesStream({
 								provider,
 								model,

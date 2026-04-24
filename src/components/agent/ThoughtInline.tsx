@@ -31,6 +31,7 @@ export function ThoughtInline({
 }) {
 	const [open, setOpen] = useState(Boolean(isStreaming));
 	const [liveDurationMs, setLiveDurationMs] = useState(0);
+	const [frozenDurationMs, setFrozenDurationMs] = useState(durationMs ?? 0);
 	const streamStartedAtRef = useRef<number | null>(
 		isStreaming ? Date.now() : null,
 	);
@@ -42,13 +43,22 @@ export function ThoughtInline({
 			if (!wasStreaming || streamStartedAtRef.current === null) {
 				streamStartedAtRef.current = Date.now();
 				setLiveDurationMs(0);
+				setFrozenDurationMs(0);
 			}
 			setOpen(true);
 		} else if (wasStreaming) {
+			const elapsed =
+				streamStartedAtRef.current === null
+					? liveDurationMs
+					: Date.now() - streamStartedAtRef.current;
+			setFrozenDurationMs(durationMs || elapsed);
+			streamStartedAtRef.current = null;
 			setOpen(false);
+		} else if (durationMs) {
+			setFrozenDurationMs(durationMs);
 		}
 		prevStreamingRef.current = isStreaming;
-	}, [isStreaming]);
+	}, [durationMs, isStreaming, liveDurationMs]);
 
 	useEffect(() => {
 		if (!isStreaming) return;
@@ -60,9 +70,11 @@ export function ThoughtInline({
 	}, [isStreaming]);
 
 	const headerDuration = useMemo(() => {
-		const displayDurationMs = isStreaming ? liveDurationMs : durationMs;
+		const displayDurationMs = isStreaming
+			? liveDurationMs
+			: durationMs || frozenDurationMs;
 		return formatDurationCompact(displayDurationMs);
-	}, [durationMs, isStreaming, liveDurationMs]);
+	}, [durationMs, frozenDurationMs, isStreaming, liveDurationMs]);
 
 	// 标题格式：Thought for Xs
 	const headerTitle = useMemo(() => {

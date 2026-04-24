@@ -32,6 +32,7 @@ export class StreamBlocksBuilder {
 	private currentTextBlockIndex = 0;
 	private toolCallBlockIndex = new Map<string, number>();
 	private currentThoughtBlockIndex: number | null = null;
+	private currentThoughtStartedAt: number | null = null;
 
 	constructor(options?: StreamBlocksBuilderOptions) {
 		this.thoughtMaxChars = Math.max(
@@ -54,10 +55,11 @@ export class StreamBlocksBuilder {
 	flushParser(): void {
 		const tail = this.thoughtParser.flush();
 		this.consumeSegments(tail);
+		this.finishCurrentThoughtTiming();
 	}
 
 	startToolCall(block: Extract<ChatMessageBlock, { type: "tool_call" }>): void {
-		this.currentThoughtBlockIndex = null;
+		this.finishCurrentThoughtTiming();
 		const last = this.blocks[this.blocks.length - 1];
 		if (!last || last.type !== "text") {
 			this.blocks.push({ type: "text", text: "" });
@@ -98,6 +100,7 @@ export class StreamBlocksBuilder {
 	}
 
 	getBlocks(): ChatMessageBlock[] {
+		this.updateCurrentThoughtDuration();
 		return cloneBlocks(this.blocks);
 	}
 
@@ -115,7 +118,7 @@ export class StreamBlocksBuilder {
 		for (const segment of segments) {
 			if (!segment.content) continue;
 			if (segment.type === "text") {
-				this.currentThoughtBlockIndex = null;
+				this.finishCurrentThoughtTiming();
 				this.ensureTextBlock();
 				const textBlock = this.blocks[this.currentTextBlockIndex];
 				if (!textBlock || textBlock.type !== "text") continue;
@@ -141,7 +144,11 @@ export class StreamBlocksBuilder {
 					title: title || existing.title,
 					content: merged.content,
 					phase: meta?.phase || existing.phase,
-					durationMs: meta?.durationMs || existing.durationMs,
+					durationMs:
+						meta?.durationMs ||
+						(this.currentThoughtStartedAt
+							? Date.now() - this.currentThoughtStartedAt
+							: existing.durationMs),
 					source: meta?.source || existing.source,
 					model: meta?.model || existing.model,
 					truncated: Boolean(existing.truncated || normalized.truncated),
@@ -162,6 +169,25 @@ export class StreamBlocksBuilder {
 		};
 		this.blocks.push(thoughtBlock);
 		this.currentThoughtBlockIndex = this.blocks.length - 1;
+		this.currentThoughtStartedAt = Date.now();
+	}
+
+	private updateCurrentThoughtDuration(): void {
+		if (
+			this.currentThoughtBlockIndex === null ||
+			this.currentThoughtStartedAt === null
+		) {
+			return;
+		}
+		const current = this.blocks[this.currentThoughtBlockIndex];
+		if (!current || current.type !== "thought") return;
+		current.durationMs = Date.now() - this.currentThoughtStartedAt;
+	}
+
+	private finishCurrentThoughtTiming(): void {
+		this.updateCurrentThoughtDuration();
+		this.currentThoughtBlockIndex = null;
+		this.currentThoughtStartedAt = null;
 	}
 
 	private ensureTextBlock(): void {

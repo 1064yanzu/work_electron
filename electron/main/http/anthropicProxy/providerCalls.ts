@@ -15,13 +15,12 @@ import {
 } from "./openaiCompat";
 import {
 	getOpenAIResponsesErrorMessage,
+	getOpenAIEndpointResolution,
 	getOpenAIResponsesItemText,
 	getOpenAIResponsesStopReason,
-	isOpenAIResponsesProvider,
 	readOpenAIResponsesStream,
 	toOpenAIResponsesRequest,
 	translateResponsesToAnthropic,
-	type OpenAIEndpointType,
 	type OpenAIResponsesResponse,
 } from "./openaiResponsesCompat";
 import {
@@ -441,9 +440,8 @@ export async function callProvider(
 		});
 	}
 
-	const endpointType: OpenAIEndpointType = isOpenAIResponsesProvider(provider)
-		? "responses"
-		: "chat_completions";
+	const endpointResolution = getOpenAIEndpointResolution(provider, model);
+	const endpointType = endpointResolution.type;
 
 	if (endpointType === "responses") {
 		const responsesReq = toOpenAIResponsesRequest({
@@ -480,21 +478,32 @@ export async function callProvider(
 
 		if (!responsesUpstream.ok) {
 			const errorText = await responsesUpstream.text();
-			logger?.error({
-				msg: "anthropic proxy: openai responses api error",
-				status: responsesUpstream.status,
-				error: errorText,
-			});
-			throw new Error(
-				`OpenAI Responses API error: ${responsesUpstream.status} ${errorText}`.trim(),
+			if (
+				endpointResolution.source !== "model" &&
+				isResponsesEndpointUnsupported(responsesUpstream.status, errorText)
+			) {
+				logger?.warn({
+					msg: "anthropic proxy: responses api unsupported, falling back to chat completions",
+					status: responsesUpstream.status,
+					error: errorText,
+				});
+			} else {
+				logger?.error({
+					msg: "anthropic proxy: openai responses api error",
+					status: responsesUpstream.status,
+					error: errorText,
+				});
+				throw new Error(
+					`OpenAI Responses API error: ${responsesUpstream.status} ${errorText}`.trim(),
+				);
+			}
+		} else {
+			return translateResponsesToAnthropic(
+				messageId,
+				model,
+				await responsesUpstream.json(),
 			);
 		}
-
-		return translateResponsesToAnthropic(
-			messageId,
-			model,
-			await responsesUpstream.json(),
-		);
 	}
 
 	const openaiReq = {
@@ -783,6 +792,15 @@ async function readSseStream(
 		const data = dataLines.join("\n").trim();
 		if (data) await onData(data);
 	}
+}
+
+function isResponsesEndpointUnsupported(status: number, errorText: string) {
+	if (status === 404 || status === 405 || status === 501) return true;
+	const normalized = errorText.toLowerCase();
+	return (
+		normalized.includes("unsupported endpoint") ||
+		normalized.includes("method not allowed")
+	);
 }
 
 type ResponsesTextBlockState = {
@@ -1524,7 +1542,8 @@ export async function callProviderStream(
 	);
 
 	const openaiTools = toOpenAICompatibleTools(anthropicReq);
-	if (isOpenAIResponsesProvider(provider)) {
+	const endpointResolution = getOpenAIEndpointResolution(provider, model);
+	if (endpointResolution.type === "responses") {
 		const estimatedInputTokens = estimateAnthropicInputTokens(anthropicReq);
 		const responsesReq = toOpenAIResponsesRequest({
 			model,
@@ -1560,28 +1579,39 @@ export async function callProviderStream(
 
 		if (!responsesUpstream.ok) {
 			const errorText = await responsesUpstream.text();
-			writeSseEvent(res, "error", {
-				type: "error",
-				error: { type: "api_error", message: errorText || "Upstream error" },
+			if (
+				endpointResolution.source !== "model" &&
+				isResponsesEndpointUnsupported(responsesUpstream.status, errorText)
+			) {
+				logger?.warn({
+					msg: "anthropic proxy: streaming responses api unsupported, falling back to chat completions",
+					status: responsesUpstream.status,
+					error: errorText,
+				});
+			} else {
+				writeSseEvent(res, "error", {
+					type: "error",
+					error: { type: "api_error", message: errorText || "Upstream error" },
+				});
+				res.end();
+				return;
+			}
+		} else {
+			await streamOpenAIResponsesToAnthropic({
+				upstreamBody: responsesUpstream.body,
+				upstreamContentType: String(
+					responsesUpstream.headers.get("content-type") || "",
+				),
+				readJsonFallback: () => responsesUpstream.json(),
+				res,
+				messageId,
+				model,
+				estimatedInputTokens,
+				logger,
+				requestId,
 			});
-			res.end();
 			return;
 		}
-
-		await streamOpenAIResponsesToAnthropic({
-			upstreamBody: responsesUpstream.body,
-			upstreamContentType: String(
-				responsesUpstream.headers.get("content-type") || "",
-			),
-			readJsonFallback: () => responsesUpstream.json(),
-			res,
-			messageId,
-			model,
-			estimatedInputTokens,
-			logger,
-			requestId,
-		});
-		return;
 	}
 	const openaiReq = {
 		model,
@@ -1812,6 +1842,9 @@ export async function callProviderStream(
 	let pendingStopReason: "end_turn" | "tool_use" | "max_tokens" | null = null;
 	let lastUsage: any = null;
 	let finalized = false;
+	let sawDoneSentinel = false;
+	let sawExplicitFinishReason = false;
+	let sawAssistantDelta = false;
 
 	const stopTextBlockIfNeeded = () => {
 		if (textBlockIndex === null) return;
@@ -1945,6 +1978,7 @@ export async function callProviderStream(
 		await readSseStream(upstream.body, async (data) => {
 			if (res.writableEnded) throw doneErr;
 			if (data === "[DONE]") {
+				sawDoneSentinel = true;
 				finalize();
 				throw doneErr;
 			}
@@ -1964,6 +1998,7 @@ export async function callProviderStream(
 			);
 
 			if (thoughtDeltas.length > 0) {
+				sawAssistantDelta = true;
 				stopTextBlockIfNeeded();
 				for (const fragment of thoughtDeltas) {
 					if (!fragment.text) continue;
@@ -1980,6 +2015,7 @@ export async function callProviderStream(
 			}
 
 			if (typeof delta?.content === "string" && delta.content.length > 0) {
+				sawAssistantDelta = true;
 				stopThoughtBlockIfNeeded();
 				if (textBlockIndex === null) {
 					textBlockIndex = nextBlockIndex++;
@@ -1997,6 +2033,7 @@ export async function callProviderStream(
 			}
 
 			if (Array.isArray(delta?.tool_calls)) {
+				if (delta.tool_calls.length > 0) sawAssistantDelta = true;
 				for (const tc of delta.tool_calls) {
 					const idx = typeof tc?.index === "number" ? tc.index : 0;
 					const existing = toolCalls.get(idx) || {
@@ -2024,6 +2061,7 @@ export async function callProviderStream(
 			}
 
 			if (!finishReason) return;
+			sawExplicitFinishReason = true;
 
 			// 【调试】打印 finishReason 值，帮助定位 error_during_execution 问题
 			logger?.info({
@@ -2058,6 +2096,20 @@ export async function callProviderStream(
 		});
 	} catch (e) {
 		if (e !== doneErr) streamError = e;
+	}
+
+	if (!streamError && !sawDoneSentinel && !sawExplicitFinishReason) {
+		logger?.warn({
+			msg: "anthropic proxy: upstream stream ended without explicit completion",
+			requestId,
+			model,
+			sawAssistantDelta,
+			toolCallCount: toolCalls.size,
+			hasUsage: !!lastUsage,
+		});
+		streamError = new Error(
+			"Upstream stream closed before completion (missing finish_reason/[DONE])",
+		);
 	}
 
 	if (streamError) {

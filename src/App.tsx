@@ -32,10 +32,7 @@ import {
 	subscribeSystemMotionPreference,
 	type MotionPreference,
 } from "./lib/interaction/motionPreference";
-import {
-	useWorkspaceStoreSelector,
-	workspaceStore,
-} from "./lib/workspaceStore";
+import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import type { SettingsTabId } from "./components/Settings/types";
