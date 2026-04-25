@@ -101,11 +101,11 @@ export function SlashCommandChip({
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
-			{/* 紧凑卡片头 */}
+			{/* 紧凑卡片头 — pill-shaped */}
 			<div
 				className={`
-					inline-flex items-center gap-1.5 px-2 py-1 
-					rounded-md border shadow-sm self-start
+					inline-flex items-center gap-1.5 px-2.5 py-1
+					rounded-full border shadow-sm self-start
 					transition-all duration-200 cursor-pointer
 					${styles.bg} ${styles.border} ${styles.ring}
 					hover:shadow hover:ring-2 hover:scale-[1.01]

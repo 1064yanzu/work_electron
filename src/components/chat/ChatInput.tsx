@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
 	type KeyboardEvent,
+	useCallback,
 	useDeferredValue,
 	useEffect,
 	useMemo,
@@ -39,6 +40,10 @@ import { Model, ModelSelector } from "./ModelSelector";
 import { type SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
+import {
+	SuggestionChips,
+	getDefaultSuggestionChips,
+} from "./SuggestionChips";
 
 // 提交选项
 export interface SubmitOptions {
@@ -90,6 +95,7 @@ export function ChatInput({
 	const [showSlashMenu, setShowSlashMenu] = useState(false);
 	const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
 	const [slashFilter, setSlashFilter] = useState("");
+	const [isFocused, setIsFocused] = useState(false);
 
 	// 已选择的命令卡片
 	const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
@@ -489,8 +495,37 @@ export function ChatInput({
 		);
 	};
 
+	const handleFocus = useCallback(() => {
+		setIsFocused(true);
+		prefetchChatContext();
+	}, []);
+
+	const handleBlur = useCallback((e: React.FocusEvent) => {
+		// 如果焦点仍在输入区域容器内，不折叠
+		const container = e.currentTarget.closest('[data-chat-input-root]');
+		if (container?.contains(e.relatedTarget as Node)) return;
+		setIsFocused(false);
+	}, []);
+
+	const suggestionChips = useMemo(
+		() =>
+			getDefaultSuggestionChips(
+				() => setValue("/"),
+				onOpenPromptLibrary,
+			),
+		[onOpenPromptLibrary],
+	);
+
+	// 是否处于展开状态
+	const isExpanded =
+		isFocused ||
+		value.trim().length > 0 ||
+		selectedChips.length > 0 ||
+		contexts.length > 0 ||
+		showSlashMenu;
+
 	return (
-		<div className="relative">
+		<div className="relative" data-chat-input-root onBlur={handleBlur}>
 			<input
 				type="file"
 				ref={fileInputRef}
@@ -508,12 +543,41 @@ export function ChatInput({
 				onOpenPromptLibrary={onOpenPromptLibrary}
 			/>
 
-			{/* 主输入区域 */}
-			<div className="bg-surface rounded-[20px] border border-border focus-within:border-warm-400 dark:focus-within:border-warm-400 transition-all duration-200 shadow-[rgba(0,0,0,0.04)_0px_1px_8px]">
+			{/* 模型选择器弹出面板 — 放在 overflow-hidden 外，避免被裁剪 */}
+			{isModelSelectorOpen && models.length > 0 && (
+				<ModelSelector
+					models={models}
+					activeModel={model || null}
+					onSelect={(id) => {
+						onModelSelect?.(id);
+						setIsModelSelectorOpen(false);
+					}}
+					onClose={() => setIsModelSelectorOpen(false)}
+					className="bottom-full left-0 mb-2"
+				/>
+			)}
+
+			{/* 主输入区域 — pill-shaped, 渐进式展开 */}
+			<div
+				className={`
+					bg-surface border transition-all duration-300 ease-out
+					shadow-[rgba(0,0,0,0.03)_0px_1px_6px,rgba(0,0,0,0.02)_0px_0px_0px_1px]
+					${isExpanded
+						? "rounded-[22px] border-warm-400/70 dark:border-warm-500/40 shadow-[rgba(0,0,0,0.06)_0px_4px_20px,rgba(0,0,0,0.03)_0px_0px_0px_1px]"
+						: "rounded-[28px] border-border hover:border-warm-300 dark:hover:border-warm-500/30"
+					}
+				`}
+			>
+				{/* 建议 Chips — 聚焦时展开 */}
+				<SuggestionChips
+					chips={suggestionChips}
+					visible={isExpanded && contexts.length === 0 && selectedChips.length === 0 && !showSlashMenu}
+				/>
+
 				{/* 上下文附件条 */}
 				{contexts.length > 0 ? (
 					<div className="px-4 pt-3 pb-1">
-						<div className="flex items-center gap-1.5 overflow-x-auto">
+						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
 							{contexts.map((ctx) => (
 								<div key={ctx.id} className="shrink-0">
 									<AttachmentCard
@@ -541,8 +605,7 @@ export function ChatInput({
 								</div>
 							))}
 						</div>
-						{/* 附件与输入区分割线 */}
-						<div className="mt-2 border-t border-warm-200/60" />
+						<div className="mt-2 border-t border-warm-200/40" />
 					</div>
 				) : null}
 
@@ -561,93 +624,126 @@ export function ChatInput({
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
 						onKeyDown={handleKeyDown}
-						onFocus={prefetchChatContext}
+						onFocus={handleFocus}
 						placeholder={placeholder}
 						disabled={disabled}
 						rows={1}
-						className="w-full px-5 py-4 bg-transparent text-[14px] text-text-primary placeholder-[#b0aea5]/80 dark:placeholder-[#5e5d59] resize-none focus:outline-none disabled:opacity-50 min-h-[72px] leading-relaxed"
+						className={`
+							w-full bg-transparent text-[14px] text-text-primary
+							placeholder-text-muted/60 dark:placeholder-text-muted/40
+							resize-none focus:outline-none disabled:opacity-50 leading-relaxed
+							transition-all duration-200
+							${isExpanded ? "px-5 py-3.5 min-h-[64px]" : "px-5 py-4 min-h-[52px]"}
+						`}
 						style={{ maxHeight: "200px" }}
 					/>
 				</div>
 
-				{/* 底部工具栏 — 分割线 + 宽松布局 */}
-				<div className="mx-4 border-t border-warm-200/50" />
-				<div className="flex items-center justify-between px-3 py-2.5">
-					{/* 左侧：圆形按钮组 */}
-					<div className="flex items-center gap-1">
-						{/* 附件/命令按钮 */}
-						<button
-							onClick={() => fileInputRef.current?.click()}
-							aria-label="添加附件"
-							className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-warm-200 hover:border-warm-400 dark:hover:border-warm-400 transition-all duration-150 cursor-pointer active:scale-95"
-							title="添加附件"
-						>
-							<Plus className="w-4 h-4" />
-						</button>
-
-						{/* 斜杠命令按钮 */}
-						<button
-							onClick={() => setValue("/")}
-							onMouseEnter={prefetchChatContext}
-							aria-label="命令菜单"
-							className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-warm-200 hover:border-warm-400 dark:hover:border-warm-400 transition-all duration-150 cursor-pointer active:scale-95"
-							title="命令菜单 (/)"
-						>
-							<AtSign className="w-4 h-4" />
-						</button>
-
-						{/* 模型选择器 */}
-						<div className="relative ml-1">
-							{isModelSelectorOpen && models.length > 0 && (
-								<ModelSelector
-									models={models}
-									activeModel={model || null}
-									onSelect={(id) => {
-										onModelSelect?.(id);
-										setIsModelSelectorOpen(false);
-									}}
-									onClose={() => setIsModelSelectorOpen(false)}
-									className="bottom-full left-0 mb-2"
-								/>
-							)}
+				{/* 底部工具栏 — 展开时显示 */}
+				<div
+					className={`
+						overflow-hidden transition-all duration-300 ease-out
+						${isExpanded ? "max-h-[60px] opacity-100" : "max-h-0 opacity-0"}
+					`}
+				>
+					<div className="mx-4 border-t border-warm-200/40 dark:border-warm-700/30" />
+					<div className="flex items-center justify-between px-3 py-2">
+						{/* 左侧：圆形按钮组 */}
+						<div className="flex items-center gap-1">
 							<button
-								onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-								className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-full transition-all duration-150 cursor-pointer ${
-									isModelSelectorOpen
-										? "bg-warm-200 text-text-primary"
-										: "text-text-muted hover:text-text-primary hover:bg-warm-200"
-								}`}
+								onClick={() => fileInputRef.current?.click()}
+								aria-label="添加附件"
+								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+								title="添加附件"
 							>
-								<ChevronUp
-									className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`}
-								/>
-								<span className="font-medium truncate max-w-[100px]">
-									{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
-								</span>
+								<Plus className="w-4 h-4" />
+							</button>
+
+							<button
+								onClick={() => setValue("/")}
+								onMouseEnter={prefetchChatContext}
+								aria-label="命令菜单"
+								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+								title="命令菜单 (/)"
+							>
+								<AtSign className="w-3.5 h-3.5" />
+							</button>
+
+							{/* 模型选择器 — pill tag（弹出面板在容器外渲染） */}
+							<div className="relative ml-0.5">
+								<button
+									onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
+									className={`
+										flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-full
+										transition-all duration-150 cursor-pointer
+										${isModelSelectorOpen
+											? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
+											: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-zinc-700/40"
+										}
+									`}
+								>
+									<ChevronUp
+										className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`}
+									/>
+									<span className="font-medium truncate max-w-[100px]">
+										{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
+									</span>
+								</button>
+							</div>
+						</div>
+
+						{/* 右侧：语音 + 发送按钮 */}
+						<div className="flex items-center gap-1.5">
+							<button
+								aria-label="语音输入"
+								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/50 hover:text-text-muted hover:bg-warm-200/60 dark:hover:bg-zinc-700/40 transition-all duration-150 cursor-pointer active:scale-95"
+								title="语音输入"
+							>
+								<Mic className="w-3.5 h-3.5" />
+							</button>
+							<button
+								onClick={handleSubmit}
+								disabled={
+									disabled || (!value.trim() && selectedChips.length === 0)
+								}
+								aria-label="发送消息"
+								className={`
+									flex items-center justify-center w-8 h-8 rounded-full
+									transition-all duration-200 cursor-pointer active:scale-90
+									${value.trim() || selectedChips.length > 0
+										? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
+										: "bg-warm-200/80 dark:bg-zinc-700/50 text-text-muted/40 disabled:cursor-not-allowed"
+									}
+								`}
+							>
+								<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
 							</button>
 						</div>
 					</div>
+				</div>
 
-					{/* 右侧：语音 + 发送按钮 */}
-					<div className="flex items-center gap-2">
-						<button
-							aria-label="语音输入"
-							className="w-9 h-9 flex items-center justify-center rounded-full text-[#d1cfc5] hover:text-text-muted hover:bg-warm-200 transition-all duration-150 cursor-pointer active:scale-95"
-							title="语音输入"
-						>
-							<Mic className="w-4 h-4" />
-						</button>
+				{/* 未展开时的迷你工具栏 — 只显示发送按钮 */}
+				<div
+					className={`
+						overflow-hidden transition-all duration-300 ease-out
+						${!isExpanded ? "max-h-[48px] opacity-100" : "max-h-0 opacity-0"}
+					`}
+				>
+					<div className="flex items-center justify-end px-3 py-2">
 						<button
 							onClick={handleSubmit}
 							disabled={
 								disabled || (!value.trim() && selectedChips.length === 0)
 							}
 							aria-label="发送消息"
-							className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 cursor-pointer active:scale-90 ${
-								value.trim() || selectedChips.length > 0
-									? "bg-primary hover:bg-primary-hover text-surface shadow-[#c96442_0px_0px_0px_0px,#c96442_0px_0px_0px_1px]"
-									: "bg-warm-200 text-[#d1cfc5] disabled:cursor-not-allowed"
-							}`}
+							className={`
+								flex items-center justify-center w-8 h-8 rounded-full
+								transition-all duration-200 cursor-pointer active:scale-90
+								${value.trim() || selectedChips.length > 0
+									? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
+									: "bg-warm-200/60 dark:bg-zinc-700/40 text-text-muted/30 disabled:cursor-not-allowed"
+								}
+							`}
 						>
 							<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
 						</button>
@@ -655,16 +751,25 @@ export function ChatInput({
 				</div>
 			</div>
 
-			{/* 快捷键提示 */}
-			<div className="flex items-center justify-center gap-5 mt-2.5 text-[10px] text-[#d1cfc5] dark:text-[#4a4845] select-none">
+			{/* 快捷键提示 — 聚焦时显示 */}
+			<div
+				className={`
+					flex items-center justify-center gap-5 mt-2 text-[10px] select-none
+					transition-all duration-300
+					${isExpanded
+						? "opacity-100 text-text-muted/50 dark:text-text-muted/30"
+						: "opacity-0 text-transparent"
+					}
+				`}
+			>
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-surface/60 border border-border rounded text-[9px] font-sans text-text-light shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-surface/50 border border-border/50 rounded-[4px] text-[9px] font-sans text-text-light/60 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
 						/
 					</kbd>
 					命令
 				</span>
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[18px] flex items-center justify-center bg-surface/60 border border-border rounded text-[9px] font-sans text-text-light shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-surface/50 border border-border/50 rounded-[4px] text-[9px] font-sans text-text-light/60 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
 						↵
 					</kbd>
 					发送
