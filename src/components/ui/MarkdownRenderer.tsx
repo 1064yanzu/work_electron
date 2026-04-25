@@ -177,7 +177,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				if (isInline) {
 					return (
 						<code
-							className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-sm font-mono text-zinc-800 dark:text-zinc-200"
+							className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-zinc-200"
 							{...props}
 						>
 							{children}
@@ -224,10 +224,10 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					if (isStreaming) {
 						return (
 							<div className="relative group my-3">
-								<div className="absolute top-2 right-2 text-xs text-zinc-400 font-mono">
+								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 									{language}
 								</div>
-								<pre className="bg-zinc-900 dark:bg-zinc-950 text-zinc-100 rounded-xl p-4 overflow-x-auto text-sm">
+								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
 									<code className={className} {...props}>
 										{children}
 									</code>
@@ -238,7 +238,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					return (
 						<Suspense
 							fallback={
-								<div className="my-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 text-xs text-zinc-500 dark:text-zinc-400">
+								<div className="my-3 rounded-xl border border-border bg-warm-50 p-4 text-xs text-text-muted">
 									正在加载图表渲染器...
 								</div>
 							}
@@ -252,10 +252,10 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				if (isStreaming) {
 					return (
 						<div className="relative group my-3">
-							<div className="absolute top-2 right-2 text-xs text-zinc-400 font-mono">
+							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 								{language}
 							</div>
-							<pre className="bg-zinc-900 dark:bg-zinc-950 text-zinc-100 rounded-xl p-4 overflow-x-auto text-sm">
+							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
 								<code className={className} {...props}>
 									{children}
 								</code>
@@ -345,17 +345,17 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 					return (
 						<span className="block my-4 flex items-center justify-center">
-							<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
+							<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-border shadow-sm">
 								{/* 加载动画 */}
 								<span className="relative block w-12 h-12">
-									<span className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-700" />
+									<span className="absolute inset-0 rounded-full border-4 border-border" />
 									<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
 								</span>
-								<span className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+								<span className="flex items-center gap-2 text-sm text-text-muted">
 									<span className="animate-pulse">🎨</span>
 									<span>{alt || "AI 配图生成中..."}</span>
 								</span>
-								<span className="text-xs text-zinc-400 dark:text-zinc-500">
+								<span className="text-xs text-text-light">
 									请稍候，图片即将呈现
 								</span>
 							</span>
@@ -375,7 +375,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			// 自定义引用块
 			blockquote({ children }: { children?: any }) {
 				return (
-					<blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 my-3 italic text-zinc-600 dark:text-zinc-400">
+					<blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 my-3 italic text-text-secondary">
 						{children}
 					</blockquote>
 				);
@@ -384,7 +384,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			table({ children }: { children?: any }) {
 				return (
 					<div className="overflow-x-auto my-3">
-						<table className="min-w-full border-collapse border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+						<table className="min-w-full border-collapse border border-border rounded-lg overflow-hidden">
 							{children}
 						</table>
 					</div>
@@ -392,21 +392,17 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			},
 			th({ children }: { children?: any }) {
 				return (
-					<th className="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 text-left font-semibold border-b border-zinc-200 dark:border-zinc-700">
+					<th className="bg-warm-200 px-4 py-2 text-left font-semibold border-b border-border">
 						{children}
 					</th>
 				);
 			},
 			td({ children }: { children?: any }) {
-				return (
-					<td className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800">
-						{children}
-					</td>
-				);
+				return <td className="px-4 py-2 border-b border-border">{children}</td>;
 			},
 			// 自定义分割线
 			hr() {
-				return <hr className="my-6 border-zinc-200 dark:border-zinc-700" />;
+				return <hr className="my-6 border-border" />;
 			},
 		};
 	}, [isStreaming, sandboxDir]);

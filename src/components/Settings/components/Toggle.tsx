@@ -17,11 +17,11 @@ export function Toggle({ checked, onChange, size = "md" }: ToggleProps) {
 			aria-checked={checked}
 			onClick={onChange}
 			className={`relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/20 ${sizeClasses.track} ${
-				checked ? "bg-emerald-500" : "bg-zinc-200"
+				checked ? "bg-emerald-500" : "bg-warm-300"
 			}`}
 		>
 			<span
-				className={`pointer-events-none inline-block rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${sizeClasses.dot} ${
+				className={`pointer-events-none inline-block rounded-full bg-surface shadow-lg ring-0 transition-transform duration-200 ease-in-out ${sizeClasses.dot} ${
 					checked ? sizeClasses.translate : "translate-x-0"
 				}`}
 				style={{ marginTop: "2px", marginLeft: "2px" }}

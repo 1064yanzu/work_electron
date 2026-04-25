@@ -27,13 +27,13 @@ export function CopilotHeader({
 	onNewSession,
 }: CopilotHeaderProps) {
 	return (
-		<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
+		<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-surface/80/80 backdrop-blur-sm z-10">
 			<div className="flex items-center gap-3">
 				<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 dark:from-zinc-100 dark:to-zinc-300 flex items-center justify-center shadow-sm">
-					<MessagesSquare className="w-4 h-4 text-white dark:text-zinc-900" />
+					<MessagesSquare className="w-4 h-4 text-white" />
 				</div>
 				<div>
-					<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 tracking-tight">
+					<h2 className="font-semibold text-sm text-text-primary tracking-tight">
 						AI 助手
 					</h2>
 					{isAgentExecuting ? (
@@ -67,11 +67,11 @@ export function CopilotHeader({
 					{isMoreMenuOpen ? (
 						<>
 							<div className="fixed inset-0 z-40" onClick={onCloseMoreMenu} />
-							<div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+							<div className="absolute right-0 top-full mt-1 w-48 bg-surface rounded-xl shadow-lg border border-border py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
 								<button
 									type="button"
 									onClick={onOpenPromptLibrary}
-									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
 								>
 									<MessageSquare className="w-4 h-4" />
 									<span>提示词仓库</span>

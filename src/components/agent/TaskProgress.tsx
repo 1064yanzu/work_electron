@@ -31,9 +31,9 @@ function PhaseStatusIcon({
 				<div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
 			);
 		case "skipped":
-			return <Circle className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />;
+			return <Circle className="w-4 h-4 text-text-light" />;
 		default:
-			return <Circle className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />;
+			return <Circle className="w-4 h-4 text-text-light" />;
 	}
 }
 
@@ -56,7 +56,7 @@ function ProgressRing({
 			{/* 背景圆 */}
 			<svg className="transform -rotate-90" width={size} height={size}>
 				<circle
-					className="text-zinc-200 dark:text-zinc-700"
+					className="text-zinc-200"
 					strokeWidth={strokeWidth}
 					stroke="currentColor"
 					fill="transparent"
@@ -80,7 +80,7 @@ function ProgressRing({
 			</svg>
 			{/* 中心文字 */}
 			<div className="absolute inset-0 flex items-center justify-center">
-				<span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+				<span className="text-sm font-semibold text-text-secondary dark:text-zinc-200">
 					{Math.round(progress)}%
 				</span>
 			</div>
@@ -126,7 +126,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 								status === "completed" &&
 									!isActive &&
 									"text-green-600 dark:text-green-400",
-								status === "pending" && "text-zinc-400",
+								status === "pending" && "text-text-light",
 							)}
 						>
 							{config.label}
@@ -150,14 +150,14 @@ function ToolCallStats({
 	stats: { total: number; completed: number; failed: number };
 }) {
 	return (
-		<div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
+		<div className="flex items-center gap-4 p-3 bg-warm-50/50 rounded-lg">
 			<div className="flex items-center gap-2">
-				<Hammer className="w-4 h-4 text-zinc-400" />
-				<span className="text-sm text-zinc-500">工具调用</span>
+				<Hammer className="w-4 h-4 text-text-light" />
+				<span className="text-sm text-text-muted">工具调用</span>
 			</div>
 			<div className="flex items-center gap-3">
 				<div className="flex items-center gap-1">
-					<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+					<span className="text-sm font-medium text-text-secondary">
 						{stats.completed}
 					</span>
 					<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
@@ -170,7 +170,7 @@ function ToolCallStats({
 						<AlertCircle className="w-3.5 h-3.5 text-red-500" />
 					</div>
 				)}
-				<span className="text-xs text-zinc-400">/ {stats.total} 次</span>
+				<span className="text-xs text-text-light">/ {stats.total} 次</span>
 			</div>
 		</div>
 	);
@@ -194,14 +194,14 @@ export default function TaskProgress() {
 	};
 
 	return (
-		<div className="rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+		<div className="rounded-xl bg-surface ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 			{/* Header */}
-			<div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
+			<div className="px-4 py-3 border-b border-border flex items-center gap-3">
 				<div className="relative">
 					<Activity
 						className={cn(
 							"w-5 h-5",
-							isExecuting ? "text-blue-500" : "text-zinc-400",
+							isExecuting ? "text-blue-500" : "text-text-light",
 						)}
 					/>
 					{isExecuting && (
@@ -209,11 +209,11 @@ export default function TaskProgress() {
 					)}
 				</div>
 				<div className="flex-1">
-					<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+					<h3 className="text-sm font-semibold text-text-secondary dark:text-zinc-200">
 						任务进度
 					</h3>
 					{taskProgress.currentOperation && (
-						<p className="text-xs text-zinc-400 truncate mt-0.5">
+						<p className="text-xs text-text-light truncate mt-0.5">
 							{taskProgress.currentOperation}
 						</p>
 					)}
@@ -273,7 +273,7 @@ export default function TaskProgress() {
 				{/* 预估剩余时间 */}
 				{taskProgress.estimatedTimeRemaining &&
 					taskProgress.estimatedTimeRemaining > 0 && (
-						<div className="flex items-center gap-2 text-xs text-zinc-400">
+						<div className="flex items-center gap-2 text-xs text-text-light">
 							<Clock className="w-3.5 h-3.5" />
 							<span>{formatTime(taskProgress.estimatedTimeRemaining)}</span>
 						</div>
@@ -295,7 +295,7 @@ export function TaskProgressCompact() {
 		<div className="flex items-center gap-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full">
 			<div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
 			<div className="flex-1 min-w-0">
-				<div className="h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+				<div className="h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
 					<div
 						className="h-full bg-blue-500 rounded-full transition-all duration-500"
 						style={{ width: `${taskProgress.overallProgress}%` }}

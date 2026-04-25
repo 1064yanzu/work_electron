@@ -292,7 +292,7 @@ export default function SandboxWorkspace({
 	);
 
 	return (
-		<div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">
+		<div className="flex flex-col h-full bg-warm-50">
 			<ManagedCenterHeader
 				centerView={ui.centerView}
 				headerTitle={headerTitle}
@@ -307,7 +307,7 @@ export default function SandboxWorkspace({
 			{ui.centerView === "graph" ? (
 				<Suspense
 					fallback={
-						<div className="flex-1 flex items-center justify-center text-sm text-zinc-500 dark:text-zinc-400 bg-white/70 dark:bg-zinc-900/40">
+						<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70/40">
 							正在加载运行图...
 						</div>
 					}
@@ -361,7 +361,7 @@ export default function SandboxWorkspace({
 						/>
 					</Panel>
 
-					<PanelResizeHandle className="w-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
+					<PanelResizeHandle className="w-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
 
 					<Panel defaultSize={75} minSize={40}>
 						{previewPanel}

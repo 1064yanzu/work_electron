@@ -225,7 +225,7 @@ export default function OutputStage() {
 									onClick={() => handleSelectOutput(output)}
 									className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
 										selectedOutput?.id === output.id
-											? "bg-white text-primary border-primary"
+											? "bg-surface text-primary border-primary"
 											: "text-text-secondary hover:bg-surface/50 border-transparent hover:text-primary"
 									}`}
 								>
@@ -235,7 +235,7 @@ export default function OutputStage() {
 						</div>
 
 						{/* Editor / Preview Area */}
-						<div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 p-6 min-h-0">
+						<div className="flex-1 overflow-y-auto bg-surface dark:bg-gray-800 p-6 min-h-0">
 							{selectedOutput ? (
 								isEditing ? (
 									<textarea

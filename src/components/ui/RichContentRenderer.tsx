@@ -276,14 +276,14 @@ export function RichContentWithStyles({
         prose prose-zinc dark:prose-invert max-w-none
 
         /* 标题样式 */
-        prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100
-        prose-h1:text-3xl prose-h1:leading-tight prose-h1:mt-10 prose-h1:mb-6 prose-h1:border-b prose-h1:border-zinc-200 dark:prose-h1:border-zinc-800 prose-h1:pb-3
+        prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-text-primary dark:prose-headings:text-surface
+        prose-h1:text-3xl prose-h1:leading-tight prose-h1:mt-10 prose-h1:mb-6 prose-h1:border-b prose-h1:border-border dark:prose-h1:border-dark-border prose-h1:pb-3
         prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
         prose-h3:text-xl prose-h3:mt-7 prose-h3:mb-3
         prose-h4:text-lg prose-h4:mt-6 prose-h4:mb-2.5
 
         /* 段落样式 */
-        prose-p:text-[15px] prose-p:leading-[1.9] prose-p:my-5 prose-p:text-zinc-700 dark:prose-p:text-zinc-200 prose-p:tracking-wide
+        prose-p:text-[15px] prose-p:leading-[1.9] prose-p:my-5 prose-p:text-text-secondary dark:prose-p:text-zinc-200 prose-p:tracking-wide
 
         /* 图片样式 */
         prose-img:rounded-2xl prose-img:shadow-[0_20px_45px_rgba(0,0,0,0.08)] prose-img:my-8 prose-img:mx-auto prose-img:max-w-full
@@ -297,31 +297,31 @@ export function RichContentWithStyles({
         /* 引用块样式 */
         prose-blockquote:border-l-[3px] prose-blockquote:border-zinc-300 dark:prose-blockquote:border-zinc-600
         prose-blockquote:pl-5 prose-blockquote:py-2 prose-blockquote:my-6
-        prose-blockquote:italic prose-blockquote:text-zinc-600 dark:prose-blockquote:text-zinc-300
-        prose-blockquote:bg-zinc-50/70 dark:prose-blockquote:bg-white/5 prose-blockquote:rounded-r-2xl
+        prose-blockquote:italic prose-blockquote:text-text-secondary dark:prose-blockquote:text-text-light
+        prose-blockquote:bg-warm-50/70 dark:prose-blockquote:bg-surface/5 prose-blockquote:rounded-r-2xl
 
         /* 代码样式 */
-        prose-pre:bg-[#0f0f11] dark:prose-pre:bg-black prose-pre:text-sm prose-pre:text-zinc-100 prose-pre:rounded-2xl prose-pre:my-6 prose-pre:px-6 prose-pre:py-4
-        prose-code:text-zinc-900 dark:prose-code:text-zinc-100
-        prose-code:bg-zinc-100/80 dark:prose-code:bg-white/10 prose-code:px-2 prose-code:py-0.5 prose-code:rounded-lg
+        prose-pre:bg-[#0f0f11] dark:prose-pre:bg-black prose-pre:text-sm prose-pre:text-surface prose-pre:rounded-2xl prose-pre:my-6 prose-pre:px-6 prose-pre:py-4
+        prose-code:text-text-primary dark:prose-code:text-surface
+        prose-code:bg-warm-200/80 dark:prose-code:bg-surface/10 prose-code:px-2 prose-code:py-0.5 prose-code:rounded-lg
         prose-code:before:content-none prose-code:after:content-none prose-code:font-medium
 
         /* 列表样式 */
         prose-ul:my-5 prose-ul:pl-7 prose-ul:space-y-2
         prose-ol:my-5 prose-ol:pl-7 prose-ol:space-y-2
-        prose-li:leading-7 prose-li:text-zinc-700 dark:prose-li:text-zinc-200 prose-li:marker:text-zinc-400
+        prose-li:leading-7 prose-li:text-text-secondary dark:prose-li:text-zinc-200 prose-li:marker:text-text-light
 
         /* 表格样式 */
         prose-table:my-6 prose-table:w-full prose-table:border-collapse
-        prose-th:bg-zinc-100 dark:prose-th:bg-zinc-800 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold
-        prose-td:px-4 prose-td:py-2 prose-td:border-b prose-td:border-zinc-200 dark:prose-td:border-zinc-700 prose-td:text-[15px]
+        prose-th:bg-warm-200 dark:prose-th:bg-dark-surface prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold
+        prose-td:px-4 prose-td:py-2 prose-td:border-b prose-td:border-border dark:prose-td:border-dark-border prose-td:text-[15px]
 
         /* 分割线 */
-        prose-hr:my-10 prose-hr:border-zinc-200 dark:prose-hr:border-zinc-700
+        prose-hr:my-10 prose-hr:border-border dark:prose-hr:border-dark-border
 
         /* 其他 */
         prose-figure:my-8
-        prose-figcaption:text-sm prose-figcaption:text-zinc-500 dark:prose-figcaption:text-zinc-400 prose-figcaption:text-center
+        prose-figcaption:text-sm prose-figcaption:text-text-muted dark:prose-figcaption:text-text-light prose-figcaption:text-center
 
         ${className}
       `}

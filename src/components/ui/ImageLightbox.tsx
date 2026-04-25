@@ -26,7 +26,7 @@ export function ImageLightbox({
 			onClick={onClose}
 		>
 			<div
-				className="relative w-[min(1220px,96vw)] h-[min(90vh,960px)] bg-white dark:bg-zinc-900 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/10 overflow-hidden"
+				className="relative w-[min(1220px,96vw)] h-[min(90vh,960px)] bg-surface rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/10 overflow-hidden"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<ZoomableImageViewer
@@ -37,7 +37,7 @@ export function ImageLightbox({
 						<a
 							href={src}
 							download={name}
-							className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+							className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 							onClick={(e) => e.stopPropagation()}
 							title="下载"
 						>

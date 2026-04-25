@@ -15,9 +15,10 @@ export function SettingsPageContainer({
 	return (
 		<div
 			className={cn(
-				"flex-1 h-full overflow-y-auto bg-white dark:bg-zinc-950 p-8 text-text-primary",
+				"flex-1 h-full overflow-y-auto p-8 text-text-primary transition-colors duration-300",
 				className,
 			)}
+			style={{ backgroundColor: "var(--t-bg-surface)" }}
 		>
 			<div className={cn("space-y-8", contentClassName)}>{children}</div>
 		</div>
@@ -36,9 +37,10 @@ export function SettingsSectionCard({
 	return (
 		<div
 			className={cn(
-				"rounded-2xl border border-zinc-200/80 bg-white ring-1 ring-black/[0.03] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]",
+				"rounded-2xl border border-border ring-1 ring-black/[0.03] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-colors duration-300",
 				className,
 			)}
+			style={{ backgroundColor: "var(--t-bg-surface)" }}
 		>
 			{children}
 		</div>
@@ -57,7 +59,7 @@ export function SettingsSectionTitle({
 	return (
 		<h4
 			className={cn(
-				"mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500",
+				"mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted",
 				className,
 			)}
 		>
@@ -84,25 +86,23 @@ export function SettingsRow({
 	return (
 		<div
 			className={cn(
-				"flex items-center justify-between border-b border-zinc-100/80 py-4 last:border-0 dark:border-zinc-800/80",
+				"flex items-center justify-between border-b border-border py-4 last:border-0",
 				className,
 			)}
 		>
 			<div className="min-w-0 flex-1">
-				<div className="text-[13.5px] font-medium leading-snug text-zinc-800 dark:text-zinc-100">
+				<div className="text-[13.5px] font-medium leading-snug text-text-primary">
 					{label}
 				</div>
 				{description && (
-					<div className="mt-1 text-[12px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+					<div className="mt-1 text-[12px] leading-relaxed text-text-muted">
 						{description}
 					</div>
 				)}
 			</div>
 			<div className="ml-4 flex items-center gap-3">
 				{value && (
-					<div className="text-[13px] text-zinc-500 dark:text-zinc-400">
-						{value}
-					</div>
+					<div className="text-[13px] text-text-secondary">{value}</div>
 				)}
 				{action}
 			</div>
@@ -134,15 +134,17 @@ export function SettingsSwitch({
 			}}
 			className={cn(
 				"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
-				checked ? "bg-[#c96442]" : "bg-zinc-200 dark:bg-zinc-700",
+				checked ? "bg-primary" : "bg-warm-300",
 				disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
 				className,
 			)}
 		>
 			<span
 				className={cn(
-					"inline-block h-[16px] w-[16px] transform rounded-full bg-white shadow-sm transition-transform duration-200",
-					checked ? "translate-x-[20px]" : "translate-x-[3px]",
+					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-200",
+					checked
+						? "translate-x-[20px] bg-primary-foreground"
+						: "translate-x-[3px] bg-surface",
 				)}
 			/>
 		</button>

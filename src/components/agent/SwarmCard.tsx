@@ -50,8 +50,7 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 					"bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
 				status === "error" &&
 					"bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
-				status === "pending" &&
-					"bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500",
+				status === "pending" && "bg-warm-200 text-text-light",
 			)}
 		>
 			{status === "completed" ? (
@@ -96,13 +95,13 @@ const AgentProgressBar = memo(function AgentProgressBar({
 	}
 	if (status === "pending") {
 		return (
-			<div className="w-16 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+			<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-zinc-700" />
 		);
 	}
 	// running
 	const pct = progress ?? 0;
 	return (
-		<div className="w-16 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+		<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-zinc-700 overflow-hidden">
 			{pct > 0 ? (
 				<div
 					className="h-full bg-[#D96C46] rounded-full transition-all duration-500"
@@ -157,9 +156,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
 				agent.status === "error" && "bg-red-50/50 dark:bg-red-900/10",
 				agent.status === "pending" && "opacity-50",
-				onClick
-					? "cursor-pointer hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
-					: "cursor-default",
+				onClick ? "cursor-pointer hover:bg-warm-200/60/40" : "cursor-default",
 			)}
 		>
 			<AgentIndexBadge index={agent.index} status={agent.status} />
@@ -167,15 +164,15 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 			{/* 名称 + 活动摘要 */}
 			<div className="flex-1 min-w-0 flex flex-col gap-0.5">
 				<div className="flex items-center gap-1.5">
-					<span className="text-xs font-medium text-zinc-800 dark:text-zinc-100 truncate">
+					<span className="text-xs font-medium text-text-primary truncate">
 						{agent.name}
 					</span>
-					<span className="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">
+					<span className="text-[10px] text-text-light shrink-0">
 						#{agent.index}
 					</span>
 				</div>
 				{agent.lastActivity && agent.status === "running" && (
-					<div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+					<div className="flex items-center gap-1 text-[11px] text-text-muted truncate">
 						<Loader2 className="w-2.5 h-2.5 animate-spin text-[#D96C46] shrink-0" />
 						<span className="truncate">{agent.lastActivity}</span>
 					</div>
@@ -194,12 +191,12 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 						agent.status === "completed" &&
 							"text-emerald-600 dark:text-emerald-400",
 						agent.status === "error" && "text-red-600 dark:text-red-400",
-						agent.status === "pending" && "text-zinc-400",
+						agent.status === "pending" && "text-text-light",
 					)}
 				>
 					{statusLabel(agent.status)}
 				</span>
-				{dur && <span className="text-[10px] text-zinc-400">{dur}</span>}
+				{dur && <span className="text-[10px] text-text-light">{dur}</span>}
 			</div>
 		</button>
 	);
@@ -253,10 +250,10 @@ export const SwarmCard = memo(function SwarmCard({
 			className={cn(
 				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden mb-2",
 				hasAnyRunning
-					? "bg-white/80 dark:bg-zinc-900/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
+					? "bg-surface/80/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
 					: allDone
-						? "bg-white dark:bg-zinc-900 border-emerald-200 dark:border-emerald-800/30"
-						: "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800",
+						? "bg-surface border-emerald-200 dark:border-emerald-800/30"
+						: "bg-surface border-border",
 			)}
 		>
 			{/* 运行中的呼吸背景动画 */}
@@ -277,7 +274,7 @@ export const SwarmCard = memo(function SwarmCard({
 								? "bg-[#D96C46]/10 text-[#D96C46]"
 								: allDone
 									? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-									: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
+									: "bg-warm-200 text-text-muted",
 						)}
 					>
 						{hasAnyRunning ? (
@@ -298,14 +295,14 @@ export const SwarmCard = memo(function SwarmCard({
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+						<span className="text-sm font-semibold text-text-primary">
 							{title}
 						</span>
-						<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+						<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200 text-text-muted">
 							{stats.total} 个并行任务
 						</span>
 					</div>
-					<div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+					<div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
 						{hasAnyRunning && (
 							<Loader2 className="w-3 h-3 animate-spin text-[#D96C46]" />
 						)}
@@ -325,7 +322,7 @@ export const SwarmCard = memo(function SwarmCard({
 			</div>
 
 			{/* Agent 列表 */}
-			<div className="relative z-10 border-t border-zinc-100 dark:border-zinc-800/60">
+			<div className="relative z-10 border-t border-border/60">
 				<div className="py-1">
 					{visibleAgents.map((agent) => (
 						<SwarmAgentRow
@@ -341,7 +338,7 @@ export const SwarmCard = memo(function SwarmCard({
 					<button
 						type="button"
 						onClick={() => setExpanded((v) => !v)}
-						className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors border-t border-zinc-100 dark:border-zinc-800/60"
+						className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors border-t border-border/60"
 					>
 						{expanded ? (
 							<>
@@ -359,7 +356,7 @@ export const SwarmCard = memo(function SwarmCard({
 			</div>
 
 			{/* 底部汇总条 */}
-			<div className="relative z-10 flex items-center gap-3 px-3 py-2 border-t border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/30">
+			<div className="relative z-10 flex items-center gap-3 px-3 py-2 border-t border-border/60 bg-warm-50/50/30">
 				<SwarmMiniStats stats={stats} />
 			</div>
 		</div>
@@ -391,7 +388,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 					fill="none"
 					stroke="currentColor"
 					strokeWidth="2.5"
-					className="text-zinc-200 dark:text-zinc-700"
+					className="text-zinc-200"
 				/>
 				<circle
 					cx="18"
@@ -414,7 +411,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 				/>
 			</svg>
 			<div className="absolute inset-0 flex items-center justify-center">
-				<span className="text-[9px] font-bold text-zinc-600 dark:text-zinc-300">
+				<span className="text-[9px] font-bold text-text-secondary">
 					{completed}/{total}
 				</span>
 			</div>
@@ -455,7 +452,7 @@ const SwarmMiniStats = memo(function SwarmMiniStats({
 				</span>
 			)}
 			{stats.pending > 0 && (
-				<span className="flex items-center gap-1 text-zinc-400">
+				<span className="flex items-center gap-1 text-text-light">
 					<Clock className="w-3 h-3" />
 					{stats.pending} 等待
 				</span>

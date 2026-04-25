@@ -61,7 +61,7 @@ const TerminalPanel = lazy(() => import("./components/Terminal/TerminalPanel"));
 
 function PanelLoadingFallback() {
 	return (
-		<div className="h-full w-full flex items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+		<div className="h-full w-full flex items-center justify-center text-xs text-text-muted">
 			正在加载...
 		</div>
 	);
@@ -206,7 +206,13 @@ export default function App() {
 						/>
 					</Suspense>
 				) : (
-					<div className="h-screen w-screen bg-[#f5f4ed] dark:bg-[#141413] app-shell-texture app-shell-noise text-[#4d4c48] dark:text-[#b0aea5] font-sans overflow-hidden relative transition-colors flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 duration-300">
+					<div
+						className="h-screen w-screen app-shell-texture app-shell-noise font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95"
+						style={{
+							backgroundColor: "var(--t-bg)",
+							color: "var(--t-text-secondary)",
+						}}
+					>
 						<PanelGroup
 							direction="horizontal"
 							className="gap-0"
@@ -328,7 +334,12 @@ export default function App() {
 							<button
 								type="button"
 								onClick={handleShowRightSidebar}
-								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#faf9f5]/95 dark:bg-[#1e1d1b]/95 backdrop-blur-xl hover:bg-[#f5f4ed] dark:hover:bg-[#30302e] text-[#5e5d59] dark:text-[#b0aea5] rounded-2xl shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px] dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px] hover:shadow-[#e8e6dc_0px_0px_0px_0px,#c2c0b6_0px_0px_0px_1px] transition-[transform,box-shadow,background-color,color] duration-200 active:scale-[0.98]"
+								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-2xl shadow-card transition-[transform,box-shadow,background-color,color] duration-200 active:scale-[0.98]"
+								style={{
+									backgroundColor: "var(--t-bg-surface)",
+									color: "var(--t-text-secondary)",
+									border: "1px solid var(--t-border)",
+								}}
 								title="打开 AI 对话 (⌘L)"
 							>
 								<MessageCircle className="w-4 h-4" />

@@ -183,20 +183,20 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	return (
 		<div className="flex flex-col h-full bg-transparent">
 			{/* Header */}
-			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-zinc-100 dark:border-white/[0.05]">
-				<h2 className="font-semibold text-[13px] text-zinc-500 uppercase tracking-widest">
+			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-border dark:border-white/[0.05]">
+				<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
 					Threads
 				</h2>
 				<div className="flex items-center gap-1">
 					<button
 						onClick={handleCreateThread}
-						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors"
 						title="New Thread"
 					>
 						<Plus className="w-4 h-4" />
 					</button>
 					<button
-						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors"
 						title="Search"
 					>
 						<Search className="w-4 h-4" />
@@ -212,9 +212,9 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						<div key={folderName} className="mb-4">
 							<button
 								onClick={() => toggleFolder(folderName)}
-								className="flex items-center gap-2 w-full px-2 py-1.5 mb-1 group hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors"
+								className="flex items-center gap-2 w-full px-2 py-1.5 mb-1 group hover:bg-warm-200/50 transition-colors"
 							>
-								<div className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+								<div className="text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light transition-colors">
 									{isExpanded ? (
 										<ChevronDown className="w-3.5 h-3.5" />
 									) : (
@@ -228,7 +228,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 										<Folder className="w-4 h-4" />
 									)}
 								</div>
-								<span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-300 truncate">
+								<span className="text-[13px] font-medium text-text-primary truncate">
 									{folderName}
 								</span>
 							</button>
@@ -247,7 +247,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 												className={`w-full flex items-center justify-between pl-4 pr-3 py-1.5 rounded-lg transition-all duration-200 text-left group ${
 													isActive
 														? "bg-transparent relative"
-														: "hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+														: "hover:bg-warm-200/50"
 												}`}
 											>
 												{isActive && (
@@ -257,7 +257,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 													className={`text-[12px] truncate pr-3 ${
 														isActive
 															? "text-[#D96C46] dark:text-[#E07B52] font-semibold"
-															: "text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-300"
+															: "text-text-secondary group-hover:text-text-primary dark:group-hover:text-text-light"
 													}`}
 												>
 													{session.title || "Untitled Chat"}
@@ -266,7 +266,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 													className={`text-[10px] whitespace-nowrap shrink-0 ${
 														isActive
 															? "text-[#D96C46]/70 dark:text-[#E07B52]/70"
-															: "text-zinc-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity"
+															: "text-text-light opacity-0 group-hover:opacity-100 transition-opacity"
 													}`}
 												>
 													{formatRelativeTime(session.lastActiveAt)}
@@ -282,10 +282,10 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 				{Object.keys(groupedSessions).length === 0 && (
 					<div className="text-center py-10 mt-10">
-						<div className="w-12 h-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-							<MessageSquare className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+						<div className="w-12 h-12 bg-warm-50/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+							<MessageSquare className="w-5 h-5 text-text-light" />
 						</div>
-						<p className="text-sm text-zinc-500 font-medium">无活跃线程</p>
+						<p className="text-sm text-text-muted font-medium">无活跃线程</p>
 					</div>
 				)}
 			</div>

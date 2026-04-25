@@ -143,7 +143,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 		<div
 			className={cn(
 				"rounded-xl overflow-hidden transition-all duration-300 shadow-sm",
-				"bg-white/80 dark:bg-zinc-900/60",
+				"bg-surface/80/60",
 				isUrgent
 					? "ring-2 ring-amber-200/50 dark:ring-amber-800/30"
 					: levelStyle.ring,
@@ -169,10 +169,10 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+							<span className="text-sm font-medium text-text-secondary">
 								{request.toolName}
 							</span>
-							<span className="text-[11px] text-zinc-400">
+							<span className="text-[11px] text-text-light">
 								{getToolDescription(request.toolName)}
 							</span>
 							{levelStyle.badgeText && (
@@ -194,7 +194,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 				<div
 					className={cn(
 						"text-sm font-medium tabular-nums",
-						isUrgent ? "text-amber-600 dark:text-amber-400" : "text-zinc-500",
+						isUrgent ? "text-amber-600 dark:text-amber-400" : "text-text-muted",
 					)}
 				>
 					{remainingTime}s
@@ -234,33 +234,31 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 			<div className="px-3 pb-2">
 				<button
 					onClick={() => setExpanded(!expanded)}
-					className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+					className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-warm-50/50 transition-colors text-left"
 				>
 					{expanded ? (
-						<ChevronDown className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+						<ChevronDown className="w-3.5 h-3.5 text-text-light flex-shrink-0" />
 					) : (
-						<ChevronRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+						<ChevronRight className="w-3.5 h-3.5 text-text-light flex-shrink-0" />
 					)}
-					<span className="text-xs text-zinc-500 dark:text-zinc-400">
-						参数预览
-					</span>
+					<span className="text-xs text-text-muted">参数预览</span>
 				</button>
 				{expanded && (
-					<pre className="mt-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 text-[11px] text-zinc-600 dark:text-zinc-400 overflow-x-auto max-h-60 overflow-y-auto border border-zinc-200/50 dark:border-zinc-700/50">
+					<pre className="mt-2 p-2 rounded-lg bg-warm-50/50 text-[11px] text-text-secondary overflow-x-auto max-h-60 overflow-y-auto border border-border/50/50">
 						{inputPreview}
 					</pre>
 				)}
 			</div>
 
 			{/* 操作按钮 */}
-			<div className="flex gap-2 px-3 pb-3 border-t border-zinc-200/30 dark:border-zinc-700/30 pt-2">
+			<div className="flex gap-2 px-3 pb-3 border-t border-border/30/30 pt-2">
 				<button
 					onClick={() => onDeny(request.id)}
 					disabled={isSubmitting}
 					className={cn(
 						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-						"bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-						"hover:bg-zinc-200 dark:hover:bg-zinc-700",
+						"bg-warm-200 text-text-secondary",
+						"hover:bg-warm-300 dark:hover:bg-zinc-700",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
 				>

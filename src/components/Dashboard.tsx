@@ -244,14 +244,17 @@ export default function Dashboard({
 	);
 
 	return (
-		<div className="min-h-screen w-screen bg-[#f5f4ed] dark:bg-[#141413] text-[#141413] dark:text-[#faf9f5] font-sans selection:bg-primary/20 flex overflow-hidden relative">
+		<div
+			className="min-h-screen w-screen app-shell-texture app-shell-noise text-text-primary font-sans selection:bg-primary/20 flex overflow-hidden relative transition-colors duration-300"
+			style={{ backgroundColor: "var(--t-bg)" }}
+		>
 			{/* Left Sidebar - More minimal */}
-			<aside className="w-20 lg:w-60 shrink-0 flex flex-col py-8 px-3 lg:px-5 border-r border-[#f0eee6] dark:border-[#30302e] z-20 bg-[#faf9f5] dark:bg-[#141413]">
+			<aside className="w-20 lg:w-60 shrink-0 flex flex-col py-8 px-3 lg:px-5 border-r border-border z-20 bg-surface">
 				<div className="flex items-center gap-2.5 mb-10 px-2">
-					<div className="w-7 h-7 bg-[#141413] dark:bg-[#faf9f5] rounded-lg flex items-center justify-center text-white dark:text-black shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
+					<div className="w-7 h-7 bg-text-primary rounded-lg flex items-center justify-center text-surface shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
 						<Compass className="w-3.5 h-3.5" />
 					</div>
-					<span className="font-serif font-medium text-[1.05rem] tracking-[-0.01em] hidden lg:block text-[#141413] dark:text-[#faf9f5]">
+					<span className="font-serif font-medium text-[1.05rem] tracking-[-0.01em] hidden lg:block text-text-primary">
 						Workbench
 					</span>
 				</div>
@@ -278,11 +281,11 @@ export default function Dashboard({
 				</nav>
 
 				{/* Sidebar Footer */}
-				<div className="mt-auto pt-4 border-t border-[#f0eee6] dark:border-[#30302e]">
+				<div className="mt-auto pt-4 border-t border-border">
 					<button
 						onClick={onOpenSettings}
 						aria-label="设置"
-						className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-[#f0eee6] dark:hover:bg-[#30302e] hover:text-[#141413] dark:hover:text-[#faf9f5] transition-all group text-sm cursor-pointer"
+						className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-text-muted hover:bg-warm-200 hover:text-text-primary transition-all group text-sm cursor-pointer"
 					>
 						<Settings className="w-4 h-4" />
 						<span className="font-medium hidden lg:block">设置</span>
@@ -295,19 +298,23 @@ export default function Dashboard({
 				{/* ... Search Modal (Keep functionality, refine style) ... */}
 				{showSearch && (
 					<div
-						className="fixed inset-0 z-50 bg-[#f5f4ed]/85 dark:bg-[#141413]/85 backdrop-blur-md flex items-start justify-center pt-[20vh]"
+						className="fixed inset-0 z-50 backdrop-blur-md flex items-start justify-center pt-[20vh]"
+						style={{
+							backgroundColor:
+								"color-mix(in srgb, var(--t-bg) 85%, transparent)",
+						}}
 						onClick={() => setShowSearch(false)}
 					>
 						<div
-							className="w-full max-w-2xl bg-[#faf9f5] dark:bg-[#1e1d1b] rounded-xl shadow-2xl border border-[#e8e6dc] dark:border-[#30302e] p-0 animate-in fade-in zoom-in-95 duration-200"
+							className="w-full max-w-2xl bg-surface rounded-xl shadow-2xl border border-border p-0 animate-in fade-in zoom-in-95 duration-200"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<div className="flex items-center gap-3 px-4 py-4 border-b border-[#f0eee6] dark:border-[#30302e]">
-								<Search className="w-5 h-5 text-zinc-400" />
+							<div className="flex items-center gap-3 px-4 py-4 border-b border-border">
+								<Search className="w-5 h-5 text-text-light" />
 								<input
 									autoFocus
 									type="text"
-									className="flex-1 bg-transparent border-none outline-none text-lg placeholder:text-zinc-300 font-serif text-zinc-800 dark:text-zinc-100"
+									className="flex-1 bg-transparent border-none outline-none text-lg placeholder:text-text-light font-serif text-text-primary"
 									placeholder="搜索文档..."
 									value={searchQuery}
 									onChange={(e) => {
@@ -338,7 +345,7 @@ export default function Dashboard({
 								<button
 									onClick={() => setShowSearch(false)}
 									aria-label="关闭搜索"
-									className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 cursor-pointer transition-colors"
+									className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-warm-200 rounded-lg text-text-light cursor-pointer transition-colors"
 								>
 									<X className="w-5 h-5" />
 								</button>
@@ -358,18 +365,18 @@ export default function Dashboard({
 													filteredProjects.indexOf(project) ===
 													searchSelectedIndex
 														? "bg-primary/10 dark:bg-primary/20"
-														: "hover:bg-[#f0eee6] dark:hover:bg-[#30302e]"
+														: "hover:bg-warm-200"
 												}`}
 											>
 												<Folder
-													className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"
+													className="w-4 h-4 text-text-light group-hover:text-text-primary dark:group-hover:text-surface"
 													style={{ color: project.color }}
 												/>
 												<div>
-													<div className="font-serif font-medium text-sm text-zinc-800 dark:text-zinc-100">
+													<div className="font-serif font-medium text-sm text-text-primary">
 														{project.name}
 													</div>
-													<div className="text-xs text-zinc-400 line-clamp-1 font-sans">
+													<div className="text-xs text-text-light line-clamp-1 font-sans">
 														{project.description || "暂无描述"}
 													</div>
 												</div>
@@ -377,7 +384,7 @@ export default function Dashboard({
 										))}
 									</div>
 								) : (
-									<div className="px-4 py-12 text-center text-zinc-300 text-sm font-serif">
+									<div className="px-4 py-12 text-center text-text-light text-sm font-serif">
 										输入关键词搜索...
 									</div>
 								)}
@@ -391,34 +398,34 @@ export default function Dashboard({
 						{/* Header - Serif & Minimal */}
 						<header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
 							<div>
-								<h1 className="text-[2.4rem] md:text-[2.8rem] font-serif font-medium leading-[1.12] tracking-[-0.02em] mb-2.5 text-[#141413] dark:text-[#faf9f5]">
+								<h1 className="text-[2.4rem] md:text-[2.8rem] font-serif font-medium leading-[1.12] tracking-[-0.02em] mb-2.5 text-text-primary">
 									{greeting}, {username}
 								</h1>
-								<p className="text-[#87867f] dark:text-[#5e5d59] font-sans text-[13.5px] leading-relaxed">
+								<p className="text-text-muted font-sans text-[13.5px] leading-relaxed">
 									准备好开始创作了吗？
 								</p>
 							</div>
 
 							{/* Minimal View Toggles */}
-							<div className="flex items-center gap-0.5 p-1 bg-[#f0eee6]/80 dark:bg-[#30302e]/70 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+							<div className="flex items-center gap-0.5 p-1 bg-warm-200 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
 								<button
 									onClick={() => setViewMode("grid")}
 									aria-label="网格视图"
-									className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-[#141413] dark:text-[#faf9f5] bg-white dark:bg-[#3a3937] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-white/60 dark:hover:bg-[#3a3937]/60"}`}
+									className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all duration-150 ${viewMode === "grid" ? "text-text-primary bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-text-muted hover:text-text-primary hover:bg-surface/60/60"}`}
 								>
 									<LayoutGrid className="w-3.5 h-3.5" />
 								</button>
 								<button
 									onClick={() => setViewMode("list")}
 									aria-label="列表视图"
-									className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-[#141413] dark:text-[#faf9f5] bg-white dark:bg-[#3a3937] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-white/60 dark:hover:bg-[#3a3937]/60"}`}
+									className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all duration-150 ${viewMode === "list" ? "text-text-primary bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-text-muted hover:text-text-primary hover:bg-surface/60/60"}`}
 								>
 									<ListIcon className="w-3.5 h-3.5" />
 								</button>
-								<div className="w-px h-4 bg-[#e8e6dc] dark:bg-[#4a4845] mx-0.5" />
+								<div className="w-px h-4 bg-warm-300 mx-0.5" />
 								<button
 									aria-label="搜索项目"
-									className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-white/60 dark:hover:bg-[#3a3937]/60 cursor-pointer transition-all duration-150 active:scale-95"
+									className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface/60/60 cursor-pointer transition-all duration-150 active:scale-95"
 									onClick={() => setShowSearch(true)}
 								>
 									<Search className="w-3.5 h-3.5" />
@@ -433,18 +440,18 @@ export default function Dashboard({
 									console.log("[Dashboard] 点击新建项目按钮");
 									setShowNewProject(true);
 								}}
-								className="group relative w-full bg-white dark:bg-[#1e1d1b] rounded-2xl border border-zinc-200/80 dark:border-[#30302e] cursor-pointer mb-14 overflow-hidden transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_28px_rgba(0,0,0,0.06)] hover:border-zinc-300/80 dark:hover:border-[#4a4845] active:scale-[0.995]"
+								className="group relative w-full bg-surface rounded-2xl border border-border cursor-pointer mb-14 overflow-hidden transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_28px_rgba(0,0,0,0.06)] active:scale-[0.995]"
 							>
 								<div className="px-8 py-9 flex items-center justify-between">
 									<div>
-										<h2 className="text-[1.35rem] font-serif font-medium leading-[1.25] tracking-[-0.015em] text-[#141413] dark:text-[#faf9f5] mb-1.5 group-hover:translate-x-0.5 transition-transform duration-200">
+										<h2 className="text-[1.35rem] font-serif font-medium leading-[1.25] tracking-[-0.015em] text-text-primary mb-1.5 group-hover:translate-x-0.5 transition-transform duration-200">
 											开始新项目
 										</h2>
-										<p className="text-[#87867f] dark:text-[#5e5d59] text-[13px] leading-relaxed">
+										<p className="text-text-muted text-[13px] leading-relaxed">
 											创建空白文档或选择模板
 										</p>
 									</div>
-									<div className="w-10 h-10 rounded-xl bg-[#f5f4ed] dark:bg-[#30302e] border border-[#e8e6dc] dark:border-[#4a4845] flex items-center justify-center text-[#5e5d59] dark:text-[#87867f] group-hover:scale-105 group-hover:bg-[#c96442] group-hover:border-[#c96442] group-hover:text-white dark:group-hover:bg-[#c96442] dark:group-hover:border-[#c96442] dark:group-hover:text-white transition-all duration-200">
+									<div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-secondary group-hover:scale-105 group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all duration-200">
 										<Plus className="w-4 h-4" />
 									</div>
 								</div>
@@ -453,8 +460,8 @@ export default function Dashboard({
 
 						{/* Projects Grid - Clean Cards */}
 						<div>
-							<div className="flex items-center justify-between mb-6 pb-3.5 border-b border-[#f0eee6] dark:border-[#30302e]/60">
-								<h3 className="text-[10.5px] font-semibold text-[#b0aea5] dark:text-[#4a4845] uppercase tracking-[0.16em]">
+							<div className="flex items-center justify-between mb-6 pb-3.5 border-b border-border">
+								<h3 className="text-[10.5px] font-semibold text-text-light dark:text-[#4a4845] uppercase tracking-[0.16em]">
 									{activeTab === "overview"
 										? "最近的项目"
 										: activeTab === "recent"
@@ -463,7 +470,7 @@ export default function Dashboard({
 								</h3>
 								<button
 									onClick={() => setShowNewProject(true)}
-									className="text-[11px] font-medium text-[#b0aea5] dark:text-[#4a4845] hover:text-[#5e5d59] dark:hover:text-[#87867f] flex items-center gap-1 transition-colors"
+									className="text-[11px] font-medium text-text-light dark:text-[#4a4845] hover:text-text-secondary flex items-center gap-1 transition-colors"
 								>
 									<Plus className="w-3 h-3" />
 									新建项目
@@ -473,14 +480,18 @@ export default function Dashboard({
 							{/* 新建项目对话框 */}
 							{showNewProject && (
 								<div
-									className="fixed inset-0 z-50 bg-[#141413]/60 backdrop-blur-sm flex items-center justify-center"
+									className="fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center"
+									style={{
+										backgroundColor:
+											"color-mix(in srgb, var(--t-bg) 60%, transparent)",
+									}}
 									onClick={() => setShowNewProject(false)}
 								>
 									<div
-										className="bg-[#faf9f5] dark:bg-[#1e1d1b] rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4"
+										className="bg-surface rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4"
 										onClick={(e) => e.stopPropagation()}
 									>
-										<h3 className="font-serif text-xl mb-4 text-zinc-900 dark:text-white">
+										<h3 className="font-serif text-xl mb-4 text-text-primary dark:text-white">
 											新建项目
 										</h3>
 										<input
@@ -492,18 +503,18 @@ export default function Dashboard({
 											onKeyDown={(e) =>
 												e.key === "Enter" && handleCreateProject()
 											}
-											className="w-full px-4 py-3 rounded-xl border border-[#e8e6dc] dark:border-[#30302e] bg-transparent text-zinc-800 dark:text-zinc-100 mb-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
+											className="w-full px-4 py-3 rounded-xl border border-border bg-transparent text-text-primary mb-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
 										/>
 										<div className="flex justify-end gap-2">
 											<button
 												onClick={() => setShowNewProject(false)}
-												className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700"
+												className="px-4 py-2 text-sm text-text-muted hover:text-text-secondary"
 											>
 												取消
 											</button>
 											<button
 												onClick={handleCreateProject}
-												className="px-4 py-2 text-sm bg-[#141413] dark:bg-[#faf9f5] text-[#faf9f5] dark:text-[#141413] rounded-lg hover:opacity-90"
+												className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90"
 											>
 												创建
 											</button>
@@ -519,7 +530,7 @@ export default function Dashboard({
 									{Array.from({ length: 6 }).map((_, i) => (
 										<div
 											key={i}
-											className="rounded-2xl border border-[#f0eee6] dark:border-[#30302e] p-6 space-y-4 h-48 animate-in fade-in"
+											className="rounded-2xl border border-warm-200 p-6 space-y-4 h-48 animate-in fade-in"
 											style={{ animationDelay: `${i * 50}ms` }}
 										>
 											<div className="flex items-start justify-between">
@@ -557,11 +568,11 @@ export default function Dashboard({
 												handleProjectContextMenu(e, project)
 											}
 											className={`
-                        group bg-white dark:bg-[#1e1d1b] border border-zinc-100 dark:border-[#30302e]
+                        group bg-surface border border-border
                         rounded-2xl p-6 cursor-pointer
                         transition-all duration-200 ease-out
                         shadow-[0_1px_3px_rgba(0,0,0,0.04),0_2px_10px_rgba(0,0,0,0.03)]
-                        hover:border-zinc-200/90 dark:hover:border-[#4a4845]
+                        hover:border-border/90 dark:hover:border-warm-400
                         hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.05)]
                         hover:-translate-y-[2px]
                         active:scale-[0.99] active:translate-y-0
@@ -587,22 +598,22 @@ export default function Dashboard({
 														/>
 													</div>
 													<div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-1 group-hover:translate-x-0">
-														<span className="text-[10px] font-medium text-zinc-400 tracking-wider uppercase">
+														<span className="text-[10px] font-medium text-text-light tracking-wider uppercase">
 															OPEN
 														</span>
-														<ChevronRight className="w-3 h-3 text-zinc-400" />
+														<ChevronRight className="w-3 h-3 text-text-light" />
 													</div>
 												</div>
-												<h4 className="font-serif text-[1.05rem] font-medium leading-[1.3] tracking-[-0.01em] text-[#141413] dark:text-[#faf9f5] mb-2 line-clamp-1 group-hover:text-[#c96442] transition-colors duration-200">
+												<h4 className="font-serif text-[1.05rem] font-medium leading-[1.3] tracking-[-0.01em] text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors duration-200">
 													{project.name}
 												</h4>
-												<p className="text-[12.5px] text-[#87867f] dark:text-[#5e5d59] leading-[1.55] line-clamp-2 font-sans">
+												<p className="text-[12.5px] text-text-muted leading-[1.55] line-clamp-2 font-sans">
 													{project.description || "暂无描述"}
 												</p>
 											</div>
 
-											<div className="flex items-center justify-between pt-3.5 mt-2 border-t border-zinc-50 dark:border-[#30302e]/60">
-												<div className="text-[11px] font-medium text-[#b0aea5] dark:text-[#4a4845] font-sans tracking-wide">
+											<div className="flex items-center justify-between pt-3.5 mt-2 border-t border-border">
+												<div className="text-[11px] font-medium text-text-light font-sans tracking-wide">
 													{new Date(project.updated_at).toLocaleDateString(
 														"zh-CN",
 														{
@@ -611,14 +622,14 @@ export default function Dashboard({
 														},
 													)}
 												</div>
-												<div className="h-1.5 w-1.5 rounded-full bg-zinc-200 dark:bg-[#30302e] group-hover:bg-[#c96442]/60 transition-colors duration-300" />
+												<div className="h-1.5 w-1.5 rounded-full bg-warm-300 group-hover:bg-primary/60 transition-colors duration-300" />
 											</div>
 										</div>
 									))}
 
 									{filteredProjects.length === 0 && (
 										<div className="col-span-full py-20 text-center">
-											<p className="font-serif text-[#b0aea5] dark:text-[#4a4845] text-base font-medium">
+											<p className="font-serif text-text-light dark:text-[#4a4845] text-base font-medium">
 												暂无项目，点击上方创建新项目
 											</p>
 										</div>
@@ -662,17 +673,17 @@ function NavItem({
       w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative text-sm cursor-pointer
       ${
 				active
-					? "bg-[#faf9f5] dark:bg-[#30302e] text-[#141413] dark:text-[#faf9f5] shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px] dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px]"
-					: "text-[#87867f] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] hover:text-[#141413] dark:hover:text-[#faf9f5] active:scale-[0.99]"
+					? "bg-surface text-text-primary shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px] dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px]"
+					: "text-text-muted hover:bg-warm-200 hover:text-text-primary active:scale-[0.99]"
 			}
     `}
 		>
 			{/* 激活指示器 */}
 			{active && (
-				<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#c96442] rounded-r-full" />
+				<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
 			)}
 			<Icon
-				className={`w-4 h-4 transition-colors ${active ? "text-[#c96442]" : "text-[#b0aea5] group-hover:text-[#141413] dark:group-hover:text-[#faf9f5]"}`}
+				className={`w-4 h-4 transition-colors ${active ? "text-primary" : "text-text-light group-hover:text-text-primary"}`}
 				strokeWidth={2}
 			/>
 			<span
@@ -681,7 +692,7 @@ function NavItem({
 				{label}
 			</span>
 			{badge && (
-				<span className="ml-auto bg-[#f0eee6] dark:bg-[#30302e] text-[#5e5d59] dark:text-[#87867f] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+				<span className="ml-auto bg-warm-200 text-text-secondary text-[10px] font-bold px-1.5 py-0.5 rounded-md">
 					{badge}
 				</span>
 			)}

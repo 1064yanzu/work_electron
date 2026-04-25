@@ -232,7 +232,7 @@ export function SlashCommandMenu({
 			{/* 命令菜单 */}
 			<div
 				ref={menuRef}
-				className="fixed z-[9999] min-h-[200px] max-h-[500px] overflow-y-auto bg-white dark:bg-gray-800 border-2 border-primary/20 rounded-xl shadow-2xl"
+				className="fixed z-[9999] min-h-[200px] max-h-[500px] overflow-y-auto bg-surface dark:bg-gray-800 border-2 border-primary/20 rounded-xl shadow-2xl"
 				style={{
 					top: position ? `${position.top + 8}px` : "50%",
 					left: position ? `${position.left}px` : "50%",
@@ -314,17 +314,17 @@ export function SlashCommandMenu({
 				{/* 底部提示 */}
 				<div className="px-4 py-2 text-xs text-text-muted border-t border-border bg-surface flex items-center justify-between">
 					<div>
-						<kbd className="px-1.5 py-0.5 bg-white border border-border rounded text-xs">
+						<kbd className="px-1.5 py-0.5 bg-surface border border-border rounded text-xs">
 							↑↓
 						</kbd>
 						<span className="ml-2">选择</span>
-						<kbd className="ml-4 px-1.5 py-0.5 bg-white border border-border rounded text-xs">
+						<kbd className="ml-4 px-1.5 py-0.5 bg-surface border border-border rounded text-xs">
 							↵
 						</kbd>
 						<span className="ml-2">执行</span>
 					</div>
 					<div>
-						<kbd className="px-1.5 py-0.5 bg-white border border-border rounded text-xs">
+						<kbd className="px-1.5 py-0.5 bg-surface border border-border rounded text-xs">
 							ESC
 						</kbd>
 						<span className="ml-2">关闭</span>

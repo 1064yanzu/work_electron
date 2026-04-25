@@ -141,46 +141,48 @@ export function ModelDiscoveryModal({
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
 			<div
-				className="w-full max-w-2xl bg-background dark:bg-zinc-900 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-zinc-200/70 dark:border-zinc-700 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+				className="w-full max-w-2xl bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
 				style={{ height: "85vh", maxHeight: "850px" }}
 			>
 				{/* Header */}
-				<div className="px-6 py-5 bg-white border-b border-zinc-100 flex items-center justify-between shrink-0">
+				<div className="px-6 py-5 bg-surface border-b border-border flex items-center justify-between shrink-0">
 					<div>
-						<h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-							<Server className="w-5 h-5 text-zinc-500" />
+						<h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+							<Server className="w-5 h-5 text-text-muted" />
 							发现模型
 						</h2>
-						<p className="text-xs text-zinc-400 mt-1">
+						<p className="text-xs text-text-light mt-1">
 							从{" "}
-							<span className="font-medium text-zinc-600">{provider.name}</span>{" "}
+							<span className="font-medium text-text-secondary">
+								{provider.name}
+							</span>{" "}
 							获取最新的模型列表
 						</p>
 					</div>
 					<button
 						onClick={onClose}
-						className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-400 hover:text-zinc-600"
+						className="p-2 hover:bg-warm-200 rounded-full transition-colors text-text-light hover:text-text-secondary"
 					>
 						<X className="w-5 h-5" />
 					</button>
 				</div>
 
 				{/* Toolbar */}
-				<div className="px-6 py-4 bg-white border-b border-zinc-100 flex gap-3 shrink-0">
+				<div className="px-6 py-4 bg-surface border-b border-border flex gap-3 shrink-0">
 					<div className="relative flex-1 group">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" />
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary transition-colors" />
 						<input
 							type="text"
 							placeholder="搜索模型 ID..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-transparent focus:bg-white focus:border-zinc-200 rounded-xl text-sm outline-none transition-all"
+							className="w-full pl-10 pr-4 py-2.5 bg-warm-50 border border-transparent focus:bg-surface focus:border-border rounded-xl text-sm outline-none transition-all"
 						/>
 					</div>
 					<button
 						onClick={handleFetch}
 						disabled={isLoading}
-						className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+						className="px-4 py-2 bg-surface border border-border hover:bg-warm-50 text-text-secondary rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
 					>
 						<RefreshCw
 							className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
@@ -192,12 +194,12 @@ export function ModelDiscoveryModal({
 				{/* Content */}
 				<div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
 					{error ? (
-						<div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-3">
+						<div className="flex flex-col items-center justify-center h-full text-text-muted gap-3">
 							<div className="p-4 bg-red-50 rounded-full text-red-500 mb-2">
 								<Server className="w-8 h-8" />
 							</div>
-							<p className="font-medium text-zinc-700">获取失败</p>
-							<p className="text-sm text-center max-w-xs opacity-80 bg-white px-4 py-2 rounded-lg border border-red-100 text-red-600">
+							<p className="font-medium text-text-secondary">获取失败</p>
+							<p className="text-sm text-center max-w-xs opacity-80 bg-surface px-4 py-2 rounded-lg border border-red-100 text-red-600">
 								{error}
 							</p>
 							<button
@@ -208,16 +210,16 @@ export function ModelDiscoveryModal({
 							</button>
 						</div>
 					) : isLoading && discoveredModels.length === 0 ? (
-						<div className="flex flex-col items-center justify-center h-full text-zinc-400 gap-4">
-							<Loader2 className="w-10 h-10 animate-spin text-zinc-300" />
-							<p className="text-sm font-medium text-zinc-500">
+						<div className="flex flex-col items-center justify-center h-full text-text-light gap-4">
+							<Loader2 className="w-10 h-10 animate-spin text-text-light" />
+							<p className="text-sm font-medium text-text-muted">
 								正在连接 {provider.name} API...
 							</p>
 						</div>
 					) : discoveredModels.length === 0 ? (
-						<div className="flex flex-col items-center justify-center h-full text-zinc-400">
+						<div className="flex flex-col items-center justify-center h-full text-text-light">
 							<Box className="w-16 h-16 mb-4 opacity-10" />
-							<p className="text-zinc-500 font-medium">未找到任何模型</p>
+							<p className="text-text-muted font-medium">未找到任何模型</p>
 							<p className="text-xs mt-1">请尝试刷新或检查网络连接</p>
 						</div>
 					) : (
@@ -231,22 +233,22 @@ export function ModelDiscoveryModal({
 								return (
 									<div
 										key={groupName}
-										className="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden"
+										className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden"
 									>
 										{/* Group Header */}
 										<div
-											className="flex items-center justify-between px-4 py-3 bg-zinc-50/50 border-b border-zinc-100 cursor-pointer hover:bg-zinc-50 transition-colors select-none"
+											className="flex items-center justify-between px-4 py-3 bg-warm-50/50 border-b border-border cursor-pointer hover:bg-warm-50 transition-colors select-none"
 											onClick={() => toggleGroupCollapse(groupName)}
 										>
 											<div className="flex items-center gap-2">
 												{isCollapsed ? (
-													<ChevronRight className="w-4 h-4 text-zinc-400" />
+													<ChevronRight className="w-4 h-4 text-text-light" />
 												) : (
-													<ChevronDown className="w-4 h-4 text-zinc-400" />
+													<ChevronDown className="w-4 h-4 text-text-light" />
 												)}
-												<h3 className="text-sm font-semibold text-zinc-700 flex items-center gap-2 uppercase tracking-tight">
+												<h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2 uppercase tracking-tight">
 													{groupName}
-													<span className="bg-zinc-200/60 text-zinc-500 px-1.5 py-0.5 rounded text-[10px] font-bold">
+													<span className="bg-warm-300/60 text-text-muted px-1.5 py-0.5 rounded text-[10px] font-bold">
 														{models.length}
 													</span>
 												</h3>
@@ -257,7 +259,7 @@ export function ModelDiscoveryModal({
 											>
 												<button
 													onClick={() => toggleGroupSelection(models)}
-													className="text-xs font-medium text-zinc-400 hover:text-blue-600 transition-colors px-2 py-1 hover:bg-blue-50 rounded-md"
+													className="text-xs font-medium text-text-light hover:text-blue-600 transition-colors px-2 py-1 hover:bg-blue-50 rounded-md"
 												>
 													{allSelected ? "取消全选" : "全选"}
 												</button>
@@ -279,7 +281,7 @@ export function ModelDiscoveryModal({
 															}
 															className={`
                                 group flex items-center justify-between px-4 py-3 transition-all duration-200
-                                ${isExisting ? "opacity-60 bg-zinc-50/30 cursor-default" : "cursor-pointer hover:bg-zinc-50"}
+                                ${isExisting ? "opacity-60 bg-warm-50/30 cursor-default" : "cursor-pointer hover:bg-warm-50"}
                                 ${isSelected && !isExisting ? "bg-blue-50/30" : ""}
                               `}
 														>
@@ -290,10 +292,10 @@ export function ModelDiscoveryModal({
                                   w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0
                                   ${
 																		isExisting
-																			? "bg-zinc-100 border-zinc-200 text-zinc-400"
+																			? "bg-warm-200 border-border text-text-light"
 																			: isSelected
 																				? "bg-blue-500 border-blue-500 text-white shadow-sm shadow-blue-200"
-																				: "border-zinc-300 text-transparent group-hover:border-zinc-400 bg-white"
+																				: "border-zinc-300 text-transparent group-hover:border-zinc-400 bg-surface"
 																	}
                                 `}
 																>
@@ -313,12 +315,12 @@ export function ModelDiscoveryModal({
 																	) : null}
 																	<div className="flex items-center gap-2 flex-wrap min-w-0">
 																		<span
-																			className={`text-sm font-medium truncate ${isSelected && !isExisting ? "text-blue-700" : "text-zinc-700"}`}
+																			className={`text-sm font-medium truncate ${isSelected && !isExisting ? "text-blue-700" : "text-text-secondary"}`}
 																		>
 																			{model.id}
 																		</span>
 																		{isExisting && (
-																			<span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-400 rounded border border-zinc-200 flex items-center gap-1 shrink-0">
+																			<span className="text-[10px] px-1.5 py-0.5 bg-warm-200 text-text-light rounded border border-border flex items-center gap-1 shrink-0">
 																				<Check className="w-2.5 h-2.5" />
 																				已添加
 																			</span>
@@ -335,7 +337,7 @@ export function ModelDiscoveryModal({
                                   ${
 																		isSelected
 																			? "text-blue-500 bg-blue-50"
-																			: "text-zinc-300 group-hover:text-zinc-400 bg-transparent group-hover:bg-zinc-100"
+																			: "text-text-light group-hover:text-text-light bg-transparent group-hover:bg-warm-200"
 																	}
                                 `}
 																>
@@ -359,11 +361,11 @@ export function ModelDiscoveryModal({
 				</div>
 
 				{/* Footer */}
-				<div className="px-6 py-5 bg-white border-t border-zinc-100 flex justify-between items-center shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10">
-					<div className="text-sm text-zinc-500 flex items-center gap-2">
+				<div className="px-6 py-5 bg-surface border-t border-border flex justify-between items-center shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10">
+					<div className="text-sm text-text-muted flex items-center gap-2">
 						<div className="w-2 h-2 rounded-full bg-blue-500"></div>
 						已选择{" "}
-						<span className="font-bold text-zinc-900">
+						<span className="font-bold text-text-primary">
 							{selectedModels.size}
 						</span>{" "}
 						个模型
@@ -371,14 +373,14 @@ export function ModelDiscoveryModal({
 					<div className="flex gap-3">
 						<button
 							onClick={onClose}
-							className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+							className="px-5 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-warm-200 transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleConfirm}
 							disabled={selectedModels.size === 0}
-							className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-sm font-medium shadow-lg shadow-zinc-500/20 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
+							className="px-6 py-2.5 bg-dark-muted hover:bg-dark-surface text-white rounded-xl text-sm font-medium shadow-lg shadow-zinc-500/20 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
 						>
 							<Star className="w-4 h-4 text-yellow-300" />
 							添加选中模型

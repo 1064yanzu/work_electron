@@ -420,7 +420,7 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[300px] bg-white dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[300px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
 			{/* 头部：返回按钮 + 标题 */}
 			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#333]">
@@ -596,7 +596,7 @@ function GroupSection({
 									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
                     ${
 											isSelected
-												? "bg-white dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+												? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
 												: "bg-[#f5f5f5] dark:bg-[#363636]"
 										}`}
 								>

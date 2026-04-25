@@ -43,15 +43,15 @@ function isTypingElement(target: EventTarget | null): boolean {
 
 function EmptyGraph() {
 	return (
-		<div className="flex-1 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+		<div className="flex-1 flex flex-col items-center justify-center bg-warm-50">
 			<div className="text-center space-y-2 max-w-md">
-				<div className="mx-auto w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
-					<Workflow className="w-6 h-6 text-zinc-400" />
+				<div className="mx-auto w-12 h-12 rounded-2xl bg-surface ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
+					<Workflow className="w-6 h-6 text-text-light" />
 				</div>
-				<div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+				<div className="text-sm font-medium text-text-secondary">
 					暂无运行任务
 				</div>
-				<div className="text-xs text-zinc-400 dark:text-zinc-500">
+				<div className="text-xs text-text-light">
 					开始托管任务后，这里会展示运行图。
 				</div>
 			</div>
@@ -286,14 +286,14 @@ function ExecutionGraphInner({
 				<Controls
 					position="bottom-left"
 					showInteractive={false}
-					className="!bg-white/70 dark:!bg-zinc-950/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+					className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
 				/>
 				{selectedNodeId ? null : (
 					<MiniMap
 						position="bottom-right"
 						zoomable
 						pannable
-						className="!bg-white/70 dark:!bg-zinc-950/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+						className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
 					/>
 				)}
 			</ReactFlow>

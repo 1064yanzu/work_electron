@@ -56,8 +56,8 @@ function StepStatusIcon({ status }: { status: PlanStep["status"] }) {
 			);
 		default:
 			return (
-				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800">
-					<Circle className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-warm-200">
+					<Circle className="w-3.5 h-3.5 text-text-light" />
 				</div>
 			);
 	}
@@ -90,7 +90,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 									? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
 									: step.status === "rejected"
 										? "bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400"
-										: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400",
+										: "bg-warm-200 text-text-muted",
 					)}
 				>
 					{index + 1}
@@ -106,7 +106,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 						onClick={() => setExpanded(!expanded)}
 						className="flex items-center gap-1 min-w-0 text-left group"
 					>
-						<span className="text-zinc-400 dark:text-zinc-500 transition-transform">
+						<span className="text-text-light transition-transform">
 							{expanded ? (
 								<ChevronDown className="w-3.5 h-3.5" />
 							) : (
@@ -117,8 +117,8 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 							className={cn(
 								"text-sm font-medium truncate",
 								step.status === "rejected"
-									? "line-through text-zinc-400 dark:text-zinc-500"
-									: "text-zinc-800 dark:text-zinc-100",
+									? "line-through text-text-light"
+									: "text-text-primary",
 							)}
 						>
 							{step.title}
@@ -128,7 +128,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 
 				{/* 描述（可折叠） */}
 				{expanded && step.description && (
-					<p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed pl-5">
+					<p className="mt-1.5 text-xs text-text-muted leading-relaxed pl-5">
 						{step.description}
 					</p>
 				)}
@@ -139,7 +139,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 						{step.estimatedFiles.map((file) => (
 							<span
 								key={file}
-								className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate"
+								className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-warm-200 text-text-secondary max-w-[200px] truncate"
 							>
 								{file}
 							</span>

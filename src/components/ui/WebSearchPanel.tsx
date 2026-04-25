@@ -62,7 +62,7 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 			onClick={onClose}
 		>
 			<div
-				className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+				className="bg-surface rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col"
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* Header */}

@@ -63,10 +63,10 @@ export function SubagentCard({
 			className={cn(
 				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden",
 				isRunning
-					? "bg-white/80 dark:bg-zinc-900/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
+					? "bg-surface/80/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
 					: isError
 						? "bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30"
-						: "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800",
+						: "bg-surface border-border",
 			)}
 		>
 			{/* Breathing Background Animation for Running State */}
@@ -91,7 +91,7 @@ export function SubagentCard({
 								? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
 								: isCompleted
 									? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-									: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
+									: "bg-warm-200 text-text-muted",
 						)}
 					>
 						{isRunning ? (
@@ -113,7 +113,7 @@ export function SubagentCard({
 				{/* Title & Info */}
 				<div className="flex-1 min-w-0 flex flex-col gap-0.5">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+						<span className="text-sm font-semibold text-text-primary truncate">
 							子代理调用{subagentType ? ` · ${subagentType}` : ""}
 						</span>
 						{subagentModel && (
@@ -128,7 +128,7 @@ export function SubagentCard({
 									? "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300"
 									: isCompleted
 										? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"
-										: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
+										: "bg-warm-200 text-text-muted",
 							)}
 						>
 							{isRunning
@@ -142,7 +142,7 @@ export function SubagentCard({
 					</div>
 
 					{/* Active Status Text */}
-					<div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 h-4">
+					<div className="flex items-center gap-1.5 text-xs text-text-muted h-4">
 						{isRunning ? (
 							<>
 								<Loader2 className="w-3 h-3 animate-spin text-purple-500" />
@@ -157,7 +157,7 @@ export function SubagentCard({
 				</div>
 
 				{/* Expand Toggle */}
-				<div className="text-zinc-400">
+				<div className="text-text-light">
 					{expanded ? (
 						<ChevronDown className="w-4 h-4" />
 					) : (
@@ -168,18 +168,18 @@ export function SubagentCard({
 
 			{/* Expanded Content: Activities Log */}
 			{expanded && (
-				<div className="relative z-10 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+				<div className="relative z-10 border-t border-border bg-warm-50/50/50">
 					<div
 						ref={activitiesRef}
 						className="max-h-60 overflow-y-auto p-2 space-y-1 font-mono text-xs"
 					>
 						{/* Parameters */}
-						<div className="px-2 py-1.5 mb-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+						<div className="px-2 py-1.5 mb-2 rounded bg-warm-200 text-text-muted">
 							调用参数: {JSON.stringify(toolCall.input)}
 						</div>
 
 						{activities.length === 0 && isRunning && (
-							<div className="px-3 py-4 text-center text-zinc-400 italic">
+							<div className="px-3 py-4 text-center text-text-light italic">
 								等待子代理响应...
 							</div>
 						)}
@@ -187,19 +187,19 @@ export function SubagentCard({
 						{activities.map((step) => (
 							<div
 								key={step.id}
-								className="group flex gap-2 px-2 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+								className="group flex gap-2 px-2 py-1.5 rounded hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
 							>
-								<div className="mt-0.5 shrink-0 text-zinc-400">
+								<div className="mt-0.5 shrink-0 text-text-light">
 									{step.phase === "executing" ? (
 										<Terminal className="w-3 h-3 text-amber-500" />
 									) : (
 										<GitBranch className="w-3 h-3 text-purple-500" />
 									)}
 								</div>
-								<div className="flex-1 min-w-0 break-words text-zinc-600 dark:text-zinc-300 leading-relaxed">
+								<div className="flex-1 min-w-0 break-words text-text-secondary leading-relaxed">
 									{step.content}
 								</div>
-								<div className="shrink-0 text-[10px] text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity">
+								<div className="shrink-0 text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity">
 									{new Date(step.timestamp).toLocaleTimeString([], {
 										hour: "2-digit",
 										minute: "2-digit",
@@ -211,7 +211,7 @@ export function SubagentCard({
 
 						{/* Result */}
 						{isCompleted && toolCall.output && (
-							<div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-700/50">
+							<div className="mt-2 pt-2 border-t border-border/50">
 								<div className="px-2 py-1.5 rounded bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
 										<Zap className="w-3 h-3" /> 结果
@@ -231,7 +231,7 @@ export function SubagentCard({
 
 						{/* Error */}
 						{isError && toolCall.error && (
-							<div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-700/50">
+							<div className="mt-2 pt-2 border-t border-border/50">
 								<div className="px-2 py-1.5 rounded bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
 										<AlertTriangle className="w-3 h-3" /> 错误

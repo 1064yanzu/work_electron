@@ -84,7 +84,7 @@ export function QQBotQuickSetup({
 				</div>
 			</div>
 
-			<div className="rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:border-zinc-800 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-2xl border border-border/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:from-zinc-900/60 dark:to-zinc-900">
 				<StepBlock
 					index={1}
 					icon={Bot}
@@ -117,12 +117,12 @@ export function QQBotQuickSetup({
 								onChange={(e) => setAppId(e.target.value)}
 								placeholder="102xxxxxx"
 								className={cn(
-									"mt-1 w-full rounded-xl border bg-white px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 dark:bg-zinc-900",
+									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 									idValid
 										? "border-emerald-400 ring-2 ring-emerald-400/20"
 										: idTrim
 											? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
-											: "border-zinc-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700",
+											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>
 						</div>
@@ -140,12 +140,12 @@ export function QQBotQuickSetup({
 								onChange={(e) => setClientSecret(e.target.value)}
 								placeholder="client_secret"
 								className={cn(
-									"mt-1 w-full rounded-xl border bg-white px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 dark:bg-zinc-900",
+									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 									secretTrim.length >= 16
 										? "border-emerald-400 ring-2 ring-emerald-400/20"
 										: secretTrim
 											? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
-											: "border-zinc-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700",
+											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>
 						</div>
@@ -158,7 +158,7 @@ export function QQBotQuickSetup({
 					description="首次调试建议用沙箱（只和白名单用户互动），上线后再切生产。"
 					isLast
 				>
-					<div className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+					<div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
 						<EnvPill
 							active={environment === "sandbox"}
 							onClick={() => setEnvironment("sandbox")}

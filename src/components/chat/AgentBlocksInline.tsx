@@ -122,7 +122,7 @@ export function AgentBlocksInline({
 			nodes.push(
 				<div
 					key={i}
-					className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden"
+					className="text-sm text-text-primary dark:text-zinc-200 leading-7 w-full overflow-hidden"
 				>
 					{renderText(b.text, `text-${i}`)}
 				</div>,

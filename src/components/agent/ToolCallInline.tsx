@@ -247,7 +247,7 @@ function ToolOutputDisplay({
 	// 渲染图片（已添加到产物列表，会在中间栏自动预览）
 	if (imagePath) {
 		return (
-			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
+			<div className="bg-warm-50/50 p-2 rounded border border-border/50">
 				<InlineImage
 					path={imagePath}
 					title="生成的图片（已添加到产物列表）"
@@ -260,9 +260,9 @@ function ToolOutputDisplay({
 	// 加载中
 	if (loading) {
 		return (
-			<div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded border border-zinc-100 dark:border-zinc-800/50 flex items-center gap-3">
-				<Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-				<span className="text-sm text-zinc-500">正在处理图片...</span>
+			<div className="bg-warm-50/50 p-4 rounded border border-border/50 flex items-center gap-3">
+				<Loader2 className="w-5 h-5 animate-spin text-text-light" />
+				<span className="text-sm text-text-muted">正在处理图片...</span>
 			</div>
 		);
 	}
@@ -278,8 +278,8 @@ function ToolOutputDisplay({
 
 	// 默认：显示截断的文本
 	return (
-		<div className="bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800/50">
-			<pre className="whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-300 text-[11px] max-h-[200px] overflow-y-auto">
+		<div className="bg-warm-50/50 p-2 rounded border border-border/50">
+			<pre className="whitespace-pre-wrap break-all text-text-secondary text-[11px] max-h-[200px] overflow-y-auto">
 				{outputStr.slice(0, 500) + (outputStr.length > 500 ? "..." : "")}
 			</pre>
 		</div>
@@ -744,13 +744,13 @@ export default function ToolCallInline({
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors",
 					hasDetails
-						? "cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 -mx-2 px-2 py-1.5 rounded-lg"
+						? "cursor-pointer hover:bg-warm-50/80/40 -mx-2 px-2 py-1.5 rounded-lg"
 						: "cursor-default py-0.5",
 				)}
 			>
 				{/* 折叠箭头 */}
 				{hasDetails ? (
-					<span className="w-4 h-4 flex items-center justify-center text-zinc-400 flex-shrink-0">
+					<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
 						{isExpanded ? (
 							<ChevronDown className="w-3.5 h-3.5" />
 						) : (
@@ -764,11 +764,11 @@ export default function ToolCallInline({
 				{/* 状态/类型图标 */}
 				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
 					{isRunning ? (
-						<Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 text-text-light animate-spin" />
 					) : isError ? (
 						<XCircle className="w-3.5 h-3.5 text-red-500" />
 					) : (
-						<Icon className="w-3.5 h-3.5 text-zinc-400" />
+						<Icon className="w-3.5 h-3.5 text-text-light" />
 					)}
 				</span>
 
@@ -778,7 +778,7 @@ export default function ToolCallInline({
 						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
 							? "text-red-600 dark:text-red-400"
-							: "text-zinc-700 dark:text-zinc-200",
+							: "text-text-secondary dark:text-zinc-200",
 					)}
 				>
 					<span className="font-medium flex-shrink-0 whitespace-nowrap">
@@ -794,9 +794,9 @@ export default function ToolCallInline({
 								void openFilePreview();
 							}}
 							className={cn(
-								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 max-w-[200px] min-w-0",
+								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
 								canPreviewFile
-									? "hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 cursor-pointer"
+									? "hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 cursor-pointer"
 									: "cursor-default",
 							)}
 							title={canPreviewFile ? "点击预览" : fileName}
@@ -806,20 +806,16 @@ export default function ToolCallInline({
 						</button>
 					)}
 					{suffix && !fileName && (
-						<span className="text-zinc-500 dark:text-zinc-400 truncate">
-							{suffix}
-						</span>
+						<span className="text-text-muted truncate">{suffix}</span>
 					)}
 					{filePath && !fileName && (
-						<span className="text-zinc-400 dark:text-zinc-500 text-xs truncate">
-							{filePath}
-						</span>
+						<span className="text-text-light text-xs truncate">{filePath}</span>
 					)}
 				</span>
 
 				{/* 结果计数（如搜索结果） */}
 				{detail && !isExpanded && (
-					<span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+					<span className="ml-auto text-xs text-text-light flex-shrink-0">
 						{detail}
 					</span>
 				)}

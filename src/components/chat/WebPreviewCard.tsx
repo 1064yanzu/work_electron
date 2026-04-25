@@ -29,9 +29,9 @@ function TerminalPreview({ code }: { code: string }) {
 	}, [code]);
 
 	return (
-		<div className="rounded-xl overflow-hidden border border-zinc-200/60 dark:border-zinc-700/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
+		<div className="rounded-xl overflow-hidden border border-border/60/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
 			{/* 终端头部装饰 */}
-			<div className="flex items-center gap-1.5 px-3 py-2 bg-zinc-100/80 dark:bg-zinc-900/80 border-b border-zinc-200/60 dark:border-zinc-800/60">
+			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80/80 border-b border-border/60/60">
 				<div className="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
@@ -43,7 +43,7 @@ function TerminalPreview({ code }: { code: string }) {
 					<span className="text-emerald-600 dark:text-emerald-400 font-bold flex-shrink-0 select-none">
 						$
 					</span>
-					<div className="flex-1 text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
+					<div className="flex-1 text-text-secondary whitespace-pre-wrap break-words leading-relaxed">
 						{lastLines}
 						<span className="inline-block w-0.5 h-4 ml-1 bg-emerald-600 dark:bg-emerald-400 animate-pulse align-middle rounded-full" />
 					</div>
@@ -69,12 +69,12 @@ function EntryCard({
 }) {
 	return (
 		<div
-			className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-200 cursor-pointer"
+			className="group flex items-center justify-between p-3 rounded-xl border border-border bg-surface/50 hover:bg-warm-50 transition-all duration-200 cursor-pointer"
 			onClick={() => onOpen("preview")}
 		>
 			{/* 左侧信息 */}
 			<div className="flex items-center gap-3">
-				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200">
+				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warm-200 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200">
 					{kind === "react" ? (
 						<Code className="w-5 h-5" />
 					) : (
@@ -82,12 +82,10 @@ function EntryCard({
 					)}
 				</div>
 				<div>
-					<div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+					<div className="text-sm font-medium text-text-primary dark:text-zinc-200">
 						{title}
 					</div>
-					<div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-						点击查看详情
-					</div>
+					<div className="text-xs text-text-muted mt-0.5">点击查看详情</div>
 				</div>
 			</div>
 
@@ -99,19 +97,19 @@ function EntryCard({
 						e.stopPropagation();
 						onDownload();
 					}}
-					className="p-2 rounded-lg text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
 					title="下载代码"
 				>
 					<Download className="w-4 h-4" />
 				</button>
-				<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+				<div className="w-px h-4 bg-warm-300 mx-1" />
 				<button
 					type="button"
 					onClick={(e) => {
 						e.stopPropagation();
 						onOpen("code");
 					}}
-					className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800"
+					className="p-2 rounded-lg text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-300/50"
 					title="查看代码"
 				>
 					<Code className="w-4 h-4" />
@@ -122,7 +120,7 @@ function EntryCard({
 						e.stopPropagation();
 						onOpen("preview");
 					}}
-					className="p-2 rounded-lg text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
 					title="预览"
 				>
 					<Maximize2 className="w-4 h-4" />
@@ -180,19 +178,19 @@ function FullScreenModal({
 
 	return createPortal(
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="relative w-[90vw] h-[85vh] max-w-6xl bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+			<div className="relative w-[90vw] h-[85vh] max-w-6xl bg-surface rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
 				{/* 模态窗 Header */}
-				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-zinc-50/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800 backdrop-blur-sm">
+				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-warm-50/80/80 border-b border-border backdrop-blur-sm">
 					{/* 左侧：标题 */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
-						<div className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+						<div className="text-sm font-semibold text-text-primary dark:text-zinc-200 truncate">
 							{title}
 						</div>
 					</div>
 
 					{/* 中间：分段控制器 */}
 					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-						<div className="flex items-center p-1 rounded-lg bg-zinc-200/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
+						<div className="flex items-center p-1 rounded-lg bg-warm-300/50/50 border border-border/50/50">
 							<button
 								type="button"
 								onClick={() => setViewMode("code")}
@@ -200,8 +198,8 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                                     ${
 																			viewMode === "code"
-																				? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-																				: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+																				? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
 							>
@@ -215,8 +213,8 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                                     ${
 																			viewMode === "preview"
-																				? "bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
-																				: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+																				? "bg-surface dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
 							>
@@ -230,15 +228,15 @@ function FullScreenModal({
 					<div className="flex items-center justify-end flex-1 gap-2">
 						<button
 							onClick={onDownload}
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-warm-300/50 hover:text-text-primary transition-colors"
 						>
 							<Download className="w-4 h-4" />
 							<span>下载</span>
 						</button>
-						<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+						<div className="w-px h-4 bg-warm-300 mx-1" />
 						<button
 							onClick={onClose}
-							className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+							className="p-2 rounded-lg text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 transition-colors"
 						>
 							<X className="w-5 h-5" />
 						</button>
@@ -246,7 +244,7 @@ function FullScreenModal({
 				</div>
 
 				{/* 模态窗内容区 */}
-				<div className="flex-1 overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/50 relative">
+				<div className="flex-1 overflow-hidden bg-warm-50/50/50 relative">
 					{/* 代码视图 */}
 					<div
 						className={`
@@ -255,7 +253,7 @@ function FullScreenModal({
                         `}
 					>
 						<div className="h-full overflow-auto">
-							<pre className="p-6 text-xs font-mono leading-relaxed tab-4 bg-white dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300 min-h-full">
+							<pre className="p-6 text-xs font-mono leading-relaxed tab-4 bg-surface text-text-secondary min-h-full">
 								<code>{codeContent}</code>
 							</pre>
 						</div>
@@ -264,7 +262,7 @@ function FullScreenModal({
 					{/* 预览视图 */}
 					<div
 						className={`
-                            absolute inset-0 transition-opacity duration-300 ease-in-out bg-white dark:bg-white
+                            absolute inset-0 transition-opacity duration-300 ease-in-out bg-surface
                             ${viewMode === "preview" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"}
                         `}
 					>
@@ -457,11 +455,11 @@ ${transformed}
 		if (!hasContent) {
 			// Loading 态
 			return (
-				<div className="flex flex-col items-center justify-center p-6 gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+				<div className="flex flex-col items-center justify-center p-6 gap-3 rounded-xl border border-border bg-surface">
 					<div className="relative">
-						<div className="w-5 h-5 border-2 border-zinc-200 dark:border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+						<div className="w-5 h-5 border-2 border-border border-t-emerald-500 rounded-full animate-spin" />
 					</div>
-					<div className="text-xs text-zinc-400 dark:text-zinc-500 font-mono animate-pulse">
+					<div className="text-xs text-text-light font-mono animate-pulse">
 						Generating preview...
 					</div>
 				</div>

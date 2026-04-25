@@ -222,26 +222,20 @@ export function MCPSettings() {
 				/>
 
 				<div className="grid gap-4 sm:grid-cols-3">
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							已配置服务
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">已配置服务</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{servers.length}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							已启用
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">已启用</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{enabledServers}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							运行环境
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">运行环境</div>
 						<div className="mt-2 text-sm font-medium text-text-primary">
 							{isCheckingEnv
 								? "检测中..."
@@ -264,7 +258,7 @@ export function MCPSettings() {
 			/>
 
 			{/* 环境检测 */}
-			<div className="bg-zinc-50 border border-border rounded-lg p-4">
+			<div className="bg-warm-50 border border-border rounded-lg p-4">
 				<div className="flex items-center justify-between mb-4">
 					<h4 className="text-sm font-medium text-text-primary flex items-center gap-2">
 						<Terminal className="w-4 h-4" />
@@ -320,11 +314,11 @@ export function MCPSettings() {
 						<div className="pt-2 border-t border-border/50">
 							<div className="flex items-center justify-between mb-1">
 								<span className="text-text-secondary">Shell Path</span>
-								<span className="text-[10px] text-text-muted bg-zinc-100 px-1.5 py-0.5 rounded">
+								<span className="text-[10px] text-text-muted bg-warm-200 px-1.5 py-0.5 rounded">
 									{envCheck.shell || "Default"}
 								</span>
 							</div>
-							<code className="block w-full p-2 bg-white border border-border rounded text-[10px] text-text-secondary font-mono break-all max-h-20 overflow-y-auto">
+							<code className="block w-full p-2 bg-surface border border-border rounded text-[10px] text-text-secondary font-mono break-all max-h-20 overflow-y-auto">
 								{envCheck.path}
 							</code>
 						</div>
@@ -357,7 +351,7 @@ export function MCPSettings() {
 					<div className="flex items-center gap-2">
 						<button
 							onClick={handleImportJson}
-							className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-surface transition-colors"
+							className="flex items-center gap-2 px-3 py-1.5 text-sm bg-surface border border-border text-text-primary rounded-lg hover:bg-surface transition-colors"
 							title="从 JSON 导入"
 						>
 							<Upload className="w-4 h-4" />
@@ -365,7 +359,7 @@ export function MCPSettings() {
 						</button>
 						<button
 							onClick={handleExportJson}
-							className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-surface transition-colors"
+							className="flex items-center gap-2 px-3 py-1.5 text-sm bg-surface border border-border text-text-primary rounded-lg hover:bg-surface transition-colors"
 							title="导出为 JSON"
 						>
 							<Download className="w-4 h-4" />
@@ -426,7 +420,7 @@ export function MCPSettings() {
 											onChange={() => toggleServer(server.id)}
 											className="sr-only peer"
 										/>
-										<div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+										<div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
 									</label>
 									<button
 										onClick={() => handleRemoveServer(server.id)}
@@ -490,7 +484,7 @@ export function MCPSettings() {
 									setNewServer({ ...newServer, name: e.target.value })
 								}
 								placeholder="例如: Playwright Browser"
-								className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+								className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
 							/>
 						</div>
 
@@ -505,7 +499,7 @@ export function MCPSettings() {
 									setNewServer({ ...newServer, command: e.target.value })
 								}
 								placeholder="例如: npx"
-								className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+								className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
 							/>
 						</div>
 
@@ -523,7 +517,7 @@ export function MCPSettings() {
 								}
 								placeholder="-y&#10;@modelcontextprotocol/server-playwright"
 								rows={3}
-								className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+								className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
 							/>
 						</div>
 

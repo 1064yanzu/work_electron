@@ -550,23 +550,23 @@ export function DataSettings() {
 	if (!syncConfig || !dataStats || !storageSettings) {
 		return (
 			<div className="flex-1 h-full bg-background flex items-center justify-center">
-				<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+				<RefreshCw className="w-5 h-5 animate-spin text-text-light" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex-1 h-full bg-background dark:bg-zinc-950 overflow-hidden text-text-primary">
+		<div className="flex-1 h-full bg-background overflow-hidden text-text-primary">
 			<div className="h-full flex">
 				{/* 左侧导航 */}
-				<div className="w-52 border-r border-zinc-200/60 bg-white/50 p-4">
+				<div className="w-52 border-r border-border/60 bg-surface/50 p-4">
 					<nav className="space-y-1">
 						<button
 							onClick={() => setActiveSection("storage")}
 							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
 								activeSection === "storage"
 									? "bg-primary/10 text-primary"
-									: "text-zinc-600 hover:bg-zinc-100"
+									: "text-text-secondary hover:bg-warm-200"
 							}`}
 						>
 							<HardDrive className="w-4 h-4" />
@@ -577,7 +577,7 @@ export function DataSettings() {
 							className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
 								activeSection === "webdav"
 									? "bg-primary/10 text-primary"
-									: "text-zinc-600 hover:bg-zinc-100"
+									: "text-text-secondary hover:bg-warm-200"
 							}`}
 						>
 							<Cloud className="w-4 h-4" />
@@ -620,7 +620,7 @@ export function DataSettings() {
 															);
 														}}
 														disabled={isUpdatingStorage}
-														className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors disabled:opacity-60"
+														className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors disabled:opacity-60"
 													>
 														选择目录
 													</button>
@@ -631,7 +631,7 @@ export function DataSettings() {
 																toast.error(result.error || "打开目录失败");
 															}
 														}}
-														className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+														className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
 													>
 														打开目录
 													</button>
@@ -684,8 +684,8 @@ export function DataSettings() {
 												/>
 											}
 										/>
-										<div className="mt-4 border-t border-zinc-100 pt-4">
-											<div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+										<div className="mt-4 border-t border-border pt-4">
+											<div className="text-xs font-medium text-text-light uppercase tracking-wider mb-3">
 												主题目录
 											</div>
 											<div className="flex items-center gap-2 mb-3">
@@ -694,31 +694,31 @@ export function DataSettings() {
 													value={newThemeName}
 													onChange={(e) => setNewThemeName(e.target.value)}
 													placeholder="新主题名称"
-													className="flex-1 px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60"
+													className="flex-1 px-3 py-2 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60"
 												/>
 												<button
 													onClick={handleAddTheme}
-													className="px-3 py-2 text-xs bg-zinc-900 text-white rounded-lg hover:opacity-90 transition-opacity"
+													className="px-3 py-2 text-xs bg-dark-muted text-white rounded-lg hover:opacity-90 transition-opacity"
 												>
 													新增
 												</button>
 											</div>
 											<div className="space-y-2">
 												{themes.length === 0 ? (
-													<div className="text-xs text-zinc-400">
+													<div className="text-xs text-text-light">
 														暂无主题目录
 													</div>
 												) : (
 													themes.map((theme) => (
 														<div
 															key={theme.id}
-															className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-50"
+															className="flex items-center justify-between px-3 py-2 rounded-lg bg-warm-50"
 														>
 															<div className="min-w-0">
-																<div className="text-sm text-zinc-700 truncate">
+																<div className="text-sm text-text-secondary truncate">
 																	{theme.name}
 																</div>
-																<div className="text-[11px] text-zinc-400 truncate">
+																<div className="text-[11px] text-text-light truncate">
 																	Themes/{theme.slug}
 																</div>
 															</div>
@@ -727,7 +727,7 @@ export function DataSettings() {
 																	onClick={async () => {
 																		handleOpenRenameTheme(theme);
 																	}}
-																	className="text-xs text-zinc-500 hover:text-zinc-700"
+																	className="text-xs text-text-muted hover:text-text-secondary"
 																>
 																	重命名
 																</button>
@@ -759,31 +759,33 @@ export function DataSettings() {
 									<div className="p-5">
 										<SettingsSectionTitle>数据概览</SettingsSectionTitle>
 										<div className="grid grid-cols-3 gap-4">
-											<div className="text-center p-4 bg-zinc-50 rounded-xl">
-												<div className="text-2xl font-semibold text-zinc-800">
+											<div className="text-center p-4 bg-warm-50 rounded-xl">
+												<div className="text-2xl font-semibold text-text-primary">
 													{(dataStats.sources_count ?? 0) +
 														(dataStats.notes_count ?? 0)}
 												</div>
-												<div className="text-xs text-zinc-400 mt-1">
+												<div className="text-xs text-text-light mt-1">
 													资料与笔记
 												</div>
 											</div>
-											<div className="text-center p-4 bg-zinc-50 rounded-xl">
-												<div className="text-2xl font-semibold text-zinc-800">
+											<div className="text-center p-4 bg-warm-50 rounded-xl">
+												<div className="text-2xl font-semibold text-text-primary">
 													{dataStats.outputs_count ?? 0}
 												</div>
-												<div className="text-xs text-zinc-400 mt-1">
+												<div className="text-xs text-text-light mt-1">
 													输出文稿
 												</div>
 											</div>
-											<div className="text-center p-4 bg-zinc-50 rounded-xl">
-												<div className="text-2xl font-semibold text-zinc-800">
+											<div className="text-center p-4 bg-warm-50 rounded-xl">
+												<div className="text-2xl font-semibold text-text-primary">
 													{formatSize(
 														(dataStats.database_size ?? 0) +
 															(dataStats.media_size ?? 0),
 													)}
 												</div>
-												<div className="text-xs text-zinc-400 mt-1">总占用</div>
+												<div className="text-xs text-text-light mt-1">
+													总占用
+												</div>
 											</div>
 										</div>
 									</div>
@@ -814,7 +816,7 @@ export function DataSettings() {
 											action={
 												<button
 													onClick={handleMigrateDatabase}
-													className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+													className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
 												>
 													迁移数据库
 												</button>
@@ -835,7 +837,7 @@ export function DataSettings() {
 											action={
 												<button
 													onClick={handleClearCache}
-													className="px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+													className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
 												>
 													清除缓存
 												</button>
@@ -859,7 +861,7 @@ export function DataSettings() {
 															saveConfig({ local_backup_dir: result.path });
 														}
 													}}
-													className="flex items-center gap-2 px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+													className="flex items-center gap-2 px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
 												>
 													<FolderOpen className="w-3.5 h-3.5" />
 													选择目录
@@ -966,14 +968,14 @@ export function DataSettings() {
 													</button>
 													<button
 														onClick={() => setIsLocalBackupManagerOpen(true)}
-														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors"
+														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
 													>
 														<HardDrive className="w-4 h-4" />
 														管理备份
 													</button>
 												</div>
 												{syncConfig.local_backup_last_sync_at && (
-													<div className="text-xs text-zinc-400 mt-3">
+													<div className="text-xs text-text-light mt-3">
 														上次备份:{" "}
 														{new Date(
 															syncConfig.local_backup_last_sync_at,
@@ -992,14 +994,14 @@ export function DataSettings() {
 										<div className="flex gap-3 mb-4">
 											<button
 												onClick={handleLocalBackup}
-												className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors"
+												className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
 											>
 												<Download className="w-4 h-4" />
 												备份
 											</button>
 											<button
 												onClick={handleImport}
-												className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors"
+												className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
 											>
 												<RotateCcw className="w-4 h-4" />
 												恢复
@@ -1055,15 +1057,15 @@ export function DataSettings() {
 														<Cloud className="w-5 h-5 text-green-600" />
 													</div>
 												) : (
-													<div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
-														<CloudOff className="w-5 h-5 text-zinc-400" />
+													<div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center">
+														<CloudOff className="w-5 h-5 text-text-light" />
 													</div>
 												)}
 												<div>
-													<div className="font-medium text-zinc-800">
+													<div className="font-medium text-text-primary">
 														WebDAV 云同步
 													</div>
-													<div className="text-xs text-zinc-400">
+													<div className="text-xs text-text-light">
 														{syncConfig.webdav_enabled ? "已启用" : "未启用"}
 													</div>
 												</div>
@@ -1075,7 +1077,7 @@ export function DataSettings() {
 										</div>
 
 										{syncConfig.webdav_enabled && syncConfig.last_sync_at && (
-											<div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-50 rounded-lg px-3 py-2">
+											<div className="flex items-center gap-2 text-xs text-text-light bg-warm-50 rounded-lg px-3 py-2">
 												<Clock className="w-3.5 h-3.5" />
 												上次备份: {formatTime(syncConfig.last_backup_at)}
 											</div>
@@ -1091,7 +1093,7 @@ export function DataSettings() {
 										<SettingsSectionTitle>连接配置</SettingsSectionTitle>
 										<div className="space-y-4">
 											<div>
-												<label className="block text-xs font-medium text-zinc-500 mb-2">
+												<label className="block text-xs font-medium text-text-muted mb-2">
 													选择服务商
 												</label>
 												<Select
@@ -1153,7 +1155,7 @@ export function DataSettings() {
 
 											{/* WebDAV 地址 - Claude 风格 */}
 											<div>
-												<label className="block text-xs font-medium text-zinc-500 mb-2">
+												<label className="block text-xs font-medium text-text-muted mb-2">
 													WebDAV 地址
 												</label>
 												<input
@@ -1162,7 +1164,7 @@ export function DataSettings() {
 													onChange={(e) => handleUrlChange(e.target.value)}
 													placeholder="https://dav.example.com/dav/"
 													disabled={!syncConfig.webdav_enabled}
-													className={`w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white disabled:opacity-50 transition-all ${
+													className={`w-full px-4 py-2.5 bg-warm-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-surface disabled:opacity-50 transition-all ${
 														!urlValidation.valid
 															? "ring-2 ring-red-200 bg-red-50/30"
 															: ""
@@ -1198,7 +1200,7 @@ export function DataSettings() {
 										</div>
 										<div className="grid grid-cols-2 gap-4">
 											<div>
-												<label className="block text-xs text-zinc-500 mb-1.5">
+												<label className="block text-xs text-text-muted mb-1.5">
 													用户名
 												</label>
 												<input
@@ -1209,11 +1211,11 @@ export function DataSettings() {
 													}
 													placeholder="用户名"
 													disabled={!syncConfig.webdav_enabled}
-													className="w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+													className="w-full px-4 py-2.5 bg-warm-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
 												/>
 											</div>
 											<div>
-												<label className="block text-xs text-zinc-500 mb-1.5">
+												<label className="block text-xs text-text-muted mb-1.5">
 													密码
 												</label>
 												<div className="relative">
@@ -1225,12 +1227,12 @@ export function DataSettings() {
 														}
 														placeholder="密码"
 														disabled={!syncConfig.webdav_enabled}
-														className="w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50 pr-10"
+														className="w-full px-4 py-2.5 bg-warm-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50 pr-10"
 													/>
 													<button
 														type="button"
 														onClick={() => setShowPassword(!showPassword)}
-														className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+														className="absolute right-3 top-1/2 -translate-y-1/2 text-text-light hover:text-text-secondary"
 													>
 														{showPassword ? (
 															<EyeOff className="w-4 h-4" />
@@ -1242,7 +1244,7 @@ export function DataSettings() {
 											</div>
 										</div>
 										<div>
-											<label className="block text-xs text-zinc-500 mb-1.5">
+											<label className="block text-xs text-text-muted mb-1.5">
 												同步路径
 											</label>
 											<input
@@ -1253,7 +1255,7 @@ export function DataSettings() {
 												}
 												placeholder="/workbench-sync"
 												disabled={!syncConfig.webdav_enabled}
-												className="w-full px-4 py-2.5 bg-zinc-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+												className="w-full px-4 py-2.5 bg-warm-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
 											/>
 										</div>
 
@@ -1263,7 +1265,7 @@ export function DataSettings() {
 												disabled={
 													!syncConfig.webdav_enabled || isTestingConnection
 												}
-												className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+												className="flex items-center gap-2 px-4 py-2 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
 											>
 												<RefreshCw
 													className={`w-4 h-4 ${isTestingConnection ? "animate-spin" : ""}`}
@@ -1299,11 +1301,13 @@ export function DataSettings() {
 
 										{/* 同步状态显示 */}
 										{syncConfig.webdav_auto_sync && (
-											<div className="flex items-center gap-2 text-xs bg-zinc-50 rounded-lg px-3 py-2 mb-4">
+											<div className="flex items-center gap-2 text-xs bg-warm-50 rounded-lg px-3 py-2 mb-4">
 												{isSyncing ? (
 													<>
 														<RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-														<span className="text-zinc-600">正在同步...</span>
+														<span className="text-text-secondary">
+															正在同步...
+														</span>
 													</>
 												) : syncConfig.webdav_last_sync_error ? (
 													<>
@@ -1315,7 +1319,7 @@ export function DataSettings() {
 												) : syncConfig.webdav_last_sync_at ? (
 													<>
 														<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-														<span className="text-zinc-500">
+														<span className="text-text-muted">
 															上次同步:{" "}
 															{new Date(
 																syncConfig.webdav_last_sync_at,
@@ -1324,8 +1328,8 @@ export function DataSettings() {
 													</>
 												) : (
 													<>
-														<Clock className="w-3.5 h-3.5 text-zinc-400" />
-														<span className="text-zinc-400">尚未同步</span>
+														<Clock className="w-3.5 h-3.5 text-text-light" />
+														<span className="text-text-light">尚未同步</span>
 													</>
 												)}
 											</div>
@@ -1445,14 +1449,14 @@ export function DataSettings() {
 													!syncConfig.webdav_username ||
 													!syncConfig.webdav_password
 												}
-												className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+												className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
 											>
 												<Download className="w-4 h-4" />从 WebDAV 恢复
 											</button>
 										</div>
 
 										{syncConfig.last_sync_at && (
-											<div className="text-xs text-zinc-400 mt-2">
+											<div className="text-xs text-text-light mt-2">
 												上次同步:{" "}
 												{new Date(syncConfig.last_sync_at).toLocaleString()}
 											</div>
@@ -1490,15 +1494,13 @@ export function DataSettings() {
 			>
 				<div className="space-y-4">
 					<div className="space-y-2">
-						<label className="text-xs text-zinc-500 dark:text-zinc-400">
-							主题名称
-						</label>
+						<label className="text-xs text-text-muted">主题名称</label>
 						<input
 							type="text"
 							value={renameThemeName}
 							onChange={(e) => setRenameThemeName(e.target.value)}
 							placeholder="请输入新的主题名称"
-							className="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+							className="w-full px-3 py-2 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300/60"
 						/>
 					</div>
 					<div className="flex justify-end gap-2">
@@ -1508,7 +1510,7 @@ export function DataSettings() {
 								setThemeBeingRenamed(null);
 								setRenameThemeName("");
 							}}
-							className="px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors dark:text-zinc-300 dark:hover:bg-zinc-800"
+							className="px-3 py-2 text-sm text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
@@ -1516,7 +1518,7 @@ export function DataSettings() {
 							type="button"
 							onClick={() => void handleRenameTheme()}
 							disabled={!renameThemeName.trim()}
-							className="px-3 py-2 text-sm text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+							className="px-3 py-2 text-sm text-white bg-dark-muted hover:bg-dark-surface rounded-lg transition-colors disabled:opacity-50 dark:hover:bg-warm-300"
 						>
 							保存
 						</button>
@@ -1547,7 +1549,7 @@ export function DataSettings() {
 						<li>• 应用内的个性化设置</li>
 					</ul>
 					<div className="space-y-2">
-						<label className="text-xs text-zinc-500">
+						<label className="text-xs text-text-muted">
 							请输入{" "}
 							<span className="font-mono font-semibold text-red-600">
 								DELETE ALL
@@ -1559,7 +1561,7 @@ export function DataSettings() {
 							value={confirmPhrase}
 							onChange={(e) => setConfirmPhrase(e.target.value)}
 							placeholder="DELETE ALL"
-							className="w-full px-4 py-2.5 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-white text-sm"
+							className="w-full px-4 py-2.5 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-surface text-sm"
 							disabled={isClearing}
 						/>
 					</div>
@@ -1575,7 +1577,7 @@ export function DataSettings() {
 								setConfirmPhrase("");
 							}
 						}}
-						className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 						disabled={isClearing}
 					>
 						取消
@@ -1611,7 +1613,7 @@ export function DataSettings() {
 			>
 				<div className="space-y-4">
 					{/* 表头 */}
-					<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-100">
+					<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-text-light border-b border-border">
 						<div className="col-span-5">文件名</div>
 						<div className="col-span-4">修改时间</div>
 						<div className="col-span-3 text-right">操作</div>
@@ -1621,25 +1623,25 @@ export function DataSettings() {
 					<div className="max-h-80 overflow-y-auto space-y-1">
 						{isLoadingBackups ? (
 							<div className="flex items-center justify-center py-8">
-								<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+								<RefreshCw className="w-5 h-5 animate-spin text-text-light" />
 							</div>
 						) : webdavBackups.length === 0 ? (
-							<div className="text-center py-8 text-sm text-zinc-400">
+							<div className="text-center py-8 text-sm text-text-light">
 								暂无备份文件
 							</div>
 						) : (
 							webdavBackups.map((backup) => (
 								<div
 									key={backup.fileName}
-									className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg transition-colors"
+									className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-warm-50 hover:bg-warm-200 rounded-lg transition-colors"
 								>
 									<div
-										className="col-span-5 text-xs font-mono text-zinc-600 truncate"
+										className="col-span-5 text-xs font-mono text-text-secondary truncate"
 										title={backup.fileName}
 									>
 										{backup.fileName}
 									</div>
-									<div className="col-span-4 text-xs text-zinc-500">
+									<div className="col-span-4 text-xs text-text-muted">
 										{new Date(backup.modifiedTime).toLocaleString("zh-CN")}
 									</div>
 									<div className="col-span-3 flex items-center justify-end gap-2">
@@ -1653,7 +1655,7 @@ export function DataSettings() {
 										<button
 											onClick={() => handleDeleteBackup(backup.fileName)}
 											disabled={isDeletingBackup === backup.fileName}
-											className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+											className="p-1 text-text-light hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
 											title="删除备份"
 										>
 											{isDeletingBackup === backup.fileName ? (
@@ -1669,17 +1671,17 @@ export function DataSettings() {
 					</div>
 				</div>
 
-				<div className="flex justify-between items-center mt-6 pt-4 border-t border-zinc-100">
+				<div className="flex justify-between items-center mt-6 pt-4 border-t border-border">
 					<button
 						onClick={handleOpenBackupManager}
-						className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+						className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 					>
 						<RefreshCw className="w-4 h-4" />
 						刷新
 					</button>
 					<button
 						onClick={() => setIsBackupManagerOpen(false)}
-						className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 					>
 						关闭
 					</button>

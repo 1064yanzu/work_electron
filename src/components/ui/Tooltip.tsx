@@ -103,7 +103,7 @@ export function Tooltip({
 						role="tooltip"
 						className={cn(
 							"fixed z-[9999] px-2.5 py-1.5 text-xs font-medium rounded-lg",
-							"bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900",
+							"bg-dark-muted text-white",
 							"shadow-lg pointer-events-none whitespace-nowrap",
 							"animate-in fade-in-0 zoom-in-95 duration-150",
 						)}

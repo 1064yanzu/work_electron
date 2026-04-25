@@ -47,7 +47,7 @@ function CopilotMessageListImpl({
 					<button
 						type="button"
 						onClick={onLoadOlderMessages}
-						className="px-3 py-1.5 rounded-full text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+						className="px-3 py-1.5 rounded-full text-xs text-text-muted bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors"
 					>
 						加载更早消息（{hiddenMessageCount} 条）
 					</button>

@@ -159,7 +159,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 
 	if (!diff) {
 		return (
-			<div className="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-sm">
+			<div className="flex-1 flex items-center justify-center text-text-light text-sm">
 				<div className="text-center">
 					<FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
 					<p>选择一个文件变更查看 Diff</p>
@@ -172,14 +172,14 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 	const isPending = diff.status === "pending";
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-zinc-900 overflow-hidden">
+		<div className="flex flex-col h-full bg-surface overflow-hidden">
 			{/* 顶部工具栏 */}
-			<div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50 flex-shrink-0">
+			<div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60/60 bg-warm-50/50/50 flex-shrink-0">
 				{/* 左侧：文件路径 + 统计 */}
 				<div className="flex items-center gap-3 min-w-0 flex-1">
-					<FileText className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+					<FileText className="w-4 h-4 text-text-light flex-shrink-0" />
 					<span
-						className="text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate"
+						className="text-sm font-medium text-text-secondary truncate"
 						title={diff.filePath}
 					>
 						{displayPath}
@@ -201,15 +201,15 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 				{/* 右侧：视图切换 + 操作按钮 */}
 				<div className="flex items-center gap-2 flex-shrink-0">
 					{/* 视图模式切换 */}
-					<div className="flex items-center rounded-lg bg-zinc-100 dark:bg-zinc-800 p-0.5">
+					<div className="flex items-center rounded-lg bg-warm-200 p-0.5">
 						<button
 							type="button"
 							onClick={() => setViewMode("split")}
 							className={cn(
 								"flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
 								viewMode === "split"
-									? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shadow-sm"
-									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300",
+									? "bg-surface dark:bg-zinc-700 text-text-primary dark:text-zinc-200 shadow-sm"
+									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light",
 							)}
 							title="左右对比"
 						>
@@ -222,8 +222,8 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							className={cn(
 								"flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
 								viewMode === "unified"
-									? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shadow-sm"
-									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300",
+									? "bg-surface dark:bg-zinc-700 text-text-primary dark:text-zinc-200 shadow-sm"
+									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light",
 							)}
 							title="行内对比"
 						>
@@ -238,7 +238,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							<button
 								type="button"
 								onClick={handleReject}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-warm-300/60 dark:hover:bg-zinc-700/60 transition-colors"
 							>
 								<X className="w-3.5 h-3.5" />
 								拒绝
@@ -274,7 +274,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 						<button
 							type="button"
 							onClick={onClose}
-							className="ml-1 p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+							className="ml-1 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 transition-colors"
 						>
 							<X className="w-4 h-4" />
 						</button>

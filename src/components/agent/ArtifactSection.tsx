@@ -62,9 +62,9 @@ export default function ArtifactSection({
 	return (
 		<>
 			<div className={cn("space-y-2 mt-3", className)}>
-				<div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider px-1 flex items-center gap-2">
+				<div className="text-[10px] font-semibold text-text-light uppercase tracking-wider px-1 flex items-center gap-2">
 					<span>生成的文件</span>
-					<span className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+					<span className="px-1.5 py-0.5 rounded bg-warm-200 text-text-muted">
 						{artifacts.length}
 					</span>
 				</div>

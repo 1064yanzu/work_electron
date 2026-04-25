@@ -246,7 +246,7 @@ export function SlashCommandMenu({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[320px] bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface rounded-xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
 		>
 			<div className="max-h-[320px] overflow-y-auto py-1.5 scrollbar-hide">
 				{Object.entries(groupedCommands).map(([groupName, commands]) => {
@@ -258,7 +258,7 @@ export function SlashCommandMenu({
 							{/* 分组标题 - 改为 Button 以明确可交互性 */}
 							<button
 								type="button"
-								className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors select-none outline-none focus:bg-zinc-100 dark:focus:bg-zinc-700"
+								className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold text-text-light uppercase tracking-wider hover:bg-warm-200 dark:hover:bg-zinc-700 rounded transition-colors select-none outline-none focus:bg-warm-200 dark:focus:bg-zinc-700"
 								onClick={() => toggleGroup(groupName)}
 							>
 								<span>{groupName}</span>
@@ -286,13 +286,13 @@ export function SlashCommandMenu({
 												className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors text-sm
                           ${
 														isSelected
-															? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-															: "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+															? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
+															: "text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50"
 													}
                         `}
 											>
 												<div
-													className={`p-1.5 rounded-md ${isSelected ? "bg-white dark:bg-zinc-600 shadow-sm" : "bg-zinc-100 dark:bg-zinc-800"}`}
+													className={`p-1.5 rounded-md ${isSelected ? "bg-surface dark:bg-zinc-600 shadow-sm" : "bg-warm-200"}`}
 												>
 													<command.icon className="w-4 h-4" />
 												</div>
@@ -300,12 +300,12 @@ export function SlashCommandMenu({
 													<div className="font-medium truncate">
 														{command.name}
 													</div>
-													<div className="text-xs text-zinc-400 truncate opacity-80">
+													<div className="text-xs text-text-light truncate opacity-80">
 														{command.description}
 													</div>
 												</div>
 												{isSelected && (
-													<span className="text-[10px] text-zinc-400 font-medium bg-white dark:bg-zinc-600 px-1.5 py-0.5 rounded shadow-sm">
+													<span className="text-[10px] text-text-light font-medium bg-surface dark:bg-zinc-600 px-1.5 py-0.5 rounded shadow-sm">
 														↵
 													</span>
 												)}
@@ -319,7 +319,7 @@ export function SlashCommandMenu({
 				})}
 
 				{flatCommands.length === 0 && (
-					<div className="px-4 py-8 text-center text-sm text-zinc-400">
+					<div className="px-4 py-8 text-center text-sm text-text-light">
 						未找到相关命令
 					</div>
 				)}

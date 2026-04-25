@@ -96,7 +96,7 @@ export function WorkflowLab() {
 
 	return (
 		<main className="flex-1 flex flex-col bg-panel-process border-r border-border relative h-full overflow-hidden">
-			<div className="p-4 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-sm z-10">
+			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm z-10">
 				<div className="flex items-center gap-2 text-text-secondary">
 					<Workflow className="w-5 h-5 text-primary" />
 					<h2 className="font-serif font-medium tracking-wide text-sm">
@@ -105,7 +105,7 @@ export function WorkflowLab() {
 				</div>
 				<button
 					onClick={handleCreateNode}
-					className="p-1.5 bg-white border border-border rounded-md hover:border-primary/50 transition-colors text-text-secondary"
+					className="p-1.5 bg-surface border border-border rounded-md hover:border-primary/50 transition-colors text-text-secondary"
 				>
 					<Plus className="w-4 h-4" />
 				</button>
@@ -123,7 +123,7 @@ export function WorkflowLab() {
 					{nodes.map((node) => (
 						<div
 							key={node.id}
-							className="bg-white rounded-xl border border-border shadow-sm p-5 transition-all hover:shadow-md"
+							className="bg-surface rounded-xl border border-border shadow-sm p-5 transition-all hover:shadow-md"
 						>
 							<div className="flex items-center justify-between mb-4">
 								<div className="flex items-center gap-3">
@@ -181,12 +181,12 @@ export function WorkflowLab() {
 			</div>
 
 			{/* Chat Input Area */}
-			<div className="p-4 border-t border-border bg-white/80 backdrop-blur-md sticky bottom-0">
+			<div className="p-4 border-t border-border bg-surface/80 backdrop-blur-md sticky bottom-0">
 				<div className="max-w-3xl mx-auto relative">
 					<input
 						type="text"
 						placeholder="Describe a task to generate workflow..."
-						className="w-full pl-4 pr-12 py-3.5 rounded-xl border border-border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-text-muted/50"
+						className="w-full pl-4 pr-12 py-3.5 rounded-xl border border-border bg-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-text-muted/50"
 					/>
 					<div className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-surface rounded-md border border-border text-xs text-text-muted font-medium">
 						⏎

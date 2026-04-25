@@ -309,13 +309,13 @@ export function WikiView() {
 		return (
 			<div className="flex flex-col h-full">
 				<div className="flex-1 flex flex-col items-center justify-center px-6">
-					<div className="w-16 h-16 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/80 flex items-center justify-center mb-5">
-						<BookOpen className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+					<div className="w-16 h-16 rounded-2xl bg-warm-200/80/80 flex items-center justify-center mb-5">
+						<BookOpen className="w-8 h-8 text-text-light" />
 					</div>
-					<h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-100 mb-2">
+					<h3 className="text-base font-semibold text-text-primary mb-2">
 						暂无线程工作目录
 					</h3>
-					<p className="text-sm text-zinc-500 dark:text-zinc-400 text-center leading-relaxed max-w-[260px]">
+					<p className="text-sm text-text-muted text-center leading-relaxed max-w-[260px]">
 						Wiki
 						跟随当前线程的工作目录。请先在线程列表中选择一个线程，再整理该目录下的结构化知识。
 					</p>
@@ -332,14 +332,14 @@ export function WikiView() {
 					<div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
 						<BookOpen className="w-8 h-8 text-primary" />
 					</div>
-					<h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-100 mb-2">
+					<h3 className="text-base font-semibold text-text-primary mb-2">
 						知识 Wiki
 					</h3>
-					<p className="text-sm text-zinc-500 dark:text-zinc-400 text-center leading-relaxed mb-6 max-w-[260px]">
+					<p className="text-sm text-text-muted text-center leading-relaxed mb-6 max-w-[260px]">
 						将当前线程工作目录中的稳定知识整理为结构化索引，方便快速查阅和积累。
 					</p>
 					{scopeLabel ? (
-						<div className="mb-4 text-xs text-zinc-400 dark:text-zinc-500">
+						<div className="mb-4 text-xs text-text-light">
 							当前目录：{scopeLabel}
 						</div>
 					) : null}
@@ -371,7 +371,7 @@ export function WikiView() {
 	if (enabled === null) {
 		return (
 			<div className="flex flex-col h-full items-center justify-center">
-				<RefreshCw className="w-5 h-5 text-zinc-400 animate-spin" />
+				<RefreshCw className="w-5 h-5 text-text-light animate-spin" />
 			</div>
 		);
 	}
@@ -381,40 +381,40 @@ export function WikiView() {
 		return (
 			<div className="flex flex-col h-full">
 				{/* Header */}
-				<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+				<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 					<div className="flex items-center gap-2">
 						<button
 							onClick={() => {
 								setViewMode("list");
 								setSelectedPage(null);
 							}}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							<ArrowLeft className="w-4 h-4" />
 						</button>
 						<FileText className="w-4 h-4 text-primary" />
-						<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 truncate max-w-[180px]">
+						<h2 className="font-semibold text-sm text-text-primary truncate max-w-[180px]">
 							{selectedPage.title}
 						</h2>
 					</div>
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => openInEditor(selectedPage.id, selectedPage.title)}
-							className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 							title="在文档编辑器中打开（支持分屏预览、语法高亮、完整 Markdown 编辑）"
 						>
 							<ExternalLink className="w-4 h-4" />
 						</button>
 						<button
 							onClick={() => setViewMode("edit")}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 							title="快速编辑"
 						>
 							<Pencil className="w-4 h-4" />
 						</button>
 						<button
 							onClick={() => handleDeletePage(selectedPage)}
-							className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
 							title="删除"
 						>
 							<Trash2 className="w-4 h-4" />
@@ -425,12 +425,12 @@ export function WikiView() {
 				{/* Content */}
 				<div className="flex-1 overflow-y-auto p-4">
 					{selectedPage.page_type && selectedPage.page_type !== "entity" && (
-						<div className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md mb-3 uppercase tracking-wider">
+						<div className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-warm-200 text-text-muted rounded-md mb-3 uppercase tracking-wider">
 							{selectedPage.page_type}
 						</div>
 					)}
 					{selectedPage.summary && (
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 italic">
+						<p className="text-sm text-text-muted mb-4 italic">
 							{selectedPage.summary}
 						</p>
 					)}
@@ -452,7 +452,7 @@ export function WikiView() {
 						pages={pages}
 						onNavigate={openPage}
 					/>
-					<div className="mt-6 flex items-center gap-3 text-[11px] text-zinc-400">
+					<div className="mt-6 flex items-center gap-3 text-[11px] text-text-light">
 						<span className="flex items-center gap-1">
 							<Clock className="w-3 h-3" />
 							更新于 {formatDate(selectedPage.updated_at)}
@@ -500,18 +500,16 @@ export function WikiView() {
 	return (
 		<div className="flex flex-col h-full">
 			{/* Header */}
-			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 				<div className="flex items-center gap-2">
 					<BookOpen className="w-4 h-4 text-primary" />
-					<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
-						知识 Wiki
-					</h2>
+					<h2 className="font-semibold text-sm text-text-primary">知识 Wiki</h2>
 					{scopeLabel ? (
-						<span className="max-w-[120px] truncate text-[11px] text-zinc-400 dark:text-zinc-500">
+						<span className="max-w-[120px] truncate text-[11px] text-text-light">
 							{scopeLabel}
 						</span>
 					) : null}
-					<span className="text-[11px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+					<span className="text-[11px] text-text-light tabular-nums">
 						{pages.length}
 					</span>
 				</div>
@@ -519,7 +517,7 @@ export function WikiView() {
 					<button
 						onClick={refresh}
 						disabled={loading}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
 						title="刷新"
 					>
 						<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -529,7 +527,7 @@ export function WikiView() {
 						disabled={
 							loading || isInitializing || lintLoading || pages.length === 0
 						}
-						className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
 						title="Wiki 健康检查（孤儿页 / stub / 断链 / 未摄入源）"
 					>
 						<ShieldCheck
@@ -539,7 +537,7 @@ export function WikiView() {
 					<button
 						onClick={handleRebuildWiki}
 						disabled={loading || isInitializing}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
 						title="重建 Wiki 结构"
 					>
 						<RotateCcw className="w-4 h-4" />
@@ -547,7 +545,7 @@ export function WikiView() {
 					<button
 						onClick={handleGenerateWiki}
 						disabled={loading || isInitializing || isGenerating}
-						className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
 						title="AI 生成 Wiki 页面"
 					>
 						<BookOpen
@@ -556,7 +554,7 @@ export function WikiView() {
 					</button>
 					<button
 						onClick={() => setViewMode("create")}
-						className="p-1.5 text-zinc-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 						title="新建知识页面"
 					>
 						<Plus className="w-4 h-4" />
@@ -565,9 +563,9 @@ export function WikiView() {
 			</div>
 
 			{/* Search */}
-			<div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="px-3 py-2 border-b border-border">
 				<div className="relative">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
 					<input
 						type="text"
 						value={searchQuery}
@@ -581,7 +579,7 @@ export function WikiView() {
 							if (e.key === "Enter") handleSearch();
 						}}
 						placeholder="搜索知识页面..."
-						className="w-full pl-8 pr-8 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
+						className="w-full pl-8 pr-8 py-1.5 text-sm bg-warm-50/60 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
 					/>
 					{searchQuery && (
 						<button
@@ -589,7 +587,7 @@ export function WikiView() {
 								setSearchQuery("");
 								setSearchResults(null);
 							}}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 rounded"
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded"
 						>
 							<X className="w-3.5 h-3.5" />
 						</button>
@@ -656,7 +654,7 @@ export function WikiView() {
 						</div>
 
 						{schemaStats.skipped_files.length > 0 && (
-							<div className="mb-2 max-h-32 overflow-y-auto rounded border border-amber-200/40 dark:border-amber-800/30 bg-white/40 dark:bg-amber-950/40 p-1.5">
+							<div className="mb-2 max-h-32 overflow-y-auto rounded border border-amber-200/40 dark:border-amber-800/30 bg-surface/40 dark:bg-amber-950/40 p-1.5">
 								{schemaStats.skipped_files.slice(0, 10).map((f) => (
 									<div
 										key={f.path}
@@ -681,7 +679,7 @@ export function WikiView() {
 							{schemaStats.skipped_count > 0 && (
 								<button
 									onClick={handleRetrySkipped}
-									className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-white dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+									className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
 								>
 									重试跳过的 {schemaStats.skipped_count} 个文件
 								</button>
@@ -690,7 +688,7 @@ export function WikiView() {
 								schemaStats.real_page_count === 0 && (
 									<button
 										onClick={handleResetProcessed}
-										className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-white dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+										className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
 									>
 										重置 {schemaStats.processed_count} 条已处理记录
 									</button>
@@ -731,7 +729,7 @@ export function WikiView() {
 						(generationProgress.phase === "extracting" ||
 							generationProgress.phase === "llm") && (
 							<div className="mb-2">
-								<div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+								<div className="w-full h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
 									<div
 										className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
 										style={{
@@ -742,7 +740,7 @@ export function WikiView() {
 							</div>
 						)}
 					{/* 状态文字 */}
-					<div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+					<div className="flex items-center justify-between text-[11px] text-text-muted">
 						<span className="truncate max-w-[200px]">
 							{generationProgress.current_source_title
 								? `${getPhaseVerb(generationProgress.phase)}：${generationProgress.current_source_title}`
@@ -813,7 +811,7 @@ export function WikiView() {
 						)}
 					<button
 						onClick={() => clearGenerationProgress()}
-						className="mt-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline"
+						className="mt-1.5 text-[11px] text-text-light hover:text-text-secondary dark:hover:text-text-light underline"
 					>
 						关闭
 					</button>
@@ -843,10 +841,10 @@ export function WikiView() {
 			<div className="flex-1 overflow-y-auto">
 				{loading && pages.length === 0 ? (
 					<div className="flex items-center justify-center py-12">
-						<RefreshCw className="w-5 h-5 text-zinc-400 animate-spin" />
+						<RefreshCw className="w-5 h-5 text-text-light animate-spin" />
 					</div>
 				) : filteredPages.length === 0 && searchQuery ? (
-					<div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+					<div className="flex flex-col items-center justify-center py-12 text-text-light">
 						<Search className="w-8 h-8 mb-2 opacity-40" />
 						<p className="text-sm">未找到匹配的页面</p>
 					</div>
@@ -856,23 +854,23 @@ export function WikiView() {
 							<button
 								key={page.id}
 								onClick={() => openPage(page)}
-								className="w-full text-left px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group border-b border-zinc-50 dark:border-zinc-800/50 last:border-b-0"
+								className="w-full text-left px-4 py-3 hover:bg-warm-50/50 transition-colors group border-b border-zinc-50/50 last:border-b-0"
 							>
 								<div className="flex items-start justify-between gap-2">
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center gap-2 mb-1">
 											<FileText className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
-											<h4 className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
+											<h4 className="text-sm font-medium text-text-primary truncate">
 												{page.title}
 											</h4>
 											{page.page_type && page.page_type !== "entity" && (
-												<span className="px-1.5 py-0.5 text-[9px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded uppercase tracking-wider flex-shrink-0">
+												<span className="px-1.5 py-0.5 text-[9px] font-medium bg-warm-200 text-text-light rounded uppercase tracking-wider flex-shrink-0">
 													{page.page_type}
 												</span>
 											)}
 										</div>
 										{page.summary && (
-											<p className="text-xs text-zinc-500 dark:text-zinc-400 truncate pl-5.5 ml-[22px]">
+											<p className="text-xs text-text-muted truncate pl-5.5 ml-[22px]">
 												{page.summary}
 											</p>
 										)}
@@ -881,13 +879,13 @@ export function WikiView() {
 												{page.tags.slice(0, 3).map((tag) => (
 													<span
 														key={tag}
-														className="px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded"
+														className="px-1.5 py-0.5 text-[10px] font-medium bg-warm-200 text-text-muted rounded"
 													>
 														{tag}
 													</span>
 												))}
 												{page.tags.length > 3 && (
-													<span className="text-[10px] text-zinc-400">
+													<span className="text-[10px] text-text-light">
 														+{page.tags.length - 3}
 													</span>
 												)}
@@ -895,10 +893,10 @@ export function WikiView() {
 										)}
 									</div>
 									<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-										<span className="text-[10px] text-zinc-400 whitespace-nowrap">
+										<span className="text-[10px] text-text-light whitespace-nowrap">
 											{formatDate(page.updated_at)}
 										</span>
-										<ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600" />
+										<ChevronRight className="w-3.5 h-3.5 text-text-light" />
 									</div>
 								</div>
 							</button>

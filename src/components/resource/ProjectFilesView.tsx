@@ -199,12 +199,12 @@ export function ProjectFilesView() {
 						onClick={() => toggleDir(item)}
 						onContextMenu={(e) => handleFileContextMenu(e, item)}
 						className={cn(
-							"flex items-center w-full px-2 py-1.5 text-left group hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors",
+							"flex items-center w-full px-2 py-1.5 text-left group hover:bg-warm-200/50 transition-colors",
 							level === 0 ? "text-[13px]" : "text-[13px]",
 						)}
 						style={{ paddingLeft: `${Math.max(0.5, level * 0.75 + 0.5)}rem` }}
 					>
-						<span className="w-4 h-4 mr-1 flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300">
+						<span className="w-4 h-4 mr-1 flex items-center justify-center shrink-0 text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light">
 							{item.isDir ? (
 								isExpanded ? (
 									<ChevronDown className="w-3.5 h-3.5" />
@@ -215,7 +215,7 @@ export function ProjectFilesView() {
 								<span className="w-1.5" />
 							)}
 						</span>
-						<span className="mr-2 shrink-0 text-zinc-400 group-hover:text-zinc-500">
+						<span className="mr-2 shrink-0 text-text-light group-hover:text-text-muted">
 							{item.isDir ? (
 								isExpanded ? (
 									<FolderOpen className="w-4 h-4 text-[#D96C46]/80" />
@@ -223,15 +223,15 @@ export function ProjectFilesView() {
 									<Folder className="w-4 h-4 text-[#D96C46]/80" />
 								)
 							) : (
-								<File className="w-4 h-4 text-zinc-400" />
+								<File className="w-4 h-4 text-text-light" />
 							)}
 						</span>
 						<span
 							className={cn(
 								"truncate",
 								item.isDir
-									? "text-zinc-800 dark:text-zinc-200"
-									: "text-zinc-600 dark:text-zinc-400",
+									? "text-text-primary dark:text-zinc-200"
+									: "text-text-secondary",
 							)}
 						>
 							{item.name}
@@ -253,13 +253,13 @@ export function ProjectFilesView() {
 	return (
 		<div className="flex flex-col h-full bg-transparent">
 			{/* Header */}
-			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-zinc-100 dark:border-white/[0.05]">
-				<h2 className="font-semibold text-[13px] text-zinc-500 uppercase tracking-widest">
+			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-border dark:border-white/[0.05]">
+				<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
 					Files
 				</h2>
 				<button
 					onClick={refreshRoot}
-					className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+					className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors"
 					title="Refresh"
 				>
 					<RefreshCcw
@@ -272,15 +272,15 @@ export function ProjectFilesView() {
 			<div className="flex-1 overflow-y-auto scrollbar-hide py-2">
 				{projectPath === null ? (
 					<div className="text-center py-10 px-6 mt-10">
-						<Folder className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-4" />
-						<p className="text-sm text-zinc-500 font-medium">无工作路径</p>
-						<p className="text-xs text-zinc-400 mt-2">
+						<Folder className="w-10 h-10 text-text-light mx-auto mb-4" />
+						<p className="text-sm text-text-muted font-medium">无工作路径</p>
+						<p className="text-xs text-text-light mt-2">
 							请先到线程列表中选择或创建一个线程
 						</p>
 					</div>
 				) : entries.length === 0 && !isLoading ? (
 					<div className="text-center py-10 px-6 mt-10">
-						<p className="text-sm text-zinc-500 font-medium">文件夹为空</p>
+						<p className="text-sm text-text-muted font-medium">文件夹为空</p>
 					</div>
 				) : (
 					<div className="pb-6">{renderTree(entries, 0)}</div>
@@ -328,7 +328,7 @@ function DirChildrenLoader({
 
 	if (!loaded) {
 		return (
-			<div className="pl-6 py-1.5 text-[11px] text-zinc-400/50 animate-pulse">
+			<div className="pl-6 py-1.5 text-[11px] text-text-light/50 animate-pulse">
 				Loading...
 			</div>
 		);

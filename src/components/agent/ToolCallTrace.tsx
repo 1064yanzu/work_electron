@@ -81,8 +81,8 @@ const toolConfig: Record<
 	default: {
 		icon: Zap,
 		gradient:
-			"from-zinc-500/10 via-zinc-500/10 to-zinc-500/10 border-zinc-200/50 dark:border-zinc-800/30",
-		iconColor: "text-zinc-600 dark:text-zinc-400",
+			"from-zinc-500/10 via-zinc-500/10 to-zinc-500/10 border-border/50/30",
+		iconColor: "text-text-secondary",
 		label: "Tool Call",
 	},
 };
@@ -106,13 +106,13 @@ function getFileIcon(filename: string) {
 			return <FileType className="w-3.5 h-3.5 text-orange-500" />;
 		case "md":
 		case "txt":
-			return <FileText className="w-3.5 h-3.5 text-zinc-500" />;
+			return <FileText className="w-3.5 h-3.5 text-text-muted" />;
 		case "png":
 		case "jpg":
 		case "svg":
 			return <ImageIcon className="w-3.5 h-3.5 text-purple-500" />;
 		default:
-			return <File className="w-3.5 h-3.5 text-zinc-400" />;
+			return <File className="w-3.5 h-3.5 text-text-light" />;
 	}
 }
 
@@ -129,13 +129,13 @@ function CopyButton({ text }: { text: string }) {
 	return (
 		<button
 			onClick={handleCopy}
-			className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-md transition-colors"
+			className="p-1 hover:bg-warm-200 dark:hover:bg-zinc-700/50 rounded-md transition-colors"
 			title="Copy"
 		>
 			{copied ? (
 				<Check className="w-3 h-3 text-emerald-500" />
 			) : (
-				<Copy className="w-3 h-3 text-zinc-400" />
+				<Copy className="w-3 h-3 text-text-light" />
 			)}
 		</button>
 	);
@@ -144,7 +144,7 @@ function CopyButton({ text }: { text: string }) {
 // 结构化结果渲染
 function StructuredOutput({ type, output }: { type: string; output: any }) {
 	const codeBlockClass =
-		"text-[10px] bg-emerald-50/50 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-zinc-600 dark:text-zinc-400 font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
+		"text-[10px] bg-emerald-50/50 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
 
 	// 1. 资料库检索
 	if (type === "kb_search_chunks") {
@@ -169,16 +169,16 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 						return (
 							<div
 								key={idx}
-								className="flex items-center gap-2 py-1 px-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-[11px]"
+								className="flex items-center gap-2 py-1 px-2 rounded hover:bg-warm-50/50 text-[11px]"
 							>
 								{getFileIcon(file)}
 								<span
-									className="font-medium text-zinc-700 dark:text-zinc-300 truncate"
+									className="font-medium text-text-secondary truncate"
 									title={file}
 								>
 									{basename}
 								</span>
-								<span className="text-zinc-400 font-mono text-[10px] ml-auto">
+								<span className="text-text-light font-mono text-[10px] ml-auto">
 									{lineDisplay}
 								</span>
 							</div>
@@ -212,16 +212,16 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 							href={item.url}
 							target="_blank"
 							rel="noopener"
-							className="block p-2 rounded border border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+							className="block p-2 rounded border border-border/50 hover:bg-warm-50/50"
 						>
 							<div className="flex items-center gap-2 mb-1">
 								<Globe className="w-3 h-3 text-blue-500" />
-								<span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
+								<span className="text-xs font-semibold text-text-secondary truncate">
 									{item.title || item.url}
 								</span>
 							</div>
 							{(item.content || item.snippet) && (
-								<p className="text-[10px] text-zinc-500 line-clamp-2">
+								<p className="text-[10px] text-text-muted line-clamp-2">
 									{item.content || item.snippet}
 								</p>
 							)}
@@ -260,7 +260,7 @@ function ToolCallCard({
 		<div className="relative group/trace-item">
 			{/* 连接线 */}
 			{!isLast && (
-				<div className="absolute left-[15px] top-8 bottom-[-8px] w-px bg-zinc-200 dark:bg-zinc-800" />
+				<div className="absolute left-[15px] top-8 bottom-[-8px] w-px bg-warm-300" />
 			)}
 
 			<div
@@ -270,10 +270,10 @@ function ToolCallCard({
 				<div className="relative flex-shrink-0 z-10">
 					<div
 						className={cn(
-							"flex items-center justify-center w-8 h-8 rounded-full border bg-white dark:bg-zinc-900 shadow-sm transition-all duration-300",
+							"flex items-center justify-center w-8 h-8 rounded-full border bg-surface shadow-sm transition-all duration-300",
 							isRunning
 								? "scale-110 ring-2 ring-violet-500/20 border-violet-500"
-								: "border-zinc-200 dark:border-zinc-800",
+								: "border-border",
 							isError ? "border-rose-500" : "",
 						)}
 					>
@@ -291,15 +291,15 @@ function ToolCallCard({
 				<div
 					className={cn(
 						"flex-1 min-w-0 rounded-xl border transition-all duration-300 mb-3 overflow-hidden",
-						"bg-white dark:bg-zinc-900/40",
+						"bg-surface/40",
 						isRunning
 							? "border-violet-200 dark:border-violet-800/30 shadow-sm"
-							: "border-zinc-200/60 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700",
+							: "border-border/60/60 hover:border-zinc-300",
 					)}
 				>
 					<button
 						onClick={() => setIsExpanded(!isExpanded)}
-						className="w-full flex items-center gap-3 p-3 text-left hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors"
+						className="w-full flex items-center gap-3 p-3 text-left hover:bg-warm-50/50/30 transition-colors"
 					>
 						<div
 							className={cn(
@@ -313,10 +313,10 @@ function ToolCallCard({
 
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center justify-between">
-								<span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+								<span className="text-sm font-medium text-text-primary dark:text-zinc-200">
 									{config.label}
 								</span>
-								<span className="text-[10px] text-zinc-400 font-mono">
+								<span className="text-[10px] text-text-light font-mono">
 									{toolCall.duration
 										? `${(toolCall.duration / 1000).toFixed(1)}s`
 										: isRunning
@@ -324,14 +324,14 @@ function ToolCallCard({
 											: ""}
 								</span>
 							</div>
-							<div className="text-xs text-zinc-500 truncate mt-0.5">
+							<div className="text-xs text-text-muted truncate mt-0.5">
 								{toolCall.name}
 							</div>
 						</div>
 
 						<ChevronDown
 							className={cn(
-								"w-4 h-4 text-zinc-400 transition-transform duration-200",
+								"w-4 h-4 text-text-light transition-transform duration-200",
 								isExpanded && "rotate-180",
 							)}
 						/>
@@ -339,7 +339,7 @@ function ToolCallCard({
 
 					{/* 详情内容 */}
 					{isExpanded && (
-						<div className="px-3 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/50">
+						<div className="px-3 pb-3 pt-0 border-t border-border/50">
 							{toolCall.type === "skill_call" &&
 							toolCall.metadata?.skillExecution ? (
 								<div className="mt-3">
@@ -349,14 +349,14 @@ function ToolCallCard({
 								<div className="mt-3 space-y-3">
 									<div>
 										<div className="flex items-center justify-between mb-1">
-											<span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+											<span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">
 												Input
 											</span>
 											<CopyButton
 												text={JSON.stringify(toolCall.input, null, 2)}
 											/>
 										</div>
-										<pre className="text-[10px] bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 overflow-x-auto text-zinc-600 dark:text-zinc-400 font-mono border border-zinc-100 dark:border-zinc-800">
+										<pre className="text-[10px] bg-warm-50 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-border">
 											{JSON.stringify(toolCall.input, null, 2)}
 										</pre>
 									</div>
@@ -428,10 +428,10 @@ export default function ToolCallTrace({
 	if (!task) {
 		return (
 			<div className="flex flex-col items-center justify-center p-8 text-center">
-				<div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center mb-3">
-					<Search className="w-5 h-5 text-zinc-300" />
+				<div className="w-12 h-12 rounded-2xl bg-warm-50 flex items-center justify-center mb-3">
+					<Search className="w-5 h-5 text-text-light" />
 				</div>
-				<p className="text-sm font-medium text-zinc-500">No active trace</p>
+				<p className="text-sm font-medium text-text-muted">No active trace</p>
 			</div>
 		);
 	}
@@ -439,11 +439,11 @@ export default function ToolCallTrace({
 	return (
 		<div className="h-full flex flex-col">
 			{/* 头部摘要 */}
-			<div className="flex-none p-4 border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-20">
-				<h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
+			<div className="flex-none p-4 border-b border-border bg-surface/50/50 backdrop-blur-sm sticky top-0 z-20">
+				<h3 className="text-sm font-semibold text-text-primary dark:text-zinc-200 mb-1">
 					追踪: {task.title || "代理任务"}
 				</h3>
-				<div className="flex items-center gap-2 text-xs text-zinc-500">
+				<div className="flex items-center gap-2 text-xs text-text-muted">
 					<Clock className="w-3.5 h-3.5" />
 					<span>Started {new Date(task.createdAt).toLocaleTimeString()}</span>
 					<span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
@@ -464,7 +464,7 @@ export default function ToolCallTrace({
 
 				{task.status === "executing" && (
 					<div className="pl-[15px] pt-4">
-						<div className="w-1.5 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
+						<div className="w-1.5 h-1.5 rounded-full bg-warm-300 dark:bg-zinc-700 animate-pulse" />
 					</div>
 				)}
 			</div>

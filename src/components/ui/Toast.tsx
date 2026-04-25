@@ -68,7 +68,7 @@ function getActionClass(variant: ToastActionVariant) {
 		case "danger":
 			return "bg-red-500 text-white hover:bg-red-600";
 		default:
-			return "bg-[#f0eee6] text-[#4d4c48] hover:bg-[#e8e6dc] dark:bg-[#30302e] dark:text-[#b0aea5] dark:hover:bg-[#3a3937]";
+			return "bg-warm-200 text-text-charcoal hover:bg-warm-300";
 	}
 }
 
@@ -164,7 +164,7 @@ function ToastItemView({
 		<div
 			role="status"
 			className={cn(
-				"pointer-events-auto relative overflow-hidden rounded-xl border bg-[#faf9f5] dark:bg-[#1e1d1b] p-4 shadow-[rgba(0,0,0,0.06)_0px_8px_32px]",
+				"pointer-events-auto relative overflow-hidden rounded-xl border bg-surface p-4 shadow-[rgba(0,0,0,0.06)_0px_8px_32px]",
 				"transition-[opacity,transform] duration-200 ease-out",
 				isExiting ? "translate-x-4 scale-[0.98] opacity-0" : "opacity-100",
 				styles.border,
@@ -181,7 +181,7 @@ function ToastItemView({
 				</div>
 
 				<div className="min-w-0 flex-1">
-					<div className="break-words pt-0.5 text-sm text-[#141413] dark:text-[#faf9f5]">
+					<div className="break-words pt-0.5 text-sm text-text-primary">
 						{item.message}
 					</div>
 					{item.actionLabel && item.onAction ? (
@@ -208,7 +208,7 @@ function ToastItemView({
 						type="button"
 						onClick={closeWithMotion}
 						aria-label="关闭通知"
-						className="rounded-lg p-1.5 text-[#87867f] transition-colors hover:bg-[#f0eee6] hover:text-[#141413] dark:hover:bg-[#30302e] dark:hover:text-[#faf9f5]"
+						className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
 					>
 						<X size={14} />
 					</button>
@@ -216,7 +216,7 @@ function ToastItemView({
 			</div>
 
 			{item.duration > 0 ? (
-				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#f0eee6] dark:bg-[#30302e]">
+				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-warm-200">
 					<div
 						className={cn(
 							"h-full transition-[width] duration-75",

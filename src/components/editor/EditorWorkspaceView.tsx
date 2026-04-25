@@ -69,7 +69,7 @@ const EditorPreviewPane = memo(function EditorPreviewPane({
 	return (
 		<>
 			{isMarkdownPreview ? (
-				<h1 className="text-[34px] leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mb-5">
+				<h1 className="text-[34px] leading-tight font-semibold tracking-tight text-text-primary mb-5">
 					{title || "无标题"}
 				</h1>
 			) : null}
@@ -136,9 +136,9 @@ export function EditorWorkspaceView({
 		: "text-base leading-[1.75]";
 
 	const titleInputClass =
-		"focus-ring w-full border-none bg-transparent p-0 tracking-tight font-semibold text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-500 dark:placeholder:text-zinc-400";
+		"focus-ring w-full border-none bg-transparent p-0 tracking-tight font-semibold text-text-primary dark:text-zinc-50 placeholder:text-text-muted dark:placeholder:text-text-light";
 	const editorTextClass =
-		"text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 caret-zinc-800 dark:caret-zinc-200";
+		"text-text-secondary placeholder:text-text-muted dark:placeholder:text-text-light caret-zinc-800 dark:caret-zinc-200";
 
 	const textareaProps = useMemo(
 		() => ({
@@ -173,7 +173,7 @@ export function EditorWorkspaceView({
 			<div className="flex h-full">
 				<section
 					ref={editContainerRef}
-					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide border-r border-zinc-200/70 dark:border-zinc-800/70 bg-white/70 dark:bg-zinc-950/45"
+					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide border-r border-border/70/70 bg-surface/70/45"
 					aria-label="编辑区域"
 				>
 					<div
@@ -202,7 +202,7 @@ export function EditorWorkspaceView({
 					ref={previewContainerRef}
 					onScroll={onPreviewScroll}
 					onContextMenu={onPreviewContextMenu}
-					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide bg-zinc-50/80 dark:bg-zinc-900/60"
+					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide bg-warm-50/80/60"
 					aria-label="预览区域"
 				>
 					<div
@@ -223,7 +223,7 @@ export function EditorWorkspaceView({
 	}
 
 	return (
-		<div className="h-full overflow-y-auto scrollbar-hide bg-white/72 dark:bg-zinc-950/35">
+		<div className="h-full overflow-y-auto scrollbar-hide bg-surface/72/35">
 			<div className={cn(maxWidthSingle, "mx-auto px-6 py-7 sm:px-8 sm:py-8")}>
 				{!isBinaryFile && (
 					<input
@@ -235,7 +235,7 @@ export function EditorWorkspaceView({
 							titleInputClass,
 							isMarkdownPreview
 								? "text-[40px] leading-tight mb-7"
-								: "text-[18px] leading-tight mb-4 font-medium text-zinc-600 dark:text-zinc-300",
+								: "text-[18px] leading-tight mb-4 font-medium text-text-secondary",
 						)}
 						placeholder="无标题"
 						style={{ boxShadow: "none" }}

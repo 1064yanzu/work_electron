@@ -136,18 +136,18 @@ export function ChatHistory({
 		: [];
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-zinc-900 animate-in slide-in-from-left-5 duration-200">
+		<div className="flex flex-col h-full bg-surface animate-in slide-in-from-left-5 duration-200">
 			{/* Header Area */}
 			<div className="flex flex-col gap-4 p-4 pb-2">
 				<div className="flex items-center justify-between">
-					<h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 tracking-tight">
+					<h3 className="font-semibold text-lg text-text-primary tracking-tight">
 						对话历史
 					</h3>
 					<div className="flex items-center gap-2">
 						<button
 							onClick={onNewSession}
 							aria-label="新建对话"
-							className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95"
+							className="p-2 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-xl transition-all active:scale-95"
 							title="新建对话"
 						>
 							<Plus className="w-5 h-5" />
@@ -155,7 +155,7 @@ export function ChatHistory({
 						<button
 							onClick={onClose}
 							aria-label="关闭历史记录"
-							className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95"
+							className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all active:scale-95"
 						>
 							<X className="w-5 h-5" />
 						</button>
@@ -164,13 +164,13 @@ export function ChatHistory({
 
 				{/* Search Bar */}
 				<div className="relative group">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" />
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary transition-colors" />
 					<input
 						type="text"
 						placeholder="搜索对话..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
-						className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-transparent focus:border-zinc-200 dark:focus:border-zinc-700 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+						className="w-full pl-9 pr-4 py-2.5 bg-warm-50/50 border border-transparent focus:border-border dark:focus:border-dark-border rounded-xl text-sm text-text-primary placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 					/>
 				</div>
 			</div>
@@ -178,15 +178,15 @@ export function ChatHistory({
 			{/* Session List */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide px-3 pb-4">
 				{!hasResults ? (
-					<div className="flex flex-col items-center justify-center h-64 text-zinc-400 animate-in fade-in zoom-in-95 duration-300">
-						<div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center mb-4">
+					<div className="flex flex-col items-center justify-center h-64 text-text-light animate-in fade-in zoom-in-95 duration-300">
+						<div className="w-16 h-16 rounded-2xl bg-warm-50/50 flex items-center justify-center mb-4">
 							{searchQuery ? (
 								<Search className="w-8 h-8 opacity-40" />
 							) : (
 								<MessageSquare className="w-8 h-8 opacity-40" />
 							)}
 						</div>
-						<p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+						<p className="text-sm font-medium text-text-muted">
 							{searchQuery ? "没有找到相关对话" : "暂无对话记录"}
 						</p>
 						{searchQuery && (
@@ -203,11 +203,11 @@ export function ChatHistory({
 						{sortedEntries.map(([dateKey, dateSessions]) => (
 							<div key={dateKey} className="space-y-2">
 								<div className="flex items-center gap-2 px-2">
-									<Calendar className="w-3.5 h-3.5 text-zinc-400" />
-									<div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+									<Calendar className="w-3.5 h-3.5 text-text-light" />
+									<div className="text-xs font-medium text-text-light uppercase tracking-wider">
 										{dateKey}
 									</div>
-									<div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800" />
+									<div className="h-px flex-1 bg-warm-200" />
 								</div>
 
 								<div className="space-y-1">
@@ -228,8 +228,8 @@ export function ChatHistory({
                         group relative flex items-start gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200
                         ${
 													activeSessionId === session.id
-														? "bg-zinc-100 dark:bg-zinc-800 shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50"
-														: "hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:shadow-sm"
+														? "bg-warm-200 shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50"
+														: "hover:bg-warm-50/50 hover:shadow-sm"
 												}
                       `}
 											style={{
@@ -242,8 +242,8 @@ export function ChatHistory({
                         w-8 h-8 mt-0.5 rounded-lg flex items-center justify-center shrink-0 transition-colors
                         ${
 													activeSessionId === session.id
-														? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-														: "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"
+														? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+														: "bg-warm-200 text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light"
 												}
                       `}
 											>
@@ -254,7 +254,7 @@ export function ChatHistory({
 												<div
 													className={`
                           text-sm font-medium truncate transition-colors mb-0.5
-                          ${activeSessionId === session.id ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"}
+                          ${activeSessionId === session.id ? "text-text-primary" : "text-text-secondary group-hover:text-text-primary dark:group-hover:text-surface"}
                         `}
 												>
 													{session.title || "新对话"}
@@ -264,7 +264,7 @@ export function ChatHistory({
 														</span>
 													) : null}
 												</div>
-												<div className="text-xs text-zinc-400 truncate">
+												<div className="text-xs text-text-light truncate">
 													{session.messages[
 														session.messages.length - 1
 													]?.content.slice(0, 30) || "无消息"}
@@ -277,7 +277,7 @@ export function ChatHistory({
 													onDeleteSession(session.id);
 												}}
 												aria-label={`删除对话 ${session.title || "新对话"}`}
-												className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
+												className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
 												title="删除对话"
 											>
 												<Trash2 className="w-3.5 h-3.5" />

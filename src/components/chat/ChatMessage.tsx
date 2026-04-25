@@ -284,7 +284,7 @@ function ChatMessageImpl({
 								<AttachmentList files={message.metadata.attachedFiles} />
 							)}
 						{/* 消息气泡 */}
-						<div className="bg-[#141413] dark:bg-[#faf9f5] text-[#faf9f5] dark:text-[#141413] rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-[#30302e] dark:selection:bg-[#e8e6dc] select-text">
+						<div className="bg-text-primary text-surface rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-dark-surface dark:selection:bg-border select-text">
 							<div className="whitespace-pre-wrap break-words">
 								{message.content}
 							</div>
@@ -309,15 +309,15 @@ function ChatMessageImpl({
 										{codeBlocks.map((block, idx) => (
 											<div
 												key={idx}
-												className="flex items-center gap-1 bg-[#faf9f5] dark:bg-[#1e1d1b] rounded-lg p-1 ring-1 ring-[#e8e6dc] dark:ring-[#30302e]"
+												className="flex items-center gap-1 bg-surface rounded-lg p-1 ring-1 ring-border dark:ring-dark-surface"
 											>
-												<span className="text-[10px] text-[#87867f] px-1.5 font-mono font-medium uppercase">
+												<span className="text-[10px] text-text-muted px-1.5 font-mono font-medium uppercase">
 													{block.language || "code"}
 												</span>
-												<div className="h-3 w-px bg-[#e8e6dc] dark:bg-[#30302e]" />
+												<div className="h-3 w-px bg-warm-300" />
 												<button
 													onClick={() => handleCopyCodeBlock(idx)}
-													className="p-1.5 text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] rounded transition-colors"
+													className="p-1.5 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded transition-colors"
 													title="复制代码"
 												>
 													<Copy className="w-3 h-3" />
@@ -328,7 +328,7 @@ function ChatMessageImpl({
 													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
 														appliedBlocks.has(idx)
 															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-															: "text-[#87867f] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e]"
+															: "text-text-muted hover:text-text-primary hover:bg-warm-200"
 													}`}
 													title="应用代码到编辑器"
 												>
@@ -348,7 +348,7 @@ function ChatMessageImpl({
 									<div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
 										<button
 											onClick={handleCopy}
-											className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+											className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
 										>
 											{copied ? (
 												<Check className="w-3 h-3" />
@@ -359,7 +359,7 @@ function ChatMessageImpl({
 										</button>
 										<button
 											onClick={handleApply}
-											className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+											className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
 										>
 											<FileText className="w-3 h-3" />
 											追加
@@ -367,7 +367,7 @@ function ChatMessageImpl({
 										{onRegenerate && (
 											<button
 												onClick={() => onRegenerate(message.id)}
-												className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+												className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
 												title="重新生成此回复"
 											>
 												<RefreshCw className="w-3 h-3" />

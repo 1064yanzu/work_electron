@@ -80,7 +80,7 @@ type ChannelConfigCardProps = {
 };
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
 
 export function ChannelConfigCard({
 	channelId,
@@ -122,7 +122,7 @@ export function ChannelConfigCard({
 	}, [channelId]);
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			{/* 顶部装饰线 */}
 			<div
 				className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${accentGradient} opacity-50`}
@@ -335,14 +335,14 @@ export function ChannelConfigCard({
 				/>
 
 				{/* 运行状态 + 连通测试 */}
-				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
+				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">运行状态：</span>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
 								? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-								: "bg-zinc-500/10 text-zinc-500"
+								: "bg-warm-500/10 text-text-muted"
 						}`}
 					>
 						<span
@@ -359,7 +359,7 @@ export function ChannelConfigCard({
 						className={`font-medium ${
 							runtimeChannel?.connected
 								? "text-emerald-600 dark:text-emerald-400"
-								: "text-zinc-500"
+								: "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}

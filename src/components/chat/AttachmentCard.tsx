@@ -39,7 +39,7 @@ function getFileIcon(filename: string) {
 	}
 
 	// 默认文件图标
-	return <File className="w-4 h-4 text-zinc-400" />;
+	return <File className="w-4 h-4 text-text-light" />;
 }
 
 function formatBytes(bytes?: number): string | null {
@@ -114,8 +114,8 @@ export function AttachmentCard({
 		<div
 			className={cn(
 				"flex items-center gap-2 rounded-xl",
-				"bg-white dark:bg-zinc-800",
-				"border border-zinc-200 dark:border-zinc-700",
+				"bg-surface",
+				"border border-border",
 				"hover:border-zinc-300 dark:hover:border-zinc-600",
 				"transition-colors duration-200",
 				"cursor-default shadow-sm",
@@ -126,7 +126,7 @@ export function AttachmentCard({
 			{/* 图标容器 */}
 			<div
 				className={cn(
-					"flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-700",
+					"flex items-center justify-center rounded-lg bg-warm-200 dark:bg-zinc-700",
 					variant === "chip" ? "w-6 h-6" : "w-7 h-7",
 				)}
 			>
@@ -137,7 +137,7 @@ export function AttachmentCard({
 			<div className="min-w-0 flex-1 max-w-[180px]">
 				<div
 					className={cn(
-						"font-medium text-zinc-800 dark:text-zinc-100 truncate",
+						"font-medium text-text-primary truncate",
 						variant === "chip" ? "text-[13px]" : "text-sm",
 					)}
 				>
@@ -149,7 +149,7 @@ export function AttachmentCard({
 				<button
 					type="button"
 					onClick={onRemove}
-					className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+					className="p-1 rounded-lg hover:bg-warm-200 dark:hover:bg-zinc-700/50 text-text-light hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
 					title="移除"
 				>
 					<X className="w-4 h-4" />

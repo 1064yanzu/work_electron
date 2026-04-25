@@ -32,7 +32,7 @@ function StatusPill({
 		amber:
 			"bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
 		rose: "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400",
-		zinc: "bg-zinc-500/10 text-zinc-600 dark:bg-zinc-500/15 dark:text-zinc-400",
+		zinc: "bg-warm-500/10 text-text-secondary0/15",
 	} as const;
 
 	return (
@@ -78,7 +78,7 @@ export function RemoteControlHeader({
 	const totalChannels = runtimeStatus?.channels.length ?? 0;
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			{/* 装饰性渐变背景 */}
 			<div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-violet-500/[0.02] dark:from-primary/[0.06] dark:to-violet-500/[0.04]" />
 			<div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-bl from-primary/[0.05] to-transparent rounded-bl-full dark:from-primary/[0.08]" />
@@ -105,7 +105,7 @@ export function RemoteControlHeader({
 							className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
 								enabled
 									? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-									: "bg-zinc-500/10 text-zinc-500 dark:bg-zinc-500/15 dark:text-zinc-400"
+									: "bg-warm-500/10 text-text-muted0/15"
 							}`}
 						>
 							<span
@@ -124,28 +124,28 @@ export function RemoteControlHeader({
 				</div>
 
 				{/* 状态仪表盘 */}
-				<div className="flex items-center gap-6 rounded-xl border border-zinc-100 bg-zinc-50/50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-800/30">
+				<div className="flex items-center gap-6 rounded-xl border border-border bg-warm-50/50 px-5 py-4/30">
 					<StatusPill
 						icon={Radio}
 						label="活跃渠道"
 						value={`${connectedChannels}/${totalChannels}`}
 						tone={connectedChannels > 0 ? "emerald" : "zinc"}
 					/>
-					<div className="h-10 w-px bg-zinc-200 dark:bg-zinc-700" />
+					<div className="h-10 w-px bg-warm-300 dark:bg-zinc-700" />
 					<StatusPill
 						icon={Zap}
 						label="运行任务"
 						value={runtimeStatus?.active_runs ?? 0}
 						tone={(runtimeStatus?.active_runs ?? 0) > 0 ? "amber" : "zinc"}
 					/>
-					<div className="h-10 w-px bg-zinc-200 dark:bg-zinc-700" />
+					<div className="h-10 w-px bg-warm-300 dark:bg-zinc-700" />
 					<StatusPill
 						icon={Users}
 						label="待审配对"
 						value={runtimeStatus?.pending_pairings ?? 0}
 						tone={(runtimeStatus?.pending_pairings ?? 0) > 0 ? "rose" : "zinc"}
 					/>
-					<div className="h-10 w-px bg-zinc-200 dark:bg-zinc-700" />
+					<div className="h-10 w-px bg-warm-300 dark:bg-zinc-700" />
 					<StatusPill
 						icon={Globe}
 						label="当前模型"

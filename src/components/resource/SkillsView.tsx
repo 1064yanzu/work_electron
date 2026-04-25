@@ -112,21 +112,21 @@ export function SkillsView(_props: SkillsViewProps) {
 	return (
 		<div className="flex flex-col h-full bg-transparent">
 			{/* Header */}
-			<div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-white/[0.05]">
+			<div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-border dark:border-white/[0.05]">
 				<div className="flex items-center gap-2">
 					<Zap className="w-4 h-4 text-amber-500" />
-					<h2 className="font-semibold text-[13px] text-zinc-500 uppercase tracking-widest">
+					<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
 						Skills
 					</h2>
 				</div>
 				<div className="flex items-center gap-2">
-					<span className="text-[11px] text-zinc-400">
+					<span className="text-[11px] text-text-light">
 						{enabledCount}/{skills.length} 已启用
 					</span>
 					<button
 						onClick={handleRefresh}
 						disabled={isLoading}
-						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
 						title="刷新"
 					>
 						<RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
@@ -134,7 +134,7 @@ export function SkillsView(_props: SkillsViewProps) {
 					<button
 						onClick={handleImport}
 						disabled={isLoading}
-						className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
 						title="导入技能"
 					>
 						<FolderOpen className="w-4 h-4" />
@@ -158,18 +158,18 @@ export function SkillsView(_props: SkillsViewProps) {
 			{/* Search & Filter */}
 			<div className="px-4 py-3 flex gap-2 shrink-0">
 				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
 					<input
 						type="text"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						placeholder="搜索技能..."
-						className="w-full pl-9 pr-8 py-2 text-xs bg-zinc-100/80 dark:bg-zinc-800/50 border-none rounded-lg text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-primary/30"
+						className="w-full pl-9 pr-8 py-2 text-xs bg-warm-200/80/50 border-none rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-primary/30"
 					/>
 					{searchQuery && (
 						<button
 							onClick={() => setSearchQuery("")}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600"
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary"
 						>
 							<X className="w-3 h-3" />
 						</button>
@@ -200,8 +200,8 @@ export function SkillsView(_props: SkillsViewProps) {
 								key={skill.name}
 								className={cn(
 									"group rounded-xl border transition-all duration-200",
-									"border-zinc-100 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30",
-									"hover:border-zinc-200 dark:hover:border-zinc-700/60 hover:shadow-sm",
+									"border-border/60 bg-surface/50/30",
+									"hover:border-border/60 hover:shadow-sm",
 									isExpanded &&
 										"border-primary/20 dark:border-primary/20 shadow-sm",
 								)}
@@ -229,7 +229,7 @@ export function SkillsView(_props: SkillsViewProps) {
 									</div>
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center gap-2">
-											<span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
+											<span className="text-[13px] font-medium text-text-primary dark:text-zinc-200 truncate">
 												{skill.name}
 											</span>
 											<span
@@ -243,7 +243,7 @@ export function SkillsView(_props: SkillsViewProps) {
 												{isSystem ? "系统" : "自定义"}
 											</span>
 										</div>
-										<p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+										<p className="text-[11px] text-text-muted truncate mt-0.5">
 											{skill.description}
 										</p>
 									</div>
@@ -255,9 +255,7 @@ export function SkillsView(_props: SkillsViewProps) {
 											}}
 											className={cn(
 												"transition-colors",
-												skill.enabled
-													? "text-emerald-500"
-													: "text-zinc-300 dark:text-zinc-600",
+												skill.enabled ? "text-emerald-500" : "text-text-light",
 											)}
 											title={skill.enabled ? "点击禁用" : "点击启用"}
 										>
@@ -268,21 +266,21 @@ export function SkillsView(_props: SkillsViewProps) {
 											)}
 										</button>
 										{isExpanded ? (
-											<ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
+											<ChevronUp className="w-3.5 h-3.5 text-text-light" />
 										) : (
-											<ChevronDown className="w-3.5 h-3.5 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+											<ChevronDown className="w-3.5 h-3.5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity" />
 										)}
 									</div>
 								</div>
 
 								{/* Expanded details */}
 								{isExpanded && (
-									<div className="px-4 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/60">
-										<p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mt-3 whitespace-pre-wrap">
+									<div className="px-4 pb-3 pt-0 border-t border-border/60">
+										<p className="text-xs text-text-secondary leading-relaxed mt-3 whitespace-pre-wrap">
 											{skill.description}
 										</p>
 										<div className="flex items-center gap-3 mt-3">
-											<span className="text-[10px] text-zinc-400 font-mono truncate">
+											<span className="text-[10px] text-text-light font-mono truncate">
 												{skill.location}
 											</span>
 											{!isSystem && (
@@ -305,12 +303,12 @@ export function SkillsView(_props: SkillsViewProps) {
 				{/* Empty state */}
 				{filteredSkills.length === 0 && (
 					<div className="text-center py-10 mt-10">
-						<Zap className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
-						<p className="text-sm text-zinc-500 font-medium">
+						<Zap className="w-8 h-8 text-text-light mx-auto mb-3" />
+						<p className="text-sm text-text-muted font-medium">
 							{searchQuery ? "未找到匹配的技能" : "暂无技能"}
 						</p>
 						{!searchQuery && (
-							<p className="text-xs text-zinc-400 mt-1.5">
+							<p className="text-xs text-text-light mt-1.5">
 								点击右上角按钮导入技能文件夹
 							</p>
 						)}

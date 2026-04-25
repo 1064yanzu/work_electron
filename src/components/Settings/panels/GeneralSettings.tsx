@@ -23,13 +23,23 @@ import { type ThemeMode, themeManager } from "../../../lib/theme";
 import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
+import { ThemeColorPicker } from "../components/ThemeColorPicker";
 import { useSettingsExperience } from "../context/SettingsExperienceContext";
-import { SettingsPageContainer } from "../ui/SettingsPrimitives";
+import {
+	SettingsPageContainer,
+	SettingsRow,
+	SettingsSectionCard,
+	SettingsSectionTitle,
+	SettingsSwitch,
+} from "../ui/SettingsPrimitives";
 
 export function GeneralSettings() {
 	const { providers } = useSettingsStore();
 	const { mode, setMode } = useSettingsExperience();
 	const [theme, setTheme] = useState<ThemeMode>(themeManager.getTheme());
+	const [colorThemeId, setColorThemeId] = useState(
+		themeManager.getColorThemeId(),
+	);
 	const [language, setLanguage] = useState<string>("zh-CN");
 	const [titleModel, setTitleModel] = useState<string>("");
 	const [imageExtractionModel, setImageExtractionModel] = useState<string>("");
@@ -58,6 +68,7 @@ export function GeneralSettings() {
 		loadSettings();
 		const unsubscribe = themeManager.subscribe(() => {
 			setTheme(themeManager.getTheme());
+			setColorThemeId(themeManager.getColorThemeId());
 		});
 		return () => unsubscribe();
 	}, []);
@@ -96,6 +107,15 @@ export function GeneralSettings() {
 			await setConfig("theme", newTheme);
 		} catch (error) {
 			console.error("保存主题失败:", error);
+		}
+	};
+
+	const handleColorThemeChange = async (id: string) => {
+		themeManager.setColorTheme(id);
+		try {
+			await setConfig("colorTheme", id);
+		} catch (error) {
+			console.error("保存色彩主题失败:", error);
 		}
 	};
 
@@ -222,295 +242,297 @@ export function GeneralSettings() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 			<SettingsPanelHeader
 				icon={SettingsIcon}
 				title="常规设置"
 				description="配置应用的基础行为和外观。"
 			/>
 
-			{/* Theme */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">界面外观</h4>
-				<div className="grid grid-cols-3 gap-4">
-					<button
-						onClick={() => handleThemeChange("light")}
-						className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${
-							theme === "light"
-								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
-						}`}
-					>
-						浅色模式
-					</button>
-					<button
-						onClick={() => handleThemeChange("dark")}
-						className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${
-							theme === "dark"
-								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
-						}`}
-					>
-						深色模式
-					</button>
-					<button
-						onClick={() => handleThemeChange("system")}
-						className={`p-4 rounded-lg text-sm font-medium text-center transition-colors duration-200 cursor-pointer shadow-sm hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${
-							theme === "system"
-								? "border-2 border-primary bg-primary/5 text-primary"
-								: "border border-border hover:border-primary/40 text-text-secondary hover:text-primary"
-						}`}
-					>
-						跟随系统
-					</button>
+			{/* 界面外观 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>界面外观</SettingsSectionTitle>
+					<ThemeColorPicker
+						currentColorThemeId={colorThemeId}
+						currentMode={theme}
+						onColorThemeChange={handleColorThemeChange}
+						onModeChange={handleThemeChange}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
 
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">动效偏好</h4>
-				<Select
-					value={motionPreference}
-					onChange={(e) =>
-						handleMotionPreferenceChange(e.target.value as MotionPreference)
-					}
-					options={[
-						{ value: "system", label: "跟随系统（默认）" },
-						{ value: "standard", label: "标准动效" },
-						{ value: "reduced", label: "减少动效" },
-					]}
-				/>
-				<p className="text-xs text-text-muted">
-					减少动效会显著缩短过渡与动画时长，适合对动态效果敏感的场景。
-				</p>
-			</div>
-
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">中间栏体验</h4>
-				<div className="space-y-3">
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							默认视图
-						</label>
-						<Select
-							value={centerUxPrefs.defaultView}
-							onChange={(e) =>
-								handleCenterUxPrefsChange({
-									defaultView: e.target.value as CenterUxPrefs["defaultView"],
-								})
-							}
-							options={[
-								{ value: "graph", label: "运行图（推荐）" },
-								{ value: "preview", label: "产物预览" },
-							]}
-						/>
-					</div>
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							产物节点点击行为
-						</label>
-						<Select
-							value={centerUxPrefs.artifactClickBehavior}
-							onChange={(e) =>
-								handleCenterUxPrefsChange({
-									artifactClickBehavior: e.target
-										.value as CenterUxPrefs["artifactClickBehavior"],
-								})
-							}
-							options={[
-								{ value: "select_only", label: "仅选中节点（推荐）" },
-								{ value: "open_preview", label: "直接打开预览" },
-							]}
-						/>
-					</div>
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							信息密度
-						</label>
-						<Select
-							value={centerUxPrefs.infoDensity}
-							onChange={(e) =>
-								handleCenterUxPrefsChange({
-									infoDensity: e.target.value as CenterUxPrefs["infoDensity"],
-								})
-							}
-							options={[
-								{ value: "comfortable", label: "舒适" },
-								{ value: "compact", label: "紧凑" },
-							]}
-						/>
-					</div>
-					<div className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2.5">
-						<div>
-							<div className="text-sm font-medium text-text-primary">
-								运行图自动跟随
-							</div>
-							<div className="text-xs text-text-muted mt-0.5">
-								开启后会自动聚焦到当前活动节点
-							</div>
-						</div>
-						<button
-							type="button"
-							role="switch"
-							aria-checked={centerUxPrefs.graphFollow}
-							onClick={() =>
-								handleCenterUxPrefsChange({
-									graphFollow: !centerUxPrefs.graphFollow,
-								})
-							}
-							className={`focus-ring relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${centerUxPrefs.graphFollow ? "bg-primary" : "bg-zinc-300 dark:bg-zinc-700"}`}
-						>
-							<span
-								className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${centerUxPrefs.graphFollow ? "translate-x-6" : "translate-x-1"}`}
+			{/* 动效与显示 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>动效与显示</SettingsSectionTitle>
+					<SettingsRow
+						label="动效偏好"
+						description="减少动效会显著缩短过渡与动画时长，适合对动态效果敏感的场景。"
+						action={
+							<Select
+								value={motionPreference}
+								onChange={(e) =>
+									handleMotionPreferenceChange(e.target.value as MotionPreference)
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[160px]"
+								options={[
+									{ value: "system", label: "跟随系统（默认）" },
+									{ value: "standard", label: "标准动效" },
+									{ value: "reduced", label: "减少动效" },
+								]}
 							/>
-						</button>
-					</div>
+						}
+					/>
+					<SettingsRow
+						label="设置详细程度"
+						description="完整模式会展示更多高级设置项。"
+						action={
+							<Select
+								value={mode}
+								onChange={(e) => setMode(e.target.value as typeof mode)}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+								options={[
+									{ value: "simple", label: "默认" },
+									{ value: "geek", label: "完整" },
+								]}
+							/>
+						}
+					/>
+					<SettingsRow
+						label="语言"
+						action={
+							<Select
+								value={language}
+								onChange={(e) => handleLanguageChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+								options={[
+									{ value: "zh-CN", label: "简体中文" },
+									{ value: "en-US", label: "English" },
+								]}
+							/>
+						}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
 
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">设置显示</h4>
-				<Select
-					value={mode}
-					onChange={(e) => setMode(e.target.value as typeof mode)}
-					options={[
-						{ value: "simple", label: "默认" },
-						{ value: "geek", label: "完整" },
-					]}
-				/>
-			</div>
-
-			{/* Language */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">语言</h4>
-				<Select
-					value={language}
-					onChange={(e) => handleLanguageChange(e.target.value)}
-					options={[
-						{ value: "zh-CN", label: "简体中文" },
-						{ value: "en-US", label: "English" },
-					]}
-				/>
-			</div>
+			{/* 中间栏体验 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>中间栏体验</SettingsSectionTitle>
+					<SettingsRow
+						label="默认视图"
+						action={
+							<Select
+								value={centerUxPrefs.defaultView}
+								onChange={(e) =>
+									handleCenterUxPrefsChange({
+										defaultView: e.target.value as CenterUxPrefs["defaultView"],
+									})
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[160px]"
+								options={[
+									{ value: "graph", label: "运行图（推荐）" },
+									{ value: "preview", label: "产物预览" },
+								]}
+							/>
+						}
+					/>
+					<SettingsRow
+						label="产物节点点击行为"
+						action={
+							<Select
+								value={centerUxPrefs.artifactClickBehavior}
+								onChange={(e) =>
+									handleCenterUxPrefsChange({
+										artifactClickBehavior: e.target
+											.value as CenterUxPrefs["artifactClickBehavior"],
+									})
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[180px]"
+								options={[
+									{ value: "select_only", label: "仅选中节点（推荐）" },
+									{ value: "open_preview", label: "直接打开预览" },
+								]}
+							/>
+						}
+					/>
+					<SettingsRow
+						label="信息密度"
+						action={
+							<Select
+								value={centerUxPrefs.infoDensity}
+								onChange={(e) =>
+									handleCenterUxPrefsChange({
+										infoDensity: e.target.value as CenterUxPrefs["infoDensity"],
+									})
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+								options={[
+									{ value: "comfortable", label: "舒适" },
+									{ value: "compact", label: "紧凑" },
+								]}
+							/>
+						}
+					/>
+					<SettingsRow
+						label="运行图自动跟随"
+						description="开启后会自动聚焦到当前活动节点"
+						action={
+							<SettingsSwitch
+								checked={centerUxPrefs.graphFollow}
+								onChange={(v) =>
+									handleCenterUxPrefsChange({ graphFollow: v })
+								}
+							/>
+						}
+					/>
+				</div>
+			</SettingsSectionCard>
 
 			{/* 搜索策略 */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">搜索策略</h4>
-				<Select
-					value={searchStrategy}
-					onChange={(e) =>
-						handleSearchStrategyChange(e.target.value as SearchStrategy)
-					}
-					options={[
-						{ value: "local_first", label: "本地优先（失败或无结果再用 MCP）" },
-						{ value: "mcp_first", label: "MCP 优先（失败或无结果再用本地）" },
-						{ value: "local_only", label: "仅本地（不联网）" },
-						{ value: "mcp_only", label: "仅 MCP" },
-					]}
-				/>
-				<Select
-					value={searchMcpProvider}
-					onChange={(e) =>
-						handleSearchMcpProviderChange(e.target.value as SearchMcpProvider)
-					}
-					options={[
-						{ value: "auto", label: "自动（优先 Tavily，无则 Exa MCP）" },
-						{ value: "tavily", label: "Tavily (MCP)" },
-						{ value: "exa_mcp", label: "Exa MCP（免费）" },
-					]}
-				/>
-				{searchHealth && (
-					<p className="text-xs text-text-muted">
-						当前健康状态：{searchHealth}
-					</p>
-				)}
-			</div>
-
-			{/* AI Capabilities */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">AI 能力</h4>
-				<div className="space-y-3">
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							会话标题生成模型
-						</label>
-						<Select
-							value={titleModel}
-							onChange={(e) => handleTitleModelChange(e.target.value)}
-						>
-							<option value="">跟随当前对话模型 (默认)</option>
-							{allModels.map((model) => (
-								<option key={`${model.provider}-${model.id}`} value={model.id}>
-									{model.id} ({model.provider})
-								</option>
-							))}
-						</Select>
-						<p className="text-xs text-text-muted mt-1.5">
-							用于自动根据对话内容生成简短标题。如果未选择，将尝试使用当前对话的模型。
-						</p>
-					</div>
-
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							图像信息提取模型
-						</label>
-						<Select
-							value={imageExtractionModel}
-							onChange={(e) => handleImageExtractionModelChange(e.target.value)}
-						>
-							<option value="">跟随当前对话模型 (默认)</option>
-							{allModels.map((model) => (
-								<option key={`${model.provider}-${model.id}`} value={model.id}>
-									{model.id} ({model.provider})
-								</option>
-							))}
-						</Select>
-						<p className="text-xs text-text-muted mt-1.5">
-							用于图片导入后的信息提取与结构化整理。如果未选择，将尝试使用当前对话的模型。
-						</p>
-					</div>
-
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							Wiki 生成模型
-						</label>
-						<Select
-							value={wikiModel}
-							onChange={(e) => handleWikiModelChange(e.target.value)}
-						>
-							<option value="">跟随当前对话模型 (默认)</option>
-							{allModels.map((model) => (
-								<option
-									key={`${model.provider}-${model.id}-wiki`}
-									value={model.id}
-								>
-									{model.id} ({model.provider})
-								</option>
-							))}
-						</Select>
-						<p className="text-xs text-text-muted mt-1.5">
-							用于后续 Wiki
-							自动整理、知识地图扩写和页面生成。未选择时默认沿用当前对话模型。
-						</p>
-					</div>
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>搜索策略</SettingsSectionTitle>
+					<SettingsRow
+						label="搜索优先级"
+						action={
+							<Select
+								value={searchStrategy}
+								onChange={(e) =>
+									handleSearchStrategyChange(e.target.value as SearchStrategy)
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[240px]"
+								options={[
+									{ value: "local_first", label: "本地优先（失败再用 MCP）" },
+									{ value: "mcp_first", label: "MCP 优先（失败再用本地）" },
+									{ value: "local_only", label: "仅本地（不联网）" },
+									{ value: "mcp_only", label: "仅 MCP" },
+								]}
+							/>
+						}
+					/>
+					<SettingsRow
+						label="MCP 搜索引擎"
+						action={
+							<Select
+								value={searchMcpProvider}
+								onChange={(e) =>
+									handleSearchMcpProviderChange(e.target.value as SearchMcpProvider)
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[240px]"
+								options={[
+									{ value: "auto", label: "自动（优先 Tavily）" },
+									{ value: "tavily", label: "Tavily (MCP)" },
+									{ value: "exa_mcp", label: "Exa MCP（免费）" },
+								]}
+							/>
+						}
+					/>
+					{searchHealth && (
+						<div className="mt-2 px-1">
+							<p className="text-xs text-text-muted">
+								当前健康状态：{searchHealth}
+							</p>
+						</div>
+					)}
 				</div>
-			</div>
+			</SettingsSectionCard>
 
-			{/* Update */}
-			<div className="pt-4 border-t border-border">
-				<div className="flex items-center justify-between">
-					<div>
-						<div className="font-medium text-text-primary">当前版本</div>
-						<div className="text-xs text-text-muted">v0.1.0-alpha</div>
-					</div>
-					<button
-						onClick={handleCheckUpdate}
-						disabled={isCheckingUpdate}
-						className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-white hover:text-primary hover:border-primary transition-all disabled:opacity-50"
-					>
-						{isCheckingUpdate ? "检查中..." : "检查更新"}
-					</button>
+			{/* AI 能力 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>AI 能力</SettingsSectionTitle>
+					<SettingsRow
+						label="会话标题生成模型"
+						description="用于自动根据对话内容生成简短标题。未选择时使用当前对话模型。"
+						action={
+							<Select
+								value={titleModel}
+								onChange={(e) => handleTitleModelChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[200px]"
+							>
+								<option value="">跟随对话模型（默认）</option>
+								{allModels.map((model) => (
+									<option key={`${model.provider}-${model.id}`} value={model.id}>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
+						}
+					/>
+					<SettingsRow
+						label="图像信息提取模型"
+						description="用于图片导入后的信息提取与结构化整理。"
+						action={
+							<Select
+								value={imageExtractionModel}
+								onChange={(e) => handleImageExtractionModelChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[200px]"
+							>
+								<option value="">跟随对话模型（默认）</option>
+								{allModels.map((model) => (
+									<option key={`${model.provider}-${model.id}`} value={model.id}>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
+						}
+					/>
+					<SettingsRow
+						label="Wiki 生成模型"
+						description="用于 Wiki 自动整理、知识地图扩写和页面生成。"
+						action={
+							<Select
+								value={wikiModel}
+								onChange={(e) => handleWikiModelChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[200px]"
+							>
+								<option value="">跟随对话模型（默认）</option>
+								{allModels.map((model) => (
+									<option
+										key={`${model.provider}-${model.id}-wiki`}
+										value={model.id}
+									>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
+						}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
+
+			{/* 版本信息 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>关于</SettingsSectionTitle>
+					<SettingsRow
+						label="当前版本"
+						value="v0.1.0-alpha"
+						action={
+							<button
+								onClick={handleCheckUpdate}
+								disabled={isCheckingUpdate}
+								className="px-4 py-1.5 text-xs font-medium bg-warm-200 hover:bg-warm-300 text-text-secondary rounded-lg transition-colors disabled:opacity-50"
+							>
+								{isCheckingUpdate ? "检查中..." : "检查更新"}
+							</button>
+						}
+					/>
+				</div>
+			</SettingsSectionCard>
 		</SettingsPageContainer>
 	);
 }

@@ -80,7 +80,7 @@ export default function SourceReadView({
 
 		// 无内容
 		return (
-			<div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+			<div className="flex flex-col items-center justify-center py-20 text-text-light">
 				<BookOpen className="w-12 h-12 mb-4 opacity-50" />
 				<p className="text-lg">暂无内容</p>
 			</div>
@@ -88,18 +88,18 @@ export default function SourceReadView({
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-zinc-900">
+		<div className="flex flex-col h-full bg-surface">
 			{/* 顶部标题栏 */}
-			<div className="shrink-0 px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+			<div className="shrink-0 px-6 py-4 border-b border-border flex items-center justify-between">
 				<div className="flex items-center gap-3 min-w-0">
-					<BookOpen className="w-5 h-5 text-zinc-400 shrink-0" />
-					<h1 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+					<BookOpen className="w-5 h-5 text-text-light shrink-0" />
+					<h1 className="text-lg font-semibold text-text-primary truncate">
 						{title}
 					</h1>
 				</div>
 				<button
 					onClick={onClose}
-					className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+					className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 					title="关闭"
 				>
 					<X className="w-5 h-5" />

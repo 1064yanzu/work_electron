@@ -22,11 +22,11 @@ function Section({
 	return (
 		<section
 			className={cn(
-				"rounded-xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white/70 dark:bg-zinc-900/50 p-2.5",
+				"rounded-xl border border-border/70/60 bg-surface/70/50 p-2.5",
 				className,
 			)}
 		>
-			<div className="text-[11px] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+			<div className="text-[11px] font-semibold tracking-wide text-text-muted uppercase mb-2">
 				{title}
 			</div>
 			{children}
@@ -48,7 +48,7 @@ export function ToolCallDetailsPanel({
 					<button
 						type="button"
 						onClick={onPreviewFile}
-						className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-2.5 py-1.5 text-[11px] font-medium hover:opacity-90 transition-opacity"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-dark-muted text-white px-2.5 py-1.5 text-[11px] font-medium hover:opacity-90 transition-opacity"
 					>
 						<Eye className="w-3.5 h-3.5" />
 						预览文件
@@ -61,8 +61,8 @@ export function ToolCallDetailsPanel({
 					<div className="space-y-1.5">
 						{Object.entries(input).map(([key, value]) => (
 							<div key={key} className="text-[11px] leading-relaxed">
-								<div className="text-zinc-500 dark:text-zinc-400">{key}</div>
-								<div className="mt-1 rounded-md bg-zinc-100/70 dark:bg-zinc-800/60 p-2 text-zinc-700 dark:text-zinc-200 break-all whitespace-pre-wrap">
+								<div className="text-text-muted">{key}</div>
+								<div className="mt-1 rounded-md bg-warm-200/70/60 p-2 text-text-secondary dark:text-zinc-200 break-all whitespace-pre-wrap">
 									{typeof value === "string"
 										? value
 										: JSON.stringify(value, null, 2)}

@@ -143,8 +143,8 @@ export function SlashCommandChip({
 					className={`
 						p-0.5 rounded transition-all flex-shrink-0 ml-0.5
 						${isHovered ? "opacity-100 w-4 scale-100" : "opacity-0 w-0 scale-50 overflow-hidden"}
-						text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300
-						hover:bg-black/5 dark:hover:bg-white/10
+						text-text-light hover:text-text-secondary dark:hover:text-text-light
+						hover:bg-black/5 dark:hover:bg-surface/10
 					`}
 					title="移除"
 				>

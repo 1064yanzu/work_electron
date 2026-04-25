@@ -123,7 +123,7 @@ export function DashboardSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-white p-8 overflow-y-auto">
+		<div className="flex-1 h-full bg-surface p-8 overflow-y-auto">
 			<div className="max-w-4xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
 					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
@@ -151,7 +151,7 @@ export function DashboardSettings() {
 								<BarChart3 className="w-4 h-4" />
 								活跃度
 							</h4>
-							<div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+							<div className="p-6 bg-surface border border-border rounded-2xl shadow-sm">
 								<ActivityHeatmap data={activityData} />
 							</div>
 						</div>
@@ -168,7 +168,7 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 			{/* 资料 (Sources) - 输入端 */}
-			<div className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
 				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
 					<Layers className="w-16 h-16 text-blue-500" />
 				</div>
@@ -177,21 +177,21 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 						<div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
 							<Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
 						</div>
-						<span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+						<span className="text-sm font-medium text-text-secondary">
 							知识来源
 						</span>
 					</div>
 					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
+						<span className="text-3xl font-mono font-bold text-text-primary">
 							{(stats.sources_count ?? 0).toLocaleString()}
 						</span>
-						<span className="text-xs text-zinc-400">个文件</span>
+						<span className="text-xs text-text-light">个文件</span>
 					</div>
 				</div>
 			</div>
 
 			{/* 笔记 (Notes) - 沉淀端 */}
-			<div className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm relative overflow-hidden group hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
+			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
 				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
 					<FileText className="w-16 h-16 text-emerald-500" />
 				</div>
@@ -200,21 +200,21 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 						<div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
 							<FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
 						</div>
-						<span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+						<span className="text-sm font-medium text-text-secondary">
 							原子笔记
 						</span>
 					</div>
 					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
+						<span className="text-3xl font-mono font-bold text-text-primary">
 							{(stats.notes_count ?? 0).toLocaleString()}
 						</span>
-						<span className="text-xs text-zinc-400">篇</span>
+						<span className="text-xs text-text-light">篇</span>
 					</div>
 				</div>
 			</div>
 
 			{/* 输出 (Outputs) - 产出端 */}
-			<div className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm relative overflow-hidden group hover:border-orange-200 dark:hover:border-orange-800 transition-colors">
+			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-orange-200 dark:hover:border-orange-800 transition-colors">
 				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
 					<FileOutput className="w-16 h-16 text-orange-500" />
 				</div>
@@ -223,15 +223,15 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 						<div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
 							<FileOutput className="w-4 h-4 text-orange-600 dark:text-orange-400" />
 						</div>
-						<span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+						<span className="text-sm font-medium text-text-secondary">
 							创作产出
 						</span>
 					</div>
 					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
+						<span className="text-3xl font-mono font-bold text-text-primary">
 							{(stats.outputs_count ?? 0).toLocaleString()}
 						</span>
-						<span className="text-xs text-zinc-400">文章</span>
+						<span className="text-xs text-text-light">文章</span>
 					</div>
 				</div>
 			</div>
@@ -264,15 +264,15 @@ function TokenUsagePanel({
 					<Zap className="w-4 h-4 text-indigo-500" />
 					Token 消耗
 				</h4>
-				<div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+				<div className="flex bg-warm-200 p-1 rounded-lg">
 					{(["today", "week", "month", "all"] as const).map((p) => (
 						<button
 							key={p}
 							onClick={() => setPeriod(p)}
 							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
 								period === p
-									? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+									? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 							}`}
 						>
 							{p === "today" && "今日"}
@@ -284,34 +284,32 @@ function TokenUsagePanel({
 				</div>
 			</div>
 
-			<div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+			<div className="p-6 bg-surface border border-border rounded-2xl shadow-sm">
 				<div className="flex items-end justify-between mb-6">
 					<div>
-						<div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">
-							总消耗 Tokens
-						</div>
-						<div className="text-4xl font-mono font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+						<div className="text-sm text-text-muted mb-1">总消耗 Tokens</div>
+						<div className="text-4xl font-mono font-bold text-text-primary tracking-tight">
 							{currentStats.total.toLocaleString()}
 						</div>
 					</div>
 					<div className="text-right">
-						<div className="text-xs text-zinc-400 dark:text-zinc-500 mb-1">
+						<div className="text-xs text-text-light mb-1">
 							{hasRealCost ? "实际花费" : "预估花费"}
 						</div>
-						<div className="text-lg font-mono font-medium text-zinc-700 dark:text-zinc-300">
+						<div className="text-lg font-mono font-medium text-text-secondary">
 							$
 							{hasRealCost
 								? currentStats.cost.toFixed(4)
 								: (currentStats.total * 0.000002).toFixed(4)}
 							{!hasRealCost && (
-								<span className="text-[10px] text-zinc-400 ml-1">(估算)</span>
+								<span className="text-[10px] text-text-light ml-1">(估算)</span>
 							)}
 						</div>
 					</div>
 				</div>
 
 				{/* 进度条可视化 */}
-				<div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex mb-6">
+				<div className="h-3 w-full bg-warm-200 rounded-full overflow-hidden flex mb-6">
 					<div
 						className="h-full bg-emerald-500/80 transition-all duration-500 ease-out"
 						style={{ width: `${promptPercent}%` }}
@@ -326,35 +324,35 @@ function TokenUsagePanel({
 				<div
 					className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}
 				>
-					<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+					<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
 						<div className="flex items-center gap-2 mb-2">
 							<div className="w-2 h-2 rounded-full bg-emerald-500" />
-							<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+							<span className="text-xs font-medium text-text-muted">
 								输入 (Prompt)
 							</span>
 						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+							<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
 								{formatTokenCount(currentStats.prompt)}
 							</span>
-							<span className="text-xs text-zinc-400">
+							<span className="text-xs text-text-light">
 								{promptPercent.toFixed(1)}%
 							</span>
 						</div>
 					</div>
 
-					<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+					<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
 						<div className="flex items-center gap-2 mb-2">
 							<div className="w-2 h-2 rounded-full bg-orange-500" />
-							<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+							<span className="text-xs font-medium text-text-muted">
 								输出 (Completion)
 							</span>
 						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+							<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
 								{formatTokenCount(currentStats.completion)}
 							</span>
-							<span className="text-xs text-zinc-400">
+							<span className="text-xs text-text-light">
 								{completionPercent.toFixed(1)}%
 							</span>
 						</div>
@@ -362,28 +360,28 @@ function TokenUsagePanel({
 
 					{hasCacheData && (
 						<>
-							<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+							<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
 								<div className="flex items-center gap-2 mb-2">
 									<div className="w-2 h-2 rounded-full bg-blue-500" />
-									<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+									<span className="text-xs font-medium text-text-muted">
 										Cache 命中
 									</span>
 								</div>
 								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+									<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
 										{formatTokenCount(currentStats.cacheRead)}
 									</span>
 								</div>
 							</div>
-							<div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+							<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
 								<div className="flex items-center gap-2 mb-2">
 									<div className="w-2 h-2 rounded-full bg-violet-500" />
-									<span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+									<span className="text-xs font-medium text-text-muted">
 										Cache 创建
 									</span>
 								</div>
 								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+									<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
 										{formatTokenCount(currentStats.cacheCreation)}
 									</span>
 								</div>

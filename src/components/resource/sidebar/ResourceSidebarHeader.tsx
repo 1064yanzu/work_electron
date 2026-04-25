@@ -35,13 +35,11 @@ export function ResourceSidebarHeader({
 	onToggleSelectionMode,
 }: ResourceSidebarHeaderProps) {
 	return (
-		<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+		<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 			<div className="flex items-center gap-3">
 				<div className="flex items-center gap-2">
-					<BookOpen className="w-4 h-4 text-zinc-400" />
-					<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
-						资料库
-					</h2>
+					<BookOpen className="w-4 h-4 text-text-light" />
+					<h2 className="font-semibold text-sm text-text-primary">资料库</h2>
 				</div>
 				{viewTabs}
 			</div>
@@ -101,7 +99,7 @@ export function ResourceSidebarHeader({
 					className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium focus-ring cursor-pointer ${
 						selectionMode
 							? "text-primary bg-primary/10"
-							: "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+							: "text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200"
 					}`}
 				>
 					{selectionMode ? (

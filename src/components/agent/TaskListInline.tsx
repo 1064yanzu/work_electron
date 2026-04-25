@@ -90,7 +90,7 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 
 	return (
 		<div className="my-3">
-			<div className="rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-zinc-200/80 dark:ring-zinc-800 shadow-sm overflow-hidden">
+			<div className="rounded-xl bg-warm-50 ring-1 ring-zinc-200/80 dark:ring-zinc-800 shadow-sm overflow-hidden">
 				<button
 					type="button"
 					onClick={() => setExpanded((v) => !v)}
@@ -98,14 +98,14 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 				>
 					<div className="flex items-center gap-2 min-w-0">
 						<ListTodo className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-						<div className="text-sm font-medium text-zinc-700 dark:text-zinc-200 truncate">
+						<div className="text-sm font-medium text-text-secondary dark:text-zinc-200 truncate">
 							<span className="tabular-nums">
 								{completedCount}/{totalCount}
 							</span>{" "}
 							已完成
 						</div>
 					</div>
-					<div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
+					<div className="flex items-center gap-1.5 text-text-light">
 						{expanded ? (
 							<ChevronUp className="w-4 h-4" />
 						) : (
@@ -115,7 +115,7 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 				</button>
 
 				{expanded ? (
-					<div className="px-4 pb-3 pt-1 border-t border-zinc-200/70 dark:border-zinc-800">
+					<div className="px-4 pb-3 pt-1 border-t border-border/70">
 						<div className="flex flex-col gap-2">
 							{items.map((t, idx) => {
 								const uiStatus = statusToUi(t.status);
@@ -132,15 +132,15 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 											) : done ? (
 												<CheckCircle2 className="w-5 h-5 text-emerald-500" />
 											) : (
-												<Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+												<Circle className="w-5 h-5 text-text-light" />
 											)}
 										</div>
 										<div
 											className={[
 												"flex-1 min-w-0 text-sm leading-6",
 												done
-													? "text-zinc-400 dark:text-zinc-500 line-through"
-													: "text-zinc-800 dark:text-zinc-100",
+													? "text-text-light line-through"
+													: "text-text-primary",
 											].join(" ")}
 										>
 											{t.content}
@@ -151,9 +151,7 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 						</div>
 
 						{allDone ? (
-							<div className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
-								任务已全部完成
-							</div>
+							<div className="mt-2 text-xs text-text-light">任务已全部完成</div>
 						) : null}
 					</div>
 				) : null}

@@ -79,7 +79,7 @@ export function DiscordQuickSetup({
 				</div>
 			</div>
 
-			<div className="rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:border-zinc-800 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-2xl border border-border/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:from-zinc-900/60 dark:to-zinc-900">
 				<StepBlock
 					index={1}
 					icon={Bot}
@@ -117,12 +117,12 @@ export function DiscordQuickSetup({
 						}}
 						placeholder="MT..."
 						className={cn(
-							"w-full rounded-xl border bg-white px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 dark:bg-zinc-900",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 							tokenValid
 								? "border-emerald-400 ring-2 ring-emerald-400/20"
 								: trimmed
 									? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
-									: "border-zinc-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700",
+									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 						)}
 					/>
 					{tokenValid ? (
@@ -143,7 +143,7 @@ export function DiscordQuickSetup({
 						value={appId}
 						onChange={(e) => setAppId(e.target.value)}
 						placeholder="应用 ID（可选）"
-						className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900"
+						className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
 					/>
 				</StepBlock>
 			</div>

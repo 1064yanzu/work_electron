@@ -123,7 +123,7 @@ export function ResourceModals({
 				title="新建文件夹"
 			>
 				<div className="space-y-4">
-					<div className="text-xs text-zinc-500">
+					<div className="text-xs text-text-muted">
 						{currentFolderId && currentFolderId !== UNASSIGNED_FOLDER_ID
 							? `父文件夹：${foldersById.get(currentFolderId)?.name || "（未知）"}`
 							: "父文件夹：根目录"}
@@ -132,7 +132,7 @@ export function ResourceModals({
 						type="text"
 						value={newFolderName}
 						onChange={(e) => setNewFolderName(e.target.value)}
-						className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-base font-medium placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
 						placeholder="输入文件夹名称..."
 						autoFocus
 						onKeyDown={(e) => {
@@ -142,14 +142,14 @@ export function ResourceModals({
 					<div className="flex items-center justify-end gap-2">
 						<button
 							onClick={() => setIsFolderModalOpen(false)}
-							className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleCreateFolder}
 							disabled={!newFolderName.trim()}
-							className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							创建
 						</button>
@@ -164,7 +164,7 @@ export function ResourceModals({
 				title="移动到文件夹"
 			>
 				<div className="space-y-4">
-					<div className="text-xs text-zinc-500">
+					<div className="text-xs text-text-muted">
 						将 {selectedIds.length} 条资料移动到：
 					</div>
 					<Select
@@ -181,14 +181,14 @@ export function ResourceModals({
 					<div className="flex items-center justify-end gap-2">
 						<button
 							onClick={() => setIsMoveFolderModalOpen(false)}
-							className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleMoveSelectedToFolder}
 							disabled={!selectedIds.length}
-							className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							移动
 						</button>
@@ -211,7 +211,7 @@ export function ResourceModals({
 						type="text"
 						value={renameFolderName}
 						onChange={(e) => setRenameFolderName(e.target.value)}
-						className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-base font-medium placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
 						placeholder="输入新名称..."
 						autoFocus
 						onKeyDown={(e) => {
@@ -225,14 +225,14 @@ export function ResourceModals({
 								setRenameFolderTarget(null);
 								setRenameFolderName("");
 							}}
-							className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleRenameFolder}
 							disabled={!renameFolderName.trim()}
-							className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							确认
 						</button>
@@ -251,7 +251,7 @@ export function ResourceModals({
 				title="移动文件夹"
 			>
 				<div className="space-y-4">
-					<div className="text-xs text-zinc-500">
+					<div className="text-xs text-text-muted">
 						将「{moveFolderSource?.name}」移动到：
 					</div>
 					<Select
@@ -274,13 +274,13 @@ export function ResourceModals({
 								setMoveFolderSource(null);
 								setMoveFolderToTargetId("");
 							}}
-							className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleMoveFolderTo}
-							className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90"
+							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90"
 						>
 							移动
 						</button>
@@ -298,10 +298,10 @@ export function ResourceModals({
 				title="移动到文件夹"
 			>
 				<div className="space-y-4">
-					<div className="text-xs text-zinc-500 dark:text-zinc-400">
+					<div className="text-xs text-text-muted">
 						将「{singleSourceMoveModal?.title}」移动到：
 					</div>
-					<div className="max-h-[300px] overflow-y-auto border border-zinc-200 dark:border-zinc-700 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/30">
+					<div className="max-h-[300px] overflow-y-auto border border-border rounded-xl bg-warm-50/50/30">
 						<div className="p-2 space-y-1">
 							{/* 未归类选项 */}
 							<button
@@ -311,7 +311,7 @@ export function ResourceModals({
 								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
 										? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-										: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+										: "hover:bg-warm-200 dark:hover:bg-zinc-700 text-text-secondary"
 								}`}
 							>
 								<FolderIcon className="w-4 h-4 shrink-0" />
@@ -325,7 +325,7 @@ export function ResourceModals({
 									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 										singleSourceMoveTargetId === opt.id
 											? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-											: "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+											: "hover:bg-warm-200 dark:hover:bg-zinc-700 text-text-secondary"
 									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
@@ -343,13 +343,13 @@ export function ResourceModals({
 								setSingleSourceMoveModal(null);
 								setSingleSourceMoveTargetId("");
 							}}
-							className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleSingleSourceMove}
-							className="px-4 py-2 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity font-medium"
+							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
 						>
 							移动
 						</button>
@@ -365,15 +365,15 @@ export function ResourceModals({
 			>
 				<div className="space-y-4">
 					{/* Tabs */}
-					<div className="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+					<div className="flex p-1 bg-warm-200 rounded-lg">
 						{(["web", "text", "file"] as const).map((tab) => (
 							<button
 								key={tab}
 								onClick={() => setActiveTab(tab)}
 								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
 									activeTab === tab
-										? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-800 dark:text-zinc-100"
-										: "text-zinc-500"
+										? "bg-surface dark:bg-zinc-700 shadow-sm text-text-primary"
+										: "text-text-muted"
 								}`}
 							>
 								{tab === "web" ? "网页" : tab === "text" ? "笔记" : "文件"}
@@ -385,7 +385,7 @@ export function ResourceModals({
 						type="text"
 						value={newSourceTitle}
 						onChange={(e) => setNewSourceTitle(e.target.value)}
-						className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-base font-medium placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
 						placeholder="输入标题..."
 					/>
 
@@ -394,7 +394,7 @@ export function ResourceModals({
 							type="url"
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-sm font-mono placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm font-mono placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
 							placeholder="https://..."
 						/>
 					)}
@@ -403,13 +403,13 @@ export function ResourceModals({
 						<textarea
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 leading-relaxed"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 leading-relaxed"
 							placeholder="输入内容..."
 						/>
 					)}
 
 					{activeTab === "file" && (
-						<div className="border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl p-8 text-center hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors relative group">
+						<div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-warm-50/50 transition-colors relative group">
 							<input
 								type="file"
 								accept=".txt,.md,.markdown,.json,.csv,.html,.htm,.xml,.yaml,.yml,.toml,.rst,.log,.conf,.ini,.rtf,.pdf,.docx,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,.svg"
@@ -426,13 +426,13 @@ export function ResourceModals({
 									reader.readAsText(file);
 								}}
 							/>
-							<div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-								<Paperclip className="w-5 h-5 text-zinc-400" />
+							<div className="w-12 h-12 rounded-full bg-warm-200 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+								<Paperclip className="w-5 h-5 text-text-light" />
 							</div>
-							<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+							<p className="text-sm font-medium text-text-secondary">
 								{selectedFile ? selectedFile.name : "点击或拖拽文件上传"}
 							</p>
-							<p className="text-xs text-zinc-400 mt-1">
+							<p className="text-xs text-text-light mt-1">
 								支持文本、PDF、Word、图片等常见格式
 							</p>
 						</div>
@@ -441,13 +441,13 @@ export function ResourceModals({
 					<div className="flex justify-end gap-2 pt-4">
 						<button
 							onClick={() => setIsAddModalOpen(false)}
-							className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleCreateSource}
-							className="px-6 py-2 bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-black text-sm font-medium rounded-lg shadow-sm transition-colors"
+							className="px-6 py-2 bg-black hover:bg-dark-surface text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
 						>
 							创建文档
 						</button>

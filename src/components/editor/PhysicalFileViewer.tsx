@@ -21,7 +21,7 @@ export const PhysicalFileViewer = memo(function PhysicalFileViewer({
 }: PhysicalFileViewerProps) {
 	const isPdf = /\.pdf$/i.test(fileName);
 	return (
-		<div className="h-full overflow-y-auto scrollbar-hide bg-white/72 dark:bg-zinc-950/35">
+		<div className="h-full overflow-y-auto scrollbar-hide bg-surface/72/35">
 			<div
 				className={cn(
 					"mx-auto",

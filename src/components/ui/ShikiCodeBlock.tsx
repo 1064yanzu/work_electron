@@ -41,7 +41,7 @@ function ShikiCodeBlockInner({
 		<div
 			className={cn(
 				"relative group my-3 rounded-xl overflow-hidden ring-1",
-				isDark ? "ring-zinc-800 bg-[#0d1117]" : "ring-zinc-200 bg-white",
+				isDark ? "ring-zinc-800 bg-[#0d1117]" : "ring-zinc-200 bg-surface",
 				className,
 			)}
 		>
@@ -50,8 +50,8 @@ function ShikiCodeBlockInner({
 				className={cn(
 					"flex items-center justify-between px-4 py-2 text-xs border-b",
 					isDark
-						? "border-zinc-800 text-zinc-500"
-						: "border-zinc-100 text-zinc-400",
+						? "border-dark-border text-text-muted"
+						: "border-border text-text-light",
 				)}
 			>
 				<span className="font-mono">{language || "text"}</span>
@@ -61,8 +61,8 @@ function ShikiCodeBlockInner({
 					className={cn(
 						"flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors",
 						isDark
-							? "hover:bg-zinc-800 hover:text-zinc-300"
-							: "hover:bg-zinc-100 hover:text-zinc-600",
+							? "hover:bg-dark-surface hover:text-text-light"
+							: "hover:bg-warm-200 hover:text-text-secondary",
 						copied && "text-emerald-500",
 					)}
 				>
@@ -93,7 +93,7 @@ function ShikiCodeBlockInner({
 					<pre
 						className={cn(
 							"p-4 text-sm font-mono leading-6",
-							isDark ? "text-zinc-300" : "text-zinc-700",
+							isDark ? "text-text-light" : "text-text-secondary",
 						)}
 					>
 						<code>{code}</code>
@@ -112,7 +112,7 @@ function ShikiCodeBlockInner({
 									<span
 										className={cn(
 											"inline-block w-10 flex-shrink-0 select-none pr-4 text-right",
-											isDark ? "text-zinc-600" : "text-zinc-400",
+											isDark ? "text-text-secondary" : "text-text-light",
 										)}
 									>
 										{lineIdx + 1}
@@ -137,7 +137,7 @@ function ShikiCodeBlockInner({
 									<span
 										className={cn(
 											"inline-block w-10 flex-shrink-0 select-none pr-4 text-right",
-											isDark ? "text-zinc-600" : "text-zinc-400",
+											isDark ? "text-text-secondary" : "text-text-light",
 										)}
 									>
 										{tokens.length + 1}

@@ -59,7 +59,7 @@ export function RemoteTabNav({
 		<div
 			ref={containerRef}
 			className={cn(
-				"relative flex items-center gap-1 rounded-2xl border border-zinc-200/70 bg-white/80 p-1 shadow-[0_1px_4px_rgba(0,0,0,0.03)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60",
+				"relative flex items-center gap-1 rounded-2xl border border-border/70 bg-surface/80 p-1 shadow-[0_1px_4px_rgba(0,0,0,0.03)] backdrop-blur/60",
 				className,
 			)}
 		>
@@ -79,7 +79,7 @@ export function RemoteTabNav({
 							? "bg-rose-500 text-white"
 							: tab.badgeTone === "amber"
 								? "bg-amber-500 text-white"
-								: "bg-zinc-300 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200";
+								: "bg-zinc-300 text-text-secondary dark:bg-zinc-700 dark:text-zinc-200";
 				return (
 					<button
 						key={tab.key}

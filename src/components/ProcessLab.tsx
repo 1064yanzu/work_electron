@@ -201,7 +201,7 @@ export default function ProcessLab() {
 						{nodes.map((node) => (
 							<div
 								key={node.id}
-								className="bg-white dark:bg-gray-700 rounded-xl border border-border dark:border-gray-600 shadow-sm p-6 hover:shadow-md hover:border-primary/20 transition-all group"
+								className="bg-surface dark:bg-gray-700 rounded-xl border border-border dark:border-gray-600 shadow-sm p-6 hover:shadow-md hover:border-primary/20 transition-all group"
 							>
 								<div className="flex items-center gap-4 mb-4">
 									<div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-primary border border-border">
@@ -243,7 +243,7 @@ export default function ProcessLab() {
 				)}
 			</div>
 
-			<div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-border dark:border-gray-700 shrink-0">
+			<div className="p-4 bg-surface/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-border dark:border-gray-700 shrink-0">
 				<div className="max-w-3xl mx-auto space-y-4">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="flex flex-col gap-1">
@@ -267,7 +267,7 @@ export default function ProcessLab() {
 											className="fixed inset-0 z-10"
 											onClick={() => setIsModelMenuOpen(false)}
 										/>
-										<div className="absolute left-0 top-full mt-2 z-20 w-64 bg-white border border-border rounded-xl shadow-xl overflow-hidden">
+										<div className="absolute left-0 top-full mt-2 z-20 w-64 bg-surface border border-border rounded-xl shadow-xl overflow-hidden">
 											<div className="px-3 py-2 text-xs font-medium text-text-muted bg-surface border-b border-border">
 												选择模型
 											</div>

@@ -25,18 +25,18 @@ export function EditorDialogs({
 		<>
 			{showBulkDeleteConfirm ? (
 				<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							确认批量删除
 						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+						<p className="text-sm text-text-muted mb-6">
 							确定要删除选中的 {selectedForManageCount}{" "}
 							篇文档吗？此操作无法撤销。
 						</p>
 						<div className="flex justify-end gap-2">
 							<button
 								onClick={onCloseBulkDeleteConfirm}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>
@@ -54,18 +54,18 @@ export function EditorDialogs({
 
 			{deleteConfirm ? (
 				<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							确认删除
 						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+						<p className="text-sm text-text-muted mb-6">
 							确定要删除「{deleteConfirm.title || "未命名文档"}
 							」吗？此操作无法撤销。
 						</p>
 						<div className="flex justify-end gap-2">
 							<button
 								onClick={onCloseDeleteConfirm}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>

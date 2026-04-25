@@ -133,7 +133,7 @@ export function WebdavBackupManager({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
-			<div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[80vh] flex flex-col animate-scale-in">
+			<div className="w-full max-w-3xl bg-surface dark:bg-gray-800 rounded-lg shadow-xl max-h-[80vh] flex flex-col animate-scale-in">
 				{/* Header */}
 				<div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
 					<h2 className="text-lg font-semibold">WebDAV 备份管理</h2>

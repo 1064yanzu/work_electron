@@ -71,7 +71,8 @@ export function SettingsModal({
 				}}
 			>
 				<FocusTrap
-					className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-[28px] bg-white/95 dark:bg-zinc-950/95 shadow-2xl border border-border overflow-hidden flex ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+					className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-[28px] shadow-2xl border border-border overflow-hidden flex transition-colors duration-300 ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+					style={{ backgroundColor: "var(--t-bg-surface)" }}
 					onEscape={handleClose}
 					initialFocusRef={closeButtonRef}
 					role="dialog"
@@ -86,7 +87,10 @@ export function SettingsModal({
 						}
 					/>
 
-					<main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-zinc-950">
+					<main
+						className="flex-1 flex flex-col min-w-0 overflow-hidden relative transition-colors duration-300"
+						style={{ backgroundColor: "var(--t-bg-surface)" }}
+					>
 						<button
 							ref={closeButtonRef}
 							onClick={handleClose}

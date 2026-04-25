@@ -153,7 +153,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 					{/* 信息 */}
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							<span className="font-medium text-zinc-800 dark:text-zinc-200">
+							<span className="font-medium text-text-primary dark:text-zinc-200">
 								{toolName}
 							</span>
 							<span
@@ -163,13 +163,13 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 								{riskConfig.label}
 							</span>
 						</div>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">
+						<p className="text-sm text-text-muted">
 							请求执行此工具，需要您的确认
 						</p>
 					</div>
 
 					{/* 倒计时 */}
-					<div className="flex items-center gap-1 text-sm text-zinc-400">
+					<div className="flex items-center gap-1 text-sm text-text-light">
 						<Clock className="w-4 h-4" />
 						<span>{remainingTime}s</span>
 					</div>
@@ -179,7 +179,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 				<div className="mt-3">
 					<button
 						onClick={() => setExpanded(!expanded)}
-						className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+						className="flex items-center gap-1 text-sm text-text-muted hover:text-text-secondary dark:hover:text-text-light transition-colors"
 					>
 						{expanded ? (
 							<ChevronUp className="w-4 h-4" />
@@ -189,7 +189,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						查看参数
 					</button>
 					{expanded && (
-						<pre className="mt-2 p-3 rounded-lg bg-black/5 dark:bg-white/5 text-xs text-zinc-600 dark:text-zinc-400 overflow-x-auto max-h-40 overflow-y-auto">
+						<pre className="mt-2 p-3 rounded-lg bg-black/5/5 text-xs text-text-secondary overflow-x-auto max-h-40 overflow-y-auto">
 							{request.inputPreview}
 						</pre>
 					)}
@@ -238,7 +238,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						onChange={(e) => setRememberForSession(e.target.checked)}
 						className="rounded border-zinc-300 dark:border-zinc-600"
 					/>
-					<span className="text-zinc-600 dark:text-zinc-400">本次会话记住</span>
+					<span className="text-text-secondary">本次会话记住</span>
 				</label>
 				<label className="flex items-center gap-2 cursor-pointer">
 					<input
@@ -247,7 +247,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						onChange={(e) => setRememberForTool(e.target.checked)}
 						className="rounded border-zinc-300 dark:border-zinc-600"
 					/>
-					<span className="text-zinc-600 dark:text-zinc-400">对此工具记住</span>
+					<span className="text-text-secondary">对此工具记住</span>
 				</label>
 			</div>
 
@@ -255,11 +255,11 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 			<div className="flex border-t border-black/5 dark:border-white/10">
 				<button
 					onClick={handleDeny}
-					className="flex-1 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+					className="flex-1 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
 				>
 					拒绝
 				</button>
-				<div className="w-px bg-black/5 dark:bg-white/10" />
+				<div className="w-px bg-black/5/10" />
 				<button
 					onClick={handleAllow}
 					className="flex-1 py-3 text-sm font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"

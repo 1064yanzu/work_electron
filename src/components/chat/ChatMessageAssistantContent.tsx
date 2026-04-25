@@ -27,7 +27,7 @@ interface ChatMessageAssistantContentProps {
 }
 
 const PREVIEW_LOADING_FALLBACK = (
-	<div className="mb-3 rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-zinc-50/70 dark:bg-zinc-800/40 p-4 text-xs text-zinc-400 dark:text-zinc-500">
+	<div className="mb-3 rounded-2xl border border-border/70/60 bg-warm-50/70/40 p-4 text-xs text-text-light">
 		正在准备预览...
 	</div>
 );
@@ -120,7 +120,7 @@ function ChatMessageAssistantContentImpl({
 				</Suspense>
 			) : null}
 
-			<div className="text-sm text-zinc-800 dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
+			<div className="text-sm text-text-primary dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
 				{canRenderAssistantByBlocks ? (
 					<AgentBlocksInline
 						blocks={message.metadata?.blocks ?? []}

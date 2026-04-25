@@ -763,17 +763,17 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-zinc-500/5 border-zinc-300"}`}
+					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-zinc-300"}`}
 				>
-					<div className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl shadow-lg border border-primary/30 dark:border-primary/40 flex items-center gap-3">
+					<div className="bg-surface px-4 py-3 rounded-xl shadow-lg border border-primary/30 dark:border-primary/40 flex items-center gap-3">
 						<div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
 							<Plus className="w-5 h-5 text-primary" />
 						</div>
 						<div>
-							<p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+							<p className="text-sm font-medium text-text-primary">
 								添加到 AI 上下文
 							</p>
-							<p className="text-xs text-zinc-500 dark:text-zinc-400">
+							<p className="text-xs text-text-muted">
 								{isMouseDragOver
 									? "松开鼠标将资料添加到对话"
 									: "将资料拖拽到此处"}
@@ -848,44 +848,44 @@ export default function CopilotSidebar() {
 
 				{pendingCreateProposals.length > 0 && activeCreateProposal && (
 					<div className="mb-2 relative">
-						<div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-700/50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] px-3 py-2.5 ring-1 ring-black/[0.02] dark:ring-white/[0.02]">
+						<div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60/50 bg-surface/90/90 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] px-3 py-2.5 ring-1 ring-black/[0.02] dark:ring-white/[0.02]">
 							<button
 								type="button"
 								onClick={() => setIsProposalMenuOpen((v) => !v)}
 								className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
 							>
-								<div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 shrink-0 shadow-sm">
-									<FileText className="w-4.5 h-4.5 text-zinc-700 dark:text-zinc-300" />
+								<div className="w-9 h-9 rounded-xl bg-warm-200 flex items-center justify-center ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 shrink-0 shadow-sm">
+									<FileText className="w-4.5 h-4.5 text-text-secondary" />
 								</div>
 								<div className="min-w-0 flex-1 text-left">
 									<div className="flex items-center gap-1.5 min-w-0">
-										<span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+										<span className="text-sm font-semibold text-text-primary">
 											{pendingCreateProposals.length} 个文件待审查
 										</span>
 										{pendingCreateProposals.length > 1 && (
-											<span className="px-1.5 py-0.5 rounded-md bg-zinc-800 dark:bg-zinc-200 text-[10px] font-semibold text-white dark:text-zinc-900">
+											<span className="px-1.5 py-0.5 rounded-md bg-dark-surface text-[10px] font-semibold text-white">
 												+{pendingCreateProposals.length - 1}
 											</span>
 										)}
 									</div>
-									<div className="text-xs text-zinc-600 dark:text-zinc-400 truncate mt-0.5">
+									<div className="text-xs text-text-secondary truncate mt-0.5">
 										{activeCreateProposal.title}
 										{activeCreateProposal.summary && (
-											<span className="text-zinc-400 dark:text-zinc-500">
+											<span className="text-text-light">
 												{" "}
 												· {activeCreateProposal.summary}
 											</span>
 										)}
 									</div>
 								</div>
-								<ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
+								<ChevronDown className="w-4 h-4 text-text-light shrink-0" />
 							</button>
 
 							<div className="flex items-center gap-1.5">
 								<button
 									type="button"
 									onClick={() => removeCreateProposal(activeCreateProposal.id)}
-									className="h-10 w-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-all cursor-pointer"
+									className="h-10 w-10 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-surface/60/60 transition-all cursor-pointer"
 									title="忽略"
 									aria-label="忽略建议"
 								>
@@ -894,7 +894,7 @@ export default function CopilotSidebar() {
 								<button
 									type="button"
 									onClick={() => void acceptActiveCreateProposal()}
-									className="h-8 px-3 rounded-lg flex items-center gap-1.5 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-all shadow-sm hover:shadow font-medium text-xs"
+									className="h-8 px-3 rounded-lg flex items-center gap-1.5 bg-dark-muted text-white hover:bg-dark-surface dark:hover:bg-surface transition-all shadow-sm hover:shadow font-medium text-xs"
 									title="创建并打开"
 								>
 									<Check className="w-3.5 h-3.5" />
@@ -904,7 +904,7 @@ export default function CopilotSidebar() {
 						</div>
 
 						{isProposalMenuOpen && (
-							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white/95 dark:bg-zinc-900/95 backdrop-blur shadow-xl overflow-hidden">
+							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-border/70/70 bg-surface/95/95 backdrop-blur shadow-xl overflow-hidden">
 								<div className="max-h-56 overflow-auto">
 									{pendingCreateProposals.map((p) => (
 										<button
@@ -914,32 +914,30 @@ export default function CopilotSidebar() {
 												setActiveProposalId(p.id);
 												setIsProposalMenuOpen(false);
 											}}
-											className={`w-full px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors ${
-												p.id === activeCreateProposal.id
-													? "bg-zinc-50 dark:bg-zinc-800/40"
-													: ""
+											className={`w-full px-4 py-3 text-left hover:bg-warm-50/60 transition-colors ${
+												p.id === activeCreateProposal.id ? "bg-warm-50/40" : ""
 											}`}
 										>
-											<div className="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
+											<div className="text-sm font-medium text-text-primary truncate">
 												{p.title || "新文档"}
 											</div>
 											{p.summary ? (
-												<div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+												<div className="text-xs text-text-muted truncate mt-0.5">
 													{p.summary}
 												</div>
 											) : null}
 										</button>
 									))}
 								</div>
-								<div className="px-4 py-2 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between">
-									<div className="text-[11px] text-zinc-400">
+								<div className="px-4 py-2 border-t border-border/60/60 flex items-center justify-between">
+									<div className="text-[11px] text-text-light">
 										点击选择要处理的文档
 									</div>
 									<button
 										type="button"
 										onClick={() => setIsProposalMenuOpen(false)}
 										aria-label="关闭文档列表"
-										className="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer"
+										className="text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 cursor-pointer"
 									>
 										关闭
 									</button>
@@ -950,7 +948,7 @@ export default function CopilotSidebar() {
 				)}
 
 				<div className="mb-2 flex items-center justify-between">
-					<div className="inline-flex items-center bg-zinc-100/70 dark:bg-zinc-800/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
+					<div className="inline-flex items-center bg-warm-200/70/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
 						<button
 							onClick={() => {
 								setChatMode("chat");
@@ -958,8 +956,8 @@ export default function CopilotSidebar() {
 							}}
 							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
 								chatMode === "chat"
-									? "bg-white dark:bg-zinc-900 text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+									? "bg-surface text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
+									: "text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-surface/50/50"
 							}`}
 						>
 							<MessageSquare className="w-3.5 h-3.5" />
@@ -972,8 +970,8 @@ export default function CopilotSidebar() {
 							}}
 							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
 								chatMode === "agent"
-									? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md scale-[1.02]"
-									: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50"
+									? "bg-dark-surface text-white shadow-md scale-[1.02]"
+									: "text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-surface/50/50"
 							}`}
 						>
 							<CircleUser className="w-3.5 h-3.5" />
@@ -982,7 +980,7 @@ export default function CopilotSidebar() {
 					</div>
 
 					<div
-						className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-400"}`}
+						className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-text-secondary" : "text-text-light"}`}
 					>
 						{chatMode === "agent" ? (
 							<>

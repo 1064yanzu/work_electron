@@ -206,7 +206,7 @@ export function SourceListView({
 
 	const getScopeBadgeClassName = useCallback((source: Source) => {
 		return source.scope === "project"
-			? "bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300"
+			? "bg-warm-200/80/70 text-text-secondary"
 			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
 	}, []);
 
@@ -215,15 +215,13 @@ export function SourceListView({
 		if (breadcrumbPath.length <= 1) return null;
 
 		return (
-			<div className="px-3 py-2 flex items-center gap-1 text-xs border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 overflow-x-auto scrollbar-hide">
+			<div className="px-3 py-2 flex items-center gap-1 text-xs border-b border-border bg-warm-50/50/30 overflow-x-auto scrollbar-hide">
 				{breadcrumbPath.map((item, index) => (
 					<div
 						key={item.id ?? "root"}
 						className="flex items-center gap-1 shrink-0"
 					>
-						{index > 0 && (
-							<ChevronRight className="w-3 h-3 text-zinc-300 dark:text-zinc-600" />
-						)}
+						{index > 0 && <ChevronRight className="w-3 h-3 text-text-light" />}
 						<button
 							onClick={() => {
 								// 点击面包屑时，如果当前在详情视图，先切换回资料列表
@@ -232,10 +230,10 @@ export function SourceListView({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors ${
+							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors ${
 								index === breadcrumbPath.length - 1
-									? "text-zinc-800 dark:text-zinc-200 font-medium"
-									: "text-zinc-500 dark:text-zinc-400"
+									? "text-text-primary dark:text-zinc-200 font-medium"
+									: "text-text-muted"
 							}`}
 						>
 							{item.name}
@@ -334,17 +332,17 @@ export function SourceListView({
 							/>
 						</div>
 						<div className="mt-2 pointer-events-none">
-							<h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2 leading-snug">
+							<h3 className="text-sm font-medium text-text-primary dark:text-zinc-200 line-clamp-2 leading-snug">
 								{folder.name}
 							</h3>
-							<p className="text-[10px] text-zinc-400 mt-1">{count} 项</p>
+							<p className="text-[10px] text-text-light mt-1">{count} 项</p>
 						</div>
 						<button
 							onClick={(e) => {
 								e.stopPropagation();
 								handleFolderContextMenu(e, folder);
 							}}
-							className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 hover:bg-white/50 dark:hover:bg-black/20 rounded transition-all pointer-events-auto"
+							className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary hover:bg-surface/50 dark:hover:bg-black/20 rounded transition-all pointer-events-auto"
 						>
 							<MoreHorizontal className="w-3.5 h-3.5" />
 						</button>
@@ -427,17 +425,17 @@ export function SourceListView({
 						/>
 					</div>
 					<div className="flex-1 min-w-0 ml-1 pointer-events-none">
-						<h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
+						<h3 className="text-sm font-medium text-text-primary dark:text-zinc-200 truncate">
 							{folder.name}
 						</h3>
-						<p className="text-[10px] text-zinc-400">{count} 项</p>
+						<p className="text-[10px] text-text-light">{count} 项</p>
 					</div>
 					<button
 						onClick={(e) => {
 							e.stopPropagation();
 							handleFolderContextMenu(e, folder);
 						}}
-						className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all shrink-0 pointer-events-auto"
+						className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded transition-all shrink-0 pointer-events-auto"
 					>
 						<MoreHorizontal className="w-3.5 h-3.5" />
 					</button>
@@ -475,10 +473,10 @@ export function SourceListView({
 			const cardState = selectionMode
 				? isSelected
 					? "ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-					: "border border-dashed border-zinc-200 dark:border-zinc-700"
+					: "border border-dashed border-border"
 				: viewMode === "grid"
-					? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-white dark:bg-zinc-800/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
-					: "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 hover:pl-3";
+					? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-surface/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
+					: "hover:bg-warm-50/80/50 hover:pl-3";
 			const isDraggingThis =
 				isMouseDragging && dragItem?.sourceId === source.id;
 			return (
@@ -524,7 +522,7 @@ export function SourceListView({
 							className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${
 								isSelected
 									? "bg-blue-600 text-white"
-									: "bg-white/80 dark:bg-zinc-900/60 text-zinc-400"
+									: "bg-surface/80/60 text-text-light"
 							}`}
 						>
 							{isSelected ? (
@@ -540,11 +538,11 @@ export function SourceListView({
 						{getIconForSource(source.kind)}
 					</div>
 					<div className={viewMode === "grid" ? "mt-2" : "flex-1 min-w-0 ml-1"}>
-						<h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2 leading-snug">
+						<h3 className="text-sm font-medium text-text-primary dark:text-zinc-200 line-clamp-2 leading-snug">
 							{source.title}
 						</h3>
 						<div className="flex items-center gap-2 mt-1">
-							<p className="text-[10px] text-zinc-400">
+							<p className="text-[10px] text-text-light">
 								{new Date(source.created_at).toLocaleDateString("zh-CN", {
 									month: "short",
 									day: "numeric",
@@ -568,7 +566,7 @@ export function SourceListView({
 								</span>
 							) : null}
 							{source.source_type === SourceOrigin.Import ? (
-								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
+								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-warm-200/70/60 text-text-secondary rounded text-[10px] font-medium">
 									<ArrowDownToLine className="w-2.5 h-2.5" />
 									导入
 								</span>
@@ -576,7 +574,7 @@ export function SourceListView({
 							{(source.tags || []).slice(0, 2).map((tag) => (
 								<span
 									key={`${source.id}-tag-${tag}`}
-									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-300"
+									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80/70 text-text-muted"
 								>
 									#{tag}
 								</span>
@@ -589,7 +587,7 @@ export function SourceListView({
 								e.stopPropagation();
 								void onDeleteSource(source);
 							}}
-							className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0 hover:scale-110"
+							className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0 hover:scale-110"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 						</button>
@@ -636,11 +634,11 @@ export function SourceListView({
 			{renderBreadcrumb()}
 
 			{selectionMode && (
-				<div className="px-4 py-2 flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/30 backdrop-blur-sm text-xs">
-					<span className="text-zinc-500">已选 {selectedIds.length} 条</span>
+				<div className="px-4 py-2 flex items-center gap-3 border-b border-border bg-warm-50/80/30 backdrop-blur-sm text-xs">
+					<span className="text-text-muted">已选 {selectedIds.length} 条</span>
 					<button
 						onClick={handleSelectAll}
-						className="px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300 transition-colors"
+						className="px-2 py-1 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-zinc-300 transition-colors"
 					>
 						{selectedIds.length === sources.length ? "取消全选" : "全选"}
 					</button>
@@ -650,8 +648,8 @@ export function SourceListView({
 							disabled={selectedSources.length === 0}
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
-									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
-									: "bg-zinc-900 text-white hover:bg-zinc-800"
+									? "bg-warm-200 text-text-light/50"
+									: "bg-dark-muted text-white hover:bg-dark-surface"
 							}`}
 						>
 							添加到 AI 上下文
@@ -668,8 +666,8 @@ export function SourceListView({
 							disabled={selectedSources.length === 0}
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
-									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
-									: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+									? "bg-warm-200 text-text-light/50"
+									: "bg-surface border border-border text-text-secondary dark:text-zinc-200 hover:bg-warm-50"
 							}`}
 						>
 							移动
@@ -679,7 +677,7 @@ export function SourceListView({
 							disabled={selectedSources.length === 0}
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
-									? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50"
+									? "bg-warm-200 text-text-light/50"
 									: "bg-red-50 text-red-600 hover:bg-red-100"
 							}`}
 						>
@@ -761,17 +759,17 @@ export function SourceListView({
 					</div>
 				) : isLoading ? (
 					<div className="flex items-center justify-center h-32">
-						<Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
 					</div>
 				) : sources.length === 0 && currentSubfolders.length === 0 ? (
 					<div className="text-center py-12">
-						<div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-							<FileText className="w-7 h-7 text-zinc-400" />
+						<div className="w-16 h-16 bg-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+							<FileText className="w-7 h-7 text-text-light" />
 						</div>
-						<p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+						<p className="text-sm font-medium text-text-secondary mb-1">
 							暂无资料
 						</p>
-						<p className="text-xs text-zinc-400">点击下方按钮添加</p>
+						<p className="text-xs text-text-light">点击下方按钮添加</p>
 					</div>
 				) : (
 					<div
@@ -877,13 +875,13 @@ export function SourceListView({
 			</div>
 
 			{/* Bottom Actions */}
-			<div className="p-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2 flex-wrap shrink-0">
+			<div className="p-3 border-t border-border flex items-center justify-center gap-2 flex-wrap shrink-0">
 				<button
 					onClick={() => {
 						setActiveTab("text");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-zinc-800 ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<PenLine className="w-3.5 h-3.5" />
 					笔记
@@ -893,7 +891,7 @@ export function SourceListView({
 						setActiveTab("web");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-zinc-800 ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<Link className="w-3.5 h-3.5" />
 					链接
@@ -903,7 +901,7 @@ export function SourceListView({
 						setActiveTab("file");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-zinc-800 ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<Paperclip className="w-3.5 h-3.5" />
 					文件

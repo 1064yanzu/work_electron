@@ -24,7 +24,7 @@ import {
 import { StatusDot } from "../StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
 
 type CloudBindForm = {
 	relay_url: string;
@@ -70,7 +70,7 @@ export function AdvancedSection({
 			<SettingsSectionCard className="p-5 space-y-4">
 				<div className="flex items-start gap-3">
 					<div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-500/15 to-zinc-500/10">
-						<Shield className="h-4.5 w-4.5 text-zinc-600 dark:text-zinc-300" />
+						<Shield className="h-4.5 w-4.5 text-text-secondary" />
 					</div>
 					<div>
 						<SettingsSectionTitle className="mb-1 text-base">
@@ -139,11 +139,11 @@ export function AdvancedSection({
 					</label>
 				</div>
 
-				<div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-100 bg-zinc-50/60 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-900/40">
+				<div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-warm-50/60 px-4 py-3 text-xs/40">
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Shield className="h-4 w-4 text-text-muted" />
 						默认 scopes：
-						<span className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800">
+						<span className="rounded bg-surface px-1.5 py-0.5 font-mono text-[11px]">
 							{config.security.defaultScopes.join(", ") || "—"}
 						</span>
 					</div>
@@ -154,7 +154,7 @@ export function AdvancedSection({
 							className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
 								config.mobileGateway.enabled
 									? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-									: "bg-zinc-500/10 text-zinc-500"
+									: "bg-warm-500/10 text-text-muted"
 							}`}
 						>
 							<StatusDot
@@ -189,7 +189,7 @@ export function AdvancedSection({
 								className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
 									cloudNodeRuntime?.connected
 										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-										: "bg-zinc-500/10 text-zinc-500"
+										: "bg-warm-500/10 text-text-muted"
 								}`}
 							>
 								<StatusDot
@@ -287,7 +287,7 @@ export function AdvancedSection({
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/60 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-900/40">
+					<div className="flex items-center justify-between rounded-xl border border-border bg-warm-50/60 px-4 py-3 text-xs/40">
 						<div className="space-y-0.5">
 							<div className="text-text-secondary">
 								Node ID：
@@ -304,7 +304,7 @@ export function AdvancedSection({
 					</div>
 
 					{/* 绑定表单 */}
-					<div className="space-y-3 rounded-2xl border border-zinc-200/70 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
+					<div className="space-y-3 rounded-2xl border border-border/70 bg-warm-50/50 p-4/30">
 						<div>
 							<SettingsSectionTitle className="mb-0.5 text-base">
 								绑定 / 解绑云节点

@@ -67,7 +67,7 @@ function IconBtn({ label, onClick, icon, active, disabled }: IconBtnProps) {
 					"focus-ring h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg transition-colors",
 					active
 						? "bg-primary/12 dark:bg-primary/20 text-primary"
-						: "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+						: "text-text-secondary hover:text-text-primary hover:bg-warm-200",
 					disabled && "opacity-50 cursor-not-allowed",
 				)}
 			>
@@ -107,7 +107,7 @@ export function EditorHeader({
 				: "已保存";
 
 	return (
-		<header className="doc-toolbar shrink-0 border-b border-zinc-200/70 dark:border-zinc-800/70 px-2 py-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 relative z-30 overflow-x-auto">
+		<header className="doc-toolbar shrink-0 border-b border-border/70/70 px-2 py-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 relative z-30 overflow-x-auto">
 			<div className="flex items-center gap-1.5 shrink-0">
 				<IconBtn
 					label="返回文档列表"
@@ -115,15 +115,15 @@ export function EditorHeader({
 					icon={<ChevronLeft className="w-5 h-5" />}
 				/>
 
-				<div className="hidden sm:inline-flex items-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/80 p-0.5">
+				<div className="hidden sm:inline-flex items-center rounded-xl border border-border bg-surface/90/80 p-0.5">
 					<button
 						type="button"
 						onClick={() => onSetEditorMode("edit")}
 						className={cn(
 							"focus-ring min-h-10 px-3 rounded-lg inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
 							editorMode === "edit"
-								? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-								: "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+								? "bg-dark-muted text-white"
+								: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200",
 						)}
 					>
 						<Edit3 className="w-4 h-4" />
@@ -135,8 +135,8 @@ export function EditorHeader({
 						className={cn(
 							"focus-ring min-h-10 px-3 rounded-lg inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
 							editorMode === "split"
-								? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-								: "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+								? "bg-dark-muted text-white"
+								: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200",
 						)}
 					>
 						<Columns className="w-4 h-4" />
@@ -148,8 +148,8 @@ export function EditorHeader({
 						className={cn(
 							"focus-ring min-h-10 px-3 rounded-lg inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
 							editorMode === "preview"
-								? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-								: "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+								? "bg-dark-muted text-white"
+								: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200",
 						)}
 					>
 						<Eye className="w-4 h-4" />
@@ -162,7 +162,7 @@ export function EditorHeader({
 			<div className="flex-1 min-w-0" />
 
 			{editorMode !== "preview" && !focusMode && showFormattingTools ? (
-				<div className="hidden lg:flex items-center shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/88 dark:bg-zinc-900/78 p-0.5">
+				<div className="hidden lg:flex items-center shrink-0 rounded-lg border border-border bg-surface/88/78 p-0.5">
 					<IconBtn
 						label="粗体"
 						onClick={() => onInsertMarkdown("**", "**")}
@@ -216,7 +216,7 @@ export function EditorHeader({
 						"focus-ring min-h-11 px-3.5 rounded-xl border inline-flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
 						hasUnsavedChanges
 							? "bg-primary/12 dark:bg-primary/22 border-primary/35 text-primary"
-							: "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200",
+							: "bg-surface border-border text-text-secondary dark:text-zinc-200",
 					)}
 					title={saveLabel}
 				>

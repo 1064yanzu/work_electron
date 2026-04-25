@@ -14,17 +14,17 @@ export function EditorStatusBar({
 	lastSavedLabel,
 }: EditorStatusBarProps) {
 	return (
-		<footer className="doc-toolbar shrink-0 px-4 py-2.5 border-t border-zinc-200/70 dark:border-zinc-800/70 flex items-center justify-between text-xs">
-			<div className="inline-flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+		<footer className="doc-toolbar shrink-0 px-4 py-2.5 border-t border-border/70/70 flex items-center justify-between text-xs">
+			<div className="inline-flex items-center gap-2 text-text-secondary">
 				<span>{editorContentLength} 字</span>
-				<span className="text-zinc-400 dark:text-zinc-500">·</span>
+				<span className="text-text-light">·</span>
 				<span>
 					{Math.max(1, Math.ceil(editorContentLength / 400))} 分钟阅读
 				</span>
 			</div>
 
 			<div
-				className="inline-flex items-center gap-1.5 text-zinc-700 dark:text-zinc-200"
+				className="inline-flex items-center gap-1.5 text-text-secondary dark:text-zinc-200"
 				role="status"
 				aria-live="polite"
 			>

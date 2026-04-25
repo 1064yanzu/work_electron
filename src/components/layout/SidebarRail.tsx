@@ -38,7 +38,7 @@ export function SidebarRail({
 	];
 
 	return (
-		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-transparent border-r border-[#f0eee6] dark:border-[#30302e]">
+		<div className="w-16 flex-shrink-0 flex flex-col items-center py-4 bg-transparent border-r border-warm-200">
 			<div className="flex flex-col items-center gap-1 flex-1">
 				{navItems.map((item) => {
 					const isSourceSubView = [
@@ -62,8 +62,8 @@ export function SidebarRail({
 							className={[
 								"flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
 								isActive
-									? "bg-[#c96442]/10 dark:bg-[#c96442]/15 text-[#c96442] dark:text-[#c96442]"
-									: "text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e]",
+									? "bg-primary/10 dark:bg-primary/15 text-primary dark:text-primary"
+									: "text-text-muted hover:text-text-primary hover:bg-warm-200",
 							].join(" ")}
 							title={item.label}
 						>
@@ -79,17 +79,17 @@ export function SidebarRail({
 				})}
 			</div>
 
-			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-[#f0eee6] dark:border-[#30302e] w-full">
+			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-warm-200 w-full">
 				<button
 					onClick={onNavigateHome}
-					className="flex items-center justify-center w-12 h-12 rounded-xl text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] transition-all duration-200"
+					className="flex items-center justify-center w-12 h-12 rounded-xl text-text-muted hover:text-text-primary hover:bg-warm-200 transition-all duration-200"
 					title="返回首页"
 				>
 					<Home className="w-[20px] h-[20px]" strokeWidth={1.75} />
 				</button>
 				<button
 					onClick={onOpenSettings}
-					className="flex items-center justify-center w-12 h-12 rounded-xl text-[#87867f] dark:text-[#5e5d59] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-[#f0eee6] dark:hover:bg-[#30302e] transition-all duration-200"
+					className="flex items-center justify-center w-12 h-12 rounded-xl text-text-muted hover:text-text-primary hover:bg-warm-200 transition-all duration-200"
 					title="设置"
 				>
 					<SlidersHorizontal className="w-[20px] h-[20px]" strokeWidth={1.75} />

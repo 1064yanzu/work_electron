@@ -177,7 +177,7 @@ export function LocalBackupManagerModal({
 			<div className="space-y-4">
 				{/* 头部操作栏 */}
 				<div className="flex items-center justify-between">
-					<div className="text-sm text-zinc-500">
+					<div className="text-sm text-text-muted">
 						备份目录: <span className="font-mono text-xs">{backupDir}</span>
 					</div>
 					<div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export function LocalBackupManagerModal({
 							type="button"
 							onClick={fetchBackupFiles}
 							disabled={isLoading}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
+							className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
 						>
 							<RefreshCw
 								className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
@@ -215,7 +215,7 @@ export function LocalBackupManagerModal({
 				)}
 
 				{/* 表头 */}
-				<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-100">
+				<div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs text-text-light border-b border-border">
 					<div className="col-span-1">
 						<input
 							type="checkbox"
@@ -237,17 +237,17 @@ export function LocalBackupManagerModal({
 				<div className="max-h-80 overflow-y-auto space-y-1">
 					{isLoading ? (
 						<div className="flex items-center justify-center py-8">
-							<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+							<RefreshCw className="w-5 h-5 animate-spin text-text-light" />
 						</div>
 					) : backupFiles.length === 0 ? (
-						<div className="text-center py-8 text-sm text-zinc-400">
+						<div className="text-center py-8 text-sm text-text-light">
 							暂无备份文件
 						</div>
 					) : (
 						backupFiles.map((backup) => (
 							<div
 								key={backup.fileName}
-								className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg transition-colors"
+								className="grid grid-cols-12 gap-2 items-center px-3 py-2.5 bg-warm-50 hover:bg-warm-200 rounded-lg transition-colors"
 							>
 								<div className="col-span-1">
 									<input
@@ -258,15 +258,15 @@ export function LocalBackupManagerModal({
 									/>
 								</div>
 								<div
-									className="col-span-5 text-xs font-mono text-zinc-600 truncate"
+									className="col-span-5 text-xs font-mono text-text-secondary truncate"
 									title={backup.fileName}
 								>
 									{backup.fileName}
 								</div>
-								<div className="col-span-2 text-xs text-zinc-500">
+								<div className="col-span-2 text-xs text-text-muted">
 									{formatFileSize(backup.size)}
 								</div>
-								<div className="col-span-2 text-xs text-zinc-500">
+								<div className="col-span-2 text-xs text-text-muted">
 									{formatTime(backup.modifiedTime)}
 								</div>
 								<div className="col-span-2 flex items-center justify-end gap-1">
@@ -287,7 +287,7 @@ export function LocalBackupManagerModal({
 										type="button"
 										onClick={() => handleDelete(backup.fileName)}
 										disabled={isRestoring !== null || isDeleting !== null}
-										className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+										className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
 										title="删除"
 									>
 										{isDeleting === backup.fileName ? (
@@ -303,11 +303,11 @@ export function LocalBackupManagerModal({
 				</div>
 
 				{/* 底部按钮 */}
-				<div className="flex justify-end pt-4 border-t border-zinc-100">
+				<div className="flex justify-end pt-4 border-t border-border">
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 					>
 						关闭
 					</button>

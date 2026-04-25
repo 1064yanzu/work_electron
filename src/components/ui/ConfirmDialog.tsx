@@ -88,7 +88,7 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative mx-4 w-full max-w-md rounded-2xl border border-zinc-200/50 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:border-zinc-700/50 dark:bg-zinc-900",
+					"relative mx-4 w-full max-w-md rounded-2xl border border-border/50 bg-surface shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]/50",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
@@ -114,13 +114,13 @@ function ConfirmDialogView({
 							<div className="flex-1 min-w-0">
 								<h3
 									id="confirm-title"
-									className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+									className="mb-2 text-lg font-semibold text-text-primary"
 								>
 									{title}
 								</h3>
 								<p
 									id="confirm-message"
-									className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-400"
+									className="whitespace-pre-wrap text-sm text-text-secondary"
 								>
 									{message}
 								</p>
@@ -131,7 +131,7 @@ function ConfirmDialogView({
 						<button
 							type="button"
 							onClick={() => close(false)}
-							className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+							className="rounded-xl bg-warm-200 px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-warm-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 dark:hover:bg-zinc-700"
 						>
 							{cancelText}
 						</button>

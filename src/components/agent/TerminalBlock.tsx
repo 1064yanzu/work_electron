@@ -34,13 +34,13 @@ export default function TerminalBlock({
 	return (
 		<div
 			className={cn(
-				"rounded-lg overflow-hidden shadow-lg border border-zinc-700/50",
+				"rounded-lg overflow-hidden shadow-lg border border-dark-border/50",
 				"bg-[#1e1e1e] dark:bg-[#0d0d0d]",
 				className,
 			)}
 		>
 			{/* Mac 风格标题栏 */}
-			<div className="flex items-center gap-2 px-3 py-2 bg-[#2d2d2d] dark:bg-[#1a1a1a] border-b border-zinc-700/50">
+			<div className="flex items-center gap-2 px-3 py-2 bg-[#2d2d2d] dark:bg-[#1a1a1a] border-b border-dark-border/50">
 				{/* 红黄绿按钮 */}
 				<div className="flex items-center gap-1.5">
 					<span className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-inner" />
@@ -50,7 +50,7 @@ export default function TerminalBlock({
 
 				{/* 标题 */}
 				<div className="flex-1 text-center">
-					<span className="text-xs text-zinc-400 font-medium">
+					<span className="text-xs text-text-light font-medium">
 						{description || "Terminal"}
 					</span>
 				</div>
@@ -72,12 +72,12 @@ export default function TerminalBlock({
 				{/* 命令行 */}
 				<div className="flex items-start gap-2">
 					<span className="text-green-400 select-none flex-shrink-0">$</span>
-					<span className="text-zinc-100 break-all">{command}</span>
+					<span className="text-surface break-all">{command}</span>
 				</div>
 
 				{/* 输出 */}
 				{output && (
-					<div className="mt-2 text-zinc-300 text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[200px] overflow-y-auto">
+					<div className="mt-2 text-text-light text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[200px] overflow-y-auto">
 						{output.length > 1000 ? output.slice(0, 1000) + "\n..." : output}
 					</div>
 				)}
@@ -91,8 +91,8 @@ export default function TerminalBlock({
 
 				{/* 运行中提示 */}
 				{isRunning && !output && !error && (
-					<div className="mt-2 flex items-center gap-2 text-zinc-500 text-xs">
-						<span className="inline-block w-2 h-2 bg-zinc-500 rounded-full animate-pulse" />
+					<div className="mt-2 flex items-center gap-2 text-text-muted text-xs">
+						<span className="inline-block w-2 h-2 bg-warm-500 rounded-full animate-pulse" />
 						<span>执行中...</span>
 					</div>
 				)}

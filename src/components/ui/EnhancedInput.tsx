@@ -152,7 +152,7 @@ export function EnhancedInput({
 	return (
 		<div ref={containerRef} className={`relative ${className}`}>
 			{/* 输入区域 */}
-			<div className="bg-white border-2 border-border rounded-2xl shadow-lg hover:border-primary/30 focus-within:border-primary transition-all">
+			<div className="bg-surface border-2 border-border rounded-2xl shadow-lg hover:border-primary/30 focus-within:border-primary transition-all">
 				{/* 已选择的上下文标签 */}
 				{selectedContexts.length > 0 && (
 					<div className="p-3 pb-0 flex flex-wrap gap-2">

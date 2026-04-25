@@ -618,7 +618,7 @@ export default function ResourceSidebar({
 				) : leftSidebarView === "agent" ? (
 					<Suspense
 						fallback={
-							<div className="flex h-full items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+							<div className="flex h-full items-center justify-center text-xs text-text-muted">
 								正在加载 Agent 面板...
 							</div>
 						}
@@ -650,22 +650,22 @@ export default function ResourceSidebar({
 				) : leftSidebarView === "websearch" ? (
 					<div className="flex flex-col h-full">
 						{/* Header */}
-						<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+						<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 							<div className="flex items-center gap-2">
 								<button
 									onClick={() => setLeftSidebarView("sources")}
-									className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+									className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 								>
 									<ArrowLeft className="w-4 h-4" />
 								</button>
 								<Search className="w-4 h-4 text-blue-500" />
-								<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
+								<h2 className="font-semibold text-sm text-text-primary">
 									网络搜索
 								</h2>
 							</div>
 							<button
 								onClick={onOpenSettings}
-								className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 							>
 								<Settings className="w-4 h-4" />
 							</button>
@@ -675,7 +675,7 @@ export default function ResourceSidebar({
 						<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
 							<Suspense
 								fallback={
-									<div className="flex h-full items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+									<div className="flex h-full items-center justify-center text-xs text-text-muted">
 										正在加载搜索模块...
 									</div>
 								}

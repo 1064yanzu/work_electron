@@ -32,9 +32,7 @@ function PhaseIndicator({
 				isCompleted &&
 					!isActive &&
 					"bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
-				!isActive &&
-					!isCompleted &&
-					"bg-zinc-100 dark:bg-zinc-800 text-zinc-400",
+				!isActive && !isCompleted && "bg-warm-200 text-text-light",
 			)}
 		>
 			<span>{config.emoji}</span>
@@ -89,8 +87,8 @@ function ThinkingStepCard({
 			className={cn(
 				"p-3 rounded-lg transition-all duration-300",
 				isLatest
-					? "bg-white dark:bg-zinc-800/80 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-					: "bg-zinc-50/50 dark:bg-zinc-800/30",
+					? "bg-surface/80 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+					: "bg-warm-50/50/30",
 			)}
 		>
 			<div className="flex items-center gap-2 mb-2">
@@ -99,14 +97,14 @@ function ThinkingStepCard({
 					{config.label}
 				</span>
 				{step.duration && (
-					<span className="text-xs text-zinc-400 ml-auto">
+					<span className="text-xs text-text-light ml-auto">
 						{(step.duration / 1000).toFixed(1)}s
 					</span>
 				)}
 			</div>
 			<div
 				ref={contentRef}
-				className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap"
+				className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap"
 			>
 				{displayedContent}
 				{isLatest && displayedContent.length < step.content.length && (
@@ -154,13 +152,13 @@ export default function StreamingThought() {
 			{/* Header */}
 			<button
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/50 dark:hover:bg-zinc-800/50 transition-colors"
+				className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface/50/50 transition-colors"
 			>
 				<div className="relative">
 					<Activity
 						className={cn(
 							"w-5 h-5 transition-colors",
-							isExecuting ? "text-blue-500" : "text-zinc-400",
+							isExecuting ? "text-blue-500" : "text-text-light",
 						)}
 					/>
 					{isExecuting && (
@@ -170,7 +168,7 @@ export default function StreamingThought() {
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+						<span className="text-sm font-medium text-text-secondary dark:text-zinc-200">
 							思考过程
 						</span>
 						{isExecuting && (
@@ -199,7 +197,7 @@ export default function StreamingThought() {
 											"w-3 h-0.5 rounded-full transition-colors",
 											phases.indexOf(thinkingPhase) > idx
 												? "bg-green-300 dark:bg-green-700"
-												: "bg-zinc-200 dark:bg-zinc-700",
+												: "bg-warm-300 dark:bg-zinc-700",
 										)}
 									/>
 								)}
@@ -209,9 +207,9 @@ export default function StreamingThought() {
 				</div>
 
 				{isExpanded ? (
-					<ChevronUp className="w-4 h-4 text-zinc-400" />
+					<ChevronUp className="w-4 h-4 text-text-light" />
 				) : (
-					<ChevronDown className="w-4 h-4 text-zinc-400" />
+					<ChevronDown className="w-4 h-4 text-text-light" />
 				)}
 			</button>
 
@@ -231,7 +229,7 @@ export default function StreamingThought() {
 
 					{/* 当前正在流式输出的内容 */}
 					{partialThinking && (
-						<div className="p-3 rounded-lg bg-white dark:bg-zinc-800/80 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50">
+						<div className="p-3 rounded-lg bg-surface/80 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50">
 							<div className="flex items-center gap-2 mb-2">
 								<span className="text-base">
 									{THINKING_PHASE_CONFIG[thinkingPhase].emoji}
@@ -249,7 +247,7 @@ export default function StreamingThought() {
 									输入中...
 								</span>
 							</div>
-							<div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+							<div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
 								{partialThinking}
 								<span className="inline-block w-1.5 h-4 bg-blue-500 ml-0.5 animate-pulse" />
 							</div>

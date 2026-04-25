@@ -41,7 +41,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 	return (
 		<div
 			className={cn(
-				"min-w-[320px] max-w-[360px] rounded-2xl border bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl",
+				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90/70 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
@@ -70,12 +70,12 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 				)}
 			/>
 
-			<div className="px-4 py-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+			<div className="px-4 py-3 border-b border-border/60/60">
 				<div className="flex items-start gap-3">
 					<div
 						className={cn(
 							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm",
-							"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white dark:text-zinc-900",
+							"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white",
 							isActive &&
 								"from-primary/90 to-primary dark:from-primary dark:to-primary/80 text-white dark:text-white",
 						)}
@@ -84,7 +84,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
-							<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+							<div className="text-sm font-semibold text-text-primary truncate">
 								{data.title}
 							</div>
 							<span
@@ -104,7 +104,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 							</span>
 						</div>
 						{data.subtitle ? (
-							<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
+							<div className="mt-0.5 text-[12px] text-text-muted line-clamp-2">
 								{data.subtitle}
 							</div>
 						) : null}
@@ -112,9 +112,9 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 				</div>
 			</div>
 
-			<div className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-300">
+			<div className="px-4 py-3 text-xs text-text-secondary">
 				<div className="flex items-center gap-2 flex-wrap">
-					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
+					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-warm-50 ring-1 ring-black/5 dark:ring-white/10">
 						<PenLine className="w-3.5 h-3.5 text-primary" />
 						工具 {data.stats.toolsCompleted}/{data.stats.toolsTotal}
 					</span>
@@ -124,8 +124,8 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 							失败 {data.stats.toolsFailed}
 						</span>
 					) : null}
-					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-50 dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
-						<Archive className="w-3.5 h-3.5 text-zinc-500" />
+					<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-warm-50 ring-1 ring-black/5 dark:ring-white/10">
+						<Archive className="w-3.5 h-3.5 text-text-muted" />
 						产物 {data.stats.artifacts}
 					</span>
 				</div>
@@ -157,7 +157,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 	return (
 		<div
 			className={cn(
-				"min-w-[280px] max-w-[320px] rounded-2xl border bg-white/85 dark:bg-zinc-950/60 backdrop-blur-xl",
+				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85/60 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				borderCls,
@@ -186,7 +186,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 										? "bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/30 text-rose-600 dark:text-rose-300"
 										: isCompleted
 											? "bg-gradient-to-br from-emerald-50 to-emerald-100/80 dark:from-emerald-900/20 dark:to-emerald-800/30 text-emerald-600 dark:text-emerald-400"
-											: "bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300",
+											: "bg-warm-50 text-text-secondary",
 							)}
 						>
 							{isRunning ? (
@@ -214,7 +214,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 flex-wrap">
-							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-300 ring-1 ring-black/5 dark:ring-white/10">
+							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
 								STEP {String(data.step).padStart(2, "0")}
 							</span>
 							{/* 工具分类标签 */}
@@ -234,7 +234,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 								{pill.label}
 							</span>
 						</div>
-						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate mt-0.5">
+						<div className="text-sm font-semibold text-text-primary truncate mt-0.5">
 							{data.isSubagent
 								? data.subagentType
 									? `子代理 · ${data.subagentType}`
@@ -242,7 +242,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 								: data.name}
 						</div>
 						{data.description && (
-							<div className="mt-0.5 text-[12px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
+							<div className="mt-0.5 text-[12px] text-text-muted line-clamp-2">
 								{data.description}
 							</div>
 						)}
@@ -251,10 +251,8 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						{(data.inputSummary || data.outputSummary) && (
 							<div className="mt-1.5 space-y-1">
 								{data.inputSummary && (
-									<div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50/60 dark:bg-zinc-900/40 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
-										<span className="text-zinc-400 dark:text-zinc-500 mr-0.5">
-											→
-										</span>
+									<div className="text-[11px] text-text-muted bg-warm-50/60/40 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
+										<span className="text-text-light mr-0.5">→</span>
 										{data.inputSummary}
 									</div>
 								)}
@@ -270,17 +268,15 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						)}
 
 						{data.lastActivity ? (
-							<div className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-50/80 dark:bg-zinc-900/60 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
-								<span className="text-zinc-400 dark:text-zinc-500 mr-1">
-									最新：
-								</span>
+							<div className="mt-2 text-[11px] text-text-secondary bg-warm-50/80/60 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
+								<span className="text-text-light mr-1">最新：</span>
 								{data.lastActivity}
 							</div>
 						) : null}
 					</div>
 
 					{data.durationMs ? (
-						<div className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500 font-medium tabular-nums">
+						<div className="shrink-0 text-[11px] text-text-light font-medium tabular-nums">
 							{formatDuration(data.durationMs)}
 						</div>
 					) : null}
@@ -333,7 +329,7 @@ function getArtifactIcon(artifactType: string) {
 		default:
 			return {
 				icon: Archive,
-				color: "text-zinc-600 dark:text-zinc-300",
+				color: "text-text-secondary",
 				bg: "from-zinc-50 to-stone-50 dark:from-zinc-900/30 dark:to-zinc-800/30",
 			};
 	}
@@ -349,7 +345,7 @@ const ArtifactNode = memo(function ArtifactNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[220px] max-w-[280px] rounded-2xl border bg-white/90 dark:bg-zinc-950/65 backdrop-blur-xl",
+				"min-w-[220px] max-w-[280px] rounded-2xl border bg-surface/90/65 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
@@ -370,18 +366,18 @@ const ArtifactNode = memo(function ArtifactNode(
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-1.5 mb-1">
-							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-300 ring-1 ring-black/5 dark:ring-white/10">
+							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
 								ARTIFACT {String(data.step).padStart(2, "0")}
 							</span>
 							<span className={cn("text-[10px] font-medium", artCfg.color)}>
 								{data.artifactType}
 							</span>
 						</div>
-						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+						<div className="text-sm font-semibold text-text-primary truncate">
 							{data.title}
 						</div>
 					</div>
-					<ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 shrink-0 mt-1" />
+					<ChevronRight className="w-4 h-4 text-text-light shrink-0 mt-1" />
 				</div>
 			</div>
 		</div>
@@ -421,7 +417,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[210px] max-w-[250px] rounded-2xl border bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl",
+				"min-w-[210px] max-w-[250px] rounded-2xl border bg-surface/90/70 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-primary/30 dark:border-primary/25",
@@ -436,7 +432,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 				{/* 标题行 + 蜂群粒子 */}
 				<div className="flex items-center gap-2 mb-2.5">
 					<GitBranch className="w-3.5 h-3.5 text-primary/70" />
-					<span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+					<span className="text-xs font-semibold text-text-primary">
 						蜂群总览
 					</span>
 					{/* 粒子指示器 */}
@@ -519,7 +515,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 						</svg>
 						{/* 中心数字 */}
 						<div className="absolute inset-0 flex items-center justify-center">
-							<span className="text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+							<span className="text-base font-bold text-text-primary tabular-nums">
 								{totalAgents}
 							</span>
 						</div>
@@ -545,9 +541,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 								</span>
 							)}
 							{pending > 0 && (
-								<span className="text-zinc-400 dark:text-zinc-500">
-									等待 {pending}
-								</span>
+								<span className="text-text-light">等待 {pending}</span>
 							)}
 						</div>
 					</div>
@@ -566,7 +560,7 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
 				"text-[11px] font-medium backdrop-blur-sm",
 				isMain
-					? "border-zinc-200/70 dark:border-zinc-700/70 bg-white/80 dark:bg-zinc-900/70 text-zinc-600 dark:text-zinc-300"
+					? "border-border/70/70 bg-surface/80/70 text-text-secondary"
 					: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
 			)}
 		>
@@ -589,16 +583,16 @@ const PhaseDividerNode = memo(function PhaseDividerNode(
 		<div className="flex items-center gap-2 px-3 py-1">
 			<Handle type="target" position={Position.Left} className="opacity-0" />
 			<Handle type="source" position={Position.Right} className="opacity-0" />
-			<Minus className="w-3 h-3 text-zinc-300 dark:text-zinc-600" />
-			<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+			<Minus className="w-3 h-3 text-text-light" />
+			<span className="text-[10px] font-medium text-text-light whitespace-nowrap">
 				{data.label}
 			</span>
 			{data.gapMs ? (
-				<span className="text-[10px] text-zinc-300 dark:text-zinc-600 tabular-nums">
+				<span className="text-[10px] text-text-light tabular-nums">
 					{formatDuration(data.gapMs)}
 				</span>
 			) : null}
-			<Minus className="w-3 h-3 text-zinc-300 dark:text-zinc-600" />
+			<Minus className="w-3 h-3 text-text-light" />
 		</div>
 	);
 });

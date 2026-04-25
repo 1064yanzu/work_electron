@@ -113,7 +113,7 @@ export function AskUserQuestionCard({
 								<div className="text-xs text-blue-500 dark:text-blue-400">
 									{question.header}
 								</div>
-								<div className="text-sm text-zinc-700 dark:text-zinc-200">
+								<div className="text-sm text-text-secondary dark:text-zinc-200">
 									{question.question}
 								</div>
 							</div>
@@ -131,13 +131,13 @@ export function AskUserQuestionCard({
 												"w-full text-left rounded-lg border px-3 py-2 transition-colors",
 												checked
 													? "border-blue-400 bg-blue-100/70 dark:bg-blue-900/30"
-													: "border-zinc-200 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/40",
+													: "border-border bg-surface/70/40",
 											)}
 										>
-											<div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+											<div className="text-sm font-medium text-text-secondary dark:text-zinc-200">
 												{option.label}
 											</div>
-											<div className="text-xs text-zinc-500 dark:text-zinc-400">
+											<div className="text-xs text-text-muted">
 												{option.description}
 											</div>
 										</button>
@@ -151,7 +151,7 @@ export function AskUserQuestionCard({
 								onChange={(event) =>
 									updateOther(questionIndex, event.target.value)
 								}
-								className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+								className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
 							/>
 						</div>
 					);
@@ -162,7 +162,7 @@ export function AskUserQuestionCard({
 				<button
 					type="button"
 					onClick={() => onDeny(request.requestId, "User denied")}
-					className="flex-1 rounded-lg px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+					className="flex-1 rounded-lg px-3 py-2 text-sm bg-warm-200 text-text-secondary"
 				>
 					拒绝
 				</button>

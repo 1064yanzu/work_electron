@@ -78,11 +78,11 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 	return (
 		<div className="px-4 pb-3">
 			<div className="flex items-center gap-2 mb-1.5">
-				<span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+				<span className="text-xs text-text-muted tabular-nums">
 					{completed}/{total} 步已完成
 				</span>
 			</div>
-			<div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+			<div className="h-1.5 bg-warm-200 rounded-full overflow-hidden flex">
 				{completedPct > 0 && (
 					<div
 						className="h-full bg-emerald-500 transition-all duration-500 ease-out"
@@ -125,10 +125,10 @@ export function PlanCard({
 			className={cn(
 				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
 				isExecuting
-					? "bg-white/80 dark:bg-zinc-900/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
+					? "bg-surface/80/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
 					: isCompleted
 						? "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-200 dark:border-emerald-800/30"
-						: "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800",
+						: "bg-surface border-border",
 			)}
 		>
 			{/* 执行中呼吸动画 */}
@@ -139,7 +139,7 @@ export function PlanCard({
 			)}
 
 			{/* 头部 */}
-			<div className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-border">
 				<div
 					className={cn(
 						"flex items-center justify-center w-8 h-8 rounded-lg",
@@ -147,7 +147,7 @@ export function PlanCard({
 							? "bg-[#D96C46]/10 text-[#D96C46]"
 							: isCompleted
 								? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-								: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500",
+								: "bg-warm-200 text-text-muted",
 					)}
 				>
 					{isExecuting ? (
@@ -161,7 +161,7 @@ export function PlanCard({
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+						<span className="text-sm font-semibold text-text-primary">
 							执行计划
 						</span>
 						<span
@@ -173,7 +173,7 @@ export function PlanCard({
 							{statusConfig.text}
 						</span>
 					</div>
-					<p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+					<p className="text-xs text-text-muted truncate mt-0.5">
 						{plan.taskDescription}
 					</p>
 				</div>
@@ -191,14 +191,14 @@ export function PlanCard({
 
 			{/* 操作按钮（仅 draft 状态） */}
 			{isDraft && (
-				<div className="relative z-10 border-t border-zinc-100 dark:border-zinc-800 px-4 py-3">
+				<div className="relative z-10 border-t border-border px-4 py-3">
 					{modifyMode ? (
 						<div className="space-y-2">
 							<textarea
 								value={feedback}
 								onChange={(e) => setFeedback(e.target.value)}
 								placeholder="描述你想修改的内容..."
-								className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#D96C46]/30"
+								className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-warm-50 text-text-primary dark:text-zinc-200 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#D96C46]/30"
 								rows={2}
 							/>
 							<div className="flex gap-2">
@@ -221,7 +221,7 @@ export function PlanCard({
 										setModifyMode(false);
 										setFeedback("");
 									}}
-									className="px-3 py-1.5 text-xs font-medium rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+									className="px-3 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:bg-warm-200 transition-colors"
 								>
 									取消
 								</button>
@@ -240,14 +240,14 @@ export function PlanCard({
 							<button
 								type="button"
 								onClick={() => setModifyMode(true)}
-								className="px-3 py-2 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+								className="px-3 py-2 text-sm font-medium rounded-lg border border-border text-text-secondary hover:bg-warm-50 transition-colors"
 							>
 								修改
 							</button>
 							<button
 								type="button"
 								onClick={onReject}
-								className="px-3 py-2 text-sm font-medium rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+								className="px-3 py-2 text-sm font-medium rounded-lg text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
 							>
 								<X className="w-4 h-4" />
 							</button>

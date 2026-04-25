@@ -77,11 +77,11 @@ export function SkillCard({
 					"rounded-xl overflow-hidden transition-all duration-300",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
-						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 						: hasError && !hideHeader
-							? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
 							: !hideHeader
-								? "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30"
+								? "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30"
 								: "",
 				)}
 			>
@@ -95,7 +95,7 @@ export function SkillCard({
 									? "bg-blue-50 dark:bg-blue-900/20"
 									: hasError
 										? "bg-red-50 dark:bg-red-900/20"
-										: "bg-zinc-50 dark:bg-zinc-800/50",
+										: "bg-warm-50/50",
 							)}
 						>
 							<Zap
@@ -105,7 +105,7 @@ export function SkillCard({
 										? "text-blue-600 dark:text-blue-400"
 										: hasError
 											? "text-red-600 dark:text-red-400"
-											: "text-zinc-500",
+											: "text-text-muted",
 								)}
 							/>
 						</div>
@@ -115,10 +115,10 @@ export function SkillCard({
 									className={cn(
 										"text-sm font-medium",
 										isActive
-											? "text-zinc-700 dark:text-zinc-300"
+											? "text-text-secondary"
 											: hasError
-												? "text-zinc-700 dark:text-zinc-300"
-												: "text-zinc-500 dark:text-zinc-400",
+												? "text-text-secondary"
+												: "text-text-muted",
 									)}
 								>
 									{skill.skillName}
@@ -126,7 +126,7 @@ export function SkillCard({
 								<StatusIcon status={skill.status} />
 							</div>
 							{skill.detectedScene && (
-								<div className="text-[11px] text-zinc-400 dark:text-zinc-500">
+								<div className="text-[11px] text-text-light">
 									场景: {skill.detectedScene}
 								</div>
 							)}
@@ -146,14 +146,14 @@ export function SkillCard({
 								<span
 									className={
 										step.status === "pending"
-											? "text-zinc-400 dark:text-zinc-500"
-											: "text-zinc-600 dark:text-zinc-400"
+											? "text-text-light"
+											: "text-text-secondary"
 									}
 								>
 									{step.label}
 								</span>
 								{step.detail && (
-									<span className="text-zinc-400 dark:text-zinc-500 truncate">
+									<span className="text-text-light truncate">
 										· {step.detail}
 									</span>
 								)}
@@ -164,12 +164,12 @@ export function SkillCard({
 
 				{/* 已加载文件(紧凑显示) */}
 				{skill.loadedFiles.length > 0 && (
-					<div className="px-3 py-1.5 border-t border-zinc-200/30 dark:border-zinc-700/30">
+					<div className="px-3 py-1.5 border-t border-border/30/30">
 						<div className="flex flex-wrap gap-1">
 							{skill.loadedFiles.map((file, i) => (
 								<span
 									key={i}
-									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50/60 dark:bg-zinc-800/60 rounded text-[10px] text-zinc-500 dark:text-zinc-400"
+									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60/60 rounded text-[10px] text-text-muted"
 								>
 									<File className="w-2.5 h-2.5" />
 									{file.path.split("/").pop()}
@@ -191,13 +191,13 @@ export function SkillCard({
 
 	// 标准模式(原有样式,保持兼容)
 	return (
-		<div className="w-full bg-white/60 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg overflow-hidden mb-4 shadow-sm">
+		<div className="w-full bg-surface/60/40 border border-border/50/50 rounded-lg overflow-hidden mb-4 shadow-sm">
 			{/* 头部 */}
-			<div className="flex items-center gap-2 px-3 py-2.5 bg-zinc-50/50 dark:bg-zinc-800/50 border-b border-zinc-200/50 dark:border-zinc-700/50">
-				<div className="p-1.5 rounded-lg bg-white dark:bg-zinc-900">
+			<div className="flex items-center gap-2 px-3 py-2.5 bg-warm-50/50/50 border-b border-border/50/50">
+				<div className="p-1.5 rounded-lg bg-surface">
 					<Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
 				</div>
-				<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200 flex-1">
+				<span className="text-sm font-medium text-text-secondary dark:text-zinc-200 flex-1">
 					{skill.skillName} 执行中
 				</span>
 				<StatusIcon status={skill.status} />
@@ -218,14 +218,14 @@ export function SkillCard({
 								<span
 									className={
 										step.status === "pending"
-											? "text-zinc-400 dark:text-zinc-500"
-											: "text-zinc-700 dark:text-zinc-200 font-medium"
+											? "text-text-light"
+											: "text-text-secondary dark:text-zinc-200 font-medium"
 									}
 								>
 									{step.label}
 								</span>
 								{step.detail && (
-									<span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+									<span className="text-xs text-text-muted truncate">
 										- {step.detail}
 									</span>
 								)}
@@ -237,21 +237,19 @@ export function SkillCard({
 
 			{/* 加载的文件 */}
 			{skill.loadedFiles.length > 0 && (
-				<div className="px-3 py-2 bg-zinc-50/30 dark:bg-zinc-800/30 border-t border-zinc-100/50 dark:border-zinc-700/50">
-					<div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-						已读取文件:
-					</div>
+				<div className="px-3 py-2 bg-warm-50/30/30 border-t border-border/50/50">
+					<div className="text-xs text-text-muted mb-1">已读取文件:</div>
 					<div className="flex flex-wrap gap-2">
 						{skill.loadedFiles.map((file, i) => (
 							<div
 								key={i}
-								className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded text-xs text-zinc-600 dark:text-zinc-300"
+								className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border dark:border-zinc-600 rounded text-xs text-text-secondary"
 							>
-								<File className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
+								<File className="w-3 h-3 text-text-light" />
 								<span className="truncate max-w-[200px]" title={file.path}>
 									{file.path.split("/").pop()}
 								</span>
-								<span className="text-zinc-400 dark:text-zinc-500 text-[10px]">
+								<span className="text-text-light text-[10px]">
 									{(file.size / 1024).toFixed(1)}KB
 								</span>
 							</div>

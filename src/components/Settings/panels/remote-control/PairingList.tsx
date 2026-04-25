@@ -31,7 +31,7 @@ export function PairingList(props: {
 						className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
 							props.pending.length > 0
 								? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-								: "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
+								: "border-border bg-warm-50 text-text-muted"
 						}`}
 					>
 						<span
@@ -45,7 +45,7 @@ export function PairingList(props: {
 					</span>
 				</div>
 				{props.pending.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-zinc-200 px-4 py-6 text-center text-xs text-text-muted dark:border-zinc-700">
+					<div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-text-muted">
 						<p className="text-text-muted">暂无待审批请求</p>
 					</div>
 				) : (
@@ -55,7 +55,7 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.request_id}
-									className="group rounded-xl border border-zinc-200 bg-white p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
@@ -66,7 +66,7 @@ export function PairingList(props: {
 												{item.peer_name || item.peer_id}
 											</div>
 											<div className="mt-1.5 text-text-muted flex items-center gap-2">
-												<span className="font-mono text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+												<span className="font-mono text-[10px] bg-warm-200 px-1.5 py-0.5 rounded">
 													{item.code}
 												</span>
 												<span>到期 {formatTs(item.expires_at)}</span>
@@ -103,12 +103,12 @@ export function PairingList(props: {
 			<div>
 				<div className="mb-3 flex items-center justify-between">
 					<h5 className="text-sm font-medium text-text-primary">已授权配对</h5>
-					<span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+					<span className="inline-flex items-center rounded-full border border-border bg-warm-50 px-2.5 py-0.5 text-xs font-medium text-text-muted">
 						{props.records.length} 条
 					</span>
 				</div>
 				{props.records.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-zinc-200 px-4 py-6 text-center text-xs text-text-muted dark:border-zinc-700">
+					<div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-text-muted">
 						<p className="text-text-muted">暂无已授权配对</p>
 					</div>
 				) : (
@@ -119,7 +119,7 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.pairing_id}
-									className="group rounded-xl border border-zinc-200 bg-white p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">

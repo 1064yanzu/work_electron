@@ -257,8 +257,8 @@ export default function WebSearchModule({
 			{/* 搜索输入区域 - 紧凑设计 */}
 			<div className="space-y-2 mb-3">
 				{/* 搜索框 */}
-				<div className="relative flex items-center gap-2 px-3 py-2.5 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-xl transition-all focus-within:bg-white dark:focus-within:bg-zinc-800 focus-within:shadow-sm focus-within:ring-1 focus-within:ring-zinc-200 dark:focus-within:ring-zinc-700">
-					<Search className="w-4 h-4 text-zinc-400 shrink-0" />
+				<div className="relative flex items-center gap-2 px-3 py-2.5 bg-warm-200/80/80 rounded-xl transition-all focus-within:bg-surface dark:focus-within:bg-dark-surface focus-within:shadow-sm focus-within:ring-1 focus-within:ring-zinc-200 dark:focus-within:ring-zinc-700">
+					<Search className="w-4 h-4 text-text-light shrink-0" />
 					<input
 						ref={inputRef}
 						type="text"
@@ -266,13 +266,13 @@ export default function WebSearchModule({
 						onChange={(e) => setQuery(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="搜索网络内容..."
-						className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+						className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary dark:text-zinc-200 placeholder:text-text-light"
 					/>
 					{query && (
 						<button
 							onClick={() => setQuery("")}
 							aria-label="清空搜索关键词"
-							className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors"
+							className="p-0.5 text-text-light hover:text-text-secondary dark:hover:text-text-light rounded transition-colors"
 						>
 							<X className="w-3.5 h-3.5" />
 						</button>
@@ -284,8 +284,8 @@ export default function WebSearchModule({
 						aria-label="执行搜索"
 						className={`p-1.5 rounded-lg transition-all ${
 							query.trim() && !isSearching
-								? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90"
-								: "bg-zinc-300/50 dark:bg-zinc-700/50 text-zinc-400 cursor-not-allowed"
+								? "bg-dark-muted text-white hover:opacity-90"
+								: "bg-zinc-300/50 dark:bg-zinc-700/50 text-text-light cursor-not-allowed"
 						}`}
 					>
 						{isSearching ? (
@@ -302,7 +302,7 @@ export default function WebSearchModule({
 					<div className="relative" ref={engineDropdownRef}>
 						<button
 							onClick={() => setShowEngineDropdown(!showEngineDropdown)}
-							className="flex items-center gap-1 px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-xs text-zinc-500 dark:text-zinc-400 transition-colors"
+							className="flex items-center gap-1 px-2 py-1 hover:bg-warm-200 rounded-md text-xs text-text-muted transition-colors"
 						>
 							<Globe className="w-3 h-3" />
 							<span>{currentEngine.name}</span>
@@ -310,7 +310,7 @@ export default function WebSearchModule({
 						</button>
 
 						{showEngineDropdown && (
-							<div className="absolute top-full left-0 mt-1 w-36 bg-white dark:bg-zinc-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-[100]">
+							<div className="absolute top-full left-0 mt-1 w-36 bg-surface rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-[100]">
 								{ENGINES.map((engine) => (
 									<button
 										key={engine.id}
@@ -320,8 +320,8 @@ export default function WebSearchModule({
 										}}
 										className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
 											selectedEngine === engine.id
-												? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-												: "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+												? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
+												: "text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50"
 										}`}
 									>
 										<span>{engine.icon}</span>
@@ -344,7 +344,7 @@ export default function WebSearchModule({
 			{/* 搜索结果 */}
 			{results.length > 0 && (
 				<div className="flex-1 overflow-hidden flex flex-col min-h-0">
-					<div className="flex items-center justify-between py-1.5 text-[11px] text-zinc-400 shrink-0">
+					<div className="flex items-center justify-between py-1.5 text-[11px] text-text-light shrink-0">
 						<span>找到 {results.length} 个结果</span>
 					</div>
 
@@ -359,7 +359,7 @@ export default function WebSearchModule({
 									className={`p-2.5 rounded-lg transition-all group ${
 										isAdded
 											? "bg-green-50 dark:bg-green-900/10 ring-1 ring-green-200 dark:ring-green-800"
-											: "hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
+											: "hover:bg-warm-200/80"
 									}`}
 								>
 									<div className="flex items-start gap-2">
@@ -367,10 +367,10 @@ export default function WebSearchModule({
 										<button
 											onClick={() => handlePreview(result)}
 											aria-label={`预览 ${result.title}`}
-											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-warm-200 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
 											title="预览内容"
 										>
-											<Eye className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-500" />
+											<Eye className="w-3.5 h-3.5 text-text-light group-hover:text-blue-500" />
 										</button>
 
 										{/* 添加按钮 */}
@@ -386,26 +386,26 @@ export default function WebSearchModule({
 												isAdded
 													? "bg-green-500 text-white cursor-default"
 													: isAdding
-														? "bg-zinc-200 dark:bg-zinc-700 cursor-wait"
-														: "bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30"
+														? "bg-warm-300 dark:bg-zinc-700 cursor-wait"
+														: "bg-warm-200 hover:bg-green-100 dark:hover:bg-green-900/30"
 											}`}
 											title={isAdded ? "已添加" : "添加为资料"}
 										>
 											{isAdding ? (
-												<Loader2 className="w-3 h-3 animate-spin text-zinc-400" />
+												<Loader2 className="w-3 h-3 animate-spin text-text-light" />
 											) : isAdded ? (
 												<Check className="w-3 h-3" />
 											) : (
-												<Plus className="w-3 h-3 text-zinc-400 hover:text-green-500" />
+												<Plus className="w-3 h-3 text-text-light hover:text-green-500" />
 											)}
 										</button>
 
 										{/* 内容 */}
 										<div className="flex-1 min-w-0">
-											<h4 className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1 leading-tight">
+											<h4 className="text-[13px] font-medium text-text-primary dark:text-zinc-200 line-clamp-1 leading-tight">
 												{result.title}
 											</h4>
-											<p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1">
+											<p className="text-[11px] text-text-muted mt-0.5 line-clamp-1">
 												{result.snippet}
 											</p>
 										</div>
@@ -417,7 +417,7 @@ export default function WebSearchModule({
 											rel="noopener noreferrer"
 											onClick={(e) => e.stopPropagation()}
 											aria-label={`在浏览器打开 ${result.title}`}
-											className="shrink-0 p-1 text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity"
+											className="shrink-0 p-1 text-text-light hover:text-text-muted dark:hover:text-text-light opacity-0 group-hover:opacity-100 transition-opacity"
 											title="在浏览器中打开"
 										>
 											<ExternalLink className="w-3 h-3" />
@@ -434,10 +434,10 @@ export default function WebSearchModule({
 			{!isSearching && results.length === 0 && (
 				<div className="flex-1 flex items-center justify-center">
 					<div className="text-center py-8">
-						<div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3">
-							<Search className="w-5 h-5 text-zinc-400" />
+						<div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center mx-auto mb-3">
+							<Search className="w-5 h-5 text-text-light" />
 						</div>
-						<p className="text-xs text-zinc-400">
+						<p className="text-xs text-text-light">
 							{query ? "未找到相关结果" : "输入关键词搜索网络内容"}
 						</p>
 					</div>
@@ -451,7 +451,7 @@ export default function WebSearchModule({
 					onClick={closePreview}
 				>
 					<FocusTrap
-						className="w-[90vw] h-[85vh] max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+						className="w-[90vw] h-[85vh] max-w-4xl bg-surface rounded-2xl shadow-2xl overflow-hidden flex flex-col"
 						onClick={(e) => e.stopPropagation()}
 						onEscape={closePreview}
 						role="dialog"
@@ -459,16 +459,16 @@ export default function WebSearchModule({
 						aria-label="网页预览"
 					>
 						{/* 模态框头部 */}
-						<div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80">
+						<div className="flex items-center justify-between px-5 py-4 border-b border-border bg-warm-50/80/80">
 							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center shrink-0">
-									<Globe className="w-4 h-4 text-zinc-500" />
+								<div className="w-8 h-8 rounded-lg bg-warm-200 dark:bg-zinc-700 flex items-center justify-center shrink-0">
+									<Globe className="w-4 h-4 text-text-muted" />
 								</div>
 								<div className="min-w-0 flex-1">
-									<h3 className="text-base font-medium text-zinc-800 dark:text-zinc-200 truncate">
+									<h3 className="text-base font-medium text-text-primary dark:text-zinc-200 truncate">
 										{previewContent?.title || previewResult.title}
 									</h3>
-									<p className="text-xs text-zinc-400 truncate mt-0.5">
+									<p className="text-xs text-text-light truncate mt-0.5">
 										{previewResult.url}
 									</p>
 								</div>
@@ -476,7 +476,7 @@ export default function WebSearchModule({
 							<button
 								onClick={closePreview}
 								aria-label="关闭预览"
-								className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+								className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 							>
 								<X className="w-5 h-5" />
 							</button>
@@ -484,11 +484,13 @@ export default function WebSearchModule({
 
 						{/* 阅读模式（Windows 等） vs iframe（macOS） */}
 						{useReadingMode ? (
-							<div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-900">
+							<div className="flex-1 overflow-y-auto bg-surface">
 								{isLoadingPreview ? (
 									<div className="flex flex-col items-center justify-center h-full gap-3">
-										<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
-										<p className="text-sm text-zinc-500">正在加载页面内容...</p>
+										<Loader2 className="w-8 h-8 animate-spin text-text-light" />
+										<p className="text-sm text-text-muted">
+											正在加载页面内容...
+										</p>
 									</div>
 								) : previewError ? (
 									<div className="flex flex-col items-center justify-center h-full gap-4 px-8">
@@ -496,16 +498,16 @@ export default function WebSearchModule({
 											<X className="w-8 h-8 text-red-400" />
 										</div>
 										<div className="text-center">
-											<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+											<p className="text-sm font-medium text-text-secondary mb-1">
 												无法加载页面内容
 											</p>
-											<p className="text-xs text-zinc-500 max-w-md">
+											<p className="text-xs text-text-muted max-w-md">
 												{previewError}
 											</p>
 										</div>
 										<button
 											onClick={() => handleOpenExternal(previewResult.url)}
-											className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 transition-colors"
+											className="flex items-center gap-2 px-4 py-2 bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 rounded-lg text-sm text-text-secondary transition-colors"
 										>
 											<ExternalLink className="w-4 h-4" />
 											<span>在浏览器中打开</span>
@@ -514,20 +516,20 @@ export default function WebSearchModule({
 								) : previewContent ? (
 									<article className="max-w-3xl mx-auto px-8 py-8">
 										{previewContent.description && (
-											<p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
+											<p className="text-text-muted text-sm mb-6 pb-6 border-b border-border">
 												{previewContent.description}
 											</p>
 										)}
 										<div
 											className="prose prose-zinc dark:prose-invert prose-sm max-w-none
-                        prose-headings:font-medium prose-headings:text-zinc-800 dark:prose-headings:text-zinc-200
-                        prose-p:text-zinc-600 dark:prose-p:text-zinc-400 prose-p:leading-relaxed
+                        prose-headings:font-medium prose-headings:text-text-primary dark:prose-headings:text-zinc-200
+                        prose-p:text-text-secondary dark:prose-p:text-text-light prose-p:leading-relaxed
                         prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
-                        prose-strong:text-zinc-700 dark:prose-strong:text-zinc-300
-                        prose-code:text-zinc-700 dark:prose-code:text-zinc-300 prose-code:bg-zinc-100 dark:prose-code:bg-zinc-800 prose-code:px-1 prose-code:rounded
-                        prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-800
-                        prose-blockquote:border-zinc-300 dark:prose-blockquote:border-zinc-700
-                        prose-li:text-zinc-600 dark:prose-li:text-zinc-400"
+                        prose-strong:text-text-secondary dark:prose-strong:text-text-light
+                        prose-code:text-text-secondary dark:prose-code:text-text-light prose-code:bg-warm-200 dark:prose-code:bg-dark-surface prose-code:px-1 prose-code:rounded
+                        prose-pre:bg-warm-200 dark:prose-pre:bg-dark-surface
+                        prose-blockquote:border-zinc-300 dark:prose-blockquote:border-dark-border
+                        prose-li:text-text-secondary dark:prose-li:text-text-light"
 											style={{ whiteSpace: "pre-wrap" }}
 										>
 											{previewContent.content}
@@ -535,12 +537,12 @@ export default function WebSearchModule({
 									</article>
 								) : (
 									<div className="flex items-center justify-center h-full">
-										<p className="text-sm text-zinc-400">暂无内容</p>
+										<p className="text-sm text-text-light">暂无内容</p>
 									</div>
 								)}
 							</div>
 						) : (
-							<div className="flex-1 bg-white dark:bg-zinc-900">
+							<div className="flex-1 bg-surface">
 								<iframe
 									src={previewResult.url}
 									className="w-full h-full border-0"
@@ -551,10 +553,10 @@ export default function WebSearchModule({
 						)}
 
 						{/* 模态框底部 */}
-						<div className="flex items-center justify-between px-5 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80">
+						<div className="flex items-center justify-between px-5 py-4 border-t border-border bg-warm-50/80/80">
 							<button
 								onClick={() => handleOpenExternal(previewResult.url)}
-								className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+								className="flex items-center gap-2 text-sm text-text-muted hover:text-text-secondary dark:hover:text-text-light transition-colors"
 							>
 								<ExternalLink className="w-4 h-4" />
 								<span>在浏览器中打开</span>
@@ -563,7 +565,7 @@ export default function WebSearchModule({
 							<div className="flex items-center gap-3">
 								<button
 									onClick={closePreview}
-									className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+									className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 								>
 									取消
 								</button>
@@ -577,8 +579,8 @@ export default function WebSearchModule({
 										addedUrls.has(previewResult.url)
 											? "bg-green-500 text-white cursor-default"
 											: addingUrls.has(previewResult.url)
-												? "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 cursor-not-allowed"
-												: "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90"
+												? "bg-warm-300 dark:bg-zinc-700 text-text-light cursor-not-allowed"
+												: "bg-dark-muted text-white hover:opacity-90"
 									}`}
 								>
 									{addingUrls.has(previewResult.url) ? (

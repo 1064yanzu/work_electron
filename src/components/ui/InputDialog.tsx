@@ -111,7 +111,7 @@ function InputDialogView({
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-lg rounded-2xl border border-zinc-200/60 dark:border-zinc-700/70 bg-white/95 dark:bg-zinc-900/95 shadow-[0_24px_48px_-18px_rgba(0,0,0,0.3)]"
+				className="relative w-full max-w-lg rounded-2xl border border-border/60/70 bg-surface/95/95 shadow-[0_24px_48px_-18px_rgba(0,0,0,0.3)]"
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
@@ -122,7 +122,7 @@ function InputDialogView({
 								"mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
 								variant === "danger"
 									? "bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-300"
-									: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+									: "bg-warm-200 text-text-secondary",
 							)}
 						>
 							{variant === "danger" ? (
@@ -132,13 +132,11 @@ function InputDialogView({
 							)}
 						</div>
 						<div className="min-w-0 flex-1">
-							<h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+							<h3 className="text-base font-semibold text-text-primary">
 								{title}
 							</h3>
 							{message ? (
-								<p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-									{message}
-								</p>
+								<p className="mt-1 text-sm text-text-muted">{message}</p>
 							) : null}
 						</div>
 					</div>
@@ -156,7 +154,7 @@ function InputDialogView({
 							}}
 							onKeyDown={onKeyDown}
 							placeholder={placeholder}
-							className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-300 focus:bg-white focus:ring-2 focus:ring-zinc-300/50 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:bg-zinc-800 dark:focus:ring-zinc-700"
+							className="w-full resize-none rounded-xl border border-border bg-warm-50 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-zinc-300 focus:bg-surface focus:ring-2 focus:ring-zinc-300/50/70 dark:focus:border-zinc-600 dark:focus:bg-dark-surface dark:focus:ring-zinc-700"
 						/>
 					) : (
 						<input
@@ -169,7 +167,7 @@ function InputDialogView({
 							}}
 							onKeyDown={onKeyDown}
 							placeholder={placeholder}
-							className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-300 focus:bg-white focus:ring-2 focus:ring-zinc-300/50 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:bg-zinc-800 dark:focus:ring-zinc-700"
+							className="w-full rounded-xl border border-border bg-warm-50 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-zinc-300 focus:bg-surface focus:ring-2 focus:ring-zinc-300/50/70 dark:focus:border-zinc-600 dark:focus:bg-dark-surface dark:focus:ring-zinc-700"
 						/>
 					)}
 
@@ -180,11 +178,11 @@ function InputDialogView({
 					) : null}
 				</div>
 
-				<div className="flex items-center justify-end gap-2 border-t border-zinc-200/60 bg-zinc-50/70 px-6 py-4 dark:border-zinc-800/60 dark:bg-zinc-900/70">
+				<div className="flex items-center justify-end gap-2 border-t border-border/60 bg-warm-50/70 px-6 py-4/60/70">
 					<button
 						type="button"
 						onClick={handleCancel}
-						className="rounded-lg px-3.5 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+						className="rounded-lg px-3.5 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-warm-200 hover:text-text-primary"
 					>
 						{cancelText}
 					</button>
@@ -196,7 +194,7 @@ function InputDialogView({
 							"rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60",
 							variant === "danger"
 								? "bg-red-600 hover:bg-red-700"
-								: "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+								: "bg-dark-muted hover:bg-dark-surface dark:hover:bg-surface",
 						)}
 					>
 						{isSubmitting ? "处理中..." : confirmText}

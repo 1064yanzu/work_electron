@@ -44,15 +44,15 @@ export function WikiGraphPanel({
 	};
 
 	return (
-		<section className="mx-3 mt-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-900/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<section className="mx-3 mt-3 rounded-2xl border border-border/80/80 bg-surface/80/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
-			<div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800/70">
+			<div className="px-4 py-3 border-b border-border/70">
 				<div className="flex items-center justify-between gap-3">
 					<div>
-						<div className="text-[11px] uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+						<div className="text-[11px] uppercase tracking-[0.18em] text-text-light">
 							Wiki Graph
 						</div>
-						<h3 className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+						<h3 className="mt-1 text-sm font-semibold text-text-primary">
 							{scopeLabel || "当前线程目录"}
 						</h3>
 					</div>
@@ -60,7 +60,7 @@ export function WikiGraphPanel({
 						<button
 							type="button"
 							onClick={openFullscreen}
-							className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-zinc-500 hover:text-primary hover:bg-primary/8 transition-colors"
+							className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-text-muted hover:text-primary hover:bg-primary/8 transition-colors"
 							title="在中间栏全屏展开知识地图"
 						>
 							<Maximize2 className="h-3.5 w-3.5" />
@@ -77,13 +77,11 @@ export function WikiGraphPanel({
 			<div ref={containerRef} className="relative px-2 py-2">
 				{pages.length === 0 ? (
 					<div
-						className="flex flex-col items-center justify-center rounded-xl bg-zinc-50/60 dark:bg-zinc-800/30"
+						className="flex flex-col items-center justify-center rounded-xl bg-warm-50/60/30"
 						style={{ height: GRAPH_HEIGHT }}
 					>
-						<BookOpen className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mb-2" />
-						<span className="text-xs text-zinc-400 dark:text-zinc-500">
-							暂无页面数据
-						</span>
+						<BookOpen className="h-8 w-8 text-text-light mb-2" />
+						<span className="text-xs text-text-light">暂无页面数据</span>
 					</div>
 				) : (
 					<WikiGraphCanvas
@@ -95,7 +93,7 @@ export function WikiGraphPanel({
 				)}
 
 				{/* Hint */}
-				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-white/92 dark:bg-zinc-900/88 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-surface/92/88 px-2 py-1 text-[11px] text-text-muted shadow-sm ring-1 ring-black/5 dark:ring-white/10">
 					<FileText className="h-3.5 w-3.5" />
 					点击节点打开页面 · 拖拽移动 · 滚轮缩放
 				</div>

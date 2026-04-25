@@ -69,7 +69,7 @@ export function SourceList() {
 
 	return (
 		<aside className="w-[300px] min-w-[250px] border-r border-border bg-panel-input flex flex-col h-full">
-			<div className="p-4 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-sm">
+			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm">
 				<div className="flex items-center gap-2 text-text-secondary">
 					<Layers className="w-5 h-5 text-primary" />
 					<h2 className="font-serif font-medium tracking-wide text-sm">
@@ -91,7 +91,7 @@ export function SourceList() {
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Search sources..."
-						className="w-full pl-9 pr-3 py-1.5 text-sm bg-white border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+						className="w-full pl-9 pr-3 py-1.5 text-sm bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
 					/>
 				</div>
 			</div>
@@ -105,7 +105,7 @@ export function SourceList() {
 				{sources.map((source) => (
 					<div
 						key={source.id}
-						className="group p-3 bg-white rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
+						className="group p-3 bg-surface rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
 					>
 						<div className="flex items-start justify-between mb-1">
 							<div className="font-medium text-sm text-text-primary line-clamp-2 leading-snug">
@@ -125,7 +125,7 @@ export function SourceList() {
 				))}
 			</div>
 
-			<div className="p-4 border-t border-border bg-white/50">
+			<div className="p-4 border-t border-border bg-surface/50">
 				<button
 					onClick={handleCreateMockSource}
 					className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary-hover transition-colors text-sm font-medium flex items-center justify-center gap-2 shadow-sm"

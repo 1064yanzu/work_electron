@@ -511,8 +511,8 @@ export function RemoteControlSettings() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-			<div className="text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
+		<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+			<div className="text-xs text-text-muted">{label}</div>
 			<div className="mt-2 text-sm font-semibold text-text-primary">
 				{value}
 			</div>

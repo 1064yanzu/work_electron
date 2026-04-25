@@ -10,13 +10,13 @@ interface CheckButtonProps {
 export function CheckButton({ status, onClick }: CheckButtonProps) {
 	const config = {
 		idle: {
-			bg: "bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300",
-			text: "text-zinc-700",
+			bg: "bg-warm-200 hover:bg-warm-300 active:bg-zinc-300",
+			text: "text-text-secondary",
 			label: "检 测",
 		},
 		checking: {
-			bg: "bg-zinc-100",
-			text: "text-zinc-400",
+			bg: "bg-warm-200",
+			text: "text-text-light",
 			label: "",
 		},
 		success: {

@@ -75,13 +75,13 @@ export default function InlineReviewRenderer({
 
 	return (
 		<div
-			className={`flex flex-col h-full bg-white dark:bg-[#1E1E1E] ${className}`}
+			className={`flex flex-col h-full bg-surface dark:bg-[#1E1E1E] ${className}`}
 		>
 			{/* 顶部操作栏 */}
-			<div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-50/80 to-blue-50/80 dark:from-emerald-950/20 dark:to-blue-950/20 border-b border-zinc-200/50 dark:border-zinc-800/50">
+			<div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-50/80 to-blue-50/80 dark:from-emerald-950/20 dark:to-blue-950/20 border-b border-border/50/50">
 				<div className="flex items-center gap-3">
 					<div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/30" />
-					<span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+					<span className="text-sm font-semibold text-text-primary dark:text-zinc-200">
 						AI 修改建议
 					</span>
 					<div className="flex items-center gap-2 text-xs">
@@ -97,7 +97,7 @@ export default function InlineReviewRenderer({
 				<div className="flex items-center gap-2">
 					<button
 						onClick={onReject}
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 transition-all"
+						className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-warm-300/80/80 transition-all"
 					>
 						<Undo2 className="w-4 h-4" />
 						拒绝
@@ -125,12 +125,12 @@ export default function InlineReviewRenderer({
 										? "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-500 text-emerald-800 dark:text-emerald-300"
 										: line.type === "removed"
 											? "bg-red-50/60 dark:bg-red-950/20 border-red-500 text-red-800 dark:text-red-300 line-through opacity-60"
-											: "bg-transparent border-transparent text-zinc-700 dark:text-zinc-300"
+											: "bg-transparent border-transparent text-text-secondary"
 								}
               `}
 						>
 							{/* 行号 */}
-							<span className="w-12 shrink-0 px-2 py-1 text-right text-zinc-400 dark:text-zinc-600 select-none border-r border-zinc-200/50 dark:border-zinc-800/50 text-xs font-mono">
+							<span className="w-12 shrink-0 px-2 py-1 text-right text-text-light select-none border-r border-border/50/50 text-xs font-mono">
 								{line.type === "added"
 									? "+"
 									: line.type === "removed"
@@ -147,13 +147,13 @@ export default function InlineReviewRenderer({
 			</div>
 
 			{/* 底部快捷键提示 */}
-			<div className="px-4 py-2 bg-zinc-50/80 dark:bg-zinc-900/50 border-t border-zinc-200/50 dark:border-zinc-800/50">
-				<p className="text-xs text-zinc-400 text-center">
-					<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700 font-mono text-[10px]">
+			<div className="px-4 py-2 bg-warm-50/80/50 border-t border-border/50/50">
+				<p className="text-xs text-text-light text-center">
+					<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono text-[10px]">
 						Tab
 					</kbd>
 					<span className="mx-1">接受</span>
-					<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700 font-mono text-[10px] ml-3">
+					<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono text-[10px] ml-3">
 						Esc
 					</kbd>
 					<span className="mx-1">拒绝</span>

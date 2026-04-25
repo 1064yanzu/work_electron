@@ -114,7 +114,7 @@ export function Modal({
 			{/* 遮罩层 */}
 			<div
 				className={cn(
-					"absolute inset-0 bg-[#141413]/25 dark:bg-[#141413]/60 backdrop-blur-sm",
+					"absolute inset-0 bg-text-primary/25/60 backdrop-blur-sm",
 					isClosing ? "animate-fade-out" : "animate-fade-in",
 				)}
 			/>
@@ -123,9 +123,9 @@ export function Modal({
 			<FocusTrap
 				className={cn(
 					"relative w-full rounded-2xl",
-					"bg-[#faf9f5] dark:bg-[#1e1d1b]",
+					"bg-surface",
 					"shadow-[rgba(0,0,0,0.08)_0px_16px_48px_-8px]",
-					"border border-[#e8e6dc] dark:border-[#30302e]",
+					"border border-border",
 					"overflow-hidden",
 					isClosing ? "animate-scale-out" : "animate-scale-in",
 					sizeStyles[size],
@@ -136,10 +136,10 @@ export function Modal({
 				initialFocusRef={initialFocusRef}
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-[#f0eee6] dark:border-[#30302e] px-6 py-4 bg-[#f5f4ed]/60 dark:bg-[#30302e]/40">
+				<div className="flex items-center justify-between border-b border-warm-200 px-6 py-4 bg-background/60/40">
 					<h3
 						id="modal-title"
-						className="font-serif font-medium text-lg text-[#141413] dark:text-[#faf9f5]"
+						className="font-serif font-medium text-lg text-text-primary"
 					>
 						{title}
 					</h3>
@@ -150,9 +150,9 @@ export function Modal({
 							onClick={handleClose}
 							className={cn(
 								"rounded-full p-1.5",
-								"text-[#87867f] dark:text-[#5e5d59]",
-								"hover:text-[#141413] dark:hover:text-[#faf9f5]",
-								"hover:bg-[#f0eee6] dark:hover:bg-[#30302e]",
+								"text-text-muted",
+								"hover:text-text-primary",
+								"hover:bg-warm-200",
 								"btn-spring",
 								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3898ec]/50",
 							)}
@@ -168,7 +168,7 @@ export function Modal({
 
 				{/* Footer */}
 				{footer && (
-					<div className="flex items-center justify-end gap-3 border-t border-[#f0eee6] dark:border-[#30302e] px-6 py-4 bg-[#f5f4ed]/60 dark:bg-[#30302e]/40">
+					<div className="flex items-center justify-end gap-3 border-t border-warm-200 px-6 py-4 bg-background/60/40">
 						{footer}
 					</div>
 				)}

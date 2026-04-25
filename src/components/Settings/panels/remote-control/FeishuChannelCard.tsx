@@ -35,7 +35,7 @@ import {
 import { StatusDot } from "./StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
 
 type FeishuChannelConfig = RemoteControlConfig["channels"]["feishu"];
 
@@ -92,7 +92,7 @@ export function FeishuChannelCard({
 	}, []);
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d6b9] via-[#00b6ed] to-[#465bff] opacity-70" />
 
 			<div className="p-5 space-y-5">
@@ -323,7 +323,7 @@ export function FeishuChannelCard({
 							className={INPUT_CLASS}
 						/>
 					</label>
-					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-xl border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm font-medium text-text-secondary">
 							要求 @ 提及
 						</div>
@@ -342,7 +342,7 @@ export function FeishuChannelCard({
 
 				{/* 附件合并 + 文档预取 */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-xl border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm font-medium text-text-secondary">
 							附件与命令合并
 						</div>
@@ -380,7 +380,7 @@ export function FeishuChannelCard({
 							className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
 						/>
 					</label>
-					<div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-xl border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm font-medium text-text-secondary">
 							文档链接预取
 						</div>
@@ -398,7 +398,7 @@ export function FeishuChannelCard({
 				</div>
 
 				{/* 文档控制能力 */}
-				<div className="space-y-3 rounded-2xl border border-zinc-200/70 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+				<div className="space-y-3 rounded-2xl border border-border/70 bg-warm-50/50 p-4/40">
 					<div>
 						<SettingsSectionTitle className="mb-0.5 text-base">
 							文档控制能力
@@ -489,14 +489,14 @@ export function FeishuChannelCard({
 				/>
 
 				{/* 运行状态条 */}
-				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
+				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">运行状态：</span>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
 								? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-								: "bg-zinc-500/10 text-zinc-500"
+								: "bg-warm-500/10 text-text-muted"
 						}`}
 					>
 						<StatusDot
@@ -511,7 +511,7 @@ export function FeishuChannelCard({
 						className={`font-medium ${
 							runtimeChannel?.connected
 								? "text-emerald-600 dark:text-emerald-400"
-								: "text-zinc-500"
+								: "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}
@@ -558,10 +558,10 @@ function DocToggle({
 }) {
 	return (
 		<div
-			className={`flex items-center justify-between rounded-xl border bg-white px-3 py-2 transition-colors ${
+			className={`flex items-center justify-between rounded-xl border bg-surface px-3 py-2 transition-colors ${
 				danger
-					? "border-rose-200/70 dark:border-rose-900/40 dark:bg-zinc-900"
-					: "border-zinc-200/80 dark:border-zinc-800 dark:bg-zinc-900"
+					? "border-rose-200/70 dark:border-rose-900/40"
+					: "border-border/80"
 			} ${span2 ? "md:col-span-2" : ""}`}
 		>
 			<div

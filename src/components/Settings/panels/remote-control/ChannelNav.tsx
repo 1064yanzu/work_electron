@@ -52,7 +52,7 @@ export function ChannelNav({
 	return (
 		<nav
 			className={cn(
-				"flex flex-col gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/70 p-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)] dark:border-zinc-800 dark:bg-zinc-900/50",
+				"flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface/70 p-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]/50",
 				className,
 			)}
 			aria-label="通道选择"
@@ -80,8 +80,8 @@ export function ChannelNav({
 						className={cn(
 							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
 							isActive
-								? "bg-white ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:bg-zinc-900 dark:ring-primary/50"
-								: "hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40",
+								? "bg-surface ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:ring-primary/50"
+								: "hover:bg-warm-200/60/40",
 						)}
 					>
 						{/* 左侧强调条 */}
@@ -103,7 +103,7 @@ export function ChannelNav({
 							)}
 						>
 							<Icon className={cn("h-4 w-4", item.accent)} strokeWidth={1.8} />
-							<span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-white dark:bg-zinc-900">
+							<span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-surface">
 								<StatusDot tone={tone} pulse={pulse} size="xs" />
 							</span>
 						</span>
@@ -122,7 +122,7 @@ export function ChannelNav({
 												? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
 												: item.badge.tone === "sky"
 													? "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
-													: "bg-zinc-500/10 text-zinc-500",
+													: "bg-warm-500/10 text-text-muted",
 										)}
 									>
 										{item.badge.text}

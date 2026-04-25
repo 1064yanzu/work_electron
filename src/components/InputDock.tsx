@@ -175,7 +175,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 						placeholder="搜索来源..."
 						value={searchQuery}
 						onChange={(e) => handleSearch(e.target.value)}
-						className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-700 border border-border dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary dark:text-gray-100 placeholder:text-text-muted dark:placeholder:text-gray-400 transition-all"
+						className="w-full pl-9 pr-3 py-2 text-sm bg-surface dark:bg-gray-700 border border-border dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary dark:text-gray-100 placeholder:text-text-muted dark:placeholder:text-gray-400 transition-all"
 					/>
 				</div>
 			</div>
@@ -194,7 +194,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 					sources.map((source) => (
 						<div
 							key={source.id}
-							className="p-3 bg-white dark:bg-gray-700 rounded border border-border dark:border-gray-600 shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group"
+							className="p-3 bg-surface dark:bg-gray-700 rounded border border-border dark:border-gray-600 shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group"
 						>
 							<div className="flex items-start justify-between mb-1">
 								<div className="font-medium text-sm text-text-primary line-clamp-2">
@@ -231,7 +231,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			<div className="p-4 border-t border-border bg-surface shrink-0 space-y-2">
 				<button
 					onClick={() => setIsAddModalOpen(true)}
-					className="w-full py-2 px-4 bg-white border border-border text-text-secondary rounded hover:bg-white hover:text-primary hover:border-primary transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-sm"
+					className="w-full py-2 px-4 bg-surface border border-border text-text-secondary rounded hover:bg-surface hover:text-primary hover:border-primary transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-sm"
 				>
 					<Plus className="w-4 h-4" />
 					新增来源
@@ -259,7 +259,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 							onClick={() => setActiveTab("web")}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
 								activeTab === "web"
-									? "bg-white text-primary shadow-sm"
+									? "bg-surface text-primary shadow-sm"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
@@ -270,7 +270,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 							onClick={() => setActiveTab("text")}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
 								activeTab === "text"
-									? "bg-white text-primary shadow-sm"
+									? "bg-surface text-primary shadow-sm"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
@@ -281,7 +281,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 							onClick={() => setActiveTab("file")}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
 								activeTab === "file"
-									? "bg-white text-primary shadow-sm"
+									? "bg-surface text-primary shadow-sm"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
@@ -300,7 +300,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 								type="text"
 								value={newSourceTitle}
 								onChange={(e) => setNewSourceTitle(e.target.value)}
-								className="w-full px-3 py-2 bg-white border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm"
+								className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm"
 								placeholder="例如：React 官方文档"
 							/>
 						</div>
@@ -314,7 +314,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 									type="url"
 									value={newSourceContent}
 									onChange={(e) => setNewSourceContent(e.target.value)}
-									className="w-full px-3 py-2 bg-white border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm font-mono"
+									className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm font-mono"
 									placeholder="https://..."
 								/>
 							</div>
@@ -329,7 +329,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 									value={newSourceContent}
 									onChange={(e) => setNewSourceContent(e.target.value)}
 									rows={6}
-									className="w-full px-3 py-2 bg-white border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm resize-none"
+									className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm resize-none"
 									placeholder="在此粘贴文本..."
 								/>
 							</div>

@@ -6,11 +6,11 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 	const isCreate = update.type === "create";
 
 	return (
-		<div className="my-5 group rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-3.5 transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:ring-zinc-300 dark:hover:ring-zinc-700">
+		<div className="my-5 group rounded-xl bg-surface ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-3.5 transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:ring-zinc-300 dark:hover:ring-zinc-700">
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0 flex-1">
 					{/* 图标容器 - 极简灰 */}
-					<div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+					<div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-warm-200 text-text-secondary">
 						{isCreate ? (
 							<FilePlus className="w-4.5 h-4.5" />
 						) : (
@@ -20,10 +20,10 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 					{/* 文本信息 */}
 					<div className="min-w-0 flex-1">
-						<h4 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm truncate leading-tight mb-0.5">
+						<h4 className="font-medium text-text-primary text-sm truncate leading-tight mb-0.5">
 							{update.fileName}
 						</h4>
-						<p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+						<p className="text-xs text-text-muted flex items-center gap-1.5">
 							{isCreate ? "创建新文档" : "已完成修改"}
 						</p>
 					</div>
@@ -32,12 +32,12 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 				{/* 统计数据 Badge - 极简数字 */}
 				<div className="flex items-center gap-2 shrink-0 self-center">
 					{update.additions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+						<span className="text-[11px] font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded">
 							+{update.additions}
 						</span>
 					)}
 					{update.deletions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+						<span className="text-[11px] font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded">
 							-{update.deletions}
 						</span>
 					)}

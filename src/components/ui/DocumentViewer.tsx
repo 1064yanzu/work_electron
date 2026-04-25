@@ -13,7 +13,7 @@ const DocxViewer = lazy(() => import("./document-viewers/DocxViewer"));
 function DocumentLoadingFallback() {
 	return (
 		<div className="flex items-center justify-center py-12">
-			<Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+			<Loader2 className="w-8 h-8 animate-spin text-text-light" />
 		</div>
 	);
 }
@@ -39,7 +39,7 @@ export default function DocumentViewer({
 	}
 
 	return (
-		<div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+		<div className="flex flex-col items-center justify-center py-12 text-text-light">
 			<FileWarning className="w-12 h-12 mb-3 opacity-50" />
 			<p className="text-sm">不支持的文档类型</p>
 		</div>

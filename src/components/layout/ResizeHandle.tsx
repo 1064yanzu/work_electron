@@ -28,15 +28,15 @@ export default function ResizeHandle({
 					isHorizontal
 						? [
 								"inset-y-0 w-px",
-								"bg-[#e8e6dc] dark:bg-[#30302e]",
-								"group-hover:w-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-[#4a4845]",
+								"bg-warm-300",
+								"group-hover:w-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-dark-surface",
 							]
 						: [
 								"inset-x-0 h-px",
-								"bg-[#e8e6dc] dark:bg-[#30302e]",
-								"group-hover:h-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-[#4a4845]",
+								"bg-warm-300",
+								"group-hover:h-[2px] group-hover:bg-[#d1cfc5] dark:group-hover:bg-dark-surface",
 							],
-					"group-data-[resize-handle-active]:bg-[#c96442] dark:group-data-[resize-handle-active]:bg-[#c96442]",
+					"group-data-[resize-handle-active]:bg-primary dark:group-data-[resize-handle-active]:bg-primary",
 				)}
 			/>
 			{/* 透明热区，方便拖拽 */}

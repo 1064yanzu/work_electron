@@ -94,24 +94,24 @@ function PromptCard({
 				className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 border cursor-grab active:cursor-grabbing
                     ${
 											isSelected
-												? "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
-												: "bg-white/60 dark:bg-zinc-900/60 border-transparent hover:bg-white dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm"
+												? "bg-surface border-border shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+												: "bg-surface/60/60 border-transparent hover:bg-surface hover:border-border hover:shadow-sm"
 										}`}
 				onClick={onSelect}
 				onMouseEnter={() => setIsHovered(true)}
 				onMouseLeave={() => setIsHovered(false)}
 			>
 				{/* 图标 */}
-				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xl border border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0 transition-transform group-hover:scale-105">
+				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-warm-200 text-xl border border-border shadow-sm shrink-0 transition-transform group-hover:scale-105">
 					{prompt.icon || "📝"}
 				</div>
 
 				{/* 内容 */}
 				<div className="flex-1 min-w-0">
-					<h4 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate mb-0.5">
+					<h4 className="font-semibold text-text-primary truncate mb-0.5">
 						{prompt.name}
 					</h4>
-					<p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+					<p className="text-sm text-text-muted truncate">
 						{prompt.shortDescription || prompt.content}
 					</p>
 				</div>
@@ -122,7 +122,7 @@ function PromptCard({
 				>
 					<button
 						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
 						title="复制"
 					>
 						{hasCopied ? (
@@ -133,14 +133,14 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
 						title="编辑"
 					>
 						<Edit3 className="w-5 h-5" />
 					</button>
 					<button
 						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
 						title="删除"
 					>
 						<Trash2 className="w-5 h-5" />
@@ -158,8 +158,8 @@ function PromptCard({
 			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
                 ${
 									isSelected
-										? "bg-white dark:bg-zinc-800 ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
-										: "bg-white dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
+										? "bg-surface ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
+										: "bg-surface border-border/40/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
 								}`}
 			onClick={onSelect}
 			onMouseEnter={() => setIsHovered(true)}
@@ -167,7 +167,7 @@ function PromptCard({
 		>
 			{/* 头部：图标 + 操作按钮 */}
 			<div className="flex items-start justify-between mb-4">
-				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 text-2xl shadow-sm group-hover:scale-105 transition-all duration-300">
+				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 border border-border/50/50 text-2xl shadow-sm group-hover:scale-105 transition-all duration-300">
 					{prompt.icon || "📝"}
 				</div>
 				{/* 操作按钮 - 始终占位但悬停时显示 */}
@@ -176,7 +176,7 @@ function PromptCard({
 				>
 					<button
 						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
 						title="复制"
 					>
 						{hasCopied ? (
@@ -187,14 +187,14 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
 						title="编辑"
 					>
 						<Edit3 className="w-5 h-5" />
 					</button>
 					<button
 						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
 						title="删除"
 					>
 						<Trash2 className="w-5 h-5" />
@@ -204,13 +204,13 @@ function PromptCard({
 
 			{/* 标题 */}
 			<div className="mb-2">
-				<h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg mb-1 line-clamp-1 tracking-tight">
+				<h3 className="font-semibold text-text-primary text-lg mb-1 line-clamp-1 tracking-tight">
 					{prompt.name}
 				</h3>
 			</div>
 
 			{/* 描述 */}
-			<p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-4 leading-relaxed flex-1">
+			<p className="text-sm text-text-muted line-clamp-4 leading-relaxed flex-1">
 				{prompt.shortDescription || prompt.content}
 			</p>
 		</div>
@@ -414,24 +414,24 @@ export function PromptLibraryModal({
 
 	return ReactDOM.createPortal(
 		<div
-			className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-200 p-4 sm:p-6 md:p-8"
+			className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-bg/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-200 p-4 sm:p-6 md:p-8"
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
-			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200/50 dark:border-zinc-800 flex flex-col md:flex-row overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
+			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-2xl border border-border/50 flex flex-col md:flex-row overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
 				{/* Sidebar (Folder Navigation) */}
-				<div className="w-full md:w-56 bg-zinc-50/50 dark:bg-zinc-900/50 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
+				<div className="w-full md:w-56 bg-warm-50/50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
 					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
-						<div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 shadow-md shadow-zinc-900/5">
+						<div className="w-8 h-8 rounded-lg bg-dark-muted flex items-center justify-center text-white shadow-md shadow-zinc-900/5">
 							<Library className="w-4 h-4" />
 						</div>
-						<span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+						<span className="text-lg font-bold text-text-primary tracking-tight">
 							提示词库
 						</span>
 					</div>
 
 					<div className="px-2 mb-2 hidden md:block">
-						<div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">
+						<div className="text-xs font-semibold text-text-light uppercase tracking-wider mb-2 px-1">
 							文件夹
 						</div>
 					</div>
@@ -445,17 +445,17 @@ export function PromptLibraryModal({
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
 								${
 									activeFolderId === null
-										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
 								<LayoutGrid
-									className={`w-4 h-4 ${activeFolderId === null ? "text-zinc-900 dark:text-zinc-100" : "opacity-70"}`}
+									className={`w-4 h-4 ${activeFolderId === null ? "text-text-primary" : "opacity-70"}`}
 								/>
 								<span>全部</span>
 							</div>
-							<span className="text-xs text-zinc-400">{prompts.length}</span>
+							<span className="text-xs text-text-light">{prompts.length}</span>
 						</button>
 
 						{/* 文件夹列表 */}
@@ -472,7 +472,7 @@ export function PromptLibraryModal({
 											if (e.key === "Enter") handleRenameFolder(folder.id);
 											if (e.key === "Escape") setEditingFolderId(null);
 										}}
-										className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-2 border-blue-500 rounded-xl outline-none"
+										className="w-full px-3 py-2 text-sm bg-surface border-2 border-blue-500 rounded-xl outline-none"
 										autoFocus
 									/>
 								) : (
@@ -484,8 +484,8 @@ export function PromptLibraryModal({
 										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 										${
 											activeFolderId === folder.id
-												? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-												: "text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
+												? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+												: "text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 hover:text-text-primary dark:hover:text-zinc-200"
 										}`}
 									>
 										<div
@@ -506,7 +506,7 @@ export function PromptLibraryModal({
 											</span>
 										</div>
 										<div className="flex items-center gap-1">
-											<span className="text-xs text-zinc-400">
+											<span className="text-xs text-text-light">
 												{folderCounts[folder.id] || 0}
 											</span>
 											<button
@@ -516,7 +516,7 @@ export function PromptLibraryModal({
 														folderMenuId === folder.id ? null : folder.id,
 													);
 												}}
-												className="p-1 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-all"
+												className="p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary dark:hover:text-text-light rounded transition-all"
 											>
 												<MoreHorizontal className="w-3.5 h-3.5" />
 											</button>
@@ -536,7 +536,7 @@ export function PromptLibraryModal({
 											}}
 										/>
 										{/* Menu */}
-										<div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-1 z-[150] animate-in fade-in slide-in-from-top-2 duration-150">
+										<div className="absolute right-0 top-full mt-1 w-36 bg-surface rounded-xl shadow-xl border border-border py-1 z-[150] animate-in fade-in slide-in-from-top-2 duration-150">
 											<button
 												onClick={(e) => {
 													e.stopPropagation();
@@ -544,7 +544,7 @@ export function PromptLibraryModal({
 													setEditingFolderName(folder.name);
 													setFolderMenuId(null);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
 											>
 												<Edit3 className="w-3.5 h-3.5" />
 												重命名
@@ -554,7 +554,7 @@ export function PromptLibraryModal({
 													e.stopPropagation();
 													handleDeleteFolder(folder.id, false);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
 											>
 												<Trash2 className="w-3.5 h-3.5" />
 												删除（保留内容）
@@ -585,15 +585,15 @@ export function PromptLibraryModal({
 								${dragOverFolderId === "uncategorized" ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 								${
 									activeFolderId === "uncategorized"
-										? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-										: "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
 								<Archive className="w-4 h-4 opacity-70" />
 								<span>未分类</span>
 							</div>
-							<span className="text-xs text-zinc-400">
+							<span className="text-xs text-text-light">
 								{folderCounts.uncategorized}
 							</span>
 						</button>
@@ -613,7 +613,7 @@ export function PromptLibraryModal({
 										if (e.key === "Enter") handleCreateFolder();
 										if (e.key === "Escape") setIsAddingFolder(false);
 									}}
-									className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-2 border-blue-500 rounded-xl outline-none"
+									className="w-full px-3 py-2 text-sm bg-surface border-2 border-blue-500 rounded-xl outline-none"
 									placeholder="输入文件夹名称..."
 									autoFocus
 								/>
@@ -621,7 +621,7 @@ export function PromptLibraryModal({
 						) : (
 							<button
 								onClick={() => setIsAddingFolder(true)}
-								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all duration-200 border border-dashed border-zinc-300 dark:border-zinc-700"
+								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-light hover:text-text-primary hover:bg-warm-200/50 transition-all duration-200 border border-dashed border-zinc-300"
 							>
 								<FolderPlus className="w-4 h-4" />
 								<span>新建文件夹</span>
@@ -629,10 +629,10 @@ export function PromptLibraryModal({
 						)}
 					</div>
 
-					<div className="pt-2 md:pt-4 border-t border-zinc-200/50 dark:border-zinc-800 mt-0 md:mt-2">
+					<div className="pt-2 md:pt-4 border-t border-border/50 mt-0 md:mt-2">
 						<button
 							onClick={() => handleStartEdit()}
-							className="w-full flex items-center justify-center gap-2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-[0.98] font-medium text-sm shadow-sm"
+							className="w-full flex items-center justify-center gap-2 bg-surface text-text-primary py-2.5 rounded-xl border border-border hover:bg-warm-50 transition-all active:scale-[0.98] font-medium text-sm shadow-sm"
 						>
 							<Plus className="w-4 h-4" />
 							<span>新建提示词</span>
@@ -641,38 +641,38 @@ export function PromptLibraryModal({
 				</div>
 
 				{/* Main Content */}
-				<div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 relative min-w-0">
+				<div className="flex-1 flex flex-col bg-surface relative min-w-0">
 					{/* Header Toolbar */}
-					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md z-10">
+					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-border sticky top-0 bg-surface/80/80 backdrop-blur-md z-10">
 						<div className="relative flex-1 max-w-md group">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 dark:group-focus-within:text-zinc-300 transition-colors" />
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary dark:group-focus-within:text-text-light transition-colors" />
 							<input
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索..."
-								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-zinc-100/50 dark:bg-zinc-900 border-none rounded-lg text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-800 transition-all outline-none"
+								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-warm-200/50 border-none rounded-lg text-sm text-text-primary placeholder-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-800 transition-all outline-none"
 							/>
 						</div>
 
-						<div className="flex items-center gap-0.5 bg-white dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
+						<div className="flex items-center gap-0.5 bg-surface/50 p-1 rounded-lg border border-border/50/50 shadow-sm">
 							<button
 								onClick={() => setViewMode("grid")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "grid" ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "grid" ? "bg-warm-200 dark:bg-zinc-700 text-text-primary shadow-sm" : "text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-50/50"}`}
 								title="网格视图"
 							>
 								<LayoutGrid className="w-4 h-4" />
 							</button>
 							<button
 								onClick={() => setViewMode("list")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "list" ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "list" ? "bg-warm-200 dark:bg-zinc-700 text-text-primary shadow-sm" : "text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-50/50"}`}
 								title="列表视图"
 							>
 								<LayoutList className="w-4 h-4" />
 							</button>
 						</div>
 
-						<div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
+						<div className="h-6 w-px bg-warm-300 mx-1" />
 
 						<div className="flex items-center gap-0.5">
 							<input
@@ -684,21 +684,21 @@ export function PromptLibraryModal({
 							/>
 							<button
 								onClick={() => fileInputRef.current?.click()}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
 								title="导入"
 							>
 								<Upload className="w-4.5 h-4.5" />
 							</button>
 							<button
 								onClick={handleExport}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
 								title="导出"
 							>
 								<Download className="w-4.5 h-4.5" />
 							</button>
 							<button
 								onClick={onClose}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
 								title="关闭"
 							>
 								<X className="w-4.5 h-4.5" />
@@ -710,13 +710,13 @@ export function PromptLibraryModal({
 					<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
 						{filteredPrompts.length === 0 ? (
 							<div className="h-full flex flex-col items-center justify-center text-center pb-20">
-								<div className="w-20 h-20 rounded-3xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-6 ring-1 ring-zinc-100 dark:ring-zinc-800">
-									<Archive className="w-8 h-8 text-zinc-300" />
+								<div className="w-20 h-20 rounded-3xl bg-warm-50 flex items-center justify-center mb-6 ring-1 ring-zinc-100 dark:ring-zinc-800">
+									<Archive className="w-8 h-8 text-text-light" />
 								</div>
-								<h3 className="text-zinc-900 dark:text-zinc-100 font-medium text-lg mb-2">
+								<h3 className="text-text-primary font-medium text-lg mb-2">
 									暂无提示词
 								</h3>
-								<p className="text-zinc-500 dark:text-zinc-400 max-w-xs text-sm">
+								<p className="text-text-muted max-w-xs text-sm">
 									{activeFolderId === null
 										? "创建一个新的提示词来开始使用。"
 										: activeFolderId === "uncategorized"
@@ -725,7 +725,7 @@ export function PromptLibraryModal({
 								</p>
 								<button
 									onClick={() => handleStartEdit()}
-									className="mt-6 px-6 py-2.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity"
+									className="mt-6 px-6 py-2.5 rounded-full bg-dark-muted text-white text-sm font-medium hover:opacity-90 transition-opacity"
 								>
 									新建提示词
 								</button>
@@ -776,30 +776,30 @@ export function PromptLibraryModal({
 
 					{/* Editor Overlay */}
 					{isEditing && (
-						<div className="absolute inset-0 z-20 bg-white dark:bg-[#121212] flex flex-col animate-in slide-in-from-bottom-[5%] duration-300">
-							<div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
+						<div className="absolute inset-0 z-20 bg-surface dark:bg-[#121212] flex flex-col animate-in slide-in-from-bottom-[5%] duration-300">
+							<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 								<div className="flex items-center gap-4">
 									<button
 										onClick={() => setIsEditing(false)}
-										className="p-2 -ml-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+										className="p-2 -ml-2 text-text-light hover:text-text-primary rounded-full hover:bg-warm-200 transition-colors"
 									>
 										<ArrowLeft className="w-5 h-5" />
 									</button>
-									<span className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg">
+									<span className="font-semibold text-text-primary text-lg">
 										{editingPrompt?.id ? "编辑提示词" : "新建提示词"}
 									</span>
 								</div>
 								<div className="flex items-center gap-3">
 									<button
 										onClick={() => setIsEditing(false)}
-										className="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+										className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
 									>
 										取消
 									</button>
 									<button
 										onClick={handleSave}
 										disabled={!editingPrompt?.name || !editingPrompt?.content}
-										className="px-6 py-2 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+										className="px-6 py-2 rounded-full bg-dark-muted text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
 									>
 										保存
 									</button>
@@ -810,7 +810,7 @@ export function PromptLibraryModal({
 								<div className="max-w-3xl mx-auto space-y-8">
 									<div className="flex gap-6 items-start">
 										<div className="flex flex-col gap-2">
-											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+											<label className="text-xs font-semibold text-text-light uppercase tracking-wider">
 												图标
 											</label>
 											<input
@@ -821,13 +821,13 @@ export function PromptLibraryModal({
 														prev ? { ...prev, icon: e.target.value } : null,
 													)
 												}
-												className="w-16 h-16 text-3xl text-center rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all"
+												className="w-16 h-16 text-3xl text-center rounded-2xl bg-warm-50/50 border border-border focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all"
 												placeholder="📝"
 											/>
 										</div>
 										<div className="flex-1 space-y-6">
 											<div className="space-y-2">
-												<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+												<label className="text-xs font-semibold text-text-light uppercase tracking-wider">
 													名称
 												</label>
 												<input
@@ -838,14 +838,14 @@ export function PromptLibraryModal({
 															prev ? { ...prev, name: e.target.value } : null,
 														)
 													}
-													className="w-full text-2xl font-bold bg-transparent border-b border-zinc-200 dark:border-zinc-800 pb-2 focus:border-zinc-900 dark:focus:border-zinc-100 outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
+													className="w-full text-2xl font-bold bg-transparent border-b border-border pb-2 focus:border-zinc-900 dark:focus:border-border outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
 													placeholder="输入提示词名称..."
 													autoFocus
 												/>
 											</div>
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 												<div className="space-y-2">
-													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+													<label className="text-xs font-semibold text-text-light uppercase tracking-wider">
 														文件夹
 													</label>
 													<Select
@@ -870,7 +870,7 @@ export function PromptLibraryModal({
 													/>
 												</div>
 												<div className="space-y-2">
-													<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+													<label className="text-xs font-semibold text-text-light uppercase tracking-wider">
 														简介
 													</label>
 													<input
@@ -886,7 +886,7 @@ export function PromptLibraryModal({
 																	: null,
 															)
 														}
-														className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
+														className="w-full px-4 py-2.5 rounded-xl bg-warm-50/50 border border-border focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
 														placeholder="简短描述..."
 													/>
 												</div>
@@ -896,16 +896,16 @@ export function PromptLibraryModal({
 
 									<div className="space-y-3 pt-4">
 										<div className="flex items-center justify-between">
-											<label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+											<label className="text-xs font-semibold text-text-light uppercase tracking-wider">
 												提示词内容
 											</label>
-											<div className="text-xs text-zinc-400 flex items-center gap-1">
+											<div className="text-xs text-text-light flex items-center gap-1">
 												<BookMarked className="w-3 h-3" />
 												<span>支持 {"{变量名}"} 格式的占位符</span>
 											</div>
 										</div>
 										<div className="relative group">
-											<div className="absolute top-0 bottom-0 left-0 w-1 bg-zinc-200 dark:bg-zinc-800 group-focus-within:bg-zinc-900 dark:group-focus-within:bg-zinc-100 transition-colors rounded-full" />
+											<div className="absolute top-0 bottom-0 left-0 w-1 bg-warm-300 group-focus-within:bg-dark-muted dark:group-focus-within:bg-warm-200 transition-colors rounded-full" />
 											<textarea
 												value={editingPrompt?.content || ""}
 												onChange={(e) =>
@@ -913,7 +913,7 @@ export function PromptLibraryModal({
 														prev ? { ...prev, content: e.target.value } : null,
 													)
 												}
-												className="w-full h-[400px] pl-6 pr-4 py-2 bg-transparent resize-none outline-none font-mono text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700"
+												className="w-full h-[400px] pl-6 pr-4 py-2 bg-transparent resize-none outline-none font-mono text-sm leading-relaxed text-text-primary dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700"
 												placeholder="在此输入详细的提示词内容..."
 											/>
 										</div>

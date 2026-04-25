@@ -108,10 +108,7 @@ export function SkeletonCard({
 }: SkeletonCardProps) {
 	return (
 		<div
-			className={cn(
-				"rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 space-y-4",
-				className,
-			)}
+			className={cn("rounded-xl border border-border p-4 space-y-4", className)}
 		>
 			{hasImage && <Skeleton className="h-32 w-full rounded-lg" />}
 			<div className="space-y-2">
@@ -158,9 +155,7 @@ export function SkeletonChatMessage({
 				<div
 					className={cn(
 						"rounded-2xl p-4 space-y-2",
-						isUser
-							? "bg-primary/10 dark:bg-primary/20"
-							: "bg-zinc-100 dark:bg-zinc-800",
+						isUser ? "bg-primary/10 dark:bg-primary/20" : "bg-warm-200",
 					)}
 				>
 					<Skeleton className="h-4 w-full" />
@@ -202,7 +197,7 @@ export function SkeletonProjectCard({ className }: { className?: string }) {
 	return (
 		<div
 			className={cn(
-				"rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 space-y-4",
+				"rounded-2xl border border-border p-5 space-y-4",
 				className,
 			)}
 		>

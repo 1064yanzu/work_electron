@@ -81,7 +81,7 @@ export function TelegramQuickSetup({
 				</div>
 			</div>
 
-			<div className="rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:border-zinc-800 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-2xl border border-border/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:from-zinc-900/60 dark:to-zinc-900">
 				<StepBlock
 					index={1}
 					icon={Bot}
@@ -100,7 +100,7 @@ export function TelegramQuickSetup({
 					title="发送 /newbot 创建新 bot"
 					description='按提示输入 bot 名称 + username（要以 "bot" 结尾，比如 my_assistant_bot）。'
 				>
-					<div className="rounded-xl bg-zinc-100/80 p-3 font-mono text-xs text-text-secondary dark:bg-zinc-800/60">
+					<div className="rounded-xl bg-warm-200/80 p-3 font-mono text-xs text-text-secondary/60">
 						<div>/newbot</div>
 						<div className="text-text-muted">
 							→ Alright, a new bot. How are we going to call it?
@@ -129,12 +129,12 @@ export function TelegramQuickSetup({
 						}}
 						placeholder="123456789:ABC..."
 						className={cn(
-							"w-full rounded-xl border bg-white px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 dark:bg-zinc-900",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 							isValid
 								? "border-emerald-400 ring-2 ring-emerald-400/20"
 								: trimmed
 									? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
-									: "border-zinc-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700",
+									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 						)}
 					/>
 					{trimmed && !isValid ? (

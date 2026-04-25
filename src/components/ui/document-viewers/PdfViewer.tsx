@@ -65,7 +65,7 @@ const VirtualPage = memo(function VirtualPage({
 		<div
 			ref={ref}
 			data-page-container=""
-			className="bg-white shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)] rounded-sm relative"
+			className="bg-surface shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)] rounded-sm relative"
 			style={{ minHeight: shouldRender ? undefined : estimatedHeight }}
 		>
 			{shouldRender ? (
@@ -80,16 +80,16 @@ const VirtualPage = memo(function VirtualPage({
 							className="flex items-center justify-center"
 							style={{ height: estimatedHeight }}
 						>
-							<Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
+							<Loader2 className="w-5 h-5 animate-spin text-text-light" />
 						</div>
 					}
 				/>
 			) : (
 				<div
-					className="flex items-center justify-center bg-zinc-50/50"
+					className="flex items-center justify-center bg-warm-50/50"
 					style={{ height: estimatedHeight }}
 				>
-					<span className="text-[11px] text-zinc-300">{pageNumber}</span>
+					<span className="text-[11px] text-text-light">{pageNumber}</span>
 				</div>
 			)}
 		</div>
@@ -262,14 +262,14 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 	if (error) {
 		return (
-			<div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+			<div className="flex flex-col items-center justify-center py-12 text-text-light">
 				<FileWarning className="w-12 h-12 mb-3 opacity-50" />
 				<p className="text-sm">{error}</p>
 				<a
 					href={src}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="mt-4 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+					className="mt-4 px-4 py-2 bg-warm-200 rounded-lg text-sm hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors"
 				>
 					在外部应用中打开
 				</a>
@@ -284,25 +284,25 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 			tabIndex={0}
 		>
 			{/* 工具栏 */}
-			<div className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 bg-white/92 dark:bg-zinc-900/92 backdrop-blur-md rounded-t-xl border-b border-zinc-200 dark:border-zinc-700">
+			<div className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 bg-surface/92/92 backdrop-blur-md rounded-t-xl border-b border-border">
 				{/* 页码导航 */}
 				<div className="flex items-center gap-0.5">
 					<button
 						onClick={() => jumpToPage(currentPage - 1)}
 						disabled={currentPage <= 1}
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 						title="上一页"
 					>
 						<ChevronLeft className="w-3.5 h-3.5" />
 					</button>
-					<div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
+					<div className="flex items-center gap-1 text-text-muted">
 						<input
 							type="text"
 							value={jumpInput || (numPages ? String(currentPage) : "")}
 							onChange={(e) => setJumpInput(e.target.value)}
 							onKeyDown={handleJumpInputKeyDown}
 							onBlur={() => setJumpInput("")}
-							className="w-9 text-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+							className="w-9 text-center bg-warm-50 border border-border rounded py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/30"
 							disabled={!numPages}
 						/>
 						<span className="text-[11px]">/ {numPages || "..."}</span>
@@ -310,7 +310,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					<button
 						onClick={() => jumpToPage(currentPage + 1)}
 						disabled={currentPage >= numPages}
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 						title="下一页"
 					>
 						<ChevronRight className="w-3.5 h-3.5" />
@@ -322,26 +322,26 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					<button
 						onClick={zoomOut}
 						disabled={scale <= 0.3}
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 						title="缩小 (-)"
 					>
 						<ZoomOut className="w-3.5 h-3.5" />
 					</button>
-					<span className="text-[11px] text-zinc-500 dark:text-zinc-400 min-w-[36px] text-center tabular-nums">
+					<span className="text-[11px] text-text-muted min-w-[36px] text-center tabular-nums">
 						{Math.round(scale * 100)}%
 					</span>
 					<button
 						onClick={zoomIn}
 						disabled={scale >= 3.0}
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 						title="放大 (+)"
 					>
 						<ZoomIn className="w-3.5 h-3.5" />
 					</button>
-					<div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+					<div className="w-px h-3.5 bg-warm-300 dark:bg-zinc-700 mx-1" />
 					<button
 						onClick={fitWidth}
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 transition-colors"
 						title="适应宽度"
 					>
 						<Maximize2 className="w-3.5 h-3.5" />
@@ -349,7 +349,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					<a
 						href={downloadUrl || src}
 						download
-						className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+						className="p-1 rounded-md hover:bg-warm-200 transition-colors"
 						title="下载"
 					>
 						<Download className="w-3.5 h-3.5" />
@@ -360,12 +360,12 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 			{/* PDF 内容 */}
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-auto bg-zinc-100/60 dark:bg-zinc-950/50 rounded-b-xl px-3 py-4"
+				className="flex-1 overflow-auto bg-warm-200/60/50 rounded-b-xl px-3 py-4"
 			>
 				{loading && (
 					<div className="flex flex-col items-center justify-center py-16 gap-3">
-						<Loader2 className="w-7 h-7 animate-spin text-zinc-300" />
-						<span className="text-xs text-zinc-400">正在加载 PDF...</span>
+						<Loader2 className="w-7 h-7 animate-spin text-text-light" />
+						<span className="text-xs text-text-light">正在加载 PDF...</span>
 					</div>
 				)}
 				{documentFile ? (

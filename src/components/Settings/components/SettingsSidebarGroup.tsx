@@ -33,9 +33,7 @@ export function SettingsSidebarGroup({
 					<h3
 						className={cn(
 							"text-[10px] font-semibold uppercase tracking-[0.2em]",
-							isTechnical
-								? "text-[#b0aea5] dark:text-[#4d4c48]"
-								: "text-[#87867f] dark:text-[#5e5d59]",
+							isTechnical ? "text-text-light" : "text-text-muted",
 						)}
 					>
 						{label}
@@ -45,7 +43,7 @@ export function SettingsSidebarGroup({
 							type="button"
 							onClick={() => onExpandedChange(!expanded)}
 							aria-expanded={expanded}
-							className="flex min-h-[28px] min-w-[28px] items-center justify-center rounded-lg text-[#b0aea5] transition-colors hover:bg-[#faf9f5] hover:text-[#5e5d59] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:bg-[#30302e] dark:hover:text-[#b0aea5]"
+							className="flex min-h-[28px] min-w-[28px] items-center justify-center rounded-lg text-text-light transition-colors hover:bg-surface hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
 						>
 							<ChevronDown
 								className={cn(
@@ -71,21 +69,19 @@ export function SettingsSidebarGroup({
 							className={cn(
 								"relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1",
 								activeTab === item.id
-									? "bg-[#faf9f5] text-[#141413] shadow-[0_1px_3px_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.04)] dark:bg-[#30302e] dark:text-[#faf9f5]"
+									? "bg-surface text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.04)]"
 									: isTechnical
-										? "text-[#b0aea5] hover:bg-[#faf9f5]/80 hover:text-[#5e5d59] dark:text-[#5e5d59] dark:hover:bg-[#30302e]/70 dark:hover:text-[#b0aea5]"
-										: "text-[#87867f] hover:bg-[#faf9f5]/80 hover:text-[#141413] dark:text-[#87867f] dark:hover:bg-[#30302e]/60 dark:hover:text-[#faf9f5]",
+										? "text-text-light hover:bg-surface/80 hover:text-text-secondary/70"
+										: "text-text-muted hover:bg-surface/80 hover:text-text-primary/60",
 							)}
 						>
 							{activeTab === item.id && (
-								<div className="absolute -left-[14px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-[#c96442]" />
+								<div className="absolute -left-[14px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
 							)}
 							<item.icon
 								className={cn(
 									"h-[15px] w-[15px] shrink-0",
-									activeTab === item.id
-										? "text-[#c96442]"
-										: "text-[#b0aea5] dark:text-[#5e5d59]",
+									activeTab === item.id ? "text-primary" : "text-text-light",
 								)}
 								strokeWidth={activeTab === item.id ? 2 : 1.75}
 							/>

@@ -82,7 +82,7 @@ export function ContextPicker({
 	if (items.length === 0) return null;
 
 	return (
-		<div className="absolute bottom-full left-0 mb-2 w-full max-h-[300px] overflow-y-auto bg-white rounded-xl shadow-xl border border-border z-50 animate-in fade-in zoom-in-95 duration-100">
+		<div className="absolute bottom-full left-0 mb-2 w-full max-h-[300px] overflow-y-auto bg-surface rounded-xl shadow-xl border border-border z-50 animate-in fade-in zoom-in-95 duration-100">
 			<div className="p-2 text-xs font-medium text-text-muted uppercase tracking-wider bg-surface/50 sticky top-0 backdrop-blur-sm border-b border-border">
 				选择上下文
 			</div>

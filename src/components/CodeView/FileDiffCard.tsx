@@ -79,8 +79,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 		<div
 			className={cn(
 				"my-2 rounded-xl ring-1 transition-all overflow-hidden",
-				isPending &&
-					"ring-zinc-200 dark:ring-zinc-700/60 bg-white dark:bg-zinc-900",
+				isPending && "ring-zinc-200 dark:ring-zinc-700/60 bg-surface",
 				isAccepted &&
 					"ring-emerald-200 dark:ring-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10",
 				isRejected &&
@@ -91,10 +90,10 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors"
+				className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-warm-50/50/30 transition-colors"
 			>
 				{/* 折叠箭头 */}
-				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-zinc-400">
+				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-text-light">
 					{expanded ? (
 						<ChevronDown className="w-3.5 h-3.5" />
 					) : (
@@ -103,7 +102,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				</span>
 
 				{/* 文件图标 */}
-				<span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 bg-zinc-100 dark:bg-zinc-800">
+				<span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 bg-warm-200">
 					{isCreate ? (
 						<FilePlus className="w-3 h-3 text-emerald-500" />
 					) : (
@@ -113,7 +112,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 				{/* 文件路径 */}
 				<span
-					className="flex-1 text-left text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate"
+					className="flex-1 text-left text-sm font-medium text-text-primary dark:text-zinc-200 truncate"
 					title={diff.filePath}
 				>
 					{displayPath}
@@ -148,7 +147,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 			{/* 展开的 diff 预览 */}
 			{expanded && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800">
+				<div className="border-t border-border">
 					{/* diff 行预览 */}
 					<div className="max-h-[240px] overflow-y-auto text-[12px] font-mono leading-5">
 						{preview.lines.map((line, idx) => (
@@ -165,7 +164,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<span
 									className={cn(
 										"w-9 flex-shrink-0 text-right pr-2 select-none border-r",
-										"text-zinc-400 dark:text-zinc-600 border-zinc-100 dark:border-zinc-800",
+										"text-text-light border-border",
 									)}
 								>
 									{line.type === "added"
@@ -181,8 +180,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 										line.type === "added" &&
 											"text-emerald-600 dark:text-emerald-400",
 										line.type === "removed" && "text-red-500 dark:text-red-400",
-										line.type === "unchanged" &&
-											"text-zinc-300 dark:text-zinc-600",
+										line.type === "unchanged" && "text-text-light",
 									)}
 								>
 									{line.type === "added"
@@ -203,18 +201,18 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 					{/* 截断提示 */}
 					{preview.truncated && (
-						<div className="px-3 py-1.5 text-center text-[11px] text-zinc-400 dark:text-zinc-500 bg-zinc-50/50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800">
+						<div className="px-3 py-1.5 text-center text-[11px] text-text-light bg-warm-50/50/30 border-t border-border">
 							还有 {preview.totalChangedLines - 10} 行变更未显示
 						</div>
 					)}
 
 					{/* 操作栏 */}
-					<div className="flex items-center justify-between px-3 py-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
+					<div className="flex items-center justify-between px-3 py-2 border-t border-border bg-warm-50/50/20">
 						{/* 查看完整 diff */}
 						<button
 							type="button"
 							onClick={openFullDiff}
-							className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+							className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
 						>
 							<ExternalLink className="w-3 h-3" />
 							查看完整 Diff
@@ -226,7 +224,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<button
 									type="button"
 									onClick={() => rejectDiff(diff.id)}
-									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 transition-colors"
+									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-text-muted hover:bg-warm-300/60 dark:hover:bg-zinc-700/60 transition-colors"
 								>
 									<X className="w-3 h-3" />
 									拒绝

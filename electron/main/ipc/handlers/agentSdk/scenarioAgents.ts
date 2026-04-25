@@ -630,11 +630,11 @@ ${opts.wikiScopePath ? `- Writing/editing files inside \`${opts.wikiScopePath}/.
 
 ## Knowledge Wiki (Karpathy LLM Wiki pattern)
 ${(() => {
-		if (!opts.wikiScopePath) {
-			return "No wiki detected for this project (no `.llm-wiki/` directory found).";
-		}
-		const wikiPath = `${opts.wikiScopePath}/.llm-wiki`;
-		return `**IMPORTANT — 这个项目有知识 Wiki（Karpathy LLM Wiki 模式）**
+	if (!opts.wikiScopePath) {
+		return "No wiki detected for this project (no `.llm-wiki/` directory found).";
+	}
+	const wikiPath = `${opts.wikiScopePath}/.llm-wiki`;
+	return `**IMPORTANT — 这个项目有知识 Wiki（Karpathy LLM Wiki 模式）**
 
 Wiki 位置：\`${wikiPath}/\`
 这是原始材料的 **LLM 编译版本**，是你回答问题、执行写作/分析任务的**首要知识源**。
@@ -645,7 +645,7 @@ Wiki 位置：\`${wikiPath}/\`
 - 维护：新摄入文件 → ingest 工作流；回答后有新综合 → backfill 工作流；定期 lint 检查
 - Wiki 文件用绝对路径访问（\`${wikiPath}/index.md\` 等）；SCHEMA.md 包含完整操作手册
 - 交叉引用使用 \`[[slug]]\` 语法；每次操作追加到 \`${wikiPath}/log.md\``;
-	})()}
+})()}
 
 ## Environment
 cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}

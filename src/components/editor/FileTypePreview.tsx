@@ -80,18 +80,18 @@ const CodePreview = memo(function CodePreview({
 		density === "compact" ? "text-[12px] leading-6" : "text-[13px] leading-7";
 
 	if (!content) {
-		return <p className="text-zinc-500 dark:text-zinc-400">文件内容为空。</p>;
+		return <p className="text-text-muted">文件内容为空。</p>;
 	}
 
 	return (
-		<div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-zinc-950 dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
-			<div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-900/90">
+		<div className="rounded-2xl border border-border/80/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
+			<div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border bg-dark-muted/90">
 				<div className="flex gap-1.5">
 					<span className="w-3 h-3 rounded-full bg-red-500/75" />
 					<span className="w-3 h-3 rounded-full bg-amber-400/75" />
 					<span className="w-3 h-3 rounded-full bg-emerald-500/75" />
 				</div>
-				<span className="text-xs font-medium text-zinc-400 truncate">
+				<span className="text-xs font-medium text-text-light truncate">
 					{fileName}
 				</span>
 			</div>
@@ -104,12 +104,12 @@ const CodePreview = memo(function CodePreview({
 					tokens.map((line, index) => (
 						<div
 							key={`${fileName}-line-${index + 1}`}
-							className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 hover:bg-white/[0.03] transition-colors"
+							className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 hover:bg-surface/[0.03] transition-colors"
 						>
-							<span className="select-none pr-4 text-right text-zinc-500">
+							<span className="select-none pr-4 text-right text-text-muted">
 								{index + 1}
 							</span>
-							<span className="whitespace-pre-wrap break-words text-zinc-100">
+							<span className="whitespace-pre-wrap break-words text-surface">
 								{line.length > 0
 									? line.map((token, tokenIndex) => (
 											<span key={tokenIndex} style={{ color: token.color }}>
@@ -147,15 +147,13 @@ const ImagePreview = memo(function ImagePreview({
 					const parent = (e.target as HTMLImageElement).parentElement;
 					if (parent) {
 						const fallback = document.createElement("p");
-						fallback.className = "text-zinc-500 dark:text-zinc-400 text-sm";
+						fallback.className = "text-text-muted text-sm";
 						fallback.textContent = `无法加载图片: ${fileName}`;
 						parent.appendChild(fallback);
 					}
 				}}
 			/>
-			<span className="text-xs text-zinc-400 dark:text-zinc-500">
-				{fileName}
-			</span>
+			<span className="text-xs text-text-light">{fileName}</span>
 		</div>
 	);
 });
@@ -177,9 +175,7 @@ const VideoPreview = memo(function VideoPreview({
 			>
 				您的浏览器不支持视频播放
 			</video>
-			<span className="text-xs text-zinc-400 dark:text-zinc-500">
-				{fileName}
-			</span>
+			<span className="text-xs text-text-light">{fileName}</span>
 		</div>
 	);
 });
@@ -209,7 +205,7 @@ const AudioPreview = memo(function AudioPreview({
 					/>
 				</svg>
 			</div>
-			<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+			<span className="text-sm font-medium text-text-secondary">
 				{fileName}
 			</span>
 			<audio src={src} controls className="w-full max-w-md">
@@ -228,7 +224,7 @@ const PdfPreview = memo(function PdfPreview({
 }) {
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-2 p-1">
-			<div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+			<div className="flex items-center gap-2 text-sm text-text-muted">
 				<svg
 					className="w-4 h-4"
 					fill="none"
@@ -247,7 +243,7 @@ const PdfPreview = memo(function PdfPreview({
 			<DocumentViewer
 				src={filePath}
 				type="pdf"
-				className="flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700"
+				className="flex-1 min-h-0 rounded-lg border border-border"
 			/>
 		</div>
 	);
@@ -288,14 +284,14 @@ const CsvPreview = memo(function CsvPreview({
 	const body = rows.slice(1);
 
 	return (
-		<div className="overflow-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800/80">
+		<div className="overflow-auto rounded-xl border border-border/80/80">
 			<table className="w-full text-sm">
-				<thead className="bg-zinc-100 dark:bg-zinc-800/80 sticky top-0">
+				<thead className="bg-warm-200/80 sticky top-0">
 					<tr>
 						{header.map((cell, i) => (
 							<th
 								key={`h-${i}`}
-								className="px-4 py-2.5 text-left font-medium text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap"
+								className="px-4 py-2.5 text-left font-medium text-text-secondary border-b border-border whitespace-nowrap"
 							>
 								{cell}
 							</th>
@@ -306,12 +302,12 @@ const CsvPreview = memo(function CsvPreview({
 					{body.map((row, i) => (
 						<tr
 							key={`r-${i}`}
-							className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+							className="hover:bg-warm-50/40 transition-colors"
 						>
 							{row.map((cell, j) => (
 								<td
 									key={`c-${i}-${j}`}
-									className="px-4 py-2 text-zinc-600 dark:text-zinc-400 border-b border-zinc-100 dark:border-zinc-800/50 whitespace-nowrap"
+									className="px-4 py-2 text-text-secondary border-b border-border/50 whitespace-nowrap"
 								>
 									{cell}
 								</td>
@@ -321,7 +317,7 @@ const CsvPreview = memo(function CsvPreview({
 				</tbody>
 			</table>
 			{body.length > 0 && (
-				<div className="px-4 py-2 text-xs text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/50">
+				<div className="px-4 py-2 text-xs text-text-light border-t border-border/50">
 					共 {body.length} 行 · {header.length} 列
 				</div>
 			)}
@@ -352,10 +348,8 @@ const ExcelPlaceholder = memo(function ExcelPlaceholder({
 				</svg>
 			</div>
 			<div>
-				<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-					{fileName}
-				</p>
-				<p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+				<p className="text-sm font-medium text-text-secondary">{fileName}</p>
+				<p className="text-xs text-text-light mt-1">
 					Excel 文件无法在此预览，请使用 Excel 或 WPS 等工具打开
 				</p>
 			</div>
@@ -370,9 +364,9 @@ const BinaryNotAvailable = memo(function BinaryNotAvailable({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-3 p-10 text-center">
-			<div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+			<div className="w-14 h-14 rounded-2xl bg-warm-200 flex items-center justify-center">
 				<svg
-					className="w-7 h-7 text-zinc-400 dark:text-zinc-500"
+					className="w-7 h-7 text-text-light"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -385,10 +379,8 @@ const BinaryNotAvailable = memo(function BinaryNotAvailable({
 					/>
 				</svg>
 			</div>
-			<p className="text-sm text-zinc-500 dark:text-zinc-400">{fileName}</p>
-			<p className="text-xs text-zinc-400 dark:text-zinc-500">
-				该文件需要指定文件路径才能预览
-			</p>
+			<p className="text-sm text-text-muted">{fileName}</p>
+			<p className="text-xs text-text-light">该文件需要指定文件路径才能预览</p>
 		</div>
 	);
 });
@@ -443,7 +435,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 对二进制占位内容不做文本渲染
 	if (isBinaryContent || !content) {
-		return <p className="text-zinc-600 dark:text-zinc-300">{emptyText}</p>;
+		return <p className="text-text-secondary">{emptyText}</p>;
 	}
 
 	// 7. Markdown
@@ -453,7 +445,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 				? "text-[14px] leading-[1.65]"
 				: "text-base leading-[1.75]";
 		return (
-			<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:leading-[1.75] prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100">
+			<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-text-secondary dark:prose-p:text-text-light prose-p:leading-[1.75] prose-li:text-text-secondary dark:prose-li:text-text-light prose-strong:text-text-primary dark:prose-strong:text-surface">
 				<MarkdownRenderer content={content} className={textClass} />
 			</article>
 		);
@@ -468,7 +460,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 9. 纯文本
 	return (
-		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/80 dark:bg-zinc-950/55 px-5 py-4 text-sm leading-7 text-zinc-700 dark:text-zinc-200">
+		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80/80 bg-warm-50/80/55 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-zinc-200">
 			{content || emptyText}
 		</pre>
 	);

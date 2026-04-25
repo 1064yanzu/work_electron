@@ -25,7 +25,7 @@ const TONE_CLASS: Record<StatusTone, { solid: string; ring: string }> = {
 		ring: "ring-sky-500/20",
 	},
 	zinc: {
-		solid: "bg-zinc-400 dark:bg-zinc-500",
+		solid: "bg-zinc-4000",
 		ring: "ring-zinc-400/20",
 	},
 };
@@ -82,7 +82,7 @@ export function StatusPill({
 		amber: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
 		rose: "text-rose-600 dark:text-rose-400 bg-rose-500/10",
 		sky: "text-sky-600 dark:text-sky-400 bg-sky-500/10",
-		zinc: "text-zinc-500 dark:text-zinc-400 bg-zinc-500/10",
+		zinc: "text-text-muted bg-warm-500/10",
 	};
 	return (
 		<span

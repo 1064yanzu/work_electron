@@ -159,14 +159,14 @@ export function GraphInspectorPanel({
 					: "w-[min(420px,calc(100%-1.5rem))] bottom-3",
 			)}
 		>
-			<div className="h-full rounded-3xl bg-white/90 dark:bg-zinc-950/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
-				<div className="px-4 py-3 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-start justify-between gap-3">
+			<div className="h-full rounded-3xl bg-surface/90/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
+				<div className="px-4 py-3 border-b border-border/60/60 flex items-start justify-between gap-3">
 					<div className="min-w-0">
-						<div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+						<div className="text-sm font-semibold text-text-primary truncate">
 							{title}
 						</div>
 						{subtitle ? (
-							<div className="text-[12px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+							<div className="text-[12px] text-text-muted mt-0.5 truncate">
 								{subtitle}
 							</div>
 						) : null}
@@ -175,7 +175,7 @@ export function GraphInspectorPanel({
 						<button
 							type="button"
 							onClick={() => setCollapsed((v) => !v)}
-							className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 transition-colors"
+							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50 transition-colors"
 							title={collapsed ? "展开" : "收起"}
 						>
 							{collapsed ? (
@@ -191,7 +191,7 @@ export function GraphInspectorPanel({
 								"p-2 rounded-xl transition-colors",
 								pinned
 									? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
-									: "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50",
+									: "text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50",
 							)}
 							title={pinned ? "取消固定" : "固定详情"}
 						>
@@ -204,7 +204,7 @@ export function GraphInspectorPanel({
 						<button
 							type="button"
 							onClick={onClose}
-							className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 transition-colors"
+							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50 transition-colors"
 							title="关闭"
 						>
 							<X className="w-4 h-4" />
@@ -225,7 +225,7 @@ export function GraphInspectorPanel({
 												source: "graph",
 											});
 										}}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-white text-xs font-medium hover:opacity-90 transition-opacity"
 									>
 										<ChevronRight className="w-4 h-4" />
 										定位右栏
@@ -235,7 +235,7 @@ export function GraphInspectorPanel({
 										onClick={() =>
 											copy("input", safeJson(selectedToolCall.input))
 										}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 transition-colors"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
 									>
 										{copiedTag === "input" ? (
 											<Check className="w-4 h-4" />
@@ -249,7 +249,7 @@ export function GraphInspectorPanel({
 										onClick={() =>
 											copy("output", safeJson(selectedToolCall.output))
 										}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 transition-colors"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
 									>
 										{copiedTag === "output" ? (
 											<Check className="w-4 h-4" />
@@ -261,8 +261,8 @@ export function GraphInspectorPanel({
 								</div>
 
 								{artifactsForTool.length > 0 ? (
-									<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-										<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
+									<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+										<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
 											关联产物
 										</div>
 										<div className="p-2 space-y-1">
@@ -272,7 +272,7 @@ export function GraphInspectorPanel({
 														key={artifact.id}
 														type="button"
 														onClick={() => onOpenArtifact(artifact.url!)}
-														className="w-full text-left inline-flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-white/70 dark:hover:bg-zinc-800/60 text-xs text-zinc-700 dark:text-zinc-200"
+														className="w-full text-left inline-flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-surface/70/60 text-xs text-text-secondary dark:text-zinc-200"
 													>
 														<span className="truncate mr-2">
 															{artifact.title}
@@ -285,25 +285,25 @@ export function GraphInspectorPanel({
 									</div>
 								) : null}
 
-								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
+								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
 										输入
 									</div>
-									<pre className="px-3 py-2 text-[11px] text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words">
+									<pre className="px-3 py-2 text-[11px] text-text-secondary dark:text-zinc-200 whitespace-pre-wrap break-words">
 										{safeJson(selectedToolCall.input)}
 									</pre>
 								</div>
 
-								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
+								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
 										输出
 									</div>
-									<pre className="px-3 py-2 text-[11px] text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+									<pre className="px-3 py-2 text-[11px] text-text-secondary dark:text-zinc-200 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
 										{safeJson(selectedToolCall.output)}
 									</pre>
 								</div>
 
-								<div className="text-[11px] text-zinc-400 dark:text-zinc-500">
+								<div className="text-[11px] text-text-light">
 									{selectedToolCall.duration
 										? `耗时 ${formatDuration(selectedToolCall.duration)}`
 										: ""}
@@ -311,11 +311,11 @@ export function GraphInspectorPanel({
 							</>
 						) : selectedArtifact ? (
 							<>
-								<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
+								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
 										路径
 									</div>
-									<div className="px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-200 break-words">
+									<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-zinc-200 break-words">
 										{selectedArtifact.url || "—"}
 									</div>
 								</div>
@@ -324,7 +324,7 @@ export function GraphInspectorPanel({
 										<button
 											type="button"
 											onClick={() => onOpenArtifact(selectedArtifact.url!)}
-											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
+											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-white text-xs font-medium hover:opacity-90 transition-opacity"
 										>
 											<Eye className="w-4 h-4" />
 											打开预览
@@ -332,7 +332,7 @@ export function GraphInspectorPanel({
 										<button
 											type="button"
 											onClick={() => copy("path", selectedArtifact.url!)}
-											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 transition-colors"
+											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
 										>
 											{copiedTag === "path" ? (
 												<Check className="w-4 h-4" />
@@ -345,26 +345,24 @@ export function GraphInspectorPanel({
 								) : null}
 							</>
 						) : isTaskSelected ? (
-							<div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/60 dark:border-zinc-800/60">
+							<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+								<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
 									任务描述
 								</div>
-								<div className="px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-200 break-words">
+								<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-zinc-200 break-words">
 									{source.subtitle || "—"}
 								</div>
 							</div>
 						) : (
-							<div className="text-sm text-zinc-500 dark:text-zinc-400">
-								未找到对应数据。
-							</div>
+							<div className="text-sm text-text-muted">未找到对应数据。</div>
 						)}
 					</div>
 				)}
 
 				{/* 子代理切换器 — 当选中子代理且同组有 2+ 个时显示 */}
 				{!collapsed && siblingSubagents.length >= 2 && onSelectNode ? (
-					<div className="border-t border-zinc-200/60 dark:border-zinc-800/60 px-3 py-2.5">
-						<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+					<div className="border-t border-border/60/60 px-3 py-2.5">
+						<div className="text-[11px] font-medium text-text-muted mb-2">
 							同组 Agent ({siblingSubagents.length})
 						</div>
 						<div
@@ -390,7 +388,7 @@ export function GraphInspectorPanel({
 											"shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors",
 											isActive
 												? "bg-primary/15 text-primary ring-1 ring-primary/25"
-												: "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/50",
+												: "bg-warm-200/60 text-text-secondary hover:bg-warm-300/70 dark:hover:bg-zinc-700/50",
 										)}
 									>
 										<span

@@ -28,13 +28,15 @@ export function TestEnhancedInput() {
 					<h2 className="font-medium mb-2">使用说明:</h2>
 					<ul className="text-sm text-text-muted space-y-1 list-disc list-inside">
 						<li>
-							输入 <code className="bg-white px-1 rounded">/</code> 查看所有命令
+							输入 <code className="bg-surface px-1 rounded">/</code>{" "}
+							查看所有命令
 						</li>
 						<li>
-							输入 <code className="bg-white px-1 rounded">@</code> 引用上下文
+							输入 <code className="bg-surface px-1 rounded">@</code> 引用上下文
 						</li>
 						<li>
-							使用 <code className="bg-white px-1 rounded">⌘ + Enter</code> 提交
+							使用 <code className="bg-surface px-1 rounded">⌘ + Enter</code>{" "}
+							提交
 						</li>
 					</ul>
 				</div>

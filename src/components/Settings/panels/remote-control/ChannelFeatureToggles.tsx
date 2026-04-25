@@ -59,9 +59,9 @@ function renderRow(
 	control: ReactNode,
 ) {
 	return (
-		<div className="flex items-start justify-between gap-4 rounded-xl border border-zinc-200/80 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+		<div className="flex items-start justify-between gap-4 rounded-xl border border-border/80 bg-surface px-4 py-3">
 			<div className="flex items-start gap-3 min-w-0">
-				<div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+				<div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-warm-200 text-text-secondary">
 					{icon}
 				</div>
 				<div className="min-w-0">
@@ -101,7 +101,7 @@ export function ChannelFeatureToggles({
 	];
 
 	return (
-		<div className="space-y-3 rounded-2xl border border-zinc-200/70 bg-zinc-50/40 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+		<div className="space-y-3 rounded-2xl border border-border/70 bg-warm-50/40 p-4/40">
 			<div>
 				<SettingsSectionTitle className="mb-0.5 text-base">
 					能力开关

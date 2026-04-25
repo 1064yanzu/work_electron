@@ -77,9 +77,8 @@ const fileTypeConfig: Record<
 	},
 	text: {
 		icon: FileText,
-		gradient:
-			"from-zinc-500/20 to-slate-500/20 border-zinc-200/50 dark:border-zinc-800/30",
-		iconColor: "text-zinc-600 dark:text-zinc-400",
+		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50/30",
+		iconColor: "text-text-secondary",
 		label: "文本",
 	},
 	code: {
@@ -140,9 +139,8 @@ const fileTypeConfig: Record<
 	},
 	other: {
 		icon: File,
-		gradient:
-			"from-zinc-500/20 to-slate-500/20 border-zinc-200/50 dark:border-zinc-800/30",
-		iconColor: "text-zinc-600 dark:text-zinc-400",
+		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50/30",
+		iconColor: "text-text-secondary",
 		label: "文件",
 	},
 };
@@ -188,8 +186,8 @@ function ActionButton({
 			}}
 			className={cn(
 				"p-1.5 rounded-lg transition-all duration-200",
-				"text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300",
-				"hover:bg-zinc-100 dark:hover:bg-zinc-800",
+				"text-text-light hover:text-text-secondary dark:hover:text-text-light",
+				"hover:bg-warm-200",
 				"active:scale-95",
 				className,
 			)}
@@ -222,9 +220,9 @@ export default function ArtifactCard({
 		<div
 			className={cn(
 				"group relative flex items-center gap-3",
-				"bg-white dark:bg-zinc-900/40",
-				"border border-zinc-200/60 dark:border-zinc-800/60",
-				"hover:border-zinc-300 dark:hover:border-zinc-700",
+				"bg-surface/40",
+				"border border-border/60/60",
+				"hover:border-zinc-300",
 				"hover:shadow-md hover:-translate-y-0.5",
 				"rounded-xl p-3",
 				"transition-all duration-300 ease-out",
@@ -254,12 +252,12 @@ export default function ArtifactCard({
 			{/* 文件信息 */}
 			<div className="flex-1 min-w-0">
 				<h4
-					className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate"
+					className="text-sm font-medium text-text-primary dark:text-zinc-200 truncate"
 					title={fileName}
 				>
 					{fileName}
 				</h4>
-				<p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 flex items-center gap-1.5">
+				<p className="text-[11px] text-text-light mt-0.5 flex items-center gap-1.5">
 					<span>{config.label}</span>
 					<span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
 					<span>{formatFileSize(fileSize)}</span>
@@ -271,7 +269,7 @@ export default function ArtifactCard({
 					)}
 				</p>
 				{description && (
-					<p className="text-[10px] text-zinc-400 mt-1 line-clamp-1">
+					<p className="text-[10px] text-text-light mt-1 line-clamp-1">
 						{description}
 					</p>
 				)}
@@ -317,8 +315,8 @@ export default function ArtifactCard({
 					className={cn(
 						"absolute left-0 right-0 -bottom-8 z-10",
 						"px-3 py-1.5",
-						"bg-zinc-900/90 dark:bg-zinc-800/90 backdrop-blur-sm",
-						"text-[10px] text-zinc-300 font-mono truncate",
+						"bg-dark-muted/90/90 backdrop-blur-sm",
+						"text-[10px] text-text-light font-mono truncate",
 						"rounded-lg shadow-lg",
 						"animate-in fade-in slide-in-from-top-1 duration-200",
 					)}
@@ -356,7 +354,7 @@ export function ArtifactCardList({
 
 	return (
 		<div className="space-y-2 mt-3">
-			<div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider px-1">
+			<div className="text-[10px] font-semibold text-text-light uppercase tracking-wider px-1">
 				产物文件 ({artifacts.length})
 			</div>
 			<div className="space-y-2">

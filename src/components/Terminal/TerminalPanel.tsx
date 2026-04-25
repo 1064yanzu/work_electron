@@ -48,11 +48,11 @@ export function TerminalPanel() {
 
 	if (terminals.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full bg-[#1a1b26] text-zinc-500">
+			<div className="flex flex-col items-center justify-center h-full bg-[#1a1b26] text-text-muted">
 				<button
 					type="button"
 					onClick={() => terminalStore.createTerminal()}
-					className="flex items-center gap-2 px-4 py-2.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+					className="flex items-center gap-2 px-4 py-2.5 text-text-light hover:text-zinc-200 hover:bg-surface/5 rounded-lg transition-colors cursor-pointer"
 				>
 					<Terminal className="w-4 h-4" />
 					<span className="text-sm">新建终端</span>

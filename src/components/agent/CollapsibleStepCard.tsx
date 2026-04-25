@@ -76,30 +76,30 @@ export function CollapsibleStepCard({
 	// 状态颜色映射
 	const statusColors = {
 		pending: {
-			bg: "bg-white/40 dark:bg-zinc-900/20",
+			bg: "bg-surface/40/20",
 			ring: "ring-1 ring-zinc-200/40 dark:ring-zinc-700/40",
-			text: "text-zinc-400 dark:text-zinc-500",
-			iconBg: "bg-zinc-50 dark:bg-zinc-800/50",
-			iconColor: "text-zinc-400",
+			text: "text-text-light",
+			iconBg: "bg-warm-50/50",
+			iconColor: "text-text-light",
 		},
 		running: {
-			bg: "bg-white/80 dark:bg-zinc-900/60",
+			bg: "bg-surface/80/60",
 			ring: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
-			text: "text-zinc-700 dark:text-zinc-300",
+			text: "text-text-secondary",
 			iconBg: "bg-blue-50 dark:bg-blue-900/20",
 			iconColor: "text-blue-600 dark:text-blue-400",
 		},
 		completed: {
-			bg: "bg-white/60 dark:bg-zinc-900/40",
+			bg: "bg-surface/60/40",
 			ring: "ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
-			text: "text-zinc-500 dark:text-zinc-400",
+			text: "text-text-muted",
 			iconBg: "bg-emerald-50/50 dark:bg-emerald-900/10",
 			iconColor: "text-emerald-600 dark:text-emerald-400",
 		},
 		error: {
-			bg: "bg-white/80 dark:bg-zinc-900/60",
+			bg: "bg-surface/80/60",
 			ring: "ring-2 ring-red-200/50 dark:ring-red-800/30",
-			text: "text-zinc-700 dark:text-zinc-300",
+			text: "text-text-secondary",
 			iconBg: "bg-red-50 dark:bg-red-900/20",
 			iconColor: "text-red-600 dark:text-red-400",
 		},
@@ -123,8 +123,7 @@ export function CollapsibleStepCard({
 				onClick={() => canToggle && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					canToggle &&
-						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					canToggle && "cursor-pointer hover:bg-surface/90/70",
 					!canToggle && "cursor-default",
 				)}
 				disabled={!canToggle}
@@ -150,9 +149,7 @@ export function CollapsibleStepCard({
 						<div
 							className={cn(
 								"text-sm font-medium transition-colors",
-								status === "pending"
-									? "text-zinc-400 dark:text-zinc-500"
-									: colors.text,
+								status === "pending" ? "text-text-light" : colors.text,
 							)}
 						>
 							{title}
@@ -163,7 +160,7 @@ export function CollapsibleStepCard({
 
 						{/* 持续时间 */}
 						{durationText && (
-							<div className="text-[11px] font-medium text-zinc-400">
+							<div className="text-[11px] font-medium text-text-light">
 								{durationText}
 							</div>
 						)}
@@ -172,9 +169,9 @@ export function CollapsibleStepCard({
 						{canToggle && (
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								)}
 							</div>
 						)}
@@ -182,7 +179,7 @@ export function CollapsibleStepCard({
 
 					{/* 描述 */}
 					{description && (
-						<div className="text-[11px] text-zinc-400 dark:text-zinc-500 line-clamp-1 mt-0.5">
+						<div className="text-[11px] text-text-light line-clamp-1 mt-0.5">
 							{description}
 						</div>
 					)}
@@ -191,9 +188,7 @@ export function CollapsibleStepCard({
 
 			{/* 展开内容 */}
 			{isExpanded && children && (
-				<div className="px-3 pb-3 border-t border-zinc-200/30 dark:border-zinc-700/30">
-					{children}
-				</div>
+				<div className="px-3 pb-3 border-t border-border/30/30">{children}</div>
 			)}
 		</div>
 	);

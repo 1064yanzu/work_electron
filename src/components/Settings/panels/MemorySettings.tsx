@@ -285,20 +285,20 @@ export function MemorySettings() {
 			{/* 搜索栏 + 预览按钮 */}
 			<div className="flex gap-2">
 				<div className="flex-1 relative">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light" />
 					<input
 						type="text"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						onKeyDown={(e) => e.key === "Enter" && handleSearch()}
 						placeholder="搜索记忆..."
-						className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+						className="w-full pl-9 pr-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
 					/>
 				</div>
 				<button
 					type="button"
 					onClick={handleSearch}
-					className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors cursor-pointer"
+					className="px-4 py-2 text-sm font-medium bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-text-secondary rounded-lg transition-colors cursor-pointer"
 				>
 					搜索
 				</button>
@@ -308,7 +308,7 @@ export function MemorySettings() {
 					className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
 						showContextPreview
 							? "bg-primary/10 text-primary dark:bg-primary/20"
-							: "bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+							: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-text-secondary"
 					}`}
 					title="预览注入到 Agent 的记忆上下文"
 				>
@@ -319,20 +319,20 @@ export function MemorySettings() {
 
 			{/* 上下文预览 */}
 			{showContextPreview && (
-				<div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 animate-in slide-in-from-top-2 duration-200">
+				<div className="rounded-xl border border-border/70 bg-warm-50/50 p-4 animate-in slide-in-from-top-2 duration-200">
 					<div className="flex items-center gap-2 mb-2">
 						<Eye className="w-4 h-4 text-primary" />
-						<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+						<span className="text-sm font-medium text-text-secondary">
 							Agent 启动时注入的记忆上下文
 						</span>
 					</div>
 					{contextLoading ? (
-						<div className="flex items-center gap-2 py-4 text-zinc-400">
+						<div className="flex items-center gap-2 py-4 text-text-light">
 							<Loader2 className="w-4 h-4 animate-spin" />
 							<span className="text-sm">加载中...</span>
 						</div>
 					) : (
-						<pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed font-mono bg-white dark:bg-zinc-900 rounded-lg p-3 max-h-64 overflow-y-auto border border-zinc-100 dark:border-zinc-800">
+						<pre className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed font-mono bg-surface rounded-lg p-3 max-h-64 overflow-y-auto border border-border">
 							{contextPreview}
 						</pre>
 					)}
@@ -363,12 +363,12 @@ export function MemorySettings() {
 
 			{/* 记忆列表（按分类分组） */}
 			{loading ? (
-				<div className="flex items-center justify-center py-12 text-zinc-400">
+				<div className="flex items-center justify-center py-12 text-text-light">
 					<Loader2 className="w-5 h-5 animate-spin mr-2" />
 					加载中...
 				</div>
 			) : memories.length === 0 ? (
-				<div className="flex flex-col items-center justify-center py-16 text-zinc-400 dark:text-zinc-500">
+				<div className="flex flex-col items-center justify-center py-16 text-text-light">
 					<Database className="w-10 h-10 mb-3 opacity-40" />
 					<p className="text-sm">暂无记忆数据</p>
 					<p className="text-xs mt-1">Agent 会在使用过程中自动积累记忆</p>
@@ -410,22 +410,20 @@ function MemoryStatsBar({
 	stats: { total: number; byCategory: Record<string, number> };
 }) {
 	return (
-		<div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800">
-			<div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+		<div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-warm-50/50 border border-border/50">
+			<div className="flex items-center gap-1.5 text-text-muted">
 				<BarChart3 className="w-4 h-4" />
 				<span className="text-sm font-medium">共 {stats.total} 条</span>
 			</div>
-			<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
+			<div className="w-px h-4 bg-warm-300 dark:bg-zinc-700" />
 			{Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
 				const count = stats.byCategory[key] ?? 0;
 				if (count === 0) return null;
 				return (
 					<div key={key} className="flex items-center gap-1">
 						<span className="text-xs">{config.icon}</span>
-						<span className="text-xs text-zinc-500 dark:text-zinc-400">
-							{config.label}
-						</span>
-						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+						<span className="text-xs text-text-muted">{config.label}</span>
+						<span className="text-xs font-medium text-text-secondary">
 							{count}
 						</span>
 					</div>
@@ -460,7 +458,7 @@ function MemoryAddForm({
 		<div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
 			<div className="flex gap-3">
 				<div className="flex-1">
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+					<label className="block text-xs font-medium text-text-muted mb-1">
 						标识 (Key)
 					</label>
 					<input
@@ -468,11 +466,11 @@ function MemoryAddForm({
 						value={newKey}
 						onChange={(e) => onKeyChange(e.target.value)}
 						placeholder="如: user_writing_style"
-						className="w-full px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+						className="w-full px-3 py-1.5 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
 					/>
 				</div>
 				<div className="w-32">
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+					<label className="block text-xs font-medium text-text-muted mb-1">
 						类别
 					</label>
 					<Select
@@ -489,7 +487,7 @@ function MemoryAddForm({
 				</div>
 			</div>
 			<div>
-				<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+				<label className="block text-xs font-medium text-text-muted mb-1">
 					内容
 				</label>
 				<textarea
@@ -497,7 +495,7 @@ function MemoryAddForm({
 					onChange={(e) => onContentChange(e.target.value)}
 					placeholder="记忆的具体内容..."
 					rows={3}
-					className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+					className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
 				/>
 			</div>
 			<div className="flex justify-end">
@@ -535,7 +533,7 @@ function ClearConfirmDialog({
 				<button
 					type="button"
 					onClick={onCancel}
-					className="px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+					className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 cursor-pointer"
 				>
 					取消
 				</button>
@@ -583,23 +581,23 @@ function MemoryGroup({
 	const config = CATEGORY_CONFIG[category];
 
 	return (
-		<div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800 overflow-hidden">
+		<div className="rounded-xl border border-border/70 overflow-hidden">
 			{/* 分组标题 */}
 			<button
 				type="button"
 				onClick={onToggle}
-				className="w-full flex items-center gap-2 px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+				className="w-full flex items-center gap-2 px-4 py-2.5 bg-warm-50/50 hover:bg-warm-200/50 transition-colors cursor-pointer"
 			>
 				{collapsed ? (
-					<ChevronRight className="w-4 h-4 text-zinc-400" />
+					<ChevronRight className="w-4 h-4 text-text-light" />
 				) : (
-					<ChevronDown className="w-4 h-4 text-zinc-400" />
+					<ChevronDown className="w-4 h-4 text-text-light" />
 				)}
 				<span className="text-sm">{config.icon}</span>
-				<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+				<span className="text-sm font-medium text-text-secondary">
 					{config.label}
 				</span>
-				<span className="text-xs text-zinc-400 dark:text-zinc-500 ml-1">
+				<span className="text-xs text-text-light ml-1">
 					({memories.length})
 				</span>
 			</button>
@@ -656,7 +654,7 @@ function MemoryItem({
 		: "未访问";
 
 	return (
-		<div className="group px-4 py-3 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+		<div className="group px-4 py-3 bg-surface hover:bg-warm-50/30 transition-colors">
 			<div className="flex items-start justify-between gap-3">
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -665,14 +663,12 @@ function MemoryItem({
 						>
 							{cat.label}
 						</span>
-						<span className="text-xs font-mono text-zinc-400 dark:text-zinc-500 truncate">
+						<span className="text-xs font-mono text-text-light truncate">
 							{memory.key}
 						</span>
-						<span className="text-[10px] text-zinc-300 dark:text-zinc-600">
-							更新: {dateStr}
-						</span>
+						<span className="text-[10px] text-text-light">更新: {dateStr}</span>
 						{memory.accessCount > 0 && (
-							<span className="inline-flex items-center gap-0.5 text-[10px] text-zinc-300 dark:text-zinc-600">
+							<span className="inline-flex items-center gap-0.5 text-[10px] text-text-light">
 								<Hash className="w-2.5 h-2.5" />
 								{memory.accessCount}次 · 最近: {lastAccess}
 							</span>
@@ -689,13 +685,13 @@ function MemoryItem({
 								value={editContent}
 								onChange={(e) => onEditChange(e.target.value)}
 								rows={3}
-								className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+								className="w-full px-3 py-2 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
 							/>
 							<div className="flex gap-2 justify-end">
 								<button
 									type="button"
 									onClick={onEditCancel}
-									className="px-3 py-1 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer"
+									className="px-3 py-1 text-xs text-text-muted hover:text-text-secondary dark:hover:text-text-light cursor-pointer"
 								>
 									取消
 								</button>
@@ -709,7 +705,7 @@ function MemoryItem({
 							</div>
 						</div>
 					) : (
-						<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap">
+						<p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
 							{memory.content}
 						</p>
 					)}
@@ -719,7 +715,7 @@ function MemoryItem({
 						<button
 							type="button"
 							onClick={onEditStart}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-colors cursor-pointer"
 							title="编辑"
 						>
 							<Edit3 className="w-3.5 h-3.5" />
@@ -727,7 +723,7 @@ function MemoryItem({
 						<button
 							type="button"
 							onClick={onDelete}
-							className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer"
+							className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer"
 							title="删除"
 						>
 							<Trash2 className="w-3.5 h-3.5" />

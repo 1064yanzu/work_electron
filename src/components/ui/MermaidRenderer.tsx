@@ -179,32 +179,32 @@ const MermaidRenderer = memo(function MermaidRenderer({
 	};
 
 	const Controls = () => (
-		<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
+		<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/90/90 backdrop-blur-sm p-1 rounded-lg border border-border shadow-sm">
 			<button
 				onClick={handleZoomOut}
-				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 				title="缩小"
 			>
 				<ZoomOut className="w-3.5 h-3.5" />
 			</button>
 			<button
 				onClick={handleReset}
-				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 				title="重置"
 			>
 				<RotateCcw className="w-3.5 h-3.5" />
 			</button>
 			<button
 				onClick={handleZoomIn}
-				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 				title="放大"
 			>
 				<ZoomIn className="w-3.5 h-3.5" />
 			</button>
-			<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-0.5" />
+			<div className="w-px h-4 bg-warm-300 dark:bg-zinc-700 mx-0.5" />
 			<button
 				onClick={() => setIsFullscreen(true)}
-				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 				title="全屏预览"
 			>
 				<Maximize2 className="w-3.5 h-3.5" />
@@ -212,17 +212,17 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			<div className="relative group/dl">
 				<button
 					onClick={() => handleDownload("svg")}
-					className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+					className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 					title="保存 SVG (推荐)"
 				>
 					<Download className="w-3.5 h-3.5" />
 				</button>
 				{/* Optional PNG dropdown can be added here, but default to SVG is safer */}
 			</div>
-			<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-0.5" />
+			<div className="w-px h-4 bg-warm-300 dark:bg-zinc-700 mx-0.5" />
 			<button
 				onClick={handleCopy}
-				className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
 				title="复制 Meramid 代码"
 			>
 				{copied ? (
@@ -243,7 +243,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 				<pre className="whitespace-pre-wrap font-mono text-xs text-rose-500 dark:text-rose-300 overflow-x-auto">
 					{error}
 				</pre>
-				<pre className="mt-4 p-2 bg-white dark:bg-zinc-900 rounded border border-rose-100 dark:border-rose-900/30 font-mono text-xs text-zinc-600 dark:text-zinc-400 overflow-x-auto">
+				<pre className="mt-4 p-2 bg-surface rounded border border-rose-100 dark:border-rose-900/30 font-mono text-xs text-text-secondary overflow-x-auto">
 					{chart}
 				</pre>
 			</div>
@@ -254,7 +254,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 		<>
 			<div
 				className={cn(
-					"relative group border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950 my-4",
+					"relative group border border-border rounded-lg overflow-hidden bg-surface my-4",
 					className,
 				)}
 			>
@@ -271,7 +271,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 							dangerouslySetInnerHTML={{ __html: svg }}
 						/>
 					) : (
-						<div className="flex items-center gap-2 text-sm text-zinc-400 animate-pulse">
+						<div className="flex items-center gap-2 text-sm text-text-light animate-pulse">
 							<RefreshCw className="w-4 h-4 animate-spin" />
 							Rendering chart...
 						</div>
@@ -282,17 +282,17 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			{/* Fullscreen Modal */}
 			{isFullscreen && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
-					<div className="relative w-full h-full bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col">
-						<div className="absolute top-4 right-4 flex items-center gap-2 z-10 bg-white/50 backdrop-blur-sm p-1 rounded-lg border border-zinc-200 shadow-sm">
+					<div className="relative w-full h-full bg-surface rounded-xl overflow-hidden shadow-2xl flex flex-col">
+						<div className="absolute top-4 right-4 flex items-center gap-2 z-10 bg-surface/50 backdrop-blur-sm p-1 rounded-lg border border-border shadow-sm">
 							<button
 								onClick={() => setIsFullscreen(false)}
-								className="p-2 hover:bg-zinc-100 rounded-md text-zinc-500 hover:text-zinc-800 transition-colors"
+								className="p-2 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary transition-colors"
 							>
 								<X className="w-5 h-5" />
 							</button>
 						</div>
 
-						<div className="flex-1 overflow-auto flex items-center justify-center p-8 bg-white">
+						<div className="flex-1 overflow-auto flex items-center justify-center p-8 bg-surface">
 							{svg && (
 								<div
 									className="origin-center"
@@ -303,29 +303,29 @@ const MermaidRenderer = memo(function MermaidRenderer({
 						</div>
 
 						{/* Toolbar at bottom */}
-						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur shadow-lg border border-zinc-200 rounded-full px-4 py-2">
+						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-surface/90 backdrop-blur shadow-lg border border-border rounded-full px-4 py-2">
 							<button
 								onClick={handleZoomOut}
-								className="p-2 hover:bg-zinc-100 rounded-full"
+								className="p-2 hover:bg-warm-200 rounded-full"
 							>
 								<ZoomOut className="w-4 h-4" />
 							</button>
 							<button
 								onClick={handleReset}
-								className="p-2 hover:bg-zinc-100 rounded-full"
+								className="p-2 hover:bg-warm-200 rounded-full"
 							>
 								<RotateCcw className="w-4 h-4" />
 							</button>
 							<button
 								onClick={handleZoomIn}
-								className="p-2 hover:bg-zinc-100 rounded-full"
+								className="p-2 hover:bg-warm-200 rounded-full"
 							>
 								<ZoomIn className="w-4 h-4" />
 							</button>
 							<div className="w-px h-4 bg-zinc-300 mx-1" />
 							<button
 								onClick={() => handleDownload("svg")}
-								className="p-2 hover:bg-zinc-100 rounded-full"
+								className="p-2 hover:bg-warm-200 rounded-full"
 								title="保存 SVG"
 							>
 								<Download className="w-4 h-4" />

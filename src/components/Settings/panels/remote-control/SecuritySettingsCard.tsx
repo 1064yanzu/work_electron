@@ -7,7 +7,7 @@ import { SettingsSectionTitle } from "../../ui/SettingsPrimitives";
 import type { RemoteControlConfig } from "../../../../lib/api";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
 
 type SecuritySettingsCardProps = {
 	config: RemoteControlConfig;
@@ -23,7 +23,7 @@ export function SecuritySettingsCard({
 	onSave,
 }: SecuritySettingsCardProps) {
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			{/* 顶部装饰线 */}
 			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-40" />
 
@@ -103,7 +103,7 @@ export function SecuritySettingsCard({
 				</div>
 
 				{/* 信息展示条 */}
-				<div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
+				<div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Shield className="h-3.5 w-3.5 text-text-muted" />
 						<span className="font-medium">默认 scopes：</span>
@@ -111,7 +111,7 @@ export function SecuritySettingsCard({
 							{config.security.defaultScopes.join(", ") || "—"}
 						</span>
 					</div>
-					<div className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" />
+					<div className="h-3 w-px bg-warm-300 dark:bg-zinc-700" />
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Activity className="h-3.5 w-3.5 text-text-muted" />
 						<span className="font-medium">移动端网关：</span>
@@ -119,7 +119,7 @@ export function SecuritySettingsCard({
 							className={`font-medium ${
 								config.mobileGateway.enabled
 									? "text-emerald-600 dark:text-emerald-400"
-									: "text-zinc-500"
+									: "text-text-muted"
 							}`}
 						>
 							{config.mobileGateway.enabled ? "已启用" : "已关闭"}

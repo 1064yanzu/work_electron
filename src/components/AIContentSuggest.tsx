@@ -17,12 +17,12 @@ export default function AIContentSuggest({
 }: AIContentSuggestProps) {
 	return (
 		<div className="fixed bottom-8 right-8 max-w-md z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-			<div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+			<div className="bg-surface rounded-xl shadow-2xl border border-border overflow-hidden">
 				{/* Header */}
-				<div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-zinc-200 dark:border-zinc-800">
+				<div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-border">
 					<div className="flex items-center gap-2">
 						<div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-						<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+						<span className="text-sm font-medium text-text-secondary">
 							AI 建议
 						</span>
 					</div>
@@ -30,16 +30,16 @@ export default function AIContentSuggest({
 
 				{/* Content Preview */}
 				<div className="p-4 max-h-60 overflow-y-auto scrollbar-hide">
-					<pre className="text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-sans leading-relaxed">
+					<pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
 						{content}
 					</pre>
 				</div>
 
 				{/* Actions */}
-				<div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+				<div className="px-4 py-3 bg-warm-50/50 border-t border-border flex items-center justify-end gap-2">
 					<button
 						onClick={onReject}
-						className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+						className="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:bg-warm-300 transition-colors flex items-center gap-2"
 					>
 						<X className="w-4 h-4" />
 						拒绝
@@ -54,13 +54,13 @@ export default function AIContentSuggest({
 				</div>
 
 				{/* Keyboard Hint */}
-				<div className="px-4 py-2 bg-zinc-100/50 dark:bg-zinc-950/50 border-t border-zinc-200 dark:border-zinc-800">
-					<p className="text-xs text-zinc-400 text-center">
-						<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700 font-mono">
+				<div className="px-4 py-2 bg-warm-200/50/50 border-t border-border">
+					<p className="text-xs text-text-light text-center">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono">
 							Tab
 						</kbd>{" "}
 						接受 ·
-						<kbd className="px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700 font-mono ml-2">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono ml-2">
 							Esc
 						</kbd>{" "}
 						拒绝

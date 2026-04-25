@@ -77,10 +77,10 @@ export function WikiPageEditor({
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-zinc-900">
+		<div className="flex flex-col h-full bg-surface">
 			{/* Header */}
-			<div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-				<h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+			<div className="flex items-center justify-between px-4 py-3 border-b border-border">
+				<h3 className="text-sm font-semibold text-text-primary">
 					{mode === "create" ? "新建知识页面" : "编辑知识页面"}
 				</h3>
 				<div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export function WikiPageEditor({
 					</button>
 					<button
 						onClick={onCancel}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 					>
 						<X className="w-4 h-4" />
 					</button>
@@ -105,7 +105,7 @@ export function WikiPageEditor({
 			<div className="flex-1 overflow-y-auto p-4 space-y-4">
 				{/* Title */}
 				<div>
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+					<label className="block text-xs font-medium text-text-muted mb-1.5">
 						标题
 					</label>
 					<input
@@ -113,14 +113,14 @@ export function WikiPageEditor({
 						value={title}
 						onChange={(e) => setTitle(e.target.value)}
 						placeholder="知识页面标题"
-						className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+						className="w-full px-3 py-2 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
 						autoFocus
 					/>
 				</div>
 
 				{/* Summary */}
 				<div>
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+					<label className="block text-xs font-medium text-text-muted mb-1.5">
 						摘要
 					</label>
 					<input
@@ -128,13 +128,13 @@ export function WikiPageEditor({
 						value={summary}
 						onChange={(e) => setSummary(e.target.value)}
 						placeholder="一句话概括（可选）"
-						className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+						className="w-full px-3 py-2 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
 					/>
 				</div>
 
 				{/* Page Type */}
 				<div>
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+					<label className="block text-xs font-medium text-text-muted mb-1.5">
 						页面类型
 					</label>
 					<div className="flex flex-wrap gap-2">
@@ -146,7 +146,7 @@ export function WikiPageEditor({
 								className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
 									pageType === pt.value
 										? "border-primary bg-primary/10 text-primary font-medium"
-										: "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
+										: "border-border text-text-muted hover:border-zinc-300 dark:hover:border-zinc-600"
 								}`}
 								title={pt.desc}
 							>
@@ -158,20 +158,20 @@ export function WikiPageEditor({
 
 				{/* Content */}
 				<div className="flex-1">
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+					<label className="block text-xs font-medium text-text-muted mb-1.5">
 						内容（支持 Markdown）
 					</label>
 					<textarea
 						value={content}
 						onChange={(e) => setContent(e.target.value)}
 						placeholder="在此输入知识内容..."
-						className="w-full min-h-[280px] px-3 py-2 text-sm font-mono leading-relaxed bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors resize-y"
+						className="w-full min-h-[280px] px-3 py-2 text-sm font-mono leading-relaxed bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors resize-y"
 					/>
 				</div>
 
 				{/* Tags */}
 				<div>
-					<label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+					<label className="block text-xs font-medium text-text-muted mb-1.5">
 						标签
 					</label>
 					<div className="flex flex-wrap gap-1.5 mb-2">
@@ -203,7 +203,7 @@ export function WikiPageEditor({
 								}
 							}}
 							placeholder="添加标签后回车"
-							className="flex-1 px-3 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+							className="flex-1 px-3 py-1.5 text-sm bg-warm-50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
 						/>
 					</div>
 				</div>

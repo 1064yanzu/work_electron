@@ -108,18 +108,18 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 			{/* 卡片删除确认对话框 */}
 			{cardDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-						<h3 className="font-semibold text-lg text-zinc-800 dark:text-zinc-100 mb-2">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							删除卡片
 						</h3>
-						<p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+						<p className="text-sm text-text-muted mb-6">
 							确定删除「{cardDeleteConfirm.title}」吗？图片文件也会一并移除。
 						</p>
 						<div className="flex justify-end gap-2">
 							<button
 								type="button"
 								onClick={() => setCardDeleteConfirm(null)}
-								className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>
@@ -142,16 +142,16 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 					onClick={() => setCardPreview(null)}
 				>
 					<div
-						className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+						className="bg-surface rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
 						onClick={(e) => e.stopPropagation()}
 					>
 						{/* 头部 */}
-						<div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
 							<div className="flex-1 min-w-0 pr-4">
-								<h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+								<h3 className="text-base font-semibold text-text-primary truncate">
 									{cardPreview.title}
 								</h3>
-								<p className="text-xs text-zinc-400 mt-0.5">
+								<p className="text-xs text-text-light mt-0.5">
 									{new Date(cardPreview.created_at).toLocaleString("zh-CN", {
 										year: "numeric",
 										month: "short",
@@ -172,7 +172,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								)}
 								<button
 									onClick={() => setCardPreview(null)}
-									className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+									className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-colors"
 								>
 									<X className="w-4 h-4" />
 								</button>
@@ -195,8 +195,8 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								) : (
 									<div className="aspect-[4/5] flex items-center justify-center">
 										<div className="text-center">
-											<ImageIcon className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-											<p className="text-sm text-zinc-400">图片加载中...</p>
+											<ImageIcon className="w-10 h-10 text-text-light mx-auto mb-2" />
+											<p className="text-sm text-text-light">图片加载中...</p>
 										</div>
 									</div>
 								)}
@@ -204,8 +204,8 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 
 							{/* 文本内容 */}
 							<div className="p-5 space-y-4">
-								<div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4">
-									<p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+								<div className="bg-warm-50/50 rounded-xl p-4">
+									<p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
 										{cardPreview.text}
 									</p>
 								</div>
@@ -213,19 +213,19 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								{/* 元信息 */}
 								<div className="flex flex-wrap gap-2">
 									{cardPreview.theme_id && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs text-zinc-600 dark:text-zinc-400">
+										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
 											<span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
 											{cardPreview.theme_id}
 										</span>
 									)}
 									{cardPreview.font_id && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs text-zinc-600 dark:text-zinc-400">
+										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
 											<Type className="w-3 h-3" />
 											{cardPreview.font_id}
 										</span>
 									)}
 									{cardPreview.aspect_ratio && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs text-zinc-600 dark:text-zinc-400">
+										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
 											<ImageIcon className="w-3 h-3" />
 											{cardPreview.aspect_ratio}
 										</span>
@@ -238,11 +238,11 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 			)}
 
 			{/* 卡片列表头部 */}
-			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2">
-						<ImageIcon className="w-4 h-4 text-zinc-400" />
-						<h2 className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
+						<ImageIcon className="w-4 h-4 text-text-light" />
+						<h2 className="font-semibold text-sm text-text-primary">
 							分享卡片
 						</h2>
 					</div>
@@ -251,7 +251,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 				<div className="flex items-center gap-2">
 					<button
 						onClick={fetchCards}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 						title="刷新卡片"
 					>
 						{isLoadingCards ? (
@@ -262,7 +262,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 					</button>
 					<button
 						onClick={onOpenSettings}
-						className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 					>
 						<Settings className="w-4 h-4" />
 					</button>
@@ -283,17 +283,17 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 					</div>
 				) : isLoadingCards ? (
 					<div className="flex items-center justify-center h-32">
-						<Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
 					</div>
 				) : cards.length === 0 ? (
 					<div className="text-center py-12">
-						<div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-							<ImageIcon className="w-7 h-7 text-zinc-400" />
+						<div className="w-16 h-16 bg-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+							<ImageIcon className="w-7 h-7 text-text-light" />
 						</div>
-						<p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+						<p className="text-sm font-medium text-text-secondary mb-1">
 							暂无分享卡片
 						</p>
-						<p className="text-xs text-zinc-400">
+						<p className="text-xs text-text-light">
 							请在浏览器插件中生成并发送卡片
 						</p>
 					</div>
@@ -305,7 +305,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								<div
 									key={card.id}
 									onClick={() => setCardPreview(card)}
-									className="group rounded-2xl bg-white dark:bg-zinc-800/50 ring-1 ring-zinc-200/50 dark:ring-zinc-700/40 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1"
+									className="group rounded-2xl bg-surface/50 ring-1 ring-zinc-200/50 dark:ring-zinc-700/40 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1"
 								>
 									{/* 卡片图片区域 */}
 									<div className="relative bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
@@ -322,14 +322,16 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 										) : (
 											<div className="aspect-[4/5] flex items-center justify-center">
 												<div className="text-center">
-													<ImageIcon className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-													<p className="text-xs text-zinc-400">图片加载中...</p>
+													<ImageIcon className="w-8 h-8 text-text-light mx-auto mb-2" />
+													<p className="text-xs text-text-light">
+														图片加载中...
+													</p>
 												</div>
 											</div>
 										)}
 										{/* 主题标签 */}
 										{card.theme_id && (
-											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-white/90 dark:bg-zinc-900/80 text-zinc-600 dark:text-zinc-300 shadow-sm backdrop-blur-sm">
+											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-surface/90/80 text-text-secondary shadow-sm backdrop-blur-sm">
 												{card.theme_id}
 											</span>
 										)}
@@ -338,7 +340,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 									{/* 卡片信息区域 */}
 									<div className="p-4 space-y-3">
 										<div className="flex items-start justify-between gap-3">
-											<h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 leading-snug line-clamp-2 flex-1">
+											<h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2 flex-1">
 												{card.title}
 											</h3>
 											{card.source_url && (
@@ -347,7 +349,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 														e.stopPropagation();
 														handleOpenCardSource(card);
 													}}
-													className="shrink-0 p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+													className="shrink-0 p-1.5 text-text-light hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
 													title="访问原文"
 												>
 													<ExternalLink className="w-3.5 h-3.5" />
@@ -355,14 +357,14 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 											)}
 										</div>
 
-										<p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-3">
+										<p className="text-[13px] text-text-muted leading-relaxed line-clamp-3">
 											{card.text}
 										</p>
 
-										<div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-700/50">
-											<div className="flex items-center gap-2 text-xs text-zinc-400">
+										<div className="flex items-center justify-between pt-2 border-t border-border/50">
+											<div className="flex items-center gap-2 text-xs text-text-light">
 												{card.aspect_ratio && (
-													<span className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-700/50 rounded text-[10px]">
+													<span className="px-1.5 py-0.5 bg-warm-200 dark:bg-zinc-700/50 rounded text-[10px]">
 														{card.aspect_ratio}
 													</span>
 												)}
@@ -378,7 +380,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 													e.stopPropagation();
 													handleDeleteCard(card);
 												}}
-												className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+												className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
 												title="删除卡片"
 											>
 												<Trash2 className="w-3.5 h-3.5" />

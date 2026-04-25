@@ -351,15 +351,15 @@ function SelectComponent(
 				className={`
 					group relative w-full flex items-center justify-between gap-2
 					${variantStyles.trigger}
-					bg-white dark:bg-zinc-900
-					border border-zinc-200/80 dark:border-zinc-700
+					bg-surface
+					border border-border/80
 					rounded-xl
-					text-zinc-900 dark:text-zinc-100 font-medium
+					text-text-primary font-medium
 					cursor-pointer
 					shadow-[0_1px_2px_rgba(0,0,0,0.03)]
 					text-left
 
-					hover:bg-zinc-50/80 dark:hover:bg-zinc-800
+					hover:bg-warm-50/80
 					hover:border-zinc-300 dark:hover:border-zinc-600
 					hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]
 
@@ -370,9 +370,9 @@ function SelectComponent(
 
 					disabled:opacity-50
 					disabled:cursor-not-allowed
-					disabled:bg-zinc-100 dark:disabled:bg-zinc-800
-					disabled:hover:bg-zinc-100 dark:disabled:hover:bg-zinc-800
-					disabled:hover:border-zinc-200/80 dark:disabled:hover:border-zinc-700
+					disabled:bg-warm-200 dark:disabled:bg-dark-surface
+					disabled:hover:bg-warm-200 dark:disabled:hover:bg-dark-surface
+					disabled:hover:border-border/80 dark:disabled:hover:border-dark-border
 					disabled:shadow-none
 
 					transition-all duration-200 ease-out
@@ -382,14 +382,14 @@ function SelectComponent(
 				`}
 			>
 				<span
-					className={`truncate ${!selectedOption ? "text-zinc-400 dark:text-zinc-500" : ""}`}
+					className={`truncate ${!selectedOption ? "text-text-light" : ""}`}
 				>
 					{displayLabel}
 				</span>
 				<ChevronDown
 					className={`
 						shrink-0 ${variantStyles.icon}
-						text-zinc-400 dark:text-zinc-500
+						text-text-light
 						transition-transform duration-200
 						${isOpen ? "rotate-180" : ""}
 					`}
@@ -413,7 +413,7 @@ function SelectComponent(
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+						className="bg-surface rounded-xl border border-border shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
 					>
 						<div
 							data-select-dropdown-scroll=""
@@ -440,10 +440,10 @@ function SelectComponent(
 											${opt.disabled ? "opacity-40 cursor-not-allowed" : ""}
 											${
 												isSelected
-													? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
+													? "bg-warm-200 text-text-primary font-medium"
 													: isActive
-														? "bg-zinc-50 dark:bg-zinc-800/70 text-zinc-900 dark:text-zinc-100"
-														: "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+														? "bg-warm-50/70 text-text-primary"
+														: "text-text-secondary hover:bg-warm-50/50"
 											}
 										`}
 									>
@@ -455,7 +455,7 @@ function SelectComponent(
 								);
 							})}
 							{resolvedOptions.length === 0 && (
-								<div className="px-3 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
+								<div className="px-3 py-6 text-center text-xs text-text-light">
 									暂无选项
 								</div>
 							)}

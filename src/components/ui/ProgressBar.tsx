@@ -81,11 +81,9 @@ export const ProgressBar = ({
 		<div className={cn("space-y-2", className)}>
 			{stage && (
 				<div className="flex items-center justify-between text-sm">
-					<span className="text-zinc-600 dark:text-zinc-400">
-						{getStageText(stage)}
-					</span>
+					<span className="text-text-secondary">{getStageText(stage)}</span>
 					{showPercentage && !indeterminate && (
-						<span className="font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">
+						<span className="font-medium text-text-primary tabular-nums">
 							{Math.round(displayProgress)}%
 						</span>
 					)}
@@ -93,7 +91,7 @@ export const ProgressBar = ({
 			)}
 			<div
 				className={cn(
-					"bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden",
+					"bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden",
 					sizeStyles[size],
 				)}
 			>
@@ -182,7 +180,7 @@ export const CircularProgress = ({
 					stroke="currentColor"
 					strokeWidth={strokeWidth}
 					fill="none"
-					className="text-zinc-200 dark:text-zinc-700"
+					className="text-zinc-200"
 				/>
 				{/* 进度圆环 */}
 				<circle
@@ -202,7 +200,7 @@ export const CircularProgress = ({
 				/>
 			</svg>
 			{showPercentage && (
-				<span className="absolute text-xs font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">
+				<span className="absolute text-xs font-medium text-text-primary tabular-nums">
 					{Math.round(displayProgress)}%
 				</span>
 			)}

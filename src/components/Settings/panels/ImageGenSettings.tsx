@@ -8,7 +8,12 @@ import {
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import Select from "../../ui/Select";
-import { SettingsPageContainer } from "../ui/SettingsPrimitives";
+import {
+	SettingsPageContainer,
+	SettingsRow,
+	SettingsSectionCard,
+	SettingsSectionTitle,
+} from "../ui/SettingsPrimitives";
 
 // 比例预设（参考 Cherry Studio）
 const ASPECT_RATIO_GROUPS = [
@@ -137,20 +142,20 @@ export function ImageGenSettings() {
 	if (isLoading) {
 		return (
 			<div className="flex-1 h-full bg-background p-8 flex items-center justify-center">
-				<Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+				<Loader2 className="w-6 h-6 animate-spin text-text-light" />
 			</div>
 		);
 	}
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 			<SettingsPanelHeader
 				icon={Image}
 				title="AI 生图设置"
 				description="配置生图模型与参数。"
 				actions={
 					isSaving ? (
-						<span className="text-xs text-zinc-400 flex items-center gap-1 ml-2">
+						<span className="text-xs text-text-light flex items-center gap-1 ml-2">
 							<Loader2 className="w-3 h-3 animate-spin" />
 							保存中...
 						</span>
@@ -158,172 +163,196 @@ export function ImageGenSettings() {
 				}
 			/>
 
-			{/* 提供商选择 */}
-			<div className="space-y-3">
-				<h4 className="font-medium text-text-primary">生图提供商</h4>
-				<Select
-					value={config.providerId}
-					onChange={(e) => handleChange("providerId", e.target.value)}
-				>
-					<option value="">选择提供商...</option>
-					{enabledProviders.map((provider) => (
-						<option key={provider.id} value={provider.id}>
-							{provider.name}
-						</option>
-					))}
-				</Select>
-				<p className="text-xs text-text-muted">
-					推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。
-				</p>
-			</div>
-
-			{/* 模型选择 - 下拉框 */}
-			<div className="space-y-3">
-				<h4 className="font-medium text-text-primary">生图模型</h4>
-				{config.providerId && availableModels.length > 0 ? (
-					<Select
-						value={config.model}
-						onChange={(e) => handleChange("model", e.target.value)}
-					>
-						<option value="">选择模型...</option>
-						{availableModels.map((model: string) => (
-							<option key={model} value={model}>
-								{model}
-							</option>
-						))}
-					</Select>
-				) : config.providerId ? (
-					<>
-						<input
-							type="text"
-							value={config.model}
-							onChange={(e) => handleChange("model", e.target.value)}
-							placeholder="输入生图模型 ID，如 dall-e-3, flux.1-schnell"
-							className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-						/>
-						<p className="text-xs text-text-muted">
-							该提供商暂无预设模型，请手动输入支持的生图模型 ID。
-						</p>
-					</>
-				) : (
-					<div className="px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-500">
-						请先选择提供商
-					</div>
-				)}
-			</div>
-
-			{/* 图片比例选择 */}
-			<div className="space-y-3">
-				<h4 className="font-medium text-text-primary">图片比例</h4>
-				<div className="flex flex-wrap gap-2">
-					{ASPECT_RATIO_GROUPS.map((group) => (
-						<div key={group.label} className="flex items-center gap-1">
-							<span className="text-xs text-zinc-400 mr-1">{group.label}:</span>
-							{group.options.map((option) => (
-								<button
-									key={option.value}
-									onClick={() => handleChange("defaultSize", option.value)}
-									className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-										config.defaultSize === option.value
-											? "bg-zinc-900 text-white"
-											: "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-									}`}
-								>
-									{option.label}
-								</button>
-							))}
-						</div>
-					))}
-				</div>
-			</div>
-
-			{/* 提示词模板 */}
-			<div className="space-y-3">
-				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Palette className="w-4 h-4" />
-					提示词模板
-				</h4>
-				<textarea
-					value={config.promptTemplate}
-					onChange={(e) => handleChange("promptTemplate", e.target.value)}
-					rows={4}
-					placeholder="使用 {text} 作为选中文字的占位符"
-					className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none font-mono"
-				/>
-				<div className="flex items-center justify-between">
-					<p className="text-xs text-text-muted">
-						<code className="px-1.5 py-0.5 bg-zinc-100 rounded text-zinc-600">
-							{"{text}"}
-						</code>{" "}
-						将替换为选中的文字
-					</p>
-					<button
-						onClick={() =>
-							handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
+			{/* 提供商与模型 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>提供商与模型</SettingsSectionTitle>
+					<SettingsRow
+						label="生图提供商"
+						description="推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。"
+						action={
+							<Select
+								value={config.providerId}
+								onChange={(e) => handleChange("providerId", e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[180px]"
+							>
+								<option value="">选择提供商...</option>
+								{enabledProviders.map((provider) => (
+									<option key={provider.id} value={provider.id}>
+										{provider.name}
+									</option>
+								))}
+							</Select>
 						}
-						className="text-xs text-primary hover:underline"
-					>
-						恢复默认
-					</button>
+					/>
+					<SettingsRow
+						label="生图模型"
+						description={
+							!config.providerId
+								? "请先选择提供商"
+								: config.providerId && availableModels.length === 0
+									? "该提供商暂无预设模型，请手动输入支持的生图模型 ID。"
+									: undefined
+						}
+						action={
+							config.providerId && availableModels.length > 0 ? (
+								<Select
+									value={config.model}
+									onChange={(e) => handleChange("model", e.target.value)}
+									variant="inline"
+									containerClassName="w-auto min-w-[200px]"
+								>
+									<option value="">选择模型...</option>
+									{availableModels.map((model: string) => (
+										<option key={model} value={model}>
+											{model}
+										</option>
+									))}
+								</Select>
+							) : config.providerId ? (
+								<input
+									type="text"
+									value={config.model}
+									onChange={(e) => handleChange("model", e.target.value)}
+									placeholder="如 dall-e-3"
+									className="w-48 px-3 py-1.5 bg-warm-50 border border-border/80 rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+								/>
+							) : (
+								<span className="text-sm text-text-muted">—</span>
+							)
+						}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
 
-			{/* 负向提示词 */}
-			<div className="space-y-3">
-				<h4 className="font-medium text-text-primary">负向提示词（可选）</h4>
-				<textarea
-					value={config.negativePrompt || ""}
-					onChange={(e) => handleChange("negativePrompt", e.target.value)}
-					rows={2}
-					placeholder="low quality, blurry, distorted, watermark, text"
-					className="w-full px-4 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all resize-none"
-				/>
-				<p className="text-xs text-text-muted">
-					指定不希望出现在图像中的元素。部分模型支持此参数。
-				</p>
-			</div>
+			{/* 图片比例 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>图片比例</SettingsSectionTitle>
+					<div className="flex flex-wrap gap-3 pt-1">
+						{ASPECT_RATIO_GROUPS.map((group) => (
+							<div key={group.label} className="flex items-center gap-1.5">
+								<span className="text-xs text-text-light mr-0.5">
+									{group.label}:
+								</span>
+								{group.options.map((option) => (
+									<button
+										key={option.value}
+										onClick={() => handleChange("defaultSize", option.value)}
+										className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+											config.defaultSize === option.value
+												? "bg-primary text-primary-foreground shadow-sm"
+												: "bg-warm-200 text-text-secondary hover:bg-warm-300"
+										}`}
+									>
+										{option.label}
+									</button>
+								))}
+							</div>
+						))}
+					</div>
+				</div>
+			</SettingsSectionCard>
+
+			{/* 提示词配置 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>提示词配置</SettingsSectionTitle>
+					<div className="space-y-4">
+						<div>
+							<div className="flex items-center justify-between mb-2">
+								<label className="text-[13.5px] font-medium text-text-primary flex items-center gap-1.5">
+									<Palette className="w-3.5 h-3.5 text-text-muted" />
+									提示词模板
+								</label>
+								<button
+									onClick={() =>
+										handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
+									}
+									className="text-xs text-primary hover:underline"
+								>
+									恢复默认
+								</button>
+							</div>
+							<textarea
+								value={config.promptTemplate}
+								onChange={(e) => handleChange("promptTemplate", e.target.value)}
+								rows={4}
+								placeholder="使用 {text} 作为选中文字的占位符"
+								className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all resize-none font-mono"
+							/>
+							<p className="text-xs text-text-muted mt-1.5">
+								<code className="px-1.5 py-0.5 bg-warm-200 rounded text-text-secondary">
+									{"{text}"}
+								</code>{" "}
+								将替换为选中的文字
+							</p>
+						</div>
+						<div>
+							<label className="text-[13.5px] font-medium text-text-primary block mb-2">
+								负向提示词（可选）
+							</label>
+							<textarea
+								value={config.negativePrompt || ""}
+								onChange={(e) => handleChange("negativePrompt", e.target.value)}
+								rows={2}
+								placeholder="low quality, blurry, distorted, watermark, text"
+								className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all resize-none"
+							/>
+							<p className="text-xs text-text-muted mt-1.5">
+								指定不希望出现在图像中的元素。部分模型支持此参数。
+							</p>
+						</div>
+					</div>
+				</div>
+			</SettingsSectionCard>
 
 			{/* 高级选项 */}
-			<div className="space-y-4 pt-4 border-t border-border">
-				<h4 className="font-medium text-text-primary">高级选项</h4>
-				<div className="grid grid-cols-2 gap-4">
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							图片质量
-						</label>
-						<Select
-							value={config.quality || "standard"}
-							onChange={(e) => handleChange("quality", e.target.value)}
-						>
-							<option value="standard">标准</option>
-							<option value="hd">高清 (HD)</option>
-						</Select>
-					</div>
-					<div>
-						<label className="text-sm text-text-secondary mb-1.5 block">
-							图片风格
-						</label>
-						<Select
-							value={config.style || "natural"}
-							onChange={(e) => handleChange("style", e.target.value)}
-						>
-							<option value="natural">自然</option>
-							<option value="vivid">鲜艳</option>
-						</Select>
-					</div>
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>高级选项</SettingsSectionTitle>
+					<SettingsRow
+						label="图片质量"
+						action={
+							<Select
+								value={config.quality || "standard"}
+								onChange={(e) => handleChange("quality", e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+							>
+								<option value="standard">标准</option>
+								<option value="hd">高清 (HD)</option>
+							</Select>
+						}
+					/>
+					<SettingsRow
+						label="图片风格"
+						action={
+							<Select
+								value={config.style || "natural"}
+								onChange={(e) => handleChange("style", e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+							>
+								<option value="natural">自然</option>
+								<option value="vivid">鲜艳</option>
+							</Select>
+						}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
 
 			{/* 状态提示 */}
 			{!config.providerId || !config.model ? (
-				<div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-					<p className="text-sm text-amber-800">
+				<div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl">
+					<p className="text-sm text-amber-800 dark:text-amber-300">
 						⚠️ 请配置提供商和模型后才能使用生图功能。
 					</p>
 				</div>
 			) : (
-				<div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-					<p className="text-sm text-emerald-800">
+				<div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
+					<p className="text-sm text-emerald-800 dark:text-emerald-300">
 						✅ 配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
 					</p>
 				</div>

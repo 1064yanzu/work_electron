@@ -10,6 +10,9 @@ import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsPageContainer,
+	SettingsRow,
+	SettingsSectionCard,
+	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../ui/SettingsPrimitives";
 
@@ -124,24 +127,20 @@ export function SkillsSettings() {
 				)}
 
 				<div className="grid gap-4 sm:grid-cols-3">
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							已安装技能
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">已安装技能</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{skills.length}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							启用中
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">启用中</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{enabledCount}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">状态</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">状态</div>
 						<div className="mt-2 text-sm font-medium text-text-primary">
 							{isLoading ? "加载中" : skills.length > 0 ? "可用" : "尚未安装"}
 						</div>
@@ -174,7 +173,7 @@ export function SkillsSettings() {
 					<button
 						onClick={handleRefresh}
 						disabled={isLoading}
-						className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-surface transition-colors disabled:opacity-50"
+						className="flex items-center gap-2 px-3 py-1.5 text-sm bg-surface border border-border text-text-primary rounded-lg hover:bg-surface transition-colors disabled:opacity-50"
 					>
 						<RefreshCw
 							className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
@@ -206,24 +205,25 @@ export function SkillsSettings() {
 					skills.map((skill) => (
 						<div
 							key={skill.name}
-							className="p-4 border border-border rounded-lg hover:shadow-md transition-shadow"
+							className="p-4 border border-border/80 rounded-2xl hover:shadow-sm transition-all ring-1 ring-black/[0.03]"
+							style={{ backgroundColor: "var(--t-bg-surface)" }}
 						>
 							<div className="flex items-start justify-between">
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center gap-2 mb-1">
-										<h5 className="font-medium text-text-primary">
+										<h5 className="text-[13.5px] font-medium text-text-primary">
 											{skill.name}
 										</h5>
 										{!skill.enabled && (
-											<span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+											<span className="px-2 py-0.5 text-[10px] font-medium bg-warm-200 text-text-muted rounded-md">
 												已禁用
 											</span>
 										)}
 									</div>
-									<p className="text-sm text-text-secondary line-clamp-2">
+									<p className="text-[12px] text-text-muted leading-relaxed line-clamp-2">
 										{skill.description}
 									</p>
-									<p className="text-xs text-text-muted mt-2 truncate font-mono">
+									<p className="text-[11px] text-text-light mt-2 truncate font-mono">
 										{skill.location}
 									</p>
 								</div>
@@ -235,7 +235,7 @@ export function SkillsSettings() {
 									/>
 									<button
 										onClick={() => handleDelete(skill.name)}
-										className="p-1.5 text-text-muted hover:text-red-600 transition-colors"
+										className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
 										title="删除"
 									>
 										<Trash2 className="w-4 h-4" />
@@ -248,41 +248,42 @@ export function SkillsSettings() {
 			</div>
 
 			{/* Skill LLM Model Config */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary">Skill 执行模型</h4>
-				<div>
-					<label className="text-sm text-text-secondary mb-1.5 block">
-						技能内容生成模型
-					</label>
-					<Select
-						value={skillLlmModel}
-						onChange={(e) => handleSkillModelChange(e.target.value)}
-					>
-						<option value="">跟随当前活跃模型（默认）</option>
-						{allModels.map((model) => (
-							<option key={`${model.provider}-${model.id}`} value={model.id}>
-								{model.id} ({model.provider})
-							</option>
-						))}
-					</Select>
-					<p className="text-xs text-text-muted mt-1.5">
-						Skill 执行时用于生成内容的 LLM
-						模型。如果未选择，将使用当前活跃模型。建议选择稳定性好的模型以避免执行失败。
-					</p>
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>Skill 执行模型</SettingsSectionTitle>
+					<SettingsRow
+						label="技能内容生成模型"
+						description="Skill 执行时用于生成内容的 LLM 模型。未选择时使用当前活跃模型。"
+						action={
+							<Select
+								value={skillLlmModel}
+								onChange={(e) => handleSkillModelChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[200px]"
+							>
+								<option value="">跟随活跃模型（默认）</option>
+								{allModels.map((model) => (
+									<option key={`${model.provider}-${model.id}`} value={model.id}>
+										{model.id} ({model.provider})
+									</option>
+								))}
+							</Select>
+						}
+					/>
 				</div>
-			</div>
+			</SettingsSectionCard>
 
 			{/* Info */}
-			<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+			<div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
 				<div className="flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-					<div className="text-sm text-blue-900">
+					<AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+					<div className="text-sm text-blue-900 dark:text-blue-200">
 						<div className="font-medium mb-1">关于 Agent Skills</div>
-						<p className="text-blue-700 mb-2">
+						<p className="text-blue-700 dark:text-blue-300 mb-2">
 							技能是一组指导 Agent 完成特定任务的指令和资源，遵循 agentskills.io
 							开放标准。
 						</p>
-						<div className="text-xs text-blue-600">
+						<div className="text-xs text-blue-600 dark:text-blue-400">
 							• 技能目录需包含 SKILL.md 文件
 							<br />• 技能元数据包括 name 和 description
 							<br />• 与 Claude Code 等应用共享技能库

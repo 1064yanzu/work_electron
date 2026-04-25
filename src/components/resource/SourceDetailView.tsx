@@ -297,7 +297,7 @@ export const SourceDetailView = forwardRef<
 
 	const getScopeBadgeClassName = useCallback((source: Source) => {
 		return source.scope === "project"
-			? "bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300"
+			? "bg-warm-200/80/70 text-text-secondary"
 			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
 	}, []);
 
@@ -306,7 +306,7 @@ export const SourceDetailView = forwardRef<
 	const isSource = "kind" in previewSource;
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200 bg-white dark:bg-[#1E1E1E]">
+		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200 bg-surface dark:bg-[#1E1E1E]">
 			{/* 划词引用弹窗 */}
 			{selectionPopup && (
 				<div
@@ -319,7 +319,7 @@ export const SourceDetailView = forwardRef<
 				>
 					<button
 						onClick={handleInsertSelection}
-						className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium rounded-lg shadow-lg transition-colors"
+						className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-muted hover:bg-dark-surface text-white text-xs font-medium rounded-lg shadow-lg transition-colors"
 					>
 						<Quote className="w-3 h-3" />
 						引用到编辑器
@@ -335,7 +335,7 @@ export const SourceDetailView = forwardRef<
 						onClick={() => setContentContextMenu(null)}
 					/>
 					<div
-						className="fixed z-50 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
+						className="fixed z-50 bg-surface rounded-xl shadow-lg border border-border py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
 						style={{ left: contentContextMenu.x, top: contentContextMenu.y }}
 					>
 						<button
@@ -343,7 +343,7 @@ export const SourceDetailView = forwardRef<
 								handleInsertSelection();
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 flex items-center gap-2"
 						>
 							<Quote className="w-4 h-4" />
 							引用到编辑器
@@ -356,7 +356,7 @@ export const SourceDetailView = forwardRef<
 								}
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 flex items-center gap-2"
 						>
 							<Copy className="w-4 h-4" />
 							复制
@@ -366,10 +366,10 @@ export const SourceDetailView = forwardRef<
 			)}
 
 			{/* Header */}
-			<div className="px-4 py-3 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 shrink-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+			<div className="px-4 py-3 flex items-center gap-2 border-b border-border shrink-0 bg-surface/50/50 backdrop-blur-sm">
 				<button
 					onClick={handleCloseDetail}
-					className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+					className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 				>
 					<ArrowLeft className="w-4 h-4" />
 				</button>
@@ -379,12 +379,12 @@ export const SourceDetailView = forwardRef<
 						<input
 							value={editTitle}
 							onChange={(e) => setEditTitle(e.target.value)}
-							className="w-full px-2 py-1 text-sm font-semibold bg-zinc-100 dark:bg-zinc-800 rounded focus:outline-none focus:ring-2 focus:ring-zinc-200"
+							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-zinc-200"
 							placeholder="标题"
 						/>
 					) : (
 						<h2
-							className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 truncate"
+							className="font-semibold text-sm text-text-primary truncate"
 							title={previewSource.title}
 						>
 							{previewSource.title}
@@ -396,7 +396,7 @@ export const SourceDetailView = forwardRef<
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => setIsEditing(true)}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 							title="编辑"
 						>
 							<Edit2 className="w-4 h-4" />
@@ -408,7 +408,7 @@ export const SourceDetailView = forwardRef<
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => setIsEditing(false)}
-							className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg"
+							className="p-1.5 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded-lg"
 							title="取消"
 						>
 							<X className="w-4 h-4" />
@@ -436,13 +436,13 @@ export const SourceDetailView = forwardRef<
 			>
 				{isLoadingDetail ? (
 					<div className="flex items-center justify-center h-48">
-						<Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
 					</div>
 				) : (
 					<div className="p-6 space-y-6 max-w-3xl mx-auto">
 						{/* Meta Info (Read Only) */}
 						{!isEditing && (
-							<div className="flex items-center gap-3 text-xs text-zinc-400 flex-wrap pb-4 border-b border-zinc-100 dark:border-zinc-800/50">
+							<div className="flex items-center gap-3 text-xs text-text-light flex-wrap pb-4 border-b border-border/50">
 								{isSource && (
 									<span
 										className={`w-2 h-2 rounded-full ${getKindColor((previewSource as Source).kind)}`}
@@ -478,7 +478,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.Import && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70/60 text-text-secondary rounded text-[10px] font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
 										</span>
@@ -496,7 +496,7 @@ export const SourceDetailView = forwardRef<
 										.map((tag) => (
 											<span
 												key={`${previewSource.id}-detail-tag-${tag}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300"
+												className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80/70 text-text-secondary"
 											>
 												#{tag}
 											</span>
@@ -508,7 +508,7 @@ export const SourceDetailView = forwardRef<
 												(previewSource as Source).storage_path!,
 											)
 										}
-										className="inline-flex items-center gap-1 text-zinc-500 hover:text-zinc-700 text-[11px]"
+										className="inline-flex items-center gap-1 text-text-muted hover:text-text-secondary text-[11px]"
 										title={(previewSource as Source).storage_path}
 									>
 										<Copy className="w-3 h-3" />
@@ -547,13 +547,13 @@ export const SourceDetailView = forwardRef<
 												setEditHtmlContent(e.currentTarget.innerHTML)
 											}
 											dangerouslySetInnerHTML={{ __html: editHtmlContent }}
-											className="w-full min-h-[60vh] p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600 prose prose-zinc dark:prose-invert max-w-none overflow-auto"
+											className="w-full min-h-[60vh] p-6 bg-surface border border-border rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600 prose prose-zinc dark:prose-invert max-w-none overflow-auto"
 										/>
 									) : (
 										<textarea
 											value={editContent}
 											onChange={(e) => setEditContent(e.target.value)}
-											className="w-full h-[60vh] p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-zinc-200 resize-none font-mono"
+											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-zinc-200 resize-none font-mono"
 											placeholder="输入内容..."
 										/>
 									)}
@@ -620,7 +620,7 @@ export const SourceDetailView = forwardRef<
 											} else {
 												// 无内容
 												return (
-													<div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+													<div className="flex flex-col items-center justify-center py-12 text-text-light">
 														<FileEdit className="w-8 h-8 mb-2 opacity-50" />
 														<p className="text-sm">暂无内容</p>
 														<button
@@ -642,11 +642,11 @@ export const SourceDetailView = forwardRef<
 											/>
 										</article>
 									) : (previewSource as ResearchSource).snippet ? (
-										<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed select-text">
+										<p className="text-sm text-text-secondary leading-relaxed select-text">
 											{(previewSource as ResearchSource).snippet}
 										</p>
 									) : (
-										<p className="text-sm text-zinc-400 text-center py-8">
+										<p className="text-sm text-text-light text-center py-8">
 											暂无内容
 										</p>
 									)}
@@ -659,7 +659,7 @@ export const SourceDetailView = forwardRef<
 
 			{/* 固定底部操作栏 */}
 			{!isEditing && (
-				<div className="shrink-0 px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+				<div className="shrink-0 px-4 py-3 border-t border-border bg-surface">
 					<div className="flex items-center gap-2">
 						{/* 在中间栏阅读按钮 */}
 						{isSource && sourceDetail && (
@@ -677,7 +677,7 @@ export const SourceDetailView = forwardRef<
 											: undefined,
 									);
 								}}
-								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-border text-text-secondary rounded-xl text-sm font-medium hover:bg-warm-50 transition-colors"
 							>
 								<BookOpen className="w-4 h-4" />
 								全屏阅读
@@ -685,7 +685,7 @@ export const SourceDetailView = forwardRef<
 						)}
 						<button
 							onClick={handleCopyToEditor}
-							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-dark-muted text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
 						>
 							<PenLine className="w-4 h-4" />
 							添加到编辑器
@@ -693,7 +693,7 @@ export const SourceDetailView = forwardRef<
 						{isSource && (
 							<button
 								onClick={() => onDeleteSource(previewSource as Source)}
-								className="p-2.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+								className="p-2.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
 								title="删除"
 							>
 								<Trash2 className="w-4 h-4" />

@@ -27,7 +27,7 @@ import {
 } from "./ChannelFeatureToggles";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
 
 type QqbotChannelConfig = NonNullable<RemoteControlConfig["channels"]["qqbot"]>;
 
@@ -84,7 +84,7 @@ export function QQBotChannelCard({
 	}, []);
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#12B7F5] to-[#0D6EFF] opacity-60" />
 
 			<div className="p-5 space-y-5">
@@ -186,7 +186,7 @@ export function QQBotChannelCard({
 							]}
 						/>
 					</div>
-					<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3 text-xs text-text-secondary dark:border-zinc-800 dark:bg-zinc-900/60">
+					<div className="rounded-xl border border-border/80 bg-warm-50/60 p-3 text-xs text-text-secondary/60">
 						沙箱环境用于调试；生产环境接收真实用户消息，需提前在 QQ
 						开放平台完成机器人审核与权益开通。
 					</div>
@@ -194,7 +194,7 @@ export function QQBotChannelCard({
 
 				{/* 事件订阅开关 */}
 				<div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-					<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-lg border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm text-text-secondary">C2C 私聊</div>
 						<SettingsSwitch
 							checked={channelConfig.enableC2c}
@@ -208,7 +208,7 @@ export function QQBotChannelCard({
 							disabled={saving}
 						/>
 					</div>
-					<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-lg border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm text-text-secondary">群（Q-Group）</div>
 						<SettingsSwitch
 							checked={channelConfig.enableGroup}
@@ -222,7 +222,7 @@ export function QQBotChannelCard({
 							disabled={saving}
 						/>
 					</div>
-					<div className="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+					<div className="flex items-center justify-between rounded-lg border border-border/80 bg-surface px-3 py-2">
 						<div className="text-sm text-text-secondary">频道（Guild）</div>
 						<SettingsSwitch
 							checked={channelConfig.enableGuild}
@@ -406,14 +406,14 @@ export function QQBotChannelCard({
 				/>
 
 				{/* 运行状态 + 测试连通 */}
-				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/30">
+				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">运行状态：</span>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
 								? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-								: "bg-zinc-500/10 text-zinc-500"
+								: "bg-warm-500/10 text-text-muted"
 						}`}
 					>
 						<span
@@ -430,7 +430,7 @@ export function QQBotChannelCard({
 						className={`font-medium ${
 							runtimeChannel?.connected
 								? "text-emerald-600 dark:text-emerald-400"
-								: "text-zinc-500"
+								: "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}

@@ -112,7 +112,7 @@ function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
 				className={cn(
 					"flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all",
 					isLoading
-						? "bg-zinc-100 text-zinc-400 cursor-wait dark:bg-zinc-800"
+						? "bg-warm-200 text-text-light cursor-wait"
 						: "bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow",
 				)}
 			>
@@ -160,7 +160,7 @@ function ToolStatusIcon({ status }: { status: ToolCall["status"] }) {
 		case "error":
 			return <XCircle className="w-3.5 h-3.5 text-red-500" />;
 		default:
-			return <Clock className="w-3.5 h-3.5 text-zinc-400" />;
+			return <Clock className="w-3.5 h-3.5 text-text-light" />;
 	}
 }
 
@@ -219,7 +219,7 @@ const CommandHighlight = memo(function CommandHighlight({
 
 				// 其他参数
 				return (
-					<span key={idx} className="text-zinc-700 dark:text-zinc-300">
+					<span key={idx} className="text-text-secondary">
 						{part}
 					</span>
 				);
@@ -317,30 +317,30 @@ const ArtifactRow = memo(function ArtifactRow({
 	};
 
 	return (
-		<div className="rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+		<div className="rounded-xl bg-surface/60/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 			{/* 头部信息 */}
 			<div
 				className={cn(
 					"flex items-start gap-2 px-3 py-2",
 					isPreviewable &&
-						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors",
+						"cursor-pointer hover:bg-black/[0.02] dark:hover:bg-surface/[0.02] transition-colors",
 				)}
 				onClick={isPreviewable ? togglePreview : undefined}
 			>
-				<div className="mt-0.5 p-1.5 rounded-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
+				<div className="mt-0.5 p-1.5 rounded-lg bg-surface ring-1 ring-black/5 dark:ring-white/10">
 					{loadingContent ? (
-						<Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 text-text-light animate-spin" />
 					) : (
-						<Icon className="w-3.5 h-3.5 text-zinc-500" />
+						<Icon className="w-3.5 h-3.5 text-text-muted" />
 					)}
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<div className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
+						<div className="text-xs font-medium text-text-secondary dark:text-zinc-200 truncate">
 							{artifact.title}
 						</div>
 						{isPreviewable && (
-							<div className="flex items-center gap-1 text-[10px] text-zinc-400">
+							<div className="flex items-center gap-1 text-[10px] text-text-light">
 								{showPreview ? (
 									<>
 										<ChevronDown className="w-3 h-3" />
@@ -356,11 +356,11 @@ const ArtifactRow = memo(function ArtifactRow({
 						)}
 					</div>
 					{artifact.url ? (
-						<div className="text-[11px] text-zinc-400 truncate">
+						<div className="text-[11px] text-text-light truncate">
 							{artifact.url}
 						</div>
 					) : artifact.content && !showPreview ? (
-						<div className="text-[11px] text-zinc-400 line-clamp-2 whitespace-pre-wrap">
+						<div className="text-[11px] text-text-light line-clamp-2 whitespace-pre-wrap">
 							{artifact.content.slice(0, 100)}
 							{artifact.content.length > 100 ? "..." : ""}
 						</div>
@@ -377,15 +377,15 @@ const ArtifactRow = memo(function ArtifactRow({
 
 			{/* HTML 预览 */}
 			{showPreview && isHtmlFile && fileContent && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800">
+				<div className="border-t border-border">
 					<WebPreviewCard kind="html" html={fileContent} title={fileName} />
 				</div>
 			)}
 
 			{/* 代码/文本预览 */}
 			{showPreview && !isHtmlFile && (fileContent || artifact.content) && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800 max-h-60 overflow-y-auto">
-					<pre className="px-3 py-2 text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words font-mono">
+				<div className="border-t border-border max-h-60 overflow-y-auto">
+					<pre className="px-3 py-2 text-[11px] text-text-secondary whitespace-pre-wrap break-words font-mono">
 						{(fileContent || artifact.content || "").slice(0, 3000)}
 						{(fileContent || artifact.content || "").length > 3000 &&
 							"\n... (内容过长已截断)"}
@@ -395,7 +395,7 @@ const ArtifactRow = memo(function ArtifactRow({
 
 			{/* PDF 预览 */}
 			{isPdfFile && artifact.url && showPreview && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800 h-80">
+				<div className="border-t border-border h-80">
 					<iframe
 						src={toFileUrl(artifact.url)}
 						title="PDF Preview"
@@ -406,7 +406,7 @@ const ArtifactRow = memo(function ArtifactRow({
 
 			{/* 视频预览 */}
 			{isVideoFile && artifact.url && showPreview && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800">
+				<div className="border-t border-border">
 					<video
 						controls
 						src={toFileUrl(artifact.url)}
@@ -417,7 +417,7 @@ const ArtifactRow = memo(function ArtifactRow({
 
 			{/* 音频预览 */}
 			{isAudioFile && artifact.url && showPreview && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800 p-3">
+				<div className="border-t border-border p-3">
 					<audio controls src={toFileUrl(artifact.url)} className="w-full" />
 				</div>
 			)}
@@ -508,14 +508,14 @@ const ToolCallRow = memo(function ToolCallRow({
 		const skillData = (toolCall.output as any)?.data || toolCall.output;
 		if (skillData?.skillName || skillData?.instructions) {
 			return (
-				<div className="mb-2 rounded-xl bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 overflow-hidden">
+				<div className="mb-2 rounded-xl bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 overflow-hidden">
 					<div className="flex items-center gap-2 px-3 py-2">
 						<div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20">
 							<Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center gap-2">
-								<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+								<span className="text-xs font-medium text-text-secondary">
 									技能已激活: {skillData.skillName}
 								</span>
 								{toolCall.status === "completed" && (
@@ -525,7 +525,7 @@ const ToolCallRow = memo(function ToolCallRow({
 								)}
 							</div>
 							{skillData.description && (
-								<div className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate">
+								<div className="text-[11px] text-text-light truncate">
 									{skillData.description}
 								</div>
 							)}
@@ -534,7 +534,7 @@ const ToolCallRow = memo(function ToolCallRow({
 					{/* 指令预览 */}
 					{skillData.instructions && (
 						<div className="px-3 pb-2">
-							<div className="text-[10px] text-zinc-400 dark:text-zinc-500 line-clamp-2">
+							<div className="text-[10px] text-text-light line-clamp-2">
 								已加载 {Math.round(skillData.instructions.length / 1000)}KB
 								技能指令
 							</div>
@@ -556,15 +556,15 @@ const ToolCallRow = memo(function ToolCallRow({
 				className={cn(
 					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 					toolCall.status === "running"
-						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
-							? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-							: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+							: "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 				)}
 			>
 				<button
 					onClick={() => setIsExpanded((v) => !v)}
-					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-white/90 dark:hover:bg-zinc-900/70 transition-colors"
+					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-surface/90/70 transition-colors"
 				>
 					<div
 						className={cn(
@@ -589,20 +589,20 @@ const ToolCallRow = memo(function ToolCallRow({
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 mb-1.5">
-							<span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+							<span className="text-[11px] font-medium text-text-muted uppercase tracking-wide">
 								命令行
 							</span>
 							<ToolStatusIcon status={toolCall.status} />
 							{duration ? (
-								<div className="text-[11px] font-medium text-zinc-400">
+								<div className="text-[11px] font-medium text-text-light">
 									{duration}
 								</div>
 							) : null}
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								)}
 							</div>
 						</div>
@@ -613,9 +613,9 @@ const ToolCallRow = memo(function ToolCallRow({
 
 				{/* 展开后显示完整输出 */}
 				{isExpanded && output && (
-					<div className="px-3 pb-3 border-t border-zinc-200/50 dark:border-zinc-700/50">
-						<div className="mt-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50">
-							<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-2 flex items-center justify-between">
+					<div className="px-3 pb-3 border-t border-border/50/50">
+						<div className="mt-2 p-3 rounded-lg bg-warm-50/50 border border-border/50/50">
+							<div className="text-[11px] font-medium text-text-muted mb-2 flex items-center justify-between">
 								<span>输出</span>
 								{exitCode !== undefined && (
 									<span
@@ -630,7 +630,7 @@ const ToolCallRow = memo(function ToolCallRow({
 									</span>
 								)}
 							</div>
-							<pre className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+							<pre className="text-[11px] text-text-secondary font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
 								{output}
 							</pre>
 						</div>
@@ -675,18 +675,17 @@ const ToolCallRow = memo(function ToolCallRow({
 				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 				// 根据状态设置边框和背景
 				toolCall.status === "running"
-					? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+					? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 					: toolCall.status === "error"
-						? "bg-white/80 dark:bg-zinc-900/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-						: "bg-white/60 dark:bg-zinc-900/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+						? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+						: "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 			)}
 		>
 			<button
 				onClick={() => hasDetails && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					hasDetails &&
-						"cursor-pointer hover:bg-white/90 dark:hover:bg-zinc-900/70",
+					hasDetails && "cursor-pointer hover:bg-surface/90/70",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}
@@ -700,7 +699,7 @@ const ToolCallRow = memo(function ToolCallRow({
 								? "bg-red-50 dark:bg-red-900/20"
 								: toolCall.status === "completed"
 									? "bg-emerald-50 dark:bg-emerald-900/20"
-									: "bg-zinc-50 dark:bg-zinc-800/50",
+									: "bg-warm-50/50",
 					)}
 				>
 					<Icon
@@ -712,13 +711,13 @@ const ToolCallRow = memo(function ToolCallRow({
 									? "text-red-600 dark:text-red-400"
 									: toolCall.status === "completed"
 										? "text-emerald-600 dark:text-emerald-400"
-										: "text-zinc-500",
+										: "text-text-muted",
 						)}
 					/>
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+						<div className="text-xs font-semibold text-text-primary truncate">
 							{toolCall.name}
 							{toolCall.name === "Task" && toolCall.status === "running" && (
 								<span className="ml-2 text-[10px] font-normal text-purple-500 animate-pulse">
@@ -728,40 +727,40 @@ const ToolCallRow = memo(function ToolCallRow({
 						</div>
 						<ToolStatusIcon status={toolCall.status} />
 						{duration ? (
-							<div className="text-[11px] font-medium text-zinc-400">
+							<div className="text-[11px] font-medium text-text-light">
 								{duration}
 							</div>
 						) : null}
 						{hasDetails ? (
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" />
+									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
 								)}
 							</div>
 						) : null}
 					</div>
 					{toolCall.description ? (
-						<div className="text-[11px] text-zinc-400 line-clamp-1">
+						<div className="text-[11px] text-text-light line-clamp-1">
 							{toolCall.description}
 						</div>
 					) : null}
 					{getResultSummary() && !isExpanded ? (
-						<div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+						<div className="mt-1 text-[11px] text-text-muted">
 							{getResultSummary()}
 						</div>
 					) : null}
 					{progress !== undefined && toolCall.status === "running" ? (
 						<div className="mt-1.5 space-y-1">
-							<div className="h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+							<div className="h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
 								<div
 									className="h-full bg-blue-500 transition-all duration-300"
 									style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
 								/>
 							</div>
 							{progressMessage ? (
-								<div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+								<div className="text-[11px] text-text-muted">
 									{progressMessage}
 								</div>
 							) : null}
@@ -773,7 +772,7 @@ const ToolCallRow = memo(function ToolCallRow({
 						</div>
 					) : null}
 					{toolCall.metadata?.message && progress === undefined ? (
-						<div className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-1">
+						<div className="text-[11px] text-text-muted line-clamp-1">
 							{String(toolCall.metadata.message)}
 						</div>
 					) : null}
@@ -782,19 +781,19 @@ const ToolCallRow = memo(function ToolCallRow({
 
 			{/* 展开的详细内容 */}
 			{isExpanded && toolCall.output && (
-				<div className="px-3 pb-3 border-t border-zinc-200/50 dark:border-zinc-700/50">
+				<div className="px-3 pb-3 border-t border-border/50/50">
 					{toolCall.type === "kb_search_chunks" ? (
 						<div className="mt-2 space-y-2">
 							{((toolCall.output as any)?.hits || []).map(
 								(hit: any, idx: number) => (
 									<div
 										key={idx}
-										className="text-[11px] text-zinc-600 dark:text-zinc-400 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30"
+										className="text-[11px] text-text-secondary p-2 rounded-lg bg-warm-50/30"
 									>
-										<div className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+										<div className="font-medium text-text-secondary mb-1">
 											{hit.source_title || "未知"} · #{hit.chunk_index}
 											{hit.score ? (
-												<span className="ml-2 text-[10px] text-zinc-400">
+												<span className="ml-2 text-[10px] text-text-light">
 													score: {hit.score.toFixed(3)}
 												</span>
 											) : null}
@@ -813,12 +812,12 @@ const ToolCallRow = memo(function ToolCallRow({
 								.map((result: any, idx: number) => (
 									<div
 										key={idx}
-										className="text-[11px] text-zinc-600 dark:text-zinc-400 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30"
+										className="text-[11px] text-text-secondary p-2 rounded-lg bg-warm-50/30"
 									>
-										<div className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+										<div className="font-medium text-text-secondary mb-1">
 											{result.title || "无标题"}
 										</div>
-										<div className="text-[10px] text-zinc-400 mb-1">
+										<div className="text-[10px] text-text-light mb-1">
 											{result.url || ""}
 										</div>
 										<div className="line-clamp-2">{result.snippet || ""}</div>
@@ -826,8 +825,8 @@ const ToolCallRow = memo(function ToolCallRow({
 								))}
 						</div>
 					) : (
-						<div className="mt-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30">
-							<pre className="text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+						<div className="mt-2 p-2 rounded-lg bg-warm-50/30">
+							<pre className="text-[11px] text-text-secondary whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
 								{typeof toolCall.output === "string"
 									? toolCall.output
 									: JSON.stringify(toolCall.output, null, 2)}
@@ -961,31 +960,31 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 			<AgentExecutionFlow task={task} isExecuting={isThisTaskExecuting} />
 
 			{/* 原有的详细信息面板 */}
-			<div className="rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+			<div className="rounded-2xl bg-warm-50/80/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 				<button
 					onClick={() => setOpen((v) => !v)}
 					className="w-full flex items-center justify-between px-3 py-2.5 text-left"
 				>
 					<div className="flex items-center gap-2 min-w-0">
-						<div className="p-1.5 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
+						<div className="p-1.5 rounded-xl bg-surface ring-1 ring-black/5 dark:ring-white/10">
 							<MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
 						</div>
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
-								<div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+								<div className="text-xs font-semibold text-text-primary truncate">
 									详细信息
 								</div>
-								<div className="text-[11px] text-zinc-400">{statusText}</div>
+								<div className="text-[11px] text-text-light">{statusText}</div>
 								{isThisTaskExecuting ? (
 									<Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
 								) : null}
 							</div>
-							<div className="text-[11px] text-zinc-400 truncate">
+							<div className="text-[11px] text-text-light truncate">
 								工具 {task.toolCalls.length} · 产物 {task.artifacts.length}
 							</div>
 						</div>
 					</div>
-					<div className="text-zinc-400">
+					<div className="text-text-light">
 						{open ? (
 							<ChevronDown className="w-4 h-4" />
 						) : (
@@ -1001,22 +1000,20 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 							<div className="w-full">
 								<button
 									onClick={() => setThinkingOpen((v) => !v)}
-									className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded"
+									className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-warm-50/50/30 -mx-1.5 px-1.5 rounded"
 								>
-									<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+									<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
 										{thinkingOpen ? (
 											<ChevronDown className="w-3.5 h-3.5" />
 										) : (
 											<ChevronRight className="w-3.5 h-3.5" />
 										)}
 									</span>
-									<span className="text-sm text-zinc-500 dark:text-zinc-400">
-										思考过程
-									</span>
+									<span className="text-sm text-text-muted">思考过程</span>
 								</button>
 								{thinkingOpen ? (
-									<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
-										<div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+									<div className="mt-2 ml-6 pl-3 border-l-2 border-border">
+										<div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
 											{thinking}
 										</div>
 									</div>
@@ -1030,7 +1027,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								{canPause ? (
 									<button
 										onClick={() => pauseTask()}
-										className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200"
+										className="flex-1 px-3 py-1.5 rounded-lg bg-warm-300 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary dark:text-zinc-200"
 									>
 										<Pause className="w-3.5 h-3.5" />
 										暂停
@@ -1072,7 +1069,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								})()}
 							</div>
 						) : (
-							<div className="px-3 py-3 text-xs text-zinc-400">
+							<div className="px-3 py-3 text-xs text-text-light">
 								尚未开始工具调用
 							</div>
 						)}
@@ -1088,7 +1085,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 
 							return nonKbArtifacts.length > 0 ? (
 								<div className="space-y-2">
-									<div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 px-1">
+									<div className="text-[11px] font-medium text-text-muted px-1">
 										产物预览 ({nonKbArtifacts.length})
 									</div>
 									{nonKbArtifacts.slice(0, 6).map((a) => (
@@ -1108,8 +1105,8 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 												</button>
 											)}
 											{artifactPreview === a.id && a.content ? (
-												<div className="mt-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 ring-1 ring-black/5 dark:ring-white/10">
-													<div className="text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+												<div className="mt-2 px-3 py-2 rounded-xl bg-warm-200/50 ring-1 ring-black/5 dark:ring-white/10">
+													<div className="text-[11px] text-text-secondary whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
 														{a.content.slice(0, 1000)}
 														{a.content.length > 1000 ? "..." : ""}
 													</div>
@@ -1199,21 +1196,21 @@ function ContextControl({
 	const isHigh = percent > 50;
 
 	return (
-		<div className="border-t border-zinc-100 dark:border-zinc-700/50 pt-2 mt-2">
+		<div className="border-t border-border/50 pt-2 mt-2">
 			<div className="flex items-center justify-between px-1">
 				<div className="flex items-center gap-2">
-					<div className="p-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+					<div className="p-1 rounded bg-warm-200 text-text-muted">
 						<Database className="w-3 h-3" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-[10px] uppercase font-medium text-zinc-400 leading-none mb-0.5">
+						<span className="text-[10px] uppercase font-medium text-text-light leading-none mb-0.5">
 							Context
 						</span>
-						<span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-none">
+						<span className="text-xs font-medium text-text-secondary leading-none">
 							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
 							{tokenUsage?.promptTokens !== undefined &&
 								tokenUsage?.completionTokens !== undefined && (
-									<span className="text-[10px] text-zinc-500 font-normal ml-1">
+									<span className="text-[10px] text-text-muted font-normal ml-1">
 										(↑{tokenUsage.promptTokens.toLocaleString()} ↓
 										{tokenUsage.completionTokens.toLocaleString()})
 									</span>
@@ -1222,7 +1219,7 @@ function ContextControl({
 						{(tokenUsage?.cacheReadInputTokens ||
 							tokenUsage?.cacheCreationInputTokens ||
 							tokenUsage?.costUsd !== undefined) && (
-							<span className="text-[10px] text-zinc-500 leading-none mt-1">
+							<span className="text-[10px] text-text-muted leading-none mt-1">
 								cache read{" "}
 								{(tokenUsage?.cacheReadInputTokens || 0).toLocaleString()}
 								{" · "}
@@ -1234,7 +1231,7 @@ function ContextControl({
 							</span>
 						)}
 						{teamId && (
-							<span className="text-[10px] text-zinc-500 leading-none mt-1">
+							<span className="text-[10px] text-text-muted leading-none mt-1">
 								{agentRole || "leader"} · {delegationMode || "hybrid"}
 								{teammateMode ? ` · ${teammateMode}` : ""}
 								{maxTeammates ? ` · teammates ${maxTeammates}` : ""}
@@ -1245,7 +1242,7 @@ function ContextControl({
 
 				<div className="flex items-center gap-2">
 					{/* Usage Bar */}
-					<div className="w-24 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+					<div className="w-24 h-1.5 bg-warm-200 rounded-full overflow-hidden">
 						<div
 							className={`h-full rounded-full transition-all duration-500 ${isHigh ? "bg-amber-400" : "bg-emerald-400"}`}
 							style={{ width: `${percent}%` }}
@@ -1258,8 +1255,8 @@ function ContextControl({
 						disabled={isCompacting || !sdkSessionId}
 						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
 							isCompacting
-								? "bg-zinc-100 text-zinc-400 cursor-wait"
-								: "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300"
+								? "bg-warm-200 text-text-light cursor-wait"
+								: "bg-warm-200 hover:bg-warm-300 text-text-secondary dark:hover:bg-zinc-700"
 						}`}
 						title="执行 /compact 命令压缩历史"
 					>

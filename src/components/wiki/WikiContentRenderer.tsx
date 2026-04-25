@@ -23,7 +23,7 @@ export function WikiContentRenderer({
 	const elements = parseWikiContent(content, pageMap, onNavigate);
 
 	return (
-		<div className="wiki-content prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+		<div className="wiki-content prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-text-secondary">
 			{elements}
 		</div>
 	);
@@ -46,7 +46,7 @@ function parseWikiContent(
 			elements.push(
 				<h4
 					key={i}
-					className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mt-4 mb-2"
+					className="text-sm font-semibold text-text-primary mt-4 mb-2"
 				>
 					{renderInline(line.slice(4), pageMap, onNavigate, i)}
 				</h4>,
@@ -55,7 +55,7 @@ function parseWikiContent(
 			elements.push(
 				<h3
 					key={i}
-					className="text-base font-semibold text-zinc-800 dark:text-zinc-100 mt-5 mb-2"
+					className="text-base font-semibold text-text-primary mt-5 mb-2"
 				>
 					{renderInline(line.slice(3), pageMap, onNavigate, i)}
 				</h3>,
@@ -64,7 +64,7 @@ function parseWikiContent(
 			elements.push(
 				<h2
 					key={i}
-					className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mt-6 mb-3"
+					className="text-lg font-bold text-text-primary dark:text-zinc-50 mt-6 mb-3"
 				>
 					{renderInline(line.slice(2), pageMap, onNavigate, i)}
 				</h2>,
@@ -127,7 +127,7 @@ function renderInline(
 				parts.push(
 					<span
 						key={`${lineKey}-link-${match.index}`}
-						className="text-zinc-400 dark:text-zinc-500"
+						className="text-text-light"
 						title={`页面「${linkTitle}」尚未创建`}
 					>
 						[[{linkTitle}]]
@@ -139,7 +139,7 @@ function renderInline(
 			parts.push(
 				<strong
 					key={`${lineKey}-bold-${match.index}`}
-					className="font-semibold text-zinc-800 dark:text-zinc-200"
+					className="font-semibold text-text-primary dark:text-zinc-200"
 				>
 					{match[2]}
 				</strong>,
@@ -149,7 +149,7 @@ function renderInline(
 			parts.push(
 				<code
 					key={`${lineKey}-code-${match.index}`}
-					className="px-1 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-primary/80"
+					className="px-1 py-0.5 text-xs bg-warm-200 rounded font-mono text-primary/80"
 				>
 					{match[3]}
 				</code>,

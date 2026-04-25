@@ -235,7 +235,7 @@ export function FeishuQuickSetup({
 			</div>
 
 			{/* 主体内容：按 status 分支 */}
-			<div className="rounded-xl border border-zinc-200/70 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+			<div className="rounded-xl border border-border/70 bg-surface p-6/50">
 				{status.kind === "loading" ? <LoadingView /> : null}
 
 				{status.kind === "ready" ? (
@@ -364,7 +364,7 @@ function ReadyView({
 		<div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
 			{/* QR 码 */}
 			<div className="mx-auto flex flex-col items-center md:mx-0">
-				<div className="rounded-2xl bg-white p-3 ring-1 ring-zinc-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:ring-zinc-700">
+				<div className="rounded-2xl bg-surface p-3 ring-1 ring-zinc-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:ring-zinc-700">
 					<img
 						src={qrDataUrl}
 						alt="飞书扫码授权"
@@ -405,7 +405,7 @@ function ReadyView({
 							{minutes}:{seconds.toString().padStart(2, "0")}
 						</span>
 					</div>
-					<div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+					<div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-warm-300">
 						<div
 							className={cn(
 								"h-full rounded-full transition-all duration-1000 ease-linear",
@@ -418,7 +418,7 @@ function ReadyView({
 					</div>
 					<div className="mt-2 text-[11px] text-text-muted">
 						User code：
-						<code className="ml-1 rounded bg-white px-1 py-0.5 font-mono dark:bg-zinc-800">
+						<code className="ml-1 rounded bg-surface px-1 py-0.5 font-mono">
 							{userCode}
 						</code>
 					</div>
@@ -437,7 +437,7 @@ function StepLine({
 }) {
 	return (
 		<li className="flex items-start gap-2.5">
-			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200/70 text-[10px] font-semibold text-text-secondary dark:bg-zinc-800">
+			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-warm-300/70 text-[10px] font-semibold text-text-secondary">
 				{index}
 			</span>
 			<span>{children}</span>
@@ -511,23 +511,23 @@ function SuccessView({
 				</p>
 			</div>
 
-			<div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-3 text-left text-xs dark:border-zinc-800 dark:bg-zinc-900">
+			<div className="w-full max-w-md rounded-xl border border-border bg-surface p-3 text-left text-xs">
 				<div className="flex items-center justify-between">
 					<span className="text-text-muted">App ID</span>
-					<code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800">
+					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
 						{appId}
 					</code>
 				</div>
 				<div className="mt-1.5 flex items-center justify-between">
 					<span className="text-text-muted">域名</span>
-					<code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800">
+					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
 						{domain}
 					</code>
 				</div>
 				{openId ? (
 					<div className="mt-1.5 flex items-center justify-between">
 						<span className="text-text-muted">你的 open_id</span>
-						<code className="truncate rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800">
+						<code className="truncate rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
 							{openId}
 						</code>
 					</div>

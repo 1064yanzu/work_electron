@@ -18,8 +18,8 @@ export interface ButtonProps
 const variantStyles = {
 	// 陶土橙主按钮 — 品牌核心 CTA
 	primary: `
-		bg-[#c96442] text-[#faf9f5]
-		hover:bg-[#b5573a]
+		bg-primary text-surface
+		hover:bg-primary-hover
 		active:bg-[#a34e34]
 		shadow-[#c96442_0px_0px_0px_0px,#c96442_0px_0px_0px_1px]
 		hover:shadow-[#c96442_0px_0px_0px_0px,#b5573a_0px_0px_0px_1px]
@@ -27,9 +27,9 @@ const variantStyles = {
 	`,
 	// 暖沙色次要按钮 — 日常操作
 	secondary: `
-		bg-[#e8e6dc] dark:bg-[#30302e]
-		text-[#4d4c48] dark:text-[#b0aea5]
-		hover:bg-[#dddbd0] dark:hover:bg-[#3a3937]
+		bg-warm-300
+		text-text-charcoal
+		hover:bg-[#dddbd0]
 		active:bg-[#d5d3c8] dark:active:bg-[#404040]
 		shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px]
 		dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px]
@@ -38,14 +38,14 @@ const variantStyles = {
 	// 透明幽灵按钮 — 低优先级操作
 	ghost: `
 		bg-transparent
-		text-[#5e5d59] dark:text-[#87867f]
-		hover:bg-[#f0eee6] dark:hover:bg-[#30302e]
-		hover:text-[#141413] dark:hover:text-[#faf9f5]
-		active:bg-[#e8e6dc] dark:active:bg-[#3a3937]
+		text-text-secondary
+		hover:bg-warm-200
+		hover:text-text-primary
+		active:bg-warm-300 dark:active:bg-dark-surface
 	`,
 	// 深暖红危险按钮
 	danger: `
-		bg-[#b53333] text-[#faf9f5]
+		bg-[#b53333] text-surface
 		hover:bg-[#9e2b2b]
 		active:bg-[#8a2424]
 		shadow-[#b53333_0px_0px_0px_0px,#b53333_0px_0px_0px_1px]
@@ -54,11 +54,11 @@ const variantStyles = {
 	// 描边按钮 — 暖色边框
 	outline: `
 		bg-transparent
-		border border-[#e8e6dc] dark:border-[#30302e]
-		text-[#4d4c48] dark:text-[#b0aea5]
-		hover:bg-[#f5f4ed] dark:hover:bg-[#30302e]
-		hover:border-[#d1cfc5] dark:hover:border-[#4a4845]
-		active:bg-[#f0eee6] dark:active:bg-[#3a3937]
+		border border-border
+		text-text-charcoal
+		hover:bg-background
+		hover:border-warm-400 dark:hover:border-warm-400
+		active:bg-warm-200 dark:active:bg-dark-surface
 	`,
 };
 

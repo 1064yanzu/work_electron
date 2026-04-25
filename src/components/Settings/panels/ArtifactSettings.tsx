@@ -112,7 +112,7 @@ export function ArtifactSettings() {
 	if (isLoading || !settings) {
 		return (
 			<div className="flex-1 h-full bg-background flex items-center justify-center">
-				<RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
+				<RefreshCw className="w-5 h-5 animate-spin text-text-light" />
 			</div>
 		);
 	}
@@ -130,33 +130,27 @@ export function ArtifactSettings() {
 				/>
 
 				<div className="grid gap-4 sm:grid-cols-3">
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							产物数量
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">产物数量</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{artifacts.length}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							涉及会话
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">涉及会话</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{sessionCount}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							总占用
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">总占用</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{formatSize(totalSize)}
 						</div>
 					</div>
 				</div>
 
-				<div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+				<div className="rounded-2xl border border-border/80 bg-warm-50/90 p-4/80">
 					<div className="text-sm font-medium text-text-primary">当前策略</div>
 					<div className="mt-2 space-y-2 text-xs leading-6 text-text-secondary">
 						<div>存储路径：{settings.storage_path || "默认路径"}</div>
@@ -188,23 +182,23 @@ export function ArtifactSettings() {
 				<div className="p-5">
 					<SettingsSectionTitle>产物概览</SettingsSectionTitle>
 					<div className="grid grid-cols-3 gap-4">
-						<div className="text-center p-4 bg-zinc-50 rounded-xl">
-							<div className="text-2xl font-semibold text-zinc-800">
+						<div className="text-center p-4 bg-warm-50 rounded-xl">
+							<div className="text-2xl font-semibold text-text-primary">
 								{artifacts.length}
 							</div>
-							<div className="text-xs text-zinc-400 mt-1">产物数量</div>
+							<div className="text-xs text-text-light mt-1">产物数量</div>
 						</div>
-						<div className="text-center p-4 bg-zinc-50 rounded-xl">
-							<div className="text-2xl font-semibold text-zinc-800">
+						<div className="text-center p-4 bg-warm-50 rounded-xl">
+							<div className="text-2xl font-semibold text-text-primary">
 								{sessionCount}
 							</div>
-							<div className="text-xs text-zinc-400 mt-1">会话数</div>
+							<div className="text-xs text-text-light mt-1">会话数</div>
 						</div>
-						<div className="text-center p-4 bg-zinc-50 rounded-xl">
-							<div className="text-2xl font-semibold text-zinc-800">
+						<div className="text-center p-4 bg-warm-50 rounded-xl">
+							<div className="text-2xl font-semibold text-text-primary">
 								{formatSize(totalSize)}
 							</div>
-							<div className="text-xs text-zinc-400 mt-1">总占用</div>
+							<div className="text-xs text-text-light mt-1">总占用</div>
 						</div>
 					</div>
 				</div>
@@ -243,7 +237,7 @@ export function ArtifactSettings() {
 								}
 								min={1}
 								max={500}
-								className="w-20 px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
+								className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
 							/>
 						}
 					/>
@@ -263,9 +257,9 @@ export function ArtifactSettings() {
 									}
 									min={100}
 									max={10240}
-									className="w-20 px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
+									className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
 								/>
-								<span className="text-xs text-zinc-400">MB</span>
+								<span className="text-xs text-text-light">MB</span>
 							</div>
 						}
 					/>
@@ -302,9 +296,9 @@ export function ArtifactSettings() {
 										}
 										min={1}
 										max={365}
-										className="w-20 px-3 py-1.5 bg-zinc-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
+										className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
 									/>
-									<span className="text-xs text-zinc-400">天</span>
+									<span className="text-xs text-text-light">天</span>
 								</div>
 							}
 						/>
@@ -322,7 +316,7 @@ export function ArtifactSettings() {
 						<button
 							onClick={() => handleCleanup(false)}
 							disabled={isCleaning}
-							className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+							className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
 						>
 							{isCleaning ? (
 								<RefreshCw className="w-4 h-4 animate-spin" />

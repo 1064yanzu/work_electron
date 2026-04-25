@@ -28,18 +28,18 @@ export default function DocCreationProposal({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="w-full max-w-lg mx-4 bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+			<div className="w-full max-w-lg mx-4 bg-surface dark:bg-[#1E1E1E] rounded-2xl shadow-2xl border border-border/50/50 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
 				{/* Header */}
-				<div className="px-6 py-4 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-zinc-200/50 dark:border-zinc-800/50">
+				<div className="px-6 py-4 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-border/50/50">
 					<div className="flex items-center gap-3">
 						<div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
 							<FilePlus2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div>
-							<h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">
+							<h3 className="text-base font-semibold text-text-primary dark:text-zinc-200">
 								AI 建议创建新文档
 							</h3>
-							<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+							<p className="text-xs text-text-muted mt-0.5">
 								当前文档不适合添加此内容，建议新建
 							</p>
 						</div>
@@ -50,12 +50,10 @@ export default function DocCreationProposal({
 				<div className="px-6 py-4 space-y-4">
 					{/* 标题 */}
 					<div className="flex items-start gap-3">
-						<FileText className="w-5 h-5 text-zinc-400 mt-0.5 shrink-0" />
+						<FileText className="w-5 h-5 text-text-light mt-0.5 shrink-0" />
 						<div className="flex-1">
-							<p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-								文档标题
-							</p>
-							<p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+							<p className="text-xs text-text-muted mb-1">文档标题</p>
+							<p className="text-sm font-medium text-text-primary dark:text-zinc-200">
 								{title}
 							</p>
 						</div>
@@ -64,10 +62,8 @@ export default function DocCreationProposal({
 					{/* 摘要 */}
 					{summary && (
 						<div className="pl-8">
-							<p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-								摘要
-							</p>
-							<p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+							<p className="text-xs text-text-muted mb-1">摘要</p>
+							<p className="text-sm text-text-secondary leading-relaxed">
 								{summary}
 							</p>
 						</div>
@@ -75,11 +71,9 @@ export default function DocCreationProposal({
 
 					{/* 内容预览 */}
 					<div className="pl-8">
-						<p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-							内容预览
-						</p>
-						<div className="max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-200/50 dark:border-zinc-800/50">
-							<pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-mono leading-relaxed">
+						<p className="text-xs text-text-muted mb-2">内容预览</p>
+						<div className="max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-warm-50/50 p-4 border border-border/50/50">
+							<pre className="text-xs text-text-secondary whitespace-pre-wrap font-mono leading-relaxed">
 								{preview}
 							</pre>
 						</div>
@@ -87,10 +81,10 @@ export default function DocCreationProposal({
 				</div>
 
 				{/* Actions */}
-				<div className="px-6 py-4 bg-zinc-50/80 dark:bg-zinc-900/50 border-t border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-end gap-3">
+				<div className="px-6 py-4 bg-warm-50/80/50 border-t border-border/50/50 flex items-center justify-end gap-3">
 					<button
 						onClick={onReject}
-						className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 transition-all"
+						className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:bg-warm-300/80/80 transition-all"
 					>
 						<X className="w-4 h-4" />
 						取消

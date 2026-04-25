@@ -452,7 +452,7 @@ export function PromptSettings() {
 					<>
 						<button
 							onClick={handleResetAll}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							<RotateCcw className="w-3.5 h-3.5" />
 							<span>重置全部</span>
@@ -462,8 +462,8 @@ export function PromptSettings() {
 							disabled={!hasChanges || isSaving}
 							className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
 								hasChanges && !isSaving
-									? "bg-zinc-900 text-white hover:bg-zinc-800"
-									: "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+									? "bg-dark-muted text-white hover:bg-dark-surface"
+									: "bg-warm-200 text-text-light cursor-not-allowed"
 							}`}
 						>
 							<Save className="w-3.5 h-3.5" />
@@ -486,7 +486,7 @@ export function PromptSettings() {
 							className={`rounded-xl border transition-all ${
 								isExpanded
 									? "border-zinc-300 dark:border-zinc-600 shadow-sm"
-									: "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+									: "border-border hover:border-zinc-300 dark:hover:border-zinc-600"
 							}`}
 						>
 							{/* 折叠头部 */}
@@ -499,14 +499,14 @@ export function PromptSettings() {
 										className={`w-8 h-8 rounded-lg flex items-center justify-center ${
 											isModified
 												? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-												: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+												: "bg-warm-200 text-text-muted"
 										}`}
 									>
 										<config.icon className="w-4 h-4" />
 									</div>
 									<div>
 										<div className="flex items-center gap-2">
-											<span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+											<span className="text-sm font-medium text-text-primary dark:text-zinc-200">
 												{config.label}
 											</span>
 											{isModified && (
@@ -515,23 +515,23 @@ export function PromptSettings() {
 												</span>
 											)}
 										</div>
-										<p className="text-xs text-zinc-500 mt-0.5">
+										<p className="text-xs text-text-muted mt-0.5">
 											{config.description}
 										</p>
 									</div>
 								</div>
 								<div className="flex items-center gap-2">
 									{isExpanded ? (
-										<ChevronUp className="w-4 h-4 text-zinc-400" />
+										<ChevronUp className="w-4 h-4 text-text-light" />
 									) : (
-										<ChevronDown className="w-4 h-4 text-zinc-400" />
+										<ChevronDown className="w-4 h-4 text-text-light" />
 									)}
 								</div>
 							</button>
 
 							{/* 展开内容 */}
 							{isExpanded && (
-								<div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800">
+								<div className="px-4 pb-4 border-t border-border">
 									<div className="pt-4 space-y-3">
 										<textarea
 											value={currentValue}
@@ -540,10 +540,10 @@ export function PromptSettings() {
 											}
 											placeholder={config.placeholder}
 											rows={12}
-											className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 resize-none font-mono leading-relaxed"
+											className="w-full px-4 py-3 bg-warm-50/50 border border-border rounded-xl text-sm text-text-primary dark:text-zinc-200 placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 resize-none font-mono leading-relaxed"
 										/>
 										<div className="flex items-center justify-between">
-											<p className="text-xs text-zinc-400">
+											<p className="text-xs text-text-light">
 												{currentValue.length} 字符
 											</p>
 											<button
@@ -551,8 +551,8 @@ export function PromptSettings() {
 												disabled={!isModified}
 												className={`flex items-center gap-1 text-xs transition-colors ${
 													isModified
-														? "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-														: "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
+														? "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
+														: "text-text-light cursor-not-allowed"
 												}`}
 											>
 												<RotateCcw className="w-3 h-3" />
@@ -568,18 +568,18 @@ export function PromptSettings() {
 			</div>
 
 			{/* 使用说明 */}
-			<div className="mt-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-				<h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+			<div className="mt-8 p-4 bg-warm-50/50 rounded-xl">
+				<h4 className="text-sm font-medium text-text-secondary mb-2">
 					使用说明
 				</h4>
-				<ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1.5">
+				<ul className="text-xs text-text-muted space-y-1.5">
 					<li>
 						• 提示词中可以使用变量占位符，如{" "}
-						<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
+						<code className="px-1 py-0.5 bg-warm-300 dark:bg-zinc-700 rounded">
 							{"{message}"}
 						</code>
 						、
-						<code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">
+						<code className="px-1 py-0.5 bg-warm-300 dark:bg-zinc-700 rounded">
 							{"{document}"}
 						</code>{" "}
 						等

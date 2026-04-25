@@ -67,7 +67,7 @@ export function OutputEditor() {
 
 	return (
 		<aside className="w-[400px] min-w-[300px] bg-panel-output flex flex-col h-full border-l border-border">
-			<div className="p-4 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-sm">
+			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm">
 				<div className="flex items-center gap-2 text-text-secondary">
 					<PenTool className="w-5 h-5 text-primary" />
 					<h2 className="font-serif font-medium tracking-wide text-sm">
@@ -92,8 +92,8 @@ export function OutputEditor() {
 						onClick={() => setActiveId(asset.id)}
 						className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap max-w-[120px] truncate ${
 							activeId === asset.id
-								? "border-primary text-primary bg-white/50"
-								: "border-transparent text-text-muted hover:text-text-secondary hover:bg-white/30"
+								? "border-primary text-primary bg-surface/50"
+								: "border-transparent text-text-muted hover:text-text-secondary hover:bg-surface/30"
 						}`}
 					>
 						{asset.title}
@@ -101,7 +101,7 @@ export function OutputEditor() {
 				))}
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-8 bg-white">
+			<div className="flex-1 overflow-y-auto p-8 bg-surface">
 				{activeAsset ? (
 					<article className="prose prose-stone prose-sm max-w-none">
 						<div className="flex items-center justify-between mb-6 not-prose">

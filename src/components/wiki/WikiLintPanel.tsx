@@ -93,21 +93,21 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 	);
 
 	return (
-		<div className="mx-3 mt-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/60 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<div className="mx-3 mt-3 rounded-2xl border border-border/80/80 bg-surface/90/60 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
-			<div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800/70 flex items-center justify-between">
+			<div className="px-4 py-3 border-b border-border/70 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<AlertTriangle className="w-4 h-4 text-primary" />
-					<h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+					<h3 className="text-sm font-semibold text-text-primary">
 						Wiki 健康检查
 					</h3>
-					<span className="text-[11px] text-zinc-400 tabular-nums">
+					<span className="text-[11px] text-text-light tabular-nums">
 						{report.total_pages} 页 · {totalIssues} 个问题
 					</span>
 				</div>
 				<button
 					onClick={onDismiss}
-					className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+					className="p-1 text-text-light hover:text-text-secondary dark:hover:text-text-light rounded"
 				>
 					<X className="w-3.5 h-3.5" />
 				</button>
@@ -124,7 +124,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 							{report.suggestions.map((s, i) => (
 								<li
 									key={i}
-									className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed"
+									className="text-xs text-text-secondary leading-relaxed"
 								>
 									· {s}
 								</li>
@@ -166,23 +166,23 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 展开的 issue 列表 */}
 				{expandedKind && grouped[expandedKind].length > 0 && (
-					<div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800/70 bg-zinc-50/50 dark:bg-zinc-800/30 max-h-60 overflow-y-auto">
+					<div className="rounded-xl border border-border/70/70 bg-warm-50/50/30 max-h-60 overflow-y-auto">
 						{grouped[expandedKind].slice(0, 50).map((issue, i) => (
 							<button
 								key={`${issue.page_slug}-${i}`}
 								onClick={() => onOpenPage?.(issue.page_slug)}
-								className="w-full text-left px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-b-0 hover:bg-white dark:hover:bg-zinc-800/70 transition-colors"
+								className="w-full text-left px-3 py-2 border-b border-border last:border-b-0 hover:bg-surface/70 transition-colors"
 							>
-								<div className="text-xs font-medium text-zinc-800 dark:text-zinc-100 truncate mb-0.5">
+								<div className="text-xs font-medium text-text-primary truncate mb-0.5">
 									{issue.page_title}
 								</div>
-								<div className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+								<div className="text-[11px] text-text-muted leading-relaxed">
 									{issue.detail}
 								</div>
 							</button>
 						))}
 						{grouped[expandedKind].length > 50 && (
-							<div className="px-3 py-2 text-[11px] text-zinc-400 bg-zinc-100/50 dark:bg-zinc-800/50">
+							<div className="px-3 py-2 text-[11px] text-text-light bg-warm-200/50/50">
 								…还有 {grouped[expandedKind].length - 50} 条
 							</div>
 						)}

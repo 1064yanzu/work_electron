@@ -80,8 +80,8 @@ export function EmptyState({
 				<div
 					className={cn(
 						"flex items-center justify-center rounded-2xl mb-4",
-						"bg-zinc-100 dark:bg-zinc-800",
-						"text-zinc-400 dark:text-zinc-500",
+						"bg-warm-200",
+						"text-text-light",
 						styles.iconWrapper,
 					)}
 				>
@@ -92,7 +92,7 @@ export function EmptyState({
 			{/* 标题 */}
 			<h3
 				className={cn(
-					"font-serif font-medium text-zinc-600 dark:text-zinc-300 mb-1",
+					"font-serif font-medium text-text-secondary mb-1",
 					styles.title,
 				)}
 			>
@@ -101,12 +101,7 @@ export function EmptyState({
 
 			{/* 描述 */}
 			{description && (
-				<p
-					className={cn(
-						"text-zinc-400 dark:text-zinc-500 max-w-xs",
-						styles.description,
-					)}
-				>
+				<p className={cn("text-text-light max-w-xs", styles.description)}>
 					{description}
 				</p>
 			)}
@@ -132,8 +127,7 @@ export function IllustratedEmptyState({
 	...props
 }: IllustratedEmptyStateProps) {
 	const getIllustration = () => {
-		const baseClasses =
-			"w-24 h-24 mb-6 text-zinc-200 dark:text-zinc-700 animate-pulse-subtle";
+		const baseClasses = "w-24 h-24 mb-6 text-zinc-200 animate-pulse-subtle";
 
 		switch (illustration) {
 			case "folder":
@@ -250,11 +244,11 @@ export function IllustratedEmptyState({
 			)}
 		>
 			{getIllustration()}
-			<h3 className="font-serif font-medium text-lg text-zinc-600 dark:text-zinc-300 mb-2">
+			<h3 className="font-serif font-medium text-lg text-text-secondary mb-2">
 				{props.title}
 			</h3>
 			{props.description && (
-				<p className="text-sm text-zinc-400 dark:text-zinc-500 max-w-sm mb-4">
+				<p className="text-sm text-text-light max-w-sm mb-4">
 					{props.description}
 				</p>
 			)}

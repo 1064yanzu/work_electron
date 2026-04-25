@@ -335,16 +335,16 @@ export function ModelSettings() {
 	return (
 		<div className="flex h-full">
 			{/* 左侧：服务商列表 */}
-			<div className="w-60 border-r border-zinc-200/80 bg-zinc-50/50 flex flex-col">
+			<div className="w-60 border-r border-border/80 bg-warm-50/50 flex flex-col">
 				<div className="p-4">
 					<div className="relative">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light" />
 						<input
 							type="text"
 							placeholder="搜索模型平台..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200/80 rounded-xl text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+							className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border/80 rounded-xl text-sm placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
 						/>
 					</div>
 				</div>
@@ -356,8 +356,8 @@ export function ModelSettings() {
 							onClick={() => setSelectedId(provider.id)}
 							className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
 								selectedId === provider.id
-									? "bg-white shadow-sm ring-1 ring-zinc-200/80"
-									: "hover:bg-white/60"
+									? "bg-surface shadow-sm ring-1 ring-zinc-200/80"
+									: "hover:bg-surface/60"
 							}`}
 						>
 							<div
@@ -373,17 +373,17 @@ export function ModelSettings() {
 									provider.icon && <provider.icon className="w-5 h-5" />
 								)}
 							</div>
-							<span className="flex-1 text-sm font-medium text-zinc-800 truncate">
+							<span className="flex-1 text-sm font-medium text-text-primary truncate">
 								{provider.name}
 							</span>
 						</div>
 					))}
 				</div>
 
-				<div className="p-4 border-t border-zinc-200/80">
+				<div className="p-4 border-t border-border/80">
 					<button
 						onClick={() => setIsAddProviderOpen(true)}
-						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200/80 rounded-xl transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+						className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary bg-surface hover:bg-warm-50 border border-border/80 rounded-xl transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 					>
 						<Plus className="w-4 h-4" />
 						添加服务商
@@ -392,7 +392,7 @@ export function ModelSettings() {
 			</div>
 
 			{/* 右侧：配置详情 */}
-			<div className="flex-1 overflow-y-auto bg-white">
+			<div className="flex-1 overflow-y-auto bg-surface">
 				{selected ? (
 					<div className="p-8 max-w-2xl">
 						{/* 标题栏 */}
@@ -411,13 +411,13 @@ export function ModelSettings() {
 										selected.icon && <selected.icon className="w-6 h-6" />
 									)}
 								</div>
-								<h2 className="text-xl font-semibold text-zinc-900">
+								<h2 className="text-xl font-semibold text-text-primary">
 									{selected.name}
 								</h2>
 								{template?.homeUrl && (
 									<button
 										onClick={() => openUrl(template.homeUrl!)}
-										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+										className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200 transition-colors"
 									>
 										<ExternalLink className="w-4 h-4" />
 									</button>
@@ -432,19 +432,19 @@ export function ModelSettings() {
 						{/* API 密钥 */}
 						<div className="mb-8">
 							<div className="flex items-center justify-between mb-3">
-								<label className="text-sm font-medium text-zinc-700">
+								<label className="text-sm font-medium text-text-secondary">
 									API 密钥
 								</label>
 								<div className="flex items-center gap-2">
 									<button
 										onClick={handleOpenApiKeyModal}
-										className="px-2.5 py-1 text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+										className="px-2.5 py-1 text-xs font-medium text-text-secondary hover:text-text-primary bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
 									>
 										管理
 									</button>
 									<button
 										onClick={() => setShowApiKey(!showApiKey)}
-										className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+										className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200 transition-colors"
 									>
 										{showApiKey ? (
 											<EyeOff className="w-4 h-4" />
@@ -464,11 +464,11 @@ export function ModelSettings() {
 										})
 									}
 									placeholder="sk-..."
-									className="flex-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+									className="flex-1 px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
 								/>
 								<CheckButton status={checkStatus} onClick={handleCheck} />
 							</div>
-							<p className="mt-2 text-xs text-zinc-400">
+							<p className="mt-2 text-xs text-text-light">
 								支持多个密钥，用逗号或换行分隔
 							</p>
 							{apiKeyUrl && (
@@ -484,10 +484,10 @@ export function ModelSettings() {
 						{/* API 地址 */}
 						<div className="mb-8">
 							<div className="flex items-center gap-2 mb-3">
-								<label className="text-sm font-medium text-zinc-700">
+								<label className="text-sm font-medium text-text-secondary">
 									API 地址
 								</label>
-								<span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-md">
+								<span className="text-xs text-text-light bg-warm-200 px-2 py-0.5 rounded-md">
 									可选
 								</span>
 							</div>
@@ -502,10 +502,10 @@ export function ModelSettings() {
 								placeholder={
 									template?.defaultApiBase || "https://api.openai.com/v1"
 								}
-								className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+								className="w-full px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
 							/>
 							{selected.apiBase && apiPreviewUrl && (
-								<p className="mt-2 text-xs text-zinc-400">
+								<p className="mt-2 text-xs text-text-light">
 									预览：{apiPreviewUrl}
 								</p>
 							)}
@@ -513,7 +513,7 @@ export function ModelSettings() {
 
 						{canConfigureEndpoint && (
 							<div className="mb-8">
-								<label className="mb-3 block text-sm font-medium text-zinc-700">
+								<label className="mb-3 block text-sm font-medium text-text-secondary">
 									默认端点类型
 								</label>
 								<Select
@@ -530,7 +530,7 @@ export function ModelSettings() {
 									<option value="chat_completions">兼容型</option>
 									<option value="responses">Responses</option>
 								</Select>
-								<p className="mt-2 text-xs text-zinc-400">
+								<p className="mt-2 text-xs text-text-light">
 									未单独配置的模型会继承此默认端点类型。
 								</p>
 							</div>
@@ -540,17 +540,17 @@ export function ModelSettings() {
 						<div className="mb-8">
 							<div className="flex items-center justify-between mb-4">
 								<div className="flex items-center gap-3">
-									<span className="text-sm font-medium text-zinc-700">
+									<span className="text-sm font-medium text-text-secondary">
 										模型
 									</span>
-									<span className="text-xs text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
+									<span className="text-xs text-text-muted bg-warm-200 px-2 py-0.5 rounded-md">
 										({selected.models.length})
 									</span>
 								</div>
 								<div className="flex items-center gap-2">
 									<button
 										onClick={() => setIsManaging(!isManaging)}
-										className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${isManaging ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
+										className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${isManaging ? "bg-dark-muted text-white" : "bg-warm-200 text-text-secondary hover:bg-warm-300"}`}
 									>
 										{isManaging ? "完成" : "管理"}
 									</button>
@@ -564,7 +564,7 @@ export function ModelSettings() {
 									</button>
 									<button
 										onClick={() => setIsAddModelOpen(true)}
-										className="px-3 py-1.5 text-sm font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 rounded-lg transition-all flex items-center gap-1"
+										className="px-3 py-1.5 text-sm font-medium bg-warm-200 text-text-secondary hover:bg-warm-300 rounded-lg transition-all flex items-center gap-1"
 									>
 										<Plus className="w-3.5 h-3.5" />
 										添加
@@ -577,36 +577,36 @@ export function ModelSettings() {
 									{Object.entries(modelGroups).map(([groupName, models]) => (
 										<div
 											key={groupName}
-											className="border border-zinc-200/80 rounded-2xl overflow-hidden bg-zinc-50/30"
+											className="border border-border/80 rounded-2xl overflow-hidden bg-warm-50/30"
 										>
 											<div
-												className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-100/50 transition-colors"
+												className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-warm-200/50 transition-colors"
 												onClick={() => toggleGroup(groupName)}
 											>
 												<div className="flex items-center gap-2">
 													{expandedGroups.has(groupName) ? (
-														<ChevronDown className="w-4 h-4 text-zinc-400" />
+														<ChevronDown className="w-4 h-4 text-text-light" />
 													) : (
-														<ChevronRight className="w-4 h-4 text-zinc-400" />
+														<ChevronRight className="w-4 h-4 text-text-light" />
 													)}
-													<span className="text-sm font-medium text-zinc-700">
+													<span className="text-sm font-medium text-text-secondary">
 														{formatGroupName(groupName)}
 													</span>
-													<span className="text-xs text-zinc-400">
+													<span className="text-xs text-text-light">
 														({models.length})
 													</span>
 												</div>
 											</div>
 											{expandedGroups.has(groupName) && (
-												<div className="border-t border-zinc-200/60">
+												<div className="border-t border-border/60">
 													{models.map((model, idx) => (
 														<div
 															key={model}
-															className={`flex items-center justify-between px-4 py-3 group hover:bg-white transition-colors ${idx !== models.length - 1 ? "border-b border-zinc-100" : ""}`}
+															className={`flex items-center justify-between px-4 py-3 group hover:bg-surface transition-colors ${idx !== models.length - 1 ? "border-b border-border" : ""}`}
 														>
 															<div className="flex min-w-0 flex-1 items-center gap-3">
 																<div
-																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm bg-white border border-zinc-200 overflow-hidden`}
+																	className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm bg-surface border border-border overflow-hidden`}
 																>
 																	{getModelIcon(model) ? (
 																		<img
@@ -624,7 +624,7 @@ export function ModelSettings() {
 																		</div>
 																	)}
 																</div>
-																<span className="truncate text-sm text-zinc-800 font-medium">
+																<span className="truncate text-sm text-text-primary font-medium">
 																	{model}
 																</span>
 																<div className="flex shrink-0 gap-1">
@@ -661,7 +661,7 @@ export function ModelSettings() {
 																<button
 																	onClick={() => handleTestModel(model)}
 																	disabled={testingModel === model}
-																	className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+																	className="p-2 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 																	title="测试连接"
 																>
 																	{testingModel === model ? (
@@ -673,7 +673,7 @@ export function ModelSettings() {
 																{isManaging && (
 																	<button
 																		onClick={() => handleRemoveModel(model)}
-																		className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+																		className="p-2 text-text-light hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
 																		title="删除"
 																	>
 																		<Trash2 className="w-4 h-4" />
@@ -688,8 +688,8 @@ export function ModelSettings() {
 									))}
 								</div>
 							) : (
-								<div className="text-center py-12 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50">
-									<p className="text-sm text-zinc-400">暂无模型</p>
+								<div className="text-center py-12 border border-dashed border-border rounded-2xl bg-warm-50/50">
+									<p className="text-sm text-text-light">暂无模型</p>
 									<button
 										onClick={() => setIsAddModelOpen(true)}
 										className="mt-3 text-sm text-blue-600 hover:text-blue-700"
@@ -700,7 +700,7 @@ export function ModelSettings() {
 							)}
 
 							{template && (docsUrl || modelsUrl) && (
-								<p className="mt-4 text-xs text-zinc-400">
+								<p className="mt-4 text-xs text-text-light">
 									{docsUrl && (
 										<>
 											查看{" "}
@@ -727,7 +727,7 @@ export function ModelSettings() {
 						</div>
 
 						{/* 删除 */}
-						<div className="pt-8 border-t border-zinc-200/80">
+						<div className="pt-8 border-t border-border/80">
 							<button
 								onClick={handleDelete}
 								disabled={isDeleting}
@@ -741,10 +741,10 @@ export function ModelSettings() {
 				) : (
 					<div className="h-full flex items-center justify-center">
 						<div className="text-center">
-							<div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-100 flex items-center justify-center">
-								<Settings className="w-8 h-8 text-zinc-300" />
+							<div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-warm-200 flex items-center justify-center">
+								<Settings className="w-8 h-8 text-text-light" />
 							</div>
-							<p className="text-zinc-500">选择一个服务商进行配置</p>
+							<p className="text-text-muted">选择一个服务商进行配置</p>
 						</div>
 					</div>
 				)}
@@ -757,13 +757,13 @@ export function ModelSettings() {
 				title="添加提供商"
 			>
 				<div className="flex justify-center mb-8">
-					<div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-3xl font-bold text-zinc-400 shadow-inner">
+					<div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-3xl font-bold text-text-light shadow-inner">
 						{providerName?.[0]?.toUpperCase() || "P"}
 					</div>
 				</div>
 				<div className="space-y-5">
 					<div>
-						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+						<label className="text-sm font-medium text-text-secondary mb-2 block">
 							提供商名称
 						</label>
 						<input
@@ -771,11 +771,11 @@ export function ModelSettings() {
 							value={providerName}
 							onChange={(e) => setProviderName(e.target.value)}
 							placeholder="例如 OpenAI"
-							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
 						/>
 					</div>
 					<div>
-						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+						<label className="text-sm font-medium text-text-secondary mb-2 block">
 							提供商类型
 						</label>
 						<Select
@@ -793,14 +793,14 @@ export function ModelSettings() {
 				<div className="flex justify-end gap-3 mt-8">
 					<button
 						onClick={() => setIsAddProviderOpen(false)}
-						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 					>
 						取消
 					</button>
 					<button
 						onClick={handleCreate}
 						disabled={isCreating || !providerName.trim()}
-						className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+						className="px-5 py-2.5 text-sm font-medium bg-dark-muted text-white rounded-xl hover:bg-dark-surface disabled:opacity-50 transition-colors"
 					>
 						{isCreating ? "创建中..." : "确定"}
 					</button>
@@ -815,7 +815,7 @@ export function ModelSettings() {
 			>
 				<div className="space-y-5">
 					<div>
-						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+						<label className="text-sm font-medium text-text-secondary mb-2 block">
 							密钥列表
 						</label>
 						<textarea
@@ -823,9 +823,9 @@ export function ModelSettings() {
 							onChange={(e) => setApiKeyDraft(e.target.value)}
 							placeholder="每行一个密钥"
 							rows={6}
-							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all resize-none"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all resize-none"
 						/>
-						<p className="mt-2 text-xs text-zinc-400">
+						<p className="mt-2 text-xs text-text-light">
 							支持逗号或换行分隔，系统会自动去重
 						</p>
 					</div>
@@ -833,13 +833,13 @@ export function ModelSettings() {
 				<div className="flex justify-end gap-3 mt-8">
 					<button
 						onClick={() => setIsApiKeyModalOpen(false)}
-						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 					>
 						取消
 					</button>
 					<button
 						onClick={handleSaveApiKeyModal}
-						className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+						className="px-5 py-2.5 text-sm font-medium bg-dark-muted text-white rounded-xl hover:bg-dark-surface disabled:opacity-50 transition-colors"
 					>
 						保存
 					</button>
@@ -854,7 +854,7 @@ export function ModelSettings() {
 			>
 				<div className="space-y-5">
 					<div>
-						<label className="text-sm font-medium text-zinc-700 mb-2 block">
+						<label className="text-sm font-medium text-text-secondary mb-2 block">
 							模型 ID <span className="text-red-500">*</span>
 						</label>
 						<input
@@ -862,9 +862,9 @@ export function ModelSettings() {
 							value={newModelId}
 							onChange={(e) => setNewModelId(e.target.value)}
 							placeholder="例如 gpt-4o-mini"
-							className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-white transition-all"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
 						/>
-						<p className="mt-2 text-xs text-zinc-400">
+						<p className="mt-2 text-xs text-text-light">
 							请输入模型的完整 ID，如 gpt-4o、claude-3-5-sonnet-20241022
 						</p>
 					</div>
@@ -875,7 +875,7 @@ export function ModelSettings() {
 							setIsAddModelOpen(false);
 							setNewModelId("");
 						}}
-						className="px-5 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors"
+						className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-xl transition-colors"
 					>
 						取消
 					</button>

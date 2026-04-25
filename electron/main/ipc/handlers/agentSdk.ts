@@ -1475,9 +1475,7 @@ export function createAgentSdkHandlers(options: {
 												resolvedWikiScopePath,
 												".llm-wiki",
 											);
-											const normalizedTarget = path.normalize(
-												resolved.path,
-											);
+											const normalizedTarget = path.normalize(resolved.path);
 											const normalizedWikiDir = path.normalize(wikiDir);
 											if (
 												normalizedTarget === normalizedWikiDir ||

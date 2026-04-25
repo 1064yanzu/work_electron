@@ -49,10 +49,8 @@ const StepIndicator = memo(function StepIndicator({
 		);
 	}
 	return (
-		<div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center ring-2 ring-zinc-200 dark:ring-zinc-700">
-			<span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-				{index + 1}
-			</span>
+		<div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center ring-2 ring-zinc-200 dark:ring-zinc-700">
+			<span className="text-xs font-semibold text-text-muted">{index + 1}</span>
 		</div>
 	);
 });
@@ -81,7 +79,7 @@ const StepCard = memo(function StepCard({
 								? "bg-emerald-300 dark:bg-emerald-700"
 								: step.status === "running"
 									? "bg-gradient-to-b from-[#D96C46] to-[#D96C46]/30"
-									: "bg-zinc-200 dark:bg-zinc-700",
+									: "bg-warm-300 dark:bg-zinc-700",
 						)}
 					/>
 				)}
@@ -96,16 +94,16 @@ const StepCard = memo(function StepCard({
 								? "bg-emerald-50/50 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
 								: step.status === "error"
 									? "bg-red-50/50 dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
-									: "bg-zinc-50/50 dark:bg-zinc-800/30 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+									: "bg-warm-50/50/30 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 					)}
 				>
 					<div className="flex items-start gap-2 mb-2">
 						<div className="flex-1 min-w-0">
-							<div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+							<div className="text-sm font-semibold text-text-primary truncate">
 								{step.title}
 							</div>
 							{step.description && (
-								<div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
+								<div className="text-xs text-text-muted mt-1 line-clamp-2">
 									{step.description}
 								</div>
 							)}
@@ -117,7 +115,7 @@ const StepCard = memo(function StepCard({
 						)}
 					</div>
 					{toolCount > 0 && (
-						<div className="flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+						<div className="flex items-center gap-1 text-[11px] text-text-secondary">
 							<Zap className="w-3 h-3" />
 							<span>{toolCount} 个工具</span>
 						</div>
@@ -137,13 +135,13 @@ const ToolCallChain = memo(function ToolCallChain({
 	if (toolCalls.length === 0) return null;
 	const recentCalls = toolCalls.slice(-5);
 	return (
-		<div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+		<div className="mt-4 pt-4 border-t border-border">
 			<div className="flex items-center gap-2 mb-3">
-				<Zap className="w-4 h-4 text-zinc-500" />
-				<span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
+				<Zap className="w-4 h-4 text-text-muted" />
+				<span className="text-xs font-semibold text-text-secondary uppercase">
 					工具调用链
 				</span>
-				<span className="ml-auto text-[10px] text-zinc-400">
+				<span className="ml-auto text-[10px] text-text-light">
 					{toolCalls.length} 次
 				</span>
 			</div>
@@ -159,7 +157,7 @@ const ToolCallChain = memo(function ToolCallChain({
 										? "bg-[#D96C46]/15 text-[#D96C46] ring-1 ring-[#D96C46]/30"
 										: call.status === "error"
 											? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-											: "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400",
+											: "bg-warm-200 text-text-secondary",
 							)}
 						>
 							{call.status === "running" && (
@@ -174,7 +172,7 @@ const ToolCallChain = memo(function ToolCallChain({
 							<span className="truncate max-w-[80px]">{call.name}</span>
 						</div>
 						{idx < recentCalls.length - 1 && (
-							<ChevronRight className="w-3 h-3 text-zinc-300 dark:text-zinc-600" />
+							<ChevronRight className="w-3 h-3 text-text-light" />
 						)}
 					</div>
 				))}
@@ -204,7 +202,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 					fill="none"
 					stroke="currentColor"
 					strokeWidth="3"
-					className="text-zinc-200 dark:text-zinc-700"
+					className="text-zinc-200"
 				/>
 				<circle
 					cx="40"
@@ -227,10 +225,10 @@ const OverallProgressRing = memo(function OverallProgressRing({
 				/>
 			</svg>
 			<div className="absolute inset-0 flex flex-col items-center justify-center">
-				<span className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+				<span className="text-2xl font-bold text-text-primary">
 					{Math.round(progress)}%
 				</span>
-				<span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+				<span className="text-[10px] text-text-muted">
 					{isRunning ? "运行中" : "完成"}
 				</span>
 			</div>
@@ -289,17 +287,17 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 	}
 
 	return (
-		<div className="rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-			<div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-4">
+		<div className="rounded-2xl bg-surface ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+			<div className="px-4 py-3 border-b border-border flex items-center gap-4">
 				<div className="flex-1">
 					<div className="flex items-center gap-2">
 						<Activity
 							className={cn(
 								"w-4 h-4 transition-colors",
-								isExecuting ? "text-[#D96C46]" : "text-zinc-400",
+								isExecuting ? "text-[#D96C46]" : "text-text-light",
 							)}
 						/>
-						<h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+						<h3 className="text-sm font-semibold text-text-primary">
 							执行计划
 						</h3>
 						{isExecuting && (
@@ -308,9 +306,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 							</span>
 						)}
 					</div>
-					<p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
-						{task.title}
-					</p>
+					<p className="text-xs text-text-muted truncate mt-1">{task.title}</p>
 				</div>
 				<OverallProgressRing
 					progress={overallProgress}
@@ -321,11 +317,11 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 			<div className="p-4 space-y-4">
 				<div>
 					<div className="flex items-center gap-2 mb-3">
-						<TrendingUp className="w-4 h-4 text-zinc-500" />
-						<span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
+						<TrendingUp className="w-4 h-4 text-text-muted" />
+						<span className="text-xs font-semibold text-text-secondary uppercase">
 							执行步骤
 						</span>
-						<span className="ml-auto text-[10px] text-zinc-400">
+						<span className="ml-auto text-[10px] text-text-light">
 							{task.steps.length} 步
 						</span>
 					</div>
@@ -346,38 +342,30 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 					<ToolCallChain toolCalls={task.toolCalls} />
 				)}
 
-				<div className="pt-2 border-t border-zinc-200 dark:border-zinc-700 grid grid-cols-4 gap-2">
+				<div className="pt-2 border-t border-border grid grid-cols-4 gap-2">
 					<div className="text-center">
-						<div className="text-lg font-bold text-zinc-800 dark:text-zinc-100">
+						<div className="text-lg font-bold text-text-primary">
 							{toolStats.total}
 						</div>
-						<div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-							总调用
-						</div>
+						<div className="text-[10px] text-text-muted">总调用</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
 							{toolStats.completed}
 						</div>
-						<div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-							成功
-						</div>
+						<div className="text-[10px] text-text-muted">成功</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-[#D96C46]">
 							{toolStats.running}
 						</div>
-						<div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-							运行中
-						</div>
+						<div className="text-[10px] text-text-muted">运行中</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-red-600 dark:text-red-400">
 							{toolStats.failed}
 						</div>
-						<div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-							失败
-						</div>
+						<div className="text-[10px] text-text-muted">失败</div>
 					</div>
 				</div>
 			</div>

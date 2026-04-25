@@ -435,7 +435,7 @@ export function WikiGraphCanvas({
 			/>
 			{tooltip && (
 				<div
-					className="pointer-events-none absolute z-50 max-w-[260px] rounded-lg bg-zinc-900 px-3 py-2 text-xs text-white shadow-xl"
+					className="pointer-events-none absolute z-50 max-w-[260px] rounded-lg bg-dark-muted px-3 py-2 text-xs text-white shadow-xl"
 					style={{
 						left: tooltip.x,
 						top: tooltip.y,
@@ -452,7 +452,7 @@ export function WikiGraphCanvas({
 						<span className="font-medium leading-snug">{tooltip.title}</span>
 					</div>
 					{tooltip.summary && (
-						<div className="text-zinc-300 leading-relaxed line-clamp-4">
+						<div className="text-text-light leading-relaxed line-clamp-4">
 							{tooltip.summary}
 						</div>
 					)}

@@ -43,7 +43,7 @@ const TONE_ICON_CLASS: Record<StatusTileTone, string> = {
 	amber: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
 	rose: "text-rose-600 dark:text-rose-400 bg-rose-500/10",
 	sky: "text-sky-500 dark:text-sky-400 bg-sky-500/10",
-	zinc: "text-zinc-500 bg-zinc-100 dark:text-zinc-400 dark:bg-zinc-800",
+	zinc: "text-text-muted bg-warm-200",
 };
 
 function StatusTile({
@@ -56,7 +56,7 @@ function StatusTile({
 }: StatusTileProps) {
 	const iconCls = TONE_ICON_CLASS[tone];
 	return (
-		<div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+		<div className="rounded-xl border border-border/80 bg-surface p-4">
 			<div className="flex items-start gap-3">
 				<div
 					className={cn(
@@ -82,7 +82,9 @@ function StatusTile({
 						<span className="block truncate">{value}</span>
 					</div>
 					{hint ? (
-						<div className="mt-0.5 truncate text-[11px] text-text-muted">{hint}</div>
+						<div className="mt-0.5 truncate text-[11px] text-text-muted">
+							{hint}
+						</div>
 					) : null}
 				</div>
 			</div>
@@ -148,7 +150,7 @@ export function OverviewSection({
 										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
 										enabled
 											? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-											: "bg-zinc-500/10 text-zinc-500",
+											: "bg-warm-500/10 text-text-muted",
 									)}
 								>
 									<StatusDot

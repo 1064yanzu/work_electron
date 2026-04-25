@@ -168,7 +168,7 @@ export const InlineImage = memo(function InlineImage({
 	// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 	if (error) {
 		return (
-			<span className="block text-[11px] text-zinc-400">
+			<span className="block text-[11px] text-text-light">
 				图片加载失败: {path}
 			</span>
 		);
@@ -176,7 +176,7 @@ export const InlineImage = memo(function InlineImage({
 
 	if (!dataUrl) {
 		return (
-			<span className="flex items-center gap-2 text-[11px] text-zinc-500">
+			<span className="flex items-center gap-2 text-[11px] text-text-muted">
 				<Loader2 className="w-3 h-3 animate-spin" />
 				加载图片...
 			</span>
@@ -202,7 +202,7 @@ export const InlineImage = memo(function InlineImage({
 				<a
 					href={dataUrl}
 					download={downloadName}
-					className="absolute top-2 right-2 inline-flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 text-zinc-700 dark:text-zinc-100 ring-1 ring-black/5 dark:ring-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+					className="absolute top-2 right-2 inline-flex items-center gap-2 px-2.5 py-2 rounded-xl bg-surface/90/90 text-text-secondary ring-1 ring-black/5 dark:ring-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
 					title="下载"
 					onClick={(e) => e.stopPropagation()}
 				>

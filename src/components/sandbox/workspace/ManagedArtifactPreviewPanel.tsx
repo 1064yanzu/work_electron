@@ -95,24 +95,24 @@ export const ManagedArtifactPreviewPanel = memo(
 
 		const isCompact = density === "compact";
 		return (
-			<div className="h-full flex flex-col bg-white dark:bg-zinc-900">
+			<div className="h-full flex flex-col bg-surface">
 				<div
 					className={cn(
-						"border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5",
+						"border-b border-border bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5",
 						isCompact ? "px-2.5 py-2" : "px-3 py-2.5",
 					)}
 				>
 					<div className="flex items-center justify-between">
-						<div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+						<div className="inline-flex items-center gap-1.5 text-xs text-text-muted">
 							<Zap className="w-3.5 h-3.5" />
 							产物导航
 						</div>
-						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400">
+						<div className="inline-flex items-center gap-1.5 text-[11px] text-text-light">
 							<button
 								type="button"
 								onClick={() => jumpArtifact(-1)}
 								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 focus-ring"
+								className="p-1 rounded-md border border-border text-text-muted hover:bg-warm-200 disabled:opacity-40 focus-ring"
 								title="上一个产物 (Alt+[)"
 								aria-label="上一个产物"
 							>
@@ -127,7 +127,7 @@ export const ManagedArtifactPreviewPanel = memo(
 								type="button"
 								onClick={() => jumpArtifact(1)}
 								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 focus-ring"
+								className="p-1 rounded-md border border-border text-text-muted hover:bg-warm-200 disabled:opacity-40 focus-ring"
 								title="下一个产物 (Alt+])"
 								aria-label="下一个产物"
 							>
@@ -143,7 +143,7 @@ export const ManagedArtifactPreviewPanel = memo(
 						<div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
 						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 px-1">
 							{totalArtifacts === 0 ? (
-								<span className="text-xs text-zinc-400 px-2 py-1">
+								<span className="text-xs text-text-light px-2 py-1">
 									暂无产物
 								</span>
 							) : (
@@ -164,8 +164,8 @@ export const ManagedArtifactPreviewPanel = memo(
 										className={cn(
 											"px-2.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-all focus-ring active:scale-95",
 											selectedFile?.id === artifact.id
-												? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-black/[0.06] dark:border-white/[0.08] shadow-sm"
-												: "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700",
+												? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08] shadow-sm"
+												: "bg-surface text-text-secondary border-border hover:bg-warm-200 dark:hover:bg-zinc-700",
 										)}
 									>
 										{artifact.name}
@@ -175,7 +175,7 @@ export const ManagedArtifactPreviewPanel = memo(
 						</div>
 					</div>
 					{recentArtifacts.length > 0 ? (
-						<div className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+						<div className="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
 							<History className="w-3 h-3" />
 							最近预览：
 							<div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
@@ -184,7 +184,7 @@ export const ManagedArtifactPreviewPanel = memo(
 										key={artifact.id}
 										type="button"
 										onClick={() => onSelectArtifact(artifact.id)}
-										className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px]"
+										className="px-2 py-0.5 rounded-md bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-[11px]"
 										aria-label={`最近预览 ${artifact.name}`}
 									>
 										{artifact.name}

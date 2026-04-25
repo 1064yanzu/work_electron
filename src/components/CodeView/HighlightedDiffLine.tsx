@@ -49,7 +49,7 @@ function HighlightedDiffLineInner({
 					"flex-1 px-2 whitespace-pre-wrap break-all",
 					lineType === "added" && "text-emerald-800 dark:text-emerald-300",
 					lineType === "removed" && "text-red-700 dark:text-red-300",
-					lineType === "unchanged" && "text-zinc-600 dark:text-zinc-400",
+					lineType === "unchanged" && "text-text-secondary",
 				)}
 			>
 				{content || " "}

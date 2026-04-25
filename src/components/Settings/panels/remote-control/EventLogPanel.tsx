@@ -5,8 +5,7 @@ import { listRemoteEventLogs, type RemoteEventLog } from "../../../../lib/api";
 const LEVEL_STYLES: Record<string, { text: string; badge: string }> = {
 	info: {
 		text: "text-text-secondary",
-		badge:
-			"bg-zinc-500/10 text-zinc-500 dark:bg-zinc-500/15 dark:text-zinc-400",
+		badge: "bg-warm-500/10 text-text-muted0/15",
 	},
 	warn: {
 		text: "text-amber-600 dark:text-amber-400",
@@ -73,7 +72,7 @@ export function EventLogPanel() {
 	}, [logs.length]);
 
 	return (
-		<div className="rounded-xl border border-zinc-100 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-800/30 overflow-hidden">
+		<div className="rounded-xl border border-border bg-warm-50/50/30 overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
@@ -81,7 +80,7 @@ export function EventLogPanel() {
 			>
 				<ScrollText className="h-4 w-4" />
 				<span>活动日志</span>
-				<span className="ml-auto inline-flex items-center rounded-full bg-zinc-200/60 dark:bg-zinc-700/60 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
+				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300/60 dark:bg-zinc-700/60 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
 					{logs.length}
 				</span>
 				<ChevronDown
@@ -89,7 +88,7 @@ export function EventLogPanel() {
 				/>
 			</button>
 			{expanded && (
-				<div className="max-h-52 overflow-y-auto border-t border-zinc-100 dark:border-zinc-800 font-mono text-[11px]">
+				<div className="max-h-52 overflow-y-auto border-t border-border font-mono text-[11px]">
 					{unsupportedHint ? (
 						<div className="px-4 py-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-500/10 border-b border-amber-200/60 dark:border-amber-500/20">
 							{unsupportedHint}
@@ -106,7 +105,7 @@ export function EventLogPanel() {
 								return (
 									<div
 										key={`${log.timestamp}-${i}`}
-										className="flex gap-2.5 px-4 py-1.5 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/50 transition-colors"
+										className="flex gap-2.5 px-4 py-1.5 hover:bg-warm-200/60/50 transition-colors"
 									>
 										<span className="shrink-0 text-text-muted tabular-nums">
 											{formatTime(log.timestamp)}

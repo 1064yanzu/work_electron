@@ -96,14 +96,14 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 			case SourceType.Image:
 				return "bg-pink-500";
 			default:
-				return "bg-zinc-500";
+				return "bg-warm-500";
 		}
 	};
 
 	return (
 		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
 			{/* Header */}
-			<div className="shrink-0 px-8 py-6 border-b border-zinc-100 dark:border-zinc-800">
+			<div className="shrink-0 px-8 py-6 border-b border-border">
 				<div className="flex items-start justify-between gap-4">
 					<div className="flex items-start gap-4 min-w-0 flex-1">
 						<div
@@ -112,10 +112,10 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 							{getIcon(source.kind)}
 						</div>
 						<div className="min-w-0 flex-1">
-							<h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight mb-2 line-clamp-2">
+							<h1 className="text-xl font-bold text-text-primary leading-tight mb-2 line-clamp-2">
 								{source.title}
 							</h1>
-							<div className="flex items-center gap-4 text-xs text-zinc-400">
+							<div className="flex items-center gap-4 text-xs text-text-light">
 								<span className="flex items-center gap-1.5">
 									<span
 										className={`w-2 h-2 rounded-full ${getKindColor(source.kind)}`}
@@ -135,7 +135,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 					</div>
 					<button
 						onClick={onClose}
-						className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+						className="p-2 rounded-xl text-text-light hover:text-text-secondary hover:bg-warm-200 transition-colors shrink-0"
 					>
 						<X className="w-5 h-5" />
 					</button>
@@ -144,12 +144,12 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 				{/* Tags */}
 				{source.tags && source.tags.length > 0 && (
 					<div className="flex items-center gap-2 mt-4">
-						<Tag className="w-3.5 h-3.5 text-zinc-400" />
+						<Tag className="w-3.5 h-3.5 text-text-light" />
 						<div className="flex flex-wrap gap-1.5">
 							{source.tags.map((tag, idx) => (
 								<span
 									key={idx}
-									className="px-2 py-0.5 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md"
+									className="px-2 py-0.5 text-xs font-medium bg-warm-200 text-text-secondary rounded-md"
 								>
 									{tag}
 								</span>
@@ -176,7 +176,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 			<div className="flex-1 overflow-y-auto scrollbar-hide">
 				{isLoading ? (
 					<div className="flex items-center justify-center h-64">
-						<div className="flex items-center gap-3 text-zinc-400">
+						<div className="flex items-center gap-3 text-text-light">
 							<Loader2 className="w-5 h-5 animate-spin" />
 							<span className="text-sm">正在加载内容...</span>
 						</div>
@@ -201,7 +201,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 								/>
 							</article>
 						) : (
-							<div className="text-center py-12 text-zinc-400">
+							<div className="text-center py-12 text-text-light">
 								<FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
 								<p>暂无内容</p>
 							</div>

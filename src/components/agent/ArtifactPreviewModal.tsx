@@ -48,8 +48,8 @@ function ToolbarButton({
 			onClick={onClick}
 			className={cn(
 				"flex items-center gap-2 px-3 py-2 rounded-lg",
-				"text-sm font-medium text-zinc-600 dark:text-zinc-300",
-				"hover:bg-zinc-100 dark:hover:bg-zinc-800",
+				"text-sm font-medium text-text-secondary",
+				"hover:bg-warm-200",
 				"transition-colors duration-200",
 				className,
 			)}
@@ -66,7 +66,7 @@ function ImagePreview({ filePath }: { filePath: string }) {
 		<ZoomableImageViewer
 			src={`file://${filePath}`}
 			alt="预览"
-			className="bg-zinc-50 dark:bg-zinc-950"
+			className="bg-warm-50"
 		/>
 	);
 }
@@ -114,7 +114,7 @@ function TextPreview({ filePath }: { filePath: string }) {
 
 	return (
 		<div className="h-full overflow-auto p-6">
-			<pre className="text-sm font-mono text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+			<pre className="text-sm font-mono text-text-secondary whitespace-pre-wrap break-words">
 				{content}
 			</pre>
 		</div>
@@ -126,7 +126,7 @@ function HtmlPreview({ filePath }: { filePath: string }) {
 	return (
 		<iframe
 			src={`file://${filePath}`}
-			className="w-full h-full border-0 rounded-lg bg-white"
+			className="w-full h-full border-0 rounded-lg bg-surface"
 			title="HTML 预览"
 			sandbox="allow-same-origin"
 		/>
@@ -147,19 +147,19 @@ function GenericPreview({
 }) {
 	return (
 		<div className="flex flex-col items-center justify-center h-full gap-4">
-			<div className="w-24 h-24 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+			<div className="w-24 h-24 rounded-2xl bg-warm-200 flex items-center justify-center">
 				<span className="text-4xl">📄</span>
 			</div>
 			<div className="text-center">
-				<h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+				<h3 className="text-lg font-semibold text-text-primary dark:text-zinc-200">
 					{fileName}
 				</h3>
-				<p className="text-sm text-zinc-500 mt-1">
+				<p className="text-sm text-text-muted mt-1">
 					{fileType.toUpperCase()} · {formatFileSize(fileSize)}
 					{mimeType && ` · ${mimeType}`}
 				</p>
 			</div>
-			<p className="text-sm text-zinc-400">
+			<p className="text-sm text-text-light">
 				此文件类型暂不支持预览，请下载后使用其他应用打开
 			</p>
 		</div>
@@ -234,7 +234,7 @@ export default function ArtifactPreviewModal({
 			<div
 				className={cn(
 					"relative w-[90vw] h-[85vh] max-w-6xl",
-					"bg-white dark:bg-zinc-900",
+					"bg-surface",
 					"rounded-3xl shadow-2xl",
 					"flex flex-col overflow-hidden",
 					"animate-in zoom-in-95 duration-300",
@@ -242,12 +242,12 @@ export default function ArtifactPreviewModal({
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* 顶部工具栏 */}
-				<div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
-						<h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-md">
+						<h2 className="text-lg font-semibold text-text-primary dark:text-zinc-200 truncate max-w-md">
 							{fileName}
 						</h2>
-						<span className="px-2 py-0.5 text-xs font-medium rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+						<span className="px-2 py-0.5 text-xs font-medium rounded-md bg-warm-200 text-text-muted">
 							{formatFileSize(fileSize)}
 						</span>
 					</div>
@@ -279,8 +279,8 @@ export default function ArtifactPreviewModal({
 							onClick={onClose}
 							className={cn(
 								"ml-2 p-2 rounded-lg",
-								"text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300",
-								"hover:bg-zinc-100 dark:hover:bg-zinc-800",
+								"text-text-light hover:text-text-secondary dark:hover:text-text-light",
+								"hover:bg-warm-200",
 								"transition-colors duration-200",
 							)}
 						>
@@ -290,12 +290,12 @@ export default function ArtifactPreviewModal({
 				</div>
 
 				{/* 预览内容区域 */}
-				<div className="flex-1 overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+				<div className="flex-1 overflow-hidden bg-warm-50">
 					{renderPreview()}
 				</div>
 
 				{/* 底部状态栏 */}
-				<div className="flex items-center justify-between px-6 py-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-400">
+				<div className="flex items-center justify-between px-6 py-3 border-t border-border text-xs text-text-light">
 					<span className="font-mono truncate max-w-xl">{filePath}</span>
 					<span>{mimeType || fileType}</span>
 				</div>

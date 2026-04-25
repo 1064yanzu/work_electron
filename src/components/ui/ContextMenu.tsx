@@ -204,10 +204,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 			className={cn(
 				"fixed z-[9999] min-w-[200px]",
 				// 高级毛玻璃效果
-				"bg-white/90 dark:bg-zinc-900/90",
+				"bg-surface/90/90",
 				"backdrop-blur-xl backdrop-saturate-150",
 				// 优雅的边框和阴影
-				"rounded-xl border border-zinc-200/50 dark:border-zinc-700/50",
+				"rounded-xl border border-border/50/50",
 				"shadow-2xl shadow-black/10 dark:shadow-black/40",
 				// 内边距
 				"py-1.5",
@@ -223,7 +223,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 					return (
 						<div
 							key={`separator-${index}`}
-							className="h-px bg-zinc-200/60 dark:bg-zinc-700/60 my-1.5 mx-2"
+							className="h-px bg-warm-300/60 dark:bg-zinc-700/60 my-1.5 mx-2"
 						/>
 					);
 				}
@@ -244,10 +244,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-all duration-150",
 							"group/item relative",
 							item.disabled
-								? "text-zinc-400 dark:text-zinc-600 cursor-not-allowed opacity-50"
+								? "text-text-light cursor-not-allowed opacity-50"
 								: item.danger
 									? "text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20"
-									: "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60",
+									: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200/80/60",
 							// 高级 hover 效果
 							!item.disabled && "hover:scale-[1.02] active:scale-[0.98]",
 						)}
@@ -269,7 +269,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
 						{/* 快捷键提示 */}
 						{item.shortcut && (
-							<span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+							<span className="text-xs text-text-light font-mono">
 								{item.shortcut}
 							</span>
 						)}

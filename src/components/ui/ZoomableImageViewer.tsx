@@ -232,31 +232,31 @@ export function ZoomableImageViewer({
 
 	return (
 		<div className={cn("relative w-full h-full overflow-hidden", className)}>
-			<div className="absolute left-1/2 -translate-x-1/2 top-3 z-20 flex items-center gap-1.5 rounded-2xl bg-white/85 dark:bg-zinc-900/80 backdrop-blur-md px-2 py-1.5 ring-1 ring-black/5 dark:ring-white/10 shadow-[0_12px_35px_-25px_rgba(0,0,0,0.55)]">
+			<div className="absolute left-1/2 -translate-x-1/2 top-3 z-20 flex items-center gap-1.5 rounded-2xl bg-surface/85/80 backdrop-blur-md px-2 py-1.5 ring-1 ring-black/5 dark:ring-white/10 shadow-[0_12px_35px_-25px_rgba(0,0,0,0.55)]">
 				<button
 					type="button"
 					onClick={zoomOut}
-					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="缩小 (-)"
 				>
 					<Minus className="w-4 h-4" />
 				</button>
-				<div className="min-w-[64px] text-center text-xs font-medium text-zinc-600 dark:text-zinc-300 tabular-nums">
+				<div className="min-w-[64px] text-center text-xs font-medium text-text-secondary tabular-nums">
 					{scalePercent}%
 				</div>
 				<button
 					type="button"
 					onClick={zoomIn}
-					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="放大 (+)"
 				>
 					<Plus className="w-4 h-4" />
 				</button>
-				<div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+				<div className="w-px h-5 bg-warm-300 dark:bg-zinc-700 mx-1" />
 				<button
 					type="button"
 					onClick={setFit}
-					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="适配窗口 (F)"
 				>
 					<Scan className="w-3.5 h-3.5" />
@@ -265,27 +265,25 @@ export function ZoomableImageViewer({
 				<button
 					type="button"
 					onClick={setActual}
-					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="原始大小 (0)"
 				>
 					<ZoomIn className="w-3.5 h-3.5" />
 					100%
 				</button>
-				<div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
-				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-100/70 dark:bg-zinc-800/70">
+				<div className="w-px h-5 bg-warm-300 dark:bg-zinc-700 mx-1" />
+				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-text-muted bg-warm-200/70/70">
 					<Move className="w-3 h-3" />
 					拖拽
 				</div>
 				{actionsSlot ? (
-					<div className="ml-1 pl-1 border-l border-zinc-200 dark:border-zinc-700">
-						{actionsSlot}
-					</div>
+					<div className="ml-1 pl-1 border-l border-border">{actionsSlot}</div>
 				) : null}
 				{onRequestClose ? (
 					<button
 						type="button"
 						onClick={onRequestClose}
-						className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+						className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 						title="关闭 (Esc)"
 					>
 						<X className="w-4 h-4" />

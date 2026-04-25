@@ -30,11 +30,11 @@ const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 
 // 状态颜色
 const statusColors: Record<string, string> = {
-	pending: "text-zinc-400",
+	pending: "text-text-light",
 	running: "text-blue-500",
 	completed: "text-green-500",
 	error: "text-red-500",
-	cancelled: "text-zinc-400",
+	cancelled: "text-text-light",
 };
 
 // 状态图标
@@ -55,7 +55,7 @@ function StatusIcon({
 		case "error":
 			return <XCircle className={cn("text-red-500", className)} />;
 		case "cancelled":
-			return <AlertCircle className={cn("text-zinc-400", className)} />;
+			return <AlertCircle className={cn("text-text-light", className)} />;
 		default:
 			return (
 				<div className={cn("w-2 h-2 rounded-full bg-zinc-300", className)} />
@@ -69,23 +69,23 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 	const Icon = toolIcons[toolCall.type] || toolIcons.default;
 
 	return (
-		<div className="border-l-2 border-zinc-200 dark:border-zinc-700 pl-3 py-1">
+		<div className="border-l-2 border-border pl-3 py-1">
 			<button
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="flex items-center gap-2 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded px-1 py-0.5 transition-colors"
+				className="flex items-center gap-2 w-full text-left hover:bg-warm-200 rounded px-1 py-0.5 transition-colors"
 			>
 				{isExpanded ? (
-					<ChevronDown className="w-3 h-3 text-zinc-400" />
+					<ChevronDown className="w-3 h-3 text-text-light" />
 				) : (
-					<ChevronRight className="w-3 h-3 text-zinc-400" />
+					<ChevronRight className="w-3 h-3 text-text-light" />
 				)}
 				<Icon className={cn("w-4 h-4", statusColors[toolCall.status])} />
-				<span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 flex-1 truncate">
+				<span className="text-sm font-medium text-text-secondary flex-1 truncate">
 					{toolCall.name}
 				</span>
 				<StatusIcon status={toolCall.status} className="w-4 h-4" />
 				{toolCall.duration && (
-					<span className="text-xs text-zinc-400">
+					<span className="text-xs text-text-light">
 						{(toolCall.duration / 1000).toFixed(1)}s
 					</span>
 				)}
@@ -94,9 +94,9 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 			{isExpanded && (
 				<div className="mt-1 ml-5 text-xs space-y-1">
 					{/* 输入参数 */}
-					<div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
-						<div className="text-zinc-500 mb-1">输入:</div>
-						<pre className="text-zinc-600 dark:text-zinc-400 overflow-x-auto whitespace-pre-wrap">
+					<div className="bg-warm-50/50 rounded p-2">
+						<div className="text-text-muted mb-1">输入:</div>
+						<pre className="text-text-secondary overflow-x-auto whitespace-pre-wrap">
 							{JSON.stringify(toolCall.input, null, 2).slice(0, 500)}
 						</pre>
 					</div>
@@ -107,7 +107,7 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 							<div className="text-green-600 dark:text-green-400 mb-1">
 								输出:
 							</div>
-							<pre className="text-zinc-600 dark:text-zinc-400 overflow-x-auto whitespace-pre-wrap">
+							<pre className="text-text-secondary overflow-x-auto whitespace-pre-wrap">
 								{typeof toolCall.output === "string"
 									? toolCall.output.slice(0, 500)
 									: JSON.stringify(toolCall.output, null, 2).slice(0, 500)}
@@ -140,18 +140,18 @@ function TaskStatus({ task }: { task: AgentTask }) {
 	const totalCount = task.toolCalls.length;
 
 	return (
-		<div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+		<div className="bg-surface rounded-xl border border-border overflow-hidden">
 			{/* 头部 */}
 			<button
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="w-full flex items-center gap-3 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+				className="w-full flex items-center gap-3 p-3 hover:bg-warm-50/50 transition-colors"
 			>
 				<StatusIcon status={task.status} className="w-5 h-5" />
 				<div className="flex-1 text-left">
-					<div className="font-medium text-zinc-800 dark:text-zinc-200 text-sm">
+					<div className="font-medium text-text-primary dark:text-zinc-200 text-sm">
 						{task.title || task.query.slice(0, 30)}
 					</div>
-					<div className="text-xs text-zinc-500">
+					<div className="text-xs text-text-muted">
 						{task.status === "executing" &&
 							`执行中 (${completedCount}/${totalCount})`}
 						{task.status === "planning" && "规划中..."}
@@ -161,15 +161,15 @@ function TaskStatus({ task }: { task: AgentTask }) {
 					</div>
 				</div>
 				{isExpanded ? (
-					<ChevronDown className="w-4 h-4 text-zinc-400" />
+					<ChevronDown className="w-4 h-4 text-text-light" />
 				) : (
-					<ChevronRight className="w-4 h-4 text-zinc-400" />
+					<ChevronRight className="w-4 h-4 text-text-light" />
 				)}
 			</button>
 
 			{/* 工具调用列表 */}
 			{isExpanded && task.toolCalls.length > 0 && (
-				<div className="border-t border-zinc-100 dark:border-zinc-800 p-3 space-y-1">
+				<div className="border-t border-border p-3 space-y-1">
 					{task.toolCalls.map((tc) => (
 						<ToolCallItem key={tc.id} toolCall={tc} />
 					))}
@@ -205,7 +205,7 @@ export default function AgentStatus() {
 				<div>
 					<div className="flex items-center gap-2 mb-2">
 						<Zap className="w-4 h-4 text-amber-500" />
-						<span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+						<span className="text-xs font-medium text-text-muted uppercase tracking-wide">
 							当前任务
 						</span>
 						{isExecuting && (
@@ -223,7 +223,7 @@ export default function AgentStatus() {
 				<div>
 					<button
 						onClick={() => setShowHistory(!showHistory)}
-						className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+						className="flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary dark:hover:text-text-light transition-colors"
 					>
 						{showHistory ? (
 							<ChevronDown className="w-3 h-3" />
@@ -267,9 +267,9 @@ export function AgentStatusBadge({ taskId }: { taskId?: string }) {
 	const totalCount = task.toolCalls.length;
 
 	return (
-		<div className="inline-flex items-center gap-1.5 text-xs bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5">
+		<div className="inline-flex items-center gap-1.5 text-xs bg-warm-200 rounded-full px-2 py-0.5">
 			<StatusIcon status={task.status} className="w-3 h-3" />
-			<span className="text-zinc-600 dark:text-zinc-400">
+			<span className="text-text-secondary">
 				{task.status === "executing" && `${completedCount}/${totalCount} 工具`}
 				{task.status === "planning" && "规划中"}
 				{task.status === "completed" && `${totalCount} 个工具`}

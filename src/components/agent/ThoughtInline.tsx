@@ -90,12 +90,12 @@ export function ThoughtInline({
 				onClick={() => setOpen((v) => !v)}
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors py-0.5",
-					"cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 -mx-1.5 px-1.5 rounded",
+					"cursor-pointer hover:bg-warm-50/50/30 -mx-1.5 px-1.5 rounded",
 				)}
 				aria-expanded={open}
 			>
 				{/* 折叠箭头 */}
-				<span className="w-4 h-4 flex items-center justify-center text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+				<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
 					{open ? (
 						<ChevronDown className="w-3.5 h-3.5" />
 					) : (
@@ -104,20 +104,18 @@ export function ThoughtInline({
 				</span>
 
 				{/* 文字：Thought for Xs */}
-				<span className="text-sm text-zinc-500 dark:text-zinc-400">
-					{headerTitle}
-				</span>
+				<span className="text-sm text-text-muted">{headerTitle}</span>
 			</button>
 
 			{/* 展开内容 - 极简风格 */}
 			{open && (
-				<div className="mt-2 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+				<div className="mt-2 ml-6 pl-3 border-l-2 border-border">
 					{truncated && (
-						<div className="mb-2 text-[11px] text-zinc-400">
+						<div className="mb-2 text-[11px] text-text-light">
 							内容较长，已自动截断展示。
 						</div>
 					)}
-					<div className="max-h-72 overflow-y-auto text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+					<div className="max-h-72 overflow-y-auto text-sm text-text-secondary leading-relaxed">
 						<div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:mt-3 prose-headings:mb-1.5">
 							<MarkdownRenderer content={content} />
 						</div>

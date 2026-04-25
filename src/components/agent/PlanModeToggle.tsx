@@ -22,7 +22,7 @@ export function PlanModeToggle({
 			<div
 				className={cn(
 					"relative flex items-center rounded-lg p-0.5 transition-colors",
-					"bg-zinc-100 dark:bg-zinc-800",
+					"bg-warm-200",
 					disabled && "opacity-50 pointer-events-none",
 				)}
 			>
@@ -32,7 +32,7 @@ export function PlanModeToggle({
 						"absolute top-0.5 h-[calc(100%-4px)] rounded-md transition-all duration-200 ease-out",
 						planMode
 							? "bg-[#D96C46] shadow-sm left-[calc(50%+1px)] w-[calc(50%-3px)]"
-							: "bg-white dark:bg-zinc-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
+							: "bg-surface dark:bg-zinc-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
 					)}
 				/>
 
@@ -43,8 +43,8 @@ export function PlanModeToggle({
 					className={cn(
 						"relative z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
 						!planMode
-							? "text-zinc-800 dark:text-zinc-100"
-							: "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300",
+							? "text-text-primary"
+							: "text-text-light hover:text-text-secondary dark:hover:text-text-light",
 					)}
 				>
 					<Zap className="w-3 h-3" />
@@ -59,7 +59,7 @@ export function PlanModeToggle({
 						"relative z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
 						planMode
 							? "text-white"
-							: "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300",
+							: "text-text-light hover:text-text-secondary dark:hover:text-text-light",
 					)}
 				>
 					<ListChecks className="w-3 h-3" />

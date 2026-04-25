@@ -482,34 +482,26 @@ export function AgentSettings() {
 				/>
 
 				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							默认权限模式
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">默认权限模式</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{permissionModeLabel}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							默认模型
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">默认模型</div>
 						<div className="mt-2 text-sm font-semibold text-text-primary break-all">
 							{modelSettings.defaultModelId || "尚未指定"}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							已启用场景
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">已启用场景</div>
 						<div className="mt-2 text-2xl font-semibold text-text-primary">
 							{enabledScenarioCount}
 						</div>
 					</div>
-					<div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-						<div className="text-xs text-zinc-500 dark:text-zinc-400">
-							资料检索
-						</div>
+					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
+						<div className="text-xs text-text-muted">资料检索</div>
 						<div className="mt-2 text-lg font-semibold text-text-primary">
 							{retrievalModeLabel}
 						</div>
@@ -837,7 +829,7 @@ export function AgentSettings() {
 						/>
 					</div>
 				</div>
-				<div className="rounded-2xl border border-border/70 bg-zinc-50/60 dark:bg-zinc-900/30 p-4 space-y-4">
+				<div className="rounded-2xl border border-border/70 bg-warm-50/60/30 p-4 space-y-4">
 					<div className="flex items-start justify-between gap-4">
 						<div>
 							<div className="text-sm font-medium text-text-primary flex items-center gap-2">
@@ -1084,7 +1076,7 @@ export function AgentSettings() {
 				</p>
 
 				<div className="space-y-3">
-					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-warm-50/30">
 						<div>
 							<div className="text-sm font-medium text-text-primary">
 								启用回放
@@ -1104,7 +1096,7 @@ export function AgentSettings() {
 						/>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-warm-50/30">
 						<div>
 							<div className="text-sm font-medium text-text-primary">
 								启用消息落库
@@ -1124,7 +1116,7 @@ export function AgentSettings() {
 						/>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-warm-50/30">
 						<div>
 							<div className="text-sm font-medium text-text-primary">
 								落库 Trace 事件
@@ -1144,7 +1136,7 @@ export function AgentSettings() {
 						/>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-warm-50/30">
 						<div>
 							<div className="text-sm font-medium">Blocks 优先渲染</div>
 							<div className="text-xs text-text-muted mt-0.5">
@@ -1180,7 +1172,7 @@ export function AgentSettings() {
 						/>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-zinc-50/30">
+					<div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-warm-50/30">
 						<div>
 							<div className="text-sm font-medium text-text-primary">
 								回放条数限制
@@ -1197,7 +1189,7 @@ export function AgentSettings() {
 								value={replayLimitDraft}
 								onChange={(e) => setReplayLimitDraft(e.target.value)}
 								onBlur={() => void commitReplayLimit()}
-								className="w-24 px-3 py-2 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+								className="w-24 px-3 py-2 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 							/>
 							<span className="text-xs text-text-muted">条</span>
 						</div>
@@ -1214,7 +1206,7 @@ export function AgentSettings() {
 						</div>
 						<button
 							onClick={() => void agentChatSettingsStore.resetToDefaults()}
-							className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-primary hover:border-primary transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+							className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-warm-50 hover:text-primary hover:border-primary transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
 						>
 							<RotateCcw className="w-4 h-4 shrink-0" />
 							重置
@@ -1233,7 +1225,7 @@ export function AgentSettings() {
 				</div>
 				<div className="border border-border rounded-xl overflow-hidden">
 					<table className="w-full text-sm">
-						<thead className="bg-zinc-50">
+						<thead className="bg-warm-50">
 							<tr>
 								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
 									工具名称
@@ -1256,7 +1248,7 @@ export function AgentSettings() {
 								return (
 									<tr
 										key={toolType}
-										className="border-t border-border hover:bg-zinc-50/50"
+										className="border-t border-border hover:bg-warm-50/50"
 									>
 										<td className="px-4 py-2.5 text-text-primary">
 											{TOOL_NAMES[toolType]}
@@ -1307,7 +1299,7 @@ export function AgentSettings() {
 							onChange={(e) =>
 								handleTimeoutChange(parseInt(e.target.value) || 30)
 							}
-							className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+							className="w-full px-4 py-2.5 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 						/>
 					</div>
 					<span className="text-sm text-text-secondary">
@@ -1368,7 +1360,7 @@ export function AgentSettings() {
 											parseInt(e.target.value) || 480,
 										)
 									}
-									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									className="w-full px-4 py-2.5 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 								/>
 							</div>
 							<span className="text-xs text-text-muted">
@@ -1395,7 +1387,7 @@ export function AgentSettings() {
 											parseFloat(e.target.value) || 0.2,
 										)
 									}
-									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									className="w-full px-4 py-2.5 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 								/>
 							</div>
 							<span className="text-xs text-text-muted">
@@ -1443,7 +1435,7 @@ export function AgentSettings() {
 											parseInt(e.target.value) || 4,
 										)
 									}
-									className="w-full px-4 py-2.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+									className="w-full px-4 py-2.5 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
 								/>
 							</div>
 							<span className="text-xs text-text-muted">
@@ -1466,7 +1458,7 @@ export function AgentSettings() {
 							<button
 								onClick={handleKbRebuild}
 								disabled={isRebuilding || !kbEmbeddingModel}
-								className="min-w-[100px] px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-primary hover:text-primary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 self-start sm:self-auto whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+								className="min-w-[100px] px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium text-text-primary hover:text-primary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 self-start sm:self-auto whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
 							>
 								{isRebuilding ? (
 									<>
@@ -1493,7 +1485,7 @@ export function AgentSettings() {
 					</div>
 					<button
 						onClick={handleResetToDefault}
-						className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-white hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+						className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-surface hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
 					>
 						<RotateCcw className="w-4 h-4 shrink-0" />
 						重置

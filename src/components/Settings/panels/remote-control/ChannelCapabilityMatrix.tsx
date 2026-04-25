@@ -67,7 +67,7 @@ function StatusBadge({
 			);
 		default:
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-[11px] font-medium text-zinc-500 dark:bg-zinc-500/15 dark:text-zinc-400">
+				<span className="inline-flex items-center gap-1 rounded-full bg-warm-500/10 px-2 py-0.5 text-[11px] font-medium text-text-muted0/15">
 					<CircleAlert className="h-3 w-3" />
 					Placeholder
 				</span>
@@ -84,7 +84,7 @@ function CapabilityCell({ value }: { value: boolean }) {
 		);
 	}
 	return (
-		<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/60 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600">
+		<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-warm-300/60 text-text-light">
 			<Minus className="h-3.5 w-3.5" />
 		</span>
 	);
@@ -119,9 +119,17 @@ export function ChannelCapabilityMatrix() {
 					<SettingsSectionTitle className="mb-1">能力矩阵</SettingsSectionTitle>
 					<p className="text-sm text-text-secondary">
 						各渠道当前支持能力一览。
-						<span className="text-emerald-600 dark:text-emerald-400 font-medium">SDK</span>：已迁移到新 ChannelPluginSDK；
-						<span className="text-amber-600 dark:text-amber-400 font-medium"> Legacy</span>：未迁移但运行良好；
-						<span className="text-zinc-500 font-medium"> Placeholder</span>：占位，尚未实装。
+						<span className="text-emerald-600 dark:text-emerald-400 font-medium">
+							SDK
+						</span>
+						：已迁移到新 ChannelPluginSDK；
+						<span className="text-amber-600 dark:text-amber-400 font-medium">
+							{" "}
+							Legacy
+						</span>
+						：未迁移但运行良好；
+						<span className="text-text-muted font-medium"> Placeholder</span>
+						：占位，尚未实装。
 					</p>
 				</div>
 				<Button
@@ -135,11 +143,11 @@ export function ChannelCapabilityMatrix() {
 				</Button>
 			</div>
 
-			<div className="overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+			<div className="overflow-x-auto rounded-2xl border border-border/70 bg-surface">
 				<table className="min-w-full text-sm">
 					<thead>
-						<tr className="border-b border-zinc-200/60 bg-zinc-50/60 text-xs uppercase tracking-wider text-text-muted dark:border-zinc-800 dark:bg-zinc-900/60">
-							<th className="sticky left-0 z-10 bg-zinc-50/60 px-4 py-3 text-left font-medium dark:bg-zinc-900/60">
+						<tr className="border-b border-border/60 bg-warm-50/60 text-xs uppercase tracking-wider text-text-muted/60">
+							<th className="sticky left-0 z-10 bg-warm-50/60 px-4 py-3 text-left font-medium/60">
 								渠道
 							</th>
 							<th className="px-3 py-3 text-left font-medium">状态</th>
@@ -168,9 +176,9 @@ export function ChannelCapabilityMatrix() {
 						{entries.map((entry) => (
 							<tr
 								key={entry.channel}
-								className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800/80"
+								className="border-b border-border last:border-b-0/80"
 							>
-								<td className="sticky left-0 z-10 bg-white px-4 py-3 font-medium text-text-primary whitespace-nowrap dark:bg-zinc-900">
+								<td className="sticky left-0 z-10 bg-surface px-4 py-3 font-medium text-text-primary whitespace-nowrap">
 									{entry.label}
 								</td>
 								<td className="px-3 py-3">

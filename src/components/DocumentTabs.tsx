@@ -69,8 +69,8 @@ const DocumentTabItem = memo(function DocumentTabItem({
 			className={cn(
 				"group flex items-center gap-1 rounded-xl border min-h-11 px-1.5 py-1 shrink-0 transition-all duration-150",
 				isActive
-					? "bg-[#faf9f5] dark:bg-[#1e1d1b] border-[#e8e6dc] dark:border-[#30302e] shadow-sm"
-					: "bg-transparent border-transparent hover:bg-[#f0eee6] dark:hover:bg-[#30302e]",
+					? "bg-surface border-border shadow-sm"
+					: "bg-transparent border-transparent hover:bg-warm-200",
 				isDragging && "opacity-40 scale-95",
 				isDropTarget && "border-primary/50 bg-primary/5 dark:bg-primary/10",
 			)}
@@ -90,13 +90,11 @@ const DocumentTabItem = memo(function DocumentTabItem({
 				onClick={() => onActivate(docId)}
 				className="focus-ring min-h-9 pl-0.5 pr-1.5 inline-flex items-center gap-2 rounded-lg text-left cursor-pointer"
 			>
-				<FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-300" />
+				<FileText className="w-4 h-4 text-text-muted" />
 				<span
 					className={cn(
 						"text-sm font-medium max-w-[200px] truncate",
-						isActive
-							? "text-zinc-900 dark:text-zinc-100"
-							: "text-zinc-700 dark:text-zinc-300",
+						isActive ? "text-text-primary" : "text-text-secondary",
 					)}
 				>
 					{label}
@@ -114,7 +112,7 @@ const DocumentTabItem = memo(function DocumentTabItem({
 			<button
 				type="button"
 				onClick={() => onClose(docId)}
-				className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
+				className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-300/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
 				aria-label={`关闭文档 ${label}`}
 				title="关闭文档"
 			>
@@ -314,7 +312,7 @@ export default function DocumentTabs({
 	if (openedDocs.length === 0) return null;
 
 	return (
-		<div className="doc-toolbar border-b border-zinc-200/70 dark:border-zinc-800/70 px-2 py-1.5 flex items-center gap-1.5">
+		<div className="doc-toolbar border-b border-border/70/70 px-2 py-1.5 flex items-center gap-1.5">
 			<div
 				ref={tabsRef}
 				className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide"
@@ -351,7 +349,7 @@ export default function DocumentTabs({
 				<button
 					type="button"
 					onClick={onNewDoc}
-					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
 					aria-label="新建文档"
 					title="新建文档 (Cmd+N)"
 				>
