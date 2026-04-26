@@ -123,6 +123,20 @@ export interface ChatSession {
 	agentSessionId?: string;
 	/** Claude Agent SDK session id for SDK-native context management/compaction */
 	sdkSessionId?: string;
+	/** 关联的工作目录（用于线程按项目分组） */
+	cwd?: string;
+	/** 是否在线程列表中置顶。 */
+	isPinned?: boolean;
+	/** 是否归档；归档后进入“归档对话”分组，可取消归档。 */
+	isArchived?: boolean;
+	/** 会话来源元数据。远程控制会话需要在 Threads 中单独列出。 */
+	threadSource?: {
+		type: "local" | "remote";
+		remoteSessionId?: string;
+		channelId?: string;
+		peerName?: string;
+		peerId?: string;
+	};
 }
 
 export interface ChatContext {

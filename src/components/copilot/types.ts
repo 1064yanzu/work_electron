@@ -16,6 +16,7 @@ export interface ChatStoreLike {
 		model?: string;
 		agentSessionId?: string;
 		sdkSessionId?: string;
+		cwd?: string;
 	}>;
 	activeSessionId: string | null;
 	activeSession: {
@@ -25,6 +26,7 @@ export interface ChatStoreLike {
 		model?: string;
 		agentSessionId?: string;
 		sdkSessionId?: string;
+		cwd?: string;
 	} | null;
 	status: ChatStatus;
 	createNewSession: () => void;
@@ -57,6 +59,7 @@ export interface ChatStoreLike {
 		sdkSessionId: string | undefined,
 	) => void;
 	setStatus: (status: ChatStatus, errorMessage?: string) => void;
+	setSessionCwd: (sessionId: string, cwd: string | undefined) => void;
 	deleteMessage: (sessionId: string, messageId: string) => void;
 }
 

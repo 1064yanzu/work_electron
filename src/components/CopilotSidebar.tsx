@@ -97,6 +97,7 @@ const chatActions = {
 		chatStoreInstance.setSessionAgentSessionId.bind(chatStoreInstance),
 	setSessionSdkSessionId:
 		chatStoreInstance.setSessionSdkSessionId.bind(chatStoreInstance),
+	setSessionCwd: chatStoreInstance.setSessionCwd.bind(chatStoreInstance),
 	setStatus: chatStoreInstance.setStatus.bind(chatStoreInstance),
 	deleteMessage: chatStoreInstance.deleteMessage.bind(chatStoreInstance),
 };
@@ -631,8 +632,7 @@ export default function CopilotSidebar() {
 				? `\n\n[附加文件]\n${attachedFileTitles.map((t) => `- ${t}`).join("\n")}`
 				: "";
 
-		// 添加强制 skill 信息到消息
-		const skillInfo = forcedSkillId ? `\n[强制技能: ${forcedSkillId}]` : "";
+		const skillInfo = forcedSkillId ? `\n[Skill: $${forcedSkillId}]` : "";
 		const userTextForChat =
 			(command ? `[${command.name}] ${content}` : content) +
 			attachmentFooter +
@@ -970,8 +970,8 @@ export default function CopilotSidebar() {
 							}}
 							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
 								chatMode === "agent"
-									? "bg-dark-surface text-white shadow-md scale-[1.02]"
-									: "text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-surface/50/50"
+									? "bg-[#141413] text-[#faf9f5] dark:bg-[#faf9f5] dark:text-[#141413] shadow-md scale-[1.02]"
+									: "text-[#5f5d57] dark:text-[#b0aea5] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-surface/60"
 							}`}
 						>
 							<CircleUser className="w-3.5 h-3.5" />

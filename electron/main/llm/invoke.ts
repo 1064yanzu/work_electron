@@ -12,6 +12,7 @@ import {
 import { parseLlmError, formatLlmErrorForStream } from "./llmErrors";
 
 const DEFAULT_MODEL = "gpt-4o";
+const DEFAULT_RESPONSES_INSTRUCTIONS = "You are a helpful assistant.";
 
 /** LLM 调用超时（毫秒） */
 const LLM_CALL_TIMEOUT_MS = 120_000; // 非流式：2 分钟
@@ -507,12 +508,10 @@ async function callOpenAIResponses(
 
 	const body: Record<string, unknown> = {
 		model,
-		input: prompt,
+		input: [{ role: "user", content: prompt }],
+		instructions: contextMsg ?? DEFAULT_RESPONSES_INSTRUCTIONS,
 		temperature: temperature ?? 0.7,
 	};
-	if (contextMsg) {
-		body.instructions = contextMsg;
-	}
 
 	const MAX_RETRIES = 4;
 	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -528,6 +527,19 @@ async function callOpenAIResponses(
 
 		if (response.ok) break;
 		lastErrorText = await response.text();
+		if (
+			response.status === 400 &&
+			/stream must be set to true/i.test(lastErrorText)
+		) {
+			return callOpenAIResponsesStreamingFallback({
+				provider,
+				model,
+				prompt,
+				apiKey,
+				context,
+				temperature,
+			});
+		}
 		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
 			// 指数退避：1s, 3s, 8s, 20s
 			const baseDelay = 1000;
@@ -545,6 +557,82 @@ async function callOpenAIResponses(
 	}
 
 	return parseOpenAIStyleResult(await response.text());
+}
+
+async function callOpenAIResponsesStreamingFallback(opts: {
+	provider: Provider;
+	model: string;
+	prompt: string;
+	apiKey: string | undefined;
+	context?: string[];
+	temperature?: number;
+}): Promise<LlmCallResult> {
+	const baseUrl = normalizeOpenAICompatibleBaseUrl(
+		opts.provider,
+		"https://api.openai.com",
+	);
+	const url = `${baseUrl}/responses`;
+
+	const contextMsg = buildContextMessage(opts.context);
+	const body: Record<string, unknown> = {
+		model: opts.model,
+		input: [{ role: "user", content: opts.prompt }],
+		instructions: contextMsg ?? DEFAULT_RESPONSES_INSTRUCTIONS,
+		temperature: opts.temperature ?? 0.7,
+		stream: true,
+	};
+
+	const response = await fetch(url, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getOpenAICompatibleAuthHeaders(opts.provider, opts.apiKey),
+		},
+		body: JSON.stringify(body),
+		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+	});
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(
+			`LLM call failed (stream fallback): ${response.status} - ${errorText}`,
+		);
+	}
+
+	if (!response.body)
+		throw new Error("No response body for streaming fallback");
+
+	let content = "";
+	let usage: StreamChunk["usage"] | undefined;
+	const parse = createSseParser((data) => {
+		if (data === "[DONE]") return;
+		try {
+			const json = JSON.parse(data) as any;
+			const eventType = json?.type as string | undefined;
+			if (eventType === "response.output_text.delta") {
+				const delta = typeof json.delta === "string" ? json.delta : "";
+				if (delta) content += delta;
+			} else if (eventType === "response.done") {
+				const u = json?.response?.usage;
+				if (u && typeof u === "object") {
+					const inputT = Number(u.input_tokens ?? 0);
+					const outputT = Number(u.output_tokens ?? 0);
+					usage = {
+						prompt_tokens: inputT,
+						completion_tokens: outputT,
+						total_tokens: u.total_tokens
+							? Number(u.total_tokens)
+							: inputT + outputT,
+					};
+				}
+			}
+		} catch {
+			// ignore malformed lines
+		}
+	});
+
+	await readTextStream(response.body, parse);
+	return { content, usage };
 }
 
 /**
@@ -576,13 +664,11 @@ async function callOpenAIResponsesStream(opts: {
 
 	const body: Record<string, unknown> = {
 		model: opts.model,
-		input: opts.prompt,
+		input: [{ role: "user", content: opts.prompt }],
+		instructions: contextMsg ?? DEFAULT_RESPONSES_INSTRUCTIONS,
 		temperature: opts.temperature ?? 0.7,
 		stream: true,
 	};
-	if (contextMsg) {
-		body.instructions = contextMsg;
-	}
 
 	for (let attempt = 0; attempt < 3; attempt++) {
 		const response = await fetch(url, {

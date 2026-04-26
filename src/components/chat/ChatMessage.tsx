@@ -19,10 +19,7 @@ import { AgentBlocksInline } from "./AgentBlocksInline";
 import { AttachmentList } from "./AttachmentCard";
 import { ChatMessageAssistantContent } from "./ChatMessageAssistantContent";
 import { TokenDisplay } from "./TokenDisplay";
-import {
-	extractCodeBlocks,
-	extractWebPreviewFromCodeBlocks,
-} from "./chatMessageDerivations";
+import { extractCodeBlocks } from "./chatMessageDerivations";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
@@ -147,14 +144,7 @@ function ChatMessageImpl({
 		[message.content],
 	);
 
-	// 流式状态的预览
-	const streamingWebPreview = useMemo(
-		() =>
-			message.role === "assistant" && isStreaming && codeBlocks.length > 0
-				? extractWebPreviewFromCodeBlocks(codeBlocks)
-				: null,
-		[message.role, isStreaming, codeBlocks],
-	);
+	const streamingWebPreview = null;
 
 	// 完成状态的预览
 	const handleCopy = async () => {

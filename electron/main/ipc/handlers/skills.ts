@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { IpcMainInvokeEvent } from "electron";
-import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
+import { getManagedSkillsRootDir } from "./skillRoots";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -12,11 +12,6 @@ type Handler<K extends keyof IPCSchema> = (
 ) => Promise<IPCSchema[K]["output"]>;
 
 type SkillMetadata = IPCSchema["list_skills"]["output"][number];
-
-function getSkillsRootDir() {
-	const home = app.getPath("home");
-	return path.join(home, ".claude", "skills");
-}
 
 async function ensureDir(dir: string) {
 	await fs.mkdir(dir, { recursive: true });
@@ -119,7 +114,7 @@ async function setSkillEnabledInDb(
 
 export function createSkillsHandlers(db: DbContext) {
 	const list_skills: Handler<"list_skills"> = async () => {
-		const root = getSkillsRootDir();
+		const root = getManagedSkillsRootDir();
 		try {
 			await ensureDir(root);
 		} catch {
@@ -168,7 +163,7 @@ export function createSkillsHandlers(db: DbContext) {
 			path.basename(sourcePath),
 		);
 
-		const root = getSkillsRootDir();
+		const root = getManagedSkillsRootDir();
 		await ensureDir(root);
 
 		const destName = sanitizeDirName(parsed.name || path.basename(sourcePath));

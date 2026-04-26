@@ -106,99 +106,100 @@ function InputDialogView({
 		<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
 			<button
 				type="button"
-				className="absolute inset-0 bg-black/35 dark:bg-black/55 backdrop-blur-sm"
+				className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
 				onClick={handleCancel}
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-lg rounded-2xl border border-border/60/70 bg-surface/95/95 shadow-[0_24px_48px_-18px_rgba(0,0,0,0.3)]"
+				className="relative w-full max-w-[440px] rounded-[24px] border border-black/5 dark:border-white/10 bg-surface shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden"
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
-				<div className="p-6 pb-4">
-					<div className="flex items-start gap-3">
+				<div className="p-6">
+					<div className="flex items-start gap-4">
 						<div
 							className={cn(
-								"mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+								"mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
 								variant === "danger"
-									? "bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-300"
-									: "bg-warm-200 text-text-secondary",
+									? "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400"
+									: "bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400",
 							)}
 						>
 							{variant === "danger" ? (
-								<AlertCircle className="h-4 w-4" />
+								<AlertCircle className="h-5 w-5" />
 							) : (
-								<PencilLine className="h-4 w-4" />
+								<PencilLine className="h-5 w-5" />
 							)}
 						</div>
-						<div className="min-w-0 flex-1">
-							<h3 className="text-base font-semibold text-text-primary">
+						<div className="min-w-0 flex-1 pt-0.5">
+							<h3 className="text-[17px] font-semibold text-text-primary tracking-tight">
 								{title}
 							</h3>
 							{message ? (
-								<p className="mt-1 text-sm text-text-muted">{message}</p>
+								<p className="mt-1.5 text-[13px] text-text-muted leading-relaxed">{message}</p>
 							) : null}
 						</div>
 					</div>
-				</div>
 
-				<div className="px-6 pb-4">
-					{multiline ? (
-						<textarea
-							ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-							value={value}
-							rows={rows}
-							onChange={(event) => {
-								setValue(event.target.value);
-								setError(null);
-							}}
-							onKeyDown={onKeyDown}
-							placeholder={placeholder}
-							className="w-full resize-none rounded-xl border border-border bg-warm-50 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-zinc-300 focus:bg-surface focus:ring-2 focus:ring-zinc-300/50/70 dark:focus:border-zinc-600 dark:focus:bg-dark-surface dark:focus:ring-zinc-700"
-						/>
-					) : (
-						<input
-							ref={inputRef as React.RefObject<HTMLInputElement>}
-							value={value}
-							type={inputType}
-							onChange={(event) => {
-								setValue(event.target.value);
-								setError(null);
-							}}
-							onKeyDown={onKeyDown}
-							placeholder={placeholder}
-							className="w-full rounded-xl border border-border bg-warm-50 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-zinc-300 focus:bg-surface focus:ring-2 focus:ring-zinc-300/50/70 dark:focus:border-zinc-600 dark:focus:bg-dark-surface dark:focus:ring-zinc-700"
-						/>
-					)}
-
-					{error ? (
-						<p className="mt-2 text-xs text-red-500 dark:text-red-400">
-							{error}
-						</p>
-					) : null}
-				</div>
-
-				<div className="flex items-center justify-end gap-2 border-t border-border/60 bg-warm-50/70 px-6 py-4/60/70">
-					<button
-						type="button"
-						onClick={handleCancel}
-						className="rounded-lg px-3.5 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-warm-200 hover:text-text-primary"
-					>
-						{cancelText}
-					</button>
-					<button
-						type="button"
-						onClick={() => void handleConfirm()}
-						disabled={isSubmitting}
-						className={cn(
-							"rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-							variant === "danger"
-								? "bg-red-600 hover:bg-red-700"
-								: "bg-dark-muted hover:bg-dark-surface dark:hover:bg-surface",
+					<div className="mt-6">
+						{multiline ? (
+							<textarea
+								ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+								value={value}
+								rows={rows}
+								onChange={(event) => {
+									setValue(event.target.value);
+									setError(null);
+								}}
+								onKeyDown={onKeyDown}
+								placeholder={placeholder}
+								className="w-full resize-none rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-blue-500/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+							/>
+						) : (
+							<input
+								ref={inputRef as React.RefObject<HTMLInputElement>}
+								value={value}
+								type={inputType}
+								onChange={(event) => {
+									setValue(event.target.value);
+									setError(null);
+								}}
+								onKeyDown={onKeyDown}
+								placeholder={placeholder}
+								className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-blue-500/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+							/>
 						)}
-					>
-						{isSubmitting ? "处理中..." : confirmText}
-					</button>
+
+						{error ? (
+							<p className="mt-2.5 text-[13px] font-medium text-red-500 flex items-center gap-1.5">
+								<AlertCircle className="w-3.5 h-3.5" />
+								{error}
+							</p>
+						) : null}
+					</div>
+
+					<div className="mt-8 flex items-center justify-end gap-3">
+						<button
+							type="button"
+							onClick={handleCancel}
+							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-all hover:bg-black/5 dark:hover:bg-white/5"
+						>
+							{cancelText}
+						</button>
+						<button
+							type="button"
+							onClick={() => void handleConfirm()}
+							disabled={isSubmitting}
+							className={cn(
+								"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
+								variant === "danger"
+									? "bg-red-500 text-white hover:bg-red-600 shadow-red-500/20"
+									: "bg-zinc-800 text-white hover:bg-zinc-900 shadow-black/10 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10",
+							)}
+						>
+							{isSubmitting ? "处理中..." : confirmText}
+						</button>
+					</div>
 				</div>
 			</FocusTrap>
 		</div>

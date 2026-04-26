@@ -7,7 +7,23 @@ import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 function formatDurationCompact(durationMs?: number) {
 	if (!durationMs || durationMs <= 0) return "";
 	const s = Math.max(1, Math.round(durationMs / 1000));
-	return `${s}s`;
+	if (s < 60) return `${s}s`;
+	const minutes = Math.floor(s / 60);
+	const seconds = s % 60;
+	return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
+
+function localizeThoughtTitle(title?: string) {
+	const normalized = String(title || "")
+		.trim()
+		.toLowerCase();
+	if (!normalized || normalized === "thought" || normalized === "thinking") {
+		return "思考中";
+	}
+	if (normalized === "reasoning") {
+		return "推理中";
+	}
+	return String(title || "思考中").trim();
 }
 
 export function ThoughtInline({
@@ -29,7 +45,7 @@ export function ThoughtInline({
 	truncated?: boolean;
 	isStreaming?: boolean;
 }) {
-	const [open, setOpen] = useState(Boolean(isStreaming));
+	const [open, setOpen] = useState(false);
 	const [liveDurationMs, setLiveDurationMs] = useState(0);
 	const [frozenDurationMs, setFrozenDurationMs] = useState(durationMs ?? 0);
 	const streamStartedAtRef = useRef<number | null>(
@@ -45,7 +61,6 @@ export function ThoughtInline({
 				setLiveDurationMs(0);
 				setFrozenDurationMs(0);
 			}
-			setOpen(true);
 		} else if (wasStreaming) {
 			const elapsed =
 				streamStartedAtRef.current === null
@@ -53,7 +68,6 @@ export function ThoughtInline({
 					: Date.now() - streamStartedAtRef.current;
 			setFrozenDurationMs(durationMs || elapsed);
 			streamStartedAtRef.current = null;
-			setOpen(false);
 		} else if (durationMs) {
 			setFrozenDurationMs(durationMs);
 		}
@@ -78,8 +92,8 @@ export function ThoughtInline({
 
 	// 标题格式：Thought for Xs
 	const headerTitle = useMemo(() => {
-		const baseTitle = title?.trim() || "Thought";
-		return headerDuration ? `${baseTitle} for ${headerDuration}` : baseTitle;
+		const baseTitle = localizeThoughtTitle(title);
+		return headerDuration ? `${baseTitle} ${headerDuration}` : baseTitle;
 	}, [title, headerDuration]);
 
 	return (

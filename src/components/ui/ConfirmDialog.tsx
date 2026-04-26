@@ -45,32 +45,32 @@ function ConfirmDialogView({
 		switch (type) {
 			case "danger":
 				return {
-					icon: <AlertTriangle size={20} className="text-red-500" />,
-					bg: "bg-red-50 dark:bg-red-900/30",
+					icon: <AlertTriangle size={20} className="text-red-500 dark:text-red-400" />,
+					bg: "bg-red-50 dark:bg-red-500/10",
 				};
 			case "warning":
 				return {
-					icon: <AlertTriangle size={20} className="text-amber-500" />,
-					bg: "bg-amber-50 dark:bg-amber-900/30",
+					icon: <AlertTriangle size={20} className="text-amber-500 dark:text-amber-400" />,
+					bg: "bg-amber-50 dark:bg-amber-500/10",
 				};
 			default:
 				return {
-					icon: <Info size={20} className="text-blue-500" />,
-					bg: "bg-blue-50 dark:bg-blue-900/30",
+					icon: <Info size={20} className="text-blue-500 dark:text-blue-400" />,
+					bg: "bg-blue-50 dark:bg-blue-500/10",
 				};
 		}
 	})();
 
 	const confirmButtonClass = (() => {
 		const base =
-			"rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+			"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 		switch (type) {
 			case "danger":
-				return `${base} bg-red-600 hover:bg-red-700 focus-visible:ring-red-500`;
+				return `${base} bg-red-500 text-white hover:bg-red-600 shadow-red-500/20`;
 			case "warning":
-				return `${base} bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-500`;
+				return `${base} bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20`;
 			default:
-				return `${base} bg-blue-500 hover:bg-blue-600 focus-visible:ring-blue-500`;
+				return `${base} bg-zinc-800 text-white hover:bg-zinc-900 shadow-black/10 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10`;
 		}
 	})();
 
@@ -79,7 +79,7 @@ function ConfirmDialogView({
 			<button
 				type="button"
 				className={cn(
-					"absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity dark:bg-black/55",
+					"absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity",
 					isClosing ? "opacity-0" : "opacity-100",
 				)}
 				onClick={() => close(false)}
@@ -88,7 +88,7 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative mx-4 w-full max-w-md rounded-2xl border border-border/50 bg-surface shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]/50",
+					"relative w-full max-w-[440px] rounded-[24px] border border-black/5 dark:border-white/10 bg-surface shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
@@ -100,38 +100,38 @@ function ConfirmDialogView({
 					aria-modal="true"
 					aria-labelledby="confirm-title"
 					aria-describedby="confirm-message"
+					className="p-6"
 				>
-					<div className="p-6 pb-4">
-						<div className="flex items-start gap-4">
-							<div
-								className={cn(
-									"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-									iconConfig.bg,
-								)}
+					<div className="flex items-start gap-4">
+						<div
+							className={cn(
+								"mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+								iconConfig.bg,
+							)}
+						>
+							{iconConfig.icon}
+						</div>
+						<div className="flex-1 min-w-0 pt-0.5">
+							<h3
+								id="confirm-title"
+								className="text-[17px] font-semibold text-text-primary tracking-tight"
 							>
-								{iconConfig.icon}
-							</div>
-							<div className="flex-1 min-w-0">
-								<h3
-									id="confirm-title"
-									className="mb-2 text-lg font-semibold text-text-primary"
-								>
-									{title}
-								</h3>
-								<p
-									id="confirm-message"
-									className="whitespace-pre-wrap text-sm text-text-secondary"
-								>
-									{message}
-								</p>
-							</div>
+								{title}
+							</h3>
+							<p
+								id="confirm-message"
+								className="mt-1.5 whitespace-pre-wrap text-[14px] text-text-secondary leading-relaxed"
+							>
+								{message}
+							</p>
 						</div>
 					</div>
-					<div className="flex items-center justify-end gap-3 p-6 pt-2">
+					
+					<div className="mt-8 flex items-center justify-end gap-3">
 						<button
 							type="button"
 							onClick={() => close(false)}
-							className="rounded-xl bg-warm-200 px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-warm-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 dark:hover:bg-zinc-700"
+							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-all hover:bg-black/5 dark:hover:bg-white/5"
 						>
 							{cancelText}
 						</button>

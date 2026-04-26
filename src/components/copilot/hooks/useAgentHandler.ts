@@ -5,11 +5,7 @@ import {
 	encodeChatMessageToAgentContentJson,
 	persistChatMessageToAgentSession,
 } from "../../../lib/agent/chatBridge";
-import {
-	agentPersistence,
-	resumePersistentSession,
-	startPersistentSession,
-} from "../../../lib/agent/persistence";
+import { ensurePersistentSession } from "../../../lib/agent/persistence";
 import { agentStore } from "../../../lib/agent/store";
 import { chatStore as chatStoreInstance } from "../../../lib/chat/store";
 import {
@@ -19,7 +15,6 @@ import {
 import type { ChatMessageBlock } from "../../../lib/chat/types";
 import { createMessage } from "../../../lib/chat/types";
 import { EVENTS, events } from "../../../lib/events";
-import { getChatSystemPromptWithBudget } from "../../../lib/prompts";
 import { workspaceStore } from "../../../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context/conversationMessages";
 import { isSdkSessionId } from "../../../lib/agent/context/sessionId";
@@ -41,6 +36,16 @@ import type { SlashCommand } from "../../chat/SlashCommand";
 import { planModeStore } from "../../../lib/agent/planModeStore";
 import { setPlan } from "../../../lib/agent/planModeStore";
 import { parsePlanFromAgentOutput } from "../../../lib/agent/planModePrompt";
+import {
+	buildAgentInterruptionNote,
+	buildAgentNoTextCompletionSummary,
+	toFriendlyAgentRuntimeError,
+} from "../../../lib/agent/runtimeText";
+
+const AGENT_WATCHDOG_IDLE_FINALIZE_MS = 20_000;
+const AGENT_WATCHDOG_STALLED_EXECUTION_MS = 45_000;
+const AGENT_WATCHDOG_STALL_NOTE =
+	"> Agent 长时间未返回结束信号，已根据当前输出自动收口，并中止后台挂起运行。";
 
 interface UseAgentHandlerOptions {
 	chatStore: ChatStoreLike;
@@ -80,7 +85,7 @@ export function useAgentHandler({
 		session: NonNullable<ChatStoreLike["activeSession"]>,
 		userTextForChat: string,
 		command: SlashCommand | undefined,
-		forcedSkillId: string | undefined,
+		_forcedSkillId: string | undefined,
 		skipUserMessage: boolean | undefined,
 		forceForkSession: boolean,
 		parentSdkSessionIdForRun: string | undefined,
@@ -88,20 +93,31 @@ export function useAgentHandler({
 		// 绑定/创建后端 Agent Session（用于持久化与回放）
 		let boundAgentSessionId: string | undefined = session.agentSessionId;
 		try {
-			if (boundAgentSessionId) {
-				agentPersistence.setCurrentSessionId(boundAgentSessionId);
-				await resumePersistentSession(boundAgentSessionId);
-			} else {
-				const agentSessionId = await startPersistentSession(session.title);
-				chatStore.setSessionAgentSessionId(session.id, agentSessionId);
-				boundAgentSessionId = agentSessionId;
+			const ensuredSession = await ensurePersistentSession({
+				sessionId: boundAgentSessionId,
+				title: session.title,
+			});
+			if (ensuredSession.sessionId !== boundAgentSessionId) {
+				chatStore.setSessionAgentSessionId(
+					session.id,
+					ensuredSession.sessionId,
+				);
 			}
+			boundAgentSessionId = ensuredSession.sessionId;
 		} catch (e) {
 			// 后端不可用时自动降级（仍可跑前端内存态 Agent）
 			console.warn(
 				"[CopilotSidebar] Agent Session 持久化初始化失败，将降级为本地执行",
 				e,
 			);
+		}
+
+		// 如果当前 session 尚无 cwd，从 sessionStore 获取当前工作目录并记录
+		if (!session.cwd) {
+			const currentAgentSession = sessionStore.getCurrentSession();
+			if (currentAgentSession?.cwd) {
+				chatStore.setSessionCwd(session.id, currentAgentSession.cwd);
+			}
 		}
 
 		// 创建或获取用户消息
@@ -161,6 +177,12 @@ export function useAgentHandler({
 
 		const touchActivity = () => {
 			lastActivityAt = Date.now();
+		};
+		const appendStallFinalizeNote = (text: string) => {
+			const trimmed = String(text || "").trim();
+			if (!trimmed) return AGENT_WATCHDOG_STALL_NOTE;
+			if (trimmed.includes(AGENT_WATCHDOG_STALL_NOTE)) return trimmed;
+			return `${trimmed}\n\n${AGENT_WATCHDOG_STALL_NOTE}`;
 		};
 
 		let lastSkillExecutionBlock: ChatMessageBlock | null = null;
@@ -409,6 +431,23 @@ export function useAgentHandler({
 				forcedFinalized = true;
 				streamBuilder.flushParser();
 				const finalRawText = rawText || getStreamText();
+
+				const protocol = parseDocProtocolFinal(finalRawText, {
+					activeDocContent: workspaceStore.getActiveDocContent() || "",
+					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+					prompt: command?.name || content.slice(0, 50),
+				});
+				let result = replaceDataImageMarkdownWithPaths(
+					normalizeRuntimeText(protocol.displayContent),
+					getTaskImageArtifactPaths(
+						agentStore.getState().currentTask?.artifacts,
+					),
+				);
+				const forcedByStall = source === "watchdog_stall";
+				if (forcedByStall) {
+					result = appendStallFinalizeNote(result);
+					agentStore.completeTask(result);
+				}
 				const forcedFinalState = agentStore.getState();
 				const forcedTokenUsage = (forcedFinalState.currentTask?.metadata as any)
 					?.tokenUsage as
@@ -419,17 +458,11 @@ export function useAgentHandler({
 					  }
 					| undefined;
 
-				const protocol = parseDocProtocolFinal(finalRawText, {
-					activeDocContent: workspaceStore.getActiveDocContent() || "",
-					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
-					prompt: command?.name || content.slice(0, 50),
-				});
-				const result = replaceDataImageMarkdownWithPaths(
-					normalizeRuntimeText(protocol.displayContent),
-					getTaskImageArtifactPaths(
-						agentStore.getState().currentTask?.artifacts,
-					),
-				);
+				if (protocol.kind === "update") {
+					events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
+				} else if (protocol.kind === "create") {
+					queueCreateProposal(protocol.eventPayload);
+				}
 
 				if (streamingMsgId) {
 					chatStore.updateMessage(session.id, streamingMsgId, {
@@ -452,15 +485,9 @@ export function useAgentHandler({
 					persistSessionMessageById(streamingMsgId);
 				}
 
-				if (protocol.kind === "update") {
-					events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);
-				} else if (protocol.kind === "create") {
-					queueCreateProposal(protocol.eventPayload);
-				}
-
 				chatStore.setStatus("idle");
 				try {
-					agentExecutor.cancel();
+					agentExecutor.cancel({ updateStore: !forcedByStall });
 				} catch {}
 
 				if (detachAgentEvent) {
@@ -476,21 +503,19 @@ export function useAgentHandler({
 				if (forcedFinalized) return;
 				if (!streamingMsgId) return;
 				const now = Date.now();
-				if (now - lastActivityAt < 20000) return;
+				const silenceMs = now - lastActivityAt;
+				if (silenceMs < AGENT_WATCHDOG_IDLE_FINALIZE_MS) return;
 
 				const live = agentStore.getState();
 				const liveTaskStatus = live.currentTask?.status;
-				if (
+				const stillRunning =
 					live.isExecuting ||
 					live.isWaitingForLLM ||
 					liveTaskStatus === "planning" ||
 					liveTaskStatus === "executing" ||
 					(live.currentSkill &&
 						live.currentSkill.status !== "completed" &&
-						live.currentSkill.status !== "error")
-				) {
-					return;
-				}
+						live.currentSkill.status !== "error");
 				const hasRunningTools = streamBuilder
 					.getBlocks()
 					.some(
@@ -501,16 +526,16 @@ export function useAgentHandler({
 				if (hasRunningTools) return;
 				const raw = getStreamText();
 				if (!raw.trim()) return;
+
+				if (stillRunning) {
+					if (silenceMs < AGENT_WATCHDOG_STALLED_EXECUTION_MS) return;
+					finalizeFromRawText(raw, "watchdog_stall");
+					return;
+				}
 				finalizeFromRawText(raw, "watchdog_inactivity");
 			}, 1000);
 
-			const activeDocContent = workspaceStore.getActiveDocContent() || "";
-			const hasActiveDoc = Boolean(workspaceStore.getState().activeDocId);
-			const chatPromptWithBudget = await getChatSystemPromptWithBudget({
-				documentContent: activeDocContent,
-				hasActiveDoc,
-			});
-			const systemPrompt = chatPromptWithBudget.prompt;
+			const systemPrompt = undefined;
 			const conversationMessagesForAgent = buildConversationMessagesForAgentRun(
 				{
 					sessionMessages: session.messages,
@@ -615,8 +640,6 @@ export function useAgentHandler({
 						metadata: {
 							...userMessage.metadata,
 							attachedFiles: attachedFilesForUI,
-							contextCharsAfter:
-								chatPromptWithBudget.budget.stats.injectedChars,
 						},
 					});
 				}
@@ -739,7 +762,6 @@ export function useAgentHandler({
 					forkSession: forceForkSession,
 					parentSdkSessionId: parentSdkSessionIdForRun,
 					documentContextInjected: true,
-					forcedSkillName: forcedSkillId, // 传递强制 skill 名称
 					planMode: planModeStore.getState().enabled,
 					confirmedPlan:
 						planModeStore.getState().currentPlan?.status === "confirmed"
@@ -794,11 +816,10 @@ export function useAgentHandler({
 				  }
 				| undefined;
 
-			// 检查任务是否失败（LLM API 错误等会导致 failTask 被调用）
-			if (finalState.currentTask?.status === "error") {
-				const taskError = finalState.currentTask.error || "任务执行失败";
-				throw new Error(taskError);
-			}
+			const taskError =
+				finalState.currentTask?.status === "error"
+					? finalState.currentTask.error || "任务执行失败"
+					: "";
 
 			// 检查是否有图片生成
 			const toolCalls = finalState.currentTask?.toolCalls || [];
@@ -812,14 +833,20 @@ export function useAgentHandler({
 
 			// 如果有图片生成但没有文本，使用空白或简短提示；否则使用默认失败消息
 			const rawText = getStreamText();
+			if (taskError && !rawText.trim() && !hasImages) {
+				throw new Error(taskError);
+			}
 			const rawResult = (() => {
 				if (rawText) return rawText;
 				if (hasImages) return "";
 				// 检查 agentStore 中是否有更详细的错误信息
 				const taskMeta = finalState.currentTask?.metadata as any;
-				const taskError = finalState.currentTask?.error;
 				if (taskError) return `⚠️ ${taskError}`;
 				if (taskMeta?.lastStderrError) return `⚠️ ${taskMeta.lastStderrError}`;
+				const noTextSummary = buildAgentNoTextCompletionSummary(
+					finalState.currentTask,
+				);
+				if (noTextSummary) return noTextSummary;
 				return "⚠️ 任务已完成，但未能生成文本结果。可能是模型响应格式不兼容，请尝试切换模型或重新发送。";
 			})();
 
@@ -828,10 +855,16 @@ export function useAgentHandler({
 				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
 				prompt: command?.name || content.slice(0, 50),
 			});
-			const result = replaceDataImageMarkdownWithPaths(
+			let result = replaceDataImageMarkdownWithPaths(
 				normalizeRuntimeText(protocol.displayContent),
 				getTaskImageArtifactPaths(agentStore.getState().currentTask?.artifacts),
 			);
+			if (taskError) {
+				const interruptionNote = buildAgentInterruptionNote(taskError);
+				result = result.trim()
+					? `${result}\n\n> ${interruptionNote}`
+					: `> ${interruptionNote}`;
+			}
 
 			// Agent 模式下我们总是走"流式消息"，但这会导致 create-doc / update-doc 协议没有被执行。
 			// 这里统一在完成后应用协议、更新消息、并触发 EditorCanvas 的创建/审查流程。
@@ -1028,19 +1061,7 @@ export function useAgentHandler({
 			const errorMessage = error instanceof Error ? error.message : "未知错误";
 			const taskId = currentTaskId || null;
 			const errorState = agentStore.getState();
-			// 构造用户友好的错误消息
-			const friendlyError = (() => {
-				if (/stream closed/i.test(errorMessage)) {
-					return "Agent 内部通信流已断开。这通常是因为所用模型与 Agent SDK 不完全兼容，建议切换到 Claude 系列模型重试。";
-				}
-				if (/aborted/i.test(errorMessage)) {
-					return "Agent 任务已取消。";
-				}
-				if (/timeout|timed out/i.test(errorMessage)) {
-					return "Agent 请求超时，请检查网络连接后重试。";
-				}
-				return errorMessage;
-			})();
+			const friendlyError = toFriendlyAgentRuntimeError(errorMessage);
 			const assistantMessage = createMessage(
 				"assistant",
 				`⚠️ Agent 执行失败: ${friendlyError}`,

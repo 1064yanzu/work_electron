@@ -190,6 +190,20 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
 				// 检测可预览的代码块 - 渲染预览卡片替代代码块
 				if (language === "html" || language === "htm") {
+					if (isStreaming) {
+						return (
+							<div className="relative group my-3">
+								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
+									{language}
+								</div>
+								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+									<code className={className} {...props}>
+										{children}
+									</code>
+								</pre>
+							</div>
+						);
+					}
 					return (
 						<div className="my-3">
 							<Suspense fallback={null}>
@@ -205,6 +219,20 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				}
 
 				if (language === "jsx" || language === "tsx" || language === "react") {
+					if (isStreaming) {
+						return (
+							<div className="relative group my-3">
+								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
+									{language}
+								</div>
+								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+									<code className={className} {...props}>
+										{children}
+									</code>
+								</pre>
+							</div>
+						);
+					}
 					return (
 						<div className="my-3">
 							<Suspense fallback={null}>

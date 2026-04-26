@@ -1,9 +1,6 @@
 import { Eye, Code, X, Maximize2, Download } from "lucide-react";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { managedModeStore } from "../../lib/managedModeStore";
-import { useAgentStoreSelector } from "../../lib/agent/store";
-import { debugUiLog } from "../../lib/debug/uiDebug";
 
 // -----------------------------------------------------------------------------
 // 0. 工具函数
@@ -302,12 +299,6 @@ export function WebPreviewCard({
 }) {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMode, setModalMode] = useState<"preview" | "code">("preview");
-	const savedHashRef = useRef<string | null>(null);
-
-	// 获取沙盒目录
-	const sandboxDir = useAgentStoreSelector(
-		(state) => state.currentTask?.metadata?.sandboxDir as string | undefined,
-	);
 
 	// 下载功能
 	const handleDownload = () => {
@@ -316,29 +307,6 @@ export function WebPreviewCard({
 		const filename = `${title.replace(/\s+/g, "_") || "code_snippet"}.${ext}`;
 		downloadFile(content, filename);
 	};
-
-	// 自动保存产物到沙盒目录（去重：基于内容 hash）
-	useEffect(() => {
-		if (isStreaming) return; // 流式阶段不保存
-		if (!sandboxDir) return; // 没有沙盒目录不保存
-
-		const content = kind === "html" ? html || "" : jsx || "";
-		if (!content.trim()) return;
-
-		// 简单 hash 去重
-		const hash = `${kind}-${content.length}-${content.slice(0, 100)}`;
-		if (savedHashRef.current === hash) return;
-		savedHashRef.current = hash;
-
-		// 异步保存
-		managedModeStore
-			.saveArtifact(sandboxDir, content, kind, title)
-			.then((filePath) => {
-				if (filePath) {
-					debugUiLog("[WebPreviewCard] Auto-saved artifact to:", filePath);
-				}
-			});
-	}, [isStreaming, sandboxDir, kind, html, jsx, title]);
 
 	// 构建预览文档 (复用原有逻辑)
 	const srcDoc = useMemo(() => {
@@ -460,7 +428,7 @@ ${transformed}
 						<div className="w-5 h-5 border-2 border-border border-t-emerald-500 rounded-full animate-spin" />
 					</div>
 					<div className="text-xs text-text-light font-mono animate-pulse">
-						Generating preview...
+						代码生成中，暂不写入文件
 					</div>
 				</div>
 			);

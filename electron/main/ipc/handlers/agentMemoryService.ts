@@ -420,11 +420,12 @@ export async function extractMemoriesWithLlm(
 			return [];
 		}
 
-		const prompt = `${LLM_EXTRACTION_PROMPT}\n\n---\n对话内容：\n${conversationText.slice(0, 4000)}`;
+		const prompt = `请分析以下对话内容并提取值得长期记住的信息：\n${conversationText.slice(0, 4000)}`;
 
 		const result = await invokeLlm(db, {
 			model: "", // 使用默认活跃模型
 			prompt,
+			context: [LLM_EXTRACTION_PROMPT],
 			temperature: 0.2,
 		});
 

@@ -21,7 +21,10 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { saveTempFile } from "../../lib/api";
+import {
+	buildPastedFileName,
+	saveContextAttachmentFromFile,
+} from "../../lib/chat/attachmentFiles";
 import {
 	filterSourcesByProjectAndFolder,
 	prefetchChatContext,
@@ -35,21 +38,19 @@ import {
 } from "../../lib/workspaceStore";
 import type { DocCacheItem } from "../../lib/stores/types";
 import { SourceType } from "../../types";
+import { toast } from "../ui/Toast";
 import { AttachmentCard } from "./AttachmentCard";
 import { Model, ModelSelector } from "./ModelSelector";
 import { type SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
-import {
-	SuggestionChips,
-	getDefaultSuggestionChips,
-} from "./SuggestionChips";
+import { SuggestionChips, getDefaultSuggestionChips } from "./SuggestionChips";
 
 // 提交选项
 export interface SubmitOptions {
 	command?: SlashCommand;
 	chips?: SelectedChip[];
-	forcedSkillId?: string; // 强制使用的 skill ID
+	forcedSkillId?: string; // 用户显式选择的 SDK Skill 名称
 }
 
 interface ChatInputProps {
@@ -243,90 +244,79 @@ export function ChatInput({
 		menuDataEnabled,
 	]);
 
+	const appendFilesToContext = useCallback(
+		async (files: File[]) => {
+			if (files.length === 0) return 0;
+
+			let successCount = 0;
+			for (const [index, file] of files.entries()) {
+				try {
+					const normalizedFileName =
+						file.name?.trim() || buildPastedFileName(file, index);
+					const attachment = await saveContextAttachmentFromFile(
+						file,
+						normalizedFileName,
+					);
+					addFileToContext(attachment);
+					successCount += 1;
+				} catch (err) {
+					console.error("读取文件失败:", err);
+				}
+			}
+
+			return successCount;
+		},
+		[addFileToContext],
+	);
+
 	// 处理本地文件选择
 	const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
+		const files = Array.from(e.target.files ?? []);
+		if (files.length === 0) return;
 
 		try {
-			const inferExtension = (name: string) => {
-				const ext = name.split(".").pop()?.trim().toLowerCase();
-				if (!ext || ext === name.toLowerCase()) return "txt";
-				return ext;
-			};
-
-			const inferPrefix = (name: string) => {
-				const base = name.split(/[/\\]/).pop() || name;
-				const stem = base.includes(".")
-					? base.slice(0, base.lastIndexOf("."))
-					: base;
-				return stem.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32) || "file";
-			};
-
-			const isLikelyTextFile = (f: File) => {
-				if (f.type?.startsWith("text/")) return true;
-				const name = f.name.toLowerCase();
-				return (
-					name.endsWith(".md") ||
-					name.endsWith(".markdown") ||
-					name.endsWith(".txt") ||
-					name.endsWith(".json") ||
-					name.endsWith(".csv") ||
-					name.endsWith(".ts") ||
-					name.endsWith(".tsx") ||
-					name.endsWith(".js") ||
-					name.endsWith(".jsx") ||
-					name.endsWith(".py") ||
-					name.endsWith(".java") ||
-					name.endsWith(".go") ||
-					name.endsWith(".rs") ||
-					name.endsWith(".xml") ||
-					name.endsWith(".yml") ||
-					name.endsWith(".yaml") ||
-					name.endsWith(".toml") ||
-					name.endsWith(".ini") ||
-					name.endsWith(".log")
-				);
-			};
-
-			const arrayBufferToBase64 = (buf: ArrayBuffer) => {
-				let binary = "";
-				const bytes = new Uint8Array(buf);
-				const chunkSize = 0x8000;
-				for (let i = 0; i < bytes.length; i += chunkSize) {
-					binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-				}
-				return btoa(binary);
-			};
-
-			const ext = inferExtension(file.name);
-			const prefix = inferPrefix(file.name);
-
-			const isText = isLikelyTextFile(file);
-			const contentForSave = isText
-				? await file.text()
-				: arrayBufferToBase64(await file.arrayBuffer());
-
-			const temp = await saveTempFile({
-				content: contentForSave,
-				extension: ext,
-				prefix,
-				encoding: isText ? "utf-8" : "base64",
-			});
-
-			addFileToContext({
-				title: file.name,
-				content: isText ? contentForSave : "",
-				filePath: temp.path,
-				size: file.size,
-				mimeType: file.type || undefined,
-			});
-			// 清空 input 以便允许重复选择同名文件
-			e.target.value = "";
+			const successCount = await appendFilesToContext(files);
+			if (successCount > 1) {
+				toast.success(`已添加 ${successCount} 个附件`);
+			}
 		} catch (err) {
 			console.error("读取文件失败:", err);
+			toast.error("添加附件失败");
+		} finally {
+			// 清空 input 以便允许重复选择同名文件
+			e.target.value = "";
 		}
 	};
+
+	const handlePaste = useCallback(
+		async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+			if (disabled) return;
+
+			const files = Array.from(e.clipboardData.items)
+				.filter((item) => item.kind === "file")
+				.map((item) => item.getAsFile())
+				.filter((file): file is File => file instanceof File);
+			if (files.length === 0) return;
+
+			e.preventDefault();
+			try {
+				const successCount = await appendFilesToContext(files);
+				if (successCount === 0) {
+					toast.error("剪贴板里的文件添加失败");
+					return;
+				}
+				toast.success(
+					successCount === 1
+						? "已从剪贴板添加附件"
+						: `已从剪贴板添加 ${successCount} 个附件`,
+				);
+			} catch (error) {
+				console.error("粘贴附件失败:", error);
+				toast.error("粘贴附件失败");
+			}
+		},
+		[appendFilesToContext, disabled],
+	);
 
 	// 自动调整高度
 	useEffect(() => {
@@ -358,25 +348,28 @@ export function ChatInput({
 			.map((c) => c.content)
 			.join("\n\n");
 
-		// 最终要发送的消息：提示词内容 + 用户输入
+		const agentSkillChip = selectedChips.find((c) => c.type === "agent_skill");
+		const selectedSkillName = agentSkillChip?.skillName;
+		const skillMention = selectedSkillName ? `$${selectedSkillName}` : "";
+
+		// 最终要发送的消息：显式 Skill 名称 + 提示词内容 + 用户输入
 		let finalMessage = trimmed;
 		if (promptContent) {
 			finalMessage = finalMessage
 				? `${promptContent}\n\n${finalMessage}`
 				: promptContent;
 		}
+		if (skillMention) {
+			finalMessage = finalMessage
+				? `${skillMention}\n\n${finalMessage}`
+				: skillMention;
+		}
 
 		if (finalMessage && !disabled) {
-			// 查找强制使用的 Agent Skill
-			const agentSkillChip = selectedChips.find(
-				(c) => c.type === "agent_skill",
-			);
-			const forcedSkillId = agentSkillChip?.skillName; // 使用存储的 skillName
-
-			// 提交带有 chips 和强制 skill 信息
+			// 提交 chips；Skill 通过 `$skill-name` 显式出现在用户 prompt 中，由 SDK 原生路由。
 			onSubmit(finalMessage, {
 				chips: selectedChips.length > 0 ? selectedChips : undefined,
-				forcedSkillId,
+				forcedSkillId: selectedSkillName,
 			});
 
 			setValue("");
@@ -415,14 +408,16 @@ export function ChatInput({
 			return;
 		}
 
-		// 检测是否为 Agent Skill（强制执行）
+		// 检测是否为 Agent Skill（以 `$skill-name` 方式显式交给 SDK 原生路由）
 		const isAgentSkill = command.id.startsWith("agent-skill-");
-		const forceSkillMatch = command.prompt?.match(/^\[FORCE_SKILL:(.+)\]$/);
-		const forcedSkillName = forceSkillMatch ? forceSkillMatch[1] : undefined;
+		const explicitSkillMatch = command.prompt?.match(/^\[FORCE_SKILL:(.+)\]$/);
+		const explicitSkillName = explicitSkillMatch
+			? explicitSkillMatch[1]
+			: undefined;
 
 		// 判断类型
 		let chipType: SelectedChip["type"] = "skill";
-		if (isAgentSkill || forcedSkillName) {
+		if (isAgentSkill || explicitSkillName) {
 			chipType = "agent_skill";
 		} else if (command.category === "context" || command.prompt) {
 			chipType = "prompt";
@@ -439,10 +434,10 @@ export function ChatInput({
 			command,
 			isExpanded: false,
 			content: chipType === "agent_skill" ? undefined : command.prompt,
-			skillName: forcedSkillName, // 存储强制 skill 名称
+			skillName: explicitSkillName,
 		};
 
-		// 如果是 agent_skill 类型，替换已有的（只能有一个强制 skill）
+		// 如果是 agent_skill 类型，替换已有的（只能显式选择一个 skill）
 		if (chipType === "agent_skill") {
 			setSelectedChips((prev) => [
 				...prev.filter((c) => c.type !== "agent_skill"),
@@ -502,17 +497,13 @@ export function ChatInput({
 
 	const handleBlur = useCallback((e: React.FocusEvent) => {
 		// 如果焦点仍在输入区域容器内，不折叠
-		const container = e.currentTarget.closest('[data-chat-input-root]');
+		const container = e.currentTarget.closest("[data-chat-input-root]");
 		if (container?.contains(e.relatedTarget as Node)) return;
 		setIsFocused(false);
 	}, []);
 
 	const suggestionChips = useMemo(
-		() =>
-			getDefaultSuggestionChips(
-				() => setValue("/"),
-				onOpenPromptLibrary,
-			),
+		() => getDefaultSuggestionChips(() => setValue("/"), onOpenPromptLibrary),
 		[onOpenPromptLibrary],
 	);
 
@@ -530,6 +521,7 @@ export function ChatInput({
 				type="file"
 				ref={fileInputRef}
 				className="hidden"
+				multiple
 				onChange={handleFileSelect}
 			/>
 
@@ -562,16 +554,22 @@ export function ChatInput({
 				className={`
 					bg-surface border transition-all duration-300 ease-out
 					shadow-[rgba(0,0,0,0.03)_0px_1px_6px,rgba(0,0,0,0.02)_0px_0px_0px_1px]
-					${isExpanded
-						? "rounded-[22px] border-warm-400/70 dark:border-warm-500/40 shadow-[rgba(0,0,0,0.06)_0px_4px_20px,rgba(0,0,0,0.03)_0px_0px_0px_1px]"
-						: "rounded-[28px] border-border hover:border-warm-300 dark:hover:border-warm-500/30"
+					${
+						isExpanded
+							? "rounded-[22px] border-warm-400/70 dark:border-warm-500/40 shadow-[rgba(0,0,0,0.06)_0px_4px_20px,rgba(0,0,0,0.03)_0px_0px_0px_1px]"
+							: "rounded-[28px] border-border hover:border-warm-300 dark:hover:border-warm-500/30"
 					}
 				`}
 			>
 				{/* 建议 Chips — 聚焦时展开 */}
 				<SuggestionChips
 					chips={suggestionChips}
-					visible={isExpanded && contexts.length === 0 && selectedChips.length === 0 && !showSlashMenu}
+					visible={
+						isExpanded &&
+						contexts.length === 0 &&
+						selectedChips.length === 0 &&
+						!showSlashMenu
+					}
 				/>
 
 				{/* 上下文附件条 */}
@@ -624,6 +622,7 @@ export function ChatInput({
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
 						onKeyDown={handleKeyDown}
+						onPaste={handlePaste}
 						onFocus={handleFocus}
 						placeholder={placeholder}
 						disabled={disabled}
@@ -631,7 +630,7 @@ export function ChatInput({
 						className={`
 							w-full bg-transparent text-[14px] text-text-primary
 							placeholder-text-muted/60 dark:placeholder-text-muted/40
-							resize-none focus:outline-none disabled:opacity-50 leading-relaxed
+							resize-none focus:outline-none focus:ring-0 focus:shadow-none disabled:opacity-50 leading-relaxed
 							transition-all duration-200
 							${isExpanded ? "px-5 py-3.5 min-h-[64px]" : "px-5 py-4 min-h-[52px]"}
 						`}
@@ -676,9 +675,10 @@ export function ChatInput({
 									className={`
 										flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-full
 										transition-all duration-150 cursor-pointer
-										${isModelSelectorOpen
-											? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
-											: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-zinc-700/40"
+										${
+											isModelSelectorOpen
+												? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
+												: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-zinc-700/40"
 										}
 									`}
 								>
@@ -710,9 +710,10 @@ export function ChatInput({
 								className={`
 									flex items-center justify-center w-8 h-8 rounded-full
 									transition-all duration-200 cursor-pointer active:scale-90
-									${value.trim() || selectedChips.length > 0
-										? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
-										: "bg-warm-200/80 dark:bg-zinc-700/50 text-text-muted/40 disabled:cursor-not-allowed"
+									${
+										value.trim() || selectedChips.length > 0
+											? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
+											: "bg-warm-200/80 dark:bg-zinc-700/50 text-text-muted/40 disabled:cursor-not-allowed"
 									}
 								`}
 							>
@@ -739,9 +740,10 @@ export function ChatInput({
 							className={`
 								flex items-center justify-center w-8 h-8 rounded-full
 								transition-all duration-200 cursor-pointer active:scale-90
-								${value.trim() || selectedChips.length > 0
-									? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
-									: "bg-warm-200/60 dark:bg-zinc-700/40 text-text-muted/30 disabled:cursor-not-allowed"
+								${
+									value.trim() || selectedChips.length > 0
+										? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
+										: "bg-warm-200/60 dark:bg-zinc-700/40 text-text-muted/30 disabled:cursor-not-allowed"
 								}
 							`}
 						>
@@ -756,9 +758,10 @@ export function ChatInput({
 				className={`
 					flex items-center justify-center gap-5 mt-2 text-[10px] select-none
 					transition-all duration-300
-					${isExpanded
-						? "opacity-100 text-text-muted/50 dark:text-text-muted/30"
-						: "opacity-0 text-transparent"
+					${
+						isExpanded
+							? "opacity-100 text-text-muted/50 dark:text-text-muted/30"
+							: "opacity-0 text-transparent"
 					}
 				`}
 			>

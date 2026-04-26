@@ -598,6 +598,61 @@ class ChatStore {
 		);
 	}
 
+	// 设置会话关联的工作目录（用于线程按项目分组）
+	setSessionCwd(sessionId: string, cwd: string | undefined) {
+		this.setState(
+			(state) => ({
+				...state,
+				sessions: state.sessions.map((s) =>
+					s.id === sessionId ? { ...s, cwd, updatedAt: Date.now() } : s,
+				),
+			}),
+			"normal",
+		);
+	}
+
+	setSessionPinned(sessionId: string, isPinned: boolean) {
+		this.setState(
+			(state) => ({
+				...state,
+				sessions: state.sessions.map((s) =>
+					s.id === sessionId ? { ...s, isPinned, updatedAt: Date.now() } : s,
+				),
+			}),
+			"normal",
+		);
+	}
+
+	setSessionArchived(sessionId: string, isArchived: boolean) {
+		this.setState(
+			(state) => ({
+				...state,
+				sessions: state.sessions.map((s) =>
+					s.id === sessionId ? { ...s, isArchived, updatedAt: Date.now() } : s,
+				),
+			}),
+			"normal",
+		);
+	}
+
+	// 设置会话来源（用于线程区分本地项目对话与远程对话）
+	setSessionThreadSource(
+		sessionId: string,
+		threadSource: ChatSession["threadSource"] | undefined,
+	) {
+		this.setState(
+			(state) => ({
+				...state,
+				sessions: state.sessions.map((s) =>
+					s.id === sessionId
+						? { ...s, threadSource, updatedAt: Date.now() }
+						: s,
+				),
+			}),
+			"normal",
+		);
+	}
+
 	// 设置状态
 	setStatus(status: ChatState["status"], error?: string) {
 		this.setState(
@@ -673,6 +728,10 @@ const chatActions = {
 	updateSessionTitle: chatStore.updateSessionTitle.bind(chatStore),
 	setSessionAgentSessionId: chatStore.setSessionAgentSessionId.bind(chatStore),
 	setSessionSdkSessionId: chatStore.setSessionSdkSessionId.bind(chatStore),
+	setSessionCwd: chatStore.setSessionCwd.bind(chatStore),
+	setSessionPinned: chatStore.setSessionPinned.bind(chatStore),
+	setSessionArchived: chatStore.setSessionArchived.bind(chatStore),
+	setSessionThreadSource: chatStore.setSessionThreadSource.bind(chatStore),
 	setStatus: chatStore.setStatus.bind(chatStore),
 	clearAllSessions: chatStore.clearAllSessions.bind(chatStore),
 	deleteMessage: chatStore.deleteMessage.bind(chatStore),

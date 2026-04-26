@@ -250,6 +250,23 @@ export function getMimeType(filename: string): string {
 		gif: "image/gif",
 		svg: "image/svg+xml",
 		webp: "image/webp",
+		bmp: "image/bmp",
+		tiff: "image/tiff",
+
+		// 媒体
+		mp4: "video/mp4",
+		webm: "video/webm",
+		mov: "video/quicktime",
+		avi: "video/x-msvideo",
+		mkv: "video/x-matroska",
+		m4v: "video/x-m4v",
+		mp3: "audio/mpeg",
+		wav: "audio/wav",
+		ogg: "audio/ogg",
+		flac: "audio/flac",
+		aac: "audio/aac",
+		m4a: "audio/mp4",
+		wma: "audio/x-ms-wma",
 
 		// 数据
 		csv: "text/csv",

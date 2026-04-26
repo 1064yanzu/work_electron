@@ -6,11 +6,14 @@
  * directory resolution, and plugin normalization.
  */
 import { execFile } from "node:child_process";
-import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { app } from "electron";
+import {
+	getManagedSkillsRootDir,
+	getProjectSkillsRootDir,
+} from "../skillRoots";
 
 const execFileAsync = promisify(execFile);
 
@@ -133,21 +136,8 @@ export function pickWritingSkill(skills: string[]): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Skills home directory & sync
+// Skills directory & sync
 // ---------------------------------------------------------------------------
-
-export function getHomeSkillsRootDir() {
-	const home = app.getPath("home");
-	// Codex desktop stores skills under ~/.codex/skills.
-	// Claude Code stores skills under ~/.claude/skills.
-	// Prefer Codex skills if present.
-	const codexSkills = path.join(home, ".codex", "skills");
-	const claudeSkills = path.join(home, ".claude", "skills");
-	if (fs.existsSync(codexSkills)) return codexSkills;
-	if (fs.existsSync(claudeSkills)) return claudeSkills;
-	// Default to Codex location to make intent obvious.
-	return codexSkills;
-}
 
 async function ensureDir(dir: string) {
 	await fsp.mkdir(dir, { recursive: true });
@@ -183,9 +173,14 @@ async function isSkillNewer(srcDir: string, destDir: string): Promise<boolean> {
 export async function syncSkillsToCwd(
 	cwd: string,
 	stderr: (msg: string) => void,
+	enabledSkillNames?: string[],
 ) {
-	const srcRoot = getHomeSkillsRootDir();
-	const destRoot = path.join(cwd, ".claude", "skills");
+	const srcRoot = getManagedSkillsRootDir();
+	const destRoot = getProjectSkillsRootDir(cwd);
+	const enabledSkillSet = new Set(
+		(enabledSkillNames ?? []).map((name) => String(name || "").trim()),
+	);
+	const hasExplicitEnabledSkills = Array.isArray(enabledSkillNames);
 
 	try {
 		await ensureDir(destRoot);
@@ -206,13 +201,17 @@ export async function syncSkillsToCwd(
 
 	const dirEntries = entries.filter((e) => e.isDirectory());
 	stderr(
-		`[agent_sdk_start] Syncing skills: src=${srcRoot} -> dest=${destRoot} (dirs=${dirEntries.length})`,
+		`[agent_sdk_start] Syncing enabled skills: src=${srcRoot} -> dest=${destRoot} (enabled=${hasExplicitEnabledSkills ? enabledSkillSet.size : dirEntries.length}, available=${dirEntries.length})`,
 	);
 
 	let newCount = 0;
 	let updatedCount = 0;
+	let removedCount = 0;
+	const homeSkillNames = new Set(dirEntries.map((ent) => ent.name));
 
 	for (const ent of dirEntries) {
+		if (hasExplicitEnabledSkills && !enabledSkillSet.has(ent.name)) continue;
+
 		const srcDir = path.join(srcRoot, ent.name);
 		const destDir = path.join(destRoot, ent.name);
 
@@ -254,9 +253,29 @@ export async function syncSkillsToCwd(
 		}
 	}
 
-	if (newCount > 0 || updatedCount > 0) {
+	if (hasExplicitEnabledSkills) {
+		try {
+			const destEntries = await fsp.readdir(destRoot, { withFileTypes: true });
+			for (const ent of destEntries) {
+				if (!ent.isDirectory()) continue;
+				if (!homeSkillNames.has(ent.name)) continue;
+				if (enabledSkillSet.has(ent.name)) continue;
+				await fsp.rm(path.join(destRoot, ent.name), {
+					recursive: true,
+					force: true,
+				});
+				removedCount++;
+			}
+		} catch (e) {
+			stderr(
+				`[agent_sdk_start] Failed to prune disabled project skills. ${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+	}
+
+	if (newCount > 0 || updatedCount > 0 || removedCount > 0) {
 		stderr(
-			`[agent_sdk_start] Skills sync complete: ${newCount} new, ${updatedCount} updated`,
+			`[agent_sdk_start] Skills sync complete: ${newCount} new, ${updatedCount} updated, ${removedCount} removed`,
 		);
 	}
 }
@@ -279,7 +298,7 @@ export function uniqStrings(values: string[]): string[] {
 }
 
 export async function listProjectSkills(cwd: string): Promise<string[]> {
-	const dir = path.join(cwd, ".claude", "skills");
+	const dir = getProjectSkillsRootDir(cwd);
 	try {
 		const entries = await fsp.readdir(dir, { withFileTypes: true });
 		return entries
@@ -288,6 +307,14 @@ export async function listProjectSkills(cwd: string): Promise<string[]> {
 	} catch {
 		return [];
 	}
+}
+
+export function resolveSkillSettingSources(
+	settingSources: Array<"user" | "project" | "local">,
+	skillsFromInput: string[] | undefined,
+): Array<"user" | "project" | "local"> {
+	if (!Array.isArray(skillsFromInput)) return settingSources;
+	return ["project"];
 }
 
 // ---------------------------------------------------------------------------

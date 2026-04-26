@@ -186,20 +186,41 @@ function generateSuggestions(
 			break;
 
 		case "parameter":
-			suggestions.push(
-				{
-					id: "retry-param",
-					label: "修正参数重试",
-					action: "retry",
-					description: "尝试用修正后的参数重新执行",
-					isRecommended: true,
-				},
-				{
-					id: "skip-param",
-					label: "跳过",
-					action: "skip",
-				},
-			);
+			if (
+				/InputValidationError|required parameter|missing required/i.test(
+					_errorMessage,
+				)
+			) {
+				suggestions.push(
+					{
+						id: "manual-param",
+						label: "手动处理",
+						action: "manual",
+						description: "需要补齐工具必填参数后重新执行",
+						isRecommended: true,
+					},
+					{
+						id: "skip-param",
+						label: "跳过",
+						action: "skip",
+					},
+				);
+			} else {
+				suggestions.push(
+					{
+						id: "retry-param",
+						label: "修正参数重试",
+						action: "retry",
+						description: "尝试用修正后的参数重新执行",
+						isRecommended: true,
+					},
+					{
+						id: "skip-param",
+						label: "跳过",
+						action: "skip",
+					},
+				);
+			}
 			break;
 
 		case "not_found":

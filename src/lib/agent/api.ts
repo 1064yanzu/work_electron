@@ -146,9 +146,14 @@ export interface NoteChunkSearchHit {
 export async function createAgentSession(
 	title?: string,
 	projectId?: string | null,
+	configJson?: Record<string, unknown> | null,
 ): Promise<AgentSession> {
 	return await safeInvoke("agent_create_session", {
-		payload: { title, project_id: projectId },
+		payload: {
+			title,
+			project_id: projectId,
+			config_json: configJson ?? undefined,
+		},
 	});
 }
 

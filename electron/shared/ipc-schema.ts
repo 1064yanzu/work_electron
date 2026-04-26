@@ -1083,7 +1083,11 @@ export type IPCSchema = {
 	// Agent Runtime（会话/消息等）
 	// ==================
 	agent_create_session: {
-		input: { title?: string; config_json?: unknown };
+		input: {
+			title?: string;
+			project_id?: string | null;
+			config_json?: unknown;
+		};
 		output: AgentSession;
 	};
 	agent_get_session: {
@@ -1091,7 +1095,7 @@ export type IPCSchema = {
 		output: AgentSession | null;
 	};
 	agent_list_sessions: {
-		input: { status?: string; limit?: number };
+		input: { status?: string; limit?: number; project_id?: string | null };
 		output: AgentSession[];
 	};
 	agent_update_session: {

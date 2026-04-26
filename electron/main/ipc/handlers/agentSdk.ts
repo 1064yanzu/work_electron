@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import fsp from "node:fs/promises";
 import path from "node:path";
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
@@ -20,13 +19,12 @@ import {
 	normalizeNumber,
 	normalizeSettingSources,
 	normalizeToolSearchMode,
-	isLikelyWritingTask,
-	pickWritingSkill,
-	syncSkillsToCwd,
 	uniqStrings,
-	listProjectSkills,
 	normalizeAdditionalDirectories,
 	normalizePlugins,
+	resolveSkillSettingSources,
+	listProjectSkills,
+	syncSkillsToCwd,
 	writeClaudeConfigSettings,
 } from "./agentSdk/configManager";
 import {
@@ -50,20 +48,16 @@ import {
 } from "./agentSdk/fileResolver";
 import { analyzeBashCommand } from "./agentSdk/bashAnalyzer";
 import {
-	type AgentModelSettingsLike,
-	matchScenarioAgentForPrompt,
-	buildSubagentAliasMap,
-	resolveSubagentType,
-	buildDynamicScenarioAgents,
-	buildSubagentPolicyAppend,
-	buildCustomSystemPrompt,
-} from "./agentSdk/scenarioAgents";
+	buildMissingRequiredToolParamsMessage,
+	getMissingRequiredToolParams,
+	hasRequiredToolParamValue,
+	normalizeToolNameKey,
+	shouldPreserveEmptyStringParam,
+} from "./agentSdk/toolValidation";
+import type { AgentModelSettingsLike } from "./agentSdk/scenarioAgents";
 import {
-	buildLeaderCollaborationPrompt,
 	buildMultiAgentRuntime,
 	buildRuntimeMetadata,
-	buildStableTaskSpine,
-	buildSubagentCapsuleContext,
 	normalizeMultiAgentMode,
 	normalizeTeammateMode,
 } from "./agentSdk/multiAgentRuntime";
@@ -86,6 +80,19 @@ export function createAgentSdkHandlers(options: {
 	db: DbContext;
 }) {
 	const logger = options.logger;
+
+	const mergeUpdatedToolInput = (
+		baseInput: Record<string, unknown>,
+		updatedInput?: Record<string, unknown>,
+	): Record<string, unknown> => {
+		if (!updatedInput || typeof updatedInput !== "object") {
+			return baseInput;
+		}
+		return {
+			...baseInput,
+			...updatedInput,
+		};
+	};
 
 	let cachedAgentModelSettings: { loadedAt: number; settings: any } | null =
 		null;
@@ -184,6 +191,10 @@ export function createAgentSdkHandlers(options: {
 				const toolNameById = new Map<string, string>();
 				const toolUseIdByIndex = new Map<number, string>();
 				const toolInputJsonById = new Map<string, string>();
+				const preToolInputByToolUseId = new Map<
+					string,
+					Record<string, unknown>
+				>();
 				const taskCallSignatureByToolUseId = new Map<string, string>();
 				const taskCallStateBySignature = new Map<
 					string,
@@ -306,35 +317,8 @@ export function createAgentSdkHandlers(options: {
 
 				// 【调试】打印 cwd 到控制台
 				console.log(`[agent_sdk] Starting with cwd='${cwd}'`);
-
-				// 检查 skills 目录
-				const skillsDir = path.join(cwd, ".claude", "skills");
-				try {
-					const skillEntries = await fsp.readdir(skillsDir, {
-						withFileTypes: true,
-					});
-					const skillNames = skillEntries
-						.filter((e) => e.isDirectory() && !e.name.startsWith("."))
-						.map((e) => e.name);
-					logger.info({
-						msg: "agent_sdk skills directory",
-						scope: "agent",
-						runId,
-						skillsDir,
-						skillNames,
-					});
-				} catch (e) {
-					logger.info({
-						msg: "agent_sdk skills directory not accessible",
-						scope: "agent",
-						runId,
-						skillsDir,
-						error: e instanceof Error ? e.message : String(e),
-					});
-				}
-
-				// 让 SDK 的 Skill tool 能在 project settings（cwd/.claude/skills）里发现 skills
-				await syncSkillsToCwd(cwd, stderr);
+				const skillsFromInput = normalizeStringArray((input as any).skills);
+				const appSkillSelectionProvided = Array.isArray((input as any).skills);
 
 				// 验证 wiki_scope_path（需要实际存在 .llm-wiki/ 目录才生效）
 				const resolvedWikiScopePath =
@@ -360,46 +344,8 @@ export function createAgentSdkHandlers(options: {
 						? [...allowedRaw, "AskUserQuestion"]
 						: [...allowedRaw],
 				);
-				const skillsFromInput = normalizeStringArray((input as any).skills);
-				const skillsFromProject = await listProjectSkills(cwd);
-				const enabledSkills = uniqStrings([
-					...skillsFromInput,
-					...skillsFromProject,
-				]);
-				const preferredWritingSkill = pickWritingSkill(enabledSkills);
 				const agentModelSettings =
 					(await loadAgentModelSettingsFromDb()) as AgentModelSettingsLike | null;
-				try {
-					const configs = Array.isArray(
-						(agentModelSettings as any)?.scenarioConfigs,
-					)
-						? ((agentModelSettings as any).scenarioConfigs as any[])
-						: [];
-					const enabledCount = configs.filter(
-						(c) => c && c.enabled !== false,
-					).length;
-					logger.info({
-						msg: "agent_sdk scenario+skills loaded",
-						scope: "agent",
-						runId,
-						scenarioConfigsTotal: configs.length,
-						scenarioConfigsEnabled: enabledCount,
-						projectSkillsCount: skillsFromProject.length,
-						inputSkillsCount: skillsFromInput.length,
-						enabledSkillsCount: enabledSkills.length,
-						enabledSkillsPreview: enabledSkills.slice(0, 20),
-					});
-				} catch {}
-				const scenarioAgents = buildDynamicScenarioAgents({
-					settings: agentModelSettings,
-					enabledSkills,
-					logger,
-				});
-				const subagentPolicyAppend = buildSubagentPolicyAppend({
-					settings: agentModelSettings,
-					enabledSkills,
-					logger,
-				});
 				const resumeSessionIdRaw =
 					typeof (input as any).resume_session_id === "string"
 						? (input as any).resume_session_id.trim()
@@ -427,10 +373,12 @@ export function createAgentSdkHandlers(options: {
 						: "";
 				const resumeSessionAt = resumeSessionAtRaw || undefined;
 				const runtimeConfig = (agentModelSettings as any)?.contextRuntime || {};
+				// 默认不限制主代理轮数（undefined → SDK 不强制截断），让长程任务能完整推进。
+				// 调用方/设置面板仍可通过 input.max_turns / runtimeConfig.maxTurns 显式覆盖。
+				// 失控保护交给 max_budget_usd 和用户的 abort 能力。
 				const maxTurns =
 					normalizeNumber((input as any).max_turns) ??
-					normalizeNumber(runtimeConfig?.maxTurns) ??
-					24;
+					normalizeNumber(runtimeConfig?.maxTurns);
 				const maxThinkingTokens =
 					normalizeNumber((input as any).max_thinking_tokens) ??
 					normalizeNumber(runtimeConfig?.maxThinkingTokens) ??
@@ -441,60 +389,15 @@ export function createAgentSdkHandlers(options: {
 				const settingSources = normalizeSettingSources(
 					(input as any).setting_sources ?? runtimeConfig?.settingSources,
 				);
+				const effectiveSettingSources = resolveSkillSettingSources(
+					settingSources,
+					appSkillSelectionProvided ? skillsFromInput : undefined,
+				);
 				const betas = uniqStrings(
 					normalizeStringArray(
 						(input as any).betas ?? runtimeConfig?.betas ?? [],
 					),
 				);
-				const rawContextPolicy = String(
-					(input as any).context_policy ?? runtimeConfig?.contextPolicy ?? "",
-				).trim();
-				const contextPolicy: "balanced" | "strict" | "aggressive" =
-					rawContextPolicy === "strict" || rawContextPolicy === "aggressive"
-						? rawContextPolicy
-						: "balanced";
-				const subagentContextMode =
-					String(
-						(input as any).subagent_context_mode ??
-							runtimeConfig?.subagentContextMode ??
-							"capsule",
-					).trim() === "inherit"
-						? "inherit"
-						: "capsule";
-				const contextBudgetRaw =
-					(input as any).context_budget &&
-					typeof (input as any).context_budget === "object"
-						? ((input as any).context_budget as Record<string, unknown>)
-						: runtimeConfig?.contextBudget &&
-								typeof runtimeConfig.contextBudget === "object"
-							? (runtimeConfig.contextBudget as Record<string, unknown>)
-							: {};
-				const contextBudget = {
-					max_context_chars: Math.max(
-						1000,
-						Math.floor(
-							normalizeNumber(contextBudgetRaw.max_context_chars) ??
-								normalizeNumber((contextBudgetRaw as any).maxContextChars) ??
-								16000,
-						),
-					),
-					max_files: Math.max(
-						1,
-						Math.floor(
-							normalizeNumber(contextBudgetRaw.max_files) ??
-								normalizeNumber((contextBudgetRaw as any).maxFiles) ??
-								12,
-						),
-					),
-					max_file_chars: Math.max(
-						500,
-						Math.floor(
-							normalizeNumber(contextBudgetRaw.max_file_chars) ??
-								normalizeNumber((contextBudgetRaw as any).maxFileChars) ??
-								6000,
-						),
-					),
-				};
 				const enableToolSearch = normalizeToolSearchMode(
 					(input as any).enable_tool_search ?? runtimeConfig?.enableToolSearch,
 				);
@@ -548,16 +451,6 @@ export function createAgentSdkHandlers(options: {
 					teammateExecutionModel,
 				});
 				const runtimeMetadata = buildRuntimeMetadata(multiAgentRuntime);
-				const stableTaskSpine = buildStableTaskSpine({
-					prompt: String(input.prompt ?? ""),
-					systemPrompt:
-						typeof input.system_prompt === "string"
-							? input.system_prompt
-							: undefined,
-					contextPolicy,
-					subagentContextMode,
-					runtime: multiAgentRuntime,
-				});
 				const mcpServers =
 					(input as any).mcp_servers &&
 					typeof (input as any).mcp_servers === "object"
@@ -568,6 +461,23 @@ export function createAgentSdkHandlers(options: {
 					(input as any).additional_directories,
 				);
 				const plugins = await normalizePlugins(cwd, (input as any).plugins);
+				if (appSkillSelectionProvided) {
+					await syncSkillsToCwd(cwd, stderr, skillsFromInput);
+				}
+				const projectSkills = await listProjectSkills(cwd);
+				logger.info({
+					msg: appSkillSelectionProvided
+						? "agent_sdk managed skills prepared"
+						: "agent_sdk native skills prepared",
+					scope: "agent",
+					runId,
+					inputSkillsCount: skillsFromInput.length,
+					inputSkillsPreview: skillsFromInput.slice(0, 8),
+					projectSkillsCount: projectSkills.length,
+					projectSkillsPreview: projectSkills.slice(0, 8),
+					settingSources,
+					effectiveSettingSources,
+				});
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
 					input.permission_mode.trim()
@@ -586,35 +496,14 @@ export function createAgentSdkHandlers(options: {
 					runId,
 					stderr,
 					emitLifecycleEvent,
-					subagentAdditionalContext: buildSubagentCapsuleContext({
-						prompt: String(input.prompt ?? ""),
-						runtime: multiAgentRuntime,
-					}),
 					runtimeMetadata,
 				});
-				// 预声明记忆变量（供 lifecycle hooks 和 UserPromptSubmit hook 使用）
-				let memoryContextBuilder:
-					| ((currentPrompt: string) => Promise<string>)
-					| null = null;
-				let coreMemoryContext = "";
 
 				const lifecycleHooks = createLifecycleHooks({
 					logger,
 					runId,
 					stderr,
 					emitLifecycleEvent,
-					sessionAdditionalContext: [stableTaskSpine, coreMemoryContext]
-						.filter(Boolean)
-						.join("\n\n"),
-					preCompactAdditionalContext: [
-						stableTaskSpine,
-						"压缩后必须保留：任务目标、硬性约束、当前进度、未完成事项、协作策略。",
-						coreMemoryContext
-							? `以下是用户核心记忆，压缩后务必保留：\n${coreMemoryContext}`
-							: "",
-					]
-						.filter(Boolean)
-						.join("\n"),
 					runtimeMetadata,
 					experimentalMultiAgentEnabled: multiAgentRuntime.experimentalEnabled,
 				});
@@ -625,67 +514,27 @@ export function createAgentSdkHandlers(options: {
 						: [...allowed],
 				);
 
-				// 注意: SDK Options 不直接支持 skills 参数
-				// Skills 通过 system prompt 和 syncSkillsToCwd 来处理
+				// 当应用侧传入 skills 数组时，左栏启用状态成为 Skill Tool 的真实边界：
+				// 先同步到项目沙盒，再仅从 project settings 加载，避免外部命令/用户级技能漂移。
 
 				// 【调试】确认 canUseTool 被传入 options
 				console.log(
 					`[agent_sdk] About to call sdk.query with cwd='${cwd}', hasCanUseTool=true`,
 				);
 
-				const agentsConfig = {
-					...scenarioAgents,
-					reader: {
-						description:
-							"Reads provided files and extracts key facts/summaries.",
-						prompt:
-							"Read only the minimum necessary from the provided working directory files using Read/Glob/Grep. Return a concise bullet summary and any key quotes only if necessary.",
-						model:
-							typeof (scenarioAgents as any)?.fast_search?.model === "string"
-								? String((scenarioAgents as any).fast_search.model)
-								: undefined,
-						tools: ["Read", "Glob", "Grep"],
-						disallowedTools: ["Task"],
-					},
-					writer: {
-						description:
-							"Writes polished content (Xiaohongshu/marketing/copywriting) based on provided facts.",
-						prompt:
-							"Write in Chinese, follow the user's requested style (e.g., 小红书). Prefer using Skill tool when a matching writing skill is available. Do not paste full source files; use extracted facts only.",
-						model:
-							typeof (scenarioAgents as any)?.writing?.model === "string"
-								? String((scenarioAgents as any).writing.model)
-								: undefined,
-						tools: ["Skill", "Read", "Glob", "Grep"],
-						disallowedTools: ["Task"],
-						skills: enabledSkills.length > 0 ? enabledSkills : undefined,
-					},
-				};
-				const subagentAliasToKey = buildSubagentAliasMap(agentsConfig as any);
-
 				// 【调试】记录传递给 SDK 的 agents 配置
 				logger.info({
-					msg: "agent_sdk agentsConfig before sdk.query",
+					msg: "agent_sdk native prompt mode before sdk.query",
 					scope: "agent",
 					runId,
 					hasExplicitAllowedTools,
+					settingSources: effectiveSettingSources,
 					allowedToolsCount: allowedToolsForRun.length,
 					allowedToolsHasTask: allowedToolsForRun.includes("Task"),
 					allowedToolsHasTeammate: allowedToolsForRun.includes("Teammate"),
 					multiAgentRuntime,
-					agentKeys: Object.keys(agentsConfig),
-					agentsPreview: Object.entries(agentsConfig).map(([k, v]) => ({
-						key: k,
-						hasDescription: !!(v as any)?.description,
-						hasPrompt: !!(v as any)?.prompt,
-						model: (v as any)?.model?.slice?.(0, 50) ?? (v as any)?.model,
-					})),
+					agents: "filesystem/native",
 				});
-				const userPromptHintFingerprint = new Set<string>();
-				const normalizedContextPolicy: "balanced" | "strict" | "aggressive" =
-					contextPolicy === "strict" || contextPolicy === "aggressive"
-						? contextPolicy
-						: "balanced";
 
 				// Fix: SDK uses import.meta.url to resolve cli.js at runtime. When the SDK
 				// gets bundled into dist-electron/sdk-*.js, import.meta.url points to
@@ -704,43 +553,6 @@ export function createAgentSdkHandlers(options: {
 					);
 					return fs.existsSync(candidate) ? candidate : undefined;
 				})();
-
-				// 构建记忆上下文 — 用于 UserPromptSubmit hook 动态注入（每轮对话按当前 prompt 做相关性匹配）
-				const modelStr = String(input.model ?? "").toLowerCase();
-				const isClaudeModel =
-					modelStr.includes("claude") ||
-					modelStr.includes("anthropic") ||
-					modelStr === "";
-				if (isClaudeModel) {
-					try {
-						const { buildMemoryContextForAgent } = await import(
-							"./agentMemoryService"
-						);
-						// 预加载 instruction 类核心记忆（不随 prompt 变化）
-						coreMemoryContext = await buildMemoryContextForAgent(options.db, {
-							limit: 10,
-							minRelevanceScore: 0.5,
-							categories: ["instruction", "preference"],
-							maxChars: 1000,
-						});
-						// 构建一个可复用的 builder，在每轮 UserPromptSubmit 中按当前 prompt 匹配
-						memoryContextBuilder = async (currentPrompt: string) => {
-							return buildMemoryContextForAgent(options.db, {
-								limit: 30,
-								minRelevanceScore: 0.3,
-								query: currentPrompt,
-								maxChars: 3000,
-							});
-						};
-					} catch (memErr) {
-						logger.warn({
-							msg: "Failed to build memory context",
-							scope: "agent",
-							runId,
-							error: memErr instanceof Error ? memErr.message : String(memErr),
-						});
-					}
-				}
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -765,7 +577,6 @@ export function createAgentSdkHandlers(options: {
 							: multiAgentRuntime.experimentalEnabled
 								? allowedToolsForRun
 								: undefined,
-						agents: agentsConfig as any,
 						hooks: {
 							...lifecycleHooks,
 							...subagentLifecycleHooks,
@@ -783,6 +594,20 @@ export function createAgentSdkHandlers(options: {
 											}
 											const toolName = (hookInput as any).tool_name || "";
 											const toolInput = (hookInput as any).tool_input || {};
+											const toolUseId =
+												typeof (hookInput as any).tool_use_id === "string"
+													? String((hookInput as any).tool_use_id).trim()
+													: "";
+
+											if (
+												toolUseId &&
+												toolInput &&
+												typeof toolInput === "object"
+											) {
+												preToolInputByToolUseId.set(toolUseId, {
+													...(toolInput as Record<string, unknown>),
+												});
+											}
 
 											console.log(
 												`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`,
@@ -790,7 +615,7 @@ export function createAgentSdkHandlers(options: {
 
 											const toolLower = String(toolName).toLowerCase();
 
-											// 处理 Task(subagent) 调用：兼容用户/模型用中文描述填写 subagent_type
+											// 处理 Task(subagent) 调用：仅做重复调用防护，不改写 SDK 原生 subagent 输入。
 											if (
 												toolLower === "task" &&
 												toolInput &&
@@ -803,70 +628,6 @@ export function createAgentSdkHandlers(options: {
 												let normalizedInput: Record<string, unknown> = {
 													...inputAny,
 												};
-												let normalizedChanged = false;
-												const rawSubType =
-													typeof inputAny.subagent_type === "string"
-														? inputAny.subagent_type
-														: typeof inputAny.subagentType === "string"
-															? inputAny.subagentType
-															: null;
-												if (rawSubType) {
-													const resolved = resolveSubagentType(
-														rawSubType,
-														agentsConfig,
-														subagentAliasToKey,
-													);
-													if (resolved && resolved !== rawSubType) {
-														console.log(
-															`[PreToolUse] ✓ subagent_type rewritten: '${rawSubType}' -> '${resolved}'`,
-														);
-														normalizedInput = {
-															...normalizedInput,
-															subagent_type: resolved,
-															subagentType: resolved,
-														};
-														normalizedChanged = true;
-													}
-												}
-
-												// 若 Task prompt 中携带了明确文件路径，强制补充“先 Read 文件再作图/写作”的执行约束
-												const taskPrompt =
-													typeof normalizedInput.prompt === "string"
-														? normalizedInput.prompt
-														: "";
-												if (taskPrompt) {
-													const pathMatches =
-														taskPrompt.match(
-															/(?:\/Users\/[^\n"'`]+?\.[A-Za-z0-9]{1,8}|\/[^\n"'`]+?\.[A-Za-z0-9]{1,8})/g,
-														) || [];
-													const existingPaths: string[] = [];
-													for (const raw of pathMatches.slice(0, 8)) {
-														const candidate = String(raw || "")
-															.trim()
-															.replace(/[),，。；;:]+$/g, "");
-														if (!candidate || existingPaths.includes(candidate))
-															continue;
-														try {
-															if (fs.existsSync(candidate)) {
-																existingPaths.push(candidate);
-															}
-														} catch {}
-													}
-													const hasReadConstraint =
-														/先读取|先用Read|使用 Read|Read 工具|先用 read|read 工具/i.test(
-															taskPrompt,
-														);
-													if (existingPaths.length > 0 && !hasReadConstraint) {
-														const readHint =
-															`\n\n执行要求：你必须先使用 Read 工具读取以下文件后再继续，不得只根据标题猜测内容：\n` +
-															existingPaths.map((p) => `- ${p}`).join("\n");
-														normalizedInput = {
-															...normalizedInput,
-															prompt: `${taskPrompt}${readHint}`,
-														};
-														normalizedChanged = true;
-													}
-												}
 
 												const signature =
 													buildTaskCallSignature(normalizedInput);
@@ -894,15 +655,85 @@ export function createAgentSdkHandlers(options: {
 														);
 													}
 												}
+											}
 
-												// 如有输入规范化（subagent_type / prompt），回写 updatedInput
-												if (normalizedChanged) {
+											let effectiveToolInput: Record<string, unknown> =
+												toolInput && typeof toolInput === "object"
+													? { ...(toolInput as Record<string, unknown>) }
+													: {};
+
+											// 通用清洗：移除空字符串参数（如 pages: ""、pattern: "" 等）
+											// 模型（尤其非 Claude 模型）经常为可选参数生成空字符串，导致 SDK 校验失败
+											if (toolInput && typeof toolInput === "object") {
+												const sanitizedInput: Record<string, unknown> = {};
+												let hasSanitized = false;
+												for (const [k, v] of Object.entries(toolInput)) {
+													if (v === "") {
+														if (shouldPreserveEmptyStringParam(toolName, k)) {
+															sanitizedInput[k] = v;
+															continue;
+														}
+														hasSanitized = true;
+														console.log(
+															`[PreToolUse] ✓ Stripped empty param '${k}' from ${toolName}`,
+														);
+														continue;
+													}
+													sanitizedInput[k] = v;
+												}
+												effectiveToolInput = sanitizedInput;
+												if (
+													normalizeToolNameKey(toolName) === "read" &&
+													!hasRequiredToolParamValue(effectiveToolInput, {
+														name: "file_path",
+														aliases: ["path", "file"],
+													})
+												) {
+													const guessed = await guessDefaultReadableFilePath(cwd);
+													if (guessed) {
+														effectiveToolInput = {
+															...effectiveToolInput,
+															file_path: guessed,
+														};
+														hasSanitized = true;
+														console.log(
+															`[PreToolUse] ✓ Auto-filled Read file_path='${guessed}'`,
+														);
+													}
+												}
+												const missingRequired = getMissingRequiredToolParams(
+													toolName,
+													effectiveToolInput,
+												);
+												if (missingRequired.length > 0) {
+													const reason = buildMissingRequiredToolParamsMessage(
+														toolName,
+														missingRequired,
+													);
+													stderr(
+														`[PreToolUse] Denied invalid ${toolName}: ${reason}`,
+													);
+													return {
+														continue: true,
+														hookSpecificOutput: {
+															hookEventName: "PreToolUse" as const,
+															permissionDecision: "deny" as const,
+															permissionDecisionReason: reason,
+														},
+													};
+												}
+												if (hasSanitized) {
+													if (toolUseId) {
+														preToolInputByToolUseId.set(toolUseId, {
+															...sanitizedInput,
+														});
+													}
 													return {
 														continue: true,
 														hookSpecificOutput: {
 															hookEventName: "PreToolUse" as const,
 															permissionDecision: "allow" as const,
-															updatedInput: normalizedInput,
+															updatedInput: sanitizedInput,
 														},
 													};
 												}
@@ -915,16 +746,18 @@ export function createAgentSdkHandlers(options: {
 												)
 											) {
 												const key =
-													typeof toolInput.file_path === "string"
+													typeof effectiveToolInput.file_path === "string"
 														? "file_path"
-														: typeof toolInput.path === "string"
+														: typeof effectiveToolInput.path === "string"
 															? "path"
-															: typeof toolInput.file === "string"
+															: typeof effectiveToolInput.file === "string"
 																? "file"
 																: null;
 
 												if (key) {
-													const rawPath = String(toolInput[key] || "").trim();
+													const rawPath = String(
+														effectiveToolInput[key] || "",
+													).trim();
 													if (rawPath) {
 														console.log(
 															`[PreToolUse] Resolving path: '${rawPath}' in cwd='${cwd}'`,
@@ -937,16 +770,23 @@ export function createAgentSdkHandlers(options: {
 															console.log(
 																`[PreToolUse] ✓ Rewritten: '${rawPath}' -> '${resolved}'`,
 															);
+															const nextUpdatedInput = {
+																...effectiveToolInput,
+																[key]: resolved,
+																file_path: resolved,
+															};
+															if (toolUseId) {
+																preToolInputByToolUseId.set(
+																	toolUseId,
+																	nextUpdatedInput as Record<string, unknown>,
+																);
+															}
 															return {
 																continue: true,
 																hookSpecificOutput: {
 																	hookEventName: "PreToolUse" as const,
 																	permissionDecision: "allow" as const,
-																	updatedInput: {
-																		...toolInput,
-																		[key]: resolved,
-																		file_path: resolved,
-																	},
+																	updatedInput: nextUpdatedInput,
 																},
 															};
 														}
@@ -974,15 +814,22 @@ export function createAgentSdkHandlers(options: {
 													console.log(
 														`[PreToolUse] ✓ Bash rewritten: '${cmd}' -> '${rewritten}'`,
 													);
+													const nextUpdatedInput = {
+														...toolInput,
+														command: rewritten,
+													};
+													if (toolUseId) {
+														preToolInputByToolUseId.set(
+															toolUseId,
+															nextUpdatedInput as Record<string, unknown>,
+														);
+													}
 													return {
 														continue: true,
 														hookSpecificOutput: {
 															hookEventName: "PreToolUse" as const,
 															permissionDecision: "allow" as const,
-															updatedInput: {
-																...toolInput,
-																command: rewritten,
-															},
+															updatedInput: nextUpdatedInput,
 														},
 													};
 												}
@@ -1084,154 +931,6 @@ export function createAgentSdkHandlers(options: {
 									],
 								},
 							],
-							UserPromptSubmit: [
-								{
-									hooks: [
-										async (hookInput: any) => {
-											const promptText =
-												hookInput.hook_event_name === "UserPromptSubmit"
-													? String((hookInput as any).prompt ?? "")
-													: "";
-											const inSubagentContext = Boolean(
-												(hookInput as any)?.parent_tool_use_id ||
-													(hookInput as any)?.agent_id ||
-													(hookInput as any)?.agent_type,
-											);
-											const maxAdditionalChars = 4000; // 包含记忆上下文的合理上限
-											const additions: string[] = [];
-											const pushHint = (
-												fingerprint: string,
-												content: string,
-											) => {
-												if (!content.trim()) return;
-												if (userPromptHintFingerprint.has(fingerprint)) return;
-												userPromptHintFingerprint.add(fingerprint);
-												additions.push(content.trim());
-											};
-											pushHint(
-												"read-rule",
-												"读取文件请优先使用 Read/Glob/Grep 等内置工具（不要依赖通配符 Bash）。",
-											);
-											pushHint(
-												`context-policy:${normalizedContextPolicy}`,
-												`上下文策略：${normalizedContextPolicy}；子代理上下文模式：${subagentContextMode}。`,
-											);
-											pushHint(
-												"context-budget",
-												`上下文预算：max_context_chars=${contextBudget.max_context_chars}, max_files=${contextBudget.max_files}, max_file_chars=${contextBudget.max_file_chars}。`,
-											);
-											pushHint("stable-task-spine", stableTaskSpine);
-
-											// 动态注入记忆上下文 — 每轮根据当前 prompt 做相关性匹配
-											if (memoryContextBuilder && promptText.trim()) {
-												try {
-													const memCtx = await memoryContextBuilder(promptText);
-													if (memCtx.trim()) {
-														// 记忆不走去重，每轮都注入最新匹配的记忆
-														additions.push(memCtx.trim());
-													}
-												} catch {
-													// 记忆注入失败不影响主流程
-												}
-											}
-
-											if (multiAgentRuntime.experimentalEnabled) {
-												pushHint(
-													"multi-agent-policy",
-													`多 Agent 实验已开启：mode=${multiAgentRuntime.multiAgentMode}, max_teammates=${multiAgentRuntime.maxTeammates}, teammate_mode=${multiAgentRuntime.teammateMode}。优先使用最小 brief 协作；Teammate 不可用时回退 Task。`,
-												);
-											}
-
-											if (!inSubagentContext) {
-												const matchedScenarioAgent =
-													matchScenarioAgentForPrompt({
-														settings: agentModelSettings,
-														promptText,
-													});
-												if (matchedScenarioAgent) {
-													pushHint(
-														`subagent-match:${matchedScenarioAgent.agentKey}`,
-														`⚠️ 你的请求可能与子代理「${matchedScenarioAgent.description}」语义相关。请优先调用 Task({ subagent_type: "${matchedScenarioAgent.agentKey}", ... })；如需补充上下文，可先做最小必要的 Read/Glob/Grep。`,
-													);
-												}
-											}
-
-											// === LLM Wiki 主动注入（Karpathy 最佳实践）===
-											// wiki 是 raw materials 的"编译版本"，是首要知识源。
-											// 在每轮上下文里注入 index.md，让 Agent 随时知道 wiki 里有什么，
-											// 避免写作/查询任务绕过 wiki 直接走 skill 或训练数据。
-											if (resolvedWikiScopePath && !inSubagentContext) {
-												try {
-													const wikiIndexPath = path.join(
-														resolvedWikiScopePath,
-														".llm-wiki",
-														"index.md",
-													);
-													const indexContent = await fsp.readFile(
-														wikiIndexPath,
-														"utf-8",
-													);
-													if (indexContent.trim()) {
-														// 截断防止占用过多 context
-														const cappedIndex =
-															indexContent.length > 3000
-																? `${indexContent.slice(0, 3000)}\n...(index.md 已截断，完整内容请用 Read 工具读取)`
-																: indexContent;
-														pushHint(
-															"wiki-index",
-															`## 你的知识 Wiki 目录（Karpathy LLM Wiki）\n以下是 \`${resolvedWikiScopePath}/.llm-wiki/index.md\` 的内容。这是你的原始资料的**LLM 编译版本**，是回答用户问题、执行写作任务的**首要知识源**。\n\n当用户说"根据材料"时，这里的 wiki 页面就是那些材料。写作/分析前先读相关 wiki 页面，而不是依赖训练数据。\n\n${cappedIndex}`,
-														);
-													}
-												} catch {
-													// index.md 不存在或读取失败，跳过注入
-												}
-											}
-
-											if (
-												!inSubagentContext &&
-												isLikelyWritingTask(promptText)
-											) {
-												const hasWiki = Boolean(resolvedWikiScopePath);
-												if (preferredWritingSkill) {
-													pushHint(
-														"writing-skill-preferred",
-														hasWiki
-															? `这是写作任务，且你有知识 Wiki：**先读 wiki 相关页面（从 index.md 导航）获取材料，再调用 Skill（skill="${preferredWritingSkill}"）生成输出**，最后根据 wiki 内容填充细节。`
-															: `这是写作任务：请先调用 Skill 工具（skill="${preferredWritingSkill}"）生成初稿/框架，再根据需要整理为最终输出。`,
-													);
-												} else if (enabledSkills.length > 0) {
-													pushHint(
-														"writing-skill-any",
-														hasWiki
-															? `这是写作任务，且你有知识 Wiki：先读 wiki 相关页面，再视需要调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`
-															: `这是写作任务：如果有合适技能，请先调用 Skill 工具（可用技能：${enabledSkills.slice(0, 8).join(", ")}）。`,
-													);
-												}
-
-												pushHint(
-													"writing-subagent-pattern",
-													'为减少上下文污染：请用 Task 工具把"读资料/提炼要点"委派给 reader 子代理，把"写作成文"委派给 writer 子代理，然后你只输出最终结果。',
-												);
-											}
-
-											let additionalContext = additions.join("\n");
-											if (additionalContext.length > maxAdditionalChars) {
-												additionalContext =
-													additionalContext.slice(0, maxAdditionalChars) +
-													"\n...(系统提示已截断)";
-											}
-
-											return {
-												continue: true,
-												hookSpecificOutput: {
-													hookEventName: "UserPromptSubmit",
-													additionalContext,
-												},
-											};
-										},
-									],
-								},
-							],
 						},
 						permissionMode: permissionModeForRun as any,
 						additionalDirectories: (() => {
@@ -1250,8 +949,8 @@ export function createAgentSdkHandlers(options: {
 						plugins: plugins.length > 0 ? plugins : undefined,
 						sandbox: sandboxSettings as any,
 						// CRITICAL: settingSources 告诉 SDK 从文件系统加载 skills
-						// 默认 user+project，可由 UI/调用方覆盖
-						settingSources: settingSources as any,
+						// 应用侧传入 skills 时改为 project-only，确保左栏 Skill 管理真实生效。
+						settingSources: effectiveSettingSources as any,
 						tools: hasExplicitAllowedTools
 							? allowedToolsForRun
 							: { type: "preset", preset: "claude_code" },
@@ -1261,8 +960,9 @@ export function createAgentSdkHandlers(options: {
 									"team-name": multiAgentRuntime.teamId,
 									"agent-name": "leader",
 									"agent-type": "leader",
-									"parent-session-id":
-										multiAgentRuntime.parentSessionId || null,
+									...(multiAgentRuntime.parentSessionId
+										? { "parent-session-id": multiAgentRuntime.parentSessionId }
+										: {}),
 									"teammate-mode": multiAgentRuntime.teammateMode,
 								}
 							: undefined,
@@ -1302,24 +1002,21 @@ export function createAgentSdkHandlers(options: {
 						includePartialMessages: true,
 						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
 						stream: true,
-						// 使用精简版系统提示词，移除 Claude Code preset 中不需要的内容
-						// 保留工具使用说明、Skill 调用、子代理配置等核心功能
-						systemPrompt: buildCustomSystemPrompt({
-							cwd,
-							model: String(input.model ?? ""),
-							availableTools: allowedToolsForRun,
-							wikiScopePath: resolvedWikiScopePath,
-							appendContent: [
-								input.system_prompt,
-								subagentPolicyAppend,
-								buildLeaderCollaborationPrompt({
-									runtime: multiAgentRuntime,
-								}),
-								// 记忆不再静态注入 systemPrompt，改为通过 UserPromptSubmit hook 每轮动态注入
-							]
-								.filter((s) => typeof s === "string" && s.trim())
-								.join("\n\n"),
-						}),
+						// 使用 Claude Code 原生 preset，不再追加业务提示词、skills 策略或动态上下文。
+						systemPrompt:
+							typeof input.system_prompt === "string" &&
+							input.system_prompt.trim()
+								? {
+										type: "preset" as const,
+										preset: "claude_code" as const,
+										append: input.system_prompt.trim(),
+										excludeDynamicSections: true,
+									}
+								: {
+										type: "preset" as const,
+										preset: "claude_code" as const,
+										excludeDynamicSections: true,
+									},
 						canUseTool: async (
 							toolName: string,
 							toolInput: any,
@@ -1348,6 +1045,89 @@ export function createAgentSdkHandlers(options: {
 								toolInput && typeof toolInput === "object"
 									? { ...(toolInput as Record<string, unknown>) }
 									: {};
+							const toolLower = String(toolName || "").toLowerCase();
+							const currentToolUseId =
+								typeof extra?.toolUseID === "string"
+									? String(extra.toolUseID).trim()
+									: "";
+							const preToolInput =
+								currentToolUseId &&
+								preToolInputByToolUseId.has(currentToolUseId)
+									? preToolInputByToolUseId.get(currentToolUseId)
+									: undefined;
+							if (
+								toolLower === "bash" &&
+								typeof rewrittenInput.command !== "string" &&
+								preToolInput &&
+								typeof preToolInput.command === "string" &&
+								preToolInput.command.trim()
+							) {
+								rewrittenInput = {
+									...preToolInput,
+									...rewrittenInput,
+									command: preToolInput.command,
+								};
+								stderr(
+									`[agent_sdk] Restored missing Bash command from PreToolUse cache (toolUseId=${currentToolUseId})`,
+								);
+							}
+
+							// 通用清洗：移除空字符串参数（如 pages: ""、pattern: "" 等）
+							// 非 Claude 模型（GPT-5.5、Gemini 等）经常为可选参数生成空字符串，
+							// 导致 SDK 内部校验失败（如 "Invalid pages parameter: """）。
+							// 必须在 canUseTool 中清洗，因为 canUseTool 返回的 updatedInput
+							// 优先于 PreToolUse hook 的 updatedInput。
+							{
+								const keysToRemove: string[] = [];
+								for (const [k, v] of Object.entries(rewrittenInput)) {
+									if (v === "") {
+										if (shouldPreserveEmptyStringParam(toolName, k)) {
+											continue;
+										}
+										keysToRemove.push(k);
+									}
+								}
+								if (keysToRemove.length > 0) {
+									for (const k of keysToRemove) {
+										delete rewrittenInput[k];
+									}
+									stderr(
+										`[canUseTool] Stripped empty params from ${toolName}: ${keysToRemove.join(", ")}`,
+									);
+								}
+							}
+
+							if (
+								toolLower === "read" &&
+								!hasRequiredToolParamValue(rewrittenInput, {
+									name: "file_path",
+									aliases: ["path", "file"],
+								})
+							) {
+								const guessed = await guessDefaultReadableFilePath(cwd);
+								if (guessed) {
+									stderr(
+										`[agent_sdk] Auto-filled Read file_path='${guessed}' (missing in tool input)`,
+									);
+									rewrittenInput = { ...rewrittenInput, file_path: guessed };
+								}
+							}
+
+							const missingRequired = getMissingRequiredToolParams(
+								toolName,
+								rewrittenInput,
+							);
+							if (missingRequired.length > 0) {
+								const message = buildMissingRequiredToolParamsMessage(
+									toolName,
+									missingRequired,
+								);
+								stderr(`[canUseTool] Denied invalid ${toolName}: ${message}`);
+								return {
+									behavior: "deny",
+									message,
+								};
+							}
 
 							// 跟踪工具操作的范围信息（用于前端 UI 展示）
 							let toolScope:
@@ -1358,8 +1138,6 @@ export function createAgentSdkHandlers(options: {
 										reason?: string;
 								  }
 								| undefined;
-
-							const toolLower = String(toolName || "").toLowerCase();
 
 							// ============================================================
 							// 文件工具路径解析 — 支持全局文件访问
@@ -1490,7 +1268,6 @@ export function createAgentSdkHandlers(options: {
 								}
 							}
 
-							// ============================================================
 							// Bash 命令分析 — 智能权限判断
 							// ============================================================
 							if (
@@ -1559,17 +1336,17 @@ export function createAgentSdkHandlers(options: {
 								}
 							}
 
-							// AskUserQuestion 不支持在 subagent 内触发
+							// AskUserQuestion 在 subagent 内触发时，依然走 interaction_request
+							// （前端不区分 main/subagent，可正常弹卡片）。
+							// 仅记录来源 agentID，便于排查。
 							if (
 								toolName === "AskUserQuestion" &&
 								typeof extra?.agentID === "string" &&
 								extra.agentID.trim()
 							) {
-								return {
-									behavior: "deny",
-									message:
-										"AskUserQuestion is not supported inside subagents. Continue from the main agent.",
-								};
+								stderr(
+									`[agent_sdk] AskUserQuestion triggered inside subagent agentID='${extra.agentID}', forwarding to UI`,
+								);
 							}
 
 							// ============================================================
@@ -1585,6 +1362,70 @@ export function createAgentSdkHandlers(options: {
 								return { behavior: "allow", updatedInput: rewrittenInput };
 							}
 
+							// ============================================================
+							// AskUserQuestion — 强制走 interaction_request
+							// 必须发送给前端，让前端弹出交互式选择卡片
+							// ============================================================
+							if (toolName === "AskUserQuestion") {
+								const askReqId = randomUUID();
+								const askTimeout = 55_000;
+								const askToolUseId =
+									typeof extra?.toolUseID === "string" ? extra.toolUseID : "";
+								const askReq: AgentSdkInteractionRequestPayload = {
+									requestId: askReqId,
+									toolName,
+									toolInput: rewrittenInput,
+									toolUseId: askToolUseId,
+									agentId:
+										typeof extra?.agentID === "string"
+											? extra.agentID
+											: undefined,
+									description:
+										typeof extra?.description === "string"
+											? extra.description
+											: undefined,
+									decisionReason:
+										typeof extra?.decisionReason === "string"
+											? extra.decisionReason
+											: undefined,
+									blockedPath:
+										typeof extra?.blockedPath === "string"
+											? extra.blockedPath
+											: undefined,
+									suggestions: Array.isArray(extra?.suggestions)
+										? extra.suggestions
+										: undefined,
+									expiresAt: Date.now() + askTimeout,
+								};
+								emit(options.getMainWindow, {
+									runId,
+									type: "interaction_request",
+									request: askReq,
+								});
+								const askDec = await interactionBroker.createRequest(
+									runId,
+									askReqId,
+									askTimeout,
+								);
+								if (askDec.behavior === "allow") {
+									const mergedUpdatedInput = mergeUpdatedToolInput(
+										rewrittenInput,
+										askDec.updatedInput,
+									);
+									return {
+										behavior: "allow",
+										updatedInput: mergedUpdatedInput,
+										updatedPermissions: Array.isArray(askDec.updatedPermissions)
+											? (askDec.updatedPermissions as any)
+											: undefined,
+									};
+								}
+								return {
+									behavior: "deny",
+									message: askDec.message || "User denied AskUserQuestion",
+									interrupt: askDec.interrupt,
+								};
+							}
 							// ============================================================
 							// 智能自动通过判断
 							// ============================================================
@@ -1640,9 +1481,13 @@ export function createAgentSdkHandlers(options: {
 								timeoutMs,
 							);
 							if (decision.behavior === "allow") {
+								const mergedUpdatedInput = mergeUpdatedToolInput(
+									rewrittenInput,
+									decision.updatedInput,
+								);
 								return {
 									behavior: "allow",
-									updatedInput: decision.updatedInput ?? rewrittenInput,
+									updatedInput: mergedUpdatedInput,
 									updatedPermissions: Array.isArray(decision.updatedPermissions)
 										? (decision.updatedPermissions as any)
 										: undefined,

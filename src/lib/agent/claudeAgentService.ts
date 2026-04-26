@@ -28,6 +28,11 @@ import {
 	permissionStore,
 } from "./permissionStore";
 import { AgentStreamState, type UIEvent } from "./streamState";
+import {
+	extractToolErrorMessageFromUnknown,
+	toFriendlyAgentRuntimeError,
+} from "./runtimeText";
+import { isClaudeFamilyModel } from "./modelGuards";
 
 /**
  * Message types that our UI understands
@@ -322,6 +327,7 @@ export class ClaudeAgentService {
 		const model =
 			userModel || settingsStore.getActiveModel() || "claude-sonnet-4-5";
 		console.log("[ClaudeAgentService] Using model for SDK:", model);
+		const isClaudeModel = isClaudeFamilyModel(model);
 		const [
 			configInteractiveApproval,
 			configPermissionMode,
@@ -450,9 +456,7 @@ export class ClaudeAgentService {
 		const resolvedMaxTurns =
 			parseNumber(maxTurns) ?? parseNumber(configMaxTurns) ?? 24;
 		const resolvedMaxThinkingTokens =
-			parseNumber(maxThinkingTokens) ??
-			parseNumber(configMaxThinkingTokens) ??
-			8192;
+			parseNumber(maxThinkingTokens) ?? parseNumber(configMaxThinkingTokens);
 		const resolvedMaxBudgetUsd =
 			parseNumber(maxBudgetUsd) ?? parseNumber(configMaxBudgetUsd);
 		const resolvedSettingSources = normalizeSettingSources(
@@ -593,6 +597,11 @@ export class ClaudeAgentService {
 		const resolvedSystemPrompt = (() => {
 			const parts: string[] = [];
 			if (systemPrompt) parts.push(systemPrompt);
+			if (!isClaudeModel && resolvedMaxThinkingTokens === undefined) {
+				parts.push(
+					"当前运行的不是 Claude 系列模型。请减少隐藏思考，优先尽快进入工具调用或直接输出可执行内容；如长时间停留在 reasoning/thinking 通道，说明该模型与 Claude Agent SDK 的兼容性一般。",
+				);
+			}
 			if (planMode) {
 				parts.push(buildPlanModeSystemPrompt());
 			}
@@ -609,6 +618,10 @@ export class ClaudeAgentService {
 		let toolUseErrorCount = 0;
 		let lastToolUseError: string | null = null;
 		let lastToolUseId: string | null = null;
+		const toolErrorWarningMilestones = new Set<number>();
+		let sawNonThoughtProgress = false;
+		let thoughtOnlyStartedAt: number | null = null;
+		let emittedLongThinkingWarning = false;
 		const debug = import.meta.env?.VITE_AGENT_DEBUG === "1";
 		const toolNamesById = new Map<string, string>();
 		const streamState = new AgentStreamState();
@@ -734,8 +747,7 @@ export class ClaudeAgentService {
 						}
 					}
 
-					// Claude Code can get stuck retrying invalid tool inputs (e.g. Skill tool).
-					// Detect repeated tool validation errors and abort with the last error string.
+					// 工具失败会持续反馈给模型自行恢复，这里只做死循环保护，不再过早中断任务。
 					if ((payload.message as any)?.type === "user") {
 						const msgAny = payload.message as any;
 						const blocks = Array.isArray(msgAny?.message?.content)
@@ -763,7 +775,7 @@ export class ClaudeAgentService {
 
 							if (debug) {
 								console.error(
-									`[ClaudeAgentService] Tool use error (${toolUseErrorCount}/10):`,
+									`[ClaudeAgentService] Tool use error (${toolUseErrorCount}/20):`,
 									{
 										errorCount: toolErrors.length,
 										totalErrors: toolUseErrorCount,
@@ -773,24 +785,47 @@ export class ClaudeAgentService {
 								);
 							}
 
-							// Increased threshold from 3 to 10
-							if (toolUseErrorCount >= 10) {
+							const toolName = lastToolUseId
+								? toolNamesById.get(lastToolUseId)
+								: undefined;
+							const errText =
+								extractToolErrorMessageFromUnknown(lastToolUseError) ||
+								"工具调用失败";
+
+							for (const milestone of [3, 8]) {
+								if (
+									toolUseErrorCount >= milestone &&
+									!toolErrorWarningMilestones.has(milestone)
+								) {
+									toolErrorWarningMilestones.add(milestone);
+									onMessage?.({
+										type: "system",
+										content: [
+											`检测到工具已连续失败 ${toolUseErrorCount} 次，当前不会立即中止任务。`,
+											toolName ? `最近失败的工具：${toolName}` : null,
+											errText ? `最近错误：${errText}` : null,
+											"系统将继续保留当前运行，让 Agent 优先改用列目录、校正路径或切换方案继续处理。",
+										]
+											.filter(Boolean)
+											.join("\n"),
+										status: "running",
+									});
+								}
+							}
+
+							if (toolUseErrorCount >= 20) {
 								const errRaw =
 									lastToolUseError ||
-									"Tool call failed repeatedly (10+ errors)";
-								const errText = String(errRaw)
-									.replace(/<tool_use_error>/g, "")
-									.replace(/<\/tool_use_error>/g, "")
-									.trim();
-								const toolName = lastToolUseId
-									? toolNamesById.get(lastToolUseId)
-									: undefined;
+									"Tool call failed repeatedly (20+ errors)";
+								const finalError =
+									extractToolErrorMessageFromUnknown(errRaw) ||
+									"工具调用连续失败，疑似进入死循环。";
 								const guidance = [
-									"工具调用多次失败，为避免无限重试，我已停止本次任务。",
+									"工具调用连续失败过多，任务已被保护性终止。",
 									toolName || lastToolUseId
 										? `最后一次失败的工具：${toolName || "unknown"}（tool_use_id=${lastToolUseId || "unknown"}）`
 										: null,
-									errText ? `错误信息：${errText}` : null,
+									finalError ? `错误信息：${finalError}` : null,
 									"建议：请先用 Glob 列出沙盒目录下的实际文件名，再用 Read 读取；或确认引用的文件路径是否在当前沙盒目录内。",
 									"你也可以把上面失败的工具卡片展开，查看当时发送的参数。",
 								]
@@ -800,7 +835,7 @@ export class ClaudeAgentService {
 									"[ClaudeAgentService] Aborting due to repeated tool errors:",
 									{
 										totalErrors: toolUseErrorCount,
-										lastError: errText,
+										lastError: finalError,
 										lastToolUseId,
 									},
 								);
@@ -1187,9 +1222,33 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "text_delta") {
+							sawNonThoughtProgress = true;
+							thoughtOnlyStartedAt = null;
 							// 只处理增量文本，忽略完整 text 事件避免重复
 							onChunk?.(event.content);
 						} else if (event.type === "thought_delta") {
+							if (!sawNonThoughtProgress) {
+								if (thoughtOnlyStartedAt === null) {
+									thoughtOnlyStartedAt = Date.now();
+								} else if (
+									!emittedLongThinkingWarning &&
+									Date.now() - thoughtOnlyStartedAt >= 45_000
+								) {
+									emittedLongThinkingWarning = true;
+									onMessage?.({
+										type: "system",
+										content: !isClaudeModel
+											? "当前模型长时间停留在思考通道，通常说明它与 Claude Agent SDK 的 reasoning 行为兼容性一般；我已经限制了默认思考预算，建议优先改用 Claude 模型执行托管任务。"
+											: "当前任务已长时间停留在思考通道，正在等待模型进入执行阶段。",
+										status: "running",
+										metadata: {
+											longThinking: true,
+											model,
+											maxThinkingTokens: resolvedMaxThinkingTokens,
+										},
+									});
+								}
+							}
 							onMessage?.({
 								type: "thought_delta",
 								content: event.content,
@@ -1200,6 +1259,8 @@ export class ClaudeAgentService {
 								status: "running",
 							});
 						} else if (event.type === "tool_call_start") {
+							sawNonThoughtProgress = true;
+							thoughtOnlyStartedAt = null;
 							toolNamesById.set(event.id, event.name);
 							// 检查是否是 TodoWrite 工具
 							if (event.name === "TodoWrite" && event.input && onTodoUpdate) {
@@ -1228,6 +1289,8 @@ export class ClaudeAgentService {
 								status: "running",
 							});
 						} else if (event.type === "tool_call_end") {
+							sawNonThoughtProgress = true;
+							thoughtOnlyStartedAt = null;
 							// TodoWrite 的结果对 UI 没有必要展示为 tool_result（任务列表已经更新）
 							if (toolNamesById.get(event.id) === "TodoWrite") {
 								toolNamesById.delete(event.id);
@@ -1469,17 +1532,17 @@ export class ClaudeAgentService {
 
 					onMessage?.({
 						type: "system",
-						content: `Error: ${finalError}`,
+						content: toFriendlyAgentRuntimeError(finalError),
 						status: "error",
 					});
 					onComplete?.({
 						success: false,
-						summary: finalError,
+						summary: toFriendlyAgentRuntimeError(finalError),
 						sessionId: sessionId ?? undefined,
 					});
 					if (unlisten) unlisten();
 					unlisten = null;
-					settle?.(new Error(finalError));
+					settle?.(new Error(toFriendlyAgentRuntimeError(finalError)));
 				}
 			};
 

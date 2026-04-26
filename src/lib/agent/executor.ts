@@ -18,10 +18,12 @@ import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
 import { buildRuntimeUserPrompt } from "./context/userPrompt";
-import { buildDocumentBudget } from "./context/documentBudget";
 import { managedModeStore } from "../managedModeStore";
 import { EVENTS, events } from "../events";
-import { memoryStore } from "./memoryStore";
+import { generateErrorRecoveryStrategy } from "./errorRecoveryStrategies";
+import { isHtmlPreviewPath } from "../frontendPreview";
+import { extractToolErrorMessageFromUnknown } from "./runtimeText";
+import { DEFAULT_AGENT_MODEL_SETTINGS } from "../models/agentModelConfig";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -330,7 +332,9 @@ function normalizeImageFilePathCandidate(
 	if (!value) return null;
 	if (value.startsWith("data:image/")) return null;
 	if (value.startsWith("http://") || value.startsWith("https://")) return null;
+	if (/[<>|;&]/.test(value)) return null;
 	if (!hasImageFileExtension(value)) return null;
+	if (isLikelyShellImageCommand(value)) return null;
 
 	if (isAbsolutePath(value)) return value;
 	if (value.startsWith("~/")) return value;
@@ -345,6 +349,33 @@ function normalizeImageFilePathCandidate(
 	}
 
 	return value;
+}
+
+function isLikelyShellImageCommand(value: string): boolean {
+	const normalized = String(value || "").trim();
+	if (!normalized) return false;
+	if (
+		/^(ffmpeg|magick|convert|python|python3|node|bash|sh|zsh)\s/i.test(
+			normalized,
+		)
+	) {
+		return true;
+	}
+	if (
+		/\s-(i|ss|vf|filter|frames?|frames:v|loop|t|to|itsoffset)\b/i.test(
+			normalized,
+		)
+	) {
+		return true;
+	}
+	if (
+		/\.(mp4|mov|mkv|avi|webm|wav|mp3)\b/i.test(normalized) &&
+		/\.(png|jpg|jpeg|gif|webp|svg)\b/i.test(normalized) &&
+		/\s/.test(normalized)
+	) {
+		return true;
+	}
+	return false;
 }
 
 function extractImagePathsFromString(
@@ -559,8 +590,6 @@ class AgentExecutor {
 			leaderSummaryModel?: string;
 			teammateExecutionModel?: string;
 			parentSdkSessionId?: string;
-			/** 强制使用的 Agent Skill 名称 */
-			forcedSkillName?: string;
 			/** 是否启用规划模式 */
 			planMode?: boolean;
 			/** 已确认的计划（用于执行阶段） */
@@ -620,12 +649,6 @@ class AgentExecutor {
 			enabledSkills.map((s) => s.name),
 		);
 
-		// 强制执行指定 skill
-		const forcedSkillName = options?.forcedSkillName;
-		if (forcedSkillName) {
-			console.log("[AgentExecutor SDK] Forced skill:", forcedSkillName);
-		}
-
 		// Start task in UI store
 		const task = agentStore.startTask("custom", query);
 
@@ -640,15 +663,6 @@ class AgentExecutor {
 
 		this.abortController = new AbortController();
 		options = options || {};
-
-		// 预加载与查询相关的记忆数据（异步，在 buildEnhancedPromptForRun 之前获取）
-		let memoryContext = "";
-		try {
-			const memories = await memoryStore.searchMemories(query, 5);
-			memoryContext = memoryStore.formatMemoriesAsContext(memories);
-		} catch (err) {
-			console.warn("[AgentExecutor] 加载记忆失败，忽略:", err);
-		}
 
 		const runtimeConfig = agentModelSettingsStore.getSettings().contextRuntime;
 		const resolvedContextPolicy =
@@ -679,8 +693,13 @@ class AgentExecutor {
 				? runtimeConfig.settingSources
 				: (["user", "project"] as Array<"user" | "project" | "local">);
 		const resolvedMaxTurns = options.maxTurns ?? runtimeConfig?.maxTurns ?? 24;
+		const runtimeMaxThinkingTokens =
+			runtimeConfig?.maxThinkingTokens !==
+			DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxThinkingTokens
+				? runtimeConfig?.maxThinkingTokens
+				: undefined;
 		const resolvedMaxThinkingTokens =
-			options.maxThinkingTokens ?? runtimeConfig?.maxThinkingTokens ?? 8192;
+			options.maxThinkingTokens ?? runtimeMaxThinkingTokens;
 		const resolvedMaxBudgetUsd =
 			options.maxBudgetUsd ?? runtimeConfig?.maxBudgetUsd;
 		const resolvedBetas =
@@ -969,60 +988,7 @@ class AgentExecutor {
 			};
 		};
 		const buildEnhancedPromptForRun = () => {
-			let enhancedPrompt = systemPrompt || "";
-
-			// 注入记忆上下文到 system prompt
-			if (memoryContext) {
-				enhancedPrompt += `\n\n${memoryContext}`;
-			}
-
-			const promptMentionsDoc =
-				options?.documentContextInjected === true ||
-				/:::update-doc|:::create-doc|文档输出协议|当前编辑器|文档内容|正在编辑文档/i.test(
-					enhancedPrompt,
-				);
-
-			// 强制执行指定 skill 的指令
-			if (forcedSkillName) {
-				enhancedPrompt += `\n\n## 强制技能\n必须使用 Skill 工具：${forcedSkillName}\n不要用其他方式绕过；如需输入（如文件路径），直接使用用户已提供的信息。`;
-			}
-
-			if (!promptMentionsDoc) {
-				const hasActiveDoc = Boolean(options?.hasActiveDoc);
-				enhancedPrompt +=
-					"\n\n## 文档输出协议\n" +
-					(hasActiveDoc
-						? "当前编辑器已打开一个文档：如需改写/润色/续写，请用 `:::update-doc ... :::` 输出完整新文档内容。\n"
-						: "当前编辑器没有打开任何文档：如需生成新文章，请用 `:::create-doc ... :::` 创建新文档（不要用 update-doc）。\n");
-				const docBudget = buildDocumentBudget({
-					content: String(options?.activeDocContent || ""),
-					hasActiveDoc,
-					docPath: options?.activeDocPath,
-					maxInlineChars:
-						degradeLevel >= 2
-							? 1200
-							: Math.min(4000, resolvedContextBudget.maxFileChars),
-					maxSummaryChars:
-						degradeLevel >= 2
-							? 3200
-							: Math.min(12000, resolvedContextBudget.maxContextChars),
-				});
-				enhancedPrompt += `\n\n## 当前编辑器文档\n\`\`\`\n${docBudget.injectedDocument}\n\`\`\``;
-				if (docBudget.guidance) {
-					enhancedPrompt += `\n${docBudget.guidance}`;
-				}
-				agentStore.setTaskMetadata({
-					contextCharsAfter: docBudget.stats.injectedChars,
-				});
-			}
-
-			if (
-				typeof options?.conversationSessionId === "string" &&
-				options.conversationSessionId.trim()
-			) {
-				enhancedPrompt += `\n\n<ipo-conversation id="${options.conversationSessionId.trim()}" />`;
-			}
-			return enhancedPrompt;
+			return systemPrompt || "";
 		};
 
 		let finalResult = "";
@@ -1269,13 +1235,44 @@ class AgentExecutor {
 								// 静默失败，回退使用原始工具输出
 							}
 
+							const toolErrorMessage =
+								message.status === "error"
+									? extractToolErrorMessageFromUnknown(normalizedToolOutput) ||
+										"工具调用失败"
+									: undefined;
+							const displayToolOutput =
+								message.status === "error" && toolErrorMessage
+									? toolErrorMessage
+									: normalizedToolOutput;
+
 							// 更新工具调用状态（优先使用 SDK 的 tool_use_id）
 							if (resolvedToolCallId) {
 								agentStore.updateToolCall(resolvedToolCallId, {
-									output: normalizedToolOutput,
+									output: displayToolOutput,
+									error: toolErrorMessage,
 									status: message.status === "error" ? "error" : "completed",
 									completedAt: Date.now(),
 								});
+
+								if (toolErrorMessage) {
+									const currentToolCall =
+										agentStore
+											.getState()
+											.currentTask?.toolCalls.find(
+												(tc) => tc.id === resolvedToolCallId,
+											) || null;
+									if (currentToolCall) {
+										agentStore.setPendingErrorRecovery(
+											resolvedToolCallId,
+											generateErrorRecoveryStrategy(
+												toolErrorMessage,
+												currentToolCall.type,
+												currentToolCall.name,
+												currentToolCall.retryCount || 0,
+											),
+										);
+									}
+								}
 							}
 
 							// 更新最新的工具步骤状态和描述
@@ -1288,9 +1285,9 @@ class AgentExecutor {
 								) {
 									// 格式化输出内容
 									const outputStr =
-										typeof normalizedToolOutput === "string"
-											? normalizedToolOutput
-											: JSON.stringify(normalizedToolOutput, null, 2);
+										typeof displayToolOutput === "string"
+											? displayToolOutput
+											: JSON.stringify(displayToolOutput, null, 2);
 
 									// 追加结果到描述中（限制长度避免 UI 爆炸）
 									const truncatedOutput =
@@ -1373,11 +1370,13 @@ class AgentExecutor {
 									);
 									if (latestArtifact?.url) {
 										await managedModeStore.scanSandboxDir(sandboxDir);
-										events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
-											toolCallId: resolvedToolCallId,
-											artifactUrl: latestArtifact.url,
-											autoPreview: true,
-										});
+										if (isHtmlPreviewPath(latestArtifact.url)) {
+											events.emit(EVENTS.AGENT_FOCUS_TOOL_CALL, {
+												toolCallId: resolvedToolCallId,
+												artifactUrl: latestArtifact.url,
+												autoPreview: true,
+											});
+										}
 									}
 								}
 							} catch {
@@ -1650,12 +1649,14 @@ ${query}
 	/**
 	 * Cancel current execution
 	 */
-	cancel(): void {
+	cancel(options?: { updateStore?: boolean }): void {
 		if (this.abortController) {
 			this.abortController.abort();
 			this.abortController = null;
 		}
-		agentStore.cancelTask();
+		if (options?.updateStore !== false) {
+			agentStore.cancelTask();
+		}
 	}
 
 	async setRuntimePermissionMode(mode: string): Promise<boolean> {

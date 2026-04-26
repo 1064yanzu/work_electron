@@ -201,6 +201,7 @@ export const ManagedArtifactPreviewPanel = memo(
 						previewMode={previewMode}
 						onSetPreviewMode={onSetPreviewMode}
 						onLoadContent={onLoadContent}
+						onRevealFile={onRevealFile}
 						emptyTitle="暂无预览"
 						emptyDescription="从左侧文件树或上方产物导航选择文件"
 					/>

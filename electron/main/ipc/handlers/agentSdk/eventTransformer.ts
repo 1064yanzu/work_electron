@@ -383,15 +383,6 @@ export function toUIEvents(
 				const output = options?.rewriteToolResultOutput
 					? options.rewriteToolResultOutput(toolUseId, b.content)
 					: b.content;
-				const toolThought = extractThoughtTextFromUnknown(output);
-				if (toolThought) {
-					events.push({
-						type: "thought_delta",
-						content: toolThought,
-						source: "thinking",
-						title: "Thought",
-					});
-				}
 				events.push({
 					type: "tool_call_end",
 					id: toolUseId,
@@ -476,17 +467,6 @@ export function toUIEvents(
 	}
 
 	if (message.type === "result") {
-		const resultThought = extractThoughtTextFromUnknown(
-			(message as any).result,
-		);
-		if (resultThought) {
-			events.push({
-				type: "thought_delta",
-				content: resultThought,
-				source: "reasoning",
-				title: "Reasoning",
-			});
-		}
 		const isError =
 			Boolean((message as any).is_error) || message.subtype !== "success";
 		if (

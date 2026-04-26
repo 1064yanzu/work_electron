@@ -286,7 +286,8 @@ export function SkillsSettings() {
 						<div className="text-xs text-blue-600 dark:text-blue-400">
 							• 技能目录需包含 SKILL.md 文件
 							<br />• 技能元数据包括 name 和 description
-							<br />• 与 Claude Code 等应用共享技能库
+							<br />• 运行 Agent 时只会同步当前启用的技能到任务沙盒
+							<br />• 与 Claude Code 等应用共享 `~/.claude/skills` 技能库
 						</div>
 					</div>
 				</div>

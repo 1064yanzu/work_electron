@@ -1,0 +1,614 @@
+/**
+ * AskUserQuestion 浮动弹窗样式 — Claude 暖色调
+ *
+ * 主色: var(--t-primary, #c96442) 赤陶橙
+ * 设计语言: Claude 风格，柔和阴影、玻璃质感、克制的微动画
+ */
+
+/* ================================================================== */
+/*  CSS Variables                                                      */
+/* ================================================================== */
+
+.auq-popup-overlay {
+	--auq-accent: var(--t-primary, #c96442);
+	--auq-accent-hover: var(--t-primary-hover, #b5573a);
+	--auq-accent-fg: var(--t-primary-fg, #faf9f5);
+	--auq-accent-soft: color-mix(in srgb, var(--t-primary, #c96442) 10%, transparent);
+	--auq-accent-softer: color-mix(in srgb, var(--t-primary, #c96442) 6%, transparent);
+	--auq-accent-border: color-mix(in srgb, var(--t-primary, #c96442) 32%, transparent);
+	--auq-accent-ring: color-mix(in srgb, var(--t-primary, #c96442) 18%, transparent);
+	--auq-accent-glow: color-mix(in srgb, var(--t-primary, #c96442) 28%, transparent);
+
+	--auq-surface: var(--t-bg-surface, #faf9f5);
+	--auq-surface-alt: var(--t-bg, #f5f4ed);
+	--auq-surface-deep: var(--t-bg-muted, #f0eee6);
+	--auq-border: var(--t-border, #e8e6dc);
+	--auq-border-subtle: color-mix(in srgb, var(--t-border, #e8e6dc) 60%, transparent);
+
+	--auq-text: var(--t-text-primary, #141413);
+	--auq-text-sec: var(--t-text-secondary, #5e5d59);
+	--auq-text-muted: var(--t-text-muted, #87867f);
+
+	--auq-shadow-card:
+		0 -2px 8px color-mix(in srgb, var(--t-primary, #c96442) 4%, transparent),
+		0 -8px 28px rgba(20, 20, 19, 0.06),
+		0 0 0 1px rgba(20, 20, 19, 0.02);
+}
+
+:is(.dark) .auq-popup-overlay {
+	--auq-accent-soft: color-mix(in srgb, var(--t-primary, #c96442) 14%, transparent);
+	--auq-accent-softer: color-mix(in srgb, var(--t-primary, #c96442) 8%, transparent);
+	--auq-accent-border: color-mix(in srgb, var(--t-primary, #c96442) 38%, transparent);
+	--auq-accent-ring: color-mix(in srgb, var(--t-primary, #c96442) 22%, transparent);
+
+	--auq-shadow-card:
+		0 -2px 12px color-mix(in srgb, var(--t-primary, #c96442) 10%, transparent),
+		0 -10px 36px rgba(0, 0, 0, 0.45),
+		0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* ================================================================== */
+/*  Overlay & Backdrop                                                 */
+/* ================================================================== */
+
+.auq-popup-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	align-items: center;
+	padding: 14px;
+	pointer-events: none;
+	animation: auq-overlay-in 0.28s ease-out;
+}
+
+.auq-popup-overlay > * {
+	pointer-events: auto;
+}
+
+@keyframes auq-overlay-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.auq-popup-backdrop {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		to top,
+		color-mix(in srgb, var(--t-bg, #141413) 28%, transparent),
+		transparent 60%
+	);
+	backdrop-filter: blur(3px) saturate(1.05);
+	-webkit-backdrop-filter: blur(3px) saturate(1.05);
+	pointer-events: auto;
+}
+
+:is(.dark) .auq-popup-backdrop {
+	background: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0.4),
+		transparent 60%
+	);
+}
+
+/* ================================================================== */
+/*  Popup Card                                                         */
+/* ================================================================== */
+
+.auq-popup-card {
+	position: relative;
+	width: 100%;
+	border-radius: 18px;
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--auq-surface) 96%, var(--auq-accent) 4%),
+			var(--auq-surface) 30%
+		);
+	border: 1px solid var(--auq-border);
+	box-shadow: var(--auq-shadow-card);
+	overflow: hidden;
+	animation: auq-card-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 顶部细微高光 */
+.auq-popup-card::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 14%;
+	right: 14%;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		color-mix(in srgb, var(--auq-accent) 40%, transparent),
+		transparent
+	);
+	pointer-events: none;
+}
+
+@keyframes auq-card-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(28px) scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* ================================================================== */
+/*  Countdown Bar                                                      */
+/* ================================================================== */
+
+.auq-countdown-bar {
+	height: 2px;
+	background: var(--auq-border-subtle);
+	overflow: hidden;
+}
+
+.auq-countdown-fill {
+	height: 100%;
+	background: linear-gradient(
+		90deg,
+		var(--auq-accent),
+		color-mix(in srgb, var(--auq-accent), #f59e0b 35%)
+	);
+	border-radius: 0 2px 2px 0;
+	box-shadow: 0 0 8px var(--auq-accent-glow);
+}
+
+.auq-countdown-urgent {
+	background: linear-gradient(90deg, #f59e0b, #ef4444);
+	animation: auq-bar-pulse 1s ease-in-out infinite;
+}
+
+@keyframes auq-bar-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.55; }
+}
+
+/* ================================================================== */
+/*  Header                                                             */
+/* ================================================================== */
+
+.auq-popup-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 14px 6px;
+}
+
+.auq-popup-header-left {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.auq-popup-icon {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: linear-gradient(
+		135deg,
+		var(--auq-accent),
+		color-mix(in srgb, var(--auq-accent), #d97757 40%)
+	);
+	color: var(--auq-accent-fg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	box-shadow:
+		0 1px 3px color-mix(in srgb, var(--auq-accent) 35%, transparent),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.auq-popup-title {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--auq-text);
+	letter-spacing: -0.01em;
+}
+
+.auq-popup-title-count {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--auq-text-muted);
+	margin-left: 2px;
+	font-variant-numeric: tabular-nums;
+}
+
+.auq-popup-close {
+	width: 26px;
+	height: 26px;
+	border-radius: 7px;
+	border: none;
+	background: transparent;
+	color: var(--auq-text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auq-popup-close:hover {
+	background: var(--auq-surface-deep);
+	color: var(--auq-text-sec);
+}
+
+.auq-popup-close:active {
+	transform: scale(0.92);
+}
+
+/* ================================================================== */
+/*  Progress Dots                                                      */
+/* ================================================================== */
+
+.auq-popup-dots {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 4px 14px 8px;
+}
+
+.auq-popup-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--auq-border);
+	transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.auq-popup-dot-active {
+	width: 22px;
+	border-radius: 4px;
+	background: var(--auq-accent);
+	box-shadow: 0 0 0 3px var(--auq-accent-ring);
+}
+
+.auq-popup-dot-done {
+	background: color-mix(in srgb, var(--auq-accent) 55%, transparent);
+}
+
+/* ================================================================== */
+/*  Body (question content with slide animation)                       */
+/* ================================================================== */
+
+.auq-popup-body {
+	padding: 4px 14px 10px;
+}
+
+.auq-popup-body[data-dir="forward"] {
+	animation: auq-slide-fwd 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auq-popup-body[data-dir="backward"] {
+	animation: auq-slide-bwd 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes auq-slide-fwd {
+	from { opacity: 0; transform: translateX(18px); }
+	to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes auq-slide-bwd {
+	from { opacity: 0; transform: translateX(-18px); }
+	to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Question badge & text */
+
+.auq-popup-q-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--auq-accent);
+	background: var(--auq-accent-soft);
+	padding: 3px 9px;
+	border-radius: 7px;
+	border: 1px solid var(--auq-accent-border);
+	margin-bottom: 8px;
+}
+
+.auq-popup-q-badge::before {
+	content: "";
+	width: 4px;
+	height: 4px;
+	border-radius: 50%;
+	background: var(--auq-accent);
+	box-shadow: 0 0 6px var(--auq-accent);
+}
+
+.auq-popup-q-text {
+	font-size: 13.5px;
+	color: var(--auq-text);
+	line-height: 1.5;
+	margin-bottom: 12px;
+	font-weight: 500;
+	letter-spacing: -0.005em;
+}
+
+/* ================================================================== */
+/*  Options                                                            */
+/* ================================================================== */
+
+.auq-popup-options {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.auq-option {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	width: 100%;
+	text-align: left;
+	padding: 10px 12px;
+	border-radius: 11px;
+	border: 1px solid var(--auq-border);
+	background: var(--auq-surface-alt);
+	cursor: pointer;
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	animation: auq-opt-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+	position: relative;
+}
+
+@keyframes auq-opt-in {
+	from { opacity: 0; transform: translateY(6px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+.auq-option:hover {
+	border-color: var(--auq-accent-border);
+	background: var(--auq-accent-softer);
+	transform: translateY(-0.5px);
+}
+
+.auq-option:active {
+	transform: scale(0.992);
+}
+
+.auq-option-selected {
+	border-color: var(--auq-accent) !important;
+	background: var(--auq-accent-soft) !important;
+	box-shadow:
+		0 0 0 3px var(--auq-accent-ring),
+		0 1px 3px color-mix(in srgb, var(--auq-accent) 12%, transparent);
+}
+
+/* Check indicator */
+
+.auq-option-check {
+	width: 18px;
+	height: 18px;
+	border-radius: 6px;
+	border: 1.5px solid var(--auq-border);
+	background: var(--auq-surface);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-top: 1px;
+	transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+	color: transparent;
+}
+
+.auq-option-check-active {
+	border-color: var(--auq-accent);
+	background: var(--auq-accent);
+	color: var(--auq-accent-fg);
+	transform: scale(1.08);
+	box-shadow: 0 1px 4px color-mix(in srgb, var(--auq-accent) 35%, transparent);
+}
+
+/* Option content */
+
+.auq-option-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.auq-option-label {
+	font-size: 12.5px;
+	font-weight: 500;
+	color: var(--auq-text);
+	line-height: 1.4;
+	letter-spacing: -0.005em;
+}
+
+.auq-option-desc {
+	font-size: 11.5px;
+	color: var(--auq-text-muted);
+	line-height: 1.4;
+	margin-top: 2px;
+}
+
+.auq-option-selected .auq-option-label {
+	color: var(--auq-text);
+	font-weight: 600;
+}
+
+/* ================================================================== */
+/*  Other Input                                                        */
+/* ================================================================== */
+
+.auq-popup-other {
+	width: 100%;
+	margin-top: 8px;
+	padding: 8px 12px;
+	border-radius: 10px;
+	border: 1px solid var(--auq-border);
+	background: var(--auq-surface-alt);
+	font-size: 12px;
+	color: var(--auq-text);
+	outline: none;
+	transition: all 0.18s ease;
+	font-family: inherit;
+}
+
+.auq-popup-other::placeholder {
+	color: var(--auq-text-muted);
+	font-size: 11.5px;
+}
+
+.auq-popup-other:focus {
+	border-color: var(--auq-accent);
+	background: var(--auq-surface);
+	box-shadow: 0 0 0 3px var(--auq-accent-ring);
+}
+
+/* ================================================================== */
+/*  Footer                                                             */
+/* ================================================================== */
+
+.auq-popup-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 14px 12px;
+	border-top: 1px solid var(--auq-border-subtle);
+	background: linear-gradient(
+		180deg,
+		transparent,
+		color-mix(in srgb, var(--auq-accent) 2%, transparent)
+	);
+}
+
+.auq-popup-footer-right {
+	display: flex;
+	gap: 6px;
+}
+
+/* Ghost button (上一步) */
+
+.auq-popup-btn-ghost {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 11px;
+	border-radius: 9px;
+	font-size: 11.5px;
+	font-weight: 500;
+	color: var(--auq-text-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: all 0.18s ease;
+	font-family: inherit;
+}
+
+.auq-popup-btn-ghost:hover {
+	color: var(--auq-text-sec);
+	background: var(--auq-surface-deep);
+	border-color: var(--auq-border);
+}
+
+.auq-popup-btn-ghost:active {
+	transform: scale(0.98);
+}
+
+/* Next button */
+
+.auq-popup-btn-next {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 13px;
+	border-radius: 9px;
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--auq-accent);
+	background: var(--auq-accent-soft);
+	border: 1px solid var(--auq-accent-border);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	font-family: inherit;
+}
+
+.auq-popup-btn-next:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--auq-accent) 14%, transparent);
+	border-color: var(--auq-accent);
+	transform: translateY(-0.5px);
+}
+
+.auq-popup-btn-next:active:not(:disabled) {
+	transform: translateY(0) scale(0.98);
+}
+
+.auq-popup-btn-next:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* Primary button (提交) */
+
+.auq-popup-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 16px;
+	border-radius: 9px;
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--auq-accent-fg);
+	background: linear-gradient(
+		135deg,
+		var(--auq-accent),
+		color-mix(in srgb, var(--auq-accent), #d97757 30%)
+	);
+	border: none;
+	cursor: pointer;
+	transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+	opacity: 0.5;
+	font-family: inherit;
+	letter-spacing: 0.01em;
+}
+
+.auq-popup-btn-primary:disabled {
+	cursor: not-allowed;
+}
+
+.auq-popup-btn-ready {
+	opacity: 1;
+	box-shadow:
+		0 1px 3px color-mix(in srgb, var(--auq-accent) 30%, transparent),
+		0 4px 14px color-mix(in srgb, var(--auq-accent) 22%, transparent),
+		inset 0 1px 0 rgba(255, 255, 255, 0.18);
+	animation: auq-btn-glow 0.6s ease;
+}
+
+.auq-popup-btn-ready:hover {
+	transform: translateY(-1px);
+	box-shadow:
+		0 2px 5px color-mix(in srgb, var(--auq-accent) 35%, transparent),
+		0 6px 20px color-mix(in srgb, var(--auq-accent) 30%, transparent),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.auq-popup-btn-ready:active {
+	transform: translateY(0) scale(0.97);
+}
+
+@keyframes auq-btn-glow {
+	0% { box-shadow: 0 0 0 color-mix(in srgb, var(--auq-accent) 0%, transparent); }
+	50% { box-shadow: 0 0 22px color-mix(in srgb, var(--auq-accent) 35%, transparent); }
+	100% {
+		box-shadow:
+			0 1px 3px color-mix(in srgb, var(--auq-accent) 30%, transparent),
+			0 4px 14px color-mix(in srgb, var(--auq-accent) 22%, transparent),
+			inset 0 1px 0 rgba(255, 255, 255, 0.18);
+	}
+}

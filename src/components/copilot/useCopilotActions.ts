@@ -1,14 +1,24 @@
 import { useCallback } from "react";
+import { getActiveModel } from "../../lib/api";
+import {
+	createThreadSessionForPath,
+	DEFAULT_THREAD_MODEL,
+	resolveThreadWorkingDirectory,
+} from "../../lib/chat/threadSessions";
+import { managedModeStore } from "../../lib/managedModeStore";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { toast } from "../ui/Toast";
 
 interface ChatSessionLite {
 	id: string;
 	title: string;
+	cwd?: string;
+	agentSessionId?: string;
 }
 
 interface ChatStoreLike {
 	sessions: ChatSessionLite[];
+	activeSession: ChatSessionLite | null;
 	createNewSession: () => void;
 	deleteSessionWithUndo: (
 		sessionId: string,
@@ -32,8 +42,24 @@ export function useCopilotActions({
 	onCloseHistory,
 }: UseCopilotActionsOptions) {
 	const handleNewSession = useCallback(() => {
-		chatStore.createNewSession();
-		onCloseHistory?.();
+		void (async () => {
+			try {
+				const preferredPath = resolveThreadWorkingDirectory(
+					chatStore.activeSession,
+				);
+				if (preferredPath) {
+					const model = (await getActiveModel()) || DEFAULT_THREAD_MODEL;
+					createThreadSessionForPath(preferredPath, model);
+					managedModeStore.enableManagedMode();
+				} else {
+					chatStore.createNewSession();
+				}
+				onCloseHistory?.();
+			} catch (error) {
+				console.error("[useCopilotActions] 新建对话失败:", error);
+				toast.error("新建对话失败");
+			}
+		})();
 	}, [chatStore, onCloseHistory]);
 
 	const handleDeleteSession = useCallback(

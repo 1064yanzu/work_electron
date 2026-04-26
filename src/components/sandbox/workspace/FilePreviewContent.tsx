@@ -1,9 +1,25 @@
-import { Check, Copy, Download, Eye, FileCode2, Link2 } from "lucide-react";
+import {
+	Check,
+	Copy,
+	Download,
+	Eye,
+	FileCode2,
+	FolderOpen,
+	Link2,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
 import { cn } from "../../../lib/utils";
+import { convertFileSrc } from "../../../lib/tauriCompat";
+import { isHtmlPreviewExtension } from "../../../lib/frontendPreview";
 import { MarkdownRenderer } from "../../ui/MarkdownRenderer";
 import DocumentViewer from "../../ui/DocumentViewer";
+import {
+	isAudioPreviewExtension,
+	isVideoPreviewExtension,
+	SandboxAudioPreview,
+	SandboxVideoPreview,
+} from "./SandboxMediaPreview";
 import { SandboxImagePreview } from "./SandboxImagePreview";
 
 interface FilePreviewContentProps {
@@ -11,6 +27,7 @@ interface FilePreviewContentProps {
 	previewMode: "preview" | "source";
 	onSetPreviewMode: (mode: "preview" | "source") => void;
 	onLoadContent: (fileId: string) => Promise<void>;
+	onRevealFile: (file: SandboxFile) => Promise<void> | void;
 	emptyTitle?: string;
 	emptyDescription?: string;
 }
@@ -20,22 +37,24 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 	previewMode,
 	onSetPreviewMode,
 	onLoadContent,
+	onRevealFile,
 	emptyTitle = "选择文件预览",
 	emptyDescription = "点击左侧文件查看内容",
 }: FilePreviewContentProps) {
 	const [copiedAction, setCopiedAction] = useState<"" | "content" | "path">("");
 
+	const isImage = file?.category === "images";
+	const isVideo = file ? isVideoPreviewExtension(file.extension) : false;
+	const isAudio = file ? isAudioPreviewExtension(file.extension) : false;
+	const isDocument = file?.extension === "pdf" || file?.extension === "docx";
+	const canPreviewWithoutText =
+		Boolean(isImage) || isVideo || isAudio || Boolean(isDocument);
+
 	useEffect(() => {
-		if (
-			file &&
-			file.content === undefined &&
-			file.category !== "images" &&
-			file.extension !== "pdf" &&
-			file.extension !== "docx"
-		) {
+		if (file && file.content === undefined && !canPreviewWithoutText) {
 			onLoadContent(file.id);
 		}
-	}, [file, onLoadContent]);
+	}, [canPreviewWithoutText, file, onLoadContent]);
 
 	useEffect(() => {
 		if (!copiedAction) return;
@@ -56,15 +75,23 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		setCopiedAction("path");
 	}, [file]);
 
+	const handleRevealFile = useCallback(() => {
+		if (!file) return;
+		return onRevealFile(file);
+	}, [file, onRevealFile]);
+
 	const handleDownload = useCallback(() => {
-		if (!file?.content) return;
-		const blob = new Blob([file.content], { type: file.mimeType });
-		const url = URL.createObjectURL(blob);
+		if (!file) return;
 		const a = document.createElement("a");
-		a.href = url;
 		a.download = file.name;
+		const url = file.content
+			? URL.createObjectURL(new Blob([file.content], { type: file.mimeType }))
+			: convertFileSrc(file.path);
+		a.href = url;
 		a.click();
-		URL.revokeObjectURL(url);
+		if (file.content) {
+			URL.revokeObjectURL(url);
+		}
 	}, [file]);
 
 	// useMemo must be called before any early returns to satisfy React Hooks rules
@@ -97,21 +124,17 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		);
 	}
 
-	const isImage = file.category === "images";
-	const isHtmlLike = ["html", "tsx", "jsx"].includes(file.extension);
+	const isHtmlLike = isHtmlPreviewExtension(file.extension);
 	const isMarkdown = file.extension === "md" || file.extension === "markdown";
-	const isDocument = file.extension === "pdf" || file.extension === "docx";
 	const previewAvailable =
 		isImage ||
+		isVideo ||
+		isAudio ||
 		isHtmlLike ||
 		isMarkdown ||
 		isDocument ||
 		file.content !== undefined;
-	const isLoadingContent =
-		file.category !== "images" &&
-		file.extension !== "pdf" &&
-		file.extension !== "docx" &&
-		file.content === undefined;
+	const isLoadingContent = !canPreviewWithoutText && file.content === undefined;
 
 	const renderSource = () => (
 		<div className="flex-1 overflow-auto bg-dark-muted dark:bg-black">
@@ -153,6 +176,26 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					filePath={file.path}
 					fileName={file.name}
 					fileSize={file.size}
+				/>
+			);
+		}
+
+		if (isVideo) {
+			return (
+				<SandboxVideoPreview
+					filePath={file.path}
+					fileName={file.name}
+					mimeType={file.mimeType}
+				/>
+			);
+		}
+
+		if (isAudio) {
+			return (
+				<SandboxAudioPreview
+					filePath={file.path}
+					fileName={file.name}
+					mimeType={file.mimeType}
 				/>
 			);
 		}
@@ -210,7 +253,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 	const isFallbackToSource =
 		previewMode === "preview" && effectiveMode === "source";
 	const canCopyContent = Boolean(file.content);
-	const canDownload = Boolean(file.content);
+	const canDownload = Boolean(file.path || file.content);
 	const fileExtensionLabel = file.extension.toUpperCase() || "FILE";
 
 	return (
@@ -300,6 +343,15 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						) : (
 							<Link2 className="w-4 h-4" />
 						)}
+					</button>
+					<button
+						type="button"
+						onClick={handleRevealFile}
+						className="p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95"
+						title="在访达/文件管理器中显示"
+						aria-label="在访达或文件管理器中显示"
+					>
+						<FolderOpen className="w-4 h-4" />
 					</button>
 					<button
 						type="button"

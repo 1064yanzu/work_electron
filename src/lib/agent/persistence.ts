@@ -3,6 +3,7 @@
 
 import * as api from "./api";
 import { agentStore } from "./store";
+import { sessionStore } from "./sessionManager";
 import { workspaceStore } from "../workspaceStore";
 import type { AgentTask, ToolArtifact, ToolCall } from "./types";
 
@@ -281,7 +282,18 @@ class AgentPersistence {
 		try {
 			// 从 workspaceStore 获取当前项目 ID
 			const projectId = workspaceStore.getState().currentProjectId || null;
-			const session = await api.createAgentSession(title, projectId);
+			const currentRuntimeSession = sessionStore.getCurrentSession();
+			const configJson = currentRuntimeSession?.cwd
+				? {
+						source: "local-chat",
+						cwd: currentRuntimeSession.cwd,
+					}
+				: undefined;
+			const session = await api.createAgentSession(
+				title,
+				projectId,
+				configJson,
+			);
 			this.currentSessionId = session.id;
 			console.log(
 				`[AgentPersistence] 创建会话: ${session.id}, 项目: ${projectId || "全局"}`,
@@ -587,6 +599,30 @@ export async function startPersistentSession(title?: string): Promise<string> {
 	const sessionId = await agentPersistence.createSession(title);
 	enableAutoSave();
 	return sessionId;
+}
+
+export async function ensurePersistentSession(options: {
+	sessionId?: string;
+	title?: string;
+}): Promise<{ sessionId: string; recreated: boolean }> {
+	const existingId = options.sessionId?.trim();
+	if (existingId && !existingId.startsWith("local-")) {
+		try {
+			await api.getAgentSession(existingId);
+			agentPersistence.setCurrentSessionId(existingId);
+			await resumePersistentSession(existingId);
+			return { sessionId: existingId, recreated: false };
+		} catch (error) {
+			console.warn(
+				"[AgentPersistence] 已绑定的后端会话不存在，将创建新会话:",
+				existingId,
+				error,
+			);
+		}
+	}
+
+	const sessionId = await startPersistentSession(options.title);
+	return { sessionId, recreated: true };
 }
 
 // 恢复持久化会话

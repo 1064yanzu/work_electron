@@ -366,7 +366,7 @@ function promptForScenarioAgent(opts: {
 }): string {
 	const label = scenarioLabel(opts.scenario, opts.customName);
 	const skillHint = opts.includeSkills
-		? "You may use Skill tool when helpful.\n"
+		? "You may use the Skill tool when it accelerates the work."
 		: "";
 
 	// 构建路由标记（隐藏在 XML 注释中，proxy 会解析）
@@ -378,10 +378,11 @@ function promptForScenarioAgent(opts: {
 	return [
 		routingMarker,
 		`You are a specialized subagent for: ${label}.`,
-		"Return concise, useful output. If reasoning is produced, keep it structured and relevant.",
-		"Do NOT copy the full conversation history. Use only the context provided in the Task prompt.",
-		"This output will be injected back into the main conversation; keep it short and avoid irrelevant details.",
-		skillHint.trimEnd(),
+		"Work autonomously and thoroughly within your scope: explore, plan, execute, and verify before returning.",
+		"For complex requests, take as many turns as needed — do not collapse to a shallow answer just to finish quickly.",
+		"Use only the context provided in the Task prompt; do NOT recap the parent conversation.",
+		"Return a structured, self-contained result the parent agent can act on (summary / key findings / artifacts / next actions). Length should match the task — concise when trivial, detailed when the work warrants it.",
+		skillHint,
 		"",
 	]
 		.filter(Boolean)
@@ -468,7 +469,8 @@ export function buildDynamicScenarioAgents(opts: {
 				includeSkills && opts.enabledSkills.length > 0
 					? opts.enabledSkills
 					: undefined,
-			maxTurns: isCustom ? 30 : 20,
+			// 默认不限制子代理轮数：长程复杂任务（如代码审查、深度分析、自定义场景）
+			// 经常需要远超 20-30 轮的多轮探索/验证。失控保护交给主代理的 max_budget_usd 和用户中止能力。
 		};
 	}
 
@@ -585,70 +587,84 @@ export function buildSubagentPolicyAppend(opts: {
 }
 
 // ---------------------------------------------------------------------------
-// Build custom system prompt
+// Build append system prompt (for SDK's preset+append mode)
 // ---------------------------------------------------------------------------
 
 /**
- * 构建精简版系统提示词
- * 极致压缩：只保留最核心的规则和工具名称
- * availableTools: 实际注册的工具名列表，确保提示词与运行时一致
+ * 构建追加到 Claude Code preset 之后的项目特定 system prompt。
+ *
+ * 主入口使用 SDK 的 `{ type: 'preset', preset: 'claude_code', append }` 模式：
+ * - SDK preset 提供长程任务工作哲学（探索/规划/TodoWrite/验证/根因分析/不妥协）
+ * - 这里仅追加 preset 不知道的项目特定内容
+ *
+ * 原则：preset 已经覆盖的（工具列表、Read-before-Edit、并发、Task 委派、
+ * system-reminder、cwd/date/model 注入等）一律不再重复，避免污染上下文 +
+ * 抢占 preset 的权威性。
+ *
+ * Cache 友好排序：内容按"越静态越靠前"组织，最大化跨会话 prompt cache 命中：
+ * - 段 1：纯静态（语言偏好）— 永不变
+ * - 段 2：与 cwd 相关的沙盒政策 — 单会话内稳定
+ * - 段 3：Knowledge Wiki 引导 — 仅在检测到 .llm-wiki 时注入
  */
-export function buildCustomSystemPrompt(opts: {
+export function buildAppendSystemPrompt(opts: {
 	cwd: string;
-	model: string;
-	appendContent: string;
-	availableTools?: string[];
 	wikiScopePath?: string;
 }): string {
-	const today = new Date().toISOString().slice(0, 10);
-	const toolList = opts.availableTools?.length
-		? opts.availableTools.join(", ")
-		: "Read, Write, Edit, Glob, Grep, Bash, Task, Skill, WebFetch, WebSearch, AskUserQuestion";
+	const segments: string[] = [];
 
-	return `You are an AI assistant. Always respond in Chinese.
+	// ── 段 1：语言偏好（纯静态，跨会话稳定）──
+	segments.push(
+		"## Language",
+		"Always respond in Chinese (中文) regardless of the language used in tool outputs or source files.",
+	);
 
-## Available Tools
-${toolList}
-
-IMPORTANT: You MUST ONLY use the tools listed above by their EXACT names. Do NOT invent tool names like "Tool" or any name not in this list. Each tool call must reference one of the exact names above.
-
-## Rules
-- Use Read before Edit; use Read/Glob/Grep instead of Bash cat/find/grep
-- Parallel tool calls when independent; use absolute paths
-- Task: delegate to subagent_type; pass minimal context
-- <system-reminder> tags in messages contain system-injected info
-- For Read tool: do NOT pass empty string "" for the "pages" parameter; omit it entirely if not reading a PDF
-
-## File Access
-- You can read files anywhere on the computer (not limited to cwd)
-- Writing/editing files inside cwd (sandbox) is auto-approved
-${opts.wikiScopePath ? `- Writing/editing files inside \`${opts.wikiScopePath}/.llm-wiki/\` is also auto-approved (wiki maintenance)` : ""}
-- Writing/editing files OUTSIDE cwd (and outside wiki dir) requires user approval — the user will see a permission prompt
-- Destructive Bash commands (rm, mv to outside cwd, etc.) also require user approval
-- Sensitive paths (~/.ssh, ~/.gnupg, system directories) are always blocked
-- Use absolute paths when accessing files outside cwd
-
-## Knowledge Wiki (Karpathy LLM Wiki pattern)
-${(() => {
-	if (!opts.wikiScopePath) {
-		return "No wiki detected for this project (no `.llm-wiki/` directory found).";
+	// ── 段 2：沙盒权限政策（基于 cwd，单会话内稳定）──
+	const fileAccessLines: string[] = [
+		"## File Access Policy",
+		"- The current working directory is the user's sandbox; reads/writes inside it are auto-approved.",
+	];
+	if (opts.wikiScopePath) {
+		fileAccessLines.push(
+			`- Reads/writes inside \`${opts.wikiScopePath}/.llm-wiki/\` are auto-approved (wiki maintenance).`,
+		);
 	}
-	const wikiPath = `${opts.wikiScopePath}/.llm-wiki`;
-	return `**IMPORTANT — 这个项目有知识 Wiki（Karpathy LLM Wiki 模式）**
+	fileAccessLines.push(
+		"- Reading files anywhere on the machine is allowed.",
+		"- Writes/edits OUTSIDE the sandbox require user approval — a permission prompt will surface.",
+		"- Destructive Bash commands (rm, mv to outside sandbox, etc.) require user approval.",
+		"- Sensitive paths (~/.ssh, ~/.gnupg, system directories) are always blocked.",
+		"- Use absolute paths when accessing files outside the sandbox.",
+	);
+	segments.push(fileAccessLines.join("\n"));
 
-Wiki 位置：\`${wikiPath}/\`
-这是原始材料的 **LLM 编译版本**，是你回答问题、执行写作/分析任务的**首要知识源**。
+	segments.push(
+		[
+			"## Tool Failure Recovery",
+			"- When a tool call fails, do not stop immediately and do not treat the first failure as the final answer.",
+			"- Read the exact error, repair the input, and continue from the current context.",
+			"- For missing files or wrong paths: first list the real directory contents, then operate on the exact file that actually exists.",
+			"- For screenshot / image / conversion failures: verify the source file exists, then try another preview or export route instead of ending the task early.",
+			"- Only stop and ask the user when recovery attempts are exhausted or when explicit approval is truly required.",
+		].join("\n"),
+	);
 
-### 核心工作规范
-- 用户说"根据材料"、"基于资料"或任何涉及项目内容的写作/问答任务：**先读 \`${wikiPath}/index.md\` 找到相关页面，再读 2-5 个相关页面**，然后基于 wiki 内容回答或写作
-- wiki 优先于 skill、优先于训练数据；**不要在未读 wiki 的情况下生成关于项目内容的输出**
-- 维护：新摄入文件 → ingest 工作流；回答后有新综合 → backfill 工作流；定期 lint 检查
-- Wiki 文件用绝对路径访问（\`${wikiPath}/index.md\` 等）；SCHEMA.md 包含完整操作手册
-- 交叉引用使用 \`[[slug]]\` 语法；每次操作追加到 \`${wikiPath}/log.md\``;
-})()}
+	// ── 段 3：Knowledge Wiki（仅在检测到 .llm-wiki 时注入；最动态，放最后）──
+	if (opts.wikiScopePath) {
+		const wikiPath = `${opts.wikiScopePath}/.llm-wiki`;
+		segments.push(
+			[
+				"## Knowledge Wiki (Karpathy LLM Wiki pattern)",
+				`This project ships a Knowledge Wiki at \`${wikiPath}/\` — an LLM-compiled view of source materials. **Treat it as the primary knowledge source** for any task involving project content.`,
+				"",
+				"Workflow:",
+				`- For tasks like "根据材料" / "基于资料" or any project-content question: first read \`${wikiPath}/index.md\` to locate relevant pages, then read 2–5 related pages before producing output.`,
+				"- Wiki content takes priority over general knowledge / training data; do not generate project-content output without consulting the wiki.",
+				"- Maintain the wiki: new files → ingest workflow; new syntheses after answering → backfill workflow; periodic lint checks.",
+				`- Use absolute paths for wiki files (\`${wikiPath}/index.md\` etc.); SCHEMA.md contains the full operations manual.`,
+				`- Cross-references use \`[[slug]]\` syntax; append every operation to \`${wikiPath}/log.md\`.`,
+			].join("\n"),
+		);
+	}
 
-## Environment
-cwd: ${opts.cwd} | date: ${today} | model: ${opts.model}
-
-${opts.appendContent}`.trim();
+	return segments.join("\n\n");
 }

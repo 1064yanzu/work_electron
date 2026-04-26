@@ -218,9 +218,21 @@ export function useRemoteChatBridge(): void {
 		const ensureRemoteChatSession = (input: {
 			remoteSessionId?: string;
 			agentSessionId?: string;
+			channelId?: string;
+			peerName?: string;
+			peerId?: string;
 			title: string;
 		}): ChatSession => {
 			const { remoteSessionId, agentSessionId, title } = input;
+			const markRemoteSource = (chatSessionId: string) => {
+				chatStore.setSessionThreadSource(chatSessionId, {
+					type: "remote",
+					remoteSessionId,
+					channelId: input.channelId,
+					peerName: input.peerName,
+					peerId: input.peerId,
+				});
+			};
 			if (agentSessionId) {
 				const mappedByAgent =
 					agentSessionToChatSessionRef.current.get(agentSessionId);
@@ -233,6 +245,7 @@ export function useRemoteChatBridge(): void {
 								existing.id,
 							);
 						}
+						markRemoteSource(existing.id);
 						return existing;
 					}
 					agentSessionToChatSessionRef.current.delete(agentSessionId);
@@ -249,6 +262,7 @@ export function useRemoteChatBridge(): void {
 							existingByAgent.id,
 						);
 					}
+					markRemoteSource(existingByAgent.id);
 					return existingByAgent;
 				}
 			}
@@ -258,7 +272,10 @@ export function useRemoteChatBridge(): void {
 					remoteSessionToChatSessionRef.current.get(remoteSessionId);
 				if (mappedByRemote) {
 					const existing = getChatSessionById(mappedByRemote);
-					if (existing) return existing;
+					if (existing) {
+						markRemoteSource(existing.id);
+						return existing;
+					}
 					remoteSessionToChatSessionRef.current.delete(remoteSessionId);
 				}
 			}
@@ -275,6 +292,7 @@ export function useRemoteChatBridge(): void {
 				agentSessionToChatSessionRef.current.set(agentSessionId, created.id);
 				chatStore.setSessionAgentSessionId(created.id, agentSessionId);
 			}
+			markRemoteSource(created.id);
 			return created;
 		};
 
@@ -338,6 +356,9 @@ export function useRemoteChatBridge(): void {
 					const chatSession = ensureRemoteChatSession({
 						remoteSessionId: item.meta.remoteSessionId,
 						agentSessionId,
+						channelId: item.meta.channelId,
+						peerName: item.meta.peerName,
+						peerId: item.meta.peerId,
 						title:
 							typeof item.session.title === "string" &&
 							item.session.title.trim()
@@ -466,6 +487,9 @@ export function useRemoteChatBridge(): void {
 					const session = ensureRemoteChatSession({
 						remoteSessionId: payload.sessionId,
 						agentSessionId: payload.agentSessionId,
+						channelId: payload.channelId,
+						peerName: payload.peerName,
+						peerId: payload.peerId,
 						title: buildRemoteSessionTitle(
 							payload.channelId,
 							payload.peerName,

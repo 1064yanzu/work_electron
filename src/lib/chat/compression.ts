@@ -12,7 +12,7 @@ import type {
 } from "./types";
 
 // 存储版本号
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 
 // ============ 精简数据类型 ============
 
@@ -97,6 +97,16 @@ interface CompactSession {
 	m?: string; // model
 	asid?: string; // agentSessionId
 	ssid?: string; // sdkSessionId
+	cwd?: string; // working directory
+	p?: boolean; // pinned
+	ar?: boolean; // archived
+	src?: {
+		t: "l" | "r"; // local / remote
+		rsid?: string; // remoteSessionId
+		ch?: string; // channelId
+		pn?: string; // peerName
+		pid?: string; // peerId
+	};
 }
 
 /** 精简存储的状态 */
@@ -490,6 +500,18 @@ function compactSession(session: ChatSession): CompactSession {
 	if (session.model) compact.m = session.model;
 	if (session.agentSessionId) compact.asid = session.agentSessionId;
 	if (session.sdkSessionId) compact.ssid = session.sdkSessionId;
+	if (session.cwd) compact.cwd = session.cwd;
+	if (session.isPinned) compact.p = true;
+	if (session.isArchived) compact.ar = true;
+	if (session.threadSource) {
+		compact.src = {
+			t: session.threadSource.type === "remote" ? "r" : "l",
+			rsid: session.threadSource.remoteSessionId,
+			ch: session.threadSource.channelId,
+			pn: session.threadSource.peerName,
+			pid: session.threadSource.peerId,
+		};
+	}
 
 	return compact;
 }
@@ -507,6 +529,18 @@ function expandSession(compact: CompactSession): ChatSession {
 		model: compact.m,
 		agentSessionId: compact.asid,
 		sdkSessionId: compact.ssid,
+		cwd: compact.cwd,
+		isPinned: compact.p,
+		isArchived: compact.ar,
+		threadSource: compact.src
+			? {
+					type: compact.src.t === "r" ? "remote" : "local",
+					remoteSessionId: compact.src.rsid,
+					channelId: compact.src.ch,
+					peerName: compact.src.pn,
+					peerId: compact.src.pid,
+				}
+			: undefined,
 	};
 }
 

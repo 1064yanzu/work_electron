@@ -105,9 +105,9 @@ const ERROR_PATTERNS: ErrorPattern[] = [
 	{
 		pattern: /InputValidationError|tool_use_error|invalid.*input/i,
 		type: AgentErrorType.TOOL_VALIDATION_ERROR,
-		severity: ErrorSeverity.WARNING,
-		recoverable: true,
-		suggestion: "Agent 将尝试修复工具参数",
+		severity: ErrorSeverity.ERROR,
+		recoverable: false,
+		suggestion: "请修正工具参数后重新执行",
 	},
 	{
 		pattern: /permission.*denied|access.*denied/i,
@@ -264,7 +264,6 @@ export function shouldAutoRetry(
 	if (retryCount >= 3) return false;
 
 	const retryableTypes = [
-		AgentErrorType.TOOL_VALIDATION_ERROR,
 		AgentErrorType.TOOL_TIMEOUT,
 		AgentErrorType.RATE_LIMITED,
 		AgentErrorType.CONTEXT_TOO_LONG,
