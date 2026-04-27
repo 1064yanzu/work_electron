@@ -52,6 +52,8 @@ const initialCoreState: CoreWorkspaceState = {
 	contexts: [],
 	currentProjectId: null,
 	currentFolderId: null,
+	currentThreadPath: null,
+	currentThreadTitle: null,
 	previewSource: null,
 };
 
@@ -355,6 +357,8 @@ class WorkspaceStore {
 			...state,
 			currentProjectId: projectId,
 			currentFolderId: null,
+			currentThreadPath: null,
+			currentThreadTitle: null,
 			selectedSources: [],
 			contexts: [],
 			previewSource: null,
@@ -371,6 +375,24 @@ class WorkspaceStore {
 		this.setState((state) => {
 			if (state.currentFolderId === folderId) return state;
 			return { ...state, currentFolderId: folderId };
+		});
+	}
+
+	setCurrentThreadScope(path: string | null, title?: string | null) {
+		this.setState((state) => {
+			const normalizedPath = path?.trim() || null;
+			const normalizedTitle = title?.trim() || null;
+			if (
+				state.currentThreadPath === normalizedPath &&
+				state.currentThreadTitle === normalizedTitle
+			) {
+				return state;
+			}
+			return {
+				...state,
+				currentThreadPath: normalizedPath,
+				currentThreadTitle: normalizedTitle,
+			};
 		});
 	}
 
@@ -589,6 +611,8 @@ export function useWorkspaceStore() {
 		setEditorSelection: workspaceStore.setEditorSelection.bind(workspaceStore),
 		setCurrentProject: workspaceStore.setCurrentProject.bind(workspaceStore),
 		setCurrentFolder: workspaceStore.setCurrentFolder.bind(workspaceStore),
+		setCurrentThreadScope:
+			workspaceStore.setCurrentThreadScope.bind(workspaceStore),
 		setMainView: workspaceStore.setMainView.bind(workspaceStore),
 		getContextText: workspaceStore.getContextText.bind(workspaceStore),
 		// 右侧栏控制

@@ -69,12 +69,13 @@ function recordToTask(
 	toolCalls: ToolCall[],
 	artifacts: ToolArtifact[],
 ): AgentTask {
+	const budgetJson =
+		record.budget_json && typeof record.budget_json === "object"
+			? (record.budget_json as Record<string, unknown>)
+			: {};
 	const legacyFrontendTaskId =
-		record.budget_json &&
-		typeof (record.budget_json as Record<string, unknown>)
-			.legacy_frontend_task_id === "string"
-			? ((record.budget_json as Record<string, unknown>)
-					.legacy_frontend_task_id as string)
+		typeof budgetJson.legacy_frontend_task_id === "string"
+			? (budgetJson.legacy_frontend_task_id as string)
 			: null;
 
 	return {
@@ -94,10 +95,14 @@ function recordToTask(
 			? new Date(record.finished_at).getTime()
 			: undefined,
 		metadata: {
+			sandboxDir:
+				typeof budgetJson.sandboxDir === "string"
+					? budgetJson.sandboxDir
+					: undefined,
 			backendTaskId: record.id,
 			legacyFrontendTaskId: legacyFrontendTaskId || undefined,
 			sessionId: record.session_id,
-			budget_json: record.budget_json,
+			budget_json: budgetJson,
 		},
 	};
 }
@@ -350,6 +355,15 @@ class AgentPersistence {
 				status: mapStatusToBackend(task.status),
 				error: task.error,
 				result_summary: task.result,
+				budget_json: {
+					frontend_task_type: task.type,
+					legacy_frontend_task_id: task.id,
+					sandboxDir:
+						typeof (task.metadata as Record<string, unknown> | undefined)
+							?.sandboxDir === "string"
+							? (task.metadata as Record<string, unknown>).sandboxDir
+							: undefined,
+				},
 			});
 
 			// 保存工具调用：每个 tool call 对应一个 node + tool_call

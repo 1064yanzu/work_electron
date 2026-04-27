@@ -35,6 +35,9 @@ export function toFriendlyAgentRuntimeError(errorMessage: string): string {
 	if (/stream closed/i.test(message)) {
 		return "Agent 内部通信流已断开。这通常说明当前模型与 Agent SDK 的输出格式兼容性不足，建议切换到 Claude 系列模型后重试。";
 	}
+	if (/stream_read_error/i.test(message)) {
+		return "上游模型的流式响应在传输中断开了。当前已显示的内容通常仍然有效，但本轮生成没有正常收尾；请重试一次，并优先检查代理服务或所选模型的流式兼容性。";
+	}
 	if (/aborted/i.test(message)) {
 		return "Agent 任务已取消。";
 	}

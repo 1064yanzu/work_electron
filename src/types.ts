@@ -303,6 +303,7 @@ export interface Provider {
 	api_base?: string;
 	models: string[];
 	metadata: any;
+	template_id?: string;
 	created_at: DateTime;
 	updated_at: DateTime;
 }

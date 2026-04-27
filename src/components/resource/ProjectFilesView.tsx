@@ -8,8 +8,10 @@ import {
 	RefreshCcw,
 } from "lucide-react";
 import { safeInvoke } from "../../lib/tauriBridge";
-import { sessionStore } from "../../lib/agent/sessionManager";
-import { workspaceStore } from "../../lib/workspaceStore";
+import {
+	useWorkspaceStoreSelector,
+	workspaceStore,
+} from "../../lib/workspaceStore";
 import { managedModeStore } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
 import { toast } from "../ui/Toast";
@@ -31,7 +33,6 @@ interface FileEntry {
 }
 
 export function ProjectFilesView() {
-	const [projectPath, setProjectPath] = useState<string | null>(null);
 	const [entries, setEntries] = useState<FileEntry[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
@@ -40,23 +41,9 @@ export function ProjectFilesView() {
 		y: number;
 		entry: FileEntry;
 	} | null>(null);
-
-	// 获取项目路径
-	useEffect(() => {
-		const updatePath = () => {
-			const session = sessionStore.getCurrentSession();
-			if (session?.cwd) {
-				setProjectPath(session.cwd);
-			} else {
-				setProjectPath(null);
-				setEntries([]);
-			}
-		};
-
-		updatePath();
-		const unsubscribe = sessionStore.subscribe(updatePath);
-		return () => unsubscribe();
-	}, []);
+	const projectPath = useWorkspaceStoreSelector(
+		(state) => state.currentThreadPath,
+	);
 
 	const loadDir = useCallback(async (dirPath: string) => {
 		try {
@@ -89,6 +76,12 @@ export function ProjectFilesView() {
 	useEffect(() => {
 		void refreshRoot();
 	}, [refreshRoot]);
+
+	useEffect(() => {
+		if (projectPath) return;
+		setEntries([]);
+		setExpandedDirs(new Set());
+	}, [projectPath]);
 
 	const toggleDir = async (entry: FileEntry) => {
 		if (entry.isDir) {

@@ -37,7 +37,10 @@ const mapBackendToUI = (backend: BackendProvider): UIProvider => {
 	const template = findTemplateByType(backend.provider_type);
 	const metadata = backend.metadata ?? {};
 	const templateId =
-		metadata.templateId ?? metadata.template_id ?? template?.templateId;
+		backend.template_id ??
+		metadata.templateId ??
+		metadata.template_id ??
+		template?.templateId;
 	return {
 		id: backend.id,
 		templateId,
@@ -115,7 +118,7 @@ const getProviderTemplateId = (
 	provider: BackendProvider,
 ): string | undefined => {
 	const metadata = provider.metadata ?? {};
-	return metadata.templateId ?? metadata.template_id;
+	return provider.template_id ?? metadata.templateId ?? metadata.template_id;
 };
 
 const matchesTemplate = (

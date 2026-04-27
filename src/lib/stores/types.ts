@@ -169,6 +169,9 @@ export interface CoreWorkspaceState {
 	currentProjectId: string | null;
 	// 当前选中的文件夹（用于资料库筛选/新增归类）；null=全部
 	currentFolderId: string | null;
+	// 当前线程工作目录（用于 Files / Wiki 等直接跟随线程）
+	currentThreadPath: string | null;
+	currentThreadTitle: string | null;
 	// 当前预览的资料
 	previewSource: Source | ResearchSource | null;
 }

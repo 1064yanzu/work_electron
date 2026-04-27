@@ -4,7 +4,7 @@
  * 默认不建立 Wiki，只有用户主动点击「建立 Wiki」时才启用。
  * 页面中提醒用户：知识索引适合相对稳定的、静态的知识。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	BookOpen,
 	Plus,
@@ -28,7 +28,7 @@ import { useWiki, type WikiPageItem } from "./useWiki";
 import { WikiPageEditor } from "./WikiPageEditor";
 import { WikiContentRenderer } from "./WikiContentRenderer";
 import { confirmDialog } from "../ui/ConfirmDialog";
-import { sessionStore } from "../../lib/agent/sessionManager";
+import { useActiveThreadScope } from "../../lib/chat/threadScope";
 import { WikiGraphPanel } from "./WikiGraphPanel";
 import { WikiLintPanel } from "./WikiLintPanel";
 
@@ -97,22 +97,7 @@ function getPhaseHint(phase?: string): string {
 }
 
 export function WikiView() {
-	const [scopePath, setScopePath] = useState<string | null>(() => {
-		return sessionStore.getCurrentSession()?.cwd ?? null;
-	});
-	const [threadTitle, setThreadTitle] = useState<string | null>(() => {
-		return sessionStore.getCurrentSession()?.title ?? null;
-	});
-
-	useEffect(() => {
-		const syncSession = () => {
-			const currentSession = sessionStore.getCurrentSession();
-			setScopePath(currentSession?.cwd ?? null);
-			setThreadTitle(currentSession?.title ?? null);
-		};
-		syncSession();
-		return sessionStore.subscribe(syncSession);
-	}, []);
+	const { scopePath, threadTitle } = useActiveThreadScope();
 
 	const {
 		pages,

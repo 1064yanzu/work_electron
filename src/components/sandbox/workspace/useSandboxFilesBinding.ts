@@ -132,9 +132,7 @@ export function useSandboxFilesBinding({
 			return;
 		}
 
-		const sandboxKey = String(
-			activeSession?.agentSessionId || activeSessionId || "",
-		).trim();
+		const sandboxKey = String(sessionTaskId || "").trim();
 		if (!sandboxKey) {
 			setFallbackSandboxDir(undefined);
 			fallbackResolvedKeyRef.current = null;
@@ -167,7 +165,6 @@ export function useSandboxFilesBinding({
 		};
 	}, [
 		activeSession,
-		activeSessionId,
 		boundTask?.metadata?.sandboxDir,
 		sessionSandboxDir,
 		sessionTaskId,

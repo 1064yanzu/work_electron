@@ -165,18 +165,24 @@ export function createAgentSdkHandlers(options: {
 				// 收集 stderr 关键错误信息，用于在 sawResult=false 时提供更有意义的错误
 				const stderrErrors: string[] = [];
 				const stderr = (data: string) => {
-					logger.info({
+					const normalizedData =
+						typeof data === "string" ? data.slice(0, 20000) : String(data);
+					const isErrorLike =
+						typeof data === "string" &&
+						/error|exception|fail|crash|closed/i.test(data);
+					const logPayload = {
 						msg: "agent_sdk stderr",
 						scope: "agent",
 						runId,
-						data:
-							typeof data === "string" ? data.slice(0, 20000) : String(data),
-					});
+						data: normalizedData,
+					};
+					if (isErrorLike) {
+						logger.error(logPayload);
+					} else {
+						logger.info(logPayload);
+					}
 					// 收集关键错误信息
-					if (
-						typeof data === "string" &&
-						/error|exception|fail|crash|closed/i.test(data)
-					) {
+					if (isErrorLike) {
 						stderrErrors.push(data.slice(0, 500));
 					}
 					emit(options.getMainWindow, { runId, type: "stderr", error: data });

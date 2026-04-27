@@ -225,7 +225,7 @@ export async function listAgentTasks(
 export async function updateAgentTask(
 	id: string,
 	updates: Partial<
-		Pick<AgentTaskRecord, "status" | "error" | "result_summary">
+		Pick<AgentTaskRecord, "status" | "error" | "result_summary" | "budget_json">
 	>,
 ): Promise<void> {
 	return await safeInvoke("agent_update_task", {
@@ -234,6 +234,7 @@ export async function updateAgentTask(
 			status: updates.status ?? "queued",
 			error: updates.error,
 			result_summary: updates.result_summary,
+			budget_json: updates.budget_json,
 		},
 	});
 }
@@ -457,11 +458,34 @@ export async function getFullSessionHistory(sessionId: string): Promise<{
 	tasks: AgentTaskRecord[];
 	auditLogs: AuditLogRecord[];
 }> {
-	const [session, tasks, auditLogs] = await Promise.all([
-		getAgentSession(sessionId),
+	const [sessionResult, tasks, auditLogs] = await Promise.all([
+		getAgentSession(sessionId).catch((error) => {
+			if (
+				error instanceof Error &&
+				error.message === "Agent session not found"
+			) {
+				console.warn(
+					"[agent/api] 后端会话记录不存在，改为按任务历史降级恢复:",
+					sessionId,
+				);
+				return null;
+			}
+			throw error;
+		}),
 		listAgentTasks(sessionId),
 		listAuditLogs(sessionId, 100),
 	]);
+
+	const session =
+		sessionResult ||
+		({
+			id: sessionId,
+			title: null,
+			status: "archived",
+			config_json: null,
+			created_at: "",
+			updated_at: "",
+		} satisfies AgentSession);
 
 	return { session, tasks, auditLogs };
 }

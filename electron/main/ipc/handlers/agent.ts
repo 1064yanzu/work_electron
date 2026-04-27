@@ -414,6 +414,7 @@ export function createAgentTaskHandlers(db: DbContext) {
 			status?: string;
 			error?: string;
 			result_summary?: string;
+			budget_json?: unknown;
 			started_at?: number;
 			finished_at?: number;
 		},
@@ -432,6 +433,12 @@ export function createAgentTaskHandlers(db: DbContext) {
 		if (input.result_summary !== undefined) {
 			updates.push("result_summary = ?");
 			args.push(input.result_summary);
+		}
+		if (input.budget_json !== undefined) {
+			updates.push("budget_json = ?");
+			args.push(
+				input.budget_json === null ? null : JSON.stringify(input.budget_json),
+			);
 		}
 		if (input.started_at !== undefined) {
 			updates.push("started_at = ?");

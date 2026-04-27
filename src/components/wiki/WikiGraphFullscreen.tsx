@@ -29,7 +29,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { sessionStore } from "../../lib/agent/sessionManager";
+import { useActiveThreadScope } from "../../lib/chat/threadScope";
 import { workspaceStore } from "../../lib/workspaceStore";
 import { useWiki, type WikiPageItem } from "./useWiki";
 import { WIKI_NODE_COLORS, WikiGraphCanvas } from "./WikiGraphCanvas";
@@ -48,9 +48,7 @@ const PAGE_TYPE_META: Array<{
 ];
 
 export function WikiGraphFullscreen() {
-	const [scopePath] = useState<string | null>(
-		() => sessionStore.getCurrentSession()?.cwd ?? null,
-	);
+	const { scopePath } = useActiveThreadScope();
 
 	const { pages, loading, refresh, openInEditor } = useWiki(scopePath);
 

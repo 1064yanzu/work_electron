@@ -625,6 +625,7 @@ export class ClaudeAgentService {
 		const debug = import.meta.env?.VITE_AGENT_DEBUG === "1";
 		const toolNamesById = new Map<string, string>();
 		const streamState = new AgentStreamState();
+		let streamedVisibleText = "";
 		const bufferedEvents: Array<{
 			runId: string;
 			type: string;
@@ -1222,10 +1223,18 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "text_delta") {
+							// text_delta 是 SDK 流式传输的真正增量片段，直接追加
+							// 不使用 mergeStreamingText（那是为全量快照合并设计的）
+							// 使用该函数会在某些边界情况下错误地判断"重复"，导致文本被丢弃或重复
+							const delta =
+								typeof event.content === "string" ? event.content : "";
+							if (!delta) {
+								continue;
+							}
+							streamedVisibleText += delta;
 							sawNonThoughtProgress = true;
 							thoughtOnlyStartedAt = null;
-							// 只处理增量文本，忽略完整 text 事件避免重复
-							onChunk?.(event.content);
+							onChunk?.(delta);
 						} else if (event.type === "thought_delta") {
 							if (!sawNonThoughtProgress) {
 								if (thoughtOnlyStartedAt === null) {

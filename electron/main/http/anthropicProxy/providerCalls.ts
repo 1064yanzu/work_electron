@@ -525,7 +525,7 @@ export async function callProvider(
 	});
 
 	const response = await loggedFetch(
-		`/chat/completions`,
+		`${baseUrl}/chat/completions`,
 		{
 			method: "POST",
 			headers,
@@ -847,6 +847,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		messageId,
 		model,
 		estimatedInputTokens,
+		logger,
+		requestId,
 	} = params;
 	let messageStarted = false;
 	let heartbeatTimer: NodeJS.Timeout | null = null;
@@ -939,6 +941,27 @@ async function streamOpenAIResponsesToAnthropic(params: {
 	let finalResponse: OpenAIResponsesResponse | null = null;
 	let pendingStopReason: AnthropicResponse["stop_reason"] | null = null;
 	let finalized = false;
+
+	const hasVisibleAssistantOutput = () =>
+		[...textStates.values()].some((state) => Boolean(state.text)) ||
+		[...thoughtStates.values()].some((state) => Boolean(state.text));
+
+	const hasFlushableToolCalls = () =>
+		[...toolCalls.values()].some(
+			(state) =>
+				typeof state.name === "string" &&
+				state.name.trim().length > 0 &&
+				(Boolean(state.args) || Boolean(state.id)),
+		);
+
+	const isRecoverableStreamTerminationError = (value: unknown) => {
+		const message =
+			value instanceof Error ? value.message : typeof value === "string" ? value : "";
+		if (!message) return false;
+		return /stream_read_error|stream closed|missing finish_reason|socket hang up|unexpected end|terminated/i.test(
+			message,
+		);
+	};
 
 	const stopTextBlockIfNeeded = (key = activeTextKey) => {
 		if (!key) return;
@@ -1107,43 +1130,6 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		return `tool_${toolCalls.size}`;
 	};
 
-	const ensureToolCallBlock = (state: ResponsesToolCallState) => {
-		if (state.blockIndex !== null) return;
-		// 延迟创建 block 直到 name 可用。
-		// 当 function_call_arguments.delta 先于 output_item.added 到达时，
-		// state.name 还未被设置，此时不应创建 block，而是继续缓冲 args。
-		// name 将在 output_item.added 或 response.completed 时通过
-		// hydrateToolCallFromItem 设置，届时再创建 block 并 flush 所有缓冲 args。
-		if (!state.name) return;
-		stopTextBlockIfNeeded();
-		stopThoughtBlockIfNeeded();
-		state.blockIndex = nextBlockIndex++;
-		writeSseEvent(res, "content_block_start", {
-			type: "content_block_start",
-			index: state.blockIndex,
-			content_block: {
-				type: "tool_use",
-				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-				name: state.name,
-				input: {},
-			},
-		});
-	};
-
-	const emitToolCallArgsIfNeeded = (state: ResponsesToolCallState) => {
-		ensureToolCallBlock(state);
-		const deltaArgs = state.args.slice(state.sentArgsLength);
-		if (!deltaArgs || state.blockIndex === null) return;
-		writeSseEvent(res, "content_block_delta", {
-			type: "content_block_delta",
-			index: state.blockIndex,
-			delta: {
-				type: "input_json_delta",
-				partial_json: deltaArgs,
-			},
-		});
-		state.sentArgsLength = state.args.length;
-	};
 
 	const hydrateToolCallFromItem = (
 		item: Record<string, unknown>,
@@ -1164,7 +1150,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		if (typeof item.arguments === "string" && item.arguments) {
 			state.args = mergeStreamingFragment(state.args, item.arguments);
 		}
-		emitToolCallArgsIfNeeded(state);
+		// 【关键修复】只积累状态，不实时 emit，等 finalize 时一次性发送
 	};
 
 	const hydrateMessageItem = (
@@ -1205,7 +1191,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		stopThoughtBlockIfNeeded();
 
 		// 强制刷出所有延迟创建的 tool call blocks
-		// （处理 name 从未到达的极端情况，如流中断）
+		// 【关键修复】使用 emitToolUseBlock 一次性发送完整 JSON，
+		// 避免 SDK 的 input_json_delta 流式拼装器在超大输入时解析为 {} 的 bug。
 		for (const state of toolCalls.values()) {
 			if (state.blockIndex !== null) continue;
 			if (!state.args && !state.name && !state.id) continue;
@@ -1214,9 +1201,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			if (!toolName) continue;
 			stopTextBlockIfNeeded();
 			stopThoughtBlockIfNeeded();
-			state.blockIndex = nextBlockIndex++;
-			// 清洗参数：移除空字符串可选参数
-			let sanitizedArgs = state.args;
+			// 解析并清洗参数
+			let parsedInput: unknown = {};
 			try {
 				const parsed = JSON.parse(state.args || "{}");
 				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -1227,33 +1213,24 @@ async function streamOpenAIResponsesToAnthropic(params: {
 						if (v === "") continue;
 						cleaned[k] = v;
 					}
-					sanitizedArgs = JSON.stringify(cleaned);
+					parsedInput = cleaned;
+				} else {
+					parsedInput = parsed;
 				}
 			} catch {
-				// 保持原始 args
+				console.warn(
+					`[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
+				);
 			}
-			writeSseEvent(res, "content_block_start", {
-				type: "content_block_start",
-				index: state.blockIndex,
-				content_block: {
-					type: "tool_use",
-					id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-					name: toolName,
-					input: {},
-				},
+			state.blockIndex = nextBlockIndex;
+			emitToolUseBlock(res, {
+				index: nextBlockIndex++,
+				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+				name: toolName,
+				input: parsedInput,
 			});
-			const pendingArgs = sanitizedArgs.slice(state.sentArgsLength);
-			if (pendingArgs) {
-				writeSseEvent(res, "content_block_delta", {
-					type: "content_block_delta",
-					index: state.blockIndex,
-					delta: {
-						type: "input_json_delta",
-						partial_json: pendingArgs,
-					},
-				});
-				state.sentArgsLength = sanitizedArgs.length;
-			}
+			state.stopped = true;
+			state.sentArgsLength = state.args.length;
 		}
 
 		stopAllToolCallBlocksIfNeeded();
@@ -1353,7 +1330,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				if (typeof event.delta === "string" && event.delta) {
 					state.args = mergeStreamingFragment(state.args, event.delta);
 				}
-				emitToolCallArgsIfNeeded(state);
+				// 【关键修复】只积累 args，不实时 emit，等 finalize 时一次性发送
 				return;
 			}
 
@@ -1369,7 +1346,7 @@ async function streamOpenAIResponsesToAnthropic(params: {
 				if (finalArgs) {
 					state.args = mergeStreamingFragment(state.args, finalArgs);
 				}
-				emitToolCallArgsIfNeeded(state);
+				// 【关键修复】只积累 args，不实时 emit，等 finalize 时一次性发送
 				return;
 			}
 
@@ -1433,6 +1410,27 @@ async function streamOpenAIResponsesToAnthropic(params: {
 	}
 
 	if (streamError) {
+		if (
+			isRecoverableStreamTerminationError(streamError) &&
+			(hasVisibleAssistantOutput() || hasFlushableToolCalls())
+		) {
+			logger?.warn({
+				msg: "anthropic proxy: recovering responses stream after partial termination",
+				requestId,
+				model,
+				error:
+					streamError instanceof Error
+						? streamError.message
+						: String(streamError),
+				hasVisibleAssistantOutput: hasVisibleAssistantOutput(),
+				hasFlushableToolCalls: hasFlushableToolCalls(),
+			});
+			if (!pendingStopReason) {
+				pendingStopReason = hasFlushableToolCalls() ? "tool_use" : "end_turn";
+			}
+			finalize();
+			return;
+		}
 		finishWithError(
 			streamError instanceof Error ? streamError.message : String(streamError),
 		);
@@ -1846,6 +1844,23 @@ export async function callProviderStream(
 	let sawExplicitFinishReason = false;
 	let sawAssistantDelta = false;
 
+	const hasFlushableToolCalls = () =>
+		[...toolCalls.values()].some(
+			(state) =>
+				typeof state.name === "string" &&
+				state.name.trim().length > 0 &&
+				(Boolean(state.args) || Boolean(state.id)),
+		);
+
+	const isRecoverableStreamTerminationError = (value: unknown) => {
+		const message =
+			value instanceof Error ? value.message : typeof value === "string" ? value : "";
+		if (!message) return false;
+		return /stream_read_error|stream closed|missing finish_reason|socket hang up|unexpected end|terminated/i.test(
+			message,
+		);
+	};
+
 	const stopTextBlockIfNeeded = () => {
 		if (textBlockIndex === null) return;
 		writeSseEvent(res, "content_block_stop", {
@@ -1881,25 +1896,7 @@ export async function callProviderStream(
 		return thoughtBlockIndex;
 	};
 
-	const startToolCallBlockIfNeeded = (state: StreamingToolCallState) => {
-		if (state.blockIndex !== null) return;
-		// 延迟创建 block 直到 name 可用，避免 unknown_tool
-		const toolName = typeof state.name === "string" ? state.name.trim() : "";
-		if (!toolName) return;
-		stopTextBlockIfNeeded();
-		stopThoughtBlockIfNeeded();
-		state.blockIndex = nextBlockIndex++;
-		writeSseEvent(res, "content_block_start", {
-			type: "content_block_start",
-			index: state.blockIndex,
-			content_block: {
-				type: "tool_use",
-				id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
-				name: toolName,
-				input: {},
-			},
-		});
-	};
+
 
 	const emitToolCallArgsIfNeeded = (state: StreamingToolCallState) => {
 		if (state.blockIndex === null) return;
@@ -1937,10 +1934,38 @@ export async function callProviderStream(
 			// 跳过无名工具调用
 			const toolName = typeof state.name === "string" ? state.name.trim() : "";
 			if (!toolName) continue;
-			startToolCallBlockIfNeeded(state);
-			emitToolCallArgsIfNeeded(state);
+			// 【关键修复】使用 emitToolUseBlock 一次性发送完整 JSON，
+			// 而不是通过 startToolCallBlockIfNeeded + emitToolCallArgsIfNeeded
+			// 的流式路径。SDK 的 input_json_delta 流式拼装器在处理超大输入时
+			// 有 bug（input 被解析为 {}），一次性发送可绕过该问题。
+			if (state.blockIndex === null) {
+				// 还没有发送过 block，用完整 JSON 一次性发
+				let parsedInput: unknown = {};
+				if (state.args) {
+					try {
+						parsedInput = JSON.parse(state.args);
+					} catch {
+						// args 不是合法 JSON，保持 {} 并记录警告
+						console.warn(
+							`[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
+						);
+					}
+				}
+				state.blockIndex = nextBlockIndex;
+				emitToolUseBlock(res, {
+					index: nextBlockIndex++,
+					id: state.id || `toolu_${crypto.randomUUID().replace(/-/g, "")}`,
+					name: toolName,
+					input: parsedInput,
+				});
+				state.stopped = true;
+			} else {
+				// 已经发送过 block（不应发生，兜底处理）
+				emitToolCallArgsIfNeeded(state);
+			}
 			flushed = true;
 		}
+		// 停止所有已开启但未关闭的 blocks（兜底）
 		stopAllToolCallBlocksIfNeeded();
 		return flushed;
 	};
@@ -2054,8 +2079,11 @@ export async function callProviderStream(
 							tc.function.arguments,
 						);
 					}
-					startToolCallBlockIfNeeded(existing);
-					emitToolCallArgsIfNeeded(existing);
+					// 【关键修复】不在流式过程中实时发送 input_json_delta，
+					// 只累积 args，等 finish_reason 时由 flushToolCallsAsToolUse
+					// 用完整 JSON 一次性发送。
+					// 原因：SDK 的流式 JSON 拼装器在处理超大输入（如 1MB+ HTML）
+					// 时存在 bug，会将 input 解析为 {}，触发 InputValidationError。
 					toolCalls.set(idx, existing);
 				}
 			}
@@ -2107,12 +2135,38 @@ export async function callProviderStream(
 			toolCallCount: toolCalls.size,
 			hasUsage: !!lastUsage,
 		});
+		if (sawAssistantDelta || hasFlushableToolCalls()) {
+			pendingStopReason = hasFlushableToolCalls() ? "tool_use" : "end_turn";
+			finalize();
+			return;
+		}
 		streamError = new Error(
 			"Upstream stream closed before completion (missing finish_reason/[DONE])",
 		);
 	}
 
 	if (streamError) {
+		if (
+			isRecoverableStreamTerminationError(streamError) &&
+			(sawAssistantDelta || hasFlushableToolCalls())
+		) {
+			logger?.warn({
+				msg: "anthropic proxy: recovering chat-completions stream after partial termination",
+				requestId,
+				model,
+				error:
+					streamError instanceof Error
+						? streamError.message
+						: String(streamError),
+				sawAssistantDelta,
+				hasFlushableToolCalls: hasFlushableToolCalls(),
+			});
+			if (!pendingStopReason) {
+				pendingStopReason = hasFlushableToolCalls() ? "tool_use" : "end_turn";
+			}
+			finalize();
+			return;
+		}
 		const msg =
 			streamError instanceof Error ? streamError.message : String(streamError);
 		writeSseEvent(res, "error", {

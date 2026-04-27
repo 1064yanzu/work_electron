@@ -44,7 +44,6 @@ import { Model, ModelSelector } from "./ModelSelector";
 import { type SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
-import { SuggestionChips, getDefaultSuggestionChips } from "./SuggestionChips";
 
 // 提交选项
 export interface SubmitOptions {
@@ -502,11 +501,6 @@ export function ChatInput({
 		setIsFocused(false);
 	}, []);
 
-	const suggestionChips = useMemo(
-		() => getDefaultSuggestionChips(() => setValue("/"), onOpenPromptLibrary),
-		[onOpenPromptLibrary],
-	);
-
 	// 是否处于展开状态
 	const isExpanded =
 		isFocused ||
@@ -561,17 +555,6 @@ export function ChatInput({
 					}
 				`}
 			>
-				{/* 建议 Chips — 聚焦时展开 */}
-				<SuggestionChips
-					chips={suggestionChips}
-					visible={
-						isExpanded &&
-						contexts.length === 0 &&
-						selectedChips.length === 0 &&
-						!showSlashMenu
-					}
-				/>
-
 				{/* 上下文附件条 */}
 				{contexts.length > 0 ? (
 					<div className="px-4 pt-3 pb-1">

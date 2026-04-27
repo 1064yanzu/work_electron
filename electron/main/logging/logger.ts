@@ -38,6 +38,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return proto === Object.prototype || proto === null;
 }
 
+function getStructuredLogPayload(
+	info: Record<string, unknown>,
+): Record<string, unknown> {
+	if (isPlainObject(info.message)) {
+		return info.message as Record<string, unknown>;
+	}
+	return info;
+}
+
 const SENSITIVE_KEY_RE =
 	/(^|[_-])(api[_-]?key|token|authorization|cookie|password|secret)([_-]|$)/i;
 
@@ -64,9 +73,10 @@ function redactSecrets(value: unknown, keyHint?: string): unknown {
 }
 
 function toConsoleSummary(info: Record<string, unknown>): string {
+	const payload = getStructuredLogPayload(info);
 	const msg =
-		typeof info.msg === "string"
-			? info.msg
+		typeof payload.msg === "string"
+			? payload.msg
 			: typeof info.message === "string"
 				? info.message
 				: "";
@@ -84,7 +94,7 @@ function toConsoleSummary(info: Record<string, unknown>): string {
 
 	const parts: string[] = [];
 	for (const k of pickedKeys) {
-		const v = info[k];
+		const v = payload[k];
 		if (v === undefined || v === null) continue;
 		if (typeof v === "string") {
 			parts.push(`${k}=${truncateText(v, 120)}`);
@@ -101,6 +111,13 @@ function toConsoleSummary(info: Record<string, unknown>): string {
 		if (typeof v === "object") {
 			parts.push(`${k}={...}`);
 		}
+	}
+
+	if (typeof payload.error === "string" && payload.error.trim()) {
+		parts.push(`error=${truncateText(payload.error, 180)}`);
+	}
+	if (typeof payload.data === "string" && payload.data.trim()) {
+		parts.push(`data=${truncateText(payload.data, 180)}`);
 	}
 
 	return parts.length > 0 ? `${msg} (${parts.join(" ")})` : msg;

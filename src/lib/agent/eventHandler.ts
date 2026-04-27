@@ -25,9 +25,10 @@ export interface EventHandlerCallbacks {
 export class AgentEventHandler {
 	private streamState = new AgentStreamState();
 	private callbacks: EventHandlerCallbacks = {};
-	private sawStreamText = false;
 	private toolUseErrorCount = 0;
 	private lastToolUseError: string | null = null;
+	/** 累积已发送的可见文本，用于 text_delta 去重（避免与 claudeAgentService 双重推送） */
+	private streamedVisibleText = "";
 
 	/**
 	 * 设置回调函数
@@ -102,7 +103,8 @@ export class AgentEventHandler {
 			}
 		}
 
-		// 处理 assistant 消息
+		// 处理 assistant 消息（仅发送 onMessage，不调用 onChunk）
+		// text 内容统一由 handleTransformed 的 text_delta 路径处理，避免重复
 		if (message.type === "assistant" || message.type === "stream_event") {
 			const content = this.extractTextFromMessage(message);
 			if (content) {
@@ -111,13 +113,6 @@ export class AgentEventHandler {
 					content,
 					status: "running",
 				});
-
-				if (message.type === "stream_event") {
-					this.sawStreamText = true;
-					this.callbacks.onChunk?.(content);
-				} else if (!this.sawStreamText) {
-					this.callbacks.onChunk?.(content);
-				}
 			}
 		}
 
@@ -139,8 +134,21 @@ export class AgentEventHandler {
 		for (const event of events) {
 			switch (event.type) {
 				case "text":
+					// 'text' 是完整快照，只取相对于已发送文本的新增部分
+					if (typeof event.content === "string" && event.content.length > this.streamedVisibleText.length) {
+						const delta = event.content.slice(this.streamedVisibleText.length);
+						if (delta) {
+							this.streamedVisibleText = event.content;
+							this.callbacks.onChunk?.(delta);
+						}
+					}
+					break;
 				case "text_delta":
-					this.callbacks.onChunk?.(event.content);
+					// 'text_delta' 是真正的增量，直接追加（无需去重）
+					if (typeof event.content === "string" && event.content) {
+						this.streamedVisibleText += event.content;
+						this.callbacks.onChunk?.(event.content);
+					}
 					break;
 
 				case "thought_delta":
@@ -277,9 +285,9 @@ export class AgentEventHandler {
 	 */
 	reset(): void {
 		this.streamState.reset();
-		this.sawStreamText = false;
 		this.toolUseErrorCount = 0;
 		this.lastToolUseError = null;
+		this.streamedVisibleText = "";
 	}
 }
 

@@ -55,6 +55,7 @@ import {
 	getVisibleSessionsForGroup,
 	useThreadGroupVisibility,
 } from "./threads/threadGroupVisibility";
+import { workspaceStore } from "../../lib/workspaceStore";
 
 interface ThreadsViewProps {
 	onNavigateWorkbench?: () => void;
@@ -244,6 +245,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 			// 如果对话有关联 cwd，同步到 sessionStore 的当前会话
 			const cwd = resolveCwd(session, backendMetadataBySessionId);
+			workspaceStore.setCurrentThreadScope(cwd || null, session.title);
 			if (cwd) {
 				// 优先找已有的 agentSession 关联
 				if (session.agentSessionId) {
