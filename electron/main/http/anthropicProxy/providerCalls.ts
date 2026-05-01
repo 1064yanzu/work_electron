@@ -13,6 +13,7 @@ import {
 	translateToAnthropic,
 	translateToOpenAI,
 } from "./openaiCompat";
+import { isDeepSeekModel } from "./deepseekCompat";
 import {
 	getOpenAIResponsesErrorMessage,
 	getOpenAIEndpointResolution,
@@ -427,7 +428,9 @@ export async function callProvider(
 	// 转换 Anthropic 请求为 OpenAI 格式
 	const openaiMessages = normalizeMessagesForProvider(
 		provider,
-		translateToOpenAI(anthropicReq),
+		translateToOpenAI(anthropicReq, {
+			preserveReasoningContent: isDeepSeekModel(model),
+		}),
 		logger,
 	);
 
@@ -631,6 +634,9 @@ export async function callProvider(
 }
 
 function writeSseEvent(res: Response, event: string, data: unknown) {
+	// 客户端断开后底层 socket 已关闭，写入会触发 ERR_STREAM_WRITE_AFTER_END 或失败。
+	// 静默丢弃写入，避免 heartbeat / 收尾事件污染日志。
+	if (res.writableEnded || res.destroyed) return;
 	res.write(`event: ${event}\n`);
 	res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
@@ -897,6 +903,8 @@ async function streamOpenAIResponsesToAnthropic(params: {
 
 	sendMessageStart();
 	startHeartbeat();
+	// 客户端中途断开（页面切换 / 取消）时立即停止 heartbeat，避免向 ended socket 继续写 ping。
+	res.once("close", stopHeartbeat);
 
 	if (!upstreamBody) {
 		finishWithError("No upstream body");
@@ -956,7 +964,11 @@ async function streamOpenAIResponsesToAnthropic(params: {
 
 	const isRecoverableStreamTerminationError = (value: unknown) => {
 		const message =
-			value instanceof Error ? value.message : typeof value === "string" ? value : "";
+			value instanceof Error
+				? value.message
+				: typeof value === "string"
+					? value
+					: "";
 		if (!message) return false;
 		return /stream_read_error|stream closed|missing finish_reason|socket hang up|unexpected end|terminated/i.test(
 			message,
@@ -1129,7 +1141,6 @@ async function streamOpenAIResponsesToAnthropic(params: {
 		}
 		return `tool_${toolCalls.size}`;
 	};
-
 
 	const hydrateToolCallFromItem = (
 		item: Record<string, unknown>,
@@ -1524,7 +1535,9 @@ export async function callProviderStream(
 	// OpenAI-compatible: stream chat completions and translate to Anthropic SSE
 	const openaiMessages = normalizeMessagesForProvider(
 		provider,
-		translateToOpenAI(anthropicReq),
+		translateToOpenAI(anthropicReq, {
+			preserveReasoningContent: isDeepSeekModel(model),
+		}),
 		logger,
 	);
 	const headers: Record<string, string> = {
@@ -1669,6 +1682,8 @@ export async function callProviderStream(
 
 	sendMessageStart();
 	startHeartbeat();
+	// 客户端中途断开时立即停止 heartbeat，避免向 ended socket 写 ping。
+	res.once("close", stopHeartbeat);
 
 	const upstream = await loggedFetch(
 		`${baseUrl}/chat/completions`,
@@ -1854,7 +1869,11 @@ export async function callProviderStream(
 
 	const isRecoverableStreamTerminationError = (value: unknown) => {
 		const message =
-			value instanceof Error ? value.message : typeof value === "string" ? value : "";
+			value instanceof Error
+				? value.message
+				: typeof value === "string"
+					? value
+					: "";
 		if (!message) return false;
 		return /stream_read_error|stream closed|missing finish_reason|socket hang up|unexpected end|terminated/i.test(
 			message,
@@ -1895,8 +1914,6 @@ export async function callProviderStream(
 		});
 		return thoughtBlockIndex;
 	};
-
-
 
 	const emitToolCallArgsIfNeeded = (state: StreamingToolCallState) => {
 		if (state.blockIndex === null) return;

@@ -1,5 +1,5 @@
 import { Check, Edit2, Eye, FileText, PenTool } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	createOutputAsset,
 	listOutputAssets,
@@ -21,6 +21,16 @@ export default function OutputStage() {
 	const [editorContent, setEditorContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+	// 当前 typewriter 的 cancellation token：每次新触发或卸载时翻新，
+	// 老循环检测到 token 变更立即停止 setEditorContent，避免对已卸载组件 setState。
+	const typewriterTokenRef = useRef(0);
+
+	useEffect(() => {
+		return () => {
+			typewriterTokenRef.current += 1;
+		};
+	}, []);
 
 	const fetchOutputs = async () => {
 		try {
@@ -100,8 +110,12 @@ export default function OutputStage() {
 
 	// Typewriter effect for AI content
 	const typeWriterEffect = async (text: string) => {
+		// 每次启动新 typewriter 都翻新 token，老循环立即退出
+		typewriterTokenRef.current += 1;
+		const myToken = typewriterTokenRef.current;
 		setIsEditing(true); // Force edit mode
 		for (let i = 0; i < text.length; i++) {
+			if (typewriterTokenRef.current !== myToken) return;
 			setEditorContent((prev) => prev + text.charAt(i));
 			await new Promise((resolve) => setTimeout(resolve, 10)); // 10ms delay per char
 		}
@@ -127,7 +141,11 @@ export default function OutputStage() {
 						setSelectedOutput(newAsset);
 						setEditorContent(newAsset.content);
 						// Small delay to ensure state updates before typing
-						setTimeout(() => typeWriterEffect(contentToAdd), 100);
+						const initialToken = typewriterTokenRef.current;
+						setTimeout(() => {
+							if (typewriterTokenRef.current !== initialToken) return;
+							typeWriterEffect(contentToAdd);
+						}, 100);
 					} catch (e) {
 						console.error("AI Auto-create failed", e);
 					}
@@ -143,6 +161,8 @@ export default function OutputStage() {
 
 	// Handle switching documents
 	const handleSelectOutput = (output: OutputAsset) => {
+		// 切换文档时让正在跑的 typewriter 立即停下
+		typewriterTokenRef.current += 1;
 		setSelectedOutput(output);
 		setEditorContent(output.content);
 		setLastSaved(null); // Reset save status

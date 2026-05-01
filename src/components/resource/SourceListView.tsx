@@ -1,19 +1,13 @@
 // 资料列表视图组件
 
 import {
-	ArrowDownToLine,
-	CheckSquare,
 	FileText,
 	Folder as FolderIcon,
-	Globe,
 	Link,
 	Loader2,
 	MoreHorizontal,
 	Paperclip,
 	PenLine,
-	Search,
-	Square,
-	Trash2,
 } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { useCallback, useRef } from "react";
@@ -25,14 +19,9 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
-import {
-	type Folder,
-	type Source,
-	SourceOrigin,
-	SourceType,
-} from "../../types";
-import { getSourceTypeConfig } from "../../lib/sourceTypeConfig";
+import type { Folder, Source } from "../../types";
 import { ResourceSidebarHeader } from "./sidebar/ResourceSidebarHeader";
+import { SourceCard } from "./cards/SourceCard";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
 
 interface SourceListViewProps {
@@ -167,12 +156,6 @@ export function SourceListView({
 		overscan: 14,
 	});
 
-	const getIconForSource = useCallback((kind: SourceType) => {
-		const config = getSourceTypeConfig(kind);
-		const Icon = config.icon;
-		return <Icon className={`w-4 h-4 ${config.iconColor}`} />;
-	}, []);
-
 	const handleToggleViewMode = useCallback(() => {
 		const nextMode = viewMode === "grid" ? "list" : "grid";
 		const startedAt = performance.now();
@@ -196,26 +179,12 @@ export function SourceListView({
 		});
 	}, [sources.length, viewMode]);
 
-	const getKindColor = useCallback((kind: SourceType) => {
-		return getSourceTypeConfig(kind).dotColor;
-	}, []);
-
-	const getScopeLabel = useCallback((source: Source) => {
-		return source.scope === "project" ? "项目内" : "全局";
-	}, []);
-
-	const getScopeBadgeClassName = useCallback((source: Source) => {
-		return source.scope === "project"
-			? "bg-warm-200/80/70 text-text-secondary"
-			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
-	}, []);
-
 	// 渲染面包屑导航
 	const renderBreadcrumb = useCallback(() => {
 		if (breadcrumbPath.length <= 1) return null;
 
 		return (
-			<div className="px-3 py-2 flex items-center gap-1 text-xs border-b border-border bg-warm-50/50/30 overflow-x-auto scrollbar-hide">
+			<div className="px-3 py-2 flex items-center gap-1 text-xs border-b border-border bg-warm-50/30 overflow-x-auto scrollbar-hide">
 				{breadcrumbPath.map((item, index) => (
 					<div
 						key={item.id ?? "root"}
@@ -466,23 +435,28 @@ export function SourceListView({
 	const renderSourceCard = useCallback(
 		(source: Source) => {
 			const isSelected = selectedIdSet.has(source.id);
-			const cardBase =
-				viewMode === "grid"
-					? "p-3 flex flex-col"
-					: "p-2 flex items-center gap-3";
-			const cardState = selectionMode
-				? isSelected
-					? "ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-					: "border border-dashed border-border"
-				: viewMode === "grid"
-					? "ring-1 ring-zinc-200/60 dark:ring-zinc-700/50 bg-surface/50 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
-					: "hover:bg-warm-50/80/50 hover:pl-3";
 			const isDraggingThis =
 				isMouseDragging && dragItem?.sourceId === source.id;
 			return (
-				<div
+				<SourceCard
 					key={source.id}
-					draggable={!selectionMode}
+					source={source}
+					viewMode={viewMode}
+					selectionMode={selectionMode}
+					isSelected={isSelected}
+					isDraggingThis={isDraggingThis}
+					onClick={() =>
+						selectionMode ? toggleSelection(source.id) : onOpenDetail(source)
+					}
+					onContextMenu={(e) => {
+						if (selectionMode) return;
+						e.preventDefault();
+						setContextMenu({ x: e.clientX, y: e.clientY, source });
+					}}
+					onToggleSelect={() => toggleSelection(source.id)}
+					onDelete={() => {
+						void onDeleteSource(source);
+					}}
 					onDragStart={(e) => {
 						if (selectionMode) {
 							e.preventDefault();
@@ -503,96 +477,7 @@ export function SourceListView({
 							);
 						}
 					}}
-					onClick={() =>
-						selectionMode ? toggleSelection(source.id) : onOpenDetail(source)
-					}
-					onContextMenu={(e) => {
-						if (selectionMode) return;
-						e.preventDefault();
-						setContextMenu({ x: e.clientX, y: e.clientY, source });
-					}}
-					className={`group cursor-pointer rounded-xl transition-all duration-200 relative ${cardBase} ${cardState} ${isDraggingThis ? "opacity-50 scale-95" : ""}`}
-				>
-					{selectionMode ? (
-						<button
-							onClick={(e) => {
-								e.stopPropagation();
-								toggleSelection(source.id);
-							}}
-							className={`absolute top-2 left-2 p-1 rounded-md transition-colors ${
-								isSelected
-									? "bg-blue-600 text-white"
-									: "bg-surface/80/60 text-text-light"
-							}`}
-						>
-							{isSelected ? (
-								<CheckSquare className="w-4 h-4" />
-							) : (
-								<Square className="w-4 h-4" />
-							)}
-						</button>
-					) : null}
-					<div
-						className={`w-8 h-8 rounded-lg ${getKindColor(source.kind)} bg-opacity-10 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105`}
-					>
-						{getIconForSource(source.kind)}
-					</div>
-					<div className={viewMode === "grid" ? "mt-2" : "flex-1 min-w-0 ml-1"}>
-						<h3 className="text-sm font-medium text-text-primary dark:text-zinc-200 line-clamp-2 leading-snug">
-							{source.title}
-						</h3>
-						<div className="flex items-center gap-2 mt-1">
-							<p className="text-[10px] text-text-light">
-								{new Date(source.created_at).toLocaleDateString("zh-CN", {
-									month: "short",
-									day: "numeric",
-								})}
-							</p>
-							<span
-								className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(source)}`}
-							>
-								{getScopeLabel(source)}
-							</span>
-							{source.source_type === SourceOrigin.BrowserClip ? (
-								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
-									<Globe className="w-2.5 h-2.5" />
-									剪存
-								</span>
-							) : null}
-							{source.source_type === SourceOrigin.WebSearch ? (
-								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
-									<Search className="w-2.5 h-2.5" />
-									搜索
-								</span>
-							) : null}
-							{source.source_type === SourceOrigin.Import ? (
-								<span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-warm-200/70/60 text-text-secondary rounded text-[10px] font-medium">
-									<ArrowDownToLine className="w-2.5 h-2.5" />
-									导入
-								</span>
-							) : null}
-							{(source.tags || []).slice(0, 2).map((tag) => (
-								<span
-									key={`${source.id}-tag-${tag}`}
-									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80/70 text-text-muted"
-								>
-									#{tag}
-								</span>
-							))}
-						</div>
-					</div>
-					{!selectionMode ? (
-						<button
-							onClick={(e) => {
-								e.stopPropagation();
-								void onDeleteSource(source);
-							}}
-							className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0 hover:scale-110"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-						</button>
-					) : null}
-				</div>
+				/>
 			);
 		},
 		[
@@ -605,10 +490,6 @@ export function SourceListView({
 			handleDragStart,
 			handleDragEnd,
 			onOpenDetail,
-			getScopeBadgeClassName,
-			getScopeLabel,
-			getKindColor,
-			getIconForSource,
 			toggleSelection,
 			setContextMenu,
 			onDeleteSource,
@@ -634,7 +515,7 @@ export function SourceListView({
 			{renderBreadcrumb()}
 
 			{selectionMode && (
-				<div className="px-4 py-2 flex items-center gap-3 border-b border-border bg-warm-50/80/30 backdrop-blur-sm text-xs">
+				<div className="px-4 py-2 flex items-center gap-3 border-b border-border bg-warm-50/30 backdrop-blur-sm text-xs">
 					<span className="text-text-muted">已选 {selectedIds.length} 条</span>
 					<button
 						onClick={handleSelectAll}

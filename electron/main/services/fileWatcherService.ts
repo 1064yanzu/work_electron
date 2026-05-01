@@ -126,6 +126,13 @@ export async function stopWatching(
 ): Promise<{ success: boolean; error?: string }> {
 	const watcher = watchers.get(projectPath);
 	if (!watcher) {
+		// 即使 watcher 已经被清掉，也要确保任何残留的 buffer 被释放
+		pendingChanges.delete(projectPath);
+		const stale = debounceTimers.get(projectPath);
+		if (stale) {
+			clearTimeout(stale);
+			debounceTimers.delete(projectPath);
+		}
 		return { success: true };
 	}
 
@@ -133,12 +140,13 @@ export async function stopWatching(
 		await watcher.close();
 		watchers.delete(projectPath);
 
-		// 清理防抖定时器
+		// 清理防抖定时器与待发送变更，避免空 entry 累积
 		const timer = debounceTimers.get(projectPath);
 		if (timer) {
 			clearTimeout(timer);
 			debounceTimers.delete(projectPath);
 		}
+		pendingChanges.delete(projectPath);
 
 		return { success: true };
 	} catch (err) {

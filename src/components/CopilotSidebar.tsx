@@ -26,6 +26,7 @@ import {
 	encodeChatMessageToAgentContentJson,
 	loadAgentSessionMessagesAsChatMessages,
 } from "../lib/agent/chatBridge";
+import { normalizeAgentReplayMessages } from "../lib/chat/messageNormalization";
 import {
 	agentPersistence,
 	resumePersistentSession,
@@ -347,8 +348,10 @@ export default function CopilotSidebar() {
 						for (const m of replayMessages) {
 							if (!mergedById.has(m.id)) mergedById.set(m.id, m);
 						}
-						const merged = Array.from(mergedById.values()).sort(
-							(a, b) => a.timestamp - b.timestamp,
+						const merged = normalizeAgentReplayMessages(
+							Array.from(mergedById.values()).sort(
+								(a, b) => a.timestamp - b.timestamp,
+							),
 						);
 						chatStore.replaceSessionMessages(s.id, merged);
 					}

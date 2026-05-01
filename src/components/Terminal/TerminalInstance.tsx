@@ -51,7 +51,14 @@ export function TerminalInstance({
 	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
 
-	// 初始化 xterm.js
+	// 通过 ref 桥接 onExit，避免父组件 inline 闭包导致 useEffect 重建（每次渲染都
+	// 销毁/重建整个 xterm 实例 + 重新订阅 IPC）。
+	const onExitRef = useRef(onExit);
+	useEffect(() => {
+		onExitRef.current = onExit;
+	}, [onExit]);
+
+	// 初始化 xterm.js（仅依赖 terminalId）
 	useEffect(() => {
 		if (!containerRef.current) return;
 
@@ -107,7 +114,7 @@ export function TerminalInstance({
 				term.writeln(
 					`\r\n\x1b[90m[进程已退出，退出码: ${payload.exitCode}]\x1b[0m`,
 				);
-				onExit?.();
+				onExitRef.current?.();
 			}
 		});
 
@@ -126,7 +133,7 @@ export function TerminalInstance({
 			termRef.current = null;
 			fitAddonRef.current = null;
 		};
-	}, [terminalId, onExit]);
+	}, [terminalId]);
 
 	// 窗口 resize 时自适应
 	useEffect(() => {

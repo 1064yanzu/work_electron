@@ -324,6 +324,7 @@ export interface InvokeLlmPayload {
 	prompt: string;
 	context?: string[];
 	temperature?: number;
+	streamId?: string;
 }
 
 export interface LlmResponse {

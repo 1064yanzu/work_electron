@@ -22,6 +22,10 @@ export interface TerminalInfo {
 	createdAt: number;
 }
 
+interface IDisposable {
+	dispose(): void;
+}
+
 class TerminalService {
 	private terminals = new Map<
 		string,
@@ -30,6 +34,7 @@ class TerminalService {
 			info: TerminalInfo;
 			dataCallbacks: Set<(data: string) => void>;
 			exitCallbacks: Set<(exitCode: number, signal?: number) => void>;
+			disposables: IDisposable[];
 		}
 	>();
 
@@ -93,25 +98,29 @@ class TerminalService {
 			info,
 			dataCallbacks: new Set<(data: string) => void>(),
 			exitCallbacks: new Set<(exitCode: number, signal?: number) => void>(),
+			disposables: [] as IDisposable[],
 		};
 
 		this.terminals.set(id, entry);
 
-		// 监听 pty 数据输出
-		ptyProcess.onData((data) => {
+		// 监听 pty 数据输出。保存 disposable，destroyTerminal 时显式 dispose 避免残留监听器。
+		const dataDisposable = ptyProcess.onData((data) => {
 			for (const cb of entry.dataCallbacks) {
 				cb(data);
 			}
 		});
+		entry.disposables.push(dataDisposable);
 
 		// 监听 pty 退出
-		ptyProcess.onExit(({ exitCode, signal }) => {
+		const exitDisposable = ptyProcess.onExit(({ exitCode, signal }) => {
 			for (const cb of entry.exitCallbacks) {
 				cb(exitCode, signal);
 			}
-			// 终端退出后清理
+			// 终端退出后清理 disposable + entry
+			this.disposeAll(entry.disposables);
 			this.terminals.delete(id);
 		});
+		entry.disposables.push(exitDisposable);
 
 		return info;
 	}
@@ -146,6 +155,7 @@ class TerminalService {
 	destroyTerminal(id: string): boolean {
 		const entry = this.terminals.get(id);
 		if (!entry) return false;
+		this.disposeAll(entry.disposables);
 		try {
 			entry.process.kill();
 		} catch {
@@ -155,6 +165,18 @@ class TerminalService {
 		entry.exitCallbacks.clear();
 		this.terminals.delete(id);
 		return true;
+	}
+
+	private disposeAll(disposables: IDisposable[]): void {
+		while (disposables.length > 0) {
+			const d = disposables.pop();
+			if (!d) continue;
+			try {
+				d.dispose();
+			} catch {
+				// 忽略 dispose 异常，不影响其他清理
+			}
+		}
 	}
 
 	/**

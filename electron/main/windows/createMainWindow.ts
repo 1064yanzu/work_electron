@@ -27,6 +27,11 @@ export function createMainWindow({
 	// 设置主窗口引用，用于 LLM 流式输出
 	setMainWindow(win);
 
+	// 窗口销毁时释放所有持有的引用，避免 BrowserWindow 对象残留导致 GC 不掉（M3）
+	win.on("closed", () => {
+		setMainWindow(null);
+	});
+
 	win.webContents.on("did-finish-load", () => {
 		win.webContents.send("main-process-message", new Date().toLocaleString());
 	});

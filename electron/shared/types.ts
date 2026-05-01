@@ -337,6 +337,12 @@ export interface InvokeLlmPayload {
 	prompt: string;
 	context?: string[];
 	temperature?: number;
+	/**
+	 * 可选的流式取消令牌。渲染端为同一次会话生成 streamId，
+	 * 在切换会话/卸载组件时通过 invoke_llm_stream_cancel 主动取消，
+	 * 防止上游 SSE 连接和闭包泄漏。仅 invoke_llm_stream 使用。
+	 */
+	streamId?: string;
 }
 
 export interface InvokeLlmResult {

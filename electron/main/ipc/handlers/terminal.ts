@@ -5,6 +5,7 @@
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import { getTerminalService } from "../../services/terminalService";
+import { BatchedSender } from "../../utils/batchedSender";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -20,6 +21,12 @@ export function createTerminalHandlers(deps: {
 	const dataUnsubscribers = new Map<string, () => void>();
 	const exitUnsubscribers = new Map<string, () => void>();
 
+	// 所有终端共享一个 BatchedSender：节流式输出（如 npm install / 编译）的 IPC 频次
+	const terminalDataSender = new BatchedSender<{ id: string; data: string }>(
+		"terminal-data",
+		deps.getMainWindow,
+	);
+
 	const terminal_create: Handler<"terminal_create"> = async (_event, input) => {
 		const info = service.createTerminal(input.id, {
 			cwd: input.cwd,
@@ -33,17 +40,16 @@ export function createTerminalHandlers(deps: {
 		dataUnsubscribers.get(input.id)?.();
 		exitUnsubscribers.get(input.id)?.();
 
-		// 注册数据输出回调 -> 推送到前端
+		// 注册数据输出回调 -> 推送到前端（合并成 batched IPC）
 		const unsubData = service.onData(input.id, (data) => {
-			const win = deps.getMainWindow();
-			if (win && !win.isDestroyed()) {
-				win.webContents.send("terminal-data", { id: input.id, data });
-			}
+			terminalDataSender.send({ id: input.id, data });
 		});
 		dataUnsubscribers.set(input.id, unsubData);
 
 		// 注册退出回调 -> 通知前端
 		const unsubExit = service.onExit(input.id, (exitCode, signal) => {
+			// 退出前 flush，确保最后一段输出被前端先收到
+			terminalDataSender.flush();
 			const win = deps.getMainWindow();
 			if (win && !win.isDestroyed()) {
 				win.webContents.send("terminal-exit", {

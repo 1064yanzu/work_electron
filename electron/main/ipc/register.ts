@@ -13,6 +13,7 @@ import {
 	invokeLlmStream,
 	invokeImageGeneration,
 } from "../llm/invoke";
+import { llmStreamRegistry } from "../llm/streamRegistry";
 import type { Logger } from "../logging/types";
 import {
 	createAgentMemoryHandlers,
@@ -73,7 +74,7 @@ type IpcHandler<K extends keyof IPCSchema> = (
 // 主窗口引用，用于流式输出
 let mainWindowRef: BrowserWindow | null = null;
 
-export function setMainWindow(window: BrowserWindow) {
+export function setMainWindow(window: BrowserWindow | null) {
 	mainWindowRef = window;
 	// 同步传递给远程控制编排器，让远程消息可以注入到前端 UI
 	try {
@@ -82,7 +83,7 @@ export function setMainWindow(window: BrowserWindow) {
 		// orchestrator 可能尚未初始化，忽略
 	}
 	try {
-		getCloudNodeClient();
+		if (window) getCloudNodeClient();
 	} catch {
 		// cloud node client 可能尚未初始化，忽略
 	}
@@ -427,6 +428,25 @@ export function registerIpcHandlers({
 		logger.info({ msg: "invoke_llm_stream called", model: input.model });
 		return invokeLlmStream(db, mainWindowRef, input);
 	}) satisfies IpcHandler<"invoke_llm_stream">);
+
+	ipcMain.handle("invoke_llm_stream_cancel", (async (_event, input) => {
+		if (input?.cancelAll) {
+			const count = llmStreamRegistry.cancelAll("user-cancel-all");
+			logger.info({ msg: "invoke_llm_stream_cancel: cancelAll", count });
+			return { cancelled: count > 0, count };
+		}
+		const streamId = input?.streamId;
+		if (!streamId) {
+			return { cancelled: false, count: 0 };
+		}
+		const ok = llmStreamRegistry.cancel(streamId, "user-cancelled");
+		logger.info({
+			msg: "invoke_llm_stream_cancel",
+			streamId,
+			cancelled: ok,
+		});
+		return { cancelled: ok, count: ok ? 1 : 0 };
+	}) satisfies IpcHandler<"invoke_llm_stream_cancel">);
 
 	ipcMain.handle("invoke_image_generation", (async (_event, input) => {
 		logger.info({ msg: "invoke_image_generation called", model: input.model });

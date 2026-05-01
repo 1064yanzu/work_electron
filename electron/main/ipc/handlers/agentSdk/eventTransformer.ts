@@ -13,6 +13,7 @@ import type { BrowserWindow } from "electron";
 import { isSdkSessionId } from "./sessionId";
 import { uniqStrings } from "./configManager";
 import { publishAgentSdkBusEvent } from "../../../remote-control/core/agentSdkEventBus";
+import { BatchedSender } from "../../../utils/batchedSender";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -54,13 +55,56 @@ export type GetMainWindow = () => BrowserWindow | null;
 // emit helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Agent SDK 事件流的 BatchedSender。
+ * Agent 在长任务中可能产生密集的 thought_delta / text_delta，合并到帧粒度的单次 IPC
+ * 显著降低渲染端 setState 频率。
+ *
+ * - sender 在第一次 emit 时根据当时的 mainWindow 实例创建。
+ * - 关键边界（result / error / session_init 等）调用 flush() 立即送达。
+ */
+let agentSdkSender: BatchedSender<AgentSdkEventPayload> | null = null;
+let agentSdkSenderGetWindow: GetMainWindow | null = null;
+
+function getAgentSdkSender(
+	getMainWindow: GetMainWindow,
+): BatchedSender<AgentSdkEventPayload> {
+	if (agentSdkSender && agentSdkSenderGetWindow === getMainWindow) {
+		return agentSdkSender;
+	}
+	agentSdkSenderGetWindow = getMainWindow;
+	agentSdkSender = new BatchedSender<AgentSdkEventPayload>(
+		"agent-sdk-event",
+		() => {
+			const win = getMainWindow();
+			return win && !win.isDestroyed() ? win : null;
+		},
+	);
+	return agentSdkSender;
+}
+
+const FLUSH_IMMEDIATELY_TYPES = new Set([
+	"result",
+	"error",
+	"session_init",
+	"task_notification",
+	"files_persisted",
+	"system_notice",
+	"auth_status",
+	"tool_use_summary",
+]);
+
 export function emit(
 	getMainWindow: GetMainWindow,
 	payload: AgentSdkEventPayload,
 ) {
 	const win = getMainWindow();
 	if (!win) return;
-	win.webContents.send("agent-sdk-event", payload);
+	const sender = getAgentSdkSender(getMainWindow);
+	sender.send(payload);
+	if (FLUSH_IMMEDIATELY_TYPES.has(payload.type)) {
+		sender.flush();
+	}
 	publishAgentSdkBusEvent(payload as any);
 }
 
@@ -212,17 +256,27 @@ export function extractThoughtTextFromUnknown(
 ): string {
 	const out: string[] = [];
 	const seen = new Set<unknown>();
+	// 在递归过程中维护一个累计长度（含分隔符 "\n\n" 的近似），
+	// 避免每次循环都 out.join("\n\n").length 触发 O(N²) 字符串拼接。
+	const SEP_LEN = 2; // "\n\n"
+	let currentLen = 0;
+
+	const pushPart = (text: string): boolean => {
+		out.push(text);
+		currentLen += text.length + (out.length > 1 ? SEP_LEN : 0);
+		return currentLen >= maxChars;
+	};
 
 	const visit = (v: unknown, depth: number, inThoughtField: boolean) => {
 		if (v === null || v === undefined) return;
 		if (depth > 10) return;
-		if (out.join("\n\n").length >= maxChars) return;
+		if (currentLen >= maxChars) return;
 
 		if (typeof v === "string") {
 			const text = v.trim();
 			if (!text) return;
 			if (inThoughtField) {
-				out.push(text);
+				pushPart(text);
 				return;
 			}
 			// 兼容模型把结构化结果包成 JSON 字符串返回
@@ -244,7 +298,7 @@ export function extractThoughtTextFromUnknown(
 		if (Array.isArray(v)) {
 			for (const item of v) {
 				visit(item, depth + 1, inThoughtField);
-				if (out.join("\n\n").length >= maxChars) break;
+				if (currentLen >= maxChars) break;
 			}
 			return;
 		}
@@ -257,7 +311,7 @@ export function extractThoughtTextFromUnknown(
 			const k = key.toLowerCase().trim();
 			const nextInThought = inThoughtField || THOUGHT_FIELD_KEYS.has(k);
 			visit(nested, depth + 1, nextInThought);
-			if (out.join("\n\n").length >= maxChars) break;
+			if (currentLen >= maxChars) break;
 		}
 	};
 

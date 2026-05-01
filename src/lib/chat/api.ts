@@ -51,6 +51,11 @@ export interface LlmCallOptions {
 	onComplete?: () => void;
 	onError?: (error: string, detail?: LlmErrorDetail) => void;
 	onUsage?: (usage: TokenUsage) => void; // Token 消耗回调
+	/**
+	 * 可选取消信号。abort 时会通过 IPC 通知主进程立即断开上游 SSE，
+	 * 并停止派发后续 chunk。语义与 fetch 的 signal 一致。
+	 */
+	signal?: AbortSignal;
 }
 
 /**
@@ -172,8 +177,21 @@ export function formatErrorForDisplay(detail: LlmErrorDetail): string {
 	return `**${detail.title}**\n\n${detail.message}\n\n💡 ${detail.suggestion}`;
 }
 
+function generateStreamId(): string {
+	if (
+		typeof crypto !== "undefined" &&
+		typeof crypto.randomUUID === "function"
+	) {
+		return crypto.randomUUID();
+	}
+	return `stream-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /**
  * 流式调用 LLM
+ *
+ * 若 options.signal 提供：abort 时会 IPC 通知主进程立即断开上游 SSE，
+ * 并停止派发后续 chunk；done 事件仍会触发 onComplete 来收尾 UI 状态。
  */
 export async function invokeLlmWithCallback(
 	options: LlmCallOptions,
@@ -189,6 +207,7 @@ export async function invokeLlmWithCallback(
 		onComplete,
 		onError,
 		onUsage,
+		signal,
 	} = options;
 
 	// 如果有系统提示词，将其添加到 prompt 前面
@@ -196,7 +215,29 @@ export async function invokeLlmWithCallback(
 		? `${systemPrompt}\n\n用户请求：${prompt}`
 		: prompt;
 
+	const streamId = generateStreamId();
 	let unlisten: UnlistenFn | null = null;
+	let cancelled = false;
+	let abortHandler: (() => void) | null = null;
+
+	const detachAbort = () => {
+		if (abortHandler && signal) {
+			signal.removeEventListener("abort", abortHandler);
+			abortHandler = null;
+		}
+	};
+
+	if (signal) {
+		if (signal.aborted) {
+			cancelled = true;
+		} else {
+			abortHandler = () => {
+				cancelled = true;
+				void invoke("invoke_llm_stream_cancel", { streamId }).catch(() => {});
+			};
+			signal.addEventListener("abort", abortHandler, { once: true });
+		}
+	}
 
 	try {
 		// 先设置监听器
@@ -229,7 +270,9 @@ export async function invokeLlmWithCallback(
 					onComplete?.();
 				}
 				unlisten?.();
+				detachAbort();
 			} else if (chunk.content) {
+				if (cancelled) return;
 				if (chunk.channel === "thought") {
 					onThoughtChunk?.(chunk.content, chunk.thoughtMeta);
 				} else {
@@ -240,11 +283,23 @@ export async function invokeLlmWithCallback(
 
 		// 启动流式调用
 		await invoke("invoke_llm_stream", {
-			payload: { model, prompt: fullPrompt, context, temperature },
+			payload: {
+				model,
+				prompt: fullPrompt,
+				context,
+				temperature,
+				streamId,
+			},
 		});
+
+		// 若用户在 invoke 完成前已经 abort，立即让主进程取消（处理竞态）
+		if (cancelled) {
+			void invoke("invoke_llm_stream_cancel", { streamId }).catch(() => {});
+		}
 	} catch (error) {
 		console.error("LLM 调用失败:", error);
 		unlisten?.();
+		detachAbort();
 
 		// 如果流式失败，回退到非流式
 		try {
@@ -259,6 +314,7 @@ export async function invokeLlmWithCallback(
 				const chunkSize = 15;
 
 				const outputChunk = () => {
+					if (cancelled) return;
 					if (index < content.length) {
 						onChunk?.(content.slice(index, index + chunkSize));
 						index += chunkSize;

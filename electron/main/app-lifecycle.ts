@@ -10,6 +10,7 @@ import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 
 import { getTerminalService } from "./services/terminalService";
 import { stopAllWatchers } from "./services/fileWatcherService";
+import { invalidateProviderCache } from "./llm/invoke";
 
 export async function bootstrapApp({
 	createWindow,
@@ -126,5 +127,7 @@ export async function bootstrapApp({
 		// 停止所有文件监听
 		stopAllWatchers();
 		logger.info({ msg: "File watchers stopped" });
+		// 释放 provider 缓存的模块级单例（含 in-flight promise），避免延迟卸载残留
+		invalidateProviderCache();
 	});
 }

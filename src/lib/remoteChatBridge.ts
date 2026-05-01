@@ -9,6 +9,7 @@
 import { useEffect, useRef } from "react";
 import { listAgentSessions } from "./agent/api";
 import { loadAgentSessionMessagesAsChatMessages } from "./agent/chatBridge";
+import { normalizeAgentReplayMessages } from "./chat/messageNormalization";
 import type { UIEvent } from "./agent/streamState";
 import { chatStore } from "./chat/store";
 import type { ChatMessage, ChatMessageBlock, ChatSession } from "./chat/types";
@@ -306,7 +307,10 @@ export function useRemoteChatBridge(): void {
 				const messages =
 					await loadAgentSessionMessagesAsChatMessages(agentSessionId);
 				if (!getChatSessionById(chatSessionId)) return;
-				chatStore.replaceSessionMessages(chatSessionId, messages);
+				chatStore.replaceSessionMessages(
+					chatSessionId,
+					normalizeAgentReplayMessages(messages),
+				);
 			} catch (error) {
 				console.warn("[RemoteChatBridge] 同步远程会话消息失败:", error);
 			}

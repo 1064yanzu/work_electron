@@ -88,7 +88,16 @@ export type OpenAIToolCall = {
 export type OpenAIChatMessage =
 	| { role: "system"; content: string }
 	| { role: "user"; content: string }
-	| { role: "assistant"; content: string | null; tool_calls?: OpenAIToolCall[] }
+	| {
+			role: "assistant";
+			content: string | null;
+			tool_calls?: OpenAIToolCall[];
+			thinking?: unknown;
+			reasoning?: unknown;
+			reasoning_content?: unknown;
+			reasoning_text?: unknown;
+			thought?: unknown;
+	  }
 	| { role: "tool"; content: string; tool_call_id: string };
 
 export interface AnthropicResponse {

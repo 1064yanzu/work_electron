@@ -10,6 +10,8 @@ import {
 	normalizeOpenAICompatibleBaseUrl,
 } from "./providerHttp";
 import { parseLlmError, formatLlmErrorForStream } from "./llmErrors";
+import { BatchedSender } from "../utils/batchedSender";
+import { combineAbortSignals, llmStreamRegistry } from "./streamRegistry";
 
 const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_RESPONSES_INSTRUCTIONS = "You are a helpful assistant.";
@@ -21,6 +23,18 @@ const LLM_STREAM_TIMEOUT_MS = 300_000; // 流式：5 分钟
 /** 创建带超时的 AbortSignal */
 function createTimeoutSignal(timeoutMs: number): AbortSignal {
 	return AbortSignal.timeout(timeoutMs);
+}
+
+/**
+ * 合并超时 signal 与外部传入的取消 signal，任一触发即 abort。
+ * 外部 signal 通常来自 streamRegistry，由用户主动 cancel 触发。
+ */
+function createCallSignal(
+	timeoutMs: number,
+	external?: AbortSignal,
+): AbortSignal {
+	if (!external) return createTimeoutSignal(timeoutMs);
+	return combineAbortSignals([createTimeoutSignal(timeoutMs), external]);
 }
 
 /** Provider 类型 */
@@ -71,6 +85,8 @@ interface LlmCallOptions {
 	prompt: string;
 	context?: string[];
 	temperature?: number;
+	/** 流式调用专用：渲染端可凭此 id 主动取消 */
+	streamId?: string;
 }
 
 interface LlmCallResult {
@@ -85,11 +101,37 @@ interface LlmCallResult {
 }
 
 function sendStreamChunk(mainWindow: BrowserWindow, chunk: StreamChunk): void {
-	mainWindow.webContents.send("llm-stream-chunk", chunk);
+	const sender = getStreamSender(mainWindow);
+	sender.send(chunk);
+	if (chunk.done) sender.flush();
+}
+
+let cachedSender: BatchedSender<StreamChunk> | null = null;
+let cachedSenderWindow: BrowserWindow | null = null;
+
+function getStreamSender(
+	mainWindow: BrowserWindow,
+): BatchedSender<StreamChunk> {
+	if (cachedSender && cachedSenderWindow === mainWindow) return cachedSender;
+	cachedSender = new BatchedSender<StreamChunk>("llm-stream-chunk", () =>
+		cachedSenderWindow && !cachedSenderWindow.isDestroyed()
+			? cachedSenderWindow
+			: null,
+	);
+	cachedSenderWindow = mainWindow;
+	return cachedSender;
 }
 
 function sleep(ms: number) {
 	return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * 给指数退避加抖动，避免多个并发请求遇到 429/503 时同步退避导致"惊群"。
+ * 输出范围：[base * 0.85, base * 1.15] 区间内的随机值。
+ */
+function withJitter(baseMs: number): number {
+	return Math.round(baseMs * (0.85 + Math.random() * 0.3));
 }
 
 async function readTextStream(
@@ -126,14 +168,36 @@ function createSseParser(
 			const block = buf.slice(0, sep);
 			buf = buf.slice(sep + 2);
 
-			const lines = block
-				.split("\n")
-				.map((l) => l.trimEnd())
-				.filter(Boolean);
-			for (const line of lines) {
-				if (!line.startsWith("data:")) continue;
-				const data = line.slice("data:".length).trim();
-				if (data) onEvent(data);
+			// 单次扫描切分行，避免每个 SSE block 都生成 split/map/filter 三层临时数组
+			let cursor = 0;
+			while (cursor < block.length) {
+				const nl = block.indexOf("\n", cursor);
+				const end = nl === -1 ? block.length : nl;
+				let lineEnd = end;
+				while (
+					lineEnd > cursor &&
+					(block.charCodeAt(lineEnd - 1) === 13 /* \r */ ||
+						block.charCodeAt(lineEnd - 1) === 32 /* space */ ||
+						block.charCodeAt(lineEnd - 1) === 9) /* \t */
+				) {
+					lineEnd--;
+				}
+				if (lineEnd > cursor && block.charCodeAt(cursor) === 100 /* d */) {
+					if (block.startsWith("data:", cursor)) {
+						let dataStart = cursor + 5; /* "data:".length */
+						while (
+							dataStart < lineEnd &&
+							(block.charCodeAt(dataStart) === 32 ||
+								block.charCodeAt(dataStart) === 9)
+						) {
+							dataStart++;
+						}
+						if (dataStart < lineEnd) {
+							onEvent(block.slice(dataStart, lineEnd));
+						}
+					}
+				}
+				cursor = nl === -1 ? block.length : nl + 1;
 			}
 		}
 	};
@@ -288,17 +352,18 @@ function parseOpenAIStyleResult(raw: string): LlmCallResult {
 	return { content, usage };
 }
 
-function collectThoughtTextFromUnknown(value: unknown): string[] {
-	if (!value) return [];
-	if (typeof value === "string") return value.trim() ? [value] : [];
+function collectThoughtTextInto(value: unknown, out: string[]): void {
+	if (!value) return;
+	if (typeof value === "string") {
+		if (value.trim()) out.push(value);
+		return;
+	}
 	if (Array.isArray(value)) {
-		const out: string[] = [];
-		for (const item of value) out.push(...collectThoughtTextFromUnknown(item));
-		return out;
+		for (const item of value) collectThoughtTextInto(item, out);
+		return;
 	}
 	if (typeof value === "object") {
 		const obj = value as Record<string, unknown>;
-		const out: string[] = [];
 		for (const [key, nested] of Object.entries(obj)) {
 			if (
 				key === "text" ||
@@ -306,30 +371,23 @@ function collectThoughtTextFromUnknown(value: unknown): string[] {
 				key === "reasoning" ||
 				key === "thinking"
 			) {
-				out.push(...collectThoughtTextFromUnknown(nested));
-				continue;
+				collectThoughtTextInto(nested, out);
 			}
 		}
-		return out;
 	}
-	return [];
 }
 
 function extractThoughtDeltaFromOpenAIChunk(chunk: any): string {
 	const delta = chunk?.choices?.[0]?.delta;
 	if (!delta || typeof delta !== "object") return "";
 
-	const candidates: unknown[] = [
-		delta.reasoning_content,
-		delta.reasoning_text,
-		delta.reasoning,
-		delta.thinking,
-	];
+	// 复用同一个 buffer，避免每个 SSE chunk 都生成多层数组 + spread
 	const parts: string[] = [];
-	for (const candidate of candidates) {
-		parts.push(...collectThoughtTextFromUnknown(candidate));
-	}
-	return parts.join("");
+	collectThoughtTextInto(delta.reasoning_content, parts);
+	collectThoughtTextInto(delta.reasoning_text, parts);
+	collectThoughtTextInto(delta.reasoning, parts);
+	collectThoughtTextInto(delta.thinking, parts);
+	return parts.length === 0 ? "" : parts.join("");
 }
 
 /**
@@ -346,10 +404,14 @@ async function getActiveModel(db: DbContext): Promise<string> {
 
 /**
  * Provider 缓存 - 避免每次 LLM 调用都重新查询数据库
+ *
+ * 缓存过期瞬间多个并发调用容易重复跑 SQL + JSON.parse，
+ * 用 inFlight promise 去重，让同时间窗口内的并发请求共享一次查询。
  */
 const PROVIDER_CACHE_TTL_MS = 30_000;
 let providerCacheTimestamp = 0;
 let providerCacheData: Provider[] = [];
+let providerCacheInFlight: Promise<Provider[]> | null = null;
 
 async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
 	const now = Date.now();
@@ -360,48 +422,59 @@ async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
 		return providerCacheData;
 	}
 
-	const rows = await db.client.execute(
-		`SELECT * FROM providers WHERE is_enabled = 1`,
-	);
+	if (providerCacheInFlight) return providerCacheInFlight;
 
-	const providers: Provider[] = [];
-	for (const row of rows.rows) {
-		let models: string[] = [];
+	providerCacheInFlight = (async () => {
 		try {
-			models = JSON.parse((row.models as string) || "[]");
-		} catch {
-			continue;
-		}
-		let metadata: Record<string, unknown> = {};
-		try {
-			metadata = JSON.parse((row.metadata as string) || "{}");
-		} catch {
-			metadata = {};
-		}
-		providers.push({
-			id: row.id as string,
-			name: row.name as string,
-			provider_type: row.provider_type as ProviderType,
-			is_enabled: true,
-			api_key: row.api_key as string | undefined,
-			api_base: row.api_base as string | undefined,
-			models,
-			metadata,
-			template_id: row.template_id as string | undefined,
-			created_at: row.created_at as number,
-			updated_at: row.updated_at as number,
-		});
-	}
+			const rows = await db.client.execute(
+				`SELECT * FROM providers WHERE is_enabled = 1`,
+			);
 
-	providerCacheData = providers;
-	providerCacheTimestamp = now;
-	return providers;
+			const providers: Provider[] = [];
+			for (const row of rows.rows) {
+				let models: string[] = [];
+				try {
+					models = JSON.parse((row.models as string) || "[]");
+				} catch {
+					continue;
+				}
+				let metadata: Record<string, unknown> = {};
+				try {
+					metadata = JSON.parse((row.metadata as string) || "{}");
+				} catch {
+					metadata = {};
+				}
+				providers.push({
+					id: row.id as string,
+					name: row.name as string,
+					provider_type: row.provider_type as ProviderType,
+					is_enabled: true,
+					api_key: row.api_key as string | undefined,
+					api_base: row.api_base as string | undefined,
+					models,
+					metadata,
+					template_id: row.template_id as string | undefined,
+					created_at: row.created_at as number,
+					updated_at: row.updated_at as number,
+				});
+			}
+
+			providerCacheData = providers;
+			providerCacheTimestamp = Date.now();
+			return providers;
+		} finally {
+			providerCacheInFlight = null;
+		}
+	})();
+
+	return providerCacheInFlight;
 }
 
 /** 主动失效 provider 缓存（在 provider 变更时调用） */
 export function invalidateProviderCache() {
 	providerCacheTimestamp = 0;
 	providerCacheData = [];
+	providerCacheInFlight = null;
 }
 
 /**
@@ -543,7 +616,7 @@ async function callOpenAIResponses(
 		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
 			// 指数退避：1s, 3s, 8s, 20s
 			const baseDelay = 1000;
-			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			const delay = withJitter(Math.min(baseDelay * 2.5 ** attempt, 30_000));
 			await sleep(delay);
 			continue;
 		}
@@ -566,6 +639,7 @@ async function callOpenAIResponsesStreamingFallback(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
+	signal?: AbortSignal;
 }): Promise<LlmCallResult> {
 	const baseUrl = normalizeOpenAICompatibleBaseUrl(
 		opts.provider,
@@ -589,7 +663,7 @@ async function callOpenAIResponsesStreamingFallback(opts: {
 			...getOpenAICompatibleAuthHeaders(opts.provider, opts.apiKey),
 		},
 		body: JSON.stringify(body),
-		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+		signal: createCallSignal(LLM_STREAM_TIMEOUT_MS, opts.signal),
 	});
 
 	if (!response.ok) {
@@ -646,6 +720,7 @@ async function callOpenAIResponsesStream(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
+	signal?: AbortSignal;
 	onChunk: (
 		text: string,
 		channel?: "text" | "thought",
@@ -678,13 +753,13 @@ async function callOpenAIResponsesStream(opts: {
 				...getOpenAICompatibleAuthHeaders(opts.provider, opts.apiKey),
 			},
 			body: JSON.stringify(body),
-			signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+			signal: createCallSignal(LLM_STREAM_TIMEOUT_MS, opts.signal),
 		});
 
 		if (!response.ok) {
 			lastErrorText = await response.text();
 			if (transientStatus.has(response.status) && attempt < 2) {
-				await sleep(500 * (attempt + 1) * (attempt + 1));
+				await sleep(withJitter(500 * (attempt + 1) * (attempt + 1)));
 				continue;
 			}
 			throw new Error(
@@ -786,7 +861,7 @@ async function callOpenAICompatible(
 		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
 			// 指数退避：1s, 3s, 8s, 20s
 			const baseDelay = 1000;
-			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			const delay = withJitter(Math.min(baseDelay * 2.5 ** attempt, 30_000));
 			await sleep(delay);
 			continue;
 		}
@@ -809,6 +884,7 @@ async function callOpenAICompatibleStream(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
+	signal?: AbortSignal;
 	onChunk: (
 		text: string,
 		channel?: "text" | "thought",
@@ -844,13 +920,13 @@ async function callOpenAICompatibleStream(opts: {
 				stream_options: { include_usage: true },
 				temperature: opts.temperature ?? 0.7,
 			}),
-			signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+			signal: createCallSignal(LLM_STREAM_TIMEOUT_MS, opts.signal),
 		});
 
 		if (!response.ok) {
 			lastErrorText = await response.text();
 			if (transientStatus.has(response.status) && attempt < 2) {
-				await sleep(500 * (attempt + 1) * (attempt + 1));
+				await sleep(withJitter(500 * (attempt + 1) * (attempt + 1)));
 				continue;
 			}
 			throw new Error(
@@ -941,7 +1017,7 @@ async function callAnthropic(
 		lastErrorText = await response.text();
 		if (transientStatus.has(response.status) && attempt < MAX_RETRIES - 1) {
 			const baseDelay = 1000;
-			const delay = Math.min(baseDelay * 2.5 ** attempt, 30_000);
+			const delay = withJitter(Math.min(baseDelay * 2.5 ** attempt, 30_000));
 			await sleep(delay);
 			continue;
 		}
@@ -1001,6 +1077,7 @@ async function callAnthropicStream(opts: {
 	apiKey: string | undefined;
 	context?: string[];
 	temperature?: number;
+	signal?: AbortSignal;
 	onChunk: (
 		text: string,
 		channel?: "text" | "thought",
@@ -1031,7 +1108,7 @@ async function callAnthropicStream(opts: {
 			temperature: opts.temperature ?? 0.7,
 			stream: true,
 		}),
-		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+		signal: createCallSignal(LLM_STREAM_TIMEOUT_MS, opts.signal),
 	});
 
 	if (!response.ok) {
@@ -1147,6 +1224,7 @@ async function callOllamaStream(opts: {
 	provider: Provider;
 	model: string;
 	prompt: string;
+	signal?: AbortSignal;
 	onChunk: (text: string) => void;
 }): Promise<void> {
 	const baseUrl = opts.provider.api_base || "http://localhost:11434";
@@ -1160,7 +1238,7 @@ async function callOllamaStream(opts: {
 			messages: [{ role: "user", content: opts.prompt }],
 			stream: true,
 		}),
-		signal: createTimeoutSignal(LLM_STREAM_TIMEOUT_MS),
+		signal: createCallSignal(LLM_STREAM_TIMEOUT_MS, opts.signal),
 	});
 
 	if (!response.ok) {
@@ -1308,6 +1386,9 @@ export async function invokeLlm(
 /**
  * 流式 LLM 调用
  * 通过事件发送到渲染进程
+ *
+ * 若 options.streamId 提供，则注册到 llmStreamRegistry，
+ * 渲染端可通过 IPC `invoke_llm_stream_cancel` 主动 abort 整个上游 SSE。
  */
 export async function invokeLlmStream(
 	db: DbContext,
@@ -1317,6 +1398,23 @@ export async function invokeLlmStream(
 	if (!mainWindow) {
 		throw new Error("No main window available for streaming");
 	}
+
+	const streamId = options.streamId;
+	const controller = streamId ? llmStreamRegistry.register(streamId) : null;
+	const userSignal = controller?.signal;
+
+	const isAbortedError = (err: unknown): boolean => {
+		if (!err) return false;
+		if (
+			typeof err === "object" &&
+			err !== null &&
+			"name" in err &&
+			(err as { name?: string }).name === "AbortError"
+		) {
+			return true;
+		}
+		return Boolean(userSignal?.aborted);
+	};
 
 	// 异步执行流式调用
 	(async () => {
@@ -1349,6 +1447,7 @@ export async function invokeLlmStream(
 				channel: "text" | "thought" = "text",
 				thoughtMeta?: StreamChunk["thoughtMeta"],
 			) => {
+				if (userSignal?.aborted) return;
 				sendStreamChunk(mainWindow, {
 					content: text,
 					done: false,
@@ -1367,6 +1466,7 @@ export async function invokeLlmStream(
 							apiKey: resolvedApiKey,
 							context: options.context,
 							temperature: options.temperature,
+							signal: userSignal,
 							onChunk,
 						});
 						usage = res.usage;
@@ -1377,6 +1477,7 @@ export async function invokeLlmStream(
 							provider,
 							model,
 							prompt: options.prompt,
+							signal: userSignal,
 							onChunk,
 						});
 						break;
@@ -1389,6 +1490,7 @@ export async function invokeLlmStream(
 								apiKey: resolvedApiKey,
 								context: options.context,
 								temperature: options.temperature,
+								signal: userSignal,
 								onChunk,
 							});
 							usage = res.usage;
@@ -1400,6 +1502,7 @@ export async function invokeLlmStream(
 								apiKey: resolvedApiKey,
 								context: options.context,
 								temperature: options.temperature,
+								signal: userSignal,
 								onChunk,
 							});
 							usage = res.usage;
@@ -1408,11 +1511,21 @@ export async function invokeLlmStream(
 					}
 				}
 			} catch (e) {
+				// 用户取消 → 静默结束，不再补偿落 chunk
+				if (isAbortedError(e)) {
+					sendStreamChunk(mainWindow, {
+						content: "",
+						done: true,
+						usage,
+					});
+					return;
+				}
 				// Fallback: provider might not support streaming; use non-stream and emit in chunks.
 				const result = await invokeLlm(db, options);
 				const content = result.content;
 				const chunkSize = 40;
 				for (let i = 0; i < content.length; i += chunkSize) {
+					if (userSignal?.aborted) break;
 					sendStreamChunk(mainWindow, {
 						content: content.slice(i, i + chunkSize),
 						done: false,
@@ -1428,6 +1541,11 @@ export async function invokeLlmStream(
 				usage,
 			});
 		} catch (error) {
+			// 用户取消不算错误
+			if (isAbortedError(error)) {
+				sendStreamChunk(mainWindow, { content: "", done: true });
+				return;
+			}
 			// 解析错误并发送结构化错误信息
 			const errorInfo = parseLlmError(
 				error instanceof Error ? error : String(error),
@@ -1440,6 +1558,8 @@ export async function invokeLlmStream(
 				done: true,
 			};
 			sendStreamChunk(mainWindow, errorChunk);
+		} finally {
+			if (streamId) llmStreamRegistry.unregister(streamId);
 		}
 	})();
 

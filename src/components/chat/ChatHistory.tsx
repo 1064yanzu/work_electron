@@ -128,7 +128,9 @@ export function ChatHistory({
 					a.href = url;
 					a.download = `${(contextMenu.session.title || "会话").replace(/[\\\\/:*?\"<>|]/g, "-")}.md`;
 					a.click();
-					URL.revokeObjectURL(url);
+					// a.click() 在部分 Electron 渠道是异步触发下载的，立即 revoke 可能让大文件下载失败；
+					// 推到下一帧再释放，让浏览器先把 url 取走。
+					setTimeout(() => URL.revokeObjectURL(url), 0);
 				},
 				onDelete: () => onDeleteSession(contextMenu.session.id),
 				pinned: pinnedIds.includes(contextMenu.session.id),

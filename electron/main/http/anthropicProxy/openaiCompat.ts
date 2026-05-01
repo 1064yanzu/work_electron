@@ -12,6 +12,37 @@ import {
 } from "./thinkingCompat";
 
 /**
+ * 翻译选项。
+ *
+ * `preserveReasoningContent`：DeepSeek-V4 兼容模式开关。
+ * 启用后，所有 assistant 消息都会强制带 `reasoning_content` 字段：
+ * 有真实思考内容时填实际文本；没有时填空字符串占位。
+ * 这是 DeepSeek-V4 在思考模式下的硬性要求 —— 详见 deepseekCompat.ts。
+ */
+export interface TranslateToOpenAIOptions {
+	preserveReasoningContent?: boolean;
+}
+
+/**
+ * 在 assistant 消息上补齐 `reasoning_content` 字段。
+ * 仅在兼容模式开启、且消息上不存在该字段时生效；不会覆盖真实思考内容。
+ */
+function withPreservedReasoningContent<T extends OpenAIChatMessage>(
+	message: T,
+	options?: TranslateToOpenAIOptions,
+): T {
+	if (!options?.preserveReasoningContent) return message;
+	if (message.role !== "assistant") return message;
+	if (
+		"reasoning_content" in message &&
+		(message as { reasoning_content?: unknown }).reasoning_content !== undefined
+	) {
+		return message;
+	}
+	return { ...message, reasoning_content: "" } as T;
+}
+
+/**
  * 清洗工具输入参数：移除空字符串的可选参数（如 pages: ""），
  * 避免下游校验失败。
  */
@@ -216,11 +247,37 @@ export async function readOpenAIChatCompletionsStreamAsJson(
 	};
 }
 
+function buildAssistantThoughtFields(
+	thoughtBySource: Partial<Record<"thinking" | "reasoning", string>>,
+): Pick<
+	OpenAIResponse["choices"][0]["message"],
+	"thinking" | "reasoning" | "reasoning_content" | "reasoning_text"
+> {
+	const thinking = String(thoughtBySource.thinking || "").trim();
+	const reasoning = String(thoughtBySource.reasoning || "").trim();
+	const mergedReasoningContent = [reasoning, thinking]
+		.filter((value) => value.length > 0)
+		.join("\n\n")
+		.trim();
+
+	return {
+		...(thinking ? { thinking } : null),
+		...(reasoning ? { reasoning } : null),
+		...(mergedReasoningContent
+			? {
+					reasoning_content: mergedReasoningContent,
+					reasoning_text: mergedReasoningContent,
+				}
+			: null),
+	};
+}
+
 /**
  * 翻译 Anthropic 请求为 OpenAI 格式
  */
 export function translateToOpenAI(
 	anthropicReq: AnthropicRequest,
+	options?: TranslateToOpenAIOptions,
 ): OpenAIChatMessage[] {
 	const messages: OpenAIChatMessage[] = [];
 
@@ -243,13 +300,22 @@ export function translateToOpenAI(
 	// Messages
 	for (const msg of anthropicReq.messages) {
 		if (typeof msg.content === "string") {
-			if (msg.role === "user" || msg.role === "assistant") {
-				messages.push({ role: msg.role as any, content: msg.content });
+			if (msg.role === "user") {
+				messages.push({ role: "user", content: msg.content });
+			} else if (msg.role === "assistant") {
+				messages.push(
+					withPreservedReasoningContent(
+						{ role: "assistant", content: msg.content },
+						options,
+					),
+				);
 			}
 		} else {
 			// 处理 content blocks
 			const textParts: string[] = [];
 			const toolCalls: OpenAIToolCall[] = [];
+			const thoughtBySource: Partial<Record<"thinking" | "reasoning", string>> =
+				{};
 			for (const block of msg.content) {
 				const blockType =
 					typeof (block as any)?.type === "string" ? (block as any).type : "";
@@ -294,19 +360,51 @@ export function translateToOpenAI(
 						content: resultContent,
 						tool_call_id: String((block as any).tool_use_id),
 					});
+				} else if (
+					(blockType === "thinking" || blockType === "reasoning") &&
+					typeof (block as any)?.text === "string" &&
+					(block as any).text.trim()
+				) {
+					const rawText = String((block as any).text).trim();
+					const source =
+						blockType === "reasoning" ||
+						typeof (block as any)?.reasoning === "string" ||
+						typeof (block as any)?.reasoning_content === "string" ||
+						typeof (block as any)?.reasoning_text === "string"
+							? "reasoning"
+							: "thinking";
+					const prev = thoughtBySource[source] || "";
+					thoughtBySource[source] = prev ? `${prev}\n\n${rawText}` : rawText;
 				}
 			}
 
 			const text = textParts.join("\n").trim();
+			const thoughtFields = buildAssistantThoughtFields(thoughtBySource);
+			const hasThoughtFields = Object.keys(thoughtFields).length > 0;
 			if (msg.role === "assistant") {
 				if (toolCalls.length > 0) {
-					messages.push({
-						role: "assistant",
-						content: text.length > 0 ? text : null,
-						tool_calls: toolCalls,
-					});
-				} else if (text.length > 0) {
-					messages.push({ role: "assistant", content: text });
+					messages.push(
+						withPreservedReasoningContent(
+							{
+								role: "assistant",
+								content: text.length > 0 ? text : null,
+								tool_calls: toolCalls,
+								...thoughtFields,
+							},
+							options,
+						),
+					);
+				} else if (text.length > 0 || hasThoughtFields) {
+					messages.push(
+						withPreservedReasoningContent(
+							{
+								role: "assistant",
+								content: text.length > 0 ? text : null,
+								...thoughtFields,
+							},
+							options,
+						),
+					);
 				}
 			} else if (msg.role === "user") {
 				// User may include tool_result blocks + additional text.

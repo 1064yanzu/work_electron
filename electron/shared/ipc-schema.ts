@@ -1356,6 +1356,15 @@ export type IPCSchema = {
 		input: InvokeLlmPayload;
 		output: { started: boolean };
 	};
+	/**
+	 * 取消进行中的 LLM 流式调用，立即 abort 上游 SSE 连接。
+	 * - streamId 提供：取消该 id 对应的流；不存在时返回 cancelled=false。
+	 * - cancelAll=true：取消所有进行中的流。
+	 */
+	invoke_llm_stream_cancel: {
+		input: { streamId?: string; cancelAll?: boolean };
+		output: { cancelled: boolean; count: number };
+	};
 	invoke_image_generation: {
 		input: {
 			model: string;
