@@ -1,62 +1,110 @@
-# Logs
-logs
+# =============================================================================
+# IPO Workbench .gitignore
+# 分组维护，便于阅读与扩展。
+# =============================================================================
+
+# ----- 系统/操作系统 ---------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ----- 编辑器/IDE ------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+.trae/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# ----- 依赖 ------------------------------------------------------------------
+node_modules/
+# 项目使用 npm，pnpm-lock.yaml / yarn.lock 不入库
+pnpm-lock.yaml
+yarn.lock
+
+# ----- 构建产物 --------------------------------------------------------------
+dist/
+dist-ssr/
+dist-electron/
+release/
+out/
+*.local
+
+# Electron 打包源资源（最终图标在 build/icon.png 已入库）
+icon.iconset/
+
+# ----- 日志与调试 ------------------------------------------------------------
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-/docs
-node_modules
-dist
-dist-ssr
-dist-electron
-release
-*.local
-.env
-CHANGELOG.md
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-/前端参考
-/cherry-studio参考
-/Volumes/external disk/develop/work_electron/cherry-studio参考/docs
-/Volumes/external disk/develop/work_electron/cherry-studio参考logs/
-/icon.iconset
-Claude.md
-/Claude.md
-.agent
-.agent/
-.claude
-.claude/
-.gitignore
-todos/
-/todos
-.claude.json*
-shell-snapshots
-debug
-/debug
+dev.log
 debug/
-session-env
-todos/
-images/
-images
-plans
-plans/
-projects
-projects/
+temp.css
+*.tmp
+
+# ----- 环境变量与密钥 --------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ----- Claude Code / Agent 用户态 -------------------------------------------
+# Claude Code 用户级配置/凭证
+.claude/
 .claude.json
+.claude.json.*
+.claude.json.backup.*
+# Claude Agent SDK 运行时数据
+.agent/
+projects/
 todos/
-/todos
-debug
+plans/
+images/
+shell-snapshots/
+session-env/
+settings.json
+
+# ----- 应用本地工作区数据 ----------------------------------------------------
+# IPO Workbench 工作区
+.ipo/
+
+# ----- 参考资料/调研（仅本地保留） -------------------------------------------
+.references/
+cherry-studio参考/
+前端参考/
+
+# ----- 子项目（独立仓库，不在主仓库追踪） ------------------------------------
 mobile-app/
 cloud-relay/
-.references/
+
+# ----- 文档变更日志（按团队偏好不入库） --------------------------------------
 CHANGELOG.md
+
+# ----- 临时/草稿 -------------------------------------------------------------
+*.bak
+*.orig
+*.rej
+
+# ----- 测试覆盖率 ------------------------------------------------------------
+coverage/
+.nyc_output/
+
+# ----- 缓存 ------------------------------------------------------------------
+.cache/
+.parcel-cache/
+.eslintcache
