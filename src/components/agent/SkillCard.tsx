@@ -43,9 +43,7 @@ function StepStatusIcon({
 				<Loader2 className="w-3 h-3 text-focus animate-spin flex-shrink-0" />
 			);
 		case "completed":
-			return (
-				<CheckCircle2 className="w-3 h-3 text-success flex-shrink-0" />
-			);
+			return <CheckCircle2 className="w-3 h-3 text-success flex-shrink-0" />;
 		case "error":
 			return <XCircle className="w-3 h-3 text-error flex-shrink-0" />;
 		default:

@@ -110,8 +110,8 @@ export function KbRetrievalSection({
 							/>
 						</div>
 						<span className="text-xs text-text-muted">
-							为规避部分服务商的 512 tokens 限制，向量化时会先截断内容（默认
-							480 字符）。
+							为规避部分服务商的 512 tokens 限制，向量化时会先截断内容（默认 480
+							字符）。
 						</span>
 					</div>
 				</div>
@@ -158,8 +158,8 @@ export function KbRetrievalSection({
 					</Select>
 					<p className="text-xs text-text-muted mt-1.5">
 						用于将资料库分块转换为向量。
-						<strong>必须选择服务商支持的 embedding 专用模型</strong>，如
-						OpenAI 的 text-embedding-3-small。
+						<strong>必须选择服务商支持的 embedding 专用模型</strong>，如 OpenAI
+						的 text-embedding-3-small。
 					</p>
 				</div>
 

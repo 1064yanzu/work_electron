@@ -161,9 +161,7 @@ export function CommandPalette({
 			/>
 
 			<FocusTrap active={isOpen}>
-				<div
-					className="relative w-full max-w-[640px] rounded-2xl border border-border bg-surface shadow-[0_20px_50px_-12px_rgb(26_26_25/0.25)] animate-in fade-in slide-in-from-top-4 duration-200 overflow-hidden"
-				>
+				<div className="relative w-full max-w-[640px] rounded-2xl border border-border bg-surface shadow-[0_20px_50px_-12px_rgb(26_26_25/0.25)] animate-in fade-in slide-in-from-top-4 duration-200 overflow-hidden">
 					{/* 输入框 */}
 					<div className="flex items-center gap-3 px-5 py-4 border-b border-border">
 						<Command
@@ -239,7 +237,9 @@ export function CommandPalette({
 													<Icon
 														className={cn(
 															"w-4 h-4 shrink-0",
-															isActive ? "text-text-primary" : "text-text-muted",
+															isActive
+																? "text-text-primary"
+																: "text-text-muted",
 														)}
 														strokeWidth={1.5}
 													/>

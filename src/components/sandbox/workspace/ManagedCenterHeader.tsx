@@ -1,14 +1,14 @@
-import { Eye, RefreshCw, Workflow, X } from "lucide-react";
+import { Code2, Eye, RefreshCw, Workflow, X } from "lucide-react";
 import { IconButton } from "../../ui/Button";
 import { cn } from "../../../lib/utils";
 
 interface ManagedCenterHeaderProps {
-	centerView: "graph" | "preview";
+	centerView: "graph" | "preview" | "code";
 	headerTitle: string;
 	headerMeta: string;
 	density?: "comfortable" | "compact";
 	isRefreshing: boolean;
-	onSetCenterView: (view: "graph" | "preview") => void;
+	onSetCenterView: (view: "graph" | "preview" | "code") => void;
 	onRefresh: () => void;
 	onExit: () => void;
 }
@@ -62,6 +62,21 @@ export function ManagedCenterHeader({
 						<Eye className="w-4 h-4" />
 						产物预览
 					</button>
+					<button
+						type="button"
+						onClick={() => onSetCenterView("code")}
+						className={cn(
+							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
+							centerView === "code"
+								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
+								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
+						)}
+						title="代码视图 (Alt+3)"
+						aria-label="切换到代码视图"
+					>
+						<Code2 className="w-4 h-4" />
+						代码
+					</button>
 				</div>
 
 				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700" />
@@ -74,7 +89,7 @@ export function ManagedCenterHeader({
 						</span>
 					</h2>
 					<div className="mt-0.5 text-xs text-text-muted">
-						快捷键: Alt+1 运行图 · Alt+2 产物预览
+						快捷键: Alt+1 运行图 · Alt+2 产物预览 · Alt+3 代码
 					</div>
 				</div>
 			</div>

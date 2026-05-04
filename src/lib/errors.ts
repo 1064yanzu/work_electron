@@ -19,7 +19,10 @@ const TECHNICAL_NOISE_PATTERNS = [
 ];
 
 const KNOWN_NETWORK_HINTS: Array<[RegExp, string]> = [
-	[/network|fetch|ECONN|ENOTFOUND|EHOSTUNREACH|timeout/i, "网络连接异常，请检查网络后重试"],
+	[
+		/network|fetch|ECONN|ENOTFOUND|EHOSTUNREACH|timeout/i,
+		"网络连接异常，请检查网络后重试",
+	],
 	[/unauthor|401|forbidden|403/i, "权限不足或登录已过期"],
 	[/not\s*found|404/i, "资源不存在或已被删除"],
 	[/conflict|409|already exists|duplicate/i, "存在冲突（可能是名称重复）"],
@@ -33,7 +36,10 @@ const KNOWN_NETWORK_HINTS: Array<[RegExp, string]> = [
  * - 纯技术栈错误（TypeError 等）：返回 fallback
  * - 业务自定义 Error：返回 message，但去掉技术噪声前缀
  */
-export function humanizeError(error: unknown, fallback = "操作失败，请稍后再试"): string {
+export function humanizeError(
+	error: unknown,
+	fallback = "操作失败，请稍后再试",
+): string {
 	const raw =
 		error instanceof Error
 			? error.message
@@ -71,7 +77,10 @@ export function humanizeError(error: unknown, fallback = "操作失败，请稍�
 /**
  * 同时返回友好提示与原始 message — 用于 toast 主文案 + 折叠详情场景。
  */
-export function describeError(error: unknown, fallback = "操作失败，请稍后再试") {
+export function describeError(
+	error: unknown,
+	fallback = "操作失败，请稍后再试",
+) {
 	const friendly = humanizeError(error, fallback);
 	const raw =
 		error instanceof Error

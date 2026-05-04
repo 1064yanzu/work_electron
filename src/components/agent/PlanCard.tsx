@@ -44,8 +44,7 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	},
 	confirmed: {
 		text: "已确认",
-		className:
-			"bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus",
+		className: "bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus",
 	},
 	executing: {
 		text: "执行中",
@@ -58,7 +57,8 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	},
 	rejected: {
 		text: "已拒绝",
-		className: "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
+		className:
+			"bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
 	},
 };
 

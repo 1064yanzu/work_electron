@@ -15,7 +15,10 @@ export interface MascotEmptyProps {
 	fallback?: React.ReactNode;
 }
 
-const ILLUSTRATION_SIZE: Record<NonNullable<MascotEmptyProps["size"]>, "md" | "lg" | "xl"> = {
+const ILLUSTRATION_SIZE: Record<
+	NonNullable<MascotEmptyProps["size"]>,
+	"md" | "lg" | "xl"
+> = {
 	sm: "md",
 	md: "lg",
 	lg: "xl",

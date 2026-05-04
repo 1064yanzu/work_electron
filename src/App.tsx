@@ -36,6 +36,7 @@ import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
+import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
@@ -81,6 +82,7 @@ function PanelLoadingFallback() {
 
 export default function App() {
 	useRemoteChatBridge();
+	usePetQuickReplyBridge();
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [settingsInitialTab, setSettingsInitialTab] =

@@ -65,7 +65,11 @@ export interface SpriteRowSpec {
 }
 
 const HATCH_PET_ROWS = {
-	idle: { rowIndex: 0, frameCount: 6, durations: [280, 110, 110, 140, 140, 320] },
+	idle: {
+		rowIndex: 0,
+		frameCount: 6,
+		durations: [280, 110, 110, 140, 140, 320],
+	},
 	"running-right": {
 		rowIndex: 1,
 		frameCount: 8,
@@ -83,9 +87,21 @@ const HATCH_PET_ROWS = {
 		frameCount: 8,
 		durations: [140, 140, 140, 140, 140, 140, 140, 240],
 	},
-	waiting: { rowIndex: 6, frameCount: 6, durations: [150, 150, 150, 150, 150, 260] },
-	running: { rowIndex: 7, frameCount: 6, durations: [120, 120, 120, 120, 120, 220] },
-	review: { rowIndex: 8, frameCount: 6, durations: [150, 150, 150, 150, 150, 280] },
+	waiting: {
+		rowIndex: 6,
+		frameCount: 6,
+		durations: [150, 150, 150, 150, 150, 260],
+	},
+	running: {
+		rowIndex: 7,
+		frameCount: 6,
+		durations: [120, 120, 120, 120, 120, 220],
+	},
+	review: {
+		rowIndex: 8,
+		frameCount: 6,
+		durations: [150, 150, 150, 150, 150, 280],
+	},
 } as const satisfies Record<string, SpriteRowSpec>;
 
 /**

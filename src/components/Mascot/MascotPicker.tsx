@@ -71,9 +71,7 @@ function MascotCard({ id, selected, onSelect }: MascotCardProps) {
 					: "border-border bg-surface hover:border-primary/40",
 			)}
 			style={
-				selected
-					? { boxShadow: `0 8px 24px ${meta.accentColor}1A` }
-					: undefined
+				selected ? { boxShadow: `0 8px 24px ${meta.accentColor}1A` } : undefined
 			}
 		>
 			{selected && (
@@ -136,7 +134,7 @@ function OffCard({ selected, onSelect }: OffCardProps) {
 			</div>
 			<div className="mt-1 space-y-1">
 				<div className="text-[14px] font-semibold tracking-tight text-text-primary">
-					关闭 IP 形象
+					关闭桌面宠物
 				</div>
 				<div className="text-[11.5px] leading-snug text-text-light">
 					回到极简的图标 / SVG 风格

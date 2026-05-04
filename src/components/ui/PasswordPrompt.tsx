@@ -183,9 +183,7 @@ const PasswordPrompt = ({
 
 					{/* 错误提示 */}
 					{error && (
-						<div className="text-sm text-error dark:text-error">
-							{error}
-						</div>
+						<div className="text-sm text-error dark:text-error">{error}</div>
 					)}
 
 					{/* 密码强度提示 */}

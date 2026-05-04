@@ -3,7 +3,7 @@
  * 整合所有 handlers 并注册到 ipcMain
  */
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
-import { app, ipcMain, shell } from "electron";
+import { app, ipcMain, screen, shell } from "electron";
 import type { IPCSchema } from "../../shared/ipc-schema";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
@@ -65,7 +65,14 @@ import { createTerminalHandlers } from "./handlers/terminal";
 import { createWorktreeHandlers } from "./handlers/worktree";
 import { createWikiHandlers } from "./handlers/wiki";
 import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
-
+import { createPetWindowHandlers } from "./handlers/petWindow";
+import {
+	focusMainWindow as petFocusMainWindow,
+	sendChatToMainWindow as petSendChat,
+	getPetWindow,
+	setPetWindowPosition,
+} from "../services/petWindowService";
+import { createPreviewServerHandlers } from "./handlers/previewServer";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -190,6 +197,11 @@ export function registerIpcHandlers({
 		get current() {
 			return mainWindowRef;
 		},
+	});
+
+	// Preview Server handlers (沙盒前端预览)
+	const previewServerHandlers = createPreviewServerHandlers({
+		getMainWindow: () => mainWindowRef,
 	});
 
 	// ==================
@@ -889,6 +901,143 @@ export function registerIpcHandlers({
 		"wiki_generation_status",
 		wikiGenHandlers.wiki_generation_status,
 	);
+
+	// ==================
+	// 桌面宠物窗口
+	// ==================
+	// 拖动状态：在 drag_start 时缓存"鼠标起始屏幕坐标 + 窗口起始位置"，
+	// drag_move 时根据鼠标增量重新设置窗口位置，drag_end 时持久化。
+	let petDragState: {
+		originMouseX: number;
+		originMouseY: number;
+		originWinX: number;
+		originWinY: number;
+		moved: boolean;
+	} | null = null;
+
+	const petWindowHandlers = createPetWindowHandlers({
+		focusMainWindow: () => petFocusMainWindow(() => mainWindowRef),
+		sendChatToMainWindow: (text: string) =>
+			petSendChat(() => mainWindowRef, text),
+		dragStart: (mouseX: number, mouseY: number) => {
+			const win = getPetWindow();
+			if (!win || win.isDestroyed()) return;
+			const [winX, winY] = win.getPosition();
+			petDragState = {
+				originMouseX: mouseX,
+				originMouseY: mouseY,
+				originWinX: winX,
+				originWinY: winY,
+				moved: false,
+			};
+		},
+		dragMove: (mouseX: number, mouseY: number) => {
+			const win = getPetWindow();
+			if (!win || win.isDestroyed() || !petDragState) return;
+			const dx = mouseX - petDragState.originMouseX;
+			const dy = mouseY - petDragState.originMouseY;
+			// 5px 死区：避免点击时微小抖动也算作拖动
+			if (!petDragState.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+				return;
+			}
+			petDragState.moved = true;
+
+			const targetX = Math.round(petDragState.originWinX + dx);
+			const targetY = Math.round(petDragState.originWinY + dy);
+
+			// 屏幕边界约束：窗口必须完全停在当前所在显示器的工作区内
+			// （workArea 已经排除了 macOS 菜单栏 / Dock / Windows 任务栏）
+			const [winW, winH] = win.getSize();
+			const display = screen.getDisplayNearestPoint({
+				x: targetX + Math.round(winW / 2),
+				y: targetY + Math.round(winH / 2),
+			});
+			const wa = display.workArea;
+			const clampedX = Math.max(
+				wa.x,
+				Math.min(targetX, wa.x + wa.width - winW),
+			);
+			const clampedY = Math.max(
+				wa.y,
+				Math.min(targetY, wa.y + wa.height - winH),
+			);
+
+			win.setPosition(clampedX, clampedY);
+		},
+		dragEnd: () => {
+			const win = getPetWindow();
+			if (!win || win.isDestroyed()) {
+				const moved = petDragState?.moved ?? false;
+				petDragState = null;
+				return { moved, x: 0, y: 0 };
+			}
+			const [x, y] = win.getPosition();
+			const moved = petDragState?.moved ?? false;
+			// 仅在真正拖动后持久化新位置
+			if (moved) {
+				setPetWindowPosition(x, y);
+			}
+			petDragState = null;
+			return { moved, x, y };
+		},
+	});
+	ipcMain.handle(
+		"pet_window_get_state",
+		petWindowHandlers.pet_window_get_state,
+	);
+	ipcMain.handle(
+		"pet_window_set_enabled",
+		petWindowHandlers.pet_window_set_enabled,
+	);
+	ipcMain.handle(
+		"pet_window_set_position",
+		petWindowHandlers.pet_window_set_position,
+	);
+	ipcMain.handle(
+		"pet_window_set_through_clicks",
+		petWindowHandlers.pet_window_set_through_clicks,
+	);
+	ipcMain.handle(
+		"pet_window_focus_main",
+		petWindowHandlers.pet_window_focus_main,
+	);
+	ipcMain.handle(
+		"pet_window_send_chat",
+		petWindowHandlers.pet_window_send_chat,
+	);
+	ipcMain.handle(
+		"pet_window_drag_start",
+		petWindowHandlers.pet_window_drag_start,
+	);
+	ipcMain.handle(
+		"pet_window_drag_move",
+		petWindowHandlers.pet_window_drag_move,
+	);
+	ipcMain.handle(
+		"pet_window_drag_end",
+		petWindowHandlers.pet_window_drag_end,
+	);
+
+	// ==================
+	// 预览服务器（沙盒前端预览）
+	// ==================
+	ipcMain.handle(
+		"preview_server_start",
+		previewServerHandlers.preview_server_start,
+	);
+	ipcMain.handle(
+		"preview_server_stop",
+		previewServerHandlers.preview_server_stop,
+	);
+	ipcMain.handle(
+		"preview_server_status",
+		previewServerHandlers.preview_server_status,
+	);
+	ipcMain.handle(
+		"preview_window_open",
+		previewServerHandlers.preview_window_open,
+	);
+	ipcMain.handle("sandbox_save_file", previewServerHandlers.sandbox_save_file);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

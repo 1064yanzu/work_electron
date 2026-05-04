@@ -28,10 +28,7 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/ImageGenSettings"),
 		"ImageGenSettings",
 	),
-	mascot: toDefault(
-		() => import("./panels/MascotSettings"),
-		"MascotSettings",
-	),
+	mascot: toDefault(() => import("./panels/MascotSettings"), "MascotSettings"),
 	agent: toDefault(() => import("./panels/AgentSettings"), "AgentSettings"),
 
 	memory: toDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
@@ -56,6 +53,10 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 	shortcuts: toDefault(
 		() => import("./panels/ShortcutsSettings"),
 		"ShortcutsSettings",
+	),
+	sandboxPreview: toDefault(
+		() => import("./panels/SandboxPreviewSettings"),
+		"SandboxPreviewSettings",
 	),
 };
 

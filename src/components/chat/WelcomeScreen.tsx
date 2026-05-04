@@ -8,12 +8,7 @@ export function WelcomeScreen() {
 		<div className="flex flex-col h-full items-center justify-center -mt-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10 transition-all">
 			<div className="flex flex-col items-center text-center mb-10 z-10">
 				{enabled ? (
-					<Mascot
-						slot="state-greet"
-						size="2xl"
-						float
-						wrapperClassName="mb-4"
-					/>
+					<Mascot slot="state-greet" size="2xl" float wrapperClassName="mb-4" />
 				) : (
 					<div
 						className="w-12 h-12 rounded-full bai-avatar-glow mb-6"

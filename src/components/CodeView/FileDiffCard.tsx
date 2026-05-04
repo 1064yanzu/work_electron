@@ -157,7 +157,8 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 									"flex",
 									line.type === "added" &&
 										"bg-success/8/70 dark:bg-emerald-950/20",
-									line.type === "removed" && "bg-[rgba(181,51,51,0.08)]/70 dark:bg-red-950/20",
+									line.type === "removed" &&
+										"bg-[rgba(181,51,51,0.08)]/70 dark:bg-red-950/20",
 								)}
 							>
 								{/* 行号 */}
@@ -177,8 +178,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<span
 									className={cn(
 										"w-5 flex-shrink-0 text-center select-none",
-										line.type === "added" &&
-											"text-success dark:text-success",
+										line.type === "added" && "text-success dark:text-success",
 										line.type === "removed" && "text-error dark:text-error",
 										line.type === "unchanged" && "text-text-light",
 									)}

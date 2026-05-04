@@ -307,9 +307,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													}}
 													className={cn(
 														"transition-colors",
-														skill.enabled
-															? "text-success"
-															: "text-text-light",
+														skill.enabled ? "text-success" : "text-text-light",
 													)}
 													title={skill.enabled ? "点击禁用" : "点击启用"}
 												>

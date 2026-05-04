@@ -35,7 +35,8 @@ const SLIDES: Slide[] = [
 	{
 		slot: "onboarding-3",
 		title: "挑一个最对眼的我",
-		description: "三种人格,你喜欢哪一种?也可以随时在「设置 - IP 形象」里更换。",
+		description:
+			"三种人格,你喜欢哪一种?也可以随时在「设置 - 桌面宠物」里更换。",
 	},
 ];
 
@@ -82,7 +83,9 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 					<div className="relative mx-auto mb-5 flex h-44 w-44 items-center justify-center">
 						<div
 							className="absolute inset-0 rounded-full opacity-60 blur-2xl"
-							style={{ backgroundColor: `${MASCOT_META[previewId].accentColor}33` }}
+							style={{
+								backgroundColor: `${MASCOT_META[previewId].accentColor}33`,
+							}}
 						/>
 						<img
 							key={`${previewId}-${slide.slot}`}

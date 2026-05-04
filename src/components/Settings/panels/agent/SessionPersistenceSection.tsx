@@ -56,8 +56,7 @@ export function SessionPersistenceSection({
 							启用回放
 						</div>
 						<div className="text-xs text-text-muted mt-0.5">
-							切换到绑定了 Agent Session
-							的会话时，从后端消息记录回放到聊天窗口
+							切换到绑定了 Agent Session 的会话时，从后端消息记录回放到聊天窗口
 						</div>
 					</div>
 					<Toggle
@@ -76,8 +75,7 @@ export function SessionPersistenceSection({
 							启用消息落库
 						</div>
 						<div className="text-xs text-text-muted mt-0.5">
-							将 user/assistant 消息写入
-							agent_messages（后端不可用会自动降级）
+							将 user/assistant 消息写入 agent_messages（后端不可用会自动降级）
 						</div>
 					</div>
 					<Toggle

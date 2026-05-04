@@ -18,18 +18,27 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 const REMOTE_FEISHU_DOCX_MCP_ARG = "--remote-feishu-docx-mcp";
 
+const preloadPath = path.join(MAIN_DIST, "index.mjs");
+
 const createWindow = () => {
 	const publicDir = process.env.VITE_PUBLIC ?? RENDERER_DIST;
 	createMainWindow({
 		rendererUrl: VITE_DEV_SERVER_URL,
 		rendererDist: RENDERER_DIST,
 		publicDir,
-		preloadPath: path.join(MAIN_DIST, "index.mjs"),
+		preloadPath,
 	});
 };
 
 if (process.argv.includes(REMOTE_FEISHU_DOCX_MCP_ARG)) {
 	startFeishuDocxMcpServerFromEnv();
 } else {
-	void bootstrapApp({ createWindow });
+	void bootstrapApp({
+		createWindow,
+		petWindowConfig: {
+			preloadPath,
+			rendererUrl: VITE_DEV_SERVER_URL,
+			rendererDist: RENDERER_DIST,
+		},
+	});
 }

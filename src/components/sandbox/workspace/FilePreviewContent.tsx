@@ -6,6 +6,7 @@ import {
 	FileCode2,
 	FolderOpen,
 	Link2,
+	Loader2,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
@@ -21,9 +22,16 @@ import {
 	SandboxVideoPreview,
 } from "./SandboxMediaPreview";
 import { SandboxImagePreview } from "./SandboxImagePreview";
+import { BrowserShell } from "../preview/BrowserShell";
+import {
+	usePreviewServerStoreSelector,
+	previewServerStore,
+} from "../../../lib/previewServerStore";
 
 interface FilePreviewContentProps {
 	file: SandboxFile | null;
+	taskId?: string;
+	sandboxDir?: string;
 	previewMode: "preview" | "source";
 	onSetPreviewMode: (mode: "preview" | "source") => void;
 	onLoadContent: (fileId: string) => Promise<void>;
@@ -34,6 +42,8 @@ interface FilePreviewContentProps {
 
 export const FilePreviewContent = memo(function FilePreviewContent({
 	file,
+	taskId,
+	sandboxDir,
 	previewMode,
 	onSetPreviewMode,
 	onLoadContent,
@@ -42,6 +52,24 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 	emptyDescription = "点击左侧文件查看内容",
 }: FilePreviewContentProps) {
 	const [copiedAction, setCopiedAction] = useState<"" | "content" | "path">("");
+
+	const previewServer = usePreviewServerStoreSelector((state) =>
+		taskId ? state.servers[taskId] : undefined,
+	);
+
+	// 自动启动预览服务器（如果需要）
+	useEffect(() => {
+		if (!taskId || !sandboxDir) return;
+		if (previewServer?.running) return;
+
+		// 检查是否有 package.json 或多个 HTML 文件
+		const hasPackageJson = file?.name === "package.json";
+		const isHtmlFile = file && isHtmlPreviewExtension(file.extension);
+
+		if (hasPackageJson || isHtmlFile) {
+			previewServerStore.start(taskId, sandboxDir);
+		}
+	}, [taskId, sandboxDir, file, previewServer?.running]);
 
 	const isImage = file?.category === "images";
 	const isVideo = file ? isVideoPreviewExtension(file.extension) : false;
@@ -201,6 +229,40 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		}
 
 		if (isHtmlLike) {
+			// 优先级 1：如果预览服务器已 ready，使用 BrowserShell
+			if (previewServer?.ready && previewServer?.url) {
+				return (
+					<BrowserShell
+						src={previewServer.url}
+						taskId={taskId}
+						className="flex-1"
+					/>
+				);
+			}
+
+			// 优先级 2：如果有 package.json 或多文件项目，显示启动中状态
+			if (
+				taskId &&
+				sandboxDir &&
+				previewServer?.running &&
+				!previewServer?.ready
+			) {
+				return (
+					<div className="flex-1 flex flex-col items-center justify-center gap-4 bg-surface">
+						<Loader2 className="w-8 h-8 text-primary animate-spin" />
+						<div className="text-center space-y-2">
+							<p className="text-sm font-medium text-text-primary">
+								正在启动开发服务器...
+							</p>
+							<p className="text-xs text-text-muted">
+								首次启动可能需要安装依赖
+							</p>
+						</div>
+					</div>
+				);
+			}
+
+			// 优先级 3：单 HTML fallback 到 srcDoc
 			if (!file.content) {
 				return (
 					<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface">

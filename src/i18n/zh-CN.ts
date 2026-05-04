@@ -101,7 +101,7 @@ export const zhCN = {
 			themeDesc: "切换浅色/深色 / 主题色",
 			agent: "Agent 设置",
 			data: "数据与备份",
-			mascot: "IP 形象",
+			mascot: "桌面宠物",
 			skills: "Skills 与市场",
 			shortcuts: "键盘快捷键",
 		},

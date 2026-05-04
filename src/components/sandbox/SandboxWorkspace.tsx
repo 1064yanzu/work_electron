@@ -18,6 +18,8 @@ import {
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
+import { BrowserShell } from "./preview/BrowserShell";
+import { usePreviewServerStoreSelector } from "../../lib/previewServerStore";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
 import { confirmDialog } from "../ui/ConfirmDialog";
@@ -27,6 +29,11 @@ import { toast } from "../ui/Toast";
 const ExecutionGraph = lazy(async () => {
 	const mod = await import("./ExecutionGraph");
 	return { default: mod.ExecutionGraph };
+});
+
+const CodeWorkspace = lazy(async () => {
+	const mod = await import("./code/CodeWorkspace");
+	return { default: mod.CodeWorkspace };
 });
 
 interface SandboxWorkspaceProps {
@@ -44,6 +51,11 @@ export default function SandboxWorkspace({
 	const currentTask = useAgentStoreSelector((state) => state.currentTask);
 	const taskHistory = useAgentStoreSelector((state) => state.taskHistory);
 	const isExecuting = useAgentStoreSelector((state) => state.isExecuting);
+
+	const taskId = currentTask?.id;
+	const previewServer = usePreviewServerStoreSelector((state) =>
+		taskId ? state.servers[taskId] : undefined,
+	);
 
 	const activeSessionId = useChatStoreSelector(
 		(state) => state.activeSessionId,
@@ -91,7 +103,12 @@ export default function SandboxWorkspace({
 	];
 
 	const totalFiles = files.filter((f) => f.type === "file").length;
-	const headerTitle = ui.centerView === "graph" ? "运行图" : "产物预览";
+	const headerTitle =
+		ui.centerView === "graph"
+			? "运行图"
+			: ui.centerView === "code"
+				? "代码"
+				: "产物预览";
 	const headerMeta =
 		ui.centerView === "graph"
 			? graphSource
@@ -165,6 +182,11 @@ export default function SandboxWorkspace({
 			if (e.altKey && e.key === "2") {
 				e.preventDefault();
 				managedModeStore.setCenterView("preview");
+				return;
+			}
+			if (e.altKey && e.key === "3") {
+				e.preventDefault();
+				managedModeStore.setCenterView("code");
 			}
 		};
 		window.addEventListener("keydown", handleShortcuts);
@@ -277,6 +299,8 @@ export default function SandboxWorkspace({
 		<ManagedArtifactPreviewPanel
 			selectedFile={selectedFile}
 			artifactFiles={artifactFiles}
+			taskId={taskId}
+			sandboxDir={sandboxDir || undefined}
 			previewMode={ui.previewMode}
 			density={ui.centerDensity || "comfortable"}
 			onSetPreviewMode={(mode) => managedModeStore.setPreviewMode(mode)}
@@ -332,6 +356,21 @@ export default function SandboxWorkspace({
 						onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
 						artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
 						density={ui.centerDensity || "comfortable"}
+					/>
+				</Suspense>
+			) : ui.centerView === "code" ? (
+				<Suspense
+					fallback={
+						<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70/40">
+							正在加载代码编辑器...
+						</div>
+					}
+				>
+					<CodeWorkspace
+						taskId={taskId || ""}
+						sandboxDir={sandboxDir || ""}
+						selectedFile={selectedFile}
+						onSelectFile={(id) => void handleSelectFile(id, "user")}
 					/>
 				</Suspense>
 			) : (

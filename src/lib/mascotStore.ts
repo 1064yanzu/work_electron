@@ -1,5 +1,5 @@
 /**
- * MascotManager — IP 形象选择器
+ * MascotManager — 桌面宠物选择器
  *
  * 与 themeManager 同款单例 + localStorage 持久化模式。
  * - 持久化 key: mascotId

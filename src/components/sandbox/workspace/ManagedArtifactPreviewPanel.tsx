@@ -10,6 +10,8 @@ import { useArtifactNavigator } from "./useArtifactNavigator";
 interface ManagedArtifactPreviewPanelProps {
 	selectedFile: SandboxFile | null;
 	artifactFiles: SandboxFile[];
+	taskId?: string;
+	sandboxDir?: string;
 	previewMode: "preview" | "source";
 	density?: "comfortable" | "compact";
 	onSetPreviewMode: (mode: "preview" | "source") => void;
@@ -25,6 +27,8 @@ export const ManagedArtifactPreviewPanel = memo(
 	function ManagedArtifactPreviewPanel({
 		selectedFile,
 		artifactFiles,
+		taskId,
+		sandboxDir,
 		previewMode,
 		density = "comfortable",
 		onSetPreviewMode,
@@ -198,6 +202,8 @@ export const ManagedArtifactPreviewPanel = memo(
 				<div className="flex-1 min-h-0">
 					<FilePreviewContent
 						file={selectedFile}
+						taskId={taskId}
+						sandboxDir={sandboxDir}
 						previewMode={previewMode}
 						onSetPreviewMode={onSetPreviewMode}
 						onLoadContent={onLoadContent}

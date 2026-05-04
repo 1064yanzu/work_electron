@@ -290,10 +290,10 @@ class ToastAPI {
 				try {
 					await retry();
 				} catch (e) {
-					this.show(
-						`重试失败：${e instanceof Error ? e.message : String(e)}`,
-						{ type: "error", duration: 5000 },
-					);
+					this.show(`重试失败：${e instanceof Error ? e.message : String(e)}`, {
+						type: "error",
+						duration: 5000,
+					});
 				}
 			},
 		});

@@ -32,7 +32,7 @@ export const SETTINGS_MENU = [
 	{ id: "models", label: "模型配置", icon: Cpu },
 	{ id: "prompts", label: "提示词配置", icon: MessageSquare },
 	{ id: "imagegen", label: "AI 生图", icon: Image },
-	{ id: "mascot", label: "IP 形象", icon: Sparkles },
+	{ id: "mascot", label: "桌面宠物", icon: Sparkles },
 	{ id: "agent", label: "Agent 设置", icon: Shield },
 	{ id: "skills", label: "Agent 技能", icon: Blocks },
 	{ id: "mcp", label: "MCP 配置", icon: Plug },

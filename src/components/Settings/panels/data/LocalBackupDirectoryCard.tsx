@@ -4,10 +4,7 @@
 
 import { Archive, FolderOpen, HardDrive, RefreshCw } from "lucide-react";
 import type { SyncConfig } from "../../../../lib/api";
-import {
-	backupToLocalDir,
-	selectBackupDirectory,
-} from "../../../../lib/api";
+import { backupToLocalDir, selectBackupDirectory } from "../../../../lib/api";
 import { Select } from "../../../ui/Select";
 import {
 	SettingsRow,

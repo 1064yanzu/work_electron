@@ -78,8 +78,7 @@ export function DiffView({
 							{stats.added}
 						</span>
 						<span className="flex items-center gap-1 text-error dark:text-error">
-							<span className="w-2 h-2 rounded-full bg-error" />-
-							{stats.removed}
+							<span className="w-2 h-2 rounded-full bg-error" />-{stats.removed}
 						</span>
 					</div>
 				</div>

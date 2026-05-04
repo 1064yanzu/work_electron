@@ -20,7 +20,7 @@ export interface AppConfig {
 	value: any;
 }
 
-export type CenterDefaultView = "graph" | "preview";
+export type CenterDefaultView = "graph" | "preview" | "code";
 export type CenterArtifactClickBehavior = "select_only" | "open_preview";
 export type CenterInfoDensity = "comfortable" | "compact";
 
@@ -162,7 +162,8 @@ export async function setMotionPreference(
 }
 
 function normalizeCenterDefaultView(value: unknown): CenterDefaultView {
-	if (value === "graph" || value === "preview") return value;
+	if (value === "graph" || value === "preview" || value === "code")
+		return value;
 	// 向后兼容历史配置：旧版本 docs 视图并入 preview
 	if (value === "docs") return "preview";
 	return DEFAULT_CENTER_UX_PREFS.defaultView;

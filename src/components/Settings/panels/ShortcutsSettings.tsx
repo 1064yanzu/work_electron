@@ -22,7 +22,8 @@ interface ShortcutGroup {
 	entries: ShortcutEntry[];
 }
 
-const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+const isMac =
+	typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 const Mod = isMac ? "⌘" : "Ctrl";
 
 const SHORTCUT_GROUPS: ShortcutGroup[] = [
@@ -100,7 +101,10 @@ export function ShortcutsSettings() {
 											</div>
 											<div className="flex items-center gap-1 shrink-0">
 												{entry.keys.map((key, idx) => (
-													<span key={`${key}-${idx}`} className="flex items-center gap-1">
+													<span
+														key={`${key}-${idx}`}
+														className="flex items-center gap-1"
+													>
 														<kbd className="px-2 py-1 rounded-md text-[11px] font-medium text-text-secondary bg-warm-200 border border-border">
 															{key}
 														</kbd>
@@ -134,7 +138,8 @@ export function ShortcutsSettings() {
 								新建项目、切换主题、跳转到任意设置 tab、唤起终端等都能直接搜索。
 							</p>
 							<p className="mt-2 text-text-muted text-[12px]">
-								键盘自定义功能将在后续版本中开放。如有快捷键冲突或建议，请通过设置 → 反馈提交。
+								键盘自定义功能将在后续版本中开放。如有快捷键冲突或建议，请通过设置
+								→ 反馈提交。
 							</p>
 						</div>
 					</div>

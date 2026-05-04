@@ -12,6 +12,7 @@ import {
 	Shield,
 	Smartphone,
 	Sparkles,
+	Monitor,
 	type LucideIcon,
 } from "lucide-react";
 import type {
@@ -59,7 +60,7 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 	},
 	{
 		id: "mascot",
-		label: "IP 形象",
+		label: "桌面宠物",
 		icon: Sparkles,
 		group: "common",
 		simpleMode: "full",
@@ -125,6 +126,13 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 		id: "artifacts",
 		label: "产物管理",
 		icon: Package,
+		group: "technical",
+		simpleMode: "summary",
+	},
+	{
+		id: "sandboxPreview",
+		label: "沙盒预览",
+		icon: Monitor,
 		group: "technical",
 		simpleMode: "summary",
 	},

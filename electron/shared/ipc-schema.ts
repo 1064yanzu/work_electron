@@ -2198,6 +2198,95 @@ export type IPCSchema = {
 			ran_at: number;
 		};
 	};
+
+	// ==================
+	// 桌面宠物窗口
+	// ==================
+	pet_window_get_state: {
+		input: Record<string, never>;
+		output: {
+			enabled: boolean;
+			x: number;
+			y: number;
+			throughClicks: boolean;
+		};
+	};
+	pet_window_set_enabled: {
+		input: { enabled: boolean };
+		output: { success: boolean };
+	};
+	pet_window_set_position: {
+		input: { x: number; y: number };
+		output: { success: boolean };
+	};
+	pet_window_set_through_clicks: {
+		input: { enabled: boolean };
+		output: { success: boolean };
+	};
+	pet_window_focus_main: {
+		input: Record<string, never>;
+		output: { success: boolean };
+	};
+	pet_window_send_chat: {
+		input: { text: string };
+		output: { success: boolean };
+	};
+	pet_window_drag_move: {
+		input: { mouseX: number; mouseY: number };
+		output: { success: boolean };
+	};
+	pet_window_drag_start: {
+		input: { mouseX: number; mouseY: number };
+		output: { success: boolean };
+	};
+	pet_window_drag_end: {
+		input: Record<string, never>;
+		output: { success: boolean; moved: boolean; x: number; y: number };
+	};
+
+	// ==================
+	// 预览服务器（沙盒前端预览）
+	// ==================
+	/** 启动预览服务器 */
+	preview_server_start: {
+		input: {
+			taskId: string;
+			sandboxDir: string;
+			mode?: "dev" | "static" | "single";
+		};
+		output: {
+			port: number;
+			url: string;
+			mode: "dev" | "static" | "single";
+			processId?: number;
+		};
+	};
+	/** 停止预览服务器 */
+	preview_server_stop: {
+		input: { taskId: string };
+		output: { success: boolean };
+	};
+	/** 查询预览服务器状态 */
+	preview_server_status: {
+		input: { taskId: string };
+		output: {
+			running: boolean;
+			mode?: "dev" | "static" | "single";
+			url?: string;
+			port?: number;
+			ready?: boolean;
+		};
+	};
+	/** 弹出独立预览窗口 */
+	preview_window_open: {
+		input: { taskId: string; url?: string };
+		output: { windowId: number };
+	};
+	/** 保存沙盒文件（Monaco 编辑器用） */
+	sandbox_save_file: {
+		input: { taskId: string; relPath: string; content: string };
+		output: { success: boolean };
+	};
 };
 
 export type IPCChannel = keyof IPCSchema;

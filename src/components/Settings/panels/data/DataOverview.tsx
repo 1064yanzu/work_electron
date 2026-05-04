@@ -38,13 +38,7 @@ export function DataOverview({ dataStats, formatSize }: DataOverviewProps) {
 	);
 }
 
-function StatCard({
-	value,
-	label,
-}: {
-	value: string | number;
-	label: string;
-}) {
+function StatCard({ value, label }: { value: string | number; label: string }) {
 	return (
 		<div className="text-center p-4 bg-warm-50 rounded-xl">
 			<div className="text-2xl font-semibold text-text-primary">{value}</div>

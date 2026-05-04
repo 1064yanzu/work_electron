@@ -745,11 +745,7 @@ function NavItem({
  * 三个引导卡片：创建项目 / 上传资料 / 与 AI 对话
  * 不强引导，只是展示"产品能为你做什么"，CTA 文案克制
  */
-function EmptyOnboarding({
-	onCreateProject,
-}: {
-	onCreateProject: () => void;
-}) {
+function EmptyOnboarding({ onCreateProject }: { onCreateProject: () => void }) {
 	const items = [
 		{
 			icon: Folder,

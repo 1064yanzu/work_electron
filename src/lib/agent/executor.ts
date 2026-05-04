@@ -24,6 +24,7 @@ import { generateErrorRecoveryStrategy } from "./errorRecoveryStrategies";
 import { isHtmlPreviewPath } from "../frontendPreview";
 import { extractToolErrorMessageFromUnknown } from "./runtimeText";
 import { DEFAULT_AGENT_MODEL_SETTINGS } from "../models/agentModelConfig";
+import { previewServerStore } from "../previewServerStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
 const ILLEGAL_FILENAME_CHARS_RE =
@@ -1376,6 +1377,21 @@ class AgentExecutor {
 												artifactUrl: latestArtifact.url,
 												autoPreview: true,
 											});
+										}
+
+										// 自动启动预览服务器（如果检测到 package.json 或多文件项目）
+										const fileName = latestArtifact.url.split("/").pop() || "";
+										const isPackageJson = fileName === "package.json";
+										const isHtmlFile = isHtmlPreviewPath(latestArtifact.url);
+										const isCssOrJs = /\.(css|js|jsx|ts|tsx)$/.test(fileName);
+
+										if (isPackageJson || isHtmlFile || isCssOrJs) {
+											const taskId = task.id;
+											const serverState =
+												previewServerStore.getState().servers[taskId];
+											if (!serverState?.running) {
+												previewServerStore.start(taskId, sandboxDir);
+											}
 										}
 									}
 								}

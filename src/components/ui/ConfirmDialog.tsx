@@ -46,10 +46,7 @@ function ConfirmDialogView({
 			case "danger":
 				return {
 					icon: (
-						<AlertTriangle
-							size={20}
-							className="text-error dark:text-error"
-						/>
+						<AlertTriangle size={20} className="text-error dark:text-error" />
 					),
 					bg: "bg-[rgba(181,51,51,0.08)] dark:bg-error/10",
 				};

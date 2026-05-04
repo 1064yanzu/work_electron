@@ -70,7 +70,8 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 				ring: "ring-2 ring-red-300/60 dark:ring-red-700/40",
 				iconBg: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
 				iconColor: "text-error dark:text-error",
-				badge: "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
+				badge:
+					"bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
 				badgeText: "高危",
 				buttonBg: "bg-error hover:bg-error text-white",
 			};
@@ -155,7 +156,9 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					<div
 						className={cn(
 							"p-1.5 rounded-lg transition-all duration-200",
-							isUrgent ? "bg-peach-100 dark:bg-amber-900/20" : levelStyle.iconBg,
+							isUrgent
+								? "bg-peach-100 dark:bg-amber-900/20"
+								: levelStyle.iconBg,
 						)}
 					>
 						<ShieldIcon

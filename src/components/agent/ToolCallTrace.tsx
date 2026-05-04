@@ -490,9 +490,7 @@ export default function ToolCallTrace({
 						) : (
 							<>
 								<XCircle className="w-4 h-4 text-error dark:text-error" />
-								<span className="text-error dark:text-error">
-									任务失败
-								</span>
+								<span className="text-error dark:text-error">任务失败</span>
 							</>
 						)}
 					</div>

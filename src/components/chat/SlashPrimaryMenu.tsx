@@ -65,7 +65,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "执行快捷操作",
 		icon: Zap,
 		shortcut: "a",
-		gradient: "bg-[rgba(181,51,51,0.08)] dark:bg-error/10 text-error dark:text-error",
+		gradient:
+			"bg-[rgba(181,51,51,0.08)] dark:bg-error/10 text-error dark:text-error",
 		iconColor: "text-error dark:text-error",
 	},
 ];

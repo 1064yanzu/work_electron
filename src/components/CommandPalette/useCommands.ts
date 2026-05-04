@@ -126,11 +126,15 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			title: string;
 			desc?: string;
 		}> = [
-			{ tab: "models", title: "模型设置", desc: "Provider / API key / 模型默认" },
+			{
+				tab: "models",
+				title: "模型设置",
+				desc: "Provider / API key / 模型默认",
+			},
 			{ tab: "theme", title: "外观与主题", desc: "切换浅色/深色 / 主题色" },
 			{ tab: "agent", title: "Agent 设置" },
 			{ tab: "data", title: "数据与备份" },
-			{ tab: "mascot", title: "IP 形象" },
+			{ tab: "mascot", title: "桌面宠物" },
 			{ tab: "skills", title: "Skills 与市场" },
 		];
 		for (const t of settingsTabs) {

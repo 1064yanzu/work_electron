@@ -43,7 +43,6 @@ import {
 	statFileSize,
 } from "./toolCall/toolUtils";
 
-
 // 从工具调用中提取描述信息
 function getReadableDescription(toolCall: ToolCall): {
 	icon: React.ElementType;

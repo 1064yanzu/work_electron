@@ -13,6 +13,7 @@ import type { BrowserWindow } from "electron";
 import { isSdkSessionId } from "./sessionId";
 import { uniqStrings } from "./configManager";
 import { publishAgentSdkBusEvent } from "../../../remote-control/core/agentSdkEventBus";
+import { forwardToPetWindow } from "../../../services/petWindowService";
 import { BatchedSender } from "../../../utils/batchedSender";
 
 // ---------------------------------------------------------------------------
@@ -106,6 +107,13 @@ export function emit(
 		sender.flush();
 	}
 	publishAgentSdkBusEvent(payload as any);
+
+	// Fan-out 到桌面宠物窗口
+	try {
+		forwardToPetWindow("agent-sdk-event", { items: [payload] });
+	} catch {
+		// petWindowService 可能未初始化，静默忽略
+	}
 }
 
 // ---------------------------------------------------------------------------

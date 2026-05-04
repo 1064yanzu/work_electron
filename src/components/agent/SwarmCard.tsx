@@ -154,7 +154,8 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				agent.status === "running" &&
 					"bg-[#D96C46]/[0.04] dark:bg-[#D96C46]/[0.06]",
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
-				agent.status === "error" && "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
+				agent.status === "error" &&
+					"bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
 				agent.status === "pending" && "opacity-50",
 				onClick ? "cursor-pointer hover:bg-warm-200/60" : "cursor-default",
 			)}
@@ -188,8 +189,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 					className={cn(
 						"text-[10px] font-medium",
 						agent.status === "running" && "text-[#D96C46]",
-						agent.status === "completed" &&
-							"text-success dark:text-success",
+						agent.status === "completed" && "text-success dark:text-success",
 						agent.status === "error" && "text-error dark:text-error",
 						agent.status === "pending" && "text-text-light",
 					)}

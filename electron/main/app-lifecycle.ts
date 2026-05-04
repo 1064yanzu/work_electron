@@ -11,11 +11,22 @@ import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 import { getTerminalService } from "./services/terminalService";
 import { stopAllWatchers } from "./services/fileWatcherService";
 import { invalidateProviderCache } from "./llm/invoke";
+import {
+	initPetWindowService,
+	bootPetWindow,
+	destroyPetWindow,
+} from "./services/petWindowService";
 
 export async function bootstrapApp({
 	createWindow,
+	petWindowConfig,
 }: {
 	createWindow: () => void;
+	petWindowConfig?: {
+		preloadPath: string;
+		rendererUrl?: string;
+		rendererDist: string;
+	};
 }) {
 	const logger = createLogger();
 	const bootStartedAt = performance.now();
@@ -53,6 +64,13 @@ export async function bootstrapApp({
 	logger.info({ msg: "IPC handlers registered successfully" });
 
 	createWindow();
+
+	// 桌面宠物窗口：初始化服务并根据持久化设置启动
+	if (petWindowConfig) {
+		initPetWindowService(petWindowConfig);
+		bootPetWindow();
+	}
+
 	logger.info({
 		msg: "App core phase ready",
 		scope: "performance",
@@ -121,6 +139,9 @@ export async function bootstrapApp({
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();
 		void cloudNodeClient.stop();
+		// 销毁桌面宠物窗口
+		destroyPetWindow();
+		logger.info({ msg: "Pet window destroyed" });
 		// 销毁所有终端进程
 		getTerminalService().destroyAll();
 		logger.info({ msg: "Terminal processes destroyed" });

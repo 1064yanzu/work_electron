@@ -15,10 +15,7 @@ import {
 import React, { memo, useState } from "react";
 import { useAgentStore, useAgentStoreSelector } from "../../lib/agent/store";
 
-import {
-	type ToolArtifact,
-	type ToolCall,
-} from "../../lib/agent/types";
+import { type ToolArtifact, type ToolCall } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
 import { safeInvoke } from "../../lib/tauriBridge";
 import { InlineImage } from "../ui/InlineImage";
@@ -28,11 +25,7 @@ import { SubagentCard } from "./SubagentCard";
 import { SwarmCard, type SwarmAgentInfo } from "./SwarmCard";
 import TaskSteps from "./TaskSteps";
 import { AgentExecutionFlow } from "./AgentExecutionFlow";
-import {
-	getToolIcon,
-	ToolStatusIcon,
-	formatDurationMs,
-} from "./inline/utils";
+import { getToolIcon, ToolStatusIcon, formatDurationMs } from "./inline/utils";
 import { ResumeFromCheckpointButton } from "./inline/ResumeFromCheckpointButton";
 
 /* ResumeFromCheckpointButton, getToolIcon, ToolStatusIcon, formatDurationMs
@@ -56,10 +49,7 @@ const CommandHighlight = memo(function CommandHighlight({
 				// 命令名（第一个词）
 				if (idx === 0) {
 					return (
-						<span
-							key={idx}
-							className="text-focus font-semibold"
-						>
+						<span key={idx} className="text-focus font-semibold">
 							{part}
 						</span>
 					);
@@ -77,10 +67,7 @@ const CommandHighlight = memo(function CommandHighlight({
 				// 操作符（&&, ||, |, >, <）
 				if (["&&", "||", "|", ">", "<", ">>"].includes(trimmed)) {
 					return (
-						<span
-							key={idx}
-							className="bai-icon-violet font-semibold"
-						>
+						<span key={idx} className="bai-icon-violet font-semibold">
 							{part}
 						</span>
 					);

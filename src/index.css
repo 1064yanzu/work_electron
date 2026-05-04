@@ -76,6 +76,57 @@
 		overflow: hidden;
 	}
 
+	/* ============================================
+	   桌面宠物窗口模式 — 全透明，无背景，让 BrowserWindow 真透明生效
+	   由 main.tsx 在 #/pet 路由下给 <html> 加 .pet-window 类
+	   ============================================ */
+	html.pet-window,
+	html.pet-window body,
+	html.pet-window #root {
+		background: transparent !important;
+		background-color: transparent !important;
+	}
+
+	html.pet-window {
+		height: 100%;
+	}
+
+	html.pet-window body {
+		overflow: hidden;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		/* 全局禁用文本选中高亮，避免拖动宠物时蓝色选中色块漏出来 */
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	html.pet-window #root {
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	/* 宠物窗口下彻底隐藏所有 scrollbar — 浅色暖色 scrollbar 在透明窗口里
+	   会显示成"右侧/下方一条颜色"，正是用户看到的问题 */
+	html.pet-window ::-webkit-scrollbar,
+	html.pet-window *::-webkit-scrollbar {
+		width: 0 !important;
+		height: 0 !important;
+		display: none !important;
+	}
+
+	html.pet-window,
+	html.pet-window * {
+		scrollbar-width: none !important;
+		-ms-overflow-style: none !important;
+	}
+
+	/* 屏蔽 ::selection 在透明窗口里出现的奶油色高亮 */
+	html.pet-window ::selection {
+		background-color: transparent;
+	}
+
 	/* 段落默认行高 */
 	p {
 		line-height: 1.65;
@@ -724,6 +775,45 @@ svg.lucide:not([stroke-width]) {
 	);
 	background-size: 200% 100%;
 	animation: graph-success-shimmer 3s ease-in-out infinite;
+}
+
+/* ============================================
+   桌面宠物气泡动画 — 暖色克制，呼应 B.AI 风格
+   ============================================ */
+@keyframes pet-bubble-in {
+	0% {
+		opacity: 0;
+		transform: translateY(6px) scale(0.96);
+	}
+	60% {
+		opacity: 1;
+		transform: translateY(-1px) scale(1.005);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.animate-pet-bubble-in {
+	animation: pet-bubble-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	transform-origin: bottom center;
+}
+
+@keyframes pet-pulse {
+	0%,
+	100% {
+		opacity: 0.85;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.18);
+	}
+}
+
+.animate-pet-pulse {
+	animation: pet-pulse 1.4s ease-in-out infinite;
 }
 
 /* ============================================

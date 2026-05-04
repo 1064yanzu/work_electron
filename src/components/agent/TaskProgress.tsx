@@ -132,9 +132,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 							{config.label}
 						</span>
 						{isActive && (
-							<span className="text-xs text-focus animate-pulse">
-								进行中
-							</span>
+							<span className="text-xs text-focus animate-pulse">进行中</span>
 						)}
 					</div>
 				);
