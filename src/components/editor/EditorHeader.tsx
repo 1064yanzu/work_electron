@@ -257,7 +257,7 @@ export function EditorHeader({
 				<IconBtn
 					label="删除文档"
 					onClick={onDelete}
-					icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+					icon={<Trash2 className="w-4 h-4 text-error" />}
 					disabled={!selectedOutput}
 				/>
 			</div>

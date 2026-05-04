@@ -86,22 +86,22 @@ export function CollapsibleStepCard({
 			bg: "bg-surface/80/60",
 			ring: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
 			text: "text-text-secondary",
-			iconBg: "bg-blue-50 dark:bg-blue-900/20",
-			iconColor: "text-blue-600 dark:text-blue-400",
+			iconBg: "bg-focus/8 dark:bg-blue-900/20",
+			iconColor: "text-focus dark:text-focus",
 		},
 		completed: {
 			bg: "bg-surface/60",
 			ring: "ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 			text: "text-text-muted",
-			iconBg: "bg-emerald-50/50 dark:bg-emerald-900/10",
-			iconColor: "text-emerald-600 dark:text-emerald-400",
+			iconBg: "bg-success/8/50 dark:bg-emerald-900/10",
+			iconColor: "text-success dark:text-success",
 		},
 		error: {
 			bg: "bg-surface/80/60",
 			ring: "ring-2 ring-red-200/50 dark:ring-red-800/30",
 			text: "text-text-secondary",
-			iconBg: "bg-red-50 dark:bg-red-900/20",
-			iconColor: "text-red-600 dark:text-red-400",
+			iconBg: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
+			iconColor: "text-error dark:text-error",
 		},
 	};
 

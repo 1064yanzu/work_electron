@@ -25,8 +25,8 @@ const PROVIDER_CONFIG: Record<
 	}
 > = {
 	anthropic: { label: "Anthropic", order: 1, color: "text-orange-500" },
-	openai: { label: "OpenAI", order: 2, color: "text-emerald-500" },
-	google: { label: "Google", order: 3, color: "text-blue-500" },
+	openai: { label: "OpenAI", order: 2, color: "text-success" },
+	google: { label: "Google", order: 3, color: "text-focus" },
 	deepseek: { label: "DeepSeek", order: 0, color: "text-indigo-500" }, // DeepSeek 优先
 	default: { label: "Other", order: 99, color: "text-text-muted" },
 };

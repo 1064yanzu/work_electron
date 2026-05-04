@@ -26,8 +26,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "选择文件添加到上下文",
 		icon: FileText,
 		shortcut: "f",
-		gradient: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
-		iconColor: "text-blue-600 dark:text-blue-400",
+		gradient: "bg-focus/8 dark:bg-focus/10 text-focus dark:text-focus",
+		iconColor: "text-focus dark:text-focus",
 	},
 	{
 		id: "folder",
@@ -36,8 +36,8 @@ export const slashCategories: SlashCategory[] = [
 		icon: Folder,
 		shortcut: "d",
 		gradient:
-			"bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
-		iconColor: "text-amber-600 dark:text-amber-400",
+			"bg-peach-100 dark:bg-peach-500/10 text-peach-500 dark:text-amber-400",
+		iconColor: "text-peach-500 dark:text-amber-400",
 	},
 	{
 		id: "prompt",
@@ -65,8 +65,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "执行快捷操作",
 		icon: Zap,
 		shortcut: "a",
-		gradient: "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
-		iconColor: "text-rose-600 dark:text-rose-400",
+		gradient: "bg-[rgba(181,51,51,0.08)] dark:bg-error/10 text-error dark:text-error",
+		iconColor: "text-error dark:text-error",
 	},
 ];
 

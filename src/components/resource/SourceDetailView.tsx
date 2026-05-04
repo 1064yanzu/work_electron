@@ -462,7 +462,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.BrowserClip && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 dark:bg-emerald-900/20 text-success dark:text-success rounded text-[10px] font-medium">
 											<Globe className="w-2.5 h-2.5" />
 											浏览器剪存
 										</span>
@@ -470,7 +470,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.WebSearch && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus rounded text-[10px] font-medium">
 											<Search className="w-2.5 h-2.5" />
 											网络搜索
 										</span>
@@ -522,7 +522,7 @@ export const SourceDetailView = forwardRef<
 										onClick={() =>
 											invoke("open_external_url", { url: previewSource.url })
 										}
-										className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline cursor-pointer ml-auto"
+										className="flex items-center gap-1.5 text-xs text-focus hover:text-focus hover:underline cursor-pointer ml-auto"
 									>
 										<ExternalLink className="w-3 h-3" />
 										访问原文
@@ -625,7 +625,7 @@ export const SourceDetailView = forwardRef<
 														<p className="text-sm">暂无内容</p>
 														<button
 															onClick={() => setIsEditing(true)}
-															className="mt-2 text-xs text-blue-600 hover:underline"
+															className="mt-2 text-xs text-focus hover:underline"
 														>
 															开始编辑
 														</button>
@@ -693,7 +693,7 @@ export const SourceDetailView = forwardRef<
 						{isSource && (
 							<button
 								onClick={() => onDeleteSource(previewSource as Source)}
-								className="p-2.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+								className="p-2.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-colors"
 								title="删除"
 							>
 								<Trash2 className="w-4 h-4" />

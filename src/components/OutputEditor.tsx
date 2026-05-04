@@ -109,7 +109,7 @@ export function OutputEditor() {
 							<div className="flex gap-2">
 								<button
 									onClick={() => handleDelete(activeAsset.id)}
-									className="p-1 text-text-muted hover:text-red-500 transition-colors"
+									className="p-1 text-text-muted hover:text-error transition-colors"
 								>
 									<Trash2 className="w-4 h-4" />
 								</button>

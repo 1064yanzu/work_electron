@@ -65,14 +65,14 @@ const fileTypeConfig: Record<
 		icon: FileImage,
 		gradient:
 			"from-purple-500/20 to-pink-500/20 border-purple-200/50 dark:border-purple-800/30",
-		iconColor: "text-purple-600 dark:text-purple-400",
+		iconColor: "bai-icon-violet dark:bai-icon-violet",
 		label: "图片",
 	},
 	pdf: {
 		icon: FileText,
 		gradient:
-			"from-red-500/20 to-orange-500/20 border-red-200/50 dark:border-red-800/30",
-		iconColor: "text-red-600 dark:text-red-400",
+			"from-red-500/20 to-orange-500/20 border-[rgba(181,51,51,0.32)]/50 dark:border-red-800/30",
+		iconColor: "text-error dark:text-error",
 		label: "PDF",
 	},
 	text: {
@@ -84,8 +84,8 @@ const fileTypeConfig: Record<
 	code: {
 		icon: FileCode,
 		gradient:
-			"from-emerald-500/20 to-teal-500/20 border-emerald-200/50 dark:border-emerald-800/30",
-		iconColor: "text-emerald-600 dark:text-emerald-400",
+			"from-emerald-500/20 to-teal-500/20 border-success/30/50 dark:border-success/30",
+		iconColor: "text-success dark:text-success",
 		label: "代码",
 	},
 	html: {
@@ -98,8 +98,8 @@ const fileTypeConfig: Record<
 	video: {
 		icon: FileVideo,
 		gradient:
-			"from-blue-500/20 to-indigo-500/20 border-blue-200/50 dark:border-blue-800/30",
-		iconColor: "text-blue-600 dark:text-blue-400",
+			"from-blue-500/20 to-indigo-500/20 border-focus/30/50 dark:border-focus/30",
+		iconColor: "text-focus dark:text-focus",
 		label: "视频",
 	},
 	audio: {
@@ -113,14 +113,14 @@ const fileTypeConfig: Record<
 		icon: Archive,
 		gradient:
 			"from-amber-500/20 to-yellow-500/20 border-amber-200/50 dark:border-amber-800/30",
-		iconColor: "text-amber-600 dark:text-amber-400",
+		iconColor: "text-peach-500 dark:text-amber-400",
 		label: "压缩包",
 	},
 	document: {
 		icon: FileText,
 		gradient:
-			"from-blue-500/20 to-cyan-500/20 border-blue-200/50 dark:border-blue-800/30",
-		iconColor: "text-blue-600 dark:text-blue-400",
+			"from-blue-500/20 to-cyan-500/20 border-focus/30/50 dark:border-focus/30",
+		iconColor: "text-focus dark:text-focus",
 		label: "文档",
 	},
 	spreadsheet: {

@@ -67,11 +67,11 @@ function getToolIcon(type: ToolType): React.ElementType {
 function ToolStatusIcon({ status }: { status: ToolCall["status"] }) {
 	switch (status) {
 		case "running":
-			return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+			return <Loader2 className="w-4 h-4 animate-spin text-focus" />;
 		case "completed":
 			return <CheckCircle2 className="w-4 h-4 text-green-500" />;
 		case "error":
-			return <XCircle className="w-4 h-4 text-red-500" />;
+			return <XCircle className="w-4 h-4 text-error" />;
 		case "cancelled":
 			return <X className="w-4 h-4 text-text-light" />;
 		default:
@@ -103,9 +103,9 @@ function ToolCallCard({
 	const Icon = isSubagentCall ? GitBranch : getToolIcon(toolCall.type);
 	const statusColors = {
 		pending: "bg-warm-50/50",
-		running: "bg-blue-50 dark:bg-blue-900/20",
+		running: "bg-focus/8 dark:bg-blue-900/20",
 		completed: "bg-green-50/50 dark:bg-green-900/10",
-		error: "bg-red-50/50 dark:bg-red-900/10",
+		error: "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
 		cancelled: "bg-warm-50/50",
 	};
 
@@ -172,8 +172,8 @@ function ToolCallCard({
 
 					{/* 错误信息 */}
 					{toolCall.error && (
-						<div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-							<p className="text-xs font-medium text-red-600 dark:text-red-400">
+						<div className="p-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-lg">
+							<p className="text-xs font-medium text-error dark:text-error">
 								{toolCall.error}
 							</p>
 						</div>
@@ -206,11 +206,11 @@ function ArtifactCard({
 			onClick={onClick}
 			className="w-full flex items-start gap-3 p-3 bg-surface/50 hover:bg-warm-50 rounded-xl text-left transition-colors group"
 		>
-			<div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0">
+			<div className="w-8 h-8 rounded-lg bg-focus/8 dark:bg-blue-900/20 flex items-center justify-center text-focus shrink-0">
 				<Icon className="w-4 h-4" />
 			</div>
 			<div className="flex-1 min-w-0">
-				<p className="text-sm font-medium text-text-secondary line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+				<p className="text-sm font-medium text-text-secondary line-clamp-1 group-hover:text-focus dark:group-hover:text-focus transition-colors">
 					{artifact.title}
 				</p>
 				{artifact.url && (
@@ -254,7 +254,7 @@ export default function AgentTaskPanel({
 				{onBack && (
 					<button
 						onClick={onBack}
-						className="mt-4 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+						className="mt-4 px-4 py-2 text-sm text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
 					>
 						返回资料库
 					</button>
@@ -266,11 +266,11 @@ export default function AgentTaskPanel({
 	// 任务状态颜色
 	const statusColors = {
 		idle: "text-text-light",
-		planning: "text-blue-500",
-		executing: "text-blue-600",
-		waiting: "text-amber-500",
+		planning: "text-focus",
+		executing: "text-focus",
+		waiting: "text-peach-500",
 		completed: "text-green-500",
-		error: "text-red-500",
+		error: "text-error",
 		cancelled: "text-text-light",
 	};
 
@@ -298,7 +298,7 @@ export default function AgentTaskPanel({
 				)}
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<Zap className="w-4 h-4 text-blue-500" />
+						<Zap className="w-4 h-4 text-focus" />
 						<h2 className="font-semibold text-sm text-text-primary">
 							Agent 任务
 						</h2>
@@ -349,7 +349,7 @@ export default function AgentTaskPanel({
 							</button>
 							<button
 								onClick={() => agentExecutor.cancel()}
-								className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+								className="p-1.5 text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
 								title="取消任务"
 							>
 								<Square className="w-4 h-4" />
@@ -459,8 +459,8 @@ export default function AgentTaskPanel({
 
 				{/* 错误信息 */}
 				{currentTask.error && (
-					<div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
-						<p className="text-sm text-red-600 dark:text-red-400">
+					<div className="p-4 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-xl">
+						<p className="text-sm text-error dark:text-error">
 							⚠️ {currentTask.error}
 						</p>
 					</div>
@@ -469,7 +469,7 @@ export default function AgentTaskPanel({
 				{/* 执行中的加载状态 */}
 				{isExecuting && currentTask.toolCalls.length === 0 && (
 					<div className="flex items-center justify-center py-8">
-						<Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+						<Loader2 className="w-6 h-6 animate-spin text-focus" />
 						<span className="ml-2 text-sm text-text-muted">
 							正在规划任务...
 						</span>

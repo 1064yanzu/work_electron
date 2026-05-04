@@ -92,7 +92,7 @@ const FileCategoryGroup = memo(function FileCategoryGroup({
 								</span>
 								<span className="truncate flex-1 text-left">{file.name}</span>
 								{file.isNew ? (
-									<span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+									<span className="w-1.5 h-1.5 rounded-full bg-focus shrink-0" />
 								) : null}
 							</button>
 						);

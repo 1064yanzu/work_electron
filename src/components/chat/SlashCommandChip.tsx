@@ -62,11 +62,11 @@ const CHIP_STYLES: Record<
 		ring: "ring-orange-200/50 dark:ring-orange-500/20",
 	},
 	data: {
-		bg: "bg-emerald-50 dark:bg-emerald-500/10",
-		bgExpanded: "bg-emerald-50/50 dark:bg-emerald-500/10",
-		border: "border-emerald-200 dark:border-emerald-500/20",
-		text: "text-emerald-700 dark:text-emerald-300",
-		icon: "text-emerald-600 dark:text-emerald-400",
+		bg: "bg-success/8 dark:bg-success/10",
+		bgExpanded: "bg-success/8/50 dark:bg-success/10",
+		border: "border-success/30 dark:border-success/20",
+		text: "text-success dark:text-success",
+		icon: "text-success dark:text-success",
 		ring: "ring-emerald-200/50 dark:ring-emerald-500/20",
 	},
 	context: {

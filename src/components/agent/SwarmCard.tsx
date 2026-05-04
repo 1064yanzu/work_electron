@@ -47,9 +47,9 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 				status === "running" &&
 					"bg-[#D96C46]/15 text-[#D96C46] ring-1 ring-[#D96C46]/30",
 				status === "completed" &&
-					"bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
+					"bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success",
 				status === "error" &&
-					"bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+					"bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
 				status === "pending" && "bg-warm-200 text-text-light",
 			)}
 		>
@@ -82,14 +82,14 @@ const AgentProgressBar = memo(function AgentProgressBar({
 	if (status === "completed") {
 		return (
 			<div className="w-16 h-1 rounded-full bg-emerald-200 dark:bg-emerald-800/40 overflow-hidden">
-				<div className="h-full w-full bg-emerald-400 dark:bg-emerald-500 rounded-full" />
+				<div className="h-full w-full bg-emerald-400 dark:bg-success rounded-full" />
 			</div>
 		);
 	}
 	if (status === "error") {
 		return (
-			<div className="w-16 h-1 rounded-full bg-red-200 dark:bg-red-800/40 overflow-hidden">
-				<div className="h-full w-full bg-red-400 dark:bg-red-500 rounded-full" />
+			<div className="w-16 h-1 rounded-full bg-[rgba(181,51,51,0.24)] dark:bg-red-800/40 overflow-hidden">
+				<div className="h-full w-full bg-error dark:bg-error rounded-full" />
 			</div>
 		);
 	}
@@ -154,7 +154,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				agent.status === "running" &&
 					"bg-[#D96C46]/[0.04] dark:bg-[#D96C46]/[0.06]",
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
-				agent.status === "error" && "bg-red-50/50 dark:bg-red-900/10",
+				agent.status === "error" && "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
 				agent.status === "pending" && "opacity-50",
 				onClick ? "cursor-pointer hover:bg-warm-200/60" : "cursor-default",
 			)}
@@ -189,8 +189,8 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 						"text-[10px] font-medium",
 						agent.status === "running" && "text-[#D96C46]",
 						agent.status === "completed" &&
-							"text-emerald-600 dark:text-emerald-400",
-						agent.status === "error" && "text-red-600 dark:text-red-400",
+							"text-success dark:text-success",
+						agent.status === "error" && "text-error dark:text-error",
 						agent.status === "pending" && "text-text-light",
 					)}
 				>
@@ -252,7 +252,7 @@ export const SwarmCard = memo(function SwarmCard({
 				hasAnyRunning
 					? "bg-surface/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
 					: allDone
-						? "bg-surface border-emerald-200 dark:border-emerald-800/30"
+						? "bg-surface border-success/30 dark:border-success/30"
 						: "bg-surface border-border",
 			)}
 		>
@@ -273,7 +273,7 @@ export const SwarmCard = memo(function SwarmCard({
 							hasAnyRunning
 								? "bg-[#D96C46]/10 text-[#D96C46]"
 								: allDone
-									? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: "bg-warm-200 text-text-muted",
 						)}
 					>
@@ -306,7 +306,7 @@ export const SwarmCard = memo(function SwarmCard({
 						{hasAnyRunning && (
 							<Loader2 className="w-3 h-3 animate-spin text-[#D96C46]" />
 						)}
-						{allDone && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+						{allDone && <CheckCircle2 className="w-3 h-3 text-success" />}
 						<span className={cn(hasAnyRunning && "text-[#D96C46] font-medium")}>
 							{summaryText}
 						</span>
@@ -403,9 +403,9 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 					className={cn(
 						"transition-all duration-500",
 						hasError
-							? "text-amber-500"
+							? "text-peach-500"
 							: pct >= 100
-								? "text-emerald-500"
+								? "text-success"
 								: "text-[#D96C46]",
 					)}
 				/>
@@ -434,7 +434,7 @@ const SwarmMiniStats = memo(function SwarmMiniStats({
 	return (
 		<div className="flex items-center gap-3 text-[10px] font-medium">
 			{stats.completed > 0 && (
-				<span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+				<span className="flex items-center gap-1 text-success dark:text-success">
 					<CheckCircle2 className="w-3 h-3" />
 					{stats.completed} 完成
 				</span>
@@ -446,7 +446,7 @@ const SwarmMiniStats = memo(function SwarmMiniStats({
 				</span>
 			)}
 			{stats.errored > 0 && (
-				<span className="flex items-center gap-1 text-red-500">
+				<span className="flex items-center gap-1 text-error">
 					<AlertTriangle className="w-3 h-3" />
 					{stats.errored} 错误
 				</span>

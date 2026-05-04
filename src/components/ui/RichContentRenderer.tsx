@@ -292,7 +292,7 @@ export function RichContentWithStyles({
         prose-video:rounded-2xl prose-video:shadow-lg prose-video:my-8 prose-video:mx-auto
 
         /* 链接样式 */
-        prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+        prose-a:text-focus dark:prose-a:text-focus prose-a:no-underline hover:prose-a:underline
 
         /* 引用块样式 */
         prose-blockquote:border-l-[3px] prose-blockquote:border-cream-400 dark:prose-blockquote:border-cream-500

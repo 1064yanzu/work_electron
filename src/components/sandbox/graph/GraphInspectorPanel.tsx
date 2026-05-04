@@ -373,11 +373,11 @@ export function GraphInspectorPanel({
 								const isActive = tc.id === selectedNodeId;
 								const statusColor =
 									tc.status === "completed"
-										? "bg-emerald-500"
+										? "bg-success"
 										: tc.status === "running"
 											? "bg-primary animate-pulse"
 											: tc.status === "error"
-												? "bg-rose-500"
+												? "bg-error"
 												: "bg-cream-500";
 								return (
 									<button

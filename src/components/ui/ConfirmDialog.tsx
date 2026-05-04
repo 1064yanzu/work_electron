@@ -48,25 +48,25 @@ function ConfirmDialogView({
 					icon: (
 						<AlertTriangle
 							size={20}
-							className="text-red-500 dark:text-red-400"
+							className="text-error dark:text-error"
 						/>
 					),
-					bg: "bg-red-50 dark:bg-red-500/10",
+					bg: "bg-[rgba(181,51,51,0.08)] dark:bg-error/10",
 				};
 			case "warning":
 				return {
 					icon: (
 						<AlertTriangle
 							size={20}
-							className="text-amber-500 dark:text-amber-400"
+							className="text-peach-500 dark:text-amber-400"
 						/>
 					),
-					bg: "bg-amber-50 dark:bg-amber-500/10",
+					bg: "bg-peach-100 dark:bg-peach-500/10",
 				};
 			default:
 				return {
-					icon: <Info size={20} className="text-blue-500 dark:text-blue-400" />,
-					bg: "bg-blue-50 dark:bg-blue-500/10",
+					icon: <Info size={20} className="text-focus dark:text-focus" />,
+					bg: "bg-focus/8 dark:bg-focus/10",
 				};
 		}
 	})();
@@ -76,9 +76,9 @@ function ConfirmDialogView({
 			"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 		switch (type) {
 			case "danger":
-				return `${base} bg-red-500 text-white hover:bg-red-600 shadow-red-500/20`;
+				return `${base} bg-error text-white hover:bg-error shadow-red-500/20`;
 			case "warning":
-				return `${base} bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20`;
+				return `${base} bg-peach-500 text-white hover:bg-peach-500 shadow-amber-500/20`;
 			default:
 				return `${base} bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10`;
 		}

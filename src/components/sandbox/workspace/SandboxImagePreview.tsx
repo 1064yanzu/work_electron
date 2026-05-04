@@ -42,7 +42,7 @@ export const SandboxImagePreview = memo(function SandboxImagePreview({
 	if (error) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-				<div className="text-sm text-red-500">图片加载失败: {error}</div>
+				<div className="text-sm text-error">图片加载失败: {error}</div>
 			</div>
 		);
 	}

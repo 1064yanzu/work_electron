@@ -290,8 +290,8 @@ export function MCPSettings() {
 									</>
 								) : (
 									<>
-										<XCircle className="w-3.5 h-3.5 text-red-600" />
-										<span className="text-red-600">未检测到</span>
+										<XCircle className="w-3.5 h-3.5 text-error" />
+										<span className="text-error">未检测到</span>
 									</>
 								)}
 							</div>
@@ -311,8 +311,8 @@ export function MCPSettings() {
 									</>
 								) : (
 									<>
-										<XCircle className="w-3.5 h-3.5 text-red-600" />
-										<span className="text-red-600">未检测到</span>
+										<XCircle className="w-3.5 h-3.5 text-error" />
+										<span className="text-error">未检测到</span>
 									</>
 								)}
 							</div>
@@ -329,7 +329,7 @@ export function MCPSettings() {
 							</code>
 						</div>
 						{!envCheck.valid && (
-							<div className="mt-2 text-red-600 bg-red-50 p-2 rounded text-[11px] flex items-start gap-2">
+							<div className="mt-2 text-error bg-[rgba(181,51,51,0.08)] p-2 rounded text-[11px] flex items-start gap-2">
 								<AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
 								<div>
 									<p className="font-medium">环境配置不完整</p>
@@ -401,7 +401,7 @@ export function MCPSettings() {
 											</span>
 										)}
 										{server.status === "error" && (
-											<span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">
+											<span className="px-2 py-0.5 text-xs bg-[rgba(181,51,51,0.16)] text-error rounded-full">
 												错误
 											</span>
 										)}
@@ -430,7 +430,7 @@ export function MCPSettings() {
 									</label>
 									<button
 										onClick={() => handleRemoveServer(server.id)}
-										className="p-1.5 text-text-muted hover:text-red-600 transition-colors"
+										className="p-1.5 text-text-muted hover:text-error transition-colors"
 										title="删除"
 									>
 										<Trash2 className="w-4 h-4" />

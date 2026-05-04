@@ -186,12 +186,12 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 					</span>
 					<div className="flex items-center gap-2 flex-shrink-0">
 						{stats.additions > 0 && (
-							<span className="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">
+							<span className="text-[11px] font-mono font-medium text-success dark:text-success bg-success/8 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">
 								+{stats.additions}
 							</span>
 						)}
 						{stats.deletions > 0 && (
-							<span className="text-[11px] font-mono font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">
+							<span className="text-[11px] font-mono font-medium text-error dark:text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 px-1.5 py-0.5 rounded">
 								-{stats.deletions}
 							</span>
 						)}
@@ -246,7 +246,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							<button
 								type="button"
 								onClick={handleAccept}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-sm"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-success hover:bg-success transition-colors shadow-sm"
 							>
 								<Check className="w-3.5 h-3.5" />
 								接受
@@ -260,9 +260,9 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							className={cn(
 								"text-xs font-medium px-2.5 py-1 rounded-lg",
 								diff.status === "accepted" &&
-									"text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20",
+									"text-success dark:text-success bg-success/8 dark:bg-emerald-900/20",
 								diff.status === "rejected" &&
-									"text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
+									"text-error dark:text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
 							)}
 						>
 							{diff.status === "accepted" ? "已接受" : "已拒绝"}

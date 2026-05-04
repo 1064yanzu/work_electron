@@ -28,7 +28,7 @@ function PhaseIndicator({
 			className={cn(
 				"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300",
 				isActive &&
-					"bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 scale-105",
+					"bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus scale-105",
 				isCompleted &&
 					!isActive &&
 					"bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
@@ -108,7 +108,7 @@ function ThinkingStepCard({
 			>
 				{displayedContent}
 				{isLatest && displayedContent.length < step.content.length && (
-					<span className="inline-block w-1.5 h-4 bg-blue-500 ml-0.5 animate-pulse" />
+					<span className="inline-block w-1.5 h-4 bg-focus ml-0.5 animate-pulse" />
 				)}
 			</div>
 		</div>
@@ -158,11 +158,11 @@ export default function StreamingThought() {
 					<Activity
 						className={cn(
 							"w-5 h-5 transition-colors",
-							isExecuting ? "text-blue-500" : "text-text-light",
+							isExecuting ? "text-focus" : "text-text-light",
 						)}
 					/>
 					{isExecuting && (
-						<span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+						<span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-focus rounded-full animate-pulse" />
 					)}
 				</div>
 
@@ -172,7 +172,7 @@ export default function StreamingThought() {
 							思考过程
 						</span>
 						{isExecuting && (
-							<span className="text-xs text-blue-500 flex items-center gap-1">
+							<span className="text-xs text-focus flex items-center gap-1">
 								<Loader className="w-3 h-3 animate-pulse" />
 								思考中...
 							</span>
@@ -242,14 +242,14 @@ export default function StreamingThought() {
 								>
 									{THINKING_PHASE_CONFIG[thinkingPhase].label}
 								</span>
-								<span className="ml-auto flex items-center gap-1 text-xs text-blue-500">
-									<span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+								<span className="ml-auto flex items-center gap-1 text-xs text-focus">
+									<span className="w-1.5 h-1.5 bg-focus rounded-full animate-pulse" />
 									输入中...
 								</span>
 							</div>
 							<div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
 								{partialThinking}
-								<span className="inline-block w-1.5 h-4 bg-blue-500 ml-0.5 animate-pulse" />
+								<span className="inline-block w-1.5 h-4 bg-focus ml-0.5 animate-pulse" />
 							</div>
 						</div>
 					)}

@@ -285,7 +285,7 @@ export function SourceListView({
 						}}
 						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-all duration-200 border relative ${
 							isDragOver
-								? "bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/50 scale-[1.02]"
+								? "bg-focus/16 dark:bg-blue-900/30 border-focus dark:border-focus ring-2 ring-blue-400/50 scale-[1.02]"
 								: "bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-900/10 dark:to-orange-900/10 hover:from-amber-100/80 hover:to-orange-100/60 dark:hover:from-amber-900/20 dark:hover:to-orange-900/15 border-amber-200/50 dark:border-amber-800/30 hover:shadow-[0_4px_16px_rgba(251,191,36,0.08)] hover:-translate-y-0.5"
 						}`}
 					>
@@ -297,7 +297,7 @@ export function SourceListView({
 							}`}
 						>
 							<FolderIcon
-								className={`w-5 h-5 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
+								className={`w-5 h-5 ${isDragOver ? "text-focus dark:text-focus" : "text-peach-500 dark:text-amber-400"}`}
 							/>
 						</div>
 						<div className="mt-2 pointer-events-none">
@@ -378,8 +378,8 @@ export function SourceListView({
 					}}
 					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-all duration-200 ${
 						isDragOver
-							? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
-							: "hover:bg-amber-50/70 dark:hover:bg-amber-900/10 hover:pl-3"
+							? "bg-focus/16 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
+							: "hover:bg-peach-100/70 dark:hover:bg-amber-900/10 hover:pl-3"
 					}`}
 				>
 					<div
@@ -390,7 +390,7 @@ export function SourceListView({
 						}`}
 					>
 						<FolderIcon
-							className={`w-4 h-4 ${isDragOver ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}
+							className={`w-4 h-4 ${isDragOver ? "text-focus dark:text-focus" : "text-peach-500 dark:text-amber-400"}`}
 						/>
 					</div>
 					<div className="flex-1 min-w-0 ml-1 pointer-events-none">
@@ -559,7 +559,7 @@ export function SourceListView({
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
 									? "bg-warm-200 text-text-light/50"
-									: "bg-red-50 text-red-600 hover:bg-red-100"
+									: "bg-[rgba(181,51,51,0.08)] text-error hover:bg-[rgba(181,51,51,0.16)]"
 							}`}
 						>
 							删除
@@ -630,10 +630,10 @@ export function SourceListView({
 			>
 				{errorMessage ? (
 					<div className="text-center py-8">
-						<p className="text-sm text-red-500 mb-2">{errorMessage}</p>
+						<p className="text-sm text-error mb-2">{errorMessage}</p>
 						<button
 							onClick={fetchSources}
-							className="text-xs text-blue-600 hover:underline"
+							className="text-xs text-focus hover:underline"
 						>
 							重试
 						</button>

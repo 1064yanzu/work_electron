@@ -177,7 +177,7 @@ export function EnhancedInput({
 				{/* 已选择的命令 */}
 				{selectedCommand && (
 					<div className="p-3 pb-0">
-						<div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm">
+						<div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#e8e5f7] bai-icon-violet rounded-full text-sm">
 							<selectedCommand.icon className="w-3.5 h-3.5" />
 							<span className="font-medium">{selectedCommand.label}</span>
 							<button

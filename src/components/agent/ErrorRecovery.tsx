@@ -68,12 +68,12 @@ function SuggestionButton({
 	const Icon = ActionIcons[suggestion.action];
 
 	const colorClasses: Record<RecoverySuggestion["action"], string> = {
-		retry: "bg-blue-500 hover:bg-blue-600 text-white",
+		retry: "bg-focus hover:bg-focus text-white",
 		skip: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary",
-		alternative: "bg-purple-500 hover:bg-purple-600 text-white",
-		manual: "bg-amber-500 hover:bg-amber-600 text-white",
+		alternative: "bg-[#8b7fd9] hover:bg-[#7a6dc7] text-white",
+		manual: "bg-peach-500 hover:bg-peach-500 text-white",
 		abort:
-			"bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400",
+			"bg-[rgba(181,51,51,0.16)] hover:bg-[rgba(181,51,51,0.24)] dark:bg-red-900/30 dark:hover:bg-red-900/50 text-error dark:text-error",
 	};
 
 	return (
@@ -124,7 +124,7 @@ function ErrorDetails({
 						"p-2 rounded-lg",
 						strategy.category === "unknown"
 							? "bg-warm-200"
-							: "bg-red-50 dark:bg-red-900/20",
+							: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
 					)}
 				>
 					<Icon className={cn("w-5 h-5", config.color)} />
@@ -234,9 +234,9 @@ export default function ErrorRecovery({
 	return (
 		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-red-200 dark:ring-red-800/50 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
 			{/* 警告条 */}
-			<div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 flex items-center gap-2">
-				<AlertTriangle className="w-4 h-4 text-red-500" />
-				<span className="text-sm font-medium text-red-600 dark:text-red-400">
+			<div className="px-4 py-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 flex items-center gap-2">
+				<AlertTriangle className="w-4 h-4 text-error" />
+				<span className="text-sm font-medium text-error dark:text-error">
 					任务执行遇到问题
 				</span>
 			</div>
@@ -284,10 +284,10 @@ export function ErrorRecoveryInline({
 	const Icon = getCategoryIcon(config.icon);
 
 	return (
-		<div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg space-y-3">
+		<div className="p-3 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-lg space-y-3">
 			<div className="flex items-center gap-2">
 				<Icon className={cn("w-4 h-4", config.color)} />
-				<span className="text-sm font-medium text-red-600 dark:text-red-400">
+				<span className="text-sm font-medium text-error dark:text-error">
 					{config.label}
 				</span>
 			</div>
@@ -304,7 +304,7 @@ export function ErrorRecoveryInline({
 						className={cn(
 							"px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
 							suggestion.isRecommended
-								? "bg-blue-500 text-white hover:bg-blue-600"
+								? "bg-focus text-white hover:bg-focus"
 								: "bg-warm-200 text-text-secondary hover:bg-warm-300 dark:hover:bg-cream-700",
 						)}
 					>

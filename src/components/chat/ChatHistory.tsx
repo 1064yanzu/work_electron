@@ -1,11 +1,24 @@
 // 聊天历史记录面板
 
 import { Calendar, MessageSquare, Plus, Search, Trash2, X } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
 import type { ChatSession } from "../../lib/chat/types";
 import { inputDialog } from "../ui/InputDialog";
 import { ContextMenu } from "../ui/ContextMenu";
+
+/** 虚拟列表行 — 要么是日期分组头，要么是会话条目 */
+type Row =
+	| { type: "header"; dateKey: string }
+	| { type: "session"; session: ChatSession };
+
+const ROW_HEIGHT = {
+	header: 32, // 日期分组头
+	session: 76, // 会话条目（含 padding）
+} as const;
+
+const VIRTUALIZE_THRESHOLD = 30; // 30 条以下不虚拟化，避免轻度场景的体感跳动
 
 interface ChatHistoryProps {
 	sessions: ChatSession[];
@@ -83,6 +96,24 @@ export function ChatHistory({
 			return [dateKey, sorted] as [string, ChatSession[]];
 		});
 	}, [groupedSessions, pinnedIds]);
+
+	// 把分组结构拍平成一维 Row[]，虚拟化模式直接喂给 useVirtualizer
+	const flatRows = useMemo<Row[]>(() => {
+		const rows: Row[] = [];
+		for (const [dateKey, list] of sortedEntries) {
+			rows.push({ type: "header", dateKey });
+			for (const session of list) {
+				rows.push({ type: "session", session });
+			}
+		}
+		return rows;
+	}, [sortedEntries]);
+
+	const totalSessions = sessions.length;
+	const shouldVirtualize = totalSessions > VIRTUALIZE_THRESHOLD;
+
+	// 虚拟化滚动容器 ref
+	const scrollParentRef = useRef<HTMLDivElement>(null);
 
 	const contextMenuItems = contextMenu
 		? buildSessionContextMenu({
@@ -178,7 +209,10 @@ export function ChatHistory({
 			</div>
 
 			{/* Session List */}
-			<div className="flex-1 overflow-y-auto scrollbar-hide px-3 pb-4">
+			<div
+				ref={scrollParentRef}
+				className="flex-1 overflow-y-auto scrollbar-hide px-3 pb-4"
+			>
 				{!hasResults ? (
 					<div className="flex flex-col items-center justify-center h-64 text-text-light animate-in fade-in zoom-in-95 duration-300">
 						<div className="w-16 h-16 rounded-2xl bg-warm-50/50 flex items-center justify-center mb-4">
@@ -194,29 +228,40 @@ export function ChatHistory({
 						{searchQuery && (
 							<button
 								onClick={() => setSearchQuery("")}
-								className="mt-2 text-xs text-blue-500 hover:text-blue-600 hover:underline"
+								className="mt-2 text-xs text-text-secondary hover:text-text-primary hover:underline"
 							>
 								清空搜索
 							</button>
 						)}
 					</div>
+				) : shouldVirtualize ? (
+					<VirtualizedSessionList
+						scrollParentRef={scrollParentRef}
+						rows={flatRows}
+						activeSessionId={activeSessionId}
+						pinnedIds={pinnedIds}
+						onSelectSession={onSelectSession}
+						onDeleteSession={onDeleteSession}
+						onContextMenu={(e, session) => {
+							e.preventDefault();
+							e.stopPropagation();
+							setContextMenu({ x: e.clientX, y: e.clientY, session });
+						}}
+					/>
 				) : (
 					<div className="space-y-6 mt-2">
 						{sortedEntries.map(([dateKey, dateSessions]) => (
 							<div key={dateKey} className="space-y-2">
-								<div className="flex items-center gap-2 px-2">
-									<Calendar className="w-3.5 h-3.5 text-text-light" />
-									<div className="text-xs font-medium text-text-light uppercase tracking-wider">
-										{dateKey}
-									</div>
-									<div className="h-px flex-1 bg-warm-200" />
-								</div>
-
+								<DateHeader dateKey={dateKey} />
 								<div className="space-y-1">
 									{dateSessions.map((session) => (
-										<div
+										<SessionItem
 											key={session.id}
-											onClick={() => onSelectSession(session.id)}
+											session={session}
+											active={activeSessionId === session.id}
+											pinned={pinnedIds.includes(session.id)}
+											onSelect={() => onSelectSession(session.id)}
+											onDelete={() => onDeleteSession(session.id)}
 											onContextMenu={(e) => {
 												e.preventDefault();
 												e.stopPropagation();
@@ -226,65 +271,7 @@ export function ChatHistory({
 													session,
 												});
 											}}
-											className={`
-                        group relative flex items-start gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200
-                        ${
-													activeSessionId === session.id
-														? "bg-warm-200 shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50"
-														: "hover:bg-warm-50/50 hover:shadow-sm"
-												}
-                      `}
-											style={{
-												contentVisibility: "auto",
-												containIntrinsicSize: "88px",
-											}}
-										>
-											<div
-												className={`
-                        w-8 h-8 mt-0.5 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                        ${
-													activeSessionId === session.id
-														? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-														: "bg-warm-200 text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light"
-												}
-                      `}
-											>
-												<MessageSquare className="w-4 h-4" />
-											</div>
-
-											<div className="flex-1 min-w-0 pr-6">
-												<div
-													className={`
-                          text-sm font-medium truncate transition-colors mb-0.5
-                          ${activeSessionId === session.id ? "text-text-primary" : "text-text-secondary group-hover:text-text-primary dark:group-hover:text-surface"}
-                        `}
-												>
-													{session.title || "新对话"}
-													{pinnedIds.includes(session.id) ? (
-														<span className="ml-2 text-[10px] text-blue-500">
-															置顶
-														</span>
-													) : null}
-												</div>
-												<div className="text-xs text-text-light truncate">
-													{session.messages[
-														session.messages.length - 1
-													]?.content.slice(0, 30) || "无消息"}
-												</div>
-											</div>
-
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													onDeleteSession(session.id);
-												}}
-												aria-label={`删除对话 ${session.title || "新对话"}`}
-												className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-												title="删除对话"
-											>
-												<Trash2 className="w-3.5 h-3.5" />
-											</button>
-										</div>
+										/>
 									))}
 								</div>
 							</div>
@@ -300,6 +287,178 @@ export function ChatHistory({
 					onClose={() => setContextMenu(null)}
 				/>
 			) : null}
+		</div>
+	);
+}
+
+/* ============================================
+   子组件 — DateHeader / SessionItem / VirtualizedSessionList
+   ============================================ */
+
+function DateHeader({ dateKey }: { dateKey: string }) {
+	return (
+		<div className="flex items-center gap-2 px-2">
+			<Calendar className="w-3.5 h-3.5 text-text-light" />
+			<div className="text-xs font-medium text-text-light uppercase tracking-wider">
+				{dateKey}
+			</div>
+			<div className="h-px flex-1 bg-warm-200" />
+		</div>
+	);
+}
+
+interface SessionItemProps {
+	session: ChatSession;
+	active: boolean;
+	pinned: boolean;
+	onSelect: () => void;
+	onDelete: () => void;
+	onContextMenu: (e: React.MouseEvent) => void;
+}
+
+function SessionItem({
+	session,
+	active,
+	pinned,
+	onSelect,
+	onDelete,
+	onContextMenu,
+}: SessionItemProps) {
+	const lastMessage =
+		session.messages[session.messages.length - 1]?.content.slice(0, 30) ||
+		"无消息";
+
+	return (
+		<div
+			onClick={onSelect}
+			onContextMenu={onContextMenu}
+			className={`
+                        group relative flex items-start gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200
+                        ${
+													active
+														? "bg-warm-200 shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50"
+														: "hover:bg-warm-50/50 hover:shadow-sm"
+												}
+                      `}
+			style={{
+				contentVisibility: "auto",
+				containIntrinsicSize: "88px",
+			}}
+		>
+			<div
+				className={`
+                        w-8 h-8 mt-0.5 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                        ${
+													active
+														? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
+														: "bg-warm-200 text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light"
+												}
+                      `}
+			>
+				<MessageSquare className="w-4 h-4" />
+			</div>
+			<div className="flex-1 min-w-0 pr-6">
+				<div
+					className={`
+                          text-sm font-medium truncate transition-colors mb-0.5
+                          ${
+														active
+															? "text-text-primary"
+															: "text-text-secondary group-hover:text-text-primary dark:group-hover:text-surface"
+													}
+                        `}
+				>
+					{session.title || "新对话"}
+					{pinned ? (
+						<span className="ml-2 text-[10px] text-text-secondary">置顶</span>
+					) : null}
+				</div>
+				<div className="text-xs text-text-light truncate">{lastMessage}</div>
+			</div>
+			<button
+				onClick={(e) => {
+					e.stopPropagation();
+					onDelete();
+				}}
+				aria-label={`删除对话 ${session.title || "新对话"}`}
+				className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded-lg transition-all duration-200"
+				title="删除对话"
+			>
+				<Trash2 className="w-3.5 h-3.5" />
+			</button>
+		</div>
+	);
+}
+
+interface VirtualizedListProps {
+	scrollParentRef: React.RefObject<HTMLDivElement | null>;
+	rows: Row[];
+	activeSessionId: string | null;
+	pinnedIds: string[];
+	onSelectSession: (sessionId: string) => void;
+	onDeleteSession: (sessionId: string) => void;
+	onContextMenu: (e: React.MouseEvent, session: ChatSession) => void;
+}
+
+function VirtualizedSessionList({
+	scrollParentRef,
+	rows,
+	activeSessionId,
+	pinnedIds,
+	onSelectSession,
+	onDeleteSession,
+	onContextMenu,
+}: VirtualizedListProps) {
+	const virtualizer = useVirtualizer({
+		count: rows.length,
+		getScrollElement: () => scrollParentRef.current,
+		estimateSize: (index) =>
+			rows[index].type === "header" ? ROW_HEIGHT.header : ROW_HEIGHT.session,
+		overscan: 8,
+	});
+
+	return (
+		<div
+			style={{
+				height: `${virtualizer.getTotalSize()}px`,
+				width: "100%",
+				position: "relative",
+			}}
+			className="mt-2"
+		>
+			{virtualizer.getVirtualItems().map((virtualRow) => {
+				const row = rows[virtualRow.index];
+				return (
+					<div
+						key={virtualRow.key}
+						data-index={virtualRow.index}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							transform: `translateY(${virtualRow.start}px)`,
+						}}
+					>
+						{row.type === "header" ? (
+							<div className="pb-2">
+								<DateHeader dateKey={row.dateKey} />
+							</div>
+						) : (
+							<div className="pb-1">
+								<SessionItem
+									session={row.session}
+									active={activeSessionId === row.session.id}
+									pinned={pinnedIds.includes(row.session.id)}
+									onSelect={() => onSelectSession(row.session.id)}
+									onDelete={() => onDeleteSession(row.session.id)}
+									onContextMenu={(e) => onContextMenu(e, row.session)}
+								/>
+							</div>
+						)}
+					</div>
+				);
+			})}
 		</div>
 	);
 }

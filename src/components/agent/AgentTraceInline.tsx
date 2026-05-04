@@ -1,20 +1,14 @@
 import {
 	BookOpen,
-	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
-	Clock,
 	Code2,
-	FolderOpen,
 	Globe,
 	Loader2,
 	MessageSquare,
 	Pause,
 	Play,
-	RotateCcw,
-	Search,
 	Wrench,
-	XCircle,
 	Database,
 	Archive,
 } from "lucide-react";
@@ -22,10 +16,8 @@ import React, { memo, useState } from "react";
 import { useAgentStore, useAgentStoreSelector } from "../../lib/agent/store";
 
 import {
-	TOOL_ICONS,
 	type ToolArtifact,
 	type ToolCall,
-	type ToolType,
 } from "../../lib/agent/types";
 import { cn } from "../../lib/utils";
 import { safeInvoke } from "../../lib/tauriBridge";
@@ -36,138 +28,15 @@ import { SubagentCard } from "./SubagentCard";
 import { SwarmCard, type SwarmAgentInfo } from "./SwarmCard";
 import TaskSteps from "./TaskSteps";
 import { AgentExecutionFlow } from "./AgentExecutionFlow";
-import { getCheckpoint, deleteCheckpoint } from "../../lib/agent/api";
+import {
+	getToolIcon,
+	ToolStatusIcon,
+	formatDurationMs,
+} from "./inline/utils";
+import { ResumeFromCheckpointButton } from "./inline/ResumeFromCheckpointButton";
 
-/**
- * 恢复任务按钮组件
- * 从检查点恢复失败的任务执行
- */
-function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
-	const [isLoading, setIsLoading] = useState(false);
-	const [hasCheckpoint, setHasCheckpoint] = useState<boolean | null>(null);
-	const [error, setError] = useState<string | null>(null);
-
-	// 检查是否有检查点
-	React.useEffect(() => {
-		const checkForCheckpoint = async () => {
-			try {
-				const checkpoint = await getCheckpoint(taskId);
-				setHasCheckpoint(!!checkpoint);
-			} catch {
-				setHasCheckpoint(false);
-			}
-		};
-		checkForCheckpoint();
-	}, [taskId]);
-
-	const handleResume = async () => {
-		setIsLoading(true);
-		setError(null);
-		try {
-			const checkpoint = await getCheckpoint(taskId);
-			if (!checkpoint) {
-				setError("未找到检查点");
-				return;
-			}
-
-			// 动态导入避免循环依赖
-			const { agentExecutor } = await import("../../lib/agent/executor");
-
-			// 使用检查点数据恢复执行
-			const metadata = checkpoint.metadata as {
-				query?: string;
-				systemPrompt?: string;
-				model?: string;
-			};
-
-			await agentExecutor.executeCustomTask(
-				metadata.query || "继续之前的任务",
-				metadata.systemPrompt,
-				{},
-				{
-					resumeSessionId: checkpoint.sdk_session_id,
-					workingDirectory: checkpoint.sandbox_dir,
-				},
-			);
-
-			// 成功后删除检查点
-			await deleteCheckpoint(taskId);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "恢复失败");
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	// 没有检查点或正在检查时不显示
-	if (hasCheckpoint === null || hasCheckpoint === false) {
-		return null;
-	}
-
-	return (
-		<div className="flex flex-col gap-2">
-			<button
-				onClick={handleResume}
-				disabled={isLoading}
-				className={cn(
-					"flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all",
-					isLoading
-						? "bg-warm-200 text-text-light cursor-wait"
-						: "bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow",
-				)}
-			>
-				{isLoading ? (
-					<>
-						<Loader2 className="w-3.5 h-3.5 animate-spin" />
-						恢复中...
-					</>
-				) : (
-					<>
-						<RotateCcw className="w-3.5 h-3.5" />
-						从断点继续
-					</>
-				)}
-			</button>
-			{error && (
-				<div className="text-[11px] text-red-500 dark:text-red-400 text-center">
-					{error}
-				</div>
-			)}
-		</div>
-	);
-}
-
-const ToolIconMap: Record<string, React.ElementType> = {
-	Search,
-	BookOpen,
-	Globe,
-	FolderOpen,
-	MessageSquare,
-	Wrench,
-};
-
-function getToolIcon(type: ToolType): React.ElementType {
-	const iconName = TOOL_ICONS[type];
-	return ToolIconMap[iconName] || Wrench;
-}
-
-function ToolStatusIcon({ status }: { status: ToolCall["status"] }) {
-	switch (status) {
-		case "running":
-			return <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />;
-		case "completed":
-			return <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />;
-		case "error":
-			return <XCircle className="w-3.5 h-3.5 text-red-500" />;
-		default:
-			return <Clock className="w-3.5 h-3.5 text-text-light" />;
-	}
-}
-
-function formatDurationMs(ms?: number) {
-	if (!ms || ms <= 0) return "";
-	return `${(ms / 1000).toFixed(1)}s`;
-}
+/* ResumeFromCheckpointButton, getToolIcon, ToolStatusIcon, formatDurationMs
+   已抽出到 ./inline/ 子文件夹（阶段 3 拆解 — 2026-05） */
 
 // 命令语法高亮组件
 const CommandHighlight = memo(function CommandHighlight({
@@ -189,7 +58,7 @@ const CommandHighlight = memo(function CommandHighlight({
 					return (
 						<span
 							key={idx}
-							className="text-blue-600 dark:text-blue-400 font-semibold"
+							className="text-focus font-semibold"
 						>
 							{part}
 						</span>
@@ -199,7 +68,7 @@ const CommandHighlight = memo(function CommandHighlight({
 				// 选项（以 - 或 -- 开头）
 				if (trimmed.startsWith("-")) {
 					return (
-						<span key={idx} className="text-rose-600 dark:text-rose-400">
+						<span key={idx} className="text-error">
 							{part}
 						</span>
 					);
@@ -210,7 +79,7 @@ const CommandHighlight = memo(function CommandHighlight({
 					return (
 						<span
 							key={idx}
-							className="text-purple-600 dark:text-purple-400 font-semibold"
+							className="bai-icon-violet font-semibold"
 						>
 							{part}
 						</span>
@@ -336,7 +205,7 @@ const ArtifactRow = memo(function ArtifactRow({
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<div className="text-xs font-medium text-text-secondary dark:text-zinc-200 truncate">
+						<div className="text-xs font-medium text-text-secondary truncate">
 							{artifact.title}
 						</div>
 						{isPreviewable && (
@@ -522,7 +391,7 @@ const ToolCallRow = memo(function ToolCallRow({
 									技能已激活: {skillData.skillName}
 								</span>
 								{toolCall.status === "completed" && (
-									<span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+									<span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-[rgba(74,124,89,0.08)] text-success">
 										就绪
 									</span>
 								)}
@@ -559,10 +428,10 @@ const ToolCallRow = memo(function ToolCallRow({
 				className={cn(
 					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 					toolCall.status === "running"
-						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+						? "bg-surface/80/60 ring-2 ring-warm-300 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
-							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-							: "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+							? "bg-surface/80/60 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
+							: "bg-surface/60 ring-1 ring-border",
 				)}
 			>
 				<button
@@ -573,20 +442,20 @@ const ToolCallRow = memo(function ToolCallRow({
 						className={cn(
 							"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
 							toolCall.status === "running"
-								? "bg-blue-50 dark:bg-blue-900/20"
+								? "bg-warm-200"
 								: toolCall.status === "error" || exitCode !== 0
-									? "bg-red-50 dark:bg-red-900/20"
-									: "bg-emerald-50 dark:bg-emerald-900/20",
+									? "bg-[rgba(181,51,51,0.08)]"
+									: "bg-[rgba(74,124,89,0.08)]",
 						)}
 					>
 						<Wrench
 							className={cn(
 								"w-3.5 h-3.5 transition-colors",
 								toolCall.status === "running"
-									? "text-blue-600 dark:text-blue-400"
+									? "text-focus"
 									: toolCall.status === "error" || exitCode !== 0
-										? "text-red-600 dark:text-red-400"
-										: "text-emerald-600 dark:text-emerald-400",
+										? "text-error"
+										: "text-success",
 							)}
 						/>
 					</div>
@@ -625,8 +494,8 @@ const ToolCallRow = memo(function ToolCallRow({
 										className={cn(
 											"px-1.5 py-0.5 rounded text-[10px] font-mono",
 											exitCode === 0
-												? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-												: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400",
+												? "bg-[rgba(74,124,89,0.12)] text-success"
+												: "bg-[rgba(181,51,51,0.12)] text-error",
 										)}
 									>
 										exit {exitCode}
@@ -678,10 +547,10 @@ const ToolCallRow = memo(function ToolCallRow({
 				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 				// 根据状态设置边框和背景
 				toolCall.status === "running"
-					? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+					? "bg-surface/80/60 ring-2 ring-warm-300 shadow-sm"
 					: toolCall.status === "error"
-						? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-						: "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+						? "bg-surface/80/60 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
+						: "bg-surface/60 ring-1 ring-border",
 			)}
 		>
 			<button
@@ -697,11 +566,11 @@ const ToolCallRow = memo(function ToolCallRow({
 					className={cn(
 						"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
 						toolCall.status === "running"
-							? "bg-blue-50 dark:bg-blue-900/20"
+							? "bg-warm-200"
 							: toolCall.status === "error"
-								? "bg-red-50 dark:bg-red-900/20"
+								? "bg-[rgba(181,51,51,0.08)]"
 								: toolCall.status === "completed"
-									? "bg-emerald-50 dark:bg-emerald-900/20"
+									? "bg-[rgba(74,124,89,0.08)]"
 									: "bg-warm-50/50",
 					)}
 				>
@@ -709,11 +578,11 @@ const ToolCallRow = memo(function ToolCallRow({
 						className={cn(
 							"w-3.5 h-3.5 transition-colors",
 							toolCall.status === "running"
-								? "text-blue-600 dark:text-blue-400"
+								? "text-focus"
 								: toolCall.status === "error"
-									? "text-red-600 dark:text-red-400"
+									? "text-error"
 									: toolCall.status === "completed"
-										? "text-emerald-600 dark:text-emerald-400"
+										? "text-success"
 										: "text-text-muted",
 						)}
 					/>
@@ -723,7 +592,7 @@ const ToolCallRow = memo(function ToolCallRow({
 						<div className="text-xs font-semibold text-text-primary truncate">
 							{toolCall.name}
 							{toolCall.name === "Task" && toolCall.status === "running" && (
-								<span className="ml-2 text-[10px] font-normal text-purple-500 animate-pulse">
+								<span className="ml-2 text-[10px] font-normal bai-icon-violet animate-pulse">
 									子代理调用中...
 								</span>
 							)}
@@ -756,9 +625,9 @@ const ToolCallRow = memo(function ToolCallRow({
 					) : null}
 					{progress !== undefined && toolCall.status === "running" ? (
 						<div className="mt-1.5 space-y-1">
-							<div className="h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
+							<div className="h-1.5 bg-warm-300 rounded-full overflow-hidden">
 								<div
-									className="h-full bg-blue-500 transition-all duration-300"
+									className="h-full bg-primary transition-all duration-300"
 									style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
 								/>
 							</div>
@@ -770,7 +639,7 @@ const ToolCallRow = memo(function ToolCallRow({
 						</div>
 					) : null}
 					{toolCall.status === "error" && toolCall.error ? (
-						<div className="mt-1 text-[11px] text-red-600 dark:text-red-400 break-words">
+						<div className="mt-1 text-[11px] text-error break-words">
 							{toolCall.error}
 						</div>
 					) : null}
@@ -969,8 +838,8 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 					className="w-full flex items-center justify-between px-3 py-2.5 text-left"
 				>
 					<div className="flex items-center gap-2 min-w-0">
-						<div className="p-1.5 rounded-xl bg-surface ring-1 ring-black/5 dark:ring-white/10">
-							<MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+						<div className="p-1.5 rounded-xl bg-surface ring-1 ring-border">
+							<MessageSquare className="w-3.5 h-3.5 bai-icon-violet" />
 						</div>
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
@@ -979,7 +848,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								</div>
 								<div className="text-[11px] text-text-light">{statusText}</div>
 								{isThisTaskExecuting ? (
-									<Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+									<Loader2 className="w-3.5 h-3.5 animate-spin text-focus" />
 								) : null}
 							</div>
 							<div className="text-[11px] text-text-light truncate">
@@ -1030,7 +899,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								{canPause ? (
 									<button
 										onClick={() => pauseTask()}
-										className="flex-1 px-3 py-1.5 rounded-lg bg-warm-300 dark:bg-cream-700 hover:bg-cream-400 dark:hover:bg-cream-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary dark:text-zinc-200"
+										className="flex-1 px-3 py-1.5 rounded-lg bg-warm-300 hover:bg-warm-400 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary"
 									>
 										<Pause className="w-3.5 h-3.5" />
 										暂停
@@ -1039,7 +908,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								{canResume ? (
 									<button
 										onClick={() => resumeTask()}
-										className="flex-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-white"
+										className="flex-1 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-primary-foreground"
 									>
 										<Play className="w-3.5 h-3.5" />
 										继续
@@ -1122,7 +991,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 						})()}
 
 						{task.error ? (
-							<div className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-xs text-red-600 dark:text-red-400">
+							<div className="px-3 py-2 rounded-xl bg-[rgba(181,51,51,0.08)] text-xs text-error">
 								{task.error}
 							</div>
 						) : null}
@@ -1247,7 +1116,7 @@ function ContextControl({
 					{/* Usage Bar */}
 					<div className="w-24 h-1.5 bg-warm-200 rounded-full overflow-hidden">
 						<div
-							className={`h-full rounded-full transition-all duration-500 ${isHigh ? "bg-amber-400" : "bg-emerald-400"}`}
+							className={`h-full rounded-full transition-all duration-500 ${isHigh ? "bg-peach-500" : "bg-mint-500"}`}
 							style={{ width: `${percent}%` }}
 						/>
 					</div>

@@ -128,9 +128,9 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 									>
 										<div className="pt-0.5 flex-shrink-0">
 											{error ? (
-												<XCircle className="w-5 h-5 text-red-500" />
+												<XCircle className="w-5 h-5 text-error" />
 											) : done ? (
-												<CheckCircle2 className="w-5 h-5 text-emerald-500" />
+												<CheckCircle2 className="w-5 h-5 text-success" />
 											) : (
 												<Circle className="w-5 h-5 text-text-light" />
 											)}

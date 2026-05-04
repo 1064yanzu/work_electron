@@ -117,7 +117,7 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 					</div>
 
 					{engine !== "duckduckgo" && (
-						<p className="text-xs text-amber-600 mt-2">
+						<p className="text-xs text-peach-500 mt-2">
 							⚠️ {engine === "google" ? "Google" : "Bing"} 搜索需要配置 API
 							密钥（环境变量）
 						</p>

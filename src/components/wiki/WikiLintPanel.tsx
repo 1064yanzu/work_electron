@@ -42,17 +42,17 @@ const KIND_META: Record<
 	orphan: {
 		label: "孤儿页面",
 		icon: GitBranch,
-		color: "text-purple-600 bg-purple-50 dark:bg-purple-950/30",
+		color: "bai-icon-violet bg-purple-50 dark:bg-purple-950/30",
 	},
 	stub: {
 		label: "内容过短",
 		icon: Type,
-		color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30",
+		color: "text-peach-500 bg-peach-100 dark:bg-amber-950/30",
 	},
 	"broken-link": {
 		label: "断链",
 		icon: FileSymlink,
-		color: "text-red-600 bg-red-50 dark:bg-red-950/30",
+		color: "text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30",
 	},
 	"frontmatter-missing": {
 		label: "Frontmatter 缺失",
@@ -62,7 +62,7 @@ const KIND_META: Record<
 	"source-no-sources": {
 		label: "Source 页缺溯源",
 		icon: Package,
-		color: "text-rose-600 bg-rose-50 dark:bg-rose-950/30",
+		color: "text-error bg-[rgba(181,51,51,0.08)] dark:bg-rose-950/30",
 	},
 };
 
@@ -191,10 +191,10 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 未摄入文件 */}
 				{report.un_ingested_sources.length > 0 && (
-					<div className="rounded-xl border border-blue-200/50 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20">
-						<div className="px-3 py-2 border-b border-blue-200/50 dark:border-blue-900/40 flex items-center gap-2">
-							<Package className="w-3.5 h-3.5 text-blue-600" />
-							<span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+					<div className="rounded-xl border border-focus/30/50 dark:border-blue-900/40 bg-focus/8/50 dark:bg-blue-950/20">
+						<div className="px-3 py-2 border-b border-focus/30/50 dark:border-blue-900/40 flex items-center gap-2">
+							<Package className="w-3.5 h-3.5 text-focus" />
+							<span className="text-xs font-medium text-focus dark:text-focus">
 								未摄入原始文件（{report.un_ingested_sources.length}）
 							</span>
 						</div>
@@ -202,17 +202,17 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 							{report.un_ingested_sources.slice(0, 20).map((s) => (
 								<div
 									key={s.path}
-									className="px-3 py-1.5 text-[11px] text-blue-700/80 dark:text-blue-300/80 truncate border-b border-blue-100/50 dark:border-blue-900/30 last:border-b-0"
+									className="px-3 py-1.5 text-[11px] text-focus/80 dark:text-focus/80 truncate border-b border-focus/16/50 dark:border-blue-900/30 last:border-b-0"
 									title={s.path}
 								>
 									· {s.name}
-									<span className="ml-1 text-blue-500/70">
+									<span className="ml-1 text-focus/70">
 										（{formatSize(s.size)}）
 									</span>
 								</div>
 							))}
 							{report.un_ingested_sources.length > 20 && (
-								<div className="px-3 py-1.5 text-[10px] text-blue-500">
+								<div className="px-3 py-1.5 text-[10px] text-focus">
 									…还有 {report.un_ingested_sources.length - 20} 个
 								</div>
 							)}
@@ -222,7 +222,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 无问题状态 */}
 				{!hasAnyIssue && (
-					<div className="rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+					<div className="rounded-xl bg-success/8/60 dark:bg-emerald-950/20 border border-success/30/50 dark:border-emerald-900/40 px-3 py-2.5 text-xs text-success dark:text-success leading-relaxed">
 						Wiki 当前状态健康，未发现机械问题。如需检查矛盾或过时内容，让 Agent
 						读完 SCHEMA 后帮你做语义级审计。
 					</div>

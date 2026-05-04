@@ -126,7 +126,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 							<button
 								type="button"
 								onClick={() => void confirmDeleteCard()}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>
@@ -165,7 +165,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								{cardPreview.source_url && (
 									<button
 										onClick={() => handleOpenCardSource(cardPreview)}
-										className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+										className="px-3 py-1.5 text-xs font-medium text-focus hover:text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
 									>
 										访问原文
 									</button>
@@ -214,7 +214,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								<div className="flex flex-wrap gap-2">
 									{cardPreview.theme_id && (
 										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
-											<span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+											<span className="w-1.5 h-1.5 rounded-full bg-focus"></span>
 											{cardPreview.theme_id}
 										</span>
 									)}
@@ -273,10 +273,10 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 			<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
 				{cardErrorMessage ? (
 					<div className="text-center py-10">
-						<p className="text-sm text-red-500 mb-2">{cardErrorMessage}</p>
+						<p className="text-sm text-error mb-2">{cardErrorMessage}</p>
 						<button
 							onClick={fetchCards}
-							className="text-xs text-blue-600 hover:underline"
+							className="text-xs text-focus hover:underline"
 						>
 							重试
 						</button>
@@ -349,7 +349,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 														e.stopPropagation();
 														handleOpenCardSource(card);
 													}}
-													className="shrink-0 p-1.5 text-text-light hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+													className="shrink-0 p-1.5 text-text-light hover:text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
 													title="访问原文"
 												>
 													<ExternalLink className="w-3.5 h-3.5" />
@@ -380,7 +380,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 													e.stopPropagation();
 													handleDeleteCard(card);
 												}}
-												className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+												className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
 												title="删除卡片"
 											>
 												<Trash2 className="w-3.5 h-3.5" />

@@ -43,7 +43,7 @@ export function EditorDialogs({
 							<button
 								onClick={() => void onConfirmBulkDelete()}
 								disabled={isBulkDeleting}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error disabled:opacity-50 rounded-lg transition-colors"
 							>
 								{isBulkDeleting ? "删除中…" : "确认删除"}
 							</button>
@@ -71,7 +71,7 @@ export function EditorDialogs({
 							</button>
 							<button
 								onClick={() => void onConfirmDelete(deleteConfirm)}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>

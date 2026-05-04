@@ -28,15 +28,15 @@ const StepIndicator = memo(function StepIndicator({
 }) {
 	if (status === "completed") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center ring-2 ring-emerald-200 dark:ring-emerald-800">
-				<CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+			<div className="w-8 h-8 rounded-full bg-success/16 dark:bg-emerald-900/30 flex items-center justify-center ring-2 ring-emerald-200 dark:ring-emerald-800">
+				<CheckCircle2 className="w-4 h-4 text-success dark:text-success" />
 			</div>
 		);
 	}
 	if (status === "error") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800">
-				<AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+			<div className="w-8 h-8 rounded-full bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800">
+				<AlertCircle className="w-4 h-4 text-error dark:text-error" />
 			</div>
 		);
 	}
@@ -91,9 +91,9 @@ const StepCard = memo(function StepCard({
 						step.status === "running"
 							? "bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12] ring-1 ring-[#D96C46]/20 dark:ring-[#D96C46]/30"
 							: step.status === "completed"
-								? "bg-emerald-50/50 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
+								? "bg-success/8/50 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
 								: step.status === "error"
-									? "bg-red-50/50 dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
+									? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
 									: "bg-warm-50/50/30 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 					)}
 				>
@@ -152,11 +152,11 @@ const ToolCallChain = memo(function ToolCallChain({
 							className={cn(
 								"px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1",
 								call.status === "completed"
-									? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: call.status === "running"
 										? "bg-[#D96C46]/15 text-[#D96C46] ring-1 ring-[#D96C46]/30"
 										: call.status === "error"
-											? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+											? "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error"
 											: "bg-warm-200 text-text-secondary",
 							)}
 						>
@@ -219,8 +219,8 @@ const OverallProgressRing = memo(function OverallProgressRing({
 						isRunning
 							? "text-[#D96C46] animate-pulse-slow"
 							: progress >= 100
-								? "text-emerald-500"
-								: "text-blue-500",
+								? "text-success"
+								: "text-focus",
 					)}
 				/>
 			</svg>
@@ -350,7 +350,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<div className="text-[10px] text-text-muted">总调用</div>
 					</div>
 					<div className="text-center">
-						<div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+						<div className="text-lg font-bold text-success dark:text-success">
 							{toolStats.completed}
 						</div>
 						<div className="text-[10px] text-text-muted">成功</div>
@@ -362,7 +362,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<div className="text-[10px] text-text-muted">运行中</div>
 					</div>
 					<div className="text-center">
-						<div className="text-lg font-bold text-red-600 dark:text-red-400">
+						<div className="text-lg font-bold text-error dark:text-error">
 							{toolStats.failed}
 						</div>
 						<div className="text-[10px] text-text-muted">失败</div>

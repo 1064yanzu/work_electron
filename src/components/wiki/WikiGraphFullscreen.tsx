@@ -346,7 +346,7 @@ function WikiNodeDetailContent({
 						{page.page_type ?? "entity"}
 					</span>
 					{page.status && page.status !== "active" && (
-						<span className="text-[10px] uppercase tracking-wider text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
+						<span className="text-[10px] uppercase tracking-wider text-peach-500 bg-peach-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
 							{page.status}
 						</span>
 					)}

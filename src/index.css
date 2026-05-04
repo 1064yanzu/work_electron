@@ -85,7 +85,7 @@
 	   如果某处需要"书页感 serif"，显式使用 .type-display-serif 工具类 */
 	h1 {
 		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
-		font-weight: 600;
+		font-weight: 700;
 		font-size: 1.875rem;
 		line-height: 1.2;
 		letter-spacing: -0.02em;
@@ -114,7 +114,7 @@
 	h5,
 	h6 {
 		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
-		font-weight: 600;
+		font-weight: 500;
 		font-size: 1rem;
 		line-height: 1.35;
 		letter-spacing: -0.008em;
@@ -312,30 +312,8 @@ svg.lucide:not([stroke-width]) {
 }
 
 /* ============================================
-   [DEPRECATED] 全局纹理背景 — Claude 羊皮纸质感
-   B.AI 风改造：完全移除 radial-gradient 与噪点，
-   保留空类避免误触发，新代码请使用 var(--t-bg) 直接铺底。
+   全局背景与面板底色 — 直接使用 var(--t-bg)，不再需要 deprecated 包装类
    ============================================ */
-.app-shell-texture {
-	/* deprecated: was radial-gradient peach + warm-grey */
-}
-
-.app-shell-noise::after {
-	/* deprecated: was SVG noise overlay */
-	content: none;
-}
-
-.dark .app-shell-noise::after {
-	content: none;
-}
-
-/* ============================================
-   [DEPRECATED] 面板背景 — 暖色半透明渐晕
-   B.AI 风改造：移除 radial-gradient，使用纯净奶油色底
-   ============================================ */
-.mid-center-panel {
-	/* deprecated: was radial-gradient peach corners */
-}
 
 .editor-shell {
 	background-color: transparent;
@@ -364,29 +342,16 @@ svg.lucide:not([stroke-width]) {
 	color: var(--doc-muted);
 }
 
-/* 面板 Shell — 使用主题变量 */
+/* 面板 Shell — B.AI 风：纯净不透明底 + 1px 暖描边分层，无 glassmorphism */
 .panel-shell {
-	background-color: var(--panel-bg);
-	background-image:
-		radial-gradient(
-			120% 120% at 100% 0%,
-			var(--t-texture-a, rgba(201, 100, 66, 0.025)),
-			transparent 48%
-		),
-		radial-gradient(
-			100% 100% at 0% 100%,
-			var(--t-texture-b, rgba(93, 93, 89, 0.015)),
-			transparent 52%
-		);
+	background-color: var(--t-bg, #faf9f5);
 	border: none;
 	box-shadow: none;
-	backdrop-filter: blur(20px);
-	-webkit-backdrop-filter: blur(20px);
 	border-radius: 0;
 }
 
 .panel-shell--center {
-	background-color: var(--panel-bg-strong);
+	background-color: var(--t-bg-surface, #ffffff);
 }
 
 /* ============================================
@@ -472,15 +437,6 @@ svg.lucide:not([stroke-width]) {
 
 	.animate-scale-out {
 		animation: scaleOut 0.2s ease-in forwards;
-	}
-
-	/* 按钮 spring 效果 */
-	.btn-spring {
-		transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-	}
-
-	.btn-spring:active {
-		transform: scale(0.98);
 	}
 
 	/* Dropdown 退出动画 */
@@ -585,44 +541,6 @@ svg.lucide:not([stroke-width]) {
 		0 4px 12px 0 rgb(0 0 0 / 0.3);
 }
 
-/* [DEPRECATED] 传统阴影层级
-   B.AI 风改造：新代码请使用 .shadow-bai-card / .shadow-bai-pop / .shadow-card */
-.shadow-elevation-1 {
-	box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.04),
-		0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-.shadow-elevation-2 {
-	box-shadow:
-		0 2px 8px rgba(0, 0, 0, 0.05),
-		0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.shadow-elevation-3 {
-	box-shadow:
-		0 8px 24px rgba(0, 0, 0, 0.06),
-		0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.dark .shadow-elevation-1 {
-	box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.25),
-		0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-.dark .shadow-elevation-2 {
-	box-shadow:
-		0 2px 8px rgba(0, 0, 0, 0.3),
-		0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-.dark .shadow-elevation-3 {
-	box-shadow:
-		0 8px 24px rgba(0, 0, 0, 0.45),
-		0 2px 8px rgba(0, 0, 0, 0.35);
-}
-
 /* ============================================
    版式工具类 — B.AI 风格统一 Inter
    原 serif 风格保留为 *-serif 后缀给少数语境（如文档阅读）使用
@@ -706,72 +624,6 @@ svg.lucide:not([stroke-width]) {
 	line-height: 1.4;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
-}
-
-/* ============================================
-   [DEPRECATED] 卡片基础样式
-   B.AI 风改造：新代码请使用 .bai-card / .bai-card-interactive
-   保留旧定义以避免连锁断引用，但不要在新组件中使用
-   ============================================ */
-
-/* 标准内容卡片 */
-.card-base {
-	background: #ffffff;
-	border: 1px solid rgba(0, 0, 0, 0.06);
-	border-radius: 12px;
-	box-shadow:
-		0 0 0 1px rgba(0, 0, 0, 0.03),
-		0 2px 6px rgba(0, 0, 0, 0.04),
-		0 8px 24px rgba(0, 0, 0, 0.03);
-}
-
-.dark .card-base {
-	background: #1e1d1b;
-	border-color: rgba(255, 255, 255, 0.06);
-	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.03),
-		0 2px 6px rgba(0, 0, 0, 0.2),
-		0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
-/* 交互卡片（可点击） */
-.card-interactive {
-	background: #ffffff;
-	border: 1px solid rgba(0, 0, 0, 0.06);
-	border-radius: 12px;
-	box-shadow:
-		0 0 0 1px rgba(0, 0, 0, 0.03),
-		0 2px 6px rgba(0, 0, 0, 0.04);
-	transition:
-		border-color 0.15s,
-		box-shadow 0.15s,
-		transform 0.15s;
-	cursor: pointer;
-}
-
-.card-interactive:hover {
-	border-color: rgba(0, 0, 0, 0.1);
-	box-shadow:
-		0 0 0 1px rgba(0, 0, 0, 0.05),
-		0 4px 12px rgba(0, 0, 0, 0.06),
-		0 16px 40px rgba(0, 0, 0, 0.05);
-	transform: translateY(-1px);
-}
-
-.dark .card-interactive {
-	background: #1e1d1b;
-	border-color: rgba(255, 255, 255, 0.06);
-	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.03),
-		0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.dark .card-interactive:hover {
-	border-color: rgba(255, 255, 255, 0.1);
-	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.05),
-		0 4px 12px rgba(0, 0, 0, 0.3),
-		0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
 /* ============================================
@@ -901,98 +753,9 @@ html[data-motion-preference="reduced"] *::after {
 }
 
 /* ============================================
-   B.AI 风格工具类 — 胶囊化、1% 彩色锚点、头像渐变
+   B.AI 风格工具类 — 1% 彩色锚点、头像渐变、卡片
+   说明：bai-pill-* 已废弃，请改用 <Button shape="pill" variant="..."> 组件
    ============================================ */
-
-/* 主操作胶囊（黑底白字，主题感知） */
-.bai-pill-primary {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	padding: 0.5rem 1.125rem;
-	border-radius: 9999px;
-	background-color: var(--t-primary, #1a1a19);
-	color: var(--t-primary-fg, #ffffff);
-	font-size: 0.8125rem;
-	font-weight: 500;
-	line-height: 1;
-	border: 1px solid transparent;
-	transition:
-		background-color 0.15s ease,
-		opacity 0.15s ease,
-		transform 0.15s ease;
-}
-
-.bai-pill-primary:hover {
-	background-color: var(--t-primary-hover, #2a2a28);
-}
-
-.bai-pill-primary:active {
-	transform: scale(0.98);
-}
-
-.bai-pill-primary:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
-}
-
-/* 次要胶囊（白底暖描边） */
-.bai-pill-secondary {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	padding: 0.5rem 1rem;
-	border-radius: 9999px;
-	background-color: var(--t-bg-surface, #ffffff);
-	color: var(--t-text-primary, #1a1a19);
-	font-size: 0.8125rem;
-	font-weight: 500;
-	line-height: 1;
-	border: 1px solid var(--t-border, #e8e5dd);
-	transition:
-		background-color 0.15s ease,
-		border-color 0.15s ease,
-		transform 0.15s ease;
-}
-
-.bai-pill-secondary:hover {
-	background-color: var(--t-bg-muted, #f4f2ec);
-	border-color: var(--t-text-muted, #d8d4c9);
-}
-
-.bai-pill-secondary:active {
-	transform: scale(0.98);
-}
-
-/* 桃色 pill — 1% 彩色锚点（如"领取积分"、"升级"） */
-.bai-pill-peach {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.375rem;
-	padding: 0.375rem 0.75rem;
-	border-radius: 9999px;
-	background-color: #f8dccb;
-	color: #1a1a19;
-	font-size: 0.75rem;
-	font-weight: 500;
-	line-height: 1;
-	transition: background-color 0.15s ease;
-}
-
-.bai-pill-peach:hover {
-	background-color: #f2c4a8;
-}
-
-.dark .bai-pill-peach {
-	background-color: rgba(248, 220, 203, 0.16);
-	color: #f8dccb;
-}
-
-.dark .bai-pill-peach:hover {
-	background-color: rgba(248, 220, 203, 0.24);
-}
 
 /* 1% 锚点图标颜色（薄荷绿 / 紫罗兰），仅在工具图标、装饰处使用 */
 .bai-icon-mint {

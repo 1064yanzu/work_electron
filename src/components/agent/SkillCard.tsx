@@ -19,11 +19,11 @@ function StatusIcon({ status }: { status: SkillExecution["status"] }) {
 		case "parsing":
 		case "loading_style":
 		case "generating":
-			return <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />;
+			return <Loader2 className="w-3.5 h-3.5 animate-spin text-focus" />;
 		case "completed":
-			return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
+			return <CheckCircle2 className="w-3.5 h-3.5 text-success" />;
 		case "error":
-			return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+			return <XCircle className="w-3.5 h-3.5 text-error" />;
 		default:
 			return null;
 	}
@@ -40,14 +40,14 @@ function StepStatusIcon({
 	switch (status) {
 		case "running":
 			return (
-				<Loader2 className="w-3 h-3 text-blue-500 animate-spin flex-shrink-0" />
+				<Loader2 className="w-3 h-3 text-focus animate-spin flex-shrink-0" />
 			);
 		case "completed":
 			return (
-				<CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+				<CheckCircle2 className="w-3 h-3 text-success flex-shrink-0" />
 			);
 		case "error":
-			return <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />;
+			return <XCircle className="w-3 h-3 text-error flex-shrink-0" />;
 		default:
 			return (
 				<div className="w-3 h-3 rounded-full border border-cream-400 dark:border-cream-500 flex-shrink-0" />
@@ -92,9 +92,9 @@ export function SkillCard({
 							className={cn(
 								"p-1.5 rounded-lg transition-all duration-200",
 								isActive
-									? "bg-blue-50 dark:bg-blue-900/20"
+									? "bg-focus/8 dark:bg-blue-900/20"
 									: hasError
-										? "bg-red-50 dark:bg-red-900/20"
+										? "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20"
 										: "bg-warm-50/50",
 							)}
 						>
@@ -182,7 +182,7 @@ export function SkillCard({
 
 				{/* 错误显示 */}
 				{skill.error && (
-					<div className="px-3 py-1.5 bg-red-50/50 dark:bg-red-900/20 text-[11px] text-red-600 dark:text-red-400 border-t border-red-200/30 dark:border-red-800/30">
+					<div className="px-3 py-1.5 bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/20 text-[11px] text-error dark:text-error border-t border-[rgba(181,51,51,0.32)]/30 dark:border-red-800/30">
 						错误: {skill.error}
 					</div>
 				)}
@@ -261,7 +261,7 @@ export function SkillCard({
 
 			{/* 错误显示 */}
 			{skill.error && (
-				<div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs border-t border-red-100 dark:border-red-800/30">
+				<div className="px-3 py-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 text-error dark:text-error text-xs border-t border-[rgba(181,51,51,0.16)] dark:border-red-800/30">
 					错误: {skill.error}
 				</div>
 			)}

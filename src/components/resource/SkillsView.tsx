@@ -121,7 +121,7 @@ export function SkillsView(_props: SkillsViewProps) {
 			{/* Header */}
 			<div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-border dark:border-white/[0.05]">
 				<div className="flex items-center gap-2">
-					<Zap className="w-4 h-4 text-amber-500" />
+					<Zap className="w-4 h-4 text-peach-500" />
 					<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
 						Skills
 					</h2>
@@ -167,7 +167,7 @@ export function SkillsView(_props: SkillsViewProps) {
 				>
 					已安装 ({skills.length})
 					{updateCount > 0 && (
-						<span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">
+						<span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-error text-[9px] text-white flex items-center justify-center">
 							{updateCount}
 						</span>
 					)}
@@ -189,11 +189,11 @@ export function SkillsView(_props: SkillsViewProps) {
 
 			{/* Error */}
 			{error && (
-				<div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
+				<div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-[rgba(181,51,51,0.08)] dark:bg-red-950/20 border border-[rgba(181,51,51,0.32)] dark:border-red-900/40 text-xs text-error dark:text-error flex items-center justify-between">
 					<span className="truncate">{error}</span>
 					<button
 						onClick={() => setError(null)}
-						className="ml-2 shrink-0 text-red-400 hover:text-red-600"
+						className="ml-2 shrink-0 text-error hover:text-error"
 					>
 						<X className="w-3 h-3" />
 					</button>
@@ -269,8 +269,8 @@ export function SkillsView(_props: SkillsViewProps) {
 												className={cn(
 													"w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
 													isSystem
-														? "bg-blue-50 dark:bg-blue-500/10 text-blue-500"
-														: "bg-amber-50 dark:bg-amber-500/10 text-amber-500",
+														? "bg-focus/8 dark:bg-focus/10 text-focus"
+														: "bg-peach-100 dark:bg-peach-500/10 text-peach-500",
 												)}
 											>
 												{isSystem ? (
@@ -288,8 +288,8 @@ export function SkillsView(_props: SkillsViewProps) {
 														className={cn(
 															"text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
 															isSystem
-																? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-																: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
+																? "bg-focus/8 dark:bg-focus/10 text-focus dark:text-focus"
+																: "bg-peach-100 dark:bg-peach-500/10 text-peach-500 dark:text-amber-400",
 														)}
 													>
 														{isSystem ? "系统" : "自定义"}
@@ -308,7 +308,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													className={cn(
 														"transition-colors",
 														skill.enabled
-															? "text-emerald-500"
+															? "text-success"
 															: "text-text-light",
 													)}
 													title={skill.enabled ? "点击禁用" : "点击启用"}
@@ -340,7 +340,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													{!isSystem && (
 														<button
 															onClick={() => handleDelete(skill.name)}
-															className="flex items-center gap-1 text-[10px] text-red-500 hover:text-red-600 transition-colors"
+															className="flex items-center gap-1 text-[10px] text-error hover:text-error transition-colors"
 														>
 															<Trash2 className="w-3 h-3" />
 															删除

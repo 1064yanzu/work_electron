@@ -94,7 +94,7 @@ function MediaLoadingState({ label }: { label: string }) {
 function MediaErrorState({ message }: { message: string }) {
 	return (
 		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-zinc-950 to-zinc-900 p-6 text-center">
-			<p className="text-sm text-red-300">{message}</p>
+			<p className="text-sm text-error">{message}</p>
 		</div>
 	);
 }

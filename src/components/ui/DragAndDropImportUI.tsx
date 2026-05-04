@@ -50,11 +50,11 @@ export function DragAndDropImportUI<TResult = unknown>({
 
 	const statusClassName =
 		queueStatus === "importing"
-			? "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
+			? "text-focus bg-focus/8 dark:bg-blue-900/20 dark:text-focus"
 			: summary.error > 0
-				? "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+				? "text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 dark:text-error"
 				: summary.success > 0
-					? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
+					? "text-success bg-success/8 dark:bg-emerald-900/20 dark:text-success"
 					: "text-text-secondary bg-warm-50";
 
 	const canStart = queueStatus === "idle" && hasPending;
@@ -146,11 +146,11 @@ export function DragAndDropImportUI<TResult = unknown>({
 								>
 									<div className="mt-0.5">
 										{item.status === "importing" ? (
-											<Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+											<Loader2 className="w-4 h-4 text-focus animate-spin" />
 										) : item.status === "success" ? (
-											<CheckCircle2 className="w-4 h-4 text-emerald-500" />
+											<CheckCircle2 className="w-4 h-4 text-success" />
 										) : item.status === "error" ? (
-											<AlertCircle className="w-4 h-4 text-red-500" />
+											<AlertCircle className="w-4 h-4 text-error" />
 										) : (
 											<Circle className="w-4 h-4 text-text-light" />
 										)}
@@ -163,7 +163,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 													{item.name}
 												</p>
 												{item.error && (
-													<p className="text-[11px] text-red-600 dark:text-red-400 mt-0.5 line-clamp-2">
+													<p className="text-[11px] text-error dark:text-error mt-0.5 line-clamp-2">
 														{item.error}
 													</p>
 												)}
@@ -186,10 +186,10 @@ export function DragAndDropImportUI<TResult = unknown>({
 											<div
 												className={`h-full rounded-full transition-all ${
 													item.status === "error"
-														? "bg-red-500"
+														? "bg-error"
 														: item.status === "success"
-															? "bg-emerald-500"
-															: "bg-blue-500"
+															? "bg-success"
+															: "bg-focus"
 												}`}
 												style={{
 													width: `${Math.max(0, Math.min(1, item.progress)) * 100}%`,

@@ -45,10 +45,10 @@ interface PromptLibraryModalProps {
 }
 
 const FOLDER_COLORS: Record<string, string> = {
-	blue: "text-blue-600 dark:text-blue-400",
+	blue: "text-focus dark:text-focus",
 	orange: "text-orange-600 dark:text-orange-400",
 	green: "text-green-600 dark:text-green-400",
-	purple: "text-purple-600 dark:text-purple-400",
+	purple: "bai-icon-violet dark:bai-icon-violet",
 	pink: "text-pink-600 dark:text-pink-400",
 };
 
@@ -148,7 +148,7 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
 						title="删除"
 					>
 						<Trash2 className="w-5 h-5" />
@@ -209,7 +209,7 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
 						title="删除"
 					>
 						<Trash2 className="w-5 h-5" />
@@ -487,7 +487,7 @@ export function PromptLibraryModal({
 											if (e.key === "Enter") handleRenameFolder(folder.id);
 											if (e.key === "Escape") setEditingFolderId(null);
 										}}
-										className="w-full px-3 py-2 text-sm bg-surface border-2 border-blue-500 rounded-xl outline-none"
+										className="w-full px-3 py-2 text-sm bg-surface border-2 border-focus rounded-xl outline-none"
 										autoFocus
 									/>
 								) : (
@@ -496,7 +496,7 @@ export function PromptLibraryModal({
 										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDrop(e, folder.id)}
 										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group cursor-pointer
-										${dragOverFolderId === folder.id ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
+										${dragOverFolderId === folder.id ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 										${
 											activeFolderId === folder.id
 												? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
@@ -579,7 +579,7 @@ export function PromptLibraryModal({
 													e.stopPropagation();
 													handleDeleteFolder(folder.id, true);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 flex items-center gap-2"
 											>
 												<Trash2 className="w-3.5 h-3.5" />
 												删除（含内容）
@@ -597,7 +597,7 @@ export function PromptLibraryModal({
 							onDragLeave={handleDragLeave}
 							onDrop={(e) => handleDrop(e, undefined)}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
-								${dragOverFolderId === "uncategorized" ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
+								${dragOverFolderId === "uncategorized" ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 								${
 									activeFolderId === "uncategorized"
 										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
@@ -628,7 +628,7 @@ export function PromptLibraryModal({
 										if (e.key === "Enter") handleCreateFolder();
 										if (e.key === "Escape") setIsAddingFolder(false);
 									}}
-									className="w-full px-3 py-2 text-sm bg-surface border-2 border-blue-500 rounded-xl outline-none"
+									className="w-full px-3 py-2 text-sm bg-surface border-2 border-focus rounded-xl outline-none"
 									placeholder="输入文件夹名称..."
 									autoFocus
 								/>

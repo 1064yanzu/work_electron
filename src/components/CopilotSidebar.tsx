@@ -841,7 +841,7 @@ export default function CopilotSidebar() {
 								chatStore.setStatus("idle");
 							}}
 							aria-label="停止响应"
-							className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-sm font-medium cursor-pointer"
+							className="flex items-center gap-2 px-4 py-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 text-error dark:text-error hover:bg-[rgba(181,51,51,0.16)] dark:hover:bg-red-900/30 rounded-xl transition-colors text-sm font-medium cursor-pointer"
 						>
 							<StopCircle className="w-4 h-4" />
 							停止响应
@@ -987,7 +987,7 @@ export default function CopilotSidebar() {
 					>
 						{chatMode === "agent" ? (
 							<>
-								<span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500" />
+								<span className="w-1.5 h-1.5 rounded-full animate-pulse bg-success" />
 								Agent 模式
 							</>
 						) : (

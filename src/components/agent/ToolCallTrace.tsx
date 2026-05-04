@@ -46,22 +46,22 @@ const toolConfig: Record<
 	web_search: {
 		icon: Search,
 		gradient:
-			"from-blue-500/10 via-indigo-500/10 to-violet-500/10 border-blue-200/50 dark:border-blue-800/30",
-		iconColor: "text-blue-600 dark:text-blue-400",
+			"from-blue-500/10 via-indigo-500/10 to-violet-500/10 border-focus/30/50 dark:border-focus/30",
+		iconColor: "text-focus dark:text-focus",
 		label: "Web Search",
 	},
 	fetch_url: {
 		icon: Globe,
 		gradient:
-			"from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border-emerald-200/50 dark:border-emerald-800/30",
-		iconColor: "text-emerald-600 dark:text-emerald-400",
+			"from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border-success/30/50 dark:border-success/30",
+		iconColor: "text-success dark:text-success",
 		label: "Fetch URL",
 	},
 	llm_call: {
 		icon: Activity,
 		gradient:
 			"from-amber-500/10 via-orange-500/10 to-rose-500/10 border-amber-200/50 dark:border-amber-800/30",
-		iconColor: "text-amber-600 dark:text-amber-400",
+		iconColor: "text-peach-500 dark:text-amber-400",
 		label: "AI Analysis",
 	},
 	code_execute: {
@@ -75,7 +75,7 @@ const toolConfig: Record<
 		icon: PenLine,
 		gradient:
 			"from-purple-500/10 via-fuchsia-500/10 to-pink-500/10 border-purple-200/50 dark:border-purple-800/30",
-		iconColor: "text-purple-600 dark:text-purple-400",
+		iconColor: "bai-icon-violet dark:bai-icon-violet",
 		label: "Skill Execution",
 	},
 	default: {
@@ -96,7 +96,7 @@ function getFileIcon(filename: string) {
 		case "tsx":
 		case "js":
 		case "jsx":
-			return <FileCode className="w-3.5 h-3.5 text-blue-500" />;
+			return <FileCode className="w-3.5 h-3.5 text-focus" />;
 		case "json":
 		case "yml":
 		case "yaml":
@@ -110,7 +110,7 @@ function getFileIcon(filename: string) {
 		case "png":
 		case "jpg":
 		case "svg":
-			return <ImageIcon className="w-3.5 h-3.5 text-purple-500" />;
+			return <ImageIcon className="w-3.5 h-3.5 bai-icon-violet" />;
 		default:
 			return <File className="w-3.5 h-3.5 text-text-light" />;
 	}
@@ -133,7 +133,7 @@ function CopyButton({ text }: { text: string }) {
 			title="Copy"
 		>
 			{copied ? (
-				<Check className="w-3 h-3 text-emerald-500" />
+				<Check className="w-3 h-3 text-success" />
 			) : (
 				<Copy className="w-3 h-3 text-text-light" />
 			)}
@@ -144,7 +144,7 @@ function CopyButton({ text }: { text: string }) {
 // 结构化结果渲染
 function StructuredOutput({ type, output }: { type: string; output: any }) {
 	const codeBlockClass =
-		"text-[10px] bg-emerald-50/50 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
+		"text-[10px] bg-success/8/50 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
 
 	// 1. 资料库检索
 	if (type === "kb_search_chunks") {
@@ -215,7 +215,7 @@ function StructuredOutput({ type, output }: { type: string; output: any }) {
 							className="block p-2 rounded border border-border/50 hover:bg-warm-50/50"
 						>
 							<div className="flex items-center gap-2 mb-1">
-								<Globe className="w-3 h-3 text-blue-500" />
+								<Globe className="w-3 h-3 text-focus" />
 								<span className="text-xs font-semibold text-text-secondary truncate">
 									{item.title || item.url}
 								</span>
@@ -274,15 +274,15 @@ function ToolCallCard({
 							isRunning
 								? "scale-110 ring-2 ring-violet-500/20 border-violet-500"
 								: "border-border",
-							isError ? "border-rose-500" : "",
+							isError ? "border-error" : "",
 						)}
 					>
 						{isRunning ? (
 							<Loader2 className="w-3.5 h-3.5 animate-spin text-violet-500" />
 						) : isError ? (
-							<XCircle className="w-3.5 h-3.5 text-rose-500" />
+							<XCircle className="w-3.5 h-3.5 text-error" />
 						) : (
-							<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+							<CheckCircle2 className="w-3.5 h-3.5 text-success" />
 						)}
 					</div>
 				</div>
@@ -364,7 +364,7 @@ function ToolCallCard({
 									{toolCall.output && (
 										<div>
 											<div className="flex items-center justify-between mb-1">
-												<span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+												<span className="text-[10px] font-medium text-success dark:text-success uppercase tracking-wider">
 													Output
 												</span>
 												<CopyButton
@@ -385,10 +385,10 @@ function ToolCallCard({
 
 									{toolCall.error && (
 										<div>
-											<span className="text-[10px] font-medium text-rose-600 uppercase tracking-wider mb-1 block">
+											<span className="text-[10px] font-medium text-error uppercase tracking-wider mb-1 block">
 												Error
 											</span>
-											<pre className="text-[10px] bg-rose-50 dark:bg-rose-900/10 rounded-lg p-2 text-rose-600 dark:text-rose-400 font-mono border border-rose-100 dark:border-rose-900/20">
+											<pre className="text-[10px] bg-[rgba(181,51,51,0.08)] dark:bg-rose-900/10 rounded-lg p-2 text-error dark:text-error font-mono border border-rose-100 dark:border-rose-900/20">
 												{toolCall.error}
 											</pre>
 										</div>
@@ -475,22 +475,22 @@ export default function ToolCallTrace({
 					className={cn(
 						"flex-none p-4 border-t",
 						task.status === "completed"
-							? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20"
-							: "bg-rose-50/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/20",
+							? "bg-success/8/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20"
+							: "bg-[rgba(181,51,51,0.08)]/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/20",
 					)}
 				>
 					<div className="flex items-center gap-2 font-medium">
 						{task.status === "completed" ? (
 							<>
-								<CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-								<span className="text-emerald-700 dark:text-emerald-300">
+								<CheckCircle2 className="w-4 h-4 text-success dark:text-success" />
+								<span className="text-success dark:text-success">
 									任务已完成
 								</span>
 							</>
 						) : (
 							<>
-								<XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-								<span className="text-rose-700 dark:text-rose-300">
+								<XCircle className="w-4 h-4 text-error dark:text-error" />
+								<span className="text-error dark:text-error">
 									任务失败
 								</span>
 							</>

@@ -137,10 +137,10 @@ export interface CircularProgressProps {
 
 const circularColorStyles = {
 	primary: "text-primary",
-	blue: "text-blue-500 dark:text-blue-400",
-	green: "text-emerald-500 dark:text-emerald-400",
-	amber: "text-amber-500 dark:text-amber-400",
-	red: "text-red-500 dark:text-red-400",
+	blue: "text-focus dark:text-focus",
+	green: "text-success dark:text-success",
+	amber: "text-peach-500 dark:text-amber-400",
+	red: "text-error dark:text-error",
 };
 
 export const CircularProgress = ({

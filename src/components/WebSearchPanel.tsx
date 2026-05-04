@@ -114,7 +114,7 @@ export default function WebSearchPanel({
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<Globe className="w-4 h-4 text-blue-500" />
+					<Globe className="w-4 h-4 text-focus" />
 					<span className="font-medium text-sm text-text-primary dark:text-zinc-200">
 						网络搜索
 					</span>
@@ -161,7 +161,7 @@ export default function WebSearchPanel({
 						onClick={() => setUseBrowser(!useBrowser)}
 						className={`
               relative w-9 h-5 rounded-full transition-colors
-              ${useBrowser ? "bg-blue-500" : "bg-warm-300 dark:bg-cream-700"}
+              ${useBrowser ? "bg-focus" : "bg-warm-300 dark:bg-cream-700"}
             `}
 					>
 						<span
@@ -173,7 +173,7 @@ export default function WebSearchPanel({
 					</button>
 				</div>
 				{useBrowser && (
-					<p className="text-[10px] text-amber-600 dark:text-amber-400 px-1">
+					<p className="text-[10px] text-peach-500 dark:text-amber-400 px-1">
 						⚠️ 浏览器模式需要安装 Chrome，Windows 用户可能需要额外配置
 					</p>
 				)}
@@ -190,7 +190,7 @@ export default function WebSearchPanel({
 					/>
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light" />
 					{isSearching && (
-						<Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+						<Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-focus animate-spin" />
 					)}
 				</div>
 
@@ -198,7 +198,7 @@ export default function WebSearchPanel({
 				<button
 					onClick={handleSearch}
 					disabled={isSearching || !query.trim()}
-					className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-cream-400 dark:disabled:bg-cream-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+					className="w-full py-2.5 rounded-xl bg-focus hover:bg-focus disabled:bg-cream-400 dark:disabled:bg-cream-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
 				>
 					{isSearching ? (
 						<>
@@ -216,7 +216,7 @@ export default function WebSearchPanel({
 
 			{/* Error */}
 			{error && (
-				<div className="mx-4 mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+				<div className="mx-4 mb-4 px-4 py-3 rounded-xl bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 text-error dark:text-error text-sm">
 					{error}
 				</div>
 			)}
@@ -240,7 +240,7 @@ export default function WebSearchPanel({
 									href={result.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="font-medium text-sm text-text-primary dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400 line-clamp-2 flex items-center gap-1"
+									className="font-medium text-sm text-text-primary dark:text-zinc-200 hover:text-focus dark:hover:text-focus line-clamp-2 flex items-center gap-1"
 								>
 									{result.title}
 									<ExternalLink className="w-3 h-3 shrink-0 opacity-50" />
@@ -255,7 +255,7 @@ export default function WebSearchPanel({
 							<button
 								onClick={() => handleAddAsSource(result)}
 								disabled={addingUrl === result.url}
-								className="shrink-0 p-2 rounded-lg text-text-light hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors opacity-0 group-hover:opacity-100"
+								className="shrink-0 p-2 rounded-lg text-text-light hover:text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20 transition-colors opacity-0 group-hover:opacity-100"
 								title="添加为资料"
 							>
 								{addingUrl === result.url ? (

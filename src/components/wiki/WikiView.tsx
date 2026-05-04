@@ -330,9 +330,9 @@ export function WikiView() {
 					) : null}
 
 					{/* 提醒 */}
-					<div className="w-full max-w-[280px] rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-3.5 mb-6">
+					<div className="w-full max-w-[280px] rounded-xl bg-peach-100 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-3.5 mb-6">
 						<div className="flex items-start gap-2">
-							<Info className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+							<Info className="w-4 h-4 text-peach-500 dark:text-amber-400 mt-0.5 flex-shrink-0" />
 							<div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
 								知识 Wiki 适合整理<strong>相对稳定的、静态的知识</strong>
 								，如概念解释、技术原理、方法论等。不太适合动态性较高、频繁变化的文件内容。
@@ -399,7 +399,7 @@ export function WikiView() {
 						</button>
 						<button
 							onClick={() => handleDeletePage(selectedPage)}
-							className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+							className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-950/30 rounded-lg transition-colors"
 							title="删除"
 						>
 							<Trash2 className="w-4 h-4" />
@@ -582,14 +582,14 @@ export function WikiView() {
 
 			{/* 提示 Banner */}
 			{pages.length === 0 && !loading && (
-				<div className="mx-3 mt-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40 p-3">
+				<div className="mx-3 mt-3 rounded-xl bg-focus/8 dark:bg-blue-950/30 border border-focus/30/60 dark:border-focus/40 p-3">
 					<div className="flex items-start gap-2">
-						<Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-						<div className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+						<Info className="w-4 h-4 text-focus mt-0.5 flex-shrink-0" />
+						<div className="text-xs text-focus dark:text-focus leading-relaxed">
 							Wiki 已建立。系统会先自动生成一张知识地图，你也可以继续点击右上角{" "}
 							<Plus className="w-3 h-3 inline" /> 添加专题页。
 							<br />
-							<span className="text-blue-500/80 dark:text-blue-400/70 mt-1 block">
+							<span className="text-focus/80 dark:text-focus/70 mt-1 block">
 								适合整理稳定的知识：概念、原理、方法论、最佳实践等。
 							</span>
 						</div>
@@ -603,9 +603,9 @@ export function WikiView() {
 				(schemaStats.skipped_count > 0 ||
 					(schemaStats.processed_count > 0 &&
 						schemaStats.real_page_count === 0)) && (
-					<div className="mx-3 mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-3">
+					<div className="mx-3 mt-3 rounded-xl bg-peach-100 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-3">
 						<div className="flex items-start gap-2 mb-2">
-							<AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+							<AlertTriangle className="w-4 h-4 text-peach-500 dark:text-amber-400 mt-0.5 flex-shrink-0" />
 							<div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed flex-1">
 								{schemaStats.processed_count > 0 &&
 								schemaStats.real_page_count === 0 ? (
@@ -620,7 +620,7 @@ export function WikiView() {
 											</>
 										)}
 										<br />
-										<span className="text-amber-600/80 dark:text-amber-400/70 mt-1 block">
+										<span className="text-peach-500/80 dark:text-amber-400/70 mt-1 block">
 											这通常是旧版本（v1）遗留：当时「无法提取内容」的文件被错误地标记成了「已处理」。
 											点击下方按钮重置后再次生成即可。
 										</span>
@@ -647,13 +647,13 @@ export function WikiView() {
 										title={f.reason_detail || f.reason}
 									>
 										• {f.name}
-										<span className="text-amber-500/70 ml-1">
+										<span className="text-peach-500/70 ml-1">
 											（{f.reason_detail || f.reason}）
 										</span>
 									</div>
 								))}
 								{schemaStats.skipped_files.length > 10 && (
-									<div className="text-[10px] text-amber-500 px-1">
+									<div className="text-[10px] text-peach-500 px-1">
 										...还有 {schemaStats.skipped_files.length - 10} 个
 									</div>
 								)}
@@ -664,7 +664,7 @@ export function WikiView() {
 							{schemaStats.skipped_count > 0 && (
 								<button
 									onClick={handleRetrySkipped}
-									className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+									className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-peach-200 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
 								>
 									重试跳过的 {schemaStats.skipped_count} 个文件
 								</button>
@@ -673,14 +673,14 @@ export function WikiView() {
 								schemaStats.real_page_count === 0 && (
 									<button
 										onClick={handleResetProcessed}
-										className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
+										className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200 bg-surface dark:bg-amber-900/40 hover:bg-peach-200 dark:hover:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60 rounded-md transition-colors"
 									>
 										重置 {schemaStats.processed_count} 条已处理记录
 									</button>
 								)}
 							<button
 								onClick={() => loadSchemaStats()}
-								className="px-2.5 py-1 text-[11px] font-medium text-amber-600/70 dark:text-amber-400/70 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
+								className="px-2.5 py-1 text-[11px] font-medium text-peach-500/70 dark:text-amber-400/70 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
 							>
 								刷新诊断
 							</button>
@@ -690,13 +690,13 @@ export function WikiView() {
 
 			{/* Error */}
 			{error && (
-				<div className="mx-3 mt-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg">
+				<div className="mx-3 mt-2 px-3 py-2 text-xs text-error dark:text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30 rounded-lg">
 					{error}
 				</div>
 			)}
 
 			{isInitializing ? (
-				<div className="mx-3 mt-2 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+				<div className="mx-3 mt-2 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-peach-100 dark:bg-amber-950/30 rounded-lg">
 					正在初始化 Wiki 结构...
 				</div>
 			) : null}
@@ -743,7 +743,7 @@ export function WikiView() {
 						) : null}
 					</div>
 					{generationProgress.error && (
-						<div className="mt-1.5 text-[11px] text-red-500">
+						<div className="mt-1.5 text-[11px] text-error">
 							{generationProgress.error}
 						</div>
 					)}
@@ -760,19 +760,19 @@ export function WikiView() {
 				<div
 					className={`mx-3 mt-2 px-3 py-2.5 rounded-lg border ${
 						generationProgress.error && generationProgress.generated_pages === 0
-							? "bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40"
+							? "bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30 border-[rgba(181,51,51,0.32)]/60 dark:border-red-800/40"
 							: generationProgress.generated_pages > 0
-								? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40"
-								: "bg-amber-50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
+								? "bg-success/8 dark:bg-emerald-950/30 border-success/30/60 dark:border-success/40"
+								: "bg-peach-100 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
 					}`}
 				>
 					{generationProgress.generated_pages > 0 && (
-						<div className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">
+						<div className="text-xs text-success dark:text-success mb-1">
 							已生成 {generationProgress.generated_pages} 个 Wiki 页面
 						</div>
 					)}
 					{generationProgress.error && (
-						<div className="text-xs text-red-600 dark:text-red-400">
+						<div className="text-xs text-error dark:text-error">
 							{generationProgress.error}
 						</div>
 					)}
@@ -782,13 +782,13 @@ export function WikiView() {
 								{generationProgress.warnings.slice(0, 5).map((w, i) => (
 									<div
 										key={i}
-										className="text-[11px] text-amber-600 dark:text-amber-400"
+										className="text-[11px] text-peach-500 dark:text-amber-400"
 									>
 										• {w}
 									</div>
 								))}
 								{generationProgress.warnings.length > 5 && (
-									<div className="text-[11px] text-amber-500">
+									<div className="text-[11px] text-peach-500">
 										...还有 {generationProgress.warnings.length - 5} 条警告
 									</div>
 								)}

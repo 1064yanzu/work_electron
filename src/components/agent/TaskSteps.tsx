@@ -18,10 +18,10 @@ const statusLabel: Record<AgentTaskStep["status"], string> = {
 
 function StatusIcon({ status }: { status: AgentTaskStep["status"] }) {
 	if (status === "running")
-		return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+		return <Loader2 className="w-4 h-4 text-focus animate-spin" />;
 	if (status === "completed")
 		return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-	if (status === "error") return <XCircle className="w-4 h-4 text-red-500" />;
+	if (status === "error") return <XCircle className="w-4 h-4 text-error" />;
 	if (status === "cancelled")
 		return <PauseCircle className="w-4 h-4 text-text-light" />;
 	return <Circle className="w-4 h-4 text-text-light" />;
@@ -49,7 +49,7 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 								step.status === "completed"
 									? "bg-green-50 text-green-600 dark:bg-green-900/20"
 									: step.status === "running"
-										? "bg-blue-50 text-blue-600 dark:bg-blue-900/30"
+										? "bg-focus/8 text-focus dark:bg-blue-900/30"
 										: "bg-warm-200 text-text-muted/70",
 							)}
 						>

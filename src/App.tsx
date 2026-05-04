@@ -34,6 +34,7 @@ import {
 } from "./lib/interaction/motionPreference";
 import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
+import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 
@@ -61,6 +62,11 @@ const TerminalPanel = lazy(() => import("./components/Terminal/TerminalPanel"));
 const MascotOnboarding = lazy(() =>
 	import("./components/Mascot/MascotOnboarding").then((m) => ({
 		default: m.MascotOnboarding,
+	})),
+);
+const CommandPalette = lazy(() =>
+	import("./components/CommandPalette/CommandPaletteHost").then((m) => ({
+		default: m.CommandPaletteHost,
 	})),
 );
 const MASCOT_ONBOARDING_KEY = "mascotOnboardingShown";
@@ -175,12 +181,18 @@ export default function App() {
 		};
 	}, [motionPreference]);
 
-	// Cmd+L 快捷键切换右侧栏
+	// Cmd+L 快捷键切换右侧栏 / Cmd+K 打开命令面板
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l") {
+			const isMod = e.metaKey || e.ctrlKey;
+			if (!isMod) return;
+			const key = e.key.toLowerCase();
+			if (key === "l") {
 				e.preventDefault();
 				toggleRightSidebar();
+			} else if (key === "k") {
+				e.preventDefault();
+				commandPaletteStore.toggle();
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
@@ -232,13 +244,7 @@ export default function App() {
 						/>
 					</Suspense>
 				) : (
-					<div
-						className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95"
-						style={{
-							backgroundColor: "var(--t-bg)",
-							color: "var(--t-text-secondary)",
-						}}
-					>
+					<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
 						<PanelGroup
 							direction="horizontal"
 							className="gap-0"
@@ -389,6 +395,17 @@ export default function App() {
 						<MascotOnboarding onFinish={handleMascotOnboardingFinish} />
 					</Suspense>
 				) : null}
+
+				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡 */}
+				<Suspense fallback={null}>
+					<CommandPalette
+						onOpenProject={navigateToProject}
+						onOpenDashboard={navigateToDashboard}
+						onOpenSettings={(tab) =>
+							handleOpenSettings(tab as SettingsTabId | undefined)
+						}
+					/>
+				</Suspense>
 			</MouseDragProvider>
 		</GlobalContextMenuProvider>
 	);

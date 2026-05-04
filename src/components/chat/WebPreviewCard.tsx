@@ -29,7 +29,7 @@ function TerminalPreview({ code }: { code: string }) {
 		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
 			{/* 终端头部装饰 */}
 			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80 border-b border-border/60">
-				<div className="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm" />
+				<div className="w-2.5 h-2.5 rounded-full bg-error/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
 			</div>
@@ -37,12 +37,12 @@ function TerminalPreview({ code }: { code: string }) {
 			{/* 终端内容 */}
 			<div className="p-4 font-mono text-xs min-h-[100px]">
 				<div className="flex items-start gap-2.5">
-					<span className="text-emerald-600 dark:text-emerald-400 font-bold flex-shrink-0 select-none">
+					<span className="text-success dark:text-success font-bold flex-shrink-0 select-none">
 						$
 					</span>
 					<div className="flex-1 text-text-secondary whitespace-pre-wrap break-words leading-relaxed">
 						{lastLines}
-						<span className="inline-block w-0.5 h-4 ml-1 bg-emerald-600 dark:bg-emerald-400 animate-pulse align-middle rounded-full" />
+						<span className="inline-block w-0.5 h-4 ml-1 bg-success dark:bg-emerald-400 animate-pulse align-middle rounded-full" />
 					</div>
 				</div>
 			</div>
@@ -71,7 +71,7 @@ function EntryCard({
 		>
 			{/* 左侧信息 */}
 			<div className="flex items-center gap-3">
-				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warm-200 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200">
+				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warm-200 text-focus dark:text-focus group-hover:scale-110 transition-transform duration-200">
 					{kind === "react" ? (
 						<Code className="w-5 h-5" />
 					) : (
@@ -94,7 +94,7 @@ function EntryCard({
 						e.stopPropagation();
 						onDownload();
 					}}
-					className="p-2 rounded-lg text-text-light hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-success dark:hover:text-success hover:bg-success/8 dark:hover:bg-emerald-900/20"
 					title="下载代码"
 				>
 					<Download className="w-4 h-4" />
@@ -117,7 +117,7 @@ function EntryCard({
 						e.stopPropagation();
 						onOpen("preview");
 					}}
-					className="p-2 rounded-lg text-text-light hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-focus dark:hover:text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20"
 					title="预览"
 				>
 					<Maximize2 className="w-4 h-4" />
@@ -210,7 +210,7 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                                     ${
 																			viewMode === "preview"
-																				? "bg-surface dark:bg-cream-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+																				? "bg-surface dark:bg-cream-700 text-success dark:text-success shadow-sm"
 																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}

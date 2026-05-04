@@ -184,7 +184,7 @@ export function WikiPageEditor({
 								{tag}
 								<button
 									onClick={() => handleRemoveTag(tag)}
-									className="ml-0.5 hover:text-red-500 transition-colors"
+									className="ml-0.5 hover:text-error transition-colors"
 								>
 									<X className="w-3 h-3" />
 								</button>

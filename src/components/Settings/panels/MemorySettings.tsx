@@ -261,7 +261,7 @@ export function MemorySettings() {
 							<button
 								type="button"
 								onClick={() => setShowClearConfirm(true)}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+								className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-error dark:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
 							>
 								<Trash2 className="w-3.5 h-3.5" />
 								清空
@@ -530,8 +530,8 @@ function ClearConfirmDialog({
 	onCancel: () => void;
 }) {
 	return (
-		<div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4 animate-in slide-in-from-top-2 duration-200">
-			<p className="text-sm text-red-700 dark:text-red-400 mb-3">
+		<div className="rounded-xl border border-[rgba(181,51,51,0.32)] dark:border-red-900/50 bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30 p-4 animate-in slide-in-from-top-2 duration-200">
+			<p className="text-sm text-error dark:text-error mb-3">
 				确定要清空所有 <strong>{count}</strong> 条记忆吗？此操作不可恢复。
 			</p>
 			<div className="flex gap-2 justify-end">
@@ -545,7 +545,7 @@ function ClearConfirmDialog({
 				<button
 					type="button"
 					onClick={onConfirm}
-					className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+					className="px-3 py-1.5 text-sm font-medium text-white bg-error hover:bg-error rounded-lg transition-colors cursor-pointer"
 				>
 					确认清空
 				</button>
@@ -729,7 +729,7 @@ function MemoryItem({
 						<button
 							type="button"
 							onClick={onDelete}
-							className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer"
+							className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer"
 							title="删除"
 						>
 							<Trash2 className="w-3.5 h-3.5" />

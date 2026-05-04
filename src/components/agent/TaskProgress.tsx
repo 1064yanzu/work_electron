@@ -28,7 +28,7 @@ function PhaseStatusIcon({
 			return <CheckCircle2 className="w-4 h-4 text-green-500" />;
 		case "running":
 			return (
-				<div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+				<div className="w-4 h-4 rounded-full border-2 border-focus border-t-transparent animate-spin" />
 			);
 		case "skipped":
 			return <Circle className="w-4 h-4 text-text-light" />;
@@ -66,7 +66,7 @@ function ProgressRing({
 				/>
 				{/* 进度圆 */}
 				<circle
-					className="text-blue-500 transition-all duration-500 ease-out"
+					className="text-focus transition-all duration-500 ease-out"
 					strokeWidth={strokeWidth}
 					strokeDasharray={circumference}
 					strokeDashoffset={offset}
@@ -111,7 +111,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 						className={cn(
 							"flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
 							isActive &&
-								"bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-800",
+								"bg-focus/8 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-800",
 							status === "completed" &&
 								!isActive &&
 								"bg-green-50/50 dark:bg-green-900/10",
@@ -122,7 +122,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 						<span
 							className={cn(
 								"text-sm font-medium flex-1",
-								isActive && "text-blue-600 dark:text-blue-400",
+								isActive && "text-focus dark:text-focus",
 								status === "completed" &&
 									!isActive &&
 									"text-green-600 dark:text-green-400",
@@ -132,7 +132,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 							{config.label}
 						</span>
 						{isActive && (
-							<span className="text-xs text-blue-500 animate-pulse">
+							<span className="text-xs text-focus animate-pulse">
 								进行中
 							</span>
 						)}
@@ -164,10 +164,10 @@ function ToolCallStats({
 				</div>
 				{stats.failed > 0 && (
 					<div className="flex items-center gap-1">
-						<span className="text-sm font-medium text-red-500">
+						<span className="text-sm font-medium text-error">
 							{stats.failed}
 						</span>
-						<AlertCircle className="w-3.5 h-3.5 text-red-500" />
+						<AlertCircle className="w-3.5 h-3.5 text-error" />
 					</div>
 				)}
 				<span className="text-xs text-text-light">/ {stats.total} 次</span>
@@ -201,11 +201,11 @@ export default function TaskProgress() {
 					<Activity
 						className={cn(
 							"w-5 h-5",
-							isExecuting ? "text-blue-500" : "text-text-light",
+							isExecuting ? "text-focus" : "text-text-light",
 						)}
 					/>
 					{isExecuting && (
-						<span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+						<span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-focus rounded-full animate-pulse" />
 					)}
 				</div>
 				<div className="flex-1">
@@ -231,31 +231,31 @@ export default function TaskProgress() {
 			<div className="p-4 space-y-4">
 				{/* 等待 AI 响应提示 */}
 				{isWaitingForLLM && (
-					<div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
+					<div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-focus/16 dark:border-focus/50">
 						<div className="relative flex items-center justify-center">
-							<div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-							<div className="absolute w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+							<div className="w-5 h-5 rounded-full border-2 border-focus border-t-transparent animate-spin" />
+							<div className="absolute w-2 h-2 bg-focus rounded-full animate-pulse" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+							<p className="text-sm font-medium text-focus dark:text-focus">
 								正在等待 AI 响应...
 							</p>
-							<p className="text-xs text-blue-500/70 dark:text-blue-400/70 mt-0.5">
+							<p className="text-xs text-focus/70 dark:text-focus/70 mt-0.5">
 								请稍候，AI 正在思考中
 							</p>
 						</div>
 						{/* 三点波浪动画 */}
 						<div className="flex gap-1">
 							<span
-								className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+								className="w-1.5 h-1.5 bg-focus rounded-full animate-bounce"
 								style={{ animationDelay: "0ms" }}
 							/>
 							<span
-								className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+								className="w-1.5 h-1.5 bg-focus rounded-full animate-bounce"
 								style={{ animationDelay: "150ms" }}
 							/>
 							<span
-								className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+								className="w-1.5 h-1.5 bg-focus rounded-full animate-bounce"
 								style={{ animationDelay: "300ms" }}
 							/>
 						</div>
@@ -292,17 +292,17 @@ export function TaskProgressCompact() {
 	}
 
 	return (
-		<div className="flex items-center gap-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full">
-			<div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+		<div className="flex items-center gap-3 px-3 py-2 bg-focus/8 dark:bg-blue-900/20 rounded-full">
+			<div className="w-4 h-4 rounded-full border-2 border-focus border-t-transparent animate-spin" />
 			<div className="flex-1 min-w-0">
 				<div className="h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
 					<div
-						className="h-full bg-blue-500 rounded-full transition-all duration-500"
+						className="h-full bg-focus rounded-full transition-all duration-500"
 						style={{ width: `${taskProgress.overallProgress}%` }}
 					/>
 				</div>
 			</div>
-			<span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+			<span className="text-xs font-medium text-focus dark:text-focus">
 				{Math.round(taskProgress.overallProgress)}%
 			</span>
 		</div>

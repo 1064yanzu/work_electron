@@ -328,14 +328,14 @@ export function ArtifactSettings() {
 						<button
 							onClick={() => handleCleanup(true)}
 							disabled={isCleaning}
-							className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+							className="flex-1 flex items-center justify-center gap-2 py-3 bg-[rgba(181,51,51,0.08)] hover:bg-[rgba(181,51,51,0.16)] text-error rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
 						>
 							<AlertCircle className="w-4 h-4" />
 							清理全部产物
 						</button>
 					</div>
 					{cleanupResult && cleanupResult.errors.length > 0 && (
-						<div className="mt-3 p-3 bg-red-50 rounded-lg text-xs text-red-600">
+						<div className="mt-3 p-3 bg-[rgba(181,51,51,0.08)] rounded-lg text-xs text-error">
 							<div className="font-medium mb-1">清理过程中出现错误：</div>
 							{cleanupResult.errors.map((err, i) => (
 								<div key={i}>• {err}</div>

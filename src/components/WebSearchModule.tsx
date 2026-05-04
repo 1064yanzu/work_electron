@@ -335,7 +335,7 @@ export default function WebSearchModule({
 
 			{/* 错误提示 */}
 			{error && (
-				<div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs mb-2">
+				<div className="px-3 py-2 rounded-lg bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 text-error dark:text-error text-xs mb-2">
 					{error}
 				</div>
 			)}
@@ -366,10 +366,10 @@ export default function WebSearchModule({
 										<button
 											onClick={() => handlePreview(result)}
 											aria-label={`预览 ${result.title}`}
-											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-warm-200 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-warm-200 hover:bg-focus/16 dark:hover:bg-blue-900/30 transition-colors"
 											title="预览内容"
 										>
-											<Eye className="w-3.5 h-3.5 text-text-light group-hover:text-blue-500" />
+											<Eye className="w-3.5 h-3.5 text-text-light group-hover:text-focus" />
 										</button>
 
 										{/* 添加按钮 */}
@@ -493,8 +493,8 @@ export default function WebSearchModule({
 									</div>
 								) : previewError ? (
 									<div className="flex flex-col items-center justify-center h-full gap-4 px-8">
-										<div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-											<X className="w-8 h-8 text-red-400" />
+										<div className="w-16 h-16 rounded-full bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 flex items-center justify-center">
+											<X className="w-8 h-8 text-error" />
 										</div>
 										<div className="text-center">
 											<p className="text-sm font-medium text-text-secondary mb-1">
@@ -523,7 +523,7 @@ export default function WebSearchModule({
 											className="prose prose-zinc dark:prose-invert prose-sm max-w-none
                         prose-headings:font-medium prose-headings:text-text-primary dark:prose-headings:text-zinc-200
                         prose-p:text-text-secondary dark:prose-p:text-text-light prose-p:leading-relaxed
-                        prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                        prose-a:text-focus dark:prose-a:text-focus prose-a:no-underline hover:prose-a:underline
                         prose-strong:text-text-secondary dark:prose-strong:text-text-light
                         prose-code:text-text-secondary dark:prose-code:text-text-light prose-code:bg-warm-200 dark:prose-code:bg-dark-surface prose-code:px-1 prose-code:rounded
                         prose-pre:bg-warm-200 dark:prose-pre:bg-dark-surface

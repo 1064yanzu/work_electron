@@ -226,7 +226,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 				title="复制 Meramid 代码"
 			>
 				{copied ? (
-					<Check className="w-3.5 h-3.5 text-emerald-500" />
+					<Check className="w-3.5 h-3.5 text-success" />
 				) : (
 					<Copy className="w-3.5 h-3.5" />
 				)}
@@ -236,11 +236,11 @@ const MermaidRenderer = memo(function MermaidRenderer({
 
 	if (error) {
 		return (
-			<div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 text-sm">
-				<div className="font-semibold text-rose-600 dark:text-rose-400 mb-2">
+			<div className="p-4 rounded-lg bg-[rgba(181,51,51,0.08)] dark:bg-rose-900/20 border border-[rgba(181,51,51,0.32)] dark:border-rose-900/50 text-sm">
+				<div className="font-semibold text-error dark:text-error mb-2">
 					Mermaid Render Error
 				</div>
-				<pre className="whitespace-pre-wrap font-mono text-xs text-rose-500 dark:text-rose-300 overflow-x-auto">
+				<pre className="whitespace-pre-wrap font-mono text-xs text-error dark:text-error overflow-x-auto">
 					{error}
 				</pre>
 				<pre className="mt-4 p-2 bg-surface rounded border border-rose-100 dark:border-rose-900/30 font-mono text-xs text-text-secondary overflow-x-auto">

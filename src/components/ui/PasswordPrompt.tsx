@@ -107,7 +107,7 @@ const PasswordPrompt = ({
 				<div className="p-6 pb-4">
 					<div className="flex items-start gap-4">
 						<div className="flex-shrink-0 mt-0.5">
-							<Lock size={24} className="text-blue-500" />
+							<Lock size={24} className="text-focus" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<h3 className="text-lg font-semibold text-text-primary dark:text-cream-100 mb-2">
@@ -183,7 +183,7 @@ const PasswordPrompt = ({
 
 					{/* 错误提示 */}
 					{error && (
-						<div className="text-sm text-red-500 dark:text-red-400">
+						<div className="text-sm text-error dark:text-error">
 							{error}
 						</div>
 					)}
@@ -210,7 +210,7 @@ const PasswordPrompt = ({
 						type="button"
 						onClick={handleConfirm}
 						disabled={!password || (requireConfirmation && !confirmPassword)}
-						className="px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="px-4 py-2 text-sm font-medium text-white bg-focus hover:bg-focus rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{confirmText}
 					</button>

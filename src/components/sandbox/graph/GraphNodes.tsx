@@ -119,7 +119,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 						工具 {data.stats.toolsCompleted}/{data.stats.toolsTotal}
 					</span>
 					{data.stats.toolsFailed > 0 ? (
-						<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/15">
+						<span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-[rgba(181,51,51,0.08)] dark:bg-rose-900/20 text-error dark:text-error ring-1 ring-rose-500/15">
 							<AlertTriangle className="w-3.5 h-3.5" />
 							失败 {data.stats.toolsFailed}
 						</span>
@@ -151,7 +151,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 		accent === "warm"
 			? "border-primary/35 dark:border-primary/30"
 			: accent === "rose"
-				? "border-rose-200/70 dark:border-rose-900/40"
+				? "border-[rgba(181,51,51,0.32)]/70 dark:border-rose-900/40"
 				: "border-black/[0.06] dark:border-white/[0.08]";
 
 	return (
@@ -183,9 +183,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 								data.isSubagent
 									? "bg-gradient-to-br from-primary/15 to-primary/25 dark:from-primary/20 dark:to-primary/35 text-primary"
 									: isError
-										? "bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/30 text-rose-600 dark:text-rose-300"
+										? "bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/30 text-error dark:text-error"
 										: isCompleted
-											? "bg-gradient-to-br from-emerald-50 to-emerald-100/80 dark:from-emerald-900/20 dark:to-emerald-800/30 text-emerald-600 dark:text-emerald-400"
+											? "bg-gradient-to-br from-emerald-50 to-emerald-100/80 dark:from-emerald-900/20 dark:to-emerald-800/30 text-success dark:text-success"
 											: "bg-warm-50 text-text-secondary",
 							)}
 						>
@@ -201,12 +201,12 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						)}
 						{/* 完成/失败小角标 */}
 						{!isRunning && isCompleted && (
-							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
+							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
 								<CheckCircle2 className="w-2.5 h-2.5" />
 							</span>
 						)}
 						{!isRunning && isError && (
-							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
+							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-error text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
 								<AlertTriangle className="w-2.5 h-2.5" />
 							</span>
 						)}
@@ -257,8 +257,8 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 									</div>
 								)}
 								{data.outputSummary && (
-									<div className="text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
-										<span className="text-emerald-400 dark:text-emerald-500 mr-0.5">
+									<div className="text-[11px] text-success dark:text-success bg-success/8/50 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
+										<span className="text-success dark:text-success mr-0.5">
 											←
 										</span>
 										{data.outputSummary}
@@ -310,7 +310,7 @@ function getArtifactIcon(artifactType: string) {
 		case "audio":
 			return {
 				icon: Music,
-				color: "text-purple-600 dark:text-purple-400",
+				color: "bai-icon-violet dark:bai-icon-violet",
 				bg: "from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20",
 			};
 		case "spreadsheet":
@@ -444,7 +444,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 						</span>
 					)}
 					{allDone && failedAgents === 0 && (
-						<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 ml-auto" />
+						<CheckCircle2 className="w-3.5 h-3.5 text-success ml-auto" />
 					)}
 				</div>
 
@@ -524,7 +524,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 					{/* 统计文字 */}
 					<div className="min-w-0 flex-1 space-y-1">
 						<div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
-							<span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+							<span className="inline-flex items-center gap-1 text-success dark:text-success">
 								<CircleDot className="w-3 h-3" />
 								{completedAgents}
 							</span>
@@ -535,7 +535,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 								</span>
 							)}
 							{failedAgents > 0 && (
-								<span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+								<span className="inline-flex items-center gap-1 text-error dark:text-error">
 									<AlertTriangle className="w-3 h-3" />
 									{failedAgents}
 								</span>

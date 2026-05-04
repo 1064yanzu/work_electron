@@ -58,12 +58,12 @@ export default function TerminalBlock({
 				{/* 状态指示器 */}
 				<div className="w-4 h-4 flex items-center justify-center">
 					{isRunning && (
-						<Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 text-focus animate-spin" />
 					)}
 					{isCompleted && (
 						<CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
 					)}
-					{isError && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+					{isError && <XCircle className="w-3.5 h-3.5 text-error" />}
 				</div>
 			</div>
 
@@ -84,7 +84,7 @@ export default function TerminalBlock({
 
 				{/* 错误输出 */}
 				{error && (
-					<div className="mt-2 text-red-400 text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[150px] overflow-y-auto">
+					<div className="mt-2 text-error text-xs leading-relaxed whitespace-pre-wrap break-all max-h-[150px] overflow-y-auto">
 						{error}
 					</div>
 				)}

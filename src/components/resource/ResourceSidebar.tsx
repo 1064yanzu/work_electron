@@ -658,7 +658,7 @@ export default function ResourceSidebar({
 								>
 									<ArrowLeft className="w-4 h-4" />
 								</button>
-								<Search className="w-4 h-4 text-blue-500" />
+								<Search className="w-4 h-4 text-focus" />
 								<h2 className="font-semibold text-sm text-text-primary">
 									网络搜索
 								</h2>

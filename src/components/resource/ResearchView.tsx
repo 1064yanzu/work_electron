@@ -35,13 +35,13 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 
 	const getStepIcon = useCallback((step: ResearchStep) => {
 		if (step.status === "running") {
-			return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+			return <Loader2 className="w-4 h-4 animate-spin text-focus" />;
 		}
 		if (step.status === "completed") {
 			return <CheckCircle2 className="w-4 h-4 text-green-500" />;
 		}
 		if (step.status === "error") {
-			return <AlertCircle className="w-4 h-4 text-red-500" />;
+			return <AlertCircle className="w-4 h-4 text-error" />;
 		}
 		return <Circle className="w-4 h-4 text-text-light" />;
 	}, []);
@@ -78,7 +78,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 				</button>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<Lightbulb className="w-4 h-4 text-blue-500" />
+						<Lightbulb className="w-4 h-4 text-focus" />
 						<h2 className="font-semibold text-sm text-text-primary">
 							深度研究
 						</h2>
@@ -110,11 +110,11 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 								key={step.id}
 								className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
 									step.status === "running"
-										? "bg-blue-50 dark:bg-blue-900/20"
+										? "bg-focus/8 dark:bg-blue-900/20"
 										: step.status === "completed"
 											? "bg-green-50/50 dark:bg-green-900/10"
 											: step.status === "error"
-												? "bg-red-50/50 dark:bg-red-900/10"
+												? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10"
 												: "bg-warm-50/50"
 								}`}
 							>
@@ -147,7 +147,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 									onClick={() => onOpenResearchSource(source)}
 									className="w-full flex items-start gap-3 p-3 bg-surface/50 hover:bg-warm-50 rounded-xl text-left transition-colors group"
 								>
-									<div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0">
+									<div className="w-8 h-8 rounded-lg bg-focus/8 dark:bg-blue-900/20 flex items-center justify-center text-focus shrink-0">
 										{source.type === "search_result" ? (
 											<Globe className="w-4 h-4" />
 										) : (
@@ -155,7 +155,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 										)}
 									</div>
 									<div className="flex-1 min-w-0">
-										<p className="text-sm font-medium text-text-secondary line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+										<p className="text-sm font-medium text-text-secondary line-clamp-1 group-hover:text-focus dark:group-hover:text-focus transition-colors">
 											{source.title}
 										</p>
 										{source.snippet && (

@@ -272,6 +272,33 @@ class ToastAPI {
 		this.show(message, { type: "error", duration });
 	}
 
+	/**
+	 * 错误 + 一键重试。retry 异步函数会在按下"再试一次"时调用，
+	 * 抛错则再弹一个普通 error toast（避免无限重试循环）。
+	 */
+	errorWithRetry(
+		message: string,
+		retry: () => void | Promise<void>,
+		options: { duration?: number; actionLabel?: string } = {},
+	) {
+		this.show(message, {
+			type: "error",
+			duration: options.duration ?? 6000,
+			actionLabel: options.actionLabel ?? "再试一次",
+			actionVariant: "danger",
+			onAction: async () => {
+				try {
+					await retry();
+				} catch (e) {
+					this.show(
+						`重试失败：${e instanceof Error ? e.message : String(e)}`,
+						{ type: "error", duration: 5000 },
+					);
+				}
+			},
+		});
+	}
+
 	info(message: string, duration = 3000) {
 		this.show(message, { type: "info", duration });
 	}

@@ -40,7 +40,7 @@ export function EditorStatusBar({
 					</>
 				) : (
 					<>
-						<Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+						<Check className="w-3.5 h-3.5 text-success dark:text-success" />
 						<span>
 							{lastSavedLabel ? `已保存 · ${lastSavedLabel}` : "已保存"}
 						</span>

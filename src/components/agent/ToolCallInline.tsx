@@ -22,7 +22,7 @@ import {
 	Terminal,
 	XCircle,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAgentStore } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { EVENTS, events } from "../../lib/events";
@@ -30,347 +30,19 @@ import { cn } from "../../lib/utils";
 import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
-import { InlineImage } from "../ui/InlineImage";
 import { ToolCallDetailsPanel } from "./ToolCallDetailsPanel";
 import { ThoughtInline } from "./ThoughtInline";
 import { useDiffStoreSelector } from "../../lib/stores/diffStore";
 import { FileDiffCard } from "../CodeView/FileDiffCard";
+import { ToolOutputDisplay } from "./toolCall/ToolOutputDisplay";
+import {
+	getFileName,
+	getFilePath,
+	inferArtifactFileType,
+	isBashToolCall,
+	statFileSize,
+} from "./toolCall/toolUtils";
 
-// 工具输出显示组件 - 处理 persisted-output 和 base64 图片
-function ToolOutputDisplay({
-	output,
-	toolCallId,
-}: {
-	output: unknown;
-	toolCallId?: string;
-}) {
-	const [imagePath, setImagePath] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const agentStore = useAgentStore();
-
-	const outputStr =
-		typeof output === "string" ? output : JSON.stringify(output, null, 2);
-
-	// 检测 persisted-output 标签
-	const persistedMatch = outputStr.match(
-		/<persisted-output>[\s\S]*?Full output saved to:\s*([^\n<]+)/,
-	);
-	const persistedFilePath = persistedMatch?.[1]?.trim();
-
-	// 检测预览中的 base64 图片标记（不完整的，需要读取文件）
-	const hasPartialBase64 =
-		/data:image\/[a-z]+;base64,/.test(outputStr) && persistedFilePath;
-
-	useEffect(() => {
-		if (!persistedFilePath || !hasPartialBase64) return;
-
-		let cancelled = false;
-		setLoading(true);
-		setError(null);
-
-		(async () => {
-			try {
-				// 读取持久化文件
-				const fileContent = await (window as any).electronAPI?.invoke(
-					"read_file_utf8",
-					{
-						path: persistedFilePath,
-					},
-				);
-				if (cancelled) return;
-
-				if (!fileContent) {
-					setError("无法读取文件");
-					return;
-				}
-
-				// 解析 JSON 并提取 base64 图片
-				let parsed: any;
-				try {
-					parsed = JSON.parse(fileContent);
-				} catch {
-					setError("文件格式错误");
-					return;
-				}
-
-				// 查找图片（优先查找文件路径，避免重复保存）
-				let imageData: string | null = null;
-				const extractImagePathFromText = (text: string): string | null => {
-					const value = String(text || "").trim();
-					if (!value) return null;
-					if (
-						value.startsWith("/") &&
-						/\.(png|jpg|jpeg|gif|webp|svg)\b/i.test(value)
-					) {
-						return value;
-					}
-					const absPathMatch = value.match(
-						/(\/Users\/[^,\n)]+?\.(?:png|jpg|jpeg|gif|webp|svg))/i,
-					);
-					if (absPathMatch?.[1]) return absPathMatch[1].trim();
-					return null;
-				};
-				const findImage = (obj: any): string | null => {
-					if (typeof obj === "string") {
-						// 检查是否是文件路径
-						const pathCandidate = extractImagePathFromText(obj);
-						if (pathCandidate) {
-							return pathCandidate;
-						}
-						// 如果是 base64，也返回（备用方案）
-						const match = obj.match(
-							/(data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)/,
-						);
-						if (match) return match[1];
-						// 也检查 markdown 格式
-						const mdMatch = obj.match(
-							/!\[[^\]]*\]\((data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+)\)/,
-						);
-						if (mdMatch) return mdMatch[1];
-					}
-					if (Array.isArray(obj)) {
-						for (const item of obj) {
-							const found = findImage(item);
-							if (found) return found;
-						}
-					}
-					if (obj && typeof obj === "object") {
-						for (const key of Object.keys(obj)) {
-							const found = findImage(obj[key]);
-							if (found) return found;
-						}
-					}
-					return null;
-				};
-
-				imageData = findImage(parsed);
-				if (!imageData) {
-					setError("未找到图片");
-					return;
-				}
-
-				// 如果是文件路径，直接使用；如果是 base64，需要保存
-				let finalPath = imageData;
-				if (imageData.startsWith("data:image/")) {
-					// base64 格式：优先保存到当前任务 sandbox（中间栏可直接复用），否则回退全局目录
-					const sandboxDir = (agentStore.currentTask?.metadata as any)
-						?.sandboxDir as string | undefined;
-					const fileName = `subagent-image-${Date.now()}.jpg`;
-					let savedPath: string | null = null;
-					if (sandboxDir) {
-						const match = imageData.match(
-							/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/i,
-						);
-						if (match?.[1]) {
-							const candidate = `${sandboxDir.replace(/[\\/]+$/, "")}/images/${fileName}`;
-							try {
-								await (window as any).electronAPI?.invoke("write_file_safe", {
-									payload: {
-										path: candidate,
-										content: match[1],
-										encoding: "base64",
-										create_dirs: true,
-									},
-								});
-								savedPath = candidate;
-							} catch {
-								savedPath = null;
-							}
-						}
-					}
-					if (!savedPath) {
-						savedPath = await (window as any).electronAPI?.invoke(
-							"save_base64_image",
-							{
-								base64Data: imageData,
-								fileName,
-							},
-						);
-					}
-					if (cancelled) return;
-
-					if (!savedPath) {
-						setError("保存图片失败");
-						return;
-					}
-					finalPath = savedPath;
-				}
-
-				if (cancelled) return;
-				setImagePath(finalPath);
-				const fileName =
-					finalPath.split("/").pop() || `image-${Date.now()}.jpg`;
-				console.log("[ToolOutputDisplay] Image path:", finalPath);
-
-				// 添加到产物列表
-				console.log("[ToolOutputDisplay] Adding artifact to task:", {
-					finalPath,
-					fileName,
-					toolCallId,
-				});
-				const exists = (agentStore.currentTask?.artifacts || []).some(
-					(a) => a.type === "image" && String(a.url || "").trim() === finalPath,
-				);
-				if (!exists) {
-					agentStore.addArtifact({
-						id: `artifact-image-${Date.now()}`,
-						type: "image",
-						title: fileName,
-						url: finalPath,
-						metadata: { toolCallId, source: "subagent" },
-					});
-					console.log("[ToolOutputDisplay] Artifact added successfully");
-				}
-
-				// 触发中间栏预览
-				setTimeout(() => {
-					events.emit("AGENT_FOCUS_TOOL_CALL", {
-						toolCallId,
-						artifactUrl: finalPath,
-						autoPreview: true,
-					});
-				}, 300);
-			} catch (err) {
-				if (cancelled) return;
-				setError(String(err));
-			} finally {
-				if (!cancelled) setLoading(false);
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [persistedFilePath, hasPartialBase64, toolCallId]);
-
-	// 渲染图片（已添加到产物列表，会在中间栏自动预览）
-	if (imagePath) {
-		return (
-			<div className="bg-warm-50/50 p-2 rounded border border-border/50">
-				<InlineImage
-					path={imagePath}
-					title="生成的图片（已添加到产物列表）"
-					className="max-w-full"
-				/>
-			</div>
-		);
-	}
-
-	// 加载中
-	if (loading) {
-		return (
-			<div className="bg-warm-50/50 p-4 rounded border border-border/50 flex items-center gap-3">
-				<Loader2 className="w-5 h-5 animate-spin text-text-light" />
-				<span className="text-sm text-text-muted">正在处理图片...</span>
-			</div>
-		);
-	}
-
-	// 错误
-	if (error && hasPartialBase64) {
-		return (
-			<div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800/50">
-				<span className="text-sm text-red-600 dark:text-red-400">{error}</span>
-			</div>
-		);
-	}
-
-	// 默认：显示截断的文本
-	return (
-		<div className="bg-warm-50/50 p-2 rounded border border-border/50">
-			<pre className="whitespace-pre-wrap break-all text-text-secondary text-[11px] max-h-[200px] overflow-y-auto">
-				{outputStr.slice(0, 500) + (outputStr.length > 500 ? "..." : "")}
-			</pre>
-		</div>
-	);
-}
-
-// 提取文件名
-function getFileName(filePath: string): string {
-	if (!filePath) return "";
-	return filePath.split("/").pop() || filePath;
-}
-
-// 提取文件夹路径（用于显示）
-function getFilePath(filePath: string): string {
-	if (!filePath) return "";
-	const parts = filePath.split("/");
-	if (parts.length <= 2) return filePath;
-	return parts.slice(-2).join("/");
-}
-
-function inferArtifactFileType(filePath: string): ArtifactFileType {
-	const lower = filePath.toLowerCase();
-	const ext = lower.includes(".") ? lower.split(".").pop() || "" : "";
-	if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
-		return "image";
-	if (["htm", "html"].includes(ext)) return "html";
-	if (["pdf"].includes(ext)) return "pdf";
-	if (
-		[
-			"js",
-			"jsx",
-			"ts",
-			"tsx",
-			"css",
-			"scss",
-			"less",
-			"json",
-			"md",
-			"yml",
-			"yaml",
-			"toml",
-			"xml",
-			"sql",
-			"sh",
-			"bash",
-			"py",
-			"java",
-			"kt",
-			"go",
-			"rs",
-			"c",
-			"cc",
-			"cpp",
-			"h",
-			"hpp",
-		].includes(ext)
-	) {
-		return "code";
-	}
-	if (ext) return "text";
-	return "other";
-}
-
-async function statFileSize(filePath: string): Promise<number> {
-	try {
-		const entries = await (window as any).electronAPI?.invoke(
-			"list_files_safe",
-			{
-				path: filePath,
-				recursive: false,
-			},
-		);
-		const first = Array.isArray(entries) ? entries[0] : null;
-		const size = first && typeof first.size === "number" ? first.size : 0;
-		return Number.isFinite(size) ? size : 0;
-	} catch {
-		return 0;
-	}
-}
-
-// 检查是否为终端/Bash 工具调用
-function isBashToolCall(toolCall: ToolCall): boolean {
-	const name = toolCall.name?.toLowerCase() || "";
-	const type = toolCall.type;
-	return (
-		name === "bash" ||
-		name.includes("terminal") ||
-		name.includes("shell") ||
-		type === "code_execute"
-	);
-}
 
 // 从工具调用中提取描述信息
 function getReadableDescription(toolCall: ToolCall): {
@@ -766,7 +438,7 @@ export default function ToolCallInline({
 					{isRunning ? (
 						<Loader2 className="w-3.5 h-3.5 text-text-light animate-spin" />
 					) : isError ? (
-						<XCircle className="w-3.5 h-3.5 text-red-500" />
+						<XCircle className="w-3.5 h-3.5 text-error" />
 					) : (
 						<Icon className="w-3.5 h-3.5 text-text-light" />
 					)}
@@ -777,7 +449,7 @@ export default function ToolCallInline({
 					className={cn(
 						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
-							? "text-red-600 dark:text-red-400"
+							? "text-error dark:text-error"
 							: "text-text-secondary dark:text-zinc-200",
 					)}
 				>

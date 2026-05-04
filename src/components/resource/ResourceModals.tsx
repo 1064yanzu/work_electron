@@ -310,7 +310,7 @@ export function ResourceModals({
 								}
 								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
-										? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+										? "bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus border border-focus/30 dark:border-focus"
 										: "hover:bg-warm-200 dark:hover:bg-cream-700 text-text-secondary"
 								}`}
 							>
@@ -324,12 +324,12 @@ export function ResourceModals({
 									onClick={() => setSingleSourceMoveTargetId(opt.id)}
 									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 										singleSourceMoveTargetId === opt.id
-											? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+											? "bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus border border-focus/30 dark:border-focus"
 											: "hover:bg-warm-200 dark:hover:bg-cream-700 text-text-secondary"
 									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
-									<FolderIcon className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+									<FolderIcon className="w-4 h-4 shrink-0 text-peach-500 dark:text-amber-400" />
 									<span className="text-sm font-medium truncate">
 										{opt.name}
 									</span>

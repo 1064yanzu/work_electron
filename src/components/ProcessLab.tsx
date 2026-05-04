@@ -172,9 +172,9 @@ export default function ProcessLab() {
 			case NodeStatus.Completed:
 				return "bg-green-50 text-green-700 border-green-100";
 			case NodeStatus.Failed:
-				return "bg-red-50 text-red-700 border-red-100";
+				return "bg-[rgba(181,51,51,0.08)] text-error border-[rgba(181,51,51,0.16)]";
 			case NodeStatus.Running:
-				return "bg-blue-50 text-blue-700 border-blue-100";
+				return "bg-focus/8 text-focus border-focus/16";
 			default:
 				return "bg-surface text-text-secondary border-border";
 		}

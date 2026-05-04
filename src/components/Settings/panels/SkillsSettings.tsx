@@ -129,7 +129,7 @@ export function SkillsSettings() {
 				/>
 
 				{error && (
-					<div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200">
+					<div className="rounded-2xl border border-[rgba(181,51,51,0.32)] bg-[rgba(181,51,51,0.08)] px-4 py-3 text-sm text-error dark:border-red-900/40 dark:bg-red-950/20 dark:text-error">
 						{error}
 					</div>
 				)}
@@ -168,7 +168,7 @@ export function SkillsSettings() {
 
 			{/* Error Message */}
 			{error && (
-				<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+				<div className="p-4 bg-[rgba(181,51,51,0.08)] border border-[rgba(181,51,51,0.32)] rounded-lg text-sm text-error flex items-start gap-2">
 					<AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
 					<span>{error}</span>
 				</div>
@@ -246,7 +246,7 @@ export function SkillsSettings() {
 									/>
 									<button
 										onClick={() => handleDelete(skill.name)}
-										className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+										className="p-1.5 text-text-muted hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
 										title="删除"
 									>
 										<Trash2 className="w-4 h-4" />

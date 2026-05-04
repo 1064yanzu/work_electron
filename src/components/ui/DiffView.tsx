@@ -77,8 +77,8 @@ export function DiffView({
 							<span className="w-2 h-2 rounded-full bg-green-500" />+
 							{stats.added}
 						</span>
-						<span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-							<span className="w-2 h-2 rounded-full bg-red-500" />-
+						<span className="flex items-center gap-1 text-error dark:text-error">
+							<span className="w-2 h-2 rounded-full bg-error" />-
 							{stats.removed}
 						</span>
 					</div>
@@ -86,7 +86,7 @@ export function DiffView({
 				<div className="flex items-center gap-2">
 					<button
 						onClick={onReject}
-						className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+						className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-error dark:hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
 					>
 						<X className="w-3.5 h-3.5" />
 						拒绝
@@ -112,7 +112,7 @@ export function DiffView({
 								line.type === "added"
 									? "bg-green-50 dark:bg-green-900/20"
 									: line.type === "removed"
-										? "bg-red-50 dark:bg-red-900/20"
+										? "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20"
 										: "bg-transparent"
 							}
             `}
@@ -125,7 +125,7 @@ export function DiffView({
 								line.type === "added"
 									? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40"
 									: line.type === "removed"
-										? "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40"
+										? "text-error dark:text-error bg-[rgba(181,51,51,0.16)] dark:bg-red-900/40"
 										: "text-text-light bg-warm-50/30"
 							}
             `}
@@ -141,7 +141,7 @@ export function DiffView({
 								line.type === "added"
 									? "text-green-800 dark:text-green-200"
 									: line.type === "removed"
-										? "text-red-800 dark:text-red-200 line-through opacity-70"
+										? "text-error dark:text-error line-through opacity-70"
 										: "text-text-secondary"
 							}
             `}
@@ -189,7 +189,7 @@ export function InlineDiff({ original, modified }: InlineDiffProps) {
 					return (
 						<span
 							key={idx}
-							className="bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 line-through opacity-70 px-0.5 rounded"
+							className="bg-[rgba(181,51,51,0.16)] dark:bg-red-900/40 text-error dark:text-error line-through opacity-70 px-0.5 rounded"
 						>
 							{change.value}
 						</span>

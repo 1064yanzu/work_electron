@@ -86,9 +86,9 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 	const getKindColor = (kind: SourceType) => {
 		switch (kind) {
 			case SourceType.Web:
-				return "bg-blue-500";
+				return "bg-focus";
 			case SourceType.Audio:
-				return "bg-purple-500";
+				return "bg-[#8b7fd9]";
 			case SourceType.Document:
 				return "bg-orange-500";
 			case SourceType.Text:
@@ -164,7 +164,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 						href={source.url}
 						target="_blank"
 						rel="noreferrer"
-						className="inline-flex items-center gap-1.5 mt-4 text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+						className="inline-flex items-center gap-1.5 mt-4 text-sm text-focus hover:text-focus hover:underline transition-colors"
 					>
 						<ExternalLink className="w-3.5 h-3.5" />
 						访问原始链接
@@ -184,10 +184,10 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 				) : error ? (
 					<div className="flex items-center justify-center h-64">
 						<div className="text-center">
-							<div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-								<FileText className="w-8 h-8 text-red-400" />
+							<div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 flex items-center justify-center">
+								<FileText className="w-8 h-8 text-error" />
 							</div>
-							<p className="text-sm text-red-500">{error}</p>
+							<p className="text-sm text-error">{error}</p>
 						</div>
 					</div>
 				) : (

@@ -167,7 +167,7 @@ function MetaLine({
 		tokens.push({
 			key: "clip",
 			node: (
-				<span className="shrink-0 text-emerald-700/75 dark:text-emerald-400/70">
+				<span className="shrink-0 text-success/75 dark:text-success/70">
 					剪存
 				</span>
 			),
@@ -289,7 +289,7 @@ function SourceCardImpl({
 							e.stopPropagation();
 							onDelete();
 						}}
-						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-red-500 hover:bg-red-50/60 dark:hover:bg-red-900/20 transition-all duration-100"
+						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-all duration-100"
 						aria-label="删除"
 					>
 						<Trash2 className="w-3 h-3" />
@@ -352,7 +352,7 @@ function SourceCardImpl({
 						e.stopPropagation();
 						onDelete();
 					}}
-					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-red-500 hover:bg-red-50/60 dark:hover:bg-red-900/20 transition-all duration-100 shrink-0"
+					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-all duration-100 shrink-0"
 					aria-label="删除"
 				>
 					<Trash2 className="w-3 h-3" />

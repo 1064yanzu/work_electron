@@ -121,8 +121,8 @@ function InputDialogView({
 							className={cn(
 								"mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
 								variant === "danger"
-									? "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400"
-									: "bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400",
+									? "bg-[rgba(181,51,51,0.08)] text-error dark:bg-error/10 dark:text-error"
+									: "bg-focus/8 text-focus dark:bg-focus/10 dark:text-focus",
 							)}
 						>
 							{variant === "danger" ? (
@@ -155,7 +155,7 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full resize-none rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-blue-500/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+								className="w-full resize-none rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-focus/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
 							/>
 						) : (
 							<input
@@ -168,12 +168,12 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-blue-500/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+								className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-focus/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
 							/>
 						)}
 
 						{error ? (
-							<p className="mt-2.5 text-[13px] font-medium text-red-500 flex items-center gap-1.5">
+							<p className="mt-2.5 text-[13px] font-medium text-error flex items-center gap-1.5">
 								<AlertCircle className="w-3.5 h-3.5" />
 								{error}
 							</p>
@@ -195,7 +195,7 @@ function InputDialogView({
 							className={cn(
 								"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
 								variant === "danger"
-									? "bg-red-500 text-white hover:bg-red-600 shadow-red-500/20"
+									? "bg-error text-white hover:bg-error shadow-red-500/20"
 									: "bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10",
 							)}
 						>

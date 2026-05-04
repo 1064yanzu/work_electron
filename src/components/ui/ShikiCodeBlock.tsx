@@ -63,7 +63,7 @@ function ShikiCodeBlockInner({
 						isDark
 							? "hover:bg-dark-surface hover:text-text-light"
 							: "hover:bg-warm-200 hover:text-text-secondary",
-						copied && "text-emerald-500",
+						copied && "text-success",
 					)}
 				>
 					{copied ? (

@@ -140,7 +140,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		<div className="flex-1 overflow-auto bg-dark-muted dark:bg-black">
 			<div className="flex items-center gap-2 px-4 py-2 border-b border-dark-border bg-dark-surface sticky top-0">
 				<div className="flex gap-1.5">
-					<span className="w-3 h-3 rounded-full bg-red-500/70" />
+					<span className="w-3 h-3 rounded-full bg-error/70" />
 					<span className="w-3 h-3 rounded-full bg-yellow-500/70" />
 					<span className="w-3 h-3 rounded-full bg-green-500/70" />
 				</div>
@@ -270,14 +270,14 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				<div className="flex items-center gap-1 flex-wrap justify-end">
 					{copiedLabel ? (
 						<span
-							className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+							className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
 							aria-live="polite"
 						>
 							{copiedLabel}
 						</span>
 					) : null}
 					{isFallbackToSource ? (
-						<span className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+						<span className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
 						</span>
 					) : null}

@@ -51,7 +51,7 @@ export function ResourceSidebarDialogs({
 							<button
 								type="button"
 								onClick={() => onConfirmDeleteSource(deleteConfirm)}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>
@@ -80,7 +80,7 @@ export function ResourceSidebarDialogs({
 							<button
 								type="button"
 								onClick={onConfirmDeleteCard}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>
@@ -110,7 +110,7 @@ export function ResourceSidebarDialogs({
 							<button
 								type="button"
 								onClick={onConfirmBatchDelete}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>
@@ -140,7 +140,7 @@ export function ResourceSidebarDialogs({
 							<button
 								type="button"
 								onClick={() => onConfirmDeleteFolder(folderDeleteConfirm)}
-								className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-white bg-error hover:bg-error rounded-lg transition-colors"
 							>
 								删除
 							</button>

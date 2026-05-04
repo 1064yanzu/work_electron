@@ -47,8 +47,8 @@ function HighlightedDiffLineInner({
 			<span
 				className={cn(
 					"flex-1 px-2 whitespace-pre-wrap break-all",
-					lineType === "added" && "text-emerald-800 dark:text-emerald-300",
-					lineType === "removed" && "text-red-700 dark:text-red-300",
+					lineType === "added" && "text-success dark:text-success",
+					lineType === "removed" && "text-error dark:text-error",
 					lineType === "unchanged" && "text-text-secondary",
 				)}
 			>

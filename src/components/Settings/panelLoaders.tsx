@@ -53,6 +53,10 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/ArtifactSettings"),
 		"ArtifactSettings",
 	),
+	shortcuts: toDefault(
+		() => import("./panels/ShortcutsSettings"),
+		"ShortcutsSettings",
+	),
 };
 
 const panelComponents = Object.fromEntries(

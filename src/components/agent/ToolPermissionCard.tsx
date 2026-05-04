@@ -68,30 +68,30 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 		case "dangerous":
 			return {
 				ring: "ring-2 ring-red-300/60 dark:ring-red-700/40",
-				iconBg: "bg-red-50 dark:bg-red-900/20",
-				iconColor: "text-red-600 dark:text-red-400",
-				badge: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300",
+				iconBg: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
+				iconColor: "text-error dark:text-error",
+				badge: "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
 				badgeText: "高危",
-				buttonBg: "bg-red-500 hover:bg-red-600 text-white",
+				buttonBg: "bg-error hover:bg-error text-white",
 			};
 		case "moderate":
 			return {
 				ring: "ring-2 ring-amber-200/60 dark:ring-amber-700/40",
-				iconBg: "bg-amber-50 dark:bg-amber-900/20",
-				iconColor: "text-amber-600 dark:text-amber-400",
+				iconBg: "bg-peach-100 dark:bg-amber-900/20",
+				iconColor: "text-peach-500 dark:text-amber-400",
 				badge:
-					"bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+					"bg-peach-200 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
 				badgeText: "沙盒外操作",
-				buttonBg: "bg-amber-500 hover:bg-amber-600 text-white",
+				buttonBg: "bg-peach-500 hover:bg-peach-500 text-white",
 			};
 		default:
 			return {
 				ring: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
-				iconBg: "bg-blue-50 dark:bg-blue-900/20",
-				iconColor: "text-blue-600 dark:text-blue-400",
+				iconBg: "bg-focus/8 dark:bg-blue-900/20",
+				iconColor: "text-focus dark:text-focus",
 				badge: "",
 				badgeText: "",
-				buttonBg: "bg-blue-500 hover:bg-blue-600 text-white",
+				buttonBg: "bg-focus hover:bg-focus text-white",
 			};
 	}
 }
@@ -155,14 +155,14 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					<div
 						className={cn(
 							"p-1.5 rounded-lg transition-all duration-200",
-							isUrgent ? "bg-amber-50 dark:bg-amber-900/20" : levelStyle.iconBg,
+							isUrgent ? "bg-peach-100 dark:bg-amber-900/20" : levelStyle.iconBg,
 						)}
 					>
 						<ShieldIcon
 							className={cn(
 								"w-4 h-4 transition-colors",
 								isUrgent
-									? "text-amber-600 dark:text-amber-400"
+									? "text-peach-500 dark:text-amber-400"
 									: levelStyle.iconColor,
 							)}
 						/>
@@ -194,7 +194,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 				<div
 					className={cn(
 						"text-sm font-medium tabular-nums",
-						isUrgent ? "text-amber-600 dark:text-amber-400" : "text-text-muted",
+						isUrgent ? "text-peach-500 dark:text-amber-400" : "text-text-muted",
 					)}
 				>
 					{remainingTime}s
@@ -207,8 +207,8 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					className={cn(
 						"mx-3 mb-2 px-2.5 py-2 rounded-lg flex items-start gap-2 text-xs",
 						destructiveLevel === "dangerous"
-							? "bg-red-50/80 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-							: "bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
+							? "bg-[rgba(181,51,51,0.08)]/80 dark:bg-red-950/30 text-error dark:text-error"
+							: "bg-peach-100/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
 					)}
 				>
 					<FolderOpen className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -271,7 +271,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 						isOutsideSandbox
 							? levelStyle.buttonBg
-							: "bg-blue-500 hover:bg-blue-600 text-white",
+							: "bg-focus hover:bg-focus text-white",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
 				>

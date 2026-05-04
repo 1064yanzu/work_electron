@@ -73,20 +73,20 @@ const RISK_CONFIG: Record<
 > = {
 	L0: {
 		icon: ShieldCheck,
-		color: "text-emerald-600",
-		bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+		color: "text-success",
+		bgColor: "bg-success/8 dark:bg-emerald-900/20",
 		label: "低风险",
 	},
 	L1: {
 		icon: Shield,
-		color: "text-amber-600",
-		bgColor: "bg-amber-50 dark:bg-amber-900/20",
+		color: "text-peach-500",
+		bgColor: "bg-peach-100 dark:bg-amber-900/20",
 		label: "中风险",
 	},
 	L2: {
 		icon: ShieldAlert,
-		color: "text-red-600",
-		bgColor: "bg-red-50 dark:bg-red-900/20",
+		color: "text-error",
+		bgColor: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
 		label: "高风险",
 	},
 };
@@ -200,8 +200,8 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 					<div
 						className={`mx-4 mb-3 px-3 py-2 rounded-lg flex items-start gap-2 text-xs ${
 							request.scope.destructiveLevel === "dangerous"
-								? "bg-red-50/80 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-								: "bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
+								? "bg-[rgba(181,51,51,0.08)]/80 dark:bg-red-950/30 text-error dark:text-error"
+								: "bg-peach-100/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
 						}`}
 					>
 						<FolderOpen className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -262,7 +262,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 				<div className="w-px bg-black/5/10" />
 				<button
 					onClick={handleAllow}
-					className="flex-1 py-3 text-sm font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 dark:hover:bg-emerald-900/20 transition-colors"
 				>
 					允许
 				</button>

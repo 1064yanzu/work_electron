@@ -30,9 +30,9 @@ const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 // 状态颜色
 const statusColors: Record<string, string> = {
 	pending: "text-text-light",
-	running: "text-blue-500",
+	running: "text-focus",
 	completed: "text-green-500",
-	error: "text-red-500",
+	error: "text-error",
 	cancelled: "text-text-light",
 };
 
@@ -52,7 +52,7 @@ function StatusIcon({
 		case "completed":
 			return <CheckCircle2 className={cn("text-green-500", className)} />;
 		case "error":
-			return <XCircle className={cn("text-red-500", className)} />;
+			return <XCircle className={cn("text-error", className)} />;
 		case "cancelled":
 			return <AlertCircle className={cn("text-text-light", className)} />;
 		default:
@@ -116,9 +116,9 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 
 					{/* 错误信息 */}
 					{toolCall.error && (
-						<div className="bg-red-50 dark:bg-red-900/20 rounded p-2">
-							<div className="text-red-600 dark:text-red-400 mb-1">错误:</div>
-							<pre className="text-red-600 dark:text-red-400 whitespace-pre-wrap">
+						<div className="bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded p-2">
+							<div className="text-error dark:text-error mb-1">错误:</div>
+							<pre className="text-error dark:text-error whitespace-pre-wrap">
 								{toolCall.error}
 							</pre>
 						</div>
@@ -177,8 +177,8 @@ function TaskStatus({ task }: { task: AgentTask }) {
 
 			{/* 错误信息 */}
 			{task.error && (
-				<div className="border-t border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 p-3">
-					<div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+				<div className="border-t border-[rgba(181,51,51,0.16)] dark:border-red-900/30 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 p-3">
+					<div className="flex items-center gap-2 text-error dark:text-error text-sm">
 						<XCircle className="w-4 h-4" />
 						<span>{task.error}</span>
 					</div>
@@ -211,7 +211,7 @@ export default function AgentStatus() {
 							当前任务
 						</span>
 						{isExecuting && (
-							<span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+							<span className="text-xs bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus px-2 py-0.5 rounded-full">
 								执行中
 							</span>
 						)}
@@ -278,7 +278,7 @@ export function AgentStatusBadge({ taskId }: { taskId?: string }) {
 				{task.status === "error" && "失败"}
 			</span>
 			{runningCount > 0 && (
-				<Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+				<Loader2 className="w-3 h-3 animate-spin text-focus" />
 			)}
 		</div>
 	);

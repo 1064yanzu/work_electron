@@ -76,9 +76,9 @@ export function ToolCallDetailsPanel({
 			{error ? (
 				<Section
 					title="Error"
-					className="border-red-300/70 dark:border-red-900/60 bg-red-50/60 dark:bg-red-900/20"
+					className="border-[rgba(181,51,51,0.32)]/70 dark:border-red-900/60 bg-[rgba(181,51,51,0.08)]/60 dark:bg-red-900/20"
 				>
-					<div className="text-[11px] text-red-600 dark:text-red-300 whitespace-pre-wrap">
+					<div className="text-[11px] text-error dark:text-error whitespace-pre-wrap">
 						{error}
 					</div>
 				</Section>

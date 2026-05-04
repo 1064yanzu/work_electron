@@ -40,12 +40,12 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	draft: {
 		text: "待确认",
 		className:
-			"bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+			"bg-peach-200 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
 	},
 	confirmed: {
 		text: "已确认",
 		className:
-			"bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+			"bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus",
 	},
 	executing: {
 		text: "执行中",
@@ -54,11 +54,11 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	completed: {
 		text: "已完成",
 		className:
-			"bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300",
+			"bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success",
 	},
 	rejected: {
 		text: "已拒绝",
-		className: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+		className: "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
 	},
 };
 
@@ -85,7 +85,7 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 			<div className="h-1.5 bg-warm-200 rounded-full overflow-hidden flex">
 				{completedPct > 0 && (
 					<div
-						className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+						className="h-full bg-success transition-all duration-500 ease-out"
 						style={{ width: `${completedPct}%` }}
 					/>
 				)}
@@ -97,7 +97,7 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 				)}
 				{rejectedPct > 0 && (
 					<div
-						className="h-full bg-red-400 transition-all duration-500 ease-out"
+						className="h-full bg-error transition-all duration-500 ease-out"
 						style={{ width: `${rejectedPct}%` }}
 					/>
 				)}
@@ -127,7 +127,7 @@ export function PlanCard({
 				isExecuting
 					? "bg-surface/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
 					: isCompleted
-						? "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-200 dark:border-emerald-800/30"
+						? "bg-success/8/30 dark:bg-emerald-900/5 border-success/30 dark:border-success/30"
 						: "bg-surface border-border",
 			)}
 		>
@@ -146,7 +146,7 @@ export function PlanCard({
 						isExecuting
 							? "bg-[#D96C46]/10 text-[#D96C46]"
 							: isCompleted
-								? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+								? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 								: "bg-warm-200 text-text-muted",
 					)}
 				>
@@ -247,7 +247,7 @@ export function PlanCard({
 							<button
 								type="button"
 								onClick={onReject}
-								className="px-3 py-2 text-sm font-medium rounded-lg text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+								className="px-3 py-2 text-sm font-medium rounded-lg text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/10 transition-colors"
 							>
 								<X className="w-4 h-4" />
 							</button>

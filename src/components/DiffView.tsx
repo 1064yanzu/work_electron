@@ -209,19 +209,19 @@ export function InlineDiff({
 	onReject: () => void;
 }) {
 	return (
-		<div className="my-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 overflow-hidden bg-emerald-50/30 dark:bg-emerald-950/10">
+		<div className="my-2 rounded-lg border border-success/30 dark:border-success/50 overflow-hidden bg-success/8/30 dark:bg-emerald-950/10">
 			{/* 删除的内容 */}
 			{original && (
-				<div className="px-4 py-2 bg-red-50/50 dark:bg-red-950/20 border-l-4 border-red-400">
-					<pre className="text-sm text-red-700 dark:text-red-400 line-through opacity-70 whitespace-pre-wrap font-mono">
+				<div className="px-4 py-2 bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-950/20 border-l-4 border-red-400">
+					<pre className="text-sm text-error dark:text-error line-through opacity-70 whitespace-pre-wrap font-mono">
 						{original}
 					</pre>
 				</div>
 			)}
 			{/* 新增的内容 */}
 			{modified && (
-				<div className="px-4 py-2 bg-emerald-50/50 dark:bg-emerald-950/20 border-l-4 border-emerald-400">
-					<pre className="text-sm text-emerald-700 dark:text-emerald-400 whitespace-pre-wrap font-mono">
+				<div className="px-4 py-2 bg-success/8/50 dark:bg-emerald-950/20 border-l-4 border-emerald-400">
+					<pre className="text-sm text-success dark:text-success whitespace-pre-wrap font-mono">
 						{modified}
 					</pre>
 				</div>
@@ -237,7 +237,7 @@ export function InlineDiff({
 				</button>
 				<button
 					onClick={onAccept}
-					className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+					className="p-1.5 rounded-lg text-success hover:bg-success/16 dark:hover:bg-emerald-900/30 transition-colors"
 					title="接受 (Tab)"
 				>
 					<Check className="w-4 h-4" />

@@ -65,7 +65,7 @@ export function SubagentCard({
 				isRunning
 					? "bg-surface/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
 					: isError
-						? "bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30"
+						? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10 border-[rgba(181,51,51,0.32)] dark:border-red-800/30"
 						: "bg-surface border-border",
 			)}
 		>
@@ -88,9 +88,9 @@ export function SubagentCard({
 						className={cn(
 							"flex items-center justify-center w-8 h-8 rounded-lg transition-all",
 							isRunning
-								? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+								? "bg-[#e8e5f7] dark:bg-purple-900/30 bai-icon-violet dark:bai-icon-violet"
 								: isCompleted
-									? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: "bg-warm-200 text-text-muted",
 						)}
 					>
@@ -104,8 +104,8 @@ export function SubagentCard({
 					</div>
 					{isRunning && (
 						<span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500"></span>
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8b7fd9] opacity-75"></span>
+							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#8b7fd9]"></span>
 						</span>
 					)}
 				</div>
@@ -117,7 +117,7 @@ export function SubagentCard({
 							子代理调用{subagentType ? ` · ${subagentType}` : ""}
 						</span>
 						{subagentModel && (
-							<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 truncate max-w-[120px]">
+							<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-focus/8 dark:bg-blue-900/30 text-focus dark:text-focus truncate max-w-[120px]">
 								{subagentModel}
 							</span>
 						)}
@@ -125,9 +125,9 @@ export function SubagentCard({
 							className={cn(
 								"px-1.5 py-0.5 rounded text-[10px] font-medium",
 								isRunning
-									? "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300"
+									? "bg-[#e8e5f7] dark:bg-purple-900/40 bai-icon-violet dark:bai-icon-violet"
 									: isCompleted
-										? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"
+										? "bg-success/16 dark:bg-emerald-900/40 text-success dark:text-success"
 										: "bg-warm-200 text-text-muted",
 							)}
 						>
@@ -145,8 +145,8 @@ export function SubagentCard({
 					<div className="flex items-center gap-1.5 text-xs text-text-muted h-4">
 						{isRunning ? (
 							<>
-								<Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-								<span className="truncate text-purple-600 dark:text-purple-400 font-medium">
+								<Loader2 className="w-3 h-3 animate-spin bai-icon-violet" />
+								<span className="truncate bai-icon-violet dark:bai-icon-violet font-medium">
 									{lastActivity?.content || "子代理调用启动中..."}
 								</span>
 							</>
@@ -191,9 +191,9 @@ export function SubagentCard({
 							>
 								<div className="mt-0.5 shrink-0 text-text-light">
 									{step.phase === "executing" ? (
-										<Terminal className="w-3 h-3 text-amber-500" />
+										<Terminal className="w-3 h-3 text-peach-500" />
 									) : (
-										<GitBranch className="w-3 h-3 text-purple-500" />
+										<GitBranch className="w-3 h-3 bai-icon-violet" />
 									)}
 								</div>
 								<div className="flex-1 min-w-0 break-words text-text-secondary leading-relaxed">
@@ -212,7 +212,7 @@ export function SubagentCard({
 						{/* Result */}
 						{isCompleted && toolCall.output && (
 							<div className="mt-2 pt-2 border-t border-border/50">
-								<div className="px-2 py-1.5 rounded bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300">
+								<div className="px-2 py-1.5 rounded bg-success/8 dark:bg-emerald-900/10 text-success dark:text-success">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
 										<Zap className="w-3 h-3" /> 结果
 									</div>
@@ -232,7 +232,7 @@ export function SubagentCard({
 						{/* Error */}
 						{isError && toolCall.error && (
 							<div className="mt-2 pt-2 border-t border-border/50">
-								<div className="px-2 py-1.5 rounded bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300">
+								<div className="px-2 py-1.5 rounded bg-[rgba(181,51,51,0.08)] dark:bg-red-900/10 text-error dark:text-error">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
 										<AlertTriangle className="w-3 h-3" /> 错误
 									</div>

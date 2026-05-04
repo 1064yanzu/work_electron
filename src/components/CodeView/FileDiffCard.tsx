@@ -81,9 +81,9 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				"my-2 rounded-xl ring-1 transition-all overflow-hidden",
 				isPending && "ring-zinc-200 dark:ring-zinc-700/60 bg-surface",
 				isAccepted &&
-					"ring-emerald-200 dark:ring-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10",
+					"ring-emerald-200 dark:ring-emerald-800/40 bg-success/8/30 dark:bg-emerald-950/10",
 				isRejected &&
-					"ring-red-200 dark:ring-red-800/40 bg-red-50/20 dark:bg-red-950/10 opacity-60",
+					"ring-red-200 dark:ring-red-800/40 bg-[rgba(181,51,51,0.08)]/20 dark:bg-red-950/10 opacity-60",
 			)}
 		>
 			{/* 头部：文件路径 + 统计 */}
@@ -104,9 +104,9 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				{/* 文件图标 */}
 				<span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 bg-warm-200">
 					{isCreate ? (
-						<FilePlus className="w-3 h-3 text-emerald-500" />
+						<FilePlus className="w-3 h-3 text-success" />
 					) : (
-						<FilePen className="w-3 h-3 text-blue-500" />
+						<FilePen className="w-3 h-3 text-focus" />
 					)}
 				</span>
 
@@ -121,12 +121,12 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				{/* 增删统计 */}
 				<div className="flex items-center gap-1.5 flex-shrink-0">
 					{stats.additions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+						<span className="text-[11px] font-mono font-medium text-success dark:text-success">
 							+{stats.additions}
 						</span>
 					)}
 					{stats.deletions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-red-500 dark:text-red-400">
+						<span className="text-[11px] font-mono font-medium text-error dark:text-error">
 							-{stats.deletions}
 						</span>
 					)}
@@ -134,12 +134,12 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 				{/* 状态标记 */}
 				{isAccepted && (
-					<span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+					<span className="flex items-center gap-1 text-[11px] text-success dark:text-success font-medium">
 						<Check className="w-3 h-3" />
 					</span>
 				)}
 				{isRejected && (
-					<span className="flex items-center gap-1 text-[11px] text-red-500 dark:text-red-400 font-medium">
+					<span className="flex items-center gap-1 text-[11px] text-error dark:text-error font-medium">
 						<X className="w-3 h-3" />
 					</span>
 				)}
@@ -156,8 +156,8 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								className={cn(
 									"flex",
 									line.type === "added" &&
-										"bg-emerald-50/70 dark:bg-emerald-950/20",
-									line.type === "removed" && "bg-red-50/70 dark:bg-red-950/20",
+										"bg-success/8/70 dark:bg-emerald-950/20",
+									line.type === "removed" && "bg-[rgba(181,51,51,0.08)]/70 dark:bg-red-950/20",
 								)}
 							>
 								{/* 行号 */}
@@ -178,8 +178,8 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 									className={cn(
 										"w-5 flex-shrink-0 text-center select-none",
 										line.type === "added" &&
-											"text-emerald-600 dark:text-emerald-400",
-										line.type === "removed" && "text-red-500 dark:text-red-400",
+											"text-success dark:text-success",
+										line.type === "removed" && "text-error dark:text-error",
 										line.type === "unchanged" && "text-text-light",
 									)}
 								>
@@ -232,7 +232,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<button
 									type="button"
 									onClick={() => acceptDiff(diff.id)}
-									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-white bg-success hover:bg-success transition-colors"
 								>
 									<Check className="w-3 h-3" />
 									接受

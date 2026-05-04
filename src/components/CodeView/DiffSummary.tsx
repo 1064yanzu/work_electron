@@ -72,9 +72,9 @@ function DiffSummaryItem({
 			{/* 文件图标 */}
 			<span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 bg-warm-200">
 				{isCreate ? (
-					<FilePlus className="w-3 h-3 text-emerald-500" />
+					<FilePlus className="w-3 h-3 text-success" />
 				) : (
-					<FilePen className="w-3 h-3 text-blue-500" />
+					<FilePen className="w-3 h-3 text-focus" />
 				)}
 			</span>
 
@@ -89,12 +89,12 @@ function DiffSummaryItem({
 			{/* 统计 */}
 			<div className="flex items-center gap-1.5 flex-shrink-0">
 				{stats.additions > 0 && (
-					<span className="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+					<span className="text-[11px] font-mono font-medium text-success dark:text-success">
 						+{stats.additions}
 					</span>
 				)}
 				{stats.deletions > 0 && (
-					<span className="text-[11px] font-mono font-medium text-red-500 dark:text-red-400">
+					<span className="text-[11px] font-mono font-medium text-error dark:text-error">
 						-{stats.deletions}
 					</span>
 				)}
@@ -109,7 +109,7 @@ function DiffSummaryItem({
 							e.stopPropagation();
 							rejectDiff(diff.id);
 						}}
-						className="p-1 rounded text-text-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+						className="p-1 rounded text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 transition-colors"
 						title="拒绝"
 					>
 						<X className="w-3 h-3" />
@@ -120,7 +120,7 @@ function DiffSummaryItem({
 							e.stopPropagation();
 							acceptDiff(diff.id);
 						}}
-						className="p-1 rounded text-text-light hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+						className="p-1 rounded text-text-light hover:text-success hover:bg-success/8 dark:hover:bg-emerald-900/20 transition-colors"
 						title="接受"
 					>
 						<Check className="w-3 h-3" />
@@ -131,9 +131,9 @@ function DiffSummaryItem({
 					className={cn(
 						"flex items-center w-5 h-5 rounded-full justify-center flex-shrink-0",
 						diff.status === "accepted" &&
-							"text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
+							"text-success bg-success/8 dark:bg-emerald-900/20",
 						diff.status === "rejected" &&
-							"text-red-400 bg-red-50 dark:bg-red-900/20",
+							"text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
 					)}
 				>
 					{diff.status === "accepted" ? (
@@ -211,12 +211,12 @@ function DiffSummaryInner({ rootPath }: DiffSummaryProps) {
 
 				<div className="flex items-center gap-2 flex-shrink-0">
 					{summaryStats.totalAdditions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+						<span className="text-[11px] font-mono font-medium text-success dark:text-success">
 							+{summaryStats.totalAdditions}
 						</span>
 					)}
 					{summaryStats.totalDeletions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-red-500 dark:text-red-400">
+						<span className="text-[11px] font-mono font-medium text-error dark:text-error">
 							-{summaryStats.totalDeletions}
 						</span>
 					)}
@@ -252,7 +252,7 @@ function DiffSummaryInner({ rootPath }: DiffSummaryProps) {
 							<button
 								type="button"
 								onClick={() => acceptAllDiffs()}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-sm"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-success hover:bg-success transition-colors shadow-sm"
 							>
 								<Check className="w-3 h-3" />
 								全部接受

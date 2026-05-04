@@ -246,7 +246,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 							item.disabled
 								? "text-text-light cursor-not-allowed opacity-50"
 								: item.danger
-									? "text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20"
+									? "text-error dark:text-error hover:bg-[rgba(181,51,51,0.08)]/80 dark:hover:bg-red-900/20"
 									: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200/80/60",
 							// 高级 hover 效果
 							!item.disabled && "hover:scale-[1.02] active:scale-[0.98]",
@@ -276,7 +276,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
 						{/* Hover 指示器 */}
 						{!item.disabled && !item.danger && (
-							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-blue-500 rounded-r-full transition-all duration-200 group-hover/item:h-4" />
+							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-focus rounded-r-full transition-all duration-200 group-hover/item:h-4" />
 						)}
 					</button>
 				);

@@ -106,7 +106,7 @@ function TextPreview({ filePath }: { filePath: string }) {
 
 	if (error) {
 		return (
-			<div className="flex items-center justify-center h-full text-red-500">
+			<div className="flex items-center justify-center h-full text-error">
 				{error}
 			</div>
 		);

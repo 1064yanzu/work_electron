@@ -87,9 +87,9 @@ const CodePreview = memo(function CodePreview({
 		<div className="rounded-2xl border border-border/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
 			<div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border bg-dark-muted/90">
 				<div className="flex gap-1.5">
-					<span className="w-3 h-3 rounded-full bg-red-500/75" />
-					<span className="w-3 h-3 rounded-full bg-amber-400/75" />
-					<span className="w-3 h-3 rounded-full bg-emerald-500/75" />
+					<span className="w-3 h-3 rounded-full bg-error/75" />
+					<span className="w-3 h-3 rounded-full bg-peach-500/75" />
+					<span className="w-3 h-3 rounded-full bg-success/75" />
 				</div>
 				<span className="text-xs font-medium text-text-light truncate">
 					{fileName}
@@ -192,7 +192,7 @@ const AudioPreview = memo(function AudioPreview({
 		<div className="flex flex-col items-center gap-4 p-10">
 			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 dark:from-purple-500/30 dark:to-pink-500/30 flex items-center justify-center">
 				<svg
-					className="w-8 h-8 text-purple-500 dark:text-purple-400"
+					className="w-8 h-8 bai-icon-violet dark:bai-icon-violet"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -334,7 +334,7 @@ const ExcelPlaceholder = memo(function ExcelPlaceholder({
 		<div className="flex flex-col items-center gap-4 p-10 text-center">
 			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 dark:from-emerald-500/30 dark:to-teal-500/30 flex items-center justify-center">
 				<svg
-					className="w-8 h-8 text-emerald-600 dark:text-emerald-400"
+					className="w-8 h-8 text-success dark:text-success"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"

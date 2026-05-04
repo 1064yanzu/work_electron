@@ -673,7 +673,7 @@ export function ModelSettings() {
 																{isManaging && (
 																	<button
 																		onClick={() => handleRemoveModel(model)}
-																		className="p-2 text-text-light hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+																		className="p-2 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded-lg transition-colors"
 																		title="删除"
 																	>
 																		<Trash2 className="w-4 h-4" />
@@ -731,7 +731,7 @@ export function ModelSettings() {
 							<button
 								onClick={handleDelete}
 								disabled={isDeleting}
-								className="text-sm text-red-500 hover:text-red-600 flex items-center gap-2 px-4 py-2 -ml-4 rounded-lg hover:bg-red-50 transition-colors"
+								className="text-sm text-error hover:text-error flex items-center gap-2 px-4 py-2 -ml-4 rounded-lg hover:bg-[rgba(181,51,51,0.08)] transition-colors"
 							>
 								<Trash2 className="w-4 h-4" />
 								{isDeleting ? "删除中..." : "删除此服务商"}
@@ -855,7 +855,7 @@ export function ModelSettings() {
 				<div className="space-y-5">
 					<div>
 						<label className="text-sm font-medium text-text-secondary mb-2 block">
-							模型 ID <span className="text-red-500">*</span>
+							模型 ID <span className="text-error">*</span>
 						</label>
 						<input
 							type="text"

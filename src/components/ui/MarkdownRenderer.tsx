@@ -337,7 +337,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 						href={resolvedHref}
 						target="_blank"
 						rel="noreferrer"
-						className="text-blue-600 dark:text-blue-400 hover:underline"
+						className="text-focus dark:text-focus hover:underline"
 						onClick={async (e) => {
 							if (!resolvedHref) return;
 							// 在桌面 WebView 里，window.open/target=_blank 往往不会生效，改用后端 open_external_url 走系统浏览器

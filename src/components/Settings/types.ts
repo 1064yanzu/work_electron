@@ -15,4 +15,5 @@ export type SettingsTabId =
 	| "performance"
 	| "data"
 	| "artifacts"
-	| "mascot";
+	| "mascot"
+	| "shortcuts";

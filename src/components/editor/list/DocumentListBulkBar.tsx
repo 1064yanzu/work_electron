@@ -43,7 +43,7 @@ export function DocumentListBulkBar({
 				type="button"
 				onClick={onDeleteSelected}
 				disabled={selectedCount === 0 || isBulkDeleting}
-				className="focus-ring min-h-11 px-4 inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+				className="focus-ring min-h-11 px-4 inline-flex items-center gap-2 rounded-xl bg-error hover:bg-[#9e2b2b] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
 			>
 				<Trash2 className="w-4 h-4" />
 				批量删除

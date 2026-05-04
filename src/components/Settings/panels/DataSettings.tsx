@@ -1,6 +1,5 @@
 import {
 	AlertCircle,
-	Archive,
 	CheckCircle2,
 	Clock,
 	Cloud,
@@ -10,7 +9,6 @@ import {
 	EyeOff,
 	HardDrive,
 	RefreshCw,
-	RotateCcw,
 	ShieldAlert,
 	Trash2,
 	Upload,
@@ -48,13 +46,9 @@ import {
 	updateSyncConfig,
 	type WebDavConfig,
 	type WebdavBackupFile,
-	// 本地备份目录 API
-	selectBackupDirectory,
-	backupToLocalDir,
 } from "../../../lib/api";
 import { Modal } from "../../ui/Modal";
 import { LocalBackupManagerModal } from "../components/LocalBackupManagerModal";
-import { FolderOpen } from "lucide-react";
 import {
 	WEBDAV_PROVIDERS,
 	getProviderById,
@@ -70,6 +64,10 @@ import {
 	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../ui/SettingsPrimitives";
+import { DataDirectories } from "./data/DataDirectories";
+import { DataOverview } from "./data/DataOverview";
+import { LocalBackupDirectoryCard } from "./data/LocalBackupDirectoryCard";
+import { LocalBackupRestoreCard } from "./data/LocalBackupRestoreCard";
 
 // 格式化文件大小
 function formatSize(bytes: number): string {
@@ -741,7 +739,7 @@ export function DataSettings() {
 																		await deleteTheme(theme.id);
 																		setThemes(await listThemes());
 																	}}
-																	className="text-xs text-red-500 hover:text-red-600"
+																	className="text-xs text-error hover:opacity-80"
 																>
 																	删除
 																</button>
@@ -755,293 +753,38 @@ export function DataSettings() {
 								</SettingsSectionCard>
 
 								{/* 数据统计 */}
-								<SettingsSectionCard>
-									<div className="p-5">
-										<SettingsSectionTitle>数据概览</SettingsSectionTitle>
-										<div className="grid grid-cols-3 gap-4">
-											<div className="text-center p-4 bg-warm-50 rounded-xl">
-												<div className="text-2xl font-semibold text-text-primary">
-													{(dataStats.sources_count ?? 0) +
-														(dataStats.notes_count ?? 0)}
-												</div>
-												<div className="text-xs text-text-light mt-1">
-													资料与笔记
-												</div>
-											</div>
-											<div className="text-center p-4 bg-warm-50 rounded-xl">
-												<div className="text-2xl font-semibold text-text-primary">
-													{dataStats.outputs_count ?? 0}
-												</div>
-												<div className="text-xs text-text-light mt-1">
-													输出文稿
-												</div>
-											</div>
-											<div className="text-center p-4 bg-warm-50 rounded-xl">
-												<div className="text-2xl font-semibold text-text-primary">
-													{formatSize(
-														(dataStats.database_size ?? 0) +
-															(dataStats.media_size ?? 0),
-													)}
-												</div>
-												<div className="text-xs text-text-light mt-1">
-													总占用
-												</div>
-											</div>
-										</div>
-									</div>
-								</SettingsSectionCard>
+								{dataStats ? (
+									<DataOverview dataStats={dataStats} formatSize={formatSize} />
+								) : null}
 
 								{/* 数据目录 */}
-								<SettingsSectionCard>
-									<div className="p-5">
-										<SettingsSectionTitle>数据目录</SettingsSectionTitle>
-										<SettingsRow
-											label="应用数据"
-											description={dataDir}
-											action={
-												<button
-													onClick={() => {
-														navigator.clipboard.writeText(dataDir);
-														toast.success("路径已复制");
-													}}
-													className="text-xs text-primary hover:underline"
-												>
-													复制路径
-												</button>
-											}
-										/>
-										<SettingsRow
-											label="数据库文件"
-											description={dbPath}
-											action={
-												<button
-													onClick={handleMigrateDatabase}
-													className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
-												>
-													迁移数据库
-												</button>
-											}
-										/>
-										<SettingsRow
-											label="数据库大小"
-											value={formatSize(dataStats.database_size)}
-										/>
-										<SettingsRow
-											label="媒体文件"
-											value={formatSize(dataStats.media_size)}
-										/>
-										<SettingsRow
-											label="缓存"
-											description="分享卡片等临时文件"
-											value={formatSize(dataStats.cache_size)}
-											action={
-												<button
-													onClick={handleClearCache}
-													className="px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
-												>
-													清除缓存
-												</button>
-											}
-										/>
-									</div>
-								</SettingsSectionCard>
+								<DataDirectories
+									dataDir={dataDir}
+									dbPath={dbPath}
+									dataStats={dataStats}
+									formatSize={formatSize}
+									onMigrateDatabase={handleMigrateDatabase}
+									onClearCache={handleClearCache}
+								/>
 
 								{/* 本地备份目录 */}
-								<SettingsSectionCard>
-									<div className="p-5">
-										<SettingsSectionTitle>本地备份目录</SettingsSectionTitle>
-										<SettingsRow
-											label="备份目录"
-											description={syncConfig.local_backup_dir || "未设置"}
-											action={
-												<button
-													onClick={async () => {
-														const result = await selectBackupDirectory();
-														if (result.path) {
-															saveConfig({ local_backup_dir: result.path });
-														}
-													}}
-													className="flex items-center gap-2 px-3 py-1.5 text-xs bg-warm-200 hover:bg-warm-300 rounded-lg transition-colors"
-												>
-													<FolderOpen className="w-3.5 h-3.5" />
-													选择目录
-												</button>
-											}
-										/>
-										{syncConfig.local_backup_dir && (
-											<>
-												<SettingsRow
-													label="自动备份"
-													description="定期自动备份到本地目录"
-													action={
-														<SettingsSwitch
-															checked={
-																syncConfig.local_backup_auto_sync ?? false
-															}
-															onChange={(v) =>
-																saveConfig({ local_backup_auto_sync: v })
-															}
-														/>
-													}
-												/>
-												<SettingsRow
-													label="备份间隔"
-													action={
-														<Select
-															value={String(
-																syncConfig.local_backup_interval ?? 60,
-															)}
-															onChange={(e) =>
-																saveConfig({
-																	local_backup_interval: parseInt(
-																		e.target.value,
-																	),
-																})
-															}
-															disabled={!syncConfig.local_backup_auto_sync}
-															variant="inline"
-															containerClassName="w-auto"
-															options={[
-																{ value: "5", label: "5 分钟" },
-																{ value: "15", label: "15 分钟" },
-																{ value: "30", label: "30 分钟" },
-																{ value: "60", label: "1 小时" },
-																{ value: "180", label: "3 小时" },
-															]}
-														/>
-													}
-												/>
-												<SettingsRow
-													label="最大备份数"
-													description="超出后自动删除旧备份"
-													action={
-														<Select
-															value={String(
-																syncConfig.local_backup_max_count ?? 10,
-															)}
-															onChange={(e) =>
-																saveConfig({
-																	local_backup_max_count: parseInt(
-																		e.target.value,
-																	),
-																})
-															}
-															variant="inline"
-															containerClassName="w-auto"
-															options={[
-																{ value: "5", label: "5 份" },
-																{ value: "10", label: "10 份" },
-																{ value: "20", label: "20 份" },
-																{ value: "50", label: "50 份" },
-															]}
-														/>
-													}
-												/>
-												<div className="flex gap-3 mt-4">
-													<button
-														onClick={async () => {
-															if (!syncConfig.local_backup_dir) return;
-															setIsBackingUpToLocal(true);
-															try {
-																const result = await backupToLocalDir(
-																	syncConfig.local_backup_dir,
-																);
-																toast.success(
-																	`备份成功，文件大小 ${formatSize(result.size)}`,
-																);
-																await loadData();
-															} catch (error) {
-																toast.error(`备份失败: ${error}`);
-															} finally {
-																setIsBackingUpToLocal(false);
-															}
-														}}
-														disabled={isBackingUpToLocal}
-														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-													>
-														{isBackingUpToLocal ? (
-															<RefreshCw className="w-4 h-4 animate-spin" />
-														) : (
-															<Archive className="w-4 h-4" />
-														)}
-														立即备份
-													</button>
-													<button
-														onClick={() => setIsLocalBackupManagerOpen(true)}
-														className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
-													>
-														<HardDrive className="w-4 h-4" />
-														管理备份
-													</button>
-												</div>
-												{syncConfig.local_backup_last_sync_at && (
-													<div className="text-xs text-text-light mt-3">
-														上次备份:{" "}
-														{new Date(
-															syncConfig.local_backup_last_sync_at,
-														).toLocaleString()}
-													</div>
-												)}
-											</>
-										)}
-									</div>
-								</SettingsSectionCard>
+								<LocalBackupDirectoryCard
+									syncConfig={syncConfig}
+									saveConfig={saveConfig}
+									isBackingUpToLocal={isBackingUpToLocal}
+									setIsBackingUpToLocal={setIsBackingUpToLocal}
+									loadData={loadData}
+									formatSize={formatSize}
+									onOpenBackupManager={() => setIsLocalBackupManagerOpen(true)}
+								/>
 
-								{/* 备份与恢复 */}
-								<SettingsSectionCard>
-									<div className="p-5">
-										<SettingsSectionTitle>数据备份与恢复</SettingsSectionTitle>
-										<div className="flex gap-3 mb-4">
-											<button
-												onClick={handleLocalBackup}
-												className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
-											>
-												<Download className="w-4 h-4" />
-												备份
-											</button>
-											<button
-												onClick={handleImport}
-												className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors"
-											>
-												<RotateCcw className="w-4 h-4" />
-												恢复
-											</button>
-										</div>
-										<SettingsRow
-											label="导出为 JSON"
-											description="导出所有数据，可用于迁移或分享"
-											action={
-												<button
-													onClick={handleExport}
-													className="px-3 py-1.5 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
-												>
-													导出
-												</button>
-											}
-										/>
-									</div>
-								</SettingsSectionCard>
-
-								{/* 危险区域 */}
-								<SettingsSectionCard className="ring-red-100">
-									<div className="p-5">
-										<SettingsSectionTitle className="text-red-400">
-											危险操作
-										</SettingsSectionTitle>
-										<SettingsRow
-											label="重置数据"
-											description="删除所有数据，恢复到初始状态"
-											action={
-												<button
-													onClick={() => setIsDangerOpen(true)}
-													className="px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-												>
-													重置数据
-												</button>
-											}
-										/>
-									</div>
-								</SettingsSectionCard>
+								{/* 备份与恢复 + 危险区 */}
+								<LocalBackupRestoreCard
+									onLocalBackup={handleLocalBackup}
+									onImport={handleImport}
+									onExport={handleExport}
+									onOpenDanger={() => setIsDangerOpen(true)}
+								/>
 							</>
 						)}
 
@@ -1172,7 +915,7 @@ export function DataSettings() {
 													disabled={!syncConfig.webdav_enabled}
 													className={`w-full px-4 py-2.5 bg-warm-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-surface disabled:opacity-50 transition-all ${
 														!urlValidation.valid
-															? "ring-2 ring-red-200 bg-red-50/30"
+															? "ring-2 ring-[rgba(181,51,51,0.32)] bg-[rgba(181,51,51,0.04)]"
 															: ""
 													}`}
 												/>
@@ -1286,7 +1029,7 @@ export function DataSettings() {
 												</span>
 											)}
 											{connectionStatus === "error" && (
-												<span className="flex items-center gap-1 text-xs text-red-600">
+												<span className="flex items-center gap-1 text-xs text-error">
 													<XCircle className="w-4 h-4" />
 													连接失败
 												</span>
@@ -1318,8 +1061,8 @@ export function DataSettings() {
 													</>
 												) : syncConfig.webdav_last_sync_error ? (
 													<>
-														<XCircle className="w-3.5 h-3.5 text-red-500" />
-														<span className="text-red-600">
+														<XCircle className="w-3.5 h-3.5 text-error" />
+														<span className="text-error">
 															同步失败: {syncConfig.webdav_last_sync_error}
 														</span>
 													</>
@@ -1551,11 +1294,11 @@ export function DataSettings() {
 				title="重置所有数据"
 			>
 				<div className="space-y-4">
-					<div className="flex items-center gap-3 text-red-600">
+					<div className="flex items-center gap-3 text-error">
 						<ShieldAlert className="w-5 h-5" />
 						<p className="text-sm font-medium">此操作将永久删除以下内容：</p>
 					</div>
-					<ul className="text-sm text-red-600 bg-red-50 rounded-xl p-4 space-y-2">
+					<ul className="text-sm text-error bg-[rgba(181,51,51,0.08)] rounded-xl p-4 space-y-2">
 						<li>• 所有资料、笔记与同步配置</li>
 						<li>• 所有工作流与输出文稿</li>
 						<li>• 所有模型服务商配置</li>
@@ -1564,7 +1307,7 @@ export function DataSettings() {
 					<div className="space-y-2">
 						<label className="text-xs text-text-muted">
 							请输入{" "}
-							<span className="font-mono font-semibold text-red-600">
+							<span className="font-mono font-semibold text-error">
 								DELETE ALL
 							</span>{" "}
 							以确认
@@ -1574,11 +1317,11 @@ export function DataSettings() {
 							value={confirmPhrase}
 							onChange={(e) => setConfirmPhrase(e.target.value)}
 							placeholder="DELETE ALL"
-							className="w-full px-4 py-2.5 border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-surface text-sm"
+							className="w-full px-4 py-2.5 border border-[rgba(181,51,51,0.32)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgba(181,51,51,0.32)] bg-surface text-sm"
 							disabled={isClearing}
 						/>
 					</div>
-					<div className="text-xs text-red-500">
+					<div className="text-xs text-error">
 						⚠️ 操作无法撤销，建议先导出备份。
 					</div>
 				</div>
@@ -1611,7 +1354,7 @@ export function DataSettings() {
 						disabled={
 							confirmPhrase.trim().toUpperCase() !== "DELETE ALL" || isClearing
 						}
-						className="px-4 py-2 text-sm font-medium rounded-xl text-white bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition-colors"
+						className="px-4 py-2 text-sm font-medium rounded-xl text-white bg-error disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#9e2b2b] transition-colors"
 					>
 						{isClearing ? "重置中…" : "确认重置"}
 					</button>
@@ -1668,7 +1411,7 @@ export function DataSettings() {
 										<button
 											onClick={() => handleDeleteBackup(backup.fileName)}
 											disabled={isDeletingBackup === backup.fileName}
-											className="p-1 text-text-light hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+											className="p-1 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded transition-colors disabled:opacity-50"
 											title="删除备份"
 										>
 											{isDeletingBackup === backup.fileName ? (

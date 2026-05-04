@@ -84,9 +84,9 @@ export function WorkflowLab() {
 			case NodeStatus.Completed:
 				return <CheckCircle className="w-4 h-4 text-green-500" />;
 			case NodeStatus.Failed:
-				return <XCircle className="w-4 h-4 text-red-500" />;
+				return <XCircle className="w-4 h-4 text-error" />;
 			case NodeStatus.Running:
-				return <Clock className="w-4 h-4 text-blue-500 animate-pulse" />;
+				return <Clock className="w-4 h-4 text-focus animate-pulse" />;
 			default:
 				return (
 					<div className="w-4 h-4 rounded-full border-2 border-cream-400" />

@@ -317,7 +317,7 @@ function ChatMessageImpl({
 													disabled={appliedBlocks.has(idx)}
 													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
 														appliedBlocks.has(idx)
-															? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+															? "text-success bg-success/8 dark:bg-emerald-900/20"
 															: "text-text-muted hover:text-text-primary hover:bg-warm-200"
 													}`}
 													title="应用代码到编辑器"
