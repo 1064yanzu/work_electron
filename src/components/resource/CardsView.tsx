@@ -119,7 +119,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 							<button
 								type="button"
 								onClick={() => setCardDeleteConfirm(null)}
-								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>
@@ -364,7 +364,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 										<div className="flex items-center justify-between pt-2 border-t border-border/50">
 											<div className="flex items-center gap-2 text-xs text-text-light">
 												{card.aspect_ratio && (
-													<span className="px-1.5 py-0.5 bg-warm-200 dark:bg-zinc-700/50 rounded text-[10px]">
+													<span className="px-1.5 py-0.5 bg-warm-200 dark:bg-cream-700/50 rounded text-[10px]">
 														{card.aspect_ratio}
 													</span>
 												)}

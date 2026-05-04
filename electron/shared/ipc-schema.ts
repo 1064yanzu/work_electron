@@ -123,6 +123,13 @@ export type IPCSchema = {
 		input: { ts: number };
 		output: { ts: number };
 	};
+	system_get_user_info: {
+		input: Record<string, never>;
+		output: {
+			username: string;
+			platform: NodeJS.Platform;
+		};
+	};
 	http_get_status: {
 		input: Record<string, never>;
 		output: {
@@ -448,6 +455,127 @@ export type IPCSchema = {
 	set_skill_enabled: {
 		input: { skillName: string; enabled: boolean };
 		output: { success: boolean };
+	};
+
+	// ==================
+	// Skills Marketplace（多源市场）
+	// ==================
+	skills_marketplace_list_sources: {
+		input: Record<string, never>;
+		output: {
+			sources: Array<{
+				id: string;
+				name: string;
+				type:
+					| "anthropic_marketplace_json"
+					| "skills_sh"
+					| "tencent_skillhub"
+					| "custom_json";
+				url: string;
+				enabled: boolean;
+				trust?: "official" | "community" | "custom";
+			}>;
+			mirrors: Array<{
+				id: string;
+				name: string;
+				pattern: string;
+				enabled: boolean;
+			}>;
+			autoCheck: boolean;
+		};
+	};
+	skills_marketplace_set_sources: {
+		input: {
+			sources?: Array<{
+				id: string;
+				name: string;
+				type:
+					| "anthropic_marketplace_json"
+					| "skills_sh"
+					| "tencent_skillhub"
+					| "custom_json";
+				url: string;
+				enabled: boolean;
+				trust?: "official" | "community" | "custom";
+			}>;
+			mirrors?: Array<{
+				id: string;
+				name: string;
+				pattern: string;
+				enabled: boolean;
+			}>;
+			autoCheck?: boolean;
+		};
+		output: { success: boolean };
+	};
+	skills_marketplace_search: {
+		input: { query?: string; sourceId?: string };
+		output: {
+			entries: Array<{
+				id: string;
+				sourceId: string;
+				trust: "official" | "community" | "custom";
+				name: string;
+				displayName?: string;
+				description: string;
+				version?: string;
+				author?: string;
+				homepage?: string;
+				tags?: string[];
+				icon?: string;
+				license?: string;
+				sha256?: string;
+				artifact: unknown;
+				rawSourceUrl?: string;
+				installed?: boolean;
+				installedVersion?: string;
+			}>;
+			errors: Array<{ sourceId: string; error: string }>;
+		};
+	};
+	skills_marketplace_install: {
+		input: { entryId: string };
+		output: {
+			success: boolean;
+			name?: string;
+			location?: string;
+			error?: string;
+		};
+	};
+	skills_marketplace_uninstall: {
+		input: { skillName: string };
+		output: { success: boolean };
+	};
+	skills_marketplace_check_updates: {
+		input: Record<string, never>;
+		output: {
+			updates: Array<{
+				name: string;
+				currentVersion?: string;
+				latestVersion?: string;
+				entryId: string;
+				sourceId: string;
+			}>;
+		};
+	};
+	skills_marketplace_test_mirror: {
+		input: Record<string, never>;
+		output: {
+			results: Array<{
+				url: string;
+				ok: boolean;
+				latencyMs?: number;
+				error?: string;
+			}>;
+		};
+	};
+	skills_marketplace_preview: {
+		input: { entryId: string };
+		output: {
+			skillMd?: string;
+			usedUrl?: string;
+			error?: string;
+		};
 	};
 
 	// ==================

@@ -199,7 +199,7 @@ export function SourceListView({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors ${
+							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors ${
 								index === breadcrumbPath.length - 1
 									? "text-text-primary dark:text-zinc-200 font-medium"
 									: "text-text-muted"
@@ -519,7 +519,7 @@ export function SourceListView({
 					<span className="text-text-muted">已选 {selectedIds.length} 条</span>
 					<button
 						onClick={handleSelectAll}
-						className="px-2 py-1 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-zinc-300 transition-colors"
+						className="px-2 py-1 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-cream-400 transition-colors"
 					>
 						{selectedIds.length === sources.length ? "取消全选" : "全选"}
 					</button>
@@ -762,7 +762,7 @@ export function SourceListView({
 						setActiveTab("text");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<PenLine className="w-3.5 h-3.5" />
 					笔记
@@ -772,7 +772,7 @@ export function SourceListView({
 						setActiveTab("web");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<Link className="w-3.5 h-3.5" />
 					链接
@@ -782,7 +782,7 @@ export function SourceListView({
 						setActiveTab("file");
 						setIsAddModalOpen(true);
 					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-zinc-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
 				>
 					<Paperclip className="w-3.5 h-3.5" />
 					文件

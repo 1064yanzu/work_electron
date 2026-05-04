@@ -10,7 +10,7 @@
  */
 
 import type { LucideIcon } from "lucide-react";
-import { Globe, Radio, RefreshCw, Users, Zap } from "lucide-react";
+import { Activity, Globe, Radio, RefreshCw, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	getActiveModel,
@@ -39,10 +39,10 @@ type StatusTileProps = {
 };
 
 const TONE_ICON_CLASS: Record<StatusTileTone, string> = {
-	emerald: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
-	amber: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
-	rose: "text-rose-600 dark:text-rose-400 bg-rose-500/10",
-	sky: "text-sky-500 dark:text-sky-400 bg-sky-500/10",
+	emerald: "text-mint-600 bg-mint-500/10",
+	amber: "text-peach-500 bg-peach-500/10",
+	rose: "text-[#b53333] bg-[#b53333]/[0.08]",
+	sky: "text-violetx-500 bg-violetx-500/10",
 	zinc: "text-text-muted bg-warm-200",
 };
 
@@ -56,7 +56,7 @@ function StatusTile({
 }: StatusTileProps) {
 	const iconCls = TONE_ICON_CLASS[tone];
 	return (
-		<div className="rounded-xl border border-border/80 bg-surface p-4">
+		<div className="rounded-xl border border-border bg-surface p-4">
 			<div className="flex items-start gap-3">
 				<div
 					className={cn(
@@ -64,7 +64,7 @@ function StatusTile({
 						iconCls,
 					)}
 				>
-					<Icon className="h-4 w-4" strokeWidth={1.8} />
+					<Icon className="h-4 w-4" strokeWidth={1.5} />
 					{pulse ? (
 						<span className="absolute -right-0.5 -top-0.5">
 							<StatusDot tone={tone} pulse size="xs" />
@@ -132,8 +132,8 @@ export function OverviewSection({
 			<SettingsSectionCard className="p-5">
 				<div className="flex flex-wrap items-center justify-between gap-4">
 					<div className="flex items-start gap-3">
-						<div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-							<Radio className="h-5 w-5 text-primary" strokeWidth={1.8} />
+						<div className="bai-icon-badge h-10 w-10">
+							<Radio className="h-5 w-5 text-primary" strokeWidth={1.5} />
 							{enabled ? (
 								<span className="absolute -right-1 -top-1">
 									<StatusDot tone="emerald" pulse size="xs" />
@@ -149,8 +149,8 @@ export function OverviewSection({
 									className={cn(
 										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
 										enabled
-											? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-											: "bg-warm-500/10 text-text-muted",
+											? "bg-mint-500/10 text-mint-600"
+											: "bg-warm-200 text-text-muted",
 									)}
 								>
 									<StatusDot
@@ -200,7 +200,7 @@ export function OverviewSection({
 					pulse={connectedChannels > 0}
 				/>
 				<StatusTile
-					icon={Zap}
+					icon={Activity}
 					label="运行任务"
 					value={activeRuns}
 					hint={activeRuns > 0 ? "有正在进行的远程会话" : "当前没有任务"}

@@ -9,6 +9,7 @@ import {
 	Copy,
 	Download,
 	Edit3,
+	FileText,
 	Folder,
 	FolderOpen,
 	FolderPlus,
@@ -95,15 +96,22 @@ function PromptCard({
                     ${
 											isSelected
 												? "bg-surface border-border shadow-sm ring-1 ring-black/5 dark:ring-white/5"
-												: "bg-surface/60/60 border-transparent hover:bg-surface hover:border-border hover:shadow-sm"
+												: "bg-surface/60 border-transparent hover:bg-surface hover:border-border hover:shadow-sm"
 										}`}
 				onClick={onSelect}
 				onMouseEnter={() => setIsHovered(true)}
 				onMouseLeave={() => setIsHovered(false)}
 			>
 				{/* 图标 */}
-				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-warm-200 text-xl border border-border shadow-sm shrink-0 transition-transform group-hover:scale-105">
-					{prompt.icon || "📝"}
+				<div className="w-12 h-12 flex items-center justify-center rounded-xl bg-warm-200 text-xl border border-border shrink-0 transition-transform group-hover:scale-105">
+					{prompt.icon ? (
+						<span>{prompt.icon}</span>
+					) : (
+						<FileText
+							className="w-5 h-5 text-text-secondary"
+							strokeWidth={1.5}
+						/>
+					)}
 				</div>
 
 				{/* 内容 */}
@@ -122,7 +130,7 @@ function PromptCard({
 				>
 					<button
 						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
 						title="复制"
 					>
 						{hasCopied ? (
@@ -133,7 +141,7 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
 						title="编辑"
 					>
 						<Edit3 className="w-5 h-5" />
@@ -158,8 +166,8 @@ function PromptCard({
 			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
                 ${
 									isSelected
-										? "bg-surface ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-xl"
-										: "bg-surface border-border/40/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:scale-[1.01]"
+										? "bg-cream-50 dark:bg-cream-900 border-cream-500 dark:border-cream-400 shadow-bai-pop"
+										: "bg-cream-50 dark:bg-cream-900 border-cream-300 dark:border-cream-500/60 hover:border-cream-500 dark:hover:border-cream-400 shadow-bai-card hover:shadow-bai-pop hover:-translate-y-0.5"
 								}`}
 			onClick={onSelect}
 			onMouseEnter={() => setIsHovered(true)}
@@ -167,8 +175,15 @@ function PromptCard({
 		>
 			{/* 头部：图标 + 操作按钮 */}
 			<div className="flex items-start justify-between mb-4">
-				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 border border-border/50/50 text-2xl shadow-sm group-hover:scale-105 transition-all duration-300">
-					{prompt.icon || "📝"}
+				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-warm-200 border border-border text-2xl group-hover:scale-105 transition-transform duration-300">
+					{prompt.icon ? (
+						<span>{prompt.icon}</span>
+					) : (
+						<FileText
+							className="w-6 h-6 text-text-secondary"
+							strokeWidth={1.5}
+						/>
+					)}
 				</div>
 				{/* 操作按钮 - 始终占位但悬停时显示 */}
 				<div
@@ -176,7 +191,7 @@ function PromptCard({
 				>
 					<button
 						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
 						title="复制"
 					>
 						{hasCopied ? (
@@ -187,7 +202,7 @@ function PromptCard({
 					</button>
 					<button
 						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-xl transition-all active:scale-90"
+						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
 						title="编辑"
 					>
 						<Edit3 className="w-5 h-5" />
@@ -310,7 +325,7 @@ export function PromptLibraryModal({
 							activeFolderId === "uncategorized"
 								? undefined
 								: activeFolderId || undefined,
-						icon: "📝",
+						icon: "",
 					},
 		);
 		setIsEditing(true);
@@ -418,12 +433,12 @@ export function PromptLibraryModal({
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
-			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-2xl border border-border/50 flex flex-col md:flex-row overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
+			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
 				{/* Sidebar (Folder Navigation) */}
-				<div className="w-full md:w-56 bg-warm-50/50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
+				<div className="w-full md:w-56 bg-warm-50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
 					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
-						<div className="w-8 h-8 rounded-lg bg-dark-muted flex items-center justify-center text-white shadow-md shadow-zinc-900/5">
-							<Library className="w-4 h-4" />
+						<div className="w-8 h-8 rounded-2xl bg-cream-900 dark:bg-cream-100 flex items-center justify-center text-cream-50 dark:text-cream-900">
+							<Library className="w-4 h-4" strokeWidth={1.5} />
 						</div>
 						<span className="text-lg font-bold text-text-primary tracking-tight">
 							提示词库
@@ -536,7 +551,7 @@ export function PromptLibraryModal({
 											}}
 										/>
 										{/* Menu */}
-										<div className="absolute right-0 top-full mt-1 w-36 bg-surface rounded-xl shadow-xl border border-border py-1 z-[150] animate-in fade-in slide-in-from-top-2 duration-150">
+										<div className="absolute right-0 top-full mt-1 w-36 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1 z-[150] animate-in fade-in slide-in-from-top-2 duration-150">
 											<button
 												onClick={(e) => {
 													e.stopPropagation();
@@ -544,7 +559,7 @@ export function PromptLibraryModal({
 													setEditingFolderName(folder.name);
 													setFolderMenuId(null);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-cream-700/50 flex items-center gap-2"
 											>
 												<Edit3 className="w-3.5 h-3.5" />
 												重命名
@@ -554,7 +569,7 @@ export function PromptLibraryModal({
 													e.stopPropagation();
 													handleDeleteFolder(folder.id, false);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-cream-700/50 flex items-center gap-2"
 											>
 												<Trash2 className="w-3.5 h-3.5" />
 												删除（保留内容）
@@ -621,7 +636,7 @@ export function PromptLibraryModal({
 						) : (
 							<button
 								onClick={() => setIsAddingFolder(true)}
-								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-light hover:text-text-primary hover:bg-warm-200/50 transition-all duration-200 border border-dashed border-zinc-300"
+								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-light hover:text-text-primary hover:bg-warm-200/50 transition-all duration-200 border border-dashed border-cream-400"
 							>
 								<FolderPlus className="w-4 h-4" />
 								<span>新建文件夹</span>
@@ -643,7 +658,7 @@ export function PromptLibraryModal({
 				{/* Main Content */}
 				<div className="flex-1 flex flex-col bg-surface relative min-w-0">
 					{/* Header Toolbar */}
-					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-border sticky top-0 bg-surface/80/80 backdrop-blur-md z-10">
+					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-border sticky top-0 bg-surface/80 backdrop-blur-md z-10">
 						<div className="relative flex-1 max-w-md group">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary dark:group-focus-within:text-text-light transition-colors" />
 							<input
@@ -651,28 +666,28 @@ export function PromptLibraryModal({
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索..."
-								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-warm-200/50 border-none rounded-lg text-sm text-text-primary placeholder-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-800 transition-all outline-none"
+								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-all outline-none"
 							/>
 						</div>
 
-						<div className="flex items-center gap-0.5 bg-surface/50 p-1 rounded-lg border border-border/50/50 shadow-sm">
+						<div className="flex items-center gap-0.5 bg-cream-100/60 dark:bg-cream-800/60 p-1 rounded-full border border-cream-300/60 dark:border-cream-500/60">
 							<button
 								onClick={() => setViewMode("grid")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "grid" ? "bg-warm-200 dark:bg-zinc-700 text-text-primary shadow-sm" : "text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-50/50"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
 								title="网格视图"
 							>
-								<LayoutGrid className="w-4 h-4" />
+								<LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
 							</button>
 							<button
 								onClick={() => setViewMode("list")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${viewMode === "list" ? "bg-warm-200 dark:bg-zinc-700 text-text-primary shadow-sm" : "text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-50/50"}`}
+								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
 								title="列表视图"
 							>
-								<LayoutList className="w-4 h-4" />
+								<LayoutList className="w-4 h-4" strokeWidth={1.5} />
 							</button>
 						</div>
 
-						<div className="h-6 w-px bg-warm-300 mx-1" />
+						<div className="h-6 w-px bg-cream-300 dark:bg-cream-500 mx-1" />
 
 						<div className="flex items-center gap-0.5">
 							<input
@@ -684,24 +699,24 @@ export function PromptLibraryModal({
 							/>
 							<button
 								onClick={() => fileInputRef.current?.click()}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
 								title="导入"
 							>
-								<Upload className="w-4.5 h-4.5" />
+								<Upload className="w-4.5 h-4.5" strokeWidth={1.5} />
 							</button>
 							<button
 								onClick={handleExport}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
 								title="导出"
 							>
-								<Download className="w-4.5 h-4.5" />
+								<Download className="w-4.5 h-4.5" strokeWidth={1.5} />
 							</button>
 							<button
 								onClick={onClose}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-all active:scale-95"
+								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
 								title="关闭"
 							>
-								<X className="w-4.5 h-4.5" />
+								<X className="w-4.5 h-4.5" strokeWidth={1.5} />
 							</button>
 						</div>
 					</div>
@@ -710,7 +725,7 @@ export function PromptLibraryModal({
 					<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
 						{filteredPrompts.length === 0 ? (
 							<div className="h-full flex flex-col items-center justify-center text-center pb-20">
-								<div className="w-20 h-20 rounded-3xl bg-warm-50 flex items-center justify-center mb-6 ring-1 ring-zinc-100 dark:ring-zinc-800">
+								<div className="w-20 h-20 rounded-3xl bg-cream-100 dark:bg-cream-800 flex items-center justify-center mb-6 border border-cream-300 dark:border-cream-500">
 									<Archive className="w-8 h-8 text-text-light" />
 								</div>
 								<h3 className="text-text-primary font-medium text-lg mb-2">
@@ -725,7 +740,7 @@ export function PromptLibraryModal({
 								</p>
 								<button
 									onClick={() => handleStartEdit()}
-									className="mt-6 px-6 py-2.5 rounded-full bg-dark-muted text-white text-sm font-medium hover:opacity-90 transition-opacity"
+									className="mt-6 px-6 py-2.5 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 transition-opacity"
 								>
 									新建提示词
 								</button>
@@ -799,7 +814,7 @@ export function PromptLibraryModal({
 									<button
 										onClick={handleSave}
 										disabled={!editingPrompt?.name || !editingPrompt?.content}
-										className="px-6 py-2 rounded-full bg-dark-muted text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+										className="px-6 py-2 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
 									>
 										保存
 									</button>
@@ -821,8 +836,8 @@ export function PromptLibraryModal({
 														prev ? { ...prev, icon: e.target.value } : null,
 													)
 												}
-												className="w-16 h-16 text-3xl text-center rounded-2xl bg-warm-50/50 border border-border focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all"
-												placeholder="📝"
+												className="w-16 h-16 text-3xl text-center rounded-2xl bg-warm-200 border border-border focus:ring-2 focus:ring-primary/30 outline-none transition-colors"
+												placeholder="🔖"
 											/>
 										</div>
 										<div className="flex-1 space-y-6">
@@ -838,7 +853,7 @@ export function PromptLibraryModal({
 															prev ? { ...prev, name: e.target.value } : null,
 														)
 													}
-													className="w-full text-2xl font-bold bg-transparent border-b border-border pb-2 focus:border-zinc-900 dark:focus:border-border outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
+													className="w-full text-2xl font-bold bg-transparent border-b border-border pb-2 focus:border-cream-500 dark:focus:border-border outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
 													placeholder="输入提示词名称..."
 													autoFocus
 												/>
@@ -886,7 +901,7 @@ export function PromptLibraryModal({
 																	: null,
 															)
 														}
-														className="w-full px-4 py-2.5 rounded-xl bg-warm-50/50 border border-border focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm"
+														className="w-full px-4 py-2.5 rounded-2xl bg-cream-100 dark:bg-cream-800 border border-cream-400 dark:border-cream-500 focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 outline-none transition-all text-sm"
 														placeholder="简短描述..."
 													/>
 												</div>
@@ -905,7 +920,7 @@ export function PromptLibraryModal({
 											</div>
 										</div>
 										<div className="relative group">
-											<div className="absolute top-0 bottom-0 left-0 w-1 bg-warm-300 group-focus-within:bg-dark-muted dark:group-focus-within:bg-warm-200 transition-colors rounded-full" />
+											<div className="absolute top-0 bottom-0 left-0 w-1 bg-cream-300 dark:bg-cream-500 group-focus-within:bg-cream-900 dark:group-focus-within:bg-cream-100 transition-colors rounded-full" />
 											<textarea
 												value={editingPrompt?.content || ""}
 												onChange={(e) =>

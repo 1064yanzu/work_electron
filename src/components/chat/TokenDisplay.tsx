@@ -55,9 +55,9 @@ export function TokenDisplay({
 				↓{formatTokenCount(completionTokens)}
 			</span>
 			{hasCacheInfo && (
-				<span className="text-blue-400/70 font-mono">
+				<span className="text-text-light/70 font-mono">
 					{cacheReadInputTokens && cacheReadInputTokens > 0
-						? `⚡${formatTokenCount(cacheReadInputTokens)}`
+						? `cache ${formatTokenCount(cacheReadInputTokens)}`
 						: null}
 					{cacheCreationInputTokens && cacheCreationInputTokens > 0
 						? ` +${formatTokenCount(cacheCreationInputTokens)}`

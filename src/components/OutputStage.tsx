@@ -7,6 +7,7 @@ import {
 } from "../lib/api";
 import { EVENTS, events } from "../lib/events";
 import { type OutputAsset, OutputType } from "../types";
+import { Button } from "./ui/Button";
 import { inputDialog } from "./ui/InputDialog";
 import { toast } from "./ui/Toast";
 
@@ -173,12 +174,12 @@ export default function OutputStage() {
 	}, []);
 
 	return (
-		<aside className="flex-1 bg-panel-output dark:bg-gray-900 border-l border-border dark:border-gray-700 flex flex-col h-full font-sans min-w-0">
+		<aside className="flex-1 bg-panel-output dark:bg-cream-900 border-l border-border dark:border-cream-500 flex flex-col h-full font-sans min-w-0">
 			{/* Header */}
-			<div className="p-4 border-t border-border dark:border-gray-700 bg-surface dark:bg-gray-800 flex items-center justify-between shrink-0">
+			<div className="p-4 border-t border-border dark:border-cream-500 bg-surface dark:bg-cream-800 flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-2">
-					<PenTool className="w-5 h-5 text-primary" />
-					<h2 className="font-serif font-medium text-sm tracking-wide text-text-secondary">
+					<PenTool className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+					<h2 className="font-semibold text-sm tracking-tight text-text-secondary">
 						输出舞台
 					</h2>
 				</div>
@@ -225,14 +226,16 @@ export default function OutputStage() {
 				{outputs.length === 0 ? (
 					<div className="flex-1 flex items-center justify-center text-text-muted text-sm p-8 text-center">
 						<div>
-							<PenTool className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-20" />
-							<p className="mb-4 font-serif italic text-lg">暂无输出内容</p>
-							<button
-								onClick={handleCreateOutput}
-								className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
-							>
+							<PenTool
+								className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-20"
+								strokeWidth={1.5}
+							/>
+							<p className="mb-4 font-medium text-base text-text-secondary">
+								暂无输出内容
+							</p>
+							<Button onClick={handleCreateOutput} variant="primary" size="md">
 								创建第一篇草稿
-							</button>
+							</Button>
 						</div>
 					</div>
 				) : (
@@ -255,11 +258,11 @@ export default function OutputStage() {
 						</div>
 
 						{/* Editor / Preview Area */}
-						<div className="flex-1 overflow-y-auto bg-surface dark:bg-gray-800 p-6 min-h-0">
+						<div className="flex-1 overflow-y-auto bg-surface dark:bg-cream-800 p-6 min-h-0">
 							{selectedOutput ? (
 								isEditing ? (
 									<textarea
-										className="w-full h-full p-4 bg-transparent border-none focus:outline-none resize-none text-text-primary dark:text-gray-100 font-mono text-sm leading-relaxed"
+										className="w-full h-full p-4 bg-transparent border-none focus:outline-none resize-none text-text-primary dark:text-cream-100 font-mono text-sm leading-relaxed"
 										value={editorContent}
 										onChange={(e) => setEditorContent(e.target.value)}
 										placeholder="开始写作..."
@@ -290,7 +293,7 @@ export default function OutputStage() {
 									</div>
 								)
 							) : (
-								<div className="h-full flex items-center justify-center text-text-muted font-serif italic">
+								<div className="h-full flex items-center justify-center text-text-muted text-sm">
 									请选择一篇文档
 								</div>
 							)}

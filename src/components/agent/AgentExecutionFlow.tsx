@@ -79,7 +79,7 @@ const StepCard = memo(function StepCard({
 								? "bg-emerald-300 dark:bg-emerald-700"
 								: step.status === "running"
 									? "bg-gradient-to-b from-[#D96C46] to-[#D96C46]/30"
-									: "bg-warm-300 dark:bg-zinc-700",
+									: "bg-warm-300 dark:bg-cream-700",
 						)}
 					/>
 				)}

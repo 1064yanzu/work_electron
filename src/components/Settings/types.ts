@@ -14,4 +14,5 @@ export type SettingsTabId =
 	| "general"
 	| "performance"
 	| "data"
-	| "artifacts";
+	| "artifacts"
+	| "mascot";

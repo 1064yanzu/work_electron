@@ -30,15 +30,15 @@ export function PairingList(props: {
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
 							props.pending.length > 0
-								? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-								: "border-border bg-warm-50 text-text-muted"
+								? "border-peach-500/30 bg-peach-500/10 text-peach-500"
+								: "border-border bg-warm-200 text-text-muted"
 						}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 rounded-full ${
 								props.pending.length > 0
-									? "bg-amber-500 animate-pulse"
-									: "bg-zinc-400"
+									? "bg-peach-500 animate-pulse"
+									: "bg-cream-500"
 							}`}
 						/>
 						{props.pending.length} 条
@@ -55,7 +55,7 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.request_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
@@ -119,12 +119,12 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.pairing_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
 											<div className="font-medium text-text-primary flex items-center gap-2">
-												<span className="inline-flex items-center rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+												<span className="inline-flex items-center rounded-md bg-mint-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-mint-600 uppercase tracking-wider">
 													{item.channel_id}
 												</span>
 												{item.peer_name || item.peer_id}

@@ -70,7 +70,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 				)}
 			/>
 
-			<div className="px-4 py-3 border-b border-border/60/60">
+			<div className="px-4 py-3 border-b border-border/60">
 				<div className="flex items-start gap-3">
 					<div
 						className={cn(
@@ -251,7 +251,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						{(data.inputSummary || data.outputSummary) && (
 							<div className="mt-1.5 space-y-1">
 								{data.inputSummary && (
-									<div className="text-[11px] text-text-muted bg-warm-50/60/40 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
+									<div className="text-[11px] text-text-muted bg-warm-50/60 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
 										<span className="text-text-light mr-0.5">→</span>
 										{data.inputSummary}
 									</div>
@@ -560,7 +560,7 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
 				"text-[11px] font-medium backdrop-blur-sm",
 				isMain
-					? "border-border/70/70 bg-surface/80/70 text-text-secondary"
+					? "border-border/70 bg-surface/80/70 text-text-secondary"
 					: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
 			)}
 		>

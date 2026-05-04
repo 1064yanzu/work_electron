@@ -91,7 +91,7 @@ export const ProgressBar = ({
 			)}
 			<div
 				className={cn(
-					"bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden",
+					"bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden",
 					sizeStyles[size],
 				)}
 			>

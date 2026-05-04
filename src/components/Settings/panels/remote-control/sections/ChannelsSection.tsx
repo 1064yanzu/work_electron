@@ -13,8 +13,8 @@ import {
 	Bot,
 	MessageCircle,
 	MessageSquareMore,
+	Plug,
 	Smartphone,
-	Sparkles,
 	Wifi,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -41,7 +41,7 @@ type ChannelId =
 type QuickSetupChannelId = Exclude<ChannelId, "wechat">;
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
 
 /** 支持快速设置的通道，以及按钮的副标题提示。 */
 const QUICK_SETUP_HINT: Record<QuickSetupChannelId, string> = {
@@ -82,8 +82,8 @@ export function ChannelsSection({
 			label: "Feishu",
 			description: "企业主力通道 · WebSocket",
 			icon: MessageSquareMore,
-			accent: "text-[#0089ff]",
-			iconBg: "from-[#00d6b9]/20 to-[#465bff]/15",
+			accent: "text-text-secondary",
+			iconBg: "from-warm-200 to-warm-200",
 			enabled: config.channels.feishu.enabled,
 			running: feishuRt?.running,
 			connected: feishuRt?.connected,
@@ -96,8 +96,8 @@ export function ChannelsSection({
 				label: "Telegram",
 				description: "Bot API 长轮询",
 				icon: Smartphone,
-				accent: "text-sky-600 dark:text-sky-400",
-				iconBg: "from-sky-500/15 to-sky-400/10",
+				accent: "text-text-secondary",
+				iconBg: "from-warm-200 to-warm-200",
 				enabled: config.channels.telegram.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -111,8 +111,8 @@ export function ChannelsSection({
 				label: "Slack",
 				description: "Socket Mode",
 				icon: Activity,
-				accent: "text-emerald-600 dark:text-emerald-400",
-				iconBg: "from-emerald-500/15 to-teal-400/10",
+				accent: "text-text-secondary",
+				iconBg: "from-warm-200 to-warm-200",
 				enabled: config.channels.slack.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -126,8 +126,8 @@ export function ChannelsSection({
 				label: "Discord",
 				description: "Gateway WebSocket",
 				icon: Wifi,
-				accent: "text-indigo-600 dark:text-indigo-400",
-				iconBg: "from-indigo-500/15 to-violet-500/10",
+				accent: "text-text-secondary",
+				iconBg: "from-warm-200 to-warm-200",
 				enabled: config.channels.discord.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -141,8 +141,8 @@ export function ChannelsSection({
 				label: "QQ Bot",
 				description: "官方开放平台",
 				icon: Bot,
-				accent: "text-[#0D6EFF]",
-				iconBg: "from-[#12B7F5]/15 to-[#0D6EFF]/10",
+				accent: "text-text-secondary",
+				iconBg: "from-warm-200 to-warm-200",
 				enabled: config.channels.qqbot.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -157,8 +157,8 @@ export function ChannelsSection({
 				label: "个人微信",
 				description: "Wechaty · 实验特性",
 				icon: MessageCircle,
-				accent: "text-amber-600 dark:text-amber-400",
-				iconBg: "from-amber-500/15 to-rose-500/10",
+				accent: "text-peach-500",
+				iconBg: "from-peach-500/15 to-peach-500/5",
 				enabled: config.channels.wechat.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -228,10 +228,13 @@ export function ChannelsSection({
 						title="Telegram 通道"
 						description="使用 Telegram Bot API 长轮询，无需公网 IP。"
 						icon={
-							<Smartphone className="h-4.5 w-4.5 text-sky-600 dark:text-sky-400" />
+							<Smartphone
+								className="h-4 w-4 text-text-secondary"
+								strokeWidth={1.5}
+							/>
 						}
-						accentGradient="from-sky-400 to-sky-500"
-						iconBg="from-sky-500/15 to-sky-400/10"
+						accentGradient="from-warm-300 to-warm-300"
+						iconBg="from-warm-200 to-warm-200"
 						runtimeChannel={findRuntime("telegram")}
 						channelConfig={config.channels.telegram}
 						saving={saving}
@@ -266,10 +269,13 @@ export function ChannelsSection({
 						title="Slack 通道"
 						description="使用 Slack Socket Mode（需要 App-Level Token），无需公网 URL。"
 						icon={
-							<Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+							<Activity
+								className="h-4 w-4 text-text-secondary"
+								strokeWidth={1.5}
+							/>
 						}
-						accentGradient="from-emerald-400 to-teal-500"
-						iconBg="from-emerald-500/15 to-teal-400/10"
+						accentGradient="from-warm-300 to-warm-300"
+						iconBg="from-warm-200 to-warm-200"
 						runtimeChannel={findRuntime("slack")}
 						channelConfig={config.channels.slack}
 						saving={saving}
@@ -322,10 +328,10 @@ export function ChannelsSection({
 						title="Discord 通道"
 						description="使用 Discord Gateway WebSocket，无需公网 IP。"
 						icon={
-							<Wifi className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+							<Wifi className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
 						}
-						accentGradient="from-indigo-400 to-violet-500"
-						iconBg="from-indigo-500/15 to-violet-500/10"
+						accentGradient="from-warm-300 to-warm-300"
+						iconBg="from-warm-200 to-warm-200"
 						runtimeChannel={findRuntime("discord")}
 						channelConfig={config.channels.discord}
 						saving={saving}
@@ -419,11 +425,14 @@ function QuickSetupBanner({
 	onOpen: () => void;
 }) {
 	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] via-primary/[0.03] to-transparent p-4 transition-all duration-200 hover:border-primary/30 hover:shadow-[0_2px_12px_rgba(217,108,70,0.08)] dark:border-primary/30 dark:from-primary/[0.10]">
+		<div className="group relative overflow-hidden rounded-2xl border border-border bg-warm-200/50 p-4 transition-colors duration-200 hover:border-cream-500">
 			<div className="flex items-center justify-between gap-4">
 				<div className="flex items-start gap-3">
-					<div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 ring-1 ring-primary/20">
-						<Sparkles className="h-4.5 w-4.5 text-primary" strokeWidth={1.8} />
+					<div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-warm-200 border border-border">
+						<Plug
+							className="h-[18px] w-[18px] text-text-secondary"
+							strokeWidth={1.5}
+						/>
 					</div>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
@@ -431,13 +440,9 @@ function QuickSetupBanner({
 								一键快速配置
 							</span>
 							{channelId === "feishu" ? (
-								<span className="inline-flex items-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-									扫码
-								</span>
+								<span className="bai-tag">扫码</span>
 							) : (
-								<span className="inline-flex items-center rounded-full bg-warm-300/70 px-1.5 py-0.5 text-[10px] font-medium text-text-secondary dark:bg-zinc-700">
-									向导
-								</span>
+								<span className="bai-tag">向导</span>
 							)}
 						</div>
 						<p className="mt-0.5 truncate text-xs text-text-secondary">
@@ -446,7 +451,6 @@ function QuickSetupBanner({
 					</div>
 				</div>
 				<Button variant="primary" size="sm" onClick={onOpen}>
-					<Sparkles className="h-3.5 w-3.5" />
 					{channelId === "feishu" ? "扫码创建应用" : "打开向导"}
 				</Button>
 			</div>

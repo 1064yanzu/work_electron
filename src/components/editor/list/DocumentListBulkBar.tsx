@@ -25,7 +25,7 @@ export function DocumentListBulkBar({
 				<button
 					type="button"
 					onClick={onToggleSelectAll}
-					className="focus-ring min-h-11 px-3 inline-flex items-center gap-2 rounded-xl border border-border bg-surface text-sm text-text-secondary dark:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 transition-colors"
+					className="focus-ring min-h-11 px-3 inline-flex items-center gap-2 rounded-xl border border-border bg-surface text-sm text-text-secondary dark:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 transition-colors"
 				>
 					{isAllSelected ? (
 						<CheckCircle2 className="w-4.5 h-4.5" />

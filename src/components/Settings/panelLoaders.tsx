@@ -28,6 +28,10 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/ImageGenSettings"),
 		"ImageGenSettings",
 	),
+	mascot: toDefault(
+		() => import("./panels/MascotSettings"),
+		"MascotSettings",
+	),
 	agent: toDefault(() => import("./panels/AgentSettings"), "AgentSettings"),
 
 	memory: toDefault(() => import("./panels/MemorySettings"), "MemorySettings"),

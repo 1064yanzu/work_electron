@@ -280,7 +280,10 @@ export function MCPSettings() {
 							<div className="flex items-center gap-1.5">
 								{envCheck.node_version ? (
 									<>
-										<CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+										<CheckCircle2
+											className="w-3.5 h-3.5 bai-icon-mint"
+											strokeWidth={1.5}
+										/>
 										<span className="font-mono text-text-primary">
 											{envCheck.node_version}
 										</span>
@@ -298,7 +301,10 @@ export function MCPSettings() {
 							<div className="flex items-center gap-1.5">
 								{envCheck.npx_version ? (
 									<>
-										<CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+										<CheckCircle2
+											className="w-3.5 h-3.5 bai-icon-mint"
+											strokeWidth={1.5}
+										/>
 										<span className="font-mono text-text-primary">
 											{envCheck.npx_version}
 										</span>
@@ -390,7 +396,7 @@ export function MCPSettings() {
 											{server.name}
 										</h5>
 										{server.status === "running" && (
-											<span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+											<span className="px-2 py-0.5 text-xs bg-mint-500/15 text-mint-600 rounded-full">
 												运行中
 											</span>
 										)}
@@ -420,7 +426,7 @@ export function MCPSettings() {
 											onChange={() => toggleServer(server.id)}
 											className="sr-only peer"
 										/>
-										<div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+										<div className="w-9 h-5 bg-cream-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-cream-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
 									</label>
 									<button
 										onClick={() => handleRemoveServer(server.id)}
@@ -541,16 +547,19 @@ export function MCPSettings() {
 			)}
 
 			{/* Info */}
-			<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+			<div className="p-4 bg-warm-200/60 border border-border rounded-2xl">
 				<div className="flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-					<div className="text-sm text-blue-900">
+					<AlertCircle
+						className="w-5 h-5 text-text-secondary mt-0.5"
+						strokeWidth={1.5}
+					/>
+					<div className="text-sm text-text-primary">
 						<div className="font-medium mb-1">关于 MCP</div>
-						<p className="text-blue-700 mb-2">
+						<p className="text-text-secondary mb-2">
 							Model Context Protocol (MCP)
 							允许应用通过标准化协议连接外部工具和服务。
 						</p>
-						<div className="text-xs text-blue-600">
+						<div className="text-xs text-text-muted">
 							• Playwright: 浏览器自动化和网页抓取
 							<br />• File System: 文件系统访问
 							<br />• Custom: 自定义工具和服务

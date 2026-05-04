@@ -13,14 +13,19 @@ import {
 	ChevronUp,
 	ToggleLeft,
 	ToggleRight,
+	Store,
 } from "lucide-react";
 import { useSkillsStore } from "../../lib/skillsStore";
+import { useUpdateBadge } from "../../lib/skillsMarketplaceStore";
 import { openDirectory } from "../../lib/dialogCompat";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
 import { Select } from "../ui/Select";
+import { MarketplaceList } from "../skills/MarketplaceList";
+import { InstallProgress } from "../skills/InstallProgress";
 
 type FilterType = "all" | "system" | "custom" | "enabled";
+type TabType = "installed" | "marketplace";
 
 interface SkillsViewProps {
 	onNavigateWorkbench?: () => void;
@@ -29,6 +34,8 @@ interface SkillsViewProps {
 export function SkillsView(_props: SkillsViewProps) {
 	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
 		useSkillsStore();
+	const updateCount = useUpdateBadge();
+	const [tab, setTab] = useState<TabType>("installed");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filter, setFilter] = useState<FilterType>("all");
 	const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
@@ -120,9 +127,11 @@ export function SkillsView(_props: SkillsViewProps) {
 					</h2>
 				</div>
 				<div className="flex items-center gap-2">
-					<span className="text-[11px] text-text-light">
-						{enabledCount}/{skills.length} 已启用
-					</span>
+					{tab === "installed" && (
+						<span className="text-[11px] text-text-light">
+							{enabledCount}/{skills.length} 已启用
+						</span>
+					)}
 					<button
 						onClick={handleRefresh}
 						disabled={isLoading}
@@ -131,15 +140,51 @@ export function SkillsView(_props: SkillsViewProps) {
 					>
 						<RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
 					</button>
-					<button
-						onClick={handleImport}
-						disabled={isLoading}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
-						title="导入技能"
-					>
-						<FolderOpen className="w-4 h-4" />
-					</button>
+					{tab === "installed" && (
+						<button
+							onClick={handleImport}
+							disabled={isLoading}
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
+							title="导入本地技能"
+						>
+							<FolderOpen className="w-4 h-4" />
+						</button>
+					)}
 				</div>
+			</div>
+
+			{/* Tabs */}
+			<div className="px-4 pt-3 flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					onClick={() => setTab("installed")}
+					className={cn(
+						"relative px-3 py-1.5 text-[11.5px] font-medium rounded-lg transition-colors",
+						tab === "installed"
+							? "bg-warm-200/80 text-text-primary"
+							: "text-text-muted hover:text-text-secondary hover:bg-warm-200/40",
+					)}
+				>
+					已安装 ({skills.length})
+					{updateCount > 0 && (
+						<span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">
+							{updateCount}
+						</span>
+					)}
+				</button>
+				<button
+					type="button"
+					onClick={() => setTab("marketplace")}
+					className={cn(
+						"px-3 py-1.5 text-[11.5px] font-medium rounded-lg transition-colors flex items-center gap-1.5",
+						tab === "marketplace"
+							? "bg-warm-200/80 text-text-primary"
+							: "text-text-muted hover:text-text-secondary hover:bg-warm-200/40",
+					)}
+				>
+					<Store className="w-3 h-3" />
+					浏览市场
+				</button>
 			</div>
 
 			{/* Error */}
@@ -155,166 +200,177 @@ export function SkillsView(_props: SkillsViewProps) {
 				</div>
 			)}
 
-			{/* Search & Filter */}
-			<div className="px-4 py-3 flex gap-2 shrink-0">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
-					<input
-						type="text"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						placeholder="搜索技能..."
-						className="w-full pl-9 pr-8 py-2 text-xs bg-warm-200/80/50 border-none rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-primary/30"
-					/>
-					{searchQuery && (
-						<button
-							onClick={() => setSearchQuery("")}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary"
-						>
-							<X className="w-3 h-3" />
-						</button>
-					)}
-				</div>
-				<Select
-					value={filter}
-					onChange={(e) => setFilter(e.target.value as FilterType)}
-					variant="compact"
-					options={[
-						{ value: "all", label: "全部" },
-						{ value: "system", label: "系统" },
-						{ value: "custom", label: "自定义" },
-						{ value: "enabled", label: "已启用" },
-					]}
-					containerClassName="w-28"
-				/>
-			</div>
+			{/* 安装中浮层（任何 Tab 都显示） */}
+			<InstallProgress />
 
-			{/* Skills List */}
-			<div className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-6">
-				<div className="space-y-2">
-					{filteredSkills.map((skill) => {
-						const isExpanded = expandedSkillId === skill.name;
-						const isSystem = skill.location === "system";
-						return (
-							<div
-								key={skill.name}
-								className={cn(
-									"group rounded-xl border transition-all duration-200",
-									"border-border/60 bg-surface/50/30",
-									"hover:border-border/60 hover:shadow-sm",
-									isExpanded &&
-										"border-primary/20 dark:border-primary/20 shadow-sm",
-								)}
-							>
-								{/* Main row */}
-								<div
-									className="flex items-center gap-3 px-4 py-3 cursor-pointer"
-									onClick={() =>
-										setExpandedSkillId(isExpanded ? null : skill.name)
-									}
+			{tab === "marketplace" ? (
+				<MarketplaceList />
+			) : (
+				<>
+					{/* Search & Filter */}
+					<div className="px-4 py-3 flex gap-2 shrink-0">
+						<div className="relative flex-1">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
+							<input
+								type="text"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="搜索技能..."
+								className="w-full pl-9 pr-8 py-2 text-xs bg-warm-200/80/50 border-none rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-primary/30"
+							/>
+							{searchQuery && (
+								<button
+									onClick={() => setSearchQuery("")}
+									className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary"
 								>
+									<X className="w-3 h-3" />
+								</button>
+							)}
+						</div>
+						<Select
+							value={filter}
+							onChange={(e) => setFilter(e.target.value as FilterType)}
+							variant="compact"
+							options={[
+								{ value: "all", label: "全部" },
+								{ value: "system", label: "系统" },
+								{ value: "custom", label: "自定义" },
+								{ value: "enabled", label: "已启用" },
+							]}
+							containerClassName="w-28"
+						/>
+					</div>
+
+					{/* Skills List */}
+					<div className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-6">
+						<div className="space-y-2">
+							{filteredSkills.map((skill) => {
+								const isExpanded = expandedSkillId === skill.name;
+								const isSystem = skill.location === "system";
+								return (
 									<div
+										key={skill.name}
 										className={cn(
-											"w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
-											isSystem
-												? "bg-blue-50 dark:bg-blue-500/10 text-blue-500"
-												: "bg-amber-50 dark:bg-amber-500/10 text-amber-500",
+											"group rounded-xl border transition-all duration-200",
+											"border-border/60 bg-surface/50/30",
+											"hover:border-border/60 hover:shadow-sm",
+											isExpanded &&
+												"border-primary/20 dark:border-primary/20 shadow-sm",
 										)}
 									>
-										{isSystem ? (
-											<Package className="w-4 h-4" />
-										) : (
-											<Zap className="w-4 h-4" />
-										)}
-									</div>
-									<div className="flex-1 min-w-0">
-										<div className="flex items-center gap-2">
-											<span className="text-[13px] font-medium text-text-primary dark:text-zinc-200 truncate">
-												{skill.name}
-											</span>
-											<span
+										{/* Main row */}
+										<div
+											className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+											onClick={() =>
+												setExpandedSkillId(isExpanded ? null : skill.name)
+											}
+										>
+											<div
 												className={cn(
-													"text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+													"w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
 													isSystem
-														? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-														: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
+														? "bg-blue-50 dark:bg-blue-500/10 text-blue-500"
+														: "bg-amber-50 dark:bg-amber-500/10 text-amber-500",
 												)}
 											>
-												{isSystem ? "系统" : "自定义"}
-											</span>
+												{isSystem ? (
+													<Package className="w-4 h-4" />
+												) : (
+													<Zap className="w-4 h-4" />
+												)}
+											</div>
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center gap-2">
+													<span className="text-[13px] font-medium text-text-primary dark:text-zinc-200 truncate">
+														{skill.name}
+													</span>
+													<span
+														className={cn(
+															"text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+															isSystem
+																? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+																: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
+														)}
+													>
+														{isSystem ? "系统" : "自定义"}
+													</span>
+												</div>
+												<p className="text-[11px] text-text-muted truncate mt-0.5">
+													{skill.description}
+												</p>
+											</div>
+											<div className="flex items-center gap-1.5 shrink-0">
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														handleToggleSkill(skill.name, skill.enabled);
+													}}
+													className={cn(
+														"transition-colors",
+														skill.enabled
+															? "text-emerald-500"
+															: "text-text-light",
+													)}
+													title={skill.enabled ? "点击禁用" : "点击启用"}
+												>
+													{skill.enabled ? (
+														<ToggleRight className="w-6 h-6" />
+													) : (
+														<ToggleLeft className="w-6 h-6" />
+													)}
+												</button>
+												{isExpanded ? (
+													<ChevronUp className="w-3.5 h-3.5 text-text-light" />
+												) : (
+													<ChevronDown className="w-3.5 h-3.5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity" />
+												)}
+											</div>
 										</div>
-										<p className="text-[11px] text-text-muted truncate mt-0.5">
-											{skill.description}
-										</p>
-									</div>
-									<div className="flex items-center gap-1.5 shrink-0">
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												handleToggleSkill(skill.name, skill.enabled);
-											}}
-											className={cn(
-												"transition-colors",
-												skill.enabled ? "text-emerald-500" : "text-text-light",
-											)}
-											title={skill.enabled ? "点击禁用" : "点击启用"}
-										>
-											{skill.enabled ? (
-												<ToggleRight className="w-6 h-6" />
-											) : (
-												<ToggleLeft className="w-6 h-6" />
-											)}
-										</button>
-										{isExpanded ? (
-											<ChevronUp className="w-3.5 h-3.5 text-text-light" />
-										) : (
-											<ChevronDown className="w-3.5 h-3.5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity" />
+
+										{/* Expanded details */}
+										{isExpanded && (
+											<div className="px-4 pb-3 pt-0 border-t border-border/60">
+												<p className="text-xs text-text-secondary leading-relaxed mt-3 whitespace-pre-wrap">
+													{skill.description}
+												</p>
+												<div className="flex items-center gap-3 mt-3">
+													<span className="text-[10px] text-text-light font-mono truncate">
+														{skill.location}
+													</span>
+													{!isSystem && (
+														<button
+															onClick={() => handleDelete(skill.name)}
+															className="flex items-center gap-1 text-[10px] text-red-500 hover:text-red-600 transition-colors"
+														>
+															<Trash2 className="w-3 h-3" />
+															删除
+														</button>
+													)}
+												</div>
+											</div>
 										)}
 									</div>
-								</div>
+								);
+							})}
+						</div>
 
-								{/* Expanded details */}
-								{isExpanded && (
-									<div className="px-4 pb-3 pt-0 border-t border-border/60">
-										<p className="text-xs text-text-secondary leading-relaxed mt-3 whitespace-pre-wrap">
-											{skill.description}
-										</p>
-										<div className="flex items-center gap-3 mt-3">
-											<span className="text-[10px] text-text-light font-mono truncate">
-												{skill.location}
-											</span>
-											{!isSystem && (
-												<button
-													onClick={() => handleDelete(skill.name)}
-													className="flex items-center gap-1 text-[10px] text-red-500 hover:text-red-600 transition-colors"
-												>
-													<Trash2 className="w-3 h-3" />
-													删除
-												</button>
-											)}
-										</div>
-									</div>
+						{/* Empty state */}
+						{filteredSkills.length === 0 && (
+							<div className="text-center py-10 mt-10">
+								<Zap className="w-8 h-8 text-text-light mx-auto mb-3" />
+								<p className="text-sm text-text-muted font-medium">
+									{searchQuery ? "未找到匹配的技能" : "暂无技能"}
+								</p>
+								{!searchQuery && (
+									<p className="text-xs text-text-light mt-1.5">
+										切到「浏览市场」一键安装，或点击右上角导入本地技能文件夹
+									</p>
 								)}
 							</div>
-						);
-					})}
-				</div>
-
-				{/* Empty state */}
-				{filteredSkills.length === 0 && (
-					<div className="text-center py-10 mt-10">
-						<Zap className="w-8 h-8 text-text-light mx-auto mb-3" />
-						<p className="text-sm text-text-muted font-medium">
-							{searchQuery ? "未找到匹配的技能" : "暂无技能"}
-						</p>
-						{!searchQuery && (
-							<p className="text-xs text-text-light mt-1.5">
-								点击右上角按钮导入技能文件夹
-							</p>
 						)}
 					</div>
-				)}
-			</div>
+				</>
+			)}
 		</div>
 	);
 }

@@ -35,7 +35,7 @@ import {
 import { StatusDot } from "./StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
 
 type FeishuChannelConfig = RemoteControlConfig["channels"]["feishu"];
 
@@ -466,7 +466,7 @@ export function FeishuChannelCard({
 							span2
 						/>
 					</div>
-					<div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+					<div className="rounded-xl border border-peach-500/30 bg-peach-500/10 px-3 py-2 text-xs leading-relaxed text-text-secondary">
 						需要的飞书权限：<code>docx:document</code> /{" "}
 						<code>docx:document:write_only</code> /{" "}
 						<code>docs:document.content:read</code> / <code>drive:drive</code>{" "}
@@ -489,14 +489,14 @@ export function FeishuChannelCard({
 				/>
 
 				{/* 运行状态条 */}
-				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
+				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-200/40 px-4 py-3 text-xs">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">运行状态：</span>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
-								? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-								: "bg-warm-500/10 text-text-muted"
+								? "bg-mint-500/10 text-mint-600"
+								: "bg-warm-200 text-text-muted"
 						}`}
 					>
 						<StatusDot
@@ -509,9 +509,7 @@ export function FeishuChannelCard({
 					<span className="text-text-muted">·</span>
 					<span
 						className={`font-medium ${
-							runtimeChannel?.connected
-								? "text-emerald-600 dark:text-emerald-400"
-								: "text-text-muted"
+							runtimeChannel?.connected ? "text-mint-600" : "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}
@@ -519,7 +517,7 @@ export function FeishuChannelCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-rose-500 dark:text-rose-400">
+							<span className="text-[#b53333]">
 								{runtimeChannel.last_error}
 							</span>
 						</>
@@ -559,13 +557,11 @@ function DocToggle({
 	return (
 		<div
 			className={`flex items-center justify-between rounded-xl border bg-surface px-3 py-2 transition-colors ${
-				danger
-					? "border-rose-200/70 dark:border-rose-900/40"
-					: "border-border/80"
+				danger ? "border-[#b53333]/30" : "border-border"
 			} ${span2 ? "md:col-span-2" : ""}`}
 		>
 			<div
-				className={`text-sm font-medium ${danger ? "text-rose-600 dark:text-rose-400" : "text-text-secondary"}`}
+				className={`text-sm font-medium ${danger ? "text-[#b53333]" : "text-text-secondary"}`}
 			>
 				{label}
 			</div>

@@ -129,7 +129,7 @@ function CopyButton({ text }: { text: string }) {
 	return (
 		<button
 			onClick={handleCopy}
-			className="p-1 hover:bg-warm-200 dark:hover:bg-zinc-700/50 rounded-md transition-colors"
+			className="p-1 hover:bg-warm-200 dark:hover:bg-cream-700/50 rounded-md transition-colors"
 			title="Copy"
 		>
 			{copied ? (
@@ -294,7 +294,7 @@ function ToolCallCard({
 						"bg-surface/40",
 						isRunning
 							? "border-violet-200 dark:border-violet-800/30 shadow-sm"
-							: "border-border/60/60 hover:border-zinc-300",
+							: "border-border/60 hover:border-cream-400",
 					)}
 				>
 					<button
@@ -439,14 +439,14 @@ export default function ToolCallTrace({
 	return (
 		<div className="h-full flex flex-col">
 			{/* 头部摘要 */}
-			<div className="flex-none p-4 border-b border-border bg-surface/50/50 backdrop-blur-sm sticky top-0 z-20">
+			<div className="flex-none p-4 border-b border-border bg-surface/50 backdrop-blur-sm sticky top-0 z-20">
 				<h3 className="text-sm font-semibold text-text-primary dark:text-zinc-200 mb-1">
 					追踪: {task.title || "代理任务"}
 				</h3>
 				<div className="flex items-center gap-2 text-xs text-text-muted">
 					<Clock className="w-3.5 h-3.5" />
 					<span>Started {new Date(task.createdAt).toLocaleTimeString()}</span>
-					<span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+					<span className="w-1 h-1 rounded-full bg-cream-400 dark:bg-cream-600" />
 					<span>{task.toolCalls.length} Steps</span>
 				</div>
 			</div>
@@ -464,7 +464,7 @@ export default function ToolCallTrace({
 
 				{task.status === "executing" && (
 					<div className="pl-[15px] pt-4">
-						<div className="w-1.5 h-1.5 rounded-full bg-warm-300 dark:bg-zinc-700 animate-pulse" />
+						<div className="w-1.5 h-1.5 rounded-full bg-warm-300 dark:bg-cream-700 animate-pulse" />
 					</div>
 				)}
 			</div>

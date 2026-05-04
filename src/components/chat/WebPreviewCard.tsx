@@ -26,9 +26,9 @@ function TerminalPreview({ code }: { code: string }) {
 	}, [code]);
 
 	return (
-		<div className="rounded-xl overflow-hidden border border-border/60/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
+		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
 			{/* 终端头部装饰 */}
-			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80/80 border-b border-border/60/60">
+			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80 border-b border-border/60">
 				<div className="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
 				<div className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
@@ -177,7 +177,7 @@ function FullScreenModal({
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
 			<div className="relative w-[90vw] h-[85vh] max-w-6xl bg-surface rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
 				{/* 模态窗 Header */}
-				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-warm-50/80/80 border-b border-border backdrop-blur-sm">
+				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-warm-50/80 border-b border-border backdrop-blur-sm">
 					{/* 左侧：标题 */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
 						<div className="text-sm font-semibold text-text-primary dark:text-zinc-200 truncate">
@@ -187,7 +187,7 @@ function FullScreenModal({
 
 					{/* 中间：分段控制器 */}
 					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-						<div className="flex items-center p-1 rounded-lg bg-warm-300/50/50 border border-border/50/50">
+						<div className="flex items-center p-1 rounded-lg bg-warm-300/50 border border-border/50">
 							<button
 								type="button"
 								onClick={() => setViewMode("code")}
@@ -195,7 +195,7 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                                     ${
 																			viewMode === "code"
-																				? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+																				? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
 																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
@@ -210,7 +210,7 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                                     ${
 																			viewMode === "preview"
-																				? "bg-surface dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+																				? "bg-surface dark:bg-cream-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
 																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
@@ -241,7 +241,7 @@ function FullScreenModal({
 				</div>
 
 				{/* 模态窗内容区 */}
-				<div className="flex-1 overflow-hidden bg-warm-50/50/50 relative">
+				<div className="flex-1 overflow-hidden bg-warm-50/50 relative">
 					{/* 代码视图 */}
 					<div
 						className={`

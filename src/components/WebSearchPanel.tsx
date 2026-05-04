@@ -104,9 +104,9 @@ export default function WebSearchPanel({
 	};
 
 	const engines = [
-		{ id: "duckduckgo", name: "DuckDuckGo", icon: "🦆" },
-		{ id: "bing", name: "Bing", icon: "🔍" },
-		{ id: "google", name: "Google", icon: "🌐" },
+		{ id: "duckduckgo", name: "DuckDuckGo" },
+		{ id: "bing", name: "Bing" },
+		{ id: "google", name: "Google" },
 	] as const;
 
 	return (
@@ -138,15 +138,14 @@ export default function WebSearchPanel({
 							key={engine.id}
 							onClick={() => setSelectedEngine(engine.id)}
 							className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                px-3 py-1.5 rounded-full text-xs font-medium transition-colors
                 ${
 									selectedEngine === engine.id
-										? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-										: "text-text-muted hover:bg-warm-200"
+										? "bg-warm-200 text-text-primary"
+										: "text-text-muted hover:bg-warm-200/60"
 								}
               `}
 						>
-							<span className="mr-1">{engine.icon}</span>
 							{engine.name}
 						</button>
 					))}
@@ -162,7 +161,7 @@ export default function WebSearchPanel({
 						onClick={() => setUseBrowser(!useBrowser)}
 						className={`
               relative w-9 h-5 rounded-full transition-colors
-              ${useBrowser ? "bg-blue-500" : "bg-warm-300 dark:bg-zinc-700"}
+              ${useBrowser ? "bg-blue-500" : "bg-warm-300 dark:bg-cream-700"}
             `}
 					>
 						<span
@@ -199,7 +198,7 @@ export default function WebSearchPanel({
 				<button
 					onClick={handleSearch}
 					disabled={isSearching || !query.trim()}
-					className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+					className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-cream-400 dark:disabled:bg-cream-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
 				>
 					{isSearching ? (
 						<>

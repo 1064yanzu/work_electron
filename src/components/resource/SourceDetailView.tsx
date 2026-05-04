@@ -335,7 +335,7 @@ export const SourceDetailView = forwardRef<
 						onClick={() => setContentContextMenu(null)}
 					/>
 					<div
-						className="fixed z-50 bg-surface rounded-xl shadow-lg border border-border py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
+						className="fixed z-50 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
 						style={{ left: contentContextMenu.x, top: contentContextMenu.y }}
 					>
 						<button
@@ -343,7 +343,7 @@ export const SourceDetailView = forwardRef<
 								handleInsertSelection();
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 flex items-center gap-2"
 						>
 							<Quote className="w-4 h-4" />
 							引用到编辑器
@@ -356,7 +356,7 @@ export const SourceDetailView = forwardRef<
 								}
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 flex items-center gap-2"
 						>
 							<Copy className="w-4 h-4" />
 							复制
@@ -366,7 +366,7 @@ export const SourceDetailView = forwardRef<
 			)}
 
 			{/* Header */}
-			<div className="px-4 py-3 flex items-center gap-2 border-b border-border shrink-0 bg-surface/50/50 backdrop-blur-sm">
+			<div className="px-4 py-3 flex items-center gap-2 border-b border-border shrink-0 bg-surface/50 backdrop-blur-sm">
 				<button
 					onClick={handleCloseDetail}
 					className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"

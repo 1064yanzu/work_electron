@@ -796,7 +796,7 @@ export default function ToolCallInline({
 							className={cn(
 								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
 								canPreviewFile
-									? "hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 cursor-pointer"
+									? "hover:bg-warm-300/70 dark:hover:bg-cream-700/60 cursor-pointer"
 									: "cursor-default",
 							)}
 							title={canPreviewFile ? "点击预览" : fileName}

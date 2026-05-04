@@ -46,10 +46,60 @@ export interface ThemeDefinition {
 	dark: ThemeColors;
 }
 
-// ━━━ 1. 经典（默认 — 陶土暖色调） ━━━
+// ━━━ 0. B.AI 极简（新默认 — 奶油暖白 + 黑色单色 + 1% 彩色锚点） ━━━
+const bai: ThemeDefinition = {
+	id: "bai",
+	name: "暖调极简",
+	description: "奶油暖白底色，黑色单色界面 + 1% 彩色锚点",
+	preview: { bg: "#FAF9F5", accent: "#1A1A19", text: "#1A1A19" },
+	light: {
+		"--t-bg": "#FAF9F5",
+		"--t-bg-surface": "#FFFFFF",
+		"--t-bg-muted": "#F4F2EC",
+		"--t-bg-panel": "rgba(250,249,245,0.82)",
+		"--t-bg-panel-strong": "rgba(255,255,255,0.92)",
+		"--t-border": "#E8E5DD",
+		"--t-border-subtle": "rgba(26,26,25,0.04)",
+		"--t-primary": "#1A1A19",
+		"--t-primary-hover": "#2A2A28",
+		"--t-primary-muted": "rgba(26,26,25,0.06)",
+		"--t-primary-fg": "#FFFFFF",
+		"--t-text-primary": "#1A1A19",
+		"--t-text-secondary": "#6B6B68",
+		"--t-text-muted": "#9D9D98",
+		"--t-ring": "rgba(26,26,25,0.18)",
+		"--t-scrollbar": "#E8E5DD",
+		"--t-scrollbar-hover": "#D8D4C9",
+		"--t-texture-a": "rgba(248,220,203,0.05)",
+		"--t-texture-b": "rgba(157,157,152,0.02)",
+	},
+	dark: {
+		"--t-bg": "#1A1A19",
+		"--t-bg-surface": "#222220",
+		"--t-bg-muted": "#2A2A28",
+		"--t-bg-panel": "rgba(26,26,25,0.78)",
+		"--t-bg-panel-strong": "rgba(34,34,32,0.86)",
+		"--t-border": "#2F2F2C",
+		"--t-border-subtle": "rgba(255,255,255,0.05)",
+		"--t-primary": "#FAF9F5",
+		"--t-primary-hover": "#FFFFFF",
+		"--t-primary-muted": "rgba(250,249,245,0.10)",
+		"--t-primary-fg": "#1A1A19",
+		"--t-text-primary": "#FAF9F5",
+		"--t-text-secondary": "#B5B3AC",
+		"--t-text-muted": "#7E7C76",
+		"--t-ring": "rgba(250,249,245,0.20)",
+		"--t-scrollbar": "#2F2F2C",
+		"--t-scrollbar-hover": "#3D3D3A",
+		"--t-texture-a": "rgba(248,220,203,0.04)",
+		"--t-texture-b": "rgba(157,157,152,0.02)",
+	},
+};
+
+// ━━━ 1. 经典（陶土暖色调） ━━━
 const classic: ThemeDefinition = {
 	id: "classic",
-	name: "经典",
+	name: "经典陶土",
 	description: "温暖的陶土色调，经典羊皮纸质感",
 	preview: { bg: "#f5f4ed", accent: "#c96442", text: "#141413" },
 	light: {
@@ -399,6 +449,7 @@ const amber: ThemeDefinition = {
 
 // ━━━ 所有主题注册 ━━━
 export const ALL_THEMES: ThemeDefinition[] = [
+	bai,
 	classic,
 	ocean,
 	forest,
@@ -412,4 +463,4 @@ export const THEME_MAP = new Map<string, ThemeDefinition>(
 	ALL_THEMES.map((t) => [t.id, t]),
 );
 
-export const DEFAULT_THEME_ID = "classic";
+export const DEFAULT_THEME_ID = "bai";

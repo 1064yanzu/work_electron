@@ -69,10 +69,8 @@ export function OutputEditor() {
 		<aside className="w-[400px] min-w-[300px] bg-panel-output flex flex-col h-full border-l border-border">
 			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm">
 				<div className="flex items-center gap-2 text-text-secondary">
-					<PenTool className="w-5 h-5 text-primary" />
-					<h2 className="font-serif font-medium tracking-wide text-sm">
-						Output Stage
-					</h2>
+					<PenTool className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+					<h2 className="font-semibold tracking-tight text-sm">Output Stage</h2>
 				</div>
 				<div className="flex gap-1">
 					<button

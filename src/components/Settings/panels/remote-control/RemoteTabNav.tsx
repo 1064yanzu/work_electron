@@ -59,13 +59,13 @@ export function RemoteTabNav({
 		<div
 			ref={containerRef}
 			className={cn(
-				"relative flex items-center gap-1 rounded-2xl border border-border/70 bg-surface/80 p-1 shadow-[0_1px_4px_rgba(0,0,0,0.03)] backdrop-blur/60",
+				"relative flex items-center gap-1 rounded-2xl border border-border bg-surface/80 p-1 shadow-bai-card backdrop-blur/60",
 				className,
 			)}
 		>
 			{/* 指示条 */}
 			<span
-				className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-b from-zinc-100 to-zinc-50 shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] transition-[left,width] duration-300 ease-out dark:from-zinc-800 dark:to-zinc-800/70 dark:ring-white/[0.04]"
+				className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-warm-200 transition-[left,width] duration-300 ease-out"
 				style={{ left: indicator.left, width: indicator.width }}
 			/>
 
@@ -74,12 +74,12 @@ export function RemoteTabNav({
 				const isActive = tab.key === active;
 				const badgeToneClass =
 					tab.badgeTone === "emerald"
-						? "bg-emerald-500 text-white"
+						? "bg-mint-500/15 text-mint-600"
 						: tab.badgeTone === "rose"
-							? "bg-rose-500 text-white"
+							? "bg-[#b53333]/[0.1] text-[#b53333]"
 							: tab.badgeTone === "amber"
-								? "bg-amber-500 text-white"
-								: "bg-zinc-300 text-text-secondary dark:bg-zinc-700 dark:text-zinc-200";
+								? "bg-peach-500/15 text-peach-500"
+								: "bg-warm-300 text-text-secondary";
 				return (
 					<button
 						key={tab.key}
@@ -100,7 +100,7 @@ export function RemoteTabNav({
 								"h-4 w-4 transition-colors",
 								isActive ? "text-primary" : "",
 							)}
-							strokeWidth={isActive ? 2 : 1.75}
+							strokeWidth={1.5}
 						/>
 						<span>{tab.label}</span>
 						{typeof tab.badge === "number" && tab.badge > 0 ? (

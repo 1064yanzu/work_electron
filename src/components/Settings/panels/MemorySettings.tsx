@@ -1,13 +1,20 @@
 import {
 	BarChart3,
+	Bolt,
 	ChevronDown,
 	ChevronRight,
+	ClipboardList,
 	Database,
 	Edit3,
 	Eye,
 	Hash,
+	Lightbulb,
+	Link2,
 	Loader2,
+	type LucideIcon,
+	Pin,
 	Plus,
+	RotateCw,
 	Search,
 	Trash2,
 	X,
@@ -29,40 +36,37 @@ import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 
 const CATEGORY_CONFIG: Record<
 	MemoryCategory,
-	{ label: string; color: string; icon: string }
+	{ label: string; color: string; icon: LucideIcon }
 > = {
 	instruction: {
 		label: "指令",
-		color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-		icon: "⚡",
+		color: "bg-warm-200 text-text-primary",
+		icon: Bolt,
 	},
 	preference: {
 		label: "偏好",
-		color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-		icon: "💡",
+		color: "bg-warm-200 text-text-primary",
+		icon: Lightbulb,
 	},
 	fact: {
 		label: "事实",
-		color:
-			"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-		icon: "📌",
+		color: "bg-warm-200 text-text-primary",
+		icon: Pin,
 	},
 	context: {
 		label: "上下文",
-		color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
-		icon: "🔗",
+		color: "bg-warm-200 text-text-primary",
+		icon: Link2,
 	},
 	task_result: {
 		label: "历史结果",
-		color:
-			"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-		icon: "📋",
+		color: "bg-warm-200 text-text-primary",
+		icon: ClipboardList,
 	},
 	user_habit: {
 		label: "习惯",
-		color:
-			"bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-		icon: "🔄",
+		color: "bg-warm-200 text-text-primary",
+		icon: RotateCw,
 	},
 };
 
@@ -298,7 +302,7 @@ export function MemorySettings() {
 				<button
 					type="button"
 					onClick={handleSearch}
-					className="px-4 py-2 text-sm font-medium bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-text-secondary rounded-lg transition-colors cursor-pointer"
+					className="px-4 py-2 text-sm font-medium bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary rounded-lg transition-colors cursor-pointer"
 				>
 					搜索
 				</button>
@@ -308,7 +312,7 @@ export function MemorySettings() {
 					className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
 						showContextPreview
 							? "bg-primary/10 text-primary dark:bg-primary/20"
-							: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-text-secondary"
+							: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary"
 					}`}
 					title="预览注入到 Agent 的记忆上下文"
 				>
@@ -415,13 +419,14 @@ function MemoryStatsBar({
 				<BarChart3 className="w-4 h-4" />
 				<span className="text-sm font-medium">共 {stats.total} 条</span>
 			</div>
-			<div className="w-px h-4 bg-warm-300 dark:bg-zinc-700" />
+			<div className="w-px h-4 bg-warm-300 dark:bg-cream-700" />
 			{Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
 				const count = stats.byCategory[key] ?? 0;
 				if (count === 0) return null;
+				const Icon = config.icon;
 				return (
 					<div key={key} className="flex items-center gap-1">
-						<span className="text-xs">{config.icon}</span>
+						<Icon className="w-3 h-3 text-text-secondary" strokeWidth={1.5} />
 						<span className="text-xs text-text-muted">{config.label}</span>
 						<span className="text-xs font-medium text-text-secondary">
 							{count}
@@ -579,6 +584,7 @@ function MemoryGroup({
 	onDelete: (id: string) => void;
 }) {
 	const config = CATEGORY_CONFIG[category];
+	const Icon = config.icon;
 
 	return (
 		<div className="rounded-xl border border-border/70 overflow-hidden">
@@ -589,11 +595,11 @@ function MemoryGroup({
 				className="w-full flex items-center gap-2 px-4 py-2.5 bg-warm-50/50 hover:bg-warm-200/50 transition-colors cursor-pointer"
 			>
 				{collapsed ? (
-					<ChevronRight className="w-4 h-4 text-text-light" />
+					<ChevronRight className="w-4 h-4 text-text-light" strokeWidth={1.5} />
 				) : (
-					<ChevronDown className="w-4 h-4 text-text-light" />
+					<ChevronDown className="w-4 h-4 text-text-light" strokeWidth={1.5} />
 				)}
-				<span className="text-sm">{config.icon}</span>
+				<Icon className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
 				<span className="text-sm font-medium text-text-secondary">
 					{config.label}
 				</span>

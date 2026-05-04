@@ -114,7 +114,7 @@ export function Modal({
 			{/* 遮罩层 */}
 			<div
 				className={cn(
-					"absolute inset-0 bg-text-primary/25/60 backdrop-blur-sm",
+					"absolute inset-0 bg-text-primary/20 backdrop-blur-sm",
 					isClosing ? "animate-fade-out" : "animate-fade-in",
 				)}
 			/>
@@ -124,7 +124,7 @@ export function Modal({
 				className={cn(
 					"relative w-full rounded-2xl",
 					"bg-surface",
-					"shadow-[rgba(0,0,0,0.08)_0px_16px_48px_-8px]",
+					"shadow-[0_8px_32px_0_rgb(26_26_25/0.08)]",
 					"border border-border",
 					"overflow-hidden",
 					isClosing ? "animate-scale-out" : "animate-scale-in",
@@ -136,10 +136,10 @@ export function Modal({
 				initialFocusRef={initialFocusRef}
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-warm-200 px-6 py-4 bg-background/60/40">
+				<div className="flex items-center justify-between border-b border-border px-6 py-4">
 					<h3
 						id="modal-title"
-						className="font-serif font-medium text-lg text-text-primary"
+						className="font-semibold text-base text-text-primary tracking-tight"
 					>
 						{title}
 					</h3>
@@ -153,12 +153,12 @@ export function Modal({
 								"text-text-muted",
 								"hover:text-text-primary",
 								"hover:bg-warm-200",
-								"btn-spring",
-								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3898ec]/50",
+								"transition-transform duration-150 ease-out-expo active:scale-[0.96]",
+								"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
 							)}
 							aria-label="关闭"
 						>
-							<X className="h-4 w-4" />
+							<X className="h-4 w-4" strokeWidth={1.5} />
 						</button>
 					)}
 				</div>
@@ -168,7 +168,7 @@ export function Modal({
 
 				{/* Footer */}
 				{footer && (
-					<div className="flex items-center justify-end gap-3 border-t border-warm-200 px-6 py-4 bg-background/60/40">
+					<div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
 						{footer}
 					</div>
 				)}

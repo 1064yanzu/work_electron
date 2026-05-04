@@ -32,7 +32,7 @@ export function PlanModeToggle({
 						"absolute top-0.5 h-[calc(100%-4px)] rounded-md transition-all duration-200 ease-out",
 						planMode
 							? "bg-[#D96C46] shadow-sm left-[calc(50%+1px)] w-[calc(50%-3px)]"
-							: "bg-surface dark:bg-zinc-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
+							: "bg-surface dark:bg-cream-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
 					)}
 				/>
 

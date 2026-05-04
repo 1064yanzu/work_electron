@@ -224,7 +224,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								<button
 									type="button"
 									onClick={() => rejectDiff(diff.id)}
-									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-text-muted hover:bg-warm-300/60 dark:hover:bg-zinc-700/60 transition-colors"
+									className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-text-muted hover:bg-warm-300/60 dark:hover:bg-cream-700/60 transition-colors"
 								>
 									<X className="w-3 h-3" />
 									拒绝

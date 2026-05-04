@@ -37,7 +37,7 @@ export function SettingsSectionCard({
 	return (
 		<div
 			className={cn(
-				"rounded-2xl border border-border ring-1 ring-black/[0.03] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-colors duration-300",
+				"rounded-2xl border border-border shadow-bai-card transition-colors duration-300",
 				className,
 			)}
 			style={{ backgroundColor: "var(--t-bg-surface)" }}

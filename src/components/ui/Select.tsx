@@ -360,7 +360,7 @@ function SelectComponent(
 					text-left
 
 					hover:bg-warm-50/80
-					hover:border-zinc-300 dark:hover:border-zinc-600
+					hover:border-cream-400 dark:hover:border-cream-500
 					hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]
 
 					focus:outline-none
@@ -413,7 +413,7 @@ function SelectComponent(
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-surface rounded-xl border border-border shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
 					>
 						<div
 							data-select-dropdown-scroll=""

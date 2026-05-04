@@ -150,7 +150,7 @@ function ToolCallCard({
 				<div className="px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
 					{/* 输入参数 */}
 					{toolCall.input && Object.keys(toolCall.input).length > 0 && (
-						<div className="p-2 bg-surface/50/50 rounded-lg">
+						<div className="p-2 bg-surface/50 rounded-lg">
 							<p className="text-xs font-medium text-text-muted mb-1">输入</p>
 							<pre className="text-xs text-text-secondary overflow-x-auto">
 								{JSON.stringify(toolCall.input, null, 2)}
@@ -160,7 +160,7 @@ function ToolCallCard({
 
 					{/* 输出结果 */}
 					{toolCall.output && (
-						<div className="p-2 bg-surface/50/50 rounded-lg">
+						<div className="p-2 bg-surface/50 rounded-lg">
 							<p className="text-xs font-medium text-text-muted mb-1">输出</p>
 							<pre className="text-xs text-text-secondary overflow-x-auto max-h-32">
 								{typeof toolCall.output === "string"

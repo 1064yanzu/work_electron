@@ -93,7 +93,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 	);
 
 	return (
-		<div className="mx-3 mt-3 rounded-2xl border border-border/80/80 bg-surface/90/60 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<div className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/90/60 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border/70 flex items-center justify-between">
 				<div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 展开的 issue 列表 */}
 				{expandedKind && grouped[expandedKind].length > 0 && (
-					<div className="rounded-xl border border-border/70/70 bg-warm-50/50/30 max-h-60 overflow-y-auto">
+					<div className="rounded-xl border border-border/70 bg-warm-50/50/30 max-h-60 overflow-y-auto">
 						{grouped[expandedKind].slice(0, 50).map((issue, i) => (
 							<button
 								key={`${issue.page_slug}-${i}`}
@@ -182,7 +182,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 							</button>
 						))}
 						{grouped[expandedKind].length > 50 && (
-							<div className="px-3 py-2 text-[11px] text-text-light bg-warm-200/50/50">
+							<div className="px-3 py-2 text-[11px] text-text-light bg-warm-200/50">
 								…还有 {grouped[expandedKind].length - 50} 条
 							</div>
 						)}

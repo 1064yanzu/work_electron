@@ -307,9 +307,9 @@ export function ArtifactSettings() {
 			</SettingsSectionCard>
 
 			{/* 手动清理 */}
-			<SettingsSectionCard className="ring-orange-100">
+			<SettingsSectionCard>
 				<div className="p-5">
-					<SettingsSectionTitle className="text-orange-500">
+					<SettingsSectionTitle className="text-text-primary">
 						手动清理
 					</SettingsSectionTitle>
 					<div className="flex gap-3">

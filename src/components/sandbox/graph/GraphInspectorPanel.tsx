@@ -160,7 +160,7 @@ export function GraphInspectorPanel({
 			)}
 		>
 			<div className="h-full rounded-3xl bg-surface/90/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
-				<div className="px-4 py-3 border-b border-border/60/60 flex items-start justify-between gap-3">
+				<div className="px-4 py-3 border-b border-border/60 flex items-start justify-between gap-3">
 					<div className="min-w-0">
 						<div className="text-sm font-semibold text-text-primary truncate">
 							{title}
@@ -235,7 +235,7 @@ export function GraphInspectorPanel({
 										onClick={() =>
 											copy("input", safeJson(selectedToolCall.input))
 										}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-cream-700/60 transition-colors"
 									>
 										{copiedTag === "input" ? (
 											<Check className="w-4 h-4" />
@@ -249,7 +249,7 @@ export function GraphInspectorPanel({
 										onClick={() =>
 											copy("output", safeJson(selectedToolCall.output))
 										}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-cream-700/60 transition-colors"
 									>
 										{copiedTag === "output" ? (
 											<Check className="w-4 h-4" />
@@ -262,7 +262,7 @@ export function GraphInspectorPanel({
 
 								{artifactsForTool.length > 0 ? (
 									<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-										<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
+										<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60">
 											关联产物
 										</div>
 										<div className="p-2 space-y-1">
@@ -286,7 +286,7 @@ export function GraphInspectorPanel({
 								) : null}
 
 								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60">
 										输入
 									</div>
 									<pre className="px-3 py-2 text-[11px] text-text-secondary dark:text-zinc-200 whitespace-pre-wrap break-words">
@@ -295,7 +295,7 @@ export function GraphInspectorPanel({
 								</div>
 
 								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60">
 										输出
 									</div>
 									<pre className="px-3 py-2 text-[11px] text-text-secondary dark:text-zinc-200 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
@@ -312,7 +312,7 @@ export function GraphInspectorPanel({
 						) : selectedArtifact ? (
 							<>
 								<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
+									<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60">
 										路径
 									</div>
 									<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-zinc-200 break-words">
@@ -332,7 +332,7 @@ export function GraphInspectorPanel({
 										<button
 											type="button"
 											onClick={() => copy("path", selectedArtifact.url!)}
-											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-zinc-700/60 transition-colors"
+											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-warm-200 text-text-secondary dark:text-zinc-200 text-xs font-medium hover:bg-warm-300/70 dark:hover:bg-cream-700/60 transition-colors"
 										>
 											{copiedTag === "path" ? (
 												<Check className="w-4 h-4" />
@@ -346,7 +346,7 @@ export function GraphInspectorPanel({
 							</>
 						) : isTaskSelected ? (
 							<div className="rounded-2xl bg-warm-50/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
-								<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60/60">
+								<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border/60">
 									任务描述
 								</div>
 								<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-zinc-200 break-words">
@@ -361,7 +361,7 @@ export function GraphInspectorPanel({
 
 				{/* 子代理切换器 — 当选中子代理且同组有 2+ 个时显示 */}
 				{!collapsed && siblingSubagents.length >= 2 && onSelectNode ? (
-					<div className="border-t border-border/60/60 px-3 py-2.5">
+					<div className="border-t border-border/60 px-3 py-2.5">
 						<div className="text-[11px] font-medium text-text-muted mb-2">
 							同组 Agent ({siblingSubagents.length})
 						</div>
@@ -378,7 +378,7 @@ export function GraphInspectorPanel({
 											? "bg-primary animate-pulse"
 											: tc.status === "error"
 												? "bg-rose-500"
-												: "bg-zinc-400";
+												: "bg-cream-500";
 								return (
 									<button
 										key={tc.id}
@@ -388,7 +388,7 @@ export function GraphInspectorPanel({
 											"shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors",
 											isActive
 												? "bg-primary/15 text-primary ring-1 ring-primary/25"
-												: "bg-warm-200/60 text-text-secondary hover:bg-warm-300/70 dark:hover:bg-zinc-700/50",
+												: "bg-warm-200/60 text-text-secondary hover:bg-warm-300/70 dark:hover:bg-cream-700/50",
 										)}
 									>
 										<span

@@ -5,12 +5,10 @@ export function RemoteStatusBadge(props: {
 	tone: "green" | "amber" | "red" | "zinc";
 }) {
 	const toneClass = {
-		green:
-			"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
-		amber:
-			"border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
-		red: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300",
-		zinc: "border-border bg-warm-50 text-text-secondary",
+		green: "border-mint-500/30 bg-mint-500/10 text-mint-600",
+		amber: "border-peach-500/30 bg-peach-500/10 text-peach-500",
+		red: "border-[#b53333]/30 bg-[#b53333]/[0.08] text-[#b53333]",
+		zinc: "border-border bg-warm-200 text-text-secondary",
 	} as const;
 	return (
 		<span

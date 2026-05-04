@@ -135,7 +135,10 @@ export class AgentEventHandler {
 			switch (event.type) {
 				case "text":
 					// 'text' 是完整快照，只取相对于已发送文本的新增部分
-					if (typeof event.content === "string" && event.content.length > this.streamedVisibleText.length) {
+					if (
+						typeof event.content === "string" &&
+						event.content.length > this.streamedVisibleText.length
+					) {
 						const delta = event.content.slice(this.streamedVisibleText.length);
 						if (delta) {
 							this.streamedVisibleText = event.content;

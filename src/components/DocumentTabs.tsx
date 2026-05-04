@@ -112,7 +112,7 @@ const DocumentTabItem = memo(function DocumentTabItem({
 			<button
 				type="button"
 				onClick={() => onClose(docId)}
-				className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-300/80 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
+				className="focus-ring min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-300/80 dark:hover:bg-cream-700/80 transition-colors cursor-pointer"
 				aria-label={`关闭文档 ${label}`}
 				title="关闭文档"
 			>
@@ -312,7 +312,7 @@ export default function DocumentTabs({
 	if (openedDocs.length === 0) return null;
 
 	return (
-		<div className="doc-toolbar border-b border-border/70/70 px-2 py-1.5 flex items-center gap-1.5">
+		<div className="doc-toolbar border-b border-border/70 px-2 py-1.5 flex items-center gap-1.5">
 			<div
 				ref={tabsRef}
 				className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide"
@@ -349,7 +349,7 @@ export default function DocumentTabs({
 				<button
 					type="button"
 					onClick={onNewDoc}
-					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+					className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 transition-colors cursor-pointer"
 					aria-label="新建文档"
 					title="新建文档 (Cmd+N)"
 				>

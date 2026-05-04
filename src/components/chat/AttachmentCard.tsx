@@ -116,7 +116,7 @@ export function AttachmentCard({
 				"flex items-center gap-2 rounded-xl",
 				"bg-surface",
 				"border border-border",
-				"hover:border-zinc-300 dark:hover:border-zinc-600",
+				"hover:border-cream-400 dark:hover:border-cream-500",
 				"transition-colors duration-200",
 				"cursor-default shadow-sm",
 				variant === "chip" ? "px-2.5 py-1.5" : "px-3 py-2",
@@ -126,7 +126,7 @@ export function AttachmentCard({
 			{/* 图标容器 */}
 			<div
 				className={cn(
-					"flex items-center justify-center rounded-lg bg-warm-200 dark:bg-zinc-700",
+					"flex items-center justify-center rounded-lg bg-warm-200 dark:bg-cream-700",
 					variant === "chip" ? "w-6 h-6" : "w-7 h-7",
 				)}
 			>
@@ -149,7 +149,7 @@ export function AttachmentCard({
 				<button
 					type="button"
 					onClick={onRemove}
-					className="p-1 rounded-lg hover:bg-warm-200 dark:hover:bg-zinc-700/50 text-text-light hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
+					className="p-1 rounded-lg hover:bg-warm-200 dark:hover:bg-cream-700/50 text-text-light hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
 					title="移除"
 				>
 					<X className="w-4 h-4" />

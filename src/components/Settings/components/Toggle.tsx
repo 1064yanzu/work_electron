@@ -16,12 +16,12 @@ export function Toggle({ checked, onChange, size = "md" }: ToggleProps) {
 			role="switch"
 			aria-checked={checked}
 			onClick={onChange}
-			className={`relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/20 ${sizeClasses.track} ${
-				checked ? "bg-emerald-500" : "bg-warm-300"
+			className={`relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${sizeClasses.track} ${
+				checked ? "bg-primary" : "bg-warm-300"
 			}`}
 		>
 			<span
-				className={`pointer-events-none inline-block rounded-full bg-surface shadow-lg ring-0 transition-transform duration-200 ease-in-out ${sizeClasses.dot} ${
+				className={`pointer-events-none inline-block rounded-full bg-surface shadow-bai-card ring-0 transition-transform duration-200 ease-in-out ${sizeClasses.dot} ${
 					checked ? sizeClasses.translate : "translate-x-0"
 				}`}
 				style={{ marginTop: "2px", marginLeft: "2px" }}

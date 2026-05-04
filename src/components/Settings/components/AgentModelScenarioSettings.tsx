@@ -10,7 +10,7 @@ import {
 	Plus,
 	Cpu,
 	Trash2,
-	Zap,
+	Layers,
 	PenTool,
 	Search,
 	Code2,
@@ -41,7 +41,7 @@ import {
 
 // Icon mapping for Scenarios
 const SCENARIO_ICONS: Record<string, any> = {
-	default: Zap,
+	default: Layers,
 	fast_search: Search,
 	code_review: Code2,
 	deep_analysis: Microscope,
@@ -66,7 +66,7 @@ const Card = ({
 }) => (
 	<div
 		onClick={onClick}
-		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-zinc-300/80 transition-all duration-200 ${className}`}
+		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-cream-400/80 transition-all duration-200 ${className}`}
 	>
 		{children}
 	</div>
@@ -265,7 +265,10 @@ export function AgentModelScenarioSettings() {
 					<div className="p-4 flex flex-col justify-between">
 						<div className="mb-2">
 							<div className="flex items-center gap-2 font-medium text-text-primary text-sm">
-								<Zap className="w-4 h-4 text-amber-500" />
+								<Layers
+									className="w-4 h-4 text-text-secondary"
+									strokeWidth={1.5}
+								/>
 								默认模型
 							</div>
 							<p className="text-xs text-text-light mt-1">兜底使用的基础模型</p>
@@ -324,7 +327,7 @@ export function AgentModelScenarioSettings() {
 				<Card className="p-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
-							<div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+							<div className="p-2 rounded-lg bg-warm-200 text-text-secondary">
 								<Archive className="w-4 h-4" />
 							</div>
 							<div>
@@ -337,7 +340,7 @@ export function AgentModelScenarioSettings() {
 							</div>
 						</div>
 						<div
-							className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${settings.contextCompression?.enabled ? "bg-blue-600" : "bg-warm-300"}`}
+							className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${settings.contextCompression?.enabled ? "bg-primary" : "bg-warm-300"}`}
 							onClick={() =>
 								store.updateContextCompression({
 									enabled: !settings.contextCompression?.enabled,
@@ -376,7 +379,7 @@ export function AgentModelScenarioSettings() {
 												threshold: parseInt(e.target.value),
 											})
 										}
-										className="flex-1 h-1.5 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700"
+										className="flex-1 h-1.5 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary"
 									/>
 									<span className="text-[10px] text-text-light">100k</span>
 								</div>
@@ -500,7 +503,7 @@ export function AgentModelScenarioSettings() {
 										<div className="flex items-center border-l pl-3 ml-2 border-border gap-1">
 											<button
 												onClick={() => handleToggle(config)}
-												className={`p-2 rounded-lg transition-colors ${config.enabled ? "text-green-600 bg-green-50 hover:bg-green-100" : "text-text-light hover:bg-warm-200"}`}
+												className={`p-2 rounded-lg transition-colors ${config.enabled ? "text-mint-600 bg-mint-500/10 hover:bg-mint-500/20" : "text-text-light hover:bg-warm-200"}`}
 												title={config.enabled ? "禁用" : "启用"}
 											>
 												{config.enabled ? (
@@ -511,7 +514,7 @@ export function AgentModelScenarioSettings() {
 											</button>
 											<button
 												onClick={() => handleRemove(config)}
-												className="p-2 text-text-light hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+												className="p-2 text-text-light hover:text-[#b53333] hover:bg-[#b53333]/[0.08] rounded-lg transition-colors opacity-0 group-hover:opacity-100"
 												title="删除"
 											>
 												<Trash2 className="w-4 h-4" />

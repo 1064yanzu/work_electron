@@ -197,7 +197,7 @@ export function LocalBackupManagerModal({
 								type="button"
 								onClick={handleBatchDelete}
 								disabled={isDeleting !== null}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+								className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#b53333] hover:bg-[#b53333]/[0.08] rounded-full transition-colors disabled:opacity-50"
 							>
 								<Trash2 className="w-4 h-4" />
 								删除选中 ({selectedFiles.size})
@@ -208,7 +208,7 @@ export function LocalBackupManagerModal({
 
 				{/* 错误提示 */}
 				{error && (
-					<div className="flex items-center gap-2 px-4 py-3 bg-red-50 text-red-700 text-sm rounded-xl">
+					<div className="flex items-center gap-2 px-4 py-3 bg-[#b53333]/[0.08] text-[#b53333] text-sm rounded-xl border border-[#b53333]/20">
 						<AlertCircle className="w-4 h-4 flex-shrink-0" />
 						{error}
 					</div>
@@ -287,7 +287,7 @@ export function LocalBackupManagerModal({
 										type="button"
 										onClick={() => handleDelete(backup.fileName)}
 										disabled={isRestoring !== null || isDeleting !== null}
-										className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+										className="p-1.5 text-text-light hover:text-[#b53333] hover:bg-[#b53333]/[0.08] rounded transition-colors disabled:opacity-50"
 										title="删除"
 									>
 										{isDeleting === backup.fileName ? (

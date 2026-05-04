@@ -42,9 +42,9 @@ const RISK_LEVEL_CONFIG: Record<
 	ToolRiskLevel,
 	{ label: string; icon: React.ElementType; color: string }
 > = {
-	L0: { label: "低风险", icon: ShieldCheck, color: "text-emerald-600" },
-	L1: { label: "中风险", icon: Shield, color: "text-amber-600" },
-	L2: { label: "高风险", icon: ShieldAlert, color: "text-red-600" },
+	L0: { label: "低风险", icon: ShieldCheck, color: "text-mint-600" },
+	L1: { label: "中风险", icon: Shield, color: "text-peach-500" },
+	L2: { label: "高风险", icon: ShieldAlert, color: "text-[#b53333]" },
 };
 
 const PERMISSION_MODE_OPTIONS: { value: PermissionMode; label: string }[] = [

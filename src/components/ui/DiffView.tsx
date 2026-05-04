@@ -65,7 +65,7 @@ export function DiffView({
 	}, [diffLines]);
 
 	return (
-		<div className="flex flex-col h-full bg-surface rounded-2xl border border-border overflow-hidden shadow-lg">
+		<div className="flex flex-col h-full bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 overflow-hidden shadow-bai-card">
 			{/* Header */}
 			<div className="flex items-center justify-between px-4 py-3 bg-warm-50/50 border-b border-border">
 				<div className="flex items-center gap-3">

@@ -31,7 +31,7 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 	if (!steps || steps.length === 0) return null;
 
 	return (
-		<div className="rounded-xl bg-surface/60/40 ring-1 ring-black/5 dark:ring-white/10">
+		<div className="rounded-xl bg-surface/60 ring-1 ring-black/5 dark:ring-white/10">
 			<div className="px-3 py-2.5 border-b border-black/5 dark:border-white/5">
 				<div className="text-xs font-semibold text-text-secondary dark:text-zinc-200">
 					任务清单

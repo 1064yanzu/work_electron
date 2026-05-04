@@ -157,31 +157,34 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 	};
 
 	return (
-		<aside className="flex-1 border-r border-border dark:border-gray-700 bg-panel-input dark:bg-gray-800 flex flex-col h-full font-sans min-w-0">
+		<aside className="flex-1 border-r border-cream-300 dark:border-cream-500 bg-cream-100 dark:bg-cream-800 flex flex-col h-full font-sans min-w-0">
 			{/* Header */}
-			<div className="p-4 border-b border-border dark:border-gray-700 flex items-center gap-2 shrink-0">
-				<Layers className="w-5 h-5 text-primary" />
-				<h2 className="font-serif font-medium text-sm tracking-wide text-text-secondary">
+			<div className="px-4 py-3.5 border-b border-cream-300 dark:border-cream-500 flex items-center gap-2 shrink-0">
+				<Layers className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+				<h2 className="font-semibold text-[13px] tracking-[-0.01em] text-text-primary">
 					输入码头
 				</h2>
 			</div>
 
 			{/* Search */}
-			<div className="p-3 border-b border-border dark:border-gray-700 bg-surface/50 dark:bg-gray-700/50 shrink-0">
+			<div className="px-3 py-3 border-b border-cream-300 dark:border-cream-500 shrink-0">
 				<div className="relative">
-					<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+					<Search
+						className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+						strokeWidth={1.5}
+					/>
 					<input
 						type="text"
 						placeholder="搜索来源..."
 						value={searchQuery}
 						onChange={(e) => handleSearch(e.target.value)}
-						className="w-full pl-9 pr-3 py-2 text-sm bg-surface dark:bg-gray-700 border border-border dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary dark:text-gray-100 placeholder:text-text-muted dark:placeholder:text-gray-400 transition-all"
+						className="w-full pl-9 pr-3.5 py-2 text-[13px] bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-full focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 text-text-primary placeholder:text-text-muted transition-all"
 					/>
 				</div>
 			</div>
 
 			{/* List */}
-			<div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+			<div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
 				{isLoading ? (
 					<div className="text-center py-8 text-text-muted text-sm">
 						加载中...
@@ -194,17 +197,17 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 					sources.map((source) => (
 						<div
 							key={source.id}
-							className="p-3 bg-surface dark:bg-gray-700 rounded border border-border dark:border-gray-600 shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group"
+							className="p-3 bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-card hover:border-cream-500 hover:shadow-bai-pop transition-all cursor-pointer group"
 						>
-							<div className="flex items-start justify-between mb-1">
-								<div className="font-medium text-sm text-text-primary line-clamp-2">
+							<div className="flex items-start justify-between mb-1.5 gap-2">
+								<div className="font-medium text-[13px] tracking-[-0.005em] text-text-primary line-clamp-2">
 									{source.title}
 								</div>
-								<span className="text-text-muted group-hover:text-primary transition-colors">
+								<span className="text-text-muted shrink-0 group-hover:text-text-primary transition-colors">
 									{getIconForSource(source.kind)}
 								</span>
 							</div>
-							<div className="flex items-center justify-between text-xs text-text-secondary">
+							<div className="flex items-center justify-between text-[11px] text-text-muted">
 								<span className="capitalize">
 									{source.kind === "web"
 										? "网页"
@@ -212,11 +215,13 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 											? "文本"
 											: source.kind}
 								</span>
-								<span>{new Date(source.created_at).toLocaleDateString()}</span>
+								<span className="tabular-nums">
+									{new Date(source.created_at).toLocaleDateString()}
+								</span>
 							</div>
 							{source.url && (
 								<div
-									className="mt-2 text-xs text-primary/80 truncate hover:text-primary hover:underline"
+									className="mt-2 text-[11px] text-text-secondary truncate hover:text-text-primary"
 									title={source.url}
 								>
 									{source.url}
@@ -228,20 +233,20 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			</div>
 
 			{/* Footer Actions */}
-			<div className="p-4 border-t border-border bg-surface shrink-0 space-y-2">
+			<div className="p-3 border-t border-cream-300 dark:border-cream-500 shrink-0 space-y-2">
 				<button
 					onClick={() => setIsAddModalOpen(true)}
-					className="w-full py-2 px-4 bg-surface border border-border text-text-secondary rounded hover:bg-surface hover:text-primary hover:border-primary transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-sm"
+					className="w-full py-2.5 px-4 bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 rounded-full hover:bg-cream-800 dark:hover:bg-cream-100 transition-all text-[13px] font-medium flex items-center justify-center gap-2"
 				>
-					<Plus className="w-4 h-4" />
+					<Plus className="w-4 h-4" strokeWidth={1.5} />
 					新增来源
 				</button>
 
 				<button
 					onClick={onOpenSettings}
-					className="w-full py-2 px-4 flex items-center justify-center gap-2 text-text-muted hover:text-text-primary transition-colors text-xs"
+					className="w-full py-2 px-4 flex items-center justify-center gap-2 text-text-muted hover:text-text-primary transition-colors text-[12px]"
 				>
-					<Settings className="w-3.5 h-3.5" />
+					<Settings className="w-3.5 h-3.5" strokeWidth={1.5} />
 					设置与统计
 				</button>
 			</div>
@@ -254,38 +259,38 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			>
 				<div className="space-y-6">
 					{/* Tabs */}
-					<div className="flex p-1 bg-surface rounded-lg border border-border">
+					<div className="flex p-1 bg-cream-100 dark:bg-cream-800 rounded-full border border-cream-300 dark:border-cream-500">
 						<button
 							onClick={() => setActiveTab("web")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
 								activeTab === "web"
-									? "bg-surface text-primary shadow-sm"
+									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
-							<Link className="w-4 h-4" />
+							<Link className="w-4 h-4" strokeWidth={1.5} />
 							网页
 						</button>
 						<button
 							onClick={() => setActiveTab("text")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
 								activeTab === "text"
-									? "bg-surface text-primary shadow-sm"
+									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
-							<AlignLeft className="w-4 h-4" />
+							<AlignLeft className="w-4 h-4" strokeWidth={1.5} />
 							文本
 						</button>
 						<button
 							onClick={() => setActiveTab("file")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
 								activeTab === "file"
-									? "bg-surface text-primary shadow-sm"
+									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
 									: "text-text-secondary hover:text-text-primary"
 							}`}
 						>
-							<Upload className="w-4 h-4" />
+							<Upload className="w-4 h-4" strokeWidth={1.5} />
 							文件
 						</button>
 					</div>
@@ -293,28 +298,28 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 					{/* Fields */}
 					<div className="space-y-4">
 						<div>
-							<label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
+							<label className="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
 								标题
 							</label>
 							<input
 								type="text"
 								value={newSourceTitle}
 								onChange={(e) => setNewSourceTitle(e.target.value)}
-								className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm"
+								className="w-full px-3.5 py-2 bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-full focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 text-text-primary text-[13px]"
 								placeholder="例如：React 官方文档"
 							/>
 						</div>
 
 						{activeTab === "web" && (
 							<div>
-								<label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
+								<label className="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
 									URL 链接
 								</label>
 								<input
 									type="url"
 									value={newSourceContent}
 									onChange={(e) => setNewSourceContent(e.target.value)}
-									className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm font-mono"
+									className="w-full px-3.5 py-2 bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-full focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 text-text-primary text-[13px] font-mono"
 									placeholder="https://..."
 								/>
 							</div>
@@ -322,14 +327,14 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 
 						{activeTab === "text" && (
 							<div>
-								<label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
+								<label className="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
 									文本内容
 								</label>
 								<textarea
 									value={newSourceContent}
 									onChange={(e) => setNewSourceContent(e.target.value)}
 									rows={6}
-									className="w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary text-sm resize-none"
+									className="w-full px-3.5 py-2.5 bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 text-text-primary text-[13px] resize-none"
 									placeholder="在此粘贴文本..."
 								/>
 							</div>
@@ -337,11 +342,11 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 
 						{activeTab === "file" && (
 							<div>
-								<label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
+								<label className="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
 									选择文件
 								</label>
 								<div
-									className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-surface/50 transition-colors cursor-pointer group relative"
+									className="border border-dashed border-cream-400 dark:border-cream-500 rounded-2xl p-8 text-center hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors cursor-pointer group relative"
 									onClick={() =>
 										document.getElementById("file-upload")?.click()
 									}
@@ -370,24 +375,30 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 									/>
 									{selectedFile ? (
 										<div>
-											<FileText className="w-8 h-8 text-primary mx-auto mb-3" />
-											<div className="text-sm text-text-primary font-medium">
+											<FileText
+												className="w-8 h-8 text-text-primary mx-auto mb-3"
+												strokeWidth={1.5}
+											/>
+											<div className="text-[13px] text-text-primary font-medium">
 												{selectedFile.name}
 											</div>
-											<p className="text-xs text-text-muted mt-1">
+											<p className="text-[11px] text-text-muted mt-1 tabular-nums">
 												{(selectedFile.size / 1024).toFixed(2)} KB
 											</p>
 										</div>
 									) : (
 										<div>
-											<Upload className="w-8 h-8 text-text-muted mx-auto mb-3 group-hover:text-primary transition-colors" />
-											<div className="text-sm text-text-secondary">
-												<span className="text-primary font-medium">
+											<Upload
+												className="w-8 h-8 text-text-muted mx-auto mb-3 group-hover:text-text-primary transition-colors"
+												strokeWidth={1.5}
+											/>
+											<div className="text-[13px] text-text-secondary">
+												<span className="text-text-primary font-medium">
 													点击上传
 												</span>{" "}
 												或拖拽文件至此
 											</div>
-											<p className="text-xs text-text-muted mt-1">
+											<p className="text-[11px] text-text-muted mt-1">
 												支持 PDF, Word, Markdown, 文本, 音频
 											</p>
 										</div>
@@ -401,7 +412,7 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 					<div className="flex justify-end pt-2">
 						<button
 							onClick={handleCreateSource}
-							className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover transition-colors text-sm font-medium shadow-sm"
+							className="px-5 py-2 bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 rounded-full hover:bg-cream-800 dark:hover:bg-cream-100 transition-colors text-[13px] font-medium"
 						>
 							导入来源
 						</button>

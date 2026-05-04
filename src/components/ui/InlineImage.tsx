@@ -202,7 +202,7 @@ export const InlineImage = memo(function InlineImage({
 				<a
 					href={dataUrl}
 					download={downloadName}
-					className="absolute top-2 right-2 inline-flex items-center gap-2 px-2.5 py-2 rounded-xl bg-surface/90/90 text-text-secondary ring-1 ring-black/5 dark:ring-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+					className="absolute top-2 right-2 inline-flex items-center gap-2 px-2.5 py-2 rounded-xl bg-surface/90 text-text-secondary ring-1 ring-black/5 dark:ring-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
 					title="下载"
 					onClick={(e) => e.stopPropagation()}
 				>

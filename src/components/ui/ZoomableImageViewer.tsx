@@ -252,7 +252,7 @@ export function ZoomableImageViewer({
 				>
 					<Plus className="w-4 h-4" />
 				</button>
-				<div className="w-px h-5 bg-warm-300 dark:bg-zinc-700 mx-1" />
+				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700 mx-1" />
 				<button
 					type="button"
 					onClick={setFit}
@@ -271,8 +271,8 @@ export function ZoomableImageViewer({
 					<ZoomIn className="w-3.5 h-3.5" />
 					100%
 				</button>
-				<div className="w-px h-5 bg-warm-300 dark:bg-zinc-700 mx-1" />
-				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-text-muted bg-warm-200/70/70">
+				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700 mx-1" />
+				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-text-muted bg-warm-200/70">
 					<Move className="w-3 h-3" />
 					拖拽
 				</div>

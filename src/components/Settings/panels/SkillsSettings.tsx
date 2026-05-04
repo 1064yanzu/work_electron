@@ -1,4 +1,11 @@
-import { AlertCircle, FolderOpen, RefreshCw, Trash2, Zap } from "lucide-react";
+import {
+	AlertCircle,
+	Blocks,
+	FolderOpen,
+	RefreshCw,
+	Store,
+	Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
 import { openDirectory } from "../../../lib/dialogCompat";
@@ -15,6 +22,7 @@ import {
 	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../ui/SettingsPrimitives";
+import { SourceManager } from "../../skills/SourceManager";
 
 export function SkillsSettings() {
 	const { showTechnicalSummaries } = useSettingsExperience();
@@ -115,7 +123,7 @@ export function SkillsSettings() {
 		return (
 			<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
 				<SettingsPanelHeader
-					icon={Zap}
+					icon={Blocks}
 					title="Agent 技能"
 					description="管理 Agent 技能。"
 				/>
@@ -153,7 +161,7 @@ export function SkillsSettings() {
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
 			<SettingsPanelHeader
-				icon={Zap}
+				icon={Blocks}
 				title="Agent 技能"
 				description="管理 Agent 技能。"
 			/>
@@ -197,7 +205,10 @@ export function SkillsSettings() {
 					<div className="text-center py-8 text-text-muted">加载中...</div>
 				) : skills.length === 0 ? (
 					<div className="text-center py-12 text-text-muted">
-						<Zap className="w-12 h-12 mx-auto mb-3 opacity-30" />
+						<Blocks
+							className="w-12 h-12 mx-auto mb-3 opacity-30"
+							strokeWidth={1.5}
+						/>
 						<p>暂无已安装的技能</p>
 						<p className="text-xs mt-2">点击"导入技能"添加技能文件夹</p>
 					</div>
@@ -263,7 +274,10 @@ export function SkillsSettings() {
 							>
 								<option value="">跟随活跃模型（默认）</option>
 								{allModels.map((model) => (
-									<option key={`${model.provider}-${model.id}`} value={model.id}>
+									<option
+										key={`${model.provider}-${model.id}`}
+										value={model.id}
+									>
 										{model.id} ({model.provider})
 									</option>
 								))}
@@ -273,17 +287,36 @@ export function SkillsSettings() {
 				</div>
 			</SettingsSectionCard>
 
+			{/* Marketplace Sources & Mirrors */}
+			<SettingsSectionCard>
+				<div className="p-5 space-y-4">
+					<div className="flex items-center gap-2">
+						<Store className="w-4 h-4 text-primary" />
+						<SettingsSectionTitle>市场源 & 下载镜像</SettingsSectionTitle>
+					</div>
+					<p className="text-xs text-text-muted leading-relaxed">
+						管理 Skill 市场的注册源（Anthropic 官方 / skills.sh / 腾讯 SkillHub
+						/
+						自定义），以及下载时使用的多镜像。镜像默认并发竞速，最先返回的胜出，国内外用户都可受益；按需点击「测速」查看连通性。
+					</p>
+					<SourceManager />
+				</div>
+			</SettingsSectionCard>
+
 			{/* Info */}
-			<div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
+			<div className="p-4 bg-warm-200/60 border border-border rounded-2xl">
 				<div className="flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-					<div className="text-sm text-blue-900 dark:text-blue-200">
+					<AlertCircle
+						className="w-5 h-5 text-text-secondary mt-0.5"
+						strokeWidth={1.5}
+					/>
+					<div className="text-sm text-text-primary">
 						<div className="font-medium mb-1">关于 Agent Skills</div>
-						<p className="text-blue-700 dark:text-blue-300 mb-2">
+						<p className="text-text-secondary mb-2">
 							技能是一组指导 Agent 完成特定任务的指令和资源，遵循 agentskills.io
 							开放标准。
 						</p>
-						<div className="text-xs text-blue-600 dark:text-blue-400">
+						<div className="text-xs text-text-muted">
 							• 技能目录需包含 SKILL.md 文件
 							<br />• 技能元数据包括 name 和 description
 							<br />• 运行 Agent 时只会同步当前启用的技能到任务沙盒

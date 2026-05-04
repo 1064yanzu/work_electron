@@ -13,17 +13,41 @@
 	--auq-accent: var(--t-primary, #c96442);
 	--auq-accent-hover: var(--t-primary-hover, #b5573a);
 	--auq-accent-fg: var(--t-primary-fg, #faf9f5);
-	--auq-accent-soft: color-mix(in srgb, var(--t-primary, #c96442) 10%, transparent);
-	--auq-accent-softer: color-mix(in srgb, var(--t-primary, #c96442) 6%, transparent);
-	--auq-accent-border: color-mix(in srgb, var(--t-primary, #c96442) 32%, transparent);
-	--auq-accent-ring: color-mix(in srgb, var(--t-primary, #c96442) 18%, transparent);
-	--auq-accent-glow: color-mix(in srgb, var(--t-primary, #c96442) 28%, transparent);
+	--auq-accent-soft: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 10%,
+		transparent
+	);
+	--auq-accent-softer: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 6%,
+		transparent
+	);
+	--auq-accent-border: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 32%,
+		transparent
+	);
+	--auq-accent-ring: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 18%,
+		transparent
+	);
+	--auq-accent-glow: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 28%,
+		transparent
+	);
 
 	--auq-surface: var(--t-bg-surface, #faf9f5);
 	--auq-surface-alt: var(--t-bg, #f5f4ed);
 	--auq-surface-deep: var(--t-bg-muted, #f0eee6);
 	--auq-border: var(--t-border, #e8e6dc);
-	--auq-border-subtle: color-mix(in srgb, var(--t-border, #e8e6dc) 60%, transparent);
+	--auq-border-subtle: color-mix(
+		in srgb,
+		var(--t-border, #e8e6dc) 60%,
+		transparent
+	);
 
 	--auq-text: var(--t-text-primary, #141413);
 	--auq-text-sec: var(--t-text-secondary, #5e5d59);
@@ -31,20 +55,34 @@
 
 	--auq-shadow-card:
 		0 -2px 8px color-mix(in srgb, var(--t-primary, #c96442) 4%, transparent),
-		0 -8px 28px rgba(20, 20, 19, 0.06),
-		0 0 0 1px rgba(20, 20, 19, 0.02);
+		0 -8px 28px rgba(20, 20, 19, 0.06), 0 0 0 1px rgba(20, 20, 19, 0.02);
 }
 
 :is(.dark) .auq-popup-overlay {
-	--auq-accent-soft: color-mix(in srgb, var(--t-primary, #c96442) 14%, transparent);
-	--auq-accent-softer: color-mix(in srgb, var(--t-primary, #c96442) 8%, transparent);
-	--auq-accent-border: color-mix(in srgb, var(--t-primary, #c96442) 38%, transparent);
-	--auq-accent-ring: color-mix(in srgb, var(--t-primary, #c96442) 22%, transparent);
+	--auq-accent-soft: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 14%,
+		transparent
+	);
+	--auq-accent-softer: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 8%,
+		transparent
+	);
+	--auq-accent-border: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 38%,
+		transparent
+	);
+	--auq-accent-ring: color-mix(
+		in srgb,
+		var(--t-primary, #c96442) 22%,
+		transparent
+	);
 
 	--auq-shadow-card:
 		0 -2px 12px color-mix(in srgb, var(--t-primary, #c96442) 10%, transparent),
-		0 -10px 36px rgba(0, 0, 0, 0.45),
-		0 0 0 1px rgba(255, 255, 255, 0.04);
+		0 -10px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 /* ================================================================== */
@@ -69,8 +107,12 @@
 }
 
 @keyframes auq-overlay-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 .auq-popup-backdrop {
@@ -87,11 +129,7 @@
 }
 
 :is(.dark) .auq-popup-backdrop {
-	background: linear-gradient(
-		to top,
-		rgba(0, 0, 0, 0.4),
-		transparent 60%
-	);
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent 60%);
 }
 
 /* ================================================================== */
@@ -102,12 +140,11 @@
 	position: relative;
 	width: 100%;
 	border-radius: 18px;
-	background:
-		linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--auq-surface) 96%, var(--auq-accent) 4%),
-			var(--auq-surface) 30%
-		);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--auq-surface) 96%, var(--auq-accent) 4%),
+		var(--auq-surface) 30%
+	);
 	border: 1px solid var(--auq-border);
 	box-shadow: var(--auq-shadow-card);
 	overflow: hidden;
@@ -169,8 +206,13 @@
 }
 
 @keyframes auq-bar-pulse {
-	0%, 100% { opacity: 1; }
-	50% { opacity: 0.55; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.55;
+	}
 }
 
 /* ================================================================== */
@@ -295,13 +337,25 @@
 }
 
 @keyframes auq-slide-fwd {
-	from { opacity: 0; transform: translateX(18px); }
-	to   { opacity: 1; transform: translateX(0); }
+	from {
+		opacity: 0;
+		transform: translateX(18px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 @keyframes auq-slide-bwd {
-	from { opacity: 0; transform: translateX(-18px); }
-	to   { opacity: 1; transform: translateX(0); }
+	from {
+		opacity: 0;
+		transform: translateX(-18px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 /* Question badge & text */
@@ -367,8 +421,14 @@
 }
 
 @keyframes auq-opt-in {
-	from { opacity: 0; transform: translateY(6px); }
-	to   { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .auq-option:hover {
@@ -603,8 +663,12 @@
 }
 
 @keyframes auq-btn-glow {
-	0% { box-shadow: 0 0 0 color-mix(in srgb, var(--auq-accent) 0%, transparent); }
-	50% { box-shadow: 0 0 22px color-mix(in srgb, var(--auq-accent) 35%, transparent); }
+	0% {
+		box-shadow: 0 0 0 color-mix(in srgb, var(--auq-accent) 0%, transparent);
+	}
+	50% {
+		box-shadow: 0 0 22px color-mix(in srgb, var(--auq-accent) 35%, transparent);
+	}
 	100% {
 		box-shadow:
 			0 1px 3px color-mix(in srgb, var(--auq-accent) 30%, transparent),

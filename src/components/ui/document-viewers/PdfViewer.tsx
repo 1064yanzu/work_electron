@@ -269,7 +269,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					href={src}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="mt-4 px-4 py-2 bg-warm-200 rounded-lg text-sm hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors"
+					className="mt-4 px-4 py-2 bg-warm-200 rounded-lg text-sm hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors"
 				>
 					在外部应用中打开
 				</a>
@@ -338,7 +338,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					>
 						<ZoomIn className="w-3.5 h-3.5" />
 					</button>
-					<div className="w-px h-3.5 bg-warm-300 dark:bg-zinc-700 mx-1" />
+					<div className="w-px h-3.5 bg-warm-300 dark:bg-cream-700 mx-1" />
 					<button
 						onClick={fitWidth}
 						className="p-1 rounded-md hover:bg-warm-200 transition-colors"
@@ -360,7 +360,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 			{/* PDF 内容 */}
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-auto bg-warm-200/60/50 rounded-b-xl px-3 py-4"
+				className="flex-1 overflow-auto bg-warm-200/60 rounded-b-xl px-3 py-4"
 			>
 				{loading && (
 					<div className="flex flex-col items-center justify-center py-16 gap-3">

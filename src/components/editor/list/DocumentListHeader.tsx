@@ -22,7 +22,7 @@ export function DocumentListHeader({
 	onCreateNew,
 }: DocumentListHeaderProps) {
 	return (
-		<header className="doc-toolbar px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/70/70 shrink-0">
+		<header className="doc-toolbar px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/70 shrink-0">
 			<div className="flex items-center justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0">
 					{onBack ? (
@@ -69,7 +69,7 @@ export function DocumentListHeader({
 						className={cn(
 							"focus-ring min-h-10 px-3.5 inline-flex items-center justify-center rounded-2xl border text-sm font-medium transition-colors",
 							isManaging
-								? "bg-dark-muted text-white border-zinc-900"
+								? "bg-dark-muted text-white border-cream-500"
 								: "bg-surface/90/80 text-text-secondary dark:text-zinc-200 border-border hover:bg-warm-200",
 						)}
 					>

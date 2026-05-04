@@ -49,7 +49,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 	}, [data, startDate]);
 
 	const getColor = (count: number) => {
-		if (count === 0) return "bg-gray-100";
+		if (count === 0) return "bg-cream-100";
 		if (count <= 2) return "bg-green-200";
 		if (count <= 5) return "bg-green-400";
 		if (count <= 10) return "bg-green-600";
@@ -104,7 +104,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 								{week.map((day, dayIndex) => (
 									<div
 										key={dayIndex}
-										className={`w-3 h-3 rounded-sm ${day.count > 0 ? getColor(day.count) : "bg-gray-100"} ${day.date ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : ""}`}
+										className={`w-3 h-3 rounded-sm ${day.count > 0 ? getColor(day.count) : "bg-cream-100"} ${day.date ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : ""}`}
 										title={day.date ? `${day.date}: ${day.count} 次活动` : ""}
 									/>
 								))}
@@ -118,7 +118,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 			<div className="flex items-center gap-2 text-xs text-text-muted">
 				<span>少</span>
 				<div className="flex gap-1">
-					<div className="w-3 h-3 rounded-sm bg-gray-100" />
+					<div className="w-3 h-3 rounded-sm bg-cream-100" />
 					<div className="w-3 h-3 rounded-sm bg-green-200" />
 					<div className="w-3 h-3 rounded-sm bg-green-400" />
 					<div className="w-3 h-3 rounded-sm bg-green-600" />

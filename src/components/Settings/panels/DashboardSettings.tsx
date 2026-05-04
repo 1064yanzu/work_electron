@@ -126,8 +126,8 @@ export function DashboardSettings() {
 		<div className="flex-1 h-full bg-surface p-8 overflow-y-auto">
 			<div className="max-w-4xl space-y-8">
 				<div className="border-b border-border pb-4 mb-8">
-					<h3 className="text-lg font-serif font-medium text-text-primary flex items-center gap-2">
-						<BarChart3 className="w-5 h-5" />
+					<h3 className="text-base font-semibold text-text-primary flex items-center gap-2 tracking-tight">
+						<BarChart3 className="w-5 h-5" strokeWidth={1.5} />
 						使用统计
 					</h3>
 					<p className="text-sm text-text-secondary mt-1">
@@ -148,10 +148,10 @@ export function DashboardSettings() {
 						{/* Activity Heatmap */}
 						<div className="space-y-4">
 							<h4 className="font-medium text-text-primary flex items-center gap-2">
-								<BarChart3 className="w-4 h-4" />
+								<BarChart3 className="w-4 h-4" strokeWidth={1.5} />
 								活跃度
 							</h4>
-							<div className="p-6 bg-surface border border-border rounded-2xl shadow-sm">
+							<div className="p-6 bg-surface border border-border rounded-2xl shadow-bai-card">
 								<ActivityHeatmap data={activityData} />
 							</div>
 						</div>
@@ -165,76 +165,58 @@ export function DashboardSettings() {
 }
 
 function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
+	const items = [
+		{
+			icon: Layers,
+			label: "知识来源",
+			value: stats.sources_count ?? 0,
+			unit: "个文件",
+			tone: "text-text-secondary",
+		},
+		{
+			icon: FileText,
+			label: "原子笔记",
+			value: stats.notes_count ?? 0,
+			unit: "篇",
+			tone: "bai-icon-mint",
+		},
+		{
+			icon: FileOutput,
+			label: "创作产出",
+			value: stats.outputs_count ?? 0,
+			unit: "文章",
+			tone: "bai-icon-peach",
+		},
+	] as const;
+
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-			{/* 资料 (Sources) - 输入端 */}
-			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
-				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-					<Layers className="w-16 h-16 text-blue-500" />
-				</div>
-				<div className="relative z-10">
-					<div className="flex items-center gap-2 mb-3">
-						<div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-							<Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+			{items.map(({ icon: Icon, label, value, unit, tone }) => (
+				<div
+					key={label}
+					className="p-5 bg-surface border border-border rounded-2xl shadow-bai-card relative overflow-hidden group hover:border-cream-500 transition-colors"
+				>
+					<div className="absolute top-0 right-0 p-4 opacity-[0.06] group-hover:opacity-10 transition-opacity">
+						<Icon className="w-16 h-16 text-cream-700" strokeWidth={1.5} />
+					</div>
+					<div className="relative z-10">
+						<div className="flex items-center gap-2 mb-3">
+							<div className="w-8 h-8 rounded-lg bg-warm-200 border border-border flex items-center justify-center">
+								<Icon className={`w-4 h-4 ${tone}`} strokeWidth={1.5} />
+							</div>
+							<span className="text-sm font-medium text-text-secondary">
+								{label}
+							</span>
 						</div>
-						<span className="text-sm font-medium text-text-secondary">
-							知识来源
-						</span>
-					</div>
-					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-text-primary">
-							{(stats.sources_count ?? 0).toLocaleString()}
-						</span>
-						<span className="text-xs text-text-light">个文件</span>
-					</div>
-				</div>
-			</div>
-
-			{/* 笔记 (Notes) - 沉淀端 */}
-			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
-				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-					<FileText className="w-16 h-16 text-emerald-500" />
-				</div>
-				<div className="relative z-10">
-					<div className="flex items-center gap-2 mb-3">
-						<div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-							<FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+						<div className="flex items-baseline gap-2">
+							<span className="text-3xl font-mono font-semibold text-text-primary tabular-nums">
+								{value.toLocaleString()}
+							</span>
+							<span className="text-xs text-text-light">{unit}</span>
 						</div>
-						<span className="text-sm font-medium text-text-secondary">
-							原子笔记
-						</span>
-					</div>
-					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-text-primary">
-							{(stats.notes_count ?? 0).toLocaleString()}
-						</span>
-						<span className="text-xs text-text-light">篇</span>
 					</div>
 				</div>
-			</div>
-
-			{/* 输出 (Outputs) - 产出端 */}
-			<div className="p-5 bg-surface border border-border rounded-2xl shadow-sm relative overflow-hidden group hover:border-orange-200 dark:hover:border-orange-800 transition-colors">
-				<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-					<FileOutput className="w-16 h-16 text-orange-500" />
-				</div>
-				<div className="relative z-10">
-					<div className="flex items-center gap-2 mb-3">
-						<div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
-							<FileOutput className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-						</div>
-						<span className="text-sm font-medium text-text-secondary">
-							创作产出
-						</span>
-					</div>
-					<div className="flex items-baseline gap-2">
-						<span className="text-3xl font-mono font-bold text-text-primary">
-							{(stats.outputs_count ?? 0).toLocaleString()}
-						</span>
-						<span className="text-xs text-text-light">文章</span>
-					</div>
-				</div>
-			</div>
+			))}
 		</div>
 	);
 }
@@ -261,7 +243,7 @@ function TokenUsagePanel({
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Zap className="w-4 h-4 text-indigo-500" />
+					<Zap className="w-4 h-4 bai-icon-violet" strokeWidth={1.5} />
 					Token 消耗
 				</h4>
 				<div className="flex bg-warm-200 p-1 rounded-lg">
@@ -269,10 +251,10 @@ function TokenUsagePanel({
 						<button
 							key={p}
 							onClick={() => setPeriod(p)}
-							className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+							className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
 								period === p
-									? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
-									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
+									? "bg-surface text-text-primary"
+									: "text-text-muted hover:text-text-secondary"
 							}`}
 						>
 							{p === "today" && "今日"}
@@ -284,11 +266,11 @@ function TokenUsagePanel({
 				</div>
 			</div>
 
-			<div className="p-6 bg-surface border border-border rounded-2xl shadow-sm">
+			<div className="p-6 bg-surface border border-border rounded-2xl shadow-bai-card">
 				<div className="flex items-end justify-between mb-6">
 					<div>
 						<div className="text-sm text-text-muted mb-1">总消耗 Tokens</div>
-						<div className="text-4xl font-mono font-bold text-text-primary tracking-tight">
+						<div className="text-4xl font-mono font-semibold text-text-primary tracking-tight tabular-nums">
 							{currentStats.total.toLocaleString()}
 						</div>
 					</div>
@@ -296,7 +278,7 @@ function TokenUsagePanel({
 						<div className="text-xs text-text-light mb-1">
 							{hasRealCost ? "实际花费" : "预估花费"}
 						</div>
-						<div className="text-lg font-mono font-medium text-text-secondary">
+						<div className="text-lg font-mono font-medium text-text-secondary tabular-nums">
 							$
 							{hasRealCost
 								? currentStats.cost.toFixed(4)
@@ -308,14 +290,14 @@ function TokenUsagePanel({
 					</div>
 				</div>
 
-				{/* 进度条可视化 */}
+				{/* 进度条可视化 — 深浅对比代替色相对比 */}
 				<div className="h-3 w-full bg-warm-200 rounded-full overflow-hidden flex mb-6">
 					<div
-						className="h-full bg-emerald-500/80 transition-all duration-500 ease-out"
+						className="h-full bg-cream-900 transition-all duration-500 ease-out"
 						style={{ width: `${promptPercent}%` }}
 					/>
 					<div
-						className="h-full bg-orange-500/80 transition-all duration-500 ease-out"
+						className="h-full bg-cream-500 transition-all duration-500 ease-out"
 						style={{ width: `${completionPercent}%` }}
 					/>
 				</div>
@@ -324,15 +306,15 @@ function TokenUsagePanel({
 				<div
 					className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}
 				>
-					<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
+					<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
 						<div className="flex items-center gap-2 mb-2">
-							<div className="w-2 h-2 rounded-full bg-emerald-500" />
+							<div className="w-2 h-2 rounded-full bg-cream-900" />
 							<span className="text-xs font-medium text-text-muted">
 								输入 (Prompt)
 							</span>
 						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
+							<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
 								{formatTokenCount(currentStats.prompt)}
 							</span>
 							<span className="text-xs text-text-light">
@@ -341,15 +323,15 @@ function TokenUsagePanel({
 						</div>
 					</div>
 
-					<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
+					<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
 						<div className="flex items-center gap-2 mb-2">
-							<div className="w-2 h-2 rounded-full bg-orange-500" />
+							<div className="w-2 h-2 rounded-full bg-cream-500" />
 							<span className="text-xs font-medium text-text-muted">
 								输出 (Completion)
 							</span>
 						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
+							<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
 								{formatTokenCount(currentStats.completion)}
 							</span>
 							<span className="text-xs text-text-light">
@@ -360,28 +342,28 @@ function TokenUsagePanel({
 
 					{hasCacheData && (
 						<>
-							<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
+							<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
 								<div className="flex items-center gap-2 mb-2">
-									<div className="w-2 h-2 rounded-full bg-blue-500" />
+									<div className="w-2 h-2 rounded-full bg-cream-700" />
 									<span className="text-xs font-medium text-text-muted">
 										Cache 命中
 									</span>
 								</div>
 								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
+									<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
 										{formatTokenCount(currentStats.cacheRead)}
 									</span>
 								</div>
 							</div>
-							<div className="p-4 bg-warm-50/50 rounded-xl border border-border">
+							<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
 								<div className="flex items-center gap-2 mb-2">
-									<div className="w-2 h-2 rounded-full bg-violet-500" />
+									<div className="w-2 h-2 rounded-full bg-cream-700" />
 									<span className="text-xs font-medium text-text-muted">
 										Cache 创建
 									</span>
 								</div>
 								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-text-primary dark:text-zinc-200">
+									<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
 										{formatTokenCount(currentStats.cacheCreation)}
 									</span>
 								</div>

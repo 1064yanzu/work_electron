@@ -95,13 +95,13 @@ const AgentProgressBar = memo(function AgentProgressBar({
 	}
 	if (status === "pending") {
 		return (
-			<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-zinc-700" />
+			<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-cream-700" />
 		);
 	}
 	// running
 	const pct = progress ?? 0;
 	return (
-		<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-zinc-700 overflow-hidden">
+		<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-cream-700 overflow-hidden">
 			{pct > 0 ? (
 				<div
 					className="h-full bg-[#D96C46] rounded-full transition-all duration-500"
@@ -156,7 +156,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
 				agent.status === "error" && "bg-red-50/50 dark:bg-red-900/10",
 				agent.status === "pending" && "opacity-50",
-				onClick ? "cursor-pointer hover:bg-warm-200/60/40" : "cursor-default",
+				onClick ? "cursor-pointer hover:bg-warm-200/60" : "cursor-default",
 			)}
 		>
 			<AgentIndexBadge index={agent.index} status={agent.status} />
@@ -250,7 +250,7 @@ export const SwarmCard = memo(function SwarmCard({
 			className={cn(
 				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden mb-2",
 				hasAnyRunning
-					? "bg-surface/80/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
+					? "bg-surface/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
 					: allDone
 						? "bg-surface border-emerald-200 dark:border-emerald-800/30"
 						: "bg-surface border-border",

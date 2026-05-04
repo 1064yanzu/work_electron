@@ -1,4 +1,4 @@
-import { AtSign, Hash, Paperclip, Zap, X } from "lucide-react";
+import { ArrowUp, AtSign, Hash, Lightbulb, Paperclip, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { type SlashCommand, SlashCommandMenu } from "./SlashCommandMenu";
 
@@ -152,7 +152,7 @@ export function EnhancedInput({
 	return (
 		<div ref={containerRef} className={`relative ${className}`}>
 			{/* 输入区域 */}
-			<div className="bg-surface border-2 border-border rounded-2xl shadow-lg hover:border-primary/30 focus-within:border-primary transition-all">
+			<div className="bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-card hover:border-cream-500 focus-within:border-cream-500 focus-within:shadow-bai-pop transition-all">
 				{/* 已选择的上下文标签 */}
 				{selectedContexts.length > 0 && (
 					<div className="p-3 pb-0 flex flex-wrap gap-2">
@@ -254,7 +254,7 @@ export function EnhancedInput({
 							disabled={!inputValue.trim() && selectedContexts.length === 0}
 							className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 font-medium text-sm"
 						>
-							<Zap className="w-4 h-4" />
+							<ArrowUp className="w-4 h-4" strokeWidth={1.5} />
 							<span>发送</span>
 						</button>
 					</div>
@@ -272,8 +272,9 @@ export function EnhancedInput({
 
 			{/* 提示文本 */}
 			<div className="mt-2 px-2 text-xs text-text-muted flex items-center gap-4">
-				<span>
-					💡 输入{" "}
+				<span className="inline-flex items-center gap-1.5">
+					<Lightbulb className="w-3.5 h-3.5" strokeWidth={1.5} />
+					输入{" "}
 					<kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs">
 						/
 					</kbd>{" "}

@@ -105,21 +105,21 @@ export default function DiffView({
 
 	return (
 		<div className="fixed inset-x-4 bottom-4 md:inset-x-auto md:right-8 md:bottom-8 md:max-w-2xl z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-			<div className="bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl border border-border/50/50 overflow-hidden backdrop-blur-xl">
+			<div className="bg-surface rounded-2xl shadow-bai-pop border border-border overflow-hidden backdrop-blur-xl">
 				{/* Header */}
-				<div className="px-5 py-4 bg-gradient-to-r from-emerald-50/80 to-blue-50/80 dark:from-emerald-950/30 dark:to-blue-950/30 border-b border-border/50/50">
+				<div className="px-5 py-4 bg-warm-200/60 border-b border-border">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
-							<div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/30"></div>
-							<span className="text-sm font-semibold text-text-primary dark:text-zinc-200">
+							<div className="w-2.5 h-2.5 rounded-full bg-mint-500 animate-pulse"></div>
+							<span className="text-sm font-semibold text-text-primary">
 								{title || "AI 修改建议"}
 							</span>
 						</div>
 						<div className="flex items-center gap-3 text-xs">
-							<span className="px-2 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium">
+							<span className="px-2 py-1 rounded-md bg-cream-200 text-text-primary font-medium tabular-nums">
 								+{stats.added}
 							</span>
-							<span className="px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium">
+							<span className="px-2 py-1 rounded-md bg-cream-200 text-text-primary font-medium tabular-nums">
 								-{stats.removed}
 							</span>
 						</div>
@@ -136,15 +136,15 @@ export default function DiffView({
                   flex items-stretch border-l-4 transition-colors
                   ${
 										line.type === "added"
-											? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-800 dark:text-emerald-300"
+											? "bg-mint-500/[0.08] border-mint-500 text-text-primary"
 											: line.type === "removed"
-												? "bg-red-50/50 dark:bg-red-950/20 border-red-500 text-red-800 dark:text-red-300 line-through opacity-60"
+												? "bg-[#b53333]/[0.06] border-[#b53333] text-[#b53333] line-through opacity-70"
 												: "bg-transparent border-transparent text-text-secondary"
 									}
                 `}
 							>
 								{/* Line Number */}
-								<span className="w-12 shrink-0 px-2 py-1 text-right text-text-light select-none border-r border-border/50/50 text-xs">
+								<span className="w-12 shrink-0 px-2 py-1 text-right text-text-light select-none border-r border-border text-xs">
 									{line.type === "added"
 										? "+"
 										: line.type === "removed"
@@ -161,13 +161,13 @@ export default function DiffView({
 				</div>
 
 				{/* Actions */}
-				<div className="px-5 py-4 bg-warm-50/80/50 border-t border-border/50/50 flex items-center justify-between">
+				<div className="px-5 py-4 bg-warm-200/60 border-t border-border flex items-center justify-between">
 					<p className="text-xs text-text-light">
-						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono text-[10px]">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-border font-mono text-[10px]">
 							Tab
 						</kbd>
 						<span className="mx-1">接受</span>
-						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono text-[10px] ml-2">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-border font-mono text-[10px] ml-2">
 							Esc
 						</kbd>
 						<span className="mx-1">拒绝</span>
@@ -175,16 +175,16 @@ export default function DiffView({
 					<div className="flex items-center gap-2">
 						<button
 							onClick={onReject}
-							className="px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:bg-warm-300/80/80 transition-all flex items-center gap-2"
+							className="px-4 py-2 rounded-full text-sm font-medium text-text-secondary hover:bg-warm-200 transition-colors flex items-center gap-2"
 						>
-							<X className="w-4 h-4" />
+							<X className="w-4 h-4" strokeWidth={1.5} />
 							拒绝
 						</button>
 						<button
 							onClick={onAccept}
-							className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+							className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors flex items-center gap-2 active:scale-[0.98]"
 						>
-							<Check className="w-4 h-4" />
+							<Check className="w-4 h-4" strokeWidth={1.5} />
 							接受修改
 						</button>
 					</div>
@@ -227,7 +227,7 @@ export function InlineDiff({
 				</div>
 			)}
 			{/* 操作按钮 */}
-			<div className="px-4 py-2 bg-warm-50/50 flex items-center justify-end gap-2 border-t border-border/50/50">
+			<div className="px-4 py-2 bg-warm-50/50 flex items-center justify-end gap-2 border-t border-border/50">
 				<button
 					onClick={onReject}
 					className="p-1.5 rounded-lg text-text-muted hover:bg-warm-300 transition-colors"

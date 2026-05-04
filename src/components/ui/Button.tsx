@@ -1,6 +1,6 @@
 /**
- * 统一 Button 组件 — Claude 风格
- * 环形阴影、暖色调、细腻微交互
+ * 统一 Button 组件 — B.AI 风格
+ * 暖调单色、胶囊化 / 圆角双形态、克制阴影、细腻微交互
  */
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
@@ -8,69 +8,79 @@ import { cn } from "../../lib/utils";
 
 export interface ButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
+	variant?: "primary" | "secondary" | "ghost" | "danger" | "outline" | "peach";
 	size?: "sm" | "md" | "lg";
+	/** 形状：pill 全胶囊（B.AI 主推），rounded 大圆角（兼容旧调用） */
+	shape?: "pill" | "rounded";
 	loading?: boolean;
 	icon?: React.ReactNode;
 	iconPosition?: "left" | "right";
 }
 
 const variantStyles = {
-	// 陶土橙主按钮 — 品牌核心 CTA
+	// B.AI 黑底主按钮 — 主题感知
 	primary: `
-		bg-primary text-surface
+		bg-primary text-primary-foreground
 		hover:bg-primary-hover
-		active:bg-[#a34e34]
-		shadow-[#c96442_0px_0px_0px_0px,#c96442_0px_0px_0px_1px]
-		hover:shadow-[#c96442_0px_0px_0px_0px,#b5573a_0px_0px_0px_1px]
-		transition-shadow
+		active:opacity-90
+		border border-transparent
 	`,
-	// 暖沙色次要按钮 — 日常操作
+	// 暖白底次要按钮 — 1px 暖描边
 	secondary: `
-		bg-warm-300
-		text-text-charcoal
-		hover:bg-[#dddbd0]
-		active:bg-[#d5d3c8] dark:active:bg-[#404040]
-		shadow-[#e8e6dc_0px_0px_0px_0px,#d1cfc5_0px_0px_0px_1px]
-		dark:shadow-[#30302e_0px_0px_0px_0px,#4a4845_0px_0px_0px_1px]
-		hover:shadow-[#e8e6dc_0px_0px_0px_0px,#c2c0b6_0px_0px_0px_1px]
+		bg-surface
+		text-text-primary
+		border border-border
+		hover:bg-warm-200
+		hover:border-warm-400
 	`,
 	// 透明幽灵按钮 — 低优先级操作
 	ghost: `
 		bg-transparent
 		text-text-secondary
+		border border-transparent
 		hover:bg-warm-200
 		hover:text-text-primary
-		active:bg-warm-300 dark:active:bg-dark-surface
 	`,
-	// 深暖红危险按钮
+	// 深红危险按钮
 	danger: `
-		bg-[#b53333] text-surface
+		bg-[#b53333] text-white
 		hover:bg-[#9e2b2b]
-		active:bg-[#8a2424]
-		shadow-[#b53333_0px_0px_0px_0px,#b53333_0px_0px_0px_1px]
-		hover:shadow-[#9e2b2b_0px_0px_0px_0px,#9e2b2b_0px_0px_0px_1px]
+		border border-transparent
 	`,
-	// 描边按钮 — 暖色边框
+	// 描边按钮 — 暖色边框，无填充
 	outline: `
 		bg-transparent
 		border border-border
-		text-text-charcoal
-		hover:bg-background
-		hover:border-warm-400 dark:hover:border-warm-400
-		active:bg-warm-200 dark:active:bg-dark-surface
+		text-text-primary
+		hover:bg-warm-200
+		hover:border-warm-400
+	`,
+	// 桃色 pill — 1% 彩色锚点（升级 / 领取等）
+	peach: `
+		bg-[#F8DCCB] text-cream-900
+		hover:bg-[#F2C4A8]
+		border border-transparent
+		dark:bg-[rgba(248,220,203,0.18)] dark:text-[#F8DCCB]
 	`,
 };
 
 const sizeStyles = {
-	sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
-	md: "h-9 px-4 text-sm gap-2 rounded-xl",
-	lg: "h-11 px-5 text-base gap-2.5 rounded-xl",
+	pill: {
+		sm: "h-7 px-3 text-xs gap-1.5 rounded-full",
+		md: "h-9 px-4 text-sm gap-2 rounded-full",
+		lg: "h-11 px-5 text-[15px] gap-2.5 rounded-full",
+	},
+	rounded: {
+		sm: "h-8 px-3 text-xs gap-1.5 rounded-xl",
+		md: "h-9 px-4 text-sm gap-2 rounded-xl",
+		lg: "h-11 px-5 text-base gap-2.5 rounded-2xl",
+	},
 };
 
 export function Button({
 	variant = "primary",
 	size = "md",
+	shape = "pill",
 	loading = false,
 	icon,
 	iconPosition = "left",
@@ -87,15 +97,15 @@ export function Button({
 			disabled={isDisabled}
 			className={cn(
 				"inline-flex items-center justify-center font-medium",
-				"transition-all duration-150 ease-out",
-				// Focus ring — 唯一冷色，用于无障碍
-				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3898ec]/50 focus-visible:ring-offset-2",
+				"transition-[background-color,border-color,color,opacity,transform] duration-150 ease-out",
+				// B.AI focus ring — 暖灰，不用浏览器蓝
+				"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
 				// active 微交互
 				"active:scale-[0.98]",
 				// 禁用状态
 				"disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
 				variantStyles[variant],
-				sizeStyles[size],
+				sizeStyles[shape][size],
 				className,
 			)}
 			{...props}
@@ -106,6 +116,7 @@ export function Button({
 						"animate-spin",
 						size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4",
 					)}
+					strokeWidth={1.75}
 				/>
 			)}
 
@@ -123,19 +134,19 @@ export function Button({
 }
 
 /**
- * IconButton — 纯图标按钮
+ * IconButton — 纯图标按钮，B.AI 风格统一胶囊化
  */
 export interface IconButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "primary" | "secondary" | "ghost" | "danger";
+	variant?: "primary" | "secondary" | "ghost" | "danger" | "peach";
 	size?: "sm" | "md" | "lg";
 	loading?: boolean;
 }
 
 const iconSizeStyles = {
-	sm: "w-7 h-7 rounded-lg",
-	md: "w-9 h-9 rounded-xl",
-	lg: "w-11 h-11 rounded-xl",
+	sm: "w-7 h-7 rounded-full",
+	md: "w-9 h-9 rounded-full",
+	lg: "w-11 h-11 rounded-full",
 };
 
 export function IconButton({
@@ -155,8 +166,8 @@ export function IconButton({
 			disabled={isDisabled}
 			className={cn(
 				"inline-flex items-center justify-center",
-				"transition-all duration-150 ease-out",
-				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3898ec]/50 focus-visible:ring-offset-2",
+				"transition-[background-color,border-color,color,opacity,transform] duration-150 ease-out",
+				"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
 				"active:scale-[0.95]",
 				"disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
 				variantStyles[variant],
@@ -171,6 +182,7 @@ export function IconButton({
 						"animate-spin",
 						size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4",
 					)}
+					strokeWidth={1.75}
 				/>
 			) : (
 				children

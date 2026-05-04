@@ -10,6 +10,7 @@ import {
 	Settings as SettingsIcon,
 	Shield,
 	Smartphone,
+	Sparkles,
 	type LucideIcon,
 } from "lucide-react";
 import type {
@@ -52,6 +53,13 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 		id: "imagegen",
 		label: "AI 生图",
 		icon: Palette,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "mascot",
+		label: "IP 形象",
+		icon: Sparkles,
 		group: "common",
 		simpleMode: "full",
 	},

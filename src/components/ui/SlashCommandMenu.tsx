@@ -10,7 +10,7 @@ import {
 	Command,
 	Table,
 	Upload,
-	Zap,
+	Workflow,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -86,7 +86,7 @@ export function SlashCommandMenu({
 			id: "run-workflow",
 			label: "运行工作流",
 			description: "执行预设的自动化流程",
-			icon: Zap,
+			icon: Workflow,
 			category: "tool",
 			keywords: ["workflow", "automation", "工作流", "自动化"],
 			action: () => console.log("Run workflow"),
@@ -179,9 +179,9 @@ export function SlashCommandMenu({
 	};
 
 	const categoryLabels = {
-		tool: "🛠️ 工具",
-		context: "📚 上下文",
-		action: "⚡ 操作",
+		tool: "工具",
+		context: "上下文",
+		action: "操作",
 	};
 
 	useEffect(() => {
@@ -232,7 +232,7 @@ export function SlashCommandMenu({
 			{/* 命令菜单 */}
 			<div
 				ref={menuRef}
-				className="fixed z-[9999] min-h-[200px] max-h-[500px] overflow-y-auto bg-surface dark:bg-gray-800 border-2 border-primary/20 rounded-xl shadow-2xl"
+				className="fixed z-[9999] min-h-[200px] max-h-[500px] overflow-y-auto bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop"
 				style={{
 					top: position ? `${position.top + 8}px` : "50%",
 					left: position ? `${position.left}px` : "50%",

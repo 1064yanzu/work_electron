@@ -13,7 +13,6 @@ import {
 	Search,
 	Wrench,
 	XCircle,
-	Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { type AgentTask, type ToolCall, useAgentStore } from "../../lib/agent";
@@ -58,7 +57,7 @@ function StatusIcon({
 			return <AlertCircle className={cn("text-text-light", className)} />;
 		default:
 			return (
-				<div className={cn("w-2 h-2 rounded-full bg-zinc-300", className)} />
+				<div className={cn("w-2 h-2 rounded-full bg-cream-400", className)} />
 			);
 	}
 }
@@ -204,7 +203,10 @@ export default function AgentStatus() {
 			{currentTask && (
 				<div>
 					<div className="flex items-center gap-2 mb-2">
-						<Zap className="w-4 h-4 text-amber-500" />
+						<Activity
+							className="w-4 h-4 text-text-secondary"
+							strokeWidth={1.5}
+						/>
 						<span className="text-xs font-medium text-text-muted uppercase tracking-wide">
 							当前任务
 						</span>

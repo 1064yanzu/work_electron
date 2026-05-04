@@ -132,17 +132,19 @@ export function WebdavBackupManager({
 	if (!visible) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
-			<div className="w-full max-w-3xl bg-surface dark:bg-gray-800 rounded-lg shadow-xl max-h-[80vh] flex flex-col animate-scale-in">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-900/40 backdrop-blur-sm animate-fade-in">
+			<div className="w-full max-w-3xl bg-surface rounded-2xl border border-border shadow-bai-pop max-h-[80vh] flex flex-col animate-scale-in">
 				{/* Header */}
-				<div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
-					<h2 className="text-lg font-semibold">WebDAV 备份管理</h2>
+				<div className="p-4 border-b border-border flex items-center justify-between">
+					<h2 className="text-lg font-semibold text-text-primary">
+						WebDAV 备份管理
+					</h2>
 					<div className="flex items-center gap-2">
 						<button
 							type="button"
 							onClick={fetchBackupFiles}
 							disabled={loading}
-							className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+							className="p-2 hover:bg-warm-200 rounded-lg transition-colors text-text-secondary"
 							title="刷新列表"
 						>
 							<RefreshCw size={16} className={loading ? "animate-spin" : ""} />
@@ -150,7 +152,7 @@ export function WebdavBackupManager({
 						<button
 							type="button"
 							onClick={onClose}
-							className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+							className="p-2 hover:bg-warm-200 rounded-lg transition-colors text-text-secondary"
 							title="关闭"
 						>
 							×
@@ -160,7 +162,7 @@ export function WebdavBackupManager({
 
 				{/* Progress Bar (恢复时显示) */}
 				{restoring && (
-					<div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b dark:border-gray-700">
+					<div className="px-4 py-3 bg-warm-200/60 border-b border-border">
 						<ProgressBar
 							progress={restoreStage === "completed" ? 100 : 0}
 							stage={restoreStage}
@@ -174,10 +176,10 @@ export function WebdavBackupManager({
 				<div className="flex-1 overflow-auto p-4">
 					{loading && backupFiles.length === 0 ? (
 						<div className="flex items-center justify-center h-32">
-							<Loader2 className="animate-spin" size={24} />
+							<Loader2 className="animate-spin text-text-light" size={24} />
 						</div>
 					) : backupFiles.length === 0 ? (
-						<div className="text-center text-gray-500 py-12">
+						<div className="text-center text-text-light py-12">
 							<p className="text-lg mb-2">暂无备份文件</p>
 							<p className="text-sm">请先在设置中配置并执行备份</p>
 						</div>
@@ -186,11 +188,13 @@ export function WebdavBackupManager({
 							{backupFiles.map((file) => (
 								<div
 									key={file.fileName}
-									className="p-4 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors flex items-center justify-between"
+									className="p-4 border border-border rounded-xl hover:bg-warm-200/60 transition-colors flex items-center justify-between"
 								>
 									<div className="flex-1 min-w-0">
-										<div className="font-medium truncate">{file.fileName}</div>
-										<div className="text-sm text-gray-500">
+										<div className="font-medium truncate text-text-primary">
+											{file.fileName}
+										</div>
+										<div className="text-sm text-text-light">
 											{new Date(file.modifiedTime).toLocaleString("zh-CN")} ·{" "}
 											{formatFileSize(file.size)}
 										</div>
@@ -200,7 +204,7 @@ export function WebdavBackupManager({
 											type="button"
 											onClick={() => handleRestore(file.fileName)}
 											disabled={!!restoring || !!deleting}
-											className="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+											className="px-3 py-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
 										>
 											{restoring === file.fileName ? (
 												<Loader2 size={14} className="animate-spin" />
@@ -213,7 +217,7 @@ export function WebdavBackupManager({
 											type="button"
 											onClick={() => handleDelete(file.fileName)}
 											disabled={!!restoring || !!deleting}
-											className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+											className="px-3 py-1.5 text-sm bg-[#b53333]/[0.08] hover:bg-[#b53333]/[0.14] text-[#b53333] rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
 										>
 											{deleting === file.fileName ? (
 												<Loader2 size={14} className="animate-spin" />

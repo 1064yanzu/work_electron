@@ -172,8 +172,8 @@ export function PromptSettings() {
 							key={config.id}
 							className={`rounded-xl border transition-all ${
 								isExpanded
-									? "border-zinc-300 dark:border-zinc-600 shadow-sm"
-									: "border-border hover:border-zinc-300 dark:hover:border-zinc-600"
+									? "border-cream-400 dark:border-cream-500 shadow-sm"
+									: "border-border hover:border-cream-400 dark:hover:border-cream-500"
 							}`}
 						>
 							{/* 折叠头部 */}
@@ -185,7 +185,7 @@ export function PromptSettings() {
 									<div
 										className={`w-8 h-8 rounded-lg flex items-center justify-center ${
 											isModified
-												? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+												? "bg-warm-200 text-text-primary"
 												: "bg-warm-200 text-text-muted"
 										}`}
 									>
@@ -197,7 +197,7 @@ export function PromptSettings() {
 												{config.label}
 											</span>
 											{isModified && (
-												<span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+												<span className="px-1.5 py-0.5 text-[10px] font-medium bg-mint-500/15 text-mint-600 rounded-full">
 													已修改
 												</span>
 											)}
@@ -262,7 +262,7 @@ export function PromptSettings() {
 				<ul className="text-xs text-text-muted space-y-1.5">
 					<li>
 						• 标题生成提示词支持变量占位符{" "}
-						<code className="px-1 py-0.5 bg-warm-300 dark:bg-zinc-700 rounded">
+						<code className="px-1 py-0.5 bg-warm-300 dark:bg-cream-700 rounded">
 							{"{message}"}
 						</code>
 					</li>

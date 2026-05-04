@@ -259,7 +259,7 @@ function SourceCardImpl({
 						? isSelected
 							? "border-primary/50 bg-primary/[0.04] dark:bg-primary/[0.08]"
 							: "border-border/40 border-dashed"
-						: "border-transparent hover:border-border/50 dark:hover:border-zinc-800 hover:bg-warm-50/60 dark:hover:bg-zinc-900/40",
+						: "border-transparent hover:border-border/50 dark:hover:border-cream-500 hover:bg-warm-50/60 dark:hover:bg-cream-900/40",
 					isDraggingThis ? "opacity-40" : "",
 				].join(" ")}
 			>
@@ -318,7 +318,7 @@ function SourceCardImpl({
 					? isSelected
 						? "bg-primary/[0.04] dark:bg-primary/[0.08]"
 						: ""
-					: "hover:bg-warm-50/60 dark:hover:bg-zinc-900/40",
+					: "hover:bg-warm-50/60 dark:hover:bg-cream-900/40",
 				isDraggingThis ? "opacity-40" : "",
 			].join(" ")}
 		>

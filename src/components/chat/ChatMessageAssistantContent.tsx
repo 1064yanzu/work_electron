@@ -171,7 +171,7 @@ function ChatMessageAssistantContentImpl({
 					: null}
 
 				{isStreaming && !message.content.includes("<<<<") ? (
-					<span className="inline-block w-1.5 h-4 ml-1 bg-zinc-400 animate-pulse rounded-full align-middle" />
+					<span className="inline-block w-1.5 h-4 ml-1 bg-cream-500 animate-pulse rounded-full align-middle" />
 				) : null}
 			</div>
 		</div>

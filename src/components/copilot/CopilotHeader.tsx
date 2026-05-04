@@ -1,10 +1,4 @@
-import {
-	Loader2,
-	MessageSquare,
-	MoreHorizontal,
-	Plus,
-	MessagesSquare,
-} from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Plus } from "lucide-react";
 import { IconButton } from "../ui/Button";
 
 interface CopilotHeaderProps {
@@ -27,18 +21,16 @@ export function CopilotHeader({
 	onNewSession,
 }: CopilotHeaderProps) {
 	return (
-		<div className="px-4 py-4 flex items-center justify-between shrink-0 bg-surface/80/80 backdrop-blur-sm z-10">
+		<div className="px-4 py-3.5 flex items-center justify-between shrink-0 bg-cream-50/80 dark:bg-cream-900/80 backdrop-blur-sm z-10 border-b border-cream-300/60 dark:border-cream-500/60">
 			<div className="flex items-center gap-3">
-				<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 dark:from-zinc-100 dark:to-zinc-300 flex items-center justify-center shadow-sm">
-					<MessagesSquare className="w-4 h-4 text-white" />
-				</div>
+				<div className="w-8 h-8 rounded-full bai-avatar-glow shrink-0" />
 				<div>
-					<h2 className="font-semibold text-sm text-text-primary tracking-tight">
+					<h2 className="font-semibold text-[13px] text-text-primary tracking-[-0.01em]">
 						AI 助手
 					</h2>
 					{isAgentExecuting ? (
-						<span className="flex items-center gap-1 text-[10px] text-primary font-medium animate-pulse">
-							<Loader2 className="w-2.5 h-2.5 animate-spin" />
+						<span className="flex items-center gap-1 text-[10px] text-text-secondary font-medium animate-pulse">
+							<Loader2 className="w-2.5 h-2.5 animate-spin" strokeWidth={1.5} />
 							{agentTaskType === "research" ? "正在深度研究" : "Agent 执行中"}
 						</span>
 					) : null}
@@ -52,7 +44,7 @@ export function CopilotHeader({
 					variant="ghost"
 					size="sm"
 				>
-					<Plus className="w-4.5 h-4.5" />
+					<Plus className="w-4.5 h-4.5" strokeWidth={1.5} />
 				</IconButton>
 				<div className="relative">
 					<IconButton
@@ -62,18 +54,18 @@ export function CopilotHeader({
 						variant="ghost"
 						size="sm"
 					>
-						<MoreHorizontal className="w-4.5 h-4.5" />
+						<MoreHorizontal className="w-4.5 h-4.5" strokeWidth={1.5} />
 					</IconButton>
 					{isMoreMenuOpen ? (
 						<>
 							<div className="fixed inset-0 z-40" onClick={onCloseMoreMenu} />
-							<div className="absolute right-0 top-full mt-1 w-48 bg-surface rounded-xl shadow-lg border border-border py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+							<div className="absolute right-0 top-full mt-1 w-48 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
 								<button
 									type="button"
 									onClick={onOpenPromptLibrary}
-									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-warm-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+									className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors cursor-pointer"
 								>
-									<MessageSquare className="w-4 h-4" />
+									<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
 									<span>提示词仓库</span>
 								</button>
 							</div>

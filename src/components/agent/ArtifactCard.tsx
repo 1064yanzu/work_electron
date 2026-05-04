@@ -221,8 +221,8 @@ export default function ArtifactCard({
 			className={cn(
 				"group relative flex items-center gap-3",
 				"bg-surface/40",
-				"border border-border/60/60",
-				"hover:border-zinc-300",
+				"border border-border/60",
+				"hover:border-cream-400",
 				"hover:shadow-md hover:-translate-y-0.5",
 				"rounded-xl p-3",
 				"transition-all duration-300 ease-out",
@@ -259,11 +259,11 @@ export default function ArtifactCard({
 				</h4>
 				<p className="text-[11px] text-text-light mt-0.5 flex items-center gap-1.5">
 					<span>{config.label}</span>
-					<span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+					<span className="w-0.5 h-0.5 rounded-full bg-cream-400 dark:bg-cream-600" />
 					<span>{formatFileSize(fileSize)}</span>
 					{createdAt && (
 						<>
-							<span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+							<span className="w-0.5 h-0.5 rounded-full bg-cream-400 dark:bg-cream-600" />
 							<span>{formatTime(createdAt)}</span>
 						</>
 					)}
@@ -315,7 +315,7 @@ export default function ArtifactCard({
 					className={cn(
 						"absolute left-0 right-0 -bottom-8 z-10",
 						"px-3 py-1.5",
-						"bg-dark-muted/90/90 backdrop-blur-sm",
+						"bg-dark-muted/90 backdrop-blur-sm",
 						"text-[10px] text-text-light font-mono truncate",
 						"rounded-lg shadow-lg",
 						"animate-in fade-in slide-in-from-top-1 duration-200",

@@ -30,7 +30,7 @@ export function ClaudeAuthStatusCard({ status, loading = false }: Props) {
 
 			{loading || !status ? (
 				<div className="flex items-center gap-2 text-sm text-text-light">
-					<span className="inline-block h-2 w-2 animate-pulse rounded-full bg-zinc-300 dark:bg-zinc-600" />
+					<span className="inline-block h-2 w-2 animate-pulse rounded-full bg-cream-400" />
 					检测中...
 				</div>
 			) : (
@@ -61,10 +61,8 @@ function AuthTypeLine({ status }: { status: ClaudeAuthStatus }) {
 	if (status.authMethod === "oauth") {
 		return (
 			<div className="flex items-center gap-2 text-sm">
-				<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
-				<span className="text-text-secondary dark:text-zinc-200">
-					已通过 Claude 账号登录
-				</span>
+				<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-mint-500" />
+				<span className="text-text-secondary">已通过 Claude 账号登录</span>
 				{status.email && (
 					<span className="text-xs text-text-light">{status.email}</span>
 				)}
@@ -74,16 +72,14 @@ function AuthTypeLine({ status }: { status: ClaudeAuthStatus }) {
 	if (status.authMethod === "api_key" || status.authMethod === "env_key") {
 		return (
 			<div className="flex items-center gap-2 text-sm">
-				<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
-				<span className="text-text-secondary dark:text-zinc-200">
-					使用 API Key
-				</span>
+				<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-violetx-500" />
+				<span className="text-text-secondary">使用 API Key</span>
 			</div>
 		);
 	}
 	return (
 		<div className="flex items-center gap-2 text-sm">
-			<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-yellow-400" />
+			<span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-peach-500" />
 			<span className="text-text-muted">未配置认证</span>
 		</div>
 	);
@@ -108,7 +104,7 @@ function McpServerList({
 			<button
 				type="button"
 				onClick={onToggle}
-				className="flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-secondary dark:hover:text-zinc-200"
+				className="flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-secondary"
 			>
 				<Server className="h-3 w-3" />
 				<span>检测到 {servers.length} 个 MCP 服务器</span>

@@ -1,4 +1,4 @@
-import { Clock, Globe, Shield, Zap } from "lucide-react";
+import { Clock, Globe, Shield, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getConfig, setConfig } from "../../../lib/config";
 import { Select } from "../../ui/Select";
@@ -69,7 +69,7 @@ export function AutomationSettings() {
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 			<SettingsPanelHeader
-				icon={Zap}
+				icon={Workflow}
 				title="自动化设置"
 				description="配置浏览器自动化行为与信息雷达抓取策略"
 			/>
@@ -149,11 +149,11 @@ export function AutomationSettings() {
 							安全与隐私
 						</span>
 					</SettingsSectionTitle>
-					<div className="p-4 rounded-xl border border-amber-200/60 dark:border-amber-800/30 bg-amber-50/50 dark:bg-amber-950/20">
-						<p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
+					<div className="p-4 rounded-2xl border border-border bg-warm-200/60">
+						<p className="text-sm text-text-primary mb-2">
 							自动化浏览器将使用您的本地网络环境。请确保只抓取您有权访问的公开网站。
 						</p>
-						<div className="text-xs text-amber-600 dark:text-amber-400">
+						<div className="text-xs text-text-muted">
 							* 敏感 Cookies 不会被保存
 						</div>
 					</div>

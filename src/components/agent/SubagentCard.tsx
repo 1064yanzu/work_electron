@@ -63,7 +63,7 @@ export function SubagentCard({
 			className={cn(
 				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden",
 				isRunning
-					? "bg-surface/80/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
+					? "bg-surface/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
 					: isError
 						? "bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30"
 						: "bg-surface border-border",
@@ -168,7 +168,7 @@ export function SubagentCard({
 
 			{/* Expanded Content: Activities Log */}
 			{expanded && (
-				<div className="relative z-10 border-t border-border bg-warm-50/50/50">
+				<div className="relative z-10 border-t border-border bg-warm-50/50">
 					<div
 						ref={activitiesRef}
 						className="max-h-60 overflow-y-auto p-2 space-y-1 font-mono text-xs"

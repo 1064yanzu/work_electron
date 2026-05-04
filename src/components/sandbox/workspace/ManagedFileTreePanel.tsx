@@ -206,7 +206,7 @@ export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
 						<button
 							type="button"
 							onClick={() => onSearchQueryChange("")}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-zinc-700 transition-colors focus-ring"
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 transition-colors focus-ring"
 							title="清空搜索"
 							aria-label="清空搜索"
 						>
@@ -285,7 +285,7 @@ export const ManagedFileTreePanel = memo(function ManagedFileTreePanel({
 						className={cn(
 							"w-full min-h-11 py-2 text-xs font-medium rounded-lg transition-colors border focus-ring",
 							sandboxDir
-								? "text-text-secondary bg-warm-50 hover:bg-warm-200 dark:hover:bg-zinc-700 border-border"
+								? "text-text-secondary bg-warm-50 hover:bg-warm-200 dark:hover:bg-cream-700 border-border"
 								: "text-text-light bg-warm-200/60 border-border cursor-not-allowed",
 						)}
 					>

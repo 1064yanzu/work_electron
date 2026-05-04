@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import type { AskUserQuestionRequest } from "../../lib/agent/askUserQuestionStore";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { AskUserQuestionList } from "../agent/AskUserQuestionCard";
+import { Button } from "../ui/Button";
 import { CopilotMessageList } from "./CopilotMessageList";
 import { WelcomeScreen } from "./WelcomeScreen";
 
@@ -62,28 +63,32 @@ function CopilotMessagePaneImpl({
 					<div className="h-full relative">
 						<WelcomeScreen />
 						{currentResearch && currentResearch.status !== "completed" && (
-							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/80/80 backdrop-blur-md border border-border/50 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-[0_4px_12px_0_rgb(26_26_25/0.06)] animate-in slide-in-from-bottom-2 duration-300">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2.5">
-										<div className="w-8 h-8 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-											<Loader2 className="w-4 h-4 text-primary animate-spin" />
+										<div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center">
+											<Loader2
+												className="w-4 h-4 text-text-secondary animate-spin"
+												strokeWidth={1.5}
+											/>
 										</div>
 										<div className="flex flex-col">
-											<span className="text-sm font-medium text-text-secondary dark:text-zinc-200">
+											<span className="text-sm font-medium text-text-primary">
 												正在进行深度研究...
 											</span>
-											<span className="text-xs text-text-light">
-												AI 正在分析相关资料
+											<span className="text-xs text-text-muted">
+												正在分析相关资料
 											</span>
 										</div>
 									</div>
-									<button
+									<Button
 										onClick={onOpenResearch}
 										aria-label="查看研究进度"
-										className="px-3 py-1.5 text-xs font-medium bg-dark-muted text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+										variant="primary"
+										size="sm"
 									>
 										查看进度
-									</button>
+									</Button>
 								</div>
 							</div>
 						)}
@@ -117,20 +122,20 @@ function CopilotMessagePaneImpl({
 												正在思考中...
 											</span>
 											<span className="text-xs text-text-muted">
-												AI 正在分析您的请求
+												正在分析您的请求
 											</span>
 										</div>
 										<div className="flex gap-1 ml-2">
 											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
 												style={{ animationDelay: "0ms" }}
 											/>
 											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
 												style={{ animationDelay: "150ms" }}
 											/>
 											<span
-												className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
+												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
 												style={{ animationDelay: "300ms" }}
 											/>
 										</div>

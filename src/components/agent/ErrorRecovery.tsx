@@ -69,7 +69,7 @@ function SuggestionButton({
 
 	const colorClasses: Record<RecoverySuggestion["action"], string> = {
 		retry: "bg-blue-500 hover:bg-blue-600 text-white",
-		skip: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-text-secondary",
+		skip: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary",
 		alternative: "bg-purple-500 hover:bg-purple-600 text-white",
 		manual: "bg-amber-500 hover:bg-amber-600 text-white",
 		abort:
@@ -305,7 +305,7 @@ export function ErrorRecoveryInline({
 							"px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
 							suggestion.isRecommended
 								? "bg-blue-500 text-white hover:bg-blue-600"
-								: "bg-warm-200 text-text-secondary hover:bg-warm-300 dark:hover:bg-zinc-700",
+								: "bg-warm-200 text-text-secondary hover:bg-warm-300 dark:hover:bg-cream-700",
 						)}
 					>
 						{suggestion.label}

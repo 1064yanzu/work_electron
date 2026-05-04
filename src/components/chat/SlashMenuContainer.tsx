@@ -1,7 +1,7 @@
 // 斜杠命令二级菜单容器
 // 整合一级菜单（类型选择）和二级菜单（具体命令）
 
-import { ArrowLeft, ChevronRight, Plus, Zap } from "lucide-react";
+import { ArrowLeft, Blocks, ChevronRight, FileText, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomPromptStore } from "../../lib/customPromptStore";
 import { useSkillsStore } from "../../lib/skillsStore";
@@ -176,7 +176,15 @@ export function SlashMenuContainer({
 						id: `prompt-${p.id}`,
 						name: p.name,
 						description: p.shortDescription || p.content.slice(0, 40),
-						icon: () => <span className="text-sm">{p.icon || "📝"}</span>,
+						icon: () =>
+							p.icon ? (
+								<span className="text-sm">{p.icon}</span>
+							) : (
+								<FileText
+									className="w-4 h-4 text-text-secondary"
+									strokeWidth={1.5}
+								/>
+							),
 						category: "context" as const,
 						group: groupName,
 						prompt: p.content,
@@ -207,7 +215,7 @@ export function SlashMenuContainer({
 						id: `agent-skill-${skill.name}`,
 						name: skill.name,
 						description: skill.description || "强制使用此技能",
-						icon: () => <Zap className="w-4 h-4" />,
+						icon: () => <Blocks className="w-4 h-4" strokeWidth={1.5} />,
 						category: "skill" as const,
 						group: "Agent 技能",
 						prompt: `[FORCE_SKILL:${skill.name}]`,

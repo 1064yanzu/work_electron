@@ -1,4 +1,11 @@
-import { Activity, ChevronUp, GitBranchPlus, Play, Plus } from "lucide-react";
+import {
+	Activity,
+	ChevronUp,
+	GitBranchPlus,
+	Lightbulb,
+	Play,
+	Plus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	createWorkflowNode,
@@ -174,11 +181,14 @@ export default function ProcessLab() {
 	};
 
 	return (
-		<main className="flex-1 bg-panel-process dark:bg-gray-850 flex flex-col h-full font-sans min-w-0">
-			<div className="p-4 border-b border-border dark:border-gray-700 flex items-center justify-between shrink-0">
+		<main className="flex-1 bg-panel-process dark:bg-cream-800 flex flex-col h-full font-sans min-w-0">
+			<div className="p-4 border-b border-border dark:border-cream-500 flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-2">
-					<GitBranchPlus className="w-5 h-5 text-primary" />
-					<h2 className="font-serif font-medium text-sm tracking-wide text-text-secondary">
+					<GitBranchPlus
+						className="w-5 h-5 text-text-secondary"
+						strokeWidth={1.5}
+					/>
+					<h2 className="font-semibold text-sm tracking-tight text-text-secondary">
 						处理实验室
 					</h2>
 				</div>
@@ -186,12 +196,10 @@ export default function ProcessLab() {
 
 			<div className="flex-1 p-6 overflow-y-auto min-h-0">
 				{isLoading ? (
-					<div className="text-center py-12 text-text-muted font-serif italic">
-						加载中...
-					</div>
+					<div className="text-center py-12 text-text-muted">加载中...</div>
 				) : nodes.length === 0 ? (
 					<div className="text-center py-12 text-text-muted">
-						<div className="mb-2 font-serif text-lg text-text-secondary">
+						<div className="mb-2 font-semibold text-base text-text-secondary tracking-tight">
 							暂无活跃流程
 						</div>
 						<div className="text-sm">在下方输入框创建新流程</div>
@@ -201,14 +209,14 @@ export default function ProcessLab() {
 						{nodes.map((node) => (
 							<div
 								key={node.id}
-								className="bg-surface dark:bg-gray-700 rounded-xl border border-border dark:border-gray-600 shadow-sm p-6 hover:shadow-md hover:border-primary/20 transition-all group"
+								className="bg-surface dark:bg-cream-700 rounded-2xl border border-border dark:border-cream-500 p-6 hover:border-warm-400 transition-[border-color] group"
 							>
 								<div className="flex items-center gap-4 mb-4">
-									<div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-primary border border-border">
-										<Activity className="w-5 h-5" />
+									<div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center text-text-secondary border border-border">
+										<Activity className="w-5 h-5" strokeWidth={1.5} />
 									</div>
 									<div className="flex-1">
-										<div className="font-serif font-medium text-lg text-text-primary group-hover:text-primary transition-colors">
+										<div className="font-semibold text-base text-text-primary tracking-tight">
 											{node.name}
 										</div>
 										<div className="flex items-center gap-2 mt-1">
@@ -243,7 +251,7 @@ export default function ProcessLab() {
 				)}
 			</div>
 
-			<div className="p-4 bg-surface/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-border dark:border-gray-700 shrink-0">
+			<div className="p-4 bg-surface/80 dark:bg-cream-800/80 backdrop-blur-md border-t border-border dark:border-cream-500 shrink-0">
 				<div className="max-w-3xl mx-auto space-y-4">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="flex flex-col gap-1">
@@ -267,7 +275,7 @@ export default function ProcessLab() {
 											className="fixed inset-0 z-10"
 											onClick={() => setIsModelMenuOpen(false)}
 										/>
-										<div className="absolute left-0 top-full mt-2 z-20 w-64 bg-surface border border-border rounded-xl shadow-xl overflow-hidden">
+										<div className="absolute left-0 top-full mt-2 z-20 w-64 bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop overflow-hidden">
 											<div className="px-3 py-2 text-xs font-medium text-text-muted bg-surface border-b border-border">
 												选择模型
 											</div>
@@ -322,8 +330,9 @@ export default function ProcessLab() {
 						placeholder="输入 / 查看命令，或描述你希望自动化完成的任务..."
 					/>
 
-					<p className="text-xs text-center text-text-muted">
-						💡 输入{" "}
+					<p className="text-xs text-center text-text-muted inline-flex items-center justify-center gap-1.5">
+						<Lightbulb className="w-3.5 h-3.5" strokeWidth={1.5} />
+						输入{" "}
 						<kbd className="px-1 py-0.5 bg-surface border border-border rounded">
 							/
 						</kbd>{" "}

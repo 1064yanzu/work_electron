@@ -4,6 +4,9 @@
  */
 import type * as React from "react";
 import { cn } from "../../lib/utils";
+import type { MascotSlot } from "../../lib/mascot/manifest";
+import { useMascot } from "../../lib/mascotStore";
+import { MascotEmpty } from "../Mascot/MascotEmpty";
 
 interface EmptyStateProps {
 	/**
@@ -92,7 +95,7 @@ export function EmptyState({
 			{/* 标题 */}
 			<h3
 				className={cn(
-					"font-serif font-medium text-text-secondary mb-1",
+					"font-semibold text-text-secondary mb-1 tracking-tight",
 					styles.title,
 				)}
 			>
@@ -122,12 +125,37 @@ interface IllustratedEmptyStateProps extends EmptyStateProps {
 	illustration?: "folder" | "search" | "document" | "chat";
 }
 
+const ILLUSTRATION_TO_MASCOT: Record<
+	NonNullable<IllustratedEmptyStateProps["illustration"]>,
+	MascotSlot
+> = {
+	folder: "empty-no-data",
+	search: "empty-no-data",
+	document: "empty-no-data",
+	chat: "state-greet",
+};
+
 export function IllustratedEmptyState({
 	illustration = "folder",
 	...props
 }: IllustratedEmptyStateProps) {
+	const { enabled } = useMascot();
+
+	if (enabled) {
+		return (
+			<MascotEmpty
+				slot={ILLUSTRATION_TO_MASCOT[illustration]}
+				title={props.title}
+				description={props.description}
+				action={props.action}
+				className={props.className}
+				size="md"
+			/>
+		);
+	}
+
 	const getIllustration = () => {
-		const baseClasses = "w-24 h-24 mb-6 text-zinc-200 animate-pulse-subtle";
+		const baseClasses = "w-24 h-24 mb-6 text-cream-300 animate-pulse-subtle";
 
 		switch (illustration) {
 			case "folder":
@@ -183,7 +211,7 @@ export function IllustratedEmptyState({
 							width="30"
 							height="3"
 							rx="1.5"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 						<rect
 							x="25"
@@ -191,7 +219,7 @@ export function IllustratedEmptyState({
 							width="25"
 							height="3"
 							rx="1.5"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 						<rect
 							x="25"
@@ -199,7 +227,7 @@ export function IllustratedEmptyState({
 							width="20"
 							height="3"
 							rx="1.5"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 					</svg>
 				);
@@ -214,19 +242,19 @@ export function IllustratedEmptyState({
 							cx="30"
 							cy="35"
 							r="3"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 						<circle
 							cx="40"
 							cy="35"
 							r="3"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 						<circle
 							cx="50"
 							cy="35"
 							r="3"
-							className="fill-zinc-100 dark:fill-zinc-800"
+							className="fill-cream-200 dark:fill-cream-800"
 						/>
 					</svg>
 				);
@@ -244,7 +272,7 @@ export function IllustratedEmptyState({
 			)}
 		>
 			{getIllustration()}
-			<h3 className="font-serif font-medium text-lg text-text-secondary mb-2">
+			<h3 className="font-semibold text-base text-text-secondary mb-2 tracking-tight">
 				{props.title}
 			</h3>
 			{props.description && (

@@ -45,12 +45,22 @@ function ConfirmDialogView({
 		switch (type) {
 			case "danger":
 				return {
-					icon: <AlertTriangle size={20} className="text-red-500 dark:text-red-400" />,
+					icon: (
+						<AlertTriangle
+							size={20}
+							className="text-red-500 dark:text-red-400"
+						/>
+					),
 					bg: "bg-red-50 dark:bg-red-500/10",
 				};
 			case "warning":
 				return {
-					icon: <AlertTriangle size={20} className="text-amber-500 dark:text-amber-400" />,
+					icon: (
+						<AlertTriangle
+							size={20}
+							className="text-amber-500 dark:text-amber-400"
+						/>
+					),
 					bg: "bg-amber-50 dark:bg-amber-500/10",
 				};
 			default:
@@ -70,7 +80,7 @@ function ConfirmDialogView({
 			case "warning":
 				return `${base} bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20`;
 			default:
-				return `${base} bg-zinc-800 text-white hover:bg-zinc-900 shadow-black/10 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10`;
+				return `${base} bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10`;
 		}
 	})();
 
@@ -88,7 +98,7 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative w-full max-w-[440px] rounded-[24px] border border-black/5 dark:border-white/10 bg-surface shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden",
+					"relative w-full max-w-[440px] rounded-[24px] border border-border bg-surface shadow-bai-pop overflow-hidden",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
@@ -126,7 +136,7 @@ function ConfirmDialogView({
 							</p>
 						</div>
 					</div>
-					
+
 					<div className="mt-8 flex items-center justify-end gap-3">
 						<button
 							type="button"

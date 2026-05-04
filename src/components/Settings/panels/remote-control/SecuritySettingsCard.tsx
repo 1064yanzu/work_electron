@@ -7,7 +7,7 @@ import { SettingsSectionTitle } from "../../ui/SettingsPrimitives";
 import type { RemoteControlConfig } from "../../../../lib/api";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
 
 type SecuritySettingsCardProps = {
 	config: RemoteControlConfig;
@@ -23,14 +23,14 @@ export function SecuritySettingsCard({
 	onSave,
 }: SecuritySettingsCardProps) {
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-bai-card">
 			{/* 顶部装饰线 */}
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-40" />
+			<div className="absolute top-0 left-0 right-0 h-[2px] bg-peach-500/40" />
 
 			<div className="p-5 space-y-5">
 				<div className="flex items-center gap-3">
-					<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/15 dark:from-amber-500/25 dark:to-orange-500/25">
-						<Lock className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
+					<div className="bai-icon-badge">
+						<Lock className="h-4 w-4 text-peach-500" strokeWidth={1.5} />
 					</div>
 					<div>
 						<SettingsSectionTitle className="mb-0">
@@ -111,14 +111,14 @@ export function SecuritySettingsCard({
 							{config.security.defaultScopes.join(", ") || "—"}
 						</span>
 					</div>
-					<div className="h-3 w-px bg-warm-300 dark:bg-zinc-700" />
+					<div className="h-3 w-px bg-warm-300" />
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Activity className="h-3.5 w-3.5 text-text-muted" />
 						<span className="font-medium">移动端网关：</span>
 						<span
 							className={`font-medium ${
 								config.mobileGateway.enabled
-									? "text-emerald-600 dark:text-emerald-400"
+									? "text-mint-600"
 									: "text-text-muted"
 							}`}
 						>

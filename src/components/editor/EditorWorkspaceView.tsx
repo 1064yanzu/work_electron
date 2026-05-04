@@ -173,7 +173,7 @@ export function EditorWorkspaceView({
 			<div className="flex h-full">
 				<section
 					ref={editContainerRef}
-					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide border-r border-border/70/70 bg-surface/70/45"
+					className="flex-1 min-w-0 overflow-y-auto scrollbar-hide border-r border-border/70 bg-surface/70/45"
 					aria-label="编辑区域"
 				>
 					<div

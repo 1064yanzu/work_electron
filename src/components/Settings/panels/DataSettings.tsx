@@ -1053,8 +1053,11 @@ export function DataSettings() {
 										<div className="flex items-center justify-between mb-4">
 											<div className="flex items-center gap-3">
 												{syncConfig.webdav_enabled ? (
-													<div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-														<Cloud className="w-5 h-5 text-green-600" />
+													<div className="w-10 h-10 rounded-full bg-mint-500/15 flex items-center justify-center">
+														<Cloud
+															className="w-5 h-5 bai-icon-mint"
+															strokeWidth={1.5}
+														/>
 													</div>
 												) : (
 													<div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center">
@@ -1112,11 +1115,14 @@ export function DataSettings() {
 													))}
 												</Select>
 												{selectedProvider !== "custom" && (
-													<div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
+													<div className="mt-3 p-3 bg-warm-200/60 border border-border rounded-xl">
 														<div className="flex items-start gap-2">
-															<HelpCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+															<HelpCircle
+																className="w-4 h-4 text-text-secondary flex-shrink-0 mt-0.5"
+																strokeWidth={1.5}
+															/>
 															<div className="flex-1">
-																<p className="text-xs text-blue-900 leading-relaxed">
+																<p className="text-xs text-text-primary leading-relaxed">
 																	{
 																		getProviderById(selectedProvider)
 																			?.description
@@ -1129,7 +1135,7 @@ export function DataSettings() {
 																		}
 																		target="_blank"
 																		rel="noopener noreferrer"
-																		className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+																		className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
 																	>
 																		查看配置文档
 																		<svg
@@ -1174,22 +1180,23 @@ export function DataSettings() {
 													<div
 														className={`mt-2 p-2.5 rounded-lg flex items-start gap-2 ${
 															urlValidation.valid
-																? "bg-amber-50/50 border border-amber-100"
-																: "bg-red-50/50 border border-red-100"
+																? "bg-warm-200/60 border border-border"
+																: "bg-[#b53333]/[0.06] border border-[#b53333]/30"
 														}`}
 													>
 														<AlertCircle
 															className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${
 																urlValidation.valid
-																	? "text-amber-600"
-																	: "text-red-600"
+																	? "text-text-secondary"
+																	: "text-[#b53333]"
 															}`}
+															strokeWidth={1.5}
 														/>
 														<span
 															className={`text-xs leading-relaxed ${
 																urlValidation.valid
-																	? "text-amber-900"
-																	: "text-red-900"
+																	? "text-text-primary"
+																	: "text-[#b53333]"
 															}`}
 														>
 															{urlValidation.message}
@@ -1273,8 +1280,8 @@ export function DataSettings() {
 												测试连接
 											</button>
 											{connectionStatus === "success" && (
-												<span className="flex items-center gap-1 text-xs text-green-600">
-													<CheckCircle2 className="w-4 h-4" />
+												<span className="flex items-center gap-1 text-xs text-mint-600">
+													<CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
 													连接成功
 												</span>
 											)}
@@ -1318,7 +1325,10 @@ export function DataSettings() {
 													</>
 												) : syncConfig.webdav_last_sync_at ? (
 													<>
-														<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+														<CheckCircle2
+															className="w-3.5 h-3.5 bai-icon-mint"
+															strokeWidth={1.5}
+														/>
 														<span className="text-text-muted">
 															上次同步:{" "}
 															{new Date(
@@ -1465,12 +1475,15 @@ export function DataSettings() {
 								</SettingsSectionCard>
 
 								{/* 多设备同步说明 */}
-								<div className="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700">
+								<div className="bg-warm-200/60 border border-border rounded-2xl p-4 text-sm text-text-primary">
 									<div className="flex items-start gap-3">
-										<AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+										<AlertCircle
+											className="w-5 h-5 flex-shrink-0 mt-0.5 text-text-secondary"
+											strokeWidth={1.5}
+										/>
 										<div>
 											<div className="font-medium mb-1">多设备同步</div>
-											<div className="text-xs text-blue-600">
+											<div className="text-xs text-text-secondary">
 												在多台设备上使用相同的 WebDAV 配置，即可实现数据同步。
 												建议在每次使用前先从 WebDAV 恢复最新数据，使用后再备份。
 											</div>

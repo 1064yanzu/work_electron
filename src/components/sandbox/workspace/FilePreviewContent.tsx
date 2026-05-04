@@ -288,8 +288,8 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							className={cn(
 								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
 								effectiveMode === "preview"
-									? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-zinc-700/50",
+									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
+									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-cream-700/50",
 							)}
 							aria-label="切换到预览模式"
 						>
@@ -302,8 +302,8 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							className={cn(
 								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
 								effectiveMode === "source"
-									? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-zinc-700/50",
+									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
+									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-cream-700/50",
 							)}
 							aria-label="切换到源码模式"
 						>
@@ -312,7 +312,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						</button>
 					</div>
 					{/* 分隔线 */}
-					<div className="h-6 w-px bg-warm-300 dark:bg-zinc-700 mx-1" />
+					<div className="h-6 w-px bg-warm-300 dark:bg-cream-700 mx-1" />
 					<button
 						type="button"
 						onClick={handleCopy}

@@ -2,7 +2,7 @@
  * 密码输入对话框组件
  * 用于加密备份的密码输入
  */
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff, Lightbulb, Lock } from "lucide-react";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -102,7 +102,7 @@ const PasswordPrompt = ({
 
 	return (
 		<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-fade-in">
-			<div className="bg-surface dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 animate-scale-in">
+			<div className="bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop max-w-md w-full mx-4 animate-scale-in">
 				{/* Header */}
 				<div className="p-6 pb-4">
 					<div className="flex items-start gap-4">
@@ -110,10 +110,10 @@ const PasswordPrompt = ({
 							<Lock size={24} className="text-blue-500" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+							<h3 className="text-lg font-semibold text-text-primary dark:text-cream-100 mb-2">
 								{title}
 							</h3>
-							<p className="text-sm text-gray-600 dark:text-gray-400">
+							<p className="text-sm text-text-secondary dark:text-gray-400">
 								{message}
 							</p>
 						</div>
@@ -124,7 +124,7 @@ const PasswordPrompt = ({
 				<div className="px-6 pb-4 space-y-4">
 					{/* 密码输入 */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						<label className="block text-sm font-medium text-text-secondary dark:text-text-muted mb-2">
 							密码
 						</label>
 						<div className="relative">
@@ -135,17 +135,17 @@ const PasswordPrompt = ({
 								onKeyPress={handleKeyPress}
 								placeholder={placeholder}
 								autoFocus
-								className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-surface dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="w-full px-3 py-2 pr-10 border border-cream-400 dark:border-cream-500 rounded-lg bg-surface dark:bg-cream-700 text-text-primary dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
-								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-cream-100 dark:hover:bg-cream-600 rounded transition-colors"
 							>
 								{showPassword ? (
-									<EyeOff size={16} className="text-gray-500" />
+									<EyeOff size={16} className="text-cream-500" />
 								) : (
-									<Eye size={16} className="text-gray-500" />
+									<Eye size={16} className="text-cream-500" />
 								)}
 							</button>
 						</div>
@@ -154,7 +154,7 @@ const PasswordPrompt = ({
 					{/* 确认密码 */}
 					{requireConfirmation && (
 						<div>
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							<label className="block text-sm font-medium text-text-secondary dark:text-text-muted mb-2">
 								确认密码
 							</label>
 							<div className="relative">
@@ -164,17 +164,17 @@ const PasswordPrompt = ({
 									onChange={(e) => setConfirmPassword(e.target.value)}
 									onKeyPress={handleKeyPress}
 									placeholder="再次输入密码"
-									className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-surface dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="w-full px-3 py-2 pr-10 border border-cream-400 dark:border-cream-500 rounded-lg bg-surface dark:bg-cream-700 text-text-primary dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
 								<button
 									type="button"
 									onClick={() => setShowConfirm(!showConfirm)}
-									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-cream-100 dark:hover:bg-cream-600 rounded transition-colors"
 								>
 									{showConfirm ? (
-										<EyeOff size={16} className="text-gray-500" />
+										<EyeOff size={16} className="text-cream-500" />
 									) : (
-										<Eye size={16} className="text-gray-500" />
+										<Eye size={16} className="text-cream-500" />
 									)}
 								</button>
 							</div>
@@ -190,8 +190,9 @@ const PasswordPrompt = ({
 
 					{/* 密码强度提示 */}
 					{validateStrength && password && !error && (
-						<div className="text-xs text-gray-500 dark:text-gray-400">
-							💡 建议：使用至少 8 个字符，包含大小写字母、数字和特殊字符
+						<div className="text-xs text-text-muted inline-flex items-center gap-1.5">
+							<Lightbulb className="w-3.5 h-3.5" strokeWidth={1.5} />
+							建议：使用至少 8 个字符，包含大小写字母、数字和特殊字符
 						</div>
 					)}
 				</div>
@@ -201,7 +202,7 @@ const PasswordPrompt = ({
 					<button
 						type="button"
 						onClick={handleCancel}
-						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+						className="px-4 py-2 text-sm font-medium text-text-secondary dark:text-text-muted bg-cream-100 dark:bg-cream-700 hover:bg-cream-200 dark:hover:bg-cream-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
 					>
 						{cancelText}
 					</button>

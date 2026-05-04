@@ -107,7 +107,7 @@ export function EditorHeader({
 				: "已保存";
 
 	return (
-		<header className="doc-toolbar shrink-0 border-b border-border/70/70 px-2 py-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 relative z-30 overflow-x-auto">
+		<header className="doc-toolbar shrink-0 border-b border-border/70 px-2 py-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 relative z-30 overflow-x-auto">
 			<div className="flex items-center gap-1.5 shrink-0">
 				<IconBtn
 					label="返回文档列表"

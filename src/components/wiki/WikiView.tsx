@@ -294,7 +294,7 @@ export function WikiView() {
 		return (
 			<div className="flex flex-col h-full">
 				<div className="flex-1 flex flex-col items-center justify-center px-6">
-					<div className="w-16 h-16 rounded-2xl bg-warm-200/80/80 flex items-center justify-center mb-5">
+					<div className="w-16 h-16 rounded-2xl bg-warm-200/80 flex items-center justify-center mb-5">
 						<BookOpen className="w-8 h-8 text-text-light" />
 					</div>
 					<h3 className="text-base font-semibold text-text-primary mb-2">
@@ -714,7 +714,7 @@ export function WikiView() {
 						(generationProgress.phase === "extracting" ||
 							generationProgress.phase === "llm") && (
 							<div className="mb-2">
-								<div className="w-full h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
+								<div className="w-full h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
 									<div
 										className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
 										style={{
@@ -839,7 +839,7 @@ export function WikiView() {
 							<button
 								key={page.id}
 								onClick={() => openPage(page)}
-								className="w-full text-left px-4 py-3 hover:bg-warm-50/50 transition-colors group border-b border-zinc-50/50 last:border-b-0"
+								className="w-full text-left px-4 py-3 hover:bg-cream-100/60 transition-colors group border-b border-cream-300/50 last:border-b-0"
 							>
 								<div className="flex items-start justify-between gap-2">
 									<div className="flex-1 min-w-0">

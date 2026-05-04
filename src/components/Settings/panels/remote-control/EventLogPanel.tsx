@@ -5,17 +5,15 @@ import { listRemoteEventLogs, type RemoteEventLog } from "../../../../lib/api";
 const LEVEL_STYLES: Record<string, { text: string; badge: string }> = {
 	info: {
 		text: "text-text-secondary",
-		badge: "bg-warm-500/10 text-text-muted0/15",
+		badge: "bg-warm-200 text-text-muted",
 	},
 	warn: {
-		text: "text-amber-600 dark:text-amber-400",
-		badge:
-			"bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+		text: "text-peach-500",
+		badge: "bg-peach-500/10 text-peach-500",
 	},
 	error: {
-		text: "text-rose-600 dark:text-rose-400",
-		badge:
-			"bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400",
+		text: "text-[#b53333]",
+		badge: "bg-[#b53333]/[0.08] text-[#b53333]",
 	},
 };
 
@@ -72,7 +70,7 @@ export function EventLogPanel() {
 	}, [logs.length]);
 
 	return (
-		<div className="rounded-xl border border-border bg-warm-50/50/30 overflow-hidden">
+		<div className="rounded-xl border border-border bg-warm-200/40 overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
@@ -80,7 +78,7 @@ export function EventLogPanel() {
 			>
 				<ScrollText className="h-4 w-4" />
 				<span>活动日志</span>
-				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300/60 dark:bg-zinc-700/60 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
+				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
 					{logs.length}
 				</span>
 				<ChevronDown
@@ -90,7 +88,7 @@ export function EventLogPanel() {
 			{expanded && (
 				<div className="max-h-52 overflow-y-auto border-t border-border font-mono text-[11px]">
 					{unsupportedHint ? (
-						<div className="px-4 py-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-500/10 border-b border-amber-200/60 dark:border-amber-500/20">
+						<div className="px-4 py-3 text-xs text-peach-500 bg-peach-500/10 border-b border-peach-500/20">
 							{unsupportedHint}
 						</div>
 					) : null}
@@ -105,7 +103,7 @@ export function EventLogPanel() {
 								return (
 									<div
 										key={`${log.timestamp}-${i}`}
-										className="flex gap-2.5 px-4 py-1.5 hover:bg-warm-200/60/50 transition-colors"
+										className="flex gap-2.5 px-4 py-1.5 hover:bg-warm-200/60 transition-colors"
 									>
 										<span className="shrink-0 text-text-muted tabular-nums">
 											{formatTime(log.timestamp)}

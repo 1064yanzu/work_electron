@@ -124,7 +124,10 @@ function shouldDropAssistantFragment(
 		return canonicalHasInlineTrace;
 	}
 
-	if (canonicalText.length >= currentText.length && canonicalText.includes(currentText)) {
+	if (
+		canonicalText.length >= currentText.length &&
+		canonicalText.includes(currentText)
+	) {
 		return true;
 	}
 

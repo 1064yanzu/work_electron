@@ -17,7 +17,7 @@ export default function AIContentSuggest({
 }: AIContentSuggestProps) {
 	return (
 		<div className="fixed bottom-8 right-8 max-w-md z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-			<div className="bg-surface rounded-xl shadow-2xl border border-border overflow-hidden">
+			<div className="bg-surface rounded-2xl shadow-bai-pop border border-border overflow-hidden">
 				{/* Header */}
 				<div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-border">
 					<div className="flex items-center gap-2">
@@ -54,13 +54,13 @@ export default function AIContentSuggest({
 				</div>
 
 				{/* Keyboard Hint */}
-				<div className="px-4 py-2 bg-warm-200/50/50 border-t border-border">
+				<div className="px-4 py-2 bg-warm-200/50 border-t border-border">
 					<p className="text-xs text-text-light text-center">
-						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-cream-400 font-mono">
 							Tab
 						</kbd>{" "}
 						接受 ·
-						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-zinc-300 font-mono ml-2">
+						<kbd className="px-1.5 py-0.5 bg-surface rounded border border-cream-400 font-mono ml-2">
 							Esc
 						</kbd>{" "}
 						拒绝

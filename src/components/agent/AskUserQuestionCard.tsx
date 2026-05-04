@@ -6,7 +6,13 @@
  * 所有问题回答完后统一提交。
  */
 
-import { Check, ChevronRight, MessageCircleQuestion, Send, X } from "lucide-react";
+import {
+	Check,
+	ChevronRight,
+	MessageCircleQuestion,
+	Send,
+	X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AskUserQuestionRequest } from "../../lib/agent/askUserQuestionStore";
 import { cn } from "../../lib/utils";
@@ -22,7 +28,13 @@ type AnswerState = { selected: string[]; other: string };
 /*  CountdownBar – 顶部线性进度条倒计时                                 */
 /* ------------------------------------------------------------------ */
 
-function CountdownBar({ remaining, total }: { remaining: number; total: number }) {
+function CountdownBar({
+	remaining,
+	total,
+}: {
+	remaining: number;
+	total: number;
+}) {
 	const progress = total > 0 ? (remaining / total) * 100 : 0;
 	const isUrgent = remaining <= 10;
 	return (
@@ -59,7 +71,9 @@ function OptionButton({
 			className={cn("auq-option", checked && "auq-option-selected")}
 			style={{ animationDelay: `${index * 50}ms` }}
 		>
-			<div className={cn("auq-option-check", checked && "auq-option-check-active")}>
+			<div
+				className={cn("auq-option-check", checked && "auq-option-check-active")}
+			>
 				{checked && <Check className="w-3 h-3" />}
 			</div>
 			<div className="auq-option-content">
@@ -90,18 +104,26 @@ function AskUserQuestionPopup({
 	const [remaining, setRemaining] = useState(0);
 	const [slideDir, setSlideDir] = useState<"forward" | "backward">("forward");
 	const totalDurationRef = useRef(0);
-	const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	const totalQuestions = request.questions.length;
 
 	// 初始化总时长
 	useEffect(() => {
-		totalDurationRef.current = Math.max(1, Math.ceil((request.expiresAt - Date.now()) / 1000));
+		totalDurationRef.current = Math.max(
+			1,
+			Math.ceil((request.expiresAt - Date.now()) / 1000),
+		);
 	}, [request.expiresAt]);
 
 	// 倒计时
 	useEffect(() => {
-		const tick = () => setRemaining(Math.max(0, Math.ceil((request.expiresAt - Date.now()) / 1000)));
+		const tick = () =>
+			setRemaining(
+				Math.max(0, Math.ceil((request.expiresAt - Date.now()) / 1000)),
+			);
 		tick();
 		const timer = setInterval(tick, 1000);
 		return () => clearInterval(timer);
@@ -110,7 +132,8 @@ function AskUserQuestionPopup({
 	// 清理 auto-advance timer
 	useEffect(() => {
 		return () => {
-			if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+			if (autoAdvanceTimerRef.current)
+				clearTimeout(autoAdvanceTimerRef.current);
 		};
 	}, []);
 
@@ -118,7 +141,8 @@ function AskUserQuestionPopup({
 	const completedSteps = useMemo(() => {
 		const s = new Set<number>();
 		for (const [idx, state] of Object.entries(answers)) {
-			if (state.selected.length > 0 || state.other.trim().length > 0) s.add(Number(idx));
+			if (state.selected.length > 0 || state.other.trim().length > 0)
+				s.add(Number(idx));
 		}
 		return s;
 	}, [answers]);
@@ -150,7 +174,8 @@ function AskUserQuestionPopup({
 
 			// 单选模式：自动跳转
 			if (!multiSelect) {
-				if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+				if (autoAdvanceTimerRef.current)
+					clearTimeout(autoAdvanceTimerRef.current);
 				autoAdvanceTimerRef.current = setTimeout(() => {
 					if (currentStep < totalQuestions - 1) {
 						setSlideDir("forward");
@@ -162,22 +187,33 @@ function AskUserQuestionPopup({
 		[currentStep, request.questions, totalQuestions],
 	);
 
-	const updateOther = useCallback((value: string) => {
-		setAnswers((prev) => ({
-			...prev,
-			[currentStep]: {
-				selected: prev[currentStep]?.selected ?? [],
-				other: value,
-			},
-		}));
-	}, [currentStep]);
+	const updateOther = useCallback(
+		(value: string) => {
+			setAnswers((prev) => ({
+				...prev,
+				[currentStep]: {
+					selected: prev[currentStep]?.selected ?? [],
+					other: value,
+				},
+			}));
+		},
+		[currentStep],
+	);
 
 	const submit = useCallback(() => {
 		const responseAnswers = request.questions.map((q, i) => {
 			const s = answers[i] ?? { selected: [], other: "" };
-			return { header: q.header, question: q.question, selections: s.selected, other: s.other.trim() || undefined };
+			return {
+				header: q.header,
+				question: q.question,
+				selections: s.selected,
+				other: s.other.trim() || undefined,
+			};
 		});
-		onAllow(request.requestId, { questions: request.questions, answers: responseAnswers });
+		onAllow(request.requestId, {
+			questions: request.questions,
+			answers: responseAnswers,
+		});
 	}, [answers, onAllow, request]);
 
 	const goNext = useCallback(() => {
@@ -198,7 +234,8 @@ function AskUserQuestionPopup({
 
 	const currentState = answers[currentStep] ?? { selected: [], other: "" };
 	const isLastStep = currentStep === totalQuestions - 1;
-	const currentStepAnswered = currentState.selected.length > 0 || currentState.other.trim().length > 0;
+	const currentStepAnswered =
+		currentState.selected.length > 0 || currentState.other.trim().length > 0;
 
 	return (
 		<div className="auq-popup-overlay">
@@ -244,7 +281,9 @@ function AskUserQuestionPopup({
 								className={cn(
 									"auq-popup-dot",
 									i === currentStep && "auq-popup-dot-active",
-									completedSteps.has(i) && i !== currentStep && "auq-popup-dot-done",
+									completedSteps.has(i) &&
+										i !== currentStep &&
+										"auq-popup-dot-done",
 								)}
 							/>
 						))}
@@ -289,7 +328,11 @@ function AskUserQuestionPopup({
 				<div className="auq-popup-footer">
 					{/* 左侧: 上一步 (多题时) */}
 					{totalQuestions > 1 && currentStep > 0 ? (
-						<button type="button" onClick={goPrev} className="auq-popup-btn-ghost">
+						<button
+							type="button"
+							onClick={goPrev}
+							className="auq-popup-btn-ghost"
+						>
 							<span aria-hidden>←</span>
 							<span>上一步</span>
 						</button>
@@ -304,7 +347,10 @@ function AskUserQuestionPopup({
 								type="button"
 								onClick={submit}
 								disabled={!canSubmit}
-								className={cn("auq-popup-btn-primary", canSubmit && "auq-popup-btn-ready")}
+								className={cn(
+									"auq-popup-btn-primary",
+									canSubmit && "auq-popup-btn-ready",
+								)}
 							>
 								<Send className="w-3.5 h-3.5" />
 								提交

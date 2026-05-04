@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Palette } from "lucide-react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InlineImage } from "./InlineImage";
@@ -377,10 +378,13 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 								{/* 加载动画 */}
 								<span className="relative block w-12 h-12">
 									<span className="absolute inset-0 rounded-full border-4 border-border" />
-									<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
+									<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-700 animate-spin" />
 								</span>
 								<span className="flex items-center gap-2 text-sm text-text-muted">
-									<span className="animate-pulse">🎨</span>
+									<Palette
+										className="w-4 h-4 bai-icon-peach animate-pulse"
+										strokeWidth={1.5}
+									/>
 									<span>{alt || "AI 配图生成中..."}</span>
 								</span>
 								<span className="text-xs text-text-light">
@@ -403,7 +407,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			// 自定义引用块
 			blockquote({ children }: { children?: any }) {
 				return (
-					<blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 my-3 italic text-text-secondary">
+					<blockquote className="border-l-4 border-cream-400 dark:border-cream-500 pl-4 my-3 italic text-text-secondary">
 						{children}
 					</blockquote>
 				);

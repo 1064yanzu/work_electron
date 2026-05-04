@@ -81,7 +81,7 @@ export function ChannelNav({
 							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
 							isActive
 								? "bg-surface ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:ring-primary/50"
-								: "hover:bg-warm-200/60/40",
+								: "hover:bg-warm-200/60",
 						)}
 					>
 						{/* 左侧强调条 */}
@@ -119,10 +119,10 @@ export function ChannelNav({
 										className={cn(
 											"inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
 											item.badge.tone === "amber"
-												? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+												? "bg-peach-500/10 text-peach-500"
 												: item.badge.tone === "sky"
-													? "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
-													: "bg-warm-500/10 text-text-muted",
+													? "bg-violetx-500/10 text-violetx-500"
+													: "bg-warm-200 text-text-muted",
 										)}
 									>
 										{item.badge.text}
@@ -145,7 +145,7 @@ export function ChannelNav({
 						>
 							{item.locked ? (
 								<span
-									className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400"
+									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-[10px] text-peach-500"
 									title={item.lockedHint}
 								>
 									<Lock className="h-3 w-3" />

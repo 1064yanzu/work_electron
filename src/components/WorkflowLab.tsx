@@ -89,7 +89,7 @@ export function WorkflowLab() {
 				return <Clock className="w-4 h-4 text-blue-500 animate-pulse" />;
 			default:
 				return (
-					<div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+					<div className="w-4 h-4 rounded-full border-2 border-cream-400" />
 				);
 		}
 	};
@@ -98,10 +98,8 @@ export function WorkflowLab() {
 		<main className="flex-1 flex flex-col bg-panel-process border-r border-border relative h-full overflow-hidden">
 			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm z-10">
 				<div className="flex items-center gap-2 text-text-secondary">
-					<Workflow className="w-5 h-5 text-primary" />
-					<h2 className="font-serif font-medium tracking-wide text-sm">
-						Process Lab
-					</h2>
+					<Workflow className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+					<h2 className="font-semibold tracking-tight text-sm">Process Lab</h2>
 				</div>
 				<button
 					onClick={handleCreateNode}
@@ -131,7 +129,7 @@ export function WorkflowLab() {
 										className={`w-10 h-10 rounded-full flex items-center justify-center ${
 											node.node_type === WorkflowNodeType.Llm
 												? "bg-orange-100 text-orange-600"
-												: "bg-gray-100 text-gray-600"
+												: "bg-cream-100 text-text-secondary"
 										}`}
 									>
 										<Workflow className="w-5 h-5" />

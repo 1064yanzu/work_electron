@@ -464,7 +464,7 @@ export function ModelSettings() {
 										})
 									}
 									placeholder="sk-..."
-									className="flex-1 px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
+									className="flex-1 px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-cream-400 focus:bg-surface transition-all"
 								/>
 								<CheckButton status={checkStatus} onClick={handleCheck} />
 							</div>
@@ -474,7 +474,7 @@ export function ModelSettings() {
 							{apiKeyUrl && (
 								<button
 									onClick={() => openUrl(apiKeyUrl)}
-									className="mt-3 text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+									className="mt-3 text-sm text-text-secondary hover:text-text-primary hover:underline transition-colors"
 								>
 									点击这里获取密钥 →
 								</button>
@@ -502,7 +502,7 @@ export function ModelSettings() {
 								placeholder={
 									template?.defaultApiBase || "https://api.openai.com/v1"
 								}
-								className="w-full px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
+								className="w-full px-4 py-2.5 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-cream-400 focus:bg-surface transition-all"
 							/>
 							{selected.apiBase && apiPreviewUrl && (
 								<p className="mt-2 text-xs text-text-light">
@@ -556,7 +556,7 @@ export function ModelSettings() {
 									</button>
 									<button
 										onClick={() => setIsDiscoveryOpen(true)}
-										className="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all flex items-center gap-1"
+										className="px-3 py-1.5 text-sm font-medium bg-warm-200 text-text-primary hover:bg-cream-300 rounded-full transition-colors flex items-center gap-1"
 										title="从服务商自动获取模型列表"
 									>
 										<RefreshCw className="w-3.5 h-3.5" />
@@ -692,7 +692,7 @@ export function ModelSettings() {
 									<p className="text-sm text-text-light">暂无模型</p>
 									<button
 										onClick={() => setIsAddModelOpen(true)}
-										className="mt-3 text-sm text-blue-600 hover:text-blue-700"
+										className="mt-3 text-sm text-text-secondary hover:text-text-primary"
 									>
 										添加第一个模型
 									</button>
@@ -706,7 +706,7 @@ export function ModelSettings() {
 											查看{" "}
 											<button
 												onClick={() => openUrl(docsUrl)}
-												className="text-blue-600 hover:underline"
+												className="text-text-secondary hover:text-text-primary hover:underline"
 											>
 												{selected.name} 文档
 											</button>
@@ -716,7 +716,7 @@ export function ModelSettings() {
 									{modelsUrl && (
 										<button
 											onClick={() => openUrl(modelsUrl)}
-											className="text-blue-600 hover:underline"
+											className="text-text-secondary hover:text-text-primary hover:underline"
 										>
 											模型列表
 										</button>
@@ -771,7 +771,7 @@ export function ModelSettings() {
 							value={providerName}
 							onChange={(e) => setProviderName(e.target.value)}
 							placeholder="例如 OpenAI"
-							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-cream-400 focus:bg-surface transition-all"
 						/>
 					</div>
 					<div>
@@ -823,7 +823,7 @@ export function ModelSettings() {
 							onChange={(e) => setApiKeyDraft(e.target.value)}
 							placeholder="每行一个密钥"
 							rows={6}
-							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all resize-none"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-cream-400 focus:bg-surface transition-all resize-none"
 						/>
 						<p className="mt-2 text-xs text-text-light">
 							支持逗号或换行分隔，系统会自动去重
@@ -862,7 +862,7 @@ export function ModelSettings() {
 							value={newModelId}
 							onChange={(e) => setNewModelId(e.target.value)}
 							placeholder="例如 gpt-4o-mini"
-							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 focus:bg-surface transition-all"
+							className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-cream-400 focus:bg-surface transition-all"
 						/>
 						<p className="mt-2 text-xs text-text-light">
 							请输入模型的完整 ID，如 gpt-4o、claude-3-5-sonnet-20241022
@@ -882,7 +882,7 @@ export function ModelSettings() {
 					<button
 						onClick={handleAddModel}
 						disabled={!newModelId.trim()}
-						className="px-5 py-2.5 text-sm font-medium bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+						className="px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary-hover disabled:opacity-50 transition-colors"
 					>
 						添加模型
 					</button>

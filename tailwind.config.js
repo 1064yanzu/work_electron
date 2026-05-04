@@ -56,6 +56,8 @@ export default {
 				"scan-line": "scanLine 2.5s ease-in-out infinite",
 				"swarm-indeterminate":
 					"swarmIndeterminate 1.5s ease-in-out infinite",
+				"mascot-float": "mascotFloat 3.6s ease-in-out infinite",
+				"thinking-dot": "thinkingDot 1.2s ease-in-out infinite",
 			},
 			keyframes: {
 				fadeIn: {
@@ -104,6 +106,14 @@ export default {
 					"50%": { transform: "translateX(200%)" },
 					"100%": { transform: "translateX(-100%)" },
 				},
+				mascotFloat: {
+					"0%, 100%": { transform: "translateY(0)" },
+					"50%": { transform: "translateY(-6px)" },
+				},
+				thinkingDot: {
+					"0%, 80%, 100%": { opacity: "0.25", transform: "scale(0.85)" },
+					"40%": { opacity: "1", transform: "scale(1.1)" },
+				},
 			},
 			colors: {
 				// ============================================
@@ -112,50 +122,85 @@ export default {
 				// ============================================
 
 				// 主背景
-				background: "var(--t-bg, #f5f4ed)",
-				surface: "var(--t-bg-surface, #faf9f5)",
-				border: "var(--t-border, #e8e6dc)",
+				background: "var(--t-bg, #FAF9F5)",
+				surface: "var(--t-bg-surface, #FFFFFF)",
+				border: "var(--t-border, #E8E5DD)",
 
 				// 主品牌色
 				primary: {
-					DEFAULT: "var(--t-primary, #c96442)",
-					hover: "var(--t-primary-hover, #b5573a)",
-					foreground: "var(--t-primary-fg, #faf9f5)",
-					muted: "var(--t-primary-muted, rgba(201,100,66,0.12))",
+					DEFAULT: "var(--t-primary, #1A1A19)",
+					hover: "var(--t-primary-hover, #2A2A28)",
+					foreground: "var(--t-primary-fg, #FFFFFF)",
+					muted: "var(--t-primary-muted, rgba(26,26,25,0.06))",
 				},
 
 				// 文字色阶
 				text: {
-					primary: "var(--t-text-primary, #141413)",
-					secondary: "var(--t-text-secondary, #5e5d59)",
-					muted: "var(--t-text-muted, #87867f)",
-					light: "var(--t-text-muted, #b0aea5)",
-					dark: "var(--t-text-secondary, #3d3d3a)",
-					charcoal: "var(--t-text-secondary, #4d4c48)",
+					primary: "var(--t-text-primary, #1A1A19)",
+					secondary: "var(--t-text-secondary, #6B6B68)",
+					muted: "var(--t-text-muted, #9D9D98)",
+					light: "var(--t-text-muted, #B5B3AC)",
+					dark: "var(--t-text-secondary, #3A3A38)",
+					charcoal: "var(--t-text-secondary, #3A3A38)",
 				},
 
-				// 暖色中性色阶 — 保留静态值（用量少、对主题感知不关键）
+				// ============================================
+				// B.AI 暖调中性色阶（cream 系列）— 核心 token
+				// ============================================
+				cream: {
+					50: "#FBFAF7",
+					100: "#FAF9F5", // 主背景
+					200: "#F4F2EC", // 侧边栏 / 次要
+					300: "#EFEDE6", // 选中态
+					400: "#E8E5DD", // 默认描边
+					500: "#D8D4C9", // 强描边
+					600: "#9D9D98", // 三级文字
+					700: "#6B6B68", // 次要文字
+					800: "#3A3A38",
+					900: "#1A1A19", // 主文字 / 主操作
+				},
+
+				// ============================================
+				// 1% 彩色锚点（仅作 signature，不要全用）
+				// ============================================
+				peach: {
+					100: "#F8DCCB", // 桃色 pill 背景（如"领取积分"）
+					200: "#F2C4A8",
+					500: "#E8A77A",
+				},
+				mint: {
+					300: "#B4E0CC",
+					500: "#6FBF99", // 工具栏图标点缀
+					600: "#5BA683",
+				},
+				violetx: {
+					300: "#C5BDF0",
+					500: "#8B7FD9", // 工具栏图标点缀
+					600: "#7268C5",
+				},
+
+				// 暖色中性色阶 — 兼容现有引用
 				warm: {
-					50: "var(--t-bg-surface, #faf9f5)",
-					100: "var(--t-bg, #f5f4ed)",
-					200: "var(--t-bg-muted, #f0eee6)",
-					300: "var(--t-border, #e8e6dc)",
-					400: "#d1cfc5",
-					500: "var(--t-text-muted, #b0aea5)",
-					600: "var(--t-text-muted, #87867f)",
-					700: "var(--t-text-secondary, #5e5d59)",
-					800: "#4d4c48",
-					850: "#3d3d3a",
-					900: "var(--t-bg-muted, #30302e)",
-					950: "var(--t-bg-surface, #1e1d1b)",
+					50: "var(--t-bg-surface, #FFFFFF)",
+					100: "var(--t-bg, #FAF9F5)",
+					200: "var(--t-bg-muted, #F4F2EC)",
+					300: "var(--t-border, #E8E5DD)",
+					400: "#D8D4C9",
+					500: "var(--t-text-muted, #9D9D98)",
+					600: "var(--t-text-muted, #9D9D98)",
+					700: "var(--t-text-secondary, #6B6B68)",
+					800: "#3A3A38",
+					850: "#2D2D2B",
+					900: "var(--t-bg-muted, #1A1A19)",
+					950: "var(--t-bg-surface, #0F0F0E)",
 				},
 
 				// 深色模式表面
 				dark: {
-					bg: "var(--t-bg, #141413)",
-					surface: "var(--t-bg-muted, #30302e)",
-					border: "var(--t-border, #30302e)",
-					muted: "var(--t-bg-surface, #1e1d1b)",
+					bg: "var(--t-bg, #1A1A19)",
+					surface: "var(--t-bg-muted, #222220)",
+					border: "var(--t-border, #2F2F2C)",
+					muted: "var(--t-bg-surface, #2A2A28)",
 				},
 
 				// 语义色 — 保持不变
@@ -165,17 +210,27 @@ export default {
 
 				// 布局专用色
 				panel: {
-					input: "var(--t-bg-surface, #faf9f5)",
-					process: "var(--t-bg, #f5f4ed)",
+					input: "var(--t-bg-surface, #FFFFFF)",
+					process: "var(--t-bg, #FAF9F5)",
 					output: "#ffffff",
 				},
 
 				// 阴影环
 				ring: {
-					warm: "#d1cfc5",
-					subtle: "var(--t-border, #e8e6dc)",
-					deep: "#c2c0b6",
+					warm: "#D8D4C9",
+					subtle: "var(--t-border, #E8E5DD)",
+					deep: "#C2BEB1",
 				},
+			},
+			borderRadius: {
+				"2xl": "1rem",
+				"3xl": "1.5rem",
+			},
+			boxShadow: {
+				// B.AI 风格克制阴影
+				"bai-card": "0 1px 2px 0 rgb(26 26 25 / 0.04)",
+				"bai-pop": "0 4px 12px 0 rgb(26 26 25 / 0.06)",
+				"bai-ring": "0 0 0 1px rgb(232 229 221)",
 			},
 		},
 	},

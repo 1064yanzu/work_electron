@@ -70,8 +70,8 @@ export function QQBotQuickSetup({
 	return (
 		<div className="space-y-5">
 			<div className="flex items-start gap-3">
-				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#12B7F5]/20 to-[#0D6EFF]/10">
-					<Bot className="h-5 w-5 text-[#0D6EFF]" strokeWidth={1.8} />
+				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-warm-200 border border-border">
+					<Bot className="h-5 w-5 text-text-secondary" strokeWidth={1.5} />
 				</div>
 				<div>
 					<h3 className="text-base font-semibold text-text-primary">
@@ -84,7 +84,7 @@ export function QQBotQuickSetup({
 				</div>
 			</div>
 
-			<div className="rounded-2xl border border-border/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-2xl border border-border bg-warm-200/30 p-5">
 				<StepBlock
 					index={1}
 					icon={Bot}
@@ -119,9 +119,9 @@ export function QQBotQuickSetup({
 								className={cn(
 									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 									idValid
-										? "border-emerald-400 ring-2 ring-emerald-400/20"
+										? "border-mint-500 ring-2 ring-mint-500/20"
 										: idTrim
-											? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
+											? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
 											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>
@@ -142,9 +142,9 @@ export function QQBotQuickSetup({
 								className={cn(
 									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 									secretTrim.length >= 16
-										? "border-emerald-400 ring-2 ring-emerald-400/20"
+										? "border-mint-500 ring-2 ring-mint-500/20"
 										: secretTrim
-											? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
+											? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
 											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>

@@ -165,7 +165,7 @@ export const ManagedArtifactPreviewPanel = memo(
 											"px-2.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-all focus-ring active:scale-95",
 											selectedFile?.id === artifact.id
 												? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08] shadow-sm"
-												: "bg-surface text-text-secondary border-border hover:bg-warm-200 dark:hover:bg-zinc-700",
+												: "bg-surface text-text-secondary border-border hover:bg-warm-200 dark:hover:bg-cream-700",
 										)}
 									>
 										{artifact.name}
@@ -184,7 +184,7 @@ export const ManagedArtifactPreviewPanel = memo(
 										key={artifact.id}
 										type="button"
 										onClick={() => onSelectArtifact(artifact.id)}
-										className="px-2 py-0.5 rounded-md bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 text-[11px]"
+										className="px-2 py-0.5 rounded-md bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-[11px]"
 										aria-label={`最近预览 ${artifact.name}`}
 									>
 										{artifact.name}

@@ -361,7 +361,7 @@ export default function SandboxWorkspace({
 						/>
 					</Panel>
 
-					<PanelResizeHandle className="w-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors cursor-col-resize" />
+					<PanelResizeHandle className="w-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors cursor-col-resize" />
 
 					<Panel defaultSize={75} minSize={40}>
 						{previewPanel}

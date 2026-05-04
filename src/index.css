@@ -4,31 +4,31 @@
 
 @layer base {
 	:root {
-		/* Claude 色彩系统 — 全暖色调（作为默认 fallback） */
+		/* B.AI 风格色彩系统 — 暖调极简（作为默认 fallback） */
 		--background: 0 0% 100%;
 		--foreground: 222.2 84% 4.9%;
 
 		/* 编辑器 — 使用主题变量 */
-		--editor-shell: var(--t-bg, #f5f4ed);
-		--editor-surface: var(--t-bg-surface, #faf9f5);
-		--editor-muted-surface: var(--t-bg-muted, #f0eee6);
-		--editor-border: var(--t-border, #e8e6dc);
+		--editor-shell: var(--t-bg, #faf9f5);
+		--editor-surface: var(--t-bg-surface, #ffffff);
+		--editor-muted-surface: var(--t-bg-muted, #f4f2ec);
+		--editor-border: var(--t-border, #e8e5dd);
 
 		/* 文档浮层 */
-		--doc-surface: var(--t-bg-panel-strong, rgba(250, 249, 245, 0.93));
-		--doc-toolbar: var(--t-bg-panel, rgba(245, 244, 237, 0.82));
-		--doc-card: var(--t-bg-surface, rgba(255, 255, 255, 0.96));
-		--doc-muted: var(--t-text-secondary, #5e5d59);
+		--doc-surface: var(--t-bg-panel-strong, rgba(255, 255, 255, 0.95));
+		--doc-toolbar: var(--t-bg-panel, rgba(250, 249, 245, 0.85));
+		--doc-card: var(--t-bg-surface, #ffffff);
+		--doc-muted: var(--t-text-secondary, #6b6b68);
 
 		/* 面板 — 使用主题变量 */
-		--panel-bg: var(--t-bg-panel, rgba(245, 244, 237, 0.76));
-		--panel-bg-strong: var(--t-bg-panel-strong, rgba(250, 249, 245, 0.84));
+		--panel-bg: var(--t-bg-panel, rgba(250, 249, 245, 0.78));
+		--panel-bg-strong: var(--t-bg-panel-strong, rgba(255, 255, 255, 0.88));
 		--panel-border: var(--t-border-subtle, rgba(0, 0, 0, 0.04));
 		--panel-ring: rgba(0, 0, 0, 0.02);
 		--panel-shadow: none;
 
 		/* 交互环 */
-		--interactive-ring: var(--t-ring, rgba(201, 100, 66, 0.35));
+		--interactive-ring: var(--t-ring, rgba(26, 26, 25, 0.18));
 	}
 
 	.dark {
@@ -36,30 +36,32 @@
 		--foreground: 210 40% 98%;
 
 		/* 深色编辑器 */
-		--editor-shell: var(--t-bg, #141413);
-		--editor-surface: var(--t-bg-surface, #1e1d1b);
-		--editor-muted-surface: var(--t-bg-muted, #30302e);
-		--editor-border: var(--t-border, #30302e);
+		--editor-shell: var(--t-bg, #1a1a19);
+		--editor-surface: var(--t-bg-surface, #222220);
+		--editor-muted-surface: var(--t-bg-muted, #2a2a28);
+		--editor-border: var(--t-border, #2f2f2c);
 
 		/* 深色文档浮层 */
 		--doc-surface: var(--t-bg-panel, rgba(20, 20, 19, 0.88));
 		--doc-toolbar: var(--t-bg-panel, rgba(20, 20, 19, 0.82));
-		--doc-card: var(--t-bg-surface, rgba(30, 29, 27, 0.88));
-		--doc-muted: var(--t-text-secondary, #b0aea5);
+		--doc-card: var(--t-bg-surface, rgba(34, 34, 32, 0.88));
+		--doc-muted: var(--t-text-secondary, #b5b3ac);
 
 		/* 深色面板 */
-		--panel-bg: var(--t-bg-panel, rgba(20, 20, 19, 0.72));
-		--panel-bg-strong: var(--t-bg-panel-strong, rgba(24, 23, 22, 0.78));
+		--panel-bg: var(--t-bg-panel, rgba(26, 26, 25, 0.76));
+		--panel-bg-strong: var(--t-bg-panel-strong, rgba(34, 34, 32, 0.82));
 		--panel-border: var(--t-border-subtle, rgba(255, 255, 255, 0.05));
 		--panel-ring: rgba(255, 255, 255, 0.02);
 		--panel-shadow: none;
 
 		/* 深色交互环 */
-		--interactive-ring: var(--t-ring, rgba(201, 100, 66, 0.45));
+		--interactive-ring: var(--t-ring, rgba(250, 249, 245, 0.2));
 	}
 
 	body {
-		font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+		font-family:
+			"Inter", "PingFang SC", "Noto Sans SC", "HarmonyOS Sans", "Segoe UI",
+			system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 		font-size: 14px;
 		line-height: 1.6;
 		-webkit-font-smoothing: antialiased;
@@ -68,8 +70,8 @@
 			"kern" 1,
 			"liga" 1,
 			"calt" 1;
-		background-color: var(--t-bg, #f5f4ed);
-		color: var(--t-text-primary, #141413);
+		background-color: var(--t-bg, #faf9f5);
+		color: var(--t-text-primary, #1a1a19);
 		height: 100vh;
 		overflow: hidden;
 	}
@@ -79,43 +81,56 @@
 		line-height: 1.65;
 	}
 
-	/* 标题统一使用 serif，weight 500，紧凑行高 */
+	/* B.AI 风格：标题统一 Inter，更克制现代
+	   如果某处需要"书页感 serif"，显式使用 .type-display-serif 工具类 */
 	h1 {
-		font-family: "Merriweather", "Georgia", serif;
-		font-weight: 500;
-		font-size: 2rem;
-		line-height: 1.15;
+		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+		font-weight: 600;
+		font-size: 1.875rem;
+		line-height: 1.2;
 		letter-spacing: -0.02em;
-		color: var(--t-text-primary, #141413);
+		color: var(--t-text-primary, #1a1a19);
 	}
 
 	h2 {
-		font-family: "Merriweather", "Georgia", serif;
-		font-weight: 500;
-		font-size: 1.5rem;
-		line-height: 1.2;
+		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+		font-weight: 600;
+		font-size: 1.375rem;
+		line-height: 1.25;
 		letter-spacing: -0.018em;
-		color: var(--t-text-primary, #141413);
+		color: var(--t-text-primary, #1a1a19);
 	}
 
 	h3 {
-		font-family: "Merriweather", "Georgia", serif;
-		font-weight: 500;
-		font-size: 1.2rem;
-		line-height: 1.25;
+		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+		font-weight: 600;
+		font-size: 1.125rem;
+		line-height: 1.3;
 		letter-spacing: -0.012em;
-		color: var(--t-text-primary, #141413);
+		color: var(--t-text-primary, #1a1a19);
 	}
 
 	h4,
 	h5,
 	h6 {
-		font-family: "Merriweather", "Georgia", serif;
-		font-weight: 500;
+		font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+		font-weight: 600;
 		font-size: 1rem;
-		line-height: 1.3;
+		line-height: 1.35;
 		letter-spacing: -0.008em;
-		color: var(--t-text-primary, #141413);
+		color: var(--t-text-primary, #1a1a19);
+	}
+
+	/* 选中文字 */
+	::selection {
+		background-color: var(--t-bg-muted, #e8e5dd);
+		color: var(--t-text-primary, #1a1a19);
+	}
+
+	/* 数字工具类 — 表格/数据用 tabular-nums 让对齐更稳 */
+	.num,
+	.tabular {
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* 小文字可读性 */
@@ -133,17 +148,17 @@
 	input[type="url"],
 	input[type="search"],
 	textarea {
-		background-color: var(--t-bg-surface, #faf9f5);
-		color: var(--t-text-primary, #141413);
-		border-color: var(--t-border, #e8e6dc);
+		background-color: var(--t-bg-surface, #ffffff);
+		color: var(--t-text-primary, #1a1a19);
+		border-color: var(--t-border, #e8e5dd);
 	}
 
 	select:focus,
 	input:focus,
 	textarea:focus {
-		border-color: var(--t-primary, #c96442);
+		border-color: var(--t-text-secondary, #6b6b68);
 		outline: none;
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--t-primary) 20%, transparent);
+		box-shadow: 0 0 0 3px var(--t-primary-muted, rgba(26, 26, 25, 0.06));
 	}
 
 	/* 代码块字体 */
@@ -157,6 +172,14 @@
 		font-size: 0.875em;
 		letter-spacing: -0.02em;
 	}
+}
+
+/* ============================================
+   B.AI 全局图标线宽 — 默认 1.5 替代 lucide 默认 2
+   通过属性选择器只对未显式指定 strokeWidth 的图标生效
+   ============================================ */
+svg.lucide:not([stroke-width]) {
+	stroke-width: 1.5 !important;
 }
 
 /* ============================================
@@ -289,59 +312,29 @@
 }
 
 /* ============================================
-   全局纹理背景 — Claude 羊皮纸质感
+   [DEPRECATED] 全局纹理背景 — Claude 羊皮纸质感
+   B.AI 风改造：完全移除 radial-gradient 与噪点，
+   保留空类避免误触发，新代码请使用 var(--t-bg) 直接铺底。
    ============================================ */
 .app-shell-texture {
-	background-image:
-		radial-gradient(
-			circle at 25% 25%,
-			var(--t-texture-a, rgba(201, 100, 66, 0.025)) 0%,
-			transparent 50%
-		),
-		radial-gradient(
-			circle at 75% 75%,
-			var(--t-texture-b, rgba(93, 93, 89, 0.015)) 0%,
-			transparent 50%
-		);
-	background-size: 100% 100%;
-	background-attachment: fixed;
+	/* deprecated: was radial-gradient peach + warm-grey */
 }
 
-/* 微妙的噪点纹理 */
 .app-shell-noise::after {
-	content: "";
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	opacity: 0.012;
-	pointer-events: none;
-	z-index: 0;
-	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-	background-repeat: repeat;
-	background-size: 256px 256px;
+	/* deprecated: was SVG noise overlay */
+	content: none;
 }
 
 .dark .app-shell-noise::after {
-	opacity: 0.025;
+	content: none;
 }
 
 /* ============================================
-   面板背景 — 暖色半透明
+   [DEPRECATED] 面板背景 — 暖色半透明渐晕
+   B.AI 风改造：移除 radial-gradient，使用纯净奶油色底
    ============================================ */
 .mid-center-panel {
-	background:
-		radial-gradient(
-			120% 120% at 100% 0%,
-			var(--t-texture-a, rgba(201, 100, 66, 0.025)),
-			transparent 48%
-		),
-		radial-gradient(
-			100% 100% at 0% 100%,
-			var(--t-texture-b, rgba(93, 93, 89, 0.015)),
-			transparent 52%
-		);
+	/* deprecated: was radial-gradient peach corners */
 }
 
 .editor-shell {
@@ -553,50 +546,47 @@
 		#d1cfc5 0px 0px 0px 1px;
 }
 
-/* 轻语阴影 — 轻微浮起，卡片首选 */
+/* 轻语阴影 — 极轻浮起，B.AI 风格克制 */
 .shadow-whisper {
 	box-shadow:
-		rgba(0, 0, 0, 0.04) 0px 1px 3px,
-		rgba(0, 0, 0, 0.04) 0px 4px 16px;
+		0 1px 2px 0 rgb(26 26 25 / 0.04),
+		0 2px 8px 0 rgb(26 26 25 / 0.03);
 }
 
 .dark .shadow-whisper {
 	box-shadow:
-		rgba(0, 0, 0, 0.2) 0px 1px 3px,
-		rgba(0, 0, 0, 0.25) 0px 4px 16px;
+		0 1px 2px 0 rgb(0 0 0 / 0.18),
+		0 2px 8px 0 rgb(0 0 0 / 0.2);
 }
 
-/* 卡片阴影 — 内容卡片标准 */
+/* 卡片阴影 — B.AI 风格，靠 1px 描边分层而非深阴影 */
 .shadow-card {
 	box-shadow:
-		0 0 0 1px rgba(0, 0, 0, 0.04),
-		0 2px 6px rgba(0, 0, 0, 0.04),
-		0 8px 24px rgba(0, 0, 0, 0.03);
+		0 0 0 1px var(--t-border, #e8e5dd),
+		0 1px 2px 0 rgb(26 26 25 / 0.04);
 }
 
 .dark .shadow-card {
 	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.04),
-		0 2px 6px rgba(0, 0, 0, 0.2),
-		0 8px 24px rgba(0, 0, 0, 0.25);
+		0 0 0 1px var(--t-border, #2f2f2c),
+		0 1px 2px 0 rgb(0 0 0 / 0.2);
 }
 
-/* 悬浮阴影 — hover 时增强 */
+/* 悬浮阴影 — hover 时增强一档，仍保持克制 */
 .shadow-float {
 	box-shadow:
-		0 0 0 1px rgba(0, 0, 0, 0.05),
-		0 4px 12px rgba(0, 0, 0, 0.06),
-		0 16px 40px rgba(0, 0, 0, 0.05);
+		0 0 0 1px var(--t-border, #e8e5dd),
+		0 4px 12px 0 rgb(26 26 25 / 0.06);
 }
 
 .dark .shadow-float {
 	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.05),
-		0 4px 12px rgba(0, 0, 0, 0.3),
-		0 16px 40px rgba(0, 0, 0, 0.35);
+		0 0 0 1px var(--t-border, #2f2f2c),
+		0 4px 12px 0 rgb(0 0 0 / 0.3);
 }
 
-/* 传统阴影层级 */
+/* [DEPRECATED] 传统阴影层级
+   B.AI 风改造：新代码请使用 .shadow-bai-card / .shadow-bai-pop / .shadow-card */
 .shadow-elevation-1 {
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.04),
@@ -634,11 +624,39 @@
 }
 
 /* ============================================
-   版式工具类 — 标题/正文/标签层级
+   版式工具类 — B.AI 风格统一 Inter
+   原 serif 风格保留为 *-serif 后缀给少数语境（如文档阅读）使用
    ============================================ */
 
-/* 大标题 — serif，书页感 */
+/* 大标题 — Inter，克制现代 */
 .type-display {
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	font-size: 1.875rem;
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: -0.02em;
+}
+
+/* 板块标题 */
+.type-heading {
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	font-size: 1.25rem;
+	font-weight: 600;
+	line-height: 1.3;
+	letter-spacing: -0.015em;
+}
+
+/* 卡片标题 */
+.type-card-title {
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.4;
+	letter-spacing: -0.01em;
+}
+
+/* 可选 serif 风格 — 仅在长文阅读、正文卡片场景使用 */
+.type-display-serif {
 	font-family: "Merriweather", "Georgia", serif;
 	font-size: 2rem;
 	font-weight: 500;
@@ -646,8 +664,7 @@
 	letter-spacing: -0.02em;
 }
 
-/* 板块标题 */
-.type-heading {
+.type-heading-serif {
 	font-family: "Merriweather", "Georgia", serif;
 	font-size: 1.25rem;
 	font-weight: 500;
@@ -655,18 +672,9 @@
 	letter-spacing: -0.015em;
 }
 
-/* 卡片标题 */
-.type-card-title {
-	font-family: "Merriweather", "Georgia", serif;
-	font-size: 1rem;
-	font-weight: 500;
-	line-height: 1.4;
-	letter-spacing: -0.01em;
-}
-
 /* UI 文字 — sans，功能性 */
 .type-ui {
-	font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+	font-family: "Inter", "PingFang SC", ui-sans-serif, system-ui, sans-serif;
 	font-size: 0.875rem; /* 14px */
 	font-weight: 400;
 	line-height: 1.5;
@@ -674,7 +682,7 @@
 
 /* 小标签/元数据 */
 .type-label {
-	font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+	font-family: "Inter", "PingFang SC", ui-sans-serif, system-ui, sans-serif;
 	font-size: 0.75rem; /* 12px */
 	font-weight: 500;
 	line-height: 1.4;
@@ -683,7 +691,7 @@
 
 /* 最小说明文字 */
 .type-caption {
-	font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+	font-family: "Inter", "PingFang SC", ui-sans-serif, system-ui, sans-serif;
 	font-size: 0.6875rem; /* 11px */
 	font-weight: 400;
 	line-height: 1.5;
@@ -692,7 +700,7 @@
 
 /* 章节/分组标签 — 全大写 */
 .type-overline {
-	font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+	font-family: "Inter", "PingFang SC", ui-sans-serif, system-ui, sans-serif;
 	font-size: 0.6875rem;
 	font-weight: 600;
 	line-height: 1.4;
@@ -701,7 +709,9 @@
 }
 
 /* ============================================
-   卡片基础样式
+   [DEPRECATED] 卡片基础样式
+   B.AI 风改造：新代码请使用 .bai-card / .bai-card-interactive
+   保留旧定义以避免连锁断引用，但不要在新组件中使用
    ============================================ */
 
 /* 标准内容卡片 */
@@ -888,4 +898,207 @@ html[data-motion-preference="reduced"] *::after {
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
 	}
+}
+
+/* ============================================
+   B.AI 风格工具类 — 胶囊化、1% 彩色锚点、头像渐变
+   ============================================ */
+
+/* 主操作胶囊（黑底白字，主题感知） */
+.bai-pill-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1.125rem;
+	border-radius: 9999px;
+	background-color: var(--t-primary, #1a1a19);
+	color: var(--t-primary-fg, #ffffff);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	line-height: 1;
+	border: 1px solid transparent;
+	transition:
+		background-color 0.15s ease,
+		opacity 0.15s ease,
+		transform 0.15s ease;
+}
+
+.bai-pill-primary:hover {
+	background-color: var(--t-primary-hover, #2a2a28);
+}
+
+.bai-pill-primary:active {
+	transform: scale(0.98);
+}
+
+.bai-pill-primary:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* 次要胶囊（白底暖描边） */
+.bai-pill-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1rem;
+	border-radius: 9999px;
+	background-color: var(--t-bg-surface, #ffffff);
+	color: var(--t-text-primary, #1a1a19);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	line-height: 1;
+	border: 1px solid var(--t-border, #e8e5dd);
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		transform 0.15s ease;
+}
+
+.bai-pill-secondary:hover {
+	background-color: var(--t-bg-muted, #f4f2ec);
+	border-color: var(--t-text-muted, #d8d4c9);
+}
+
+.bai-pill-secondary:active {
+	transform: scale(0.98);
+}
+
+/* 桃色 pill — 1% 彩色锚点（如"领取积分"、"升级"） */
+.bai-pill-peach {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.375rem 0.75rem;
+	border-radius: 9999px;
+	background-color: #f8dccb;
+	color: #1a1a19;
+	font-size: 0.75rem;
+	font-weight: 500;
+	line-height: 1;
+	transition: background-color 0.15s ease;
+}
+
+.bai-pill-peach:hover {
+	background-color: #f2c4a8;
+}
+
+.dark .bai-pill-peach {
+	background-color: rgba(248, 220, 203, 0.16);
+	color: #f8dccb;
+}
+
+.dark .bai-pill-peach:hover {
+	background-color: rgba(248, 220, 203, 0.24);
+}
+
+/* 1% 锚点图标颜色（薄荷绿 / 紫罗兰），仅在工具图标、装饰处使用 */
+.bai-icon-mint {
+	color: #6fbf99;
+}
+
+.bai-icon-violet {
+	color: #8b7fd9;
+}
+
+.bai-icon-peach {
+	color: #e8a77a;
+}
+
+/* 头像渐变球（B.AI signature 1% 彩色） */
+.bai-avatar-glow {
+	background: conic-gradient(
+		from 180deg at 50% 50%,
+		#ffb8c0 0deg,
+		#b8c5ff 120deg,
+		#ffd9a8 240deg,
+		#ffb8c0 360deg
+	);
+	box-shadow: inset 0 0 0 1px var(--t-border, #e8e5dd);
+}
+
+.bai-avatar-glow-mono {
+	background: conic-gradient(
+		from 180deg at 50% 50%,
+		#d8d4c9 0deg,
+		#9d9d98 120deg,
+		#1a1a19 240deg,
+		#d8d4c9 360deg
+	);
+}
+
+/* B.AI 卡片 — 1px 暖描边 + 极轻阴影，替换深阴影 */
+.bai-card {
+	background-color: var(--t-bg-surface, #ffffff);
+	border: 1px solid var(--t-border, #e8e5dd);
+	border-radius: 1rem;
+	box-shadow: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+	transition:
+		border-color 0.18s ease,
+		box-shadow 0.18s ease,
+		transform 0.18s ease;
+}
+
+.bai-card-interactive {
+	background-color: var(--t-bg-surface, #ffffff);
+	border: 1px solid var(--t-border, #e8e5dd);
+	border-radius: 1rem;
+	box-shadow: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+	cursor: pointer;
+	transition:
+		border-color 0.18s ease,
+		box-shadow 0.18s ease,
+		transform 0.18s ease;
+}
+
+.bai-card-interactive:hover {
+	border-color: var(--t-text-muted, #d8d4c9);
+	box-shadow: 0 4px 12px 0 rgb(26 26 25 / 0.06);
+	transform: translateY(-1px);
+}
+
+/* B.AI focus ring — 用主色系暖灰，不用浏览器蓝 */
+.bai-focus-ring:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--t-primary-muted, rgba(26, 26, 25, 0.12));
+}
+
+/* B.AI dotted 分隔（极简虚线分组） */
+.bai-divider {
+	border-top: 1px dashed var(--t-border, #e8e5dd);
+	border-image: repeating-linear-gradient(
+			to right,
+			var(--t-border, #e8e5dd) 0 4px,
+			transparent 4px 8px
+		)
+		1;
+}
+
+/* 标题旁的小图标徽章（替换 sparkle/wand 这类 AI 装饰） */
+.bai-icon-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	border-radius: 0.625rem;
+	background-color: var(--t-bg-muted, #f4f2ec);
+	border: 1px solid var(--t-border, #e8e5dd);
+	color: var(--t-text-secondary, #6b6b68);
+}
+
+/* 极简 pill tag（用于状态、标签、类目） */
+.bai-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.125rem 0.5rem;
+	border-radius: 9999px;
+	background-color: var(--t-bg-muted, #f4f2ec);
+	color: var(--t-text-secondary, #6b6b68);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	line-height: 1.4;
 }

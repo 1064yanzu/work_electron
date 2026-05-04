@@ -295,7 +295,7 @@ export function RichContentWithStyles({
         prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
 
         /* 引用块样式 */
-        prose-blockquote:border-l-[3px] prose-blockquote:border-zinc-300 dark:prose-blockquote:border-zinc-600
+        prose-blockquote:border-l-[3px] prose-blockquote:border-cream-400 dark:prose-blockquote:border-cream-500
         prose-blockquote:pl-5 prose-blockquote:py-2 prose-blockquote:my-6
         prose-blockquote:italic prose-blockquote:text-text-secondary dark:prose-blockquote:text-text-light
         prose-blockquote:bg-warm-50/70 dark:prose-blockquote:bg-surface/5 prose-blockquote:rounded-r-2xl

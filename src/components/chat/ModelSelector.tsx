@@ -113,18 +113,21 @@ export function ModelSelector({
 			<div className="fixed inset-0 z-40" onClick={onClose} />
 
 			<div
-				className={`absolute z-50 flex flex-col bg-surface dark:bg-[#1a1a1a] border border-border rounded-xl shadow-xl overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-100 origin-bottom-left ${className}`}
+				className={`absolute z-50 flex flex-col bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-100 origin-bottom-left ${className}`}
 				style={{ maxHeight: "400px" }}
 			>
 				{/* 搜索头 */}
-				<div className="shrink-0 p-3 border-b border-border/50">
+				<div className="shrink-0 p-3 border-b border-cream-300 dark:border-cream-500/50">
 					<div className="relative">
-						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
+						<Search
+							className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted"
+							strokeWidth={1.5}
+						/>
 						<input
 							ref={inputRef}
 							type="text"
 							placeholder="Search models..."
-							className="w-full bg-warm-50/50 text-text-primary text-sm rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-zinc-700 placeholder:text-text-muted"
+							className="w-full bg-cream-100 dark:bg-cream-800 text-text-primary text-[13px] rounded-full pl-8 pr-3 py-1.5 border border-cream-300 dark:border-cream-500 focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 placeholder:text-text-muted"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 						/>
@@ -144,12 +147,12 @@ export function ModelSelector({
 								expandedProviders.has(provider) || searchQuery.length > 0; // 搜索时默认全部展开
 
 							return (
-								<div key={provider} className="rounded-lg overflow-hidden">
+								<div key={provider} className="rounded-xl overflow-hidden">
 									{/* 分组标题 */}
 									{!searchQuery && (
 										<button
 											onClick={() => toggleProvider(provider)}
-											className="w-full flex items-center justify-between px-2.5 py-2 hover:bg-warm-50/50 transition-colors group"
+											className="w-full flex items-center justify-between px-2.5 py-2 hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors group rounded-lg"
 										>
 											<div className="flex items-center gap-2">
 												<span
@@ -157,12 +160,13 @@ export function ModelSelector({
 												>
 													{info.label}
 												</span>
-												<span className="text-[10px] text-text-light bg-warm-200 px-1.5 py-0.5 rounded-full">
+												<span className="text-[10px] text-text-muted bg-cream-200 dark:bg-cream-700 px-1.5 py-0.5 rounded-full tabular-nums">
 													{providerModels.length}
 												</span>
 											</div>
 											<ChevronRight
-												className={`w-3 h-3 text-text-light transition-transform ${isExpanded ? "rotate-90" : ""}`}
+												className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? "rotate-90" : ""}`}
+												strokeWidth={1.5}
 											/>
 										</button>
 									)}
@@ -181,10 +185,10 @@ export function ModelSelector({
 															onSelect(model.id);
 															onClose();
 														}}
-														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-lg transition-all border border-transparent ${
+														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-xl transition-all border ${
 															isActive
-																? "bg-warm-200 dark:bg-[#262626] border-border/50 shadow-sm"
-																: "hover:bg-warm-50/50 text-text-secondary"
+																? "bg-cream-100 dark:bg-cream-800 border-cream-400 dark:border-cream-500"
+																: "hover:bg-cream-100/60 dark:hover:bg-cream-800/60 text-text-secondary border-transparent"
 														}`}
 													>
 														{/* 模型图标 */}
@@ -196,23 +200,29 @@ export function ModelSelector({
 																	className="w-4 h-4 object-contain opacity-80"
 																/>
 															) : (
-																<Zap className="w-4 h-4 text-text-light" />
+																<Zap
+																	className="w-4 h-4 text-text-muted"
+																	strokeWidth={1.5}
+																/>
 															)}
 														</div>
 
 														<div className="flex-1 min-w-0">
 															<div
-																className={`text-sm font-medium truncate ${isActive ? "text-text-primary" : ""}`}
+																className={`text-[13px] font-medium truncate ${isActive ? "text-text-primary" : ""}`}
 															>
 																{formatModelName(model.id)}
 															</div>
-															<div className="text-[10px] text-text-light truncate opacity-60">
+															<div className="text-[10px] text-text-muted truncate opacity-70">
 																{model.id}
 															</div>
 														</div>
 
 														{isActive && (
-															<Check className="w-3.5 h-3.5 text-text-primary mt-1" />
+															<Check
+																className="w-3.5 h-3.5 text-text-primary mt-1"
+																strokeWidth={1.5}
+															/>
 														)}
 													</button>
 												);

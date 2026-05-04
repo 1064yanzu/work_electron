@@ -84,12 +84,12 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 	const quickLinks = useMemo(
 		() => [
-			{ name: "Google", url: "https://www.google.com", icon: "🔍" },
-			{ name: "GitHub", url: "https://github.com", icon: "🐙" },
-			{ name: "Stack Overflow", url: "https://stackoverflow.com", icon: "📚" },
-			{ name: "MDN", url: "https://developer.mozilla.org", icon: "📖" },
-			{ name: "Hacker News", url: "https://news.ycombinator.com", icon: "🔶" },
-			{ name: "Product Hunt", url: "https://www.producthunt.com", icon: "🚀" },
+			{ name: "Google", url: "https://www.google.com" },
+			{ name: "GitHub", url: "https://github.com" },
+			{ name: "Stack Overflow", url: "https://stackoverflow.com" },
+			{ name: "MDN", url: "https://developer.mozilla.org" },
+			{ name: "Hacker News", url: "https://news.ycombinator.com" },
+			{ name: "Product Hunt", url: "https://www.producthunt.com" },
 		],
 		[],
 	);
@@ -386,7 +386,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							</button>
 							<button
 								onClick={() => void saveAsSource()}
-								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-zinc-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-cream-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								保存
@@ -394,7 +394,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 						</>
 					)}
 
-					<div className="w-px h-4 bg-warm-300 dark:bg-zinc-700 mx-1" />
+					<div className="w-px h-4 bg-warm-300 dark:bg-cream-700 mx-1" />
 
 					<button
 						onClick={() => workspaceStore.setMainView("editor")}
@@ -466,17 +466,12 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 										<button
 											key={engine}
 											onClick={() => setSelectedEngine(engine)}
-											className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+											className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
 												selectedEngine === engine
-													? "bg-primary/10 dark:bg-primary/20 text-primary"
-													: "bg-surface text-text-muted hover:bg-warm-200 dark:hover:bg-zinc-700"
+													? "bg-primary/10 text-primary"
+													: "bg-surface text-text-muted hover:bg-warm-200"
 											}`}
 										>
-											{engine === "duckduckgo"
-												? "🦆"
-												: engine === "bing"
-													? "🔍"
-													: "🌐"}
 											{engine.charAt(0).toUpperCase() + engine.slice(1)}
 										</button>
 									))}
@@ -503,10 +498,10 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 												url: link.url,
 											});
 										}}
-										className="flex flex-col items-center gap-2 p-4 bg-surface/50 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-[transform,box-shadow] group"
+										className="flex flex-col items-center gap-2 p-4 bg-surface/50 rounded-2xl border border-border hover:bg-warm-200 hover:border-cream-500 transition-colors group"
 									>
-										<span className="text-3xl">{link.icon}</span>
-										<span className="text-sm font-medium text-text-secondary group-hover:text-primary">
+										<QuickLinkFavicon url={link.url} />
+										<span className="text-sm font-medium text-text-secondary group-hover:text-text-primary">
 											{link.name}
 										</span>
 									</button>
@@ -549,7 +544,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							) : null}
 
 							{error ? (
-								<div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-600 dark:text-red-400 text-sm text-center">
+								<div className="mt-6 p-4 bg-[#b53333]/[0.08] border border-[#b53333]/20 rounded-xl text-[#b53333] text-sm text-center">
 									{error}
 								</div>
 							) : null}
@@ -575,5 +570,29 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				/>
 			) : null}
 		</div>
+	);
+}
+
+function QuickLinkFavicon({ url }: { url: string }) {
+	const [failed, setFailed] = useState(false);
+	const host = useMemo(() => {
+		try {
+			return new URL(url).host;
+		} catch {
+			return null;
+		}
+	}, [url]);
+
+	if (!host || failed) {
+		return <Globe className="w-7 h-7 text-text-light" strokeWidth={1.5} />;
+	}
+
+	return (
+		<img
+			src={`https://icons.duckduckgo.com/ip3/${host}.ico`}
+			alt=""
+			className="w-7 h-7 object-contain"
+			onError={() => setFailed(true)}
+		/>
 	);
 }

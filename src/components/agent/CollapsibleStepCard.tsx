@@ -90,7 +90,7 @@ export function CollapsibleStepCard({
 			iconColor: "text-blue-600 dark:text-blue-400",
 		},
 		completed: {
-			bg: "bg-surface/60/40",
+			bg: "bg-surface/60",
 			ring: "ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 			text: "text-text-muted",
 			iconBg: "bg-emerald-50/50 dark:bg-emerald-900/10",
@@ -188,7 +188,7 @@ export function CollapsibleStepCard({
 
 			{/* 展开内容 */}
 			{isExpanded && children && (
-				<div className="px-3 pb-3 border-t border-border/30/30">{children}</div>
+				<div className="px-3 pb-3 border-t border-border/30">{children}</div>
 			)}
 		</div>
 	);

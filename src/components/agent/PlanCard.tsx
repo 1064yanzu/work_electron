@@ -125,7 +125,7 @@ export function PlanCard({
 			className={cn(
 				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
 				isExecuting
-					? "bg-surface/80/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
+					? "bg-surface/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
 					: isCompleted
 						? "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-200 dark:border-emerald-800/30"
 						: "bg-surface border-border",

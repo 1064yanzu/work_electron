@@ -1,5 +1,7 @@
 // 新文档提案组件 - AI 建议创建新文档时的确认卡片
 import { Check, FilePlus2, FileText, X } from "lucide-react";
+import { useMascot } from "../lib/mascotStore";
+import { Mascot } from "./Mascot/Mascot";
 
 interface DocCreationProposalProps {
 	title: string;
@@ -20,6 +22,8 @@ export default function DocCreationProposal({
 	onAccept,
 	onReject,
 }: DocCreationProposalProps) {
+	const { enabled } = useMascot();
+
 	// 截取预览内容
 	const preview =
 		contentPreview.length > 500
@@ -27,16 +31,28 @@ export default function DocCreationProposal({
 			: contentPreview;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="w-full max-w-lg mx-4 bg-surface dark:bg-[#1E1E1E] rounded-2xl shadow-2xl border border-border/50/50 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+			<div className="w-full max-w-lg mx-4 bg-surface rounded-2xl shadow-bai-pop border border-border overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
 				{/* Header */}
-				<div className="px-6 py-4 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/20 dark:to-purple-950/20 border-b border-border/50/50">
+				<div className="px-6 py-4 bg-warm-200/60 border-b border-border">
 					<div className="flex items-center gap-3">
-						<div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
-							<FilePlus2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-						</div>
+						{enabled ? (
+							<Mascot
+								slot="state-organize"
+								size="md"
+								float
+								wrapperClassName="shrink-0"
+							/>
+						) : (
+							<div className="w-9 h-9 rounded-xl bg-warm-200 border border-border flex items-center justify-center shrink-0">
+								<FilePlus2
+									className="w-4 h-4 text-text-secondary"
+									strokeWidth={1.5}
+								/>
+							</div>
+						)}
 						<div>
-							<h3 className="text-base font-semibold text-text-primary dark:text-zinc-200">
+							<h3 className="text-base font-semibold text-text-primary">
 								AI 建议创建新文档
 							</h3>
 							<p className="text-xs text-text-muted mt-0.5">
@@ -50,12 +66,13 @@ export default function DocCreationProposal({
 				<div className="px-6 py-4 space-y-4">
 					{/* 标题 */}
 					<div className="flex items-start gap-3">
-						<FileText className="w-5 h-5 text-text-light mt-0.5 shrink-0" />
+						<FileText
+							className="w-5 h-5 text-text-light mt-0.5 shrink-0"
+							strokeWidth={1.5}
+						/>
 						<div className="flex-1">
 							<p className="text-xs text-text-muted mb-1">文档标题</p>
-							<p className="text-sm font-medium text-text-primary dark:text-zinc-200">
-								{title}
-							</p>
+							<p className="text-sm font-medium text-text-primary">{title}</p>
 						</div>
 					</div>
 
@@ -72,7 +89,7 @@ export default function DocCreationProposal({
 					{/* 内容预览 */}
 					<div className="pl-8">
 						<p className="text-xs text-text-muted mb-2">内容预览</p>
-						<div className="max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-warm-50/50 p-4 border border-border/50/50">
+						<div className="max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-cream-200/60 p-4 border border-border">
 							<pre className="text-xs text-text-secondary whitespace-pre-wrap font-mono leading-relaxed">
 								{preview}
 							</pre>
@@ -81,19 +98,19 @@ export default function DocCreationProposal({
 				</div>
 
 				{/* Actions */}
-				<div className="px-6 py-4 bg-warm-50/80/50 border-t border-border/50/50 flex items-center justify-end gap-3">
+				<div className="px-6 py-4 bg-warm-200/60 border-t border-border flex items-center justify-end gap-3">
 					<button
 						onClick={onReject}
-						className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:bg-warm-300/80/80 transition-all"
+						className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-text-secondary hover:bg-warm-200 transition-colors"
 					>
-						<X className="w-4 h-4" />
+						<X className="w-4 h-4" strokeWidth={1.5} />
 						取消
 					</button>
 					<button
 						onClick={onAccept}
-						className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white transition-all shadow-lg shadow-blue-500/20"
+						className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors active:scale-[0.98]"
 					>
-						<Check className="w-4 h-4" />
+						<Check className="w-4 h-4" strokeWidth={1.5} />
 						创建文档
 					</button>
 				</div>

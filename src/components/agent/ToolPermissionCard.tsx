@@ -244,21 +244,21 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 					<span className="text-xs text-text-muted">参数预览</span>
 				</button>
 				{expanded && (
-					<pre className="mt-2 p-2 rounded-lg bg-warm-50/50 text-[11px] text-text-secondary overflow-x-auto max-h-60 overflow-y-auto border border-border/50/50">
+					<pre className="mt-2 p-2 rounded-lg bg-warm-50/50 text-[11px] text-text-secondary overflow-x-auto max-h-60 overflow-y-auto border border-border/50">
 						{inputPreview}
 					</pre>
 				)}
 			</div>
 
 			{/* 操作按钮 */}
-			<div className="flex gap-2 px-3 pb-3 border-t border-border/30/30 pt-2">
+			<div className="flex gap-2 px-3 pb-3 border-t border-border/30 pt-2">
 				<button
 					onClick={() => onDeny(request.id)}
 					disabled={isSubmitting}
 					className={cn(
 						"flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 						"bg-warm-200 text-text-secondary",
-						"hover:bg-warm-300 dark:hover:bg-zinc-700",
+						"hover:bg-warm-300 dark:hover:bg-cream-700",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
 				>

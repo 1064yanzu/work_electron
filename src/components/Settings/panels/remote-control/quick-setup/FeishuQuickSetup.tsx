@@ -219,8 +219,8 @@ export function FeishuQuickSetup({
 		<div className="space-y-5">
 			{/* 标题区 */}
 			<div className="flex items-start gap-3">
-				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-sky-500/10">
-					<ScanLine className="h-5 w-5 text-sky-500" strokeWidth={1.8} />
+				<div className="bai-icon-badge h-11 w-11 flex-shrink-0">
+					<ScanLine className="h-5 w-5 text-text-secondary" strokeWidth={1.5} />
 				</div>
 				<div>
 					<h3 className="text-base font-semibold text-text-primary">
@@ -235,7 +235,7 @@ export function FeishuQuickSetup({
 			</div>
 
 			{/* 主体内容：按 status 分支 */}
-			<div className="rounded-xl border border-border/70 bg-surface p-6/50">
+			<div className="rounded-xl border border-border bg-surface p-6">
 				{status.kind === "loading" ? <LoadingView /> : null}
 
 				{status.kind === "ready" ? (
@@ -409,9 +409,7 @@ function ReadyView({
 						<div
 							className={cn(
 								"h-full rounded-full transition-all duration-1000 ease-linear",
-								progress > 0.3
-									? "bg-gradient-to-r from-primary to-primary/70"
-									: "bg-amber-500",
+								progress > 0.3 ? "bg-primary" : "bg-peach-500",
 							)}
 							style={{ width: `${progress * 100}%` }}
 						/>
@@ -458,10 +456,10 @@ function EndStateView({
 }) {
 	const iconClass =
 		tone === "emerald"
-			? "text-emerald-600 bg-emerald-500/15"
+			? "text-mint-600 bg-mint-500/15"
 			: tone === "rose"
-				? "text-rose-600 bg-rose-500/15"
-				: "text-amber-600 bg-amber-500/15";
+				? "text-[#b53333] bg-[#b53333]/[0.08]"
+				: "text-peach-500 bg-peach-500/15";
 	return (
 		<div className="flex flex-col items-center gap-3 py-10 text-center">
 			<div
@@ -498,8 +496,8 @@ function SuccessView({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-4 py-8 text-center">
-			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-				<CheckCircle2 className="h-7 w-7" strokeWidth={1.8} />
+			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500/15 text-mint-600">
+				<CheckCircle2 className="h-7 w-7" strokeWidth={1.5} />
 			</div>
 			<div className="space-y-1">
 				<div className="text-base font-semibold text-text-primary">

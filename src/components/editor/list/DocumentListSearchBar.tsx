@@ -28,7 +28,7 @@ export function DocumentListSearchBar({
 					}}
 					placeholder="搜索文档标题、标签或类型..."
 					aria-label="搜索文档"
-					className="focus-ring w-full min-h-10 rounded-2xl border border-border bg-surface/90/80 pl-10 pr-10 text-sm text-text-primary placeholder:text-text-muted dark:placeholder:text-text-light transition-all duration-200 focus:border-zinc-400 dark:focus:border-zinc-500 focus:shadow-sm"
+					className="focus-ring w-full min-h-10 rounded-2xl border border-border bg-surface/90/80 pl-10 pr-10 text-sm text-text-primary placeholder:text-text-muted dark:placeholder:text-text-light transition-all duration-200 focus:border-cream-500 dark:focus:border-cream-500 focus:shadow-sm"
 				/>
 				{hasQuery ? (
 					<button

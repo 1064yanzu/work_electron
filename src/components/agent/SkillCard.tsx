@@ -1,4 +1,4 @@
-import { CheckCircle2, File, Loader2, XCircle, Zap } from "lucide-react";
+import { Blocks, CheckCircle2, File, Loader2, XCircle } from "lucide-react";
 import type { SkillExecution } from "../../lib/agent/SkillExecutor";
 import { cn } from "../../lib/utils";
 
@@ -50,7 +50,7 @@ function StepStatusIcon({
 			return <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />;
 		default:
 			return (
-				<div className="w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-600 flex-shrink-0" />
+				<div className="w-3 h-3 rounded-full border border-cream-400 dark:border-cream-500 flex-shrink-0" />
 			);
 	}
 }
@@ -81,7 +81,7 @@ export function SkillCard({
 						: hasError && !hideHeader
 							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
 							: !hideHeader
-								? "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30"
+								? "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30"
 								: "",
 				)}
 			>
@@ -98,15 +98,16 @@ export function SkillCard({
 										: "bg-warm-50/50",
 							)}
 						>
-							<Zap
+							<Blocks
 								className={cn(
 									"w-4 h-4 transition-colors",
 									isActive
-										? "text-blue-600 dark:text-blue-400"
+										? "bai-icon-violet"
 										: hasError
-											? "text-red-600 dark:text-red-400"
+											? "text-[#b53333]"
 											: "text-text-muted",
 								)}
+								strokeWidth={1.5}
 							/>
 						</div>
 						<div className="flex-1 min-w-0">
@@ -164,12 +165,12 @@ export function SkillCard({
 
 				{/* 已加载文件(紧凑显示) */}
 				{skill.loadedFiles.length > 0 && (
-					<div className="px-3 py-1.5 border-t border-border/30/30">
+					<div className="px-3 py-1.5 border-t border-border/30">
 						<div className="flex flex-wrap gap-1">
 							{skill.loadedFiles.map((file, i) => (
 								<span
 									key={i}
-									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60/60 rounded text-[10px] text-text-muted"
+									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60 rounded text-[10px] text-text-muted"
 								>
 									<File className="w-2.5 h-2.5" />
 									{file.path.split("/").pop()}
@@ -191,11 +192,11 @@ export function SkillCard({
 
 	// 标准模式(原有样式,保持兼容)
 	return (
-		<div className="w-full bg-surface/60/40 border border-border/50/50 rounded-lg overflow-hidden mb-4 shadow-sm">
+		<div className="w-full bg-surface/60 border border-border/50 rounded-lg overflow-hidden mb-4 shadow-sm">
 			{/* 头部 */}
-			<div className="flex items-center gap-2 px-3 py-2.5 bg-warm-50/50/50 border-b border-border/50/50">
-				<div className="p-1.5 rounded-lg bg-surface">
-					<Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+			<div className="flex items-center gap-2 px-3 py-2.5 bg-warm-200/60 border-b border-border">
+				<div className="p-1.5 rounded-lg bg-surface border border-border">
+					<Blocks className="w-4 h-4 bai-icon-violet" strokeWidth={1.5} />
 				</div>
 				<span className="text-sm font-medium text-text-secondary dark:text-zinc-200 flex-1">
 					{skill.skillName} 执行中
@@ -237,13 +238,13 @@ export function SkillCard({
 
 			{/* 加载的文件 */}
 			{skill.loadedFiles.length > 0 && (
-				<div className="px-3 py-2 bg-warm-50/30/30 border-t border-border/50/50">
+				<div className="px-3 py-2 bg-warm-50/30 border-t border-border/50">
 					<div className="text-xs text-text-muted mb-1">已读取文件:</div>
 					<div className="flex flex-wrap gap-2">
 						{skill.loadedFiles.map((file, i) => (
 							<div
 								key={i}
-								className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border dark:border-zinc-600 rounded text-xs text-text-secondary"
+								className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border dark:border-cream-500 rounded text-xs text-text-secondary"
 							>
 								<File className="w-3 h-3 text-text-light" />
 								<span className="truncate max-w-[200px]" title={file.path}>

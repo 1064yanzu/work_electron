@@ -83,7 +83,7 @@ export default function DocxViewer({ src, className }: DocxViewerProps) {
 				<a
 					href={src}
 					download
-					className="p-1.5 rounded-lg hover:bg-warm-300 dark:hover:bg-zinc-700 transition-colors"
+					className="p-1.5 rounded-lg hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors"
 					title="下载"
 				>
 					<Download className="w-4 h-4" />

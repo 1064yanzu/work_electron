@@ -126,7 +126,7 @@ export function WikiGraphFullscreen() {
 	return (
 		<div className="flex flex-col h-full bg-warm-50">
 			{/* Toolbar */}
-			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70/70 bg-surface/70/60 backdrop-blur-sm shrink-0">
+			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70/60 backdrop-blur-sm shrink-0">
 				<button
 					onClick={handleClose}
 					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"
@@ -164,7 +164,7 @@ export function WikiGraphFullscreen() {
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="搜索节点（标题 / 摘要 / 标签 / 别名）..."
-							className="w-full pl-8 pr-8 py-1.5 text-sm bg-warm-200/70/70 border border-transparent rounded-lg focus:outline-none focus:bg-surface dark:focus:bg-dark-surface focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-colors"
+							className="w-full pl-8 pr-8 py-1.5 text-sm bg-warm-200/70 border border-transparent rounded-lg focus:outline-none focus:bg-surface dark:focus:bg-dark-surface focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-colors"
 						/>
 						{searchQuery && (
 							<button
@@ -204,7 +204,7 @@ export function WikiGraphFullscreen() {
 			<div className="flex-1 flex overflow-hidden">
 				{/* Left filter panel — collapsible */}
 				<aside
-					className={`shrink-0 border-r border-border/70/70 bg-surface/50/30 overflow-y-auto transition-all duration-200 ${
+					className={`shrink-0 border-r border-border/70 bg-surface/50/30 overflow-y-auto transition-all duration-200 ${
 						sidebarOpen ? "w-44" : "w-0 opacity-0 pointer-events-none"
 					}`}
 				>
@@ -245,7 +245,7 @@ export function WikiGraphFullscreen() {
 							})}
 						</div>
 
-						<div className="mt-4 pt-3 border-t border-border/60/60">
+						<div className="mt-4 pt-3 border-t border-border/60">
 							<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-2">
 								操作提示
 							</div>
@@ -310,7 +310,7 @@ function WikiNodeDetailOverlay({
 			}`}
 		>
 			{page && (
-				<div className="h-full overflow-y-auto rounded-xl border border-border/80/80 bg-surface/90/90 backdrop-blur-md shadow-lg shadow-zinc-900/10 dark:shadow-zinc-950/40">
+				<div className="h-full overflow-y-auto rounded-xl border border-border/80 bg-surface/90 backdrop-blur-md shadow-lg shadow-zinc-900/10 dark:shadow-zinc-950/40">
 					<WikiNodeDetailContent
 						page={page}
 						onOpen={onOpen}
@@ -431,7 +431,7 @@ function WikiNodeDetailContent({
 				</div>
 			)}
 
-			<div className="mt-4 pt-3 border-t border-border/60/60 space-y-2">
+			<div className="mt-4 pt-3 border-t border-border/60 space-y-2">
 				<button
 					onClick={() => onOpen(page)}
 					className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary/8 hover:bg-primary/15 text-primary text-xs py-2 transition-colors"

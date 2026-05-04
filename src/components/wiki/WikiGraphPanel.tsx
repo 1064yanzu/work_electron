@@ -44,7 +44,7 @@ export function WikiGraphPanel({
 	};
 
 	return (
-		<section className="mx-3 mt-3 rounded-2xl border border-border/80/80 bg-surface/80/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<section className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/80/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border/70">
 				<div className="flex items-center justify-between gap-3">

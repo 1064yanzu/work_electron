@@ -43,7 +43,7 @@ export function PairingSessionsSection(props: Props) {
 	return (
 		<div className="space-y-6">
 			{/* Segment 切换 */}
-			<div className="inline-flex items-center gap-1 rounded-xl border border-border/70 bg-surface/80 p-1/60">
+			<div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
 				<SegmentButton
 					active={segment === "pairing"}
 					onClick={() => setSegment("pairing")}
@@ -141,10 +141,10 @@ function SegmentButton({
 	const countClass =
 		count && count > 0
 			? countTone === "amber"
-				? "bg-amber-500 text-white"
+				? "bg-peach-500/15 text-peach-500"
 				: countTone === "emerald"
-					? "bg-emerald-500 text-white"
-					: "bg-zinc-300 text-text-secondary dark:bg-zinc-700 dark:text-zinc-200"
+					? "bg-mint-500/15 text-mint-600"
+					: "bg-warm-300 text-text-secondary"
 			: "bg-warm-300 text-text-muted";
 	return (
 		<button
@@ -153,7 +153,7 @@ function SegmentButton({
 			className={cn(
 				"inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200",
 				active
-					? "bg-surface text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.04]"
+					? "bg-warm-200 text-text-primary"
 					: "text-text-muted hover:text-text-secondary",
 			)}
 		>

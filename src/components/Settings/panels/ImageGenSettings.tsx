@@ -1,4 +1,10 @@
-import { Image, Loader2, Palette } from "lucide-react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	Image,
+	Loader2,
+	Palette,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	getImageGenConfig,
@@ -345,15 +351,17 @@ export function ImageGenSettings() {
 
 			{/* 状态提示 */}
 			{!config.providerId || !config.model ? (
-				<div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl">
-					<p className="text-sm text-amber-800 dark:text-amber-300">
-						⚠️ 请配置提供商和模型后才能使用生图功能。
+				<div className="p-4 bg-warm-200/60 border border-border rounded-2xl">
+					<p className="text-sm text-text-secondary inline-flex items-center gap-2">
+						<AlertCircle className="w-4 h-4" strokeWidth={1.5} />
+						请配置提供商和模型后才能使用生图功能。
 					</p>
 				</div>
 			) : (
-				<div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
-					<p className="text-sm text-emerald-800 dark:text-emerald-300">
-						✅ 配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
+				<div className="p-4 bg-mint-500/[0.08] border border-mint-500/30 rounded-2xl">
+					<p className="text-sm text-text-primary inline-flex items-center gap-2">
+						<CheckCircle2 className="w-4 h-4 bai-icon-mint" strokeWidth={1.5} />
+						配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
 					</p>
 				</div>
 			)}

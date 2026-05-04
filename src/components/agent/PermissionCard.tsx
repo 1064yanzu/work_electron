@@ -236,7 +236,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						type="checkbox"
 						checked={rememberForSession}
 						onChange={(e) => setRememberForSession(e.target.checked)}
-						className="rounded border-zinc-300 dark:border-zinc-600"
+						className="rounded border-cream-400 dark:border-cream-500"
 					/>
 					<span className="text-text-secondary">本次会话记住</span>
 				</label>
@@ -245,7 +245,7 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 						type="checkbox"
 						checked={rememberForTool}
 						onChange={(e) => setRememberForTool(e.target.checked)}
-						className="rounded border-zinc-300 dark:border-zinc-600"
+						className="rounded border-cream-400 dark:border-cream-500"
 					/>
 					<span className="text-text-secondary">对此工具记住</span>
 				</label>

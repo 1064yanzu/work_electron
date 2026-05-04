@@ -63,7 +63,7 @@ export function SettingsModal({
 	return (
 		<SettingsExperienceProvider>
 			<div
-				className={`fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
+				className={`fixed inset-0 z-50 flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
 				onMouseDown={(event) => {
 					if (event.target === event.currentTarget) {
 						handleClose();
@@ -71,7 +71,7 @@ export function SettingsModal({
 				}}
 			>
 				<FocusTrap
-					className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-[28px] shadow-2xl border border-border overflow-hidden flex transition-colors duration-300 ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+					className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-[28px] shadow-bai-pop border border-border overflow-hidden flex transition-colors duration-300 ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
 					style={{ backgroundColor: "var(--t-bg-surface)" }}
 					onEscape={handleClose}
 					initialFocusRef={closeButtonRef}
@@ -94,7 +94,7 @@ export function SettingsModal({
 						<button
 							ref={closeButtonRef}
 							onClick={handleClose}
-							className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-surface text-text-muted hover:text-text-primary btn-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+							className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-warm-200 text-text-muted hover:text-text-primary transition-transform duration-150 ease-out-expo active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 							title="关闭"
 							aria-label="关闭设置"
 						>

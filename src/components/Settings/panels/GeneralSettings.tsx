@@ -273,7 +273,9 @@ export function GeneralSettings() {
 							<Select
 								value={motionPreference}
 								onChange={(e) =>
-									handleMotionPreferenceChange(e.target.value as MotionPreference)
+									handleMotionPreferenceChange(
+										e.target.value as MotionPreference,
+									)
 								}
 								variant="inline"
 								containerClassName="w-auto min-w-[160px]"
@@ -387,9 +389,7 @@ export function GeneralSettings() {
 						action={
 							<SettingsSwitch
 								checked={centerUxPrefs.graphFollow}
-								onChange={(v) =>
-									handleCenterUxPrefsChange({ graphFollow: v })
-								}
+								onChange={(v) => handleCenterUxPrefsChange({ graphFollow: v })}
 							/>
 						}
 					/>
@@ -425,7 +425,9 @@ export function GeneralSettings() {
 							<Select
 								value={searchMcpProvider}
 								onChange={(e) =>
-									handleSearchMcpProviderChange(e.target.value as SearchMcpProvider)
+									handleSearchMcpProviderChange(
+										e.target.value as SearchMcpProvider,
+									)
 								}
 								variant="inline"
 								containerClassName="w-auto min-w-[240px]"
@@ -463,7 +465,10 @@ export function GeneralSettings() {
 							>
 								<option value="">跟随对话模型（默认）</option>
 								{allModels.map((model) => (
-									<option key={`${model.provider}-${model.id}`} value={model.id}>
+									<option
+										key={`${model.provider}-${model.id}`}
+										value={model.id}
+									>
 										{model.id} ({model.provider})
 									</option>
 								))}
@@ -476,13 +481,18 @@ export function GeneralSettings() {
 						action={
 							<Select
 								value={imageExtractionModel}
-								onChange={(e) => handleImageExtractionModelChange(e.target.value)}
+								onChange={(e) =>
+									handleImageExtractionModelChange(e.target.value)
+								}
 								variant="inline"
 								containerClassName="w-auto min-w-[200px]"
 							>
 								<option value="">跟随对话模型（默认）</option>
 								{allModels.map((model) => (
-									<option key={`${model.provider}-${model.id}`} value={model.id}>
+									<option
+										key={`${model.provider}-${model.id}`}
+										value={model.id}
+									>
 										{model.id} ({model.provider})
 									</option>
 								))}

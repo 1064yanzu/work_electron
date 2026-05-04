@@ -295,7 +295,7 @@ export function TaskProgressCompact() {
 		<div className="flex items-center gap-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full">
 			<div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
 			<div className="flex-1 min-w-0">
-				<div className="h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
+				<div className="h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
 					<div
 						className="h-full bg-blue-500 rounded-full transition-all duration-500"
 						style={{ width: `${taskProgress.overallProgress}%` }}

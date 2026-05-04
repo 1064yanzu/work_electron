@@ -30,7 +30,7 @@ export function DocumentGridCard({
 				"doc-card relative rounded-2xl border p-4 sm:p-5 bg-surface/95/78",
 				"border-border/75/70 shadow-[0_6px_24px_-16px_rgba(0,0,0,0.22)]",
 				"transition-all duration-200 ease-out",
-				"hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.30)] hover:-translate-y-1",
+				"hover:border-cream-400 dark:hover:border-cream-500 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.30)] hover:-translate-y-1",
 				checked &&
 					"ring-2 ring-primary/35 border-primary/45 dark:border-primary/40 bg-primary/[0.04] dark:bg-primary/[0.12]",
 			)}
@@ -39,7 +39,7 @@ export function DocumentGridCard({
 				<button
 					type="button"
 					onClick={() => onToggleManageSelection(output.id)}
-					className="focus-ring absolute left-3 top-3 min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-text-secondary dark:text-zinc-200 bg-surface/90/90 hover:bg-warm-200 dark:hover:bg-zinc-700 border border-border"
+					className="focus-ring absolute left-3 top-3 min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-text-secondary dark:text-zinc-200 bg-surface/90 hover:bg-warm-200 dark:hover:bg-cream-700 border border-border"
 					aria-label={checked ? "取消选择文档" : "选择文档"}
 				>
 					{checked ? (
@@ -88,7 +88,7 @@ export function DocumentGridCard({
 						{(output.tags || []).slice(0, 3).map((tag) => (
 							<span
 								key={`${output.id}-grid-tag-${tag}`}
-								className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] text-text-secondary dark:text-zinc-200 bg-warm-200/90 dark:bg-zinc-700/75 border border-border/80 dark:border-zinc-600/70"
+								className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] text-text-secondary dark:text-zinc-200 bg-warm-200/90 dark:bg-cream-700/75 border border-border/80 dark:border-cream-500/70"
 							>
 								#{tag}
 							</span>
@@ -96,7 +96,7 @@ export function DocumentGridCard({
 					</div>
 				) : null}
 
-				<div className="mt-4 pt-3 border-t border-border/70/70 inline-flex items-center gap-1.5 text-xs text-text-secondary">
+				<div className="mt-4 pt-3 border-t border-border/70 inline-flex items-center gap-1.5 text-xs text-text-secondary">
 					<Clock className="w-3.5 h-3.5" />
 					{formatDocumentDate(output.updated_at)}
 				</div>

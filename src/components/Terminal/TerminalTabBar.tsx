@@ -39,7 +39,7 @@ export function TerminalTabBar() {
 						className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
 							isActive
 								? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
-								: "text-text-muted hover:bg-surface/60/40"
+								: "text-text-muted hover:bg-surface/60"
 						}`}
 					>
 						<TerminalIcon className="w-3 h-3" />
@@ -47,7 +47,7 @@ export function TerminalTabBar() {
 						<button
 							type="button"
 							onClick={(e) => handleClose(e, t.id)}
-							className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-zinc-700 rounded p-0.5 transition-all cursor-pointer"
+							className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded p-0.5 transition-all cursor-pointer"
 						>
 							<X className="w-2.5 h-2.5" />
 						</button>

@@ -111,7 +111,7 @@ function InputDialogView({
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-[440px] rounded-[24px] border border-black/5 dark:border-white/10 bg-surface shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden"
+				className="relative w-full max-w-[440px] rounded-[24px] border border-border bg-surface shadow-bai-pop overflow-hidden"
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
@@ -136,7 +136,9 @@ function InputDialogView({
 								{title}
 							</h3>
 							{message ? (
-								<p className="mt-1.5 text-[13px] text-text-muted leading-relaxed">{message}</p>
+								<p className="mt-1.5 text-[13px] text-text-muted leading-relaxed">
+									{message}
+								</p>
 							) : null}
 						</div>
 					</div>
@@ -194,7 +196,7 @@ function InputDialogView({
 								"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
 								variant === "danger"
 									? "bg-red-500 text-white hover:bg-red-600 shadow-red-500/20"
-									: "bg-zinc-800 text-white hover:bg-zinc-900 shadow-black/10 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10",
+									: "bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10",
 							)}
 						>
 							{isSubmitting ? "处理中..." : confirmText}

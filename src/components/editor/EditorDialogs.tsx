@@ -36,7 +36,7 @@ export function EditorDialogs({
 						<div className="flex justify-end gap-2">
 							<button
 								onClick={onCloseBulkDeleteConfirm}
-								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>
@@ -65,7 +65,7 @@ export function EditorDialogs({
 						<div className="flex justify-end gap-2">
 							<button
 								onClick={onCloseDeleteConfirm}
-								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+								className="px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 rounded-lg transition-colors"
 							>
 								取消
 							</button>

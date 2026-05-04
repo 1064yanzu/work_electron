@@ -695,7 +695,8 @@ export function createAgentSdkHandlers(options: {
 														aliases: ["path", "file"],
 													})
 												) {
-													const guessed = await guessDefaultReadableFilePath(cwd);
+													const guessed =
+														await guessDefaultReadableFilePath(cwd);
 													if (guessed) {
 														effectiveToolInput = {
 															...effectiveToolInput,

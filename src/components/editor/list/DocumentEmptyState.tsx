@@ -1,4 +1,6 @@
 import { FileText, Plus } from "lucide-react";
+import { useMascot } from "../../../lib/mascotStore";
+import { Mascot } from "../../Mascot/Mascot";
 
 interface DocumentEmptyStateProps {
 	mode: "empty" | "search_empty";
@@ -11,6 +13,8 @@ export function DocumentEmptyState({
 	onCreateNew,
 	onClearSearch,
 }: DocumentEmptyStateProps) {
+	const { enabled } = useMascot();
+
 	if (mode === "search_empty") {
 		return (
 			<div className="flex flex-col items-center justify-center py-20 text-center">
@@ -33,9 +37,13 @@ export function DocumentEmptyState({
 
 	return (
 		<div className="flex flex-col items-center justify-center h-full text-center px-6">
-			<div className="h-24 w-24 rounded-3xl border border-border/80/70 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 inline-flex items-center justify-center">
-				<FileText className="w-12 h-12 text-text-muted" />
-			</div>
+			{enabled ? (
+				<Mascot slot="empty-no-data" size="2xl" float wrapperClassName="mb-2" />
+			) : (
+				<div className="h-24 w-24 rounded-3xl border border-border/80/70 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 inline-flex items-center justify-center">
+					<FileText className="w-12 h-12 text-text-muted" />
+				</div>
+			)}
 			<h3 className="mt-8 text-[40px] leading-none font-semibold tracking-tight text-text-primary">
 				开始创作
 			</h3>

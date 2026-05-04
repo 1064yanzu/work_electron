@@ -543,15 +543,14 @@ export function ChatInput({
 				/>
 			)}
 
-			{/* 主输入区域 — pill-shaped, 渐进式展开 */}
+			{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
 			<div
 				className={`
-					bg-surface border transition-all duration-300 ease-out
-					shadow-[rgba(0,0,0,0.03)_0px_1px_6px,rgba(0,0,0,0.02)_0px_0px_0px_1px]
+					bg-surface border transition-[border-color,border-radius,box-shadow] duration-300 ease-out
 					${
 						isExpanded
-							? "rounded-[22px] border-warm-400/70 dark:border-warm-500/40 shadow-[rgba(0,0,0,0.06)_0px_4px_20px,rgba(0,0,0,0.03)_0px_0px_0px_1px]"
-							: "rounded-[28px] border-border hover:border-warm-300 dark:hover:border-warm-500/30"
+							? "rounded-3xl border-warm-400 dark:border-warm-500/40 shadow-[0_4px_12px_0_rgb(26_26_25/0.06)]"
+							: "rounded-full border-border hover:border-warm-400 shadow-[0_1px_2px_0_rgb(26_26_25/0.04)]"
 					}
 				`}
 			>
@@ -612,7 +611,7 @@ export function ChatInput({
 						rows={1}
 						className={`
 							w-full bg-transparent text-[14px] text-text-primary
-							placeholder-text-muted/60 dark:placeholder-text-muted/40
+							placeholder-cream-600 dark:placeholder-text-muted/40
 							resize-none focus:outline-none focus:ring-0 focus:shadow-none disabled:opacity-50 leading-relaxed
 							transition-all duration-200
 							${isExpanded ? "px-5 py-3.5 min-h-[64px]" : "px-5 py-4 min-h-[52px]"}
@@ -635,20 +634,20 @@ export function ChatInput({
 							<button
 								onClick={() => fileInputRef.current?.click()}
 								aria-label="添加附件"
-								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
 								title="添加附件"
 							>
-								<Plus className="w-4 h-4" />
+								<Plus className="w-4 h-4" strokeWidth={1.5} />
 							</button>
 
 							<button
 								onClick={() => setValue("/")}
 								onMouseEnter={prefetchChatContext}
 								aria-label="命令菜单"
-								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-zinc-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-mint hover:bg-mint-100/70 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
 								title="命令菜单 (/)"
 							>
-								<AtSign className="w-3.5 h-3.5" />
+								<AtSign className="w-3.5 h-3.5" strokeWidth={1.5} />
 							</button>
 
 							{/* 模型选择器 — pill tag（弹出面板在容器外渲染） */}
@@ -657,16 +656,17 @@ export function ChatInput({
 									onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
 									className={`
 										flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-full
-										transition-all duration-150 cursor-pointer
+										transition-[background-color,color] duration-150 cursor-pointer
 										${
 											isModelSelectorOpen
-												? "bg-warm-200 dark:bg-zinc-700 text-text-primary"
-												: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-zinc-700/40"
+												? "bg-warm-200 dark:bg-cream-700 text-text-primary"
+												: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
 										}
 									`}
 								>
 									<ChevronUp
 										className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`}
+										strokeWidth={1.5}
 									/>
 									<span className="font-medium truncate max-w-[100px]">
 										{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
@@ -679,10 +679,10 @@ export function ChatInput({
 						<div className="flex items-center gap-1.5">
 							<button
 								aria-label="语音输入"
-								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/50 hover:text-text-muted hover:bg-warm-200/60 dark:hover:bg-zinc-700/40 transition-all duration-150 cursor-pointer active:scale-95"
+								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-violet hover:bg-violetx-100/70 dark:hover:bg-cream-700/40 transition-all duration-150 cursor-pointer active:scale-95"
 								title="语音输入"
 							>
-								<Mic className="w-3.5 h-3.5" />
+								<Mic className="w-3.5 h-3.5" strokeWidth={1.5} />
 							</button>
 							<button
 								onClick={handleSubmit}
@@ -692,15 +692,15 @@ export function ChatInput({
 								aria-label="发送消息"
 								className={`
 									flex items-center justify-center w-8 h-8 rounded-full
-									transition-all duration-200 cursor-pointer active:scale-90
+									transition-[background-color,opacity,transform] duration-200 cursor-pointer active:scale-90
 									${
 										value.trim() || selectedChips.length > 0
-											? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
-											: "bg-warm-200/80 dark:bg-zinc-700/50 text-text-muted/40 disabled:cursor-not-allowed"
+											? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
+											: "bg-warm-200 dark:bg-cream-700/50 text-text-muted/40 disabled:cursor-not-allowed"
 									}
 								`}
 							>
-								<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+								<ArrowUp className="w-4 h-4" strokeWidth={2} />
 							</button>
 						</div>
 					</div>
@@ -722,15 +722,15 @@ export function ChatInput({
 							aria-label="发送消息"
 							className={`
 								flex items-center justify-center w-8 h-8 rounded-full
-								transition-all duration-200 cursor-pointer active:scale-90
+								transition-[background-color,opacity,transform] duration-200 cursor-pointer active:scale-90
 								${
 									value.trim() || selectedChips.length > 0
-										? "bg-primary hover:bg-primary-hover text-surface shadow-sm"
-										: "bg-warm-200/60 dark:bg-zinc-700/40 text-text-muted/30 disabled:cursor-not-allowed"
+										? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
+										: "bg-warm-200 dark:bg-cream-700/40 text-text-muted/30 disabled:cursor-not-allowed"
 								}
 							`}
 						>
-							<ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+							<ArrowUp className="w-4 h-4" strokeWidth={2} />
 						</button>
 					</div>
 				</div>
@@ -749,13 +749,13 @@ export function ChatInput({
 				`}
 			>
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-surface/50 border border-border/50 rounded-[4px] text-[9px] font-sans text-text-light/60 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
 						/
 					</kbd>
 					命令
 				</span>
 				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-surface/50 border border-border/50 rounded-[4px] text-[9px] font-sans text-text-light/60 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
 						↵
 					</kbd>
 					发送

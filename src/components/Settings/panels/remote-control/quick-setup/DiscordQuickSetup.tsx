@@ -66,8 +66,8 @@ export function DiscordQuickSetup({
 	return (
 		<div className="space-y-5">
 			<div className="flex items-start gap-3">
-				<div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/10">
-					<Bot className="h-5 w-5 text-indigo-600" strokeWidth={1.8} />
+				<div className="bai-icon-badge h-11 w-11 flex-shrink-0">
+					<Bot className="h-5 w-5 text-text-secondary" strokeWidth={1.5} />
 				</div>
 				<div>
 					<h3 className="text-base font-semibold text-text-primary">
@@ -79,7 +79,7 @@ export function DiscordQuickSetup({
 				</div>
 			</div>
 
-			<div className="rounded-2xl border border-border/70 bg-gradient-to-br from-zinc-50/70 to-white p-5 dark:from-zinc-900/60 dark:to-zinc-900">
+			<div className="rounded-2xl border border-border bg-warm-200/30 p-5">
 				<StepBlock
 					index={1}
 					icon={Bot}
@@ -119,15 +119,15 @@ export function DiscordQuickSetup({
 						className={cn(
 							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
 							tokenValid
-								? "border-emerald-400 ring-2 ring-emerald-400/20"
+								? "border-mint-500 ring-2 ring-mint-500/20"
 								: trimmed
-									? "border-rose-300 ring-2 ring-rose-300/20 dark:border-rose-700"
+									? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
 									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 						)}
 					/>
 					{tokenValid ? (
-						<p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-							<CheckCircle2 className="h-3 w-3" />
+						<p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-mint-600">
+							<CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
 							Token 格式看起来没问题
 						</p>
 					) : null}

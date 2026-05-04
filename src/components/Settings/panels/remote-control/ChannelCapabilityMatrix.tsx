@@ -7,14 +7,7 @@
  *   - Agent 调度时「某渠道不支持」的可视化参考
  */
 
-import {
-	Check,
-	CircleAlert,
-	Minus,
-	RefreshCw,
-	Sparkles,
-	Wrench,
-} from "lucide-react";
+import { Check, CircleAlert, Minus, RefreshCw, Wrench } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../../ui/Button";
 import { toast } from "../../../ui/Toast";
@@ -53,22 +46,22 @@ function StatusBadge({
 	switch (status) {
 		case "sdk":
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-					<Sparkles className="h-3 w-3" />
+				<span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 px-2 py-0.5 text-[11px] font-medium text-mint-600">
+					<Check className="h-3 w-3" strokeWidth={1.5} />
 					SDK
 				</span>
 			);
 		case "legacy":
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
-					<Wrench className="h-3 w-3" />
+				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+					<Wrench className="h-3 w-3" strokeWidth={1.5} />
 					Legacy
 				</span>
 			);
 		default:
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-warm-500/10 px-2 py-0.5 text-[11px] font-medium text-text-muted0/15">
-					<CircleAlert className="h-3 w-3" />
+				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] font-medium text-text-muted">
+					<CircleAlert className="h-3 w-3" strokeWidth={1.5} />
 					Placeholder
 				</span>
 			);
@@ -78,8 +71,8 @@ function StatusBadge({
 function CapabilityCell({ value }: { value: boolean }) {
 	if (value) {
 		return (
-			<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-				<Check className="h-3.5 w-3.5" />
+			<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-mint-500/15 text-mint-600">
+				<Check className="h-3.5 w-3.5" strokeWidth={1.5} />
 			</span>
 		);
 	}
@@ -119,14 +112,9 @@ export function ChannelCapabilityMatrix() {
 					<SettingsSectionTitle className="mb-1">能力矩阵</SettingsSectionTitle>
 					<p className="text-sm text-text-secondary">
 						各渠道当前支持能力一览。
-						<span className="text-emerald-600 dark:text-emerald-400 font-medium">
-							SDK
-						</span>
+						<span className="text-mint-600 font-medium">SDK</span>
 						：已迁移到新 ChannelPluginSDK；
-						<span className="text-amber-600 dark:text-amber-400 font-medium">
-							{" "}
-							Legacy
-						</span>
+						<span className="text-peach-500 font-medium"> Legacy</span>
 						：未迁移但运行良好；
 						<span className="text-text-muted font-medium"> Placeholder</span>
 						：占位，尚未实装。

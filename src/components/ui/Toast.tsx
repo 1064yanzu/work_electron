@@ -32,31 +32,31 @@ function getToastStyles(type: ToastType) {
 	switch (type) {
 		case "success":
 			return {
-				border: "border-emerald-200 dark:border-emerald-800/50",
-				iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-				icon: <CheckCircle2 size={18} className="text-emerald-500" />,
-				progress: "bg-emerald-500",
+				border: "border-[rgba(74,124,89,0.22)]",
+				iconBg: "bg-[rgba(74,124,89,0.08)]",
+				icon: <CheckCircle2 size={18} className="text-success" />,
+				progress: "bg-success",
 			};
 		case "error":
 			return {
-				border: "border-red-200 dark:border-red-800/50",
-				iconBg: "bg-red-50 dark:bg-red-900/30",
-				icon: <XCircle size={18} className="text-red-500" />,
-				progress: "bg-red-500",
+				border: "border-[rgba(181,51,51,0.22)]",
+				iconBg: "bg-[rgba(181,51,51,0.08)]",
+				icon: <XCircle size={18} className="text-error" />,
+				progress: "bg-error",
 			};
 		case "warning":
 			return {
-				border: "border-amber-200 dark:border-amber-800/50",
-				iconBg: "bg-amber-50 dark:bg-amber-900/30",
-				icon: <Info size={18} className="text-amber-500" />,
-				progress: "bg-amber-500",
+				border: "border-[rgba(232,167,122,0.32)]",
+				iconBg: "bg-[rgba(232,167,122,0.14)]",
+				icon: <Info size={18} className="text-peach-500" />,
+				progress: "bg-peach-500",
 			};
 		default:
 			return {
-				border: "border-blue-200 dark:border-blue-800/50",
-				iconBg: "bg-blue-50 dark:bg-blue-900/30",
-				icon: <Info size={18} className="text-blue-500" />,
-				progress: "bg-blue-500",
+				border: "border-border",
+				iconBg: "bg-warm-200",
+				icon: <Info size={18} className="text-text-secondary" />,
+				progress: "bg-text-secondary",
 			};
 	}
 }
@@ -64,11 +64,11 @@ function getToastStyles(type: ToastType) {
 function getActionClass(variant: ToastActionVariant) {
 	switch (variant) {
 		case "primary":
-			return "bg-blue-500 text-white hover:bg-blue-600";
+			return "bg-primary text-primary-foreground hover:bg-primary-hover";
 		case "danger":
-			return "bg-red-500 text-white hover:bg-red-600";
+			return "bg-error text-white hover:bg-[#9e2b2b]";
 		default:
-			return "bg-warm-200 text-text-charcoal hover:bg-warm-300";
+			return "bg-warm-200 text-text-primary hover:bg-warm-300";
 	}
 }
 

@@ -58,18 +58,18 @@ export function WebSearchPanel({ onClose, onAddSource }: WebSearchPanelProps) {
 
 	return (
 		<div
-			className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+			className="fixed inset-0 bg-cream-900/30 backdrop-blur-sm flex items-center justify-center z-50"
 			onClick={onClose}
 		>
 			<div
-				className="bg-surface rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+				className="bg-surface rounded-2xl shadow-bai-pop border border-border w-full max-w-3xl max-h-[80vh] flex flex-col"
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* Header */}
 				<div className="p-6 border-b border-border">
 					<div className="flex items-center gap-3 mb-4">
-						<Globe className="w-6 h-6 text-primary" />
-						<h2 className="text-xl font-serif font-medium text-text-primary">
+						<Globe className="w-6 h-6 text-text-secondary" strokeWidth={1.5} />
+						<h2 className="text-lg font-semibold text-text-primary tracking-tight">
 							网页搜索
 						</h2>
 					</div>

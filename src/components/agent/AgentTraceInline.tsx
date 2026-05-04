@@ -4,6 +4,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Clock,
+	Code2,
 	FolderOpen,
 	Globe,
 	Loader2,
@@ -14,7 +15,6 @@ import {
 	Search,
 	Wrench,
 	XCircle,
-	Zap,
 	Database,
 	Archive,
 } from "lucide-react";
@@ -281,7 +281,7 @@ const ArtifactRow = memo(function ArtifactRow({
 			: artifact.type === "text"
 				? BookOpen
 				: artifact.type === "code" || isCodeFile
-					? Zap
+					? Code2
 					: MessageSquare;
 
 	// 加载文件内容用于预览
@@ -317,7 +317,7 @@ const ArtifactRow = memo(function ArtifactRow({
 	};
 
 	return (
-		<div className="rounded-xl bg-surface/60/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+		<div className="rounded-xl bg-surface/60 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 			{/* 头部信息 */}
 			<div
 				className={cn(
@@ -508,10 +508,13 @@ const ToolCallRow = memo(function ToolCallRow({
 		const skillData = (toolCall.output as any)?.data || toolCall.output;
 		if (skillData?.skillName || skillData?.instructions) {
 			return (
-				<div className="mb-2 rounded-xl bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 overflow-hidden">
+				<div className="mb-2 rounded-xl bg-surface/60 ring-1 ring-border overflow-hidden">
 					<div className="flex items-center gap-2 px-3 py-2">
-						<div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-							<Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+						<div className="p-1.5 rounded-lg bg-warm-200 border border-border">
+							<Wrench
+								className="w-3.5 h-3.5 text-text-secondary"
+								strokeWidth={1.5}
+							/>
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center gap-2">
@@ -559,7 +562,7 @@ const ToolCallRow = memo(function ToolCallRow({
 						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
 							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-							: "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+							: "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 				)}
 			>
 				<button
@@ -613,8 +616,8 @@ const ToolCallRow = memo(function ToolCallRow({
 
 				{/* 展开后显示完整输出 */}
 				{isExpanded && output && (
-					<div className="px-3 pb-3 border-t border-border/50/50">
-						<div className="mt-2 p-3 rounded-lg bg-warm-50/50 border border-border/50/50">
+					<div className="px-3 pb-3 border-t border-border/50">
+						<div className="mt-2 p-3 rounded-lg bg-warm-50/50 border border-border/50">
 							<div className="text-[11px] font-medium text-text-muted mb-2 flex items-center justify-between">
 								<span>输出</span>
 								{exitCode !== undefined && (
@@ -678,7 +681,7 @@ const ToolCallRow = memo(function ToolCallRow({
 					? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
 					: toolCall.status === "error"
 						? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
-						: "bg-surface/60/40 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+						: "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 			)}
 		>
 			<button
@@ -753,7 +756,7 @@ const ToolCallRow = memo(function ToolCallRow({
 					) : null}
 					{progress !== undefined && toolCall.status === "running" ? (
 						<div className="mt-1.5 space-y-1">
-							<div className="h-1.5 bg-warm-300 dark:bg-zinc-700 rounded-full overflow-hidden">
+							<div className="h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
 								<div
 									className="h-full bg-blue-500 transition-all duration-300"
 									style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
@@ -781,7 +784,7 @@ const ToolCallRow = memo(function ToolCallRow({
 
 			{/* 展开的详细内容 */}
 			{isExpanded && toolCall.output && (
-				<div className="px-3 pb-3 border-t border-border/50/50">
+				<div className="px-3 pb-3 border-t border-border/50">
 					{toolCall.type === "kb_search_chunks" ? (
 						<div className="mt-2 space-y-2">
 							{((toolCall.output as any)?.hits || []).map(
@@ -1027,7 +1030,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								{canPause ? (
 									<button
 										onClick={() => pauseTask()}
-										className="flex-1 px-3 py-1.5 rounded-lg bg-warm-300 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary dark:text-zinc-200"
+										className="flex-1 px-3 py-1.5 rounded-lg bg-warm-300 dark:bg-cream-700 hover:bg-cream-400 dark:hover:bg-cream-600 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary dark:text-zinc-200"
 									>
 										<Pause className="w-3.5 h-3.5" />
 										暂停
@@ -1256,7 +1259,7 @@ function ContextControl({
 						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
 							isCompacting
 								? "bg-warm-200 text-text-light cursor-wait"
-								: "bg-warm-200 hover:bg-warm-300 text-text-secondary dark:hover:bg-zinc-700"
+								: "bg-warm-200 hover:bg-warm-300 text-text-secondary dark:hover:bg-cream-700"
 						}`}
 						title="执行 /compact 命令压缩历史"
 					>

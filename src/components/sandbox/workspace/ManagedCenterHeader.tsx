@@ -1,4 +1,4 @@
-import { Eye, RefreshCw, Zap, X } from "lucide-react";
+import { Eye, RefreshCw, Workflow, X } from "lucide-react";
 import { IconButton } from "../../ui/Button";
 import { cn } from "../../../lib/utils";
 
@@ -26,7 +26,7 @@ export function ManagedCenterHeader({
 	return (
 		<div
 			className={cn(
-				"flex items-center justify-between border-b border-border/80/80 bg-surface/92/88 backdrop-blur-sm shrink-0",
+				"flex items-center justify-between border-b border-border/80 bg-surface/92/88 backdrop-blur-sm shrink-0",
 				density === "compact" ? "px-3 py-2" : "px-4 py-2.5",
 			)}
 		>
@@ -38,13 +38,13 @@ export function ManagedCenterHeader({
 						className={cn(
 							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
 							centerView === "graph"
-								? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
 								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
 						)}
 						title="运行图 (Alt+1)"
 						aria-label="切换到运行图"
 					>
-						<Zap className="w-4 h-4" />
+						<Workflow className="w-4 h-4" strokeWidth={1.5} />
 						运行图
 					</button>
 					<button
@@ -53,7 +53,7 @@ export function ManagedCenterHeader({
 						className={cn(
 							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
 							centerView === "preview"
-								? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
 								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
 						)}
 						title="产物预览视角 (Alt+2)"
@@ -64,7 +64,7 @@ export function ManagedCenterHeader({
 					</button>
 				</div>
 
-				<div className="w-px h-5 bg-warm-300 dark:bg-zinc-700" />
+				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700" />
 
 				<div className="min-w-0">
 					<h2 className="text-sm font-medium text-text-secondary dark:text-zinc-200 truncate">

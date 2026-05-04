@@ -84,7 +84,7 @@ const CodePreview = memo(function CodePreview({
 	}
 
 	return (
-		<div className="rounded-2xl border border-border/80/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
+		<div className="rounded-2xl border border-border/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
 			<div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border bg-dark-muted/90">
 				<div className="flex gap-1.5">
 					<span className="w-3 h-3 rounded-full bg-red-500/75" />
@@ -284,7 +284,7 @@ const CsvPreview = memo(function CsvPreview({
 	const body = rows.slice(1);
 
 	return (
-		<div className="overflow-auto rounded-xl border border-border/80/80">
+		<div className="overflow-auto rounded-xl border border-border/80">
 			<table className="w-full text-sm">
 				<thead className="bg-warm-200/80 sticky top-0">
 					<tr>
@@ -460,7 +460,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 9. 纯文本
 	return (
-		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80/80 bg-warm-50/80/55 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-zinc-200">
+		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80 bg-warm-50/80/55 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-zinc-200">
 			{content || emptyText}
 		</pre>
 	);

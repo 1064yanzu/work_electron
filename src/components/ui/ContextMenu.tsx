@@ -204,11 +204,11 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 			className={cn(
 				"fixed z-[9999] min-w-[200px]",
 				// 高级毛玻璃效果
-				"bg-surface/90/90",
+				"bg-cream-50/90 dark:bg-cream-900/90",
 				"backdrop-blur-xl backdrop-saturate-150",
 				// 优雅的边框和阴影
-				"rounded-xl border border-border/50/50",
-				"shadow-2xl shadow-black/10 dark:shadow-black/40",
+				"rounded-2xl border border-cream-400 dark:border-cream-500",
+				"shadow-bai-pop",
 				// 内边距
 				"py-1.5",
 				// 动画
@@ -223,7 +223,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 					return (
 						<div
 							key={`separator-${index}`}
-							className="h-px bg-warm-300/60 dark:bg-zinc-700/60 my-1.5 mx-2"
+							className="h-px bg-warm-300/60 dark:bg-cream-700/60 my-1.5 mx-2"
 						/>
 					);
 				}

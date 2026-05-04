@@ -30,7 +30,7 @@ export function DocumentRowItem({
 				"doc-card rounded-2xl border px-3 py-2.5 sm:px-4 sm:py-3 bg-surface/95/78",
 				"border-border/75/70",
 				"transition-[box-shadow,border-color,background-color] duration-200",
-				"hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-[0_12px_28px_-22px_rgba(0,0,0,0.35)]",
+				"hover:border-cream-400 dark:hover:border-cream-500 hover:shadow-[0_12px_28px_-22px_rgba(0,0,0,0.35)]",
 				checked &&
 					"ring-2 ring-primary/35 border-primary/45 dark:border-primary/40 bg-primary/[0.04] dark:bg-primary/[0.12]",
 			)}
@@ -41,7 +41,7 @@ export function DocumentRowItem({
 						<button
 							type="button"
 							onClick={() => onToggleManageSelection(output.id)}
-							className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-text-secondary dark:text-zinc-200 bg-surface/90/90 hover:bg-warm-200 dark:hover:bg-zinc-700 border border-border"
+							className="focus-ring min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-text-secondary dark:text-zinc-200 bg-surface/90 hover:bg-warm-200 dark:hover:bg-cream-700 border border-border"
 							aria-label={checked ? "取消选择文档" : "选择文档"}
 						>
 							{checked ? (
@@ -93,7 +93,7 @@ export function DocumentRowItem({
 					{(output.tags || []).slice(0, 2).map((tag) => (
 						<span
 							key={`${output.id}-row-tag-${tag}`}
-							className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] text-text-secondary dark:text-zinc-200 bg-warm-200/90 dark:bg-zinc-700/75 border border-border/80 dark:border-zinc-600/70"
+							className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] text-text-secondary dark:text-zinc-200 bg-warm-200/90 dark:bg-cream-700/75 border border-border/80 dark:border-cream-500/70"
 						>
 							#{tag}
 						</span>

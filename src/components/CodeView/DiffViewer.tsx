@@ -174,7 +174,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 	return (
 		<div className="flex flex-col h-full bg-surface overflow-hidden">
 			{/* 顶部工具栏 */}
-			<div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60/60 bg-warm-50/50/50 flex-shrink-0">
+			<div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-warm-50/50 flex-shrink-0">
 				{/* 左侧：文件路径 + 统计 */}
 				<div className="flex items-center gap-3 min-w-0 flex-1">
 					<FileText className="w-4 h-4 text-text-light flex-shrink-0" />
@@ -208,7 +208,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							className={cn(
 								"flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
 								viewMode === "split"
-									? "bg-surface dark:bg-zinc-700 text-text-primary dark:text-zinc-200 shadow-sm"
+									? "bg-surface dark:bg-cream-700 text-text-primary dark:text-zinc-200 shadow-sm"
 									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light",
 							)}
 							title="左右对比"
@@ -222,7 +222,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							className={cn(
 								"flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
 								viewMode === "unified"
-									? "bg-surface dark:bg-zinc-700 text-text-primary dark:text-zinc-200 shadow-sm"
+									? "bg-surface dark:bg-cream-700 text-text-primary dark:text-zinc-200 shadow-sm"
 									: "text-text-muted hover:text-text-secondary dark:hover:text-text-light",
 							)}
 							title="行内对比"
@@ -238,7 +238,7 @@ function DiffViewerInner({ diffId, rootPath, onClose }: DiffViewerProps) {
 							<button
 								type="button"
 								onClick={handleReject}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-warm-300/60 dark:hover:bg-zinc-700/60 transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-warm-300/60 dark:hover:bg-cream-700/60 transition-colors"
 							>
 								<X className="w-3.5 h-3.5" />
 								拒绝

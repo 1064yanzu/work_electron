@@ -244,7 +244,7 @@ export function ChatHistory({
                         w-8 h-8 mt-0.5 rounded-lg flex items-center justify-center shrink-0 transition-colors
                         ${
 													activeSessionId === session.id
-														? "bg-surface dark:bg-zinc-700 text-text-primary shadow-sm"
+														? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
 														: "bg-warm-200 text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light"
 												}
                       `}

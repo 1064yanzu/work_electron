@@ -244,7 +244,7 @@ function DiffSummaryInner({ rootPath }: DiffSummaryProps) {
 							<button
 								type="button"
 								onClick={() => rejectAllDiffs()}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:bg-warm-300/60 dark:hover:bg-zinc-700/60 transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:bg-warm-300/60 dark:hover:bg-cream-700/60 transition-colors"
 							>
 								<X className="w-3 h-3" />
 								全部拒绝

@@ -766,11 +766,11 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-zinc-300"}`}
+					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-cream-400"}`}
 				>
-					<div className="bg-surface px-4 py-3 rounded-xl shadow-lg border border-primary/30 dark:border-primary/40 flex items-center gap-3">
-						<div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-							<Plus className="w-5 h-5 text-primary" />
+					<div className="bg-surface px-4 py-3 rounded-xl shadow-bai-pop border border-border flex items-center gap-3">
+						<div className="w-10 h-10 rounded-lg bg-warm-200 border border-border flex items-center justify-center">
+							<Plus className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
 						</div>
 						<div>
 							<p className="text-sm font-medium text-text-primary">
@@ -851,7 +851,7 @@ export default function CopilotSidebar() {
 
 				{pendingCreateProposals.length > 0 && activeCreateProposal && (
 					<div className="mb-2 relative">
-						<div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60/50 bg-surface/90/90 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] px-3 py-2.5 ring-1 ring-black/[0.02] dark:ring-white/[0.02]">
+						<div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface/90 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] px-3 py-2.5 ring-1 ring-black/[0.02] dark:ring-white/[0.02]">
 							<button
 								type="button"
 								onClick={() => setIsProposalMenuOpen((v) => !v)}
@@ -888,7 +888,7 @@ export default function CopilotSidebar() {
 								<button
 									type="button"
 									onClick={() => removeCreateProposal(activeCreateProposal.id)}
-									className="h-10 w-10 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-surface/60/60 transition-all cursor-pointer"
+									className="h-10 w-10 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-surface/60 transition-all cursor-pointer"
 									title="忽略"
 									aria-label="忽略建议"
 								>
@@ -907,7 +907,7 @@ export default function CopilotSidebar() {
 						</div>
 
 						{isProposalMenuOpen && (
-							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-border/70/70 bg-surface/95/95 backdrop-blur shadow-xl overflow-hidden">
+							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-border bg-surface backdrop-blur shadow-bai-pop overflow-hidden">
 								<div className="max-h-56 overflow-auto">
 									{pendingCreateProposals.map((p) => (
 										<button
@@ -932,7 +932,7 @@ export default function CopilotSidebar() {
 										</button>
 									))}
 								</div>
-								<div className="px-4 py-2 border-t border-border/60/60 flex items-center justify-between">
+								<div className="px-4 py-2 border-t border-border/60 flex items-center justify-between">
 									<div className="text-[11px] text-text-light">
 										点击选择要处理的文档
 									</div>
@@ -951,19 +951,19 @@ export default function CopilotSidebar() {
 				)}
 
 				<div className="mb-2 flex items-center justify-between">
-					<div className="inline-flex items-center bg-warm-200/70/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
+					<div className="inline-flex items-center bg-warm-200/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
 						<button
 							onClick={() => {
 								setChatMode("chat");
 								managedModeStore.disableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
 								chatMode === "chat"
-									? "bg-surface text-primary shadow-md ring-1 ring-primary/20 scale-[1.02]"
-									: "text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-surface/50/50"
+									? "bg-warm-200 text-text-primary"
+									: "text-text-muted hover:text-text-primary hover:bg-warm-200/60"
 							}`}
 						>
-							<MessageSquare className="w-3.5 h-3.5" />
+							<MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
 							对话
 						</button>
 						<button
@@ -971,13 +971,13 @@ export default function CopilotSidebar() {
 								setChatMode("agent");
 								managedModeStore.enableManagedMode();
 							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
 								chatMode === "agent"
-									? "bg-[#141413] text-[#faf9f5] dark:bg-[#faf9f5] dark:text-[#141413] shadow-md scale-[1.02]"
-									: "text-[#5f5d57] dark:text-[#b0aea5] hover:text-[#141413] dark:hover:text-[#faf9f5] hover:bg-surface/60"
+									? "bg-primary text-primary-foreground"
+									: "text-text-muted hover:text-text-primary hover:bg-warm-200/60"
 							}`}
 						>
-							<CircleUser className="w-3.5 h-3.5" />
+							<CircleUser className="w-3.5 h-3.5" strokeWidth={1.5} />
 							托管
 						</button>
 					</div>

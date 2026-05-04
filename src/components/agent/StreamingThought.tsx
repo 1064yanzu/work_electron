@@ -152,7 +152,7 @@ export default function StreamingThought() {
 			{/* Header */}
 			<button
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface/50/50 transition-colors"
+				className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface/50 transition-colors"
 			>
 				<div className="relative">
 					<Activity
@@ -197,7 +197,7 @@ export default function StreamingThought() {
 											"w-3 h-0.5 rounded-full transition-colors",
 											phases.indexOf(thinkingPhase) > idx
 												? "bg-green-300 dark:bg-green-700"
-												: "bg-warm-300 dark:bg-zinc-700",
+												: "bg-warm-300 dark:bg-cream-700",
 										)}
 									/>
 								)}

@@ -10,29 +10,29 @@ function stateTone(state: string): {
 } {
 	if (state === "running")
 		return {
-			bg: "bg-emerald-500/10 dark:bg-emerald-500/15",
-			text: "text-emerald-600 dark:text-emerald-400",
-			dot: "bg-emerald-500",
+			bg: "bg-mint-500/10",
+			text: "text-mint-600",
+			dot: "bg-mint-500",
 			dotAnimate: true,
 		};
 	if (state === "waiting_interaction")
 		return {
-			bg: "bg-amber-500/10 dark:bg-amber-500/15",
-			text: "text-amber-600 dark:text-amber-400",
-			dot: "bg-amber-500",
+			bg: "bg-peach-500/10",
+			text: "text-peach-500",
+			dot: "bg-peach-500",
 			dotAnimate: true,
 		};
 	if (state === "error")
 		return {
-			bg: "bg-rose-500/10 dark:bg-rose-500/15",
-			text: "text-rose-600 dark:text-rose-400",
-			dot: "bg-rose-500",
+			bg: "bg-[#b53333]/[0.08]",
+			text: "text-[#b53333]",
+			dot: "bg-[#b53333]",
 			dotAnimate: false,
 		};
 	return {
-		bg: "bg-warm-500/100/15",
+		bg: "bg-warm-200",
 		text: "text-text-secondary",
-		dot: "bg-zinc-400",
+		dot: "bg-cream-500",
 		dotAnimate: false,
 	};
 }
@@ -68,7 +68,7 @@ export function SessionList(props: {
 				return (
 					<div
 						key={item.session_id}
-						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-sm"
+						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
 					>
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0 space-y-1.5">

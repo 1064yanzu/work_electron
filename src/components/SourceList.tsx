@@ -96,10 +96,8 @@ export function SourceList() {
 		<aside className="w-[300px] min-w-[250px] border-r border-border bg-panel-input flex flex-col h-full">
 			<div className="p-4 border-b border-border flex items-center justify-between bg-surface/50 backdrop-blur-sm">
 				<div className="flex items-center gap-2 text-text-secondary">
-					<Layers className="w-5 h-5 text-primary" />
-					<h2 className="font-serif font-medium tracking-wide text-sm">
-						Input Dock
-					</h2>
+					<Layers className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+					<h2 className="font-semibold tracking-tight text-sm">Input Dock</h2>
 				</div>
 				<button
 					onClick={fetchSources}

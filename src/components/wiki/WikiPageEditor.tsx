@@ -146,7 +146,7 @@ export function WikiPageEditor({
 								className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
 									pageType === pt.value
 										? "border-primary bg-primary/10 text-primary font-medium"
-										: "border-border text-text-muted hover:border-zinc-300 dark:hover:border-zinc-600"
+										: "border-border text-text-muted hover:border-cream-400 dark:hover:border-cream-500"
 								}`}
 								title={pt.desc}
 							>

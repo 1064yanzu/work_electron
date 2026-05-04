@@ -58,6 +58,12 @@ const SettingsModal = lazy(async () => {
 	return { default: mod.SettingsModal };
 });
 const TerminalPanel = lazy(() => import("./components/Terminal/TerminalPanel"));
+const MascotOnboarding = lazy(() =>
+	import("./components/Mascot/MascotOnboarding").then((m) => ({
+		default: m.MascotOnboarding,
+	})),
+);
+const MASCOT_ONBOARDING_KEY = "mascotOnboardingShown";
 
 function PanelLoadingFallback() {
 	return (
@@ -75,6 +81,7 @@ export default function App() {
 		useState<SettingsTabId>("models");
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");
+	const [showMascotOnboarding, setShowMascotOnboarding] = useState(false);
 	const activeMainView = useLayoutStoreSelector(
 		(state) => state.activeMainView,
 	);
@@ -112,6 +119,25 @@ export default function App() {
 	useEffect(() => {
 		void themeManager.getTheme();
 		void preloadUiDebugSetting();
+	}, []);
+
+	// 首启 Mascot 引导：仅在未读标记时显示一次
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const shown = window.localStorage.getItem(MASCOT_ONBOARDING_KEY);
+		if (!shown) {
+			const id = window.setTimeout(() => {
+				setShowMascotOnboarding(true);
+			}, 600);
+			return () => window.clearTimeout(id);
+		}
+	}, []);
+
+	const handleMascotOnboardingFinish = useCallback(() => {
+		setShowMascotOnboarding(false);
+		if (typeof window !== "undefined") {
+			window.localStorage.setItem(MASCOT_ONBOARDING_KEY, "1");
+		}
 	}, []);
 
 	useEffect(() => {
@@ -207,7 +233,7 @@ export default function App() {
 					</Suspense>
 				) : (
 					<div
-						className="h-screen w-screen app-shell-texture app-shell-noise font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95"
+						className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95"
 						style={{
 							backgroundColor: "var(--t-bg)",
 							color: "var(--t-text-secondary)",
@@ -244,10 +270,7 @@ export default function App() {
 								minSize={30}
 								className="overflow-hidden"
 							>
-								<PanelShell
-									variant="center"
-									className="mid-center-panel relative"
-								>
+								<PanelShell variant="center" className="relative">
 									<PanelGroup
 										direction="vertical"
 										className="h-full"
@@ -334,15 +357,16 @@ export default function App() {
 							<button
 								type="button"
 								onClick={handleShowRightSidebar}
-								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-2xl shadow-card transition-[transform,box-shadow,background-color,color] duration-200 active:scale-[0.98]"
+								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-full transition-[background-color,box-shadow,transform,color] duration-200 active:scale-[0.98]"
 								style={{
 									backgroundColor: "var(--t-bg-surface)",
-									color: "var(--t-text-secondary)",
+									color: "var(--t-text-primary)",
 									border: "1px solid var(--t-border)",
+									boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
 								}}
 								title="打开 AI 对话 (⌘L)"
 							>
-								<MessageCircle className="w-4 h-4" />
+								<MessageCircle className="w-4 h-4" strokeWidth={1.5} />
 								<span className="text-sm font-medium">AI 对话</span>
 							</button>
 						)}
@@ -357,6 +381,12 @@ export default function App() {
 							onClose={() => setIsSettingsOpen(false)}
 							initialTab={settingsInitialTab}
 						/>
+					</Suspense>
+				) : null}
+
+				{showMascotOnboarding ? (
+					<Suspense fallback={null}>
+						<MascotOnboarding onFinish={handleMascotOnboardingFinish} />
 					</Suspense>
 				) : null}
 			</MouseDragProvider>

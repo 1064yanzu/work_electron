@@ -67,23 +67,25 @@ export function SettingsSidebarGroup({
 							onFocus={() => onTabPrefetch?.(item.id)}
 							aria-current={activeTab === item.id ? "page" : undefined}
 							className={cn(
-								"relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1",
+								"relative flex w-full items-center gap-2.5 rounded-full px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream-400/40 focus-visible:ring-offset-1",
 								activeTab === item.id
-									? "bg-surface text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.04)]"
+									? "bg-cream-300 dark:bg-cream-700 text-text-primary"
 									: isTechnical
-										? "text-text-light hover:bg-surface/80 hover:text-text-secondary/70"
-										: "text-text-muted hover:bg-surface/80 hover:text-text-primary/60",
+										? "text-text-light hover:bg-cream-200/60 dark:hover:bg-cream-700/60 hover:text-text-secondary/70"
+										: "text-text-muted hover:bg-cream-200/60 dark:hover:bg-cream-700/60 hover:text-text-primary/80",
 							)}
 						>
 							{activeTab === item.id && (
-								<div className="absolute -left-[14px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+								<div className="absolute -left-[14px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-cream-900 dark:bg-cream-100" />
 							)}
 							<item.icon
 								className={cn(
 									"h-[15px] w-[15px] shrink-0",
-									activeTab === item.id ? "text-primary" : "text-text-light",
+									activeTab === item.id
+										? "text-text-primary"
+										: "text-text-muted",
 								)}
-								strokeWidth={activeTab === item.id ? 2 : 1.75}
+								strokeWidth={1.5}
 							/>
 							<div className="min-w-0 flex-1 truncate">{item.label}</div>
 						</button>

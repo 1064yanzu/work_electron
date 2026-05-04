@@ -34,7 +34,7 @@ import {
 } from "./ChannelFeatureToggles";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-zinc-300 dark:hover:border-zinc-600";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
 
 type WechatChannelConfig = NonNullable<
 	RemoteControlConfig["channels"]["wechat"]
@@ -95,23 +95,26 @@ export function WechatChannelCard({
 	const canEnable = channelConfig.acknowledgedRisk;
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-amber-300/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-amber-500/10 dark:border-amber-700/50">
-			<div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500 opacity-80" />
+		<div className="relative overflow-hidden rounded-2xl border border-peach-500/40 bg-surface shadow-bai-card">
+			<div className="absolute top-0 left-0 right-0 h-[3px] bg-peach-500/60" />
 
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3">
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/15 to-rose-500/10 dark:opacity-90">
-							<MessageCircle className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
+						<div className="bai-icon-badge h-9 w-9">
+							<MessageCircle
+								className="h-4 w-4 text-peach-500"
+								strokeWidth={1.5}
+							/>
 						</div>
 						<div>
 							<div className="flex items-center gap-2">
 								<SettingsSectionTitle className="mb-0">
 									个人微信通道
 								</SettingsSectionTitle>
-								<span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-									<AlertTriangle className="h-3 w-3" />
+								<span className="inline-flex items-center gap-1 rounded-full bg-peach-500/15 px-2 py-0.5 text-[11px] font-medium text-peach-500">
+									<AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
 									实验特性
 								</span>
 							</div>
@@ -138,14 +141,17 @@ export function WechatChannelCard({
 				</div>
 
 				{/* 风险提示 */}
-				<div className="space-y-3 rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
+				<div className="space-y-3 rounded-xl border border-[#b53333]/30 bg-[#b53333]/[0.06] p-4">
 					<div className="flex items-start gap-2.5">
-						<AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+						<AlertTriangle
+							className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#b53333]"
+							strokeWidth={1.5}
+						/>
 						<div className="space-y-1.5 text-sm">
-							<div className="font-medium text-rose-900 dark:text-rose-200">
+							<div className="font-medium text-[#b53333]">
 								使用前请了解以下风险
 							</div>
-							<ul className="list-disc space-y-0.5 pl-4 text-xs leading-relaxed text-rose-800/90 dark:text-rose-300/90">
+							<ul className="list-disc space-y-0.5 pl-4 text-xs leading-relaxed text-[#b53333]/85">
 								<li>微信无官方 Bot API，所有方案都是机器人伪装成客户端</li>
 								<li>
 									新注册账号 / 频繁发消息 / 大群广播 均可能触发封号或功能限制
@@ -164,14 +170,14 @@ export function WechatChannelCard({
 								href="https://wechaty.js.org/"
 								target="_blank"
 								rel="noreferrer"
-								className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 underline-offset-2 hover:underline dark:text-rose-300"
+								className="inline-flex items-center gap-1 text-xs font-medium text-[#b53333] underline-offset-2 hover:underline"
 							>
 								了解 Wechaty 文档
 								<ExternalLink className="h-3 w-3" />
 							</a>
 						</div>
 					</div>
-					<label className="flex items-start gap-2 rounded-lg border border-rose-300/60 bg-surface/70 px-3 py-2 text-xs text-rose-900 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200">
+					<label className="flex items-start gap-2 rounded-lg border border-[#b53333]/30 bg-surface/70 px-3 py-2 text-xs text-[#b53333]">
 						<input
 							type="checkbox"
 							checked={channelConfig.acknowledgedRisk}
@@ -187,7 +193,7 @@ export function WechatChannelCard({
 								});
 							}}
 							disabled={saving}
-							className="mt-0.5 h-3.5 w-3.5 rounded border-rose-300"
+							className="mt-0.5 h-3.5 w-3.5 rounded border-[#b53333]/40"
 						/>
 						<span>
 							我已了解上述风险；启用本渠道造成的账号限制或封禁由我自行承担。
@@ -407,21 +413,21 @@ export function WechatChannelCard({
 				/>
 
 				{/* 运行状态 + 测试连通 */}
-				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-50/50 px-4 py-3 text-xs/30">
+				<div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-warm-200/40 px-4 py-3 text-xs">
 					<Wifi className="h-4 w-4 text-text-muted" />
 					<span className="text-text-secondary">运行状态：</span>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
-								? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-								: "bg-warm-500/10 text-text-muted"
+								? "bg-mint-500/10 text-mint-600"
+								: "bg-warm-200 text-text-muted"
 						}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
-									? "bg-emerald-500 animate-pulse"
-									: "bg-zinc-400"
+									? "bg-mint-500 animate-pulse"
+									: "bg-cream-500"
 							}`}
 						/>
 						{runtimeChannel?.running ? "运行中" : "未运行"}
@@ -429,7 +435,7 @@ export function WechatChannelCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-rose-500 dark:text-rose-400">
+							<span className="text-[#b53333]">
 								{runtimeChannel.last_error}
 							</span>
 						</>

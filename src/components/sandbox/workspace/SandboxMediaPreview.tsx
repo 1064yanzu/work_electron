@@ -154,7 +154,7 @@ export const SandboxAudioPreview = memo(function SandboxAudioPreview({
 
 	return (
 		<div className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50 p-6 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
-			<div className="w-full max-w-xl rounded-[28px] border border-black/5 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur dark:border-white/10 dark:bg-zinc-900/90">
+			<div className="w-full max-w-xl rounded-[28px] border border-black/5 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur dark:border-white/10 dark:bg-cream-900/90">
 				<div className="mb-5 flex items-center gap-4">
 					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/30 to-orange-500/20 text-amber-700 dark:from-amber-400/20 dark:to-orange-500/10 dark:text-amber-200">
 						<svg

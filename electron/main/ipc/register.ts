@@ -46,8 +46,10 @@ import { createOutputHandlers } from "./handlers/outputs";
 import { createProjectHandlers } from "./handlers/projects";
 import { createProviderHandlers } from "./handlers/providers";
 import { createSkillsHandlers } from "./handlers/skills";
+import { createSkillsMarketplaceHandlers } from "./handlers/skillsMarketplace";
 import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
+import { createSystemHandlers } from "./handlers/system";
 import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
@@ -118,7 +120,12 @@ export function registerIpcHandlers({
 	const browserSearchHandlers = createBrowserSearchHandlers();
 	const exaMcpHandlers = createExaMcpHandlers();
 	const webContentHandlers = createWebContentHandlers();
+	const systemHandlers = createSystemHandlers();
 	const skillsHandlers = createSkillsHandlers(db);
+	const skillsMarketplaceHandlers = createSkillsMarketplaceHandlers({
+		db,
+		getMainWindow: () => mainWindowRef,
+	});
 	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
 	const dataStatsHandlers = createDataStatsHandlers(db);
 	const storageHandlers = createStorageHandlers(db);
@@ -200,6 +207,11 @@ export function registerIpcHandlers({
 	ipcMain.handle("health_ping", (async (_event, input) => {
 		return { ts: input.ts };
 	}) satisfies IpcHandler<"health_ping">);
+
+	ipcMain.handle(
+		"system_get_user_info",
+		systemHandlers.get_user_info satisfies IpcHandler<"system_get_user_info">,
+	);
 
 	ipcMain.handle("open_external_url", (async (_event, input) => {
 		try {
@@ -320,6 +332,58 @@ export function registerIpcHandlers({
 	ipcMain.handle("import_skill", skillsHandlers.import_skill);
 	ipcMain.handle("delete_skill", skillsHandlers.delete_skill);
 	ipcMain.handle("set_skill_enabled", skillsHandlers.set_skill_enabled);
+
+	// Skills Marketplace
+	ipcMain.handle(
+		"skills_marketplace_list_sources",
+		skillsMarketplaceHandlers.skills_marketplace_list_sources,
+	);
+	ipcMain.handle(
+		"skills_marketplace_set_sources",
+		skillsMarketplaceHandlers.skills_marketplace_set_sources,
+	);
+	ipcMain.handle(
+		"skills_marketplace_search",
+		skillsMarketplaceHandlers.skills_marketplace_search,
+	);
+	ipcMain.handle(
+		"skills_marketplace_install",
+		skillsMarketplaceHandlers.skills_marketplace_install,
+	);
+	ipcMain.handle(
+		"skills_marketplace_uninstall",
+		skillsMarketplaceHandlers.skills_marketplace_uninstall,
+	);
+	ipcMain.handle(
+		"skills_marketplace_check_updates",
+		skillsMarketplaceHandlers.skills_marketplace_check_updates,
+	);
+	ipcMain.handle(
+		"skills_marketplace_test_mirror",
+		skillsMarketplaceHandlers.skills_marketplace_test_mirror,
+	);
+	ipcMain.handle(
+		"skills_marketplace_preview",
+		skillsMarketplaceHandlers.skills_marketplace_preview,
+	);
+
+	// 启动后异步检查 skill 更新（不阻塞 IPC 注册）
+	setTimeout(() => {
+		(async () => {
+			try {
+				const fakeEvent = {} as IpcMainInvokeEvent;
+				await skillsMarketplaceHandlers.skills_marketplace_check_updates(
+					fakeEvent,
+					{},
+				);
+			} catch (e) {
+				logger.warn({
+					msg: "skills_marketplace_check_updates failed at startup",
+					error: e instanceof Error ? e.message : String(e),
+				});
+			}
+		})();
+	}, 8_000);
 
 	// ==================
 	// Providers

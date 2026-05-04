@@ -14,7 +14,7 @@ export function EditorStatusBar({
 	lastSavedLabel,
 }: EditorStatusBarProps) {
 	return (
-		<footer className="doc-toolbar shrink-0 px-4 py-2.5 border-t border-border/70/70 flex items-center justify-between text-xs">
+		<footer className="doc-toolbar shrink-0 px-4 py-2.5 border-t border-border/70 flex items-center justify-between text-xs">
 			<div className="inline-flex items-center gap-2 text-text-secondary">
 				<span>{editorContentLength} 字</span>
 				<span className="text-text-light">·</span>
