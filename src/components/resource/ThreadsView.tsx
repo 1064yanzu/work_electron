@@ -11,7 +11,6 @@ import {
 	Plus,
 	Search,
 	ChevronDown,
-	ChevronRight,
 	MessageSquare,
 	Folder,
 	FolderOpen,
@@ -110,6 +109,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchVisible, setSearchVisible] = useState(false);
+	const searchInputRef = useRef<HTMLInputElement>(null);
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 		new Set(),
 	);
@@ -124,6 +124,17 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			| { type: "session"; session: ChatSession }
 			| { type: "group"; group: ThreadFolderGroup };
 	} | null>(null);
+
+	useEffect(() => {
+		if (searchVisible) {
+			// 等待动画/挂载完成后再聚焦
+			const t = window.setTimeout(() => {
+				searchInputRef.current?.focus();
+			}, 50);
+			return () => window.clearTimeout(t);
+		}
+		setSearchQuery("");
+	}, [searchVisible]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -432,59 +443,62 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	return (
 		<div className="flex flex-col h-full bg-transparent">
 			{/* Header */}
-			<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-border dark:border-white/[0.05]">
-				<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
-					项目
-				</h2>
+			<div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
+				<h2 className="text-[14px] font-semibold text-text-primary">项目</h2>
 				<div className="flex items-center gap-1">
 					<button
 						onClick={() => setSearchVisible((v) => !v)}
-						className={`p-1.5 rounded-lg transition-colors ${
+						className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 active:scale-95 ${
 							searchVisible
-								? "text-[#D96C46] bg-[#D96C46]/10"
-								: "text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10"
+								? "text-[#D96C46] bg-[#D96C46]/[0.12]"
+								: "text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-white/[0.06]"
 						}`}
 						title="搜索"
 					>
-						<Search className="w-4 h-4" />
+						<Search className="w-3.5 h-3.5" strokeWidth={1.75} />
 					</button>
 					<button
 						onClick={handleCreateThread}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors"
+						className="flex items-center justify-center w-7 h-7 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-white/[0.06] transition-all duration-150 active:scale-95"
 						title="新建线程（选择项目目录）"
 					>
-						<Plus className="w-4 h-4" />
+						<Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
 					</button>
 				</div>
 			</div>
 
-			{/* Search Bar */}
-			{searchVisible && (
-				<div className="px-4 pb-3">
-					<div className="relative">
-						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
-						<input
-							type="text"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="搜索对话…"
-							className="w-full pl-8 pr-8 py-1.5 text-[12px] rounded-lg border border-border dark:border-white/10 bg-surface-inset dark:bg-white/5 text-text-primary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-[#D96C46]/30 transition-all"
-							autoFocus
-						/>
-						{searchQuery && (
-							<button
-								onClick={() => setSearchQuery("")}
-								className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded transition-colors"
-							>
-								<X className="w-3 h-3" />
-							</button>
-						)}
-					</div>
+			{/* Search Bar — 常驻容器，max-height 平滑过渡 */}
+			<div
+				className={`px-4 overflow-hidden transition-[max-height,opacity,margin] duration-200 ease-out ${
+					searchVisible ? "max-h-16 opacity-100 pb-3" : "max-h-0 opacity-0 pb-0"
+				}`}
+			>
+				<div className="relative">
+					<Search
+						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light pointer-events-none"
+						strokeWidth={1.75}
+					/>
+					<input
+						ref={searchInputRef}
+						type="text"
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						placeholder="搜索对话…"
+						className="w-full h-8 pl-8 pr-8 text-[12.5px] rounded-xl bg-warm-100/70 dark:bg-white/[0.05] text-text-primary placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-[#D96C46]/20 transition-shadow"
+					/>
+					{searchQuery && (
+						<button
+							onClick={() => setSearchQuery("")}
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded transition-colors"
+						>
+							<X className="w-3 h-3" />
+						</button>
+					)}
 				</div>
-			)}
+			</div>
 
 			{/* Folder Groups */}
-			<div className="flex-1 overflow-y-auto scrollbar-hide px-3 pb-6">
+			<div className="flex-1 overflow-y-auto px-2.5 pb-6">
 				{folderGroups.map((group) => {
 					const isCollapsed = collapsedGroups.has(group.key);
 					const isOverflowExpanded = expandedGroupKeys.has(group.key);
@@ -499,8 +513,11 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 					const canToggleOverflow =
 						!searchQuery.trim() &&
 						group.sessions.length > DEFAULT_VISIBLE_THREAD_COUNT;
+					const groupHasActive = group.sessions.some(
+						(s) => s.id === activeSessionId,
+					);
 					return (
-						<div key={group.key} className="mb-4">
+						<div key={group.key} className="mb-3">
 							{/* Folder Header */}
 							<div
 								onContextMenu={(e) => {
@@ -511,7 +528,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 										target: { type: "group", group },
 									});
 								}}
-								className="flex items-center gap-1 w-full px-2 py-1.5 mb-1 group hover:bg-warm-200/50 dark:hover:bg-white/5 rounded-md transition-colors"
+								className="flex items-center gap-1.5 w-full px-2.5 py-2 group hover:bg-warm-200/35 dark:hover:bg-white/[0.035] rounded-lg transition-colors duration-150"
 							>
 								<button
 									type="button"
@@ -520,33 +537,45 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									aria-expanded={!isCollapsed}
 									aria-label={`${group.folderName} 分组`}
 								>
-									<div className="text-text-light group-hover:text-text-secondary dark:group-hover:text-text-light transition-colors">
-										{isCollapsed ? (
-											<ChevronRight className="w-3.5 h-3.5" />
-										) : (
-											<ChevronDown className="w-3.5 h-3.5" />
-										)}
+									{/* Caret hit-area 16x16 */}
+									<div className="flex items-center justify-center w-4 h-4 shrink-0 text-text-light group-hover:text-text-secondary transition-colors">
+										<ChevronDown
+											className={`w-3.5 h-3.5 transition-transform duration-200 ${
+												isCollapsed ? "-rotate-90" : ""
+											}`}
+											strokeWidth={2}
+										/>
 									</div>
-									<div className="text-[#D96C46]/80 flex-shrink-0">
+									{/* Folder/Source icon */}
+									<div
+										className={`shrink-0 transition-colors ${
+											groupHasActive
+												? "text-[#D96C46]"
+												: "text-text-secondary group-hover:text-text-primary"
+										}`}
+									>
 										{group.source === "archive" ? (
-											<Archive className="w-4 h-4" />
+											<Archive className="w-4 h-4" strokeWidth={1.5} />
 										) : group.source === "remote" ? (
-											<MessageSquare className="w-4 h-4" />
+											<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
 										) : isCollapsed ? (
-											<Folder className="w-4 h-4" />
+											<Folder className="w-4 h-4" strokeWidth={1.5} />
 										) : (
-											<FolderOpen className="w-4 h-4" />
+											<FolderOpen className="w-4 h-4" strokeWidth={1.5} />
 										)}
 									</div>
 									<span
-										className="text-[13px] font-medium text-text-primary truncate flex-1"
+										className="text-[13.5px] font-semibold text-text-primary truncate flex-1"
 										title={group.folderPath || undefined}
 									>
 										{group.folderName}
 									</span>
 								</button>
 								{group.isPinned && (
-									<Pin className="w-3.5 h-3.5 text-[#D96C46]/70" />
+									<Pin
+										className="w-3 h-3 text-[#D96C46]/60 shrink-0"
+										strokeWidth={2}
+									/>
 								)}
 								{group.source === "local" && group.folderPath ? (
 									<button
@@ -556,11 +585,11 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											e.stopPropagation();
 											handleCreateThreadInGroup(group);
 										}}
-										className="rounded-md p-1 text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/10 dark:hover:bg-[#D96C46]/15 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D96C46]/25"
+										className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/10 dark:hover:bg-[#D96C46]/15 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D96C46]/25 active:scale-95"
 										aria-label={`在 ${group.folderName} 新建对话`}
 										title="新建对话"
 									>
-										<Plus className="w-3.5 h-3.5" />
+										<Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
 									</button>
 								) : null}
 								<button
@@ -574,96 +603,117 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											target: { type: "group", group },
 										});
 									}}
-									className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+									className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus-visible:opacity-100 active:scale-95"
 									aria-label={`${group.folderName} 更多操作`}
 									title="更多操作"
 								>
-									<MoreHorizontal className="w-3.5 h-3.5" />
+									<MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
 								</button>
 							</div>
 
-							{/* Sessions List */}
-							{!isCollapsed && (
-								<div className="pl-6 pr-2 space-y-0.5">
-									{visibleGroupSessions.map((session) => {
-										const isActive = session.id === activeSessionId;
-										const preview = getSessionPreview(session);
-										return (
-											<div
-												key={session.id}
-												onContextMenu={(e) =>
-													handleSessionContextMenu(e, session)
-												}
-												className={`w-full flex items-center justify-between pl-4 pr-1.5 py-1 rounded-lg transition-all duration-200 text-left group ${
-													isActive
-														? "bg-transparent relative"
-														: "hover:bg-warm-200/50 dark:hover:bg-white/5"
-												}`}
-											>
-												{isActive && (
-													<div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-sm bg-[#D96C46]" />
-												)}
-												<button
-													type="button"
-													onClick={() => handleSelectSession(session)}
-													className="flex flex-col gap-0.5 min-w-0 flex-1 pr-2 py-0.5 text-left"
+							{/* Sessions List — 用 grid-rows trick 做平滑折叠 */}
+							<div
+								className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+									isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+								}`}
+							>
+								<div className="overflow-hidden">
+									<div className="pl-[18px] pr-1.5 pt-0.5 space-y-0.5">
+										{visibleGroupSessions.map((session) => {
+											const isActive = session.id === activeSessionId;
+											const preview = getSessionPreview(session);
+											return (
+												<div
+													key={session.id}
+													onContextMenu={(e) =>
+														handleSessionContextMenu(e, session)
+													}
+													className={`relative w-full flex items-start justify-between gap-2 pl-3 pr-1.5 py-2 rounded-lg transition-colors duration-150 text-left group ${
+														isActive
+															? "bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12]"
+															: "hover:bg-warm-200/45 dark:hover:bg-white/[0.04]"
+													}`}
 												>
-													<span
-														className={`text-[12px] truncate ${
-															isActive
-																? "text-[#D96C46] dark:text-[#E07B52] font-semibold"
-																: "text-text-secondary group-hover:text-text-primary dark:group-hover:text-text-light"
-														}`}
-													>
-														{session.title || "Untitled Chat"}
-													</span>
-													{preview && (
-														<span className="text-[10px] text-text-light/60 truncate">
-															{preview}
-														</span>
+													{isActive && (
+														<span
+															aria-hidden="true"
+															className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[#D96C46]"
+														/>
 													)}
-												</button>
-												<div className="flex items-center gap-1 shrink-0">
-													{session.isPinned && (
-														<Pin className="w-3 h-3 text-[#D96C46]/70" />
-													)}
-													<span
-														className={`text-[10px] whitespace-nowrap ${
-															isActive
-																? "text-[#D96C46]/70 dark:text-[#E07B52]/70"
-																: "text-text-light opacity-0 group-hover:opacity-100 transition-opacity"
-														}`}
-													>
-														{formatRelativeTime(session.updatedAt)}
-													</span>
 													<button
 														type="button"
-														onClick={(e) =>
-															handleSessionContextMenu(e, session)
-														}
-														className="p-1 rounded-md text-text-light opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:opacity-100"
-														aria-label={`${session.title || "对话"} 更多操作`}
-														title="更多操作"
+														onClick={() => handleSelectSession(session)}
+														className="flex flex-col gap-0.5 min-w-0 flex-1 text-left"
 													>
-														<MoreHorizontal className="w-3.5 h-3.5" />
+														<span
+															className={`text-[13px] truncate transition-colors ${
+																isActive
+																	? "text-[#D96C46] dark:text-[#E07B52] font-semibold"
+																	: "text-text-secondary font-medium group-hover:text-text-primary dark:group-hover:text-text-light"
+															}`}
+														>
+															{session.title || "Untitled Chat"}
+														</span>
+														{preview && (
+															<span className="text-[11px] leading-tight text-text-light truncate mt-0.5">
+																{preview}
+															</span>
+														)}
 													</button>
+													<div className="flex items-center gap-1 shrink-0 pt-0.5">
+														{session.isPinned && (
+															<Pin
+																className="w-[11px] h-[11px] text-[#D96C46]/70"
+																strokeWidth={2}
+															/>
+														)}
+														<span
+															className={`text-[10.5px] whitespace-nowrap transition-colors ${
+																isActive
+																	? "text-[#D96C46]/70 dark:text-[#E07B52]/70"
+																	: "text-text-light"
+															}`}
+														>
+															{formatRelativeTime(session.updatedAt)}
+														</span>
+														<button
+															type="button"
+															onClick={(e) =>
+																handleSessionContextMenu(e, session)
+															}
+															className="flex items-center justify-center w-6 h-6 rounded-md text-text-light opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:opacity-100 active:scale-95"
+															aria-label={`${session.title || "对话"} 更多操作`}
+															title="更多操作"
+														>
+															<MoreHorizontal
+																className="w-3.5 h-3.5"
+																strokeWidth={1.75}
+															/>
+														</button>
+													</div>
 												</div>
-											</div>
-										);
-									})}
-									{canToggleOverflow ? (
-										<button
-											type="button"
-											onClick={() => toggleExpandedGroup(group.key)}
-											className="ml-4 mt-1 inline-flex items-center rounded-md px-2 py-1 text-[11px] font-medium text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/8 dark:hover:bg-[#D96C46]/12 transition-colors"
-										>
-											{isOverflowExpanded
-												? `收起，仅显示最近 ${DEFAULT_VISIBLE_THREAD_COUNT} 条`
-												: `展开其余 ${hiddenSessionCount} 条`}
-										</button>
-									) : null}
+											);
+										})}
+										{canToggleOverflow ? (
+											<button
+												type="button"
+												onClick={() => toggleExpandedGroup(group.key)}
+												className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/[0.08] dark:hover:bg-[#D96C46]/[0.12] transition-all"
+											>
+												<ChevronDown
+													className={`w-3 h-3 transition-transform duration-200 ${
+														isOverflowExpanded ? "" : "-rotate-90"
+													}`}
+													strokeWidth={2.25}
+												/>
+												{isOverflowExpanded
+													? `收起，仅显示最近 ${DEFAULT_VISIBLE_THREAD_COUNT} 条`
+													: `展开其余 ${hiddenSessionCount} 条`}
+											</button>
+										) : null}
+									</div>
 								</div>
-							)}
+							</div>
 						</div>
 					);
 				})}
@@ -671,8 +721,11 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				{/* Empty State */}
 				{folderGroups.length === 0 && (
 					<div className="text-center py-10 mt-10">
-						<div className="w-12 h-12 bg-warm-50/50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
-							<MessageSquare className="w-5 h-5 text-text-light" />
+						<div className="w-12 h-12 bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12] rounded-2xl flex items-center justify-center mx-auto mb-3">
+							<MessageSquare
+								className="w-5 h-5 text-[#D96C46]/70"
+								strokeWidth={1.5}
+							/>
 						</div>
 						<p className="text-sm text-text-muted font-medium">
 							{searchQuery ? "没有找到匹配的对话" : "暂无对话记录"}

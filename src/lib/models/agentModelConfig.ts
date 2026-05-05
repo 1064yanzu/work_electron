@@ -137,7 +137,7 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 	contextRuntime: {
 		contextPolicy: "balanced",
 		subagentContextMode: "capsule",
-		maxTurns: 24,
+		maxTurns: 100,
 		maxThinkingTokens: 8192,
 		maxBudgetUsd: undefined,
 		settingSources: ["user", "project"],
@@ -153,7 +153,7 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 		maxTeammates: 2,
 		teammateMode: "auto",
 		teammateBudget: {
-			maxTurns: 12,
+			maxTurns: 40,
 			maxThinkingTokens: 4096,
 			maxBudgetUsd: undefined,
 		},

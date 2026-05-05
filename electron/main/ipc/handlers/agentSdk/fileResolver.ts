@@ -279,6 +279,17 @@ export async function resolveToolFilePathEx(opts: {
 		return path.join(opts.cwd, ".claude", "skills", tail);
 	};
 
+	const mapMissingSandboxFileToCwd = (p: string): string | null => {
+		const sandboxMarker = `${path.sep}agent-sandboxes${path.sep}`;
+		if (!cwdResolved.includes(sandboxMarker) || !p.includes(sandboxMarker)) {
+			return null;
+		}
+		const base = path.basename(p);
+		if (!base || base === "." || base === path.sep) return null;
+		const mapped = path.join(cwdResolved, base);
+		return checkInsideCwd(mapped) ? mapped : null;
+	};
+
 	const checkInsideCwd = (p: string): boolean => {
 		const resolved = path.resolve(p);
 		return (
@@ -335,6 +346,14 @@ export async function resolveToolFilePathEx(opts: {
 				);
 				return { path: foundByBase, insideSandbox: true };
 			}
+		}
+
+		const mappedSandboxFile = mapMissingSandboxFileToCwd(rawClean);
+		if (mappedSandboxFile) {
+			console.log(
+				`[resolveToolFilePathEx] Rewriting missing sandbox file to cwd: '${rawClean}' -> '${mappedSandboxFile}'`,
+			);
+			return { path: mappedSandboxFile, insideSandbox: true };
 		}
 
 		// 绝对路径不存在但可能是新文件 — 检查父目录是否存在

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { listFolders } from "../api/sources";
+import { listFolders } from "../api/folders";
 import type { Folder } from "../../types";
 import { queryKeys } from "./keys";
 

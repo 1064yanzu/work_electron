@@ -24,6 +24,9 @@ import {
 	buildFileItemContextMenu,
 	buildFolderItemContextMenu,
 } from "../../lib/contextMenu/actions";
+import { isReaderSupportedFile } from "../../lib/reader/formats";
+import { readerImportFiles } from "../../lib/api/reader";
+import { openReader } from "../reader/ReaderApp";
 
 interface FileEntry {
 	path: string;
@@ -83,6 +86,24 @@ export function ProjectFilesView() {
 		setExpandedDirs(new Set());
 	}, [projectPath]);
 
+	const openInReader = useCallback(async (entry: FileEntry) => {
+		setIsLoading(true);
+		try {
+			const books = await readerImportFiles({ paths: [entry.path] });
+			const book = books[0];
+			if (!book) {
+				toast.error("无法解析该文件，请确认格式与编码");
+				return;
+			}
+			openReader(book.id);
+		} catch (e) {
+			console.error("Failed to open in reader:", entry.path, e);
+			toast.error("打开阅读器失败");
+		} finally {
+			setIsLoading(false);
+		}
+	}, []);
+
 	const toggleDir = async (entry: FileEntry) => {
 		if (entry.isDir) {
 			setExpandedDirs((prev) => {
@@ -94,42 +115,50 @@ export function ProjectFilesView() {
 				}
 				return next;
 			});
-		} else {
-			setIsLoading(true);
-			try {
-				if (isBinaryPreviewFile(entry.name)) {
-					// 二进制文件不读取内容，直接用路径打开
-					workspaceStore.openProjectFile(
-						entry.path,
-						entry.name,
-						BINARY_CONTENT_MARKER,
-					);
-				} else {
-					const res = await safeInvoke<{
-						content: string;
-						encoding: string;
-						size?: number;
-					}>("read_file_safe", { payload: { path: entry.path } });
-					console.log("[ProjectFilesView] open project file", {
-						path: entry.path,
-						title: entry.name,
-						contentLength: res?.content?.length ?? -1,
-						size: res?.size ?? -1,
-					});
-					workspaceStore.openProjectFile(entry.path, entry.name, res.content);
-				}
+			return;
+		}
 
-				// 强制切换到多标签编辑器视图
-				if (managedModeStore.getState().isActive) {
-					managedModeStore.disableManagedMode();
-				}
-				workspaceStore.setMainView("editor");
-			} catch (e) {
-				console.error("Failed to read file:", entry.path, e);
-				toast.error("无法读取文件内容");
-			} finally {
-				setIsLoading(false);
+		// 阅读器支持的格式（PDF/EPUB/MOBI/AZW3/TXT/HTML/MD/DOCX/CBZ 等）
+		// 直接交给阅读器 Overlay，不读入编辑器
+		if (isReaderSupportedFile(entry.name)) {
+			void openInReader(entry);
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			if (isBinaryPreviewFile(entry.name)) {
+				// 二进制文件不读取内容，直接用路径打开
+				workspaceStore.openProjectFile(
+					entry.path,
+					entry.name,
+					BINARY_CONTENT_MARKER,
+				);
+			} else {
+				const res = await safeInvoke<{
+					content: string;
+					encoding: string;
+					size?: number;
+				}>("read_file_safe", { payload: { path: entry.path } });
+				console.log("[ProjectFilesView] open project file", {
+					path: entry.path,
+					title: entry.name,
+					contentLength: res?.content?.length ?? -1,
+					size: res?.size ?? -1,
+				});
+				workspaceStore.openProjectFile(entry.path, entry.name, res.content);
 			}
+
+			// 强制切换到多标签编辑器视图
+			if (managedModeStore.getState().isActive) {
+				managedModeStore.disableManagedMode();
+			}
+			workspaceStore.setMainView("editor");
+		} catch (e) {
+			console.error("Failed to read file:", entry.path, e);
+			toast.error("无法读取文件内容");
+		} finally {
+			setIsLoading(false);
 		}
 	};
 

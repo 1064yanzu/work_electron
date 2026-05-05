@@ -50,7 +50,9 @@ export type MascotMotion =
 	| "greet"
 	| "done"
 	| "sad"
-	| "sleepy";
+	| "sleepy"
+	| "run-left"
+	| "run-right";
 
 /**
  * Atlas 行规格 — 来自 codex hatch-pet 标准
@@ -114,6 +116,8 @@ const HATCH_PET_ROWS = {
  * - done    → row 4 (jumping)     ：庆祝/任务完成
  * - sad     → row 5 (failed)      ：失败/委屈
  * - sleepy  → row 6 (waiting)     ：缓慢呼吸/耐心等候，最近似困倦
+ * - run-left  → row 2 (running-left) ：拖动向左偏
+ * - run-right → row 1 (running-right)：拖动向右偏
  */
 const MOTION_TO_ROW: Record<MascotMotion, SpriteRowSpec> = {
 	idle: HATCH_PET_ROWS.idle,
@@ -122,6 +126,8 @@ const MOTION_TO_ROW: Record<MascotMotion, SpriteRowSpec> = {
 	done: HATCH_PET_ROWS.jumping,
 	sad: HATCH_PET_ROWS.failed,
 	sleepy: HATCH_PET_ROWS.waiting,
+	"run-left": HATCH_PET_ROWS["running-left"],
+	"run-right": HATCH_PET_ROWS["running-right"],
 };
 
 /** Atlas 几何（hatch-pet 标准） */

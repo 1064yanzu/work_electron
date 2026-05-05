@@ -113,7 +113,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 								<button
 									type="button"
 									key={mid}
-									onClick={() => setId(mid)}
+									onClick={() => setId(mid, "main")}
 									className={cn(
 										"flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-all",
 										selected

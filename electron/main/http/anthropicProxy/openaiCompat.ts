@@ -424,7 +424,14 @@ export function translateToAnthropic(
 	model: string,
 	openaiResp: OpenAIResponse,
 ): AnthropicResponse {
-	const choice = openaiResp.choices[0];
+	const choice = openaiResp.choices?.[0];
+	if (!choice || !choice.message) {
+		throw new Error(
+			`Upstream returned no choices (response may be an error): ${JSON.stringify(
+				openaiResp,
+			).slice(0, 500)}`,
+		);
+	}
 	const content: AnthropicResponse["content"] = [];
 	const thoughtFragments = extractThoughtFragmentsFromOpenAIChunk(openaiResp);
 	const mergedThoughtBySource = mergeThoughtFragmentsBySource(thoughtFragments);

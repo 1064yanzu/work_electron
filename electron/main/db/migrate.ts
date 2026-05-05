@@ -204,4 +204,15 @@ export async function runMigrations(ctx: DbContext) {
 		"page_type",
 		"TEXT DEFAULT 'entity'",
 	);
+
+	// Migration: Reader 书架幂等导入 — 记录源文件路径并加唯一索引
+	await safeAddColumn(ctx, "reader_books", "source_path", "TEXT");
+	try {
+		await ctx.client.execute({
+			sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_reader_books_source_path ON reader_books(source_path) WHERE source_path IS NOT NULL`,
+			args: [],
+		});
+	} catch {
+		// 忽略索引创建错误
+	}
 }

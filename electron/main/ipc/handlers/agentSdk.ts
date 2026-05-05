@@ -26,6 +26,7 @@ import {
 	listProjectSkills,
 	syncSkillsToCwd,
 	writeClaudeConfigSettings,
+	loadClaudeMdChain,
 } from "./agentSdk/configManager";
 import {
 	type AgentSdkInteractionRequestPayload,
@@ -61,6 +62,10 @@ import {
 	normalizeMultiAgentMode,
 	normalizeTeammateMode,
 } from "./agentSdk/multiAgentRuntime";
+import {
+	createAgentModelSettingsLoader,
+	mergeUpdatedToolInput,
+} from "./agentSdk/modelSettingsLoader";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -81,73 +86,10 @@ export function createAgentSdkHandlers(options: {
 }) {
 	const logger = options.logger;
 
-	const mergeUpdatedToolInput = (
-		baseInput: Record<string, unknown>,
-		updatedInput?: Record<string, unknown>,
-	): Record<string, unknown> => {
-		if (!updatedInput || typeof updatedInput !== "object") {
-			return baseInput;
-		}
-		return {
-			...baseInput,
-			...updatedInput,
-		};
-	};
-
-	let cachedAgentModelSettings: { loadedAt: number; settings: any } | null =
-		null;
-	const AGENT_MODEL_SETTINGS_CACHE_TTL_MS = 5_000;
-
-	async function loadAgentModelSettingsFromDb(): Promise<any | null> {
-		const now = Date.now();
-		if (
-			cachedAgentModelSettings &&
-			now - cachedAgentModelSettings.loadedAt <
-				AGENT_MODEL_SETTINGS_CACHE_TTL_MS
-		) {
-			return cachedAgentModelSettings.settings;
-		}
-
-		try {
-			const rows = await options.db.client.execute({
-				sql: `SELECT value FROM app_config WHERE key = ?`,
-				args: ["agent.model_settings"],
-			});
-			const raw = rows.rows.length > 0 ? (rows.rows[0].value as unknown) : null;
-
-			let parsed: any = null;
-			try {
-				if (typeof raw === "string") parsed = JSON.parse(raw);
-				else if (raw && typeof raw === "object") parsed = raw;
-			} catch {
-				parsed = null;
-			}
-
-			cachedAgentModelSettings = { loadedAt: now, settings: parsed };
-			// 【调试】记录加载的配置
-			logger.info({
-				msg: "agent_sdk loadAgentModelSettingsFromDb result",
-				scope: "agent",
-				hasSettings: !!parsed,
-				scenarioConfigsCount: Array.isArray(parsed?.scenarioConfigs)
-					? parsed.scenarioConfigs.length
-					: 0,
-				scenarioConfigsPreview: Array.isArray(parsed?.scenarioConfigs)
-					? parsed.scenarioConfigs.slice(0, 3).map((c: any) => ({
-							scenario: c?.scenario,
-							customName: c?.customName,
-							enabled: c?.enabled,
-							modelId: c?.modelId,
-							providerId: c?.providerId,
-						}))
-					: [],
-			});
-			return parsed;
-		} catch {
-			cachedAgentModelSettings = { loadedAt: now, settings: null };
-			return null;
-		}
-	}
+	const loadAgentModelSettingsFromDb = createAgentModelSettingsLoader({
+		db: options.db,
+		logger,
+	});
 
 	const agent_sdk_start = async (
 		_event: IpcMainInvokeEvent,
@@ -559,6 +501,22 @@ export function createAgentSdkHandlers(options: {
 					);
 					return fs.existsSync(candidate) ? candidate : undefined;
 				})();
+
+				// 主动加载 CLAUDE.md 链（用户级 + 项目级），与 input.system_prompt
+				// 一起注入到 preset 的 append 字段。这是兜底机制：即使 SDK 的
+				// settingSources 动态注入失效，CLAUDE.md 也总能被 agent 看到。
+				const claudeMdChain = await loadClaudeMdChain(cwd);
+				const userSystemPrompt =
+					typeof input.system_prompt === "string" && input.system_prompt.trim()
+						? input.system_prompt.trim()
+						: "";
+				const appendBlocks: string[] = [];
+				if (claudeMdChain) appendBlocks.push(claudeMdChain);
+				if (userSystemPrompt) appendBlocks.push(userSystemPrompt);
+				const systemPromptAppend =
+					appendBlocks.length > 0
+						? appendBlocks.join("\n\n---\n\n")
+						: undefined;
 
 				const q = sdk.query({
 					prompt: String(input.prompt ?? ""),
@@ -1009,21 +967,14 @@ export function createAgentSdkHandlers(options: {
 						includePartialMessages: true,
 						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
 						stream: true,
-						// 使用 Claude Code 原生 preset，不再追加业务提示词、skills 策略或动态上下文。
-						systemPrompt:
-							typeof input.system_prompt === "string" &&
-							input.system_prompt.trim()
-								? {
-										type: "preset" as const,
-										preset: "claude_code" as const,
-										append: input.system_prompt.trim(),
-										excludeDynamicSections: true,
-									}
-								: {
-										type: "preset" as const,
-										preset: "claude_code" as const,
-										excludeDynamicSections: true,
-									},
+						// 使用 Claude Code 原生 preset，保留动态章节（cwd / git 状态 / TodoWrite 引导
+						// / "坚持干完"等指令），这是 agent "活人感"和"自驱续航"的来源。
+						// CLAUDE.md（项目+用户）已在主进程显式读取并通过 append 拼接，作为兜底。
+						systemPrompt: {
+							type: "preset" as const,
+							preset: "claude_code" as const,
+							...(systemPromptAppend ? { append: systemPromptAppend } : {}),
+						},
 						canUseTool: async (
 							toolName: string,
 							toolInput: any,
@@ -1314,7 +1265,23 @@ export function createAgentSdkHandlers(options: {
 									reason: analysis.reason,
 								};
 
-								// 安全命令 — 自动通过
+								// 只读且安全的命令 — 直接放行，永远不弹审批。
+								// 对齐 Claude Code CLI：ls/cat/rg/find/git status 等命令应"按键即过"。
+								if (
+									analysis.isReadOnly &&
+									analysis.destructiveLevel === "safe" &&
+									!analysis.targetsOutsideSandbox
+								) {
+									stderr(
+										`[agent_sdk] Bash auto-approved (readOnly + safe): '${finalCmd.slice(0, 120)}'`,
+									);
+									return {
+										behavior: "allow",
+										updatedInput: rewrittenInput,
+									};
+								}
+
+								// 安全命令（非只读但分析判定为 safe，例如 echo/printf）— 也自动通过
 								if (
 									analysis.isReadOnly &&
 									analysis.destructiveLevel === "safe"

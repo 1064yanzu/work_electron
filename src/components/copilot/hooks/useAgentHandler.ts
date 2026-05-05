@@ -41,11 +41,11 @@ import {
 	buildAgentNoTextCompletionSummary,
 	toFriendlyAgentRuntimeError,
 } from "../../../lib/agent/runtimeText";
-
-const AGENT_WATCHDOG_IDLE_FINALIZE_MS = 20_000;
-const AGENT_WATCHDOG_STALLED_EXECUTION_MS = 45_000;
-const AGENT_WATCHDOG_STALL_NOTE =
-	"> Agent 长时间未返回结束信号，已根据当前输出自动收口，并中止后台挂起运行。";
+import {
+	AGENT_WATCHDOG_IDLE_FINALIZE_MS,
+	AGENT_WATCHDOG_STALLED_EXECUTION_MS,
+	appendStallFinalizeNote,
+} from "./agentWatchdog";
 
 interface UseAgentHandlerOptions {
 	chatStore: ChatStoreLike;
@@ -177,12 +177,6 @@ export function useAgentHandler({
 
 		const touchActivity = () => {
 			lastActivityAt = Date.now();
-		};
-		const appendStallFinalizeNote = (text: string) => {
-			const trimmed = String(text || "").trim();
-			if (!trimmed) return AGENT_WATCHDOG_STALL_NOTE;
-			if (trimmed.includes(AGENT_WATCHDOG_STALL_NOTE)) return trimmed;
-			return `${trimmed}\n\n${AGENT_WATCHDOG_STALL_NOTE}`;
 		};
 
 		let lastSkillExecutionBlock: ChatMessageBlock | null = null;

@@ -25,6 +25,10 @@ interface ToolPermissionCardProps {
 	request: ToolPermissionRequest;
 	onAllow: (id: string) => void;
 	onDeny: (id: string) => void;
+	/** 是否绑定全局键盘快捷键（默认 true，多张卡片时只首张为 true） */
+	isFocused?: boolean;
+	/** 按 A 时调用，把 runId + toolName 加入会话级 allowlist */
+	onAllowAlways?: (id: string) => void;
 }
 
 /**
@@ -99,11 +103,18 @@ function getDestructiveLevelStyle(level: "safe" | "moderate" | "dangerous") {
 
 /**
  * 工具权限卡片
+ *
+ * 键盘快捷键（仅当卡片是当前 pending 队列首项时生效）：
+ *   Y / Enter — 允许
+ *   N / Esc   — 拒绝
+ *   A         — 本会话永远允许此工具（同 runId + toolName）
  */
 export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 	request,
 	onAllow,
 	onDeny,
+	isFocused = true,
+	onAllowAlways,
 }) => {
 	const [expanded, setExpanded] = useState(false);
 	const [remainingTime, setRemainingTime] = useState(30);
@@ -139,6 +150,45 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 
 	const isUrgent = remainingTime <= 10;
 	const ShieldIcon = destructiveLevel === "dangerous" ? ShieldAlert : Shield;
+
+	// 键盘快捷键：Y/Enter = allow, N/Esc = deny, A = allow always for session
+	useEffect(() => {
+		if (!isFocused) return;
+		if (isSubmitting) return;
+		const handler = (e: KeyboardEvent) => {
+			// 忽略输入控件中的按键
+			const target = e.target as HTMLElement | null;
+			if (target) {
+				const tag = target.tagName?.toUpperCase();
+				if (
+					tag === "INPUT" ||
+					tag === "TEXTAREA" ||
+					tag === "SELECT" ||
+					target.isContentEditable
+				)
+					return;
+			}
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			const key = e.key;
+			if (key === "y" || key === "Y" || key === "Enter") {
+				e.preventDefault();
+				onAllow(request.id);
+				return;
+			}
+			if (key === "n" || key === "N" || key === "Escape") {
+				e.preventDefault();
+				onDeny(request.id);
+				return;
+			}
+			if ((key === "a" || key === "A") && onAllowAlways) {
+				e.preventDefault();
+				onAllowAlways(request.id);
+				return;
+			}
+		};
+		window.addEventListener("keydown", handler);
+		return () => window.removeEventListener("keydown", handler);
+	}, [isFocused, isSubmitting, onAllow, onDeny, onAllowAlways, request.id]);
 
 	return (
 		<div
@@ -264,9 +314,25 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 						"hover:bg-warm-300 dark:hover:bg-cream-700",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
+					title="N / Esc"
 				>
-					{request.status === "submitting-deny" ? "拒绝中..." : "拒绝"}
+					{request.status === "submitting-deny" ? "拒绝中..." : "拒绝 (N)"}
 				</button>
+				{onAllowAlways && (
+					<button
+						onClick={() => onAllowAlways(request.id)}
+						disabled={isSubmitting}
+						className={cn(
+							"px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+							"bg-warm-100 text-text-secondary",
+							"hover:bg-warm-200 dark:hover:bg-cream-700",
+							"disabled:opacity-50 disabled:cursor-not-allowed",
+						)}
+						title="A — 本会话内所有同类工具都自动允许"
+					>
+						全允 (A)
+					</button>
+				)}
 				<button
 					onClick={() => onAllow(request.id)}
 					disabled={isSubmitting}
@@ -277,8 +343,9 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 							: "bg-focus hover:bg-focus text-white",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
 					)}
+					title="Y / Enter"
 				>
-					{request.status === "submitting-allow" ? "允许中..." : "允许"}
+					{request.status === "submitting-allow" ? "允许中..." : "允许 (Y)"}
 				</button>
 			</div>
 		</div>
@@ -287,6 +354,8 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 
 /**
  * 工具权限请求列表
+ *
+ * 只让队列首张卡片接受全局键盘快捷键，避免多张卡片时按键冲突。
  */
 export const ToolPermissionList: React.FC = () => {
 	const [requests, setRequests] = useState<ToolPermissionRequest[]>([]);
@@ -311,14 +380,24 @@ export const ToolPermissionList: React.FC = () => {
 		toolPermissionStore.denyRequest(id);
 	};
 
+	const handleAllowAlways = (id: string) => {
+		const req = toolPermissionStore.getRequest(id);
+		if (req) {
+			toolPermissionStore.allowAlwaysForSession(req.runId, req.toolName);
+		}
+		toolPermissionStore.allowRequest(id);
+	};
+
 	return (
 		<div className="space-y-2">
-			{requests.map((request) => (
+			{requests.map((request, idx) => (
 				<ToolPermissionCard
 					key={request.id}
 					request={request}
 					onAllow={handleAllow}
 					onDeny={handleDeny}
+					onAllowAlways={handleAllowAlways}
+					isFocused={idx === 0}
 				/>
 			))}
 		</div>

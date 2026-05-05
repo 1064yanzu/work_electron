@@ -106,6 +106,109 @@ type RemoteSessionState =
 	| "error";
 type CloudNodeRoutingMode = "cloud_only" | "prefer_desktop" | "auto";
 
+// ==================
+// Reader（阅读器）共享类型
+// ==================
+export type ReaderFormat =
+	| "pdf"
+	| "epub"
+	| "mobi"
+	| "azw3"
+	| "txt"
+	| "html"
+	| "md"
+	| "docx"
+	| "cbz";
+
+export type ReaderHighlightColor =
+	| "yellow"
+	| "peach"
+	| "sky"
+	| "sage"
+	| "lilac"
+	| "rose";
+
+export type ReaderTocItem = {
+	id: string;
+	label: string;
+	href: string;
+	level: number;
+	children?: ReaderTocItem[];
+};
+
+export type ReaderBook = {
+	id: string;
+	source_id: string | null;
+	title: string;
+	authors: string[];
+	language: string | null;
+	format: ReaderFormat;
+	storage_path: string;
+	cover_path: string | null;
+	page_count: number | null;
+	word_count: number | null;
+	toc: ReaderTocItem[];
+	metadata: Record<string, unknown>;
+	added_at: number;
+	last_opened_at: number | null;
+};
+
+export type ReaderProgress = {
+	book_id: string;
+	locator: string;
+	percent: number;
+	chapter_id: string | null;
+	updated_at: number;
+};
+
+export type ReaderHighlight = {
+	id: string;
+	book_id: string;
+	locator_start: string;
+	locator_end: string;
+	text: string;
+	color: ReaderHighlightColor;
+	note: string | null;
+	created_at: number;
+	updated_at: number;
+};
+
+export type ReaderBookmark = {
+	id: string;
+	book_id: string;
+	locator: string;
+	label: string | null;
+	created_at: number;
+};
+
+export type ReaderSession = {
+	id: string;
+	book_id: string;
+	started_at: number;
+	ended_at: number | null;
+	duration_ms: number;
+	pages_read: number;
+};
+
+export type ReaderChapter = {
+	id: string;
+	title: string;
+	html?: string;
+	text?: string;
+	images?: Array<{ name: string; data_url: string; mime: string }>;
+	prev_id: string | null;
+	next_id: string | null;
+	word_count?: number;
+};
+
+export type ReaderSearchHit = {
+	book_id: string;
+	chapter_id: string | null;
+	locator: string;
+	snippet: string;
+	score: number;
+};
+
 export type IPCSchema = {
 	// ==================
 	// 系统命令
@@ -2209,6 +2312,11 @@ export type IPCSchema = {
 			x: number;
 			y: number;
 			throughClicks: boolean;
+			mascotId: "off" | "efficiency" | "cloud" | "leisure";
+			sizePreset: "sm" | "md" | "lg" | "xl";
+			dwellPreset: "short" | "normal" | "long";
+			dndStart: string | null;
+			dndEnd: string | null;
 		};
 	};
 	pet_window_set_enabled: {
@@ -2240,8 +2348,72 @@ export type IPCSchema = {
 		output: { success: boolean };
 	};
 	pet_window_drag_end: {
-		input: Record<string, never>;
+		input: { vx?: number; vy?: number } | Record<string, never>;
 		output: { success: boolean; moved: boolean; x: number; y: number };
+	};
+	/** 拖动结束后吸附到最近的屏幕边缘（仅水平贴墙） */
+	pet_window_snap_to_edge: {
+		input: { threshold?: number };
+		output: { success: boolean; snapped: boolean; x: number; y: number };
+	};
+	/** 取宠物窗口当前位置 + 所在显示器工作区几何（用于气泡 placement 计算） */
+	pet_window_get_position: {
+		input: Record<string, never>;
+		output: {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+			displayX: number;
+			displayY: number;
+			displayWidth: number;
+			displayHeight: number;
+		};
+	};
+	/** 设置宠物角色尺寸档（持久化 + 通过广播让宠物窗口立即重渲染） */
+	pet_window_set_size_preset: {
+		input: { preset: "sm" | "md" | "lg" | "xl" };
+		output: { success: boolean };
+	};
+	/** 设置通知停留时长档 */
+	pet_window_set_dwell_preset: {
+		input: { preset: "short" | "normal" | "long" };
+		output: { success: boolean };
+	};
+	/** 设置勿扰时段（null 关闭勿扰） */
+	pet_window_set_dnd: {
+		input: { start: string | null; end: string | null };
+		output: { success: boolean };
+	};
+
+	// ==================
+	// 桌面宠物 IP（跨窗口同步）
+	// ==================
+	/** 设置当前宠物 IP，并广播给所有窗口（pet + main） */
+	mascot_set_id: {
+		input: {
+			id: "off" | "efficiency" | "cloud" | "leisure";
+			source?: "main" | "pet" | "system";
+		};
+		output: { success: boolean };
+	};
+	/** 取当前持久化的 IP（启动时初始化用） */
+	mascot_get_id: {
+		input: Record<string, never>;
+		output: { id: "off" | "efficiency" | "cloud" | "leisure" };
+	};
+	/**
+	 * 主动触发宠物 reminder 气泡（番茄钟 / 外部 cron / 通知服务的接入点）。
+	 * 本次只暴露通道，不绑定具体触发器。
+	 */
+	"pet-trigger-reminder": {
+		input: {
+			kind: "schedule" | "pomodoro" | "approval-waiting";
+			title: string;
+			detail?: string;
+			id?: string;
+		};
+		output: { success: boolean };
 	};
 
 	// ==================
@@ -2285,6 +2457,175 @@ export type IPCSchema = {
 	/** 保存沙盒文件（Monaco 编辑器用） */
 	sandbox_save_file: {
 		input: { taskId: string; relPath: string; content: string };
+		output: { success: boolean };
+	};
+
+	// ==================
+	// Reader（阅读器）
+	// ==================
+	/** 导入电子书：解析元数据 + 抽取目录 + 生成封面 + 全文索引 */
+	reader_import_files: {
+		input: {
+			paths: string[];
+			project_id?: string | null;
+			folder_id?: string | null;
+		};
+		output: ReaderBook[];
+	};
+	/** 列出书架（按 last_opened_at / added_at 排序） */
+	reader_list_books: {
+		input: {
+			format?: ReaderFormat;
+			project_id?: string | null;
+			limit?: number;
+			sort?: "recent" | "added" | "title";
+		};
+		output: ReaderBook[];
+	};
+	/** 单本元数据 + TOC */
+	reader_get_book: {
+		input: { id: string };
+		output: ReaderBook | null;
+	};
+	/** 打开（更新 last_opened_at） */
+	reader_open_book: {
+		input: { id: string };
+		output: { book: ReaderBook; progress: ReaderProgress | null };
+	};
+	/** 删除一本书（不删除底层文件，仅清理书架记录） */
+	reader_delete_book: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 取章节内容（HTML / 文本 / 图片序列） */
+	reader_get_chapter: {
+		input: { book_id: string; chapter_id: string };
+		output: ReaderChapter;
+	};
+	/** 保存阅读位置 */
+	reader_save_progress: {
+		input: {
+			book_id: string;
+			locator: string;
+			percent: number;
+			chapter_id?: string | null;
+		};
+		output: ReaderProgress;
+	};
+	/** 书内全文搜索（FTS5） */
+	reader_search_in_book: {
+		input: { book_id: string; query: string; limit?: number };
+		output: ReaderSearchHit[];
+	};
+	/** 跨书全文搜索（书架范围） */
+	reader_search_global: {
+		input: { query: string; limit?: number };
+		output: ReaderSearchHit[];
+	};
+	/** 列出某书的高亮 */
+	reader_list_highlights: {
+		input: { book_id: string };
+		output: ReaderHighlight[];
+	};
+	/** 创建高亮（含可选笔记） */
+	reader_create_highlight: {
+		input: {
+			book_id: string;
+			locator_start: string;
+			locator_end: string;
+			text: string;
+			color?: ReaderHighlightColor;
+			note?: string | null;
+		};
+		output: ReaderHighlight;
+	};
+	/** 更新高亮（颜色 / 笔记） */
+	reader_update_highlight: {
+		input: {
+			id: string;
+			color?: ReaderHighlightColor;
+			note?: string | null;
+		};
+		output: ReaderHighlight;
+	};
+	/** 删除高亮 */
+	reader_delete_highlight: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 列出某书的书签 */
+	reader_list_bookmarks: {
+		input: { book_id: string };
+		output: ReaderBookmark[];
+	};
+	/** 创建书签 */
+	reader_create_bookmark: {
+		input: { book_id: string; locator: string; label?: string | null };
+		output: ReaderBookmark;
+	};
+	/** 删除书签 */
+	reader_delete_bookmark: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 阅读会话开始（用于阅读统计） */
+	reader_session_start: {
+		input: { book_id: string };
+		output: ReaderSession;
+	};
+	/** 阅读会话结束（写入 duration / pages_read） */
+	reader_session_end: {
+		input: { session_id: string; pages_read?: number };
+		output: ReaderSession;
+	};
+	/** 列出阅读会话（用于热力图） */
+	reader_list_sessions: {
+		input: { book_id?: string; days?: number; limit?: number };
+		output: ReaderSession[];
+	};
+	/** 导出某书的高亮与笔记为 Markdown */
+	reader_export_highlights: {
+		input: { book_id: string; format?: "markdown" };
+		output: { content: string; suggested_filename: string };
+	};
+	/** 获取阅读器全局设置（落 app_config） */
+	reader_get_settings: {
+		input: Record<string, never>;
+		output: {
+			theme: string;
+			font_family: string;
+			font_size: number;
+			line_height: number;
+			letter_spacing: number;
+			column_count: 1 | 2;
+			max_width_ch: number;
+			page_transition: "slide" | "fade" | "instant";
+			auto_hide_chrome_ms: number;
+			default_selection_action: "explain" | "translate" | "highlight" | "ask";
+			tts_provider: "system" | "openai" | "azure" | "volcano";
+			tts_rate: number;
+			ai_context_scope: "chapter" | "book";
+			disable_notifications_while_reading: boolean;
+		};
+	};
+	/** 更新阅读器设置 */
+	reader_update_settings: {
+		input: Partial<{
+			theme: string;
+			font_family: string;
+			font_size: number;
+			line_height: number;
+			letter_spacing: number;
+			column_count: 1 | 2;
+			max_width_ch: number;
+			page_transition: "slide" | "fade" | "instant";
+			auto_hide_chrome_ms: number;
+			default_selection_action: "explain" | "translate" | "highlight" | "ask";
+			tts_provider: "system" | "openai" | "azure" | "volcano";
+			tts_rate: number;
+			ai_context_scope: "chapter" | "book";
+			disable_notifications_while_reading: boolean;
+		}>;
 		output: { success: boolean };
 	};
 };

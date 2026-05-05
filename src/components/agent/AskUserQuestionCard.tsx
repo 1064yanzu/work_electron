@@ -226,6 +226,112 @@ function AskUserQuestionPopup({
 		setCurrentStep((p) => Math.max(0, p - 1));
 	}, []);
 
+	// 键盘快捷键：仅对当前激活弹窗生效
+	// 1-9   选项快速选择（基于显示顺序）
+	// Enter 下一步 / 提交
+	// Esc   关闭
+	// ←/→   上一题 / 下一题
+	useEffect(() => {
+		if (queuePosition !== 0) return;
+		const handler = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement | null;
+			if (target) {
+				const tag = target.tagName?.toUpperCase();
+				if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
+					if (e.key === "Escape") {
+						e.preventDefault();
+						onDeny(request.requestId, "User dismissed");
+					}
+					return;
+				}
+			}
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+			const k = e.key;
+			const q = request.questions[currentStep];
+			if (k === "Escape") {
+				e.preventDefault();
+				onDeny(request.requestId, "User dismissed");
+				return;
+			}
+			if (k === "ArrowLeft" && currentStep > 0) {
+				e.preventDefault();
+				setSlideDir("backward");
+				setCurrentStep((p) => Math.max(0, p - 1));
+				return;
+			}
+			if (k === "ArrowRight" && currentStep < request.questions.length - 1) {
+				e.preventDefault();
+				setSlideDir("forward");
+				setCurrentStep((p) => Math.min(request.questions.length - 1, p + 1));
+				return;
+			}
+			if (q && /^[1-9]$/.test(k)) {
+				const idx = Number(k) - 1;
+				const opt = q.options[idx];
+				if (opt) {
+					e.preventDefault();
+					const multi = q.multiSelect === true;
+					setAnswers((prev) => {
+						const cur = prev[currentStep] ?? { selected: [], other: "" };
+						const selected = cur.selected.includes(opt.label)
+							? cur.selected.filter((l) => l !== opt.label)
+							: multi
+								? [...cur.selected, opt.label]
+								: [opt.label];
+						return { ...prev, [currentStep]: { ...cur, selected } };
+					});
+				}
+				return;
+			}
+			if (k === "Enter") {
+				e.preventDefault();
+				const isLast = currentStep === request.questions.length - 1;
+				const a = answers[currentStep] ?? { selected: [], other: "" };
+				const answered = a.selected.length > 0 || a.other.trim().length > 0;
+				if (!answered) return;
+				if (isLast || request.questions.length === 1) {
+					// submit inline（避免依赖循环）
+					const responseAnswers = request.questions.map((qq, i) => {
+						const s = answers[i] ?? { selected: [], other: "" };
+						return {
+							header: qq.header,
+							question: qq.question,
+							selections: s.selected,
+							other: s.other.trim() || undefined,
+						};
+					});
+					// 当前 step 的答案可能还没刷新到 answers state，补一份
+					if (!answers[currentStep]) {
+						responseAnswers[currentStep] = {
+							header: q?.header,
+							question: q?.question || "",
+							selections: a.selected,
+							other: a.other.trim() || undefined,
+						};
+					}
+					onAllow(request.requestId, {
+						questions: request.questions,
+						answers: responseAnswers,
+					});
+				} else {
+					setSlideDir("forward");
+					setCurrentStep((p) => Math.min(request.questions.length - 1, p + 1));
+				}
+			}
+		};
+		window.addEventListener("keydown", handler);
+		return () => window.removeEventListener("keydown", handler);
+	}, [
+		queuePosition,
+		currentStep,
+		answers,
+		onAllow,
+		onDeny,
+		request.questions,
+		request.requestId,
+	]);
+
 	// 只渲染当前激活的 (queuePosition === 0)
 	if (queuePosition !== 0) return null;
 
@@ -236,7 +342,6 @@ function AskUserQuestionPopup({
 	const isLastStep = currentStep === totalQuestions - 1;
 	const currentStepAnswered =
 		currentState.selected.length > 0 || currentState.other.trim().length > 0;
-
 	return (
 		<div className="auq-popup-overlay">
 			{/* 半透明遮罩 */}

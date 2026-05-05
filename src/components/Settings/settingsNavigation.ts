@@ -1,6 +1,7 @@
 import {
 	Package,
 	BarChart3,
+	BookOpen,
 	Cpu,
 	Database,
 	Activity,
@@ -62,6 +63,13 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 		id: "mascot",
 		label: "桌面宠物",
 		icon: Sparkles,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "reader",
+		label: "阅读器",
+		icon: BookOpen,
 		group: "common",
 		simpleMode: "full",
 	},

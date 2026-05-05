@@ -1,4 +1,5 @@
 import {
+	BookOpen,
 	Check,
 	Copy,
 	Download,
@@ -6,13 +7,24 @@ import {
 	FileCode2,
 	FolderOpen,
 	Link2,
-	Loader2,
+	Package,
+	Save,
+	Terminal as TerminalIcon,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { SandboxFile } from "../../../lib/managedModeStore";
+import { managedModeStore } from "../../../lib/managedModeStore";
+import {
+	sandboxEditorStore,
+	useSandboxEditorStoreSelector,
+} from "../../../lib/sandboxEditorStore";
 import { cn } from "../../../lib/utils";
 import { convertFileSrc } from "../../../lib/tauriCompat";
 import { isHtmlPreviewExtension } from "../../../lib/frontendPreview";
+import { isReaderSupportedFile } from "../../../lib/reader/formats";
+import { readerImportFiles } from "../../../lib/api/reader";
+import { openReader } from "../../reader/ReaderApp";
+import { toast } from "../../ui/Toast";
 import { MarkdownRenderer } from "../../ui/MarkdownRenderer";
 import DocumentViewer from "../../ui/DocumentViewer";
 import {
@@ -23,6 +35,7 @@ import {
 } from "./SandboxMediaPreview";
 import { SandboxImagePreview } from "./SandboxImagePreview";
 import { BrowserShell } from "../preview/BrowserShell";
+import { MonacoEditor, getMonacoLanguage } from "./MonacoEditor";
 import {
 	usePreviewServerStoreSelector,
 	previewServerStore,
@@ -52,24 +65,39 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 	emptyDescription = "点击左侧文件查看内容",
 }: FilePreviewContentProps) {
 	const [copiedAction, setCopiedAction] = useState<"" | "content" | "path">("");
+	const [isSaving, setIsSaving] = useState(false);
 
 	const previewServer = usePreviewServerStoreSelector((state) =>
 		taskId ? state.servers[taskId] : undefined,
 	);
 
+	// 当前文件在 sandboxEditorStore 中的 tab（如有）
+	const editorTab = useSandboxEditorStoreSelector((s) =>
+		file ? s.openTabs.find((t) => t.id === file.id) || null : null,
+	);
+
+	// source 模式优先使用 editorTab 的内容（含未保存修改），fallback 到 file.content
+	const sourceContent = editorTab?.content ?? file?.content ?? "";
+	const sourceDirty = editorTab?.dirty ?? false;
+
 	// 自动启动预览服务器（如果需要）
+	// 注意：useEffect 依赖中包含 previewServer 整体，
+	// 但启动失败（previewServer.error 存在）时不再重试，避免死循环。
 	useEffect(() => {
 		if (!taskId || !sandboxDir) return;
 		if (previewServer?.running) return;
+		if (previewServer?.error) return; // 已经失败过，不再无限重试
 
-		// 检查是否有 package.json 或多个 HTML 文件
+		// 触发条件：当前文件是 HTML 或 package.json，认为用户期望预览前端工程
 		const hasPackageJson = file?.name === "package.json";
 		const isHtmlFile = file && isHtmlPreviewExtension(file.extension);
 
 		if (hasPackageJson || isHtmlFile) {
+			// 不传 mode，让主进程根据沙盒内容自动探测
+			// （单 HTML → single 模式立即可预览；含 dev script → dev 模式启动子进程）
 			previewServerStore.start(taskId, sandboxDir);
 		}
-	}, [taskId, sandboxDir, file, previewServer?.running]);
+	}, [taskId, sandboxDir, file, previewServer?.running, previewServer?.error]);
 
 	const isImage = file?.category === "images";
 	const isVideo = file ? isVideoPreviewExtension(file.extension) : false;
@@ -122,6 +150,65 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		}
 	}, [file]);
 
+	const [isOpeningReader, setIsOpeningReader] = useState(false);
+	const canOpenInReader = file
+		? isReaderSupportedFile(file.name) && Boolean(file.path)
+		: false;
+
+	const handleOpenInReader = useCallback(async () => {
+		if (!file?.path) return;
+		setIsOpeningReader(true);
+		try {
+			const books = await readerImportFiles({ paths: [file.path] });
+			const book = books[0];
+			if (!book) {
+				toast.error("无法解析该文件，请确认格式与编码");
+				return;
+			}
+			openReader(book.id);
+		} catch (e) {
+			console.error("Failed to open in reader:", file.path, e);
+			toast.error("打开阅读器失败");
+		} finally {
+			setIsOpeningReader(false);
+		}
+	}, [file]);
+
+	const handleMonacoChange = useCallback(
+		(value: string | undefined) => {
+			if (!file || value === undefined) return;
+			sandboxEditorStore.updateContent(file.id, value);
+		},
+		[file],
+	);
+
+	const handleSave = useCallback(async () => {
+		if (!file) return;
+		const tab = sandboxEditorStore
+			.getState()
+			.openTabs.find((t) => t.id === file.id);
+		if (!tab) {
+			toast.info("当前文件未打开为可编辑标签页");
+			return;
+		}
+		if (!tab.dirty) return;
+		setIsSaving(true);
+		try {
+			const ok = await sandboxEditorStore.saveTab(file.id);
+			if (ok) {
+				// 把最新内容回写 managedModeStore，避免下次加载又取磁盘旧值
+				managedModeStore.updateFile(file.id, {
+					content: tab.content,
+				});
+				toast.success(`${file.name} 已保存`);
+			} else {
+				toast.error("保存失败");
+			}
+		} finally {
+			setIsSaving(false);
+		}
+	}, [file]);
+
 	// useMemo must be called before any early returns to satisfy React Hooks rules
 	const copiedLabel = useMemo(
 		() =>
@@ -164,38 +251,21 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		file.content !== undefined;
 	const isLoadingContent = !canPreviewWithoutText && file.content === undefined;
 
-	const renderSource = () => (
-		<div className="flex-1 overflow-auto bg-dark-muted dark:bg-black">
-			<div className="flex items-center gap-2 px-4 py-2 border-b border-dark-border bg-dark-surface sticky top-0">
-				<div className="flex gap-1.5">
-					<span className="w-3 h-3 rounded-full bg-error/70" />
-					<span className="w-3 h-3 rounded-full bg-yellow-500/70" />
-					<span className="w-3 h-3 rounded-full bg-green-500/70" />
-				</div>
-				<span className="text-xs text-text-light font-mono ml-2">
-					{file.name}
-				</span>
+	const renderSource = () => {
+		if (!file) return null;
+		const language = getMonacoLanguage(file.extension);
+		return (
+			<div className="flex-1 min-h-0 bg-surface">
+				<MonacoEditor
+					value={sourceContent}
+					language={language}
+					onChange={handleMonacoChange}
+					onSave={handleSave}
+					readOnly={!editorTab}
+				/>
 			</div>
-			<div className="p-4 font-mono text-[13px] leading-relaxed text-zinc-200">
-				{(file.content || "").split("\n").map((line, index) => (
-					<div
-						key={`${file.id}-line-${index + 1}`}
-						className="grid grid-cols-[3rem_minmax(0,1fr)] group hover:bg-dark-surface/50 -mx-4 px-4 transition-colors"
-					>
-						<span
-							className="select-none text-right pr-3 text-text-muted group-hover:text-text-light cursor-pointer transition-colors"
-							title={`第 ${index + 1} 行`}
-						>
-							{index + 1}
-						</span>
-						<span className="whitespace-pre-wrap break-words">
-							{line || " "}
-						</span>
-					</div>
-				))}
-			</div>
-		</div>
-	);
+		);
+	};
 
 	const renderPreview = () => {
 		if (isImage) {
@@ -240,45 +310,74 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				);
 			}
 
-			// 优先级 2：如果有 package.json 或多文件项目，显示启动中状态
+			// 优先级 2：dev 模式启动中（需要等待子进程编译）
+			// single / static 模式应当立即 ready，不应进入此分支
+			// 失败（有 error）时不卡 loading，直接 fallback 到 srcDoc
 			if (
 				taskId &&
 				sandboxDir &&
 				previewServer?.running &&
-				!previewServer?.ready
+				!previewServer?.ready &&
+				!previewServer?.error &&
+				previewServer?.mode === "dev"
 			) {
 				return (
-					<div className="flex-1 flex flex-col items-center justify-center gap-4 bg-surface">
-						<Loader2 className="w-8 h-8 text-primary animate-spin" />
-						<div className="text-center space-y-2">
-							<p className="text-sm font-medium text-text-primary">
-								正在启动开发服务器...
+					<div className="flex-1 relative bg-gradient-to-b from-cream-100 to-cream-200/40 dark:from-cream-900 dark:to-cream-950">
+						<div className="absolute inset-0 flex flex-col items-center justify-center px-8">
+							<div className="relative w-16 h-16 mb-5">
+								<div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cream-200 to-cream-300 dark:from-cream-700 dark:to-cream-800 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_8px_rgba(26,26,25,0.04)]" />
+								<div className="absolute inset-0 flex items-center justify-center">
+									<Package
+										className="w-7 h-7 text-[#D96C46]"
+										strokeWidth={1.5}
+									/>
+								</div>
+								{/* 呼吸光环 */}
+								<div className="absolute -inset-1.5 rounded-full border border-[#D96C46]/30 animate-pulse-slow" />
+								<div className="absolute -inset-3 rounded-full border border-[#D96C46]/15 animate-pulse-slow" />
+							</div>
+							<h3 className="text-base font-semibold text-text-primary mb-1.5">
+								正在启动开发服务器
+							</h3>
+							<p className="text-xs text-text-secondary leading-relaxed text-center max-w-sm mb-5">
+								Vite / Next 等工程在首次启动时需要安装依赖与编译。
+								<br />
+								通常需要几秒到一分钟，请稍候...
 							</p>
-							<p className="text-xs text-text-muted">
-								首次启动可能需要安装依赖
-							</p>
+							{/* 进度条 */}
+							<div className="w-56 h-1 rounded-full bg-cream-200 dark:bg-cream-800 overflow-hidden mb-3">
+								<div className="h-full w-1/3 bg-gradient-to-r from-[#D96C46] via-[#E8A77A] to-[#D96C46] rounded-full animate-swarm-indeterminate" />
+							</div>
+							<div className="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
+								<TerminalIcon className="w-3 h-3" strokeWidth={1.5} />
+								<span className="font-mono">npm run dev</span>
+								{previewServer?.port ? (
+									<>
+										<span className="text-text-light">·</span>
+										<span className="font-mono tabular-nums">
+											:{previewServer.port}
+										</span>
+									</>
+								) : null}
+							</div>
 						</div>
 					</div>
 				);
 			}
 
-			// 优先级 3：单 HTML fallback 到 srcDoc
+			// 优先级 3：单 HTML / 启动失败 → fallback 到 srcDoc，复用 BrowserShell 保证视觉统一
 			if (!file.content) {
 				return (
-					<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface">
-						预览内容为空，已自动回退到源码模式
-					</div>
+					<BrowserShell taskId={taskId} title={file.name} className="flex-1" />
 				);
 			}
 			return (
-				<div className="flex-1 bg-surface">
-					<iframe
-						srcDoc={file.content}
-						className="w-full h-full border-0"
-						title="文件预览"
-						sandbox="allow-scripts"
-					/>
-				</div>
+				<BrowserShell
+					srcDoc={file.content}
+					taskId={taskId}
+					title={file.name}
+					className="flex-1"
+				/>
 			);
 		}
 
@@ -328,6 +427,12 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<span className="text-xs text-text-muted bg-warm-200 px-1.5 py-0.5 rounded">
 						{fileExtensionLabel}
 					</span>
+					{sourceDirty ? (
+						<span className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
+							<span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+							未保存
+						</span>
+					) : null}
 				</div>
 				<div className="flex items-center gap-1 flex-wrap justify-end">
 					{copiedLabel ? (
@@ -375,6 +480,26 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					</div>
 					{/* 分隔线 */}
 					<div className="h-6 w-px bg-warm-300 dark:bg-cream-700 mx-1" />
+					{effectiveMode === "source" && editorTab ? (
+						<button
+							type="button"
+							onClick={handleSave}
+							disabled={!sourceDirty || isSaving}
+							className={cn(
+								"px-3 py-2 min-h-11 inline-flex items-center justify-center gap-1.5 rounded-xl transition-all focus-ring active:scale-95 text-xs font-medium",
+								sourceDirty
+									? "bg-primary text-white hover:bg-primary/90 shadow-sm"
+									: "text-text-muted hover:bg-warm-200",
+								(!sourceDirty || isSaving) &&
+									"opacity-60 cursor-not-allowed hover:bg-transparent",
+							)}
+							title="保存 (Cmd+S)"
+							aria-label="保存"
+						>
+							<Save className="w-3.5 h-3.5" />
+							{isSaving ? "保存中" : "保存"}
+						</button>
+					) : null}
 					<button
 						type="button"
 						onClick={handleCopy}
@@ -415,6 +540,21 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					>
 						<FolderOpen className="w-4 h-4" />
 					</button>
+					{canOpenInReader ? (
+						<button
+							type="button"
+							onClick={handleOpenInReader}
+							disabled={isOpeningReader}
+							className={cn(
+								"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95",
+								isOpeningReader && "opacity-60 cursor-wait",
+							)}
+							title="在阅读器中打开"
+							aria-label="在阅读器中打开"
+						>
+							<BookOpen className="w-4 h-4" />
+						</button>
+					) : null}
 					<button
 						type="button"
 						onClick={handleDownload}

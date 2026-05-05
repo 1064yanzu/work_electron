@@ -11,7 +11,6 @@ import {
 	X,
 } from "lucide-react";
 import {
-	lazy,
 	Suspense,
 	useCallback,
 	useEffect,
@@ -41,10 +40,7 @@ import {
 	permissionStore,
 	usePermissionStoreSelector,
 } from "../lib/agent/permissionStore";
-import {
-	chatStore as chatStoreInstance,
-	useChatStoreSelector,
-} from "../lib/chat/store";
+import { useChatStoreSelector } from "../lib/chat/store";
 import type { ChatMessage as ChatMessageType } from "../lib/chat/types";
 import { getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
@@ -57,6 +53,12 @@ import {
 import { createMessage } from "../lib/chat/types";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
+import {
+	chatActions,
+	LazyPromptLibraryModal,
+	MESSAGE_WINDOW_SIZE,
+	MESSAGE_WINDOW_STEP,
+} from "./copilot/copilotSidebarConstants";
 import { useCopilotActions } from "./copilot/useCopilotActions";
 import {
 	useCopilotProposals,
@@ -79,37 +81,7 @@ import {
 } from "../lib/agent/planModeStore";
 import { onPlanModifyFeedback } from "../lib/agent/planModifyEvent";
 
-// 快捷操作按钮
-const chatActions = {
-	createNewSession: chatStoreInstance.createNewSession.bind(chatStoreInstance),
-	setActiveSession: chatStoreInstance.setActiveSession.bind(chatStoreInstance),
-	deleteSession: chatStoreInstance.deleteSession.bind(chatStoreInstance),
-	deleteSessionWithUndo:
-		chatStoreInstance.deleteSessionWithUndo.bind(chatStoreInstance),
-	undoDeleteSession:
-		chatStoreInstance.undoDeleteSession.bind(chatStoreInstance),
-	addMessage: chatStoreInstance.addMessage.bind(chatStoreInstance),
-	updateMessage: chatStoreInstance.updateMessage.bind(chatStoreInstance),
-	replaceSessionMessages:
-		chatStoreInstance.replaceSessionMessages.bind(chatStoreInstance),
-	updateSessionTitle:
-		chatStoreInstance.updateSessionTitle.bind(chatStoreInstance),
-	setSessionAgentSessionId:
-		chatStoreInstance.setSessionAgentSessionId.bind(chatStoreInstance),
-	setSessionSdkSessionId:
-		chatStoreInstance.setSessionSdkSessionId.bind(chatStoreInstance),
-	setSessionCwd: chatStoreInstance.setSessionCwd.bind(chatStoreInstance),
-	setStatus: chatStoreInstance.setStatus.bind(chatStoreInstance),
-	deleteMessage: chatStoreInstance.deleteMessage.bind(chatStoreInstance),
-};
-
-const MESSAGE_WINDOW_SIZE = 140;
-const MESSAGE_WINDOW_STEP = 120;
-
-const LazyPromptLibraryModal = lazy(async () => {
-	const mod = await import("./PromptLibraryModal");
-	return { default: mod.PromptLibraryModal };
-});
+// chatActions / MESSAGE_WINDOW_* / LazyPromptLibraryModal — 见 ./copilot/copilotSidebarConstants
 
 const respondToPermission =
 	permissionStore.respondToPermission.bind(permissionStore);

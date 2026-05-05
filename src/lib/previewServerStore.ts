@@ -121,29 +121,57 @@ class PreviewServerStore {
 		sandboxDir: string,
 		mode?: PreviewServerMode,
 	): Promise<boolean> {
-		// 先标记为启动中
+		// 入参校验：避免把 undefined / 空串送进主进程导致 path.resolve 抛错
+		if (!taskId || !sandboxDir) {
+			console.warn("[PreviewServerStore] start 参数缺失:", {
+				taskId,
+				sandboxDir,
+			});
+			this.state = {
+				...this.state,
+				servers: {
+					...this.state.servers,
+					[taskId || "unknown"]: {
+						running: false,
+						ready: false,
+						error: "缺少 taskId 或 sandboxDir",
+					},
+				},
+			};
+			this.emit();
+			return false;
+		}
+
+		// 先标记为启动中（同时清掉旧 error，否则上层 UI 判断 !error 会沿用过期失败信息）
 		this.state = {
 			...this.state,
 			servers: {
 				...this.state.servers,
-				[taskId]: { running: true, mode, ready: false },
+				[taskId]: { running: true, mode, ready: false, error: undefined },
 			},
 		};
 		this.emit();
 
 		try {
-			const result = await invoke<{ url?: string; port?: number }>(
-				"preview_server_start",
-				{
-					task_id: taskId,
-					sandbox_dir: sandboxDir,
-					mode: mode ?? "static",
-				},
-			);
+			// 注意：使用 camelCase 与 IPC schema 保持一致；
+			// 不传默认 mode，让主进程根据 sandbox 内容自动探测
+			// （单 HTML → single；多 HTML/index.html → static；package.json+dev → dev）
+			const result = await invoke<{
+				url?: string;
+				port?: number;
+				mode?: PreviewServerMode;
+			}>("preview_server_start", {
+				taskId,
+				sandboxDir,
+				...(mode ? { mode } : {}),
+			});
 
 			// 如果 invoke 直接返回了结果，也同步更新
-			if (result?.url || result?.port) {
+			if (result?.url || result?.port || result?.mode) {
 				const current = this.state.servers[taskId];
+				// single 模式没有 port、url 是 file://，但 service 端立即标 ready
+				// → 这里乐观地把 ready=true 写入，避免 UI 等待 emit "ready" 事件的间隙
+				const isSingle = result?.mode === "single";
 				this.state = {
 					...this.state,
 					servers: {
@@ -152,6 +180,8 @@ class PreviewServerStore {
 							...current,
 							url: result.url ?? current?.url,
 							port: result.port ?? current?.port,
+							mode: result.mode ?? current?.mode,
+							ready: isSingle ? true : current?.ready,
 						},
 					},
 				};
@@ -180,7 +210,7 @@ class PreviewServerStore {
 	/** 停止预览服务器 */
 	async stop(taskId: string): Promise<void> {
 		try {
-			await invoke("preview_server_stop", { task_id: taskId });
+			await invoke("preview_server_stop", { taskId });
 		} catch {
 			// ignore
 		}
@@ -204,7 +234,7 @@ class PreviewServerStore {
 	async getStatus(taskId: string): Promise<PreviewServerEntry | null> {
 		try {
 			const result = await invoke<PreviewServerEntry>("preview_server_status", {
-				task_id: taskId,
+				taskId,
 			});
 			if (result) {
 				this.state = {

@@ -58,8 +58,8 @@ export interface ManagedModeState {
 		expandedFolders: Set<string>;
 		/** 搜索关键词 */
 		searchQuery: string;
-		/** 中间栏视图：运行图 / 产物预览 / 代码 */
-		centerView: "graph" | "preview" | "code";
+		/** 中间栏视图：运行图 / 产物预览 */
+		centerView: "graph" | "preview";
 		/** 预览视图模式：preview 渲染预览, source 源码 */
 		previewMode: "preview" | "source";
 		/** 运行图筛选 */
@@ -74,6 +74,8 @@ export interface ManagedModeState {
 		artifactClickBehavior?: "select_only" | "open_preview";
 		/** 详情面板是否固定 */
 		pinnedInspector?: boolean;
+		/** 产物预览底部终端 Dock 是否折叠 */
+		terminalDockCollapsed?: boolean;
 	};
 }
 
@@ -94,6 +96,7 @@ const initialState: ManagedModeState = {
 		centerDensity: "comfortable",
 		artifactClickBehavior: "select_only",
 		pinnedInspector: false,
+		terminalDockCollapsed: true,
 	},
 };
 
@@ -606,6 +609,14 @@ class ManagedModeStore {
 		this.setState((s) => ({
 			...s,
 			ui: { ...s.ui, pinnedInspector: pinned },
+		}));
+	}
+
+	/** 设置终端 Dock 折叠状态 */
+	setTerminalDockCollapsed(collapsed: boolean) {
+		this.setState((s) => ({
+			...s,
+			ui: { ...s.ui, terminalDockCollapsed: collapsed },
 		}));
 	}
 

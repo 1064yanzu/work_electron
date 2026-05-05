@@ -13,4 +13,5 @@ export type IpcOn = <TPayload>(
 export interface ElectronAPI {
 	invoke: IpcInvoke;
 	on: IpcOn;
+	getPathForFile: (file: File) => string;
 }

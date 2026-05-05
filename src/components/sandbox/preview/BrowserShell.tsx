@@ -1,7 +1,7 @@
 /**
- * BrowserShell - 浏览器壳子组件
- * 顶部工具栏 + iframe 容器，bolt.new 风格
- * 工具栏：后退 / 前进 / 刷新 / 地址栏 / 断点切换 / 弹出 / 全屏
+ * BrowserShell - 拟真浏览器壳子
+ * macOS 风装饰条 + 浏览器工具栏 + 设备框包裹的 iframe
+ * 已解耦：TrafficLights / DevServerStatusBadge / DeviceFrame / LoadProgressBar
  */
 
 import {
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@/lib/tauriCompat";
+import { usePreviewServerStoreSelector } from "@/lib/previewServerStore";
 import { cn } from "@/lib/utils";
 import { IconButton } from "../../ui/Button";
 import { AddressBar } from "./AddressBar";
@@ -22,13 +23,21 @@ import {
 	type Breakpoint,
 	getBreakpointSize,
 } from "./BreakpointSwitcher";
+import { DeviceFrame } from "./DeviceFrame";
+import { DevServerStatusBadge } from "./DevServerStatusBadge";
 import { IframePreview, type IframePreviewHandle } from "./IframePreview";
+import { LoadProgressBar } from "./LoadProgressBar";
+import { TrafficLights } from "./TrafficLights";
 
 interface BrowserShellProps {
 	src?: string;
 	srcDoc?: string;
 	taskId?: string;
 	className?: string;
+	/** 标题（macOS 风装饰条上显示），默认"沙盒预览" */
+	title?: string;
+	/** 是否显示装饰条（含交通灯 + 标题 + 状态徽章），默认 true */
+	showDecorationBar?: boolean;
 }
 
 export function BrowserShell({
@@ -36,11 +45,13 @@ export function BrowserShell({
 	srcDoc,
 	taskId,
 	className,
+	title = "沙盒预览",
+	showDecorationBar = true,
 }: BrowserShellProps) {
 	const iframeRef = useRef<IframePreviewHandle>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	// 历史栈管理（前端模拟，因为跨 origin 拿不到原生 history）
+	// 历史栈管理
 	const [history, setHistory] = useState<string[]>(() =>
 		initialSrc ? [initialSrc] : [],
 	);
@@ -49,6 +60,11 @@ export function BrowserShell({
 	);
 	const [breakpoint, setBreakpoint] = useState<Breakpoint>("desktop");
 	const [isFullscreen, setIsFullscreen] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+
+	const previewServer = usePreviewServerStoreSelector((state) =>
+		taskId ? state.servers[taskId] : undefined,
+	);
 
 	const currentUrl = historyIndex >= 0 ? history[historyIndex] : "";
 
@@ -59,27 +75,6 @@ export function BrowserShell({
 			setHistoryIndex(0);
 		}
 	}, [initialSrc]);
-
-	// 监听子页面 postMessage 路由变化
-	useEffect(() => {
-		const handler = (e: Event) => {
-			const detail = (e as CustomEvent).detail;
-			if (detail?.url && typeof detail.url === "string") {
-				pushHistory(detail.url);
-			}
-		};
-		window.addEventListener("preview-navigate", handler);
-		return () => window.removeEventListener("preview-navigate", handler);
-	}, []);
-
-	// 全屏状态变化监听
-	useEffect(() => {
-		const handler = () => {
-			setIsFullscreen(document.fullscreenElement !== null);
-		};
-		document.addEventListener("fullscreenchange", handler);
-		return () => document.removeEventListener("fullscreenchange", handler);
-	}, []);
 
 	/** 追加到历史栈（丢弃前进记录） */
 	const pushHistory = useCallback(
@@ -92,6 +87,27 @@ export function BrowserShell({
 		},
 		[historyIndex],
 	);
+
+	// 监听子页面 postMessage 路由变化
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent).detail;
+			if (detail?.url && typeof detail.url === "string") {
+				pushHistory(detail.url);
+			}
+		};
+		window.addEventListener("preview-navigate", handler);
+		return () => window.removeEventListener("preview-navigate", handler);
+	}, [pushHistory]);
+
+	// 全屏状态变化监听
+	useEffect(() => {
+		const handler = () => {
+			setIsFullscreen(document.fullscreenElement !== null);
+		};
+		document.addEventListener("fullscreenchange", handler);
+		return () => document.removeEventListener("fullscreenchange", handler);
+	}, []);
 
 	const canGoBack = historyIndex > 0;
 	const canGoForward = historyIndex < history.length - 1;
@@ -153,48 +169,102 @@ export function BrowserShell({
 		[breakpoint],
 	);
 
+	const hasContent = Boolean(initialSrc || srcDoc);
+	const isDesktop = breakpoint === "desktop";
+
 	return (
 		<div
 			ref={containerRef}
 			className={cn(
-				"flex flex-col h-full bg-warm-50 dark:bg-zinc-900",
+				"flex flex-col h-full overflow-hidden",
+				"bg-cream-100 dark:bg-cream-900",
 				className,
 			)}
 		>
+			{/* 装饰条：交通灯 + 标题 + 服务器状态徽章 */}
+			{showDecorationBar ? (
+				<div
+					className={cn(
+						"flex items-center gap-3 px-3 py-1.5 shrink-0",
+						"bg-cream-200/70 dark:bg-cream-900/80",
+						"border-b border-border/60",
+						"backdrop-blur-sm",
+					)}
+				>
+					<TrafficLights muted={!hasContent} />
+
+					<div className="flex-1 min-w-0 flex items-center justify-center">
+						<div className="inline-flex items-center gap-2 px-2.5 py-0.5 max-w-full">
+							<span className="text-[11px] font-medium text-text-secondary truncate">
+								{title}
+							</span>
+							{isLoading ? (
+								<span className="inline-flex items-center gap-1 text-[10px] text-text-light">
+									<span className="block w-1 h-1 rounded-full bg-[#D96C46] animate-pulse" />
+									加载中
+								</span>
+							) : null}
+						</div>
+					</div>
+
+					<div className="flex items-center gap-2 shrink-0">
+						<DevServerStatusBadge server={previewServer} />
+					</div>
+				</div>
+			) : null}
+
 			{/* 工具栏 */}
-			<div className="flex items-center gap-1.5 bg-surface/92 backdrop-blur-sm border-b border-border/80 px-3 py-2 shrink-0">
-				{/* 导航按钮 */}
-				<IconButton
-					size="sm"
-					variant="ghost"
-					onClick={handleBack}
-					disabled={!canGoBack}
-					aria-label="后退"
-					title="后退"
-				>
-					<ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-				</IconButton>
+			<div
+				className={cn(
+					"relative flex items-center gap-1.5 px-3 py-2 shrink-0",
+					"bg-surface/95 dark:bg-cream-900/95",
+					"border-b border-border/80",
+					"backdrop-blur-sm",
+				)}
+			>
+				{/* 顶部加载进度条 */}
+				<LoadProgressBar loading={isLoading} />
 
-				<IconButton
-					size="sm"
-					variant="ghost"
-					onClick={handleForward}
-					disabled={!canGoForward}
-					aria-label="前进"
-					title="前进"
-				>
-					<ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-				</IconButton>
+				{/* 导航按钮组 */}
+				<div className="flex items-center gap-0.5">
+					<IconButton
+						size="sm"
+						variant="ghost"
+						onClick={handleBack}
+						disabled={!canGoBack}
+						aria-label="后退"
+						title="后退"
+					>
+						<ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+					</IconButton>
 
-				<IconButton
-					size="sm"
-					variant="ghost"
-					onClick={handleRefresh}
-					aria-label="刷新"
-					title="刷新"
-				>
-					<RefreshCw className="w-4 h-4" strokeWidth={1.5} />
-				</IconButton>
+					<IconButton
+						size="sm"
+						variant="ghost"
+						onClick={handleForward}
+						disabled={!canGoForward}
+						aria-label="前进"
+						title="前进"
+					>
+						<ArrowRight className="w-4 h-4" strokeWidth={1.75} />
+					</IconButton>
+
+					<IconButton
+						size="sm"
+						variant="ghost"
+						onClick={handleRefresh}
+						aria-label={isLoading ? "停止加载" : "刷新"}
+						title={isLoading ? "刷新中..." : "刷新"}
+					>
+						<RefreshCw
+							className={cn(
+								"w-4 h-4 transition-transform",
+								isLoading && "animate-spin",
+							)}
+							strokeWidth={1.75}
+						/>
+					</IconButton>
+				</div>
 
 				{/* 地址栏 */}
 				<AddressBar
@@ -204,7 +274,7 @@ export function BrowserShell({
 				/>
 
 				{/* 分隔线 */}
-				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700 mx-0.5" />
+				<div className="w-px h-5 bg-cream-300 dark:bg-cream-700 mx-0.5" />
 
 				{/* 断点切换 */}
 				<BreakpointSwitcher
@@ -213,7 +283,7 @@ export function BrowserShell({
 				/>
 
 				{/* 分隔线 */}
-				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700 mx-0.5" />
+				<div className="w-px h-5 bg-cream-300 dark:bg-cream-700 mx-0.5" />
 
 				{/* 弹出按钮 */}
 				<IconButton
@@ -222,9 +292,9 @@ export function BrowserShell({
 					onClick={handlePopout}
 					disabled={!taskId || !currentUrl}
 					aria-label="在新窗口中打开"
-					title="在新窗口中打开"
+					title="在独立窗口打开"
 				>
-					<ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+					<ExternalLink className="w-4 h-4" strokeWidth={1.75} />
 				</IconButton>
 
 				{/* 全屏按钮 */}
@@ -233,30 +303,44 @@ export function BrowserShell({
 					variant="ghost"
 					onClick={handleToggleFullscreen}
 					aria-label={isFullscreen ? "退出全屏" : "全屏"}
-					title={isFullscreen ? "退出全屏" : "全屏"}
+					title={isFullscreen ? "退出全屏" : "进入全屏"}
 				>
 					{isFullscreen ? (
-						<Minimize2 className="w-4 h-4" strokeWidth={1.5} />
+						<Minimize2 className="w-4 h-4" strokeWidth={1.75} />
 					) : (
-						<Maximize2 className="w-4 h-4" strokeWidth={1.5} />
+						<Maximize2 className="w-4 h-4" strokeWidth={1.75} />
 					)}
 				</IconButton>
 			</div>
 
-			{/* iframe 容器 */}
-			<div className="flex-1 flex items-start justify-center overflow-auto bg-warm-100/50 dark:bg-zinc-800/50">
-				<div
-					className="h-full transition-[width] duration-300 ease-out"
-					style={{
-						width: breakpointSize.width ? `${breakpointSize.width}px` : "100%",
-					}}
+			{/* iframe 容器 — 桌面：贴边铺满；移动 / 平板：居中带设备框 */}
+			<div
+				className={cn(
+					"flex-1 min-h-0 overflow-auto",
+					isDesktop
+						? "bg-surface"
+						: cn(
+								"bg-gradient-to-b from-cream-100 to-cream-200/60",
+								"dark:from-cream-900 dark:to-cream-950",
+								"flex items-start justify-center",
+							),
+				)}
+			>
+				<DeviceFrame
+					breakpoint={breakpoint}
+					width={breakpointSize.width}
+					height={breakpointSize.height}
+					className={isDesktop ? "" : "mx-auto"}
 				>
 					<IframePreview
 						ref={iframeRef}
 						src={currentUrl || undefined}
 						srcDoc={!currentUrl && srcDoc ? srcDoc : undefined}
+						onLoadingChange={setIsLoading}
+						emptyTitle="暂无可预览内容"
+						emptyDescription="切换到「代码」视图编辑文件，或运行 Agent 生成产物，预览会自动加载。"
 					/>
-				</div>
+				</DeviceFrame>
 			</div>
 		</div>
 	);

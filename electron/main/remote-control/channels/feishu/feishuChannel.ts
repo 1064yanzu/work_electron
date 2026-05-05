@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import fsp from "node:fs/promises";
 import * as Lark from "@larksuiteoapi/node-sdk";
 import type { Logger } from "../../../logging/types";
 import type {
@@ -35,14 +33,15 @@ import {
 import { FeishuInboundMergeBuffer } from "./feishuInboundMergeBuffer";
 import { FeishuMessageResourceService } from "./feishuMessageResourceService";
 import { FeishuDocLinkResolver } from "./feishuDocLinkResolver";
-import { extractFeishuApiErrorInfo } from "./feishuApiError";
 import { FeishuShareMessageContextService } from "./feishuShareMessageContextService";
 import { FeishuShareContextBuffer } from "./feishuShareContextBuffer";
 import { parseCardAction } from "./feishuCardBuilder";
-import { extractLocalImagePathsFromText } from "./feishuOutboundImageExtractor";
 import { createFeishuStreamingFactory } from "./feishuStreamingCard";
 import { createFeishuTypingFactory } from "./feishuTyping";
 import { createFeishuActions } from "./feishuActions";
+import { FeishuDedupeManager } from "./feishuDedupe";
+import { FeishuOutboundSender } from "./feishuOutbound";
+import { FeishuReconnectScheduler } from "./feishuReconnect";
 
 // ─── 消息事件类型 ──────────────────────────────────────────
 
@@ -100,10 +99,6 @@ type FeishuCardActionAck = {
 	};
 };
 
-// ─── 重连配置 ──────────────────────────────────────────────
-
-const RECONNECT_DELAY_MS = 5_000;
-const MAX_RECONNECT_ATTEMPTS = 10;
 const ATTACHMENT_MESSAGE_TYPES = new Set(["file", "image", "media", "audio"]);
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -115,70 +110,12 @@ function toStringOrEmpty(value: unknown): string {
 	return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeInboundTextForDedupe(text: string): string {
-	let normalized = String(text || "")
-		.replace(/\r\n/g, "\n")
-		.trim();
-	normalized = normalized.replace(/^回复\s*[^:\n：]{1,40}[：:]\s*/u, "");
-	normalized = normalized.replace(/^(?:>\s?.*(?:\n|$))+/g, "");
-	return normalized.replace(/\s+/g, " ").trim();
-}
-
 function isOnlyDocLink(text: string): boolean {
 	const cleaned = text
 		.replace(/https?:\/\/[^\s<>"'`]+/g, "")
 		.replace(/\[系统上下文[^\]]*\]/g, "")
 		.trim();
 	return cleaned.length === 0;
-}
-
-function findRequestIdInCardJson(input: string): string | undefined {
-	try {
-		const parsed = JSON.parse(input);
-		const queue: unknown[] = [parsed];
-		const visited = new Set<unknown>();
-		while (queue.length > 0) {
-			const current = queue.shift();
-			if (!current || typeof current !== "object") continue;
-			if (visited.has(current)) continue;
-			visited.add(current);
-			if (Array.isArray(current)) {
-				for (const item of current) queue.push(item);
-				continue;
-			}
-			const record = current as Record<string, unknown>;
-			const requestId = record.requestId;
-			if (typeof requestId === "string" && requestId.trim()) {
-				return requestId.trim();
-			}
-			for (const value of Object.values(record)) {
-				queue.push(value);
-			}
-		}
-		return undefined;
-	} catch {
-		return undefined;
-	}
-}
-
-function buildCardSendFallbackText(cardJson: string): string {
-	const requestId = findRequestIdInCardJson(cardJson);
-	if (requestId) {
-		return [
-			"收到交互审批请求（卡片发送失败，已自动降级为文本命令）。",
-			`requestId=${requestId}`,
-			`/approve ${requestId}`,
-			`/reject ${requestId} <reason>`,
-		].join("\n");
-	}
-	return "收到交互审批请求，但卡片发送失败，已降级到文本模式。请发送 /sessions 或 /status 继续操作。";
-}
-
-function normalizeOutboundTextForDedupe(text: string): string {
-	return String(text || "")
-		.replace(/\r\n/g, "\n")
-		.replace(/\s+/g, " ")
-		.trim();
 }
 
 export class FeishuChannelPlugin implements RemoteChannelPlugin {
@@ -190,103 +127,79 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	private client: Lark.Client | null = null;
 	private wsClient: Lark.WSClient | null = null;
 	private botOpenId: string | undefined;
-	private readonly dedupe = new Map<string, number>();
-	private readonly textCommandDedupe = new Map<string, number>();
-	private readonly outboundTextDedupe = new Map<string, number>();
 	private readonly outboundLimiter = new FeishuOutboundRateLimiter(4);
 	private readonly inboundMergeBuffer = new FeishuInboundMergeBuffer();
 	private readonly shareContextBuffer = new FeishuShareContextBuffer();
-	private readonly docLinkMergeBuffer = new Map<
-		string,
-		{ text: string; timestamp: number }
-	>();
 	private readonly outboundQueue: SequentialQueue = createSequentialQueue();
 	private readonly persistentDedupe: ChannelDedupe = getChannelDedupe("feishu");
+	private readonly dedupe = new FeishuDedupeManager();
+	private readonly outboundSender = new FeishuOutboundSender({
+		getClient: () => this.client,
+		logger: this.loggerRef(),
+		rateLimiter: this.outboundLimiter,
+		dedupeOutboundText: (targetId, text) =>
+			this.dedupe.touchOutboundText(targetId, text),
+	});
+	private readonly reconnect: FeishuReconnectScheduler;
 	private messageResourceService: FeishuMessageResourceService | null = null;
 	private shareMessageContextService: FeishuShareMessageContextService | null =
 		null;
 	private docLinkResolver: FeishuDocLinkResolver | null = null;
-	private reconnectAttempts = 0;
-	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 	private stopped = false;
 	/** WebSocket 建连时间（ms），用于过滤积压的历史消息 */
 	private connectedAt = 0;
+	/** 最近一次 startWebSocket 使用的连接参数，便于重连时复用 */
+	private lastWsConnectParams: {
+		appId: string;
+		appSecret: string;
+		domain: "feishu" | "lark";
+	} | null = null;
 
-	constructor(private readonly logger: Logger) {}
-
-	// ─── 消息去重 ────────────────────────────────────────
-
-	private touchDedupe(messageId: string): boolean {
-		const now = Date.now();
-		for (const [id, ts] of this.dedupe.entries()) {
-			if (now - ts > 30 * 60_000) {
-				this.dedupe.delete(id);
-			}
-		}
-		if (this.dedupe.has(messageId)) return false;
-		this.dedupe.set(messageId, now);
-		return true;
+	constructor(private readonly logger: Logger) {
+		this.reconnect = new FeishuReconnectScheduler({
+			logger,
+			isStopped: () => this.stopped,
+			onGiveUp: (reason) => {
+				this.ctx?.onStatusPatch({
+					running: false,
+					connected: false,
+					last_error: reason,
+				});
+			},
+			doReconnect: () => {
+				try {
+					(this.wsClient as { stop?: () => void } | null)?.stop?.();
+				} catch {
+					// ignore
+				}
+				this.wsClient = null;
+				if (this.lastWsConnectParams) {
+					this.startWebSocket(this.lastWsConnectParams);
+				}
+			},
+		});
 	}
+
+	private loggerRef(): Logger {
+		return this.logger;
+	}
+
+	// ─── 持久化去重 ────────────────────────────────────────
 
 	/**
 	 * 持久化去重：进程重启后依然能拦截重复消息。
 	 * - 先查内存快路径；命中则直接拒绝
 	 * - 未命中时 checkAndRecord 落地磁盘（原子）
 	 *
-	 * 仅在 features.dedupe.persistent 开启时使用；否则走内存版 touchDedupe。
+	 * 仅在 features.dedupe.persistent 开启时使用；否则走内存版。
 	 */
 	private async touchPersistentDedupe(messageId: string): Promise<boolean> {
 		const feishu = this.ctx?.config.channels.feishu;
 		const persistent = feishu?.features?.dedupe.persistent !== false;
 		// 先走内存，快路径命中立即返回
-		if (!this.touchDedupe(messageId)) return false;
+		if (!this.dedupe.touchInboundId(messageId)) return false;
 		if (!persistent) return true;
 		return this.persistentDedupe.checkAndRecord(`inbound:${messageId}`);
-	}
-
-	private touchTextCommandDedupe(
-		conversationKey: string,
-		text: string,
-	): boolean {
-		const now = Date.now();
-		for (const [key, ts] of this.textCommandDedupe.entries()) {
-			if (now - ts > 10_000) {
-				this.textCommandDedupe.delete(key);
-			}
-		}
-		const normalized = normalizeInboundTextForDedupe(text);
-		if (!normalized) return false;
-		const fingerprint = `${conversationKey}::${normalized}`;
-		const lastAt = this.textCommandDedupe.get(fingerprint);
-		this.textCommandDedupe.set(fingerprint, now);
-		if (!lastAt) return true;
-		// 飞书偶发同内容短时重复投递，5 秒内按重复消息丢弃。
-		return now - lastAt > 5_000;
-	}
-
-	private cleanupDocLinkBuffer(): void {
-		const now = Date.now();
-		for (const [key, entry] of this.docLinkMergeBuffer.entries()) {
-			if (now - entry.timestamp > 30_000) {
-				this.docLinkMergeBuffer.delete(key);
-			}
-		}
-	}
-
-	private touchOutboundTextDedupe(targetId: string, text: string): boolean {
-		const now = Date.now();
-		for (const [key, ts] of this.outboundTextDedupe.entries()) {
-			if (now - ts > 15_000) {
-				this.outboundTextDedupe.delete(key);
-			}
-		}
-		const normalized = normalizeOutboundTextForDedupe(text);
-		if (!normalized) return false;
-		const fingerprint = `${targetId}::${normalized}`;
-		const lastAt = this.outboundTextDedupe.get(fingerprint);
-		this.outboundTextDedupe.set(fingerprint, now);
-		if (!lastAt) return true;
-		return now - lastAt > 8_000;
 	}
 
 	// ─── 客户端构建 ──────────────────────────────────────
@@ -346,7 +259,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		if (!(await this.touchPersistentDedupe(message.message_id))) return;
 		this.inboundMergeBuffer.cleanupExpired();
 		this.shareContextBuffer.cleanupExpired();
-		this.cleanupDocLinkBuffer();
+		this.dedupe.cleanupDocLinkBuffer();
 
 		const senderOpenId = String(event.sender?.sender_id?.open_id ?? "").trim();
 		const isGroup = message.chat_type === "group";
@@ -423,7 +336,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		}
 		const textDedupeConversationKey =
 			conversationKey || `${message.chat_id}::${senderOpenId || "unknown"}`;
-		if (!this.touchTextCommandDedupe(textDedupeConversationKey, text)) {
+		if (!this.dedupe.touchInboundText(textDedupeConversationKey, text)) {
 			this.logger.info({
 				msg: "feishu duplicate inbound text dropped",
 				messageId: message.message_id,
@@ -475,10 +388,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				/https?:\/\/[^\s<>"'`]*\/(?:docx|wiki)\/[^\s<>"'`]+/.test(text);
 			if (hasDocLink && isOnlyDocLink(text)) {
 				// 纯文档链接消息,缓冲起来
-				this.docLinkMergeBuffer.set(conversationKey, {
-					text,
-					timestamp: Date.now(),
-				});
+				this.dedupe.bufferDocLink(conversationKey, text);
 				this.logger.info({
 					msg: "feishu pure doc link buffered",
 					messageId: message.message_id,
@@ -494,16 +404,11 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			}
 
 			// 检查是否有待合并的文档链接（纯链接 + 后续留言）
-			const buffered = this.docLinkMergeBuffer.get(conversationKey);
+			const buffered = this.dedupe.consumeDocLink(conversationKey);
 			if (buffered) {
-				const now = Date.now();
-				// 10秒内的文档链接消息才合并
-				if (now - buffered.timestamp < 10_000) {
-					docPrefetchText = docPrefetchText
-						? `${buffered.text}\n${docPrefetchText}`
-						: buffered.text;
-				}
-				this.docLinkMergeBuffer.delete(conversationKey);
+				docPrefetchText = docPrefetchText
+					? `${buffered}\n${docPrefetchText}`
+					: buffered;
 			}
 
 			if (docPrefetchText) {
@@ -571,7 +476,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		});
 
 		// 重置重连计数（成功收到消息说明连接正常）
-		this.reconnectAttempts = 0;
+		this.reconnect.reset();
 
 		await ctx.onInboundMessage(inbound);
 	}
@@ -706,6 +611,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	}): void {
 		const ctx = this.ctx;
 		if (!ctx) return;
+		this.lastWsConnectParams = feishu;
 
 		const dispatcher = new Lark.EventDispatcher({});
 		dispatcher.register({
@@ -752,7 +658,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				running: true,
 				last_error: undefined,
 			});
-			this.reconnectAttempts = 0;
+			this.reconnect.reset();
 			this.logger.info({ msg: "feishu websocket connected" });
 		} catch (error) {
 			ctx.onStatusPatch({
@@ -764,51 +670,8 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				msg: "feishu websocket start failed",
 				error: error instanceof Error ? error.message : String(error),
 			});
-			this.scheduleReconnect(feishu);
+			this.reconnect.schedule();
 		}
-	}
-
-	// ─── 重连逻辑 ───────────────────────────────────────
-
-	private scheduleReconnect(feishu: {
-		appId: string;
-		appSecret: string;
-		domain: "feishu" | "lark";
-	}): void {
-		if (this.stopped) return;
-		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-			this.logger.error({
-				msg: `feishu websocket 重连次数已达上限 (${MAX_RECONNECT_ATTEMPTS})`,
-			});
-			this.ctx?.onStatusPatch({
-				running: false,
-				connected: false,
-				last_error: `重连失败：已尝试 ${MAX_RECONNECT_ATTEMPTS} 次`,
-			});
-			return;
-		}
-
-		this.reconnectAttempts++;
-		const delay = RECONNECT_DELAY_MS * Math.min(this.reconnectAttempts, 6);
-
-		this.logger.info({
-			msg: `feishu websocket 将在 ${delay}ms 后重连 (第 ${this.reconnectAttempts} 次)`,
-		});
-
-		this.reconnectTimer = setTimeout(() => {
-			this.reconnectTimer = null;
-			if (this.stopped) return;
-
-			// 先停掉旧的 ws client
-			try {
-				(this.wsClient as { stop?: () => void } | null)?.stop?.();
-			} catch {
-				// ignore
-			}
-			this.wsClient = null;
-
-			this.startWebSocket(feishu);
-		}, delay);
 	}
 
 	// ─── 频道生命周期 ───────────────────────────────────
@@ -883,7 +746,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.actions = createFeishuActions({
 			client: this.client,
 			sendTextLegacy: async (message) => {
-				await this.sendText({
+				await this.outboundSender.sendText({
 					channel_id: "feishu",
 					target_id: message.targetId,
 					text: message.text ?? "",
@@ -891,7 +754,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				});
 			},
 			sendCardLegacy: async (message) => {
-				await this.sendCard({
+				await this.outboundSender.sendCard({
 					channel_id: "feishu",
 					target_id: message.targetId,
 					text: message.cardJson ?? "",
@@ -955,11 +818,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 
 	async stop(): Promise<void> {
 		this.stopped = true;
-
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer);
-			this.reconnectTimer = null;
-		}
+		this.reconnect.cancel();
 
 		try {
 			(this.wsClient as { stop?: () => void } | null)?.stop?.();
@@ -977,154 +836,13 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.actions = null;
 		this.inboundMergeBuffer.clear();
 		this.shareContextBuffer.clear();
-		this.docLinkMergeBuffer.clear();
-		this.textCommandDedupe.clear();
-		this.outboundTextDedupe.clear();
+		this.dedupe.clear();
 		// 持久化去重不清理，跨启动有效
 		await this.persistentDedupe.flush().catch(() => {});
 		this.ctx = null;
 	}
 
-	// ─── 出站消息 ───────────────────────────────────────
-
-	private async sendRawMessage(
-		message: RemoteOutboundMessage,
-		msgType: "text" | "interactive" | "image",
-		content: string,
-	): Promise<void> {
-		if (!this.client) {
-			throw new Error("Feishu channel not initialized");
-		}
-		const receiveIdType = normalizeTargetType(message.target_id);
-		if (message.reply_to_message_id) {
-			const response = await this.client.im.message.reply({
-				path: { message_id: message.reply_to_message_id },
-				data: {
-					msg_type: msgType,
-					content,
-				},
-			});
-			if (response.code !== 0) {
-				const err = new Error(
-					response.msg || `Feishu reply failed: ${response.code}`,
-				) as Error & { code?: number; msg?: string };
-				err.code = response.code;
-				err.msg = response.msg;
-				throw err;
-			}
-			return;
-		}
-		const response = await this.client.im.message.create({
-			params: { receive_id_type: receiveIdType },
-			data: {
-				receive_id: message.target_id,
-				msg_type: msgType,
-				content,
-			},
-		});
-		if (response.code !== 0) {
-			const err = new Error(
-				response.msg || `Feishu send failed: ${response.code}`,
-			) as Error & { code?: number; msg?: string };
-			err.code = response.code;
-			err.msg = response.msg;
-			throw err;
-		}
-	}
-
-	private async sendText(message: RemoteOutboundMessage): Promise<void> {
-		await this.sendRawMessage(
-			message,
-			"text",
-			JSON.stringify({ text: message.text }),
-		);
-	}
-
-	private async sendImageByKey(
-		message: RemoteOutboundMessage,
-		imageKey: string,
-	): Promise<void> {
-		await this.sendRawMessage(
-			message,
-			"image",
-			JSON.stringify({ image_key: imageKey }),
-		);
-	}
-
-	private async uploadImageAsMessageImage(imagePath: string): Promise<string> {
-		if (!this.client) {
-			throw new Error("Feishu channel not initialized");
-		}
-		const normalized = String(imagePath || "").trim();
-		if (!normalized) {
-			throw new Error("image path is empty");
-		}
-		const stat = await fsp.stat(normalized);
-		if (!stat.isFile()) {
-			throw new Error(`not a file: ${normalized}`);
-		}
-		const uploadResp = await this.client.im.image.create({
-			data: {
-				image_type: "message",
-				image: fs.createReadStream(normalized),
-			},
-		});
-		const imageKey = toStringOrEmpty(
-			(uploadResp as { image_key?: string } | null)?.image_key ??
-				(uploadResp as { data?: { image_key?: string } } | null)?.data
-					?.image_key,
-		);
-		if (!imageKey) {
-			throw new Error("upload image success but image_key is empty");
-		}
-		return imageKey;
-	}
-
-	private async sendTextAndLocalImages(
-		message: RemoteOutboundMessage,
-		text: string,
-		imagePaths: string[],
-	): Promise<void> {
-		const sentImagePaths: string[] = [];
-		let firstReplyMessageId = message.reply_to_message_id;
-
-		if (text.trim()) {
-			await this.sendText({ ...message, text });
-			firstReplyMessageId = undefined;
-		}
-
-		for (const imagePath of imagePaths) {
-			try {
-				const imageKey = await this.uploadImageAsMessageImage(imagePath);
-				await this.sendImageByKey(
-					{
-						...message,
-						reply_to_message_id: firstReplyMessageId,
-					},
-					imageKey,
-				);
-				firstReplyMessageId = undefined;
-				sentImagePaths.push(imagePath);
-			} catch (error) {
-				this.logger.warn({
-					msg: "feishu send local image failed",
-					imagePath,
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
-
-		if (imagePaths.length > 0 && sentImagePaths.length === 0 && !text.trim()) {
-			await this.sendText({
-				...message,
-				text: "图片发送失败：请检查 im:resource 权限、图片大小与格式。",
-			});
-		}
-	}
-
-	private async sendCard(message: RemoteOutboundMessage): Promise<void> {
-		await this.sendRawMessage(message, "interactive", message.text);
-	}
+	// ─── 出站消息（委托给 outboundSender + 串行队列） ─────
 
 	async send(message: RemoteOutboundMessage): Promise<void> {
 		if (!this.client) {
@@ -1136,54 +854,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		const sequentialEnabled = feishu?.features?.sequential_delivery !== false;
 
 		const doSend = async () => {
-			// 等待限流器放行
-			await this.outboundLimiter.waitForSlot();
-			// 普通消息统一走 text，避免 markdown 卡片语法导致 230099 发送失败。
-			// 仅审批等显式 use_card 场景才使用 interactive；失败后自动降级文本。
-			if (message.use_card) {
-				try {
-					await this.sendCard(message);
-				} catch (error) {
-					const info = extractFeishuApiErrorInfo(error);
-					this.logger.warn({
-						msg: "feishu interactive card send failed, fallback to text",
-						code: info.code,
-						error:
-							info.msg ||
-							info.message ||
-							(error instanceof Error ? error.message : String(error)),
-					});
-					const fallbackText = buildCardSendFallbackText(message.text);
-					await this.sendText({
-						...message,
-						text: fallbackText,
-						use_card: false,
-					});
-				}
-			} else {
-				const { imagePaths, cleanedText } = extractLocalImagePathsFromText(
-					message.text,
-				);
-				const outboundText =
-					imagePaths.length > 0 && !cleanedText.trim()
-						? "图片结果如下："
-						: cleanedText;
-
-				if (imagePaths.length > 0) {
-					await this.sendTextAndLocalImages(message, outboundText, imagePaths);
-				} else if (outboundText.trim()) {
-					if (this.touchOutboundTextDedupe(message.target_id, outboundText)) {
-						await this.sendText({ ...message, text: outboundText });
-					} else {
-						this.logger.info({
-							msg: "feishu duplicate outbound text skipped",
-							targetId: message.target_id,
-							textPreview: outboundText.slice(0, 100),
-						});
-					}
-				}
-			}
-
+			await this.outboundSender.send(message);
 			this.ctx?.onStatusPatch({
 				last_outbound_at: Date.now(),
 				connected: true,

@@ -156,8 +156,10 @@ async function fetchAnthropicMarketplace(
 
 interface SkillsShEntry {
 	id?: string;
+	skillId?: string;
 	name?: string;
 	display_name?: string;
+	displayName?: string;
 	description?: string;
 	version?: string;
 	author?: string;
@@ -170,54 +172,69 @@ interface SkillsShEntry {
 	path?: string;
 	tags?: string[];
 	icon?: string;
+	source?: string;
+	installs?: number;
 }
 
 interface SkillsShResponse {
 	results?: SkillsShEntry[];
 	items?: SkillsShEntry[];
 	data?: SkillsShEntry[];
+	skills?: SkillsShEntry[];
+}
+
+/** 把 skills.sh 返回的 source 字段 (如 "github/awesome-copilot") 解成 GitHub 三元组 */
+function parseSkillsShSource(
+	src: string | undefined,
+): MarketplaceArtifactSource | null {
+	if (!src) return null;
+	const m = src.match(/^github\/([^/]+)\/?(.*)$/);
+	if (!m) return null;
+	const owner = m[1];
+	const rest = m[2] ?? "";
+	if (!owner) return null;
+	if (!rest) {
+		return { kind: "github", owner, repo: owner, ref: "main" };
+	}
+	const [repo, ...subdirParts] = rest.split("/");
+	return {
+		kind: "github",
+		owner,
+		repo,
+		ref: "main",
+		subdir: subdirParts.length ? subdirParts.join("/") : undefined,
+	};
 }
 
 async function fetchSkillsSh(
 	source: MarketplaceSource,
 	query?: string,
 ): Promise<MarketplaceEntry[]> {
-	const base = source.url.replace(/\/+$/, "");
-	const candidates = [
-		`${base}/api/search?q=${encodeURIComponent(query || "")}&limit=50`,
-		`${base}/api/skills?q=${encodeURIComponent(query || "")}&limit=50`,
-		`${base}/api/v1/search?q=${encodeURIComponent(query || "")}&limit=50`,
-	];
-	let data: SkillsShResponse | null = null;
-	let lastErr: unknown;
-	for (const url of candidates) {
-		try {
-			data = await fetchJson<SkillsShResponse>(url);
-			if (data) break;
-		} catch (e) {
-			lastErr = e;
-		}
-	}
-	if (!data) {
-		throw lastErr instanceof Error
-			? lastErr
-			: new Error("skills.sh API 不可达");
-	}
+	// skills.sh 的 /api/search 要求 query >= 2 字符；浏览态（query 为空）直接跳过该源
+	const q = (query ?? "").trim();
+	if (q.length < 2) return [];
 
-	const list = data.results ?? data.items ?? data.data ?? [];
+	const base = source.url.replace(/\/+$/, "");
+	// 仅尝试一个真实可用端点；返回非 OK 则抛错，让调用方汇总到 errors 里
+	const url = `${base}/api/search?q=${encodeURIComponent(q)}&limit=50`;
+	const data = await fetchJson<SkillsShResponse>(url);
+
+	const list = data.skills ?? data.results ?? data.items ?? data.data ?? [];
 	const trust = trustOf(source);
 	const entries: MarketplaceEntry[] = [];
 	for (const item of list) {
-		const name = safeStr(item.name ?? item.id);
+		const name = safeStr(item.name ?? item.skillId ?? item.id);
 		if (!name) continue;
-		const artifact = parseGithubLikeSource(item);
+		// 优先用 source 字段（"github/owner/repo"）解析 artifact
+		const artifact =
+			parseSkillsShSource(item.source) ?? parseGithubLikeSource(item);
 		if (!artifact) continue;
 		entries.push({
 			id: `${source.id}/${name}`,
 			sourceId: source.id,
 			trust,
 			name,
-			displayName: safeStr(item.display_name) || name,
+			displayName: safeStr(item.displayName ?? item.display_name) || name,
 			description: safeStr(item.description),
 			version: safeStr(item.version) || undefined,
 			author: safeStr(item.author) || undefined,

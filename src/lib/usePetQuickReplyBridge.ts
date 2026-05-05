@@ -48,7 +48,6 @@ export function usePetQuickReplyBridge(): void {
 					const userMessage = createMessage("user", text.trim(), {
 						metadata: {
 							attachedFiles: [],
-							source: "pet-quick-reply",
 						},
 					});
 					chatStore.addMessage(sessionId, userMessage);

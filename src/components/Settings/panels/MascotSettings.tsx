@@ -60,15 +60,30 @@ export function MascotSettings() {
 	// 桌面宠物窗口设置
 	const [petEnabled, setPetEnabled] = useState(true);
 	const [petThroughClicks, setPetThroughClicks] = useState(false);
+	const [sizePreset, setSizePreset] = useState<"sm" | "md" | "lg" | "xl">("lg");
+	const [dwellPreset, setDwellPreset] = useState<"short" | "normal" | "long">(
+		"normal",
+	);
+	const [dndStart, setDndStart] = useState<string>("");
+	const [dndEnd, setDndEnd] = useState<string>("");
 	const [petSettingsLoaded, setPetSettingsLoaded] = useState(false);
 
 	useEffect(() => {
-		void invoke<{ enabled: boolean; throughClicks: boolean }>(
-			"pet_window_get_state",
-		)
+		void invoke<{
+			enabled: boolean;
+			throughClicks: boolean;
+			sizePreset: "sm" | "md" | "lg" | "xl";
+			dwellPreset: "short" | "normal" | "long";
+			dndStart: string | null;
+			dndEnd: string | null;
+		}>("pet_window_get_state")
 			.then((state) => {
 				setPetEnabled(state.enabled);
 				setPetThroughClicks(state.throughClicks);
+				if (state.sizePreset) setSizePreset(state.sizePreset);
+				if (state.dwellPreset) setDwellPreset(state.dwellPreset);
+				setDndStart(state.dndStart ?? "");
+				setDndEnd(state.dndEnd ?? "");
 				setPetSettingsLoaded(true);
 			})
 			.catch(() => {
@@ -79,6 +94,31 @@ export function MascotSettings() {
 	const handlePetEnabledChange = useCallback((next: boolean) => {
 		setPetEnabled(next);
 		void invoke("pet_window_set_enabled", { enabled: next });
+	}, []);
+
+	const handleSizePresetChange = useCallback(
+		(preset: "sm" | "md" | "lg" | "xl") => {
+			setSizePreset(preset);
+			void invoke("pet_window_set_size_preset", { preset });
+		},
+		[],
+	);
+
+	const handleDwellPresetChange = useCallback(
+		(preset: "short" | "normal" | "long") => {
+			setDwellPreset(preset);
+			void invoke("pet_window_set_dwell_preset", { preset });
+		},
+		[],
+	);
+
+	const handleDndChange = useCallback((nextStart: string, nextEnd: string) => {
+		setDndStart(nextStart);
+		setDndEnd(nextEnd);
+		void invoke("pet_window_set_dnd", {
+			start: nextStart || null,
+			end: nextEnd || null,
+		});
 	}, []);
 
 	const handleThroughClicksChange = useCallback((next: boolean) => {
@@ -96,7 +136,7 @@ export function MascotSettings() {
 
 			<SettingsSectionCard className="px-7 py-7">
 				<SettingsSectionTitle>选择桌面宠物</SettingsSectionTitle>
-				<MascotPicker value={id} onChange={setId} />
+				<MascotPicker value={id} onChange={(next) => setId(next, "main")} />
 				<p className="mt-4 text-[12px] text-text-muted leading-relaxed">
 					切换后立即生效,影响欢迎页、空状态、思考态、完成提示等位置。资产已离线打包内置,无需联网。
 				</p>
@@ -124,6 +164,39 @@ export function MascotSettings() {
 									<SettingsSwitch
 										checked={petThroughClicks}
 										onChange={handleThroughClicksChange}
+									/>
+								}
+							/>
+							<SettingsRow
+								label="宠物大小"
+								description="决定桌面悬浮窗的视觉大小，立即生效。"
+								value={
+									<SizePresetChips
+										value={sizePreset}
+										onChange={handleSizePresetChange}
+										accentColor={meta.accentColor}
+									/>
+								}
+							/>
+							<SettingsRow
+								label="通知停留时长"
+								description="完成 / 错误 / 提醒等气泡的停留时长，影响节奏感。"
+								value={
+									<DwellPresetChips
+										value={dwellPreset}
+										onChange={handleDwellPresetChange}
+										accentColor={meta.accentColor}
+									/>
+								}
+							/>
+							<SettingsRow
+								label="勿扰时段"
+								description="该时段内 done / progress 静默，仅 reminder / error 出气泡。留空则不启用。"
+								value={
+									<DndTimeInputs
+										start={dndStart}
+										end={dndEnd}
+										onChange={handleDndChange}
 									/>
 								}
 							/>
@@ -307,5 +380,137 @@ export function MascotSettings() {
 				</SettingsSectionCard>
 			)}
 		</SettingsPageContainer>
+	);
+}
+
+const SIZE_PRESETS: {
+	value: "sm" | "md" | "lg" | "xl";
+	label: string;
+	px: number;
+}[] = [
+	{ value: "sm", label: "小", px: 120 },
+	{ value: "md", label: "中", px: 160 },
+	{ value: "lg", label: "大", px: 180 },
+	{ value: "xl", label: "特大", px: 220 },
+];
+
+function SizePresetChips({
+	value,
+	onChange,
+	accentColor,
+}: {
+	value: "sm" | "md" | "lg" | "xl";
+	onChange: (next: "sm" | "md" | "lg" | "xl") => void;
+	accentColor: string;
+}) {
+	return (
+		<div className="flex items-center gap-1.5">
+			{SIZE_PRESETS.map((p) => {
+				const active = p.value === value;
+				return (
+					<button
+						key={p.value}
+						type="button"
+						onClick={() => onChange(p.value)}
+						className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11.5px] font-medium leading-none transition-colors"
+						style={{
+							borderColor: active ? accentColor : "var(--t-border, #e8e3d8)",
+							backgroundColor: active ? `${accentColor}1F` : "transparent",
+							color: active ? accentColor : "var(--t-text-secondary, #6b6b68)",
+						}}
+					>
+						<span>{p.label}</span>
+						<span className="text-[10px] tabular-nums opacity-70">{p.px}</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+const DWELL_PRESETS: {
+	value: "short" | "normal" | "long";
+	label: string;
+	hint: string;
+}[] = [
+	{ value: "short", label: "较短", hint: "× 0.7" },
+	{ value: "normal", label: "默认", hint: "× 1" },
+	{ value: "long", label: "较长", hint: "× 1.5" },
+];
+
+function DwellPresetChips({
+	value,
+	onChange,
+	accentColor,
+}: {
+	value: "short" | "normal" | "long";
+	onChange: (next: "short" | "normal" | "long") => void;
+	accentColor: string;
+}) {
+	return (
+		<div className="flex items-center gap-1.5">
+			{DWELL_PRESETS.map((p) => {
+				const active = p.value === value;
+				return (
+					<button
+						key={p.value}
+						type="button"
+						onClick={() => onChange(p.value)}
+						className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11.5px] font-medium leading-none transition-colors"
+						style={{
+							borderColor: active ? accentColor : "var(--t-border, #e8e3d8)",
+							backgroundColor: active ? `${accentColor}1F` : "transparent",
+							color: active ? accentColor : "var(--t-text-secondary, #6b6b68)",
+						}}
+					>
+						<span>{p.label}</span>
+						<span className="text-[10px] tabular-nums opacity-70">
+							{p.hint}
+						</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+function DndTimeInputs({
+	start,
+	end,
+	onChange,
+}: {
+	start: string;
+	end: string;
+	onChange: (nextStart: string, nextEnd: string) => void;
+}) {
+	const inputClass =
+		"h-7 w-[88px] rounded-md border border-border bg-surface px-2 text-[12px] text-text-primary outline-none focus:border-primary/50";
+	return (
+		<div className="flex items-center gap-1.5">
+			<input
+				type="time"
+				value={start}
+				onChange={(e) => onChange(e.target.value, end)}
+				className={inputClass}
+				aria-label="勿扰开始时间"
+			/>
+			<span className="text-[12px] text-text-light">至</span>
+			<input
+				type="time"
+				value={end}
+				onChange={(e) => onChange(start, e.target.value)}
+				className={inputClass}
+				aria-label="勿扰结束时间"
+			/>
+			{(start || end) && (
+				<button
+					type="button"
+					onClick={() => onChange("", "")}
+					className="ml-1 text-[11px] text-text-light hover:text-text-secondary transition-colors"
+				>
+					清除
+				</button>
+			)}
+		</div>
 	);
 }

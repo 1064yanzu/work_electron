@@ -1,12 +1,12 @@
 /**
- * MarketplaceCard —— 市场单个 skill 卡片
+ * MarketplaceCard —— 市场单个 skill 卡片（紧凑横排）
  */
 
 import {
 	BadgeCheck,
 	Download,
-	Eye,
 	ExternalLink,
+	Eye,
 	Loader2,
 	ShieldAlert,
 	Trash2,
@@ -33,39 +33,39 @@ const TRUST_META: Record<
 	official: {
 		label: "官方",
 		icon: BadgeCheck,
-		tone: "bg-success/8 text-success dark:bg-success/10 dark:text-success",
+		tone: "text-success",
 	},
 	community: {
 		label: "社区",
 		icon: Users,
-		tone: "bg-focus/8 text-focus dark:bg-focus/10 dark:text-focus",
+		tone: "text-focus",
 	},
 	custom: {
-		label: "自定义源",
+		label: "自定义",
 		icon: ShieldAlert,
-		tone: "bg-peach-100 text-amber-700 dark:bg-peach-500/10 dark:text-amber-300",
+		tone: "text-amber-600 dark:text-amber-400",
 	},
 };
 
-function phaseToLabel(p: InstallProgressState["phase"]) {
-	switch (p) {
-		case "queued":
-			return "排队中";
-		case "resolving":
-			return "解析中";
-		case "downloading":
-			return "下载中";
-		case "extracting":
-			return "解压中";
-		case "verifying":
-			return "校验中";
-		case "writing":
-			return "写入中";
-		case "done":
-			return "已完成";
-		case "error":
-			return "失败";
+const PHASE_LABEL: Record<InstallProgressState["phase"], string> = {
+	queued: "排队",
+	resolving: "解析",
+	downloading: "下载",
+	extracting: "解压",
+	verifying: "校验",
+	writing: "写入",
+	done: "完成",
+	error: "失败",
+};
+
+/** 基于名称生成稳定的 hue（0-360），用于头像彩色背景 */
+function nameToHue(name: string): number {
+	let hash = 0;
+	for (let i = 0; i < name.length; i++) {
+		hash = (hash << 5) - hash + name.charCodeAt(i);
+		hash |= 0;
 	}
+	return Math.abs(hash) % 360;
 }
 
 export function MarketplaceCard({ entry, progress }: Props) {
@@ -78,6 +78,9 @@ export function MarketplaceCard({ entry, progress }: Props) {
 	const installing =
 		progress && progress.phase !== "done" && progress.phase !== "error";
 	const failed = progress?.phase === "error";
+
+	const initial = (entry.displayName || entry.name).slice(0, 1).toUpperCase();
+	const hue = nameToHue(entry.name);
 
 	const handleInstall = async () => {
 		await skillsMarketplaceStore.install(entry.id);
@@ -107,91 +110,100 @@ export function MarketplaceCard({ entry, progress }: Props) {
 		}
 	};
 
+	const host = (() => {
+		try {
+			return entry.rawSourceUrl ? new URL(entry.rawSourceUrl).host : null;
+		} catch {
+			return null;
+		}
+	})();
+
 	return (
 		<div
 			className={cn(
-				"group rounded-2xl border border-border/60 bg-surface/60",
-				"hover:border-primary/40 hover:shadow-sm transition-all",
-				"px-4 py-3 flex flex-col gap-2",
+				"group relative rounded-xl transition-all",
+				"bg-surface dark:bg-cream-900/30",
+				"ring-1 ring-cream-300/60 dark:ring-cream-500/20",
+				"hover:ring-cream-400/80 dark:hover:ring-cream-500/40 hover:shadow-bai-card",
+				previewing && "ring-cream-400 dark:ring-cream-500/40 shadow-bai-card",
 			)}
 		>
-			<div className="flex items-start gap-3">
-				<div
-					className={cn(
-						"w-10 h-10 rounded-xl shrink-0 flex items-center justify-center",
-						"bg-warm-200/70 text-text-secondary text-base font-semibold",
-					)}
-				>
-					{(entry.displayName || entry.name).slice(0, 1).toUpperCase()}
+			{/* 主行 */}
+			<div className="flex items-start gap-3 px-3 py-2.5">
+				{/* 头像 — 单字符 serif，淡彩背景；trust 用小角标在右下 */}
+				<div className="relative shrink-0">
+					<div
+						className="w-9 h-9 rounded-lg flex items-center justify-center font-serif text-[15px] font-semibold"
+						style={{
+							backgroundColor: `oklch(0.92 0.04 ${hue})`,
+							color: `oklch(0.45 0.12 ${hue})`,
+						}}
+					>
+						{initial}
+					</div>
+					<span
+						className={cn(
+							"absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full",
+							"bg-surface dark:bg-cream-900",
+							"flex items-center justify-center",
+							"ring-1 ring-cream-200 dark:ring-cream-800",
+							trust.tone,
+						)}
+						title={trust.label}
+					>
+						<TrustIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+					</span>
 				</div>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2 flex-wrap">
-						<span className="text-[13.5px] font-medium text-text-primary truncate">
+
+				{/* 主体 */}
+				<div className="flex-1 min-w-0 pt-px">
+					<div className="flex items-baseline gap-1.5 min-w-0">
+						<span className="text-[12.5px] font-semibold text-text-primary truncate">
 							{entry.displayName || entry.name}
 						</span>
 						{entry.version && (
-							<span className="text-[10.5px] text-text-light font-mono px-1.5 py-0.5 rounded-md bg-warm-200/60">
+							<span className="text-[10px] text-text-light font-mono shrink-0">
 								v{entry.version.replace(/^v/, "")}
 							</span>
 						)}
-						<span
-							className={cn(
-								"inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-md font-medium",
-								trust.tone,
-							)}
-						>
-							<TrustIcon className="w-3 h-3" />
-							{trust.label}
-						</span>
 						{entry.installed && (
-							<span className="text-[10.5px] px-1.5 py-0.5 rounded-md bg-success/8 text-success dark:bg-success/10 dark:text-success">
-								已安装
-								{entry.installedVersion ? ` · v${entry.installedVersion}` : ""}
+							<span className="text-[9.5px] font-medium text-success tracking-wide uppercase shrink-0">
+								已装
 							</span>
 						)}
 					</div>
-					<p className="text-[12px] text-text-muted mt-1 line-clamp-2 leading-relaxed">
+					<p className="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-snug">
 						{entry.description || "（暂无描述）"}
 					</p>
-					<div className="flex items-center gap-2 mt-1.5 text-[10.5px] text-text-light flex-wrap">
-						{entry.author && <span>作者: {entry.author}</span>}
-						{entry.license && <span>许可: {entry.license}</span>}
-						{entry.rawSourceUrl && (
-							<span
-								className="font-mono truncate max-w-[16ch]"
-								title={entry.rawSourceUrl}
-							>
-								{new URL(entry.rawSourceUrl).host}
+					<div className="flex items-center gap-1.5 mt-1 text-[10px] text-text-light min-w-0">
+						{entry.author && (
+							<span className="truncate max-w-[40%]">{entry.author}</span>
+						)}
+						{entry.author && (entry.license || host) && (
+							<span className="text-text-light/50">·</span>
+						)}
+						{entry.license && (
+							<span className="font-mono shrink-0">{entry.license}</span>
+						)}
+						{entry.license && host && (
+							<span className="text-text-light/50">·</span>
+						)}
+						{host && (
+							<span className="font-mono truncate" title={entry.rawSourceUrl}>
+								{host}
 							</span>
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-1 shrink-0">
-					<button
-						type="button"
-						onClick={handlePreview}
-						className="p-1.5 rounded-md text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-surface/10"
-						title="预览 SKILL.md"
-					>
-						<Eye className="w-3.5 h-3.5" />
-					</button>
-					{entry.homepage && (
-						<a
-							href={entry.homepage}
-							target="_blank"
-							rel="noreferrer"
-							className="p-1.5 rounded-md text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-surface/10"
-							title="打开主页"
-						>
-							<ExternalLink className="w-3.5 h-3.5" />
-						</a>
-					)}
+
+				{/* 操作区 */}
+				<div className="flex flex-col items-end gap-1.5 shrink-0">
 					{entry.installed ? (
 						<button
 							type="button"
 							onClick={handleUninstall}
 							disabled={!!installing}
-							className="px-2.5 py-1 rounded-md text-[11.5px] font-medium border border-border/60 text-text-secondary hover:text-error hover:border-[rgba(181,51,51,0.32)] dark:hover:border-red-500/40 transition-colors flex items-center gap-1"
+							className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-text-secondary hover:text-error hover:bg-error/8 transition disabled:opacity-50"
 						>
 							<Trash2 className="w-3 h-3" />
 							卸载
@@ -202,16 +214,16 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							onClick={handleInstall}
 							disabled={!!installing}
 							className={cn(
-								"px-2.5 py-1 rounded-md text-[11.5px] font-medium flex items-center gap-1 transition-colors",
+								"inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition shrink-0",
 								installing
-									? "bg-warm-200 text-text-muted cursor-not-allowed"
-									: "bg-primary text-white hover:bg-primary/90",
+									? "bg-cream-200 text-text-muted cursor-not-allowed"
+									: "bg-primary text-primary-foreground hover:bg-primary-hover",
 							)}
 						>
 							{installing ? (
 								<>
 									<Loader2 className="w-3 h-3 animate-spin" />
-									{phaseToLabel(progress?.phase ?? "queued")}
+									{PHASE_LABEL[progress?.phase ?? "queued"]}
 								</>
 							) : (
 								<>
@@ -221,16 +233,39 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							)}
 						</button>
 					)}
+
+					{/* hover 才显示的次操作 */}
+					<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+						<button
+							type="button"
+							onClick={handlePreview}
+							className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+							title="预览 SKILL.md"
+						>
+							<Eye className="w-3 h-3" />
+						</button>
+						{entry.homepage && (
+							<a
+								href={entry.homepage}
+								target="_blank"
+								rel="noreferrer"
+								className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+								title="打开主页"
+							>
+								<ExternalLink className="w-3 h-3" />
+							</a>
+						)}
+					</div>
 				</div>
 			</div>
 
 			{/* 进度条 */}
 			{progress && progress.phase !== "done" && (
-				<div className="mt-1">
-					<div className="h-1 rounded-full bg-warm-200/70 overflow-hidden">
+				<div className="px-3 pb-2.5 -mt-0.5">
+					<div className="h-[3px] rounded-full bg-cream-200/80 dark:bg-cream-800/50 overflow-hidden">
 						<div
 							className={cn(
-								"h-full transition-all",
+								"h-full transition-all duration-200 ease-out",
 								failed ? "bg-error" : "bg-primary",
 							)}
 							style={{
@@ -241,7 +276,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					{(progress.message || progress.error) && (
 						<p
 							className={cn(
-								"mt-1 text-[10.5px]",
+								"mt-1 text-[10px] truncate",
 								failed ? "text-error" : "text-text-light",
 							)}
 						>
@@ -253,7 +288,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 
 			{/* 预览面板 */}
 			{previewing && (
-				<div className="mt-1 rounded-lg border border-border/60 bg-warm-200/40 dark:bg-surface/20 p-3 max-h-64 overflow-auto">
+				<div className="mx-3 mb-2.5 rounded-lg bg-cream-200/50 dark:bg-cream-800/30 p-2.5 max-h-56 overflow-auto animate-fade-in">
 					{previewError ? (
 						<p className="text-[11px] text-error">{previewError}</p>
 					) : previewText === null ? (
@@ -262,7 +297,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							加载中…
 						</p>
 					) : (
-						<pre className="text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
+						<pre className="text-[10.5px] leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
 							{previewText || "（SKILL.md 内容为空）"}
 						</pre>
 					)}

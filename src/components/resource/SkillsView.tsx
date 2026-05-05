@@ -1,26 +1,20 @@
 // Skills 管理视图 - 在左侧边栏中间栏展示
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-	Search,
-	X,
-	Zap,
-	FolderOpen,
-	Package,
-	RefreshCw,
-	Trash2,
 	ChevronDown,
-	ChevronUp,
-	ToggleLeft,
-	ToggleRight,
+	FolderOpen,
+	RefreshCw,
+	Search,
 	Store,
+	Trash2,
+	X,
 } from "lucide-react";
 import { useSkillsStore } from "../../lib/skillsStore";
 import { useUpdateBadge } from "../../lib/skillsMarketplaceStore";
 import { openDirectory } from "../../lib/dialogCompat";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
-import { Select } from "../ui/Select";
 import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
 
@@ -30,6 +24,13 @@ type TabType = "installed" | "marketplace";
 interface SkillsViewProps {
 	onNavigateWorkbench?: () => void;
 }
+
+const FILTERS: Array<{ value: FilterType; label: string }> = [
+	{ value: "all", label: "全部" },
+	{ value: "enabled", label: "已启用" },
+	{ value: "system", label: "系统" },
+	{ value: "custom", label: "自定义" },
+];
 
 export function SkillsView(_props: SkillsViewProps) {
 	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
@@ -118,89 +119,101 @@ export function SkillsView(_props: SkillsViewProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-transparent">
-			{/* Header */}
-			<div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-border dark:border-white/[0.05]">
-				<div className="flex items-center gap-2">
-					<Zap className="w-4 h-4 text-peach-500" />
-					<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
-						Skills
-					</h2>
-				</div>
-				<div className="flex items-center gap-2">
-					{tab === "installed" && (
-						<span className="text-[11px] text-text-light">
-							{enabledCount}/{skills.length} 已启用
-						</span>
-					)}
-					<button
-						onClick={handleRefresh}
-						disabled={isLoading}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
-						title="刷新"
-					>
-						<RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-					</button>
-					{tab === "installed" && (
-						<button
-							onClick={handleImport}
+			{/* Header — editorial */}
+			<div className="px-5 pt-6 pb-3 shrink-0">
+				<div className="flex items-start justify-between gap-2">
+					<div className="min-w-0">
+						<div className="text-[9.5px] font-semibold tracking-[0.22em] text-text-light uppercase">
+							Agent Skills
+						</div>
+						<h2 className="font-serif text-[20px] leading-[1.15] text-text-primary mt-1.5 tracking-tight">
+							技能库
+						</h2>
+						<p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">
+							{enabledCount > 0 ? (
+								<>
+									<span className="tabular-nums text-text-secondary">
+										{enabledCount}
+									</span>
+									<span> / </span>
+									<span className="tabular-nums">{skills.length}</span>
+									<span> 已启用</span>
+								</>
+							) : (
+								<>共 {skills.length} 个技能</>
+							)}
+							{updateCount > 0 && (
+								<>
+									<span className="mx-1.5 text-text-light/50">·</span>
+									<button
+										type="button"
+										onClick={() => setTab("marketplace")}
+										className="text-amber-700 dark:text-amber-300 hover:underline underline-offset-2"
+									>
+										{updateCount} 个更新
+									</button>
+								</>
+							)}
+						</p>
+					</div>
+					<div className="flex items-center gap-0.5 shrink-0 -mr-1">
+						<IconButton
+							onClick={handleRefresh}
 							disabled={isLoading}
-							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-black/5 dark:hover:bg-surface/10 rounded-lg transition-colors disabled:opacity-50"
-							title="导入本地技能"
+							title="刷新"
 						>
-							<FolderOpen className="w-4 h-4" />
-						</button>
-					)}
+							<RefreshCw
+								className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
+							/>
+						</IconButton>
+						{tab === "installed" && (
+							<IconButton
+								onClick={handleImport}
+								disabled={isLoading}
+								title="导入本地技能"
+							>
+								<FolderOpen className="w-3.5 h-3.5" />
+							</IconButton>
+						)}
+					</div>
 				</div>
 			</div>
 
-			{/* Tabs */}
-			<div className="px-4 pt-3 flex items-center gap-1 shrink-0">
-				<button
-					type="button"
-					onClick={() => setTab("installed")}
-					className={cn(
-						"relative px-3 py-1.5 text-[11.5px] font-medium rounded-lg transition-colors",
-						tab === "installed"
-							? "bg-warm-200/80 text-text-primary"
-							: "text-text-muted hover:text-text-secondary hover:bg-warm-200/40",
-					)}
-				>
-					已安装 ({skills.length})
-					{updateCount > 0 && (
-						<span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-error text-[9px] text-white flex items-center justify-center">
-							{updateCount}
-						</span>
-					)}
-				</button>
-				<button
-					type="button"
-					onClick={() => setTab("marketplace")}
-					className={cn(
-						"px-3 py-1.5 text-[11.5px] font-medium rounded-lg transition-colors flex items-center gap-1.5",
-						tab === "marketplace"
-							? "bg-warm-200/80 text-text-primary"
-							: "text-text-muted hover:text-text-secondary hover:bg-warm-200/40",
-					)}
-				>
-					<Store className="w-3 h-3" />
-					浏览市场
-				</button>
+			{/* Tabs — underline editorial */}
+			<div className="px-5 shrink-0 border-b border-cream-300/70 dark:border-cream-500/20">
+				<div className="flex items-center gap-5">
+					<UnderlineTab
+						active={tab === "installed"}
+						onClick={() => setTab("installed")}
+						label="已安装"
+						count={skills.length}
+					/>
+					<UnderlineTab
+						active={tab === "marketplace"}
+						onClick={() => setTab("marketplace")}
+						icon={<Store className="w-3 h-3" />}
+						label="市场"
+						badge={updateCount}
+					/>
+				</div>
 			</div>
 
 			{/* Error */}
 			{error && (
-				<div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-[rgba(181,51,51,0.08)] dark:bg-red-950/20 border border-[rgba(181,51,51,0.32)] dark:border-red-900/40 text-xs text-error dark:text-error flex items-center justify-between">
+				<div className="mx-5 mt-3 px-3 py-2 rounded-lg bg-error/8 dark:bg-error/15 border border-error/20 text-[11.5px] text-error flex items-center justify-between gap-2 animate-fade-in">
 					<span className="truncate">{error}</span>
 					<button
+						type="button"
 						onClick={() => setError(null)}
-						className="ml-2 shrink-0 text-error hover:text-error"
+						className="shrink-0 -mr-1 p-1 rounded hover:bg-error/10"
+						title="关闭"
 					>
 						<X className="w-3 h-3" />
 					</button>
 				</div>
 			)}
 
-			{/* 安装中浮层（任何 Tab 都显示） */}
+			{/* 安装中浮层 */}
 			<InstallProgress />
 
 			{tab === "marketplace" ? (
@@ -208,166 +221,310 @@ export function SkillsView(_props: SkillsViewProps) {
 			) : (
 				<>
 					{/* Search & Filter */}
-					<div className="px-4 py-3 flex gap-2 shrink-0">
-						<div className="relative flex-1">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light" />
+					<div className="px-5 pt-4 pb-3 shrink-0 space-y-2.5">
+						<div className="relative">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light pointer-events-none" />
 							<input
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="搜索技能..."
-								className="w-full pl-9 pr-8 py-2 text-xs bg-warm-200/80/50 border-none rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-primary/30"
+								placeholder="搜索技能…"
+								className="w-full pl-9 pr-8 py-2 text-[12px] bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
 							/>
 							{searchQuery && (
 								<button
+									type="button"
 									onClick={() => setSearchQuery("")}
-									className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary"
+									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
 								>
 									<X className="w-3 h-3" />
 								</button>
 							)}
 						</div>
-						<Select
-							value={filter}
-							onChange={(e) => setFilter(e.target.value as FilterType)}
-							variant="compact"
-							options={[
-								{ value: "all", label: "全部" },
-								{ value: "system", label: "系统" },
-								{ value: "custom", label: "自定义" },
-								{ value: "enabled", label: "已启用" },
-							]}
-							containerClassName="w-28"
-						/>
+						<div className="flex items-center gap-1 -mx-1 px-1 overflow-x-auto scrollbar-hide">
+							{FILTERS.map((f) => (
+								<button
+									key={f.value}
+									type="button"
+									onClick={() => setFilter(f.value)}
+									className={cn(
+										"px-2.5 py-1 text-[11px] rounded-md transition-colors font-medium shrink-0",
+										filter === f.value
+											? "bg-primary text-primary-foreground"
+											: "text-text-muted hover:text-text-secondary hover:bg-cream-200/70",
+									)}
+								>
+									{f.label}
+								</button>
+							))}
+						</div>
 					</div>
 
-					{/* Skills List */}
-					<div className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-6">
-						<div className="space-y-2">
+					{/* Skills List — editorial directory */}
+					<div className="flex-1 overflow-y-auto scrollbar-hide px-2 pb-6">
+						<ul className="space-y-px">
 							{filteredSkills.map((skill) => {
 								const isExpanded = expandedSkillId === skill.name;
 								const isSystem = skill.location === "system";
 								return (
-									<div
-										key={skill.name}
-										className={cn(
-											"group rounded-xl border transition-all duration-200",
-											"border-border/60 bg-surface/50/30",
-											"hover:border-border/60 hover:shadow-sm",
-											isExpanded &&
-												"border-primary/20 dark:border-primary/20 shadow-sm",
-										)}
-									>
-										{/* Main row */}
+									<li key={skill.name}>
 										<div
-											className="flex items-center gap-3 px-4 py-3 cursor-pointer"
-											onClick={() =>
-												setExpandedSkillId(isExpanded ? null : skill.name)
-											}
+											className={cn(
+												"group rounded-lg transition-all",
+												isExpanded
+													? "bg-surface ring-1 ring-cream-300/70 dark:ring-cream-500/30 shadow-bai-card"
+													: "hover:bg-cream-200/60 dark:hover:bg-cream-800/30",
+											)}
 										>
-											<div
-												className={cn(
-													"w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
-													isSystem
-														? "bg-focus/8 dark:bg-focus/10 text-focus"
-														: "bg-peach-100 dark:bg-peach-500/10 text-peach-500",
-												)}
+											<button
+												type="button"
+												className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
+												onClick={() =>
+													setExpandedSkillId(isExpanded ? null : skill.name)
+												}
 											>
-												{isSystem ? (
-													<Package className="w-4 h-4" />
-												) : (
-													<Zap className="w-4 h-4" />
-												)}
-											</div>
-											<div className="flex-1 min-w-0">
-												<div className="flex items-center gap-2">
-													<span className="text-[13px] font-medium text-text-primary dark:text-zinc-200 truncate">
-														{skill.name}
-													</span>
-													<span
+												{/* Status dot — minimal indicator, ≤1px ring instead of side stripe */}
+												<span
+													className={cn(
+														"w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
+														skill.enabled
+															? "bg-success"
+															: "bg-cream-400 dark:bg-cream-700",
+													)}
+												/>
+												<div className="flex-1 min-w-0">
+													<div className="flex items-baseline gap-1.5 min-w-0">
+														<span
+															className={cn(
+																"text-[12.5px] font-medium truncate",
+																skill.enabled
+																	? "text-text-primary"
+																	: "text-text-muted",
+															)}
+														>
+															{skill.name}
+														</span>
+														{isSystem && (
+															<span className="text-[9px] text-text-light tracking-[0.1em] uppercase shrink-0">
+																SYS
+															</span>
+														)}
+													</div>
+													<p
 														className={cn(
-															"text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
-															isSystem
-																? "bg-focus/8 dark:bg-focus/10 text-focus dark:text-focus"
-																: "bg-peach-100 dark:bg-peach-500/10 text-peach-500 dark:text-amber-400",
+															"text-[10.5px] truncate mt-0.5 leading-snug",
+															skill.enabled
+																? "text-text-light"
+																: "text-text-light/70",
 														)}
 													>
-														{isSystem ? "系统" : "自定义"}
-													</span>
+														{skill.description || "（暂无描述）"}
+													</p>
 												</div>
-												<p className="text-[11px] text-text-muted truncate mt-0.5">
-													{skill.description}
-												</p>
-											</div>
-											<div className="flex items-center gap-1.5 shrink-0">
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleToggleSkill(skill.name, skill.enabled);
-													}}
-													className={cn(
-														"transition-colors",
-														skill.enabled ? "text-success" : "text-text-light",
-													)}
-													title={skill.enabled ? "点击禁用" : "点击启用"}
-												>
-													{skill.enabled ? (
-														<ToggleRight className="w-6 h-6" />
-													) : (
-														<ToggleLeft className="w-6 h-6" />
-													)}
-												</button>
-												{isExpanded ? (
-													<ChevronUp className="w-3.5 h-3.5 text-text-light" />
-												) : (
-													<ChevronDown className="w-3.5 h-3.5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity" />
-												)}
-											</div>
-										</div>
+												<div className="flex items-center gap-1 shrink-0">
+													<ToggleSwitch
+														enabled={skill.enabled}
+														onClick={(e) => {
+															e.stopPropagation();
+															handleToggleSkill(skill.name, skill.enabled);
+														}}
+													/>
+													<ChevronDown
+														className={cn(
+															"w-3 h-3 text-text-light transition-transform",
+															isExpanded && "rotate-180",
+															!isExpanded && "opacity-0 group-hover:opacity-60",
+														)}
+													/>
+												</div>
+											</button>
 
-										{/* Expanded details */}
-										{isExpanded && (
-											<div className="px-4 pb-3 pt-0 border-t border-border/60">
-												<p className="text-xs text-text-secondary leading-relaxed mt-3 whitespace-pre-wrap">
-													{skill.description}
-												</p>
-												<div className="flex items-center gap-3 mt-3">
-													<span className="text-[10px] text-text-light font-mono truncate">
-														{skill.location}
-													</span>
-													{!isSystem && (
-														<button
-															onClick={() => handleDelete(skill.name)}
-															className="flex items-center gap-1 text-[10px] text-error hover:text-error transition-colors"
+											{/* Expanded details */}
+											{isExpanded && (
+												<div className="px-3 pb-3 pt-0 ml-3.5 space-y-2.5 animate-fade-in">
+													<p className="text-[11.5px] text-text-secondary leading-relaxed whitespace-pre-wrap">
+														{skill.description || "（暂无描述）"}
+													</p>
+													<div className="flex items-center justify-between gap-2 pt-1 border-t border-cream-300/70 dark:border-cream-500/20">
+														<code
+															className="text-[10px] text-text-light font-mono truncate pt-2"
+															title={skill.location}
 														>
-															<Trash2 className="w-3 h-3" />
-															删除
-														</button>
-													)}
+															{skill.location}
+														</code>
+														{!isSystem && (
+															<button
+																type="button"
+																onClick={() => handleDelete(skill.name)}
+																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8 mt-1"
+															>
+																<Trash2 className="w-3 h-3" />
+																删除
+															</button>
+														)}
+													</div>
 												</div>
-											</div>
-										)}
-									</div>
+											)}
+										</div>
+									</li>
 								);
 							})}
-						</div>
+						</ul>
 
 						{/* Empty state */}
 						{filteredSkills.length === 0 && (
-							<div className="text-center py-10 mt-10">
-								<Zap className="w-8 h-8 text-text-light mx-auto mb-3" />
-								<p className="text-sm text-text-muted font-medium">
-									{searchQuery ? "未找到匹配的技能" : "暂无技能"}
-								</p>
-								{!searchQuery && (
-									<p className="text-xs text-text-light mt-1.5">
-										切到「浏览市场」一键安装，或点击右上角导入本地技能文件夹
-									</p>
-								)}
-							</div>
+							<EmptyState
+								searchQuery={searchQuery}
+								onBrowse={() => setTab("marketplace")}
+								onImport={handleImport}
+							/>
 						)}
 					</div>
 				</>
+			)}
+		</div>
+	);
+}
+
+function IconButton({
+	children,
+	onClick,
+	disabled,
+	title,
+}: {
+	children: React.ReactNode;
+	onClick: () => void;
+	disabled?: boolean;
+	title?: string;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			disabled={disabled}
+			title={title}
+			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-cream-200/70 dark:hover:bg-cream-800/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
+		>
+			{children}
+		</button>
+	);
+}
+
+function UnderlineTab({
+	active,
+	onClick,
+	label,
+	icon,
+	count,
+	badge,
+}: {
+	active: boolean;
+	onClick: () => void;
+	label: string;
+	icon?: React.ReactNode;
+	count?: number;
+	badge?: number;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"relative flex items-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors -mb-px",
+				active
+					? "text-text-primary"
+					: "text-text-muted hover:text-text-secondary",
+			)}
+		>
+			{icon}
+			<span>{label}</span>
+			{typeof count === "number" && (
+				<span className="text-[10.5px] tabular-nums text-text-light/80">
+					{count}
+				</span>
+			)}
+			{badge && badge > 0 ? (
+				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-amber-500/90 text-[8.5px] font-semibold text-white tabular-nums">
+					{badge > 99 ? "99+" : badge}
+				</span>
+			) : null}
+			{active && (
+				<span className="absolute left-0 right-0 -bottom-px h-0.5 bg-primary rounded-full" />
+			)}
+		</button>
+	);
+}
+
+function ToggleSwitch({
+	enabled,
+	onClick,
+}: {
+	enabled: boolean;
+	onClick: (e: React.MouseEvent) => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			role="switch"
+			aria-checked={enabled}
+			title={enabled ? "点击禁用" : "点击启用"}
+			className={cn(
+				"relative w-7 h-4 rounded-full transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/15",
+				enabled ? "bg-success" : "bg-cream-400/80 dark:bg-cream-700",
+			)}
+		>
+			<span
+				className={cn(
+					"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform",
+					enabled ? "translate-x-3.5" : "translate-x-0.5",
+				)}
+			/>
+		</button>
+	);
+}
+
+function EmptyState({
+	searchQuery,
+	onBrowse,
+	onImport,
+}: {
+	searchQuery: string;
+	onBrowse: () => void;
+	onImport: () => void;
+}) {
+	return (
+		<div className="text-center py-16 px-6">
+			<div className="text-[32px] font-serif text-text-light/60 leading-none mb-3">
+				{searchQuery ? "—" : "∅"}
+			</div>
+			<p className="text-[12.5px] text-text-secondary font-medium">
+				{searchQuery ? "没有匹配的技能" : "尚未安装任何技能"}
+			</p>
+			<p className="text-[11px] text-text-light mt-2 leading-relaxed">
+				{searchQuery
+					? "试试别的关键词或切换过滤器"
+					: "去市场一键安装，或导入本地技能文件夹"}
+			</p>
+			{!searchQuery && (
+				<div className="flex items-center gap-2 justify-center mt-5">
+					<button
+						type="button"
+						onClick={onBrowse}
+						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11.5px] font-medium hover:bg-primary-hover transition"
+					>
+						<Store className="w-3 h-3" />
+						浏览市场
+					</button>
+					<button
+						type="button"
+						onClick={onImport}
+						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-[11.5px] font-medium hover:bg-cream-300 transition"
+					>
+						<FolderOpen className="w-3 h-3" />
+						导入本地
+					</button>
+				</div>
 			)}
 		</div>
 	);

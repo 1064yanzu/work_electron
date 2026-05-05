@@ -1,5 +1,5 @@
 import type { IpcRendererEvent } from "electron";
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { IPCChannel, IPCSchema } from "../shared/ipc-schema";
 import type { ElectronAPI } from "../shared/preload-api";
 
@@ -45,6 +45,16 @@ const on: ElectronAPI["on"] = (channel, listener) => {
 	return () => ipcRenderer.off(channel, wrapped);
 };
 
-const api: ElectronAPI = { invoke, on };
+const api: ElectronAPI = {
+	invoke,
+	on,
+	getPathForFile: (file: File) => {
+		try {
+			return webUtils.getPathForFile(file);
+		} catch {
+			return "";
+		}
+	},
+};
 
 contextBridge.exposeInMainWorld("electronAPI", api);

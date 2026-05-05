@@ -95,6 +95,24 @@ const FLUSH_IMMEDIATELY_TYPES = new Set([
 	"tool_use_summary",
 ]);
 
+/**
+ * 句末标点 / 换行 / 段落分隔符。Claude Code CLI 的"打字机节奏"靠这些标点处的小停顿
+ * 形成。我们在 BatchedSender 之上加一层"句末 flush"，让 UI 体感与 CLI 对齐。
+ */
+const SENTENCE_BOUNDARY_RE = /[\n。．.！!？?；;]/;
+
+function eventsContainSentenceBoundary(events: unknown): boolean {
+	if (!Array.isArray(events)) return false;
+	for (const ev of events) {
+		if (!ev || typeof ev !== "object") continue;
+		const typed = ev as { type?: unknown; content?: unknown };
+		if (typed.type !== "text_delta" && typed.type !== "thought_delta") continue;
+		if (typeof typed.content !== "string") continue;
+		if (SENTENCE_BOUNDARY_RE.test(typed.content)) return true;
+	}
+	return false;
+}
+
 export function emit(
 	getMainWindow: GetMainWindow,
 	payload: AgentSdkEventPayload,
@@ -104,6 +122,12 @@ export function emit(
 	const sender = getAgentSdkSender(getMainWindow);
 	sender.send(payload);
 	if (FLUSH_IMMEDIATELY_TYPES.has(payload.type)) {
+		sender.flush();
+	} else if (
+		payload.type === "transformed" &&
+		eventsContainSentenceBoundary(payload.events)
+	) {
+		// 文本/思考流到句末时立即 flush，让"打字机节奏"在标点处自然停顿
 		sender.flush();
 	}
 	publishAgentSdkBusEvent(payload as any);

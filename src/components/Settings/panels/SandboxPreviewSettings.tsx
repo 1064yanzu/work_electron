@@ -88,8 +88,7 @@ export function SandboxPreviewSettings() {
 						}
 						options={[
 							{ value: "graph", label: "运行图" },
-							{ value: "preview", label: "预览" },
-							{ value: "code", label: "代码" },
+							{ value: "preview", label: "产物预览" },
 						]}
 					/>
 				</SettingsRow>

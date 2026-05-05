@@ -35,8 +35,14 @@ export function createPetWindow({
 		y: posY + Math.round(winH / 2),
 	});
 	const targetWa = targetDisplay.workArea;
-	posX = Math.max(targetWa.x, Math.min(posX, targetWa.x + targetWa.width - winW));
-	posY = Math.max(targetWa.y, Math.min(posY, targetWa.y + targetWa.height - winH));
+	posX = Math.max(
+		targetWa.x,
+		Math.min(posX, targetWa.x + targetWa.width - winW),
+	);
+	posY = Math.max(
+		targetWa.y,
+		Math.min(posY, targetWa.y + targetWa.height - winH),
+	);
 
 	const win = new BrowserWindow({
 		width: winW,

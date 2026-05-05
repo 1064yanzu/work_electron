@@ -420,10 +420,33 @@ export function createAnthropicProxyRouter(options?: {
 			res.json(result);
 		} catch (error) {
 			logger?.error({ msg: "anthropic proxy error", error: String(error) });
-			res.status(500).json({
+			const rawMsg = error instanceof Error ? error.message : String(error);
+			const typeMatch = rawMsg.match(
+				/^(invalid_request_error|authentication_error|permission_error|not_found_error|rate_limit_error|api_error|overloaded_error):\s*/,
+			);
+			const errorType =
+				(typeMatch?.[1] as
+					| "invalid_request_error"
+					| "authentication_error"
+					| "permission_error"
+					| "not_found_error"
+					| "rate_limit_error"
+					| "api_error"
+					| "overloaded_error") || "api_error";
+			const message = typeMatch ? rawMsg.slice(typeMatch[0].length) : rawMsg;
+			const statusByType: Record<string, number> = {
+				invalid_request_error: 400,
+				authentication_error: 401,
+				permission_error: 403,
+				not_found_error: 404,
+				rate_limit_error: 429,
+				api_error: 500,
+				overloaded_error: 529,
+			};
+			res.status(statusByType[errorType] ?? 500).json({
 				error: {
-					type: "api_error",
-					message: error instanceof Error ? error.message : String(error),
+					type: errorType,
+					message,
 				},
 			});
 		}

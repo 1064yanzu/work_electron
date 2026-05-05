@@ -67,12 +67,15 @@ import { createWikiHandlers } from "./handlers/wiki";
 import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 import { createPetWindowHandlers } from "./handlers/petWindow";
 import {
+	bindMainWindowGetter,
+	flingAndSnapPetWindow,
 	focusMainWindow as petFocusMainWindow,
 	sendChatToMainWindow as petSendChat,
 	getPetWindow,
 	setPetWindowPosition,
 } from "../services/petWindowService";
 import { createPreviewServerHandlers } from "./handlers/previewServer";
+import { createReaderHandlers } from "./handlers/reader";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -98,6 +101,8 @@ export function setMainWindow(window: BrowserWindow | null) {
 	}
 	// 同步传递给文件监听服务
 	setFileWatcherMainWindow(window);
+	// 让 PetWindowService 能广播给主窗口
+	bindMainWindowGetter(() => mainWindowRef);
 }
 
 export function registerIpcHandlers({
@@ -203,6 +208,9 @@ export function registerIpcHandlers({
 	const previewServerHandlers = createPreviewServerHandlers({
 		getMainWindow: () => mainWindowRef,
 	});
+
+	// Reader handlers (阅读器：电子书 / 进度 / 高亮 / 书签 / 会话 / 设置)
+	const readerHandlers = createReaderHandlers(db);
 
 	// ==================
 	// 系统命令
@@ -964,7 +972,7 @@ export function registerIpcHandlers({
 
 			win.setPosition(clampedX, clampedY);
 		},
-		dragEnd: () => {
+		dragEnd: (vx?: number, vy?: number) => {
 			const win = getPetWindow();
 			if (!win || win.isDestroyed()) {
 				const moved = petDragState?.moved ?? false;
@@ -976,6 +984,14 @@ export function registerIpcHandlers({
 			// 仅在真正拖动后持久化新位置
 			if (moved) {
 				setPetWindowPosition(x, y);
+				// 速度有效（>0.1 px/ms）就走惯性飞行 + 贴墙
+				const speed =
+					vx !== undefined && vy !== undefined
+						? Math.sqrt(vx * vx + vy * vy)
+						: 0;
+				if (speed > 0.1) {
+					flingAndSnapPetWindow(vx ?? 0, vy ?? 0, 80);
+				}
 			}
 			petDragState = null;
 			return { moved, x, y };
@@ -1013,10 +1029,50 @@ export function registerIpcHandlers({
 		"pet_window_drag_move",
 		petWindowHandlers.pet_window_drag_move,
 	);
+	ipcMain.handle("pet_window_drag_end", petWindowHandlers.pet_window_drag_end);
 	ipcMain.handle(
-		"pet_window_drag_end",
-		petWindowHandlers.pet_window_drag_end,
+		"pet_window_snap_to_edge",
+		petWindowHandlers.pet_window_snap_to_edge,
 	);
+	ipcMain.handle(
+		"pet_window_get_position",
+		petWindowHandlers.pet_window_get_position,
+	);
+	ipcMain.handle(
+		"pet_window_set_size_preset",
+		petWindowHandlers.pet_window_set_size_preset,
+	);
+	ipcMain.handle(
+		"pet_window_set_dwell_preset",
+		petWindowHandlers.pet_window_set_dwell_preset,
+	);
+	ipcMain.handle("pet_window_set_dnd", petWindowHandlers.pet_window_set_dnd);
+	ipcMain.handle("mascot_set_id", petWindowHandlers.mascot_set_id);
+	ipcMain.handle("mascot_get_id", petWindowHandlers.mascot_get_id);
+
+	// pet-trigger-reminder：番茄钟 / 外部驱动主动推送 reminder 的接入点（暂未实装触发器，
+	// 仅作为通道开放给未来的 cron / 通知服务）。
+	// - 渲染端可 invoke("pet-trigger-reminder", { kind, title, detail }) 主动测试
+	// - 主进程其它模块也可以 ipcMain.emit("pet-trigger-reminder", null, payload)
+	ipcMain.handle("pet-trigger-reminder", (async (_e, payload) => {
+		const win = getPetWindow();
+		if (!win || win.isDestroyed()) return { success: false };
+		try {
+			win.webContents.send("pet-trigger-reminder", payload);
+			return { success: true };
+		} catch {
+			return { success: false };
+		}
+	}) satisfies IpcHandler<"pet-trigger-reminder">);
+	ipcMain.on("pet-trigger-reminder", (_e, payload) => {
+		const win = getPetWindow();
+		if (!win || win.isDestroyed()) return;
+		try {
+			win.webContents.send("pet-trigger-reminder", payload);
+		} catch {
+			// noop
+		}
+	});
 
 	// ==================
 	// 预览服务器（沙盒前端预览）
@@ -1038,6 +1094,56 @@ export function registerIpcHandlers({
 		previewServerHandlers.preview_window_open,
 	);
 	ipcMain.handle("sandbox_save_file", previewServerHandlers.sandbox_save_file);
+
+	// ==================
+	// Reader（阅读器）
+	// ==================
+	ipcMain.handle("reader_import_files", readerHandlers.reader_import_files);
+	ipcMain.handle("reader_list_books", readerHandlers.reader_list_books);
+	ipcMain.handle("reader_get_book", readerHandlers.reader_get_book);
+	ipcMain.handle("reader_open_book", readerHandlers.reader_open_book);
+	ipcMain.handle("reader_delete_book", readerHandlers.reader_delete_book);
+	ipcMain.handle("reader_get_chapter", readerHandlers.reader_get_chapter);
+	ipcMain.handle("reader_save_progress", readerHandlers.reader_save_progress);
+	ipcMain.handle("reader_search_in_book", readerHandlers.reader_search_in_book);
+	ipcMain.handle("reader_search_global", readerHandlers.reader_search_global);
+	ipcMain.handle(
+		"reader_list_highlights",
+		readerHandlers.reader_list_highlights,
+	);
+	ipcMain.handle(
+		"reader_create_highlight",
+		readerHandlers.reader_create_highlight,
+	);
+	ipcMain.handle(
+		"reader_update_highlight",
+		readerHandlers.reader_update_highlight,
+	);
+	ipcMain.handle(
+		"reader_delete_highlight",
+		readerHandlers.reader_delete_highlight,
+	);
+	ipcMain.handle("reader_list_bookmarks", readerHandlers.reader_list_bookmarks);
+	ipcMain.handle(
+		"reader_create_bookmark",
+		readerHandlers.reader_create_bookmark,
+	);
+	ipcMain.handle(
+		"reader_delete_bookmark",
+		readerHandlers.reader_delete_bookmark,
+	);
+	ipcMain.handle("reader_session_start", readerHandlers.reader_session_start);
+	ipcMain.handle("reader_session_end", readerHandlers.reader_session_end);
+	ipcMain.handle("reader_list_sessions", readerHandlers.reader_list_sessions);
+	ipcMain.handle(
+		"reader_export_highlights",
+		readerHandlers.reader_export_highlights,
+	);
+	ipcMain.handle("reader_get_settings", readerHandlers.reader_get_settings);
+	ipcMain.handle(
+		"reader_update_settings",
+		readerHandlers.reader_update_settings,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

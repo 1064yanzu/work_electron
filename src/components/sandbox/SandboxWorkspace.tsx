@@ -15,11 +15,10 @@ import {
 	useManagedModeStoreSelector,
 	type SandboxFile,
 } from "../../lib/managedModeStore";
+import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
-import { BrowserShell } from "./preview/BrowserShell";
-import { usePreviewServerStoreSelector } from "../../lib/previewServerStore";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
 import { confirmDialog } from "../ui/ConfirmDialog";
@@ -29,11 +28,6 @@ import { toast } from "../ui/Toast";
 const ExecutionGraph = lazy(async () => {
 	const mod = await import("./ExecutionGraph");
 	return { default: mod.ExecutionGraph };
-});
-
-const CodeWorkspace = lazy(async () => {
-	const mod = await import("./code/CodeWorkspace");
-	return { default: mod.CodeWorkspace };
 });
 
 interface SandboxWorkspaceProps {
@@ -53,9 +47,6 @@ export default function SandboxWorkspace({
 	const isExecuting = useAgentStoreSelector((state) => state.isExecuting);
 
 	const taskId = currentTask?.id;
-	const previewServer = usePreviewServerStoreSelector((state) =>
-		taskId ? state.servers[taskId] : undefined,
-	);
 
 	const activeSessionId = useChatStoreSelector(
 		(state) => state.activeSessionId,
@@ -103,12 +94,7 @@ export default function SandboxWorkspace({
 	];
 
 	const totalFiles = files.filter((f) => f.type === "file").length;
-	const headerTitle =
-		ui.centerView === "graph"
-			? "运行图"
-			: ui.centerView === "code"
-				? "代码"
-				: "产物预览";
+	const headerTitle = ui.centerView === "graph" ? "运行图" : "产物预览";
 	const headerMeta =
 		ui.centerView === "graph"
 			? graphSource
@@ -182,11 +168,6 @@ export default function SandboxWorkspace({
 			if (e.altKey && e.key === "2") {
 				e.preventDefault();
 				managedModeStore.setCenterView("preview");
-				return;
-			}
-			if (e.altKey && e.key === "3") {
-				e.preventDefault();
-				managedModeStore.setCenterView("code");
 			}
 		};
 		window.addEventListener("keydown", handleShortcuts);
@@ -196,10 +177,30 @@ export default function SandboxWorkspace({
 	const handleSelectFile = useCallback(
 		async (id: string, source: "user" | "auto" = "user") => {
 			if (source === "user") markUserManualSelection();
+			if (!id) {
+				managedModeStore.selectFile(null);
+				return;
+			}
 			managedModeStore.selectFile(id);
 			await managedModeStore.loadFileContent(id);
+			// 同步打开为可编辑标签页
+			const file = managedModeStore.getState().files.find((f) => f.id === id);
+			if (file && file.type === "file") {
+				let relPath = file.path;
+				if (sandboxDir && file.path.startsWith(sandboxDir)) {
+					relPath = file.path.slice(sandboxDir.length).replace(/^\//, "");
+				}
+				sandboxEditorStore.openFile(
+					file.id,
+					file.path,
+					relPath,
+					file.name,
+					file.extension,
+					file.content,
+				);
+			}
 		},
-		[markUserManualSelection],
+		[markUserManualSelection, sandboxDir],
 	);
 
 	const artifactFiles = useMemo(() => {
@@ -303,6 +304,7 @@ export default function SandboxWorkspace({
 			sandboxDir={sandboxDir || undefined}
 			previewMode={ui.previewMode}
 			density={ui.centerDensity || "comfortable"}
+			terminalDockCollapsed={ui.terminalDockCollapsed ?? true}
 			onSetPreviewMode={(mode) => managedModeStore.setPreviewMode(mode)}
 			onLoadContent={async (fileId) => {
 				await managedModeStore.loadFileContent(fileId);
@@ -312,6 +314,10 @@ export default function SandboxWorkspace({
 			onRevealFile={handleRevealArtifactFile}
 			onMoveFile={handleMoveArtifactFile}
 			onDeleteFile={handleDeleteArtifactFile}
+			onSetTerminalDockCollapsed={(collapsed) =>
+				managedModeStore.setTerminalDockCollapsed(collapsed)
+			}
+			devLogs={[]}
 		/>
 	);
 
@@ -356,21 +362,6 @@ export default function SandboxWorkspace({
 						onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
 						artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
 						density={ui.centerDensity || "comfortable"}
-					/>
-				</Suspense>
-			) : ui.centerView === "code" ? (
-				<Suspense
-					fallback={
-						<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70/40">
-							正在加载代码编辑器...
-						</div>
-					}
-				>
-					<CodeWorkspace
-						taskId={taskId || ""}
-						sandboxDir={sandboxDir || ""}
-						selectedFile={selectedFile}
-						onSelectFile={(id) => void handleSelectFile(id, "user")}
 					/>
 				</Suspense>
 			) : (

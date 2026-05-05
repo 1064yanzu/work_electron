@@ -1,18 +1,6 @@
 // Cursor 风格的聊天输入框 - 支持斜杠命令和动态上下文
 
 import {
-	ArrowUp,
-	AtSign,
-	ChevronUp,
-	FileText,
-	Folder,
-	Globe,
-	Image as ImageIcon,
-	Mic,
-	Plus,
-	Type,
-} from "lucide-react";
-import {
 	type KeyboardEvent,
 	useCallback,
 	useDeferredValue,
@@ -21,27 +9,18 @@ import {
 	useRef,
 	useState,
 } from "react";
-import {
-	buildPastedFileName,
-	saveContextAttachmentFromFile,
-} from "../../lib/chat/attachmentFiles";
-import {
-	filterSourcesByProjectAndFolder,
-	prefetchChatContext,
-	useCardsQuery,
-	useOutputAssetsQuery,
-	useSourcesQuery,
-} from "../../lib/query";
+import { prefetchChatContext } from "../../lib/query";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
-import type { DocCacheItem } from "../../lib/stores/types";
-import { SourceType } from "../../types";
-import { toast } from "../ui/Toast";
-import { AttachmentCard } from "./AttachmentCard";
-import { Model, ModelSelector } from "./ModelSelector";
-import { type SlashCommand } from "./SlashCommand";
+import { ChatInputContextBar } from "./chatInput/ChatInputContextBar";
+import { ChatInputToolbar } from "./chatInput/ChatInputToolbar";
+import { buildSubmitMessage } from "./chatInput/buildSubmitMessage";
+import { useChatInputAttachments } from "./chatInput/useChatInputAttachments";
+import { useDynamicSlashCommands } from "./chatInput/useDynamicSlashCommands";
+import { type Model, ModelSelector } from "./ModelSelector";
+import type { SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
 
@@ -62,24 +41,6 @@ interface ChatInputProps {
 	onModelSelect?: (modelId: string) => void;
 	onOpenPromptLibrary?: () => void;
 	isAgentExecuting?: boolean;
-}
-
-const EMPTY_COMMANDS: SlashCommand[] = [];
-const EMPTY_DOC_CACHE: Record<string, DocCacheItem> = {};
-
-function getSourceIcon(kind: SourceType) {
-	switch (kind) {
-		case SourceType.Web:
-			return Globe;
-		case SourceType.Audio:
-			return Mic;
-		case SourceType.Image:
-			return ImageIcon;
-		case SourceType.Text:
-			return Type;
-		default:
-			return FileText;
-	}
 }
 
 export function ChatInput({
@@ -104,218 +65,15 @@ export function ChatInput({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const contexts = useWorkspaceStoreSelector((state) => state.contexts);
-	const menuDataEnabled = showSlashMenu;
-	const docCache = useWorkspaceStoreSelector((state) =>
-		menuDataEnabled ? state.docCache : EMPTY_DOC_CACHE,
-	);
-	const currentProjectId = useWorkspaceStoreSelector((state) =>
-		menuDataEnabled ? state.currentProjectId : null,
-	);
-	const currentFolderId = useWorkspaceStoreSelector((state) =>
-		menuDataEnabled ? state.currentFolderId : null,
-	);
-	const sourcesQuery = useSourcesQuery(currentProjectId, {
-		enabled: menuDataEnabled,
-	});
-	const cardsQuery = useCardsQuery({ enabled: menuDataEnabled });
-	const outputsQuery = useOutputAssetsQuery({ enabled: menuDataEnabled });
-
-	const sources = useMemo(
-		() =>
-			!menuDataEnabled
-				? []
-				: filterSourcesByProjectAndFolder(
-						sourcesQuery.data ?? [],
-						currentProjectId,
-						currentFolderId,
-					),
-		[menuDataEnabled, sourcesQuery.data, currentProjectId, currentFolderId],
-	);
-	const cards = useMemo(
-		() => (menuDataEnabled ? (cardsQuery.data ?? []) : []),
-		[menuDataEnabled, cardsQuery.data],
-	);
-	const outputs = useMemo(
-		() => (menuDataEnabled ? (outputsQuery.data ?? []) : []),
-		[menuDataEnabled, outputsQuery.data],
-	);
-	const recentDocs = useMemo(
-		() =>
-			menuDataEnabled
-				? Object.values(docCache).filter((doc) => doc.content.trim())
-				: [],
-		[docCache, menuDataEnabled],
-	);
-
-	const addSelectionToContext =
-		workspaceStore.addSelectionToContext.bind(workspaceStore);
-	const addFileToContext = workspaceStore.addFileToContext.bind(workspaceStore);
 	const removeContext = workspaceStore.removeContext.bind(workspaceStore);
-	const addSourceToContext =
-		workspaceStore.addSourceToContext.bind(workspaceStore);
 
-	// 动态生成命令列表
-	const dynamicCommands = useMemo(() => {
-		if (!menuDataEnabled) return EMPTY_COMMANDS;
-		const commands: SlashCommand[] = [];
+	const { handleFileSelect, handlePaste, triggerFilePicker } =
+		useChatInputAttachments({ disabled, fileInputRef });
 
-		// 1. 添加“导入本地文件”命令
-		commands.push({
-			id: "import-file",
-			name: "导入本地文件",
-			description: "选择并读取本地文件内容",
-			icon: Folder,
-			category: "data",
-			group: "操作",
-			action: () => fileInputRef.current?.click(),
-		});
-
-		// 2. 添加左侧资料库 (Sources)
-		sources.forEach((source) => {
-			commands.push({
-				id: `source-${source.id}`,
-				name: source.title,
-				description: "资料库",
-				icon: getSourceIcon(source.kind),
-				category: "data",
-				group: "资料库",
-				action: () => {
-					addSourceToContext(source);
-				},
-			});
-		});
-
-		// 3. 添加左侧卡片 (Cards)
-		cards.forEach((card) => {
-			commands.push({
-				id: `card-${card.id}`,
-				name: card.title || "分享卡片",
-				description: card.text.slice(0, 30).replace(/\n/g, " ") + "...",
-				icon: ImageIcon,
-				category: "data",
-				group: "卡片",
-				action: () => {
-					addSelectionToContext(card.text, `卡片: ${card.title}`);
-				},
-			});
-		});
-
-		// 4. 添加所有文档 (Outputs)
-		outputs.forEach((output) => {
-			commands.push({
-				id: `output-${output.id}`,
-				name: output.title || "未命名文档",
-				description: output.content.slice(0, 30).replace(/\n/g, " ") + "...",
-				icon: FileText,
-				category: "data",
-				group: "文档",
-				action: () => {
-					addSelectionToContext(output.content, output.title);
-				},
-			});
-		});
-
-		// 5. 添加最近打开的文档 (docCache) - 仅当不在 outputs 中时才添加，或者作为“最近打开”
-		// 为避免重复，这里只添加那些ID不在 outputs 里的（虽然理论上 docCache 是子集）
-		// 或者简单地放在“最近打开”分组
-		recentDocs.forEach((doc) => {
-			commands.push({
-				id: `doc-${doc.id}`,
-				name: doc.title || "未命名文档",
-				description: doc.content.slice(0, 30).replace(/\n/g, " ") + "...",
-				icon: FileText,
-				category: "data",
-				group: "最近打开",
-				action: () => {
-					addSelectionToContext(doc.content, doc.title);
-				},
-			});
-		});
-
-		return commands;
-	}, [
-		sources,
-		cards,
-		outputs,
-		recentDocs,
-		addSelectionToContext,
-		addSourceToContext,
-		menuDataEnabled,
-	]);
-
-	const appendFilesToContext = useCallback(
-		async (files: File[]) => {
-			if (files.length === 0) return 0;
-
-			let successCount = 0;
-			for (const [index, file] of files.entries()) {
-				try {
-					const normalizedFileName =
-						file.name?.trim() || buildPastedFileName(file, index);
-					const attachment = await saveContextAttachmentFromFile(
-						file,
-						normalizedFileName,
-					);
-					addFileToContext(attachment);
-					successCount += 1;
-				} catch (err) {
-					console.error("读取文件失败:", err);
-				}
-			}
-
-			return successCount;
-		},
-		[addFileToContext],
-	);
-
-	// 处理本地文件选择
-	const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = Array.from(e.target.files ?? []);
-		if (files.length === 0) return;
-
-		try {
-			const successCount = await appendFilesToContext(files);
-			if (successCount > 1) {
-				toast.success(`已添加 ${successCount} 个附件`);
-			}
-		} catch (err) {
-			console.error("读取文件失败:", err);
-			toast.error("添加附件失败");
-		} finally {
-			// 清空 input 以便允许重复选择同名文件
-			e.target.value = "";
-		}
-	};
-
-	const handlePaste = useCallback(
-		async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-			if (disabled) return;
-
-			const files = Array.from(e.clipboardData.items)
-				.filter((item) => item.kind === "file")
-				.map((item) => item.getAsFile())
-				.filter((file): file is File => file instanceof File);
-			if (files.length === 0) return;
-
-			e.preventDefault();
-			try {
-				const successCount = await appendFilesToContext(files);
-				if (successCount === 0) {
-					toast.error("剪贴板里的文件添加失败");
-					return;
-				}
-				toast.success(
-					successCount === 1
-						? "已从剪贴板添加附件"
-						: `已从剪贴板添加 ${successCount} 个附件`,
-				);
-			} catch (error) {
-				console.error("粘贴附件失败:", error);
-				toast.error("粘贴附件失败");
-			}
-		},
-		[appendFilesToContext, disabled],
-	);
+	const dynamicCommands = useDynamicSlashCommands({
+		enabled: showSlashMenu,
+		onTriggerFilePicker: triggerFilePicker,
+	});
 
 	// 自动调整高度
 	useEffect(() => {
@@ -338,43 +96,23 @@ export function ChatInput({
 	}, [value]);
 	const deferredSlashFilter = useDeferredValue(slashFilter);
 
-	const handleSubmit = () => {
-		const trimmed = value.trim();
-
-		// 收集提示词 Chips 的内容
-		const promptContent = selectedChips
-			.filter((c) => c.type === "prompt" && c.content)
-			.map((c) => c.content)
-			.join("\n\n");
-
-		const agentSkillChip = selectedChips.find((c) => c.type === "agent_skill");
-		const selectedSkillName = agentSkillChip?.skillName;
-		const skillMention = selectedSkillName ? `$${selectedSkillName}` : "";
-
-		// 最终要发送的消息：显式 Skill 名称 + 提示词内容 + 用户输入
-		let finalMessage = trimmed;
-		if (promptContent) {
-			finalMessage = finalMessage
-				? `${promptContent}\n\n${finalMessage}`
-				: promptContent;
-		}
-		if (skillMention) {
-			finalMessage = finalMessage
-				? `${skillMention}\n\n${finalMessage}`
-				: skillMention;
-		}
+	const handleSubmit = useCallback(() => {
+		const { finalMessage, skillName } = buildSubmitMessage(
+			value,
+			selectedChips,
+		);
 
 		if (finalMessage && !disabled) {
 			// 提交 chips；Skill 通过 `$skill-name` 显式出现在用户 prompt 中，由 SDK 原生路由。
 			onSubmit(finalMessage, {
 				chips: selectedChips.length > 0 ? selectedChips : undefined,
-				forcedSkillId: selectedSkillName,
+				forcedSkillId: skillName,
 			});
 
 			setValue("");
 			setSelectedChips([]);
 		}
-	};
+	}, [value, selectedChips, disabled, onSubmit]);
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		// 如果斜杠菜单打开，让菜单处理键盘事件
@@ -509,6 +247,11 @@ export function ChatInput({
 		contexts.length > 0 ||
 		showSlashMenu;
 
+	const hasContent = useMemo(
+		() => value.trim().length > 0 || selectedChips.length > 0,
+		[value, selectedChips],
+	);
+
 	return (
 		<div className="relative" data-chat-input-root onBlur={handleBlur}>
 			<input
@@ -554,40 +297,7 @@ export function ChatInput({
 					}
 				`}
 			>
-				{/* 上下文附件条 */}
-				{contexts.length > 0 ? (
-					<div className="px-4 pt-3 pb-1">
-						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-							{contexts.map((ctx) => (
-								<div key={ctx.id} className="shrink-0">
-									<AttachmentCard
-										variant="chip"
-										file={{
-											title: ctx.title,
-											path: ctx.filePath || "",
-											type: ctx.type === "source" ? "document" : "file",
-											size: ctx.size,
-											origin:
-												ctx.type === "source"
-													? "source"
-													: ctx.type === "selection"
-														? "selection"
-														: "file",
-											status:
-												ctx.content &&
-												ctx.content.trim().length > 0 &&
-												!ctx.filePath
-													? "preparing"
-													: "ready",
-										}}
-										onRemove={() => removeContext(ctx.id)}
-									/>
-								</div>
-							))}
-						</div>
-						<div className="mt-2 border-t border-warm-200/40" />
-					</div>
-				) : null}
+				<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
 
 				{/* 已选择的命令卡片 */}
 				<SlashCommandChipList
@@ -620,120 +330,20 @@ export function ChatInput({
 					/>
 				</div>
 
-				{/* 底部工具栏 — 展开时显示 */}
-				<div
-					className={`
-						overflow-hidden transition-all duration-300 ease-out
-						${isExpanded ? "max-h-[60px] opacity-100" : "max-h-0 opacity-0"}
-					`}
-				>
-					<div className="mx-4 border-t border-warm-200/40 dark:border-warm-700/30" />
-					<div className="flex items-center justify-between px-3 py-2">
-						{/* 左侧：圆形按钮组 */}
-						<div className="flex items-center gap-1">
-							<button
-								onClick={() => fileInputRef.current?.click()}
-								aria-label="添加附件"
-								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
-								title="添加附件"
-							>
-								<Plus className="w-4 h-4" strokeWidth={1.5} />
-							</button>
-
-							<button
-								onClick={() => setValue("/")}
-								onMouseEnter={prefetchChatContext}
-								aria-label="命令菜单"
-								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-mint hover:bg-mint-100/70 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
-								title="命令菜单 (/)"
-							>
-								<AtSign className="w-3.5 h-3.5" strokeWidth={1.5} />
-							</button>
-
-							{/* 模型选择器 — pill tag（弹出面板在容器外渲染） */}
-							<div className="relative ml-0.5">
-								<button
-									onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
-									className={`
-										flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-full
-										transition-[background-color,color] duration-150 cursor-pointer
-										${
-											isModelSelectorOpen
-												? "bg-warm-200 dark:bg-cream-700 text-text-primary"
-												: "text-text-muted hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
-										}
-									`}
-								>
-									<ChevronUp
-										className={`w-3 h-3 transition-transform duration-200 ${isModelSelectorOpen ? "" : "rotate-180"}`}
-										strokeWidth={1.5}
-									/>
-									<span className="font-medium truncate max-w-[100px]">
-										{model ? model.split("/").pop()?.slice(0, 16) : "Auto"}
-									</span>
-								</button>
-							</div>
-						</div>
-
-						{/* 右侧：语音 + 发送按钮 */}
-						<div className="flex items-center gap-1.5">
-							<button
-								aria-label="语音输入"
-								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-violet hover:bg-violetx-100/70 dark:hover:bg-cream-700/40 transition-all duration-150 cursor-pointer active:scale-95"
-								title="语音输入"
-							>
-								<Mic className="w-3.5 h-3.5" strokeWidth={1.5} />
-							</button>
-							<button
-								onClick={handleSubmit}
-								disabled={
-									disabled || (!value.trim() && selectedChips.length === 0)
-								}
-								aria-label="发送消息"
-								className={`
-									flex items-center justify-center w-8 h-8 rounded-full
-									transition-[background-color,opacity,transform] duration-200 cursor-pointer active:scale-90
-									${
-										value.trim() || selectedChips.length > 0
-											? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
-											: "bg-warm-200 dark:bg-cream-700/50 text-text-muted/40 disabled:cursor-not-allowed"
-									}
-								`}
-							>
-								<ArrowUp className="w-4 h-4" strokeWidth={2} />
-							</button>
-						</div>
-					</div>
-				</div>
-
-				{/* 未展开时的迷你工具栏 — 只显示发送按钮 */}
-				<div
-					className={`
-						overflow-hidden transition-all duration-300 ease-out
-						${!isExpanded ? "max-h-[48px] opacity-100" : "max-h-0 opacity-0"}
-					`}
-				>
-					<div className="flex items-center justify-end px-3 py-2">
-						<button
-							onClick={handleSubmit}
-							disabled={
-								disabled || (!value.trim() && selectedChips.length === 0)
-							}
-							aria-label="发送消息"
-							className={`
-								flex items-center justify-center w-8 h-8 rounded-full
-								transition-[background-color,opacity,transform] duration-200 cursor-pointer active:scale-90
-								${
-									value.trim() || selectedChips.length > 0
-										? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
-										: "bg-warm-200 dark:bg-cream-700/40 text-text-muted/30 disabled:cursor-not-allowed"
-								}
-							`}
-						>
-							<ArrowUp className="w-4 h-4" strokeWidth={2} />
-						</button>
-					</div>
-				</div>
+				<ChatInputToolbar
+					expanded={isExpanded}
+					disabled={disabled}
+					hasContent={hasContent}
+					model={model}
+					models={models}
+					isModelSelectorOpen={isModelSelectorOpen}
+					onToggleModelSelector={() =>
+						setIsModelSelectorOpen(!isModelSelectorOpen)
+					}
+					onTriggerFilePicker={triggerFilePicker}
+					onTriggerSlashMenu={() => setValue("/")}
+					onSubmit={handleSubmit}
+				/>
 			</div>
 
 			{/* 快捷键提示 — 聚焦时显示 */}

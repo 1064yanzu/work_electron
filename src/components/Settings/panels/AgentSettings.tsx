@@ -379,7 +379,7 @@ export function AgentSettings() {
 	const contextRuntime = modelSettings.contextRuntime || {
 		contextPolicy: "balanced" as const,
 		subagentContextMode: "capsule" as const,
-		maxTurns: 24,
+		maxTurns: 100,
 		maxThinkingTokens: 8192,
 		maxBudgetUsd: undefined as number | undefined,
 		settingSources: ["user", "project"] as Array<"user" | "project" | "local">,
@@ -395,7 +395,7 @@ export function AgentSettings() {
 		maxTeammates: 2,
 		teammateMode: "auto" as const,
 		teammateBudget: {
-			maxTurns: 12,
+			maxTurns: 40,
 			maxThinkingTokens: 4096,
 			maxBudgetUsd: undefined as number | undefined,
 		},

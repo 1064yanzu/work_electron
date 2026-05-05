@@ -71,7 +71,7 @@ export function buildMultiAgentRuntime(input: {
 		maxTurns: Math.max(
 			1,
 			Math.floor(
-				normalizeNumber(rawBudget.max_turns ?? rawBudget.maxTurns) ?? 12,
+				normalizeNumber(rawBudget.max_turns ?? rawBudget.maxTurns) ?? 40,
 			),
 		),
 		maxThinkingTokens: Math.max(

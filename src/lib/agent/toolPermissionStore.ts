@@ -51,6 +51,37 @@ class ToolPermissionStore {
 	private requests = new Map<string, ToolPermissionRequest>();
 	private listeners = new Set<() => void>();
 	private resolvers = new Map<string, (decision: PermissionDecision) => void>();
+	/**
+	 * 会话级"此类工具自动允许"列表，键为 `${runId}::${toolName}`。
+	 * 当用户对某个工具按 `A` 键，后续相同 runId + toolName 的审批直接 allow。
+	 * runId 切换或 run 结束后通过 clearByRunId 清理。
+	 */
+	private sessionAllowlist = new Set<string>();
+
+	private allowlistKey(runId: string, toolName: string): string {
+		return `${runId}::${toolName}`;
+	}
+
+	/**
+	 * 标记该 run + tool 在本会话内永久允许，立刻消化掉同名待审批请求。
+	 */
+	allowAlwaysForSession(runId: string, toolName: string): void {
+		this.sessionAllowlist.add(this.allowlistKey(runId, toolName));
+		// 立刻把当前同名 pending 请求 allow 掉
+		for (const [id, req] of this.requests) {
+			if (
+				req.status === "pending" &&
+				req.runId === runId &&
+				req.toolName === toolName
+			) {
+				this.allowRequest(id);
+			}
+		}
+	}
+
+	isAllowedForSession(runId: string, toolName: string): boolean {
+		return this.sessionAllowlist.has(this.allowlistKey(runId, toolName));
+	}
 
 	/**
 	 * 添加权限请求
@@ -58,6 +89,11 @@ class ToolPermissionStore {
 	addRequest(
 		request: Omit<ToolPermissionRequest, "status" | "createdAt" | "expiresAt">,
 	): Promise<PermissionDecision> {
+		// 会话级 allowlist 命中时，跳过弹卡直接 allow
+		if (this.isAllowedForSession(request.runId, request.toolName)) {
+			return Promise.resolve({ behavior: "allow" });
+		}
+
 		const fullRequest: ToolPermissionRequest = {
 			...request,
 			status: "pending",
@@ -154,7 +190,7 @@ class ToolPermissionStore {
 	}
 
 	/**
-	 * 清理指定运行的所有请求
+	 * 清理指定运行的所有请求 & 会话级 allowlist
 	 */
 	clearByRunId(runId: string): void {
 		for (const [id, request] of this.requests) {
@@ -166,6 +202,11 @@ class ToolPermissionStore {
 				}
 				this.requests.delete(id);
 			}
+		}
+		// 同时清理 session allowlist 中属于该 run 的条目
+		const prefix = `${runId}::`;
+		for (const key of this.sessionAllowlist) {
+			if (key.startsWith(prefix)) this.sessionAllowlist.delete(key);
 		}
 		this.notifyListeners();
 	}

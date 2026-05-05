@@ -2,12 +2,10 @@
 // 在用户悬停、聚焦等交互时提前加载数据，减少感知加载时间
 
 import { listAgentSessions } from "../agent/api";
-import {
-	listCards,
-	listFolders,
-	listOutputAssets,
-	listSources,
-} from "../api/sources";
+import { listCards } from "../api/cards";
+import { listFolders } from "../api/folders";
+import { listOutputAssets } from "../api/output";
+import { listSources } from "../api/sources";
 import { appQueryClient, QUERY_STALE_TIME_MS } from "./client";
 import { queryKeys } from "./keys";
 

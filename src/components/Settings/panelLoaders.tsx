@@ -58,6 +58,7 @@ const panelImporters: Record<SettingsTabId, PanelImporter> = {
 		() => import("./panels/SandboxPreviewSettings"),
 		"SandboxPreviewSettings",
 	),
+	reader: toDefault(() => import("./panels/ReaderSettings"), "ReaderSettings"),
 };
 
 const panelComponents = Object.fromEntries(

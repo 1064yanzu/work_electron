@@ -454,7 +454,7 @@ export class ClaudeAgentService {
 			).values(),
 		);
 		const resolvedMaxTurns =
-			parseNumber(maxTurns) ?? parseNumber(configMaxTurns) ?? 24;
+			parseNumber(maxTurns) ?? parseNumber(configMaxTurns) ?? 100;
 		const resolvedMaxThinkingTokens =
 			parseNumber(maxThinkingTokens) ?? parseNumber(configMaxThinkingTokens);
 		const resolvedMaxBudgetUsd =
@@ -626,6 +626,9 @@ export class ClaudeAgentService {
 		const toolNamesById = new Map<string, string>();
 		const streamState = new AgentStreamState();
 		let streamedVisibleText = "";
+		let pendingReplayProbe = "";
+		let replayDedupeOffset: number | null = null;
+		const replayProbeMinChars = 24;
 		const bufferedEvents: Array<{
 			runId: string;
 			type: string;
@@ -638,6 +641,68 @@ export class ClaudeAgentService {
 		let retryAttempt = 0;
 		const maxRetries = 3;
 		const baseDelayMs = 1000;
+
+		const appendVisibleTextDelta = (delta: string) => {
+			if (!delta) return;
+			streamedVisibleText += delta;
+			onChunk?.(delta);
+		};
+
+		const flushPendingReplayProbe = () => {
+			if (!pendingReplayProbe) return;
+			const pending = pendingReplayProbe;
+			pendingReplayProbe = "";
+			appendVisibleTextDelta(pending);
+		};
+
+		const handleVisibleTextDelta = (delta: string) => {
+			if (!delta) return;
+
+			if (replayDedupeOffset !== null) {
+				const knownTail = streamedVisibleText.slice(replayDedupeOffset);
+				if (knownTail && delta.startsWith(knownTail)) {
+					replayDedupeOffset = null;
+					appendVisibleTextDelta(delta.slice(knownTail.length));
+					return;
+				}
+
+				const expected = streamedVisibleText.slice(
+					replayDedupeOffset,
+					replayDedupeOffset + delta.length,
+				);
+				if (expected === delta) {
+					replayDedupeOffset += delta.length;
+					if (replayDedupeOffset >= streamedVisibleText.length) {
+						replayDedupeOffset = null;
+					}
+					return;
+				}
+
+				replayDedupeOffset = null;
+			}
+
+			if (pendingReplayProbe) {
+				const candidate = pendingReplayProbe + delta;
+				if (streamedVisibleText.startsWith(candidate)) {
+					if (candidate.length >= replayProbeMinChars) {
+						pendingReplayProbe = "";
+						replayDedupeOffset = candidate.length;
+					} else {
+						pendingReplayProbe = candidate;
+					}
+					return;
+				}
+
+				flushPendingReplayProbe();
+			}
+
+			if (streamedVisibleText.startsWith(delta)) {
+				pendingReplayProbe = delta;
+				return;
+			}
+
+			appendVisibleTextDelta(delta);
+		};
 
 		const finished = new Promise<void>((resolve, reject) => {
 			settle = (err?: Error) => (err ? reject(err) : resolve());
@@ -1223,19 +1288,16 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "text_delta") {
-							// text_delta 是 SDK 流式传输的真正增量片段，直接追加
-							// 不使用 mergeStreamingText（那是为全量快照合并设计的）
-							// 使用该函数会在某些边界情况下错误地判断"重复"，导致文本被丢弃或重复
 							const delta =
 								typeof event.content === "string" ? event.content : "";
 							if (!delta) {
 								continue;
 							}
-							streamedVisibleText += delta;
 							sawNonThoughtProgress = true;
 							thoughtOnlyStartedAt = null;
-							onChunk?.(delta);
+							handleVisibleTextDelta(delta);
 						} else if (event.type === "thought_delta") {
+							flushPendingReplayProbe();
 							if (!sawNonThoughtProgress) {
 								if (thoughtOnlyStartedAt === null) {
 									thoughtOnlyStartedAt = Date.now();
@@ -1268,6 +1330,7 @@ export class ClaudeAgentService {
 								status: "running",
 							});
 						} else if (event.type === "tool_call_start") {
+							flushPendingReplayProbe();
 							sawNonThoughtProgress = true;
 							thoughtOnlyStartedAt = null;
 							toolNamesById.set(event.id, event.name);
@@ -1298,6 +1361,7 @@ export class ClaudeAgentService {
 								status: "running",
 							});
 						} else if (event.type === "tool_call_end") {
+							flushPendingReplayProbe();
 							sawNonThoughtProgress = true;
 							thoughtOnlyStartedAt = null;
 							// TodoWrite 的结果对 UI 没有必要展示为 tool_result（任务列表已经更新）
@@ -1317,6 +1381,7 @@ export class ClaudeAgentService {
 								status: event.isError ? "error" : "completed",
 							});
 						} else if (event.type === "result") {
+							flushPendingReplayProbe();
 							// 不再作为可见消息显示 result 事件，避免任务完成后出现重复文本
 							// result 事件仅用于标记任务完成，其内容已通过 text_delta 显示过
 							// onMessage?.({
@@ -1325,6 +1390,7 @@ export class ClaudeAgentService {
 							// 	status: event.isError ? "error" : "completed",
 							// });
 						} else if (event.type === "tool_input_complete") {
+							flushPendingReplayProbe();
 							// 工具输入流式传输完成，发送更新消息以更新工具调用的 input 字段
 							onMessage?.({
 								type: "tool_input_update",
@@ -1339,6 +1405,7 @@ export class ClaudeAgentService {
 				}
 
 				if (payload.type === "done") {
+					flushPendingReplayProbe();
 					const subtype = payload.result?.subtype;
 					const resultAny = payload.result as any;
 					if (
@@ -1428,6 +1495,7 @@ export class ClaudeAgentService {
 				}
 
 				if (payload.type === "error") {
+					flushPendingReplayProbe();
 					const err = payload.error || "Unknown error";
 					const retryable = (payload as any).retryable === true;
 

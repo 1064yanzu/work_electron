@@ -1,6 +1,7 @@
 /**
  * IframePreview - 受控 iframe 组件
  * 支持 src / srcDoc 两种模式，监听 postMessage 同步子页面路由
+ * 暴露 loading / error 状态供外层呈现进度条 / 状态遮罩
  */
 
 import {
@@ -12,12 +13,19 @@ import {
 	useState,
 } from "react";
 import { cn } from "@/lib/utils";
+import { PreviewStatusOverlay } from "./PreviewStatusOverlay";
 
 interface IframePreviewProps {
 	src?: string;
 	srcDoc?: string;
 	onLoad?: () => void;
 	onError?: () => void;
+	/** 加载状态变化回调（外层进度条用） */
+	onLoadingChange?: (loading: boolean) => void;
+	/** 是否显示空态遮罩（无 src 且无 srcDoc 时） */
+	showEmptyOverlay?: boolean;
+	emptyTitle?: string;
+	emptyDescription?: string;
 	className?: string;
 }
 
@@ -46,32 +54,60 @@ export interface IframePreviewHandle {
 export const IframePreview = forwardRef<
 	IframePreviewHandle,
 	IframePreviewProps
->(function IframePreview({ src, srcDoc, onLoad, onError, className }, ref) {
+>(function IframePreview(
+	{
+		src,
+		srcDoc,
+		onLoad,
+		onError,
+		onLoadingChange,
+		showEmptyOverlay = true,
+		emptyTitle,
+		emptyDescription,
+		className,
+	},
+	ref,
+) {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [hasError, setHasError] = useState(false);
+	const [errorMessage, setErrorMessage] = useState<string>("");
 	const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	useImperativeHandle(ref, () => ({
-		getContentWindow: () => iframeRef.current?.contentWindow ?? null,
-		refresh: () => {
-			const iframe = iframeRef.current;
-			if (!iframe) return;
-			setIsLoading(true);
-			// 通过重新设置 src 触发刷新
-			const currentSrc = iframe.src;
-			iframe.src = "";
-			// 使用 microtask 确保浏览器处理空白帧后再恢复
-			requestAnimationFrame(() => {
-				iframe.src = currentSrc;
-			});
+	const setLoading = useCallback(
+		(value: boolean) => {
+			setIsLoading(value);
+			onLoadingChange?.(value);
 		},
-	}));
+		[onLoadingChange],
+	);
+
+	const handleRefresh = useCallback(() => {
+		const iframe = iframeRef.current;
+		if (!iframe) return;
+		setLoading(true);
+		setHasError(false);
+		setErrorMessage("");
+		const currentSrc = iframe.src;
+		iframe.src = "";
+		requestAnimationFrame(() => {
+			iframe.src = currentSrc;
+		});
+	}, [setLoading]);
+
+	useImperativeHandle(
+		ref,
+		() => ({
+			getContentWindow: () => iframeRef.current?.contentWindow ?? null,
+			refresh: handleRefresh,
+		}),
+		[handleRefresh],
+	);
 
 	// 监听子页面通过 postMessage 发送路由变化
 	useEffect(() => {
 		const handler = (event: MessageEvent) => {
 			if (isPreviewMessage(event.data)) {
-				// 通过自定义事件向上冒泡，BrowserShell 可以监听
 				window.dispatchEvent(
 					new CustomEvent("preview-navigate", {
 						detail: { url: event.data.url },
@@ -84,29 +120,38 @@ export const IframePreview = forwardRef<
 	}, []);
 
 	const handleLoad = useCallback(() => {
-		setIsLoading(false);
+		setLoading(false);
+		setHasError(false);
+		setErrorMessage("");
 		if (loadTimerRef.current) {
 			clearTimeout(loadTimerRef.current);
 			loadTimerRef.current = null;
 		}
 		onLoad?.();
-	}, [onLoad]);
+	}, [setLoading, onLoad]);
 
 	const handleError = useCallback(() => {
-		setIsLoading(false);
+		setLoading(false);
+		setHasError(true);
+		setErrorMessage("iframe 加载失败");
 		if (loadTimerRef.current) {
 			clearTimeout(loadTimerRef.current);
 			loadTimerRef.current = null;
 		}
 		onError?.();
-	}, [onError]);
+	}, [setLoading, onError]);
 
 	// src 变化时标记 loading
 	useEffect(() => {
 		if (src || srcDoc) {
-			setIsLoading(true);
-			// 安全超时：避免某些情况下 load 事件不触发导致永久 loading
-			loadTimerRef.current = setTimeout(() => setIsLoading(false), 15000);
+			setLoading(true);
+			setHasError(false);
+			setErrorMessage("");
+			loadTimerRef.current = setTimeout(() => {
+				setLoading(false);
+			}, 15000);
+		} else {
+			setLoading(false);
 		}
 		return () => {
 			if (loadTimerRef.current) {
@@ -114,30 +159,42 @@ export const IframePreview = forwardRef<
 				loadTimerRef.current = null;
 			}
 		};
-	}, [src, srcDoc]);
+	}, [src, srcDoc, setLoading]);
+
+	const isEmpty = !src && !srcDoc;
 
 	return (
 		<div className={cn("relative w-full h-full", className)}>
-			{/* Loading 指示器 */}
-			{isLoading && (
-				<div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60 backdrop-blur-[2px]">
-					<div className="flex flex-col items-center gap-2">
-						<div className="w-6 h-6 border-2 border-warm-400 border-t-transparent rounded-full animate-spin" />
-						<span className="text-xs text-text-muted">加载中...</span>
-					</div>
-				</div>
-			)}
+			{isEmpty && showEmptyOverlay ? (
+				<PreviewStatusOverlay
+					mode="empty"
+					title={emptyTitle}
+					description={emptyDescription}
+				/>
+			) : null}
 
-			<iframe
-				ref={iframeRef}
-				src={src}
-				srcDoc={srcDoc}
-				onLoad={handleLoad}
-				onError={handleError}
-				sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
-				className="w-full h-full border-none bg-white dark:bg-zinc-900"
-				title="沙盒预览"
-			/>
+			{!isEmpty && isLoading ? <PreviewStatusOverlay mode="skeleton" /> : null}
+
+			{!isEmpty && hasError ? (
+				<PreviewStatusOverlay
+					mode="error"
+					errorMessage={errorMessage}
+					onRetry={handleRefresh}
+				/>
+			) : null}
+
+			{!isEmpty ? (
+				<iframe
+					ref={iframeRef}
+					src={src}
+					srcDoc={srcDoc}
+					onLoad={handleLoad}
+					onError={handleError}
+					sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+					className="w-full h-full border-none bg-white dark:bg-zinc-900"
+					title="沙盒预览"
+				/>
+			) : null}
 		</div>
 	);
 });

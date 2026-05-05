@@ -59,6 +59,8 @@ const TOOL_ICON_MAP: Record<ToolType, LucideIcon> = {
 interface PermissionCardProps {
 	request: PermissionRequest;
 	onRespond: (response: PermissionResponse) => void;
+	/** 是否绑定全局键盘快捷键（默认 true） */
+	isFocused?: boolean;
 }
 
 // 风险等级配置
@@ -91,7 +93,11 @@ const RISK_CONFIG: Record<
 	},
 };
 
-export function PermissionCard({ request, onRespond }: PermissionCardProps) {
+export function PermissionCard({
+	request,
+	onRespond,
+	isFocused = true,
+}: PermissionCardProps) {
 	const [expanded, setExpanded] = useState(false);
 	const [rememberForSession, setRememberForSession] = useState(false);
 	const [rememberForTool, setRememberForTool] = useState(false);
@@ -137,6 +143,55 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 			rememberForTool,
 		});
 	};
+
+	const handleAllowAlways = () => {
+		onRespond({
+			requestId: request.id,
+			decision: "allowed",
+			decidedBy: "user",
+			rememberForSession: true,
+			rememberForTool: true,
+		});
+	};
+
+	// 键盘快捷键：Y/Enter = allow, N/Esc = deny, A = allow + remember
+	useEffect(() => {
+		if (!isFocused) return;
+		const handler = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement | null;
+			if (target) {
+				const tag = target.tagName?.toUpperCase();
+				if (
+					tag === "INPUT" ||
+					tag === "TEXTAREA" ||
+					tag === "SELECT" ||
+					target.isContentEditable
+				)
+					return;
+			}
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			const key = e.key;
+			if (key === "y" || key === "Y" || key === "Enter") {
+				e.preventDefault();
+				handleAllow();
+				return;
+			}
+			if (key === "n" || key === "N" || key === "Escape") {
+				e.preventDefault();
+				handleDeny();
+				return;
+			}
+			if (key === "a" || key === "A") {
+				e.preventDefault();
+				handleAllowAlways();
+				return;
+			}
+		};
+		window.addEventListener("keydown", handler);
+		return () => window.removeEventListener("keydown", handler);
+		// 依赖收缩：handleAllow / handleDeny 都是 inline，但引用 onRespond + request.id
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isFocused, onRespond, request.id, rememberForSession, rememberForTool]);
 
 	return (
 		<div
@@ -256,15 +311,25 @@ export function PermissionCard({ request, onRespond }: PermissionCardProps) {
 				<button
 					onClick={handleDeny}
 					className="flex-1 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
+					title="N / Esc"
 				>
-					拒绝
+					拒绝 (N)
+				</button>
+				<div className="w-px bg-black/5/10" />
+				<button
+					onClick={handleAllowAlways}
+					className="px-4 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
+					title="A — 本会话内所有同类工具自动允许"
+				>
+					全允 (A)
 				</button>
 				<div className="w-px bg-black/5/10" />
 				<button
 					onClick={handleAllow}
 					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 dark:hover:bg-emerald-900/20 transition-colors"
+					title="Y / Enter"
 				>
-					允许
+					允许 (Y)
 				</button>
 			</div>
 		</div>
@@ -282,11 +347,12 @@ export function PermissionList({ requests, onRespond }: PermissionListProps) {
 
 	return (
 		<div className="space-y-3">
-			{requests.map((request) => (
+			{requests.map((request, idx) => (
 				<PermissionCard
 					key={request.id}
 					request={request}
 					onRespond={onRespond}
+					isFocused={idx === 0}
 				/>
 			))}
 		</div>

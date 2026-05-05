@@ -38,6 +38,11 @@ import {
 	isMarkdownPreviewFile,
 	isBinaryPreviewFile,
 } from "./editor/FileTypePreview";
+import {
+	getPreviewFileName,
+	isBinaryPhysicalDocId,
+	isPhysicalDocId,
+} from "./editor/editorCanvasHelpers";
 import { PhysicalFileViewer } from "./editor/PhysicalFileViewer";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
@@ -50,37 +55,6 @@ interface EditorCanvasProps {
 	onBack?: () => void;
 	projectId?: string;
 	initialDocId?: string;
-}
-
-function isPhysicalDocId(docId: string | null | undefined): docId is string {
-	if (!docId) return false;
-	return docId.startsWith("/") || /^[a-zA-Z]:\\/.test(docId);
-}
-
-function isBinaryPhysicalDocId(
-	docId: string | null | undefined,
-): docId is string {
-	if (!isPhysicalDocId(docId)) return false;
-	const fileName = docId.split(/[/\\]/).pop() || docId;
-	return isBinaryPreviewFile(fileName);
-}
-
-function getPreviewFileName(params: {
-	selectedOutput: OutputAsset | null;
-	activeFileSession: { path: string; title: string } | null;
-	activeDocId: string | null;
-	currentEditorTitle: string;
-}) {
-	if (params.selectedOutput) {
-		return `${params.selectedOutput.title || "未命名文档"}.md`;
-	}
-	if (params.activeFileSession?.title) {
-		return params.activeFileSession.title;
-	}
-	if (params.activeDocId) {
-		return params.activeDocId.split(/[/\\]/).pop() || params.activeDocId;
-	}
-	return params.currentEditorTitle || "document.txt";
 }
 
 export default function EditorCanvas({

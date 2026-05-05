@@ -9,11 +9,25 @@ import fs from "node:fs";
 import path from "node:path";
 import { app } from "electron";
 
+export type MascotIdPersisted = "off" | "efficiency" | "cloud" | "leisure";
+export type SizePreset = "sm" | "md" | "lg" | "xl";
+export type DwellPreset = "short" | "normal" | "long";
+
 export interface PetWindowSettingsData {
 	enabled: boolean;
 	x: number;
 	y: number;
 	throughClicks: boolean;
+	/** 当前 IP（与 localStorage 双写，主进程作为权威源以支持跨窗口广播） */
+	mascotId: MascotIdPersisted;
+	/** 角色尺寸档：sm=120 / md=160 / lg=180 / xl=220 */
+	sizePreset: SizePreset;
+	/** 通知 dwell 时长档：short(×0.7) / normal(×1) / long(×1.5) */
+	dwellPreset: DwellPreset;
+	/** 勿扰开始时间（"HH:MM"，null 关闭勿扰段） */
+	dndStart: string | null;
+	/** 勿扰结束时间（"HH:MM"，null 关闭勿扰段） */
+	dndEnd: string | null;
 }
 
 const DEFAULT_SETTINGS: PetWindowSettingsData = {
@@ -21,6 +35,11 @@ const DEFAULT_SETTINGS: PetWindowSettingsData = {
 	x: -1, // -1 表示使用默认位置（右下角，由 createPetWindow 计算）
 	y: -1,
 	throughClicks: false,
+	mascotId: "efficiency",
+	sizePreset: "lg",
+	dwellPreset: "normal",
+	dndStart: null,
+	dndEnd: null,
 };
 
 function getSettingsPath(): string {

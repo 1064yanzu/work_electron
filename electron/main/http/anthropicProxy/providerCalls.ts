@@ -165,6 +165,98 @@ function sanitizeOpenAICompatibleJsonSchema(
 	return out;
 }
 
+function normalizeToolNameKey(name: unknown): string {
+	return String(name || "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]/g, "");
+}
+
+function cleanToolInput(input: unknown): unknown {
+	if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+	const cleaned: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+		if (value === "") continue;
+		cleaned[key] = value;
+	}
+	return cleaned;
+}
+
+function decodeJsonLikeString(value: string): string {
+	try {
+		return JSON.parse(`"${value.replace(/\r?\n/g, "\\n")}"`);
+	} catch {
+		return value
+			.replace(/\\r\\n/g, "\n")
+			.replace(/\\n/g, "\n")
+			.replace(/\\t/g, "\t")
+			.replace(/\\"/g, '"')
+			.replace(/\\\\/g, "\\");
+	}
+}
+
+function extractJsonLikeStringField(raw: string, field: string): string | null {
+	const escapedField = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const match = new RegExp(`"${escapedField}"\\s*:\\s*"([^"]*)"`).exec(raw);
+	return match ? decodeJsonLikeString(match[1] || "") : null;
+}
+
+function extractTrailingJsonLikeStringField(
+	raw: string,
+	field: string,
+): string | null {
+	if (!/}\s*$/.test(raw)) return null;
+	const escapedField = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const keyMatch = new RegExp(`"${escapedField}"\\s*:\\s*"`).exec(raw);
+	if (!keyMatch || keyMatch.index < 0) return null;
+	const start = keyMatch.index + keyMatch[0].length;
+	let end = raw.length - 1;
+	while (end >= start && /\s/.test(raw[end] || "")) end--;
+	if (raw[end] === "}") end--;
+	while (end >= start && /\s/.test(raw[end] || "")) end--;
+	if (raw[end] !== '"') return null;
+	return decodeJsonLikeString(raw.slice(start, end));
+}
+
+function repairWriteToolInputFromArgs(
+	rawArgs: string,
+): Record<string, unknown> | null {
+	const filePath =
+		extractJsonLikeStringField(rawArgs, "file_path") ||
+		extractJsonLikeStringField(rawArgs, "path") ||
+		extractJsonLikeStringField(rawArgs, "file");
+	const content = extractTrailingJsonLikeStringField(rawArgs, "content");
+	if (typeof filePath !== "string" || !filePath.trim()) return null;
+	if (typeof content !== "string") return null;
+	return {
+		file_path: filePath.trim(),
+		content,
+	};
+}
+
+function parseToolCallInput(
+	toolName: string,
+	rawArgs: string,
+): {
+	input: unknown;
+	repaired: boolean;
+	error?: unknown;
+} {
+	try {
+		return {
+			input: cleanToolInput(JSON.parse(rawArgs || "{}")),
+			repaired: false,
+		};
+	} catch (error) {
+		if (normalizeToolNameKey(toolName) === "write") {
+			const repaired = repairWriteToolInputFromArgs(rawArgs || "");
+			if (repaired) {
+				return { input: repaired, repaired: true, error };
+			}
+		}
+		return { input: {}, repaired: false, error };
+	}
+}
+
 function toOpenAICompatibleTools(
 	anthropicReq: AnthropicRequest,
 ): any[] | undefined {
@@ -229,6 +321,83 @@ function isInvalidArgumentError(bodyText: string): boolean {
 		/\binvalid argument\b/i.test(t) ||
 		/"code"\s*:\s*400/i.test(t)
 	);
+}
+
+type AnthropicErrorPayload = {
+	type:
+		| "invalid_request_error"
+		| "authentication_error"
+		| "permission_error"
+		| "not_found_error"
+		| "rate_limit_error"
+		| "api_error"
+		| "overloaded_error";
+	message: string;
+};
+
+function extractUpstreamErrorMessage(bodyText: string): string {
+	if (!bodyText) return "";
+	try {
+		const parsed = JSON.parse(bodyText);
+		const msg =
+			(parsed?.error?.message as string | undefined) ??
+			(typeof parsed?.message === "string" ? parsed.message : undefined) ??
+			(typeof parsed?.error === "string" ? parsed.error : undefined);
+		if (typeof msg === "string" && msg.trim().length > 0) {
+			return msg.trim();
+		}
+	} catch {
+		// fallthrough to raw text
+	}
+	return bodyText.slice(0, 300);
+}
+
+function humanizeUpstreamError(
+	status: number,
+	bodyText: string,
+): AnthropicErrorPayload {
+	const upstreamMsg = extractUpstreamErrorMessage(bodyText);
+	const lower = upstreamMsg.toLowerCase();
+	if (status === 401 || status === 403) {
+		return {
+			type: "authentication_error",
+			message: `上游鉴权失败（${status}）：请检查 API Key 是否正确或已过期。原始信息：${upstreamMsg}`,
+		};
+	}
+	if (status === 404) {
+		return {
+			type: "not_found_error",
+			message: `模型不存在或已下线（404）：请检查 Provider 配置中的模型 ID。原始信息：${upstreamMsg}`,
+		};
+	}
+	if (status === 429) {
+		const isQuota =
+			lower.includes("insufficient_quota") ||
+			lower.includes("quota") ||
+			lower.includes("balance");
+		return {
+			type: "rate_limit_error",
+			message: isQuota
+				? `上游 API 配额不足（429）：请检查账户余额或更换 Provider / API Key。原始信息：${upstreamMsg}`
+				: `上游限流（429）：请稍后重试或更换 Provider。原始信息：${upstreamMsg}`,
+		};
+	}
+	if (status >= 500 && status <= 599) {
+		return {
+			type: "api_error",
+			message: `上游服务异常（${status}）：${upstreamMsg || "请稍后重试"}`,
+		};
+	}
+	if (status === 400) {
+		return {
+			type: "invalid_request_error",
+			message: `请求参数错误（400）：${upstreamMsg || "请检查模型 ID 和请求体"}`,
+		};
+	}
+	return {
+		type: "api_error",
+		message: `上游返回错误（${status}）：${upstreamMsg || "未知错误"}`,
+	};
 }
 
 function getProviderTemplateId(provider: ProviderConfig): string {
@@ -522,6 +691,9 @@ export async function callProvider(
 	logger?.info({
 		msg: "anthropic proxy: sending to provider",
 		model: openaiReq.model,
+		baseUrl,
+		providerType: provider.provider_type,
+		templateId: provider.template_id || null,
 		messageCount: openaiReq.messages.length,
 		hasTools: !!openaiReq.tools,
 		toolCount: openaiReq.tools?.length || 0,
@@ -594,16 +766,26 @@ export async function callProvider(
 			);
 			if (!retryResp.ok) {
 				const retryErr = await retryResp.text();
-				throw new Error(
-					`OpenAI API error: ${retryResp.status} - ${retryErr || errorText}`,
+				const friendly = humanizeUpstreamError(
+					retryResp.status,
+					retryErr || errorText,
 				);
+				throw new Error(`${friendly.type}: ${friendly.message}`);
 			}
 
 			const openaiResp = (await retryResp.json()) as OpenAIResponse;
+			if (!openaiResp.choices || openaiResp.choices.length === 0) {
+				throw new Error(
+					`OpenAI upstream returned no choices on retry: ${JSON.stringify(
+						openaiResp,
+					).slice(0, 500)}`,
+				);
+			}
 			return translateToAnthropic(messageId, model, openaiResp);
 		}
 
-		throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+		const friendly = humanizeUpstreamError(response.status, errorText);
+		throw new Error(`${friendly.type}: ${friendly.message}`);
 	}
 
 	let openaiResp: OpenAIResponse;
@@ -630,6 +812,14 @@ export async function callProvider(
 	});
 
 	// 转换回 Anthropic 格式
+	if (!openaiResp.choices || openaiResp.choices.length === 0) {
+		throw new Error(
+			`OpenAI upstream returned no choices: ${JSON.stringify(openaiResp).slice(
+				0,
+				500,
+			)}`,
+		);
+	}
 	return translateToAnthropic(messageId, model, openaiResp);
 }
 
@@ -1212,25 +1402,15 @@ async function streamOpenAIResponsesToAnthropic(params: {
 			if (!toolName) continue;
 			stopTextBlockIfNeeded();
 			stopThoughtBlockIfNeeded();
-			// 解析并清洗参数
-			let parsedInput: unknown = {};
-			try {
-				const parsed = JSON.parse(state.args || "{}");
-				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-					const cleaned: Record<string, unknown> = {};
-					for (const [k, v] of Object.entries(
-						parsed as Record<string, unknown>,
-					)) {
-						if (v === "") continue;
-						cleaned[k] = v;
-					}
-					parsedInput = cleaned;
-				} else {
-					parsedInput = parsed;
-				}
-			} catch {
+			// 解析并清洗参数；Write 的大内容在部分 OpenAI 兼容网关会返回非严格 JSON，
+			// 这里做有限修复，避免直接降级成 {} 触发 SDK 必填参数错误。
+			const parsed = parseToolCallInput(toolName, state.args || "{}");
+			const parsedInput = parsed.input;
+			if (parsed.error) {
 				console.warn(
-					`[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
+					parsed.repaired
+						? `[proxy] Repaired malformed tool_call args for ${toolName} (len=${state.args.length})`
+						: `[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
 				);
 			}
 			state.blockIndex = nextBlockIndex;
@@ -1507,7 +1687,7 @@ export async function callProviderStream(
 			});
 			writeSseEvent(res, "error", {
 				type: "error",
-				error: { type: "api_error", message: errorText || "Upstream error" },
+				error: humanizeUpstreamError(upstream.status, errorText),
 			});
 			res.end();
 			return;
@@ -1602,7 +1782,7 @@ export async function callProviderStream(
 			} else {
 				writeSseEvent(res, "error", {
 					type: "error",
-					error: { type: "api_error", message: errorText || "Upstream error" },
+					error: humanizeUpstreamError(responsesUpstream.status, errorText),
 				});
 				res.end();
 				return;
@@ -1787,7 +1967,7 @@ export async function callProviderStream(
 
 		writeSseEvent(res, "error", {
 			type: "error",
-			error: { type: "api_error", message: errorText || "Upstream error" },
+			error: humanizeUpstreamError(upstream.status, errorText),
 		});
 		stopHeartbeat();
 		res.end();
@@ -1957,16 +2137,14 @@ export async function callProviderStream(
 			// 有 bug（input 被解析为 {}），一次性发送可绕过该问题。
 			if (state.blockIndex === null) {
 				// 还没有发送过 block，用完整 JSON 一次性发
-				let parsedInput: unknown = {};
-				if (state.args) {
-					try {
-						parsedInput = JSON.parse(state.args);
-					} catch {
-						// args 不是合法 JSON，保持 {} 并记录警告
-						console.warn(
-							`[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
-						);
-					}
+				const parsed = parseToolCallInput(toolName, state.args || "{}");
+				const parsedInput = parsed.input;
+				if (parsed.error) {
+					console.warn(
+						parsed.repaired
+							? `[proxy] Repaired malformed tool_call args for ${toolName} (len=${state.args.length})`
+							: `[proxy] Failed to parse tool_call args for ${toolName} (len=${state.args.length}), falling back to {}`,
+					);
 				}
 				state.blockIndex = nextBlockIndex;
 				emitToolUseBlock(res, {

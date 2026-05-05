@@ -36,7 +36,15 @@ export function createPreviewServerHandlers(deps: {
 		_event,
 		input,
 	) => {
-		const { taskId, sandboxDir, mode } = input;
+		const { taskId, sandboxDir, mode } = input ?? ({} as typeof input);
+
+		// 入参校验：防止 path.resolve(undefined) 抛出难懂的 ERR_INVALID_ARG_TYPE
+		if (typeof taskId !== "string" || !taskId.trim()) {
+			throw new Error("preview_server_start: taskId 必须为非空字符串");
+		}
+		if (typeof sandboxDir !== "string" || !sandboxDir.trim()) {
+			throw new Error("preview_server_start: sandboxDir 必须为非空字符串");
+		}
 
 		// 校验 sandboxDir 路径合法性
 		const resolvedDir = path.resolve(sandboxDir);

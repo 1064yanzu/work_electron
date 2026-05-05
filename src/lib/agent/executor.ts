@@ -693,7 +693,7 @@ class AgentExecutor {
 			: runtimeConfig?.settingSources?.length
 				? runtimeConfig.settingSources
 				: (["user", "project"] as Array<"user" | "project" | "local">);
-		const resolvedMaxTurns = options.maxTurns ?? runtimeConfig?.maxTurns ?? 24;
+		const resolvedMaxTurns = options.maxTurns ?? runtimeConfig?.maxTurns ?? 100;
 		const runtimeMaxThinkingTokens =
 			runtimeConfig?.maxThinkingTokens !==
 			DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxThinkingTokens
@@ -729,7 +729,7 @@ class AgentExecutor {
 			maxTurns:
 				options.teammateBudget?.maxTurns ??
 				runtimeConfig?.teammateBudget?.maxTurns ??
-				12,
+				40,
 			maxThinkingTokens:
 				options.teammateBudget?.maxThinkingTokens ??
 				runtimeConfig?.teammateBudget?.maxThinkingTokens ??

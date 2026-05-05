@@ -17,4 +17,5 @@ export type SettingsTabId =
 	| "artifacts"
 	| "mascot"
 	| "shortcuts"
-	| "sandboxPreview";
+	| "sandboxPreview"
+	| "reader";

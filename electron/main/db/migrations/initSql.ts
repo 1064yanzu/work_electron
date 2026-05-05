@@ -499,6 +499,79 @@ CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_session ON agent_checkpoints(se
 CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_updated ON agent_checkpoints(updated_at DESC);
 
 -- =====================
+-- 阅读器 Reader（书架 / 进度 / 高亮 / 书签 / 会话）
+-- =====================
+CREATE TABLE IF NOT EXISTS reader_books (
+  id TEXT PRIMARY KEY,
+  source_id TEXT,
+  title TEXT NOT NULL,
+  authors TEXT DEFAULT '[]',
+  language TEXT,
+  format TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  source_path TEXT,
+  cover_path TEXT,
+  page_count INTEGER,
+  word_count INTEGER,
+  toc_json TEXT DEFAULT '[]',
+  metadata_json TEXT DEFAULT '{}',
+  added_at INTEGER NOT NULL,
+  last_opened_at INTEGER,
+  FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reader_books_format ON reader_books(format);
+CREATE INDEX IF NOT EXISTS idx_reader_books_last_opened ON reader_books(last_opened_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reader_books_source ON reader_books(source_id);
+-- 注意：source_path 唯一索引在 migrate.ts 的 safeAddColumn 之后创建，
+-- 避免旧库升级时该列还没有就先建索引导致 "no such column: source_path"。
+
+CREATE TABLE IF NOT EXISTS reader_progress (
+  book_id TEXT PRIMARY KEY,
+  locator TEXT NOT NULL,
+  percent REAL DEFAULT 0,
+  chapter_id TEXT,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS reader_highlights (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  locator_start TEXT NOT NULL,
+  locator_end TEXT NOT NULL,
+  text TEXT NOT NULL,
+  color TEXT DEFAULT 'yellow',
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_reader_highlights_book ON reader_highlights(book_id);
+CREATE INDEX IF NOT EXISTS idx_reader_highlights_created ON reader_highlights(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS reader_bookmarks (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  locator TEXT NOT NULL,
+  label TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_reader_bookmarks_book ON reader_bookmarks(book_id);
+
+CREATE TABLE IF NOT EXISTS reader_sessions (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  started_at INTEGER NOT NULL,
+  ended_at INTEGER,
+  duration_ms INTEGER DEFAULT 0,
+  pages_read INTEGER DEFAULT 0,
+  FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_reader_sessions_book ON reader_sessions(book_id);
+CREATE INDEX IF NOT EXISTS idx_reader_sessions_started ON reader_sessions(started_at DESC);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');

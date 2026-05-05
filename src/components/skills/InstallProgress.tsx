@@ -1,5 +1,5 @@
 /**
- * InstallProgress —— 顶层进度浮层（可选，挂在 SkillsView 头部）
+ * InstallProgress —— 顶层进度浮层
  *
  * 当 progress map 中有正在安装的 entry 时显示一个紧凑列表。
  */
@@ -10,6 +10,15 @@ import {
 	useMarketplaceStore,
 } from "../../lib/skillsMarketplaceStore";
 
+const PHASE_LABEL: Record<string, string> = {
+	queued: "排队",
+	resolving: "解析",
+	downloading: "下载",
+	extracting: "解压",
+	verifying: "校验",
+	writing: "写入",
+};
+
 export function InstallProgress() {
 	const { progress } = useMarketplaceStore();
 	const entries = Object.values(progress);
@@ -18,25 +27,42 @@ export function InstallProgress() {
 	);
 	if (active.length === 0) return null;
 	return (
-		<div className="px-4 pt-2 pb-1 space-y-1">
-			{active.map((p) => (
-				<div
-					key={p.entryId}
-					className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 bg-warm-200/50 dark:bg-surface/20 text-[11px] text-text-secondary"
-				>
-					<Loader2 className="w-3 h-3 animate-spin text-primary" />
-					<span className="flex-1 truncate font-mono">{p.entryId}</span>
-					<span className="text-text-light">{p.percent}%</span>
-					<button
-						type="button"
-						onClick={() => skillsMarketplaceStore.clearProgress(p.entryId)}
-						className="p-0.5 rounded hover:bg-black/5"
-						title="收起"
+		<div className="px-5 pt-2 pb-1 space-y-1 shrink-0">
+			{active.map((p) => {
+				const entryName = p.entryId.split("/").slice(-1)[0] ?? p.entryId;
+				const phaseLabel = PHASE_LABEL[p.phase] ?? p.phase;
+				const pct = Math.max(2, Math.min(100, p.percent));
+				return (
+					<div
+						key={p.entryId}
+						className="rounded-lg bg-surface dark:bg-cream-900/40 ring-1 ring-cream-300/60 dark:ring-cream-500/20 px-3 py-2"
 					>
-						<X className="w-3 h-3" />
-					</button>
-				</div>
-			))}
+						<div className="flex items-center gap-2 mb-1.5">
+							<Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />
+							<span className="flex-1 truncate text-[11px] font-medium text-text-secondary">
+								{entryName}
+							</span>
+							<span className="text-[10px] text-text-light shrink-0">
+								{phaseLabel} · {p.percent}%
+							</span>
+							<button
+								type="button"
+								onClick={() => skillsMarketplaceStore.clearProgress(p.entryId)}
+								className="p-0.5 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+								title="收起"
+							>
+								<X className="w-3 h-3" />
+							</button>
+						</div>
+						<div className="h-[2px] rounded-full bg-cream-200/80 dark:bg-cream-800/50 overflow-hidden">
+							<div
+								className="h-full bg-primary transition-all duration-200 ease-out"
+								style={{ width: `${pct}%` }}
+							/>
+						</div>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

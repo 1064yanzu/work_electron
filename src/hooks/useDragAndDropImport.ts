@@ -138,6 +138,20 @@ export function useDragAndDropImport<TResult = unknown>(
 
 	const cancelRef = useRef(false);
 	const abortRef = useRef<AbortController | null>(null);
+	const dragCounterRef = useRef(0);
+
+	const resolveFilePath = useCallback((file: File): string => {
+		const electronApi =
+			typeof window !== "undefined" ? window.electronAPI : undefined;
+		if (electronApi && typeof electronApi.getPathForFile === "function") {
+			try {
+				const p = electronApi.getPathForFile(file);
+				if (p) return p;
+			} catch {}
+		}
+		const legacyPath = (file as unknown as { path?: string }).path;
+		return legacyPath || "";
+	}, []);
 
 	const enqueuePaths = useCallback(
 		(paths: string[]) => {
@@ -265,48 +279,80 @@ export function useDragAndDropImport<TResult = unknown>(
 
 	useEffect(() => {
 		if (!enabled) return;
+
+		const isFileDrag = (e: DragEvent) => {
+			const types = e.dataTransfer?.types;
+			if (!types) return false;
+			for (let i = 0; i < types.length; i += 1) {
+				if (types[i] === "Files") return true;
+			}
+			return false;
+		};
+
 		const onDragEnter = (e: DragEvent) => {
+			if (!isFileDrag(e)) return;
 			e.preventDefault();
+			dragCounterRef.current += 1;
 			setIsDragging(true);
 			setDragPosition({ x: e.clientX, y: e.clientY });
 		};
 
 		const onDragOver = (e: DragEvent) => {
+			if (!isFileDrag(e)) return;
 			e.preventDefault();
+			if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
 			setIsDragging(true);
 			setDragPosition({ x: e.clientX, y: e.clientY });
 		};
 
-		const onDragLeave = () => {
-			setIsDragging(false);
-			setDragPosition(null);
+		const onDragLeave = (e: DragEvent) => {
+			if (!isFileDrag(e)) return;
+			dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+			if (dragCounterRef.current === 0) {
+				setIsDragging(false);
+				setDragPosition(null);
+			}
 		};
 
 		const onDrop = (e: DragEvent) => {
 			e.preventDefault();
+			dragCounterRef.current = 0;
 			setIsDragging(false);
 			setDragPosition({ x: e.clientX, y: e.clientY });
 
 			const files = Array.from(e.dataTransfer?.files ?? []);
+			if (files.length === 0) return;
+
 			const paths = files
-				.map((f) => (f as unknown as { path?: string }).path ?? f.name)
+				.map((f) => resolveFilePath(f))
 				.filter((p): p is string => Boolean(p));
 
+			if (paths.length === 0) return;
+
 			enqueuePaths(paths);
+		};
+
+		const onDragEnd = () => {
+			dragCounterRef.current = 0;
+			setIsDragging(false);
+			setDragPosition(null);
 		};
 
 		window.addEventListener("dragenter", onDragEnter);
 		window.addEventListener("dragover", onDragOver);
 		window.addEventListener("dragleave", onDragLeave);
 		window.addEventListener("drop", onDrop);
+		window.addEventListener("dragend", onDragEnd);
 
 		return () => {
 			window.removeEventListener("dragenter", onDragEnter);
 			window.removeEventListener("dragover", onDragOver);
 			window.removeEventListener("dragleave", onDragLeave);
 			window.removeEventListener("drop", onDrop);
+			window.removeEventListener("dragend", onDragEnd);
+			dragCounterRef.current = 0;
 		};
-	}, [enabled, enqueuePaths]);
+	}, [enabled, enqueuePaths, resolveFilePath]);
 
 	return {
 		isDragging,

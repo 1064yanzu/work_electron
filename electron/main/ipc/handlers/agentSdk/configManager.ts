@@ -7,6 +7,7 @@
  */
 import { execFile } from "node:child_process";
 import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { app } from "electron";
@@ -309,12 +310,89 @@ export async function listProjectSkills(cwd: string): Promise<string[]> {
 	}
 }
 
+/**
+ * Skills 隔离策略：
+ *
+ * 旧实现：当应用侧传入 skills 数组时，把 settingSources 砍成 ["project"]，
+ * 试图阻止用户级技能漂移。问题是 SDK 在 settingSources 不含 "user" 时，
+ * 同时会忽略 ~/.claude/CLAUDE.md、~/.claude/agents、~/.claude/commands、
+ * 用户级 hooks 等所有 user-scope 配置 —— 这正是 Claude Code CLI 默认会读到的、
+ * "活人感"赖以存在的内容。
+ *
+ * 新策略：始终保留 settingSources（默认含 user + project）。skills 隔离靠
+ * `syncSkillsToCwd` + project skills 目录过滤实现，不再用 settingSources 当大锤。
+ *
+ * 兼容：参数 `skillsFromInput` 保留以避免调用方爆炸，但不再影响返回值。
+ */
 export function resolveSkillSettingSources(
 	settingSources: Array<"user" | "project" | "local">,
-	skillsFromInput: string[] | undefined,
+	_skillsFromInput: string[] | undefined,
 ): Array<"user" | "project" | "local"> {
-	if (!Array.isArray(skillsFromInput)) return settingSources;
-	return ["project"];
+	return settingSources;
+}
+
+// ---------------------------------------------------------------------------
+// CLAUDE.md chain loader
+// ---------------------------------------------------------------------------
+
+const CLAUDE_MD_CANDIDATES = [
+	"CLAUDE.md",
+	"CLAUDE.local.md",
+	".claude/CLAUDE.md",
+];
+const CLAUDE_MD_MAX_BYTES = 64 * 1024;
+
+async function readClaudeMdAt(absDir: string): Promise<string[]> {
+	const out: string[] = [];
+	for (const rel of CLAUDE_MD_CANDIDATES) {
+		const full = path.join(absDir, rel);
+		try {
+			const stat = await fsp.stat(full);
+			if (!stat.isFile()) continue;
+			const raw = await fsp.readFile(full, "utf8");
+			const trimmed = raw.trim();
+			if (!trimmed) continue;
+			const sliced =
+				trimmed.length > CLAUDE_MD_MAX_BYTES
+					? `${trimmed.slice(0, CLAUDE_MD_MAX_BYTES)}\n\n[... truncated]`
+					: trimmed;
+			out.push(`# ${rel} (${absDir})\n\n${sliced}`);
+		} catch {
+			// missing or unreadable — skip silently
+		}
+	}
+	return out;
+}
+
+/**
+ * 主动读取项目 CLAUDE.md 链 + 用户级 CLAUDE.md，拼成可注入到 systemPrompt.append
+ * 的纯文本块。Claude Code CLI 的 preset 会从 settingSources 自动注入这些内容，
+ * 但为了防御性确保 CLAUDE.md 总是被看到（无论 settingSources/动态章节配置），
+ * 我们在主进程显式读取并 append 一次。
+ *
+ * 顺序：~/.claude/CLAUDE.md → 项目 CLAUDE.md → 项目 CLAUDE.local.md → 项目 .claude/CLAUDE.md
+ */
+export async function loadClaudeMdChain(cwd: string): Promise<string> {
+	const blocks: string[] = [];
+	try {
+		const home = os.homedir();
+		if (home) {
+			const homeClaudeDir = path.join(home, ".claude");
+			const homeBlocks = await readClaudeMdAt(homeClaudeDir);
+			blocks.push(...homeBlocks);
+			// 也尝试 ~/CLAUDE.md（少见但合法）
+			const homeRootBlocks = await readClaudeMdAt(home);
+			blocks.push(...homeRootBlocks);
+		}
+	} catch {}
+	try {
+		if (cwd && cwd.trim()) {
+			const cwdBlocks = await readClaudeMdAt(cwd);
+			blocks.push(...cwdBlocks);
+		}
+	} catch {}
+	if (blocks.length === 0) return "";
+	return blocks.join("\n\n---\n\n");
 }
 
 // ---------------------------------------------------------------------------

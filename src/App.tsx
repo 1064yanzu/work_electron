@@ -70,6 +70,11 @@ const CommandPalette = lazy(() =>
 		default: m.CommandPaletteHost,
 	})),
 );
+const ReaderApp = lazy(() =>
+	import("./components/reader/ReaderApp").then((m) => ({
+		default: m.ReaderApp,
+	})),
+);
 const MASCOT_ONBOARDING_KEY = "mascotOnboardingShown";
 
 function PanelLoadingFallback() {
@@ -406,6 +411,13 @@ export default function App() {
 						onOpenSettings={(tab) =>
 							handleOpenSettings(tab as SettingsTabId | undefined)
 						}
+					/>
+				</Suspense>
+
+				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制 */}
+				<Suspense fallback={null}>
+					<ReaderApp
+						onOpenSettings={() => handleOpenSettings("reader" as SettingsTabId)}
 					/>
 				</Suspense>
 			</MouseDragProvider>
