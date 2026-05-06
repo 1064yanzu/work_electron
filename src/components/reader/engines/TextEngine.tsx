@@ -39,7 +39,42 @@ export default function TextEngine({
 }: ReaderEngineProps) {
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 	const articleRef = useRef<HTMLDivElement | null>(null);
+	// 双栏时启用翻页模式（横向翻页，像 iBooks/Kindle）
+	// 内容水平铺开，每"跨页"固定为容器高度，用户向右翻阅
 	const isPaged = typography.columnCount === 2;
+
+	// paged 模式下的章内翻页函数
+	// 返回 true 表示章内成功翻页，false 表示已到达边界需切章
+	const flipPage = useCallback(
+		(direction: "prev" | "next"): boolean => {
+			const engine = scrollRef.current;
+			if (!engine || !isPaged) return false;
+			const pageWidth = engine.clientWidth;
+			if (pageWidth <= 0) return false;
+			const currentLeft = engine.scrollLeft;
+			const maxLeft = engine.scrollWidth - pageWidth;
+			if (direction === "next") {
+				if (currentLeft >= maxLeft - 2) return false; // 已到最后一页
+				const targetPage = Math.floor((currentLeft + 5) / pageWidth) + 1;
+				engine.scrollTo({
+					left: Math.min(targetPage * pageWidth, maxLeft),
+					top: 0,
+					behavior: "smooth",
+				});
+				return true;
+			} else {
+				if (currentLeft <= 2) return false; // 已到第一页
+				const targetPage = Math.ceil((currentLeft - 5) / pageWidth) - 1;
+				engine.scrollTo({
+					left: Math.max(targetPage * pageWidth, 0),
+					top: 0,
+					behavior: "smooth",
+				});
+				return true;
+			}
+		},
+		[isPaged],
+	);
 
 	const cleanedHtml = useMemo(() => {
 		if (chapter?.html) return sanitize(chapter.html);
@@ -91,19 +126,58 @@ export default function TextEngine({
 		scroll.scrollTo({ left: 0, top: 0, behavior: "instant" });
 	}, [chapter?.id, isPaged]);
 
-	// 双页模式下，普通鼠标滚轮向下应翻到后续页组，而不是在不可滚动的纵向方向空转。
+	// 双页模式下，鼠标滚轮向下/向右触发整页翻页
 	useEffect(() => {
 		const engine = scrollRef.current;
 		if (!engine || !isPaged) return;
+		let wheelLocked = false;
 		const onWheel = (event: WheelEvent) => {
-			if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+			// 横向滚动（触控板双指左右）：让浏览器原生处理，由于 CSS columns 无法原生 scroll-snap，
+			// 我们通过后面的 scrollend 事件来进行 JS 层的对齐吸附
+			if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
 			event.preventDefault();
-			engine.scrollLeft += event.deltaY;
+			if (wheelLocked) return;
+			// 垂直滚轮：映射为整页翻页
+			const dir = event.deltaY > 0 ? "next" : "prev";
+			flipPage(dir);
+			// 锁定 300ms 避免滚轮惯性连续翻多页
+			wheelLocked = true;
+			setTimeout(() => {
+				wheelLocked = false;
+			}, 300);
 			onUserActivity?.();
 		};
 		engine.addEventListener("wheel", onWheel, { passive: false });
 		return () => engine.removeEventListener("wheel", onWheel);
-	}, [isPaged, onUserActivity]);
+	}, [isPaged, flipPage, onUserActivity]);
+
+	// 双页模式下，监听 scrollend 实现松手后的自动吸附（对齐到整数页）
+	useEffect(() => {
+		const engine = scrollRef.current;
+		if (!engine || !isPaged) return;
+		
+		const onScrollEnd = () => {
+			const pageWidth = engine.clientWidth;
+			if (pageWidth <= 0) return;
+			const currentLeft = engine.scrollLeft;
+			const targetPage = Math.round(currentLeft / pageWidth);
+			const targetLeft = targetPage * pageWidth;
+			const maxLeft = engine.scrollWidth - pageWidth;
+			const safeTarget = Math.min(Math.max(0, targetLeft), maxLeft);
+			
+			// 如果偏差超过 2px（避免浮点误差导致的无限循环），则执行吸附
+			if (Math.abs(currentLeft - safeTarget) > 2) {
+				engine.scrollTo({
+					left: safeTarget,
+					top: 0,
+					behavior: "smooth",
+				});
+			}
+		};
+		
+		engine.addEventListener("scrollend", onScrollEnd);
+		return () => engine.removeEventListener("scrollend", onScrollEnd);
+	}, [isPaged]);
 
 	// 底部进度条拖动：按当前阅读模式映射到纵向滚动或横向页组位置。
 	useEffect(() => {
@@ -232,16 +306,30 @@ export default function TextEngine({
 		};
 	}, [reportSelection]);
 
-	const articleStyle: React.CSSProperties = {
-		fontFamily: typography.fontFamilyStack,
-		fontSize: typography.fontSizePx,
-		lineHeight: typography.lineHeight,
-		letterSpacing: `${typography.letterSpacingEm}em`,
-		"--reader-column-count": isPaged ? 1 : typography.columnCount,
-		"--reader-column-gap": isPaged ? "clamp(2.5rem, 5vw, 5rem)" : "0px",
-		maxWidth: `${typography.maxWidthCh}ch`,
-		columnRuleColor: "var(--reader-border)",
-	} as React.CSSProperties;
+	const isMultiColumn = typography.columnCount === 2;
+	const articleStyle: React.CSSProperties = (isPaged
+		? {
+				// 翻页双栏模式：article 宽度铺满容器，高度继承容器（100%）
+				// CSS 会自动按 column-width 把内容横向分页
+				fontFamily: typography.fontFamilyStack,
+				fontSize: typography.fontSizePx,
+				lineHeight: typography.lineHeight,
+				letterSpacing: `${typography.letterSpacingEm}em`,
+				columnRuleColor: "var(--reader-border)",
+			}
+		: {
+				// 单栏普通滚动模式
+				fontFamily: typography.fontFamilyStack,
+				fontSize: typography.fontSizePx,
+				lineHeight: typography.lineHeight,
+				letterSpacing: `${typography.letterSpacingEm}em`,
+				"--reader-column-count": typography.columnCount,
+				"--reader-column-gap": isMultiColumn
+					? "clamp(2.5rem, 5vw, 5rem)"
+					: "0px",
+				maxWidth: `${typography.maxWidthCh}ch`,
+				columnRuleColor: "var(--reader-border)",
+			}) as React.CSSProperties;
 
 	return (
 		<div

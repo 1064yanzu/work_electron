@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  .container {
+    width: 400px;
+    height: 300px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    border: 1px solid black;
+  }
+  .content {
+    display: inline-block;
+    width: 1200px;
+    height: 100%;
+    background: linear-gradient(to right, red, blue, green);
+  }
+</style>
+</head>
+<body>
+  <div class="container" id="c">
+    <div class="content"></div>
+  </div>
+  <script>
+    document.getElementById('c').addEventListener('scrollend', () => {
+      console.log('scrollend fired');
+    });
+  </script>
+</body>
+</html>

@@ -1,10 +1,12 @@
 import {
 	BookOpen,
 	BookmarkPlus,
+	Columns2,
 	Highlighter,
 	List,
 	Maximize2,
 	Minimize2,
+	PanelLeft,
 	Search,
 	Settings as SettingsIcon,
 	Sparkles,
@@ -132,6 +134,23 @@ export function ReaderTopBar({
 					value={settings.font_size}
 					onChange={(font_size) => onPatchSettings({ font_size })}
 				/>
+				<button
+					type="button"
+					className={`reader-icon-btn ${settings.column_count === 2 ? "is-active" : ""}`}
+					title={settings.column_count === 2 ? "切换单栏" : "切换双栏"}
+					onClick={() =>
+						onPatchSettings({
+							column_count: settings.column_count === 2 ? 1 : 2,
+						})
+					}
+					aria-label="切换分栏"
+				>
+					{settings.column_count === 2 ? (
+						<Columns2 className="w-4 h-4" strokeWidth={1.5} />
+					) : (
+						<PanelLeft className="w-4 h-4" strokeWidth={1.5} />
+					)}
+				</button>
 				<button
 					type="button"
 					className="reader-icon-btn"

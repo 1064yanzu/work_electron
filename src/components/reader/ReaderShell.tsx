@@ -348,24 +348,73 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				: -1,
 		[flatTocList, activeChapterId],
 	);
-	const canPrev = currentTocIndex > 0;
+	// 双栏模式下章内可能有多页，所以翻页按钮保持可用，由点击时的逻辑判定边界
+	const isPaged = settings?.column_count === 2;
+	const canPrev = currentTocIndex > 0 || isPaged;
 	const canNext =
-		currentTocIndex >= 0 && currentTocIndex < flatTocList.length - 1;
+		(currentTocIndex >= 0 && currentTocIndex < flatTocList.length - 1) ||
+		isPaged;
+
+	/** 在 paged 模式下，翻页：返回 true 表示章内翻页成功（不切章） */
+	const flipPagedEngine = useCallback(
+		(direction: "prev" | "next"): boolean => {
+			if ((settings?.column_count ?? 1) !== 2) return false;
+			const engine = document.querySelector(
+				".reader-engine--paged",
+			) as HTMLElement | null;
+			if (!engine) return false;
+			const pageWidth = engine.clientWidth;
+			if (pageWidth <= 0) return false;
+			const currentLeft = engine.scrollLeft;
+			const maxLeft = engine.scrollWidth - pageWidth;
+			
+			if (direction === "next") {
+				if (currentLeft >= maxLeft - 2) return false;
+				const targetPage = Math.floor((currentLeft + 5) / pageWidth) + 1;
+				engine.scrollTo({
+					left: Math.min(targetPage * pageWidth, maxLeft),
+					top: 0,
+					behavior: "smooth",
+				});
+				return true;
+			} else {
+				if (currentLeft <= 2) return false;
+				const targetPage = Math.ceil((currentLeft - 5) / pageWidth) - 1;
+				engine.scrollTo({
+					left: Math.max(targetPage * pageWidth, 0),
+					top: 0,
+					behavior: "smooth",
+				});
+				return true;
+			}
+		},
+		[settings?.column_count],
+	);
+
 	const onPrevChapter = useCallback(() => {
-		if (!canPrev) return;
+		// paged 模式：先章内翻页，失败才切章
+		if (flipPagedEngine("prev")) return;
+		if (chapter?.prev_id) {
+			setActiveChapterId(chapter.prev_id);
+			return;
+		}
+		if (currentTocIndex <= 0) return;
 		const target = flatTocList[currentTocIndex - 1];
 		setActiveChapterId(target.href || target.id);
-	}, [canPrev, flatTocList, currentTocIndex]);
+	}, [flipPagedEngine, chapter?.prev_id, flatTocList, currentTocIndex]);
+	
 	const onNextChapter = useCallback(() => {
-		// 引擎可能已知 next_id（PDF/CBZ 章节切片）
+		// paged 模式：先章内翻页，失败才切章
+		if (flipPagedEngine("next")) return;
 		if (chapter?.next_id) {
 			setActiveChapterId(chapter.next_id);
 			return;
 		}
-		if (!canNext) return;
+		if (currentTocIndex < 0 || currentTocIndex >= flatTocList.length - 1)
+			return;
 		const target = flatTocList[currentTocIndex + 1];
 		setActiveChapterId(target.href || target.id);
-	}, [chapter?.next_id, canNext, flatTocList, currentTocIndex]);
+	}, [flipPagedEngine, chapter?.next_id, flatTocList, currentTocIndex]);
 
 	// 9. 设置同步（patch 后写远端）
 	const onPatchSettings = useCallback(

@@ -63,7 +63,7 @@ export function SettingsModal({
 	return (
 		<SettingsExperienceProvider>
 			<div
-				className={`fixed inset-0 z-50 flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
+				className={`fixed inset-0 z-[100] flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
 				onMouseDown={(event) => {
 					if (event.target === event.currentTarget) {
 						handleClose();
