@@ -366,7 +366,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			const pageWidth = engine.clientWidth;
 			if (pageWidth <= 0) return false;
 			const currentLeft = engine.scrollLeft;
-			const maxLeft = engine.scrollWidth - pageWidth;
+			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
 			
 			if (direction === "next") {
 				if (currentLeft >= maxLeft - 2) return false;

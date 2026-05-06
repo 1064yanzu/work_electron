@@ -52,7 +52,8 @@ export default function TextEngine({
 			const pageWidth = engine.clientWidth;
 			if (pageWidth <= 0) return false;
 			const currentLeft = engine.scrollLeft;
-			const maxLeft = engine.scrollWidth - pageWidth;
+			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
+			
 			if (direction === "next") {
 				if (currentLeft >= maxLeft - 2) return false; // 已到最后一页
 				const targetPage = Math.floor((currentLeft + 5) / pageWidth) + 1;
@@ -160,9 +161,16 @@ export default function TextEngine({
 			const pageWidth = engine.clientWidth;
 			if (pageWidth <= 0) return;
 			const currentLeft = engine.scrollLeft;
+			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
+			
 			const targetPage = Math.round(currentLeft / pageWidth);
-			const targetLeft = targetPage * pageWidth;
-			const maxLeft = engine.scrollWidth - pageWidth;
+			let targetLeft = targetPage * pageWidth;
+			
+			// 对于最后一页的零碎尾巴，如果离 maxLeft 更近，则吸附到 maxLeft
+			if (Math.abs(currentLeft - maxLeft) < Math.abs(currentLeft - targetLeft)) {
+				targetLeft = maxLeft;
+			}
+			
 			const safeTarget = Math.min(Math.max(0, targetLeft), maxLeft);
 			
 			// 如果偏差超过 2px（避免浮点误差导致的无限循环），则执行吸附
