@@ -48,6 +48,50 @@ type RemoteChannelId =
 	| "generic_webhook";
 
 /**
+ * codex hatch-pet 兼容的 atlas 网格信息
+ *
+ * 来自 pet_request.json 的 atlas + rows，渲染层据此切帧。
+ */
+export interface CustomMascotAtlasInfo {
+	columns: number;
+	rows: number;
+	cellWidth: number;
+	cellHeight: number;
+	width: number;
+	height: number;
+	rowMap?: Array<{ state: string; row: number; frames: number }>;
+}
+
+/**
+ * 自定义桌宠 meta（与 src/lib/mascot/manifest.ts MascotMeta 保持兼容）
+ *
+ * 主进程持有权威源（custom-mascots/index.json），通过 IPC 传给渲染层。
+ * 字段 isBuiltin 在 IPC payload 里固定为 false，仅为渲染层 union 兼容。
+ */
+export interface CustomMascotMeta {
+	id: string;
+	label: string;
+	tagline: string;
+	personality: string;
+	accentColor: string;
+	isBuiltin: false;
+	version: number;
+	createdAt?: string;
+	/** 是否带 atlas.webp（自家 atlas，决定桌面悬浮窗能否播 spritesheet） */
+	hasAtlas: boolean;
+	/** 是否带 loading.mp4 */
+	hasLoading: boolean;
+	/** 是否带 codex 风格 spritesheet（webp 或 png） */
+	hasSpritesheet?: boolean;
+	/** spritesheet 的扩展名 */
+	spritesheetExt?: "webp" | "png";
+	/** 实际包含的 PNG slot 列表（运行时缺位会 fallback 到 hero） */
+	slots: string[];
+	/** atlas 网格信息（codex 包通常有；自家包可选） */
+	atlas?: CustomMascotAtlasInfo;
+}
+
+/**
  * 渠道能力开关（SDK 阶段 1 起启用）。
  * - streaming.mode: off/edit/card（card 仅飞书）
  * - typing/interactive/dedupe.persistent/sequential_delivery：开关
@@ -2312,7 +2356,7 @@ export type IPCSchema = {
 			x: number;
 			y: number;
 			throughClicks: boolean;
-			mascotId: "off" | "efficiency" | "cloud" | "leisure";
+			mascotId: string;
 			sizePreset: "sm" | "md" | "lg" | "xl";
 			dwellPreset: "short" | "normal" | "long";
 			dndStart: string | null;
@@ -2389,10 +2433,10 @@ export type IPCSchema = {
 	// ==================
 	// 桌面宠物 IP（跨窗口同步）
 	// ==================
-	/** 设置当前宠物 IP，并广播给所有窗口（pet + main） */
+	/** 设置当前宠物 IP，并广播给所有窗口（pet + main）。id 可以是内置 id、"off" 或自定义桌宠 id */
 	mascot_set_id: {
 		input: {
-			id: "off" | "efficiency" | "cloud" | "leisure";
+			id: string;
 			source?: "main" | "pet" | "system";
 		};
 		output: { success: boolean };
@@ -2400,7 +2444,61 @@ export type IPCSchema = {
 	/** 取当前持久化的 IP（启动时初始化用） */
 	mascot_get_id: {
 		input: Record<string, never>;
-		output: { id: "off" | "efficiency" | "cloud" | "leisure" };
+		output: { id: string };
+	};
+	/** 列出所有自定义桌宠（不含内置） */
+	mascot_list_custom: {
+		input: Record<string, never>;
+		output: { mascots: CustomMascotMeta[] };
+	};
+	/** 导入自定义桌宠 zip 包；zipPath 为空时主进程弹原生文件选择 */
+	mascot_import_custom: {
+		input: { zipPath?: string };
+		output: {
+			success: boolean;
+			mascot?: CustomMascotMeta;
+			/** id 冲突时实际使用的 id（自动加 -2/-3 后缀） */
+			finalId?: string;
+			/** id 是否被改写（true 时 UI 应提示用户） */
+			renamed?: boolean;
+			error?: string;
+		};
+	};
+	/**
+	 * 从目录导入自定义桌宠（兼容 codex hatch-pet runs/<id> 与 ~/.codex/pets/<id>）
+	 * - dirPath 为空时主进程弹原生目录选择
+	 * - 与 zip 导入共享同一套校验 / 派生 / 写盘逻辑
+	 */
+	mascot_import_custom_dir: {
+		input: { dirPath?: string };
+		output: {
+			success: boolean;
+			mascot?: CustomMascotMeta;
+			finalId?: string;
+			renamed?: boolean;
+			error?: string;
+		};
+	};
+	/** 删除自定义桌宠；若它是当前选中，自动改回 "efficiency" 并广播 mascot-id-changed */
+	mascot_delete_custom: {
+		input: { id: string };
+		output: { success: boolean; error?: string };
+	};
+	/** 编辑自定义桌宠的 meta（label / tagline / personality / accentColor） */
+	mascot_update_custom_meta: {
+		input: {
+			id: string;
+			label?: string;
+			tagline?: string;
+			personality?: string;
+			accentColor?: string;
+		};
+		output: { success: boolean; mascot?: CustomMascotMeta; error?: string };
+	};
+	/** 备用——查询自定义桌宠某个 slot 的资源 URL（一般渲染层直接走 mascot:// 不需要这个） */
+	mascot_get_custom_asset_url: {
+		input: { id: string; slot: string };
+		output: { url: string | null };
 	};
 	/**
 	 * 主动触发宠物 reminder 气泡（番茄钟 / 外部 cron / 通知服务的接入点）。
@@ -2491,6 +2589,11 @@ export type IPCSchema = {
 	reader_open_book: {
 		input: { id: string };
 		output: { book: ReaderBook; progress: ReaderProgress | null };
+	};
+	/** 通过资料库 source_id 打开阅读器：先查关联，未关联时尝试用 source 原文件路径补建并关联 */
+	reader_open_from_source: {
+		input: { source_id: string };
+		output: { book: ReaderBook | null };
 	};
 	/** 删除一本书（不删除底层文件，仅清理书架记录） */
 	reader_delete_book: {

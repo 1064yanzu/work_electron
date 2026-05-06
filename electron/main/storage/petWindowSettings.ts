@@ -9,7 +9,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { app } from "electron";
 
-export type MascotIdPersisted = "off" | "efficiency" | "cloud" | "leisure";
+/**
+ * 持久化的桌宠 id：
+ * - "off" 关闭
+ * - "efficiency" / "cloud" / "leisure" 内置三只
+ * - 任意自定义桌宠 id（来自 userData/custom-mascots/<id>/）
+ */
+export type MascotIdPersisted = string;
 export type SizePreset = "sm" | "md" | "lg" | "xl";
 export type DwellPreset = "short" | "normal" | "long";
 

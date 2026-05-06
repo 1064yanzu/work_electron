@@ -17,6 +17,9 @@ import type {
 } from "../../shared/types";
 import { extractArticleFromHtml } from "../kb/extractArticleFromHtml";
 import { rebuildNoteChunks } from "../kb/rebuildNoteChunks";
+import { importBookFromPath } from "../reader/bookService";
+import { epubFormatHandler } from "../reader/formats/epub";
+import { detectFormatByExt } from "../reader/formats/detect";
 import { syncSourceToVault } from "../storage/sync";
 import { requireAbsoluteLocalPath } from "../utils/localPaths";
 
@@ -159,7 +162,8 @@ function guessKindFromExtension(ext: string): SourceKind {
 	if (["xls", "xlsx", "csv", "numbers", "ods"].includes(e))
 		return "spreadsheet";
 	// 文档
-	if (["doc", "docx", "odt", "rtf", "pages"].includes(e)) return "document";
+	if (["doc", "docx", "odt", "rtf", "pages", "epub"].includes(e))
+		return "document";
 	// 图片
 	if (
 		[
@@ -472,7 +476,21 @@ async function ingestLocalFile(
 	const kind = guessKindFromExtension(ext);
 	const category = guessCategoryForKind(kind);
 
-	const { contentText, contentHtml } = await (async () => {
+	type IngestPayload = {
+		contentText: string;
+		contentHtml?: string;
+		/** 解析器抽出来的元信息，会覆盖 source.title / source.author（仅当非空时） */
+		meta?: {
+			title?: string;
+			author?: string;
+		};
+	};
+
+	const {
+		contentText,
+		contentHtml,
+		meta: parsedMeta,
+	}: IngestPayload = await (async (): Promise<IngestPayload> => {
 		if (ext === ".docx") {
 			const result = await mammoth.convertToHtml({ path: absPath });
 			const html = result.value || "";
@@ -500,6 +518,59 @@ async function ingestLocalFile(
 			} catch (pdfErr) {
 				console.warn("[contentIngest] PDF text extraction failed:", pdfErr);
 				const html = `<div data-type="pdf" data-src="${fileUrl}"></div>`;
+				return { contentText: baseName, contentHtml: html };
+			}
+		}
+
+		if (ext === ".epub") {
+			try {
+				const parsed = await epubFormatHandler.parse(absPath);
+				const fullText = (parsed.full_text || "").trim();
+				const contentText = fullText || parsed.title || baseName;
+
+				// 封面（如果有）→ data URL，便于在笔记 HTML 中预览
+				let coverImg = "";
+				if (parsed.cover) {
+					const b64 = Buffer.from(parsed.cover.bytes).toString("base64");
+					coverImg = `<img src="data:${parsed.cover.mime};base64,${b64}" alt="${parsed.title}" style="max-width:200px;margin-right:16px;float:left;border-radius:4px;" />`;
+				}
+
+				const author = parsed.authors.join(", ");
+				const previewText = fullText
+					.slice(0, 500)
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;");
+
+				const html =
+					`<div data-type="epub" data-src="${fileUrl}">` +
+					`<div style="overflow:hidden;margin-bottom:12px;">` +
+					coverImg +
+					`<h2 style="margin:0 0 4px 0;">${parsed.title}</h2>` +
+					(author
+						? `<p style="margin:0 0 8px 0;color:#666;">${author}</p>`
+						: "") +
+					(parsed.page_count
+						? `<p style="margin:0 0 8px 0;color:#999;font-size:13px;">${parsed.page_count} 章 · 约 ${parsed.word_count} 字</p>`
+						: "") +
+					`</div>` +
+					`<div style="clear:both"></div>` +
+					(previewText
+						? `<p class="epub-extract-preview">${previewText}${fullText.length > 500 ? "..." : ""}</p>`
+						: "") +
+					`</div>`;
+
+				return {
+					contentText,
+					contentHtml: html,
+					meta: {
+						title: parsed.title || undefined,
+						author: author || undefined,
+					},
+				};
+			} catch (epubErr) {
+				console.warn("[contentIngest] EPUB extraction failed:", epubErr);
+				// 失败时降级为「文件引用」，不阻塞导入
+				const html = `<div data-type="epub" data-src="${fileUrl}">${baseName}</div>`;
 				return { contentText: baseName, contentHtml: html };
 			}
 		}
@@ -550,7 +621,7 @@ async function ingestLocalFile(
 
 	const source = await insertSource(db, {
 		id: randomUUID(),
-		title: baseName,
+		title: parsedMeta?.title || baseName,
 		kind,
 		tags: options.tags,
 		scope: "global",
@@ -562,7 +633,7 @@ async function ingestLocalFile(
 		category,
 		description: undefined,
 		thumbnail: undefined,
-		author: undefined,
+		author: parsedMeta?.author || undefined,
 		published_at: undefined,
 	});
 
@@ -573,6 +644,32 @@ async function ingestLocalFile(
 		content_html: contentHtml,
 	});
 	await syncSourceToVault(db, source.id);
+
+	// 阅读器支持的格式（pdf/epub/mobi/azw3/txt/md/html/docx/cbz 等）：
+	// 同步入 reader_books，并把 source.id 关联，让左侧栏「全屏阅读」按钮
+	// 能直接通过 source_id 找到对应的书并打开真正的阅读器 Overlay。
+	if (detectFormatByExt(absPath)) {
+		try {
+			const book = await importBookFromPath(db, {
+				filePath: absPath,
+				project_id: options.project_id ?? null,
+				folder_id: options.folder_id ?? null,
+				skipFullTextIndex: true,
+			});
+			if (book) {
+				await db.client.execute({
+					sql: "UPDATE reader_books SET source_id = ? WHERE id = ?",
+					args: [source.id, book.id],
+				});
+			}
+		} catch (e) {
+			console.warn(
+				"[contentIngest] importBookFromPath failed, source 仍创建成功:",
+				absPath,
+				e instanceof Error ? e.message : String(e),
+			);
+		}
+	}
 
 	return { source, note };
 }

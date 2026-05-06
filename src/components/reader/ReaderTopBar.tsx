@@ -22,6 +22,7 @@ interface ReaderTopBarProps {
 	authors: string[];
 	chapterTitle: string | null;
 	leftPanel: "toc" | "highlights" | "bookmarks";
+	leftPanelOpen: boolean;
 	onSetLeftPanel: (panel: "toc" | "highlights" | "bookmarks") => void;
 	immersive: boolean;
 	onToggleImmersive: () => void;
@@ -42,6 +43,7 @@ export function ReaderTopBar({
 	authors,
 	chapterTitle,
 	leftPanel,
+	leftPanelOpen,
 	onSetLeftPanel,
 	immersive,
 	onToggleImmersive,
@@ -94,7 +96,7 @@ export function ReaderTopBar({
 			<div className="reader-topbar__center">
 				<button
 					type="button"
-					className={`reader-tab ${leftPanel === "toc" ? "is-active" : ""}`}
+					className={`reader-tab ${leftPanel === "toc" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("toc")}
 					title="目录（⌘1）"
 				>
@@ -103,7 +105,7 @@ export function ReaderTopBar({
 				</button>
 				<button
 					type="button"
-					className={`reader-tab ${leftPanel === "highlights" ? "is-active" : ""}`}
+					className={`reader-tab ${leftPanel === "highlights" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("highlights")}
 					title="高亮（⌘2）"
 				>
@@ -112,7 +114,7 @@ export function ReaderTopBar({
 				</button>
 				<button
 					type="button"
-					className={`reader-tab ${leftPanel === "bookmarks" ? "is-active" : ""}`}
+					className={`reader-tab ${leftPanel === "bookmarks" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("bookmarks")}
 					title="书签"
 				>

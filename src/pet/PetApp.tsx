@@ -27,13 +27,13 @@ import {
 import { MascotSpriteFader } from "./MascotSpriteFader";
 import {
 	getMascotAtlas,
+	getMascotAsset,
 	type MascotMotion,
 	type MascotId,
 } from "../lib/mascot/manifest";
 import {
 	mascotManager,
-	MASCOT_IDS,
-	MASCOT_META,
+	useMascot,
 	type MascotSelection,
 } from "../lib/mascotStore";
 import { invoke } from "../lib/tauriCompat";
@@ -134,9 +134,7 @@ const INITIAL_UI_STATE: PetUIState = {
 // ── 主组件 ──
 
 export default function PetApp() {
-	const [mascotId, setMascotId] = useState<MascotSelection>(() =>
-		mascotManager.getId(),
-	);
+	const { id: mascotId } = useMascot();
 	const [uiState, uiDispatch] = useReducer(petUIReducer, INITIAL_UI_STATE);
 	const eventState = usePetEventBridge();
 	const [inputText, setInputText] = useState("");
@@ -177,14 +175,6 @@ export default function PetApp() {
 
 	// 记下最近一次显示的 notification 消息，用于决定 dwell 时长
 	const lastNotificationMessageRef = useRef<string>("");
-
-	// 监听 mascotStore 变化
-	useEffect(() => {
-		const unsub = mascotManager.subscribe(() => {
-			setMascotId(mascotManager.getId());
-		});
-		return unsub;
-	}, []);
 
 	// 启动时拉取尺寸 / dwell / 勿扰；监听 pet-settings-changed 实时同步
 	useEffect(() => {
@@ -239,15 +229,16 @@ export default function PetApp() {
 	}, []);
 
 	// 当前宠物的"声音颜色"——用于气泡边缘光晕和按钮色
-	const accentColor = useMemo(() => {
-		if (mascotId === "off") return "#D96C46";
-		return MASCOT_META[mascotId]?.accentColor ?? "#D96C46";
-	}, [mascotId]);
+	const accentColor =
+		mascotId === "off"
+			? "#D96C46"
+			: (mascotManager.getMergedMeta(mascotId)?.accentColor ?? "#D96C46");
 
-	const atlasUrl = useMemo(() => {
-		if (mascotId === "off") return null;
-		return getMascotAtlas(mascotId);
-	}, [mascotId]);
+	const atlasUrl = mascotId === "off" ? null : getMascotAtlas(mascotId);
+	const fallbackHeroUrl =
+		mascotId === "off" || atlasUrl
+			? null
+			: getMascotAsset(mascotId, "hero") || null;
 
 	// ── Agent 事件 → UI 状态同步 ──
 	//
@@ -456,8 +447,7 @@ export default function PetApp() {
 						longPressTimerRef.current = null;
 					}
 					// 按起始位移方向选 run-left / run-right；正好为 0 时默认右
-					const initialDir: MascotMotion =
-						dx >= 0 ? "run-right" : "run-left";
+					const initialDir: MascotMotion = dx >= 0 ? "run-right" : "run-left";
 					lastDragMotionRef.current = initialDir;
 					uiDispatch({ type: "SET_MOTION", motion: initialDir });
 				}
@@ -486,10 +476,7 @@ export default function PetApp() {
 					if (vxSeg > DIR_THRESHOLD) nextDirMotion = "run-right";
 					else if (vxSeg < -DIR_THRESHOLD) nextDirMotion = "run-left";
 
-					if (
-						nextDirMotion &&
-						nextDirMotion !== lastDragMotionRef.current
-					) {
+					if (nextDirMotion && nextDirMotion !== lastDragMotionRef.current) {
 						lastDragMotionRef.current = nextDirMotion;
 						uiDispatch({ type: "SET_MOTION", motion: nextDirMotion });
 					}
@@ -677,14 +664,17 @@ export default function PetApp() {
 	);
 
 	// ── 上下文菜单：换肤 ──
+	// 在所有可选 IP（内置 + 自定义）之间循环
 	const handleCycleSkin = useCallback(() => {
+		const all = mascotManager.getAllMascotIds();
+		if (all.length === 0) return;
 		const current = mascotManager.getId();
 		if (current === "off") {
-			mascotManager.setId(MASCOT_IDS[0]);
+			mascotManager.setId(all[0]);
 			return;
 		}
-		const idx = MASCOT_IDS.indexOf(current);
-		const next = MASCOT_IDS[(idx + 1) % MASCOT_IDS.length];
+		const idx = all.indexOf(current);
+		const next = all[(idx + 1) % all.length];
 		mascotManager.setId(next);
 		setContextMenuOpen(false);
 		uiDispatch({ type: "SET_MOTION", motion: "greet" });
@@ -705,7 +695,7 @@ export default function PetApp() {
 
 	// ── 渲染 ──
 
-	if (mascotId === "off" || !atlasUrl) return null;
+	if (mascotId === "off" || (!atlasUrl && !fallbackHeroUrl)) return null;
 
 	// 是否显示未读小红点（不重复 notification 气泡的可见性）
 	const showUnreadDot =
@@ -872,12 +862,26 @@ export default function PetApp() {
 					tabIndex={0}
 					aria-label="桌面宠物"
 				>
-					<MascotSpriteFader
-						atlasUrl={atlasUrl}
-						motion={uiState.motion}
-						size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
-						paused={false}
-					/>
+					{atlasUrl ? (
+						<MascotSpriteFader
+							atlasUrl={atlasUrl}
+							motion={uiState.motion}
+							size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
+							paused={false}
+						/>
+					) : (
+						<img
+							src={fallbackHeroUrl ?? ""}
+							alt=""
+							aria-hidden="true"
+							draggable={false}
+							className="block object-contain"
+							style={{
+								width: `${SIZE_PRESET_TO_PX[sizePreset] ?? 180}px`,
+								height: `${(SIZE_PRESET_TO_PX[sizePreset] ?? 180) * (208 / 192)}px`,
+							}}
+						/>
+					)}
 				</div>
 
 				{/* 上下文菜单（长按 / 右键触发） */}
@@ -915,10 +919,14 @@ function PetContextMenu({
 	onOpenSettings,
 }: PetContextMenuProps) {
 	const nextMascotLabel = useMemo(() => {
-		if (currentMascotId === "off") return MASCOT_META[MASCOT_IDS[0]].label;
-		const idx = MASCOT_IDS.indexOf(currentMascotId);
-		const next = MASCOT_IDS[(idx + 1) % MASCOT_IDS.length];
-		return MASCOT_META[next].label;
+		const all = mascotManager.getAllMascotIds();
+		if (all.length === 0) return "效率引擎";
+		if (currentMascotId === "off") {
+			return mascotManager.getMergedMeta(all[0])?.label ?? "下一个";
+		}
+		const idx = all.indexOf(currentMascotId);
+		const next = all[(idx + 1) % all.length];
+		return mascotManager.getMergedMeta(next)?.label ?? "下一个";
 	}, [currentMascotId]);
 
 	return (

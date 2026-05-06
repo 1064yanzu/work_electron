@@ -2,12 +2,12 @@ import { useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "../../lib/utils";
 import {
-	MASCOT_IDS,
-	MASCOT_META,
+	BUILTIN_MASCOT_LIST,
+	BUILTIN_MASCOT_META,
 	useMascot,
 	type MascotId,
 } from "../../lib/mascotStore";
-import { getMascotAsset } from "../../lib/mascot/manifest";
+import { isBuiltinMascotId, getMascotAsset } from "../../lib/mascot/manifest";
 
 export interface MascotOnboardingProps {
 	onFinish: () => void;
@@ -45,7 +45,11 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 	const [step, setStep] = useState(0);
 
 	const slide = SLIDES[step];
-	const previewId: MascotId = id === "off" ? "efficiency" : id;
+	// 首次引导只展示内置 IP；用户上传的自定义桌宠在设置面板再选
+	const previewId: MascotId =
+		id !== "off" && isBuiltinMascotId(id) ? id : "efficiency";
+	const previewMeta =
+		BUILTIN_MASCOT_META[previewId as keyof typeof BUILTIN_MASCOT_META];
 
 	const handleNext = () => {
 		if (step < SLIDES.length - 1) {
@@ -84,7 +88,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 						<div
 							className="absolute inset-0 rounded-full opacity-60 blur-2xl"
 							style={{
-								backgroundColor: `${MASCOT_META[previewId].accentColor}33`,
+								backgroundColor: `${previewMeta.accentColor}33`,
 							}}
 						/>
 						<img
@@ -106,8 +110,8 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 
 				{step === SLIDES.length - 1 && (
 					<div className="grid grid-cols-3 gap-2 px-7 pt-4">
-						{MASCOT_IDS.map((mid) => {
-							const meta = MASCOT_META[mid];
+						{BUILTIN_MASCOT_LIST.map((mid) => {
+							const meta = BUILTIN_MASCOT_META[mid];
 							const selected = id === mid;
 							return (
 								<button

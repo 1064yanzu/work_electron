@@ -317,6 +317,15 @@ export function getPetWindowPosition(): {
 	};
 }
 
+/** 获取所有需要接收宠物相关广播的窗口（main + pet） */
+export function getMascotBroadcastTargets(): BrowserWindow[] {
+	const main = getMainWindowRef?.() ?? null;
+	const targets: BrowserWindow[] = [];
+	if (main && !main.isDestroyed()) targets.push(main);
+	if (petWindow && !petWindow.isDestroyed()) targets.push(petWindow);
+	return targets;
+}
+
 /**
  * 广播宠物 IP 变更：同时给主窗口和宠物窗口发 "mascot-id-changed" 事件，
  * 携带 source 让接收方可去重避免回环。持久化也由本函数负责。
@@ -327,11 +336,7 @@ export function broadcastMascotChange(
 ): void {
 	updatePetWindowSettings({ mascotId: id });
 	const payload = { id, source };
-	const main = getMainWindowRef?.() ?? null;
-	const targets: BrowserWindow[] = [];
-	if (main && !main.isDestroyed()) targets.push(main);
-	if (petWindow && !petWindow.isDestroyed()) targets.push(petWindow);
-	for (const win of targets) {
+	for (const win of getMascotBroadcastTargets()) {
 		try {
 			win.webContents.send("mascot-id-changed", payload);
 		} catch {

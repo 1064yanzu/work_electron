@@ -412,7 +412,7 @@ export function ResourceModals({
 						<div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-warm-50/50 transition-colors relative group">
 							<input
 								type="file"
-								accept=".txt,.md,.markdown,.json,.csv,.html,.htm,.xml,.yaml,.yml,.toml,.rst,.log,.conf,.ini,.rtf,.pdf,.docx,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,.svg"
+								accept="*/*"
 								className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
 								onChange={(e) => {
 									const file = e.target.files?.[0];

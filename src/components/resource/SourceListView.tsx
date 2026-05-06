@@ -592,12 +592,31 @@ export function SourceListView({
 					}
 				}}
 				onDrop={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
+					// 仅处理「内部资料拖到内容区域」这一种场景：
+					// - 有 application/x-source-id 数据 → 是内部资料拖拽
+					// - 没有则可能是「外部文件拖入资料库」，必须放行让事件冒泡到
+					//   window 上的 useDragAndDropImport 监听器，否则 isDragging
+					//   的提示框不会消失、文件也不会进入导入队列。
 					const sourceId =
 						draggedSourceId ||
 						e.dataTransfer.getData("application/x-source-id");
+
+					if (!sourceId) {
+						// 外部文件拖拽：不要 preventDefault / stopPropagation，
+						// 让 window 层的 useDragAndDropImport 接管。
+						if (uiDebugLogsEnabled) {
+							debugLog(
+								"[Drag] 内容区域 onDrop 检测到外部文件拖入，交由 window 处理",
+								"types:",
+								Array.from(e.dataTransfer.types),
+							);
+						}
+						return;
+					}
+
+					e.preventDefault();
+					e.stopPropagation();
+
 					if (uiDebugLogsEnabled) {
 						debugLog(
 							"[Drag] 内容区域 onDrop 触发, sourceId:",
@@ -605,11 +624,6 @@ export function SourceListView({
 							"target:",
 							(e.target as HTMLElement)?.tagName,
 						);
-					}
-
-					if (!sourceId) {
-						debugWarn("[Drag] 没有 sourceId");
-						return;
 					}
 
 					const target = e.target as HTMLElement;

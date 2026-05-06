@@ -113,6 +113,10 @@ export default defineConfig({
 								// 打平进 dist-electron 后路径失效，必须保留为外部 require
 								"pdf-parse",
 								"pdfjs-dist",
+								// sharp 通过 dynamic require 加载 @img/sharp-<platform> 原生 .node，
+								// 被 rollup-cjs 静态打平后路径会丢，必须保留为外部依赖
+								"sharp",
+								/^@img\/sharp-/,
 							],
 							output: {
 								// 强制主进程使用 CJS 格式，避免 "type":"module" 导致

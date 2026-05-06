@@ -69,9 +69,12 @@ export function useReaderShortcuts(
 
 			switch (e.key) {
 				case "ArrowLeft":
+				case "PageUp":
+					e.preventDefault();
 					handlers.onPrevChapter();
 					return;
 				case "ArrowRight":
+				case "PageDown":
 				case " ":
 					if (
 						e.key === " " &&

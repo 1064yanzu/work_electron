@@ -14,6 +14,8 @@ export type ReaderEngineProps = {
 	book: ReaderBook;
 	/** 当前章节（部分引擎可能不依赖） */
 	chapter: ReaderChapter | null;
+	/** 用户请求打开的章节定位，可能带 EPUB/HTML 锚点片段。 */
+	requestedChapterId?: string | null;
 	/** 字体 / 字号 / 行高 / 列数 等渲染参数（已合成） */
 	typography: {
 		fontFamilyStack: string;
@@ -27,6 +29,8 @@ export type ReaderEngineProps = {
 	onRequestImmersive?: (immersive: boolean) => void;
 	/** 阅读位置发生变化时上报（节流交给父组件） */
 	onPositionChange?: (locator: string, percent: number) => void;
+	/** 外部进度条请求跳到章节内某个百分比位置。 */
+	seekPercentRequest?: { percent: number; nonce: number } | null;
 	/** 跳到下一章节 / 上一章节（顶栏快捷键、目录点击通用） */
 	onRequestNavigate?: (
 		direction: "prev" | "next" | "to",

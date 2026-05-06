@@ -70,6 +70,14 @@ export async function readerOpenBook(
 	return safeInvoke("reader_open_book", { payload: { id } });
 }
 
+export async function readerOpenFromSource(
+	source_id: string,
+): Promise<{ book: ReaderBook | null }> {
+	return safeInvoke("reader_open_from_source", {
+		payload: { source_id },
+	});
+}
+
 export async function readerDeleteBook(
 	id: string,
 ): Promise<{ success: boolean }> {

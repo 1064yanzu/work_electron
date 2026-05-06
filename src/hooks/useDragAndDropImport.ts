@@ -23,12 +23,26 @@ export interface DragAndDropPosition {
 	y: number;
 }
 
+export interface DragAndDropRejectInfo {
+	/** 没拿到任何 file 对象（比如系统拒绝） */
+	noFiles?: boolean;
+	/** 文件列表里有 File 但 webUtils.getPathForFile 全部返回空字符串 */
+	noPaths?: { fileNames: string[] };
+	/** accept 函数过滤掉了的扩展名（例如 .doc / .xlsx 不在白名单） */
+	rejectedByAccept?: { paths: string[] };
+}
+
 export interface UseDragAndDropImportOptions {
 	enabled?: boolean;
 	dedupe?: boolean;
 	maxQueue?: number;
 	accept?: (path: string) => boolean;
 	timeoutMs?: number;
+	/**
+	 * 当 drop 触发但最终没有任何文件进队列时调用。
+	 * 用于上层做用户反馈（toast 提示「不支持的格式」「无法获取路径」）。
+	 */
+	onReject?: (info: DragAndDropRejectInfo) => void;
 }
 
 function createQueueItemId(): string {
@@ -125,7 +139,20 @@ export function useDragAndDropImport<TResult = unknown>(
 		maxQueue = 64,
 		accept,
 		timeoutMs = 180_000,
+		onReject,
 	} = options;
+
+	// 让 onReject 用 ref 持有，避免依赖变化时重订阅 window 监听器
+	const onRejectRef = useRef<typeof onReject>(onReject);
+	useEffect(() => {
+		onRejectRef.current = onReject;
+	}, [onReject]);
+
+	// accept 同样用 ref，避免每次 accept 引用变化都重订阅
+	const acceptRef = useRef<typeof accept>(accept);
+	useEffect(() => {
+		acceptRef.current = accept;
+	}, [accept]);
 
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragPosition, setDragPosition] = useState<DragAndDropPosition | null>(
@@ -161,6 +188,9 @@ export function useDragAndDropImport<TResult = unknown>(
 
 			if (cleanPaths.length === 0) return;
 
+			const rejectedByAccept: string[] = [];
+			let added = 0;
+
 			setQueue((prev) => {
 				const existing = dedupe
 					? new Set(prev.map((i) => i.path))
@@ -168,7 +198,11 @@ export function useDragAndDropImport<TResult = unknown>(
 				const next: Array<DragAndDropImportItem<TResult>> = [...prev];
 
 				for (const path of cleanPaths) {
-					if (accept && !accept(path)) continue;
+					const acceptFn = acceptRef.current;
+					if (acceptFn && !acceptFn(path)) {
+						rejectedByAccept.push(path);
+						continue;
+					}
 					if (dedupe && existing.has(path)) continue;
 					if (next.length >= maxQueue) break;
 
@@ -185,12 +219,24 @@ export function useDragAndDropImport<TResult = unknown>(
 					});
 
 					existing.add(path);
+					added += 1;
 				}
 
 				return next;
 			});
+
+			// 入队后如果一个文件都没加进去（且确实有 accept 拒绝），让上层 toast
+			if (added === 0 && rejectedByAccept.length > 0) {
+				try {
+					onRejectRef.current?.({
+						rejectedByAccept: { paths: rejectedByAccept },
+					});
+				} catch (err) {
+					console.warn("[useDragAndDropImport] onReject threw:", err);
+				}
+			}
 		},
-		[accept, dedupe, maxQueue],
+		[dedupe, maxQueue],
 	);
 
 	const clearQueue = useCallback(() => {
@@ -321,13 +367,38 @@ export function useDragAndDropImport<TResult = unknown>(
 			setDragPosition({ x: e.clientX, y: e.clientY });
 
 			const files = Array.from(e.dataTransfer?.files ?? []);
-			if (files.length === 0) return;
+			if (files.length === 0) {
+				console.warn("[useDragAndDropImport] onDrop: dataTransfer.files 为空", {
+					types: Array.from(e.dataTransfer?.types ?? []),
+				});
+				try {
+					onRejectRef.current?.({ noFiles: true });
+				} catch {}
+				return;
+			}
 
+			const fileNames = files.map((f) => f.name);
 			const paths = files
 				.map((f) => resolveFilePath(f))
 				.filter((p): p is string => Boolean(p));
 
-			if (paths.length === 0) return;
+			console.info("[useDragAndDropImport] onDrop", {
+				fileCount: files.length,
+				fileNames,
+				resolvedPathCount: paths.length,
+				resolvedPaths: paths,
+			});
+
+			if (paths.length === 0) {
+				console.error(
+					"[useDragAndDropImport] webUtils.getPathForFile 全部返回空。可能是 preload 中 webUtils 不可用，或 contextBridge 序列化导致 File 对象异常。",
+					{ fileNames },
+				);
+				try {
+					onRejectRef.current?.({ noPaths: { fileNames } });
+				} catch {}
+				return;
+			}
 
 			enqueuePaths(paths);
 		};

@@ -419,13 +419,16 @@ export function usePetEventBridge(): PetEventBridge {
 		}, IDLE_TIMEOUT_MS);
 	}, []);
 
-	// 取当前 personality id（off → efficiency 兜底）
+	// 取当前 personality id（off → efficiency 兜底；自定义桌宠也回退到 efficiency 话术）
 	const getPersonalityId = useCallback(():
 		| "efficiency"
 		| "cloud"
 		| "leisure" => {
 		const id = mascotManager.getId();
-		return id === "off" ? "efficiency" : id;
+		if (id === "efficiency" || id === "cloud" || id === "leisure") {
+			return id;
+		}
+		return "efficiency";
 	}, []);
 
 	// 启动时拉取 dwell / dnd 设置；监听 pet-settings-changed 实时更新

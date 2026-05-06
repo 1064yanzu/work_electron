@@ -31,6 +31,7 @@ import { useReaderCopilot } from "./hooks/useReaderCopilot";
 import { useReaderShortcuts } from "./hooks/useReaderShortcuts";
 import { useReaderTTS } from "./hooks/useReaderTTS";
 import { ReaderCopilot } from "./ReaderCopilot";
+import { ReaderPageNav } from "./ReaderPageNav";
 import { ReaderProgressBar } from "./ReaderProgressBar";
 import { ReaderSearchPanel } from "./ReaderSearchPanel";
 import { ReaderSelectionMenu } from "./ReaderSelectionMenu";
@@ -72,11 +73,13 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		bookmarks,
 		settings,
 		leftPanel,
+		leftPanelOpen,
 		rightPanelOpen,
 		immersive,
 		fontSizeOverride,
 		loadingBook,
 		loadingChapter,
+		error,
 	} = state;
 
 	const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
@@ -85,6 +88,10 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		null,
 	);
 	const [searchOpen, setSearchOpen] = useState(false);
+	const [seekPercentRequest, setSeekPercentRequest] = useState<{
+		percent: number;
+		nonce: number;
+	} | null>(null);
 
 	const tts = useReaderTTS(settings?.tts_rate ?? 1.0);
 	const copilot = useReaderCopilot({
@@ -159,7 +166,13 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			if (progressFlushRef.current) clearTimeout(progressFlushRef.current);
 			if (chromeHideRef.current) clearTimeout(chromeHideRef.current);
 			tts.stop();
-			readerStoreApi.reset();
+			readerStoreApi.setBook(null);
+			readerStoreApi.setChapter(null);
+			readerStoreApi.setProgress(null);
+			readerStoreApi.setHighlights([]);
+			readerStoreApi.setBookmarks([]);
+			readerStoreApi.setSessionId(null);
+			readerStoreApi.setError(null);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -176,7 +189,12 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				sessionPagesRef.current += 1;
 			} catch (e) {
 				console.warn("[reader] load chapter failed", e);
-				if (!cancelled) readerStoreApi.setLoadingChapter(false);
+				if (!cancelled) {
+					readerStoreApi.setLoadingChapter(false);
+					const msg = e instanceof Error ? e.message : String(e);
+					readerStoreApi.setError(msg);
+					toast.error(`章节加载失败：${msg}`);
+				}
 			}
 		})();
 		return () => {
@@ -194,13 +212,19 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			settings?.font_family ?? "serif-cn",
 		);
 		const fontSize = fontSizeOverride ?? settings?.font_size ?? 17;
+		const columnCount = settings?.column_count ?? 1;
+		const maxWidthCh = settings?.max_width_ch ?? 70;
 		return {
 			...theme.tokens,
 			"--reader-font-family": fontFamilyStack,
 			"--reader-font-size": `${fontSize}px`,
 			"--reader-line-height": String(settings?.line_height ?? 1.75),
 			"--reader-letter-spacing": `${settings?.letter_spacing ?? 0.01}em`,
-			"--reader-max-width": `${settings?.max_width_ch ?? 70}ch`,
+			"--reader-max-width": `${maxWidthCh}ch`,
+			"--reader-layout-width":
+				columnCount === 2
+					? `calc(${maxWidthCh * 2}ch + clamp(2.5rem, 5vw, 5rem))`
+					: `${maxWidthCh}ch`,
 		} as React.CSSProperties;
 	}, [theme, settings, fontSizeOverride]);
 
@@ -225,6 +249,11 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		},
 		[book, activeChapterId],
 	);
+	const handleProgressSeek = useCallback((nextPercent: number) => {
+		const pct = Math.max(0, Math.min(1, nextPercent));
+		setPercent(pct);
+		setSeekPercentRequest({ percent: pct, nonce: Date.now() });
+	}, []);
 
 	// 6. chrome 自动隐藏（沉浸模式 OR 用户静止）
 	const [chromeHidden, setChromeHidden] = useState(false);
@@ -385,8 +414,20 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			onOpenSearch: () => setSearchOpen(true),
 			onToggleCopilot: () => readerStoreApi.toggleRightPanel(),
 			onToggleTts,
-			onOpenToc: () => readerStoreApi.setLeftPanel("toc"),
-			onOpenHighlights: () => readerStoreApi.setLeftPanel("highlights"),
+			onOpenToc: () => {
+				if (leftPanel === "toc" && leftPanelOpen) {
+					readerStoreApi.toggleLeftPanel(false);
+				} else {
+					readerStoreApi.setLeftPanel("toc");
+				}
+			},
+			onOpenHighlights: () => {
+				if (leftPanel === "highlights" && leftPanelOpen) {
+					readerStoreApi.toggleLeftPanel(false);
+				} else {
+					readerStoreApi.setLeftPanel("highlights");
+				}
+			},
 			onCycleTheme: cycleTheme,
 		},
 		Boolean(book),
@@ -440,7 +481,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 
 	return (
 		<div
-			className={`reader-shell theme-${theme.tone} ${immersive ? "is-immersive" : ""} ${chromeHidden ? "is-chrome-hidden" : ""}`}
+			className={`reader-shell theme-${theme.tone} ${immersive ? "is-immersive" : ""} ${chromeHidden ? "is-chrome-hidden" : ""} ${leftPanelOpen ? "is-left-open" : ""}`}
 			style={cssVars}
 			onMouseMove={onUserActivity}
 		>
@@ -449,7 +490,14 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				authors={book?.authors || []}
 				chapterTitle={chapter?.title || null}
 				leftPanel={leftPanel}
-				onSetLeftPanel={(p) => readerStoreApi.setLeftPanel(p)}
+				leftPanelOpen={leftPanelOpen}
+				onSetLeftPanel={(p) => {
+					if (p === leftPanel && leftPanelOpen) {
+						readerStoreApi.toggleLeftPanel(false);
+					} else {
+						readerStoreApi.setLeftPanel(p);
+					}
+				}}
 				immersive={immersive}
 				onToggleImmersive={() => readerStoreApi.toggleImmersive()}
 				rightPanelOpen={rightPanelOpen}
@@ -484,27 +532,50 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				<main className="reader-main">
 					{loadingBook || !book ? (
 						<div className="reader-shell__loading-pulse" />
+					) : error ? (
+						<div className="reader-error">
+							<div className="reader-error__icon">⚠️</div>
+							<p className="reader-error__title">无法加载内容</p>
+							<p className="reader-error__detail">
+								{error.includes("FILE_MISSING")
+									? "原始文件已被移动或删除，请重新导入。"
+									: error}
+							</p>
+							<button className="reader-error__btn" onClick={onRequestClose}>
+								关闭阅读器
+							</button>
+						</div>
 					) : (
-						<EngineSelector
-							book={book}
-							chapter={chapter}
-							typography={{
-								fontFamilyStack: getReaderFontStack(settings.font_family),
-								fontSizePx: fontSizeOverride ?? settings.font_size,
-								lineHeight: settings.line_height,
-								letterSpacingEm: settings.letter_spacing,
-								columnCount: settings.column_count,
-								maxWidthCh: settings.max_width_ch,
-							}}
-							onPositionChange={handlePositionChange}
-							onSelectionChange={onSelectionChange}
-							onUserActivity={onUserActivity}
-							onRequestNavigate={(dir, id) => {
-								if (dir === "to" && id) setActiveChapterId(id);
-								else if (dir === "prev") onPrevChapter();
-								else if (dir === "next") onNextChapter();
-							}}
-						/>
+						<>
+							<EngineSelector
+								book={book}
+								chapter={chapter}
+								requestedChapterId={activeChapterId}
+								typography={{
+									fontFamilyStack: getReaderFontStack(settings.font_family),
+									fontSizePx: fontSizeOverride ?? settings.font_size,
+									lineHeight: settings.line_height,
+									letterSpacingEm: settings.letter_spacing,
+									columnCount: settings.column_count,
+									maxWidthCh: settings.max_width_ch,
+								}}
+								onPositionChange={handlePositionChange}
+								seekPercentRequest={seekPercentRequest}
+								onSelectionChange={onSelectionChange}
+								onUserActivity={onUserActivity}
+								onRequestNavigate={(dir, id) => {
+									if (dir === "to" && id) setActiveChapterId(id);
+									else if (dir === "prev") onPrevChapter();
+									else if (dir === "next") onNextChapter();
+								}}
+							/>
+							<ReaderPageNav
+								canPrev={canPrev}
+								canNext={canNext || Boolean(chapter?.next_id)}
+								onPrev={onPrevChapter}
+								onNext={onNextChapter}
+							/>
+						</>
 					)}
 
 					{loadingChapter ? (
@@ -532,6 +603,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				onNext={onNextChapter}
 				canPrev={canPrev}
 				canNext={canNext || Boolean(chapter?.next_id)}
+				onSeek={handleProgressSeek}
 			/>
 
 			<ReaderTTSBar

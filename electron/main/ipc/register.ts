@@ -66,6 +66,7 @@ import { createWorktreeHandlers } from "./handlers/worktree";
 import { createWikiHandlers } from "./handlers/wiki";
 import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 import { createPetWindowHandlers } from "./handlers/petWindow";
+import { createCustomMascotHandlers } from "./handlers/customMascot";
 import {
 	bindMainWindowGetter,
 	flingAndSnapPetWindow,
@@ -1050,6 +1051,30 @@ export function registerIpcHandlers({
 	ipcMain.handle("mascot_set_id", petWindowHandlers.mascot_set_id);
 	ipcMain.handle("mascot_get_id", petWindowHandlers.mascot_get_id);
 
+	// 自定义桌宠（导入 / 列表 / 删除 / 编辑）
+	const customMascotHandlers = createCustomMascotHandlers();
+	ipcMain.handle("mascot_list_custom", customMascotHandlers.mascot_list_custom);
+	ipcMain.handle(
+		"mascot_import_custom",
+		customMascotHandlers.mascot_import_custom,
+	);
+	ipcMain.handle(
+		"mascot_import_custom_dir",
+		customMascotHandlers.mascot_import_custom_dir,
+	);
+	ipcMain.handle(
+		"mascot_delete_custom",
+		customMascotHandlers.mascot_delete_custom,
+	);
+	ipcMain.handle(
+		"mascot_update_custom_meta",
+		customMascotHandlers.mascot_update_custom_meta,
+	);
+	ipcMain.handle(
+		"mascot_get_custom_asset_url",
+		customMascotHandlers.mascot_get_custom_asset_url,
+	);
+
 	// pet-trigger-reminder：番茄钟 / 外部驱动主动推送 reminder 的接入点（暂未实装触发器，
 	// 仅作为通道开放给未来的 cron / 通知服务）。
 	// - 渲染端可 invoke("pet-trigger-reminder", { kind, title, detail }) 主动测试
@@ -1102,6 +1127,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("reader_list_books", readerHandlers.reader_list_books);
 	ipcMain.handle("reader_get_book", readerHandlers.reader_get_book);
 	ipcMain.handle("reader_open_book", readerHandlers.reader_open_book);
+	ipcMain.handle(
+		"reader_open_from_source",
+		readerHandlers.reader_open_from_source,
+	);
 	ipcMain.handle("reader_delete_book", readerHandlers.reader_delete_book);
 	ipcMain.handle("reader_get_chapter", readerHandlers.reader_get_chapter);
 	ipcMain.handle("reader_save_progress", readerHandlers.reader_save_progress);

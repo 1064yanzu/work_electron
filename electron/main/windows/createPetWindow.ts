@@ -82,7 +82,7 @@ export function createPetWindow({
 		win.loadURL(`${rendererUrl}#/pet`);
 	} else {
 		win.loadFile(path.join(rendererDist, "index.html"), {
-			hash: "pet",
+			hash: "/pet",
 		});
 	}
 

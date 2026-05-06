@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import type { DbContext } from "../db/client";
@@ -34,6 +35,7 @@ export async function importBookFromPath(
 		filePath: string;
 		project_id?: string | null;
 		folder_id?: string | null;
+		skipFullTextIndex?: boolean;
 	},
 ): Promise<ImportBookResult | null> {
 	const absPath = requireAbsoluteLocalPath(params.filePath);
@@ -90,15 +92,17 @@ export async function importBookFromPath(
 		],
 	});
 
-	await indexBookFullText(db, {
-		bookId: id,
-		title: parsed.title,
-		fullText: parsed.full_text,
-		storagePath: storage_path,
-		projectId: params.project_id ?? null,
-		folderId: params.folder_id ?? null,
-		tagsExtra: [`format:${format}`],
-	});
+	if (!params.skipFullTextIndex) {
+		await indexBookFullText(db, {
+			bookId: id,
+			title: parsed.title,
+			fullText: parsed.full_text,
+			storagePath: storage_path,
+			projectId: params.project_id ?? null,
+			folderId: params.folder_id ?? null,
+			tagsExtra: [`format:${format}`],
+		});
+	}
 
 	const created = await getBookById(db, id);
 	if (!created) throw new Error("BOOK_INSERT_FAILED");
@@ -167,6 +171,12 @@ export async function openBook(
 	});
 	const book = await getBookById(db, id);
 	if (!book) throw new Error("BOOK_NOT_FOUND");
+
+	if (!existsSync(book.storage_path)) {
+		throw new Error(
+			`FILE_MISSING:${book.storage_path}`,
+		);
+	}
 
 	const progRes = await db.client.execute({
 		sql: `SELECT * FROM reader_progress WHERE book_id = ? LIMIT 1`,

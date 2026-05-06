@@ -16,6 +16,11 @@ import {
 	bootPetWindow,
 	destroyPetWindow,
 } from "./services/petWindowService";
+import {
+	registerMascotProtocolPrivileges,
+	registerMascotProtocolHandler,
+} from "./services/customMascotProtocol";
+import { reconcileCustomMascotIndex } from "./services/customMascotService";
 
 export async function bootstrapApp({
 	createWindow,
@@ -31,6 +36,9 @@ export async function bootstrapApp({
 	const logger = createLogger();
 	const bootStartedAt = performance.now();
 
+	// mascot:// protocol 特权必须在 app.whenReady() 之前注册
+	registerMascotProtocolPrivileges();
+
 	app.on("window-all-closed", () => {
 		if (process.platform !== "darwin") {
 			app.quit();
@@ -45,6 +53,34 @@ export async function bootstrapApp({
 
 	await app.whenReady();
 	const corePhaseStartedAt = performance.now();
+
+	// macOS：兜底确保 Dock 图标可见
+	// Why：开发模式下 vite-plugin-electron HMR 重启 Electron 时，
+	// 子进程从 node 父进程 fork 出来，偶发出现"主进程在跑、窗口已显示，
+	// 但 Dock 图标不出现"的现象。setActivationPolicy('regular') + dock.show()
+	// 是 Electron 官方推荐的兜底；正常情况下是 no-op，异常情况下会把 Dock 拉回来。
+	if (process.platform === "darwin") {
+		try {
+			app.setActivationPolicy?.("regular");
+			void app.dock?.show?.().catch(() => {});
+		} catch (err) {
+			logger.warn({
+				msg: "Failed to ensure dock icon visible",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		}
+	}
+
+	// 注册 mascot:// protocol handler（whenReady 之后才生效）
+	registerMascotProtocolHandler();
+
+	// 修复自定义桌宠索引（移除指向不存在目录的条目；补齐磁盘上有但索引漏的）
+	void reconcileCustomMascotIndex().catch((err) => {
+		logger.warn({
+			msg: "Custom mascot index reconcile failed",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	});
 
 	const db = await initDatabase({ logger });
 	logger.info({ msg: "Database initialized successfully" });

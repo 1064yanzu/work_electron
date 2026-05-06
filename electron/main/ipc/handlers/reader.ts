@@ -1,6 +1,7 @@
 import type { IpcMainInvokeEvent } from "electron";
+import { existsSync } from "node:fs";
 
-import type { IPCSchema } from "../../../shared/ipc-schema";
+import type { IPCSchema, ReaderBook } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import {
 	createBookmark,
@@ -26,6 +27,8 @@ import {
 	updateHighlight,
 	updateReaderSettings,
 } from "../../reader";
+import { rowToBook } from "../../reader/dbRow";
+import { detectFormatByExt } from "../../reader/formats/detect";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -74,6 +77,97 @@ export function createReaderHandlers(db: DbContext) {
 		reader_open_book: (async (_event, input) => {
 			return openBook(db, input.id);
 		}) satisfies Handler<"reader_open_book">,
+
+		reader_open_from_source: (async (_event, input) => {
+			const sourceId = String(input.source_id || "").trim();
+			if (!sourceId) return { book: null };
+
+			// 1. 直接命中：reader_books.source_id = source.id
+			const linked = await db.client.execute({
+				sql: "SELECT * FROM reader_books WHERE source_id = ? LIMIT 1",
+				args: [sourceId],
+			});
+			if (linked.rows.length > 0) {
+				const book = rowToBook(linked.rows[0]) as ReaderBook;
+				if (existsSync(book.storage_path)) {
+					return { book };
+				}
+				// 文件丢失，尝试从 source_path 重新导入
+				const sourcePath = linked.rows[0].source_path ? String(linked.rows[0].source_path) : "";
+				if (sourcePath && existsSync(sourcePath) && detectFormatByExt(sourcePath)) {
+					try {
+						await db.client.execute({ sql: "DELETE FROM reader_books WHERE id = ?", args: [book.id] });
+						const reimported = await importBookFromPath(db, {
+							filePath: sourcePath,
+							project_id: null,
+							folder_id: null,
+							skipFullTextIndex: true,
+						});
+						if (reimported) {
+							await db.client.execute({
+								sql: "UPDATE reader_books SET source_id = ? WHERE id = ?",
+								args: [sourceId, reimported.id],
+							});
+							return { book: reimported };
+						}
+					} catch (e) {
+						console.warn("[reader_open_from_source] re-import from source_path failed:", e);
+					}
+				}
+				// 无法恢复，继续走兜底路径
+			}
+
+			// 2. 兜底：旧数据没建 reader_book —— 通过 sources.storage_path 或 note.content_html 中的 file:// 反推
+			const srcRows = await db.client.execute({
+				sql: "SELECT id, storage_path FROM sources WHERE id = ? LIMIT 1",
+				args: [sourceId],
+			});
+			if (srcRows.rows.length === 0) return { book: null };
+
+			let originalPath = srcRows.rows[0].storage_path ? String(srcRows.rows[0].storage_path) : "";
+
+			if (!originalPath || !existsSync(originalPath)) {
+				originalPath = "";
+				const noteRows = await db.client.execute({
+					sql: "SELECT content_html FROM notes WHERE source_id = ? ORDER BY updated_at DESC LIMIT 1",
+					args: [sourceId],
+				});
+				const html = String(noteRows.rows[0]?.content_html || "");
+				const m = html.match(/data-src="(file:\/\/[^"]+)"/);
+				if (m) {
+					try {
+						const { fileURLToPath } = await import("node:url");
+						originalPath = fileURLToPath(m[1]);
+					} catch {}
+				}
+			}
+
+			if (!originalPath || !detectFormatByExt(originalPath)) {
+				return { book: null };
+			}
+
+			try {
+				const book = await importBookFromPath(db, {
+					filePath: originalPath,
+					project_id: null,
+					folder_id: null,
+					skipFullTextIndex: true,
+				});
+				if (!book) return { book: null };
+				await db.client.execute({
+					sql: "UPDATE reader_books SET source_id = ? WHERE id = ?",
+					args: [sourceId, book.id],
+				});
+				return { book };
+			} catch (e) {
+				console.warn(
+					"[reader_open_from_source] hydrate failed:",
+					originalPath,
+					e instanceof Error ? e.message : String(e),
+				);
+				return { book: null };
+			}
+		}) satisfies Handler<"reader_open_from_source">,
 
 		reader_delete_book: (async (_event, input) => {
 			return deleteBook(db, input.id);

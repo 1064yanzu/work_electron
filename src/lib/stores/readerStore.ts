@@ -28,6 +28,8 @@ export type ReaderState = {
 	error: string | null;
 	/** UI：左/右侧栏哪个面板展开 */
 	leftPanel: Exclude<ReaderUiPanel, "copilot">;
+	/** 左侧面板是否展开 */
+	leftPanelOpen: boolean;
 	rightPanelOpen: boolean;
 	/** 沉浸模式（隐藏 chrome） */
 	immersive: boolean;
@@ -50,6 +52,7 @@ const initialState: ReaderState = {
 	loadingChapter: false,
 	error: null,
 	leftPanel: "toc",
+	leftPanelOpen: true,
 	rightPanelOpen: false,
 	immersive: false,
 	settings: null,
@@ -114,7 +117,13 @@ export const readerStoreApi = {
 		_store.setState((s) => ({ ...s, error, loadingBook: false }));
 	},
 	setLeftPanel(panel: ReaderState["leftPanel"]) {
-		_store.setState((s) => ({ ...s, leftPanel: panel }));
+		_store.setState((s) => ({ ...s, leftPanel: panel, leftPanelOpen: true }));
+	},
+	toggleLeftPanel(open?: boolean) {
+		_store.setState((s) => ({
+			...s,
+			leftPanelOpen: typeof open === "boolean" ? open : !s.leftPanelOpen,
+		}));
 	},
 	toggleRightPanel(open?: boolean) {
 		_store.setState((s) => ({

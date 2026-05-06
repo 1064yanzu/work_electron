@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Download, ExternalLink, Sparkles } from "lucide-react";
 import {
 	useMascot,
-	MASCOT_IDS,
-	MASCOT_META,
+	type CustomMascotMeta,
 	type MascotId,
+	type MascotSelection,
 } from "../../../lib/mascotStore";
 import {
 	getMascotAsset,
@@ -16,6 +16,7 @@ import {
 import { invoke } from "../../../lib/tauriCompat";
 import { MascotPicker } from "../../Mascot/MascotPicker";
 import { MascotSprite } from "../../Mascot/MascotSprite";
+import { CustomMascotEditor } from "../../Mascot/CustomMascotEditor";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsPageContainer,
@@ -52,10 +53,17 @@ const MOTION_PREVIEWS: { motion: MascotMotion; label: string; hint: string }[] =
 		{ motion: "sleepy", label: "Sleepy 困倦", hint: "长时间无操作" },
 	];
 
+const FALLBACK_ACCENT = "#D96C46";
+
 export function MascotSettings() {
-	const { id, setId } = useMascot();
+	const { id, setId, getMergedMeta, getAllMascotIds } = useMascot();
 	const previewId: MascotId = id === "off" ? "efficiency" : id;
-	const meta = MASCOT_META[previewId];
+	const meta = getMergedMeta(previewId);
+	const accentColor = meta?.accentColor ?? FALLBACK_ACCENT;
+
+	const [editingMascot, setEditingMascot] = useState<CustomMascotMeta | null>(
+		null,
+	);
 
 	// 桌面宠物窗口设置
 	const [petEnabled, setPetEnabled] = useState(true);
@@ -126,20 +134,53 @@ export function MascotSettings() {
 		void invoke("pet_window_set_through_clicks", { enabled: next });
 	}, []);
 
+	const handleEditCustom = useCallback((mascot: CustomMascotMeta) => {
+		setEditingMascot(mascot);
+	}, []);
+
 	return (
 		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Sparkles}
 				title="桌面宠物"
-				description="为 IPO Workbench 选一位陪伴你的桌面宠物——墨鱼君。可在三个人格之间切换,或关闭回到极简图标。"
+				description="为 IPO Workbench 选一位陪伴你的桌面宠物——墨鱼君。可在内置形象和你上传的自定义桌宠之间切换。"
 			/>
 
 			<SettingsSectionCard className="px-7 py-7">
 				<SettingsSectionTitle>选择桌面宠物</SettingsSectionTitle>
-				<MascotPicker value={id} onChange={(next) => setId(next, "main")} />
-				<p className="mt-4 text-[12px] text-text-muted leading-relaxed">
-					切换后立即生效,影响欢迎页、空状态、思考态、完成提示等位置。资产已离线打包内置,无需联网。
-				</p>
+				<MascotPicker
+					value={id}
+					onChange={(next) => setId(next as MascotSelection, "main")}
+					onEditCustom={handleEditCustom}
+				/>
+				<div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl bg-warm-50 px-4 py-3">
+					<Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+					<div className="flex-1 min-w-0 text-[12px] text-text-secondary leading-relaxed">
+						<span className="font-medium">支持三种来源：</span>
+						自家 zip 包（pet.json + 17 个 PNG）、{" "}
+						<code className={codeClass}>~/.codex/pets/&lt;id&gt;/</code>{" "}
+						目录、或{" "}
+						<code className={codeClass}>hatch-pet/runs/&lt;id&gt;/</code>{" "}
+						目录。缺失的 hero / 主色会自动从 spritesheet 派生。
+					</div>
+					<a
+						href="https://github.com/anthropics/claude-code/blob/main/docs/custom-mascot-pack.md"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1 rounded-lg bg-surface border border-border px-3 py-1.5 text-[11.5px] font-medium text-text-secondary hover:border-primary/40 hover:text-primary transition"
+					>
+						<ExternalLink className="h-3 w-3" />
+						查看打包规范
+					</a>
+					<button
+						type="button"
+						onClick={() => void downloadTemplate()}
+						className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[11.5px] font-semibold text-primary-foreground hover:opacity-90 transition"
+					>
+						<Download className="h-3 w-3" />
+						下载 pet.json 模版
+					</button>
+				</div>
 			</SettingsSectionCard>
 
 			{id !== "off" && petSettingsLoaded && (
@@ -174,7 +215,7 @@ export function MascotSettings() {
 									<SizePresetChips
 										value={sizePreset}
 										onChange={handleSizePresetChange}
-										accentColor={meta.accentColor}
+										accentColor={accentColor}
 									/>
 								}
 							/>
@@ -185,7 +226,7 @@ export function MascotSettings() {
 									<DwellPresetChips
 										value={dwellPreset}
 										onChange={handleDwellPresetChange}
-										accentColor={meta.accentColor}
+										accentColor={accentColor}
 									/>
 								}
 							/>
@@ -208,7 +249,7 @@ export function MascotSettings() {
 				</SettingsSectionCard>
 			)}
 
-			{id !== "off" && (
+			{id !== "off" && meta && (
 				<SettingsSectionCard className="px-7 py-7">
 					<SettingsSectionTitle>当前形象 · {meta.label}</SettingsSectionTitle>
 
@@ -219,8 +260,8 @@ export function MascotSettings() {
 							<span
 								className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
 								style={{
-									backgroundColor: `${meta.accentColor}1A`,
-									color: meta.accentColor,
+									backgroundColor: `${accentColor}1A`,
+									color: accentColor,
 								}}
 							>
 								{meta.tagline}
@@ -233,27 +274,36 @@ export function MascotSettings() {
 							表情与状态
 						</div>
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-							{PREVIEW_SLOTS.map(({ slot, label }) => (
-								<div
-									key={slot}
-									className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface px-2 py-3 transition hover:border-primary/30 hover:shadow-bai-card"
-								>
+							{PREVIEW_SLOTS.map(({ slot, label }) => {
+								const src = getMascotAsset(previewId, slot);
+								return (
 									<div
-										className="flex h-16 w-16 items-center justify-center rounded-full"
-										style={{ backgroundColor: `${meta.accentColor}10` }}
+										key={slot}
+										className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface px-2 py-3 transition hover:border-primary/30 hover:shadow-bai-card"
 									>
-										<img
-											src={getMascotAsset(previewId, slot)}
-											alt={label}
-											draggable={false}
-											className="h-full w-full object-contain p-0.5"
-										/>
+										<div
+											className="flex h-16 w-16 items-center justify-center rounded-full"
+											style={{ backgroundColor: `${accentColor}10` }}
+										>
+											{src ? (
+												<img
+													src={src}
+													alt={label}
+													draggable={false}
+													className="h-full w-full object-contain p-0.5"
+												/>
+											) : (
+												<span className="text-[10px] text-text-light">
+													缺位
+												</span>
+											)}
+										</div>
+										<span className="text-[11px] text-text-secondary">
+											{label}
+										</span>
 									</div>
-									<span className="text-[11px] text-text-secondary">
-										{label}
-									</span>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					</div>
 
@@ -265,12 +315,12 @@ export function MascotSettings() {
 							<div
 								className="flex items-center gap-4 rounded-xl border border-border/70 bg-surface px-4 py-4"
 								style={{
-									borderColor: `${meta.accentColor}33`,
+									borderColor: `${accentColor}33`,
 								}}
 							>
 								<div
 									className="flex h-20 w-20 items-center justify-center rounded-full overflow-hidden shrink-0"
-									style={{ backgroundColor: `${meta.accentColor}10` }}
+									style={{ backgroundColor: `${accentColor}10` }}
 								>
 									<video
 										// 用 src 做 key，IP 切换时强制重建播放器
@@ -317,7 +367,7 @@ export function MascotSettings() {
 										<div
 											className="flex items-center justify-center rounded-2xl overflow-hidden"
 											style={{
-												backgroundColor: `${meta.accentColor}10`,
+												backgroundColor: `${accentColor}10`,
 												width: "88px",
 												height: `${(88 * 208) / 192}px`,
 											}}
@@ -349,8 +399,10 @@ export function MascotSettings() {
 				<SettingsSectionCard className="px-7 py-6">
 					<SettingsSectionTitle>对比所有形象</SettingsSectionTitle>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-						{MASCOT_IDS.map((mid) => {
-							const m = MASCOT_META[mid];
+						{getAllMascotIds().map((mid) => {
+							const m = getMergedMeta(mid);
+							if (!m) return null;
+							const src = getMascotAsset(mid, "hero");
 							return (
 								<div
 									key={mid}
@@ -360,27 +412,74 @@ export function MascotSettings() {
 										className="flex h-20 w-20 items-center justify-center rounded-full"
 										style={{ backgroundColor: `${m.accentColor}14` }}
 									>
-										<img
-											src={getMascotAsset(mid, "hero")}
-											alt={m.label}
-											draggable={false}
-											className="h-full w-full object-contain p-0.5"
-										/>
+										{src ? (
+											<img
+												src={src}
+												alt={m.label}
+												draggable={false}
+												className="h-full w-full object-contain p-0.5"
+											/>
+										) : (
+											<span className="text-[12px] text-text-light">
+												{m.label.slice(0, 2)}
+											</span>
+										)}
 									</div>
-									<div className="text-[12.5px] font-semibold text-text-primary">
+									<div className="text-[12.5px] font-semibold text-text-primary line-clamp-1">
 										{m.label}
 									</div>
-									<div className="text-[11px] text-text-light text-center leading-snug">
+									<div className="text-[11px] text-text-light text-center leading-snug line-clamp-2">
 										{m.tagline}
 									</div>
+									{!m.isBuiltin && (
+										<span className="text-[10px] text-text-light bg-warm-100 px-1.5 py-0.5 rounded-full">
+											自定义
+										</span>
+									)}
 								</div>
 							);
 						})}
 					</div>
 				</SettingsSectionCard>
 			)}
+
+			<CustomMascotEditor
+				mascot={editingMascot}
+				onClose={() => setEditingMascot(null)}
+			/>
 		</SettingsPageContainer>
 	);
+}
+
+const codeClass = "px-1 py-0.5 rounded bg-warm-100 text-[10.5px] font-mono";
+
+/**
+ * 下载 pet.json 模版
+ *
+ * 用浏览器下载 API 直接拉本地静态文件，避免要求用户读 markdown 后再手敲。
+ */
+async function downloadTemplate(): Promise<void> {
+	const template = {
+		schemaVersion: 1,
+		id: "my-mascot",
+		label: "我的桌宠",
+		tagline: "一句话标语",
+		personality: "一段对它形象/性格的简短描述。",
+		accentColor: "#D96C46",
+		hasAtlas: false,
+		hasLoading: false,
+	};
+	const blob = new Blob([JSON.stringify(template, null, 2)], {
+		type: "application/json",
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = "pet.json";
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	URL.revokeObjectURL(url);
 }
 
 const SIZE_PRESETS: {

@@ -26,7 +26,9 @@ import {
 	useState,
 } from "react";
 import { getSourceDetail, updateNote, updateSource } from "../../lib/api";
+import { readerOpenFromSource } from "../../lib/api/reader";
 import { EVENTS, events } from "../../lib/events";
+import { openReader } from "../reader/ReaderApp";
 import { invoke } from "../../lib/tauriCompat";
 import {
 	type ResearchSource,
@@ -294,6 +296,24 @@ export const SourceDetailView = forwardRef<
 	const getScopeLabel = useCallback((source: Source) => {
 		return source.scope === "project" ? "项目内" : "全局";
 	}, []);
+
+	const handleOpenReader = useCallback(async () => {
+		if (!previewSource || !("kind" in previewSource)) return;
+		const source = previewSource as Source;
+		try {
+			const res = await readerOpenFromSource(source.id);
+			if (res.book) {
+				openReader(res.book.id);
+				return;
+			}
+		} catch (e) {
+			console.warn("[SourceDetail] open reader failed:", e);
+			toast.error(
+				`打开阅读器失败：${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+		toast.info("该资料未关联阅读器条目，如需全屏阅读请重新导入原始文件。");
+	}, [previewSource]);
 
 	const getScopeBadgeClassName = useCallback((source: Source) => {
 		return source.scope === "project"
@@ -579,6 +599,7 @@ export const SourceDetailView = forwardRef<
 														src={docInfo.src}
 														type={docInfo.type}
 														className="min-h-[60vh]"
+														onOpenReader={docInfo.type === "epub" ? handleOpenReader : undefined}
 													/>
 												);
 											}
@@ -661,11 +682,37 @@ export const SourceDetailView = forwardRef<
 			{!isEditing && (
 				<div className="shrink-0 px-4 py-3 border-t border-border bg-surface">
 					<div className="flex items-center gap-2">
-						{/* 在中间栏阅读按钮 */}
+						{/* 全屏阅读：reader 支持的格式（pdf/epub/mobi/azw3/txt/md/html/docx/cbz）走真正的阅读器 Overlay；其它退化为中间栏标签页 */}
 						{isSource && sourceDetail && (
 							<button
-								onClick={() => {
+								onClick={async () => {
 									const source = previewSource as Source;
+									console.log(
+										"[SourceDetail] 全屏阅读 clicked, source:",
+										source.id,
+										source.title,
+									);
+									let book: Awaited<
+										ReturnType<typeof readerOpenFromSource>
+									>["book"] = null;
+									try {
+										const res = await readerOpenFromSource(source.id);
+										book = res.book;
+										console.log("[SourceDetail] readerOpenFromSource ->", book);
+									} catch (e) {
+										console.warn("[SourceDetail] open reader failed:", e);
+										toast.error(
+											`打开阅读器失败：${e instanceof Error ? e.message : String(e)}`,
+										);
+									}
+									if (book) {
+										openReader(book.id);
+										return;
+									}
+									// 阅读器没法打开（不是阅读器格式或原文件不存在），给用户一个反馈再回退
+									toast.info(
+										"该资料未关联阅读器条目，已切换为内嵌预览。如需全屏阅读请重新导入原始文件。",
+									);
 									openSourceInMainView(
 										source.id,
 										source.title,

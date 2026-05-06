@@ -1,12 +1,19 @@
 /**
- * 墨鱼君 IP 资产清单
+ * 桌宠 IP 资产清单
  *
- * 静态收集 src/assets/mascots/ 下所有 PNG，按 id + slot 索引。
- * 设计意图：让组件层只通过 useMascot().getAsset(slot) 取资产，
- * 不需要知道当前选了哪个 IP。
+ * 双层 resolver 架构：
+ *   getMascotAsset(id, slot) → 内置静态表查（Vite import.meta.glob）
+ *                            → 未命中转给 customResolver（自定义桌宠走 mascot:// protocol）
+ *
+ * 内置 3 个（efficiency/cloud/leisure）继续走编译时静态收集；
+ * 自定义桌宠由渲染进程的 mascotStore 注入 customResolver，
+ * 最终通过 mascot://<id>/<slot>.<ext> 由主进程 protocol handler 提供文件。
  */
 
-export type MascotId = "efficiency" | "cloud" | "leisure";
+export type MascotId = string;
+
+export const BUILTIN_MASCOT_IDS = ["efficiency", "cloud", "leisure"] as const;
+export type BuiltinMascotId = (typeof BUILTIN_MASCOT_IDS)[number];
 
 export type MascotSlot =
 	| "hero"
@@ -32,17 +39,11 @@ export type MascotSlot =
  *
  * 与 PNG 静态 slot 解耦：动画是渐进增强项，缺位时组件层 fallback
  * 到对应的 PNG slot（例如 loading → emotion-thinking）。
- *
- * 当前 leisure（摸鱼生活）有 loading 视频；spritesheet 动画走 MascotMotion。
  */
 export type MascotAnimation = "loading";
 
 /**
  * Spritesheet 动画语义（项目侧 UI 用）
- *
- * 不直接对应 atlas 的 row（atlas 来自 codex hatch-pet，9 行；
- * 其中 running-* 在桌面应用场景用不上）。运行时通过
- * MOTION_TO_ROW 映射到 atlas 行。
  */
 export type MascotMotion =
 	| "idle"
@@ -56,8 +57,6 @@ export type MascotMotion =
 
 /**
  * Atlas 行规格 — 来自 codex hatch-pet 标准
- * `~/.codex/skills/hatch-pet/references/animation-rows.md`
- *
  * 8 列 × 9 行 × 192×208 像素（atlas: 1536×1872）
  */
 export interface SpriteRowSpec {
@@ -106,19 +105,6 @@ const HATCH_PET_ROWS = {
 	},
 } as const satisfies Record<string, SpriteRowSpec>;
 
-/**
- * UI 语义 → atlas 行 映射
- *
- * 设计意图（见 plan codex-ip-snappy-porcupine.md 第二节）：
- * - idle    → row 0 (idle)        ：与 hatch-pet 同义
- * - thinking→ row 8 (review)      ：review 是"专注查看"，最贴近 thinking
- * - greet   → row 3 (waving)      ：打招呼
- * - done    → row 4 (jumping)     ：庆祝/任务完成
- * - sad     → row 5 (failed)      ：失败/委屈
- * - sleepy  → row 6 (waiting)     ：缓慢呼吸/耐心等候，最近似困倦
- * - run-left  → row 2 (running-left) ：拖动向左偏
- * - run-right → row 1 (running-right)：拖动向右偏
- */
 const MOTION_TO_ROW: Record<MascotMotion, SpriteRowSpec> = {
 	idle: HATCH_PET_ROWS.idle,
 	thinking: HATCH_PET_ROWS.review,
@@ -146,17 +132,30 @@ export interface MascotMeta {
 	tagline: string;
 	personality: string;
 	accentColor: string;
+	/** 内置桌宠 = true；用户上传的 = false */
+	isBuiltin: boolean;
+	/** 自定义桌宠的 schemaVersion；内置不需要 */
+	version?: number;
 }
 
-export const MASCOT_IDS: MascotId[] = ["efficiency", "cloud", "leisure"];
+/** 内置 IP 列表（顺序即 UI 显示顺序） */
+export const BUILTIN_MASCOT_LIST: BuiltinMascotId[] = [
+	"efficiency",
+	"cloud",
+	"leisure",
+];
 
-export const MASCOT_META: Record<MascotId, MascotMeta> = {
+/** @deprecated 用 BUILTIN_MASCOT_LIST 替代；保留兼容旧调用方 */
+export const MASCOT_IDS: BuiltinMascotId[] = BUILTIN_MASCOT_LIST;
+
+export const BUILTIN_MASCOT_META: Record<BuiltinMascotId, MascotMeta> = {
 	efficiency: {
 		id: "efficiency",
 		label: "效率引擎",
 		tagline: "聪明高效，专注把事情做完",
 		personality: "近黑色 Q 版小章鱼，蓝色斑点，气质冷静聪明。",
 		accentColor: "#1B6FA8",
+		isBuiltin: true,
 	},
 	cloud: {
 		id: "cloud",
@@ -164,6 +163,7 @@ export const MASCOT_META: Record<MascotId, MascotMeta> = {
 		tagline: "轻盈温柔，云朵上的 AI 陪伴",
 		personality: "云朵底座、金星发饰、紫触手，气质轻盈温柔。",
 		accentColor: "#A78BFA",
+		isBuiltin: true,
 	},
 	leisure: {
 		id: "leisure",
@@ -171,8 +171,13 @@ export const MASCOT_META: Record<MascotId, MascotMeta> = {
 		tagline: "治愈松弛，陪你认真摸鱼",
 		personality: "深灰毛绒章鱼，头顶淡紫小鱼，松弛治愈。",
 		accentColor: "#8B7DAB",
+		isBuiltin: true,
 	},
 };
+
+/** @deprecated 用 BUILTIN_MASCOT_META 替代；保留兼容旧调用方 */
+export const MASCOT_META: Record<BuiltinMascotId, MascotMeta> =
+	BUILTIN_MASCOT_META;
 
 const ALL_SLOTS: MascotSlot[] = [
 	"hero",
@@ -211,8 +216,11 @@ const atlasModules = import.meta.glob<{ default: string }>(
 
 const ALL_ANIMATIONS: MascotAnimation[] = ["loading"];
 
-function buildAssetTable(): Record<MascotId, Record<MascotSlot, string>> {
-	const table: Record<MascotId, Partial<Record<MascotSlot, string>>> = {
+function buildAssetTable(): Record<
+	BuiltinMascotId,
+	Record<MascotSlot, string>
+> {
+	const table: Record<BuiltinMascotId, Partial<Record<MascotSlot, string>>> = {
 		efficiency: {},
 		cloud: {},
 		leisure: {},
@@ -222,16 +230,16 @@ function buildAssetTable(): Record<MascotId, Record<MascotSlot, string>> {
 		const match = filePath.match(/\/mascots\/([^/]+)\/([^/]+)\.png$/);
 		if (!match) continue;
 		const [, id, slot] = match;
-		if (!isMascotId(id) || !isMascotSlot(slot)) continue;
+		if (!isBuiltinMascotId(id) || !isMascotSlot(slot)) continue;
 		table[id][slot] = mod.default;
 	}
 
-	const finalized: Record<MascotId, Record<MascotSlot, string>> = {} as Record<
-		MascotId,
+	const finalized: Record<
+		BuiltinMascotId,
 		Record<MascotSlot, string>
-	>;
+	> = {} as Record<BuiltinMascotId, Record<MascotSlot, string>>;
 
-	for (const id of MASCOT_IDS) {
+	for (const id of BUILTIN_MASCOT_LIST) {
 		const slotMap = table[id];
 		const hero = slotMap.hero;
 		const filled: Record<MascotSlot, string> = {} as Record<MascotSlot, string>;
@@ -244,8 +252,8 @@ function buildAssetTable(): Record<MascotId, Record<MascotSlot, string>> {
 	return finalized;
 }
 
-function isMascotId(value: string): value is MascotId {
-	return value === "efficiency" || value === "cloud" || value === "leisure";
+export function isBuiltinMascotId(value: string): value is BuiltinMascotId {
+	return (BUILTIN_MASCOT_IDS as readonly string[]).includes(value);
 }
 
 function isMascotSlot(value: string): value is MascotSlot {
@@ -257,10 +265,13 @@ function isMascotAnimation(value: string): value is MascotAnimation {
 }
 
 function buildAnimationTable(): Record<
-	MascotId,
+	BuiltinMascotId,
 	Partial<Record<MascotAnimation, string>>
 > {
-	const table: Record<MascotId, Partial<Record<MascotAnimation, string>>> = {
+	const table: Record<
+		BuiltinMascotId,
+		Partial<Record<MascotAnimation, string>>
+	> = {
 		efficiency: {},
 		cloud: {},
 		leisure: {},
@@ -269,8 +280,24 @@ function buildAnimationTable(): Record<
 		const match = filePath.match(/\/mascots\/([^/]+)\/([^/]+)\.mp4$/);
 		if (!match) continue;
 		const [, id, animation] = match;
-		if (!isMascotId(id) || !isMascotAnimation(animation)) continue;
+		if (!isBuiltinMascotId(id) || !isMascotAnimation(animation)) continue;
 		table[id][animation] = mod.default;
+	}
+	return table;
+}
+
+function buildAtlasTable(): Record<BuiltinMascotId, string | null> {
+	const table: Record<BuiltinMascotId, string | null> = {
+		efficiency: null,
+		cloud: null,
+		leisure: null,
+	};
+	for (const [filePath, mod] of Object.entries(atlasModules)) {
+		const match = filePath.match(/\/mascots\/([^/]+)\/atlas\.webp$/);
+		if (!match) continue;
+		const [, id] = match;
+		if (!isBuiltinMascotId(id)) continue;
+		table[id] = mod.default;
 	}
 	return table;
 }
@@ -279,8 +306,52 @@ export const MASCOT_ASSETS = buildAssetTable();
 export const MASCOT_ANIMATIONS = buildAnimationTable();
 export const MASCOT_ATLASES = buildAtlasTable();
 
+// ── 自定义桌宠 resolver 注入点 ──
+//
+// 渲染进程的 mascotStore 在初始化时调用 setCustomResolver 注入实现，
+// 这里 lib 不反向依赖 store，只通过函数引用拿值。
+//
+// resolver 的语义：传入 (id, slot) 返回该自定义桌宠的资源 URL；缺位返回 null。
+
+/** 自定义桌宠的 atlas 网格信息（来自主进程 codex 兼容层） */
+export interface CustomAtlasInfo {
+	columns: number;
+	rows: number;
+	cellWidth: number;
+	cellHeight: number;
+	width: number;
+	height: number;
+	rowMap?: Array<{ state: string; row: number; frames: number }>;
+}
+
+export interface CustomMascotResolver {
+	asset: (id: string, slot: MascotSlot) => string | null;
+	atlas: (id: string) => string | null;
+	/** 自定义桌宠的 codex 风格 spritesheet（webp/png）URL；缺位返回 null */
+	spritesheet: (id: string) => string | null;
+	/** 自定义桌宠的 atlas 网格信息；缺位返回 null */
+	atlasInfo: (id: string) => CustomAtlasInfo | null;
+	animation: (id: string, animation: MascotAnimation) => string | null;
+	meta: (id: string) => MascotMeta | null;
+}
+
+let customResolver: CustomMascotResolver | null = null;
+
+export function setCustomResolver(resolver: CustomMascotResolver | null): void {
+	customResolver = resolver;
+}
+
 export function getMascotAsset(id: MascotId, slot: MascotSlot): string {
-	return MASCOT_ASSETS[id]?.[slot] ?? MASCOT_ASSETS[id]?.hero ?? "";
+	if (isBuiltinMascotId(id)) {
+		return MASCOT_ASSETS[id]?.[slot] ?? MASCOT_ASSETS[id]?.hero ?? "";
+	}
+	if (customResolver) {
+		const url = customResolver.asset(id, slot);
+		if (url) return url;
+		const hero = customResolver.asset(id, "hero");
+		if (hero) return hero;
+	}
+	return "";
 }
 
 /**
@@ -290,14 +361,42 @@ export function getMascotAnimation(
 	id: MascotId,
 	animation: MascotAnimation,
 ): string | null {
-	return MASCOT_ANIMATIONS[id]?.[animation] ?? null;
+	if (isBuiltinMascotId(id)) {
+		return MASCOT_ANIMATIONS[id]?.[animation] ?? null;
+	}
+	return customResolver?.animation(id, animation) ?? null;
 }
 
 /**
  * 取指定 IP 的 spritesheet atlas URL；缺位返回 null
+ *
+ * - 内置：使用打包时的 atlas.webp
+ * - 自定义：先尝试自家 atlas，再退到 codex 风格 spritesheet
  */
 export function getMascotAtlas(id: MascotId): string | null {
-	return MASCOT_ATLASES[id] ?? null;
+	if (isBuiltinMascotId(id)) {
+		return MASCOT_ATLASES[id] ?? null;
+	}
+	if (!customResolver) return null;
+	return customResolver.atlas(id) ?? customResolver.spritesheet(id) ?? null;
+}
+
+/**
+ * 取自定义桌宠的 atlas 网格信息（cells / rows / rowMap）；
+ * 内置桌宠使用 SPRITE_ATLAS 标准（hatch-pet 8x9 / 192x208）
+ */
+export function getMascotAtlasInfo(id: MascotId): CustomAtlasInfo | null {
+	if (isBuiltinMascotId(id)) {
+		return {
+			columns: SPRITE_ATLAS.cols,
+			rows: SPRITE_ATLAS.rows,
+			cellWidth: SPRITE_ATLAS.cellWidth,
+			cellHeight: SPRITE_ATLAS.cellHeight,
+			width: SPRITE_ATLAS.atlasWidth,
+			height: SPRITE_ATLAS.atlasHeight,
+		};
+	}
+	return customResolver?.atlasInfo(id) ?? null;
 }
 
 /**
@@ -307,18 +406,12 @@ export function getMotionSpec(motion: MascotMotion): SpriteRowSpec {
 	return MOTION_TO_ROW[motion];
 }
 
-function buildAtlasTable(): Record<MascotId, string | null> {
-	const table: Record<MascotId, string | null> = {
-		efficiency: null,
-		cloud: null,
-		leisure: null,
-	};
-	for (const [filePath, mod] of Object.entries(atlasModules)) {
-		const match = filePath.match(/\/mascots\/([^/]+)\/atlas\.webp$/);
-		if (!match) continue;
-		const [, id] = match;
-		if (!isMascotId(id)) continue;
-		table[id] = mod.default;
+/**
+ * 合并查询 meta：内置或自定义皆可命中。未命中返回 null。
+ */
+export function getMascotMeta(id: MascotId): MascotMeta | null {
+	if (isBuiltinMascotId(id)) {
+		return BUILTIN_MASCOT_META[id];
 	}
-	return table;
+	return customResolver?.meta(id) ?? null;
 }

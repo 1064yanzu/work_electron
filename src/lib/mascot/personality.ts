@@ -11,6 +11,7 @@
  */
 
 import type { MascotSelection } from "../mascotStore";
+import { isBuiltinMascotId, type BuiltinMascotId } from "./manifest";
 
 export interface PersonalityPool {
 	/** < 30s 思考态 */
@@ -113,7 +114,7 @@ const LEISURE: PersonalityPool = {
 	contextSwitchSkin: ["切到摸鱼模式", "嗨呀，又见面了"],
 };
 
-const POOLS: Record<Exclude<MascotSelection, "off">, PersonalityPool> = {
+const POOLS: Record<BuiltinMascotId, PersonalityPool> = {
 	efficiency: EFFICIENCY,
 	cloud: CLOUD,
 	leisure: LEISURE,
@@ -122,16 +123,22 @@ const POOLS: Record<Exclude<MascotSelection, "off">, PersonalityPool> = {
 // (id, key) → cursor，环形游标避免短期重复
 const CURSORS = new Map<string, number>();
 
+/** 把任意 selection 收敛到话术池支持的 builtin id（兜底 efficiency） */
+function resolvePoolKey(id: MascotSelection): BuiltinMascotId {
+	if (id !== "off" && isBuiltinMascotId(id)) return id;
+	return "efficiency";
+}
+
 /**
  * 从指定 IP 的指定话术池里取一句。
  * - 同一 (id, key) 对会按顺序循环，避免连发同一句
- * - id === "off" 时回退到 efficiency
+ * - id === "off" 或 自定义桌宠时回退到 efficiency
  */
 export function selectLine(
 	id: MascotSelection,
 	key: keyof PersonalityPool,
 ): string {
-	const safeId = id === "off" ? "efficiency" : id;
+	const safeId = resolvePoolKey(id);
 	const pool = POOLS[safeId][key];
 	if (!pool || pool.length === 0) return "";
 	const cursorKey = `${safeId}:${key}`;
@@ -146,7 +153,7 @@ export function getPool(
 	id: MascotSelection,
 	key: keyof PersonalityPool,
 ): readonly string[] {
-	const safeId = id === "off" ? "efficiency" : id;
+	const safeId = resolvePoolKey(id);
 	return POOLS[safeId][key];
 }
 

@@ -2,7 +2,7 @@
  * SandboxPreviewSettings - 沙盒预览设置面板
  * 配置沙盒预览服务器、编辑器、终端等行为
  */
-import { Monitor, Code2, Terminal, Server, Package } from "lucide-react";
+import { Monitor } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
@@ -12,7 +12,6 @@ import {
 	SettingsSectionCard,
 	SettingsSectionTitle,
 	SettingsSwitch,
-	SettingsSelect,
 } from "../ui/SettingsPrimitives";
 import {
 	getCenterUxPrefs,
@@ -46,11 +45,17 @@ export function SandboxPreviewSettings() {
 
 	// 加载偏好设置
 	useEffect(() => {
-		const centerPrefs = getCenterUxPrefs();
-		setPrefs({
-			...DEFAULT_PREFS,
-			defaultView: centerPrefs.defaultView || "preview",
+		let cancelled = false;
+		void getCenterUxPrefs().then((centerPrefs) => {
+			if (cancelled) return;
+			setPrefs({
+				...DEFAULT_PREFS,
+				defaultView: centerPrefs.defaultView || "preview",
+			});
 		});
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	// 保存偏好设置
@@ -80,18 +85,17 @@ export function SandboxPreviewSettings() {
 				<SettingsRow
 					label="中间栏默认视图"
 					description="启动托管模式时中间栏的默认显示内容"
-				>
-					<SettingsSelect
-						value={prefs.defaultView}
-						onChange={(value) =>
-							savePrefs({ defaultView: value as CenterDefaultView })
-						}
-						options={[
-							{ value: "graph", label: "运行图" },
-							{ value: "preview", label: "产物预览" },
-						]}
-					/>
-				</SettingsRow>
+					action={
+						<CompactSelect<CenterDefaultView>
+							value={prefs.defaultView}
+							onChange={(value) => savePrefs({ defaultView: value })}
+							options={[
+								{ value: "graph", label: "运行图" },
+								{ value: "preview", label: "产物预览" },
+							]}
+						/>
+					}
+				/>
 			</SettingsSectionCard>
 
 			<SettingsSectionCard>
@@ -99,80 +103,78 @@ export function SandboxPreviewSettings() {
 				<SettingsRow
 					label="自动启动开发服务器"
 					description="检测到 package.json 或多文件项目时自动启动 dev server"
-				>
-					<SettingsSwitch
-						checked={prefs.autoStartDevServer}
-						onChange={(checked) => savePrefs({ autoStartDevServer: checked })}
-					/>
-				</SettingsRow>
+					action={
+						<SettingsSwitch
+							checked={prefs.autoStartDevServer}
+							onChange={(checked) => savePrefs({ autoStartDevServer: checked })}
+						/>
+					}
+				/>
 				<SettingsRow
 					label="包管理器"
 					description="自动检测时优先使用的包管理器（按 lockfile 判断）"
-				>
-					<SettingsSelect
-						value={prefs.packageManager}
-						onChange={(value) =>
-							savePrefs({
-								packageManager: value as SandboxPreviewPrefs["packageManager"],
-							})
-						}
-						options={[
-							{ value: "auto", label: "自动检测" },
-							{ value: "npm", label: "npm" },
-							{ value: "yarn", label: "yarn" },
-							{ value: "pnpm", label: "pnpm" },
-						]}
-					/>
-				</SettingsRow>
+					action={
+						<CompactSelect<SandboxPreviewPrefs["packageManager"]>
+							value={prefs.packageManager}
+							onChange={(value) => savePrefs({ packageManager: value })}
+							options={[
+								{ value: "auto", label: "自动检测" },
+								{ value: "npm", label: "npm" },
+								{ value: "yarn", label: "yarn" },
+								{ value: "pnpm", label: "pnpm" },
+							]}
+						/>
+					}
+				/>
 				<SettingsRow
 					label="端口范围"
 					description="预览服务器使用的端口范围（默认 7300-7400）"
-				>
-					<div className="flex items-center gap-2">
-						<input
-							type="number"
-							value={prefs.portRangeStart}
-							onChange={(e) =>
-								savePrefs({ portRangeStart: Number(e.target.value) })
-							}
-							className="w-20 px-2 py-1.5 text-sm rounded-lg border border-border bg-surface"
-							min={1024}
-							max={65535}
-						/>
-						<span className="text-text-muted">-</span>
-						<input
-							type="number"
-							value={prefs.portRangeEnd}
-							onChange={(e) =>
-								savePrefs({ portRangeEnd: Number(e.target.value) })
-							}
-							className="w-20 px-2 py-1.5 text-sm rounded-lg border border-border bg-surface"
-							min={1024}
-							max={65535}
-						/>
-					</div>
-				</SettingsRow>
+					action={
+						<div className="flex items-center gap-2">
+							<input
+								type="number"
+								value={prefs.portRangeStart}
+								onChange={(e) =>
+									savePrefs({ portRangeStart: Number(e.target.value) })
+								}
+								className="w-20 px-2 py-1.5 text-sm rounded-lg border border-border bg-surface"
+								min={1024}
+								max={65535}
+							/>
+							<span className="text-text-muted">-</span>
+							<input
+								type="number"
+								value={prefs.portRangeEnd}
+								onChange={(e) =>
+									savePrefs({ portRangeEnd: Number(e.target.value) })
+								}
+								className="w-20 px-2 py-1.5 text-sm rounded-lg border border-border bg-surface"
+								min={1024}
+								max={65535}
+							/>
+						</div>
+					}
+				/>
 			</SettingsSectionCard>
 
 			<SettingsSectionCard>
 				<SettingsSectionTitle>响应式断点</SettingsSectionTitle>
-				<SettingsRow label="默认断点" description="预览视图的默认响应式断点">
-					<SettingsSelect
-						value={prefs.defaultBreakpoint}
-						onChange={(value) =>
-							savePrefs({
-								defaultBreakpoint:
-									value as SandboxPreviewPrefs["defaultBreakpoint"],
-							})
-						}
-						options={[
-							{ value: "auto", label: "自适应" },
-							{ value: "mobile", label: "手机 (375×667)" },
-							{ value: "tablet", label: "平板 (768×1024)" },
-							{ value: "desktop", label: "桌面 (100%)" },
-						]}
-					/>
-				</SettingsRow>
+				<SettingsRow
+					label="默认断点"
+					description="预览视图的默认响应式断点"
+					action={
+						<CompactSelect<SandboxPreviewPrefs["defaultBreakpoint"]>
+							value={prefs.defaultBreakpoint}
+							onChange={(value) => savePrefs({ defaultBreakpoint: value })}
+							options={[
+								{ value: "auto", label: "自适应" },
+								{ value: "mobile", label: "手机 (375×667)" },
+								{ value: "tablet", label: "平板 (768×1024)" },
+								{ value: "desktop", label: "桌面 (100%)" },
+							]}
+						/>
+					}
+				/>
 			</SettingsSectionCard>
 
 			{showTechnicalSummaries && (
@@ -181,19 +183,44 @@ export function SandboxPreviewSettings() {
 					<SettingsRow
 						label="自定义 dev 命令"
 						description="覆盖默认的 dev server 启动命令（支持 {packageManager} 占位符）"
-					>
-						<input
-							type="text"
-							value={prefs.devCommandTemplate}
-							onChange={(e) =>
-								savePrefs({ devCommandTemplate: e.target.value })
-							}
-							className="w-full px-3 py-1.5 text-sm rounded-lg border border-border bg-surface"
-							placeholder="npm run dev"
-						/>
-					</SettingsRow>
+						action={
+							<input
+								type="text"
+								value={prefs.devCommandTemplate}
+								onChange={(e) =>
+									savePrefs({ devCommandTemplate: e.target.value })
+								}
+								className="w-56 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface"
+								placeholder="npm run dev"
+							/>
+						}
+					/>
 				</SettingsSectionCard>
 			)}
 		</SettingsPageContainer>
+	);
+}
+
+function CompactSelect<T extends string>({
+	value,
+	onChange,
+	options,
+}: {
+	value: T;
+	onChange: (value: T) => void;
+	options: Array<{ value: T; label: string }>;
+}) {
+	return (
+		<select
+			value={value}
+			onChange={(event) => onChange(event.currentTarget.value as T)}
+			className="h-8 min-w-[128px] rounded-lg border border-border bg-surface px-2.5 text-sm text-text-primary outline-none transition-colors hover:bg-warm-50 focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+		>
+			{options.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
 	);
 }
