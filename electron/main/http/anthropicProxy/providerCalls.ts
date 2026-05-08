@@ -365,8 +365,12 @@ function humanizeUpstreamError(
 		};
 	}
 	if (status === 404) {
+		// Use api_error (→ HTTP 500) instead of not_found_error (→ HTTP 404).
+		// Claude Code CLI treats any 404 from the proxy as "selected model issue",
+		// which is misleading when the upstream provider itself returns 404.
+		// Returning 500 lets the CLI surface the actual error message to the user.
 		return {
-			type: "not_found_error",
+			type: "api_error",
 			message: `模型不存在或已下线（404）：请检查 Provider 配置中的模型 ID。原始信息：${upstreamMsg}`,
 		};
 	}

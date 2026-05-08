@@ -519,6 +519,11 @@ async function linkOrCopyDirectory(src: string, dest: string): Promise<void> {
 	});
 }
 
+// 从用户 ~/.claude/settings.json 中剥除会干扰 App 内 Agent 运行的字段：
+// - hooks: 外部 shell hooks 会导致 "Error in hook callback hook_1" 中断
+// - env: 可能含有 ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN，会覆盖 App 的供应商配置
+// - model: 会覆盖 App 通过 sdk.query options 传入的模型选择
+// - apiKeyHelper: 外部脚本获取 API key，与 App 自身的 key 管理冲突
 function stripExternalHooksFromSettings(
 	settingsObj: unknown,
 ): Record<string, unknown> {
@@ -527,6 +532,9 @@ function stripExternalHooksFromSettings(
 			? { ...(settingsObj as Record<string, unknown>) }
 			: {};
 	delete source.hooks;
+	delete source.env;
+	delete source.model;
+	delete source.apiKeyHelper;
 	return source;
 }
 
