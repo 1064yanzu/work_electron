@@ -11,7 +11,9 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 	const stats = useMemo(() => {
 		const additions = updates.reduce((sum, u) => sum + (u.additions || 0), 0);
 		const deletions = updates.reduce((sum, u) => sum + (u.deletions || 0), 0);
-		return { additions, deletions };
+		const running = updates.some((u) => u.status === "running");
+		const failed = updates.some((u) => u.status === "error");
+		return { additions, deletions, running, failed };
 	}, [updates]);
 
 	return (
@@ -23,7 +25,11 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 			>
 				<div className="min-w-0 flex items-center gap-2">
 					<span className="text-sm font-medium text-text-primary dark:text-zinc-200">
-						文件变更
+						{stats.failed
+							? "文件写入失败"
+							: stats.running
+								? "文件写入中"
+								: "文件变更"}
 					</span>
 					<span className="text-xs text-text-muted">{updates.length} 项</span>
 				</div>

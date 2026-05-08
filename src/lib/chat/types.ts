@@ -2,9 +2,12 @@
 
 export interface FileUpdate {
 	fileName: string;
+	filePath?: string;
 	type: "create" | "update";
 	additions: number;
 	deletions: number;
+	status?: "running" | "completed" | "error";
+	toolCallId?: string;
 }
 
 export type ChatMessageBlock =

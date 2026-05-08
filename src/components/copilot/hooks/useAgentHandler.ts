@@ -15,6 +15,7 @@ import {
 } from "../../../lib/chat/streamBlocksBuilder";
 import type { ChatMessageBlock } from "../../../lib/chat/types";
 import { createMessage } from "../../../lib/chat/types";
+import { buildFileUpdateFromToolInput } from "../../../lib/chat/fileUpdateFromTool";
 import { EVENTS, events } from "../../../lib/events";
 import { workspaceStore } from "../../../lib/workspaceStore";
 import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context/conversationMessages";
@@ -422,46 +423,94 @@ export function useAgentHandler({
 			return raw.startsWith("sdk-tool-") ? raw : `sdk-tool-${raw}`;
 		};
 
-		const handleSdkInlineMessage = (message: AgentMessage) => {
-			if (!chatSettings.inlineTraceEnabled) return;
+		const getCurrentWorkingDirectory = () =>
+			session.cwd || sessionStore.getCurrentSession()?.cwd || undefined;
 
+		const toolNameByInlineId = new Map<string, string>();
+		const toolInputByInlineId = new Map<string, Record<string, unknown>>();
+
+		const upsertInlineFileUpdate = (
+			message: AgentMessage,
+			status: "running" | "completed" | "error",
+		) => {
+			const toolCallId = normalizeSdkToolCallId(message.toolCallId);
+			if (!toolCallId) return false;
+			const mergedInput =
+				message.toolInput || toolInputByInlineId.get(toolCallId) || null;
+			const mergedToolName =
+				message.toolName || toolNameByInlineId.get(toolCallId);
+			const update = buildFileUpdateFromToolInput({
+				toolName: mergedToolName,
+				toolCallId,
+				toolInput: mergedInput,
+				status,
+				baseDir: getCurrentWorkingDirectory(),
+			});
+			if (!update) return false;
+			ensureStreamingMessage();
+			streamBuilder.upsertFileUpdate(update);
+			updateStreamingMessage();
+			return true;
+		};
+
+		const handleSdkInlineMessage = (message: AgentMessage) => {
 			if (message.type === "tool_call") {
 				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
 				if (!toolCallId) return;
-				ensureStreamingMessage();
-				streamBuilder.startToolCall({
-					type: "tool_call",
-					taskId: getCurrentInlineTaskId(),
-					toolCallId,
-					name: message.toolName,
-					status: "running",
-					input: message.toolInput,
-				});
-				updateStreamingMessage();
+				if (message.toolName)
+					toolNameByInlineId.set(toolCallId, message.toolName);
+				if (message.toolInput)
+					toolInputByInlineId.set(toolCallId, message.toolInput);
+				const didShowFileUpdate = upsertInlineFileUpdate(message, "running");
+				if (chatSettings.inlineTraceEnabled) {
+					ensureStreamingMessage();
+					streamBuilder.startToolCall({
+						type: "tool_call",
+						taskId: getCurrentInlineTaskId(),
+						toolCallId,
+						name: message.toolName,
+						status: "running",
+						input: message.toolInput,
+					});
+					updateStreamingMessage();
+				} else if (didShowFileUpdate) {
+					touchActivity();
+				}
 				return;
 			}
 
 			if (message.type === "tool_input_update") {
 				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
 				if (!toolCallId) return;
-				streamBuilder.updateToolCall(toolCallId, (block) => ({
-					...block,
-					input: message.toolInput || block.input,
-				}));
-				updateStreamingMessage();
+				if (message.toolInput)
+					toolInputByInlineId.set(toolCallId, message.toolInput);
+				if (chatSettings.inlineTraceEnabled) {
+					streamBuilder.updateToolCall(toolCallId, (block) => ({
+						...block,
+						input: message.toolInput || block.input,
+					}));
+				}
+				upsertInlineFileUpdate(message, "running");
+				if (chatSettings.inlineTraceEnabled) updateStreamingMessage();
 				return;
 			}
 
 			if (message.type === "tool_result") {
 				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
 				if (!toolCallId) return;
-				streamBuilder.updateToolCall(toolCallId, (block) => ({
-					...block,
-					status: message.status === "error" ? "error" : "completed",
-					output: message.toolOutput,
-					error: message.status === "error" ? message.content : block.error,
-				}));
-				updateStreamingMessage();
+				const status = message.status === "error" ? "error" : "completed";
+				if (chatSettings.inlineTraceEnabled) {
+					streamBuilder.updateToolCall(toolCallId, (block) => ({
+						...block,
+						status,
+						output: message.toolOutput,
+						error: message.status === "error" ? message.content : block.error,
+					}));
+				}
+				const didShowFileUpdate = upsertInlineFileUpdate(message, status);
+				if (chatSettings.inlineTraceEnabled || didShowFileUpdate) {
+					updateStreamingMessage();
+				}
 			}
 		};
 

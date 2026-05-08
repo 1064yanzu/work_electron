@@ -10,10 +10,7 @@ import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
 import { isWikiDirExists } from "../../kb/wiki/wikiFs";
 
 import { interactionBroker } from "./agentSdk/interactionBroker";
-import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
-import { createPushIterableUntyped } from "./agentSdk/pushIterable";
-import { createSubagentLifecycleHooks } from "./agentSdk/subagentHooks";
 import { normalizeSdkSessionId } from "./agentSdk/sessionId";
 import {
 	resolveUserPathFromShell,
@@ -34,30 +31,23 @@ import {
 	type AgentSdkInteractionRequestPayload,
 	type GetMainWindow,
 	emit,
-	DATA_IMAGE_URL_LIMIT,
-	collectDataImageUrlsFromUnknown,
-	persistDataImageUrlToCwd,
 	buildUiToolResultOutput,
 	toUIEvents,
 } from "./agentSdk/eventTransformer";
 import {
 	guessDefaultReadableFilePath,
-	resolveToolFilePath,
 	resolveToolFilePathEx,
-	rewriteBashCommandForMissingFile,
 	rewritePathsDeep,
 } from "./agentSdk/fileResolver";
 import {
 	buildMissingRequiredToolParamsMessage,
 	getMissingRequiredToolParams,
 	hasRequiredToolParamValue,
-	normalizeToolNameKey,
 	shouldPreserveEmptyStringParam,
 } from "./agentSdk/toolValidation";
 import type { AgentModelSettingsLike } from "./agentSdk/scenarioAgents";
 import {
 	buildMultiAgentRuntime,
-	buildRuntimeMetadata,
 	normalizeMultiAgentMode,
 	normalizeTeammateMode,
 } from "./agentSdk/multiAgentRuntime";
@@ -65,7 +55,6 @@ import {
 	createAgentModelSettingsLoader,
 	mergeUpdatedToolInput,
 } from "./agentSdk/modelSettingsLoader";
-import { resolveWebSearchFallback } from "./agentSdk/webSearchFallback";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -125,7 +114,7 @@ export function createAgentSdkHandlers(options: {
 	): Promise<AgentSdkStartOutput> => {
 		const runId = randomUUID();
 		const abortController = new AbortController();
-		runRegistry.set(runId, { abortController, alive: true });
+		runRegistry.set(runId, { abortController, alive: false });
 
 		(async () => {
 			// 收集 assistant 回复文本用于记忆提取（声明在 try 外层以便 finally 可访问）
@@ -170,22 +159,6 @@ export function createAgentSdkHandlers(options: {
 						} catch {}
 					}
 				};
-				const emitLifecycleEvent = (event: Record<string, unknown>) => {
-					try {
-						emit(options.getMainWindow, {
-							runId,
-							type: "transformed",
-							events: [event],
-						});
-					} catch (error) {
-						logger.warn({
-							msg: "agent_sdk lifecycle event emit failed",
-							scope: "agent",
-							runId,
-							error: formatUnknownError(error),
-						});
-					}
-				};
 				const toolNameById = new Map<string, string>();
 				const toolUseIdByIndex = new Map<number, string>();
 				const toolInputJsonById = new Map<string, string>();
@@ -193,46 +166,7 @@ export function createAgentSdkHandlers(options: {
 					string,
 					Record<string, unknown>
 				>();
-				const taskCallSignatureByToolUseId = new Map<string, string>();
-				const taskCallStateBySignature = new Map<
-					string,
-					"running" | "completed"
-				>();
-				// 软策略：记录每个 signature 的最近调用时间戳列表，
-				// 仅在 60 秒窗口内 ≥3 次完全相同的调用才阻断（防止真死循环）。
-				// 正常的"用相似 prompt 多发几个 Task 探不同方向"是被鼓励的并行探索，不该 deny。
-				const taskCallTimestampsBySignature = new Map<string, number[]>();
-				const TASK_REPEAT_WINDOW_MS = 60_000;
-				const TASK_REPEAT_HARD_LIMIT = 3;
 				const taskImagePathsByToolUseId = new Map<string, string[]>();
-				const normalizeTaskSignaturePart = (v: unknown) =>
-					String(v || "")
-						.normalize("NFC")
-						.trim()
-						.toLowerCase()
-						.replace(/\s+/g, " ")
-						.slice(0, 1200);
-				const buildTaskCallSignature = (
-					toolInput: Record<string, unknown>,
-				): string => {
-					const subagent =
-						typeof toolInput.subagent_type === "string"
-							? toolInput.subagent_type
-							: typeof toolInput.subagentType === "string"
-								? toolInput.subagentType
-								: "";
-					const description =
-						typeof toolInput.description === "string"
-							? toolInput.description
-							: "";
-					const prompt =
-						typeof toolInput.prompt === "string" ? toolInput.prompt : "";
-					return [
-						normalizeTaskSignaturePart(subagent),
-						normalizeTaskSignaturePart(description),
-						normalizeTaskSignaturePart(prompt),
-					].join("||");
-				};
 				const logToolUseError = (payload: any) => {
 					try {
 						const blocks = Array.isArray(payload?.message?.content)
@@ -465,7 +399,6 @@ export function createAgentSdkHandlers(options: {
 					leaderSummaryModel,
 					teammateExecutionModel,
 				});
-				const runtimeMetadata = buildRuntimeMetadata(multiAgentRuntime);
 				const mcpServers =
 					(input as any).mcp_servers &&
 					typeof (input as any).mcp_servers === "object"
@@ -508,22 +441,6 @@ export function createAgentSdkHandlers(options: {
 					(input as any).sandbox && typeof (input as any).sandbox === "object"
 						? ((input as any).sandbox as Record<string, unknown>)
 						: undefined;
-				const subagentLifecycleHooks = createSubagentLifecycleHooks({
-					logger,
-					runId,
-					stderr,
-					emitLifecycleEvent,
-					runtimeMetadata,
-				});
-
-				const lifecycleHooks = createLifecycleHooks({
-					logger,
-					runId,
-					stderr,
-					emitLifecycleEvent,
-					runtimeMetadata,
-					experimentalMultiAgentEnabled: multiAgentRuntime.experimentalEnabled,
-				});
 				const allowedToolsForRun = uniqStrings(
 					multiAgentRuntime.experimentalEnabled &&
 						multiAgentRuntime.multiAgentMode !== "subagent_only"
@@ -582,21 +499,12 @@ export function createAgentSdkHandlers(options: {
 						: "";
 				const systemPromptAppend = userSystemPrompt || undefined;
 
-				// Stream-input 模式：创建 push-based AsyncIterable 作为 prompt 源。
-				// 这让单个 cli.js 进程持续存活，后续用户消息通过 pushController.push() 注入，
-				// 实现跨轮 prompt cache 命中（cache TTL 5 分钟内进程仍活着）。
-				const pushCtrl = createPushIterableUntyped();
-				pushCtrl.push({
-					type: "user",
-					message: {
-						role: "user",
-						content: String(input.prompt ?? ""),
-					},
-					parent_tool_use_id: null,
-				});
-
 				const q = sdk.query({
-					prompt: pushCtrl.iterable as any,
+					// 先使用 SDK 最稳定的首轮字符串 prompt。0.2.132 的
+					// AsyncIterable prompt 在 Electron 子进程里会把部分首轮运行
+					// 直接归类为 "Claude Code process aborted by user"，导致前端收不到
+					// 任何 agent 消息；多轮上下文继续依赖 resume_session_id。
+					prompt: String(input.prompt ?? ""),
 					options: {
 						abortController,
 						cwd,
@@ -621,6 +529,14 @@ export function createAgentSdkHandlers(options: {
 							: multiAgentRuntime.experimentalEnabled
 								? allowedToolsForRun
 								: undefined,
+						/*
+						 * SDK JS hooks are intentionally disabled in the App runtime.
+						 *
+						 * Claude Code currently aborts the whole run when its hook bridge
+						 * reports "Error in hook callback hook_1: Stream closed". That makes
+						 * non-essential lifecycle/PostToolUse helpers block normal messaging.
+						 * Keep the critical permission/path logic in canUseTool below instead.
+						 *
 						hooks: {
 							...lifecycleHooks,
 							...subagentLifecycleHooks,
@@ -1039,6 +955,7 @@ export function createAgentSdkHandlers(options: {
 								},
 							],
 						},
+						 */
 						permissionMode: permissionModeForRun as any,
 						additionalDirectories: (() => {
 							const dirs = [...additionalDirectories];
@@ -1375,7 +1292,6 @@ export function createAgentSdkHandlers(options: {
 					} as any, // SDK Options 的 betas / hooks 字面量约束较紧，保留 cast
 				});
 				runRegistry.updateQuery(runId, q as any);
-				runRegistry.markAlive(runId, pushCtrl);
 
 				let sawResult = false;
 				// Accumulate token usage from SDK stream events
@@ -1569,18 +1485,10 @@ export function createAgentSdkHandlers(options: {
 										}
 									: (msg as any)?.usage,
 						};
-						// 标记本轮完成。如果 pushController 仍然活跃（alive run），
-						// 告诉前端这不是最终结束——进程继续等待后续消息。
-						const currentRun = runRegistry.get(runId);
-						const runAlive =
-							!!currentRun?.alive &&
-							!!currentRun?.pushController &&
-							!currentRun.pushController.closed &&
-							!currentRun.abortController.signal.aborted;
 						emit(options.getMainWindow, {
 							runId,
 							type: "done",
-							result: { ...resultWithUsage, run_alive: runAlive },
+							result: { ...resultWithUsage, run_alive: false },
 						});
 					}
 				}
@@ -1704,8 +1612,7 @@ export function createAgentSdkHandlers(options: {
 					// 静默失败
 				}
 				interactionBroker.clearRun(runId);
-				// 进程已退出（for-await 循环结束），终止 alive 状态
-				runRegistry.terminateAlive(runId);
+				runRegistry.markCompleted(runId);
 			}
 		})();
 

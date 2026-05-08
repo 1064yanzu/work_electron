@@ -31,6 +31,7 @@ export class StreamBlocksBuilder {
 	private blocks: ChatMessageBlock[] = [{ type: "text", text: "" }];
 	private currentTextBlockIndex = 0;
 	private toolCallBlockIndex = new Map<string, number>();
+	private fileUpdateBlockIndex = new Map<string, number>();
 	private currentThoughtBlockIndex: number | null = null;
 	private currentThoughtStartedAt: number | null = null;
 
@@ -89,13 +90,56 @@ export class StreamBlocksBuilder {
 		this.blocks[idx] = updater(current);
 	}
 
+	upsertFileUpdate(
+		update: Extract<ChatMessageBlock, { type: "file_update" }>["update"],
+	): void {
+		this.finishCurrentThoughtTiming();
+		const key =
+			update.toolCallId ||
+			`${update.filePath || update.fileName}:${update.type}`;
+		const existingIdx = this.fileUpdateBlockIndex.get(key);
+		if (typeof existingIdx === "number") {
+			const current = this.blocks[existingIdx];
+			if (current?.type === "file_update") {
+				this.blocks[existingIdx] = {
+					type: "file_update",
+					update: {
+						...current.update,
+						...update,
+					},
+				};
+				return;
+			}
+		}
+
+		const last = this.blocks[this.blocks.length - 1];
+		if (!last || last.type !== "text") {
+			this.blocks.push({ type: "text", text: "" });
+		}
+		this.blocks.push({ type: "file_update", update });
+		this.fileUpdateBlockIndex.set(key, this.blocks.length - 1);
+		this.blocks.push({ type: "text", text: "" });
+		this.currentTextBlockIndex = this.blocks.length - 1;
+	}
+
 	setBlocks(next: ChatMessageBlock[]): void {
 		this.blocks = cloneBlocks(next);
+		this.toolCallBlockIndex.clear();
+		this.fileUpdateBlockIndex.clear();
 		this.currentTextBlockIndex = -1;
-		for (let i = this.blocks.length - 1; i >= 0; i--) {
-			if (this.blocks[i]?.type === "text") {
+		for (let i = 0; i < this.blocks.length; i++) {
+			const block = this.blocks[i];
+			if (block?.type === "tool_call") {
+				this.toolCallBlockIndex.set(block.toolCallId, i);
+			}
+			if (block?.type === "file_update") {
+				const key =
+					block.update.toolCallId ||
+					`${block.update.filePath || block.update.fileName}:${block.update.type}`;
+				this.fileUpdateBlockIndex.set(key, i);
+			}
+			if (block?.type === "text") {
 				this.currentTextBlockIndex = i;
-				break;
 			}
 		}
 		if (this.currentTextBlockIndex < 0) {

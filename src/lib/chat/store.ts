@@ -28,9 +28,12 @@ interface DeletedSessionSnapshot {
 function sameFileUpdate(a: FileUpdate, b: FileUpdate): boolean {
 	return (
 		a.fileName === b.fileName &&
+		a.filePath === b.filePath &&
 		a.type === b.type &&
 		a.additions === b.additions &&
-		a.deletions === b.deletions
+		a.deletions === b.deletions &&
+		a.status === b.status &&
+		a.toolCallId === b.toolCallId
 	);
 }
 
@@ -48,8 +51,11 @@ function mergeFileUpdatesIntoBlocks(
 		const existingIdx = next.findIndex(
 			(b) =>
 				b.type === "file_update" &&
-				b.update.fileName === update.fileName &&
-				b.update.type === update.type,
+				((update.toolCallId &&
+					b.update.toolCallId &&
+					b.update.toolCallId === update.toolCallId) ||
+					(b.update.fileName === update.fileName &&
+						b.update.type === update.type)),
 		);
 		if (existingIdx >= 0) {
 			const existing = next[existingIdx];

@@ -45,7 +45,16 @@ type CompactBlock =
 			o?: any;
 			e?: string;
 	  } // tool_call: id, taskId, name, toolType, status, input, output, error
-	| { t: "fu"; f: string; tp: "c" | "u"; a: number; d: number } // file_update
+	| {
+			t: "fu";
+			f: string;
+			p?: string;
+			tp: "c" | "u";
+			a: number;
+			d: number;
+			s?: "r" | "c" | "e";
+			tcid?: string;
+	  } // file_update
 	| {
 			t: "sk";
 			n: string; // skillName
@@ -60,7 +69,15 @@ type CompactBlock =
 interface CompactMetadata {
 	aid?: string; // agentMessageId
 	tcIds?: string[]; // toolCallIds for lazy loading
-	fus?: Array<{ f: string; t: "c" | "u"; a: number; d: number }>; // fileUpdates
+	fus?: Array<{
+		f: string;
+		p?: string;
+		t: "c" | "u";
+		a: number;
+		d: number;
+		s?: "r" | "c" | "e";
+		tcid?: string;
+	}>; // fileUpdates
 	bs?: CompactBlock[]; // blocks
 	tr?: { t: "a" | "tc"; tid: string; tcid?: string }; // trace
 	tid?: string; // taskId
@@ -190,6 +207,18 @@ const STATUS_MAP: Record<
 	cancelled: "x",
 };
 
+const FILE_UPDATE_STATUS_MAP = {
+	running: "r",
+	completed: "c",
+	error: "e",
+} as const;
+
+const FILE_UPDATE_STATUS_REVERSE_MAP = {
+	r: "running",
+	c: "completed",
+	e: "error",
+} as const;
+
 /**
  * 精简消息块
  */
@@ -231,9 +260,14 @@ function compactBlock(block: ChatMessageBlock): CompactBlock {
 			return {
 				t: "fu",
 				f: block.update.fileName,
+				p: block.update.filePath,
 				tp: block.update.type === "create" ? "c" : "u",
 				a: block.update.additions,
 				d: block.update.deletions,
+				s: block.update.status
+					? FILE_UPDATE_STATUS_MAP[block.update.status]
+					: undefined,
+				tcid: block.update.toolCallId,
 			};
 		case "skill_execution":
 			return {
@@ -297,9 +331,14 @@ function expandBlock(compact: CompactBlock): ChatMessageBlock {
 				type: "file_update",
 				update: {
 					fileName: compact.f,
+					filePath: compact.p,
 					type: compact.tp === "c" ? "create" : "update",
 					additions: compact.a,
 					deletions: compact.d,
+					status: compact.s
+						? FILE_UPDATE_STATUS_REVERSE_MAP[compact.s]
+						: undefined,
+					toolCallId: compact.tcid,
 				},
 			};
 		case "sk":
@@ -336,9 +375,12 @@ function compactMessage(msg: ChatMessage): CompactMessage {
 		if (msg.metadata.fileUpdates && msg.metadata.fileUpdates.length > 0) {
 			md.fus = msg.metadata.fileUpdates.map((fu) => ({
 				f: fu.fileName,
+				p: fu.filePath,
 				t: fu.type === "create" ? ("c" as const) : ("u" as const),
 				a: fu.additions,
 				d: fu.deletions,
+				s: fu.status ? FILE_UPDATE_STATUS_MAP[fu.status] : undefined,
+				tcid: fu.toolCallId,
 			}));
 		}
 
@@ -462,9 +504,12 @@ function expandMessage(compact: CompactMessage): ChatMessage {
 		if (compact.md.fus && compact.md.fus.length > 0) {
 			metadata.fileUpdates = compact.md.fus.map((fu) => ({
 				fileName: fu.f,
+				filePath: fu.p,
 				type: fu.t === "c" ? ("create" as const) : ("update" as const),
 				additions: fu.a,
 				deletions: fu.d,
+				status: fu.s ? FILE_UPDATE_STATUS_REVERSE_MAP[fu.s] : undefined,
+				toolCallId: fu.tcid,
 			}));
 		}
 
