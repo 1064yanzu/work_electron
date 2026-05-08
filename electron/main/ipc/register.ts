@@ -5,6 +5,7 @@
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { app, ipcMain, screen, shell } from "electron";
 import type { IPCSchema } from "../../shared/ipc-schema";
+import { pickPetLineFromPool } from "../../shared/petPersonality";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
 import { searchChunks } from "../kb/searchChunks";
@@ -77,6 +78,7 @@ import {
 } from "../services/petWindowService";
 import { createPreviewServerHandlers } from "./handlers/previewServer";
 import { createReaderHandlers } from "./handlers/reader";
+import { createTtsHandlers } from "./handlers/tts";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -212,6 +214,12 @@ export function registerIpcHandlers({
 
 	// Reader handlers (阅读器：电子书 / 进度 / 高亮 / 书签 / 会话 / 设置)
 	const readerHandlers = createReaderHandlers(db);
+
+	// TTS handlers (文本转语音：多 provider / 音色克隆 / 流式合成)
+	const ttsHandlers = createTtsHandlers({
+		db,
+		getMainWindow: () => mainWindowRef,
+	});
 
 	// ==================
 	// 系统命令
@@ -717,6 +725,14 @@ export function registerIpcHandlers({
 		agentSdkHandlers.agent_sdk_resolve_interaction,
 	);
 	ipcMain.handle("agent_sdk_control", agentSdkHandlers.agent_sdk_control);
+	ipcMain.handle(
+		"agent_sdk_send_followup",
+		agentSdkHandlers.agent_sdk_send_followup,
+	);
+	ipcMain.handle(
+		"agent_sdk_check_alive",
+		agentSdkHandlers.agent_sdk_check_alive,
+	);
 
 	// ==================
 	// Agent Checkpoints (断点续传)
@@ -1099,6 +1115,29 @@ export function registerIpcHandlers({
 		}
 	});
 
+	// pet_speak：让桌宠"说一句话"——主动朗读 + 弹气泡。
+	// 桌宠窗口监听 "pet-speak" 事件，由 PetApp 显示气泡 + 调 speakTts({ scope: "pet" }).
+	// 启用桌宠窗口时若窗口尚未拉起，先 ensurePetWindow（避免外部 trigger 时桌宠静默被忽略）。
+	ipcMain.handle("pet_speak", (async (_e, payload) => {
+		const win = getPetWindow();
+		if (!win || win.isDestroyed()) return { success: false };
+		try {
+			win.webContents.send("pet-speak", payload ?? {});
+			return { success: true };
+		} catch {
+			return { success: false };
+		}
+	}) satisfies IpcHandler<"pet_speak">);
+
+	// pet_generate_line：桌宠台词生成；本期只走话术池兜底，留待后续接 LLM
+	ipcMain.handle("pet_generate_line", (async (_e, payload) => {
+		const text = pickPetLineFromPool(
+			payload?.event ?? "done",
+			payload?.mascotId,
+		);
+		return { text, source: "pool" as const };
+	}) satisfies IpcHandler<"pet_generate_line">);
+
 	// ==================
 	// 预览服务器（沙盒前端预览）
 	// ==================
@@ -1173,6 +1212,21 @@ export function registerIpcHandlers({
 		"reader_update_settings",
 		readerHandlers.reader_update_settings,
 	);
+
+	// ==================
+	// TTS（多 provider 文本转语音）
+	// ==================
+	ipcMain.handle("tts_settings_get", ttsHandlers.tts_settings_get);
+	ipcMain.handle("tts_settings_update", ttsHandlers.tts_settings_update);
+	ipcMain.handle("tts_list_voices", ttsHandlers.tts_list_voices);
+	ipcMain.handle("tts_voice_preview", ttsHandlers.tts_voice_preview);
+	ipcMain.handle("tts_clone_voice", ttsHandlers.tts_clone_voice);
+	ipcMain.handle("tts_delete_voice", ttsHandlers.tts_delete_voice);
+	ipcMain.handle("tts_capabilities", ttsHandlers.tts_capabilities);
+	ipcMain.handle("tts_synthesize", ttsHandlers.tts_synthesize);
+	ipcMain.handle("tts_synthesize_stream", ttsHandlers.tts_synthesize_stream);
+	ipcMain.handle("tts_cancel", ttsHandlers.tts_cancel);
+	ipcMain.handle("tts_test", ttsHandlers.tts_test);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

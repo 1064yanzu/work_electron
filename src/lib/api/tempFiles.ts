@@ -17,9 +17,3 @@ export async function saveTempFile(
 ): Promise<TempFileResult> {
 	return safeInvoke<TempFileResult>("save_temp_file", { payload });
 }
-
-export async function getAgentSandboxDir(
-	taskId: string,
-): Promise<{ path: string }> {
-	return safeInvoke<{ path: string }>("agent_get_sandbox_dir", { taskId });
-}

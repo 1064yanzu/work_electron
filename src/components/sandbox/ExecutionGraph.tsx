@@ -159,6 +159,8 @@ function ExecutionGraphInner({
 		artifactClickBehavior,
 	});
 	const [follow, setFollow] = useState(defaultFollow);
+	const followRef = useRef(follow);
+	followRef.current = follow;
 
 	const {
 		searchMatchedNodeIds,
@@ -177,11 +179,12 @@ function ExecutionGraphInner({
 
 	const updateFollow = useCallback(
 		(next: boolean | ((value: boolean) => boolean)) => {
-			setFollow((prev) => {
-				const resolved = typeof next === "function" ? next(prev) : next;
-				onFollowChange?.(resolved);
-				return resolved;
-			});
+			const resolved =
+				typeof next === "function" ? next(followRef.current) : next;
+			if (followRef.current === resolved) return;
+			followRef.current = resolved;
+			setFollow(resolved);
+			onFollowChange?.(resolved);
 		},
 		[onFollowChange],
 	);
@@ -214,6 +217,7 @@ function ExecutionGraphInner({
 	}, [source?.id, setSelectedNodeId]);
 
 	useEffect(() => {
+		followRef.current = defaultFollow;
 		setFollow(defaultFollow);
 	}, [defaultFollow]);
 

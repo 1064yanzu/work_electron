@@ -17,6 +17,8 @@ import { invoke } from "../lib/tauriCompat";
 import { listen, type UnlistenFn } from "../lib/tauriEventCompat";
 import { selectLine } from "../lib/mascot/personality";
 import { mascotManager } from "../lib/mascotStore";
+import { loadTtsSettings, speakTts } from "../lib/tts";
+import type { TTSScenePetFilter } from "../lib/tts";
 
 interface AgentSdkEventPayload {
 	runId?: string;
@@ -696,6 +698,184 @@ export function usePetEventBridge(): PetEventBridge {
 				clearTimeout(progressDebounceRef.current);
 		};
 	}, [resetIdleTimer, getPersonalityId]);
+
+	// 桌宠 TTS 副作用：当通知 / 提醒变化时按设置朗读
+	const lastSpokenIdRef = useRef<string | null>(null);
+	useEffect(() => {
+		void loadTtsSettings();
+	}, []);
+	useEffect(() => {
+		const item = state.notification;
+		if (!item) return;
+		if (lastSpokenIdRef.current === item.id) return;
+		// 桌宠 TTS：read settings from store via loadTtsSettings (cached)
+		void (async () => {
+			const s = await loadTtsSettings();
+			if (!s || !s.scene_pet_enabled) return;
+			// 类型映射 + 过滤
+			const filterType: TTSScenePetFilter | null =
+				item.type === "done"
+					? "done"
+					: item.type === "error"
+						? "error"
+						: item.type === "approval"
+							? "approval"
+							: null;
+			if (!filterType || !s.scene_pet_filter.includes(filterType)) return;
+			// 勿扰
+			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
+			lastSpokenIdRef.current = item.id;
+			const text =
+				s.scene_pet_verbosity === "title"
+					? item.message.split(/\n|。/)[0] || item.message
+					: item.message;
+			void speakTts(text, { scope: "pet" });
+		})();
+	}, [state.notification]);
+
+	useEffect(() => {
+		const reminder = state.reminder;
+		if (!reminder) return;
+		if (lastSpokenIdRef.current === reminder.id) return;
+		void (async () => {
+			const s = await loadTtsSettings();
+			if (!s || !s.scene_pet_enabled) return;
+			if (!s.scene_pet_filter.includes("reminder")) return;
+			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
+			lastSpokenIdRef.current = reminder.id;
+			const text =
+				s.scene_pet_verbosity === "title"
+					? reminder.title
+					: [reminder.title, reminder.detail].filter(Boolean).join("，");
+			void speakTts(text, { scope: "pet" });
+		})();
+	}, [state.reminder]);
+
+	// 任务启动瞬间：按 task_start filter 朗读一句 thinkingShort 话术（受 dnd 控制）
+	const lastSpokenTaskRef = useRef<string | null>(null);
+	useEffect(() => {
+		const task = state.currentTask;
+		if (!task) return;
+		if (lastSpokenTaskRef.current === task.runId) return;
+		void (async () => {
+			const s = await loadTtsSettings();
+			if (!s || !s.scene_pet_enabled) return;
+			if (!s.scene_pet_filter.includes("task_start")) return;
+			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
+			lastSpokenTaskRef.current = task.runId;
+			const line = selectLine(getPersonalityId(), "thinkingShort");
+			if (!line) return;
+			void speakTts(line, { scope: "pet" });
+		})();
+	}, [state.currentTask, getPersonalityId]);
+
+	// 长时 thinking：60s 后朗读 thinkingMedium，5min 后再朗读 thinkingLong
+	// 每个任务最多触发一次 medium / 一次 long，避免反复打扰
+	const longThinkingFiredRef = useRef<{
+		runId: string;
+		medium: boolean;
+		long: boolean;
+	} | null>(null);
+	useEffect(() => {
+		const task = state.currentTask;
+		if (!task) {
+			longThinkingFiredRef.current = null;
+			return;
+		}
+		if (
+			!longThinkingFiredRef.current ||
+			longThinkingFiredRef.current.runId !== task.runId
+		) {
+			longThinkingFiredRef.current = {
+				runId: task.runId,
+				medium: false,
+				long: false,
+			};
+		}
+
+		const fireMedium = setTimeout(async () => {
+			if (state.currentTask?.runId !== task.runId) return;
+			const flag = longThinkingFiredRef.current;
+			if (!flag || flag.medium) return;
+			const s = await loadTtsSettings();
+			if (!s || !s.scene_pet_enabled) return;
+			if (!s.scene_pet_filter.includes("thinking")) return;
+			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
+			flag.medium = true;
+			const line = selectLine(getPersonalityId(), "thinkingMedium");
+			if (line) void speakTts(line, { scope: "pet" });
+		}, 60 * 1000);
+		const fireLong = setTimeout(
+			async () => {
+				if (state.currentTask?.runId !== task.runId) return;
+				const flag = longThinkingFiredRef.current;
+				if (!flag || flag.long) return;
+				const s = await loadTtsSettings();
+				if (!s || !s.scene_pet_enabled) return;
+				if (!s.scene_pet_filter.includes("thinking")) return;
+				if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
+				flag.long = true;
+				const line = selectLine(getPersonalityId(), "thinkingLong");
+				if (line) void speakTts(line, { scope: "pet" });
+			},
+			5 * 60 * 1000,
+		);
+		return () => {
+			clearTimeout(fireMedium);
+			clearTimeout(fireLong);
+		};
+	}, [state.currentTask, getPersonalityId]);
+
+	// pet-speak：外部主动让桌宠"说一句话"——主进程 IPC 转发到这里。
+	// 走 notification 队列让气泡正常出现，同时朗读受 force 控制（默认走 scene_pet 设置）。
+	useEffect(() => {
+		let unlisten: UnlistenFn | null = null;
+		void (async () => {
+			try {
+				unlisten = await listen<{
+					text: string;
+					motion?: string;
+					bubble?: "notification" | "reminder";
+					prefix?: string;
+					notificationType?: "done" | "error" | "approval";
+					reminderKind?: PetReminderKind;
+					force?: boolean;
+				}>("pet-speak", (event) => {
+					const p = event.payload;
+					if (!p?.text) return;
+					if (p.bubble === "reminder") {
+						dispatch({
+							type: "SHOW_REMINDER",
+							reminder: {
+								id: `speak-${Date.now()}`,
+								kind: p.reminderKind ?? "schedule",
+								title: p.text,
+							},
+						});
+					} else {
+						// 默认走 notification，类型默认 done
+						dispatch({
+							type: "AGENT_DONE",
+							runId: `speak-${Date.now()}`,
+							message: p.text,
+							personalityId: getPersonalityId(),
+						});
+					}
+					// 朗读：force=true 时绕过 scene 启用开关；reminder/notification 的副作用 effect
+					// 也会朗读，但那受 filter 控制；这里强制朗读避免 filter 误屏蔽外部主动调用。
+					void speakTts(p.text, {
+						scope: "pet",
+						force: p.force !== false,
+					});
+				});
+			} catch {
+				// noop
+			}
+		})();
+		return () => {
+			unlisten?.();
+		};
+	}, [getPersonalityId]);
 
 	const markRead = useCallback(() => dispatch({ type: "MARK_READ" }), []);
 	const dismissNotification = useCallback(

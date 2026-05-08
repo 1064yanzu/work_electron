@@ -17,19 +17,22 @@ import {
 	readerUpdateSettings,
 } from "../../lib/api/reader";
 import type {
+	ReaderBookmark,
 	ReaderClientSettings,
 	ReaderHighlight,
 	ReaderHighlightColor,
 	ReaderTocItem,
 } from "../../lib/api/reader";
 import { readerStoreApi, useReaderStore } from "../../lib/stores/readerStore";
+import { useTTS } from "../../lib/tts";
+import { TTSPlaybackBar } from "../tts/TTSPlaybackBar";
 import { toast } from "../ui/Toast";
 
 import EngineSelector from "./engines/EngineSelector";
 import type { ReaderEngineSelection } from "./engines/types";
 import { useReaderCopilot } from "./hooks/useReaderCopilot";
 import { useReaderShortcuts } from "./hooks/useReaderShortcuts";
-import { useReaderTTS } from "./hooks/useReaderTTS";
+import { useReaderSpeech } from "./hooks/useReaderSpeech";
 import { ReaderCopilot } from "./ReaderCopilot";
 import { ReaderPageNav } from "./ReaderPageNav";
 import { ReaderProgressBar } from "./ReaderProgressBar";
@@ -37,7 +40,6 @@ import { ReaderSearchPanel } from "./ReaderSearchPanel";
 import { ReaderSelectionMenu } from "./ReaderSelectionMenu";
 import { ReaderTOC } from "./ReaderTOC";
 import { ReaderTopBar } from "./ReaderTopBar";
-import { ReaderTTSBar } from "./ReaderTTSBar";
 import {
 	getReaderFontStack,
 	getReaderTheme,
@@ -92,8 +94,28 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		percent: number;
 		nonce: number;
 	} | null>(null);
+	const [seekRequest, setSeekRequest] = useState<
+		| { kind: "percent"; percent: number; nonce: number }
+		| { kind: "offset"; offset: number; nonce: number }
+		| { kind: "pdfPage"; page: number; nonce: number }
+		| null
+	>(null);
+	// 待 seek：解析 locator 后若发现需要切章（且当前章节还没就绪），先把请求挂在这里，
+	// 等 chapter.id 变成期望值再下发；避免「切章 → 章节渲染 → 旧 seekRequest 已经触发了空跳」的竞态
+	const pendingSeekRef = useRef<{
+		chapterId: string;
+		seek:
+			| { kind: "offset"; offset: number; nonce: number }
+			| { kind: "pdfPage"; page: number; nonce: number };
+	} | null>(null);
 
-	const tts = useReaderTTS(settings?.tts_rate ?? 1.0);
+	const tts = useTTS({ scope: "reader" });
+	// 阅读器分段朗读：从用户当前可见段落开始，按段切分送 TTS，避免一次性合成整章
+	const readerSpeech = useReaderSpeech({
+		chapterKey: chapter?.id ?? null,
+		isPaged: (settings?.column_count ?? 1) === 2,
+		hasContent: Boolean(chapter?.text || chapter?.html),
+	});
 	const copilot = useReaderCopilot({
 		book,
 		chapter,
@@ -367,7 +389,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			if (pageWidth <= 0) return false;
 			const currentLeft = engine.scrollLeft;
 			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
-			
+
 			if (direction === "next") {
 				if (currentLeft >= maxLeft - 2) return false;
 				const targetPage = Math.floor((currentLeft + 5) / pageWidth) + 1;
@@ -402,7 +424,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		const target = flatTocList[currentTocIndex - 1];
 		setActiveChapterId(target.href || target.id);
 	}, [flipPagedEngine, chapter?.prev_id, flatTocList, currentTocIndex]);
-	
+
 	const onNextChapter = useCallback(() => {
 		// paged 模式：先章内翻页，失败才切章
 		if (flipPagedEngine("next")) return;
@@ -429,19 +451,16 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		[],
 	);
 
-	// 10. 朗读
+	// 10. 朗读 — 走分段队列：从用户当前可见段落开始，逐段合成播放
 	const onToggleTts = useCallback(() => {
-		if (tts.status === "playing" || tts.status === "paused") {
-			tts.playPause();
+		if (readerSpeech.status === "playing") {
+			readerSpeech.pause();
+		} else if (readerSpeech.status === "paused") {
+			readerSpeech.resume();
 		} else if (chapter?.text || chapter?.html) {
-			const text =
-				chapter.text ||
-				new DOMParser().parseFromString(chapter.html || "", "text/html").body
-					.textContent ||
-				"";
-			tts.queueText(text);
+			readerSpeech.start();
 		}
-	}, [tts, chapter?.text, chapter?.html]);
+	}, [readerSpeech, chapter?.text, chapter?.html]);
 
 	// 11. 主题循环（Y 键）
 	const cycleTheme = useCallback(() => {
@@ -508,17 +527,123 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 
 	const onSelectionSpeak = useCallback(() => {
 		if (!selection) return;
-		tts.queueText(selection.text);
+		void tts.speak(selection.text, { force: true });
 		setSelection(null);
 		window.getSelection()?.removeAllRanges();
 	}, [selection, tts]);
 
-	const onJumpToHighlight = useCallback((h: ReaderHighlight) => {
-		const m = h.locator_start.match(/^chapter:(.+?):/);
-		if (m) {
-			setActiveChapterId(m[1]);
+	const onJumpToHighlight = useCallback(
+		(h: ReaderHighlight) => {
+			jumpToLocator(h.locator_start);
+		},
+		// jumpToLocator 在下方定义，eslint deps 检查能识别
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[activeChapterId],
+	);
+
+	const onJumpToBookmark = useCallback(
+		(b: ReaderBookmark) => {
+			jumpToLocator(b.locator);
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[activeChapterId],
+	);
+
+	/**
+	 * 解析 locator 并下发跳转请求。
+	 *
+	 * 支持的 locator 形式（与 TextEngine / PdfEngine 写入端对齐）：
+	 *  - chapter:<id>:offset:<n>      → 文本章节内字符 offset 定位（高亮）
+	 *  - chapter:<id>:scroll:<pct>    → 文本章节内滚动百分比定位（书签）
+	 *  - pdf:page:<N>:offset-...      → PDF 第 N 页（高亮 / 书签共用）
+	 *
+	 * 切章 vs 章内：如果 locator 指向当前章节，立即下发 seekRequest；
+	 * 否则先 setActiveChapterId，把 seek 挂到 pendingSeekRef，等章节加载完再触发。
+	 */
+	function jumpToLocator(locator: string): void {
+		if (!locator) return;
+		// PDF: pdf:page:N:offset-...
+		const pdfMatch = locator.match(/^pdf:page:(\d+)/);
+		if (pdfMatch) {
+			const page = Number(pdfMatch[1]);
+			if (!Number.isFinite(page) || page < 1) return;
+			const targetChapterId = `page-${page}`;
+			const nonce = Date.now();
+			if (activeChapterId === targetChapterId) {
+				setSeekRequest({ kind: "pdfPage", page, nonce });
+			} else {
+				pendingSeekRef.current = {
+					chapterId: targetChapterId,
+					seek: { kind: "pdfPage", page, nonce },
+				};
+				setActiveChapterId(targetChapterId);
+			}
+			return;
 		}
-	}, []);
+
+		// chapter:<id>:offset:<n> | chapter:<id>:scroll:<pct>
+		const chapterMatch = locator.match(/^chapter:(.+?):(offset|scroll):(.+)$/);
+		if (!chapterMatch) return;
+		const [, chapterId, kind, raw] = chapterMatch;
+		const nonce = Date.now();
+
+		if (kind === "offset") {
+			const offset = Number(raw);
+			if (!Number.isFinite(offset) || offset < 0) return;
+			if (activeChapterId === chapterId) {
+				setSeekRequest({ kind: "offset", offset, nonce });
+			} else {
+				pendingSeekRef.current = {
+					chapterId,
+					seek: { kind: "offset", offset, nonce },
+				};
+				setActiveChapterId(chapterId);
+			}
+			return;
+		}
+
+		// scroll 模式：locator 末段是 0~1 的百分比
+		const pct = Math.max(0, Math.min(1, Number(raw)));
+		if (!Number.isFinite(pct)) return;
+		const seek = { kind: "percent" as const, percent: pct, nonce };
+		if (activeChapterId === chapterId) {
+			setSeekRequest(seek);
+		} else {
+			// pendingSeekRef 类型只支持 offset / pdfPage（百分比可以等切章后用 seekPercentRequest），
+			// 但简单起见也走 pendingSeekRef 的扩展：直接放进 setTimeout 等切章后下发
+			pendingSeekRef.current = {
+				chapterId,
+				seek: { kind: "offset", offset: 0, nonce }, // 先到顶
+			};
+			setActiveChapterId(chapterId);
+			// 章节加载完成后再追加一次百分比 seek
+			const persistedNonce = nonce;
+			const interval = window.setInterval(() => {
+				if (chapter?.id === chapterId) {
+					setSeekRequest({
+						kind: "percent",
+						percent: pct,
+						nonce: persistedNonce,
+					});
+					window.clearInterval(interval);
+				}
+			}, 80);
+			window.setTimeout(() => window.clearInterval(interval), 4000);
+		}
+	}
+
+	// 切章后兜底：等 chapter 真正变成期望值，再把挂着的 pendingSeek 下发
+	useEffect(() => {
+		const pending = pendingSeekRef.current;
+		if (!pending || !chapter) return;
+		if (chapter.id !== pending.chapterId) return;
+		// chapter 已切到目标 → 下一帧触发，等渲染稳定
+		const frame = requestAnimationFrame(() => {
+			setSeekRequest(pending.seek);
+			pendingSeekRef.current = null;
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [chapter]);
 
 	if (!settings) {
 		return (
@@ -558,7 +683,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				onOpenSearch={() => setSearchOpen(true)}
 				onOpenSettings={onOpenSettings}
 				onToggleTts={onToggleTts}
-				ttsActive={tts.status !== "idle"}
+				ttsActive={
+					readerSpeech.scope === "reader" && readerSpeech.status !== "idle"
+				}
 			/>
 
 			<div className="reader-body">
@@ -571,10 +698,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 					bookmarks={bookmarks}
 					onJumpToHighlight={onJumpToHighlight}
 					onRemoveHighlight={handleRemoveHighlight}
-					onJumpToBookmark={(b) => {
-						const m = b.locator.match(/^chapter:(.+?):/);
-						if (m) setActiveChapterId(m[1]);
-					}}
+					onJumpToBookmark={onJumpToBookmark}
 					onRemoveBookmark={handleRemoveBookmark}
 				/>
 
@@ -610,6 +734,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 								}}
 								onPositionChange={handlePositionChange}
 								seekPercentRequest={seekPercentRequest}
+								seekRequest={seekRequest}
 								onSelectionChange={onSelectionChange}
 								onUserActivity={onUserActivity}
 								onRequestNavigate={(dir, id) => {
@@ -655,14 +780,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				onSeek={handleProgressSeek}
 			/>
 
-			<ReaderTTSBar
-				visible={tts.status !== "idle"}
-				playing={tts.status === "playing"}
-				rate={tts.rate}
-				onPlayPause={tts.playPause}
-				onStop={tts.stop}
-				onChangeRate={tts.setRate}
-			/>
+			<TTSPlaybackBar scope="reader" />
 
 			<ReaderSelectionMenu
 				selection={selection}

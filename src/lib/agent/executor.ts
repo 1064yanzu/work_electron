@@ -14,7 +14,6 @@ import { safeInvoke } from "../tauriBridge";
 import { type AgentMessage, ClaudeAgentService } from "./claudeAgentService";
 import { agentStore } from "./store";
 import type { AgentTaskStep } from "./types";
-import { getAgentSandboxDir } from "../api";
 import { agentModelSettingsStore } from "../models/agentModelSettingsStore";
 import { saveCheckpoint, deleteCheckpoint } from "./api";
 import { buildRuntimeUserPrompt } from "./context/userPrompt";
@@ -596,6 +595,7 @@ class AgentExecutor {
 			/** 已确认的计划（用于执行阶段） */
 			confirmedPlan?: import("./planModeStore").PlanData;
 			onChunk?: (chunk: string) => void;
+			onMessage?: (message: AgentMessage) => void;
 			onThoughtChunk?: (
 				chunk: string,
 				meta?: {
@@ -762,17 +762,14 @@ class AgentExecutor {
 			parentSessionId: options.parentSdkSessionId,
 		});
 
-		let sandboxDir = options?.workingDirectory;
-		if (!sandboxDir) {
-			try {
-				const sandboxKey =
-					typeof options?.sandboxKey === "string" && options.sandboxKey.trim()
-						? options.sandboxKey.trim()
-						: task.id;
-				const res = await getAgentSandboxDir(sandboxKey);
-				sandboxDir = res.path;
-			} catch {}
-		}
+		// Agent 工作目录：必须由 caller 传入用户选定的真实目录（session.cwd）。
+		// 不再 fallback 到 userData/agent-sandboxes/{taskId} 隔离沙盒——和
+		// Claude Code CLI 一致：直接在用户目录里干活，产物落在用户目录。
+		// 没传就用进程 cwd 兜底，避免 SDK 因 cwd 缺失炸掉。
+		const sandboxDir =
+			options?.workingDirectory && options.workingDirectory.trim()
+				? options.workingDirectory.trim()
+				: undefined;
 		if (sandboxDir) {
 			agentStore.setTaskMetadata({ sandboxDir });
 		}
@@ -834,7 +831,11 @@ class AgentExecutor {
 			);
 		}
 
+		// attachedContexts 是用户在 UI 里贴的临时文本（无原路径），写到 cwd/.agent-attachments/
+		// 让 agent 能 Read。其余真实 attachedFiles 直接传原路径，**不再拷贝到沙盒**——
+		// 与 Claude Code CLI 一致，让 agent 在用户真实目录里直接操作原文件。
 		if (sandboxDir && options?.attachedContexts?.length) {
+			const attachmentsDir = `${stripTrailingSlash(sandboxDir)}/.agent-attachments`;
 			const seen = new Map<string, number>();
 			options.attachedFiles = options.attachedFiles || [];
 			for (const ctx of options.attachedContexts) {
@@ -850,7 +851,7 @@ class AgentExecutor {
 				const stem = dot > 0 ? safeBase.slice(0, dot) : safeBase;
 				const ext = dot > 0 ? safeBase.slice(dot) : "";
 				const name = count === 1 ? safeBase : `${stem}-${count}${ext}`;
-				const dest = `${sandboxDir}/${name}`;
+				const dest = `${attachmentsDir}/${name}`;
 				try {
 					await safeInvoke<{ success: boolean }>("write_file_safe", {
 						payload: {
@@ -873,96 +874,7 @@ class AgentExecutor {
 			options.attachedContexts = [];
 		}
 
-		if (sandboxDir && options?.attachedFiles?.length) {
-			const seen = new Map<string, number>();
-			for (const file of options.attachedFiles) {
-				const srcPath = String(file.path || "").trim();
-				const baseFromPath = getBasename(stripTrailingSlash(srcPath));
-				const safeBase = chooseSandboxFileName({
-					title: file.title || baseFromPath || "file",
-					sourcePath: srcPath,
-					mimeType: file.mimeType,
-				});
-				const count = (seen.get(safeBase) ?? 0) + 1;
-				seen.set(safeBase, count);
-				const dot = safeBase.lastIndexOf(".");
-				const stem = dot > 0 ? safeBase.slice(0, dot) : safeBase;
-				const ext = dot > 0 ? safeBase.slice(dot) : "";
-				const name = count === 1 ? safeBase : `${stem}-${count}${ext}`;
-				const dest = `${sandboxDir}/${name}`;
-				if (
-					typeof file.path === "string" &&
-					file.path.startsWith(`${sandboxDir}/`)
-				) {
-					continue;
-				}
-				try {
-					try {
-						const entries = await safeInvoke<
-							Array<{
-								path: string;
-								name: string;
-								is_file: boolean;
-								is_dir: boolean;
-								size?: number;
-							}>
-						>("list_files_safe", {
-							payload: {
-								path: srcPath,
-								recursive: true,
-							},
-						});
-
-						const singleFile =
-							entries.length === 1 &&
-							entries[0]?.is_file &&
-							stripTrailingSlash(String(entries[0]?.path ?? "")) ===
-								stripTrailingSlash(srcPath);
-
-						if (singleFile) {
-							await safeInvoke<{ success: boolean }>("copy_file_safe", {
-								src: srcPath,
-								dest,
-								create_dirs: true,
-							});
-							file.path = dest;
-							continue;
-						}
-
-						const dirRoot = stripTrailingSlash(srcPath);
-						const folderName = sanitizeFilename(
-							file.title || baseFromPath || "dir",
-						);
-						for (const e of entries) {
-							if (!e.is_file) continue;
-							const rel = String(e.path).startsWith(dirRoot)
-								? String(e.path)
-										.slice(dirRoot.length)
-										.replace(/^[/\\]+/, "")
-								: getBasename(e.path);
-							const finalRel = rel || getBasename(e.path);
-							const out = `${sandboxDir}/${folderName}/${finalRel}`;
-							try {
-								await safeInvoke<{ success: boolean }>("copy_file_safe", {
-									src: e.path,
-									dest: out,
-									create_dirs: true,
-								});
-							} catch {}
-						}
-						file.path = `${sandboxDir}/${folderName}`;
-						file.type = file.type || "file";
-					} catch {
-						await safeInvoke<{ success: boolean }>("copy_file_safe", {
-							src: srcPath,
-							dest,
-							create_dirs: true,
-						});
-						file.path = dest;
-					}
-				} catch {}
-			}
-		}
+		// attachedFiles：用户从 UI 里选的真实文件，直接保留原路径不拷贝。
 
 		let degradeLevel = 0;
 		const getConversationContextForRun = () => {
@@ -1021,10 +933,10 @@ class AgentExecutor {
 				attachedFiles: attachedForRun.files,
 				attachedContexts: attachedForRun.contexts,
 				contextBudget: {
-					maxContextChars: Math.min(
-						6000,
-						resolvedContextBudget.maxContextChars,
-					),
+					// 历史代码硬截断到 6000 字符（≈1500 token），导致多轮对话上下文被砍光、
+					// 模型每次"冷启动"。直接用用户配置的 maxContextChars（默认 16000）。
+					// degradeLevel ≥1 时仍会通过 maxContextLines 自动降级，无需在这里再叠加上限。
+					maxContextChars: resolvedContextBudget.maxContextChars,
 					maxContextLines: degradeLevel >= 2 ? 4 : degradeLevel >= 1 ? 8 : 16,
 					maxFiles:
 						attachedForRun.files.length + attachedForRun.contexts.length,
@@ -1082,6 +994,7 @@ class AgentExecutor {
 				},
 
 				onMessage: async (message: AgentMessage) => {
+					options?.onMessage?.(message);
 					// Update UI based on message type
 					switch (message.type) {
 						case "tool_call": {
@@ -1636,6 +1549,132 @@ class AgentExecutor {
 		}
 
 		return { sdkSessionId, sandboxDir };
+	}
+
+	/**
+	 * 检查是否有存活的 run 可以接收 followup 消息。
+	 * 如果有，caller 应该用 executeFollowup 代替 executeCustomTask。
+	 */
+	get canFollowup(): boolean {
+		return this.sdkService.alive && !!this.sdkService.activeRunId;
+	}
+
+	/**
+	 * 向存活的 run 发送 followup 消息。
+	 * 不再拼 conversationContext——进程内存中已有完整历史，直接发送本轮 query。
+	 */
+	async executeFollowup(
+		query: string,
+		options?: {
+			attachedContexts?: Array<{ title: string; content: string }>;
+			attachedFiles?: Array<{
+				title: string;
+				path: string;
+				type?: "file" | "document";
+				mimeType?: string;
+				size?: number;
+				isBinary?: boolean;
+			}>;
+			workingDirectory?: string;
+			onChunk?: (chunk: string) => void;
+			onMessage?: (message: AgentMessage) => void;
+			onThoughtChunk?: (
+				chunk: string,
+				meta?: {
+					title?: string;
+					source?: string;
+					phase?: string;
+					durationMs?: number;
+				},
+			) => void;
+		},
+	): Promise<{ sdkSessionId?: string }> {
+		agentStore.startTask("custom", query);
+		const analysisStep: AgentTaskStep = {
+			id: "analysis-step",
+			title: "分析任务",
+			status: "running",
+			kind: "analysis",
+		};
+		agentStore.setTaskSteps([analysisStep]);
+
+		this.abortController = new AbortController();
+		let finalResult = "";
+		let sdkSessionId: string | undefined;
+
+		try {
+			await this.sdkService.sendFollowup({
+				message: query,
+				abortController: this.abortController,
+				onChunk: (text) => {
+					finalResult += text;
+					options?.onChunk?.(text);
+				},
+				onMessage: async (message: AgentMessage) => {
+					options?.onMessage?.(message);
+					// 复用 executeCustomTask 中的消息处理逻辑
+					switch (message.type) {
+						case "tool_call": {
+							const toolCallId = `sdk-tool-${message.toolCallId || Date.now()}`;
+							const toolCall: import("./types").ToolCall = {
+								id: toolCallId,
+								type: "custom",
+								name: message.toolName || "Tool",
+								description: message.content || "",
+								input: message.toolInput || {},
+								status: "running",
+								startedAt: Date.now(),
+							};
+							agentStore.addToolCall(toolCall);
+							break;
+						}
+						case "tool_result": {
+							const resolvedId = message.toolCallId
+								? `sdk-tool-${message.toolCallId}`
+								: null;
+							if (resolvedId) {
+								agentStore.updateToolCall(resolvedId, {
+									output: message.toolOutput,
+									status: message.status === "error" ? "error" : "completed",
+									completedAt: Date.now(),
+								});
+							}
+							break;
+						}
+						case "thought_delta":
+							options?.onThoughtChunk?.(message.content, message.thoughtMeta);
+							break;
+						case "result":
+							if (message.status === "completed") {
+								agentStore.updateTaskStepByKind("analysis", "completed");
+							}
+							break;
+					}
+				},
+				onComplete: (result) => {
+					if (result.sessionId) {
+						sdkSessionId = result.sessionId;
+					}
+					if (result.success) {
+						agentStore.updateTaskStepByKind("analysis", "completed");
+						agentStore.completeTask(
+							finalResult || result.summary || "Task completed",
+						);
+					} else {
+						agentStore.failTask(result.summary || "Task failed");
+					}
+				},
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Followup failed";
+			console.error("[AgentExecutor] Followup error:", errorMessage);
+			agentStore.failTask(errorMessage);
+		} finally {
+			this.abortController = null;
+		}
+
+		return { sdkSessionId };
 	}
 
 	/**

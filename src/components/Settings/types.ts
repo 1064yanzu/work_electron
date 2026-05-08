@@ -18,4 +18,5 @@ export type SettingsTabId =
 	| "mascot"
 	| "shortcuts"
 	| "sandboxPreview"
-	| "reader";
+	| "reader"
+	| "tts";

@@ -368,7 +368,13 @@ export type IPCSchema = {
 	// ==================
 	read_file_safe: {
 		input: { path: string; encoding?: "utf-8" | "base64" };
-		output: { content: string; encoding: string; size: number };
+		output: {
+			content: string;
+			encoding: string;
+			size: number;
+			mtime_ms: number;
+			path: string;
+		};
 	};
 	write_file_safe: {
 		input: {
@@ -376,8 +382,17 @@ export type IPCSchema = {
 			content: string;
 			encoding?: "utf-8" | "base64";
 			create_dirs?: boolean;
+			allow_empty?: boolean;
+			expected_mtime_ms?: number;
+			expected_size?: number;
 		};
-		output: { success: boolean };
+		output: {
+			success: boolean;
+			bytes_written: number;
+			size: number;
+			mtime_ms: number;
+			path: string;
+		};
 	};
 	list_files_safe: {
 		input: { path: string; recursive?: boolean };
@@ -387,6 +402,7 @@ export type IPCSchema = {
 			is_file: boolean;
 			is_dir: boolean;
 			size?: number;
+			mtime_ms?: number;
 		}>;
 	};
 	mkdir_safe: {
@@ -1517,6 +1533,20 @@ export type IPCSchema = {
 		output: { success: boolean; data?: unknown; error?: string };
 	};
 
+	agent_sdk_send_followup: {
+		input: {
+			runId: string;
+			message: string;
+			attachments?: Array<{ path: string; title?: string }>;
+		};
+		output: { success: boolean; error?: string };
+	};
+
+	agent_sdk_check_alive: {
+		input: { runId: string };
+		output: { alive: boolean };
+	};
+
 	// ==================
 	// Agent 检查点命令（断点续传）
 	// ==================
@@ -2429,6 +2459,66 @@ export type IPCSchema = {
 		input: { start: string | null; end: string | null };
 		output: { success: boolean };
 	};
+	/**
+	 * 让桌宠"说一句话"——主动朗读 + 弹气泡。
+	 * 任何地方都可以调用：远程控制 / 番茄钟 / 工作流 / 设置面板试听 等。
+	 * 朗读会走 TTSScope: pet（受 scene_pet_enabled / dnd 控制；force=true 可强制）。
+	 */
+	pet_speak: {
+		input: {
+			/** 必填：要朗读 + 显示的内容（已是面向用户的最终文案） */
+			text: string;
+			/** 触发的动作；不传则保持当前 motion */
+			motion?:
+				| "idle"
+				| "greet"
+				| "thinking"
+				| "done"
+				| "sad"
+				| "sleepy"
+				| "surprise";
+			/** 气泡类型：notification（默认）= 自动消失；reminder = 持续直到用户处理 */
+			bubble?: "notification" | "reminder";
+			/** 气泡前缀（可视为 "小庆祝 / 安抚" 之类的语气提示） */
+			prefix?: string;
+			/** 气泡 type / reminder kind，用于上色与图标；可省略走默认 */
+			notificationType?: "done" | "error" | "approval";
+			reminderKind?: "schedule" | "pomodoro" | "approval-waiting";
+			/** 强制朗读（忽略 scene_pet_enabled / dnd） */
+			force?: boolean;
+		};
+		output: { success: boolean };
+	};
+	/**
+	 * 桌宠台词生成（LLM 个性化朗读的入口；本期返回话术池兜底，留待后续接 LLM）。
+	 * 当 scene_pet_persona_enabled = true 且配置了 provider/model 时，主进程会调 LLM
+	 * 生成一句符合人设的台词；否则直接从 personality.ts 的话术池里选一句返回。
+	 */
+	pet_generate_line: {
+		input: {
+			/** 事件类型：决定话术池 key */
+			event:
+				| "thinkingShort"
+				| "thinkingMedium"
+				| "thinkingLong"
+				| "done"
+				| "error"
+				| "approval"
+				| "encouragement"
+				| "consolation"
+				| "greetFirstTimeToday"
+				| "quickSuggestions"
+				| "contextSwitchSkin";
+			/** 当前 mascot id；用于选话术池 */
+			mascotId?: string;
+			/** 自定义上下文（如任务标题、错误内容），传给 LLM 当 user prompt */
+			context?: string;
+		};
+		output: {
+			text: string;
+			source: "llm" | "pool";
+		};
+	};
 
 	// ==================
 	// 桌面宠物 IP（跨窗口同步）
@@ -2567,6 +2657,11 @@ export type IPCSchema = {
 			paths: string[];
 			project_id?: string | null;
 			folder_id?: string | null;
+			/**
+			 * 静默导入：仅写 reader_books（阅读器自身需要），跳过 sources / notes / note_chunks
+			 * 全文索引写入。用于"在阅读器中打开本地文件但不放进资料库"的场景。
+			 */
+			silent?: boolean;
 		};
 		output: ReaderBook[];
 	};
@@ -2731,6 +2826,197 @@ export type IPCSchema = {
 		}>;
 		output: { success: boolean };
 	};
+
+	// =====================
+	// TTS（文本转语音）— 全局多 provider 模块
+	// 接入：阅读器 / 聊天 / 桌宠
+	// =====================
+	/** 读取 TTS 全局设置（含 providers 数组与各场景默认） */
+	tts_settings_get: {
+		input: Record<string, never>;
+		output: TTSSettings;
+	};
+	/** 更新 TTS 全局设置（部分字段；providers 整体替换） */
+	tts_settings_update: {
+		input: Partial<TTSSettings>;
+		output: TTSSettings;
+	};
+	/** 列出某 provider 内的可用音色（含克隆） */
+	tts_list_voices: {
+		input: { providerId: string; forceRefresh?: boolean };
+		output: TTSVoice[];
+	};
+	/** 试听某音色（不传 text 时使用默认问候语） */
+	tts_voice_preview: {
+		input: { providerId: string; voiceId: string; text?: string };
+		output: { audioBase64: string; format: string };
+	};
+	/** 克隆新音色：上传样本 + 命名 + 描述 */
+	tts_clone_voice: {
+		input: TTSCloneRequest;
+		output: { ok: boolean; voice?: TTSVoice; error?: string };
+	};
+	/** 删除已克隆的音色 */
+	tts_delete_voice: {
+		input: { providerId: string; voiceId: string };
+		output: { ok: boolean; error?: string };
+	};
+	/** 查询某 provider 的能力（用于 UI 决定哪些区块显隐） */
+	tts_capabilities: {
+		input: { providerId: string };
+		output: TTSCapabilities;
+	};
+	/** 一次性合成（小文本 / 试听走这个；返回 base64） */
+	tts_synthesize: {
+		input: TTSSynthesizeRequest;
+		output: { audioBase64: string; format: string };
+	};
+	/** 流式合成（长文本走这个；通过 tts-stream-chunk 事件下发） */
+	tts_synthesize_stream: {
+		input: TTSSynthesizeRequest & { streamId: string };
+		output: { ok: boolean };
+	};
+	/** 取消进行中的流式合成 */
+	tts_cancel: {
+		input: { streamId: string };
+		output: { ok: boolean };
+	};
+	/** 测试某 provider 配置是否可用 */
+	tts_test: {
+		input: { providerId: string; text?: string };
+		output: {
+			ok: boolean;
+			audioBase64?: string;
+			format?: string;
+			error?: string;
+		};
+	};
 };
+
+// =====================
+// TTS 类型导出（renderer 端通过 import type 复用）
+// =====================
+export type TTSProviderType =
+	| "system"
+	| "openai_compatible"
+	| "elevenlabs"
+	| "volcano"
+	| "mimo";
+
+export interface TTSCapabilities {
+	listVoices: boolean;
+	cloneVoice: boolean;
+	deleteVoice: boolean;
+	voiceLabels: boolean;
+	streamSynthesis: boolean;
+}
+
+export interface TTSProviderConfig {
+	id: string;
+	name: string;
+	type: TTSProviderType;
+	api_key?: string;
+	api_base?: string;
+	model?: string;
+	voice?: string;
+	metadata?: Record<string, unknown>;
+	is_enabled: boolean;
+	capabilities?: TTSCapabilities;
+}
+
+export interface TTSVoice {
+	id: string;
+	providerId: string;
+	name: string;
+	language?: string;
+	gender?: "male" | "female" | "neutral";
+	description?: string;
+	preview_url?: string;
+	is_cloned: boolean;
+	labels?: Record<string, string>;
+	created_at?: number;
+}
+
+export interface TTSSynthesizeRequest {
+	providerId: string;
+	text: string;
+	voice?: string;
+	rate?: number;
+	format?: "mp3" | "wav" | "opus";
+	streamId?: string;
+}
+
+export interface TTSCloneSample {
+	filename: string;
+	dataBase64: string;
+	mimeType?: string;
+}
+
+export interface TTSCloneRequest {
+	providerId: string;
+	name: string;
+	description?: string;
+	samples: TTSCloneSample[];
+	labels?: Record<string, string>;
+}
+
+export type TTSScenePetFilter =
+	| "reminder"
+	| "approval"
+	| "done"
+	| "error"
+	| "progress"
+	/** 任务启动瞬间（agent_start）朗读 thinkingShort 话术 */
+	| "task_start"
+	/** 任务长时思考（>60s）朗读 thinkingMedium / thinkingLong */
+	| "thinking";
+
+export interface TTSSettings {
+	default_provider_id: string | null;
+	default_voice_id: string | null;
+	rate: number;
+	volume: number;
+	pitch: number;
+	scene_reader_enabled: boolean;
+	scene_reader_voice_id: string | null;
+	scene_chat_enabled: boolean;
+	scene_chat_auto: boolean;
+	scene_chat_voice_id: string | null;
+	scene_pet_enabled: boolean;
+	scene_pet_filter: TTSScenePetFilter[];
+	scene_pet_verbosity: "title" | "full";
+	scene_pet_voice_id: string | null;
+	/**
+	 * 桌宠"AI 个性化说话"开关；启用后 pet_generate_line 走 LLM 生成台词，
+	 * 否则回退到 personality.ts 话术池。本字段以下三项为后续接入 LLM 留的扩展点。
+	 */
+	scene_pet_persona_enabled: boolean;
+	/** AI 人设 system prompt（附在 LLM 调用前） */
+	scene_pet_persona_prompt: string | null;
+	/** 走哪个 LLM provider（关联 settings 表 / model_providers），null 走默认 */
+	scene_pet_persona_provider_id: string | null;
+	/** 用什么模型；null 走 provider 默认 */
+	scene_pet_persona_model: string | null;
+	providers: TTSProviderConfig[];
+	updated_at: number | null;
+}
+
+/** 流式合成事件 chunk（通过 tts-stream-chunk 通道下发） */
+export interface TTSStreamChunkEvent {
+	streamId: string;
+	/** base64 编码的音频片段 */
+	audioBase64?: string;
+	format?: string;
+	done: boolean;
+	error?: string;
+}
+
+/** 克隆进度事件（通过 tts-clone-progress 通道下发） */
+export interface TTSCloneProgressEvent {
+	providerId: string;
+	stage: "uploading" | "training" | "ready" | "error";
+	progress: number; // 0~1
+	message?: string;
+}
 
 export type IPCChannel = keyof IPCSchema;

@@ -8,12 +8,15 @@ import {
 	FileText,
 	RefreshCw,
 	Trash2,
+	Volume2,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { EVENTS, events } from "../../lib/events";
+import { useTTS, useTtsStoreSelector } from "../../lib/tts";
 import { workspaceStore } from "../../lib/workspaceStore";
 import ToolCallInline from "../agent/ToolCallInline";
+import { TTSToolbarButton } from "../tts/TTSToolbarButton";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { AgentBlocksInline } from "./AgentBlocksInline";
 import { AttachmentList } from "./AttachmentCard";
@@ -44,6 +47,31 @@ function ChatMessageImpl({
 	} | null>(null);
 	const isUser = message.role === "user";
 	const isStreaming = !!message.isStreaming;
+
+	const tts = useTTS({ scope: "chat" });
+	const chatAuto = useTtsStoreSelector(
+		(s) => s.settings?.scene_chat_auto ?? false,
+	);
+	const chatEnabled = useTtsStoreSelector(
+		(s) => s.settings?.scene_chat_enabled ?? false,
+	);
+	const autoSpokenRef = useRef<string | null>(null);
+
+	// 自动播报：助手消息流结束 → 朗读
+	useEffect(() => {
+		if (isUser) return;
+		if (!chatAuto || !chatEnabled) return;
+		if (isStreaming) return;
+		if (!message.content || !message.content.trim()) return;
+		if (autoSpokenRef.current === message.id) return;
+		autoSpokenRef.current = message.id;
+		const text =
+			message.content.length > 600
+				? message.content.slice(0, 600)
+				: message.content;
+		void tts.speak(text);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isUser, isStreaming, chatAuto, chatEnabled, message.id, message.content]);
 
 	const hasBlocks =
 		Array.isArray(message.metadata?.blocks) &&
@@ -225,6 +253,16 @@ function ChatMessageImpl({
 
 		items.push({ label: "", separator: true, onClick: () => {} });
 
+		if (!isUser && message.content?.trim()) {
+			items.push({
+				label: "朗读",
+				icon: <Volume2 className="w-4 h-4" />,
+				onClick: () => {
+					void tts.speak(message.content, { force: true });
+				},
+			});
+		}
+
 		if (!isUser && onRegenerate) {
 			items.push({
 				label: "重新生成",
@@ -251,7 +289,16 @@ function ChatMessageImpl({
 		}
 
 		return items;
-	}, [isUser, codeBlocks.length, onRegenerate, onEdit, onDelete, message.id]);
+	}, [
+		isUser,
+		codeBlocks.length,
+		onRegenerate,
+		onEdit,
+		onDelete,
+		message.id,
+		message.content,
+		tts,
+	]);
 
 	return (
 		<>
@@ -354,6 +401,11 @@ function ChatMessageImpl({
 											<FileText className="w-3 h-3" />
 											追加
 										</button>
+										<TTSToolbarButton
+											text={message.content}
+											scope="chat"
+											label="朗读"
+										/>
 										{onRegenerate && (
 											<button
 												onClick={() => onRegenerate(message.id)}

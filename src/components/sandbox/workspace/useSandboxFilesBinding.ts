@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getAgentSandboxDir } from "../../../lib/api";
 import type {
 	AgentTaskStatus,
 	ToolArtifact,
@@ -25,11 +24,7 @@ export function useSandboxFilesBinding({
 	store,
 }: UseSandboxFilesBindingArgs) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
-	const [fallbackSandboxDir, setFallbackSandboxDir] = useState<
-		string | undefined
-	>(undefined);
 	const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-	const fallbackResolvedKeyRef = useRef<string | null>(null);
 
 	const sessionTaskId = useMemo(() => {
 		if (!activeSession) return null;
@@ -97,83 +92,16 @@ export function useSandboxFilesBinding({
 	}, [activeSession, currentTask, sessionTaskId, taskHistory]);
 
 	useEffect(() => {
-		const explicitSandboxDir =
-			(boundTask?.metadata?.sandboxDir as string | undefined) ||
-			sessionSandboxDir;
-		if (explicitSandboxDir) {
-			setFallbackSandboxDir(undefined);
-			fallbackResolvedKeyRef.current = null;
-			return;
-		}
-
-		const hasAgentSignals = Boolean(
-			activeSession?.agentSessionId ||
-				activeSession?.sdkSessionId ||
-				sessionTaskId ||
-				activeSession?.messages?.some((msg: any) => {
-					const traceType = msg?.metadata?.trace?.type;
-					if (traceType === "agent_task" || traceType === "tool_call") {
-						return true;
-					}
-					const blocks = msg?.metadata?.blocks;
-					return (
-						Array.isArray(blocks) &&
-						blocks.some((b: any) =>
-							["agent_task", "tool_call", "image", "task_list"].includes(
-								b?.type,
-							),
-						)
-					);
-				}),
-		);
-		if (!hasAgentSignals) {
-			setFallbackSandboxDir(undefined);
-			fallbackResolvedKeyRef.current = null;
-			return;
-		}
-
-		const sandboxKey = String(sessionTaskId || "").trim();
-		if (!sandboxKey) {
-			setFallbackSandboxDir(undefined);
-			fallbackResolvedKeyRef.current = null;
-			return;
-		}
-		if (fallbackResolvedKeyRef.current === sandboxKey) return;
-
-		let cancelled = false;
-		fallbackResolvedKeyRef.current = sandboxKey;
-		void (async () => {
-			try {
-				const res = await getAgentSandboxDir(sandboxKey);
-				if (!cancelled) {
-					setFallbackSandboxDir(String(res?.path || "").trim() || undefined);
-				}
-			} catch (error) {
-				if (!cancelled) {
-					setFallbackSandboxDir(undefined);
-					fallbackResolvedKeyRef.current = null;
-				}
-				console.warn(
-					"[useSandboxFilesBinding] 兜底恢复 sandbox 目录失败:",
-					error,
-				);
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		activeSession,
-		boundTask?.metadata?.sandboxDir,
-		sessionSandboxDir,
-		sessionTaskId,
-	]);
+		// 工作目录现在来自 caller 传入的 session.cwd（即用户选定的真实目录），
+		// 已写入 task.metadata.sandboxDir 与每条消息的 metadata.sandboxDir。
+		// 不再需要为没有显式 sandboxDir 的 session 兜底创建隔离目录——
+		// 没有就显示为空，符合"agent 直接在用户目录工作"的语义。
+	}, [activeSession]);
 
 	const sandboxDir = useMemo(() => {
 		const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
-		return fromTask || sessionSandboxDir || fallbackSandboxDir;
-	}, [boundTask, fallbackSandboxDir, sessionSandboxDir]);
+		return fromTask || sessionSandboxDir;
+	}, [boundTask, sessionSandboxDir]);
 
 	const graphSource = useMemo<ExecutionGraphSource | null>(() => {
 		if (boundTask) {

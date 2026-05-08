@@ -7,6 +7,10 @@ type Handler<K extends keyof IPCSchema> = (
 	input: IPCSchema[K]["input"],
 ) => Promise<IPCSchema[K]["output"]>;
 
+export type BrowserSearchRequest =
+	IPCSchema["browser_search"]["input"]["request"];
+export type BrowserSearchResult = IPCSchema["browser_search"]["output"][number];
+
 function guessMarket() {
 	const locale = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase();
 	if (locale.includes("zh"))
@@ -355,44 +359,50 @@ async function googleSearch(query: string, limit: number) {
 	return postProcessResults(results);
 }
 
+export async function runBrowserSearch(
+	request: Partial<BrowserSearchRequest> | undefined,
+): Promise<BrowserSearchResult[]> {
+	const query = request?.query?.trim() ?? "";
+	if (!query) return [];
+
+	const engine = (request?.engine ?? "duckduckgo").toLowerCase();
+	const limit =
+		typeof request?.limit === "number" && request.limit > 0
+			? Math.min(50, Math.floor(request.limit))
+			: 10;
+	const usePlaywright = Boolean(request?.use_playwright);
+	const market = guessMarket();
+
+	if (usePlaywright) {
+		return chromiumDomSearch({ engine, query, limit, market });
+	}
+
+	try {
+		if (engine === "duckduckgo" || engine === "ddg") {
+			return duckDuckGoSearch(query, limit);
+		}
+
+		if (engine === "bing") {
+			return bingSearch(query, limit);
+		}
+
+		if (engine === "google") {
+			return googleSearch(query, limit);
+		}
+
+		if (engine === "baidu") {
+			return chromiumDomSearch({ engine, query, limit, market });
+		}
+
+		return duckDuckGoSearch(query, limit);
+	} catch {
+		return chromiumDomSearch({ engine, query, limit, market });
+	}
+}
+
 export function createBrowserSearchHandlers() {
 	const browserSearch: Handler<"browser_search"> = async (_event, input) => {
-		const query = input.request?.query?.trim() ?? "";
-		if (!query) return [];
-
-		const engine = (input.request?.engine ?? "duckduckgo").toLowerCase();
-		const limit =
-			typeof input.request?.limit === "number" && input.request.limit > 0
-				? Math.min(50, Math.floor(input.request.limit))
-				: 10;
-		const usePlaywright = Boolean(input.request?.use_playwright);
-		const market = guessMarket();
-
-		if (usePlaywright) {
-			return chromiumDomSearch({ engine, query, limit, market });
-		}
-
-		try {
-			if (engine === "duckduckgo" || engine === "ddg") {
-				return duckDuckGoSearch(query, limit);
-			}
-
-			if (engine === "bing") {
-				return bingSearch(query, limit);
-			}
-
-			if (engine === "google") {
-				return googleSearch(query, limit);
-			}
-
-			if (engine === "baidu") {
-				return chromiumDomSearch({ engine, query, limit, market });
-			}
-
-			return duckDuckGoSearch(query, limit);
-		} catch {
-			return chromiumDomSearch({ engine, query, limit, market });
-		}
+		return runBrowserSearch(input.request);
 	};
 
 	return { browser_search: browserSearch };

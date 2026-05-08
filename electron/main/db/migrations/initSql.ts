@@ -572,7 +572,36 @@ CREATE INDEX IF NOT EXISTS idx_reader_sessions_book ON reader_sessions(book_id);
 CREATE INDEX IF NOT EXISTS idx_reader_sessions_started ON reader_sessions(started_at DESC);
 
 -- =====================
+-- TTS 设置（全局单行）
+-- 多 provider 配置 + 全局默认 + 各场景启用与音色覆盖
+-- =====================
+CREATE TABLE IF NOT EXISTS tts_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  default_provider_id TEXT,
+  default_voice_id TEXT,
+  rate REAL NOT NULL DEFAULT 1.0,
+  volume REAL NOT NULL DEFAULT 1.0,
+  pitch REAL NOT NULL DEFAULT 1.0,
+  scene_reader_enabled INTEGER NOT NULL DEFAULT 1,
+  scene_reader_voice_id TEXT,
+  scene_chat_enabled INTEGER NOT NULL DEFAULT 0,
+  scene_chat_auto INTEGER NOT NULL DEFAULT 0,
+  scene_chat_voice_id TEXT,
+  scene_pet_enabled INTEGER NOT NULL DEFAULT 0,
+  scene_pet_filter TEXT NOT NULL DEFAULT '["reminder","approval"]',
+  scene_pet_verbosity TEXT NOT NULL DEFAULT 'title',
+  scene_pet_voice_id TEXT,
+  scene_pet_persona_enabled INTEGER NOT NULL DEFAULT 0,
+  scene_pet_persona_prompt TEXT,
+  scene_pet_persona_provider_id TEXT,
+  scene_pet_persona_model TEXT,
+  providers TEXT NOT NULL DEFAULT '[]',
+  updated_at INTEGER
+);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');
+INSERT OR IGNORE INTO tts_settings (id) VALUES (1);
 `;

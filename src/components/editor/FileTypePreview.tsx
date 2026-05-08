@@ -1,10 +1,9 @@
 import { memo, useMemo } from "react";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import DocumentViewer from "../ui/DocumentViewer";
-import { useShikiTokens } from "../../hooks/useShikiHighlight";
-import { mapLanguageFromPath } from "../../lib/shiki";
 import { convertFileSrc } from "../../lib/tauriCompat";
-import { cn } from "../../lib/utils";
+import { CodePreview } from "./CodePreview";
+import { HtmlFilePreview } from "./HtmlFilePreview";
 import type { EditorDensity } from "./useEditorUiPrefs";
 
 interface FileTypePreviewProps {
@@ -64,67 +63,6 @@ export function isBinaryPreviewFile(fileName: string): boolean {
 		isExcelFile(fileName)
 	);
 }
-
-const CodePreview = memo(function CodePreview({
-	fileName,
-	content,
-	density,
-}: {
-	fileName: string;
-	content: string;
-	density: EditorDensity;
-}) {
-	const language = mapLanguageFromPath(fileName);
-	const { tokens, loading } = useShikiTokens(content, language);
-	const lineHeightClass =
-		density === "compact" ? "text-[12px] leading-6" : "text-[13px] leading-7";
-
-	if (!content) {
-		return <p className="text-text-muted">文件内容为空。</p>;
-	}
-
-	return (
-		<div className="rounded-2xl border border-border/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
-			<div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border bg-dark-muted/90">
-				<div className="flex gap-1.5">
-					<span className="w-3 h-3 rounded-full bg-error/75" />
-					<span className="w-3 h-3 rounded-full bg-peach-500/75" />
-					<span className="w-3 h-3 rounded-full bg-success/75" />
-				</div>
-				<span className="text-xs font-medium text-text-light truncate">
-					{fileName}
-				</span>
-			</div>
-			<div className={cn("overflow-auto px-0 py-3 font-mono", lineHeightClass)}>
-				{loading || !tokens ? (
-					<pre className="px-4 whitespace-pre-wrap break-words text-zinc-200">
-						{content}
-					</pre>
-				) : (
-					tokens.map((line, index) => (
-						<div
-							key={`${fileName}-line-${index + 1}`}
-							className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 hover:bg-surface/[0.03] transition-colors"
-						>
-							<span className="select-none pr-4 text-right text-text-muted">
-								{index + 1}
-							</span>
-							<span className="whitespace-pre-wrap break-words text-surface">
-								{line.length > 0
-									? line.map((token, tokenIndex) => (
-											<span key={tokenIndex} style={{ color: token.color }}>
-												{token.content}
-											</span>
-										))
-									: " "}
-							</span>
-						</div>
-					))
-				)}
-			</div>
-		</div>
-	);
-});
 
 /* ──────────────── 二进制文件预览组件 ──────────────── */
 
@@ -451,14 +389,19 @@ export const FileTypePreview = memo(function FileTypePreview({
 		);
 	}
 
-	// 8. 代码
+	// 8. HTML：用 iframe 真渲染网页（与"产物预览"路径共用底层组件）
+	if (/\.(html|htm)$/i.test(fileName)) {
+		return <HtmlFilePreview fileName={fileName} content={content} />;
+	}
+
+	// 9. 代码
 	if (isCodeLikeFile(fileName)) {
 		return (
 			<CodePreview fileName={fileName} content={content} density={density} />
 		);
 	}
 
-	// 9. 纯文本
+	// 10. 纯文本
 	return (
 		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80 bg-warm-50/80/55 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-zinc-200">
 			{content || emptyText}

@@ -6,15 +6,30 @@ import type { IpcMainInvokeEvent } from "electron";
 import { shell } from "electron";
 
 type ReadFileInput = { path: string; encoding?: "utf-8" | "base64" };
-type ReadFileOutput = { content: string; encoding: string; size: number };
+type ReadFileOutput = {
+	content: string;
+	encoding: string;
+	size: number;
+	mtime_ms: number;
+	path: string;
+};
 
 type WriteFileInput = {
 	path: string;
 	content: string;
 	encoding?: "utf-8" | "base64";
 	create_dirs?: boolean;
+	allow_empty?: boolean;
+	expected_mtime_ms?: number;
+	expected_size?: number;
 };
-type WriteFileOutput = { success: boolean };
+type WriteFileOutput = {
+	success: boolean;
+	bytes_written: number;
+	size: number;
+	mtime_ms: number;
+	path: string;
+};
 
 type ListFilesInput = { path: string; recursive?: boolean };
 type ListFilesOutput = Array<{
@@ -23,6 +38,7 @@ type ListFilesOutput = Array<{
 	is_file: boolean;
 	is_dir: boolean;
 	size?: number;
+	mtime_ms?: number;
 }>;
 
 type MkdirInput = { path: string; recursive?: boolean };
@@ -36,6 +52,19 @@ type DeleteFileInput = { path: string };
 type DeleteFileOutput = { success: boolean };
 type RevealFileInput = { path: string };
 type RevealFileOutput = { success: boolean };
+
+function unwrapPayload<T extends object>(input: T | { payload?: T }): T {
+	if (
+		input &&
+		typeof input === "object" &&
+		"payload" in input &&
+		input.payload &&
+		typeof input.payload === "object"
+	) {
+		return input.payload as T;
+	}
+	return input as T;
+}
 
 function normalizePathInput(p: string): string {
 	const raw = String(p ?? "").trim();
@@ -98,13 +127,13 @@ async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
 		const is_dir = ent.isDirectory();
 		const is_file = ent.isFile();
 		let size: number | undefined;
-		if (is_file) {
-			try {
-				const st = await fs.stat(full);
-				size = st.size;
-			} catch {}
-		}
-		out.push({ path: full, name: ent.name, is_file, is_dir, size });
+		let mtime_ms: number | undefined;
+		try {
+			const st = await fs.stat(full);
+			if (is_file) size = st.size;
+			mtime_ms = st.mtimeMs;
+		} catch {}
+		out.push({ path: full, name: ent.name, is_file, is_dir, size, mtime_ms });
 	}
 	return out;
 }
@@ -126,21 +155,30 @@ async function listDirRecursive(dirPath: string): Promise<ListFilesOutput> {
 export function createFsSafeHandlers() {
 	const read_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: ReadFileInput,
+		rawInput: ReadFileInput | { payload?: ReadFileInput },
 	): Promise<ReadFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const filePath = normalizePathInput(input.path);
 		requireAbsolute(filePath);
 		const encoding = input.encoding === "base64" ? "base64" : "utf-8";
 		const buf = await fs.readFile(filePath);
+		const st = await fs.stat(filePath);
 		const content =
 			encoding === "base64" ? buf.toString("base64") : buf.toString("utf-8");
-		return { content, encoding, size: buf.byteLength };
+		return {
+			content,
+			encoding,
+			size: buf.byteLength,
+			mtime_ms: st.mtimeMs,
+			path: filePath,
+		};
 	};
 
 	const write_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: WriteFileInput,
+		rawInput: WriteFileInput | { payload?: WriteFileInput },
 	): Promise<WriteFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const filePath = normalizePathInput(input.path);
 		requireAbsolute(filePath);
 		const encoding = input.encoding === "base64" ? "base64" : "utf-8";
@@ -148,21 +186,84 @@ export function createFsSafeHandlers() {
 		if (createDirs) {
 			await fs.mkdir(path.dirname(filePath), { recursive: true });
 		}
+		let existingStat: Awaited<ReturnType<typeof fs.stat>> | null = null;
+		try {
+			existingStat = await fs.stat(filePath);
+			if (existingStat.isDirectory()) {
+				throw new Error(`目标路径是文件夹，不能写入文件: ${filePath}`);
+			}
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException)?.code;
+			if (code !== "ENOENT") throw error;
+		}
 		const buf =
 			encoding === "base64"
 				? Buffer.from(String(input.content ?? ""), "base64")
 				: Buffer.from(String(input.content ?? ""), "utf-8");
-		await fs.writeFile(filePath, buf);
+
+		if (buf.length === 0 && existingStat && existingStat.size > 0) {
+			if (!input.allow_empty) {
+				throw new Error(
+					`拒绝用 0 字节内容覆盖已有文件: ${filePath}。如果这是用户显式清空文件，请传入 allow_empty=true。`,
+				);
+			}
+		}
+
+		if (
+			typeof input.expected_size === "number" &&
+			existingStat &&
+			existingStat.size !== input.expected_size
+		) {
+			throw new Error(
+				`文件已在外部变化，已取消写入: ${filePath}（读取时 ${input.expected_size} bytes，当前 ${existingStat.size} bytes）`,
+			);
+		}
+
+		if (
+			typeof input.expected_mtime_ms === "number" &&
+			existingStat &&
+			Math.abs(existingStat.mtimeMs - input.expected_mtime_ms) > 2
+		) {
+			throw new Error(
+				`文件已在外部变化，已取消写入: ${filePath}（mtime 不匹配）`,
+			);
+		}
+
+		const dir = path.dirname(filePath);
+		const tmpPath = path.join(
+			dir,
+			`.${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
+		);
+		try {
+			await fs.writeFile(tmpPath, buf);
+			if (existingStat) {
+				await fs.chmod(tmpPath, existingStat.mode);
+			}
+			await fs.rename(tmpPath, filePath);
+		} catch (error) {
+			try {
+				await fs.rm(tmpPath, { force: true });
+			} catch {}
+			throw error;
+		}
+		const nextStat = await fs.stat(filePath);
 		console.log(
 			`[write_file_safe] Written ${buf.length} bytes to: ${filePath}`,
 		);
-		return { success: true };
+		return {
+			success: true,
+			bytes_written: buf.length,
+			size: nextStat.size,
+			mtime_ms: nextStat.mtimeMs,
+			path: filePath,
+		};
 	};
 
 	const list_files_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: ListFilesInput,
+		rawInput: ListFilesInput | { payload?: ListFilesInput },
 	): Promise<ListFilesOutput> => {
+		const input = unwrapPayload(rawInput);
 		const targetPath = normalizePathInput(input.path);
 		requireAbsolute(targetPath);
 		const recursive = Boolean(input.recursive);
@@ -177,6 +278,7 @@ export function createFsSafeHandlers() {
 					is_file: st.isFile(),
 					is_dir: st.isDirectory(),
 					size: st.isFile() ? st.size : undefined,
+					mtime_ms: st.mtimeMs,
 				},
 			];
 		}
@@ -186,8 +288,9 @@ export function createFsSafeHandlers() {
 
 	const mkdir_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: MkdirInput,
+		rawInput: MkdirInput | { payload?: MkdirInput },
 	): Promise<MkdirOutput> => {
+		const input = unwrapPayload(rawInput);
 		const dirPath = normalizePathInput(input.path);
 		requireAbsolute(dirPath);
 		const recursive = input.recursive !== false;
@@ -197,8 +300,9 @@ export function createFsSafeHandlers() {
 
 	const copy_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: CopyFileInput,
+		rawInput: CopyFileInput | { payload?: CopyFileInput },
 	): Promise<CopyFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const src = normalizePathInput(input.src);
 		const dest = normalizePathInput(input.dest);
 		requireAbsolute(src);
@@ -213,8 +317,9 @@ export function createFsSafeHandlers() {
 
 	const move_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: MoveFileInput,
+		rawInput: MoveFileInput | { payload?: MoveFileInput },
 	): Promise<MoveFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const src = normalizePathInput(input.src);
 		const dest = normalizePathInput(input.dest);
 		requireAbsolute(src);
@@ -233,8 +338,9 @@ export function createFsSafeHandlers() {
 
 	const delete_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: DeleteFileInput,
+		rawInput: DeleteFileInput | { payload?: DeleteFileInput },
 	): Promise<DeleteFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const filePath = normalizePathInput(input.path);
 		requireAbsolute(filePath);
 		await fs.rm(filePath, { force: true, recursive: true });
@@ -243,8 +349,9 @@ export function createFsSafeHandlers() {
 
 	const reveal_file_safe = async (
 		_event: IpcMainInvokeEvent,
-		input: RevealFileInput,
+		rawInput: RevealFileInput | { payload?: RevealFileInput },
 	): Promise<RevealFileOutput> => {
+		const input = unwrapPayload(rawInput);
 		const filePath = normalizePathInput(input.path);
 		requireAbsolute(filePath);
 		shell.showItemInFolder(filePath);

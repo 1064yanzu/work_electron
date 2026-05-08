@@ -59,8 +59,11 @@ export interface DocCacheItem {
 	id: string;
 	title: string;
 	content: string;
+	savedContent?: string;
 	kind: "output" | "project_file";
 	filePath?: string;
+	size?: number;
+	mtimeMs?: number;
 	dirty: boolean; // 是否有未保存修改
 	lastSynced: number; // 最后同步时间戳
 	snapshot?: string; // 快照（用于撤销 AI 修改）
@@ -70,6 +73,8 @@ export interface ActiveFileSession {
 	path: string;
 	title: string;
 	content: string;
+	size?: number;
+	mtimeMs?: number;
 	openedAt: number;
 }
 

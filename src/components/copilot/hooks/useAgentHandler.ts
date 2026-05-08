@@ -1,6 +1,7 @@
 // Agent 模式消息处理 Hook
 
 import { agentExecutor } from "../../../lib/agent/executor";
+import type { AgentMessage } from "../../../lib/agent/claudeAgentService";
 import {
 	encodeChatMessageToAgentContentJson,
 	persistChatMessageToAgentSession,
@@ -30,6 +31,10 @@ import {
 	getTaskImageArtifactPaths,
 	replaceDataImageMarkdownWithPaths,
 } from "../../../lib/chat/streamHelpers";
+import {
+	isTextCoveredByFinalText,
+	joinTextBlocks,
+} from "../../../lib/chat/blockTextMerge";
 import { AGENT_STREAM_UPDATE_INTERVAL_MS } from "../constants";
 import type { ChatStoreLike } from "../types";
 import type { SlashCommand } from "../../chat/SlashCommand";
@@ -169,7 +174,6 @@ export function useAgentHandler({
 		let detachAgentEvent: (() => void) | null = null;
 		let currentTaskId: string | null = null;
 		let streamingMsgId: string | null = null;
-		const insertedToolCallIds = new Set<string>();
 		let docProtocolMode: "none" | "create" | "update" = "none";
 		let forcedFinalized = false;
 		let lastActivityAt = Date.now();
@@ -271,14 +275,13 @@ export function useAgentHandler({
 				normalizeRuntimeText(finalText),
 				taskImagePaths,
 			);
-			const existingText = blocks
-				.filter(
-					(b): b is Extract<ChatMessageBlock, { type: "text" }> =>
-						b.type === "text",
-				)
-				.map((b) => b.text || "")
-				.join("");
+			const existingText = joinTextBlocks(blocks);
 			if (
+				normalizedFinal.trim() &&
+				isTextCoveredByFinalText(existingText, normalizedFinal)
+			) {
+				// 已流式输出的文本与工具卡片有时序对应关系；最终快照覆盖它时只去重，不重排。
+			} else if (
 				normalizedFinal.trim() &&
 				normalizedFinal.trim() !== existingText.trim()
 			) {
@@ -408,6 +411,58 @@ export function useAgentHandler({
 					});
 				}
 			});
+		};
+
+		const getCurrentInlineTaskId = () =>
+			currentTaskId || agentStore.getState().currentTask?.id || "agent-task";
+
+		const normalizeSdkToolCallId = (toolCallId: string | undefined) => {
+			const raw = String(toolCallId || "").trim();
+			if (!raw) return "";
+			return raw.startsWith("sdk-tool-") ? raw : `sdk-tool-${raw}`;
+		};
+
+		const handleSdkInlineMessage = (message: AgentMessage) => {
+			if (!chatSettings.inlineTraceEnabled) return;
+
+			if (message.type === "tool_call") {
+				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
+				if (!toolCallId) return;
+				ensureStreamingMessage();
+				streamBuilder.startToolCall({
+					type: "tool_call",
+					taskId: getCurrentInlineTaskId(),
+					toolCallId,
+					name: message.toolName,
+					status: "running",
+					input: message.toolInput,
+				});
+				updateStreamingMessage();
+				return;
+			}
+
+			if (message.type === "tool_input_update") {
+				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
+				if (!toolCallId) return;
+				streamBuilder.updateToolCall(toolCallId, (block) => ({
+					...block,
+					input: message.toolInput || block.input,
+				}));
+				updateStreamingMessage();
+				return;
+			}
+
+			if (message.type === "tool_result") {
+				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
+				if (!toolCallId) return;
+				streamBuilder.updateToolCall(toolCallId, (block) => ({
+					...block,
+					status: message.status === "error" ? "error" : "completed",
+					output: message.toolOutput,
+					error: message.status === "error" ? message.content : block.error,
+				}));
+				updateStreamingMessage();
+			}
 		};
 
 		ensureStreamingMessage();
@@ -660,53 +715,13 @@ export function useAgentHandler({
 					return;
 				}
 
-				if (!chatSettings.inlineTraceEnabled) return;
-
-				if (event.type === "tool_started") {
-					const toolCallId = event.toolCall?.id;
-					if (!toolCallId || insertedToolCallIds.has(toolCallId)) return;
-					insertedToolCallIds.add(toolCallId);
-
-					const toolCallBlock: Extract<
-						ChatMessageBlock,
-						{ type: "tool_call" }
-					> = {
-						type: "tool_call",
-						taskId: event.taskId,
-						toolCallId,
-						toolType: event.toolCall?.type,
-						name: event.toolCall?.name,
-						status: event.toolCall?.status,
-						input: event.toolCall?.input,
-					};
-
-					streamBuilder.startToolCall(toolCallBlock);
-
-					updateStreamingMessage();
-					return;
-				}
-
-				if (event.type === "tool_completed" || event.type === "tool_error") {
-					if (event.type === "tool_completed") {
-						streamBuilder.updateToolCall(event.toolCallId, (b) => ({
-							...b,
-							status: "completed",
-							output: event.result.data,
-						}));
-					} else {
-						streamBuilder.updateToolCall(event.toolCallId, (b) => ({
-							...b,
-							status: "error",
-							error: event.error,
-						}));
-					}
-					updateStreamingMessage();
-				}
+				// 聊天正文里的工具卡片由 SDK transformed events 直接驱动。
+				// agentStore 事件仍用于任务面板/中间栏状态，但不再作为正文卡片的时序源。
 			});
 
 			const onChunk = (chunk: string) => {
 				touchActivity();
-				streamBuilder.appendTextChunk(chunk);
+				streamBuilder.appendVisibleTextChunk(chunk);
 				const snapshot = getStreamText();
 				if (docProtocolMode === "none") {
 					if (snapshot.includes(":::update-doc")) {
@@ -731,44 +746,66 @@ export function useAgentHandler({
 				scheduleStreamingUpdate();
 			};
 
-			const agentRun = await agentExecutor.executeCustomTask(
-				content,
-				systemPrompt,
-				undefined,
-				{
-					conversationContext,
-					fallbackSearchQuery,
-					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
-					activeDocContent: workspaceStore.getActiveDocContent() || "",
-					attachedContexts,
-					attachedFiles, // 传递文件路径
-					conversationSessionId: session.id,
-					sandboxKey: boundAgentSessionId || session.id,
-					wikiScopePath: sessionStore.getCurrentSession()?.cwd || undefined,
-					resumeSessionId: (() => {
-						if (!session.sdkSessionId) return undefined;
-						if (isSdkSessionId(session.sdkSessionId))
-							return session.sdkSessionId;
-						chatStore.setSessionSdkSessionId(session.id, undefined);
-						return undefined;
-					})(),
-					persistSession: true,
-					forkSession: forceForkSession,
-					parentSdkSessionId: parentSdkSessionIdForRun,
-					documentContextInjected: true,
-					planMode: planModeStore.getState().enabled,
-					confirmedPlan:
-						planModeStore.getState().currentPlan?.status === "confirmed"
-							? (planModeStore.getState().currentPlan ?? undefined)
-							: undefined,
-					onChunk, // 流式输出回调
-					onThoughtChunk: (chunk, meta) => {
-						touchActivity();
-						streamBuilder.appendThoughtChunk(chunk, meta);
-						scheduleStreamingUpdate();
-					},
-				},
-			);
+			// 如果有存活的 run，用 followup 模式（不重开进程，利用 prompt cache）
+			const agentRun = agentExecutor.canFollowup
+				? await agentExecutor.executeFollowup(content, {
+						workingDirectory:
+							session.cwd || sessionStore.getCurrentSession()?.cwd || undefined,
+						attachedContexts,
+						attachedFiles,
+						onChunk,
+						onMessage: handleSdkInlineMessage,
+						onThoughtChunk: (chunk, meta) => {
+							touchActivity();
+							streamBuilder.appendThoughtChunk(chunk, meta);
+							scheduleStreamingUpdate();
+						},
+					})
+				: await agentExecutor.executeCustomTask(
+						content,
+						systemPrompt,
+						undefined,
+						{
+							// 直接把用户选定的真实目录（session.cwd）作为 agent 工作目录，
+							// 与 Claude Code CLI 一致：agent 在用户目录里操作原文件。
+							workingDirectory:
+								session.cwd ||
+								sessionStore.getCurrentSession()?.cwd ||
+								undefined,
+							conversationContext,
+							fallbackSearchQuery,
+							hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+							activeDocContent: workspaceStore.getActiveDocContent() || "",
+							attachedContexts,
+							attachedFiles, // 传递文件路径
+							conversationSessionId: session.id,
+							sandboxKey: boundAgentSessionId || session.id,
+							wikiScopePath: sessionStore.getCurrentSession()?.cwd || undefined,
+							resumeSessionId: (() => {
+								if (!session.sdkSessionId) return undefined;
+								if (isSdkSessionId(session.sdkSessionId))
+									return session.sdkSessionId;
+								chatStore.setSessionSdkSessionId(session.id, undefined);
+								return undefined;
+							})(),
+							persistSession: true,
+							forkSession: forceForkSession,
+							parentSdkSessionId: parentSdkSessionIdForRun,
+							documentContextInjected: true,
+							planMode: planModeStore.getState().enabled,
+							confirmedPlan:
+								planModeStore.getState().currentPlan?.status === "confirmed"
+									? (planModeStore.getState().currentPlan ?? undefined)
+									: undefined,
+							onChunk, // 流式输出回调
+							onMessage: handleSdkInlineMessage,
+							onThoughtChunk: (chunk, meta) => {
+								touchActivity();
+								streamBuilder.appendThoughtChunk(chunk, meta);
+								scheduleStreamingUpdate();
+							},
+						},
+					);
 			workspaceStore.clearContexts();
 
 			if (agentRun?.sdkSessionId) {

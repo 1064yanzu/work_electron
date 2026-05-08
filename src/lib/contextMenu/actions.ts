@@ -46,6 +46,7 @@ export function buildDocumentTabContextMenu(ctx: {
 
 export function buildFileItemContextMenu(ctx: {
 	onOpen: () => void;
+	onOpenInReader?: () => void;
 	onRename?: () => void;
 	onMove?: () => void;
 	onCopyPath?: () => void;
@@ -57,6 +58,11 @@ export function buildFileItemContextMenu(ctx: {
 	canSetScope?: boolean;
 }): ContextMenuItem[] {
 	const items: ContextMenuItem[] = [{ label: "打开", onClick: ctx.onOpen }];
+	if (ctx.onOpenInReader)
+		items.push({
+			label: "在阅读器中打开（导入资料库）",
+			onClick: ctx.onOpenInReader,
+		});
 	if (ctx.onRename) items.push({ label: "重命名", onClick: ctx.onRename });
 	if (ctx.onMove) items.push({ label: "移动到...", onClick: ctx.onMove });
 	if (ctx.onCopyPath)

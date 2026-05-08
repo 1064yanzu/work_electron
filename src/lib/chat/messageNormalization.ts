@@ -1,4 +1,5 @@
 import type { ChatMessage, ChatMessageBlock } from "./types";
+import { isTextCoveredByFinalText } from "./blockTextMerge";
 
 function getTaskIdFromBlock(block: ChatMessageBlock): string | undefined {
 	if (block.type === "agent_task" || block.type === "task_list") {
@@ -125,8 +126,9 @@ function shouldDropAssistantFragment(
 	}
 
 	if (
-		canonicalText.length >= currentText.length &&
-		canonicalText.includes(currentText)
+		isTextCoveredByFinalText(currentText, canonicalText) ||
+		(canonicalText.length >= currentText.length &&
+			canonicalText.includes(currentText))
 	) {
 		return true;
 	}

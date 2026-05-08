@@ -647,7 +647,8 @@ body.reader-overlay-open {
 	background: var(--reader-bg);
 	scroll-behavior: smooth;
 	scrollbar-width: thin;
-	scrollbar-color: color-mix(in oklab, var(--reader-fg) 12%, transparent) transparent;
+	scrollbar-color: color-mix(in oklab, var(--reader-fg) 12%, transparent)
+		transparent;
 }
 
 .reader-main::-webkit-scrollbar {
@@ -784,7 +785,7 @@ body.reader-overlay-open {
 	--page-padding-x: clamp(32px, 5vw, 80px);
 	padding: clamp(40px, 5vh, 72px) var(--page-padding-x);
 	box-sizing: border-box;
-	
+
 	column-gap: calc(var(--page-padding-x) * 2);
 	column-width: calc(50cqw - var(--page-padding-x) * 2);
 	column-count: auto;
@@ -865,7 +866,11 @@ body.reader-overlay-open {
 	text-decoration-line: underline;
 	text-underline-offset: 0.15em;
 	text-decoration-thickness: 1px;
-	text-decoration-color: color-mix(in oklab, var(--reader-accent) 40%, transparent);
+	text-decoration-color: color-mix(
+		in oklab,
+		var(--reader-accent) 40%,
+		transparent
+	);
 	cursor: pointer;
 	transition:
 		text-decoration-color 200ms ease,
@@ -1027,6 +1032,119 @@ mark[data-reader-highlight][data-color="purple"] {
 }
 mark[data-reader-highlight][data-color="orange"] {
 	background: rgba(233, 165, 91, 0.45);
+}
+
+/* ===========================================================
+   朗读中的段落高亮 — 浅 accent 色调底 + 左侧细色条
+   =========================================================== */
+.reader-article .reader-tts-active {
+	background: color-mix(in oklab, var(--reader-accent-soft) 60%, transparent);
+	border-radius: 6px;
+	box-shadow:
+		inset 3px 0 0 var(--reader-accent),
+		0 0 0 1px color-mix(in oklab, var(--reader-accent) 16%, transparent);
+	transition:
+		background-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+		box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
+	position: relative;
+}
+
+.reader-article .reader-tts-active.reader-tts-reading::before {
+	content: "";
+	position: absolute;
+	left: -2px;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--reader-accent);
+	border-radius: 2px;
+	animation: reader-tts-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes reader-tts-breathe {
+	0%,
+	100% {
+		opacity: 0.6;
+		transform: scaleY(0.92);
+	}
+	50% {
+		opacity: 1;
+		transform: scaleY(1);
+	}
+}
+
+/* ===========================================================
+   朗读中的"点击段落跳读"hover 反馈
+   - 仅在 article 带 .reader-article--tts-running 时启用
+   - 已在播放的段（.reader-tts-active）不显示 hover，避免与高亮叠加
+   - 用 accent 色的极轻底色 + 极细左侧 hint 边，提示"可点跳读"
+   =========================================================== */
+.reader-article--tts-running p,
+.reader-article--tts-running h1,
+.reader-article--tts-running h2,
+.reader-article--tts-running h3,
+.reader-article--tts-running h4,
+.reader-article--tts-running h5,
+.reader-article--tts-running h6,
+.reader-article--tts-running blockquote,
+.reader-article--tts-running li {
+	cursor: pointer;
+	transition:
+		background-color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+/* 高亮 / 书签点击跳转后的"目标闪烁"
+   思路：用 box-shadow 包一圈柔和的 accent 色光晕，淡入淡出 1.4s，
+   不改变正文的 layout / 字色，避免抢戏。仅 1 次播放，class 由 JS 在 1400ms 后移除。 */
+.reader-target-flash {
+	animation: reader-target-flash 1400ms cubic-bezier(0.22, 0.61, 0.36, 1) 1;
+	border-radius: 6px;
+}
+
+@keyframes reader-target-flash {
+	0% {
+		background-color: color-mix(
+			in srgb,
+			var(--reader-accent, #d96c46) 18%,
+			transparent
+		);
+		box-shadow: 0 0 0 4px
+			color-mix(in srgb, var(--reader-accent, #d96c46) 22%, transparent);
+	}
+	60% {
+		background-color: color-mix(
+			in srgb,
+			var(--reader-accent, #d96c46) 8%,
+			transparent
+		);
+		box-shadow: 0 0 0 2px
+			color-mix(in srgb, var(--reader-accent, #d96c46) 10%, transparent);
+	}
+	100% {
+		background-color: transparent;
+		box-shadow: 0 0 0 0 transparent;
+	}
+}
+
+.reader-article--tts-running p:hover:not(.reader-tts-active),
+.reader-article--tts-running h1:hover:not(.reader-tts-active),
+.reader-article--tts-running h2:hover:not(.reader-tts-active),
+.reader-article--tts-running h3:hover:not(.reader-tts-active),
+.reader-article--tts-running h4:hover:not(.reader-tts-active),
+.reader-article--tts-running h5:hover:not(.reader-tts-active),
+.reader-article--tts-running h6:hover:not(.reader-tts-active),
+.reader-article--tts-running blockquote:hover:not(.reader-tts-active),
+.reader-article--tts-running li:hover:not(.reader-tts-active) {
+	background: color-mix(in oklab, var(--reader-accent-soft) 24%, transparent);
+	border-radius: 6px;
+	box-shadow: inset 2px 0 0
+		color-mix(in oklab, var(--reader-accent) 40%, transparent);
+}
+
+/* 划选文字时把 cursor 还给 text，避免 pointer 抢夺选择体感 */
+.reader-article--tts-running ::selection {
+	background: color-mix(in oklab, var(--reader-accent) 22%, transparent);
 }
 
 /* PDF 引擎 */
@@ -1955,8 +2073,12 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 @keyframes reader-loading-fadein {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* ===========================================================

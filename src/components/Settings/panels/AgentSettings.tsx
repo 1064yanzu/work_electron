@@ -1,11 +1,4 @@
-import {
-	Cog,
-	Clock,
-	RotateCcw,
-	Shield,
-	ShieldAlert,
-	ShieldCheck,
-} from "lucide-react";
+import { Cog, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAgentChatSettingsStore } from "../../../lib/agent/chatSettingsStore";
 import { usePermissionStore } from "../../../lib/agent/permissionStore";
@@ -15,7 +8,6 @@ import {
 	type PermissionMode,
 	resetToolRiskLevels,
 	setToolRiskLevel,
-	TOOL_NAMES,
 	type ToolRiskLevel,
 	type ToolType,
 } from "../../../lib/agent/types";
@@ -28,24 +20,19 @@ import { getConfig, setConfig } from "../../../lib/config";
 import { useAgentModelSettingsStore } from "../../../lib/models/agentModelSettingsStore";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { toast } from "../../ui/Toast";
-import { Select } from "../../ui/Select";
 import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
-import { SettingsPageContainer } from "../ui/SettingsPrimitives";
-import { Toggle } from "../components";
+import {
+	SettingsButton,
+	SettingsPageContainer,
+	SettingsStat,
+} from "../ui/SettingsPrimitives";
 import { AgentModelScenarioSettings } from "../components/AgentModelScenarioSettings";
 import { ContextRuntimeSection } from "./agent/ContextRuntimeSection";
 import { KbRetrievalSection } from "./agent/KbRetrievalSection";
 import { SessionPersistenceSection } from "./agent/SessionPersistenceSection";
-
-const RISK_LEVEL_CONFIG: Record<
-	ToolRiskLevel,
-	{ label: string; icon: React.ElementType; color: string }
-> = {
-	L0: { label: "低风险", icon: ShieldCheck, color: "text-mint-600" },
-	L1: { label: "中风险", icon: Shield, color: "text-peach-500" },
-	L2: { label: "高风险", icon: ShieldAlert, color: "text-[#b53333]" },
-};
+import { AgentSdkRuntimeSection } from "./agent/AgentSdkRuntimeSection";
+import { PermissionPolicySection } from "./agent/PermissionPolicySection";
 
 const PERMISSION_MODE_OPTIONS: { value: PermissionMode; label: string }[] = [
 	{ value: "auto_approve", label: "自动批准" },
@@ -79,7 +66,6 @@ export function AgentSettings() {
 		Record<ToolType, ToolRiskLevel>
 	>(() => getToolRiskLevels());
 
-	// 组件挂载时加载风险等级
 	useEffect(() => {
 		setToolRiskLevelsState(getToolRiskLevels());
 	}, []);
@@ -107,8 +93,9 @@ export function AgentSettings() {
 		String(chatSettings.replayLimit),
 	);
 	const [sdkInteractiveApproval, setSdkInteractiveApproval] =
-		useState<boolean>(true);
-	const [sdkPermissionMode, setSdkPermissionMode] = useState<string>("default");
+		useState<boolean>(false);
+	const [sdkPermissionMode, setSdkPermissionMode] =
+		useState<string>("bypassPermissions");
 	const [sdkCompatMode, setSdkCompatMode] = useState<boolean>(false);
 	const [sdkPluginPathsDraft, setSdkPluginPathsDraft] = useState<string>("");
 	const [sdkAdditionalDirsDraft, setSdkAdditionalDirsDraft] =
@@ -135,12 +122,14 @@ export function AgentSettings() {
 					getConfig("agent.sdk.additional_directories"),
 				]);
 				setSdkInteractiveApproval(
-					typeof interactiveApproval === "boolean" ? interactiveApproval : true,
+					typeof interactiveApproval === "boolean"
+						? interactiveApproval
+						: false,
 				);
 				setSdkPermissionMode(
 					typeof permissionMode === "string" && permissionMode.trim()
 						? permissionMode
-						: "default",
+						: "bypassPermissions",
 				);
 				setSdkCompatMode(compatMode === true);
 				setSdkPluginPathsDraft(
@@ -161,7 +150,7 @@ export function AgentSettings() {
 				/* ignore */
 			}
 		};
-		loadSdkSettings();
+		void loadSdkSettings();
 	}, []);
 
 	useEffect(() => {
@@ -216,7 +205,7 @@ export function AgentSettings() {
 				/* ignore */
 			}
 		};
-		load();
+		void load();
 	}, []);
 
 	const handleKbModeChange = async (mode: "fts" | "vector" | "hybrid") => {
@@ -323,6 +312,7 @@ export function AgentSettings() {
 		clearSessionRemembered();
 		resetToolRiskLevels();
 		setToolRiskLevelsState(getToolRiskLevels());
+		toast.success("Agent 设置已恢复默认");
 	};
 
 	const handleToolRiskLevelChange = (
@@ -330,7 +320,6 @@ export function AgentSettings() {
 		riskLevel: ToolRiskLevel,
 	) => {
 		setToolRiskLevel(toolType, riskLevel);
-		// 立即更新状态，确保 UI 响应
 		setToolRiskLevelsState((prev) => ({
 			...prev,
 			[toolType]: riskLevel,
@@ -376,6 +365,7 @@ export function AgentSettings() {
 			parseLines(sdkAdditionalDirsDraft),
 		);
 	};
+
 	const contextRuntime = modelSettings.contextRuntime || {
 		contextPolicy: "balanced" as const,
 		subagentContextMode: "capsule" as const,
@@ -383,7 +373,7 @@ export function AgentSettings() {
 		maxThinkingTokens: 8192,
 		maxBudgetUsd: undefined as number | undefined,
 		settingSources: ["user", "project"] as Array<"user" | "project" | "local">,
-		enableToolSearch: "auto:5" as const,
+		enableToolSearch: "false" as const,
 		contextBudget: {
 			maxContextChars: 16000,
 			maxFiles: 12,
@@ -474,183 +464,121 @@ export function AgentSettings() {
 
 	if (showTechnicalSummaries) {
 		return (
-			<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+			<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
 				<SettingsPanelHeader
 					icon={Cog}
 					title="Agent 设置"
-					description="Agent 权限、模型场景与检索。"
+					description="Agent 权限、模型场景与检索的概览。"
 				/>
 
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">默认权限模式</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{permissionModeLabel}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">默认模型</div>
-						<div className="mt-2 text-sm font-semibold text-text-primary break-all">
-							{modelSettings.defaultModelId || "尚未指定"}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">已启用场景</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">
-							{enabledScenarioCount}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">资料检索</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{retrievalModeLabel}
-						</div>
-					</div>
+				<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+					<SettingsStat
+						label="默认权限"
+						value={permissionModeLabel}
+						hint="未指定时的策略"
+					/>
+					<SettingsStat
+						label="默认模型"
+						value={modelSettings.defaultModelId || "未指定"}
+						hint="Agent 启动时使用"
+					/>
+					<SettingsStat
+						label="启用场景"
+						value={enabledScenarioCount}
+						hint="模型场景数量"
+					/>
+					<SettingsStat
+						label="资料检索"
+						value={retrievalModeLabel}
+						hint="知识库召回方式"
+					/>
 				</div>
 			</SettingsPageContainer>
 		);
 	}
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-8">
+		<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
 			<SettingsPanelHeader
 				icon={Cog}
 				title="Agent 设置"
-				description="模型场景、权限与检索。"
+				description="Claude Agent SDK 运行时、模型场景、权限策略与知识库检索一站式配置。"
+				actions={
+					<SettingsButton
+						variant="secondary"
+						icon={RotateCcw}
+						onClick={handleResetToDefault}
+						title="将权限策略与工具风险等级恢复为默认"
+					>
+						恢复默认
+					</SettingsButton>
+				}
 			/>
 
-			{/* 模型场景配置 */}
-			<AgentModelScenarioSettings />
-
-			{/* Claude Agent SDK 运行时配置 */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Cog className="w-4 h-4" />
-					Claude Agent SDK
-				</h4>
-				<div className="space-y-3">
-					<div className="flex items-center justify-between gap-3">
-						<div>
-							<div className="text-sm text-text-primary">交互审批</div>
-							<div className="text-xs text-text-muted">
-								默认开启。工具调用与 AskUserQuestion 通过 UI 确认。
-							</div>
-						</div>
-						<Toggle
-							checked={sdkInteractiveApproval}
-							onChange={() =>
-								void saveSdkInteractiveApproval(!sdkInteractiveApproval)
-							}
-						/>
-					</div>
-					<div className="flex items-center justify-between gap-3">
-						<div>
-							<div className="text-sm text-text-primary">兼容模式</div>
-							<div className="text-xs text-text-muted">
-								开启后回退为旧路径（acceptEdits + 关闭交互审批）。
-							</div>
-						</div>
-						<Toggle
-							checked={sdkCompatMode}
-							onChange={() => void saveSdkCompatMode(!sdkCompatMode)}
-						/>
-					</div>
-					<div>
-						<label className="text-sm text-text-primary mb-1.5 block">
-							默认 permission mode
-						</label>
-						<Select
-							value={sdkPermissionMode}
-							onChange={(event) => saveSdkPermissionMode(event.target.value)}
-							options={[
-								{ value: "default", label: "default" },
-								{ value: "acceptEdits", label: "acceptEdits" },
-								{ value: "dontAsk", label: "dontAsk" },
-								{ value: "plan", label: "plan" },
-								{ value: "delegate", label: "delegate（多 Agent）" },
-							]}
-						/>
-					</div>
-					<div>
-						<label className="text-sm text-text-primary">
-							插件路径（每行一个）
-						</label>
-						<textarea
-							value={sdkPluginPathsDraft}
-							onChange={(event) => setSdkPluginPathsDraft(event.target.value)}
-							onBlur={saveSdkPluginPaths}
-							placeholder="/abs/path/to/plugin"
-							rows={3}
-							className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
-						/>
-					</div>
-					<div>
-						<label className="text-sm text-text-primary">
-							additionalDirectories（每行一个）
-						</label>
-						<textarea
-							value={sdkAdditionalDirsDraft}
-							onChange={(event) =>
-								setSdkAdditionalDirsDraft(event.target.value)
-							}
-							onBlur={saveSdkAdditionalDirs}
-							placeholder="/abs/path/to/extra/dir"
-							rows={3}
-							className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-background text-sm"
-						/>
-					</div>
-				</div>
+			{/* 概览统计 */}
+			<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+				<SettingsStat
+					label="默认权限"
+					value={permissionModeLabel}
+					hint="无显式指定时"
+				/>
+				<SettingsStat
+					label="默认模型"
+					value={
+						<span className="break-all text-[12.5px]">
+							{modelSettings.defaultModelId || "未指定"}
+						</span>
+					}
+					hint="Agent 启动时使用"
+				/>
+				<SettingsStat
+					label="启用场景"
+					value={enabledScenarioCount}
+					hint="模型场景数"
+				/>
+				<SettingsStat
+					label="资料检索"
+					value={retrievalModeLabel}
+					hint="知识库召回"
+				/>
 			</div>
 
-			{/* 上下文治理配置 */}
+			{/* 模型场景 */}
+			<AgentModelScenarioSettings />
+
+			{/* SDK 运行时 */}
+			<AgentSdkRuntimeSection
+				sdkInteractiveApproval={sdkInteractiveApproval}
+				onInteractiveApprovalChange={(v) => void saveSdkInteractiveApproval(v)}
+				sdkCompatMode={sdkCompatMode}
+				onCompatModeChange={(v) => void saveSdkCompatMode(v)}
+				sdkPermissionMode={sdkPermissionMode}
+				onPermissionModeChange={(v) => void saveSdkPermissionMode(v)}
+				sdkPluginPathsDraft={sdkPluginPathsDraft}
+				onPluginPathsDraftChange={setSdkPluginPathsDraft}
+				onPluginPathsCommit={() => void saveSdkPluginPaths()}
+				sdkAdditionalDirsDraft={sdkAdditionalDirsDraft}
+				onAdditionalDirsDraftChange={setSdkAdditionalDirsDraft}
+				onAdditionalDirsCommit={() => void saveSdkAdditionalDirs()}
+			/>
+
+			{/* 上下文治理 */}
 			<ContextRuntimeSection
 				contextRuntime={contextRuntime}
 				saveContextRuntime={saveContextRuntime}
 			/>
 
-			{/* 工具权限策略 */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Shield className="w-4 h-4" />
-					工具权限策略
-				</h4>
-				<p className="text-xs text-text-muted -mt-2">
-					按风险等级配置工具调用的默认权限。低风险（L0）为纯读取操作，中风险（L1）涉及网络请求，高风险（L2）可能修改系统状态。
-				</p>
-				<div className="space-y-3">
-					{(["L0", "L1", "L2"] as ToolRiskLevel[]).map((level) => {
-						const cfg = RISK_LEVEL_CONFIG[level];
-						const Icon = cfg.icon;
-						return (
-							<div
-								key={level}
-								className="flex items-center justify-between gap-4"
-							>
-								<div className="flex items-center gap-2 min-w-[100px]">
-									<Icon className={`w-4 h-4 ${cfg.color}`} />
-									<span className="text-sm text-text-primary">{cfg.label}</span>
-								</div>
-								<Select
-									value={policy.levelPolicies[level]}
-									onChange={(e) =>
-										handleLevelPolicyChange(
-											level,
-											e.target.value as PermissionMode,
-										)
-									}
-									containerClassName="flex-1 max-w-[200px]"
-									options={PERMISSION_MODE_OPTIONS.map((opt) => ({
-										value: opt.value,
-										label: opt.label,
-									}))}
-								/>
-							</div>
-						);
-					})}
-				</div>
-			</div>
+			{/* 权限策略 */}
+			<PermissionPolicySection
+				levelPolicies={policy.levelPolicies}
+				onLevelPolicyChange={handleLevelPolicyChange}
+				timeoutSeconds={policy.timeoutSeconds}
+				onTimeoutChange={handleTimeoutChange}
+				toolRiskLevels={toolRiskLevels}
+				onToolRiskLevelChange={handleToolRiskLevelChange}
+			/>
 
-			{/* 会话持久化与回放 */}
+			{/* 会话持久化 */}
 			<SessionPersistenceSection
 				chatSettings={chatSettings}
 				agentChatSettingsStore={agentChatSettingsStore}
@@ -659,100 +587,7 @@ export function AgentSettings() {
 				onReplayLimitCommit={commitReplayLimit}
 			/>
 
-			{/* 内置工具列表 */}
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<h4 className="font-medium text-text-primary">内置工具风险等级</h4>
-					<p className="text-xs text-text-muted">
-						调整每个工具的风险等级，影响权限策略的默认行为
-					</p>
-				</div>
-				<div className="border border-border rounded-xl overflow-hidden">
-					<table className="w-full text-sm">
-						<thead className="bg-warm-50">
-							<tr>
-								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-									工具名称
-								</th>
-								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-									风险等级
-								</th>
-								<th className="text-left px-4 py-2.5 font-medium text-text-secondary">
-									当前策略
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{(Object.keys(TOOL_NAMES) as ToolType[]).map((toolType) => {
-								const riskLevel = toolRiskLevels[toolType] || "L0";
-								const currentMode = policy.levelPolicies[riskLevel];
-								const modeLabel = PERMISSION_MODE_OPTIONS.find(
-									(o) => o.value === currentMode,
-								)?.label;
-								return (
-									<tr
-										key={toolType}
-										className="border-t border-border hover:bg-warm-50/50"
-									>
-										<td className="px-4 py-2.5 text-text-primary">
-											{TOOL_NAMES[toolType]}
-										</td>
-										<td className="px-4 py-2.5">
-											<Select
-												value={riskLevel}
-												onChange={(e) =>
-													handleToolRiskLevelChange(
-														toolType,
-														e.target.value as ToolRiskLevel,
-													)
-												}
-												variant="compact"
-												containerClassName="inline-block"
-												options={(["L0", "L1", "L2"] as ToolRiskLevel[]).map(
-													(level) => ({
-														value: level,
-														label: `${level} - ${RISK_LEVEL_CONFIG[level].label}`,
-													}),
-												)}
-											/>
-										</td>
-										<td className="px-4 py-2.5 text-text-secondary">
-											{modeLabel}
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			</div>
-
-			{/* 权限请求超时 */}
-			<div className="space-y-4">
-				<h4 className="font-medium text-text-primary flex items-center gap-2">
-					<Clock className="w-4 h-4" />
-					权限请求超时
-				</h4>
-				<div className="flex items-center gap-3">
-					<div className="relative w-28">
-						<input
-							type="number"
-							min={5}
-							max={120}
-							value={policy.timeoutSeconds}
-							onChange={(e) =>
-								handleTimeoutChange(parseInt(e.target.value) || 30)
-							}
-							className="w-full px-4 py-2.5 bg-surface hover:bg-warm-50 border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
-						/>
-					</div>
-					<span className="text-sm text-text-secondary">
-						秒（超时后自动拒绝）
-					</span>
-				</div>
-			</div>
-
-			{/* 资料库检索 */}
+			{/* 知识库检索 */}
 			<KbRetrievalSection
 				retrievalModeOptions={RETRIEVAL_MODE_OPTIONS}
 				kbRetrievalMode={kbRetrievalMode}
@@ -771,25 +606,6 @@ export function AgentSettings() {
 				isRebuilding={isRebuilding}
 				onRebuild={handleKbRebuild}
 			/>
-
-			{/* 重置 */}
-			<div className="pt-4 border-t border-border">
-				<div className="flex items-center justify-between">
-					<div>
-						<div className="font-medium text-text-primary">重置设置</div>
-						<div className="text-xs text-text-muted">
-							恢复所有 Agent 设置为默认值
-						</div>
-					</div>
-					<button
-						onClick={handleResetToDefault}
-						className="px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-surface hover:text-error hover:border-[rgba(181,51,51,0.32)] transition-all inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-					>
-						<RotateCcw className="w-4 h-4 shrink-0" />
-						重置
-					</button>
-				</div>
-			</div>
 		</SettingsPageContainer>
 	);
 }

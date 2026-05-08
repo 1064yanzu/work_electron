@@ -599,7 +599,11 @@ export const SourceDetailView = forwardRef<
 														src={docInfo.src}
 														type={docInfo.type}
 														className="min-h-[60vh]"
-														onOpenReader={docInfo.type === "epub" ? handleOpenReader : undefined}
+														onOpenReader={
+															docInfo.type === "epub"
+																? handleOpenReader
+																: undefined
+														}
 													/>
 												);
 											}

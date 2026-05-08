@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import {
 	findReaderAnchorTarget,
+	findReaderOffsetElement,
 	getReaderScrollContainer,
 	normalizeReaderHref,
 	resolveReaderInternalHref,
@@ -32,6 +33,7 @@ export default function TextEngine({
 	typography,
 	onPositionChange,
 	seekPercentRequest,
+	seekRequest,
 	onRequestNavigate,
 	onSelectionChange,
 	onUserActivity,
@@ -53,7 +55,7 @@ export default function TextEngine({
 			if (pageWidth <= 0) return false;
 			const currentLeft = engine.scrollLeft;
 			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
-			
+
 			if (direction === "next") {
 				if (currentLeft >= maxLeft - 2) return false; // 已到最后一页
 				const targetPage = Math.floor((currentLeft + 5) / pageWidth) + 1;
@@ -156,23 +158,25 @@ export default function TextEngine({
 	useEffect(() => {
 		const engine = scrollRef.current;
 		if (!engine || !isPaged) return;
-		
+
 		const onScrollEnd = () => {
 			const pageWidth = engine.clientWidth;
 			if (pageWidth <= 0) return;
 			const currentLeft = engine.scrollLeft;
 			const maxLeft = Math.max(0, engine.scrollWidth - pageWidth);
-			
+
 			const targetPage = Math.round(currentLeft / pageWidth);
 			let targetLeft = targetPage * pageWidth;
-			
+
 			// 对于最后一页的零碎尾巴，如果离 maxLeft 更近，则吸附到 maxLeft
-			if (Math.abs(currentLeft - maxLeft) < Math.abs(currentLeft - targetLeft)) {
+			if (
+				Math.abs(currentLeft - maxLeft) < Math.abs(currentLeft - targetLeft)
+			) {
 				targetLeft = maxLeft;
 			}
-			
+
 			const safeTarget = Math.min(Math.max(0, targetLeft), maxLeft);
-			
+
 			// 如果偏差超过 2px（避免浮点误差导致的无限循环），则执行吸附
 			if (Math.abs(currentLeft - safeTarget) > 2) {
 				engine.scrollTo({
@@ -182,7 +186,7 @@ export default function TextEngine({
 				});
 			}
 		};
-		
+
 		engine.addEventListener("scrollend", onScrollEnd);
 		return () => engine.removeEventListener("scrollend", onScrollEnd);
 	}, [isPaged]);
@@ -209,6 +213,47 @@ export default function TextEngine({
 			pct,
 		);
 	}, [chapter, isPaged, onPositionChange, seekPercentRequest]);
+
+	// 高亮 / 书签点击跳转 — seekRequest 由 ReaderShell 解析 locator 后下发：
+	//  - kind: "percent" 走与进度条同样的百分比映射
+	//  - kind: "offset"  走 TreeWalker 解析 article.textContent 第 N 个字符位置，
+	//                    回溯到块级祖先（p / h2 / blockquote / li …）后 scrollIntoView，
+	//                    并加一个短暂的高亮闪烁让用户看到目标
+	//  - kind: "pdfPage" 由 PdfEngine 自行处理，TextEngine 忽略
+	useEffect(() => {
+		const engine = scrollRef.current;
+		const article = articleRef.current;
+		if (!engine || !article || !chapter || !seekRequest) return;
+
+		if (seekRequest.kind === "percent") {
+			const scroll = isPaged ? engine : getReaderScrollContainer(engine);
+			const pct = Math.max(0, Math.min(1, seekRequest.percent));
+			const max = Math.max(
+				0,
+				isPaged
+					? scroll.scrollWidth - scroll.clientWidth
+					: scroll.scrollHeight - scroll.clientHeight,
+			);
+			scroll.scrollTo({
+				left: isPaged ? max * pct : 0,
+				top: isPaged ? 0 : max * pct,
+				behavior: "instant",
+			});
+			return;
+		}
+
+		if (seekRequest.kind === "offset") {
+			const target = findReaderOffsetElement(article, seekRequest.offset);
+			if (!target) return;
+			// 章节刚切过来时 layout 可能还没稳定 → 等下一帧再滚
+			const frame = requestAnimationFrame(() => {
+				scrollToReaderTarget(engine, target, isPaged ? "instant" : "smooth");
+				target.classList.add("reader-target-flash");
+				setTimeout(() => target.classList.remove("reader-target-flash"), 1400);
+			});
+			return () => cancelAnimationFrame(frame);
+		}
+	}, [chapter, isPaged, seekRequest]);
 
 	// EPUB/HTML 内部目录链接：拦截默认导航，留在阅读器内切章/滚动。
 	useEffect(() => {
@@ -315,29 +360,31 @@ export default function TextEngine({
 	}, [reportSelection]);
 
 	const isMultiColumn = typography.columnCount === 2;
-	const articleStyle: React.CSSProperties = (isPaged
-		? {
-				// 翻页双栏模式：article 宽度铺满容器，高度继承容器（100%）
-				// CSS 会自动按 column-width 把内容横向分页
-				fontFamily: typography.fontFamilyStack,
-				fontSize: typography.fontSizePx,
-				lineHeight: typography.lineHeight,
-				letterSpacing: `${typography.letterSpacingEm}em`,
-				columnRuleColor: "var(--reader-border)",
-			}
-		: {
-				// 单栏普通滚动模式
-				fontFamily: typography.fontFamilyStack,
-				fontSize: typography.fontSizePx,
-				lineHeight: typography.lineHeight,
-				letterSpacing: `${typography.letterSpacingEm}em`,
-				"--reader-column-count": typography.columnCount,
-				"--reader-column-gap": isMultiColumn
-					? "clamp(2.5rem, 5vw, 5rem)"
-					: "0px",
-				maxWidth: `${typography.maxWidthCh}ch`,
-				columnRuleColor: "var(--reader-border)",
-			}) as React.CSSProperties;
+	const articleStyle: React.CSSProperties = (
+		isPaged
+			? {
+					// 翻页双栏模式：article 宽度铺满容器，高度继承容器（100%）
+					// CSS 会自动按 column-width 把内容横向分页
+					fontFamily: typography.fontFamilyStack,
+					fontSize: typography.fontSizePx,
+					lineHeight: typography.lineHeight,
+					letterSpacing: `${typography.letterSpacingEm}em`,
+					columnRuleColor: "var(--reader-border)",
+				}
+			: {
+					// 单栏普通滚动模式
+					fontFamily: typography.fontFamilyStack,
+					fontSize: typography.fontSizePx,
+					lineHeight: typography.lineHeight,
+					letterSpacing: `${typography.letterSpacingEm}em`,
+					"--reader-column-count": typography.columnCount,
+					"--reader-column-gap": isMultiColumn
+						? "clamp(2.5rem, 5vw, 5rem)"
+						: "0px",
+					maxWidth: `${typography.maxWidthCh}ch`,
+					columnRuleColor: "var(--reader-border)",
+				}
+	) as React.CSSProperties;
 
 	return (
 		<div

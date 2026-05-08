@@ -493,8 +493,13 @@ class WorkspaceStore {
 		editorStore.openDoc(docId, title, content);
 	}
 
-	openProjectFile(filePath: string, title: string, content: string) {
-		editorStore.openProjectFile(filePath, title, content);
+	openProjectFile(
+		filePath: string,
+		title: string,
+		content: string,
+		meta?: { size?: number; mtimeMs?: number },
+	) {
+		editorStore.openProjectFile(filePath, title, content, meta);
 	}
 
 	closeDoc(docId: string) {
@@ -509,8 +514,13 @@ class WorkspaceStore {
 		editorStore.reorderDocs(fromIndex, toIndex);
 	}
 
-	updateDocCache(docId: string, content: string, dirty?: boolean) {
-		editorStore.updateDocCache(docId, content, dirty);
+	updateDocCache(
+		docId: string,
+		content: string,
+		dirty?: boolean,
+		meta?: { size?: number; mtimeMs?: number },
+	) {
+		editorStore.updateDocCache(docId, content, dirty, meta);
 	}
 
 	markDocDirty(docId: string) {

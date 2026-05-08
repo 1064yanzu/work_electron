@@ -40,7 +40,9 @@ export default function DocumentViewer({
 		);
 	} else if (type === "epub") {
 		return (
-			<div className={`flex flex-col items-center justify-center py-16 ${className}`}>
+			<div
+				className={`flex flex-col items-center justify-center py-16 ${className}`}
+			>
 				<BookOpen className="w-12 h-12 mb-4 text-text-light opacity-60" />
 				<p className="text-sm text-text-secondary mb-4">
 					EPUB 图书请使用阅读器打开以获得最佳体验

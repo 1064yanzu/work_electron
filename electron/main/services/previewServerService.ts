@@ -136,7 +136,7 @@ class PreviewServerService {
 		try {
 			switch (mode) {
 				case "single": {
-					return this.startSingleMode(taskId, sandboxDir);
+					return await this.startSingleMode(taskId, sandboxDir);
 				}
 				case "static": {
 					return await this.startStaticMode(taskId, sandboxDir);
@@ -227,32 +227,76 @@ class PreviewServerService {
 	// ──── 私有方法：各模式启动 ──────────────────────────────
 
 	/**
-	 * single 模式：不启服务器，返回文件路径
+	 * single 模式：单 HTML 文件
+	 *
+	 * 设计取舍：早期版本通过 `file://` 协议直接加载磁盘文件，
+	 * 但在 dev 主窗口（http://localhost）和 sandbox iframe 双重约束下，
+	 * Electron 默认 webSecurity 会拦截跨源 file://，且路径中的空格
+	 * （macOS `Application Support`）未编码也会导致 iframe 加载失败。
+	 *
+	 * 因此 single 模式同样起一个本地 Express，URL 改为 http://127.0.0.1:port
+	 * 的形式，由 express.static 自动处理路径编码与 MIME，避免上述坑。
+	 * 与 static 模式的差异仅保留在 `mode` 字段上，前端 UI 仍可据此区分。
 	 */
-	private startSingleMode(
+	private async startSingleMode(
 		taskId: string,
 		sandboxDir: string,
-	): PreviewStartResult {
-		// 找到唯一的 HTML 文件
+	): Promise<PreviewStartResult> {
 		const htmlFile = this.findSingleHtmlSync(sandboxDir);
 		if (!htmlFile) {
 			throw new Error(`在 ${sandboxDir} 中未找到 HTML 文件`);
 		}
 
-		const filePath = path.join(sandboxDir, htmlFile);
-		const url = `file://${filePath}`;
+		const port = await findAvailablePort(PORT_RANGE_START, PORT_RANGE_ATTEMPTS);
+		const host = "127.0.0.1";
+
+		const app = express();
+
+		app.use((_req, res, next) => {
+			res.header("Access-Control-Allow-Origin", "*");
+			res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+			res.header("Access-Control-Allow-Headers", "Content-Type");
+			next();
+		});
+
+		// 静态文件服务：以单 HTML 作为默认入口，其他相对资源（图片/JS）也能访问
+		app.use(
+			express.static(sandboxDir, {
+				index: htmlFile,
+				dotfiles: "deny",
+			}),
+		);
+
+		// 兜底：未匹配到的请求返回该 HTML（保证 / 能直接打开）
+		// Express 5 / path-to-regexp v8 不再支持裸 "*"，必须命名通配符 "/*splat"
+		app.get("/*splat", async (_req, res) => {
+			try {
+				await fs.access(path.join(sandboxDir, htmlFile));
+				res.sendFile(path.join(sandboxDir, htmlFile));
+			} catch {
+				res.status(404).send("Not Found");
+			}
+		});
+
+		const server = await new Promise<Server>((resolve, reject) => {
+			const s = app.listen(port, host, () => resolve(s));
+			s.on("error", reject);
+		});
+
+		const url = `http://${host}:${port}/`;
 
 		const instance: PreviewServerInstance = {
 			taskId,
-			port: 0,
+			port,
 			url,
 			mode: "single",
 			ready: true,
+			server,
 		};
 		this.instances.set(taskId, instance);
-		this.emitEvent(taskId, "ready", { mode: "single", url });
+		this.emitEvent(taskId, "ready", { mode: "single", url, port });
 
-		return { port: 0, url, mode: "single" };
+		return { port, url, mode: "single" };
 	}
 
 	/**
@@ -284,7 +328,8 @@ class PreviewServerService {
 		);
 
 		// SPA fallback：非文件请求返回 index.html
-		app.get("*", async (_req, res) => {
+		// Express 5 / path-to-regexp v8 不再支持裸 "*"，必须命名通配符 "/*splat"
+		app.get("/*splat", async (_req, res) => {
 			try {
 				await fs.access(path.join(sandboxDir, "index.html"));
 				res.sendFile(path.join(sandboxDir, "index.html"));

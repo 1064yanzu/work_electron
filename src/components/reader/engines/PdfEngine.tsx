@@ -11,6 +11,16 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 	import.meta.url,
 ).toString();
 
+// pdfjs 的 cmaps（中日韩字体回退）/ standard_fonts（西文回退）/ wasm（OpenJPEG 解码）
+// 由 scripts/copy-pdfjs-assets.mjs 同步到 public/pdfjs/，运行时通过相对 URL 加载。
+// 不传这些 URL 会导致渲染中文 PDF 时 console 出现大量 cMapUrl/wasmUrl/字体替换警告。
+const PDFJS_OPTIONS = {
+	cMapUrl: "pdfjs/cmaps/",
+	cMapPacked: true,
+	standardFontDataUrl: "pdfjs/standard_fonts/",
+	wasmUrl: "pdfjs/wasm/",
+};
+
 type DocumentSource = string | { data: Uint8Array };
 
 export default function PdfEngine({
@@ -21,6 +31,7 @@ export default function PdfEngine({
 	onSelectionChange,
 	onUserActivity,
 	onRequestNavigate,
+	seekRequest,
 	className,
 }: ReaderEngineProps) {
 	const [documentFile, setDocumentFile] = useState<DocumentSource | null>(null);
@@ -102,6 +113,23 @@ export default function PdfEngine({
 		el?.scrollIntoView({ behavior: "instant", block: "start" });
 		setCurrentPage(target);
 	}, [chapter?.id, numPages]);
+
+	// 高亮 / 书签点击跳转：locator 形如 `pdf:page:N:offset-...`，
+	// ReaderShell 把它转成 `{ kind: "pdfPage", page: N }` 下发；
+	// PDF 没有"章内字符 offset"的概念，仅滚到对应页即可。
+	useEffect(() => {
+		if (!seekRequest || seekRequest.kind !== "pdfPage") return;
+		const scrollEl = scrollRef.current;
+		if (!scrollEl || numPages === 0) return;
+		const target = Math.max(1, Math.min(seekRequest.page, numPages));
+		const pages = scrollEl.querySelectorAll("[data-page-container]");
+		const el = pages[target - 1] as HTMLElement | undefined;
+		if (!el) return;
+		el.scrollIntoView({ behavior: "smooth", block: "start" });
+		el.classList.add("reader-target-flash");
+		setTimeout(() => el.classList.remove("reader-target-flash"), 1400);
+		setCurrentPage(target);
+	}, [seekRequest, numPages]);
 
 	const handleDocumentLoadSuccess = useCallback(
 		({ numPages: n }: { numPages: number }) => {
@@ -226,6 +254,7 @@ export default function PdfEngine({
 						onLoadSuccess={handleDocumentLoadSuccess}
 						loading={null}
 						className="reader-engine__pdf-doc"
+						options={PDFJS_OPTIONS}
 					>
 						{pageList.map((p) => (
 							<div

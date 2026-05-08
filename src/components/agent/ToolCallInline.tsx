@@ -44,6 +44,7 @@ import {
 } from "./toolCall/toolUtils";
 
 // 从工具调用中提取描述信息
+// prefix 会随 status 变化（running 显示现在时"正在 X"，completed 显示过去时"已 X"）
 function getReadableDescription(toolCall: ToolCall): {
 	icon: React.ElementType;
 	prefix: string;
@@ -55,6 +56,7 @@ function getReadableDescription(toolCall: ToolCall): {
 	const input = toolCall.input as Record<string, unknown> | undefined;
 	const name = toolCall.name?.toLowerCase() || "";
 	const type = toolCall.type;
+	const isRunning = toolCall.status === "running";
 
 	// 子代理调用（Task）
 	if (toolCall.name === "Task" || name === "task") {
@@ -67,7 +69,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		).trim();
 		return {
 			icon: Activity,
-			prefix: "子代理",
+			prefix: isRunning ? "调用子代理" : "子代理",
 			suffix: subagentType || toolCall.description,
 			detail: subagentType ? `subagent_type: ${subagentType}` : undefined,
 		};
@@ -80,7 +82,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		);
 		return {
 			icon: Search,
-			prefix: "Read",
+			prefix: isRunning ? "正在读取" : "Read",
 			fileName: getFileName(filePath),
 			filePath: getFilePath(filePath),
 			detail: filePath,
@@ -97,7 +99,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		const lineRange = startLine && endLine ? `L${startLine}-${endLine}` : "";
 		return {
 			icon: Eye,
-			prefix: "文件查看",
+			prefix: isRunning ? "正在查看" : "文件查看",
 			suffix: lineRange,
 			filePath: getFilePath(filePath),
 			detail: filePath,
@@ -111,7 +113,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		);
 		return {
 			icon: FileText,
-			prefix: "已创建",
+			prefix: isRunning ? "正在写入" : "已创建",
 			fileName: getFileName(filePath),
 			filePath: getFilePath(filePath),
 			detail: filePath,
@@ -130,7 +132,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		);
 		return {
 			icon: Edit3,
-			prefix: "已修改",
+			prefix: isRunning ? "正在修改" : "已修改",
 			fileName: getFileName(filePath),
 			filePath: getFilePath(filePath),
 			detail: filePath,
@@ -155,7 +157,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		}
 		return {
 			icon: Search,
-			prefix: "Searched",
+			prefix: isRunning ? "正在搜索" : "Searched",
 			suffix: query,
 			detail: resultCount || undefined,
 		};
@@ -166,7 +168,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		const query = String(input?.query || "");
 		return {
 			icon: Search,
-			prefix: "检索资料",
+			prefix: isRunning ? "正在检索资料" : "检索资料",
 			suffix: query,
 		};
 	}
@@ -184,7 +186,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		} catch {}
 		return {
 			icon: Globe,
-			prefix: "获取",
+			prefix: isRunning ? "正在获取" : "获取",
 			suffix: hostname || url,
 			detail: url,
 		};
@@ -201,7 +203,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		const shortCmd = cmd.length > 50 ? cmd.slice(0, 50) + "..." : cmd;
 		return {
 			icon: Terminal,
-			prefix: "$",
+			prefix: isRunning ? "执行中 $" : "$",
 			suffix: shortCmd,
 			detail: cmd,
 		};
@@ -211,8 +213,8 @@ function getReadableDescription(toolCall: ToolCall): {
 	if (name.includes("think")) {
 		return {
 			icon: Activity,
-			prefix: "Thought for",
-			suffix: "1s",
+			prefix: isRunning ? "思考中" : "Thought for",
+			suffix: isRunning ? undefined : "1s",
 		};
 	}
 
@@ -227,7 +229,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		);
 		return {
 			icon: MessageSquare,
-			prefix: "调用技能",
+			prefix: isRunning ? "调用技能中" : "调用技能",
 			suffix: skillName,
 		};
 	}
@@ -237,14 +239,16 @@ function getReadableDescription(toolCall: ToolCall): {
 		const mcpName = String(input?.name || input?.tool || toolCall.name || "");
 		return {
 			icon: MessageSquare,
-			prefix: mcpName || "MCP 调用",
+			prefix: isRunning ? `调用中 ${mcpName}` : mcpName || "MCP 调用",
 		};
 	}
 
 	// 默认
 	return {
 		icon: MessageSquare,
-		prefix: toolCall.name || "工具调用",
+		prefix: isRunning
+			? `调用 ${toolCall.name || "工具"} 中`
+			: toolCall.name || "工具调用",
 	};
 }
 
@@ -411,12 +415,20 @@ export default function ToolCallInline({
 					});
 					if (hasDetails) setIsExpanded((v) => !v);
 				}}
-				disabled={!hasDetails}
+				disabled={!hasDetails && !isRunning}
 				className={cn(
-					"w-full flex items-center gap-2 text-left transition-colors",
-					hasDetails
-						? "cursor-pointer hover:bg-warm-50/80/40 -mx-2 px-2 py-1.5 rounded-lg"
-						: "cursor-default py-0.5",
+					"w-full flex items-center gap-2 text-left transition-all",
+					// 有内容（hasDetails）或运行中：使用更大的 padding + 圆角容器
+					hasDetails || isRunning
+						? "-mx-2 px-2 py-1.5 rounded-lg cursor-pointer"
+						: "py-0.5 cursor-default",
+					// 运行中：暖色背景 + 柔光环 + 轻投影，让用户立刻看到 Agent 正在工作
+					isRunning && "bg-warm-50/80/60 ring-1 ring-warm-300/60 shadow-sm",
+					// 非运行中、有详情：hover 高亮
+					hasDetails && !isRunning && "hover:bg-warm-50/80/40",
+					// 错误态：浅红色高亮
+					isError &&
+						"bg-[rgba(181,51,51,0.04)] ring-1 ring-[rgba(181,51,51,0.18)]",
 				)}
 			>
 				{/* 折叠箭头 */}
@@ -435,7 +447,7 @@ export default function ToolCallInline({
 				{/* 状态/类型图标 */}
 				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
 					{isRunning ? (
-						<Loader2 className="w-3.5 h-3.5 text-text-light animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 text-focus animate-spin" />
 					) : isError ? (
 						<XCircle className="w-3.5 h-3.5 text-error" />
 					) : (
@@ -449,20 +461,36 @@ export default function ToolCallInline({
 						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
 							? "text-error dark:text-error"
-							: "text-text-secondary dark:text-zinc-200",
+							: isRunning
+								? "text-text-primary dark:text-zinc-100"
+								: "text-text-secondary dark:text-zinc-200",
 					)}
 				>
-					<span className="font-medium flex-shrink-0 whitespace-nowrap">
+					<span
+						className={cn(
+							"font-medium flex-shrink-0 whitespace-nowrap",
+							isRunning && "text-focus",
+						)}
+					>
 						{prefix}
 					</span>
 					{fileName && (
-						<button
-							type="button"
+						<span
+							role={canPreviewFile ? "button" : undefined}
+							tabIndex={canPreviewFile ? 0 : undefined}
 							onClick={(e) => {
 								if (!canPreviewFile) return;
 								e.preventDefault();
 								e.stopPropagation();
 								void openFilePreview();
+							}}
+							onKeyDown={(e) => {
+								if (!canPreviewFile) return;
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									e.stopPropagation();
+									void openFilePreview();
+								}
 							}}
 							className={cn(
 								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
@@ -474,7 +502,7 @@ export default function ToolCallInline({
 						>
 							<Icon className="w-3 h-3 text-sky-500 flex-shrink-0" />
 							<span className="truncate">{fileName}</span>
-						</button>
+						</span>
 					)}
 					{suffix && !fileName && (
 						<span className="text-text-muted truncate">{suffix}</span>

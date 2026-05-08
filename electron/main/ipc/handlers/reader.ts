@@ -48,6 +48,7 @@ export function createReaderHandlers(db: DbContext) {
 						filePath: p,
 						project_id: input.project_id ?? null,
 						folder_id: input.folder_id ?? null,
+						skipFullTextIndex: Boolean(input.silent),
 					});
 					if (book) out.push(book);
 				} catch (e) {
@@ -93,10 +94,19 @@ export function createReaderHandlers(db: DbContext) {
 					return { book };
 				}
 				// 文件丢失，尝试从 source_path 重新导入
-				const sourcePath = linked.rows[0].source_path ? String(linked.rows[0].source_path) : "";
-				if (sourcePath && existsSync(sourcePath) && detectFormatByExt(sourcePath)) {
+				const sourcePath = linked.rows[0].source_path
+					? String(linked.rows[0].source_path)
+					: "";
+				if (
+					sourcePath &&
+					existsSync(sourcePath) &&
+					detectFormatByExt(sourcePath)
+				) {
 					try {
-						await db.client.execute({ sql: "DELETE FROM reader_books WHERE id = ?", args: [book.id] });
+						await db.client.execute({
+							sql: "DELETE FROM reader_books WHERE id = ?",
+							args: [book.id],
+						});
 						const reimported = await importBookFromPath(db, {
 							filePath: sourcePath,
 							project_id: null,
@@ -111,7 +121,10 @@ export function createReaderHandlers(db: DbContext) {
 							return { book: reimported };
 						}
 					} catch (e) {
-						console.warn("[reader_open_from_source] re-import from source_path failed:", e);
+						console.warn(
+							"[reader_open_from_source] re-import from source_path failed:",
+							e,
+						);
 					}
 				}
 				// 无法恢复，继续走兜底路径
@@ -124,7 +137,9 @@ export function createReaderHandlers(db: DbContext) {
 			});
 			if (srcRows.rows.length === 0) return { book: null };
 
-			let originalPath = srcRows.rows[0].storage_path ? String(srcRows.rows[0].storage_path) : "";
+			let originalPath = srcRows.rows[0].storage_path
+				? String(srcRows.rows[0].storage_path)
+				: "";
 
 			if (!originalPath || !existsSync(originalPath)) {
 				originalPath = "";

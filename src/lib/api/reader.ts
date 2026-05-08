@@ -45,6 +45,7 @@ export async function readerImportFiles(payload: {
 	paths: string[];
 	project_id?: string | null;
 	folder_id?: string | null;
+	silent?: boolean;
 }): Promise<ReaderBook[]> {
 	return safeInvoke<ReaderBook[]>("reader_import_files", { payload });
 }

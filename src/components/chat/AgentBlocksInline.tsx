@@ -78,7 +78,6 @@ export function AgentBlocksInline({
 			.filter(Boolean);
 	};
 
-	console.log("[AgentBlocksInline] Rendering blocks:", blocks.length);
 	for (let i = 0; i < blocks.length; i++) {
 		const b = blocks[i];
 
@@ -109,12 +108,6 @@ export function AgentBlocksInline({
 		}
 
 		if (b.type === "text") {
-			console.log("[AgentBlocksInline] Text block:", {
-				index: i,
-				hasText: !!b.text,
-				textLength: b.text?.length,
-				textPreview: b.text?.substring(0, 150),
-			});
 			if (!b.text || !b.text.trim()) {
 				nodes.push(null);
 				continue;

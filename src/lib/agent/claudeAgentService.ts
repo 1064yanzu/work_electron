@@ -202,7 +202,13 @@ export interface ClaudeAgentExecutionOptions {
 }
 
 /**
- * Default tools that are always available
+ * 完整的 Claude Code 内置工具清单（与 SDK 0.2.x 的 sdk-tools.d.ts 对齐）。
+ *
+ * 默认对话流不传 `allowed_tools`，让主进程走 SDK 的
+ * `{ type: "preset", preset: "claude_code" }`，自动获得这一整套工具。
+ * 这里保留显式列表只用于"必须裁剪/扩展"的场景：
+ *  - Plan 模式（用 PLAN_MODE_ALLOWED_TOOLS 限制为只读）
+ *  - Multi-agent 模式（在完整集合上额外追加 "Teammate"）
  */
 const DEFAULT_TOOLS = [
 	"Read",
@@ -211,20 +217,32 @@ const DEFAULT_TOOLS = [
 	"Glob",
 	"Grep",
 	"Bash",
-	"Skill", // Enable skills support
-	"Task", // Enable subagents
+	"BashOutput",
+	"KillShell",
+	"NotebookEdit",
+	"TodoWrite",
+	"ExitPlanMode",
+	"Task",
+	"TaskStop",
 	"WebSearch",
 	"WebFetch",
 	"AskUserQuestion",
+	"ListMcpResources",
+	"ReadMcpResource",
+	"Skill", // Claude Code CLI 扩展（依赖 settingSources + filesystem skills）
 ] as const;
 
 function buildAllowedTools(
 	experimentalMultiAgent: boolean,
 	mode: "subagent_only" | "hybrid" | "teammate_preferred",
-): string[] {
+): string[] | undefined {
+	// 普通对话流不再显式传 allowed_tools，让主进程走 SDK 的
+	// { type: "preset", preset: "claude_code" }，得到完整 Claude Code 工具集。
 	if (!experimentalMultiAgent || mode === "subagent_only") {
-		return [...DEFAULT_TOOLS];
+		return undefined;
 	}
+	// Multi-agent (hybrid / teammate_preferred) 需要显式追加 "Teammate" 工具，
+	// SDK 的 tools 字段不支持 preset + append，因此必须列举完整集合。
 	return Array.from(new Set([...DEFAULT_TOOLS, "Teammate"]));
 }
 
@@ -252,7 +270,128 @@ import { settingsStore } from "../settingsStore";
  * for executing agent queries with streaming support.
  */
 export class ClaudeAgentService {
-	private activeRunId: string | null = null;
+	private _activeRunId: string | null = null;
+	private _alive: boolean = false;
+
+	get activeRunId(): string | null {
+		return this._activeRunId;
+	}
+
+	get alive(): boolean {
+		return this._alive;
+	}
+
+	// Followup turn signal：当 execute 内部收到 done 时 resolve，
+	// sendFollowup 可以 await 这个 promise 等待当前 turn 完成。
+	private _followupTurnResolve: (() => void) | null = null;
+	private _followupTurnReject: ((err: Error) => void) | null = null;
+
+	/**
+	 * 标记 run 为 alive（由 execute 的 finally 中调用）。
+	 */
+	private _markAlive() {
+		this._alive = true;
+	}
+
+	/**
+	 * 标记 run 为 dead（由 execute 的 finally 中调用）。
+	 */
+	private _markDead() {
+		this._alive = false;
+		this._activeRunId = null;
+		this._followupTurnResolve = null;
+		this._followupTurnReject = null;
+	}
+
+	/**
+	 * 发送 followup 消息到正在存活的 run。
+	 * 复用已有的 IPC 事件监听，等待下一个 done 事件。
+	 */
+	async sendFollowup(options: {
+		message: string;
+		attachments?: Array<{ path: string; title?: string }>;
+		onChunk?: (text: string) => void;
+		onMessage?: (message: AgentMessage) => void;
+		onComplete?: (result: {
+			success: boolean;
+			summary?: string;
+			sessionId?: string;
+			usage?: AgentUsageStats;
+		}) => void;
+		abortController?: AbortController;
+	}): Promise<void> {
+		if (!this._activeRunId || !this._alive) {
+			throw new Error("No alive run to send followup to");
+		}
+
+		// 更新回调（让持久事件处理器使用新的回调）
+		if (options.onChunk) this._currentOnChunk = options.onChunk;
+		if (options.onMessage) this._currentOnMessage = options.onMessage;
+		if (options.onComplete) this._currentOnComplete = options.onComplete;
+
+		// Abort 处理
+		const abortHandler = () => {
+			void invoke("agent_sdk_abort", { runId: this._activeRunId });
+			this._followupTurnReject?.(new Error("Aborted"));
+		};
+		options.abortController?.signal.addEventListener("abort", abortHandler, {
+			once: true,
+		});
+
+		try {
+			const result = await invoke<{ success: boolean; error?: string }>(
+				"agent_sdk_send_followup",
+				{
+					runId: this._activeRunId,
+					message: options.message,
+					attachments: options.attachments,
+				},
+			);
+
+			if (!result.success) {
+				this._markDead();
+				throw new Error(result.error || "Followup failed");
+			}
+
+			// 等待本轮 done 事件（由持久事件处理器 resolve）
+			await new Promise<void>((resolve, reject) => {
+				this._followupTurnResolve = resolve;
+				this._followupTurnReject = reject;
+			});
+		} finally {
+			options.abortController?.signal.removeEventListener(
+				"abort",
+				abortHandler,
+			);
+		}
+	}
+
+	/**
+	 * 检查后端 run 是否仍然 alive。
+	 */
+	async checkAlive(runId?: string): Promise<boolean> {
+		const id = runId || this._activeRunId;
+		if (!id) return false;
+		try {
+			const result = await invoke<{ alive: boolean }>("agent_sdk_check_alive", {
+				runId: id,
+			});
+			return result.alive;
+		} catch {
+			return false;
+		}
+	}
+
+	// 持久事件处理器的可替换回调（用于 followup 模式）
+	private _currentOnChunk?: (text: string) => void;
+	private _currentOnMessage?: (message: AgentMessage) => void;
+	private _currentOnComplete?: (result: {
+		success: boolean;
+		summary?: string;
+		sessionId?: string;
+		usage?: AgentUsageStats;
+	}) => void;
+	private _persistentUnlisten: (() => void) | null = null;
 
 	async control(input: {
 		action:
@@ -454,7 +593,7 @@ export class ClaudeAgentService {
 			).values(),
 		);
 		const resolvedMaxTurns =
-			parseNumber(maxTurns) ?? parseNumber(configMaxTurns) ?? 100;
+			parseNumber(maxTurns) ?? parseNumber(configMaxTurns);
 		const resolvedMaxThinkingTokens =
 			parseNumber(maxThinkingTokens) ?? parseNumber(configMaxThinkingTokens);
 		const resolvedMaxBudgetUsd =
@@ -516,7 +655,7 @@ export class ClaudeAgentService {
 			enableToolSearch ||
 			(typeof configEnableToolSearch === "string"
 				? (configEnableToolSearch as "auto" | "auto:5" | "true" | "false")
-				: "auto:5");
+				: "false");
 		const resolvedExperimentalMultiAgent =
 			typeof experimentalMultiAgent === "boolean"
 				? experimentalMultiAgent
@@ -583,7 +722,7 @@ export class ClaudeAgentService {
 			permissionModeForRun !== "plan"
 				? "delegate"
 				: permissionModeForRun;
-		const resolvedAllowedTools = planMode
+		const resolvedAllowedTools: string[] | undefined = planMode
 			? [...PLAN_MODE_ALLOWED_TOOLS]
 			: buildAllowedTools(
 					resolvedExperimentalMultiAgent,
@@ -645,7 +784,8 @@ export class ClaudeAgentService {
 		const appendVisibleTextDelta = (delta: string) => {
 			if (!delta) return;
 			streamedVisibleText += delta;
-			onChunk?.(delta);
+			// followup 模式下优先使用可替换引用
+			(this._currentOnChunk || onChunk)?.(delta);
 		};
 
 		const flushPendingReplayProbe = () => {
@@ -704,6 +844,12 @@ export class ClaudeAgentService {
 			appendVisibleTextDelta(delta);
 		};
 
+		// 可替换回调引用——followup 模式下 sendFollowup 会替换这些引用，
+		// 持久事件处理器通过 this._currentOn* 读取最新值。
+		this._currentOnChunk = onChunk;
+		this._currentOnMessage = onMessage;
+		this._currentOnComplete = onComplete;
+
 		const finished = new Promise<void>((resolve, reject) => {
 			settle = (err?: Error) => (err ? reject(err) : resolve());
 		});
@@ -711,6 +857,12 @@ export class ClaudeAgentService {
 		const abortHandler = () => {
 			if (runId) void invoke("agent_sdk_abort", { runId });
 			settle?.(new Error("Aborted"));
+			this._followupTurnReject?.(new Error("Aborted"));
+			this._markDead();
+			if (this._persistentUnlisten) {
+				this._persistentUnlisten();
+				this._persistentUnlisten = null;
+			}
 		};
 		abortController.signal.addEventListener("abort", abortHandler, {
 			once: true,
@@ -724,6 +876,9 @@ export class ClaudeAgentService {
 				result?: SDKResultMessage;
 				error?: string;
 			}) => {
+				// Followup 模式下，sendFollowup 会替换 _currentOn*，
+				// 读取最新引用。active* 是 execute 局部 let，sendFollowup 通过
+				// this._currentOn* 的 setter 间接更新它们。
 				if (debug) {
 					console.log("[ClaudeAgentService] handleEvent:", {
 						payloadRunId: payload.runId,
@@ -775,7 +930,7 @@ export class ClaudeAgentService {
 									block.text.trim()
 								) {
 									// 子代理的思考/回复
-									onMessage?.({
+									this._currentOnMessage?.({
 										type: "tool_progress",
 										content: block.text,
 										taskId: "", // context 中没有 taskId，前端需根据 toolCallId 匹配
@@ -795,7 +950,7 @@ export class ClaudeAgentService {
 										", ",
 									);
 									const toolUseMessage = `调用工具: ${toolName}(${inputDetails})`;
-									onMessage?.({
+									this._currentOnMessage?.({
 										type: "tool_progress",
 										content: toolUseMessage,
 										taskId: "",
@@ -864,7 +1019,7 @@ export class ClaudeAgentService {
 									!toolErrorWarningMilestones.has(milestone)
 								) {
 									toolErrorWarningMilestones.add(milestone);
-									onMessage?.({
+									this._currentOnMessage?.({
 										type: "system",
 										content: [
 											`检测到工具已连续失败 ${toolUseErrorCount} 次，当前不会立即中止任务。`,
@@ -906,12 +1061,12 @@ export class ClaudeAgentService {
 									},
 								);
 								void invoke("agent_sdk_abort", { runId });
-								onMessage?.({
+								this._currentOnMessage?.({
 									type: "system",
 									content: guidance,
 									status: "error",
 								});
-								onComplete?.({
+								this._currentOnComplete?.({
 									success: false,
 									summary: guidance,
 									sessionId: sessionId ?? undefined,
@@ -928,7 +1083,7 @@ export class ClaudeAgentService {
 				}
 
 				if (payload.type === "stderr" && payload.error) {
-					onMessage?.({
+					this._currentOnMessage?.({
 						type: "system",
 						content: payload.error,
 						status: "error",
@@ -1109,7 +1264,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "session_start") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `会话开始（source=${String(event.source || "unknown")}）`,
 								status: "running",
@@ -1125,7 +1280,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "session_end") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `会话结束（reason=${String(event.reason || "unknown")}）`,
 								status: "running",
@@ -1133,7 +1288,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "subagent_start") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `子代理启动：${String(event.agentType || event.agentId || "unknown")}`,
 								status: "running",
@@ -1144,7 +1299,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "subagent_stop") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `子代理结束：${String(event.agentType || event.agentId || "unknown")}`,
 								status: "running",
@@ -1152,7 +1307,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "system_notice") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: event.content,
 								status: event.level === "error" ? "error" : "running",
@@ -1166,7 +1321,7 @@ export class ClaudeAgentService {
 									: typeof event.message === "string" && event.message.trim()
 										? event.message
 										: "任务通知";
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: summary,
 								status:
@@ -1177,7 +1332,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "leader_start") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `协作编排已启动（mode=${String(event.delegationMode || "unknown")}）`,
 								status: "running",
@@ -1193,7 +1348,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "teammate_idle") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `Teammate 空闲：${String(event.teammateName || "unknown")}`,
 								status: "running",
@@ -1208,7 +1363,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "teammate_complete") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `Teammate 完成：${String(event.teammateName || "unknown")} · ${String(event.summary || "已返回结果")}`,
 								status: "running",
@@ -1223,7 +1378,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "leader_merge") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `Leader 汇总：${String(event.summary || "已合并 teammate 结果")}`,
 								status: "running",
@@ -1238,7 +1393,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "delegation_fallback") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `Teammate 不可用，已回退到 Task 子代理：${String(event.error || "unknown")}`,
 								status: "error",
@@ -1253,7 +1408,7 @@ export class ClaudeAgentService {
 							continue;
 						}
 						if (event.type === "tool_use_summary") {
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: event.summary || "",
 								status: "running",
@@ -1267,7 +1422,7 @@ export class ClaudeAgentService {
 							const failedCount = Array.isArray(event.failed)
 								? event.failed.length
 								: 0;
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: `文件持久化完成：成功 ${fileCount}，失败 ${failedCount}`,
 								status: failedCount > 0 ? "error" : "running",
@@ -1280,7 +1435,7 @@ export class ClaudeAgentService {
 								: event.error
 									? "认证失败"
 									: "认证状态更新";
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "system",
 								content: event.error ? `${base}: ${event.error}` : base,
 								status: event.error ? "error" : "running",
@@ -1306,7 +1461,7 @@ export class ClaudeAgentService {
 									Date.now() - thoughtOnlyStartedAt >= 45_000
 								) {
 									emittedLongThinkingWarning = true;
-									onMessage?.({
+									this._currentOnMessage?.({
 										type: "system",
 										content: !isClaudeModel
 											? "当前模型长时间停留在思考通道，通常说明它与 Claude Agent SDK 的 reasoning 行为兼容性一般；我已经限制了默认思考预算，建议优先改用 Claude 模型执行托管任务。"
@@ -1320,7 +1475,7 @@ export class ClaudeAgentService {
 									});
 								}
 							}
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "thought_delta",
 								content: event.content,
 								thoughtMeta: {
@@ -1352,7 +1507,7 @@ export class ClaudeAgentService {
 								? `${event.name}(${Object.keys(event.input).join(", ")})`
 								: event.name;
 
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "tool_call",
 								toolCallId: event.id,
 								content: description,
@@ -1370,7 +1525,7 @@ export class ClaudeAgentService {
 								continue;
 							}
 							toolNamesById.delete(event.id);
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "tool_result",
 								toolCallId: event.id,
 								content:
@@ -1384,7 +1539,7 @@ export class ClaudeAgentService {
 							flushPendingReplayProbe();
 							// 不再作为可见消息显示 result 事件，避免任务完成后出现重复文本
 							// result 事件仅用于标记任务完成，其内容已通过 text_delta 显示过
-							// onMessage?.({
+							// this._currentOnMessage?.({
 							// 	type: "result",
 							// 	content: event.result || "",
 							// 	status: event.isError ? "error" : "completed",
@@ -1392,7 +1547,7 @@ export class ClaudeAgentService {
 						} else if (event.type === "tool_input_complete") {
 							flushPendingReplayProbe();
 							// 工具输入流式传输完成，发送更新消息以更新工具调用的 input 字段
-							onMessage?.({
+							this._currentOnMessage?.({
 								type: "tool_input_update",
 								toolCallId: event.id,
 								content: "",
@@ -1482,12 +1637,39 @@ export class ClaudeAgentService {
 											: undefined,
 								}
 							: undefined;
-					onComplete?.({
+					const runStillAlive = resultAny?.run_alive === true;
+
+					this._currentOnComplete?.({
 						success: ok,
 						summary: ok ? resultText || "Task completed" : failureSummary,
 						sessionId: sessionId ?? undefined,
 						usage,
 					});
+
+					if (runStillAlive) {
+						// 进程继续存活，等待 followup 消息。
+						// 不 unlisten，不 settle——resolve followup turn promise 让 sendFollowup 返回。
+						this._markAlive();
+						this._followupTurnResolve?.();
+						this._followupTurnResolve = null;
+						this._followupTurnReject = null;
+						// 重置本轮状态以准备下一轮
+						streamedVisibleText = "";
+						replayDedupeOffset = null;
+						pendingReplayProbe = "";
+						toolUseErrorCount = 0;
+						lastToolUseError = null;
+						lastToolUseId = null;
+						toolErrorWarningMilestones.clear();
+						sawNonThoughtProgress = false;
+						thoughtOnlyStartedAt = null;
+						emittedLongThinkingWarning = false;
+						toolNamesById.clear();
+						return;
+					}
+
+					// Run 已终止，正常清理
+					this._markDead();
 					if (unlisten) unlisten();
 					unlisten = null;
 					settle?.(ok ? undefined : new Error(failureSummary));
@@ -1505,7 +1687,7 @@ export class ClaudeAgentService {
 						const delayMs = baseDelayMs * Math.pow(2, retryAttempt - 1);
 
 						// 通知用户正在重试
-						onMessage?.({
+						this._currentOnMessage?.({
 							type: "system",
 							content: `⚠️ 请求失败 (${err})，正在重试 ${retryAttempt}/${maxRetries}...`,
 							status: "running",
@@ -1575,7 +1757,7 @@ export class ClaudeAgentService {
 										teammate_execution_model: resolvedTeammateExecutionModel,
 									},
 								});
-								this.activeRunId = runId;
+								this._activeRunId = runId;
 
 								// 重放缓冲事件
 								for (const e of bufferedEvents) {
@@ -1586,12 +1768,12 @@ export class ClaudeAgentService {
 									retryError instanceof Error
 										? retryError.message
 										: String(retryError);
-								onMessage?.({
+								this._currentOnMessage?.({
 									type: "system",
 									content: `Error: ${retryErrMsg}`,
 									status: "error",
 								});
-								onComplete?.({
+								this._currentOnComplete?.({
 									success: false,
 									summary: retryErrMsg,
 									sessionId: sessionId ?? undefined,
@@ -1607,12 +1789,12 @@ export class ClaudeAgentService {
 					const finalError =
 						retryAttempt > 0 ? `${err} (已重试 ${retryAttempt} 次)` : err;
 
-					onMessage?.({
+					this._currentOnMessage?.({
 						type: "system",
 						content: toFriendlyAgentRuntimeError(finalError),
 						status: "error",
 					});
-					onComplete?.({
+					this._currentOnComplete?.({
 						success: false,
 						summary: toFriendlyAgentRuntimeError(finalError),
 						sessionId: sessionId ?? undefined,
@@ -1677,7 +1859,7 @@ export class ClaudeAgentService {
 					teammate_execution_model: resolvedTeammateExecutionModel,
 				},
 			});
-			this.activeRunId = runId;
+			this._activeRunId = runId;
 
 			// Replay anything that arrived before we got the runId back (race on fast failures).
 			for (const e of bufferedEvents) {
@@ -1690,21 +1872,31 @@ export class ClaudeAgentService {
 				error instanceof Error ? error.message : "Unknown error";
 
 			// Notify about the error
-			onMessage?.({
+			this._currentOnMessage?.({
 				type: "system",
 				content: `Error: ${errorMessage}`,
 				status: "error",
 			});
 
-			onComplete?.({
+			this._currentOnComplete?.({
 				success: false,
 				summary: errorMessage,
 				sessionId: sessionId ?? undefined,
 			});
 		} finally {
 			abortController.signal.removeEventListener("abort", abortHandler);
-			if (unlisten) unlisten();
-			this.activeRunId = null;
+			// 如果 run 仍 alive（等待 followup），保持事件监听器和 activeRunId
+			if (this._alive) {
+				this._persistentUnlisten = unlisten;
+				// 保持 _currentOn* — 持久事件处理器需要它们。
+				// sendFollowup 会在发送新消息前更新它们。
+			} else {
+				if (unlisten) unlisten();
+				this._activeRunId = null;
+				this._currentOnChunk = undefined;
+				this._currentOnMessage = undefined;
+				this._currentOnComplete = undefined;
+			}
 		}
 	}
 

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
@@ -11,6 +12,7 @@ import { isWikiDirExists } from "../../kb/wiki/wikiFs";
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { createLifecycleHooks } from "./agentSdk/hooksFactory";
 import { runRegistry } from "./agentSdk/runRegistry";
+import { createPushIterableUntyped } from "./agentSdk/pushIterable";
 import { createSubagentLifecycleHooks } from "./agentSdk/subagentHooks";
 import { normalizeSdkSessionId } from "./agentSdk/sessionId";
 import {
@@ -26,7 +28,6 @@ import {
 	listProjectSkills,
 	syncSkillsToCwd,
 	writeClaudeConfigSettings,
-	loadClaudeMdChain,
 } from "./agentSdk/configManager";
 import {
 	type AgentSdkInteractionRequestPayload,
@@ -42,12 +43,9 @@ import {
 	guessDefaultReadableFilePath,
 	resolveToolFilePath,
 	resolveToolFilePathEx,
-	isSensitivePath,
-	isSystemWriteBlocked,
 	rewriteBashCommandForMissingFile,
 	rewritePathsDeep,
 } from "./agentSdk/fileResolver";
-import { analyzeBashCommand } from "./agentSdk/bashAnalyzer";
 import {
 	buildMissingRequiredToolParamsMessage,
 	getMissingRequiredToolParams,
@@ -66,6 +64,7 @@ import {
 	createAgentModelSettingsLoader,
 	mergeUpdatedToolInput,
 } from "./agentSdk/modelSettingsLoader";
+import { resolveWebSearchFallback } from "./agentSdk/webSearchFallback";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -77,6 +76,11 @@ type AgentSdkResolveInteractionOutput =
 	IPCSchema["agent_sdk_resolve_interaction"]["output"];
 type AgentSdkControlInput = IPCSchema["agent_sdk_control"]["input"];
 type AgentSdkControlOutput = IPCSchema["agent_sdk_control"]["output"];
+type AgentSdkSendFollowupInput = IPCSchema["agent_sdk_send_followup"]["input"];
+type AgentSdkSendFollowupOutput =
+	IPCSchema["agent_sdk_send_followup"]["output"];
+type AgentSdkCheckAliveInput = IPCSchema["agent_sdk_check_alive"]["input"];
+type AgentSdkCheckAliveOutput = IPCSchema["agent_sdk_check_alive"]["output"];
 
 export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
@@ -97,7 +101,7 @@ export function createAgentSdkHandlers(options: {
 	): Promise<AgentSdkStartOutput> => {
 		const runId = randomUUID();
 		const abortController = new AbortController();
-		runRegistry.set(runId, { abortController });
+		runRegistry.set(runId, { abortController, alive: true });
 
 		(async () => {
 			// 收集 assistant 回复文本用于记忆提取（声明在 try 外层以便 finally 可访问）
@@ -148,6 +152,12 @@ export function createAgentSdkHandlers(options: {
 					string,
 					"running" | "completed"
 				>();
+				// 软策略：记录每个 signature 的最近调用时间戳列表，
+				// 仅在 60 秒窗口内 ≥3 次完全相同的调用才阻断（防止真死循环）。
+				// 正常的"用相似 prompt 多发几个 Task 探不同方向"是被鼓励的并行探索，不该 deny。
+				const taskCallTimestampsBySignature = new Map<string, number[]>();
+				const TASK_REPEAT_WINDOW_MS = 60_000;
+				const TASK_REPEAT_HARD_LIMIT = 3;
 				const taskImagePathsByToolUseId = new Map<string, string[]>();
 				const normalizeTaskSignaturePart = (v: unknown) =>
 					String(v || "")
@@ -214,8 +224,11 @@ export function createAgentSdkHandlers(options: {
 				const userPath = await resolveUserPathFromShell(userShell);
 				const resolvedPath = userPath || process.env.PATH;
 
-				// 代理模式：通过本地代理路由所有 API 流量（支持多 Provider 转发和模型路由）
-				const claudeConfigDir: string = cwd;
+				// 与 Claude Code CLI 对齐：使用真实的用户级配置目录 ~/.claude，
+				// 这样 SDK 能加载用户的 CLAUDE.md / agents / commands / skills /
+				// output-styles / settings.json，体验对齐 CLI。
+				// 之前指向 cwd 是个 workaround，会让所有 user-scope 配置失效。
+				const claudeConfigDir: string = path.join(os.homedir(), ".claude");
 
 				// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
 				const anthropicBaseUrl = (await options.getAnthropicBaseUrl()).replace(
@@ -276,13 +289,18 @@ export function createAgentSdkHandlers(options: {
 							: undefined
 						: undefined;
 
+				// 默认 false：与 Claude Code CLI 的 --dangerously-skip-permissions 等效。
+				// 把权限决策权交还给 SDK 的 permissionMode（bypassPermissions）和 OS 文件权限，
+				// 不再用上层弹卡阻断 agent 的工作流。AskUserQuestion 仍走交互通道。
 				const interactiveApproval =
 					typeof input.interactive_approval === "boolean"
 						? input.interactive_approval
-						: true;
-				const hasExplicitAllowedTools = Object.prototype.hasOwnProperty.call(
-					input,
-					"allowed_tools",
+						: false;
+				// 仅当调用方显式给出 allowed_tools 数组时才进入"显式裁剪"分支。
+				// undefined / null / 非数组都走 SDK 的 preset (claude_code) 默认全工具集，
+				// 这是让 agent 接近 Claude Code 体验的关键路径。
+				const hasExplicitAllowedTools = Array.isArray(
+					(input as any).allowed_tools,
 				);
 				const allowedRaw = Array.isArray(input.allowed_tools)
 					? input.allowed_tools
@@ -330,7 +348,7 @@ export function createAgentSdkHandlers(options: {
 				const maxThinkingTokens =
 					normalizeNumber((input as any).max_thinking_tokens) ??
 					normalizeNumber(runtimeConfig?.maxThinkingTokens) ??
-					8192;
+					16384;
 				const maxBudgetUsd =
 					normalizeNumber((input as any).max_budget_usd) ??
 					normalizeNumber(runtimeConfig?.maxBudgetUsd);
@@ -426,11 +444,13 @@ export function createAgentSdkHandlers(options: {
 					settingSources,
 					effectiveSettingSources,
 				});
+				// 默认 bypassPermissions：等价于 claude --dangerously-skip-permissions，
+				// SDK 内部不再对 Read/Write/Edit/Bash 弹询问。caller 仍可显式覆盖（如 plan 模式）。
 				const permissionMode =
 					typeof input.permission_mode === "string" &&
 					input.permission_mode.trim()
 						? input.permission_mode.trim()
-						: "default";
+						: "bypassPermissions";
 				const permissionModeForRun =
 					multiAgentRuntime.useDelegateMode && permissionMode !== "plan"
 						? "delegate"
@@ -502,24 +522,32 @@ export function createAgentSdkHandlers(options: {
 					return fs.existsSync(candidate) ? candidate : undefined;
 				})();
 
-				// 主动加载 CLAUDE.md 链（用户级 + 项目级），与 input.system_prompt
-				// 一起注入到 preset 的 append 字段。这是兜底机制：即使 SDK 的
-				// settingSources 动态注入失效，CLAUDE.md 也总能被 agent 看到。
-				const claudeMdChain = await loadClaudeMdChain(cwd);
+				// CLAUDE_CONFIG_DIR 已指向 ~/.claude，SDK 通过 settingSources 自动加载
+				// user-level / project-level CLAUDE.md。这里仅在 caller 显式传入
+				// system_prompt（plan mode、scenario agent 等场景）时 append，避免
+				// 与 SDK 自加载的内容重复，也不再用 # Source: ... 这种硬标题挤压
+				// preset 的语气指令权重。
 				const userSystemPrompt =
 					typeof input.system_prompt === "string" && input.system_prompt.trim()
 						? input.system_prompt.trim()
 						: "";
-				const appendBlocks: string[] = [];
-				if (claudeMdChain) appendBlocks.push(claudeMdChain);
-				if (userSystemPrompt) appendBlocks.push(userSystemPrompt);
-				const systemPromptAppend =
-					appendBlocks.length > 0
-						? appendBlocks.join("\n\n---\n\n")
-						: undefined;
+				const systemPromptAppend = userSystemPrompt || undefined;
+
+				// Stream-input 模式：创建 push-based AsyncIterable 作为 prompt 源。
+				// 这让单个 cli.js 进程持续存活，后续用户消息通过 pushController.push() 注入，
+				// 实现跨轮 prompt cache 命中（cache TTL 5 分钟内进程仍活着）。
+				const pushCtrl = createPushIterableUntyped();
+				pushCtrl.push({
+					type: "user",
+					message: {
+						role: "user",
+						content: String(input.prompt ?? ""),
+					},
+					parent_tool_use_id: null,
+				});
 
 				const q = sdk.query({
-					prompt: String(input.prompt ?? ""),
+					prompt: pushCtrl.iterable as any,
 					options: {
 						abortController,
 						cwd,
@@ -533,6 +561,9 @@ export function createAgentSdkHandlers(options: {
 						maxTurns,
 						maxThinkingTokens,
 						maxBudgetUsd,
+						settings: {
+							skipWebFetchPreflight: true,
+						} as any,
 						betas: betas.length > 0 ? betas : undefined,
 						// 必须传入 allowedTools 并包含 Task，否则自定义 agents 无法被调用
 						// 参考文档: "The Task tool must be included in allowedTools since Claude invokes subagents through the Task tool."
@@ -595,22 +626,28 @@ export function createAgentSdkHandlers(options: {
 
 												const signature =
 													buildTaskCallSignature(normalizedInput);
-												const state = signature
-													? taskCallStateBySignature.get(signature)
-													: undefined;
-												if (signature && state) {
-													return {
-														continue: true,
-														hookSpecificOutput: {
-															hookEventName: "PreToolUse" as const,
-															permissionDecision: "deny" as const,
-															permissionDecisionReason:
-																"检测到重复的 Task 调用（同一子代理 + 同一任务描述），请直接基于已有结果继续回答。",
-														},
-													};
-												}
-
 												if (signature) {
+													const now = Date.now();
+													const timestamps = (
+														taskCallTimestampsBySignature.get(signature) || []
+													).filter((t) => now - t < TASK_REPEAT_WINDOW_MS);
+													timestamps.push(now);
+													taskCallTimestampsBySignature.set(
+														signature,
+														timestamps,
+													);
+
+													if (timestamps.length >= TASK_REPEAT_HARD_LIMIT) {
+														return {
+															continue: true,
+															hookSpecificOutput: {
+																hookEventName: "PreToolUse" as const,
+																permissionDecision: "deny" as const,
+																permissionDecisionReason: `检测到 60 秒内对同一子代理 + 同一任务描述发起了 ${timestamps.length} 次完全相同的 Task 调用，疑似死循环。请基于已有结果继续推进。`,
+															},
+														};
+													}
+
 													taskCallStateBySignature.set(signature, "running");
 													if (toolUseId) {
 														taskCallSignatureByToolUseId.set(
@@ -816,6 +853,42 @@ export function createAgentSdkHandlers(options: {
 												(hookInput as any).tool_name || "",
 											);
 											const toolLower = toolName.toLowerCase();
+
+											if (toolLower === "websearch") {
+												try {
+													const fallback = await resolveWebSearchFallback({
+														toolName,
+														toolInput: (hookInput as any).tool_input,
+														toolResponse: (hookInput as any).tool_response,
+														toolUseId: String(
+															(hookInput as any).tool_use_id || "",
+														).trim(),
+													});
+													if (fallback.kind === "fallback") {
+														logger.warn({
+															msg: "agent_sdk WebSearch native result invalid; using local browser_search fallback",
+															scope: "agent",
+															runId,
+															query: fallback.query,
+															resultCount: fallback.results.length,
+														});
+														return {
+															continue: true,
+															hookSpecificOutput: {
+																hookEventName: "PostToolUse" as const,
+																updatedToolOutput: fallback.updatedToolOutput,
+																additionalContext: fallback.additionalContext,
+															},
+														};
+													}
+												} catch (e) {
+													stderr(
+														`[PostToolUse] WebSearch fallback failed: ${e instanceof Error ? e.message : String(e)}`,
+													);
+												}
+												return { continue: true };
+											}
+
 											if (toolLower !== "task") return { continue: true };
 
 											const toolUseId = String(
@@ -877,6 +950,26 @@ export function createAgentSdkHandlers(options: {
 											const toolName = String(
 												(hookInput as any).tool_name || "",
 											);
+											const errorText = String(
+												(hookInput as any).error ||
+													(hookInput as any).tool_response ||
+													"",
+											);
+											if (
+												toolName.toLowerCase() === "webfetch" &&
+												/error in hook callback|unable to verify if domain|safe to fetch|claude\.ai/i.test(
+													errorText,
+												)
+											) {
+												return {
+													continue: true,
+													hookSpecificOutput: {
+														hookEventName: "PostToolUseFailure" as const,
+														additionalContext:
+															"WebFetch 未能完成域名安全校验，这是 Claude Code SDK 的网络/安全校验失败，不代表该公开网页不可用。请不要重复调用同一个 WebFetch；改用 WebSearch 搜索同一主题，或在 Bash 中用 curl / npm registry / GitHub API 获取公开页面内容后继续完成任务。",
+													},
+												};
+											}
 											if (toolName.toLowerCase() !== "task") {
 												return { continue: true };
 											}
@@ -965,8 +1058,6 @@ export function createAgentSdkHandlers(options: {
 						})(),
 						stderr,
 						includePartialMessages: true,
-						// Force streaming if supported by the SDK/API (cast to any to avoid TS error)
-						stream: true,
 						// 使用 Claude Code 原生 preset，保留动态章节（cwd / git 状态 / TodoWrite 引导
 						// / "坚持干完"等指令），这是 agent "活人感"和"自驱续航"的来源。
 						// CLAUDE.md（项目+用户）已在主进程显式读取并通过 append 拼接，作为兜底。
@@ -1030,11 +1121,8 @@ export function createAgentSdkHandlers(options: {
 								);
 							}
 
-							// 通用清洗：移除空字符串参数（如 pages: ""、pattern: "" 等）
-							// 非 Claude 模型（GPT-5.5、Gemini 等）经常为可选参数生成空字符串，
-							// 导致 SDK 内部校验失败（如 "Invalid pages parameter: """）。
-							// 必须在 canUseTool 中清洗，因为 canUseTool 返回的 updatedInput
-							// 优先于 PreToolUse hook 的 updatedInput。
+							// 通用清洗：移除空字符串参数（如 pages: ""、pattern: "" 等）。
+							// 非 Claude 模型经常为可选参数生成空字符串，导致 SDK 内部校验失败。
 							{
 								const keysToRemove: string[] = [];
 								for (const [k, v] of Object.entries(rewrittenInput)) {
@@ -1055,6 +1143,7 @@ export function createAgentSdkHandlers(options: {
 								}
 							}
 
+							// Read 缺 file_path 时，自动猜一个 cwd 下可读的文件
 							if (
 								toolLower === "read" &&
 								!hasRequiredToolParamValue(rewrittenInput, {
@@ -1087,19 +1176,9 @@ export function createAgentSdkHandlers(options: {
 								};
 							}
 
-							// 跟踪工具操作的范围信息（用于前端 UI 展示）
-							let toolScope:
-								| {
-										insideSandbox: boolean;
-										targetPath?: string;
-										destructiveLevel?: "safe" | "moderate" | "dangerous";
-										reason?: string;
-								  }
-								| undefined;
-
-							// ============================================================
-							// 文件工具路径解析 — 支持全局文件访问
-							// ============================================================
+							// 文件工具相对路径 → 绝对路径解析（仅纠错，不再做沙盒围栏）。
+							// 与 Claude Code CLI 一致：把权限决策交给 permissionMode (bypassPermissions)
+							// 与 OS 文件权限，主进程不再做路径黑名单。
 							if (
 								(toolLower === "read" ||
 									toolLower === "glob" ||
@@ -1118,181 +1197,42 @@ export function createAgentSdkHandlers(options: {
 											: typeof inputAny.file === "string"
 												? "file"
 												: null;
-								if (!key && toolLower === "read") {
-									const guessed = await guessDefaultReadableFilePath(cwd);
-									if (guessed) {
-										stderr(
-											`[agent_sdk] Auto-filled Read file_path='${guessed}' (missing in tool input)`,
-										);
-										rewrittenInput = { ...inputAny, file_path: guessed };
-									}
-								}
 								if (key) {
 									const rawPath = String(inputAny[key] || "").trim();
 									if (rawPath) {
-										// 敏感路径检查 — 硬拒绝
-										if (isSensitivePath(rawPath)) {
-											return {
-												behavior: "deny",
-												message: `访问被拒绝：该路径包含敏感信息 (${rawPath})`,
-											};
-										}
-
-										// 使用支持全局访问的路径解析
 										const resolved = await resolveToolFilePathEx({
 											cwd,
 											rawPath,
 											allowGlobal: true,
 										});
-
 										if (resolved && resolved.path !== rawPath) {
 											stderr(
-												`[agent_sdk] Resolved ${toolName} path '${rawPath}' -> '${resolved.path}' (sandbox=${resolved.insideSandbox})`,
+												`[agent_sdk] Resolved ${toolName} path '${rawPath}' -> '${resolved.path}'`,
 											);
 											rewrittenInput = {
 												...inputAny,
 												[key]: resolved.path,
 												file_path: resolved.path,
 											};
-										}
-
-										if (!resolved) {
-											stderr(
-												`[agent_sdk] Failed to resolve ${toolName} path '${rawPath}'`,
-											);
-											return {
-												behavior: "deny",
-												message: `文件路径未找到: ${rawPath}。请使用 Glob 工具查找文件，或使用完整的绝对路径。`,
+										} else if (
+											!resolved &&
+											(toolLower === "write" || toolLower === "edit") &&
+											!path.isAbsolute(rawPath)
+										) {
+											// 写操作的目标不存在是正常情况（新建文件）：
+											// 把相对路径补成绝对路径，让 SDK 自然处理。
+											const absRaw = path.join(cwd, rawPath);
+											rewrittenInput = {
+												...inputAny,
+												[key]: absRaw,
+												file_path: absRaw,
 											};
-										}
-
-										// 写入操作的额外安全检查
-										const isWriteOp =
-											toolLower === "write" || toolLower === "edit";
-										if (isWriteOp && isSystemWriteBlocked(resolved.path)) {
-											return {
-												behavior: "deny",
-												message: `系统目录写入被禁止: ${resolved.path}`,
-											};
-										}
-
-										// 设置 scope 信息
-										toolScope = {
-											insideSandbox: resolved.insideSandbox,
-											targetPath: resolved.path,
-											destructiveLevel: isWriteOp
-												? resolved.insideSandbox
-													? "safe"
-													: "moderate"
-												: "safe",
-											reason:
-												isWriteOp && !resolved.insideSandbox
-													? `写入沙盒外文件: ${resolved.path}`
-													: undefined,
-										};
-
-										// 读取操作 — 全局自动通过（无需审批）
-										if (!isWriteOp) {
-											toolScope = undefined;
-										}
-
-										// 沙盒内写入 — 自动通过
-										if (isWriteOp && resolved.insideSandbox) {
-											toolScope = undefined;
-										}
-
-										// Wiki 目录写入 — 自动通过
-										// Karpathy LLM Wiki 模式：agent 是 wiki 页面的维护者，
-										// 必须能自由写入 .llm-wiki/（ingest 一次可更新 10-15 个页面），
-										// 如果每次都弹审批会完全阻断 ingest/backfill 工作流。
-										// 注意：只自动通过 .llm-wiki/ 目录，raw sources 仍需审批。
-										if (isWriteOp && resolvedWikiScopePath && toolScope) {
-											const wikiDir = path.join(
-												resolvedWikiScopePath,
-												".llm-wiki",
-											);
-											const normalizedTarget = path.normalize(resolved.path);
-											const normalizedWikiDir = path.normalize(wikiDir);
-											if (
-												normalizedTarget === normalizedWikiDir ||
-												normalizedTarget.startsWith(
-													normalizedWikiDir + path.sep,
-												)
-											) {
-												toolScope = undefined;
-											}
 										}
 									}
 								}
 							}
 
-							// Bash 命令分析 — 智能权限判断
-							// ============================================================
-							if (
-								toolLower === "bash" &&
-								toolInput &&
-								typeof toolInput === "object" &&
-								typeof (rewrittenInput as any).command === "string"
-							) {
-								const cmd = String((rewrittenInput as any).command || "");
-
-								// 修复缺失文件的 Bash 命令
-								const rewritten = await rewriteBashCommandForMissingFile({
-									cwd,
-									command: cmd,
-								});
-								if (rewritten && rewritten !== cmd) {
-									stderr(
-										`[agent_sdk] Auto-rewrote Bash command: '${cmd}' -> '${rewritten}'`,
-									);
-									rewrittenInput = {
-										...(rewrittenInput as any),
-										command: rewritten,
-									};
-								}
-
-								// 分析 Bash 命令安全性
-								const finalCmd = String((rewrittenInput as any).command || cmd);
-								const analysis = analyzeBashCommand(finalCmd, cwd);
-								stderr(
-									`[agent_sdk] Bash analysis: readOnly=${analysis.isReadOnly}, destructive=${analysis.destructiveLevel}, outsideSandbox=${analysis.targetsOutsideSandbox}, reason='${analysis.reason}'`,
-								);
-
-								toolScope = {
-									insideSandbox: !analysis.targetsOutsideSandbox,
-									targetPath: analysis.targetPaths[0],
-									destructiveLevel: analysis.destructiveLevel,
-									reason: analysis.reason,
-								};
-
-								// 只读且安全的命令 — 直接放行，永远不弹审批。
-								// 对齐 Claude Code CLI：ls/cat/rg/find/git status 等命令应"按键即过"。
-								if (
-									analysis.isReadOnly &&
-									analysis.destructiveLevel === "safe" &&
-									!analysis.targetsOutsideSandbox
-								) {
-									stderr(
-										`[agent_sdk] Bash auto-approved (readOnly + safe): '${finalCmd.slice(0, 120)}'`,
-									);
-									return {
-										behavior: "allow",
-										updatedInput: rewrittenInput,
-									};
-								}
-
-								// 安全命令（非只读但分析判定为 safe，例如 echo/printf）— 也自动通过
-								if (
-									analysis.isReadOnly &&
-									analysis.destructiveLevel === "safe"
-								) {
-									toolScope = undefined;
-								}
-							}
-
-							// ============================================================
 							// Skill 工具路径重写
-							// ============================================================
 							if (
 								toolLower === "skill" &&
 								rewrittenInput &&
@@ -1310,39 +1250,18 @@ export function createAgentSdkHandlers(options: {
 								}
 							}
 
-							// AskUserQuestion 在 subagent 内触发时，依然走 interaction_request
-							// （前端不区分 main/subagent，可正常弹卡片）。
-							// 仅记录来源 agentID，便于排查。
-							if (
-								toolName === "AskUserQuestion" &&
-								typeof extra?.agentID === "string" &&
-								extra.agentID.trim()
-							) {
-								stderr(
-									`[agent_sdk] AskUserQuestion triggered inside subagent agentID='${extra.agentID}', forwarding to UI`,
-								);
-							}
-
-							// ============================================================
-							// 非交互模式 — 全部自动通过（AskUserQuestion 除外）
-							// ============================================================
-							if (!interactiveApproval) {
-								if (toolName === "AskUserQuestion") {
-									return {
-										behavior: "deny",
-										message: "Interactive approval is disabled",
-									};
-								}
-								return { behavior: "allow", updatedInput: rewrittenInput };
-							}
-
-							// ============================================================
-							// AskUserQuestion — 强制走 interaction_request
-							// 必须发送给前端，让前端弹出交互式选择卡片
-							// ============================================================
+							// AskUserQuestion — 始终转发到前端弹卡，超时放宽到 5 分钟以贴合人类操作节奏。
 							if (toolName === "AskUserQuestion") {
+								if (
+									typeof extra?.agentID === "string" &&
+									extra.agentID.trim()
+								) {
+									stderr(
+										`[agent_sdk] AskUserQuestion triggered inside subagent agentID='${extra.agentID}', forwarding to UI`,
+									);
+								}
 								const askReqId = randomUUID();
-								const askTimeout = 55_000;
+								const askTimeout = 5 * 60_000;
 								const askToolUseId =
 									typeof extra?.toolUseID === "string" ? extra.toolUseID : "";
 								const askReq: AgentSdkInteractionRequestPayload = {
@@ -1400,82 +1319,14 @@ export function createAgentSdkHandlers(options: {
 									interrupt: askDec.interrupt,
 								};
 							}
-							// ============================================================
-							// 智能自动通过判断
-							// ============================================================
-							// toolScope 为空表示操作是安全的（读取/沙盒内写入），直接通过
-							if (!toolScope) {
-								return { behavior: "allow", updatedInput: rewrittenInput };
-							}
 
-							// ============================================================
-							// 需要用户审批 — 发送交互请求
-							// ============================================================
-							const requestId = randomUUID();
-							const timeoutMs = 55_000;
-							const toolUseId =
-								typeof extra?.toolUseID === "string" ? extra.toolUseID : "";
-							const request: AgentSdkInteractionRequestPayload = {
-								requestId,
-								toolName,
-								toolInput: rewrittenInput,
-								toolUseId,
-								agentId:
-									typeof extra?.agentID === "string"
-										? extra.agentID
-										: undefined,
-								description:
-									typeof extra?.description === "string"
-										? extra.description
-										: undefined,
-								decisionReason:
-									typeof extra?.decisionReason === "string"
-										? extra.decisionReason
-										: undefined,
-								blockedPath:
-									typeof extra?.blockedPath === "string"
-										? extra.blockedPath
-										: undefined,
-								suggestions: Array.isArray(extra?.suggestions)
-									? extra.suggestions
-									: undefined,
-								expiresAt: Date.now() + timeoutMs,
-								// 附带范围信息给前端
-								scope: toolScope,
-							};
-							emit(options.getMainWindow, {
-								runId,
-								type: "interaction_request",
-								request,
-							});
-
-							const decision = await interactionBroker.createRequest(
-								runId,
-								requestId,
-								timeoutMs,
-							);
-							if (decision.behavior === "allow") {
-								const mergedUpdatedInput = mergeUpdatedToolInput(
-									rewrittenInput,
-									decision.updatedInput,
-								);
-								return {
-									behavior: "allow",
-									updatedInput: mergedUpdatedInput,
-									updatedPermissions: Array.isArray(decision.updatedPermissions)
-										? (decision.updatedPermissions as any)
-										: undefined,
-								};
-							}
-							return {
-								behavior: "deny",
-								message: decision.message || "User denied",
-								interrupt: decision.interrupt,
-							};
+							// 其余工具：默认放行（与 permissionMode=bypassPermissions 行为一致）。
+							return { behavior: "allow", updatedInput: rewrittenInput };
 						},
-					} as any, // Cast to any to allow stream property
+					} as any, // SDK Options 的 betas / hooks 字面量约束较紧，保留 cast
 				});
 				runRegistry.updateQuery(runId, q as any);
+				runRegistry.markAlive(runId, pushCtrl);
 
 				let sawResult = false;
 				// Accumulate token usage from SDK stream events
@@ -1663,10 +1514,18 @@ export function createAgentSdkHandlers(options: {
 										}
 									: (msg as any)?.usage,
 						};
+						// 标记本轮完成。如果 pushController 仍然活跃（alive run），
+						// 告诉前端这不是最终结束——进程继续等待后续消息。
+						const currentRun = runRegistry.get(runId);
+						const runAlive =
+							!!currentRun?.alive &&
+							!!currentRun?.pushController &&
+							!currentRun.pushController.closed &&
+							!currentRun.abortController.signal.aborted;
 						emit(options.getMainWindow, {
 							runId,
 							type: "done",
-							result: resultWithUsage,
+							result: { ...resultWithUsage, run_alive: runAlive },
 						});
 					}
 				}
@@ -1790,7 +1649,8 @@ export function createAgentSdkHandlers(options: {
 					// 静默失败
 				}
 				interactionBroker.clearRun(runId);
-				runRegistry.markCompleted(runId);
+				// 进程已退出（for-await 循环结束），终止 alive 状态
+				runRegistry.terminateAlive(runId);
 			}
 		})();
 
@@ -1921,10 +1781,63 @@ export function createAgentSdkHandlers(options: {
 		}
 	};
 
+	const agent_sdk_send_followup = async (
+		_event: IpcMainInvokeEvent,
+		input: AgentSdkSendFollowupInput,
+	): Promise<AgentSdkSendFollowupOutput> => {
+		const run = runRegistry.get(input.runId);
+		if (!run) {
+			return { success: false, error: "Run not found" };
+		}
+		if (!run.alive || !run.pushController || run.pushController.closed) {
+			return { success: false, error: "Run is not alive" };
+		}
+		if (run.abortController.signal.aborted) {
+			return { success: false, error: "Run was aborted" };
+		}
+
+		let messageContent = String(input.message ?? "");
+		if (input.attachments && input.attachments.length > 0) {
+			const attachmentLines = input.attachments
+				.map((a) => `[Attached: ${a.title || a.path}] → ${a.path}`)
+				.join("\n");
+			messageContent = `${messageContent}\n\n${attachmentLines}`;
+		}
+
+		try {
+			run.pushController.push({
+				type: "user",
+				message: { role: "user", content: messageContent },
+				parent_tool_use_id: null,
+			} as any);
+			logger.info({
+				msg: "agent_sdk_send_followup pushed",
+				scope: "agent",
+				runId: input.runId,
+				messageLength: messageContent.length,
+			});
+			return { success: true };
+		} catch (e) {
+			return {
+				success: false,
+				error: e instanceof Error ? e.message : String(e),
+			};
+		}
+	};
+
+	const agent_sdk_check_alive = async (
+		_event: IpcMainInvokeEvent,
+		input: AgentSdkCheckAliveInput,
+	): Promise<AgentSdkCheckAliveOutput> => {
+		return { alive: runRegistry.isAlive(input.runId) };
+	};
+
 	return {
 		agent_sdk_start,
 		agent_sdk_abort,
 		agent_sdk_resolve_interaction,
 		agent_sdk_control,
+		agent_sdk_send_followup,
+		agent_sdk_check_alive,
 	};
 }

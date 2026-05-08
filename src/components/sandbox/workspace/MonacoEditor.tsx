@@ -3,8 +3,15 @@
  * 懒加载 @monaco-editor/react，支持 Cmd+S 保存、语言检测
  */
 
-import { lazy, Suspense, useCallback, useRef } from "react";
-import type { OnMount } from "@monaco-editor/react";
+import {
+	forwardRef,
+	lazy,
+	Suspense,
+	useCallback,
+	useImperativeHandle,
+	useRef,
+} from "react";
+import type { BeforeMount, OnMount } from "@monaco-editor/react";
 import { cn } from "../../../lib/utils";
 
 // 懒加载 Monaco Editor
@@ -22,7 +29,7 @@ const EXTENSION_LANGUAGE_MAP: Record<string, string> = {
 	css: "css",
 	scss: "scss",
 	less: "less",
-	html: "htm",
+	html: "html",
 	htm: "html",
 	json: "json",
 	jsonc: "json",
@@ -128,97 +135,239 @@ function EmptyEditorState() {
 
 // ==================== MonacoEditor ====================
 
+export interface MonacoCursorPosition {
+	lineNumber: number;
+	column: number;
+}
+
+export interface MonacoEditorHandle {
+	focus: () => void;
+	runAction: (actionId: string) => void;
+	formatDocument: () => void;
+	getPosition: () => MonacoCursorPosition | null;
+}
+
 interface MonacoEditorProps {
 	/** 编辑器内容 */
 	value: string;
 	/** Monaco 语言标识 */
 	language: string;
+	/** 文件路径：用于 Monaco model URI、undo/view state 隔离 */
+	path?: string;
 	/** 主题 */
 	theme?: "vs" | "vs-dark";
 	/** 内容变更回调 */
 	onChange?: (value: string | undefined) => void;
 	/** Cmd+S 保存回调 */
 	onSave?: () => void;
+	/** 光标变化回调 */
+	onCursorPositionChange?: (position: MonacoCursorPosition) => void;
 	/** 只读模式 */
 	readOnly?: boolean;
+	/** 自动换行 */
+	wordWrap?: boolean;
+	/** 迷你地图 */
+	minimap?: boolean;
 	/** 自定义类名 */
 	className?: string;
 }
 
-export function MonacoEditor({
-	value,
-	language,
-	theme = "vs",
-	onChange,
-	onSave,
-	readOnly = false,
-	className,
-}: MonacoEditorProps) {
-	const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
-
-	/** 编辑器挂载后绑定快捷键 */
-	const handleEditorMount: OnMount = useCallback(
-		(editor, monaco) => {
-			editorRef.current = editor;
-
-			// Cmd+S / Ctrl+S 保存
-			if (onSave) {
-				editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-					onSave();
-				});
-			}
-
-			// 聚焦编辑器
-			editor.focus();
+export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
+	function MonacoEditor(
+		{
+			value,
+			language,
+			path,
+			theme = "vs",
+			onChange,
+			onSave,
+			onCursorPositionChange,
+			readOnly = false,
+			wordWrap = false,
+			minimap = true,
+			className,
 		},
-		[onSave],
-	);
+		ref,
+	) {
+		const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
 
-	return (
-		<div className={cn("w-full h-full", className)}>
-			<Suspense fallback={<EditorSkeleton />}>
-				<Monaco
-					height="100%"
-					language={language}
-					theme={theme}
-					value={value}
-					onChange={onChange}
-					onMount={handleEditorMount}
-					loading={<EditorSkeleton />}
-					options={{
-						readOnly,
-						fontSize: 13,
-						fontFamily:
-							'"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
-						fontLigatures: true,
-						lineNumbers: "on",
-						minimap: { enabled: true, scale: 1 },
-						scrollBeyondLastLine: false,
-						wordWrap: "off",
-						tabSize: 2,
-						insertSpaces: true,
-						renderWhitespace: "selection",
-						bracketPairColorization: { enabled: true },
-						automaticLayout: true,
-						smoothScrolling: true,
-						cursorBlinking: "smooth",
-						cursorSmoothCaretAnimation: "on",
-						padding: { top: 8, bottom: 8 },
-						glyphMargin: false,
-						folding: true,
-						lineDecorationsWidth: 8,
-						lineNumbersMinChars: 3,
-						suggest: {
-							showIcons: true,
-							showMethods: true,
-							showFunctions: true,
-							showVariables: true,
-						},
-					}}
-				/>
-			</Suspense>
-		</div>
-	);
-}
+		useImperativeHandle(
+			ref,
+			() => ({
+				focus: () => editorRef.current?.focus(),
+				runAction: (actionId: string) => {
+					void editorRef.current?.getAction(actionId)?.run();
+				},
+				formatDocument: () => {
+					void editorRef.current
+						?.getAction("editor.action.formatDocument")
+						?.run();
+				},
+				getPosition: () => {
+					const position = editorRef.current?.getPosition();
+					return position
+						? {
+								lineNumber: position.lineNumber,
+								column: position.column,
+							}
+						: null;
+				},
+			}),
+			[],
+		);
+
+		const handleBeforeMount: BeforeMount = useCallback((monaco) => {
+			monaco.editor.defineTheme("ipo-workbench-light", {
+				base: "vs",
+				inherit: true,
+				rules: [],
+				colors: {
+					"editor.background": "#fbfaf7",
+					"editor.foreground": "#26231f",
+					"editorLineNumber.foreground": "#9a9389",
+					"editorLineNumber.activeForeground": "#0f766e",
+					"editor.selectionBackground": "#d8ece8",
+					"editor.lineHighlightBackground": "#f3f0ea",
+					"editorCursor.foreground": "#0f766e",
+					"editorIndentGuide.background1": "#e7e1d8",
+					"editorIndentGuide.activeBackground1": "#c7bfb2",
+					"minimap.background": "#fbfaf7",
+				},
+			});
+			monaco.editor.defineTheme("ipo-workbench-dark", {
+				base: "vs-dark",
+				inherit: true,
+				rules: [],
+				colors: {
+					"editor.background": "#171512",
+					"editor.foreground": "#eee8dd",
+					"editorLineNumber.foreground": "#756d62",
+					"editorLineNumber.activeForeground": "#70c7b5",
+					"editor.selectionBackground": "#264d49",
+					"editor.lineHighlightBackground": "#211f1b",
+					"editorCursor.foreground": "#70c7b5",
+					"editorIndentGuide.background1": "#2e2a24",
+					"editorIndentGuide.activeBackground1": "#5d554a",
+					"minimap.background": "#171512",
+				},
+			});
+		}, []);
+
+		/** 编辑器挂载后绑定快捷键 */
+		const handleEditorMount: OnMount = useCallback(
+			(editor, monaco) => {
+				editorRef.current = editor;
+
+				// Cmd+S / Ctrl+S 保存
+				if (onSave) {
+					editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+						onSave();
+					});
+				}
+
+				const position = editor.getPosition();
+				if (position) {
+					onCursorPositionChange?.({
+						lineNumber: position.lineNumber,
+						column: position.column,
+					});
+				}
+				const cursorDisposable = editor.onDidChangeCursorPosition((event) => {
+					onCursorPositionChange?.({
+						lineNumber: event.position.lineNumber,
+						column: event.position.column,
+					});
+				});
+				const disposeDisposable = editor.onDidDispose(() => {
+					cursorDisposable.dispose();
+					disposeDisposable.dispose();
+				});
+
+				// 聚焦编辑器
+				editor.focus();
+			},
+			[onCursorPositionChange, onSave],
+		);
+
+		return (
+			<div className={cn("w-full h-full", className)}>
+				<Suspense fallback={<EditorSkeleton />}>
+					<Monaco
+						height="100%"
+						path={path}
+						saveViewState
+						keepCurrentModel
+						language={language}
+						theme={
+							theme === "vs-dark" ? "ipo-workbench-dark" : "ipo-workbench-light"
+						}
+						value={value}
+						onChange={onChange}
+						beforeMount={handleBeforeMount}
+						onMount={handleEditorMount}
+						loading={<EditorSkeleton />}
+						options={{
+							readOnly,
+							fontSize: 13,
+							lineHeight: 21,
+							fontFamily:
+								'"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
+							fontLigatures: true,
+							letterSpacing: 0,
+							lineNumbers: "on",
+							minimap: { enabled: minimap, scale: 1, renderCharacters: false },
+							scrollBeyondLastLine: false,
+							wordWrap: wordWrap ? "on" : "off",
+							tabSize: 2,
+							insertSpaces: true,
+							renderWhitespace: "selection",
+							bracketPairColorization: { enabled: true },
+							guides: {
+								bracketPairs: true,
+								indentation: true,
+								highlightActiveIndentation: true,
+							},
+							automaticLayout: true,
+							formatOnPaste: true,
+							formatOnType: true,
+							smoothScrolling: true,
+							cursorBlinking: "smooth",
+							cursorSmoothCaretAnimation: "on",
+							padding: { top: 12, bottom: 12 },
+							glyphMargin: false,
+							folding: true,
+							foldingStrategy: "indentation",
+							showFoldingControls: "mouseover",
+							stickyScroll: { enabled: true },
+							lineDecorationsWidth: 10,
+							lineNumbersMinChars: 4,
+							renderLineHighlight: "line",
+							renderFinalNewline: "on",
+							occurrencesHighlight: "singleFile",
+							selectionHighlight: true,
+							links: true,
+							quickSuggestions: !readOnly,
+							acceptSuggestionOnEnter: "smart",
+							multiCursorModifier: "alt",
+							mouseWheelZoom: true,
+							contextmenu: true,
+							scrollbar: {
+								verticalScrollbarSize: 12,
+								horizontalScrollbarSize: 12,
+								alwaysConsumeMouseWheel: false,
+							},
+							suggest: {
+								showIcons: true,
+								showMethods: true,
+								showFunctions: true,
+								showVariables: true,
+							},
+						}}
+					/>
+				</Suspense>
+			</div>
+		);
+	},
+);
 
 export { EmptyEditorState };

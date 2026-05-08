@@ -18,13 +18,18 @@ function createDocCacheItem(params: {
 	content: string;
 	kind: DocCacheItem["kind"];
 	snapshot?: string;
+	size?: number;
+	mtimeMs?: number;
 }): DocCacheItem {
 	return {
 		id: params.docId,
 		title: params.title,
 		content: params.content,
+		savedContent: params.content,
 		kind: params.kind,
 		filePath: params.kind === "project_file" ? params.docId : undefined,
+		size: params.size,
+		mtimeMs: params.mtimeMs,
 		dirty: false,
 		lastSynced: Date.now(),
 		snapshot: params.snapshot,
@@ -35,11 +40,14 @@ function createActiveFileSession(
 	docId: string,
 	title: string,
 	content: string,
+	meta?: { size?: number; mtimeMs?: number },
 ): ActiveFileSession {
 	return {
 		path: docId,
 		title,
 		content,
+		size: meta?.size,
+		mtimeMs: meta?.mtimeMs,
 		openedAt: Date.now(),
 	};
 }
@@ -112,21 +120,36 @@ function openDoc(docId: string, title: string, content: string) {
 	});
 }
 
-function openProjectFile(filePath: string, title: string, content: string) {
+function openProjectFile(
+	filePath: string,
+	title: string,
+	content: string,
+	meta?: { size?: number; mtimeMs?: number },
+) {
 	store.setState((state) => {
 		const isAlreadyOpen = state.openedDocs.includes(filePath);
 		const newOpenedDocs = isAlreadyOpen
 			? state.openedDocs
 			: [...state.openedDocs, filePath];
 		const existingDoc = state.docCache[filePath];
-		// 无论文件是否 dirty，始终用最新读取的内容和正确的 kind
-		const nextDocCacheItem = createDocCacheItem({
-			docId: filePath,
-			title,
-			content,
-			kind: "project_file",
-			snapshot: existingDoc?.snapshot,
-		});
+		const nextDocCacheItem =
+			existingDoc?.dirty === true
+				? {
+						...existingDoc,
+						title,
+						size: meta?.size ?? existingDoc.size,
+						mtimeMs: meta?.mtimeMs ?? existingDoc.mtimeMs,
+						savedContent: existingDoc.savedContent ?? existingDoc.content,
+					}
+				: createDocCacheItem({
+						docId: filePath,
+						title,
+						content,
+						kind: "project_file",
+						snapshot: existingDoc?.snapshot,
+						size: meta?.size ?? existingDoc?.size,
+						mtimeMs: meta?.mtimeMs ?? existingDoc?.mtimeMs,
+					});
 
 		return {
 			...state,
@@ -141,6 +164,10 @@ function openProjectFile(filePath: string, title: string, content: string) {
 				filePath,
 				title,
 				nextDocCacheItem.content,
+				{
+					size: nextDocCacheItem.size,
+					mtimeMs: nextDocCacheItem.mtimeMs,
+				},
 			),
 		};
 	});
@@ -174,6 +201,10 @@ function closeDoc(docId: string) {
 							newActiveDocId,
 							nextActiveDoc.title,
 							nextActiveDoc.content,
+							{
+								size: nextActiveDoc.size,
+								mtimeMs: nextActiveDoc.mtimeMs,
+							},
 						)
 					: null,
 		};
@@ -190,7 +221,10 @@ function setActiveDoc(docId: string) {
 			editorContent: targetDoc?.content || state.editorContent,
 			activeFileSession:
 				targetDoc?.kind === "project_file"
-					? createActiveFileSession(docId, targetDoc.title, targetDoc.content)
+					? createActiveFileSession(docId, targetDoc.title, targetDoc.content, {
+							size: targetDoc.size,
+							mtimeMs: targetDoc.mtimeMs,
+						})
 					: null,
 		};
 	});
@@ -216,7 +250,12 @@ function reorderDocs(fromIndex: number, toIndex: number) {
 }
 
 // 更新文档缓存内容
-function updateDocCache(docId: string, content: string, dirty = true) {
+function updateDocCache(
+	docId: string,
+	content: string,
+	dirty = true,
+	meta?: { size?: number; mtimeMs?: number },
+) {
 	store.setState((state) => {
 		if (!state.docCache[docId]) return state;
 		return {
@@ -226,7 +265,13 @@ function updateDocCache(docId: string, content: string, dirty = true) {
 				[docId]: {
 					...state.docCache[docId],
 					content,
+					savedContent: dirty
+						? (state.docCache[docId].savedContent ??
+							state.docCache[docId].content)
+						: content,
 					dirty,
+					size: meta?.size ?? state.docCache[docId].size,
+					mtimeMs: meta?.mtimeMs ?? state.docCache[docId].mtimeMs,
 				},
 			},
 			editorContent:
@@ -236,6 +281,8 @@ function updateDocCache(docId: string, content: string, dirty = true) {
 					? {
 							...state.activeFileSession,
 							content,
+							size: meta?.size ?? state.activeFileSession.size,
+							mtimeMs: meta?.mtimeMs ?? state.activeFileSession.mtimeMs,
 						}
 					: state.activeFileSession,
 		};

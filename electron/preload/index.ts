@@ -23,6 +23,8 @@ const BATCHED_CHANNELS = new Set<string>([
 	"terminal-data",
 	"llm-stream-chunk",
 	"agent-sdk-event",
+	"tts-stream-chunk",
+	"tts-clone-progress",
 ]);
 
 function isBatchedPayload(value: unknown): value is { items: unknown[] } {

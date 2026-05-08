@@ -13,22 +13,38 @@ import type { PlanData, PlanStep } from "./planModeStore";
 
 /**
  * 构建规划模式的 system prompt 注入内容。
- * 指示 Agent 只输出结构化计划，不执行任何修改操作。
+ *
+ * 与 SDK 原生 plan mode 协作（运行时已设置 permission_mode: "plan"），
+ * 强调用 SDK 原生 ExitPlanMode 工具退出，JSON 协议作为兜底。
+ * 工具白名单与 PLAN_MODE_ALLOWED_TOOLS 保持一致。
  */
 export function buildPlanModeSystemPrompt(): string {
 	return `
 ## Plan Mode (规划模式)
 
-You are currently in **Plan Mode**. In this mode you MUST:
+You are currently in **Plan Mode**. The runtime has set \`permission_mode: "plan"\`,
+so the SDK will automatically prevent any file modifications. You don't need to
+"hold yourself back" — focus on producing a great plan.
 
-1. **Analyze** the user's request thoroughly
-2. **Output a structured plan** as a JSON code block — do NOT execute any file modifications
-3. **Only use read-only tools** (Read, Glob, Grep, WebSearch, WebFetch) to gather context
-4. **Never** use Edit, Write, Bash, or any tool that modifies the filesystem
+### What to do
 
-### Plan Output Format
+1. **Analyze** the user's request using read-only tools (Read, Glob, Grep, WebSearch, WebFetch)
+2. **Use \`TodoWrite\` liberally** to break the task into atomic steps as you think
+3. **Call \`AskUserQuestion\`** when assumptions need to be confirmed before locking in the plan
+4. **Exit by calling \`ExitPlanMode\`** when ready — pass the human-readable plan in the
+   \`plan\` field of the tool input. **This is the preferred path** (SDK-native).
+5. **Fallback**: if for any reason \`ExitPlanMode\` is not invoked, also output the plan
+   as a fenced code block tagged \`plan\` with the JSON schema below — the UI parses
+   it as a backstop and shows the same approval card.
 
-After analyzing the task, output your plan in the following JSON format inside a fenced code block tagged \`plan\`:
+### Tools available in this mode
+
+Read, Glob, Grep, WebSearch, WebFetch, AskUserQuestion, TodoWrite, ExitPlanMode.
+
+Edit / Write / Bash / Task / NotebookEdit are blocked by \`permission_mode: "plan"\`,
+do not attempt them.
+
+### Plan JSON fallback format
 
 \`\`\`plan
 {
@@ -189,7 +205,7 @@ ${stepsText}
 
 // ─── 工具集定义 ───
 
-/** 规划模式下允许的只读工具 */
+/** 规划模式下允许的工具集合：只读 + 任务规划 + Plan 模式退出 */
 export const PLAN_MODE_ALLOWED_TOOLS = [
 	"Read",
 	"Glob",
@@ -197,6 +213,8 @@ export const PLAN_MODE_ALLOWED_TOOLS = [
 	"WebSearch",
 	"WebFetch",
 	"AskUserQuestion",
+	"TodoWrite", // 让 agent 在 plan 阶段也能列任务
+	"ExitPlanMode", // SDK 原生退出 plan 模式（仍保留 JSON 兜底解析）
 ] as const;
 
 // ─── 工具函数 ───

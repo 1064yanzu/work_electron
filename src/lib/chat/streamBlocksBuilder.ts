@@ -47,6 +47,11 @@ export class StreamBlocksBuilder {
 		this.consumeSegments(segments);
 	}
 
+	appendVisibleTextChunk(chunk: string): void {
+		if (!chunk) return;
+		this.appendTextSegment(chunk);
+	}
+
 	appendThoughtChunk(chunk: string, meta?: ThoughtMeta): void {
 		if (!chunk) return;
 		this.appendThoughtSegment(chunk, meta);
@@ -118,15 +123,19 @@ export class StreamBlocksBuilder {
 		for (const segment of segments) {
 			if (!segment.content) continue;
 			if (segment.type === "text") {
-				this.finishCurrentThoughtTiming();
-				this.ensureTextBlock();
-				const textBlock = this.blocks[this.currentTextBlockIndex];
-				if (!textBlock || textBlock.type !== "text") continue;
-				textBlock.text += segment.content;
+				this.appendTextSegment(segment.content);
 				continue;
 			}
 			this.appendThoughtSegment(segment.content, segment.meta);
 		}
+	}
+
+	private appendTextSegment(content: string): void {
+		this.finishCurrentThoughtTiming();
+		this.ensureTextBlock();
+		const textBlock = this.blocks[this.currentTextBlockIndex];
+		if (!textBlock || textBlock.type !== "text") return;
+		textBlock.text += content;
 	}
 
 	private appendThoughtSegment(content: string, meta?: ThoughtMeta): void {

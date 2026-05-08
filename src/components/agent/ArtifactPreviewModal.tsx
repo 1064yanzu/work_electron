@@ -123,12 +123,57 @@ function TextPreview({ filePath }: { filePath: string }) {
 
 // HTML 预览
 function HtmlPreview({ filePath }: { filePath: string }) {
+	const [srcDoc, setSrcDoc] = useState<string>("");
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		let cancelled = false;
+		async function load() {
+			try {
+				setLoading(true);
+				setError(null);
+				const result = await window.electronAPI?.invoke("read_file_safe", {
+					path: filePath,
+					encoding: "utf-8",
+				});
+				if (cancelled) return;
+				setSrcDoc(result?.content || "");
+			} catch (err) {
+				if (cancelled) return;
+				setError(err instanceof Error ? err.message : "加载失败");
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		}
+		load();
+		return () => {
+			cancelled = true;
+		};
+	}, [filePath]);
+
+	if (loading) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cream-500" />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="flex items-center justify-center h-full text-error">
+				{error}
+			</div>
+		);
+	}
+
 	return (
 		<iframe
-			src={`file://${filePath}`}
+			srcDoc={srcDoc}
 			className="w-full h-full border-0 rounded-lg bg-surface"
 			title="HTML 预览"
-			sandbox="allow-same-origin"
+			sandbox="allow-scripts"
 		/>
 	);
 }

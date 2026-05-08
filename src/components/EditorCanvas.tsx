@@ -43,6 +43,7 @@ import {
 	isBinaryPhysicalDocId,
 	isPhysicalDocId,
 } from "./editor/editorCanvasHelpers";
+import { PhysicalFileEditor } from "./editor/PhysicalFileEditor";
 import { PhysicalFileViewer } from "./editor/PhysicalFileViewer";
 import InlineReviewRenderer from "./InlineReviewRenderer";
 import SourceReadView from "./SourceReadView";
@@ -115,6 +116,8 @@ export default function EditorCanvas({
 		(state) => state.activeFileSession,
 	);
 	const activeDocCacheContent = activeDocCache?.content;
+	const activeDocSavedContent =
+		activeDocCache?.savedContent ?? activeDocCache?.content;
 	const isPhysicalFileVisible = Boolean(
 		activeFileSession &&
 			activeDocId &&
@@ -137,6 +140,18 @@ export default function EditorCanvas({
 		activeDocId,
 		currentEditorTitle,
 	});
+	/** 非 markdown 物理文件（代码/HTML/CSV 等）—— 不套 markdown 编辑器外壳 */
+	const isNonMarkdownPhysicalFileVisible =
+		isPhysicalFileVisible &&
+		Boolean(previewFileName) &&
+		!isMarkdownPreviewFile(previewFileName);
+	const isPhysicalTextFileVisible =
+		isNonMarkdownPhysicalFileVisible &&
+		Boolean(previewFileName) &&
+		!isBinaryPreviewFile(previewFileName);
+	/** 是否隐藏 markdown 专属外壳（标题输入 / 富文本工具栏 / 字数统计状态栏） */
+	const hideMarkdownChrome =
+		isBinaryPhysicalFileVisible || isNonMarkdownPhysicalFileVisible;
 	const closeTab = workspaceStore.closeTab.bind(workspaceStore);
 	const closeDoc = workspaceStore.closeDoc.bind(workspaceStore);
 	const openDoc = workspaceStore.openDoc.bind(workspaceStore);
@@ -208,6 +223,7 @@ export default function EditorCanvas({
 	const handleEditorContentChange = useCallback(
 		(content: string) => {
 			const startedAt = performance.now();
+			editorContentRef.current = content;
 			setEditorContent(content);
 			measureNextPaint("editor.input.commit", startedAt, {
 				length: content.length,
@@ -215,6 +231,25 @@ export default function EditorCanvas({
 			});
 		},
 		[activeDocId],
+	);
+
+	const handlePhysicalTextContentChange = useCallback(
+		(content: string) => {
+			if (!activeDocId) return;
+			if (docCacheSyncTimeoutRef.current) {
+				clearTimeout(docCacheSyncTimeoutRef.current);
+				docCacheSyncTimeoutRef.current = null;
+			}
+			const startedAt = performance.now();
+			editorContentRef.current = content;
+			setEditorContent(content);
+			updateDocCache(activeDocId, content, true);
+			measureNextPaint("editor.physical.input.commit", startedAt, {
+				length: content.length,
+				docId: activeDocId,
+			});
+		},
+		[activeDocId, updateDocCache],
 	);
 
 	const handleEditorBlur = useCallback(() => {
@@ -226,13 +261,16 @@ export default function EditorCanvas({
 	}, [activeDocId, syncEditorBufferToStore]);
 
 	const replaceEditorBuffer = useCallback((next: SetStateAction<string>) => {
-		setEditorContent((previous) => {
-			const resolved = typeof next === "function" ? next(previous) : next;
-			if (workspaceStore.getState().editorContent !== resolved) {
-				workspaceStore.setEditorContent(resolved);
-			}
-			return resolved;
-		});
+		const previous = editorContentRef.current;
+		const resolved =
+			typeof next === "function"
+				? (next as (prev: string) => string)(previous)
+				: next;
+		editorContentRef.current = resolved;
+		setEditorContent(resolved);
+		if (workspaceStore.getState().editorContent !== resolved) {
+			workspaceStore.setEditorContent(resolved);
+		}
 	}, []);
 
 	// 用户手动切换编辑模式时标记为手动覆盖
@@ -266,11 +304,15 @@ export default function EditorCanvas({
 		if (!selectedOutput && !isPhysicalFileVisible) return false;
 		const fallbackSavedContent = selectedOutput
 			? selectedOutput.content
-			: activeDocCache?.content || "";
-		const savedContent = lastSavedContentRef.current || fallbackSavedContent;
+			: activeDocSavedContent || "";
+		const savedContent =
+			lastSavedDocIdRef.current === (selectedOutput?.id ?? activeDocId)
+				? lastSavedContentRef.current
+				: fallbackSavedContent;
 		return editorContent !== savedContent;
 	}, [
 		activeDocCache?.content,
+		activeDocSavedContent,
 		editorContent,
 		isPhysicalFileVisible,
 		selectedOutput,
@@ -302,15 +344,18 @@ export default function EditorCanvas({
 	}, [editorContent]);
 
 	useEffect(() => {
+		if (isPhysicalTextFileVisible) return;
 		if (storeEditorContent === editorContentRef.current) return;
+		editorContentRef.current = storeEditorContent;
 		setEditorContent(storeEditorContent);
-	}, [storeEditorContent]);
+	}, [isPhysicalTextFileVisible, storeEditorContent]);
 
 	useEffect(() => {
 		if (!activeDocId || activeDocCache?.kind !== "project_file") return;
 		setSelectedOutput(null);
 		const targetContent = activeDocCache.content ?? "";
 		if (editorContentRef.current === targetContent) return;
+		editorContentRef.current = targetContent;
 		setEditorContent(targetContent);
 	}, [activeDocCache?.content, activeDocCache?.kind, activeDocId]);
 
@@ -355,7 +400,9 @@ export default function EditorCanvas({
 			if (lastSavedDocIdRef.current !== activeDocId) {
 				lastSavedDocIdRef.current = activeDocId;
 				lastSavedContentRef.current =
-					workspaceStore.getState().docCache[activeDocId]?.content || "";
+					workspaceStore.getState().docCache[activeDocId]?.savedContent ??
+					workspaceStore.getState().docCache[activeDocId]?.content ??
+					"";
 				setLastSavedAt(Date.now());
 			}
 		} else {
@@ -408,6 +455,16 @@ export default function EditorCanvas({
 					filtered.length,
 					"items",
 				);
+
+				const activeWorkspaceDocId = workspaceStore.getState().activeDocId;
+				const activeWorkspaceDoc = activeWorkspaceDocId
+					? workspaceStore.getState().docCache[activeWorkspaceDocId]
+					: null;
+				if (activeWorkspaceDoc?.kind === "project_file") {
+					setOutputs(filtered);
+					setSelectedOutput(null);
+					return;
+				}
 
 				// 如果当前有选中的文档，保留它（即使不在 filtered 中）
 				const currentSelected = selectedOutputRef.current;
@@ -528,105 +585,128 @@ export default function EditorCanvas({
 		fetchOutputs();
 	}, [projectId, initialDocId]);
 
-	const flushPendingSave = useCallback(async () => {
-		// 防止并发保存
-		if (isSavingRef.current) {
-			return;
-		}
-
-		// 使用 ref 获取最新值，避免闭包问题
-		const currentOutput = selectedOutputRef.current;
-		const currentContent = editorContentRef.current;
-		// Danger! We are flushing the pending changes for the DOCUMENT WE WERE ON
-		// That is lastSavedDocIdRef, NOT the new activeDocId (which may have already flipped!)
-		const documentToSave = lastSavedDocIdRef.current;
-
-		if (!currentOutput) {
-			// Handling physical files save
-			if (isPhysicalDocId(documentToSave)) {
-				if (isBinaryPhysicalDocId(documentToSave)) {
-					return;
-				}
-				const savedContent = lastSavedContentRef.current;
-				if (currentContent === savedContent) return;
-
-				isSavingRef.current = true;
-				setIsSaving(true);
-				try {
-					await safeInvoke("write_file_safe", {
-						path: documentToSave,
-						content: currentContent,
-					});
-					lastSavedContentRef.current = currentContent;
-					updateDocCache(documentToSave, currentContent, false);
-					setLastSavedAt(Date.now());
-				} catch (error) {
-					console.error(
-						"[EditorCanvas] Physical flushPendingSave error",
-						error,
-					);
-				} finally {
-					isSavingRef.current = false;
-					setIsSaving(false);
-				}
+	const flushPendingSave = useCallback(
+		async (options?: { allowPhysical?: boolean }) => {
+			// 防止并发保存
+			if (isSavingRef.current) {
+				return;
 			}
-			return;
-		}
-		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 currentOutput.content
-		const savedContent = lastSavedContentRef.current || currentOutput.content;
-		if (currentContent === savedContent) {
-			return;
-		}
 
-		isSavingRef.current = true;
-		setIsSaving(true);
-		try {
-			const updated = await updateOutputAsset({
-				id: currentOutput.id,
-				content: currentContent,
-			});
-			// 更新 ref（这些不依赖组件是否挂载）
-			lastSavedContentRef.current = currentContent;
-			selectedOutputRef.current = {
-				...currentOutput,
-				content: currentContent,
-				version: updated.version,
-				updated_at: updated.updated_at,
-			};
+			// 使用 ref 获取最新值，避免闭包问题
+			const currentOutput = selectedOutputRef.current;
+			const currentContent = editorContentRef.current;
+			// Danger! We are flushing the pending changes for the DOCUMENT WE WERE ON
+			// That is lastSavedDocIdRef, NOT the new activeDocId (which may have already flipped!)
+			const documentToSave = lastSavedDocIdRef.current;
 
-			// 更新 React 状态（React 会自动忽略已卸载组件的更新）
-			setOutputs((prev) =>
-				prev.map((o) =>
-					o.id === updated.id
+			if (!currentOutput) {
+				// Handling physical files save
+				if (isPhysicalDocId(documentToSave)) {
+					if (!options?.allowPhysical) {
+						return;
+					}
+					if (isBinaryPhysicalDocId(documentToSave)) {
+						return;
+					}
+					const savedContent = lastSavedContentRef.current;
+					if (currentContent === savedContent) return;
+					const diskSnapshot =
+						workspaceStore.getState().docCache[documentToSave] ?? null;
+
+					isSavingRef.current = true;
+					setIsSaving(true);
+					try {
+						const result = await safeInvoke<{
+							success: boolean;
+							size: number;
+							mtime_ms: number;
+						}>("write_file_safe", {
+							path: documentToSave,
+							content: currentContent,
+							allow_empty: true,
+							expected_size: diskSnapshot?.size,
+							expected_mtime_ms: diskSnapshot?.mtimeMs,
+						});
+						lastSavedContentRef.current = currentContent;
+						updateDocCache(documentToSave, currentContent, false, {
+							size: result.size,
+							mtimeMs: result.mtime_ms,
+						});
+						setLastSavedAt(Date.now());
+					} catch (error) {
+						console.error(
+							"[EditorCanvas] Physical flushPendingSave error",
+							error,
+						);
+						throw error;
+					} finally {
+						isSavingRef.current = false;
+						setIsSaving(false);
+					}
+				}
+				return;
+			}
+			// 与 hasUnsavedChanges 保持一致：只在 ref 指向当前文档时使用 ref，避免空字符串被当作未初始化。
+			const savedContent =
+				lastSavedDocIdRef.current === currentOutput.id
+					? lastSavedContentRef.current
+					: currentOutput.content;
+			if (currentContent === savedContent) {
+				return;
+			}
+
+			isSavingRef.current = true;
+			setIsSaving(true);
+			try {
+				const updated = await updateOutputAsset({
+					id: currentOutput.id,
+					content: currentContent,
+				});
+				// 更新 ref（这些不依赖组件是否挂载）
+				lastSavedContentRef.current = currentContent;
+				selectedOutputRef.current = {
+					...currentOutput,
+					content: currentContent,
+					version: updated.version,
+					updated_at: updated.updated_at,
+				};
+
+				// 更新 React 状态（React 会自动忽略已卸载组件的更新）
+				setOutputs((prev) =>
+					prev.map((o) =>
+						o.id === updated.id
+							? {
+									...o,
+									content: currentContent,
+									version: updated.version,
+									updated_at: updated.updated_at,
+								}
+							: o,
+					),
+				);
+				setSelectedOutput((prev) =>
+					prev && prev.id === updated.id
 						? {
-								...o,
+								...prev,
 								content: currentContent,
 								version: updated.version,
 								updated_at: updated.updated_at,
 							}
-						: o,
-				),
-			);
-			setSelectedOutput((prev) =>
-				prev && prev.id === updated.id
-					? {
-							...prev,
-							content: currentContent,
-							version: updated.version,
-							updated_at: updated.updated_at,
-						}
-					: prev,
-			);
-			// 更新 docCache 内容并标记为已保存（dirty = false）
-			updateDocCache(updated.id, currentContent, false);
-			setLastSavedAt(Date.now());
-		} catch (error) {
-			console.error("[EditorCanvas] flushPendingSave error", error);
-		} finally {
-			isSavingRef.current = false;
-			setIsSaving(false);
-		}
-	}, [updateDocCache]);
+						: prev,
+				);
+				// 更新 docCache 内容并标记为已保存（dirty = false）
+				updateDocCache(updated.id, currentContent, false);
+				setLastSavedAt(Date.now());
+			} catch (error) {
+				console.error("[EditorCanvas] flushPendingSave error", error);
+				throw error;
+			} finally {
+				isSavingRef.current = false;
+				setIsSaving(false);
+			}
+		},
+		[activeDocId, selectedOutput?.id, updateDocCache],
+	);
 
 	const flushTitleSave = useCallback(async () => {
 		if (titleSaveTimeoutRef.current) {
@@ -654,14 +734,17 @@ export default function EditorCanvas({
 		}
 	}, []);
 
-	const flushPendingSaveImmediately = useCallback(async () => {
-		if (saveTimeoutRef.current) {
-			clearTimeout(saveTimeoutRef.current);
-			saveTimeoutRef.current = null;
-		}
-		await flushTitleSave();
-		await flushPendingSave();
-	}, [flushPendingSave, flushTitleSave]);
+	const flushPendingSaveImmediately = useCallback(
+		async (options?: { allowPhysical?: boolean }) => {
+			if (saveTimeoutRef.current) {
+				clearTimeout(saveTimeoutRef.current);
+				saveTimeoutRef.current = null;
+			}
+			await flushTitleSave();
+			await flushPendingSave(options);
+		},
+		[flushPendingSave, flushTitleSave],
+	);
 
 	// 监听 activeDocId 变化，同步切换文档（标签栏点击触发）
 	useEffect(() => {
@@ -684,8 +767,12 @@ export default function EditorCanvas({
 		} else {
 			if (activeFileSession?.path === activeDocId) {
 				flushPendingSaveImmediately().then(() => {
+					const cachedPhysicalContent =
+						workspaceStore.getState().docCache[activeDocId]?.content;
 					setSelectedOutput(null);
-					replaceEditorBuffer(activeFileSession.content);
+					replaceEditorBuffer(
+						cachedPhysicalContent ?? activeFileSession.content,
+					);
 				});
 			}
 		}
@@ -830,24 +917,17 @@ export default function EditorCanvas({
 	);
 
 	// Auto-save - 与 hasUnsavedChanges 保持一致的判断逻辑
+	// 物理文件（磁盘上的 project_file）不参与自动保存，避免与 docCache / store 同步形成
+	// 双源竞争（曾出现 24488/0 字节交替写入）。物理文件统一通过 ⌘S 手动保存。
 	useEffect(() => {
 		if (saveTimeoutRef.current) {
 			clearTimeout(saveTimeoutRef.current);
 		}
 
-		if (
-			!selectedOutput &&
-			(!isPhysicalDocId(activeDocId) || isBinaryPhysicalDocId(activeDocId))
-		) {
+		if (!selectedOutput) {
 			return;
 		}
-		// 与 hasUnsavedChanges 保持一致：优先用 ref，回退用 selectedOutput.content 或物理文件缓存
-		const physicalSavedContent = isPhysicalDocId(activeDocId)
-			? (workspaceStore.getState().docCache[activeDocId]?.content ?? "")
-			: "";
-		const savedContent =
-			lastSavedContentRef.current ||
-			(selectedOutput ? selectedOutput.content : physicalSavedContent);
+		const savedContent = lastSavedContentRef.current || selectedOutput.content;
 		if (editorContent === savedContent) {
 			return;
 		}
@@ -863,12 +943,14 @@ export default function EditorCanvas({
 		};
 	}, [editorContent, selectedOutput, flushPendingSave]);
 
-	// Flush pending save when组件卸载或离开
+	// 组件卸载时只对 output（产物文档）做最后一次落盘，物理文件不在此处兜底，
+	// 避免卸载瞬间用过期的 editorContent 覆盖磁盘真实内容。
 	useEffect(() => {
 		return () => {
 			if (saveTimeoutRef.current) {
 				clearTimeout(saveTimeoutRef.current);
 			}
+			if (!selectedOutputRef.current) return;
 			void flushPendingSave();
 		};
 	}, [flushPendingSave]);
@@ -884,6 +966,9 @@ export default function EditorCanvas({
 
 	useEffect(() => {
 		const isPhysical = isPhysicalDocId(activeDocId);
+		if (isPhysicalTextFileVisible) {
+			return;
+		}
 		if (isBinaryPhysicalDocId(activeDocId)) {
 			return;
 		}
@@ -902,6 +987,7 @@ export default function EditorCanvas({
 		activeDocCacheContent,
 		activeDocId,
 		editorContent,
+		isPhysicalTextFileVisible,
 		markDocDirty,
 		selectedOutput,
 		syncEditorBufferToStore,
@@ -1049,13 +1135,19 @@ export default function EditorCanvas({
 	const handleManualSave = useCallback(async () => {
 		if (!canSaveCurrentContent) return;
 		try {
-			await flushPendingSaveImmediately();
+			await flushPendingSaveImmediately({
+				allowPhysical: isPhysicalFileVisible,
+			});
 			toast.success("保存成功");
 		} catch (error) {
 			console.error("[EditorCanvas] 手动保存失败", error);
 			toast.error("保存失败，请稍后重试");
 		}
-	}, [canSaveCurrentContent, flushPendingSaveImmediately]);
+	}, [
+		canSaveCurrentContent,
+		flushPendingSaveImmediately,
+		isPhysicalFileVisible,
+	]);
 
 	const handleTitleChange = useCallback(
 		(newTitle: string) => {
@@ -1666,7 +1758,7 @@ export default function EditorCanvas({
 					/>
 				))}
 
-			{!isBinaryPhysicalFileVisible ? (
+			{!hideMarkdownChrome ? (
 				<EditorHeader
 					editorMode={editorMode}
 					onSetEditorMode={handleUserSetEditorMode}
@@ -1718,14 +1810,28 @@ export default function EditorCanvas({
 				) : isPhysicalFileVisible &&
 					previewFileName &&
 					!isMarkdownPreviewFile(previewFileName) ? (
-					/* 非 markdown 物理文件：直接从 store 取内容渲染，完全跳过本地 state 同步链 */
-					<PhysicalFileViewer
-						fileName={previewFileName}
-						content={activeDocCacheContent ?? storeEditorContent}
-						filePath={activeFileSession?.path}
-						density={density}
-						onContextMenu={handlePreviewContextMenu}
-					/>
+					isBinaryPreviewFile(previewFileName) ? (
+						/* 二进制（图片/PDF/视频/音频/Excel）保留只读预览 */
+						<PhysicalFileViewer
+							fileName={previewFileName}
+							content={activeDocCacheContent ?? storeEditorContent}
+							filePath={activeFileSession?.path}
+							density={density}
+							onContextMenu={handlePreviewContextMenu}
+						/>
+					) : (
+						/* 文本/代码/HTML 走 Monaco，可直接编辑 */
+						<PhysicalFileEditor
+							fileName={previewFileName}
+							filePath={activeFileSession?.path}
+							content={activeDocCacheContent ?? editorContent}
+							dirty={hasUnsavedChanges}
+							isSaving={isSaving}
+							onContentChange={handlePhysicalTextContentChange}
+							onSave={handleManualSave}
+							onContextMenu={handlePreviewContextMenu}
+						/>
+					)
 				) : (
 					<EditorWorkspaceView
 						editorMode={editorMode}
@@ -1751,7 +1857,7 @@ export default function EditorCanvas({
 				)}
 			</div>
 
-			{!isBinaryPhysicalFileVisible ? (
+			{!hideMarkdownChrome ? (
 				<EditorStatusBar
 					editorContentLength={editorContent.length}
 					isSaving={isSaving}

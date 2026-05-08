@@ -33,11 +33,17 @@ interface FileEntry {
 	name: string;
 	isDir: boolean;
 	size?: number;
+	mtimeMs?: number;
+}
+
+// 阅读器支持但本地编辑器/二进制预览也能打开的"轻量"文本格式，
+// 这些不需要导入资料库即可在编辑器里直接看。
+function isTextLikeReaderFile(fileName: string): boolean {
+	return /\.(txt|log|md|markdown|html|htm|xhtml)$/i.test(fileName);
 }
 
 export function ProjectFilesView() {
 	const [entries, setEntries] = useState<FileEntry[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
 	const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
@@ -47,6 +53,22 @@ export function ProjectFilesView() {
 	const projectPath = useWorkspaceStoreSelector(
 		(state) => state.currentThreadPath,
 	);
+	// 初始挂载若已有路径，直接进入 loading，避免闪现"文件夹为空"
+	const [isLoading, setIsLoading] = useState(Boolean(projectPath));
+	const [lastLoadedPath, setLastLoadedPath] = useState<string | null>(
+		projectPath,
+	);
+
+	// 同步派生：projectPath 变化时进入 loading 并重置展开状态。
+	// 注意：不清空 entries，保留旧内容直到新内容加载完成，避免短暂闪烁/空白。
+	if (projectPath !== lastLoadedPath) {
+		setLastLoadedPath(projectPath);
+		setExpandedDirs(new Set());
+		setIsLoading(Boolean(projectPath));
+		if (!projectPath) {
+			setEntries([]);
+		}
+	}
 
 	const loadDir = useCallback(async (dirPath: string) => {
 		try {
@@ -57,6 +79,7 @@ export function ProjectFilesView() {
 				name: r.name,
 				isDir: r.is_dir,
 				size: r.size,
+				mtimeMs: r.mtime_ms,
 			}));
 			return mapped.sort((a, b) => {
 				if (a.isDir === b.isDir) return a.name.localeCompare(b.name);
@@ -77,32 +100,47 @@ export function ProjectFilesView() {
 	}, [projectPath, loadDir]);
 
 	useEffect(() => {
-		void refreshRoot();
-	}, [refreshRoot]);
-
-	useEffect(() => {
-		if (projectPath) return;
-		setEntries([]);
-		setExpandedDirs(new Set());
-	}, [projectPath]);
-
-	const openInReader = useCallback(async (entry: FileEntry) => {
-		setIsLoading(true);
-		try {
-			const books = await readerImportFiles({ paths: [entry.path] });
-			const book = books[0];
-			if (!book) {
-				toast.error("无法解析该文件，请确认格式与编码");
-				return;
-			}
-			openReader(book.id);
-		} catch (e) {
-			console.error("Failed to open in reader:", entry.path, e);
-			toast.error("打开阅读器失败");
-		} finally {
+		if (!projectPath) {
 			setIsLoading(false);
+			return;
 		}
-	}, []);
+		let cancelled = false;
+		void loadDir(projectPath).then((rootEntries) => {
+			if (cancelled) return;
+			setEntries(rootEntries);
+			setIsLoading(false);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [projectPath, loadDir]);
+
+	const openInReader = useCallback(
+		async (entry: FileEntry, options: { silent: boolean }) => {
+			setIsLoading(true);
+			try {
+				const books = await readerImportFiles({
+					paths: [entry.path],
+					silent: options.silent,
+				});
+				const book = books[0];
+				if (!book) {
+					toast.error("无法解析该文件，请确认格式与编码");
+					return;
+				}
+				openReader(book.id);
+				if (!options.silent) {
+					toast.success("已加入资料库");
+				}
+			} catch (e) {
+				console.error("Failed to open in reader:", entry.path, e);
+				toast.error("打开阅读器失败");
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[],
+	);
 
 	const toggleDir = async (entry: FileEntry) => {
 		if (entry.isDir) {
@@ -118,42 +156,66 @@ export function ProjectFilesView() {
 			return;
 		}
 
-		// 阅读器支持的格式（PDF/EPUB/MOBI/AZW3/TXT/HTML/MD/DOCX/CBZ 等）
-		// 直接交给阅读器 Overlay，不读入编辑器
-		if (isReaderSupportedFile(entry.name)) {
-			void openInReader(entry);
+		// 阅读器支持的格式（PDF / EPUB / MOBI / AZW3 / DOCX / CBZ 等）：
+		// 默认双击 = 在阅读器里"瞬态打开"，不写 sources/notes（不进资料库）。
+		// 用户如果想入库，从右键菜单选"在阅读器中打开（导入资料库）"。
+		// TXT / MD / HTML 等纯文本类不走阅读器，留给编辑器预览，避免轻量文本被入库。
+		if (
+			isReaderSupportedFile(entry.name) &&
+			!isTextLikeReaderFile(entry.name)
+		) {
+			void openInReader(entry, { silent: true });
+			return;
+		}
+
+		// 立即切到编辑器视图，给用户瞬时反馈（VS Code 风格的快路径）
+		if (managedModeStore.getState().isActive) {
+			managedModeStore.disableManagedMode();
+		}
+		workspaceStore.setMainView("editor");
+
+		if (isBinaryPreviewFile(entry.name)) {
+			// 二进制文件不读取内容，直接用路径打开
+			workspaceStore.openProjectFile(
+				entry.path,
+				entry.name,
+				BINARY_CONTENT_MARKER,
+				{
+					size: entry.size,
+					mtimeMs: entry.mtimeMs,
+				},
+			);
+			return;
+		}
+
+		// 缓存命中：用之前读过 / 用户未保存的内容秒开（与 VS Code 切 tab 一致）
+		const cached = workspaceStore.getState().docCache[entry.path];
+		if (cached?.dirty && typeof cached.content === "string") {
+			workspaceStore.openProjectFile(entry.path, entry.name, cached.content, {
+				size: cached.size ?? entry.size,
+				mtimeMs: cached.mtimeMs ?? entry.mtimeMs,
+			});
 			return;
 		}
 
 		setIsLoading(true);
 		try {
-			if (isBinaryPreviewFile(entry.name)) {
-				// 二进制文件不读取内容，直接用路径打开
-				workspaceStore.openProjectFile(
-					entry.path,
-					entry.name,
-					BINARY_CONTENT_MARKER,
-				);
-			} else {
-				const res = await safeInvoke<{
-					content: string;
-					encoding: string;
-					size?: number;
-				}>("read_file_safe", { payload: { path: entry.path } });
-				console.log("[ProjectFilesView] open project file", {
-					path: entry.path,
-					title: entry.name,
-					contentLength: res?.content?.length ?? -1,
-					size: res?.size ?? -1,
-				});
-				workspaceStore.openProjectFile(entry.path, entry.name, res.content);
-			}
-
-			// 强制切换到多标签编辑器视图
-			if (managedModeStore.getState().isActive) {
-				managedModeStore.disableManagedMode();
-			}
-			workspaceStore.setMainView("editor");
+			const res = await safeInvoke<{
+				content: string;
+				encoding: string;
+				size?: number;
+				mtime_ms?: number;
+			}>("read_file_safe", { payload: { path: entry.path } });
+			console.log("[ProjectFilesView] open project file", {
+				path: entry.path,
+				title: entry.name,
+				contentLength: res?.content?.length ?? -1,
+				size: res?.size ?? -1,
+			});
+			workspaceStore.openProjectFile(entry.path, entry.name, res.content, {
+				size: res.size ?? entry.size,
+				mtimeMs: res.mtime_ms ?? entry.mtimeMs,
+			});
 		} catch (e) {
 			console.error("Failed to read file:", entry.path, e);
 			toast.error("无法读取文件内容");
@@ -199,6 +261,11 @@ export function ProjectFilesView() {
 					onOpen: () => {
 						void toggleDir(contextMenu.entry);
 					},
+					onOpenInReader: isReaderSupportedFile(contextMenu.entry.name)
+						? () => {
+								void openInReader(contextMenu.entry, { silent: false });
+							}
+						: undefined,
 					onCopyPath: () => {
 						void navigator.clipboard.writeText(contextMenu.entry.path);
 						toast.success("路径已复制");
@@ -300,7 +367,12 @@ export function ProjectFilesView() {
 							请先到线程列表中选择或创建一个线程
 						</p>
 					</div>
-				) : entries.length === 0 && !isLoading ? (
+				) : isLoading && entries.length === 0 ? (
+					<div className="text-center py-10 px-6 mt-10">
+						<RefreshCcw className="w-5 h-5 text-text-light mx-auto mb-3 animate-spin" />
+						<p className="text-xs text-text-light">加载中…</p>
+					</div>
+				) : entries.length === 0 ? (
 					<div className="text-center py-10 px-6 mt-10">
 						<p className="text-sm text-text-muted font-medium">文件夹为空</p>
 					</div>

@@ -14,6 +14,7 @@ import {
 	Smartphone,
 	Sparkles,
 	Monitor,
+	Volume2,
 	type LucideIcon,
 } from "lucide-react";
 import type {
@@ -70,6 +71,13 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 		id: "reader",
 		label: "阅读器",
 		icon: BookOpen,
+		group: "common",
+		simpleMode: "full",
+	},
+	{
+		id: "tts",
+		label: "语音朗读",
+		icon: Volume2,
 		group: "common",
 		simpleMode: "full",
 	},

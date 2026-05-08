@@ -7,6 +7,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { deleteFileSafe, moveFileSafe, revealFileSafe } from "../../lib/api";
 import { useAgentStoreSelector } from "../../lib/agent/store";
 import { useChatStoreSelector } from "../../lib/chat/store";
+import { workspaceStore } from "../../lib/workspaceStore";
 import { getCenterUxPrefs } from "../../lib/config";
 import { EVENTS, events } from "../../lib/events";
 import {
@@ -136,6 +137,16 @@ export default function SandboxWorkspace({
 			cancelled = true;
 		};
 	}, []);
+
+	// 当托管工作区解析出活跃线程的 sandbox 目录时，把它同步到 workspaceStore，
+	// 让左侧 FILES 面板（ProjectFilesView）能跟随当前线程而不是停留在"无工作路径"。
+	useEffect(() => {
+		if (!sandboxDir) return;
+		workspaceStore.setCurrentThreadScope(
+			sandboxDir,
+			activeSession?.title ?? null,
+		);
+	}, [sandboxDir, activeSession?.title]);
 
 	useEffect(() => {
 		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {

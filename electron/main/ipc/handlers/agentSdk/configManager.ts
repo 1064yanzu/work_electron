@@ -102,7 +102,9 @@ export function normalizeToolSearchMode(
 	) {
 		return normalized;
 	}
-	return "auto:5";
+	// 默认关：与 Claude Code CLI 默认行为对齐。
+	// 开了之后 SDK 会注入 ToolSearch 章节，稀释主指令权重，且增加一次工具发现的延迟。
+	return "false";
 }
 
 // ---------------------------------------------------------------------------

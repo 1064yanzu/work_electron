@@ -215,4 +215,20 @@ export async function runMigrations(ctx: DbContext) {
 	} catch {
 		// 忽略索引创建错误
 	}
+
+	// Migration: TTS 桌宠 AI 个性化字段（为后续 LLM 生成台词预留）
+	await safeAddColumn(
+		ctx,
+		"tts_settings",
+		"scene_pet_persona_enabled",
+		"INTEGER NOT NULL DEFAULT 0",
+	);
+	await safeAddColumn(ctx, "tts_settings", "scene_pet_persona_prompt", "TEXT");
+	await safeAddColumn(
+		ctx,
+		"tts_settings",
+		"scene_pet_persona_provider_id",
+		"TEXT",
+	);
+	await safeAddColumn(ctx, "tts_settings", "scene_pet_persona_model", "TEXT");
 }

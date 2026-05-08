@@ -141,3 +141,76 @@ export function scrollToReaderTarget(
 	const top = scroll.scrollTop + targetRect.top - scrollRect.top - 32;
 	scroll.scrollTo({ left: 0, top: Math.max(0, top), behavior });
 }
+
+/**
+ * 找到 article 容器内"第 offset 个可见字符"所属的块级元素。
+ *
+ * 用途：高亮 / 书签 click 跳转 — locator 形如 `chapter:xxx:offset:1234`，
+ * 1234 是该字符在 article.textContent 中的位置；我们要把它对应到
+ * 真正可滚动的祖先块级元素（p / h2 / blockquote / li / ...），交给
+ * scrollToReaderTarget 滚到视口。
+ *
+ * 实现：用 TreeWalker 走 textNode，累计字符长度找到包含 offset 的节点，
+ * 然后回溯到第一个块级祖先（找不到则用 textNode.parentElement 兜底）。
+ */
+const READER_BLOCK_TAGS = new Set([
+	"P",
+	"H1",
+	"H2",
+	"H3",
+	"H4",
+	"H5",
+	"H6",
+	"BLOCKQUOTE",
+	"LI",
+	"PRE",
+	"DIV",
+	"SECTION",
+	"ARTICLE",
+	"FIGURE",
+]);
+
+function findBlockAncestor(
+	article: HTMLElement,
+	node: Node,
+): HTMLElement | null {
+	let cur: Node | null =
+		node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
+	while (cur && cur !== article) {
+		if (cur.nodeType === Node.ELEMENT_NODE) {
+			const el = cur as HTMLElement;
+			if (READER_BLOCK_TAGS.has(el.tagName)) return el;
+		}
+		cur = cur.parentNode;
+	}
+	if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
+		return node.parentElement;
+	}
+	return null;
+}
+
+export function findReaderOffsetElement(
+	article: HTMLElement,
+	offset: number,
+): HTMLElement | null {
+	if (offset < 0) return null;
+	const walker = article.ownerDocument!.createTreeWalker(
+		article,
+		NodeFilter.SHOW_TEXT,
+	);
+	let acc = 0;
+	let last: Text | null = null;
+	let node = walker.nextNode() as Text | null;
+	while (node) {
+		const len = node.nodeValue?.length ?? 0;
+		if (acc + len >= offset) {
+			return findBlockAncestor(article, node);
+		}
+		acc += len;
+		last = node;
+		node = walker.nextNode() as Text | null;
+	}
+	// offset 超出文本总长 → 退回最后一段
+	if (last) return findBlockAncestor(article, last);
+	return null;
+}

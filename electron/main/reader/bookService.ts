@@ -173,9 +173,7 @@ export async function openBook(
 	if (!book) throw new Error("BOOK_NOT_FOUND");
 
 	if (!existsSync(book.storage_path)) {
-		throw new Error(
-			`FILE_MISSING:${book.storage_path}`,
-		);
+		throw new Error(`FILE_MISSING:${book.storage_path}`);
 	}
 
 	const progRes = await db.client.execute({

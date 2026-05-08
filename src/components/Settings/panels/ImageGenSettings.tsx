@@ -1,9 +1,12 @@
 import {
 	AlertCircle,
 	CheckCircle2,
-	Image,
+	Image as ImageIcon,
 	Loader2,
-	Palette,
+	RotateCcw,
+	Square,
+	RectangleVertical,
+	RectangleHorizontal,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -13,39 +16,59 @@ import {
 } from "../../../lib/api";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
-import Select from "../../ui/Select";
+import { Select } from "../../ui/Select";
 import {
+	SettingsBadge,
+	SettingsButton,
+	SettingsCardSection,
+	SettingsField,
+	SettingsHint,
 	SettingsPageContainer,
-	SettingsRow,
-	SettingsSectionCard,
-	SettingsSectionTitle,
+	SettingsTextArea,
+	SettingsTextInput,
 } from "../ui/SettingsPrimitives";
+import { cn } from "../../../lib/utils";
 
-// 比例预设（参考 Cherry Studio）
-const ASPECT_RATIO_GROUPS = [
+// 比例预设
+type AspectRatio = {
+	label: string;
+	value: string;
+	w: number;
+	h: number;
+};
+
+type AspectGroup = {
+	label: string;
+	icon: typeof Square;
+	options: AspectRatio[];
+};
+
+const ASPECT_RATIO_GROUPS: AspectGroup[] = [
 	{
 		label: "方形",
-		options: [{ label: "1:1", value: "1:1" }],
+		icon: Square,
+		options: [{ label: "1:1", value: "1:1", w: 1, h: 1 }],
 	},
 	{
 		label: "竖版",
+		icon: RectangleVertical,
 		options: [
-			{ label: "2:3", value: "2:3" },
-			{ label: "3:4", value: "3:4" },
-			{ label: "9:16", value: "9:16" },
+			{ label: "2:3", value: "2:3", w: 2, h: 3 },
+			{ label: "3:4", value: "3:4", w: 3, h: 4 },
+			{ label: "9:16", value: "9:16", w: 9, h: 16 },
 		],
 	},
 	{
 		label: "横版",
+		icon: RectangleHorizontal,
 		options: [
-			{ label: "3:2", value: "3:2" },
-			{ label: "4:3", value: "4:3" },
-			{ label: "16:9", value: "16:9" },
+			{ label: "3:2", value: "3:2", w: 3, h: 2 },
+			{ label: "4:3", value: "4:3", w: 4, h: 3 },
+			{ label: "16:9", value: "16:9", w: 16, h: 9 },
 		],
 	},
 ];
 
-// 默认提示词模版（更专业）
 const DEFAULT_PROMPT_TEMPLATE = `Create a high-quality, visually appealing illustration for the following content. Style: modern, professional, clean design with vibrant colors.
 
 Content: {text}`;
@@ -64,20 +87,15 @@ export function ImageGenSettings() {
 		style: "natural",
 	});
 
-	// 获取所有已启用且有 API Key 的提供商
 	const enabledProviders = providers.filter((p) => p.isEnabled && p.apiKey);
 
-	// 当前选中的提供商
 	const selectedProvider = useMemo(
 		() => enabledProviders.find((p) => p.id === config.providerId),
 		[enabledProviders, config.providerId],
 	);
 
-	// 该提供商的可用模型（筛选生图模型）
 	const availableModels = useMemo(() => {
 		if (!selectedProvider) return [];
-
-		// 尝试匹配推荐的生图模型
 		const providerModels = selectedProvider.models || [];
 		const imageModels = providerModels.filter((m: string) => {
 			const lower = m.toLowerCase();
@@ -94,13 +112,11 @@ export function ImageGenSettings() {
 				lower.includes("image")
 			);
 		});
-
-		// 如果没找到生图模型，显示全部模型
 		return imageModels.length > 0 ? imageModels : providerModels;
 	}, [selectedProvider]);
 
 	useEffect(() => {
-		loadConfig();
+		void loadConfig();
 	}, []);
 
 	const loadConfig = async () => {
@@ -122,15 +138,11 @@ export function ImageGenSettings() {
 		value: ImageGenConfig[K],
 	) => {
 		const newConfig = { ...config, [key]: value };
-
-		// 切换提供商时清空模型选择
 		if (key === "providerId" && value !== config.providerId) {
 			newConfig.model = "";
 		}
-
 		setConfig(newConfig);
 
-		// 自动保存
 		setIsSaving(true);
 		try {
 			await setImageGenConfig(
@@ -147,224 +159,274 @@ export function ImageGenSettings() {
 
 	if (isLoading) {
 		return (
-			<div className="flex-1 h-full bg-background p-8 flex items-center justify-center">
-				<Loader2 className="w-6 h-6 animate-spin text-text-light" />
-			</div>
+			<SettingsPageContainer>
+				<div className="flex h-40 items-center justify-center text-text-muted">
+					<Loader2 className="mr-2 h-4 w-4 animate-spin" /> 加载生图配置…
+				</div>
+			</SettingsPageContainer>
 		);
 	}
+
+	const ready = !!(config.providerId && config.model);
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 			<SettingsPanelHeader
-				icon={Image}
-				title="AI 生图设置"
-				description="配置生图模型与参数。"
+				icon={ImageIcon}
+				title="AI 生图"
+				description="配置图像生成模型与默认提示词，编辑器中可对选中文字一键生成配图。"
 				actions={
 					isSaving ? (
-						<span className="text-xs text-text-light flex items-center gap-1 ml-2">
-							<Loader2 className="w-3 h-3 animate-spin" />
-							保存中...
-						</span>
+						<SettingsBadge tone="info" icon={Loader2}>
+							保存中
+						</SettingsBadge>
 					) : null
 				}
 			/>
 
+			{/* 状态条 */}
+			<StatusBanner ready={ready} />
+
 			{/* 提供商与模型 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>提供商与模型</SettingsSectionTitle>
-					<SettingsRow
-						label="生图提供商"
-						description="推荐使用 Silicon Flow、OpenAI 或其他支持 OpenAI 兼容生图 API 的服务。"
-						action={
-							<Select
-								value={config.providerId}
-								onChange={(e) => handleChange("providerId", e.target.value)}
-								variant="inline"
-								containerClassName="w-auto min-w-[180px]"
-							>
-								<option value="">选择提供商...</option>
-								{enabledProviders.map((provider) => (
-									<option key={provider.id} value={provider.id}>
-										{provider.name}
-									</option>
-								))}
-							</Select>
-						}
+			<SettingsCardSection
+				title="提供商与模型"
+				description="推荐使用 SiliconFlow、OpenAI 或其他兼容 OpenAI 生图协议的服务。"
+				bodyClassName="px-5 py-2"
+			>
+				<SettingsField
+					label="生图提供商"
+					hint="只显示已启用且填入 API Key 的渠道。"
+					layout="horizontal"
+				>
+					<Select
+						value={config.providerId}
+						onChange={(e) => handleChange("providerId", e.target.value)}
+						variant="inline"
+						placeholder="选择提供商…"
+						options={enabledProviders.map((p) => ({
+							value: p.id,
+							label: p.name,
+						}))}
 					/>
-					<SettingsRow
-						label="生图模型"
-						description={
-							!config.providerId
-								? "请先选择提供商"
-								: config.providerId && availableModels.length === 0
-									? "该提供商暂无预设模型，请手动输入支持的生图模型 ID。"
-									: undefined
-						}
-						action={
-							config.providerId && availableModels.length > 0 ? (
-								<Select
-									value={config.model}
-									onChange={(e) => handleChange("model", e.target.value)}
-									variant="inline"
-									containerClassName="w-auto min-w-[200px]"
-								>
-									<option value="">选择模型...</option>
-									{availableModels.map((model: string) => (
-										<option key={model} value={model}>
-											{model}
-										</option>
-									))}
-								</Select>
-							) : config.providerId ? (
-								<input
-									type="text"
-									value={config.model}
-									onChange={(e) => handleChange("model", e.target.value)}
-									placeholder="如 dall-e-3"
-									className="w-48 px-3 py-1.5 bg-warm-50 border border-border/80 rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-								/>
-							) : (
-								<span className="text-sm text-text-muted">—</span>
-							)
-						}
-					/>
-				</div>
-			</SettingsSectionCard>
+				</SettingsField>
+				<SettingsField
+					label="生图模型"
+					hint={
+						!config.providerId
+							? "请先选择提供商"
+							: availableModels.length === 0
+								? "该提供商暂无预设模型，请手动输入支持的生图模型 ID。"
+								: "已自动筛选可能的生图模型。"
+					}
+					layout="horizontal"
+				>
+					{config.providerId && availableModels.length > 0 ? (
+						<Select
+							value={config.model}
+							onChange={(e) => handleChange("model", e.target.value)}
+							variant="inline"
+							placeholder="选择模型…"
+							options={availableModels.map((m: string) => ({
+								value: m,
+								label: m,
+							}))}
+						/>
+					) : config.providerId ? (
+						<SettingsTextInput
+							value={config.model}
+							onChange={(value) => handleChange("model", value)}
+							placeholder="如 dall-e-3"
+						/>
+					) : (
+						<span className="text-[12.5px] text-text-light">—</span>
+					)}
+				</SettingsField>
+			</SettingsCardSection>
 
 			{/* 图片比例 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>图片比例</SettingsSectionTitle>
-					<div className="flex flex-wrap gap-3 pt-1">
-						{ASPECT_RATIO_GROUPS.map((group) => (
-							<div key={group.label} className="flex items-center gap-1.5">
-								<span className="text-xs text-text-light mr-0.5">
-									{group.label}:
-								</span>
-								{group.options.map((option) => (
-									<button
-										key={option.value}
-										onClick={() => handleChange("defaultSize", option.value)}
-										className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-											config.defaultSize === option.value
-												? "bg-primary text-primary-foreground shadow-sm"
-												: "bg-warm-200 text-text-secondary hover:bg-warm-300"
-										}`}
-									>
-										{option.label}
-									</button>
-								))}
+			<SettingsCardSection
+				title="图片比例"
+				description="选择默认输出比例，部分模型可能仅支持其中一部分。"
+				bodyClassName="px-5 py-5 space-y-4"
+			>
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+					{ASPECT_RATIO_GROUPS.map((group) => {
+						const GroupIcon = group.icon;
+						return (
+							<div
+								key={group.label}
+								className="rounded-2xl border border-border bg-cream-50 p-3"
+							>
+								<div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+									<GroupIcon className="h-3 w-3" strokeWidth={1.6} />
+									{group.label}
+								</div>
+								<div className="flex flex-wrap gap-1.5">
+									{group.options.map((opt) => {
+										const active = config.defaultSize === opt.value;
+										return (
+											<button
+												key={opt.value}
+												type="button"
+												onClick={() => handleChange("defaultSize", opt.value)}
+												className={cn(
+													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-all",
+													active
+														? "bg-primary text-primary-foreground shadow-bai-card"
+														: "bg-surface border border-border text-text-secondary hover:border-cream-500 hover:text-text-primary",
+												)}
+											>
+												<RatioGlyph w={opt.w} h={opt.h} active={active} />
+												{opt.label}
+											</button>
+										);
+									})}
+								</div>
 							</div>
-						))}
-					</div>
+						);
+					})}
 				</div>
-			</SettingsSectionCard>
+			</SettingsCardSection>
 
 			{/* 提示词配置 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>提示词配置</SettingsSectionTitle>
-					<div className="space-y-4">
-						<div>
-							<div className="flex items-center justify-between mb-2">
-								<label className="text-[13.5px] font-medium text-text-primary flex items-center gap-1.5">
-									<Palette className="w-3.5 h-3.5 text-text-muted" />
-									提示词模板
-								</label>
-								<button
-									onClick={() =>
-										handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
-									}
-									className="text-xs text-primary hover:underline"
-								>
-									恢复默认
-								</button>
-							</div>
-							<textarea
-								value={config.promptTemplate}
-								onChange={(e) => handleChange("promptTemplate", e.target.value)}
-								rows={4}
-								placeholder="使用 {text} 作为选中文字的占位符"
-								className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all resize-none font-mono"
-							/>
-							<p className="text-xs text-text-muted mt-1.5">
-								<code className="px-1.5 py-0.5 bg-warm-200 rounded text-text-secondary">
-									{"{text}"}
-								</code>{" "}
-								将替换为选中的文字
-							</p>
-						</div>
-						<div>
-							<label className="text-[13.5px] font-medium text-text-primary block mb-2">
-								负向提示词（可选）
-							</label>
-							<textarea
-								value={config.negativePrompt || ""}
-								onChange={(e) => handleChange("negativePrompt", e.target.value)}
-								rows={2}
-								placeholder="low quality, blurry, distorted, watermark, text"
-								className="w-full px-4 py-3 bg-warm-50 border border-border/80 rounded-xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all resize-none"
-							/>
-							<p className="text-xs text-text-muted mt-1.5">
-								指定不希望出现在图像中的元素。部分模型支持此参数。
-							</p>
-						</div>
-					</div>
-				</div>
-			</SettingsSectionCard>
+			<SettingsCardSection
+				title="提示词模板"
+				description="使用 {text} 占位符替换为编辑器中选中的文字。"
+				headerAction={
+					<SettingsButton
+						variant="secondary"
+						size="sm"
+						icon={RotateCcw}
+						onClick={() =>
+							handleChange("promptTemplate", DEFAULT_PROMPT_TEMPLATE)
+						}
+					>
+						恢复默认
+					</SettingsButton>
+				}
+				bodyClassName="px-5 py-4 space-y-4"
+			>
+				<SettingsField
+					label="正向提示词"
+					hint="通用风格描述；模板中的 {text} 占位符会被替换为选中文字。"
+				>
+					<SettingsTextArea
+						value={config.promptTemplate}
+						onChange={(value) => handleChange("promptTemplate", value)}
+						rows={4}
+						minHeight={120}
+						placeholder="使用 {text} 作为选中文字的占位符"
+						mono
+					/>
+				</SettingsField>
+				<SettingsField
+					label="负向提示词"
+					hint="指定不希望出现的元素，部分模型支持。可留空。"
+				>
+					<SettingsTextArea
+						value={config.negativePrompt || ""}
+						onChange={(value) => handleChange("negativePrompt", value)}
+						rows={2}
+						minHeight={64}
+						placeholder="low quality, blurry, distorted, watermark, text"
+					/>
+				</SettingsField>
+			</SettingsCardSection>
 
 			{/* 高级选项 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>高级选项</SettingsSectionTitle>
-					<SettingsRow
-						label="图片质量"
-						action={
-							<Select
-								value={config.quality || "standard"}
-								onChange={(e) => handleChange("quality", e.target.value)}
-								variant="inline"
-								containerClassName="w-auto min-w-[120px]"
-							>
-								<option value="standard">标准</option>
-								<option value="hd">高清 (HD)</option>
-							</Select>
+			<SettingsCardSection
+				title="高级选项"
+				description="部分参数仅 DALL·E 3 等模型支持，其余模型会被忽略。"
+				bodyClassName="px-5 py-2"
+			>
+				<SettingsField
+					label="图片质量"
+					hint="HD 会消耗更多算力。"
+					layout="horizontal"
+				>
+					<Select
+						value={config.quality || "standard"}
+						onChange={(e) =>
+							handleChange("quality", e.target.value as "standard" | "hd")
 						}
+						variant="inline"
+						options={[
+							{ value: "standard", label: "标准" },
+							{ value: "hd", label: "高清 HD" },
+						]}
 					/>
-					<SettingsRow
-						label="图片风格"
-						action={
-							<Select
-								value={config.style || "natural"}
-								onChange={(e) => handleChange("style", e.target.value)}
-								variant="inline"
-								containerClassName="w-auto min-w-[120px]"
-							>
-								<option value="natural">自然</option>
-								<option value="vivid">鲜艳</option>
-							</Select>
+				</SettingsField>
+				<SettingsField
+					label="图片风格"
+					hint="自然偏写实，鲜艳偏插画。"
+					layout="horizontal"
+				>
+					<Select
+						value={config.style || "natural"}
+						onChange={(e) =>
+							handleChange("style", e.target.value as "natural" | "vivid")
 						}
+						variant="inline"
+						options={[
+							{ value: "natural", label: "自然" },
+							{ value: "vivid", label: "鲜艳" },
+						]}
 					/>
-				</div>
-			</SettingsSectionCard>
-
-			{/* 状态提示 */}
-			{!config.providerId || !config.model ? (
-				<div className="p-4 bg-warm-200/60 border border-border rounded-2xl">
-					<p className="text-sm text-text-secondary inline-flex items-center gap-2">
-						<AlertCircle className="w-4 h-4" strokeWidth={1.5} />
-						请配置提供商和模型后才能使用生图功能。
-					</p>
-				</div>
-			) : (
-				<div className="p-4 bg-mint-500/[0.08] border border-mint-500/30 rounded-2xl">
-					<p className="text-sm text-text-primary inline-flex items-center gap-2">
-						<CheckCircle2 className="w-4 h-4 bai-icon-mint" strokeWidth={1.5} />
-						配置完成！在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
-					</p>
-				</div>
-			)}
+				</SettingsField>
+			</SettingsCardSection>
 		</SettingsPageContainer>
+	);
+}
+
+// ====================
+// 子组件
+// ====================
+
+function StatusBanner({ ready }: { ready: boolean }) {
+	if (ready) {
+		return (
+			<SettingsHint tone="success" icon={CheckCircle2} title="生图已就绪">
+				在编辑器中选中文字，右键选择「AI 生成配图」即可使用。
+			</SettingsHint>
+		);
+	}
+	return (
+		<SettingsHint tone="warning" icon={AlertCircle} title="未完成配置">
+			请先选择提供商与模型，配图功能才能在编辑器中调用。
+		</SettingsHint>
+	);
+}
+
+/** 迷你比例方块 — 用纯 CSS 渲染，不引入额外资源 */
+function RatioGlyph({
+	w,
+	h,
+	active,
+}: {
+	w: number;
+	h: number;
+	active: boolean;
+}) {
+	const max = Math.max(w, h);
+	const widthPct = (w / max) * 100;
+	const heightPct = (h / max) * 100;
+	return (
+		<span
+			className="relative inline-flex h-3.5 w-3.5 items-center justify-center"
+			aria-hidden
+		>
+			<span
+				className={cn(
+					"rounded-[2px] border transition-colors",
+					active
+						? "border-primary-foreground/80 bg-primary-foreground/30"
+						: "border-text-muted/60 bg-text-muted/10",
+				)}
+				style={{
+					width: `${widthPct}%`,
+					height: `${heightPct}%`,
+				}}
+			/>
+		</span>
 	);
 }
