@@ -55,6 +55,13 @@ import {
 	useThreadGroupVisibility,
 } from "./threads/threadGroupVisibility";
 import { workspaceStore } from "../../lib/workspaceStore";
+import { ShinyText } from "../ui/ShinyText";
+
+/** 检测 session 是否正在流式输出（agent 正在工作） */
+function isSessionStreaming(session: ChatSession): boolean {
+	const lastMsg = session.messages.at(-1);
+	return lastMsg?.role === "assistant" && lastMsg.isStreaming === true;
+}
 
 interface ThreadsViewProps {
 	onNavigateWorkbench?: () => void;
@@ -645,15 +652,36 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 														onClick={() => handleSelectSession(session)}
 														className="flex flex-col gap-0.5 min-w-0 flex-1 text-left"
 													>
-														<span
-															className={`text-[13px] truncate transition-colors ${
+														{(() => {
+															const streaming = isSessionStreaming(session);
+															const titleText =
+																session.title || "Untitled Chat";
+															const titleClasses = `text-[13px] truncate transition-colors ${
 																isActive
 																	? "text-[#D96C46] dark:text-[#E07B52] font-semibold"
 																	: "text-text-secondary font-medium group-hover:text-text-primary dark:group-hover:text-text-light"
-															}`}
-														>
-															{session.title || "Untitled Chat"}
-														</span>
+															}`;
+
+															if (streaming) {
+																return (
+																	<ShinyText
+																		text={titleText}
+																		className={titleClasses}
+																		color="#D96C46"
+																		shineColor="#ffa07a"
+																		speed={1.2}
+																		delay={0.2}
+																		spread={130}
+																		direction="left"
+																	/>
+																);
+															}
+															return (
+																<span className={titleClasses}>
+																	{titleText}
+																</span>
+															);
+														})()}
 														{preview && (
 															<span className="text-[11px] leading-tight text-text-light truncate mt-0.5">
 																{preview}

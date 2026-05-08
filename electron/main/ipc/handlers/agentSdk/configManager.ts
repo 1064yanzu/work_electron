@@ -488,6 +488,99 @@ export async function normalizePlugins(
 }
 
 // ---------------------------------------------------------------------------
+// Isolated Claude config mirror
+// ---------------------------------------------------------------------------
+
+const CLAUDE_CONFIG_RESOURCE_DIRS = [
+	"agents",
+	"commands",
+	"output-styles",
+	"plugins",
+	"skills",
+];
+
+async function removeIfExists(targetPath: string): Promise<void> {
+	await fsp.rm(targetPath, { recursive: true, force: true }).catch(() => {});
+}
+
+async function linkOrCopyDirectory(src: string, dest: string): Promise<void> {
+	await removeIfExists(dest);
+	try {
+		await fsp.symlink(src, dest, "dir");
+		return;
+	} catch {
+		// 某些打包/权限环境不允许 symlink，降级为复制。
+	}
+	await fsp.cp(src, dest, {
+		recursive: true,
+		dereference: true,
+		errorOnExist: false,
+		force: true,
+	});
+}
+
+function stripExternalHooksFromSettings(
+	settingsObj: unknown,
+): Record<string, unknown> {
+	const source =
+		settingsObj && typeof settingsObj === "object"
+			? { ...(settingsObj as Record<string, unknown>) }
+			: {};
+	delete source.hooks;
+	return source;
+}
+
+/**
+ * 为 App 内 Agent 准备一份隔离的 Claude 配置目录。
+ *
+ * 直接把 CLAUDE_CONFIG_DIR 指到 ~/.claude 会让用户级 shell hooks 进入 SDK 子进程；
+ * 这类外部 hook 一旦抛错，会让整轮 Agent 以 "Error in hook callback hook_1"
+ * 中断。这里保留 agents / commands / skills 等资源，但从 settings.json 中移除
+ * hooks，让应用内 Agent 的运行时稳定性不再受外部 hook 命令影响。
+ */
+export async function prepareIsolatedClaudeConfigDir(opts: {
+	sourceClaudeConfigDir: string;
+}): Promise<string> {
+	const targetRoot = path.join(app.getPath("userData"), "claude-sdk-config");
+	await fsp.mkdir(targetRoot, { recursive: true });
+
+	const sourceSettingsPath = path.join(
+		opts.sourceClaudeConfigDir,
+		"settings.json",
+	);
+	const targetSettingsPath = path.join(targetRoot, "settings.json");
+	let settingsObj: Record<string, unknown> = {};
+	try {
+		const raw = await fsp.readFile(sourceSettingsPath, "utf8");
+		settingsObj = stripExternalHooksFromSettings(JSON.parse(raw));
+	} catch {
+		settingsObj = {};
+	}
+	await fsp.writeFile(
+		targetSettingsPath,
+		JSON.stringify(settingsObj, null, 2),
+		"utf8",
+	);
+
+	for (const dirName of CLAUDE_CONFIG_RESOURCE_DIRS) {
+		const src = path.join(opts.sourceClaudeConfigDir, dirName);
+		const dest = path.join(targetRoot, dirName);
+		try {
+			const stat = await fsp.stat(src);
+			if (!stat.isDirectory()) {
+				await removeIfExists(dest);
+				continue;
+			}
+			await linkOrCopyDirectory(src, dest);
+		} catch {
+			await removeIfExists(dest);
+		}
+	}
+
+	return targetRoot;
+}
+
+// ---------------------------------------------------------------------------
 // Claude config dir settings (API key approval)
 // ---------------------------------------------------------------------------
 

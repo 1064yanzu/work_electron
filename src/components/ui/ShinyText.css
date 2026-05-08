@@ -1,0 +1,65 @@
+/**
+ * ShinyText - 文字闪光动效
+ *
+ * 通过线性渐变 + background-clip:text 制造一段贯穿文字的高光，
+ * 再用 keyframes 让 background-position 横向移动模拟扫光。
+ * 纯 CSS 实现，无需运行时 JS 帧驱动。
+ */
+
+.shiny-text {
+	display: inline-block;
+	background-image: linear-gradient(
+		var(--shiny-spread, 120deg),
+		var(--shiny-color, #b5b5b5) 0%,
+		var(--shiny-color, #b5b5b5) 35%,
+		var(--shiny-shine-color, #ffffff) 50%,
+		var(--shiny-color, #b5b5b5) 65%,
+		var(--shiny-color, #b5b5b5) 100%
+	);
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+	background-position: 150% center;
+	will-change: background-position;
+}
+
+.shiny-text--animated {
+	animation: shiny-text-sweep var(--shiny-speed, 2s)
+		var(--shiny-timing, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
+	animation-delay: var(--shiny-delay, 0s);
+}
+
+.shiny-text--reverse {
+	animation-direction: reverse;
+}
+
+.shiny-text--yoyo {
+	animation-direction: alternate;
+}
+
+.shiny-text--reverse.shiny-text--yoyo {
+	animation-direction: alternate-reverse;
+}
+
+.shiny-text--paused {
+	animation-play-state: paused;
+}
+
+@keyframes shiny-text-sweep {
+	/* p=0 -> 150% (shine off right), p=100 -> -50% (shine off left) */
+	0% {
+		background-position: 150% center;
+	}
+	60%,
+	100% {
+		background-position: -50% center;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.shiny-text--animated {
+		animation-duration: 6s;
+	}
+}

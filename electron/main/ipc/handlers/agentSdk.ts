@@ -27,6 +27,7 @@ import {
 	resolveSkillSettingSources,
 	listProjectSkills,
 	syncSkillsToCwd,
+	prepareIsolatedClaudeConfigDir,
 	writeClaudeConfigSettings,
 } from "./agentSdk/configManager";
 import {
@@ -82,6 +83,29 @@ type AgentSdkSendFollowupOutput =
 type AgentSdkCheckAliveInput = IPCSchema["agent_sdk_check_alive"]["input"];
 type AgentSdkCheckAliveOutput = IPCSchema["agent_sdk_check_alive"]["output"];
 
+function formatUnknownError(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
+function safeJsonPreview(value: unknown, maxLength = 500): string {
+	const seen = new WeakSet<object>();
+	let text: string;
+	try {
+		text = JSON.stringify(value, (_key, nextValue) => {
+			if (typeof nextValue === "bigint") return nextValue.toString();
+			if (nextValue && typeof nextValue === "object") {
+				if (seen.has(nextValue)) return "[Circular]";
+				seen.add(nextValue);
+			}
+			return nextValue;
+		});
+	} catch (error) {
+		text = `[Unserializable: ${formatUnknownError(error)}]`;
+	}
+	if (typeof text !== "string") text = String(value);
+	return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
 export function createAgentSdkHandlers(options: {
 	getMainWindow: GetMainWindow;
 	getAnthropicBaseUrl: () => Promise<string>;
@@ -111,34 +135,56 @@ export function createAgentSdkHandlers(options: {
 				// 收集 stderr 关键错误信息，用于在 sawResult=false 时提供更有意义的错误
 				const stderrErrors: string[] = [];
 				const stderr = (data: string) => {
-					const normalizedData =
-						typeof data === "string" ? data.slice(0, 20000) : String(data);
-					const isErrorLike =
-						typeof data === "string" &&
-						/error|exception|fail|crash|closed/i.test(data);
-					const logPayload = {
-						msg: "agent_sdk stderr",
-						scope: "agent",
-						runId,
-						data: normalizedData,
-					};
-					if (isErrorLike) {
-						logger.error(logPayload);
-					} else {
-						logger.info(logPayload);
+					try {
+						const rawData = typeof data === "string" ? data : String(data);
+						const normalizedData = rawData.slice(0, 20000);
+						const isErrorLike = /error|exception|fail|crash|closed/i.test(
+							rawData,
+						);
+						const logPayload = {
+							msg: "agent_sdk stderr",
+							scope: "agent",
+							runId,
+							data: normalizedData,
+						};
+						if (isErrorLike) {
+							logger.error(logPayload);
+						} else {
+							logger.info(logPayload);
+						}
+						// 收集关键错误信息
+						if (isErrorLike) {
+							stderrErrors.push(rawData.slice(0, 500));
+						}
+						emit(options.getMainWindow, {
+							runId,
+							type: "stderr",
+							error: rawData,
+						});
+					} catch (error) {
+						try {
+							console.error(
+								"[agent_sdk] stderr forwarding failed:",
+								formatUnknownError(error),
+							);
+						} catch {}
 					}
-					// 收集关键错误信息
-					if (isErrorLike) {
-						stderrErrors.push(data.slice(0, 500));
-					}
-					emit(options.getMainWindow, { runId, type: "stderr", error: data });
 				};
 				const emitLifecycleEvent = (event: Record<string, unknown>) => {
-					emit(options.getMainWindow, {
-						runId,
-						type: "transformed",
-						events: [event],
-					});
+					try {
+						emit(options.getMainWindow, {
+							runId,
+							type: "transformed",
+							events: [event],
+						});
+					} catch (error) {
+						logger.warn({
+							msg: "agent_sdk lifecycle event emit failed",
+							scope: "agent",
+							runId,
+							error: formatUnknownError(error),
+						});
+					}
 				};
 				const toolNameById = new Map<string, string>();
 				const toolUseIdByIndex = new Map<number, string>();
@@ -226,9 +272,12 @@ export function createAgentSdkHandlers(options: {
 
 				// 与 Claude Code CLI 对齐：使用真实的用户级配置目录 ~/.claude，
 				// 这样 SDK 能加载用户的 CLAUDE.md / agents / commands / skills /
-				// output-styles / settings.json，体验对齐 CLI。
-				// 之前指向 cwd 是个 workaround，会让所有 user-scope 配置失效。
-				const claudeConfigDir: string = path.join(os.homedir(), ".claude");
+				// output-styles / settings.json。实际传给 SDK 的是去掉 hooks 的托管镜像：
+				// 保留资源能力，隔离外部 shell hooks，避免 hook_1 崩溃打断消息发送。
+				const userClaudeConfigDir: string = path.join(os.homedir(), ".claude");
+				const claudeConfigDir = await prepareIsolatedClaudeConfigDir({
+					sourceClaudeConfigDir: userClaudeConfigDir,
+				});
 
 				// IMPORTANT: pass base URL without "/v1". The Claude Code CLI appends "/v1" itself.
 				const anthropicBaseUrl = (await options.getAnthropicBaseUrl()).replace(
@@ -605,7 +654,7 @@ export function createAgentSdkHandlers(options: {
 											}
 
 											console.log(
-												`[PreToolUse] Tool='${toolName}', Input=${JSON.stringify(toolInput).slice(0, 200)}`,
+												`[PreToolUse] Tool='${toolName}', Input=${safeJsonPreview(toolInput, 200)}`,
 											);
 
 											const toolLower = String(toolName).toLowerCase();
@@ -933,7 +982,7 @@ export function createAgentSdkHandlers(options: {
 												continue: true,
 												hookSpecificOutput: {
 													hookEventName: "PostToolUse" as const,
-													additionalContext: `子代理图片已保存到本地路径，请优先使用这些路径并结束回答（不要再次调用画图子代理）：image_paths=${JSON.stringify(uniqPaths)}`,
+													additionalContext: `子代理图片已保存到本地路径，请优先使用这些路径并结束回答（不要再次调用画图子代理）：image_paths=${safeJsonPreview(uniqPaths, 1000)}`,
 												},
 											};
 										},
@@ -1072,7 +1121,7 @@ export function createAgentSdkHandlers(options: {
 							extra: any,
 						) => {
 							console.log(
-								`[canUseTool] Tool='${toolName}', AgentID='${(extra as any)?.agentID || "main"}', Input=${JSON.stringify(toolInput || {}).slice(0, 200)}`,
+								`[canUseTool] Tool='${toolName}', AgentID='${(extra as any)?.agentID || "main"}', Input=${safeJsonPreview(toolInput || {}, 200)}`,
 							);
 							if (abortController.signal.aborted || extra?.signal?.aborted) {
 								return {
@@ -1368,7 +1417,10 @@ export function createAgentSdkHandlers(options: {
 							try {
 								toolInputJsonById.set(
 									id,
-									JSON.stringify(msgAny.event.content_block.input ?? {}),
+									safeJsonPreview(
+										msgAny.event.content_block.input ?? {},
+										Number.MAX_SAFE_INTEGER,
+									),
 								);
 							} catch {}
 						}
@@ -1437,7 +1489,10 @@ export function createAgentSdkHandlers(options: {
 							if (id && name) toolNameById.set(id, name);
 							if (id && b?.input) {
 								try {
-									toolInputJsonById.set(id, JSON.stringify(b.input ?? {}));
+									toolInputJsonById.set(
+										id,
+										safeJsonPreview(b.input ?? {}, Number.MAX_SAFE_INTEGER),
+									);
 								} catch {}
 							}
 						}
