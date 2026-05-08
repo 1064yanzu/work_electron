@@ -17,6 +17,8 @@ export type ReaderSettings = {
 	tts_rate: number;
 	ai_context_scope: "chapter" | "book";
 	disable_notifications_while_reading: boolean;
+	/** 卡片生成模型；空字符串表示使用全局活跃模型 */
+	card_gen_model: string;
 };
 
 export const READER_DEFAULT_SETTINGS: ReaderSettings = {
@@ -34,6 +36,7 @@ export const READER_DEFAULT_SETTINGS: ReaderSettings = {
 	tts_rate: 1.0,
 	ai_context_scope: "chapter",
 	disable_notifications_while_reading: false,
+	card_gen_model: "",
 };
 
 function clampNumber(
@@ -95,6 +98,8 @@ function sanitize(input: Partial<ReaderSettings>): Partial<ReaderSettings> {
 	if (typeof input.disable_notifications_while_reading === "boolean")
 		out.disable_notifications_while_reading =
 			input.disable_notifications_while_reading;
+	if (typeof input.card_gen_model === "string")
+		out.card_gen_model = input.card_gen_model;
 	return out;
 }
 

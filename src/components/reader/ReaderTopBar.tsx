@@ -1,6 +1,7 @@
 import {
 	BookOpen,
 	BookmarkPlus,
+	Brain,
 	Columns2,
 	Highlighter,
 	List,
@@ -23,9 +24,9 @@ interface ReaderTopBarProps {
 	title: string;
 	authors: string[];
 	chapterTitle: string | null;
-	leftPanel: "toc" | "highlights" | "bookmarks";
+	leftPanel: "toc" | "highlights" | "bookmarks" | "cards";
 	leftPanelOpen: boolean;
-	onSetLeftPanel: (panel: "toc" | "highlights" | "bookmarks") => void;
+	onSetLeftPanel: (panel: "toc" | "highlights" | "bookmarks" | "cards") => void;
 	immersive: boolean;
 	onToggleImmersive: () => void;
 	rightPanelOpen: boolean;
@@ -122,6 +123,15 @@ export function ReaderTopBar({
 				>
 					<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
 					书签
+				</button>
+				<button
+					type="button"
+					className={`reader-tab ${leftPanel === "cards" && leftPanelOpen ? "is-active" : ""}`}
+					onClick={() => onSetLeftPanel("cards")}
+					title="知识卡片（⌘3）"
+				>
+					<Brain className="w-3.5 h-3.5" strokeWidth={1.5} />
+					卡片
 				</button>
 			</div>
 

@@ -6,9 +6,13 @@
 import {
 	ArrowLeftRight,
 	BellOff,
+	Brain,
 	MousePointerClick,
 	Sparkles,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import type { Provider } from "../../../../types";
+import { listProviders } from "../../../../lib/api/providers";
 import { Select } from "../../../ui/Select";
 import {
 	SettingsChipGroup,
@@ -26,6 +30,27 @@ export function ReaderImmersionControls({
 	settings,
 	patch,
 }: ReaderImmersionControlsProps) {
+	const [providers, setProviders] = useState<Provider[]>([]);
+
+	useEffect(() => {
+		listProviders()
+			.then(setProviders)
+			.catch(() => {});
+	}, []);
+
+	const allModels = useMemo(
+		() =>
+			providers
+				.filter((p) => p.is_enabled !== false)
+				.flatMap((p) =>
+					(p.models || []).map((m: string) => ({
+						id: m,
+						provider: p.name,
+					})),
+				),
+		[providers],
+	);
+
 	return (
 		<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
 			<TileCard
@@ -99,6 +124,25 @@ export function ReaderImmersionControls({
 					onChange={(v) => patch({ ai_context_scope: v })}
 					size="sm"
 					fullWidth
+				/>
+			</TileCard>
+
+			<TileCard
+				icon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
+				label="卡片生成模型"
+				hint="留空则使用全局活跃模型。"
+			>
+				<Select
+					value={settings.card_gen_model || ""}
+					onChange={(e) => patch({ card_gen_model: e.target.value })}
+					variant="inline"
+					options={[
+						{ value: "", label: "跟随全局模型" },
+						...allModels.map((m) => ({
+							value: m.id,
+							label: `${m.id}（${m.provider}）`,
+						})),
+					]}
 				/>
 			</TileCard>
 

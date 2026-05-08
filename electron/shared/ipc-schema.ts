@@ -225,6 +225,18 @@ export type ReaderBookmark = {
 	created_at: number;
 };
 
+export type ReaderKnowledgeCard = {
+	id: string;
+	book_id: string;
+	chapter_id: string | null;
+	question: string;
+	answer: string;
+	source_text: string | null;
+	locator: string | null;
+	created_at: number;
+	updated_at: number;
+};
+
 export type ReaderSession = {
 	id: string;
 	book_id: string;
@@ -2804,6 +2816,8 @@ export type IPCSchema = {
 			tts_rate: number;
 			ai_context_scope: "chapter" | "book";
 			disable_notifications_while_reading: boolean;
+			/** 卡片生成模型；空字符串表示使用全局活跃模型 */
+			card_gen_model: string;
 		};
 	};
 	/** 更新阅读器设置 */
@@ -2823,8 +2837,52 @@ export type IPCSchema = {
 			tts_rate: number;
 			ai_context_scope: "chapter" | "book";
 			disable_notifications_while_reading: boolean;
+			/** 卡片生成模型；空字符串表示使用全局活跃模型 */
+			card_gen_model: string;
 		}>;
 		output: { success: boolean };
+	};
+	/** 列出某书的知识卡片 */
+	reader_list_cards: {
+		input: { book_id: string; chapter_id?: string };
+		output: ReaderKnowledgeCard[];
+	};
+	/** 创建知识卡片 */
+	reader_create_card: {
+		input: {
+			book_id: string;
+			chapter_id?: string | null;
+			question: string;
+			answer: string;
+			source_text?: string | null;
+			locator?: string | null;
+		};
+		output: ReaderKnowledgeCard;
+	};
+	/** 更新知识卡片（问题 / 答案） */
+	reader_update_card: {
+		input: { id: string; question?: string; answer?: string };
+		output: ReaderKnowledgeCard;
+	};
+	/** 删除知识卡片 */
+	reader_delete_card: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 批量删除知识卡片 */
+	reader_delete_cards_bulk: {
+		input: { ids: string[] };
+		output: { success: boolean; deleted: number };
+	};
+	/** AI 生成知识卡片（启动 LLM 流，结果通过事件推送） */
+	reader_generate_cards: {
+		input: {
+			book_id: string;
+			chapter_id?: string | null;
+			text: string;
+			count?: number;
+		};
+		output: { started: boolean };
 	};
 
 	// =====================

@@ -4,16 +4,19 @@ import {
 	readerCreateBookmark,
 	readerCreateHighlight,
 	readerDeleteBookmark,
+	readerDeleteCard,
 	readerDeleteHighlight,
 	readerGetChapter,
 	readerGetSettings,
 	readerListBookmarks,
+	readerListCards,
 	readerListHighlights,
 	readerOpenBook,
 	readerSaveProgress,
 	readerSearchInBook,
 	readerSessionEnd,
 	readerSessionStart,
+	readerUpdateCard,
 	readerUpdateSettings,
 } from "../../lib/api/reader";
 import type {
@@ -21,6 +24,7 @@ import type {
 	ReaderClientSettings,
 	ReaderHighlight,
 	ReaderHighlightColor,
+	ReaderKnowledgeCard,
 	ReaderTocItem,
 } from "../../lib/api/reader";
 import { readerStoreApi, useReaderStore } from "../../lib/stores/readerStore";
@@ -30,9 +34,12 @@ import { toast } from "../ui/Toast";
 
 import EngineSelector from "./engines/EngineSelector";
 import type { ReaderEngineSelection } from "./engines/types";
+import { useCardGenerator } from "./hooks/useCardGenerator";
 import { useReaderCopilot } from "./hooks/useReaderCopilot";
 import { useReaderShortcuts } from "./hooks/useReaderShortcuts";
 import { useReaderSpeech } from "./hooks/useReaderSpeech";
+import { ReaderCardEdit } from "./ReaderCardEdit";
+import { ReaderCardReview } from "./ReaderCardReview";
 import { ReaderCopilot } from "./ReaderCopilot";
 import { ReaderPageNav } from "./ReaderPageNav";
 import { ReaderProgressBar } from "./ReaderProgressBar";
@@ -73,6 +80,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		chapter,
 		highlights,
 		bookmarks,
+		cards,
+		cardReviewOpen,
+		cardReviewIndex,
 		settings,
 		leftPanel,
 		leftPanelOpen,
@@ -108,6 +118,14 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			| { kind: "offset"; offset: number; nonce: number }
 			| { kind: "pdfPage"; page: number; nonce: number };
 	} | null>(null);
+
+	const [editingCard, setEditingCard] = useState<ReaderKnowledgeCard | null>(
+		null,
+	);
+	const cardGenerator = useCardGenerator({
+		book,
+		cardGenModel: settings?.card_gen_model,
+	});
 
 	const tts = useTTS({ scope: "reader" });
 	// 阅读器分段朗读：从用户当前可见段落开始，按段切分送 TTS，避免一次性合成整章
@@ -146,13 +164,15 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				readerStoreApi.setSessionId(session.id);
 				sessionPagesRef.current = 0;
 
-				const [hs, bms] = await Promise.all([
+				const [hs, bms, crds] = await Promise.all([
 					readerListHighlights(bookId),
 					readerListBookmarks(bookId),
+					readerListCards(bookId),
 				]);
 				if (cancelled) return;
 				readerStoreApi.setHighlights(hs);
 				readerStoreApi.setBookmarks(bms);
+				readerStoreApi.setCards(crds);
 
 				const initialChapterId =
 					progress?.chapter_id ||
@@ -193,6 +213,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			readerStoreApi.setProgress(null);
 			readerStoreApi.setHighlights([]);
 			readerStoreApi.setBookmarks([]);
+			readerStoreApi.setCards([]);
 			readerStoreApi.setSessionId(null);
 			readerStoreApi.setError(null);
 		};
@@ -359,6 +380,57 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		} catch {}
 	}, []);
 
+	// 知识卡片 CRUD
+	const handleRemoveCard = useCallback(async (id: string) => {
+		try {
+			await readerDeleteCard(id);
+			readerStoreApi.removeCard(id);
+			// 如果正在复习且删的是当前卡片，调整 index
+			const state = readerStoreApi.getState();
+			if (state.cardReviewOpen && state.cards.length > 0) {
+				const newIdx = Math.min(state.cardReviewIndex, state.cards.length - 1);
+				readerStoreApi.setCardReviewIndex(newIdx);
+			} else if (state.cards.length === 0) {
+				readerStoreApi.closeCardReview();
+			}
+		} catch {}
+	}, []);
+
+	const handleEditCardSave = useCallback(
+		async (id: string, question: string, answer: string) => {
+			try {
+				const updated = await readerUpdateCard({ id, question, answer });
+				readerStoreApi.updateCard(updated);
+				setEditingCard(null);
+				toast.success("卡片已更新");
+			} catch (e) {
+				toast.error(`更新失败：${e instanceof Error ? e.message : String(e)}`);
+			}
+		},
+		[],
+	);
+
+	const handleGenerateFromSelection = useCallback(() => {
+		if (!selection || !book) return;
+		const text = selection.text;
+		setSelection(null);
+		window.getSelection()?.removeAllRanges();
+		readerStoreApi.setLeftPanel("cards");
+		cardGenerator.generate(text, 5);
+		toast.info("正在生成知识卡片...");
+	}, [selection, book, cardGenerator]);
+
+	const handleGenerateFromChapter = useCallback(() => {
+		if (!chapter || !book) return;
+		const text = (chapter.text || "").slice(0, 4000);
+		if (!text) {
+			toast.error("当前章节没有可提取的文本");
+			return;
+		}
+		cardGenerator.generate(text, 8);
+		toast.info("正在为本章生成知识卡片...");
+	}, [chapter, book, cardGenerator]);
+
 	// 8. 章节导航
 	const flatTocList = useMemo(() => (book ? flatToc(book.toc) : []), [book]);
 	const currentTocIndex = useMemo(
@@ -494,6 +566,13 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 					readerStoreApi.toggleLeftPanel(false);
 				} else {
 					readerStoreApi.setLeftPanel("highlights");
+				}
+			},
+			onOpenCards: () => {
+				if (leftPanel === "cards" && leftPanelOpen) {
+					readerStoreApi.toggleLeftPanel(false);
+				} else {
+					readerStoreApi.setLeftPanel("cards");
 				}
 			},
 			onCycleTheme: cycleTheme,
@@ -700,6 +779,12 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 					onRemoveHighlight={handleRemoveHighlight}
 					onJumpToBookmark={onJumpToBookmark}
 					onRemoveBookmark={handleRemoveBookmark}
+					cards={cards}
+					onRemoveCard={handleRemoveCard}
+					onEditCard={(c) => setEditingCard(c)}
+					onReviewCards={() => readerStoreApi.openCardReview()}
+					onGenerateFromChapter={handleGenerateFromChapter}
+					generating={cardGenerator.generating}
 				/>
 
 				<main className="reader-main">
@@ -790,6 +875,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				onExplain={() => onSelectionAi("explain")}
 				onAsk={() => onSelectionAi("ask")}
 				onSpeak={onSelectionSpeak}
+				onGenerateCards={handleGenerateFromSelection}
 				onClose={() => setSelection(null)}
 			/>
 
@@ -801,6 +887,32 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 					setSearchOpen(false);
 					if (hit.chapter_id) setActiveChapterId(hit.chapter_id);
 				}}
+			/>
+
+			<ReaderCardReview
+				open={cardReviewOpen}
+				cards={cards}
+				currentIndex={cardReviewIndex}
+				onClose={() => readerStoreApi.closeCardReview()}
+				onPrev={() =>
+					readerStoreApi.setCardReviewIndex(Math.max(0, cardReviewIndex - 1))
+				}
+				onNext={() =>
+					readerStoreApi.setCardReviewIndex(
+						Math.min(cards.length - 1, cardReviewIndex + 1),
+					)
+				}
+				onDelete={handleRemoveCard}
+				onEdit={(c) => {
+					readerStoreApi.closeCardReview();
+					setEditingCard(c);
+				}}
+			/>
+
+			<ReaderCardEdit
+				card={editingCard}
+				onSave={handleEditCardSave}
+				onClose={() => setEditingCard(null)}
 			/>
 		</div>
 	);

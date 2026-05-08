@@ -5,9 +5,12 @@ import type { IPCSchema, ReaderBook } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import {
 	createBookmark,
+	createCard,
 	createHighlight,
 	deleteBook,
 	deleteBookmark,
+	deleteCard,
+	deleteCardsBulk,
 	deleteHighlight,
 	endSession,
 	exportHighlightsMarkdown,
@@ -17,6 +20,7 @@ import {
 	importBookFromPath,
 	listBookmarks,
 	listBooks,
+	listCards,
 	listHighlights,
 	listSessions,
 	openBook,
@@ -24,6 +28,7 @@ import {
 	searchGlobal,
 	searchInBook,
 	startSession,
+	updateCard,
 	updateHighlight,
 	updateReaderSettings,
 } from "../../reader";
@@ -261,5 +266,32 @@ export function createReaderHandlers(db: DbContext) {
 			await updateReaderSettings(db, input);
 			return { success: true };
 		}) satisfies Handler<"reader_update_settings">,
+
+		reader_list_cards: (async (_event, input) => {
+			return listCards(db, input.book_id, input.chapter_id);
+		}) satisfies Handler<"reader_list_cards">,
+
+		reader_create_card: (async (_event, input) => {
+			return createCard(db, input);
+		}) satisfies Handler<"reader_create_card">,
+
+		reader_update_card: (async (_event, input) => {
+			return updateCard(db, input);
+		}) satisfies Handler<"reader_update_card">,
+
+		reader_delete_card: (async (_event, input) => {
+			return deleteCard(db, input.id);
+		}) satisfies Handler<"reader_delete_card">,
+
+		reader_delete_cards_bulk: (async (_event, input) => {
+			return deleteCardsBulk(db, input.ids);
+		}) satisfies Handler<"reader_delete_cards_bulk">,
+
+		reader_generate_cards: (async (_event, input) => {
+			// 实际的 LLM 流式调用由渲染进程通过 invoke_llm_stream 直接发起，
+			// 此 handler 仅做入口验证，返回 started 标志。
+			void input;
+			return { started: true };
+		}) satisfies Handler<"reader_generate_cards">,
 	};
 }

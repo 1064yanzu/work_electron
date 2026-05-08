@@ -5,6 +5,7 @@ import type {
 	ReaderBookmark,
 	ReaderHighlight,
 	ReaderHighlightColor,
+	ReaderKnowledgeCard,
 	ReaderProgress,
 	ReaderSession,
 	ReaderTocItem,
@@ -119,5 +120,19 @@ export function rowToSession(row: Row): ReaderSession {
 		ended_at: row.ended_at == null ? null : asNumberStrict(row.ended_at),
 		duration_ms: asNumberStrict(row.duration_ms, 0),
 		pages_read: asNumberStrict(row.pages_read, 0),
+	};
+}
+
+export function rowToCard(row: Row): ReaderKnowledgeCard {
+	return {
+		id: asString(row.id),
+		book_id: asString(row.book_id),
+		chapter_id: row.chapter_id == null ? null : asString(row.chapter_id),
+		question: asString(row.question),
+		answer: asString(row.answer),
+		source_text: row.source_text == null ? null : asString(row.source_text),
+		locator: row.locator == null ? null : asString(row.locator),
+		created_at: asNumberStrict(row.created_at),
+		updated_at: asNumberStrict(row.updated_at),
 	};
 }

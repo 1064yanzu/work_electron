@@ -9,11 +9,17 @@ import type {
 	ReaderChapter,
 	ReaderClientSettings,
 	ReaderHighlight,
+	ReaderKnowledgeCard,
 	ReaderProgress,
 } from "../api/reader";
 
-export type ReaderUiPanel = "toc" | "highlights" | "bookmarks" | "copilot";
-export type ReaderLeftPanel = "toc" | "highlights" | "bookmarks";
+export type ReaderUiPanel =
+	| "toc"
+	| "highlights"
+	| "bookmarks"
+	| "cards"
+	| "copilot";
+export type ReaderLeftPanel = "toc" | "highlights" | "bookmarks" | "cards";
 
 export type ReaderState = {
 	/** 当前阅读的书。null 表示阅读器关闭。 */
@@ -23,6 +29,9 @@ export type ReaderState = {
 	progress: ReaderProgress | null;
 	highlights: ReaderHighlight[];
 	bookmarks: ReaderBookmark[];
+	cards: ReaderKnowledgeCard[];
+	cardReviewOpen: boolean;
+	cardReviewIndex: number;
 	loadingBook: boolean;
 	loadingChapter: boolean;
 	error: string | null;
@@ -48,6 +57,9 @@ const initialState: ReaderState = {
 	progress: null,
 	highlights: [],
 	bookmarks: [],
+	cards: [],
+	cardReviewOpen: false,
+	cardReviewIndex: 0,
 	loadingBook: false,
 	loadingChapter: false,
 	error: null,
@@ -106,6 +118,37 @@ export const readerStoreApi = {
 			...s,
 			bookmarks: s.bookmarks.filter((x) => x.id !== id),
 		}));
+	},
+	setCards(cards: ReaderKnowledgeCard[]) {
+		_store.setState((s) => ({ ...s, cards }));
+	},
+	addCards(cs: ReaderKnowledgeCard[]) {
+		_store.setState((s) => ({ ...s, cards: [...cs, ...s.cards] }));
+	},
+	updateCard(c: ReaderKnowledgeCard) {
+		_store.setState((s) => ({
+			...s,
+			cards: s.cards.map((x) => (x.id === c.id ? c : x)),
+		}));
+	},
+	removeCard(id: string) {
+		_store.setState((s) => ({
+			...s,
+			cards: s.cards.filter((x) => x.id !== id),
+		}));
+	},
+	openCardReview(startIndex?: number) {
+		_store.setState((s) => ({
+			...s,
+			cardReviewOpen: true,
+			cardReviewIndex: startIndex ?? 0,
+		}));
+	},
+	closeCardReview() {
+		_store.setState((s) => ({ ...s, cardReviewOpen: false }));
+	},
+	setCardReviewIndex(index: number) {
+		_store.setState((s) => ({ ...s, cardReviewIndex: index }));
 	},
 	setLoadingBook(loadingBook: boolean) {
 		_store.setState((s) => ({ ...s, loadingBook }));

@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS: ReaderClientSettings = {
 	tts_rate: 1.0,
 	ai_context_scope: "chapter",
 	disable_notifications_while_reading: false,
+	card_gen_model: "",
 };
 
 export function ReaderSettings() {

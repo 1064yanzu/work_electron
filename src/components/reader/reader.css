@@ -2082,6 +2082,421 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 /* ===========================================================
+   Knowledge Card List (左侧面板 · 卡片列表)
+   =========================================================== */
+.reader-card-list {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.reader-card-list__actions {
+	display: flex;
+	gap: 8px;
+	padding: 12px;
+	border-bottom: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+}
+
+.reader-card-list__review-btn,
+.reader-card-list__gen-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	background: var(--reader-bg, #faf9f5);
+	color: var(--reader-fg, #1a1a1a);
+	font-size: 12px;
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease;
+	flex: 1;
+	justify-content: center;
+}
+
+.reader-card-list__review-btn:hover,
+.reader-card-list__gen-btn:hover {
+	background: var(--reader-bg-soft, rgba(0, 0, 0, 0.04));
+}
+
+.reader-card-list__gen-btn:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.reader-card-list__review-btn {
+	color: var(--reader-accent, #d96c46);
+	border-color: color-mix(
+		in oklab,
+		var(--reader-accent, #d96c46) 30%,
+		transparent
+	);
+}
+
+.reader-card-list__count {
+	padding: 8px 12px;
+	font-size: 11px;
+	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
+	text-align: center;
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	border-top: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+}
+
+.reader-card-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+}
+
+.reader-card-row__main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	background: none;
+	border: none;
+	text-align: left;
+	cursor: pointer;
+	padding: 0;
+	color: var(--reader-fg, #1a1a1a);
+	font-family: inherit;
+}
+
+.reader-card-row__main:hover .reader-card-row__question {
+	color: var(--reader-accent, #d96c46);
+}
+
+.reader-card-row__question {
+	font-size: 13px;
+	line-height: 1.5;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	transition: color 140ms ease;
+}
+
+.reader-card-row__meta {
+	font-size: 11px;
+	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+}
+
+.reader-card-row__actions {
+	display: flex;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 140ms ease;
+	flex-shrink: 0;
+}
+
+.reader-card-row:hover .reader-card-row__actions {
+	opacity: 1;
+}
+
+.reader-card-row__action {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	color: var(--reader-fg-muted, rgba(0, 0, 0, 0.45));
+	border-radius: 6px;
+	transition:
+		color 140ms ease,
+		background-color 140ms ease;
+}
+
+.reader-card-row__action:hover {
+	color: var(--reader-fg, #1a1a1a);
+	background: var(--reader-bg-soft, rgba(0, 0, 0, 0.04));
+}
+
+/* ===========================================================
+   Knowledge Card Review (全屏复习 · 3D 翻转)
+   =========================================================== */
+.reader-card-review-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 95;
+	background: color-mix(in oklab, var(--reader-bg, #faf9f5) 88%, transparent);
+	backdrop-filter: blur(12px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: reader-overlay-fade 200ms ease;
+}
+
+.reader-card-review {
+	width: min(520px, 92vw);
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.reader-card-review__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 4px;
+}
+
+.reader-card-review__counter {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--reader-fg-muted, rgba(0, 0, 0, 0.45));
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	font-variant-numeric: tabular-nums;
+}
+
+/* --- 3D Flip Card --- */
+.reader-card-scene {
+	perspective: 900px;
+	cursor: pointer;
+	min-height: 300px;
+	outline: none;
+}
+
+.reader-card-flipper {
+	position: relative;
+	width: 100%;
+	min-height: 300px;
+	transition: transform 520ms cubic-bezier(0.4, 0, 0.2, 1);
+	transform-style: preserve-3d;
+}
+
+.reader-card-flipper.is-flipped {
+	transform: rotateY(180deg);
+}
+
+.reader-card-face {
+	position: absolute;
+	inset: 0;
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 32px;
+	border-radius: 20px;
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	background: var(--reader-bg, #faf9f5);
+	box-shadow:
+		0 4px 24px rgba(0, 0, 0, 0.06),
+		0 1px 4px rgba(0, 0, 0, 0.04);
+	text-align: center;
+	overflow-y: auto;
+}
+
+.reader-card-face--back {
+	transform: rotateY(180deg);
+	background: color-mix(
+		in oklab,
+		var(--reader-accent-soft, rgba(217, 108, 70, 0.08)) 40%,
+		var(--reader-bg, #faf9f5)
+	);
+}
+
+.reader-card-face__badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: color-mix(
+		in oklab,
+		var(--reader-accent, #d96c46) 12%,
+		transparent
+	);
+	color: var(--reader-accent, #d96c46);
+	font-size: 13px;
+	font-weight: 700;
+	font-family: "Inter", system-ui, sans-serif;
+	margin-bottom: 20px;
+}
+
+.reader-card-face__text {
+	font-size: 17px;
+	line-height: 1.75;
+	color: var(--reader-fg, #1a1a1a);
+	max-width: 42ch;
+}
+
+.reader-card-face__hint {
+	margin-top: 28px;
+	font-size: 12px;
+	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	opacity: 0.7;
+}
+
+/* Navigation footer */
+.reader-card-review__footer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.reader-card-review__btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	border-radius: 10px;
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	background: var(--reader-bg, #faf9f5);
+	color: var(--reader-fg, #1a1a1a);
+	font-size: 13px;
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease,
+		opacity 140ms ease;
+}
+
+.reader-card-review__btn:hover {
+	background: var(--reader-bg-soft, rgba(0, 0, 0, 0.04));
+}
+
+.reader-card-review__btn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.reader-card-review__btn--danger {
+	color: #e57373;
+	border-color: color-mix(in oklab, #e57373 25%, transparent);
+}
+
+.reader-card-review__btn--danger:hover {
+	background: color-mix(in oklab, #e57373 8%, transparent);
+}
+
+/* ===========================================================
+   Knowledge Card Edit Modal
+   =========================================================== */
+.reader-card-edit-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 96;
+	background: rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(4px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: reader-overlay-fade 160ms ease;
+}
+
+.reader-card-edit {
+	width: min(480px, 90vw);
+	background: var(--reader-bg, #faf9f5);
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	border-radius: 16px;
+	box-shadow:
+		0 8px 40px rgba(0, 0, 0, 0.12),
+		0 2px 8px rgba(0, 0, 0, 0.06);
+	animation: reader-search-pop 200ms cubic-bezier(0.22, 1, 0.36, 1);
+	overflow: hidden;
+}
+
+.reader-card-edit__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	border-bottom: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+}
+
+.reader-card-edit__title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--reader-fg, #1a1a1a);
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+}
+
+.reader-card-edit__body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px;
+}
+
+.reader-card-edit__label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--reader-fg-muted, rgba(0, 0, 0, 0.45));
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+}
+
+.reader-card-edit__textarea {
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	background: color-mix(in oklab, var(--reader-bg, #faf9f5) 60%, transparent);
+	color: var(--reader-fg, #1a1a1a);
+	font-size: 14px;
+	line-height: 1.6;
+	font-family: inherit;
+	resize: vertical;
+	outline: none;
+	transition: border-color 140ms ease;
+}
+
+.reader-card-edit__textarea:focus {
+	border-color: var(--reader-accent, #d96c46);
+}
+
+.reader-card-edit__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 12px 20px;
+	border-top: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+}
+
+.reader-card-edit__btn {
+	padding: 7px 16px;
+	border-radius: 8px;
+	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
+	background: var(--reader-bg, #faf9f5);
+	color: var(--reader-fg, #1a1a1a);
+	font-size: 13px;
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+	cursor: pointer;
+	transition: background-color 140ms ease;
+}
+
+.reader-card-edit__btn:hover {
+	background: var(--reader-bg-soft, rgba(0, 0, 0, 0.04));
+}
+
+.reader-card-edit__btn--primary {
+	background: var(--reader-accent, #d96c46);
+	color: #fff;
+	border-color: transparent;
+}
+
+.reader-card-edit__btn--primary:hover {
+	background: color-mix(in oklab, var(--reader-accent, #d96c46) 88%, black);
+}
+
+.reader-card-edit__btn--primary:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* ===========================================================
    打印 / 导出友好样式
    =========================================================== */
 @media print {
@@ -2090,7 +2505,9 @@ mark[data-reader-highlight][data-color="orange"] {
 	.reader-tts-bar,
 	.reader-pagenav,
 	.reader-selection-menu,
-	.reader-copilot {
+	.reader-copilot,
+	.reader-card-review-overlay,
+	.reader-card-edit-overlay {
 		display: none !important;
 	}
 

@@ -4,16 +4,22 @@ import {
 	List,
 	Trash2,
 	BookOpen,
+	Brain,
+	Pencil,
+	Play,
+	Sparkles,
+	Loader2,
 } from "lucide-react";
 
 import type {
 	ReaderBookmark,
 	ReaderHighlight,
+	ReaderKnowledgeCard,
 	ReaderTocItem,
 } from "../../lib/api/reader";
 
 interface ReaderTOCProps {
-	tab: "toc" | "highlights" | "bookmarks";
+	tab: "toc" | "highlights" | "bookmarks" | "cards";
 	toc: ReaderTocItem[];
 	currentChapterId: string | null;
 	onJumpToChapter: (chapterId: string) => void;
@@ -23,6 +29,12 @@ interface ReaderTOCProps {
 	onRemoveHighlight: (id: string) => void;
 	onJumpToBookmark: (b: ReaderBookmark) => void;
 	onRemoveBookmark: (id: string) => void;
+	cards: ReaderKnowledgeCard[];
+	onRemoveCard: (id: string) => void;
+	onEditCard: (card: ReaderKnowledgeCard) => void;
+	onReviewCards: () => void;
+	onGenerateFromChapter: () => void;
+	generating: boolean;
 }
 
 export function ReaderTOC(props: ReaderTOCProps) {
@@ -42,10 +54,15 @@ export function ReaderTOC(props: ReaderTOCProps) {
 							<Highlighter className="w-3.5 h-3.5" strokeWidth={1.5} />
 							高亮
 						</>
-					) : (
+					) : tab === "bookmarks" ? (
 						<>
 							<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
 							书签
+						</>
+					) : (
+						<>
+							<Brain className="w-3.5 h-3.5" strokeWidth={1.5} />
+							知识卡片
 						</>
 					)}
 				</span>
@@ -54,6 +71,7 @@ export function ReaderTOC(props: ReaderTOCProps) {
 				{tab === "toc" && <TocList {...props} />}
 				{tab === "highlights" && <HighlightList {...props} />}
 				{tab === "bookmarks" && <BookmarkList {...props} />}
+				{tab === "cards" && <CardList {...props} />}
 			</div>
 		</aside>
 	);
@@ -197,5 +215,92 @@ function BookmarkList({
 				</li>
 			))}
 		</ul>
+	);
+}
+
+function CardList({
+	cards,
+	onRemoveCard,
+	onEditCard,
+	onReviewCards,
+	onGenerateFromChapter,
+	generating,
+}: ReaderTOCProps) {
+	return (
+		<div className="reader-card-list">
+			<div className="reader-card-list__actions">
+				{cards.length > 0 && (
+					<button
+						type="button"
+						className="reader-card-list__review-btn"
+						onClick={onReviewCards}
+					>
+						<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+						开始复习
+					</button>
+				)}
+				<button
+					type="button"
+					className="reader-card-list__gen-btn"
+					onClick={onGenerateFromChapter}
+					disabled={generating}
+				>
+					{generating ? (
+						<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
+					) : (
+						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+					)}
+					{generating ? "生成中..." : "为本章生成"}
+				</button>
+			</div>
+			{cards.length === 0 ? (
+				<div className="reader-toc__empty">
+					还没有知识卡片 — 选中文字后生成，或点击上方按钮为本章生成。
+				</div>
+			) : (
+				<ul className="reader-toc__list" role="list">
+					{cards.map((card) => (
+						<li key={card.id} className="reader-card-row">
+							<button
+								type="button"
+								className="reader-card-row__main"
+								onClick={() => onReviewCards()}
+								title={card.question}
+							>
+								<span className="reader-card-row__question">
+									{card.question}
+								</span>
+								<span className="reader-card-row__meta">
+									{new Date(card.created_at).toLocaleDateString()}
+								</span>
+							</button>
+							<div className="reader-card-row__actions">
+								<button
+									type="button"
+									className="reader-card-row__action"
+									aria-label="编辑卡片"
+									title="编辑"
+									onClick={() => onEditCard(card)}
+								>
+									<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+								</button>
+								<button
+									type="button"
+									className="reader-card-row__action"
+									aria-label="删除卡片"
+									title="删除"
+									onClick={() => onRemoveCard(card.id)}
+								>
+									<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+								</button>
+							</div>
+						</li>
+					))}
+				</ul>
+			)}
+			{cards.length > 0 && (
+				<div className="reader-card-list__count">共 {cards.length} 张卡片</div>
+			)}
+		</div>
 	);
 }

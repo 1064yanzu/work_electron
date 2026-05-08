@@ -1212,6 +1212,15 @@ export function registerIpcHandlers({
 		"reader_update_settings",
 		readerHandlers.reader_update_settings,
 	);
+	ipcMain.handle("reader_list_cards", readerHandlers.reader_list_cards);
+	ipcMain.handle("reader_create_card", readerHandlers.reader_create_card);
+	ipcMain.handle("reader_update_card", readerHandlers.reader_update_card);
+	ipcMain.handle("reader_delete_card", readerHandlers.reader_delete_card);
+	ipcMain.handle(
+		"reader_delete_cards_bulk",
+		readerHandlers.reader_delete_cards_bulk,
+	);
+	ipcMain.handle("reader_generate_cards", readerHandlers.reader_generate_cards);
 
 	// ==================
 	// TTS（多 provider 文本转语音）

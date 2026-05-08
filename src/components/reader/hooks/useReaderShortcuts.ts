@@ -12,6 +12,7 @@ export type ReaderShortcutHandlers = {
 	onToggleTts: () => void;
 	onOpenToc: () => void;
 	onOpenHighlights: () => void;
+	onOpenCards: () => void;
 	onCycleTheme: () => void;
 };
 
@@ -58,6 +59,11 @@ export function useReaderShortcuts(
 			if (meta && e.key === "2") {
 				e.preventDefault();
 				handlers.onOpenHighlights();
+				return;
+			}
+			if (meta && e.key === "3") {
+				e.preventDefault();
+				handlers.onOpenCards();
 				return;
 			}
 

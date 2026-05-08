@@ -1,4 +1,5 @@
 import {
+	Brain,
 	Copy,
 	Highlighter,
 	Languages,
@@ -31,6 +32,7 @@ interface ReaderSelectionMenuProps {
 	onExplain: () => void;
 	onAsk: () => void;
 	onSpeak: () => void;
+	onGenerateCards: () => void;
 	onClose: () => void;
 }
 
@@ -42,6 +44,7 @@ export function ReaderSelectionMenu({
 	onExplain,
 	onAsk,
 	onSpeak,
+	onGenerateCards,
 	onClose,
 }: ReaderSelectionMenuProps) {
 	if (!selection) return null;
@@ -83,6 +86,7 @@ export function ReaderSelectionMenu({
 				<MenuAction icon={Languages} label="翻译" onClick={onTranslate} />
 				<MenuAction icon={Sparkles} label="解释" onClick={onExplain} />
 				<MenuAction icon={MessageSquare} label="问 AI" onClick={onAsk} />
+				<MenuAction icon={Brain} label="生成卡片" onClick={onGenerateCards} />
 				<MenuAction
 					icon={Highlighter}
 					label="加笔记"

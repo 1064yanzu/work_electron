@@ -571,6 +571,22 @@ CREATE TABLE IF NOT EXISTS reader_sessions (
 CREATE INDEX IF NOT EXISTS idx_reader_sessions_book ON reader_sessions(book_id);
 CREATE INDEX IF NOT EXISTS idx_reader_sessions_started ON reader_sessions(started_at DESC);
 
+CREATE TABLE IF NOT EXISTS reader_cards (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  chapter_id TEXT,
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  source_text TEXT,
+  locator TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_reader_cards_book ON reader_cards(book_id);
+CREATE INDEX IF NOT EXISTS idx_reader_cards_chapter ON reader_cards(chapter_id);
+CREATE INDEX IF NOT EXISTS idx_reader_cards_created ON reader_cards(created_at DESC);
+
 -- =====================
 -- TTS 设置（全局单行）
 -- 多 provider 配置 + 全局默认 + 各场景启用与音色覆盖

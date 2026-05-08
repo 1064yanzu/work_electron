@@ -6,6 +6,7 @@ import type {
 	ReaderFormat,
 	ReaderHighlight,
 	ReaderHighlightColor,
+	ReaderKnowledgeCard,
 	ReaderProgress,
 	ReaderSearchHit,
 	ReaderSession,
@@ -18,6 +19,7 @@ export type {
 	ReaderFormat,
 	ReaderHighlight,
 	ReaderHighlightColor,
+	ReaderKnowledgeCard,
 	ReaderProgress,
 	ReaderSearchHit,
 	ReaderSession,
@@ -39,6 +41,8 @@ export type ReaderClientSettings = {
 	tts_rate: number;
 	ai_context_scope: "chapter" | "book";
 	disable_notifications_while_reading: boolean;
+	/** 卡片生成模型；空字符串表示使用全局活跃模型 */
+	card_gen_model: string;
 };
 
 export async function readerImportFiles(payload: {
@@ -206,4 +210,56 @@ export async function readerUpdateSettings(
 	patch: Partial<ReaderClientSettings>,
 ): Promise<{ success: boolean }> {
 	return safeInvoke("reader_update_settings", { payload: patch });
+}
+
+export async function readerListCards(
+	bookId: string,
+	chapterId?: string,
+): Promise<ReaderKnowledgeCard[]> {
+	return safeInvoke("reader_list_cards", {
+		payload: {
+			book_id: bookId,
+			...(chapterId ? { chapter_id: chapterId } : {}),
+		},
+	});
+}
+
+export async function readerCreateCard(payload: {
+	book_id: string;
+	chapter_id?: string | null;
+	question: string;
+	answer: string;
+	source_text?: string | null;
+	locator?: string | null;
+}): Promise<ReaderKnowledgeCard> {
+	return safeInvoke("reader_create_card", { payload });
+}
+
+export async function readerUpdateCard(payload: {
+	id: string;
+	question?: string;
+	answer?: string;
+}): Promise<ReaderKnowledgeCard> {
+	return safeInvoke("reader_update_card", { payload });
+}
+
+export async function readerDeleteCard(
+	id: string,
+): Promise<{ success: boolean }> {
+	return safeInvoke("reader_delete_card", { payload: { id } });
+}
+
+export async function readerDeleteCardsBulk(
+	ids: string[],
+): Promise<{ success: boolean; deleted: number }> {
+	return safeInvoke("reader_delete_cards_bulk", { payload: { ids } });
+}
+
+export async function readerGenerateCards(payload: {
+	book_id: string;
+	chapter_id?: string | null;
+	text: string;
+	count?: number;
+}): Promise<{ started: boolean }> {
+	return safeInvoke("reader_generate_cards", { payload });
 }
