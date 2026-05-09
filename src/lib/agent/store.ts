@@ -676,6 +676,12 @@ class AgentStore {
 					toolCallId,
 					error: updates.error || "未知错误",
 				});
+			} else if (updates.input && nextToolCall) {
+				this.emitEvent({
+					type: "tool_input_updated",
+					taskId: updatedTask.id,
+					toolCall: nextToolCall,
+				});
 			}
 
 			if (addedArtifact) {

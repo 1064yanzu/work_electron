@@ -96,6 +96,11 @@ function ChatMessageImpl({
 				b.type === "file_update" ||
 				b.type === "image",
 		);
+	const messageTaskId =
+		message.metadata?.taskId ||
+		(message.metadata?.trace?.type === "agent_task"
+			? message.metadata.trace.taskId
+			: undefined);
 
 	if (renderableAgentBlocks) {
 		return (
@@ -109,6 +114,7 @@ function ChatMessageImpl({
 				<AgentBlocksInline
 					blocks={message.metadata!.blocks!}
 					isStreaming={isStreaming}
+					summaryTaskId={messageTaskId}
 				/>
 			</div>
 		);
@@ -132,6 +138,7 @@ function ChatMessageImpl({
 				<AgentBlocksInline
 					blocks={message.metadata.blocks}
 					isStreaming={isStreaming}
+					summaryTaskId={messageTaskId}
 				/>
 			</div>
 		);
@@ -153,6 +160,7 @@ function ChatMessageImpl({
 					<AgentBlocksInline
 						blocks={message.metadata.blocks}
 						isStreaming={isStreaming}
+						summaryTaskId={messageTaskId}
 					/>
 				) : (
 					<ToolCallInline

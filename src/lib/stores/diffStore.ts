@@ -16,8 +16,10 @@ export interface FileDiff {
 	status: "pending" | "accepted" | "rejected";
 	timestamp: number;
 	toolCallId: string; // 关联的工具调用 ID
+	taskId?: string; // 关联的 Agent 任务 ID
 	toolName?: string; // 工具名称（Write / Edit）
 	language?: string; // 文件语言（用于语法高亮）
+	oldFileExisted?: boolean; // 用于区分“新建文件”和“覆盖空文件”
 }
 
 // Diff Store 状态
@@ -33,7 +35,7 @@ interface DiffState {
 const initialState: DiffState = {
 	diffs: {},
 	activeDiffId: null,
-	summaryExpanded: false,
+	summaryExpanded: true,
 };
 
 const store = createStore<DiffState>(initialState);

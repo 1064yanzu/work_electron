@@ -10,18 +10,27 @@ import { ToolCallsStack } from "./ToolCallsStack";
 import type { ToolCall } from "../../lib/agent/types";
 import { ProcessingCard } from "./ProcessingCard";
 import { DiffSummary } from "../CodeView/DiffSummary";
+import { useDiffStoreSelector } from "../../lib/stores/diffStore";
 
 export function AgentBlocksInline({
 	blocks,
 	isStreaming = false,
+	summaryTaskId,
 }: {
 	blocks: ChatMessageBlock[];
 	isStreaming?: boolean;
+	summaryTaskId?: string;
 }) {
 	const nodes: ReactNode[] = [];
 	const activeStreamingThoughtIndex = getActiveStreamingThoughtIndex(
 		blocks,
 		isStreaming,
+	);
+	const matchingDiffCount = useDiffStoreSelector(
+		(s) =>
+			Object.values(s.diffs).filter(
+				(diff) => !summaryTaskId || diff.taskId === summaryTaskId,
+			).length,
 	);
 
 	const replaceProtocolWithMarker = (
@@ -87,6 +96,9 @@ export function AgentBlocksInline({
 				i++;
 				const next = blocks[i];
 				if (next.type === "file_update") updates.push(next.update);
+			}
+			if (!isStreaming && summaryTaskId && matchingDiffCount > 0) {
+				continue;
 			}
 			nodes.push(
 				<FileUpdatesGroup key={`file-updates-${i}`} updates={updates} />,
@@ -201,7 +213,9 @@ export function AgentBlocksInline({
 		<div className="flex flex-col gap-2 w-full">
 			{nodes}
 			{/* 当消息非流式输出时，显示 diff 汇总（如果有） */}
-			{!isStreaming && <DiffSummary />}
+			{!isStreaming && summaryTaskId ? (
+				<DiffSummary taskId={summaryTaskId} />
+			) : null}
 		</div>
 	);
 }

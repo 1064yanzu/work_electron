@@ -125,6 +125,7 @@ function ChatMessageAssistantContentImpl({
 					<AgentBlocksInline
 						blocks={message.metadata?.blocks ?? []}
 						isStreaming={isStreaming}
+						summaryTaskId={message.metadata?.taskId}
 					/>
 				) : (
 					<>

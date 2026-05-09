@@ -32,8 +32,6 @@ import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
 import { ToolCallDetailsPanel } from "./ToolCallDetailsPanel";
 import { ThoughtInline } from "./ThoughtInline";
-import { useDiffStoreSelector } from "../../lib/stores/diffStore";
-import { FileDiffCard } from "../CodeView/FileDiffCard";
 import { ToolOutputDisplay } from "./toolCall/ToolOutputDisplay";
 import {
 	getFileName,
@@ -271,12 +269,6 @@ export default function ToolCallInline({
 		fileSize: number;
 	} | null>(null);
 
-	// 查找对应的 diff 数据
-	const diffForToolCall = useDiffStoreSelector((s) => {
-		const diffs = Object.values(s.diffs);
-		return diffs.find((d) => d.toolCallId === toolCallId) || null;
-	});
-
 	const storeTask =
 		currentTask?.id === taskId
 			? currentTask
@@ -390,15 +382,6 @@ export default function ToolCallInline({
 					status={toolCall.status}
 					description={description}
 				/>
-			</div>
-		);
-	}
-
-	// 如果有 diff 数据，显示 FileDiffCard（文件写入/编辑完成后）
-	if (diffForToolCall && toolCall.status === "completed") {
-		return (
-			<div className="py-1" data-agent-tool-call-id={toolCallId}>
-				<FileDiffCard diff={diffForToolCall} />
 			</div>
 		);
 	}

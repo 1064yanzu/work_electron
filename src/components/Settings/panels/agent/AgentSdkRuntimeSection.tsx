@@ -59,7 +59,7 @@ export function AgentSdkRuntimeSection({
 			/>
 			<SettingsRow
 				label="兼容模式"
-				description="开启后回退到旧路径（acceptEdits + 关闭交互审批），仅排查问题时使用。"
+				description="开启后回退到旧路径（acceptEdits + 关闭交互审批），仅排查问题时使用。默认模式下文件编辑会直接保存，并在对话里提供撤销入口。"
 				action={
 					<Toggle
 						checked={sdkCompatMode}
@@ -79,6 +79,7 @@ export function AgentSdkRuntimeSection({
 					options={[
 						{ value: "default", label: "default" },
 						{ value: "acceptEdits", label: "acceptEdits" },
+						{ value: "bypassPermissions", label: "bypassPermissions" },
 						{ value: "dontAsk", label: "dontAsk" },
 						{ value: "plan", label: "plan" },
 						{ value: "delegate", label: "delegate（多 Agent）" },

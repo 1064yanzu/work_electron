@@ -1,8 +1,8 @@
 /**
  * Diff 文件操作层
  * 将 diffStore 的状态更新与真实文件系统操作解耦
- * Accept → 写入 newContent 到磁盘 → 更新 store 状态
- * Reject → 还原 oldContent 到磁盘 → 更新 store 状态
+ * Agent 文件工具完成时，newContent 已经落盘。
+ * Undo → 还原 oldContent 到磁盘，或删除本轮新建文件。
  */
 
 import { toast } from "../../components/ui/Toast";
@@ -10,11 +10,12 @@ import { invoke } from "../tauriCompat";
 import { diffStore } from "../stores/diffStore";
 
 /**
- * 接受单个 diff：将 newContent 写入磁盘
+ * 兼容旧入口：将 newContent 写入磁盘并标记为 accepted。
+ * 新 UI 默认认为 Agent 修改已经保存，不再要求用户手动接受。
  */
 export async function acceptDiff(diffId: string): Promise<boolean> {
 	const diff = diffStore.getState().diffs[diffId];
-	if (!diff || diff.status !== "pending") return false;
+	if (!diff || diff.status === "rejected") return false;
 
 	try {
 		const result = await invoke<{ success: boolean }>("write_file_safe", {
@@ -39,15 +40,15 @@ export async function acceptDiff(diffId: string): Promise<boolean> {
 }
 
 /**
- * 拒绝单个 diff：将 oldContent 还原到磁盘，或删除新建的文件
+ * 撤销单个 diff：将 oldContent 还原到磁盘，或删除本轮新建的文件
  */
 export async function rejectDiff(diffId: string): Promise<boolean> {
 	const diff = diffStore.getState().diffs[diffId];
-	if (!diff || diff.status !== "pending") return false;
+	if (!diff || diff.status === "rejected") return false;
 
 	try {
-		if (!diff.oldContent) {
-			// 新建文件被拒绝 → 删除文件
+		if (diff.oldFileExisted === false) {
+			// 新建文件被撤销 → 删除文件
 			await invoke<{ success: boolean }>("delete_file_safe", {
 				path: diff.filePath,
 			});
@@ -56,15 +57,16 @@ export async function rejectDiff(diffId: string): Promise<boolean> {
 			await invoke<{ success: boolean }>("write_file_safe", {
 				path: diff.filePath,
 				content: diff.oldContent,
+				allow_empty: true,
 			});
 		}
 
 		diffStore.updateDiffStatus(diffId, "rejected");
-		toast.success(`文件已还原：${getFileName(diff.filePath)}`);
+		toast.success(`已撤销：${getFileName(diff.filePath)}`);
 		return true;
 	} catch (err) {
 		toast.error(
-			`还原失败：${err instanceof Error ? err.message : String(err)}`,
+			`撤销失败：${err instanceof Error ? err.message : String(err)}`,
 		);
 		return false;
 	}
@@ -100,15 +102,16 @@ export async function acceptAllDiffs(): Promise<{
 }
 
 /**
- * 批量拒绝所有 pending diff
+ * 批量撤销所有尚未撤销的 diff
  */
-export async function rejectAllDiffs(): Promise<{
+export async function rejectAllDiffs(taskId?: string): Promise<{
 	rejected: number;
 	failed: number;
 }> {
-	const diffs = Object.values(diffStore.getState().diffs).filter(
-		(d) => d.status === "pending",
-	);
+	const diffs = Object.values(diffStore.getState().diffs).filter((d) => {
+		if (d.status === "rejected") return false;
+		return !taskId || d.taskId === taskId;
+	});
 
 	let rejected = 0;
 	let failed = 0;
@@ -120,7 +123,7 @@ export async function rejectAllDiffs(): Promise<{
 	}
 
 	if (rejected > 0 && failed === 0) {
-		toast.success(`已还原全部 ${rejected} 个文件变更`);
+		toast.success(`已撤销 ${rejected} 个文件变更`);
 	} else if (failed > 0) {
 		toast.warning(`${rejected} 个成功，${failed} 个失败`);
 	}

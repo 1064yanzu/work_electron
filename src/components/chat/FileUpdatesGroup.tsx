@@ -17,11 +17,11 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 	}, [updates]);
 
 	return (
-		<div className="my-3">
+		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-zinc-950/70 dark:ring-zinc-800">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-warm-50/60/30 ring-1 ring-zinc-200/60 dark:ring-zinc-700/60 hover:bg-warm-50/40 transition-colors"
+				className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-warm-50/45 dark:hover:bg-zinc-900/35 transition-colors"
 			>
 				<div className="min-w-0 flex items-center gap-2">
 					<span className="text-sm font-medium text-text-primary dark:text-zinc-200">
@@ -51,7 +51,7 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 			</button>
 
 			{expanded ? (
-				<div className="mt-2">
+				<div className="border-t border-border/70">
 					{updates.map((u, idx) => (
 						<FileChangeCard key={`${u.fileName}-${u.type}-${idx}`} update={u} />
 					))}

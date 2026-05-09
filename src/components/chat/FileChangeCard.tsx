@@ -19,23 +19,23 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 	return (
 		<div
-			className={`my-5 group rounded-xl bg-surface ring-1 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-3.5 transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${
+			className={`group px-3 py-2.5 transition-colors hover:bg-warm-50/45 dark:hover:bg-zinc-900/35 ${
 				isError
-					? "ring-red-200 dark:ring-red-900/70"
+					? "text-red-600 dark:text-red-300"
 					: isRunning
-						? "ring-emerald-200/90 dark:ring-emerald-900/60"
-						: "ring-zinc-200 dark:ring-zinc-800 hover:ring-zinc-300 dark:hover:ring-zinc-700"
+						? "text-emerald-600 dark:text-emerald-300"
+						: "text-text-primary dark:text-zinc-200"
 			}`}
 		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0 flex-1">
 					<div
-						className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+						className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ring-1 ${
 							isError
-								? "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300"
+								? "bg-red-50 text-red-600 ring-red-100 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900/60"
 								: isRunning
-									? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"
-									: "bg-warm-200 text-text-secondary"
+									? "bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60"
+									: "bg-warm-100 text-text-muted ring-border/70 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-zinc-800"
 						}`}
 					>
 						{isCreate ? (
@@ -47,7 +47,7 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 					{/* 文本信息 */}
 					<div className="min-w-0 flex-1">
-						<h4 className="font-medium text-text-primary text-sm truncate leading-tight mb-0.5">
+						<h4 className="font-medium text-text-primary text-sm truncate leading-tight mb-0.5 dark:text-zinc-200">
 							{update.fileName}
 						</h4>
 						<p className="text-xs text-text-muted flex items-center gap-1.5">

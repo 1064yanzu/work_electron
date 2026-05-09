@@ -316,6 +316,7 @@ export type AgentEvent =
 	| { type: "task_completed"; taskId: string; result: string }
 	| { type: "task_error"; taskId: string; error: string }
 	| { type: "tool_started"; taskId: string; toolCall: ToolCall }
+	| { type: "tool_input_updated"; taskId: string; toolCall: ToolCall }
 	| {
 			type: "tool_progress";
 			taskId: string;
