@@ -19,6 +19,14 @@ export type ReaderSettings = {
 	disable_notifications_while_reading: boolean;
 	/** 卡片生成模型；空字符串表示使用全局活跃模型 */
 	card_gen_model: string;
+	/** 划词生成的默认卡片数 */
+	card_default_count_selection: number;
+	/** 章节生成的默认卡片数 */
+	card_default_count_chapter: number;
+	/** 是否启用 SRS 间隔重复算法 */
+	card_srs_enabled: boolean;
+	/** 每日新卡片上限（用于"今日复习"队列时的引入节奏） */
+	card_daily_new_limit: number;
 };
 
 export const READER_DEFAULT_SETTINGS: ReaderSettings = {
@@ -37,6 +45,10 @@ export const READER_DEFAULT_SETTINGS: ReaderSettings = {
 	ai_context_scope: "chapter",
 	disable_notifications_while_reading: false,
 	card_gen_model: "",
+	card_default_count_selection: 5,
+	card_default_count_chapter: 8,
+	card_srs_enabled: true,
+	card_daily_new_limit: 20,
 };
 
 function clampNumber(
@@ -100,6 +112,29 @@ function sanitize(input: Partial<ReaderSettings>): Partial<ReaderSettings> {
 			input.disable_notifications_while_reading;
 	if (typeof input.card_gen_model === "string")
 		out.card_gen_model = input.card_gen_model;
+	if (input.card_default_count_selection != null)
+		out.card_default_count_selection = clampNumber(
+			input.card_default_count_selection,
+			1,
+			20,
+			5,
+		);
+	if (input.card_default_count_chapter != null)
+		out.card_default_count_chapter = clampNumber(
+			input.card_default_count_chapter,
+			1,
+			30,
+			8,
+		);
+	if (typeof input.card_srs_enabled === "boolean")
+		out.card_srs_enabled = input.card_srs_enabled;
+	if (input.card_daily_new_limit != null)
+		out.card_daily_new_limit = clampNumber(
+			input.card_daily_new_limit,
+			0,
+			200,
+			20,
+		);
 	return out;
 }
 

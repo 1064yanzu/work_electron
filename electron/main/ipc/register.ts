@@ -1213,8 +1213,37 @@ export function registerIpcHandlers({
 		readerHandlers.reader_update_settings,
 	);
 	ipcMain.handle("reader_list_cards", readerHandlers.reader_list_cards);
+	ipcMain.handle(
+		"reader_list_all_cards",
+		readerHandlers.reader_list_all_cards,
+	);
+	ipcMain.handle(
+		"reader_list_due_cards",
+		readerHandlers.reader_list_due_cards,
+	);
+	ipcMain.handle(
+		"reader_list_card_tags",
+		readerHandlers.reader_list_card_tags,
+	);
 	ipcMain.handle("reader_create_card", readerHandlers.reader_create_card);
+	ipcMain.handle(
+		"reader_create_draft_cards",
+		readerHandlers.reader_create_draft_cards,
+	);
+	ipcMain.handle(
+		"reader_accept_draft_cards",
+		readerHandlers.reader_accept_draft_cards,
+	);
+	ipcMain.handle(
+		"reader_reject_draft_cards",
+		readerHandlers.reader_reject_draft_cards,
+	);
 	ipcMain.handle("reader_update_card", readerHandlers.reader_update_card);
+	ipcMain.handle(
+		"reader_update_card_tags",
+		readerHandlers.reader_update_card_tags,
+	);
+	ipcMain.handle("reader_review_card", readerHandlers.reader_review_card);
 	ipcMain.handle("reader_delete_card", readerHandlers.reader_delete_card);
 	ipcMain.handle(
 		"reader_delete_cards_bulk",

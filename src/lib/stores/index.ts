@@ -26,12 +26,9 @@ export type {
 	ResearchStep,
 	ResearchSource,
 	ResearchTask,
-	DocCacheItem,
 	TabType,
 	TabItem,
-	AIReviewState,
 	LayoutState,
-	EditorState,
 	ResearchState,
 	TabState,
 	CoreWorkspaceState,
@@ -44,11 +41,6 @@ export {
 	useLayoutStore,
 	useLayoutStoreSelector,
 } from "./layoutStore";
-export {
-	editorStore,
-	useEditorStore,
-	useEditorStoreSelector,
-} from "./editorStore";
 export {
 	researchStore,
 	useResearchStore,

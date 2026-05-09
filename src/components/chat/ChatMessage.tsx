@@ -14,7 +14,6 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { EVENTS, events } from "../../lib/events";
 import { useTTS, useTtsStoreSelector } from "../../lib/tts";
-import { workspaceStore } from "../../lib/workspaceStore";
 import ToolCallInline from "../agent/ToolCallInline";
 import { TTSToolbarButton } from "../tts/TTSToolbarButton";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
@@ -195,14 +194,11 @@ function ChatMessageImpl({
 		const block = codeBlocks[index];
 		if (!block) return;
 
-		// 获取当前编辑器内容作为原始内容
-		const editorContent = workspaceStore.getState().editorContent || "";
-
 		events.emit(EVENTS.AI_WRITE_TO_OUTPUT, {
 			content: block.code,
 			prompt: `应用 ${block.language} 代码`,
 			type: "diff",
-			originalContent: editorContent,
+			originalContent: "",
 		});
 
 		setAppliedBlocks((prev) => new Set(prev).add(index));

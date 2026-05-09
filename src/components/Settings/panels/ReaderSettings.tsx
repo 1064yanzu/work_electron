@@ -44,6 +44,10 @@ const DEFAULT_SETTINGS: ReaderClientSettings = {
 	ai_context_scope: "chapter",
 	disable_notifications_while_reading: false,
 	card_gen_model: "",
+	card_default_count_selection: 5,
+	card_default_count_chapter: 8,
+	card_srs_enabled: true,
+	card_daily_new_limit: 20,
 };
 
 export function ReaderSettings() {

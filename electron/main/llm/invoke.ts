@@ -64,6 +64,12 @@ interface StreamChunk {
 	content: string;
 	done: boolean;
 	channel?: "text" | "thought";
+	/**
+	 * 标识当前 chunk 所属的流。多个并发流共享 `llm-stream-chunk` 通道，
+	 * 渲染端凭此过滤，避免不同 stream 的 chunk 互相串扰。
+	 * 缺省（旧调用方未传 streamId 时）保持兼容：渲染端会按"无主"处理。
+	 */
+	streamId?: string;
 	thoughtMeta?: {
 		title?: string;
 		source?: string;
@@ -1453,6 +1459,7 @@ export async function invokeLlmStream(
 					done: false,
 					channel,
 					thoughtMeta,
+					streamId,
 				});
 			};
 
@@ -1517,6 +1524,7 @@ export async function invokeLlmStream(
 						content: "",
 						done: true,
 						usage,
+						streamId,
 					});
 					return;
 				}
@@ -1529,6 +1537,7 @@ export async function invokeLlmStream(
 					sendStreamChunk(mainWindow, {
 						content: content.slice(i, i + chunkSize),
 						done: false,
+						streamId,
 					});
 					await sleep(10);
 				}
@@ -1539,11 +1548,12 @@ export async function invokeLlmStream(
 				content: "",
 				done: true,
 				usage,
+				streamId,
 			});
 		} catch (error) {
 			// 用户取消不算错误
 			if (isAbortedError(error)) {
-				sendStreamChunk(mainWindow, { content: "", done: true });
+				sendStreamChunk(mainWindow, { content: "", done: true, streamId });
 				return;
 			}
 			// 解析错误并发送结构化错误信息
@@ -1556,6 +1566,7 @@ export async function invokeLlmStream(
 			const errorChunk: StreamChunk = {
 				content: formatLlmErrorForStream(errorInfo),
 				done: true,
+				streamId,
 			};
 			sendStreamChunk(mainWindow, errorChunk);
 		} finally {

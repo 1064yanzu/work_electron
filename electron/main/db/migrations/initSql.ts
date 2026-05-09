@@ -579,6 +579,14 @@ CREATE TABLE IF NOT EXISTS reader_cards (
   answer TEXT NOT NULL,
   source_text TEXT,
   locator TEXT,
+  tags TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'active',
+  generation_session_id TEXT,
+  next_review_at INTEGER,
+  interval_days REAL NOT NULL DEFAULT 0,
+  ease REAL NOT NULL DEFAULT 2.5,
+  review_count INTEGER NOT NULL DEFAULT 0,
+  last_reviewed_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (book_id) REFERENCES reader_books(id) ON DELETE CASCADE
@@ -586,6 +594,8 @@ CREATE TABLE IF NOT EXISTS reader_cards (
 CREATE INDEX IF NOT EXISTS idx_reader_cards_book ON reader_cards(book_id);
 CREATE INDEX IF NOT EXISTS idx_reader_cards_chapter ON reader_cards(chapter_id);
 CREATE INDEX IF NOT EXISTS idx_reader_cards_created ON reader_cards(created_at DESC);
+-- 以下索引引用 status / next_review_at / generation_session_id 三个新增列，
+-- 老库 reader_cards 表里没有这些列，必须留到 migrate.ts 的 safeAddColumn 执行后再建。
 
 -- =====================
 -- TTS 设置（全局单行）

@@ -6,6 +6,7 @@ export interface StreamChunk {
 	content: string;
 	done: boolean;
 	channel?: "text" | "thought";
+	streamId?: string;
 	thoughtMeta?: {
 		title?: string;
 		source?: string;
@@ -243,6 +244,9 @@ export async function invokeLlmWithCallback(
 		// 先设置监听器
 		unlisten = await listen<StreamChunk>("llm-stream-chunk", (event) => {
 			const chunk = event.payload;
+			// 严格按 streamId 过滤：避免别的并发流的 chunk 混入本次会话
+			if (chunk.streamId && chunk.streamId !== streamId) return;
+
 			if (chunk.done) {
 				// 处理 usage 数据
 				if (chunk.usage) {

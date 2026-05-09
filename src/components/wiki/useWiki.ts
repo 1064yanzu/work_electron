@@ -4,8 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "../../lib/tauriCompat";
 import { listen } from "../../lib/tauriEventCompat";
-import { workspaceStore } from "../../lib/workspaceStore";
-import { managedModeStore } from "../../lib/managedModeStore";
+import { managedModeStore, getMimeType } from "../../lib/managedModeStore";
 
 export interface WikiPageItem {
 	id: string;
@@ -429,11 +428,29 @@ export function useWiki(scopePath: string | null) {
 					content: string;
 					encoding?: string;
 				}>("read_file_safe", { payload: { path: absPath } });
-				workspaceStore.openProjectFile(absPath, title, fileRes?.content || "");
-				if (managedModeStore.getState().isActive) {
-					managedModeStore.disableManagedMode();
+				// 在托管模式预览中打开文件
+				const existing = managedModeStore
+					.getState()
+					.files.find((f) => f.path === absPath);
+				if (existing) {
+					managedModeStore.selectFile(existing.id);
+				} else {
+					const fileName = absPath.split("/").pop() || title;
+					const ext = fileName.split(".").pop() || "";
+					const fileId = managedModeStore.addFile({
+						name: fileName,
+						path: absPath,
+						type: "file",
+						extension: ext,
+						size: fileRes?.content?.length ?? 0,
+						content: fileRes?.content || "",
+						mimeType: getMimeType(fileName),
+						createdAt: Date.now(),
+						modifiedAt: Date.now(),
+					});
+					managedModeStore.selectFile(fileId);
 				}
-				workspaceStore.setMainView("editor");
+				managedModeStore.setCenterView("preview");
 				return true;
 			} catch (e: any) {
 				setError(e?.message || "在编辑器中打开失败");

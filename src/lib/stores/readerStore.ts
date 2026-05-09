@@ -30,8 +30,14 @@ export type ReaderState = {
 	highlights: ReaderHighlight[];
 	bookmarks: ReaderBookmark[];
 	cards: ReaderKnowledgeCard[];
+	/** 草稿卡片（待审核）；按 generation_session_id 分组消费 */
+	draftCards: ReaderKnowledgeCard[];
+	/** 草稿审核抽屉是否展开 */
+	draftReviewOpen: boolean;
 	cardReviewOpen: boolean;
 	cardReviewIndex: number;
+	/** 复习模式：'all' 浏览全部 / 'due' 仅到期 */
+	cardReviewMode: "all" | "due";
 	loadingBook: boolean;
 	loadingChapter: boolean;
 	error: string | null;
@@ -58,8 +64,11 @@ const initialState: ReaderState = {
 	highlights: [],
 	bookmarks: [],
 	cards: [],
+	draftCards: [],
+	draftReviewOpen: false,
 	cardReviewOpen: false,
 	cardReviewIndex: 0,
+	cardReviewMode: "all",
 	loadingBook: false,
 	loadingChapter: false,
 	error: null,
@@ -126,22 +135,53 @@ export const readerStoreApi = {
 		_store.setState((s) => ({ ...s, cards: [...cs, ...s.cards] }));
 	},
 	updateCard(c: ReaderKnowledgeCard) {
-		_store.setState((s) => ({
-			...s,
-			cards: s.cards.map((x) => (x.id === c.id ? c : x)),
-		}));
+		_store.setState((s) => {
+			const inDraft = s.draftCards.some((x) => x.id === c.id);
+			return {
+				...s,
+				cards: s.cards.map((x) => (x.id === c.id ? c : x)),
+				draftCards: inDraft
+					? s.draftCards.map((x) => (x.id === c.id ? c : x))
+					: s.draftCards,
+			};
+		});
 	},
 	removeCard(id: string) {
 		_store.setState((s) => ({
 			...s,
 			cards: s.cards.filter((x) => x.id !== id),
+			draftCards: s.draftCards.filter((x) => x.id !== id),
 		}));
 	},
-	openCardReview(startIndex?: number) {
+	addDraftCards(cs: ReaderKnowledgeCard[]) {
+		_store.setState((s) => ({
+			...s,
+			draftCards: [...s.draftCards, ...cs],
+			draftReviewOpen: true,
+		}));
+	},
+	setDraftCards(cs: ReaderKnowledgeCard[]) {
+		_store.setState((s) => ({ ...s, draftCards: cs }));
+	},
+	removeDraftCards(ids: string[]) {
+		const set = new Set(ids);
+		_store.setState((s) => ({
+			...s,
+			draftCards: s.draftCards.filter((x) => !set.has(x.id)),
+		}));
+	},
+	openDraftReview() {
+		_store.setState((s) => ({ ...s, draftReviewOpen: true }));
+	},
+	closeDraftReview() {
+		_store.setState((s) => ({ ...s, draftReviewOpen: false }));
+	},
+	openCardReview(startIndex?: number, mode: "all" | "due" = "all") {
 		_store.setState((s) => ({
 			...s,
 			cardReviewOpen: true,
 			cardReviewIndex: startIndex ?? 0,
+			cardReviewMode: mode,
 		}));
 	},
 	closeCardReview() {

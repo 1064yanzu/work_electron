@@ -8,17 +8,11 @@ import {
 	RefreshCcw,
 } from "lucide-react";
 import { safeInvoke } from "../../lib/tauriBridge";
-import {
-	useWorkspaceStoreSelector,
-	workspaceStore,
-} from "../../lib/workspaceStore";
-import { managedModeStore } from "../../lib/managedModeStore";
+import { useWorkspaceStoreSelector } from "../../lib/workspaceStore";
+import { managedModeStore, getMimeType } from "../../lib/managedModeStore";
 import { cn } from "../../lib/utils";
 import { toast } from "../ui/Toast";
-import {
-	isBinaryPreviewFile,
-	BINARY_CONTENT_MARKER,
-} from "../editor/FileTypePreview";
+import { isBinaryPreviewFile } from "../editor/FileTypePreview";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import {
 	buildFileItemContextMenu,
@@ -168,60 +162,42 @@ export function ProjectFilesView() {
 			return;
 		}
 
-		// 立即切到编辑器视图，给用户瞬时反馈（VS Code 风格的快路径）
-		if (managedModeStore.getState().isActive) {
-			managedModeStore.disableManagedMode();
-		}
-		workspaceStore.setMainView("editor");
-
-		if (isBinaryPreviewFile(entry.name)) {
-			// 二进制文件不读取内容，直接用路径打开
-			workspaceStore.openProjectFile(
-				entry.path,
-				entry.name,
-				BINARY_CONTENT_MARKER,
-				{
-					size: entry.size,
-					mtimeMs: entry.mtimeMs,
-				},
-			);
-			return;
-		}
-
-		// 缓存命中：用之前读过 / 用户未保存的内容秒开（与 VS Code 切 tab 一致）
-		const cached = workspaceStore.getState().docCache[entry.path];
-		if (cached?.dirty && typeof cached.content === "string") {
-			workspaceStore.openProjectFile(entry.path, entry.name, cached.content, {
-				size: cached.size ?? entry.size,
-				mtimeMs: cached.mtimeMs ?? entry.mtimeMs,
-			});
-			return;
-		}
-
-		setIsLoading(true);
-		try {
-			const res = await safeInvoke<{
-				content: string;
-				encoding: string;
-				size?: number;
-				mtime_ms?: number;
-			}>("read_file_safe", { payload: { path: entry.path } });
-			console.log("[ProjectFilesView] open project file", {
+		// 在托管模式预览中打开文件
+		const existing = managedModeStore
+			.getState()
+			.files.find((f) => f.path === entry.path);
+		if (existing) {
+			managedModeStore.selectFile(existing.id);
+		} else {
+			const ext = entry.name.split(".").pop() || "";
+			let content = "";
+			if (!isBinaryPreviewFile(entry.name)) {
+				try {
+					const res = await safeInvoke<{
+						content: string;
+						encoding: string;
+					}>("read_file_safe", { payload: { path: entry.path } });
+					content = res.content;
+				} catch (e) {
+					console.error("Failed to read file:", entry.path, e);
+					toast.error("无法读取文件内容");
+					return;
+				}
+			}
+			const fileId = managedModeStore.addFile({
+				name: entry.name,
 				path: entry.path,
-				title: entry.name,
-				contentLength: res?.content?.length ?? -1,
-				size: res?.size ?? -1,
+				type: "file",
+				extension: ext,
+				size: entry.size ?? 0,
+				content,
+				mimeType: getMimeType(entry.name),
+				createdAt: Date.now(),
+				modifiedAt: entry.mtimeMs ?? Date.now(),
 			});
-			workspaceStore.openProjectFile(entry.path, entry.name, res.content, {
-				size: res.size ?? entry.size,
-				mtimeMs: res.mtime_ms ?? entry.mtimeMs,
-			});
-		} catch (e) {
-			console.error("Failed to read file:", entry.path, e);
-			toast.error("无法读取文件内容");
-		} finally {
-			setIsLoading(false);
+			managedModeStore.selectFile(fileId);
 		}
+		managedModeStore.setCenterView("preview");
 	};
 
 	const handleFileContextMenu = useCallback(

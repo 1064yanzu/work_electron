@@ -35,8 +35,16 @@ export {
 
 export {
 	listCards,
+	listAllCards,
+	listDueCards,
+	listCardTags,
 	createCard,
+	createDraftCards,
 	updateCard,
+	updateCardTags,
+	reviewCard,
+	acceptDraftCards,
+	rejectDraftCards,
 	deleteCard,
 	deleteCardsBulk,
 } from "./cards";

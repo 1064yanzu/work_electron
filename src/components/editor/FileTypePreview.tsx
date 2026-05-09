@@ -4,7 +4,7 @@ import DocumentViewer from "../ui/DocumentViewer";
 import { convertFileSrc } from "../../lib/tauriCompat";
 import { CodePreview } from "./CodePreview";
 import { HtmlFilePreview } from "./HtmlFilePreview";
-import type { EditorDensity } from "./useEditorUiPrefs";
+type EditorDensity = "comfortable" | "compact";
 
 interface FileTypePreviewProps {
 	fileName: string;

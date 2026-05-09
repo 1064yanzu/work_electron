@@ -17,10 +17,6 @@ import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
 import { useNavigation } from "./hooks/useNavigation";
-import {
-	useManagedModeStoreSelector,
-	managedModeStore,
-} from "./lib/managedModeStore";
 import { useTerminalStoreSelector } from "./lib/stores/terminalStore";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
@@ -45,7 +41,6 @@ const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
 const BrowserPanel = lazy(() => import("./components/BrowserPanel"));
 const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
-const EditorCanvas = lazy(() => import("./components/EditorCanvas"));
 const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
@@ -73,6 +68,11 @@ const CommandPalette = lazy(() =>
 const ReaderApp = lazy(() =>
 	import("./components/reader/ReaderApp").then((m) => ({
 		default: m.ReaderApp,
+	})),
+);
+const KnowledgeCardsApp = lazy(() =>
+	import("./components/cards/KnowledgeCardsApp").then((m) => ({
+		default: m.KnowledgeCardsApp,
 	})),
 );
 const MASCOT_ONBOARDING_KEY = "mascotOnboardingShown";
@@ -105,7 +105,6 @@ export default function App() {
 		workspaceStore.toggleRightSidebar.bind(workspaceStore);
 	const setRightSidebarVisible =
 		workspaceStore.setRightSidebarVisible.bind(workspaceStore);
-	const isManagedMode = useManagedModeStoreSelector((state) => state.isActive);
 	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
 
 	// 右侧 Panel 的命令式句柄
@@ -120,7 +119,6 @@ export default function App() {
 		navigateToWorkbench,
 		isInDashboard,
 		currentProjectId,
-		currentDocId,
 	} = useNavigation("dashboard");
 
 	// 同步当前项目到工作区
@@ -303,23 +301,9 @@ export default function App() {
 												<Suspense fallback={<PanelLoadingFallback />}>
 													<BrowserPanel />
 												</Suspense>
-											) : isManagedMode ? (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<SandboxWorkspace
-														onExitManagedMode={() =>
-															managedModeStore.disableManagedMode()
-														}
-													/>
-												</Suspense>
 											) : (
 												<Suspense fallback={<PanelLoadingFallback />}>
-													<EditorCanvas
-														projectId={currentProjectId}
-														initialDocId={currentDocId}
-														onBack={() => {
-															navigateToDashboard();
-														}}
-													/>
+													<SandboxWorkspace />
 												</Suspense>
 											)}
 										</Panel>
@@ -419,6 +403,11 @@ export default function App() {
 					<ReaderApp
 						onOpenSettings={() => handleOpenSettings("reader" as SettingsTabId)}
 					/>
+				</Suspense>
+
+				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制 */}
+				<Suspense fallback={null}>
+					<KnowledgeCardsApp />
 				</Suspense>
 			</MouseDragProvider>
 		</GlobalContextMenuProvider>

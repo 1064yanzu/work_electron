@@ -21,6 +21,7 @@ interface StreamChunk {
 	content: string;
 	done: boolean;
 	channel?: "text" | "thought";
+	streamId?: string;
 }
 
 /**
@@ -84,6 +85,8 @@ export async function streamLLMResponse(
 		// 监听流式事件
 		unlisten = await listen<StreamChunk>("llm-stream-chunk", (event) => {
 			const chunk = event.payload;
+			// 严格按 streamId 过滤：多个并发流共享同一通道，必须排除别的流的 chunk
+			if (chunk.streamId && chunk.streamId !== streamId) return;
 
 			if (chunk.done) {
 				finished = true;

@@ -19,6 +19,13 @@ export type CopilotIntent =
 	| { kind: "ask"; text: string; question?: string }
 	| { kind: "freeform"; question: string };
 
+type StreamChunk = {
+	content: string;
+	done: boolean;
+	channel?: "text" | "thought";
+	streamId?: string;
+};
+
 const READER_MODEL_KEY = "reader.copilot.model";
 
 async function resolveActiveModel(): Promise<string> {
@@ -92,79 +99,79 @@ export function useReaderCopilot({
 		setStreaming(false);
 	}, [book?.id]);
 
-	// 监听全局 LLM 流事件（与 invoke_llm_stream 协议保持一致）
+	// 监听 llm-stream-chunk（主进程统一通道，按 streamId 过滤本会话）
 	useEffect(() => {
-		const unsubs: Array<() => void> = [];
+		let cancelled = false;
+		let off: (() => void) | null = null;
 		(async () => {
 			try {
-				const off1 = await listen<{
-					stream_id: string;
-					delta: string;
-				}>("llm-stream-delta", (event) => {
-					if (!event?.payload) return;
-					const { stream_id, delta } = event.payload;
-					if (streamIdRef.current && stream_id !== streamIdRef.current) return;
-					setMessages((prev) =>
-						prev.map((m) =>
-							m.id === assistantIdRef.current
-								? { ...m, content: (m.content || "") + (delta || "") }
-								: m,
-						),
-					);
-				});
-				unsubs.push(off1 as () => void);
+				const unlisten = await listen<StreamChunk>(
+					"llm-stream-chunk",
+					(event) => {
+						const chunk = event?.payload;
+						if (!chunk || !streamIdRef.current) return;
+						// 严格按 streamId 过滤，避免别的并发流串扰
+						if (chunk.streamId && chunk.streamId !== streamIdRef.current) {
+							return;
+						}
 
-				const off2 = await listen<{
-					stream_id: string;
-				}>("llm-stream-end", (event) => {
-					if (!event?.payload) return;
-					if (
-						streamIdRef.current &&
-						event.payload.stream_id !== streamIdRef.current
-					)
-						return;
-					setMessages((prev) =>
-						prev.map((m) =>
-							m.id === assistantIdRef.current ? { ...m, streaming: false } : m,
-						),
-					);
-					streamIdRef.current = null;
-					assistantIdRef.current = null;
-					setStreaming(false);
-				});
-				unsubs.push(off2 as () => void);
+						const assistantId = assistantIdRef.current;
+						if (!assistantId) return;
 
-				const off3 = await listen<{
-					stream_id: string;
-					error: string;
-				}>("llm-stream-error", (event) => {
-					if (!event?.payload) return;
-					if (
-						streamIdRef.current &&
-						event.payload.stream_id !== streamIdRef.current
-					)
-						return;
-					setMessages((prev) => [
-						...prev.map((m) =>
-							m.id === assistantIdRef.current ? { ...m, streaming: false } : m,
-						),
-						{
-							id: `err-${Date.now()}`,
-							role: "system",
-							content: `⚠️ 调用失败：${event.payload.error}`,
-						},
-					]);
-					streamIdRef.current = null;
-					assistantIdRef.current = null;
-					setStreaming(false);
-				});
-				unsubs.push(off3 as () => void);
+						if (chunk.done) {
+							// 检查结构化错误（主进程错误信息会编码为 chunk.content）
+							const errorDetail = tryParseLlmError(chunk.content);
+							if (errorDetail) {
+								setMessages((prev) => [
+									...prev.map((m) =>
+										m.id === assistantId ? { ...m, streaming: false } : m,
+									),
+									{
+										id: `err-${Date.now()}`,
+										role: "system",
+										content: `⚠️ ${errorDetail.title}\n\n${errorDetail.message}\n\n💡 ${errorDetail.suggestion}`,
+									},
+								]);
+							} else {
+								setMessages((prev) =>
+									prev.map((m) =>
+										m.id === assistantId ? { ...m, streaming: false } : m,
+									),
+								);
+							}
+							streamIdRef.current = null;
+							assistantIdRef.current = null;
+							setStreaming(false);
+							return;
+						}
+
+						// 仅追加正文 chunk；thought 通道暂不渲染（保留扩展空间）
+						if (chunk.channel && chunk.channel !== "text") return;
+						const delta = chunk.content || "";
+						if (!delta) return;
+						setMessages((prev) =>
+							prev.map((m) =>
+								m.id === assistantId
+									? { ...m, content: (m.content || "") + delta }
+									: m,
+							),
+						);
+					},
+				);
+				if (cancelled) {
+					try {
+						unlisten();
+					} catch {}
+					return;
+				}
+				off = unlisten as () => void;
 			} catch {}
 		})();
 		return () => {
-			for (const fn of unsubs) {
+			cancelled = true;
+			if (off) {
 				try {
-					fn();
+					off();
 				} catch {}
 			}
 		};
@@ -222,17 +229,15 @@ export function useReaderCopilot({
 				const streamId = `reader-${book.id}-${assistantId}`;
 				streamIdRef.current = streamId;
 
+				const systemPrompt = buildSystemPrompt(book, contextScope);
+				const userPrompt = buildUserMessage(intent, contextSnippets);
+				const fullPrompt = `${systemPrompt}\n\n用户请求：${userPrompt}`;
+
 				await invoke("invoke_llm_stream", {
 					payload: {
-						stream_id: streamId,
+						streamId,
 						model,
-						system: buildSystemPrompt(book, contextScope),
-						messages: [
-							{
-								role: "user",
-								content: buildUserMessage(intent, contextSnippets),
-							},
-						],
+						prompt: fullPrompt,
 						temperature: 0.4,
 					},
 				});
@@ -263,6 +268,10 @@ export function useReaderCopilot({
 				payload: { streamId: streamIdRef.current },
 			});
 		} catch {}
+		// 主进程会发出最后一个 done chunk（content 空），监听器会负责清空状态。
+		// 这里只兜底重置，避免 done 在窗口卸载/网络异常时不达。
+		streamIdRef.current = null;
+		assistantIdRef.current = null;
 		setStreaming(false);
 	}, []);
 
@@ -286,4 +295,24 @@ function humanizeIntentForUserMsg(intent: CopilotIntent): string {
 		case "freeform":
 			return intent.question;
 	}
+}
+
+/** 解析主进程发来的结构化错误（formatLlmErrorForStream 输出） */
+function tryParseLlmError(content: string): {
+	title: string;
+	message: string;
+	suggestion: string;
+} | null {
+	if (!content || !content.includes("__llm_error__")) return null;
+	try {
+		const parsed = JSON.parse(content);
+		if (parsed?.__llm_error__ === true) {
+			return {
+				title: parsed.title || "调用失败",
+				message: parsed.message || "AI 服务调用时发生了意外错误。",
+				suggestion: parsed.suggestion || "请重试或检查配置。",
+			};
+		}
+	} catch {}
+	return null;
 }

@@ -48,9 +48,7 @@ export function useChatHandler({
 		skipUserMessage: boolean | undefined,
 	) => {
 		// 构建系统提示词 - 使用可配置的提示词
-		let systemPrompt = await getChatSystemPrompt(
-			workspaceStore.getActiveDocContent() || "",
-		);
+		let systemPrompt = await getChatSystemPrompt("");
 
 		const isWriteMode = command?.category === "skill";
 		if (isWriteMode) {
@@ -149,8 +147,7 @@ export function useChatHandler({
 							// 触发完成事件
 							if (isUpdatingDoc) {
 								// 计算 Diff 统计
-								const originalContent =
-									workspaceStore.getActiveDocContent() || "";
+								const originalContent = "";
 								const changes = diffLines(originalContent, docContentBuffer);
 								let additions = 0;
 								let deletions = 0;
@@ -159,12 +156,7 @@ export function useChatHandler({
 									if (part.removed) deletions += part.count || 0;
 								});
 
-								// 获取文档标题
-								const state = workspaceStore.getState();
-								const docTitle =
-									(state.activeDocId &&
-										state.docCache[state.activeDocId]?.title) ||
-									"当前文档";
+								const docTitle = "当前文档";
 
 								// 更新消息 metadata
 								chatStore.updateMessage(session.id, assistantMessage.id, {
@@ -181,7 +173,7 @@ export function useChatHandler({
 								});
 
 								events.emit(EVENTS.AI_DOC_UPDATE_END, {
-									originalContent: workspaceStore.getActiveDocContent(),
+									originalContent: "",
 									suggestedContent: docContentBuffer,
 									prompt: command?.name || content.slice(0, 50),
 								});
@@ -339,8 +331,7 @@ export function useChatHandler({
 
 						// 执行完成逻辑
 						if (isUpdatingDoc) {
-							const originalContent =
-								workspaceStore.getActiveDocContent() || "";
+							const originalContent = "";
 							const changes = diffLines(originalContent, docContentBuffer);
 							let additions = 0;
 							let deletions = 0;
@@ -349,11 +340,7 @@ export function useChatHandler({
 								if (part.removed) deletions += part.count || 0;
 							});
 
-							const state = workspaceStore.getState();
-							const docTitle =
-								(state.activeDocId &&
-									state.docCache[state.activeDocId]?.title) ||
-								"当前文档";
+							const docTitle = "当前文档";
 
 							chatStore.updateMessage(session.id, assistantMessage.id, {
 								metadata: {
@@ -369,7 +356,7 @@ export function useChatHandler({
 							});
 
 							events.emit(EVENTS.AI_DOC_UPDATE_END, {
-								originalContent: workspaceStore.getActiveDocContent(),
+								originalContent: "",
 								suggestedContent: docContentBuffer,
 								prompt: command?.name || content.slice(0, 50),
 							});
@@ -465,7 +452,7 @@ export function useChatHandler({
 				// 兼容旧的写入协议
 				const { writeContent } = parseWriteContent(accumulatedContent);
 				if (writeContent && !isUpdatingDoc && !isCreatingDoc) {
-					const editorContent = workspaceStore.getActiveDocContent();
+					const editorContent = "";
 					events.emit(EVENTS.AI_WRITE_TO_OUTPUT, {
 						content: editorContent
 							? editorContent + "\n\n" + writeContent

@@ -6,6 +6,7 @@ import type { DbContext } from "../../db/client";
 import {
 	createBookmark,
 	createCard,
+	createDraftCards,
 	createHighlight,
 	deleteBook,
 	deleteBookmark,
@@ -18,9 +19,12 @@ import {
 	getChapter,
 	getReaderSettings,
 	importBookFromPath,
+	listAllCards,
 	listBookmarks,
 	listBooks,
+	listCardTags,
 	listCards,
+	listDueCards,
 	listHighlights,
 	listSessions,
 	openBook,
@@ -28,7 +32,11 @@ import {
 	searchGlobal,
 	searchInBook,
 	startSession,
+	acceptDraftCards,
+	rejectDraftCards,
+	reviewCard,
 	updateCard,
+	updateCardTags,
 	updateHighlight,
 	updateReaderSettings,
 } from "../../reader";
@@ -271,13 +279,45 @@ export function createReaderHandlers(db: DbContext) {
 			return listCards(db, input.book_id, input.chapter_id);
 		}) satisfies Handler<"reader_list_cards">,
 
+		reader_list_all_cards: (async (_event, input) => {
+			return listAllCards(db, input);
+		}) satisfies Handler<"reader_list_all_cards">,
+
+		reader_list_due_cards: (async (_event, input) => {
+			return listDueCards(db, input);
+		}) satisfies Handler<"reader_list_due_cards">,
+
+		reader_list_card_tags: (async (_event, input) => {
+			return listCardTags(db, input.book_id ?? null);
+		}) satisfies Handler<"reader_list_card_tags">,
+
 		reader_create_card: (async (_event, input) => {
 			return createCard(db, input);
 		}) satisfies Handler<"reader_create_card">,
 
+		reader_create_draft_cards: (async (_event, input) => {
+			return createDraftCards(db, input);
+		}) satisfies Handler<"reader_create_draft_cards">,
+
+		reader_accept_draft_cards: (async (_event, input) => {
+			return acceptDraftCards(db, input.ids);
+		}) satisfies Handler<"reader_accept_draft_cards">,
+
+		reader_reject_draft_cards: (async (_event, input) => {
+			return rejectDraftCards(db, input.ids);
+		}) satisfies Handler<"reader_reject_draft_cards">,
+
 		reader_update_card: (async (_event, input) => {
 			return updateCard(db, input);
 		}) satisfies Handler<"reader_update_card">,
+
+		reader_update_card_tags: (async (_event, input) => {
+			return updateCardTags(db, input);
+		}) satisfies Handler<"reader_update_card_tags">,
+
+		reader_review_card: (async (_event, input) => {
+			return reviewCard(db, input);
+		}) satisfies Handler<"reader_review_card">,
 
 		reader_delete_card: (async (_event, input) => {
 			return deleteCard(db, input.id);

@@ -231,4 +231,45 @@ export async function runMigrations(ctx: DbContext) {
 		"TEXT",
 	);
 	await safeAddColumn(ctx, "tts_settings", "scene_pet_persona_model", "TEXT");
+
+	// Migration: 阅读器知识卡片 — 标签 / 草稿 / SRS 间隔重复
+	await safeAddColumn(ctx, "reader_cards", "tags", "TEXT NOT NULL DEFAULT '[]'");
+	await safeAddColumn(
+		ctx,
+		"reader_cards",
+		"status",
+		"TEXT NOT NULL DEFAULT 'active'",
+	);
+	await safeAddColumn(ctx, "reader_cards", "generation_session_id", "TEXT");
+	await safeAddColumn(ctx, "reader_cards", "next_review_at", "INTEGER");
+	await safeAddColumn(
+		ctx,
+		"reader_cards",
+		"interval_days",
+		"REAL NOT NULL DEFAULT 0",
+	);
+	await safeAddColumn(ctx, "reader_cards", "ease", "REAL NOT NULL DEFAULT 2.5");
+	await safeAddColumn(
+		ctx,
+		"reader_cards",
+		"review_count",
+		"INTEGER NOT NULL DEFAULT 0",
+	);
+	await safeAddColumn(ctx, "reader_cards", "last_reviewed_at", "INTEGER");
+	try {
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_reader_cards_status ON reader_cards(status)`,
+			args: [],
+		});
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_reader_cards_due ON reader_cards(next_review_at)`,
+			args: [],
+		});
+		await ctx.client.execute({
+			sql: `CREATE INDEX IF NOT EXISTS idx_reader_cards_gen_session ON reader_cards(generation_session_id)`,
+			args: [],
+		});
+	} catch {
+		// 忽略索引创建错误
+	}
 }

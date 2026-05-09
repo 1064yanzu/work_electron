@@ -6,7 +6,6 @@ import {
 	useOutputAssetsQuery,
 	useSourcesQuery,
 } from "../../../lib/query";
-import type { DocCacheItem } from "../../../lib/stores/types";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -15,7 +14,6 @@ import type { SlashCommand } from "../SlashCommand";
 import { getSourceIcon } from "./getSourceIcon";
 
 const EMPTY_COMMANDS: SlashCommand[] = [];
-const EMPTY_DOC_CACHE: Record<string, DocCacheItem> = {};
 
 interface UseDynamicSlashCommandsArgs {
 	enabled: boolean;
@@ -32,9 +30,6 @@ export function useDynamicSlashCommands({
 	enabled,
 	onTriggerFilePicker,
 }: UseDynamicSlashCommandsArgs) {
-	const docCache = useWorkspaceStoreSelector((state) =>
-		enabled ? state.docCache : EMPTY_DOC_CACHE,
-	);
 	const currentProjectId = useWorkspaceStoreSelector((state) =>
 		enabled ? state.currentProjectId : null,
 	);
@@ -64,13 +59,7 @@ export function useDynamicSlashCommands({
 		() => (enabled ? (outputsQuery.data ?? []) : []),
 		[enabled, outputsQuery.data],
 	);
-	const recentDocs = useMemo(
-		() =>
-			enabled
-				? Object.values(docCache).filter((doc) => doc.content.trim())
-				: [],
-		[docCache, enabled],
-	);
+	const recentDocs: Array<{ id: string; title: string; content: string }> = [];
 
 	const addSelectionToContext =
 		workspaceStore.addSelectionToContext.bind(workspaceStore);

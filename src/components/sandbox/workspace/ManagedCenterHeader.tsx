@@ -1,4 +1,4 @@
-import { Eye, RefreshCw, Workflow, X } from "lucide-react";
+import { Eye, RefreshCw, Workflow } from "lucide-react";
 import { IconButton } from "../../ui/Button";
 import { cn } from "../../../lib/utils";
 
@@ -10,7 +10,6 @@ interface ManagedCenterHeaderProps {
 	isRefreshing: boolean;
 	onSetCenterView: (view: "graph" | "preview") => void;
 	onRefresh: () => void;
-	onExit: () => void;
 }
 
 export function ManagedCenterHeader({
@@ -21,7 +20,6 @@ export function ManagedCenterHeader({
 	isRefreshing,
 	onSetCenterView,
 	onRefresh,
-	onExit,
 }: ManagedCenterHeaderProps) {
 	return (
 		<div
@@ -90,15 +88,6 @@ export function ManagedCenterHeader({
 					className={cn(isRefreshing && "animate-spin")}
 				>
 					<RefreshCw className="w-4 h-4" />
-				</IconButton>
-				<IconButton
-					onClick={onExit}
-					aria-label="关闭托管模式"
-					title="关闭托管模式"
-					variant="ghost"
-					size="sm"
-				>
-					<X className="w-4 h-4" />
 				</IconButton>
 			</div>
 		</div>

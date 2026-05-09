@@ -3,6 +3,7 @@ import type { Row } from "@libsql/client";
 import type {
 	ReaderBook,
 	ReaderBookmark,
+	ReaderCardStatus,
 	ReaderHighlight,
 	ReaderHighlightColor,
 	ReaderKnowledgeCard,
@@ -124,6 +125,9 @@ export function rowToSession(row: Row): ReaderSession {
 }
 
 export function rowToCard(row: Row): ReaderKnowledgeCard {
+	const rawStatus = asString(row.status, "active");
+	const status: ReaderCardStatus =
+		rawStatus === "draft" || rawStatus === "archived" ? rawStatus : "active";
 	return {
 		id: asString(row.id),
 		book_id: asString(row.book_id),
@@ -132,6 +136,17 @@ export function rowToCard(row: Row): ReaderKnowledgeCard {
 		answer: asString(row.answer),
 		source_text: row.source_text == null ? null : asString(row.source_text),
 		locator: row.locator == null ? null : asString(row.locator),
+		tags: parseJsonArray<string>(row.tags, []),
+		status,
+		generation_session_id:
+			row.generation_session_id == null
+				? null
+				: asString(row.generation_session_id),
+		next_review_at: asNumber(row.next_review_at),
+		interval_days: asNumberStrict(row.interval_days, 0),
+		ease: asNumberStrict(row.ease, 2.5),
+		review_count: asNumberStrict(row.review_count, 0),
+		last_reviewed_at: asNumber(row.last_reviewed_at),
 		created_at: asNumberStrict(row.created_at),
 		updated_at: asNumberStrict(row.updated_at),
 	};

@@ -9,6 +9,7 @@ import {
 	Play,
 	Sparkles,
 	Loader2,
+	Tag,
 } from "lucide-react";
 
 import type {
@@ -32,9 +33,12 @@ interface ReaderTOCProps {
 	cards: ReaderKnowledgeCard[];
 	onRemoveCard: (id: string) => void;
 	onEditCard: (card: ReaderKnowledgeCard) => void;
-	onReviewCards: () => void;
+	onReviewCards: (startIndex?: number) => void;
+	onReviewDueCards: () => void;
 	onGenerateFromChapter: () => void;
 	generating: boolean;
+	extractedCount: number;
+	dueCount: number;
 }
 
 export function ReaderTOC(props: ReaderTOCProps) {
@@ -220,28 +224,23 @@ function BookmarkList({
 
 function CardList({
 	cards,
+	toc,
 	onRemoveCard,
 	onEditCard,
 	onReviewCards,
+	onReviewDueCards,
 	onGenerateFromChapter,
 	generating,
+	extractedCount,
+	dueCount,
 }: ReaderTOCProps) {
+	const chapterLabelMap = useChapterLabelMap(toc);
 	return (
 		<div className="reader-card-list">
 			<div className="reader-card-list__actions">
-				{cards.length > 0 && (
-					<button
-						type="button"
-						className="reader-card-list__review-btn"
-						onClick={onReviewCards}
-					>
-						<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
-						开始复习
-					</button>
-				)}
 				<button
 					type="button"
-					className="reader-card-list__gen-btn"
+					className="reader-card-list__gen-btn reader-card-list__gen-btn--primary"
 					onClick={onGenerateFromChapter}
 					disabled={generating}
 				>
@@ -250,8 +249,34 @@ function CardList({
 					) : (
 						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
 					)}
-					{generating ? "生成中..." : "为本章生成"}
+					{generating
+						? extractedCount > 0
+							? `已生成 ${extractedCount} 张`
+							: "生成中..."
+						: "为本章生成"}
 				</button>
+				{cards.length > 0 ? (
+					dueCount > 0 ? (
+						<button
+							type="button"
+							className="reader-card-list__review-btn reader-card-list__review-btn--due"
+							onClick={onReviewDueCards}
+							title={`${dueCount} 张到期`}
+						>
+							<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+							今日复习 · {dueCount}
+						</button>
+					) : (
+						<button
+							type="button"
+							className="reader-card-list__review-btn"
+							onClick={() => onReviewCards(0)}
+						>
+							<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+							浏览全部
+						</button>
+					)
+				) : null}
 			</div>
 			{cards.length === 0 ? (
 				<div className="reader-toc__empty">
@@ -259,43 +284,77 @@ function CardList({
 				</div>
 			) : (
 				<ul className="reader-toc__list" role="list">
-					{cards.map((card) => (
-						<li key={card.id} className="reader-card-row">
-							<button
-								type="button"
-								className="reader-card-row__main"
-								onClick={() => onReviewCards()}
-								title={card.question}
-							>
-								<span className="reader-card-row__question">
-									{card.question}
-								</span>
-								<span className="reader-card-row__meta">
-									{new Date(card.created_at).toLocaleDateString()}
-								</span>
-							</button>
-							<div className="reader-card-row__actions">
+					{cards.map((card, idx) => {
+						const chapterLabel = card.chapter_id
+							? chapterLabelMap.get(card.chapter_id)
+							: null;
+						const dueLabel = formatDueLabel(card.next_review_at);
+						return (
+							<li key={card.id} className="reader-card-row">
 								<button
 									type="button"
-									className="reader-card-row__action"
-									aria-label="编辑卡片"
-									title="编辑"
-									onClick={() => onEditCard(card)}
+									className="reader-card-row__main"
+									onClick={() => onReviewCards(idx)}
+									title={card.question}
 								>
-									<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+									<span className="reader-card-row__question">
+										{card.question}
+									</span>
+									<span className="reader-card-row__meta">
+										{chapterLabel ? (
+											<span
+												className="reader-card-row__chapter"
+												title={chapterLabel}
+											>
+												<BookOpen
+													className="w-3 h-3"
+													strokeWidth={1.5}
+												/>
+												{chapterLabel}
+											</span>
+										) : null}
+										{dueLabel ? (
+											<span
+												className={`reader-card-row__due ${dueLabel.tone}`}
+											>
+												{dueLabel.text}
+											</span>
+										) : null}
+									</span>
+									{card.tags && card.tags.length > 0 ? (
+										<span className="reader-card-row__tags">
+											{card.tags.slice(0, 4).map((t) => (
+												<span key={t} className="reader-card-tag-chip">
+													<Tag className="w-2.5 h-2.5" strokeWidth={1.5} />
+													{t}
+												</span>
+											))}
+										</span>
+									) : null}
 								</button>
-								<button
-									type="button"
-									className="reader-card-row__action"
-									aria-label="删除卡片"
-									title="删除"
-									onClick={() => onRemoveCard(card.id)}
-								>
-									<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-								</button>
-							</div>
-						</li>
-					))}
+								<div className="reader-card-row__actions">
+									<button
+										type="button"
+										className="reader-card-row__action"
+										aria-label="编辑卡片"
+										title="编辑"
+										onClick={() => onEditCard(card)}
+									>
+										<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+									</button>
+									<button
+										type="button"
+										className="reader-card-row__action"
+										aria-label="删除卡片"
+										title="删除"
+										onClick={() => onRemoveCard(card.id)}
+									>
+										<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+									</button>
+								</div>
+							</li>
+						);
+					})}
 				</ul>
 			)}
 			{cards.length > 0 && (
@@ -303,4 +362,36 @@ function CardList({
 			)}
 		</div>
 	);
+}
+
+function useChapterLabelMap(toc: ReaderTocItem[]): Map<string, string> {
+	const map = new Map<string, string>();
+	const walk = (items: ReaderTocItem[]) => {
+		for (const item of items) {
+			const key = item.id || item.href;
+			if (key && item.label) {
+				map.set(key, item.label);
+				if (item.href) map.set(item.href, item.label);
+				if (item.id) map.set(item.id, item.label);
+			}
+			if (item.children?.length) walk(item.children);
+		}
+	};
+	walk(toc);
+	return map;
+}
+
+function formatDueLabel(
+	nextReviewAt: number | null,
+): { text: string; tone: "due" | "soon" | "future" } | null {
+	if (!nextReviewAt) return null;
+	const now = Date.now();
+	const diff = nextReviewAt - now;
+	const dayMs = 86_400_000;
+	if (diff <= 0) return { text: "待复习", tone: "due" };
+	if (diff < dayMs) return { text: "今天", tone: "soon" };
+	const days = Math.round(diff / dayMs);
+	if (days < 7) return { text: `${days}天后`, tone: "future" };
+	if (days < 30) return { text: `${Math.round(days / 7)}周后`, tone: "future" };
+	return { text: `${Math.round(days / 30)}月后`, tone: "future" };
 }

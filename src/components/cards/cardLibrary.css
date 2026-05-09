@@ -1,0 +1,325 @@
+/* ===========================================================
+   知识卡片库（全局，跨书）
+   =========================================================== */
+
+.card-library-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 90;
+	background: var(--t-bg, #faf9f5);
+	overflow: hidden;
+	animation: card-library-fade 220ms ease;
+}
+
+@keyframes card-library-fade {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.card-library-overlay-open {
+	overflow: hidden;
+}
+
+.card-library {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	width: 100vw;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 24px 28px 32px;
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+}
+
+.card-library__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.card-library__title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--t-fg, #1a1a1a);
+}
+
+.card-library__count {
+	display: inline-flex;
+	align-items: center;
+	min-width: 24px;
+	padding: 1px 8px;
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.06);
+	color: rgba(0, 0, 0, 0.55);
+	font-size: 11px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.card-library__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.card-library__primary-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 14px;
+	border-radius: 10px;
+	border: none;
+	background: #d96c46;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: filter 140ms ease;
+}
+
+.card-library__primary-btn:hover:not(:disabled) {
+	filter: brightness(1.05);
+}
+
+.card-library__primary-btn:disabled {
+	background: rgba(217, 108, 70, 0.4);
+	cursor: default;
+}
+
+.card-library__ghost-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 14px;
+	border-radius: 10px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	background: transparent;
+	color: rgba(0, 0, 0, 0.7);
+	font-size: 13px;
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease;
+}
+
+.card-library__ghost-btn:hover {
+	background: rgba(0, 0, 0, 0.04);
+}
+
+/* ----- 筛选区 ----- */
+.card-library__filters {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px 0 14px;
+}
+
+.card-library__search {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: 10px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	background: rgba(0, 0, 0, 0.025);
+	color: rgba(0, 0, 0, 0.55);
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease;
+}
+
+.card-library__search:focus-within {
+	border-color: rgba(217, 108, 70, 0.45);
+	background: #fff;
+}
+
+.card-library__search input {
+	flex: 1;
+	border: none;
+	outline: none;
+	background: transparent;
+	font-size: 13px;
+	color: rgba(0, 0, 0, 0.85);
+	font-family: inherit;
+}
+
+.card-library__search-clear {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 999px;
+	border: none;
+	background: rgba(0, 0, 0, 0.08);
+	color: rgba(0, 0, 0, 0.55);
+	cursor: pointer;
+}
+
+.card-library__filter-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.card-library__pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	background: transparent;
+	color: rgba(0, 0, 0, 0.6);
+	font-size: 12px;
+	cursor: pointer;
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease,
+		color 140ms ease;
+}
+
+.card-library__pill:hover {
+	background: rgba(0, 0, 0, 0.04);
+}
+
+.card-library__pill.is-active {
+	background: rgba(217, 108, 70, 0.12);
+	border-color: rgba(217, 108, 70, 0.4);
+	color: #d96c46;
+	font-weight: 600;
+}
+
+/* ----- 主体网格 ----- */
+.card-library__body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding-top: 8px;
+}
+
+.card-library__loading,
+.card-library__empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 200px;
+	color: rgba(0, 0, 0, 0.45);
+	font-size: 13px;
+	text-align: center;
+	padding: 40px 24px;
+}
+
+.card-library__grid {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 14px;
+}
+
+.card-library__card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 14px 14px 12px;
+	border-radius: 14px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+	transition:
+		box-shadow 160ms ease,
+		transform 160ms ease,
+		border-color 160ms ease;
+}
+
+.card-library__card::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 12px;
+	bottom: 12px;
+	width: 3px;
+	border-radius: 0 3px 3px 0;
+	background: #d96c46;
+	opacity: 0.4;
+	transition: opacity 160ms ease;
+}
+
+.card-library__card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.06);
+	border-color: rgba(217, 108, 70, 0.2);
+}
+
+.card-library__card:hover::before {
+	opacity: 0.85;
+}
+
+.card-library__card-q {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: rgba(0, 0, 0, 0.85);
+	line-height: 1.45;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.card-library__card-a {
+	font-size: 12px;
+	color: rgba(0, 0, 0, 0.55);
+	line-height: 1.55;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.card-library__card-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-top: 4px;
+	font-size: 11px;
+	color: rgba(0, 0, 0, 0.45);
+}
+
+.card-library__card-book {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	max-width: 14em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.card-library__card-actions {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	gap: 2px;
+	opacity: 0;
+	transition: opacity 140ms ease;
+}
+
+.card-library__card:hover .card-library__card-actions {
+	opacity: 1;
+}

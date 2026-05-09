@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useShikiTokens } from "../../hooks/useShikiHighlight";
 import { mapLanguageFromPath } from "../../lib/shiki";
 import { cn } from "../../lib/utils";
-import type { EditorDensity } from "./useEditorUiPrefs";
+type EditorDensity = "comfortable" | "compact";
 
 interface CodePreviewProps {
 	fileName: string;

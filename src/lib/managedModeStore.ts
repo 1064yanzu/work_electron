@@ -395,24 +395,6 @@ class ManagedModeStore {
 		}));
 	}
 
-	/** 禁用托管模式 */
-	disableManagedMode() {
-		this.setState((s) => ({
-			...s,
-			isActive: false,
-			selectedFileId: null,
-		}));
-	}
-
-	/** 切换托管模式 */
-	toggleManagedMode() {
-		if (this.state.isActive) {
-			this.disableManagedMode();
-		} else {
-			this.enableManagedMode();
-		}
-	}
-
 	// ========== 文件管理 ==========
 
 	/** 添加文件到沙盒 */

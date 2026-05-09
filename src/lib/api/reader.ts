@@ -2,6 +2,7 @@ import { safeInvoke } from "../tauriBridge";
 import type {
 	ReaderBook,
 	ReaderBookmark,
+	ReaderCardStatus,
 	ReaderChapter,
 	ReaderFormat,
 	ReaderHighlight,
@@ -15,6 +16,7 @@ import type {
 export type {
 	ReaderBook,
 	ReaderBookmark,
+	ReaderCardStatus,
 	ReaderChapter,
 	ReaderFormat,
 	ReaderHighlight,
@@ -43,6 +45,10 @@ export type ReaderClientSettings = {
 	disable_notifications_while_reading: boolean;
 	/** 卡片生成模型；空字符串表示使用全局活跃模型 */
 	card_gen_model: string;
+	card_default_count_selection: number;
+	card_default_count_chapter: number;
+	card_srs_enabled: boolean;
+	card_daily_new_limit: number;
 };
 
 export async function readerImportFiles(payload: {
@@ -224,6 +230,31 @@ export async function readerListCards(
 	});
 }
 
+export async function readerListAllCards(
+	payload: {
+		book_id?: string | null;
+		status?: ReaderCardStatus | null;
+		due_only?: boolean | null;
+		tag?: string | null;
+		search?: string | null;
+		limit?: number | null;
+	} = {},
+): Promise<ReaderKnowledgeCard[]> {
+	return safeInvoke("reader_list_all_cards", { payload });
+}
+
+export async function readerListDueCards(
+	payload: { book_id?: string | null; limit?: number | null } = {},
+): Promise<ReaderKnowledgeCard[]> {
+	return safeInvoke("reader_list_due_cards", { payload });
+}
+
+export async function readerListCardTags(
+	payload: { book_id?: string | null } = {},
+): Promise<string[]> {
+	return safeInvoke("reader_list_card_tags", { payload });
+}
+
 export async function readerCreateCard(payload: {
 	book_id: string;
 	chapter_id?: string | null;
@@ -231,16 +262,57 @@ export async function readerCreateCard(payload: {
 	answer: string;
 	source_text?: string | null;
 	locator?: string | null;
+	tags?: string[] | null;
+	status?: ReaderCardStatus | null;
 }): Promise<ReaderKnowledgeCard> {
 	return safeInvoke("reader_create_card", { payload });
+}
+
+export async function readerCreateDraftCards(payload: {
+	book_id: string;
+	chapter_id?: string | null;
+	locator?: string | null;
+	source_text?: string | null;
+	generation_session_id: string;
+	items: Array<{ question: string; answer: string }>;
+}): Promise<ReaderKnowledgeCard[]> {
+	return safeInvoke("reader_create_draft_cards", { payload });
+}
+
+export async function readerAcceptDraftCards(
+	ids: string[],
+): Promise<{ accepted: number }> {
+	return safeInvoke("reader_accept_draft_cards", { payload: { ids } });
+}
+
+export async function readerRejectDraftCards(
+	ids: string[],
+): Promise<{ rejected: number }> {
+	return safeInvoke("reader_reject_draft_cards", { payload: { ids } });
 }
 
 export async function readerUpdateCard(payload: {
 	id: string;
 	question?: string;
 	answer?: string;
+	tags?: string[];
+	status?: ReaderCardStatus;
 }): Promise<ReaderKnowledgeCard> {
 	return safeInvoke("reader_update_card", { payload });
+}
+
+export async function readerUpdateCardTags(
+	id: string,
+	tags: string[],
+): Promise<ReaderKnowledgeCard> {
+	return safeInvoke("reader_update_card_tags", { payload: { id, tags } });
+}
+
+export async function readerReviewCard(
+	id: string,
+	quality: 0 | 1 | 2,
+): Promise<ReaderKnowledgeCard> {
+	return safeInvoke("reader_review_card", { payload: { id, quality } });
 }
 
 export async function readerDeleteCard(

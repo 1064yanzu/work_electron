@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+	readerAcceptDraftCards,
 	readerCreateBookmark,
 	readerCreateHighlight,
 	readerDeleteBookmark,
@@ -12,6 +13,8 @@ import {
 	readerListCards,
 	readerListHighlights,
 	readerOpenBook,
+	readerRejectDraftCards,
+	readerReviewCard,
 	readerSaveProgress,
 	readerSearchInBook,
 	readerSessionEnd,
@@ -38,7 +41,9 @@ import { useCardGenerator } from "./hooks/useCardGenerator";
 import { useReaderCopilot } from "./hooks/useReaderCopilot";
 import { useReaderShortcuts } from "./hooks/useReaderShortcuts";
 import { useReaderSpeech } from "./hooks/useReaderSpeech";
+import { ReaderCardDraftReview } from "./ReaderCardDraftReview";
 import { ReaderCardEdit } from "./ReaderCardEdit";
+import { ReaderCardGenIndicator } from "./ReaderCardGenIndicator";
 import { ReaderCardReview } from "./ReaderCardReview";
 import { ReaderCopilot } from "./ReaderCopilot";
 import { ReaderPageNav } from "./ReaderPageNav";
@@ -81,8 +86,11 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		highlights,
 		bookmarks,
 		cards,
+		draftCards,
+		draftReviewOpen,
 		cardReviewOpen,
 		cardReviewIndex,
+		cardReviewMode,
 		settings,
 		leftPanel,
 		leftPanelOpen,
@@ -413,12 +421,18 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 	const handleGenerateFromSelection = useCallback(() => {
 		if (!selection || !book) return;
 		const text = selection.text;
+		const locator = selection.locator_start ?? selection.locator_end ?? null;
 		setSelection(null);
 		window.getSelection()?.removeAllRanges();
-		readerStoreApi.setLeftPanel("cards");
-		cardGenerator.generate(text, 5);
-		toast.info("正在生成知识卡片...");
-	}, [selection, book, cardGenerator]);
+		const count = settings?.card_default_count_selection ?? 5;
+		// 生成时不再强制切换左侧栏，避免打断阅读节奏；
+		// 进度通过右下角浮窗显示，结果通过草稿审核抽屉弹出。
+		cardGenerator.generate(text, count, {
+			chapterId: chapter?.id ?? null,
+			locator,
+			sourceText: text,
+		});
+	}, [selection, book, chapter, cardGenerator, settings]);
 
 	const handleGenerateFromChapter = useCallback(() => {
 		if (!chapter || !book) return;
@@ -427,9 +441,84 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			toast.error("当前章节没有可提取的文本");
 			return;
 		}
-		cardGenerator.generate(text, 8);
-		toast.info("正在为本章生成知识卡片...");
-	}, [chapter, book, cardGenerator]);
+		const count = settings?.card_default_count_chapter ?? 8;
+		cardGenerator.generate(text, count, {
+			chapterId: chapter.id ?? null,
+			locator: null,
+			sourceText: null,
+		});
+	}, [chapter, book, cardGenerator, settings]);
+
+	// 草稿审核：接受 / 丢弃
+	const handleAcceptDrafts = useCallback(async (ids: string[]) => {
+		if (ids.length === 0) return;
+		try {
+			await readerAcceptDraftCards(ids);
+			const accepted = readerStoreApi
+				.getState()
+				.draftCards.filter((c) => ids.includes(c.id))
+				.map((c) => ({ ...c, status: "active" as const }));
+			readerStoreApi.removeDraftCards(ids);
+			readerStoreApi.addCards(accepted);
+			readerStoreApi.closeDraftReview();
+			toast.success(`已接受 ${ids.length} 张卡片`);
+		} catch (e) {
+			toast.error(`接受失败：${e instanceof Error ? e.message : String(e)}`);
+		}
+	}, []);
+
+	const handleRejectDrafts = useCallback(async (ids: string[]) => {
+		if (ids.length === 0) return;
+		try {
+			await readerRejectDraftCards(ids);
+			readerStoreApi.removeDraftCards(ids);
+			const remaining = readerStoreApi.getState().draftCards.length;
+			if (remaining === 0) readerStoreApi.closeDraftReview();
+		} catch (e) {
+			toast.error(`丢弃失败：${e instanceof Error ? e.message : String(e)}`);
+		}
+	}, []);
+
+	// 复习反馈（SM-2）
+	const handleReviewCard = useCallback(
+		async (id: string, quality: 0 | 1 | 2) => {
+			try {
+				const updated = await readerReviewCard(id, quality);
+				readerStoreApi.updateCard(updated);
+			} catch (e) {
+				toast.error(`复习记录失败：${e instanceof Error ? e.message : String(e)}`);
+			}
+		},
+		[],
+	);
+
+	// 进入"今日复习"模式：仅复习到期 + 未复习的卡片
+	const dueCards = useMemo(() => {
+		const now = Date.now();
+		return cards.filter(
+			(c) => c.next_review_at == null || c.next_review_at <= now,
+		);
+	}, [cards]);
+
+	const handleStartDueReview = useCallback(() => {
+		if (dueCards.length === 0) {
+			toast.info("当前没有需要复习的卡片");
+			return;
+		}
+		readerStoreApi.openCardReview(0, "due");
+	}, [dueCards.length]);
+
+	// 跳转到原文（用 highlight locator 或 reader engine 的 seek）
+	const handleJumpToCardSource = useCallback(
+		(card: ReaderKnowledgeCard) => {
+			if (card.chapter_id && card.chapter_id !== activeChapterId) {
+				setActiveChapterId(card.chapter_id);
+			}
+			readerStoreApi.closeCardReview();
+			toast.info("已跳转到原文章节");
+		},
+		[activeChapterId],
+	);
 
 	// 8. 章节导航
 	const flatTocList = useMemo(() => (book ? flatToc(book.toc) : []), [book]);
@@ -782,9 +871,14 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 					cards={cards}
 					onRemoveCard={handleRemoveCard}
 					onEditCard={(c) => setEditingCard(c)}
-					onReviewCards={() => readerStoreApi.openCardReview()}
+					onReviewCards={(idx) =>
+						readerStoreApi.openCardReview(idx ?? 0, "all")
+					}
+					onReviewDueCards={handleStartDueReview}
 					onGenerateFromChapter={handleGenerateFromChapter}
 					generating={cardGenerator.generating}
+					extractedCount={cardGenerator.extractedCount}
+					dueCount={dueCards.length}
 				/>
 
 				<main className="reader-main">
@@ -891,22 +985,42 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 
 			<ReaderCardReview
 				open={cardReviewOpen}
-				cards={cards}
+				cards={cardReviewMode === "due" ? dueCards : cards}
 				currentIndex={cardReviewIndex}
+				mode={cardReviewMode}
 				onClose={() => readerStoreApi.closeCardReview()}
 				onPrev={() =>
 					readerStoreApi.setCardReviewIndex(Math.max(0, cardReviewIndex - 1))
 				}
-				onNext={() =>
+				onNext={() => {
+					const list = cardReviewMode === "due" ? dueCards : cards;
 					readerStoreApi.setCardReviewIndex(
-						Math.min(cards.length - 1, cardReviewIndex + 1),
-					)
-				}
+						Math.min(list.length - 1, cardReviewIndex + 1),
+					);
+				}}
 				onDelete={handleRemoveCard}
 				onEdit={(c) => {
 					readerStoreApi.closeCardReview();
 					setEditingCard(c);
 				}}
+				onReview={handleReviewCard}
+				onJumpToSource={handleJumpToCardSource}
+			/>
+
+			<ReaderCardDraftReview
+				open={draftReviewOpen}
+				drafts={draftCards}
+				onClose={() => readerStoreApi.closeDraftReview()}
+				onAccept={handleAcceptDrafts}
+				onReject={handleRejectDrafts}
+				onEditDraft={(c) => setEditingCard(c)}
+			/>
+
+			<ReaderCardGenIndicator
+				visible={cardGenerator.generating}
+				count={cardGenerator.extractedCount}
+				onCancel={cardGenerator.cancel}
+				onOpen={() => readerStoreApi.setLeftPanel("cards")}
 			/>
 
 			<ReaderCardEdit

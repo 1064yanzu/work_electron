@@ -531,8 +531,8 @@ export function useAgentHandler({
 				const finalRawText = rawText || getStreamText();
 
 				const protocol = parseDocProtocolFinal(finalRawText, {
-					activeDocContent: workspaceStore.getActiveDocContent() || "",
-					hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+					activeDocContent: "",
+					hasActiveDoc: false,
 					prompt: command?.name || content.slice(0, 50),
 				});
 				let result = replaceDataImageMarkdownWithPaths(
@@ -823,8 +823,8 @@ export function useAgentHandler({
 								undefined,
 							conversationContext,
 							fallbackSearchQuery,
-							hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
-							activeDocContent: workspaceStore.getActiveDocContent() || "",
+							hasActiveDoc: false,
+							activeDocContent: "",
 							attachedContexts,
 							attachedFiles, // 传递文件路径
 							conversationSessionId: session.id,
@@ -931,8 +931,8 @@ export function useAgentHandler({
 			})();
 
 			const protocol = parseDocProtocolFinal(rawResult, {
-				activeDocContent: workspaceStore.getActiveDocContent() || "",
-				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+				activeDocContent: "",
+				hasActiveDoc: false,
 				prompt: command?.name || content.slice(0, 50),
 			});
 			let result = replaceDataImageMarkdownWithPaths(

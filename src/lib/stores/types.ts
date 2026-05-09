@@ -123,24 +123,6 @@ export interface LayoutState {
 	rightSidebarVisible: boolean;
 }
 
-// 编辑器状态
-export interface EditorState {
-	// 编辑器当前内容
-	editorContent: string;
-	// 编辑器选中文本
-	editorSelection: string;
-	// 已打开的文档 ID 列表（按顺序）
-	openedDocs: string[];
-	// 当前激活的文档 ID
-	activeDocId: string | null;
-	// 文档缓存
-	docCache: Record<string, DocCacheItem>;
-	// 当前激活的项目文件会话
-	activeFileSession: ActiveFileSession | null;
-	// AI 审查状态
-	aiReview: AIReviewState;
-}
-
 // 研究状态
 export interface ResearchState {
 	// 当前研究任务
@@ -185,6 +167,5 @@ export interface CoreWorkspaceState {
 export interface WorkspaceState
 	extends CoreWorkspaceState,
 		LayoutState,
-		EditorState,
 		ResearchState,
 		TabState {}

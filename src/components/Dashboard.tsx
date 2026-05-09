@@ -1,8 +1,9 @@
-import { Clock, FolderOpen, LayoutGrid, Settings } from "lucide-react";
+import { Brain, Clock, FolderOpen, LayoutGrid, Settings } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createProject, getRecentProjects, listProjects } from "../lib/api";
 import { buildProjectContextMenu } from "../lib/contextMenu/actions";
 import { humanizeError } from "../lib/errors";
+import { cardLibraryStoreApi } from "../lib/stores/cardLibraryStore";
 import { invoke } from "../lib/tauriCompat";
 import type { Project } from "../types";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
@@ -194,6 +195,12 @@ export default function Dashboard({
 						label="归档文件"
 						active={activeTab === "archived"}
 						onClick={() => setActiveTab("archived")}
+					/>
+					<NavItem
+						icon={Brain}
+						label="知识卡片"
+						active={false}
+						onClick={() => cardLibraryStoreApi.open()}
 					/>
 				</nav>
 

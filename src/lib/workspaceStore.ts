@@ -9,10 +9,8 @@ export type {
 	ResearchStep,
 	ResearchSource,
 	ResearchTask,
-	DocCacheItem,
 	TabType,
 	TabItem,
-	AIReviewState,
 	WorkspaceState,
 } from "./stores/types";
 
@@ -24,7 +22,6 @@ import type {
 
 // 导入子 Store
 import { layoutStore } from "./stores/layoutStore";
-import { editorStore } from "./stores/editorStore";
 import { researchStore } from "./stores/researchStore";
 import { tabStore } from "./stores/tabStore";
 
@@ -34,11 +31,6 @@ export {
 	useLayoutStore,
 	useLayoutStoreSelector,
 } from "./stores/layoutStore";
-export {
-	editorStore,
-	useEditorStore,
-	useEditorStoreSelector,
-} from "./stores/editorStore";
 export {
 	researchStore,
 	useResearchStore,
@@ -66,8 +58,6 @@ class WorkspaceStore {
 	private lastCoreState: CoreWorkspaceState | null = null;
 	private lastLayoutState: ReturnType<typeof layoutStore.getState> | null =
 		null;
-	private lastEditorState: ReturnType<typeof editorStore.getState> | null =
-		null;
 	private lastResearchState: ReturnType<typeof researchStore.getState> | null =
 		null;
 	private lastTabState: ReturnType<typeof tabStore.getState> | null = null;
@@ -75,7 +65,6 @@ class WorkspaceStore {
 	getState = (): WorkspaceState => {
 		const coreState = this.state;
 		const layout = layoutStore.getState();
-		const editor = editorStore.getState();
 		const research = researchStore.getState();
 		const tab = tabStore.getState();
 
@@ -84,7 +73,6 @@ class WorkspaceStore {
 			this.cachedAggregatedState !== null &&
 			coreState === this.lastCoreState &&
 			layout === this.lastLayoutState &&
-			editor === this.lastEditorState &&
 			research === this.lastResearchState &&
 			tab === this.lastTabState
 		) {
@@ -93,13 +81,11 @@ class WorkspaceStore {
 
 		this.lastCoreState = coreState;
 		this.lastLayoutState = layout;
-		this.lastEditorState = editor;
 		this.lastResearchState = research;
 		this.lastTabState = tab;
 		this.cachedAggregatedState = {
 			...coreState,
 			...layout,
-			...editor,
 			...research,
 			...tab,
 		};
@@ -118,7 +104,6 @@ class WorkspaceStore {
 		// 同时订阅所有子 Store，以便在任何 Store 变化时通知聚合监听器
 		const unsubs = [
 			layoutStore.subscribe(notify),
-			editorStore.subscribe(notify),
 			researchStore.subscribe(notify),
 			tabStore.subscribe(notify),
 		];
@@ -334,18 +319,6 @@ class WorkspaceStore {
 		}));
 	}
 
-	// === 委托给子 Store 的方法（保持向后兼容的 API） ===
-
-	// 更新编辑器内容 -> editorStore
-	setEditorContent(content: string) {
-		editorStore.setEditorContent(content);
-	}
-
-	// 更新编辑器选中 -> editorStore
-	setEditorSelection(selection: string) {
-		editorStore.setEditorSelection(selection);
-	}
-
 	// 设置当前项目 - 核心方法，需要协调所有子 Store
 	setCurrentProject(projectId: string | null) {
 		if (this.state.currentProjectId === projectId) {
@@ -365,7 +338,6 @@ class WorkspaceStore {
 		}));
 
 		// 通知子 Store 执行各自的清理
-		editorStore.resetOnProjectChange();
 		tabStore.resetOnProjectChange();
 		layoutStore.resetOnProjectChange();
 		researchStore.resetOnProjectChange();
@@ -487,92 +459,6 @@ class WorkspaceStore {
 			.filter(Boolean);
 	}
 
-	// === 多标签文档管理 -> editorStore ===
-
-	openDoc(docId: string, title: string, content: string) {
-		editorStore.openDoc(docId, title, content);
-	}
-
-	openProjectFile(
-		filePath: string,
-		title: string,
-		content: string,
-		meta?: { size?: number; mtimeMs?: number },
-	) {
-		editorStore.openProjectFile(filePath, title, content, meta);
-	}
-
-	closeDoc(docId: string) {
-		editorStore.closeDoc(docId);
-	}
-
-	setActiveDoc(docId: string) {
-		editorStore.setActiveDoc(docId);
-	}
-
-	reorderDocs(fromIndex: number, toIndex: number) {
-		editorStore.reorderDocs(fromIndex, toIndex);
-	}
-
-	updateDocCache(
-		docId: string,
-		content: string,
-		dirty?: boolean,
-		meta?: { size?: number; mtimeMs?: number },
-	) {
-		editorStore.updateDocCache(docId, content, dirty, meta);
-	}
-
-	markDocDirty(docId: string) {
-		editorStore.markDocDirty(docId);
-	}
-
-	markDocSaved(docId: string) {
-		editorStore.markDocSaved(docId);
-	}
-
-	saveDocSnapshot(docId: string) {
-		editorStore.saveDocSnapshot(docId);
-	}
-
-	restoreDocSnapshot(docId: string) {
-		editorStore.restoreDocSnapshot(docId);
-	}
-
-	getActiveDocContent(): string {
-		return editorStore.getActiveDocContent();
-	}
-
-	// === AI 审查状态管理 -> editorStore ===
-
-	startAIReview(
-		docId: string,
-		originalContent: string,
-		suggestedContent: string,
-	) {
-		editorStore.startAIReview(docId, originalContent, suggestedContent);
-	}
-
-	startAICreateProposal(title: string, summary: string, content: string) {
-		editorStore.startAICreateProposal(title, summary, content);
-	}
-
-	acceptAIReview() {
-		editorStore.acceptAIReview();
-	}
-
-	rejectAIReview() {
-		editorStore.rejectAIReview();
-	}
-
-	hasDirtyDocs(): boolean {
-		return editorStore.hasDirtyDocs();
-	}
-
-	getDirtyDocs() {
-		return editorStore.getDirtyDocs();
-	}
-
 	// === 标签页系统 -> tabStore + layoutStore ===
 
 	openSourceInMainView(
@@ -617,8 +503,6 @@ export function useWorkspaceStore() {
 		addFileToContext: workspaceStore.addFileToContext.bind(workspaceStore),
 		removeContext: workspaceStore.removeContext.bind(workspaceStore),
 		clearContexts: workspaceStore.clearContexts.bind(workspaceStore),
-		setEditorContent: workspaceStore.setEditorContent.bind(workspaceStore),
-		setEditorSelection: workspaceStore.setEditorSelection.bind(workspaceStore),
 		setCurrentProject: workspaceStore.setCurrentProject.bind(workspaceStore),
 		setCurrentFolder: workspaceStore.setCurrentFolder.bind(workspaceStore),
 		setCurrentThreadScope:
@@ -641,26 +525,6 @@ export function useWorkspaceStore() {
 		completeResearch: workspaceStore.completeResearch.bind(workspaceStore),
 		clearCurrentResearch:
 			workspaceStore.clearCurrentResearch.bind(workspaceStore),
-		// 多标签文档管理
-		openDoc: workspaceStore.openDoc.bind(workspaceStore),
-		closeDoc: workspaceStore.closeDoc.bind(workspaceStore),
-		setActiveDoc: workspaceStore.setActiveDoc.bind(workspaceStore),
-		reorderDocs: workspaceStore.reorderDocs.bind(workspaceStore),
-		updateDocCache: workspaceStore.updateDocCache.bind(workspaceStore),
-		markDocDirty: workspaceStore.markDocDirty.bind(workspaceStore),
-		markDocSaved: workspaceStore.markDocSaved.bind(workspaceStore),
-		saveDocSnapshot: workspaceStore.saveDocSnapshot.bind(workspaceStore),
-		restoreDocSnapshot: workspaceStore.restoreDocSnapshot.bind(workspaceStore),
-		getActiveDocContent:
-			workspaceStore.getActiveDocContent.bind(workspaceStore),
-		// AI 审查状态
-		startAIReview: workspaceStore.startAIReview.bind(workspaceStore),
-		startAICreateProposal:
-			workspaceStore.startAICreateProposal.bind(workspaceStore),
-		acceptAIReview: workspaceStore.acceptAIReview.bind(workspaceStore),
-		rejectAIReview: workspaceStore.rejectAIReview.bind(workspaceStore),
-		hasDirtyDocs: workspaceStore.hasDirtyDocs.bind(workspaceStore),
-		getDirtyDocs: workspaceStore.getDirtyDocs.bind(workspaceStore),
 		// 标签页系统
 		openSourceInMainView:
 			workspaceStore.openSourceInMainView.bind(workspaceStore),

@@ -146,6 +146,73 @@ export function ReaderImmersionControls({
 				/>
 			</TileCard>
 
+			<TileCard
+				icon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
+				label="划词默认生成卡片数"
+				hint="选中文字后一次生成多少张草稿卡。"
+			>
+				<SettingsSlider
+					value={settings.card_default_count_selection}
+					min={1}
+					max={15}
+					step={1}
+					onChange={(v) => patch({ card_default_count_selection: v })}
+					formatValue={(v) => `${v} 张`}
+					minLabel="1"
+					maxLabel="15"
+				/>
+			</TileCard>
+
+			<TileCard
+				icon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
+				label="本章默认生成卡片数"
+				hint="侧栏「为本章生成」按钮一次生成多少张。"
+			>
+				<SettingsSlider
+					value={settings.card_default_count_chapter}
+					min={1}
+					max={20}
+					step={1}
+					onChange={(v) => patch({ card_default_count_chapter: v })}
+					formatValue={(v) => `${v} 张`}
+					minLabel="1"
+					maxLabel="20"
+				/>
+			</TileCard>
+
+			<TileCard
+				icon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
+				label="启用间隔重复（SRS）"
+				hint="复习时根据「认识/不认识」调整下次出现时间。"
+				control={
+					<SettingsSwitch
+						checked={settings.card_srs_enabled}
+						onChange={(v) => patch({ card_srs_enabled: v })}
+					/>
+				}
+			>
+				<p className="mt-1 text-[10.5px] leading-relaxed text-text-light">
+					关闭后卡片仅作浏览，不再排期。
+				</p>
+			</TileCard>
+
+			<TileCard
+				icon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
+				label="每日新卡上限"
+				hint="今日复习队列里新卡片最多引入多少张，避免被淹没。"
+			>
+				<SettingsSlider
+					value={settings.card_daily_new_limit}
+					min={0}
+					max={100}
+					step={5}
+					onChange={(v) => patch({ card_daily_new_limit: v })}
+					formatValue={(v) => (v === 0 ? "不引入" : `${v} 张/天`)}
+					minLabel="0"
+					maxLabel="100"
+				/>
+			</TileCard>
+
 			<div className="lg:col-span-2">
 				<TileCard
 					icon={null}

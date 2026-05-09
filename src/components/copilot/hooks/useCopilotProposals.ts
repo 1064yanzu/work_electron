@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { createOutputAsset } from "../../../lib/api";
-import { workspaceStore } from "../../../lib/workspaceStore";
 import { OutputType } from "../../../types";
 import type { CreateProposal } from "../types";
 
@@ -57,13 +56,12 @@ export function useCopilotProposals() {
 		const p = activeCreateProposal;
 		if (!p) return;
 		try {
-			const created = await createOutputAsset({
+			await createOutputAsset({
 				title: p.title || "新文档",
 				content: p.content || "",
 				output_type: OutputType.Article,
 				related_notes: [],
 			});
-			workspaceStore.openDoc(created.id, created.title, created.content);
 			removeCreateProposal(p.id);
 		} catch (e) {
 			console.error("[CopilotSidebar] 创建文档失败:", e);

@@ -225,6 +225,8 @@ export type ReaderBookmark = {
 	created_at: number;
 };
 
+export type ReaderCardStatus = "draft" | "active" | "archived";
+
 export type ReaderKnowledgeCard = {
 	id: string;
 	book_id: string;
@@ -233,6 +235,14 @@ export type ReaderKnowledgeCard = {
 	answer: string;
 	source_text: string | null;
 	locator: string | null;
+	tags: string[];
+	status: ReaderCardStatus;
+	generation_session_id: string | null;
+	next_review_at: number | null;
+	interval_days: number;
+	ease: number;
+	review_count: number;
+	last_reviewed_at: number | null;
 	created_at: number;
 	updated_at: number;
 };
@@ -2818,6 +2828,10 @@ export type IPCSchema = {
 			disable_notifications_while_reading: boolean;
 			/** 卡片生成模型；空字符串表示使用全局活跃模型 */
 			card_gen_model: string;
+			card_default_count_selection: number;
+			card_default_count_chapter: number;
+			card_srs_enabled: boolean;
+			card_daily_new_limit: number;
 		};
 	};
 	/** 更新阅读器设置 */
@@ -2839,6 +2853,10 @@ export type IPCSchema = {
 			disable_notifications_while_reading: boolean;
 			/** 卡片生成模型；空字符串表示使用全局活跃模型 */
 			card_gen_model: string;
+			card_default_count_selection: number;
+			card_default_count_chapter: number;
+			card_srs_enabled: boolean;
+			card_daily_new_limit: number;
 		}>;
 		output: { success: boolean };
 	};
@@ -2846,6 +2864,28 @@ export type IPCSchema = {
 	reader_list_cards: {
 		input: { book_id: string; chapter_id?: string };
 		output: ReaderKnowledgeCard[];
+	};
+	/** 跨书查询卡片（支持 status / due / tag / 搜索） */
+	reader_list_all_cards: {
+		input: {
+			book_id?: string | null;
+			status?: ReaderCardStatus | null;
+			due_only?: boolean | null;
+			tag?: string | null;
+			search?: string | null;
+			limit?: number | null;
+		};
+		output: ReaderKnowledgeCard[];
+	};
+	/** 列出当前到期需要复习的卡片 */
+	reader_list_due_cards: {
+		input: { book_id?: string | null; limit?: number | null };
+		output: ReaderKnowledgeCard[];
+	};
+	/** 列出所有已用过的标签（按使用频率降序） */
+	reader_list_card_tags: {
+		input: { book_id?: string | null };
+		output: string[];
 	};
 	/** 创建知识卡片 */
 	reader_create_card: {
@@ -2856,12 +2896,52 @@ export type IPCSchema = {
 			answer: string;
 			source_text?: string | null;
 			locator?: string | null;
+			tags?: string[] | null;
+			status?: ReaderCardStatus | null;
 		};
 		output: ReaderKnowledgeCard;
 	};
-	/** 更新知识卡片（问题 / 答案） */
+	/** 批量创建草稿卡片（一次划词/章节生成共享 generation_session_id） */
+	reader_create_draft_cards: {
+		input: {
+			book_id: string;
+			chapter_id?: string | null;
+			locator?: string | null;
+			source_text?: string | null;
+			generation_session_id: string;
+			items: Array<{ question: string; answer: string }>;
+		};
+		output: ReaderKnowledgeCard[];
+	};
+	/** 接受草稿卡片（status: draft → active） */
+	reader_accept_draft_cards: {
+		input: { ids: string[] };
+		output: { accepted: number };
+	};
+	/** 拒绝草稿卡片（删除） */
+	reader_reject_draft_cards: {
+		input: { ids: string[] };
+		output: { rejected: number };
+	};
+	/** 更新知识卡片（问题 / 答案 / 标签 / 状态） */
 	reader_update_card: {
-		input: { id: string; question?: string; answer?: string };
+		input: {
+			id: string;
+			question?: string;
+			answer?: string;
+			tags?: string[];
+			status?: ReaderCardStatus;
+		};
+		output: ReaderKnowledgeCard;
+	};
+	/** 单独更新卡片标签 */
+	reader_update_card_tags: {
+		input: { id: string; tags: string[] };
+		output: ReaderKnowledgeCard;
+	};
+	/** 上报复习结果（SM-2） */
+	reader_review_card: {
+		input: { id: string; quality: 0 | 1 | 2 };
 		output: ReaderKnowledgeCard;
 	};
 	/** 删除知识卡片 */

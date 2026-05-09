@@ -31,13 +31,7 @@ const ExecutionGraph = lazy(async () => {
 	return { default: mod.ExecutionGraph };
 });
 
-interface SandboxWorkspaceProps {
-	onExitManagedMode: () => void;
-}
-
-export default function SandboxWorkspace({
-	onExitManagedMode,
-}: SandboxWorkspaceProps) {
+export default function SandboxWorkspace() {
 	const files = useManagedModeStoreSelector((state) => state.files);
 	const selectedFileId = useManagedModeStoreSelector(
 		(state) => state.selectedFileId,
@@ -342,7 +336,6 @@ export default function SandboxWorkspace({
 				isRefreshing={isRefreshing}
 				onSetCenterView={(view) => managedModeStore.setCenterView(view)}
 				onRefresh={refreshFiles}
-				onExit={onExitManagedMode}
 			/>
 
 			{ui.centerView === "graph" ? (

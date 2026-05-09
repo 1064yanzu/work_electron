@@ -1,15 +1,6 @@
 // AI 助手侧边栏 - 重构版（支持 Agent 工具调用系统）
 
-import {
-	CircleUser,
-	Check,
-	ChevronDown,
-	FileText,
-	MessageSquare,
-	Plus,
-	StopCircle,
-	X,
-} from "lucide-react";
+import { Plus, StopCircle } from "lucide-react";
 import {
 	Suspense,
 	useCallback,
@@ -130,7 +121,7 @@ export default function CopilotSidebar() {
 		(state) => state.pending,
 	);
 
-	const [chatMode, setChatMode] = useState<"chat" | "agent">("agent");
+	const [chatMode] = useState<"chat" | "agent">("agent");
 	// 自动捕获文件操作的 diff 数据
 	useDiffCapture();
 
@@ -142,16 +133,7 @@ export default function CopilotSidebar() {
 	const planModeEnabled = usePlanModeSelector((s) => s.enabled);
 	const [abortController, setAbortController] =
 		useState<AbortController | null>(null);
-	const {
-		pendingCreateProposals,
-		setActiveProposalId,
-		isProposalMenuOpen,
-		setIsProposalMenuOpen,
-		queueCreateProposal,
-		removeCreateProposal,
-		activeCreateProposal,
-		acceptActiveCreateProposal,
-	} = useCopilotProposals();
+	const { queueCreateProposal } = useCopilotProposals();
 	const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
 	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 	const [messageRenderStart, setMessageRenderStart] = useState(0);
@@ -469,8 +451,8 @@ export default function CopilotSidebar() {
 				: "研究任务已完成，请在左侧 Agent 面板查看详细结果。";
 
 			const protocol = parseDocProtocolFinal(rawResultText, {
-				activeDocContent: workspaceStore.getActiveDocContent() || "",
-				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+				activeDocContent: "",
+				hasActiveDoc: false,
 				prompt: query.slice(0, 50),
 			});
 
@@ -496,8 +478,8 @@ export default function CopilotSidebar() {
 			console.error("Agent 研究任务失败:", error);
 			const rawErrorText = `⚠️ 研究任务失败: ${error instanceof Error ? error.message : "未知错误"}`;
 			const protocol = parseDocProtocolFinal(rawErrorText, {
-				activeDocContent: workspaceStore.getActiveDocContent() || "",
-				hasActiveDoc: Boolean(workspaceStore.getState().activeDocId),
+				activeDocContent: "",
+				hasActiveDoc: false,
 				prompt: query.slice(0, 50),
 			});
 
@@ -821,163 +803,13 @@ export default function CopilotSidebar() {
 					</div>
 				)}
 
-				{pendingCreateProposals.length > 0 && activeCreateProposal && (
-					<div className="mb-2 relative">
-						<div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface/90 backdrop-blur-md shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] px-3 py-2.5 ring-1 ring-black/[0.02] dark:ring-white/[0.02]">
-							<button
-								type="button"
-								onClick={() => setIsProposalMenuOpen((v) => !v)}
-								className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
-							>
-								<div className="w-9 h-9 rounded-xl bg-warm-200 flex items-center justify-center ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 shrink-0 shadow-sm">
-									<FileText className="w-4.5 h-4.5 text-text-secondary" />
-								</div>
-								<div className="min-w-0 flex-1 text-left">
-									<div className="flex items-center gap-1.5 min-w-0">
-										<span className="text-sm font-semibold text-text-primary">
-											{pendingCreateProposals.length} 个文件待审查
-										</span>
-										{pendingCreateProposals.length > 1 && (
-											<span className="px-1.5 py-0.5 rounded-md bg-dark-surface text-[10px] font-semibold text-white">
-												+{pendingCreateProposals.length - 1}
-											</span>
-										)}
-									</div>
-									<div className="text-xs text-text-secondary truncate mt-0.5">
-										{activeCreateProposal.title}
-										{activeCreateProposal.summary && (
-											<span className="text-text-light">
-												{" "}
-												· {activeCreateProposal.summary}
-											</span>
-										)}
-									</div>
-								</div>
-								<ChevronDown className="w-4 h-4 text-text-light shrink-0" />
-							</button>
-
-							<div className="flex items-center gap-1.5">
-								<button
-									type="button"
-									onClick={() => removeCreateProposal(activeCreateProposal.id)}
-									className="h-10 w-10 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-surface/60 transition-all cursor-pointer"
-									title="忽略"
-									aria-label="忽略建议"
-								>
-									<X className="w-3.5 h-3.5" />
-								</button>
-								<button
-									type="button"
-									onClick={() => void acceptActiveCreateProposal()}
-									className="h-8 px-3 rounded-lg flex items-center gap-1.5 bg-dark-muted text-white hover:bg-dark-surface dark:hover:bg-surface transition-all shadow-sm hover:shadow font-medium text-xs"
-									title="创建并打开"
-								>
-									<Check className="w-3.5 h-3.5" />
-									<span>保留</span>
-								</button>
-							</div>
-						</div>
-
-						{isProposalMenuOpen && (
-							<div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl border border-border bg-surface backdrop-blur shadow-bai-pop overflow-hidden">
-								<div className="max-h-56 overflow-auto">
-									{pendingCreateProposals.map((p) => (
-										<button
-											type="button"
-											key={p.id}
-											onClick={() => {
-												setActiveProposalId(p.id);
-												setIsProposalMenuOpen(false);
-											}}
-											className={`w-full px-4 py-3 text-left hover:bg-warm-50/60 transition-colors ${
-												p.id === activeCreateProposal.id ? "bg-warm-50/40" : ""
-											}`}
-										>
-											<div className="text-sm font-medium text-text-primary truncate">
-												{p.title || "新文档"}
-											</div>
-											{p.summary ? (
-												<div className="text-xs text-text-muted truncate mt-0.5">
-													{p.summary}
-												</div>
-											) : null}
-										</button>
-									))}
-								</div>
-								<div className="px-4 py-2 border-t border-border/60 flex items-center justify-between">
-									<div className="text-[11px] text-text-light">
-										点击选择要处理的文档
-									</div>
-									<button
-										type="button"
-										onClick={() => setIsProposalMenuOpen(false)}
-										aria-label="关闭文档列表"
-										className="text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 cursor-pointer"
-									>
-										关闭
-									</button>
-								</div>
-							</div>
-						)}
-					</div>
-				)}
-
-				<div className="mb-2 flex items-center justify-between">
-					<div className="inline-flex items-center bg-warm-200/70 rounded-2xl p-1 ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
-						<button
-							onClick={() => {
-								setChatMode("chat");
-								managedModeStore.disableManagedMode();
-							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "chat"
-									? "bg-warm-200 text-text-primary"
-									: "text-text-muted hover:text-text-primary hover:bg-warm-200/60"
-							}`}
-						>
-							<MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
-							对话
-						</button>
-						<button
-							onClick={() => {
-								setChatMode("agent");
-								managedModeStore.enableManagedMode();
-							}}
-							className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-								chatMode === "agent"
-									? "bg-primary text-primary-foreground"
-									: "text-text-muted hover:text-text-primary hover:bg-warm-200/60"
-							}`}
-						>
-							<CircleUser className="w-3.5 h-3.5" strokeWidth={1.5} />
-							托管
-						</button>
-					</div>
-
-					<div
-						className={`flex items-center gap-1.5 text-[11px] transition-colors duration-300 ${chatMode === "agent" ? "text-text-secondary" : "text-text-light"}`}
-					>
-						{chatMode === "agent" ? (
-							<>
-								<span className="w-1.5 h-1.5 rounded-full animate-pulse bg-success" />
-								Agent 模式
-							</>
-						) : (
-							"普通对话"
-						)}
-					</div>
+				<div className="px-0 pb-1.5">
+					<PlanModeToggle
+						planMode={planModeEnabled}
+						onToggle={() => togglePlanMode()}
+						disabled={isStreaming || isAgentExecuting}
+					/>
 				</div>
-
-				{/* Plan Mode 切换器 - 仅 agent 模式下显示 */}
-				{chatMode === "agent" && (
-					<div className="px-0 pb-1.5">
-						<PlanModeToggle
-							planMode={planModeEnabled}
-							onToggle={() => togglePlanMode()}
-							disabled={isStreaming || isAgentExecuting}
-						/>
-					</div>
-				)}
 
 				<ChatInput
 					onSubmit={handleSendMessage}
