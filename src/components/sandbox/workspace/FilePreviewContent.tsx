@@ -419,74 +419,72 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 
 	return (
 		<div className="flex-1 flex flex-col h-full bg-surface">
-			<div className="flex items-center justify-between gap-2 flex-wrap px-4 py-2 border-b border-border bg-warm-50">
-				<div className="flex items-center gap-2 min-w-0">
-					<span className="text-sm font-medium text-text-secondary truncate">
+			<div className="flex items-center justify-between gap-2 flex-wrap px-3 py-1.5 border-b border-border bg-warm-50">
+				<div className="flex items-center gap-1.5 min-w-0">
+					<span className="text-xs font-medium text-text-secondary truncate">
 						{file.name}
 					</span>
-					<span className="text-xs text-text-muted bg-warm-200 px-1.5 py-0.5 rounded">
+					<span className="text-[10px] text-text-muted bg-warm-200 px-1 py-0.5 rounded">
 						{fileExtensionLabel}
 					</span>
 					{sourceDirty ? (
-						<span className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
-							<span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+						<span className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
+							<span className="w-1 h-1 rounded-full bg-amber-500" />
 							未保存
 						</span>
 					) : null}
 				</div>
-				<div className="flex items-center gap-1 flex-wrap justify-end">
+				<div className="flex items-center gap-0.5 flex-wrap justify-end">
 					{copiedLabel ? (
 						<span
-							className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
+							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
 							aria-live="polite"
 						>
 							{copiedLabel}
 						</span>
 					) : null}
 					{isFallbackToSource ? (
-						<span className="mr-2 inline-flex items-center px-2 py-1 rounded-md text-[11px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
 						</span>
 					) : null}
-					<div className="flex items-center bg-warm-200 rounded-lg p-0.5 mr-2">
+					<div className="flex items-center bg-warm-200 rounded-md p-0.5 mr-1.5">
 						<button
 							type="button"
 							onClick={() => onSetPreviewMode("preview")}
 							className={cn(
-								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
+								"px-2 py-1 text-[11px] font-medium rounded inline-flex items-center gap-1 focus-ring transition-all",
 								effectiveMode === "preview"
 									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-cream-700/50",
+									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
 							)}
 							aria-label="切换到预览模式"
 						>
-							<Eye className="w-3.5 h-3.5" />
+							<Eye className="w-3 h-3" />
 							预览
 						</button>
 						<button
 							type="button"
 							onClick={() => onSetPreviewMode("source")}
 							className={cn(
-								"px-3 py-1.5 min-h-9 text-xs font-medium rounded-lg transition-all inline-flex items-center gap-1.5 focus-ring",
+								"px-2 py-1 text-[11px] font-medium rounded inline-flex items-center gap-1 focus-ring transition-all",
 								effectiveMode === "source"
 									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-300/50 dark:hover:bg-cream-700/50",
+									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
 							)}
 							aria-label="切换到源码模式"
 						>
-							<FileCode2 className="w-3.5 h-3.5" />
+							<FileCode2 className="w-3 h-3" />
 							源码
 						</button>
 					</div>
-					{/* 分隔线 */}
-					<div className="h-6 w-px bg-warm-300 dark:bg-cream-700 mx-1" />
 					{effectiveMode === "source" && editorTab ? (
 						<button
 							type="button"
 							onClick={handleSave}
 							disabled={!sourceDirty || isSaving}
 							className={cn(
-								"px-3 py-2 min-h-11 inline-flex items-center justify-center gap-1.5 rounded-xl transition-all focus-ring active:scale-95 text-xs font-medium",
+								"px-2 py-1 inline-flex items-center justify-center gap-1 rounded-md transition-all focus-ring text-[11px] font-medium",
 								sourceDirty
 									? "bg-primary text-white hover:bg-primary/90 shadow-sm"
 									: "text-text-muted hover:bg-warm-200",
@@ -496,7 +494,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							title="保存 (Cmd+S)"
 							aria-label="保存"
 						>
-							<Save className="w-3.5 h-3.5" />
+							<Save className="w-3 h-3" />
 							{isSaving ? "保存中" : "保存"}
 						</button>
 					) : null}
@@ -505,7 +503,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleCopy}
 						disabled={!canCopyContent}
 						className={cn(
-							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95",
+							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
 							!canCopyContent &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
@@ -513,32 +511,32 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						aria-label="复制内容"
 					>
 						{copiedAction === "content" ? (
-							<Check className="w-4 h-4" />
+							<Check className="w-3.5 h-3.5" />
 						) : (
-							<Copy className="w-4 h-4" />
+							<Copy className="w-3.5 h-3.5" />
 						)}
 					</button>
 					<button
 						type="button"
 						onClick={handleCopyPath}
-						className="p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95"
+						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring"
 						title="复制路径"
 						aria-label="复制路径"
 					>
 						{copiedAction === "path" ? (
-							<Check className="w-4 h-4" />
+							<Check className="w-3.5 h-3.5" />
 						) : (
-							<Link2 className="w-4 h-4" />
+							<Link2 className="w-3.5 h-3.5" />
 						)}
 					</button>
 					<button
 						type="button"
 						onClick={handleRevealFile}
-						className="p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95"
+						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring"
 						title="在访达/文件管理器中显示"
 						aria-label="在访达或文件管理器中显示"
 					>
-						<FolderOpen className="w-4 h-4" />
+						<FolderOpen className="w-3.5 h-3.5" />
 					</button>
 					{canOpenInReader ? (
 						<button
@@ -546,13 +544,13 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							onClick={handleOpenInReader}
 							disabled={isOpeningReader}
 							className={cn(
-								"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95",
+								"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
 								isOpeningReader && "opacity-60 cursor-wait",
 							)}
 							title="在阅读器中打开"
 							aria-label="在阅读器中打开"
 						>
-							<BookOpen className="w-4 h-4" />
+							<BookOpen className="w-3.5 h-3.5" />
 						</button>
 					) : null}
 					<button
@@ -560,14 +558,14 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleDownload}
 						disabled={!canDownload}
 						className={cn(
-							"p-2.5 min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all focus-ring active:scale-95",
+							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
 							!canDownload &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
 						title="下载文件 (⌘D)"
 						aria-label="下载文件"
 					>
-						<Download className="w-4 h-4" />
+						<Download className="w-3.5 h-3.5" />
 					</button>
 				</div>
 			</div>

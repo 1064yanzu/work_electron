@@ -4,12 +4,16 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { appQueryClient } from "./lib/query";
 import { initTtsStore } from "./lib/tts";
+import { installThreadPathSync } from "./lib/syncThreadPath";
 import "./index.css";
 
 const rootEl = document.getElementById("root")!;
 
 // 启动时预加载一次 TTS 设置（主窗口 / 桌宠窗口都用到）
 initTtsStore();
+
+// 把当前线程的 cwd 同步到 workspaceStore，让左边栏 FILES 面板能跟随当前线程
+installThreadPathSync();
 
 // 哈希路由：#/pet → 桌面宠物独立窗口
 if (location.hash === "#/pet") {

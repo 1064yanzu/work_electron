@@ -4,7 +4,6 @@ import {
 	FileCode,
 	FileJson,
 	FileText,
-	History,
 	Image as ImageIcon,
 	Table,
 	Terminal as TerminalIcon,
@@ -32,7 +31,6 @@ interface ManagedArtifactPreviewPanelProps {
 	taskId?: string;
 	sandboxDir?: string;
 	previewMode: "preview" | "source";
-	density?: "comfortable" | "compact";
 	terminalDockCollapsed: boolean;
 	onSetPreviewMode: (mode: "preview" | "source") => void;
 	onLoadContent: (fileId: string) => Promise<void>;
@@ -116,7 +114,6 @@ export const ManagedArtifactPreviewPanel = memo(
 		taskId,
 		sandboxDir,
 		previewMode,
-		density = "comfortable",
 		terminalDockCollapsed,
 		onSetPreviewMode,
 		onLoadContent,
@@ -166,15 +163,11 @@ export const ManagedArtifactPreviewPanel = memo(
 			});
 		}, [openTabs, artifactFiles]);
 
-		const {
-			recentArtifacts,
-			selectedArtifactIndex,
-			totalArtifacts,
-			selectNeighborId,
-		} = useArtifactNavigator({
-			artifactFiles: navigableFiles,
-			selectedFile,
-		});
+		const { selectedArtifactIndex, totalArtifacts, selectNeighborId } =
+			useArtifactNavigator({
+				artifactFiles: navigableFiles,
+				selectedFile,
+			});
 
 		const jumpArtifact = useCallback(
 			(step: 1 | -1) => {
@@ -263,58 +256,14 @@ export const ManagedArtifactPreviewPanel = memo(
 			[navigableFiles, openTabs, artifactIdSet],
 		);
 
-		const isCompact = density === "compact";
-
 		return (
 			<div className="h-full flex flex-col bg-surface">
-				<div
-					className={cn(
-						"border-b border-border bg-gradient-to-b from-zinc-50/95 to-zinc-50/70 dark:from-zinc-900/95 dark:to-zinc-900/70 backdrop-blur-sm space-y-2.5",
-						isCompact ? "px-2.5 py-2" : "px-3 py-2.5",
-					)}
-				>
-					<div className="flex items-center justify-between">
-						<div className="inline-flex items-center gap-1.5 text-xs text-text-muted">
-							<Zap className="w-3.5 h-3.5" />
-							已打开
-							<span className="text-text-light">·</span>
-							<span className="tabular-nums">{totalArtifacts}</span>
-						</div>
-						<div className="inline-flex items-center gap-1.5 text-[11px] text-text-light">
-							<button
-								type="button"
-								onClick={() => jumpArtifact(-1)}
-								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-border text-text-muted hover:bg-warm-200 disabled:opacity-40 focus-ring"
-								title="上一个 (Alt+[)"
-								aria-label="上一个标签页"
-							>
-								<ChevronLeft className="w-3 h-3" />
-							</button>
-							<span className="tabular-nums px-1.5">
-								{totalArtifacts === 0
-									? "0/0"
-									: `${selectedArtifactIndex + 1}/${totalArtifacts}`}
-							</span>
-							<button
-								type="button"
-								onClick={() => jumpArtifact(1)}
-								disabled={totalArtifacts === 0}
-								className="p-1 rounded-md border border-border text-text-muted hover:bg-warm-200 disabled:opacity-40 focus-ring"
-								title="下一个 (Alt+])"
-								aria-label="下一个标签页"
-							>
-								<ChevronRight className="w-3 h-3" />
-							</button>
-						</div>
-					</div>
-					{/* 多 Tab 标签栏 */}
-					<div className="relative">
-						<div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
-						<div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-zinc-50 dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
-						<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 px-1">
+				<div className="border-b border-border bg-warm-100/40 dark:bg-zinc-900/60 backdrop-blur-sm shrink-0">
+					{/* 单行 Tab 栏：左侧滚动 Tab 列表 + 右侧紧凑翻页 */}
+					<div className="flex items-stretch min-h-9">
+						<div className="flex items-stretch overflow-x-auto scrollbar-hide flex-1 min-w-0">
 							{totalArtifacts === 0 ? (
-								<span className="text-xs text-text-light px-2 py-1">
+								<span className="text-xs text-text-light px-3 py-2 self-center">
 									暂无打开的文件
 								</span>
 							) : (
@@ -324,10 +273,10 @@ export const ManagedArtifactPreviewPanel = memo(
 										<div
 											key={file.id}
 											className={cn(
-												"group inline-flex items-center gap-1.5 pl-2.5 pr-1.5 min-h-9 py-1.5 rounded-xl text-xs border whitespace-nowrap transition-all focus-ring active:scale-[0.98] cursor-pointer",
+												"group inline-flex items-center gap-1.5 pl-3 pr-1.5 text-xs whitespace-nowrap transition-colors cursor-pointer border-r border-border/60 shrink-0 focus-ring",
 												isActive
-													? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08] shadow-sm"
-													: "bg-surface text-text-secondary border-border hover:bg-warm-200 dark:hover:bg-cream-700",
+													? "bg-surface text-text-primary shadow-[inset_0_2px_0_0_rgba(217,108,70,0.6)] dark:bg-cream-800 dark:text-zinc-100"
+													: "bg-transparent text-text-muted hover:bg-warm-200/60 hover:text-text-secondary dark:hover:bg-cream-700/40",
 											)}
 											onClick={() => onSelectArtifact(file.id)}
 											onContextMenu={(e) => {
@@ -354,24 +303,16 @@ export const ManagedArtifactPreviewPanel = memo(
 											</span>
 											{isArtifact ? (
 												<span
-													className="shrink-0 text-amber-400"
+													className="shrink-0 text-amber-500"
 													title="Agent 标记的产物"
 												>
 													<Zap className="w-3 h-3" />
 												</span>
 											) : null}
-											{dirty ? (
-												<span
-													className={cn(
-														"w-1.5 h-1.5 rounded-full shrink-0",
-														isActive ? "bg-amber-300" : "bg-primary",
-													)}
-													title="未保存的修改"
-												/>
-											) : null}
-											<span className="truncate max-w-[140px]">
+											<span className="truncate max-w-[180px]">
 												{file.name}
 											</span>
+											{/* dirty 与关闭按钮共位：未保存时常显 dot，hover 时切换为 X */}
 											<button
 												type="button"
 												onClick={(e) => {
@@ -379,41 +320,67 @@ export const ManagedArtifactPreviewPanel = memo(
 													void handleCloseTab(file.id);
 												}}
 												className={cn(
-													"ml-0.5 p-0.5 rounded transition-all shrink-0 cursor-pointer",
+													"ml-0.5 w-4 h-4 inline-flex items-center justify-center rounded transition-all shrink-0 cursor-pointer",
 													isActive
-														? "opacity-60 hover:opacity-100 hover:bg-white/10"
-														: "opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700",
+														? "hover:bg-warm-200 dark:hover:bg-cream-700"
+														: "hover:bg-warm-300 dark:hover:bg-cream-700",
 												)}
 												aria-label={`关闭 ${file.name}`}
-												title="关闭"
+												title={dirty ? "未保存，点击关闭" : "关闭"}
 											>
-												<X className="w-3 h-3" />
+												{dirty ? (
+													<>
+														<span
+															className={cn(
+																"w-1.5 h-1.5 rounded-full block group-hover:hidden",
+																isActive ? "bg-primary" : "bg-text-muted",
+															)}
+														/>
+														<X className="w-3 h-3 hidden group-hover:block" />
+													</>
+												) : (
+													<X
+														className={cn(
+															"w-3 h-3 transition-opacity",
+															isActive
+																? "opacity-60 group-hover:opacity-100"
+																: "opacity-0 group-hover:opacity-100",
+														)}
+													/>
+												)}
 											</button>
 										</div>
 									);
 								})
 							)}
 						</div>
-					</div>
-					{recentArtifacts.length > 0 ? (
-						<div className="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
-							<History className="w-3 h-3" />
-							最近预览：
-							<div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-								{recentArtifacts.map((artifact) => (
-									<button
-										key={artifact.id}
-										type="button"
-										onClick={() => onSelectArtifact(artifact.id)}
-										className="px-2 py-0.5 rounded-md bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-[11px]"
-										aria-label={`最近预览 ${artifact.name}`}
-									>
-										{artifact.name}
-									</button>
-								))}
+						{/* 右端：紧凑翻页 */}
+						{totalArtifacts > 1 ? (
+							<div className="flex items-center gap-0.5 px-2 shrink-0 border-l border-border/60">
+								<button
+									type="button"
+									onClick={() => jumpArtifact(-1)}
+									className="p-1 rounded text-text-muted hover:text-text-secondary hover:bg-warm-200/60 focus-ring"
+									title="上一个 (Alt+[)"
+									aria-label="上一个标签页"
+								>
+									<ChevronLeft className="w-3 h-3" />
+								</button>
+								<span className="text-[10px] text-text-light tabular-nums px-0.5 min-w-[28px] text-center">
+									{selectedArtifactIndex + 1}/{totalArtifacts}
+								</span>
+								<button
+									type="button"
+									onClick={() => jumpArtifact(1)}
+									className="p-1 rounded text-text-muted hover:text-text-secondary hover:bg-warm-200/60 focus-ring"
+									title="下一个 (Alt+])"
+									aria-label="下一个标签页"
+								>
+									<ChevronRight className="w-3 h-3" />
+								</button>
 							</div>
-						</div>
-					) : null}
+						) : null}
+					</div>
 				</div>
 
 				<div className="flex-1 min-h-0">

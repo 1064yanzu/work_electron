@@ -3,7 +3,6 @@
  */
 
 import { lazy, Suspense, useCallback, useEffect, useMemo } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { deleteFileSafe, moveFileSafe, revealFileSafe } from "../../lib/api";
 import { useAgentStoreSelector } from "../../lib/agent/store";
 import { useChatStoreSelector } from "../../lib/chat/store";
@@ -11,14 +10,12 @@ import { workspaceStore } from "../../lib/workspaceStore";
 import { getCenterUxPrefs } from "../../lib/config";
 import { EVENTS, events } from "../../lib/events";
 import {
-	groupFilesByCategory,
 	managedModeStore,
 	useManagedModeStoreSelector,
 	type SandboxFile,
 } from "../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
-import { ManagedFileTreePanel } from "./workspace/ManagedFileTreePanel";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
@@ -59,37 +56,13 @@ export default function SandboxWorkspace() {
 			store: managedModeStore,
 		});
 
-	const fileTree = useMemo(() => groupFilesByCategory(files), [files]);
-
-	const filteredTree = useMemo(() => {
-		if (!ui.searchQuery.trim()) return fileTree;
-		const query = ui.searchQuery.toLowerCase();
-		const filterFiles = (arr: SandboxFile[]) =>
-			arr.filter((f) => f.name.toLowerCase().includes(query));
-		return {
-			docs: filterFiles(fileTree.docs),
-			code: filterFiles(fileTree.code),
-			images: filterFiles(fileTree.images),
-			data: filterFiles(fileTree.data),
-			other: filterFiles(fileTree.other),
-		};
-	}, [fileTree, ui.searchQuery]);
-
 	const selectedFile = useMemo(
 		() => files.find((f) => f.id === selectedFileId) || null,
 		[files, selectedFileId],
 	);
 
-	const categories = [
-		{ key: "docs" as const, title: "文档" },
-		{ key: "code" as const, title: "代码" },
-		{ key: "images" as const, title: "图片" },
-		{ key: "data" as const, title: "数据" },
-		{ key: "other" as const, title: "其他" },
-	];
-
 	const totalFiles = files.filter((f) => f.type === "file").length;
-	const headerTitle = ui.centerView === "graph" ? "运行图" : "产物预览";
+	const headerTitle = ui.centerView === "graph" ? "运行图" : "预览";
 	const headerMeta =
 		ui.centerView === "graph"
 			? graphSource
@@ -286,21 +259,6 @@ export default function SandboxWorkspace() {
 		[refreshFiles],
 	);
 
-	const handleRevealSandboxDir = useCallback(async () => {
-		if (!sandboxDir) {
-			toast.info("当前会话未生成沙盒目录");
-			return;
-		}
-		try {
-			await revealFileSafe(sandboxDir);
-		} catch (error) {
-			console.error("[SandboxWorkspace] reveal sandbox dir failed:", error);
-			toast.error(
-				`打开目录失败: ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}, [sandboxDir]);
-
 	const previewPanel = (
 		<ManagedArtifactPreviewPanel
 			selectedFile={selectedFile}
@@ -308,7 +266,6 @@ export default function SandboxWorkspace() {
 			taskId={taskId}
 			sandboxDir={sandboxDir || undefined}
 			previewMode={ui.previewMode}
-			density={ui.centerDensity || "comfortable"}
 			terminalDockCollapsed={ui.terminalDockCollapsed ?? true}
 			onSetPreviewMode={(mode) => managedModeStore.setPreviewMode(mode)}
 			onLoadContent={async (fileId) => {
@@ -369,38 +326,7 @@ export default function SandboxWorkspace() {
 					/>
 				</Suspense>
 			) : (
-				<PanelGroup direction="horizontal" className="flex-1">
-					<Panel defaultSize={25} minSize={15} maxSize={40}>
-						<ManagedFileTreePanel
-							density={ui.centerDensity || "comfortable"}
-							searchQuery={ui.searchQuery}
-							onSearchQueryChange={(query) =>
-								managedModeStore.setSearchQuery(query)
-							}
-							totalFiles={totalFiles}
-							categories={categories}
-							filteredTree={filteredTree}
-							expandedFolders={ui.expandedFolders}
-							onToggleCategory={(key) =>
-								managedModeStore.toggleFolderExpanded(key)
-							}
-							selectedFileId={selectedFileId}
-							onSelectFile={(id) => void handleSelectFile(id, "user")}
-							onCopyPath={handleCopyArtifactPath}
-							onRevealFile={handleRevealArtifactFile}
-							onMoveFile={handleMoveArtifactFile}
-							onDeleteFile={handleDeleteArtifactFile}
-							sandboxDir={sandboxDir || null}
-							onRevealSandboxDir={handleRevealSandboxDir}
-						/>
-					</Panel>
-
-					<PanelResizeHandle className="w-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors cursor-col-resize" />
-
-					<Panel defaultSize={75} minSize={40}>
-						{previewPanel}
-					</Panel>
-				</PanelGroup>
+				<div className="flex-1 min-h-0">{previewPanel}</div>
 			)}
 		</div>
 	);

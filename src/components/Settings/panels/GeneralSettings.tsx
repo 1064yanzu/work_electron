@@ -339,7 +339,7 @@ export function GeneralSettings() {
 								containerClassName="w-auto min-w-[160px]"
 								options={[
 									{ value: "graph", label: "运行图（推荐）" },
-									{ value: "preview", label: "产物预览" },
+									{ value: "preview", label: "预览" },
 								]}
 							/>
 						}

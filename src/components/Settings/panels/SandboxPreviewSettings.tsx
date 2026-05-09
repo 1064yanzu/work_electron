@@ -91,7 +91,7 @@ export function SandboxPreviewSettings() {
 							onChange={(value) => savePrefs({ defaultView: value })}
 							options={[
 								{ value: "graph", label: "运行图" },
-								{ value: "preview", label: "产物预览" },
+								{ value: "preview", label: "预览" },
 							]}
 						/>
 					}

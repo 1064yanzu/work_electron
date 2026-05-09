@@ -54,11 +54,11 @@ export function ManagedCenterHeader({
 								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
 								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
 						)}
-						title="产物预览视角 (Alt+2)"
-						aria-label="切换到产物预览视角"
+						title="预览视角 (Alt+2)"
+						aria-label="切换到预览视角"
 					>
 						<Eye className="w-4 h-4" />
-						产物预览
+						预览
 					</button>
 				</div>
 
@@ -71,9 +71,6 @@ export function ManagedCenterHeader({
 							{headerMeta}
 						</span>
 					</h2>
-					<div className="mt-0.5 text-xs text-text-muted">
-						快捷键: Alt+1 运行图 · Alt+2 产物预览 · Alt+[/] 切换标签 · ⌘S 保存
-					</div>
 				</div>
 			</div>
 
