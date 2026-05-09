@@ -121,6 +121,8 @@ export interface LayoutState {
 		| "wiki";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
+	// 卡片视图当前 Tab（知识卡片 / 分享卡片）
+	cardsActiveTab: "knowledge" | "shared";
 }
 
 // 研究状态

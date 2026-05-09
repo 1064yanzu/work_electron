@@ -7,10 +7,24 @@ import {
 } from "./createStore";
 import type { LayoutState } from "./types";
 
+const CARDS_ACTIVE_TAB_STORAGE_KEY = "layout.cardsActiveTab";
+
+function readPersistedCardsActiveTab(): LayoutState["cardsActiveTab"] {
+	if (typeof window === "undefined") return "shared";
+	try {
+		const raw = window.localStorage.getItem(CARDS_ACTIVE_TAB_STORAGE_KEY);
+		if (raw === "knowledge" || raw === "shared") return raw;
+	} catch {
+		// localStorage 不可用时静默
+	}
+	return "shared";
+}
+
 const initialLayoutState: LayoutState = {
 	activeMainView: "editor",
 	leftSidebarView: "sources",
 	rightSidebarVisible: true,
+	cardsActiveTab: readPersistedCardsActiveTab(),
 };
 
 const store = createStore<LayoutState>(initialLayoutState);
@@ -36,6 +50,17 @@ function setRightSidebarVisible(visible: boolean) {
 	store.setState((state) => ({ ...state, rightSidebarVisible: visible }));
 }
 
+function setCardsActiveTab(tab: LayoutState["cardsActiveTab"]) {
+	store.setState((state) => ({ ...state, cardsActiveTab: tab }));
+	if (typeof window !== "undefined") {
+		try {
+			window.localStorage.setItem(CARDS_ACTIVE_TAB_STORAGE_KEY, tab);
+		} catch {
+			// localStorage 写入失败时静默
+		}
+	}
+}
+
 /**
  * 项目切换时重置布局状态（由 workspaceStore.setCurrentProject 调用）
  */
@@ -52,6 +77,7 @@ export const layoutStore = {
 	setLeftSidebarView,
 	toggleRightSidebar,
 	setRightSidebarVisible,
+	setCardsActiveTab,
 	resetOnProjectChange,
 };
 

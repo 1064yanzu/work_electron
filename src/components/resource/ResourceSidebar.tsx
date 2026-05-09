@@ -47,7 +47,7 @@ import { useSourceImport } from "./hooks/useSourceImport";
 import { useSourceSelection } from "./hooks/useSourceSelection";
 
 // Extracted view components
-import { CardsView } from "./CardsView";
+import { CardsHubView } from "./CardsHubView";
 import { ResearchView } from "./ResearchView";
 import { ResourceModals } from "./ResourceModals";
 import {
@@ -66,14 +66,10 @@ const WebSearchModule = lazy(() => import("../WebSearchModule"));
 
 interface ResourceSidebarProps {
 	onOpenSettings: () => void;
-	onNavigateHome: () => void;
-	onNavigateWorkbench: () => void;
 }
 
 export default function ResourceSidebar({
 	onOpenSettings,
-	onNavigateHome,
-	onNavigateWorkbench,
 }: ResourceSidebarProps) {
 	const [sources, setSources] = useState<Source[]>([]);
 	const [rawSources, setRawSources] = useState<Source[]>([]);
@@ -343,18 +339,12 @@ export default function ResourceSidebar({
 	}, []);
 
 	const handleSetSourceScope = useCallback(
-		async (source: Source, scope: "global" | "project") => {
-			if (scope === "project" && !currentProjectId) {
-				toast.warning("当前不在项目上下文，无法设为项目内可见");
-				return;
-			}
+		async (source: Source) => {
 			try {
 				await fileSetScope({
 					id: source.id,
 					entity_type: "source",
-					scope,
-					project_id:
-						scope === "project" ? currentProjectId || undefined : undefined,
+					scope: "global",
 				});
 				await fetchSources();
 			} catch (error) {
@@ -364,7 +354,7 @@ export default function ResourceSidebar({
 				);
 			}
 		},
-		[currentProjectId, fetchSources],
+		[fetchSources],
 	);
 
 	const handleSetSourceTags = useCallback(
@@ -471,8 +461,7 @@ export default function ResourceSidebar({
 			},
 			onReveal: () => void handleRevealSourceInFinder(source),
 			onSetTags: () => void handleSetSourceTags(source),
-			onSetGlobal: () => void handleSetSourceScope(source, "global"),
-			onSetProject: () => void handleSetSourceScope(source, "project"),
+			onSetGlobal: () => void handleSetSourceScope(source),
 			onDelete: () => void handleDeleteSource(source),
 			canSetScope: true,
 		});
@@ -531,18 +520,12 @@ export default function ResourceSidebar({
 		setCurrentFolder,
 	]);
 
-	// --- View tabs ---
-	const renderViewTabs = () => null;
-
 	const computedContextMenuItems = sourceContextMenuItems();
 	const computedFolderContextMenuItems = folderContextMenuItems();
 
 	return (
 		<div className="flex flex-row h-full w-full min-w-0">
-			<SidebarRail
-				onOpenSettings={onOpenSettings}
-				onNavigateHome={onNavigateHome}
-			/>
+			<SidebarRail onOpenSettings={onOpenSettings} />
 			<aside
 				data-resource-sidebar
 				className="flex-1 bg-transparent flex flex-col h-full font-sans min-w-0 relative"
@@ -635,16 +618,13 @@ export default function ResourceSidebar({
 						</div>
 					</Suspense>
 				) : leftSidebarView === "cards" ? (
-					<CardsView
-						viewTabs={renderViewTabs()}
-						onOpenSettings={onOpenSettings}
-					/>
+					<CardsHubView />
 				) : leftSidebarView === "threads" ? (
-					<ThreadsView onNavigateWorkbench={onNavigateWorkbench} />
+					<ThreadsView />
 				) : leftSidebarView === "files" ? (
 					<ProjectFilesView />
 				) : leftSidebarView === "skills" ? (
-					<SkillsView onNavigateWorkbench={onNavigateWorkbench} />
+					<SkillsView />
 				) : leftSidebarView === "wiki" ? (
 					<WikiView />
 				) : leftSidebarView === "websearch" ? (
@@ -729,7 +709,7 @@ export default function ResourceSidebar({
 						onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
 						setActiveTab={setActiveTab}
 						setIsAddModalOpen={setIsAddModalOpen}
-						viewTabs={renderViewTabs()}
+						viewTabs={null}
 						currentResearch={currentResearch}
 						uiDebugLogsEnabled={uiDebugLogsEnabled}
 						debugLog={debugLog}

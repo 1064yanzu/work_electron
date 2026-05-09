@@ -1,11 +1,10 @@
-// 分享卡片视图组件
+// 分享卡片视图组件（剪藏分享卡片）
 
 import {
 	ExternalLink,
 	Image as ImageIcon,
 	Loader2,
 	RefreshCw,
-	Settings,
 	Trash2,
 	Type,
 	X,
@@ -17,12 +16,11 @@ import { convertFileSrc, invoke } from "../../lib/tauriCompat";
 import type { Card } from "../../types";
 import { toast } from "../ui/Toast";
 
-interface CardsViewProps {
-	viewTabs: React.ReactNode;
-	onOpenSettings: () => void;
+interface SharedCardsEmbeddedProps {
+	hideTitle?: boolean;
 }
 
-export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
+export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 	const [cards, setCards] = useState<Card[]>([]);
 	const [cardImages, setCardImages] = useState<Record<string, string>>({});
 	const [isLoadingCards, setIsLoadingCards] = useState(false);
@@ -104,7 +102,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 	}, []);
 
 	return (
-		<>
+		<div className="flex flex-col h-full">
 			{/* 卡片删除确认对话框 */}
 			{cardDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -145,7 +143,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 						className="bg-surface rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
 						onClick={(e) => e.stopPropagation()}
 					>
-						{/* 头部 */}
 						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
 							<div className="flex-1 min-w-0 pr-4">
 								<h3 className="text-base font-semibold text-text-primary truncate">
@@ -179,9 +176,7 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 							</div>
 						</div>
 
-						{/* 内容区域 - 可滚动 */}
 						<div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-							{/* 图片 */}
 							<div className="bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
 								{cardImages[cardPreview.id] ? (
 									<img
@@ -202,7 +197,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 								)}
 							</div>
 
-							{/* 文本内容 */}
 							<div className="p-5 space-y-4">
 								<div className="bg-warm-50/50 rounded-xl p-4">
 									<p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
@@ -210,7 +204,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 									</p>
 								</div>
 
-								{/* 元信息 */}
 								<div className="flex flex-wrap gap-2">
 									{cardPreview.theme_id && (
 										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
@@ -237,18 +230,15 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 				</div>
 			)}
 
-			{/* 卡片列表头部 */}
-			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
-				<div className="flex items-center gap-3">
+			{/* 嵌入式可选标题区（仅在 hideTitle=false 时显示） */}
+			{!hideTitle ? (
+				<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 					<div className="flex items-center gap-2">
 						<ImageIcon className="w-4 h-4 text-text-light" />
 						<h2 className="font-semibold text-sm text-text-primary">
 							分享卡片
 						</h2>
 					</div>
-					{viewTabs}
-				</div>
-				<div className="flex items-center gap-2">
 					<button
 						onClick={fetchCards}
 						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
@@ -260,14 +250,8 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 							<RefreshCw className="w-4 h-4" />
 						)}
 					</button>
-					<button
-						onClick={onOpenSettings}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-					>
-						<Settings className="w-4 h-4" />
-					</button>
 				</div>
-			</div>
+			) : null}
 
 			{/* 卡片列表内容 */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
@@ -307,7 +291,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 									onClick={() => setCardPreview(card)}
 									className="group rounded-2xl bg-surface/50 ring-1 ring-zinc-200/50 dark:ring-zinc-700/40 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1"
 								>
-									{/* 卡片图片区域 */}
 									<div className="relative bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
 										{imageSrc ? (
 											<img
@@ -329,7 +312,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 												</div>
 											</div>
 										)}
-										{/* 主题标签 */}
 										{card.theme_id && (
 											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-surface/90/80 text-text-secondary shadow-sm backdrop-blur-sm">
 												{card.theme_id}
@@ -337,7 +319,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 										)}
 									</div>
 
-									{/* 卡片信息区域 */}
 									<div className="p-4 space-y-3">
 										<div className="flex items-start justify-between gap-3">
 											<h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2 flex-1">
@@ -393,6 +374,6 @@ export function CardsView({ viewTabs, onOpenSettings }: CardsViewProps) {
 					</div>
 				)}
 			</div>
-		</>
+		</div>
 	);
 }

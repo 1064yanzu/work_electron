@@ -3,6 +3,7 @@ import {
 	BookOpen,
 	Brain,
 	Loader2,
+	Maximize2,
 	Pencil,
 	Play,
 	Search,
@@ -19,21 +20,28 @@ import {
 	readerReviewCard,
 	readerUpdateCard,
 } from "../../lib/api/reader";
-import type {
-	ReaderBook,
-	ReaderKnowledgeCard,
-} from "../../lib/api/reader";
+import type { ReaderBook, ReaderKnowledgeCard } from "../../lib/api/reader";
 import { toast } from "../ui/Toast";
 import { ReaderCardEdit } from "../reader/ReaderCardEdit";
 import { ReaderCardReview } from "../reader/ReaderCardReview";
 
 import "./cardLibrary.css";
 
-interface KnowledgeCardsViewProps {
-	onClose: () => void;
+type Variant = "overlay" | "embedded";
+
+interface BaseProps {
+	variant: Variant;
+	onClose?: () => void;
+	onExpand?: () => void;
+	hideTitle?: boolean;
 }
 
-export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
+function KnowledgeCardsViewBase({
+	variant,
+	onClose,
+	onExpand,
+	hideTitle,
+}: BaseProps) {
 	const [loading, setLoading] = useState(true);
 	const [cards, setCards] = useState<ReaderKnowledgeCard[]>([]);
 	const [books, setBooks] = useState<ReaderBook[]>([]);
@@ -139,29 +147,75 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 		[],
 	);
 
-	const handleReview = useCallback(
-		async (id: string, quality: 0 | 1 | 2) => {
-			try {
-				const updated = await readerReviewCard(id, quality);
-				setCards((prev) => prev.map((c) => (c.id === id ? updated : c)));
-			} catch (e) {
-				toast.error(
-					`复习记录失败：${e instanceof Error ? e.message : String(e)}`,
-				);
-			}
-		},
-		[],
-	);
+	const handleReview = useCallback(async (id: string, quality: 0 | 1 | 2) => {
+		try {
+			const updated = await readerReviewCard(id, quality);
+			setCards((prev) => prev.map((c) => (c.id === id ? updated : c)));
+		} catch (e) {
+			toast.error(
+				`复习记录失败：${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+	}, []);
+
+	const rootClassName =
+		variant === "overlay"
+			? "card-library"
+			: "card-library card-library--embedded";
 
 	return (
-		<div className="card-library">
-			<header className="card-library__header">
-				<div className="card-library__title">
-					<Brain className="w-5 h-5" strokeWidth={1.5} />
-					<span>知识卡片库</span>
-					<span className="card-library__count">{cards.length}</span>
-				</div>
-				<div className="card-library__header-actions">
+		<div className={rootClassName}>
+			{!hideTitle ? (
+				<header className="card-library__header">
+					<div className="card-library__title">
+						<Brain className="w-5 h-5" strokeWidth={1.5} />
+						<span>知识卡片库</span>
+						<span className="card-library__count">{cards.length}</span>
+					</div>
+					<div className="card-library__header-actions">
+						<button
+							type="button"
+							className="card-library__primary-btn"
+							onClick={() => handleStartReview("due")}
+							disabled={dueCount === 0}
+						>
+							<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+							今日复习 · {dueCount}
+						</button>
+						<button
+							type="button"
+							className="card-library__ghost-btn"
+							onClick={() => handleStartReview("all")}
+						>
+							浏览全部
+						</button>
+						{onExpand ? (
+							<button
+								type="button"
+								className="reader-icon-btn"
+								onClick={onExpand}
+								aria-label="放大查看"
+								title="放大查看"
+							>
+								<Maximize2 className="w-4 h-4" strokeWidth={1.5} />
+							</button>
+						) : null}
+						{onClose ? (
+							<button
+								type="button"
+								className="reader-icon-btn"
+								onClick={onClose}
+								aria-label="关闭"
+							>
+								<X className="w-4 h-4" strokeWidth={1.5} />
+							</button>
+						) : null}
+					</div>
+				</header>
+			) : null}
+
+			{hideTitle && variant === "embedded" ? (
+				<div className="card-library__embedded-actions">
 					<button
 						type="button"
 						className="card-library__primary-btn"
@@ -178,16 +232,8 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 					>
 						浏览全部
 					</button>
-					<button
-						type="button"
-						className="reader-icon-btn"
-						onClick={onClose}
-						aria-label="关闭"
-					>
-						<X className="w-4 h-4" strokeWidth={1.5} />
-					</button>
 				</div>
-			</header>
+			) : null}
 
 			<section className="card-library__filters">
 				<label className="card-library__search">
@@ -220,9 +266,7 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 							key={b.id}
 							active={filterBook === b.id}
 							label={b.title}
-							onClick={() =>
-								setFilterBook(filterBook === b.id ? null : b.id)
-							}
+							onClick={() => setFilterBook(filterBook === b.id ? null : b.id)}
 						/>
 					))}
 				</div>
@@ -239,9 +283,7 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 								active={filterTag === t}
 								label={t}
 								icon={<Tag className="w-3 h-3" strokeWidth={1.5} />}
-								onClick={() =>
-									setFilterTag(filterTag === t ? null : t)
-								}
+								onClick={() => setFilterTag(filterTag === t ? null : t)}
 							/>
 						))}
 					</div>
@@ -278,20 +320,14 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 									<div className="card-library__card-meta">
 										{book ? (
 											<span className="card-library__card-book">
-												<BookOpen
-													className="w-3 h-3"
-													strokeWidth={1.5}
-												/>
+												<BookOpen className="w-3 h-3" strokeWidth={1.5} />
 												{book.title}
 											</span>
 										) : null}
 										{card.tags.length > 0
 											? card.tags.slice(0, 3).map((t) => (
 													<span key={t} className="reader-card-tag-chip">
-														<Tag
-															className="w-2.5 h-2.5"
-															strokeWidth={1.5}
-														/>
+														<Tag className="w-2.5 h-2.5" strokeWidth={1.5} />
 														{t}
 													</span>
 												))
@@ -348,6 +384,34 @@ export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
 				onClose={() => setEditing(null)}
 			/>
 		</div>
+	);
+}
+
+interface KnowledgeCardsViewProps {
+	onClose: () => void;
+}
+
+/** 全屏 Overlay 模式（保持原签名兼容 KnowledgeCardsApp） */
+export function KnowledgeCardsView({ onClose }: KnowledgeCardsViewProps) {
+	return <KnowledgeCardsViewBase variant="overlay" onClose={onClose} />;
+}
+
+interface KnowledgeCardsEmbeddedProps {
+	onExpand?: () => void;
+	hideTitle?: boolean;
+}
+
+/** 嵌入到极窄边栏卡片视图里的紧凑模式 */
+export function KnowledgeCardsEmbedded({
+	onExpand,
+	hideTitle,
+}: KnowledgeCardsEmbeddedProps) {
+	return (
+		<KnowledgeCardsViewBase
+			variant="embedded"
+			onExpand={onExpand}
+			hideTitle={hideTitle}
+		/>
 	);
 }
 

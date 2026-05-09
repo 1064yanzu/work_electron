@@ -1,4 +1,4 @@
-// 命令面板的"接线器" — 把 App 的导航/设置回调连进去
+// 命令面板的"接线器" — 把 App 的设置回调连进去
 // App.tsx 直接用这个组件，无需关心 useCommands 内部细节
 
 import { useEffect } from "react";
@@ -14,8 +14,6 @@ import { CommandPalette } from "./CommandPalette";
 import { useCommands } from "./useCommands";
 
 interface CommandPaletteHostProps {
-	onOpenProject: (projectId: string) => void;
-	onOpenDashboard: () => void;
 	onOpenSettings: (tab?: string) => void;
 }
 
@@ -24,8 +22,6 @@ export function CommandPaletteHost(props: CommandPaletteHostProps) {
 	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
 
 	const commands = useCommands({
-		onOpenProject: props.onOpenProject,
-		onOpenDashboard: props.onOpenDashboard,
 		onOpenSettings: props.onOpenSettings,
 		onOpenTerminal: terminalVisible
 			? undefined

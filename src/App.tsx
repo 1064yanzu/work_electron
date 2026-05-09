@@ -16,7 +16,6 @@ import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
-import { useNavigation } from "./hooks/useNavigation";
 import { useTerminalStoreSelector } from "./lib/stores/terminalStore";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
@@ -40,7 +39,6 @@ const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
 
 const BrowserPanel = lazy(() => import("./components/BrowserPanel"));
 const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
-const Dashboard = lazy(() => import("./components/Dashboard"));
 const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
 const SandboxWorkspace = lazy(
 	() => import("./components/sandbox/SandboxWorkspace"),
@@ -112,19 +110,10 @@ export default function App() {
 	// 记录右侧 Panel 当前尺寸（用于拖动结束时判断）
 	const rightPanelSizeRef = useRef<number>(25);
 
-	// 使用解耦的导航 Hook
-	const {
-		navigateToDashboard,
-		navigateToProject,
-		navigateToWorkbench,
-		isInDashboard,
-		currentProjectId,
-	} = useNavigation("dashboard");
-
-	// 同步当前项目到工作区
+	// 项目概念已从 UI 移除，工作区始终处于"无项目（global）"状态
 	useEffect(() => {
-		workspaceStore.setCurrentProject(currentProjectId || null);
-	}, [currentProjectId]);
+		workspaceStore.setCurrentProject(null);
+	}, []);
 
 	// 初始化主题管理器
 	useEffect(() => {
@@ -239,136 +228,123 @@ export default function App() {
 	return (
 		<GlobalContextMenuProvider>
 			<MouseDragProvider>
-				{isInDashboard ? (
-					<Suspense fallback={<PanelLoadingFallback />}>
-						<Dashboard
-							onOpenSettings={() => handleOpenSettings()}
-							onOpenProject={(projectId) => {
-								navigateToProject(projectId);
-							}}
-						/>
-					</Suspense>
-				) : (
-					<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
-						<PanelGroup
-							direction="horizontal"
-							className="gap-0"
-							autoSaveId="main_three_panel_layout_v2"
+				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
+					<PanelGroup
+						direction="horizontal"
+						className="gap-0"
+						autoSaveId="main_three_panel_layout_v2"
+					>
+						{/* Left Panel: Resources */}
+						<Panel
+							defaultSize={20}
+							minSize={15}
+							maxSize={50}
+							className="overflow-hidden"
 						>
-							{/* Left Panel: Resources */}
-							<Panel
-								defaultSize={20}
-								minSize={15}
-								maxSize={50}
-								className="overflow-hidden"
-							>
-								<PanelShell>
-									<Suspense fallback={<PanelLoadingFallback />}>
-										<ResourceSidebar
-											onOpenSettings={() => handleOpenSettings()}
-											onNavigateHome={() => navigateToDashboard()}
-											onNavigateWorkbench={() => navigateToWorkbench()}
-										/>
-									</Suspense>
-								</PanelShell>
-							</Panel>
+							<PanelShell>
+								<Suspense fallback={<PanelLoadingFallback />}>
+									<ResourceSidebar
+										onOpenSettings={() => handleOpenSettings()}
+									/>
+								</Suspense>
+							</PanelShell>
+						</Panel>
 
-							<ResizeHandle />
+						<ResizeHandle />
 
-							{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
-							<Panel
-								defaultSize={rightSidebarVisible ? 55 : 80}
-								minSize={30}
-								className="overflow-hidden"
-							>
-								<PanelShell variant="center" className="relative">
-									<PanelGroup
-										direction="vertical"
-										className="h-full"
-										autoSaveId="center_vertical_split"
-									>
-										{/* 主内容区 */}
-										<Panel
-											defaultSize={terminalVisible ? 65 : 100}
-											minSize={20}
-											className="overflow-hidden"
-										>
-											{activeMainView === "wiki-graph" ? (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<WikiGraphFullscreen />
-												</Suspense>
-											) : activeMainView === "browser" ? (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<BrowserPanel />
-												</Suspense>
-											) : (
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<SandboxWorkspace />
-												</Suspense>
-											)}
-										</Panel>
-
-										{/* 终端面板 - 仅在可见时渲染 */}
-										{terminalVisible && (
-											<>
-												<ResizeHandle direction="vertical" />
-												<Panel
-													defaultSize={35}
-													minSize={10}
-													maxSize={80}
-													className="overflow-hidden"
-												>
-													<Suspense fallback={<PanelLoadingFallback />}>
-														<TerminalPanel />
-													</Suspense>
-												</Panel>
-											</>
-										)}
-									</PanelGroup>
-								</PanelShell>
-							</Panel>
-
-							{rightSidebarVisible && (
-								<>
-									<ResizeHandle onDragging={handleRightResizeHandleDragging} />
+						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
+						<Panel
+							defaultSize={rightSidebarVisible ? 55 : 80}
+							minSize={30}
+							className="overflow-hidden"
+						>
+							<PanelShell variant="center" className="relative">
+								<PanelGroup
+									direction="vertical"
+									className="h-full"
+									autoSaveId="center_vertical_split"
+								>
+									{/* 主内容区 */}
 									<Panel
-										ref={rightPanelRef}
-										defaultSize={25}
-										minSize={5}
-										maxSize={50}
-										onResize={handleRightPanelResize}
+										defaultSize={terminalVisible ? 65 : 100}
+										minSize={20}
 										className="overflow-hidden"
 									>
-										<PanelShell>
+										{activeMainView === "wiki-graph" ? (
 											<Suspense fallback={<PanelLoadingFallback />}>
-												<CopilotSidebar />
+												<WikiGraphFullscreen />
 											</Suspense>
-										</PanelShell>
+										) : activeMainView === "browser" ? (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<BrowserPanel />
+											</Suspense>
+										) : (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<SandboxWorkspace />
+											</Suspense>
+										)}
 									</Panel>
-								</>
-							)}
-						</PanelGroup>
 
-						{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
-						{!rightSidebarVisible && (
-							<button
-								type="button"
-								onClick={handleShowRightSidebar}
-								className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-full transition-[background-color,box-shadow,transform,color] duration-200 active:scale-[0.98]"
-								style={{
-									backgroundColor: "var(--t-bg-surface)",
-									color: "var(--t-text-primary)",
-									border: "1px solid var(--t-border)",
-									boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
-								}}
-								title="打开 AI 对话 (⌘L)"
-							>
-								<MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-								<span className="text-sm font-medium">AI 对话</span>
-							</button>
+									{/* 终端面板 - 仅在可见时渲染 */}
+									{terminalVisible && (
+										<>
+											<ResizeHandle direction="vertical" />
+											<Panel
+												defaultSize={35}
+												minSize={10}
+												maxSize={80}
+												className="overflow-hidden"
+											>
+												<Suspense fallback={<PanelLoadingFallback />}>
+													<TerminalPanel />
+												</Suspense>
+											</Panel>
+										</>
+									)}
+								</PanelGroup>
+							</PanelShell>
+						</Panel>
+
+						{rightSidebarVisible && (
+							<>
+								<ResizeHandle onDragging={handleRightResizeHandleDragging} />
+								<Panel
+									ref={rightPanelRef}
+									defaultSize={25}
+									minSize={5}
+									maxSize={50}
+									onResize={handleRightPanelResize}
+									className="overflow-hidden"
+								>
+									<PanelShell>
+										<Suspense fallback={<PanelLoadingFallback />}>
+											<CopilotSidebar />
+										</Suspense>
+									</PanelShell>
+								</Panel>
+							</>
 						)}
-					</div>
-				)}
+					</PanelGroup>
+
+					{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
+					{!rightSidebarVisible && (
+						<button
+							type="button"
+							onClick={handleShowRightSidebar}
+							className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-full transition-[background-color,box-shadow,transform,color] duration-200 active:scale-[0.98]"
+							style={{
+								backgroundColor: "var(--t-bg-surface)",
+								color: "var(--t-text-primary)",
+								border: "1px solid var(--t-border)",
+								boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
+							}}
+							title="打开 AI 对话 (⌘L)"
+						>
+							<MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+							<span className="text-sm font-medium">AI 对话</span>
+						</button>
+					)}
+				</div>
 
 				{/* Global Settings Modal - Always rendered */}
 				{isSettingsOpen ? (
@@ -390,8 +366,6 @@ export default function App() {
 				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡 */}
 				<Suspense fallback={null}>
 					<CommandPalette
-						onOpenProject={navigateToProject}
-						onOpenDashboard={navigateToDashboard}
 						onOpenSettings={(tab) =>
 							handleOpenSettings(tab as SettingsTabId | undefined)
 						}
@@ -405,7 +379,7 @@ export default function App() {
 					/>
 				</Suspense>
 
-				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制 */}
+				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制（CardsHubView 的"放大"按钮触发） */}
 				<Suspense fallback={null}>
 					<KnowledgeCardsApp />
 				</Suspense>

@@ -4,7 +4,6 @@ import {
 	BookMarked,
 	LayoutGrid,
 	SlidersHorizontal,
-	Home,
 	Blocks,
 	BookOpen,
 } from "lucide-react";
@@ -15,13 +14,9 @@ import {
 
 interface SidebarRailProps {
 	onOpenSettings: () => void;
-	onNavigateHome: () => void;
 }
 
-export function SidebarRail({
-	onOpenSettings,
-	onNavigateHome,
-}: SidebarRailProps) {
+export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	const leftSidebarView = useWorkspaceStoreSelector(
 		(state) => state.leftSidebarView,
 	);
@@ -80,13 +75,6 @@ export function SidebarRail({
 			</div>
 
 			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-border w-full">
-				<button
-					onClick={onNavigateHome}
-					className="flex items-center justify-center w-12 h-12 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"
-					title="返回首页"
-				>
-					<Home className="w-[20px] h-[20px]" strokeWidth={1.5} />
-				</button>
 				<button
 					onClick={onOpenSettings}
 					className="flex items-center justify-center w-12 h-12 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"

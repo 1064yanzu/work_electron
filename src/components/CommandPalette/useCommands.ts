@@ -1,13 +1,10 @@
 // 命令构建 — 把 App 当前状态转成 CommandItem[]
 //
 // 注意：App 本身不持久这个列表。每次 useCommands() 重新构建一次，
-// 因为命令依赖：项目列表、当前主题、当前面板可见性等动态状态。
+// 因为命令依赖：当前主题、当前面板可见性等动态状态。
 
 import {
 	FileText,
-	Folder,
-	FolderPlus,
-	LayoutDashboard,
 	MessageSquare,
 	Moon,
 	Settings,
@@ -16,36 +13,21 @@ import {
 	Terminal as TerminalIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { listProjects } from "../../lib/api";
 import { themeManager } from "../../lib/theme";
 import { workspaceStore } from "../../lib/workspaceStore";
-import type { Project } from "../../types";
 import type { CommandItem } from "./types";
 
 interface UseCommandsArgs {
-	onOpenProject: (projectId: string) => void;
-	onOpenDashboard: () => void;
 	onOpenSettings: (tab?: string) => void;
 	onOpenTerminal?: () => void;
-	onCreateProject?: () => void;
 }
 
 export function useCommands(args: UseCommandsArgs): CommandItem[] {
-	const [projects, setProjects] = useState<Project[]>([]);
 	const [currentTheme, setCurrentTheme] = useState<string>(
 		themeManager.getTheme(),
 	);
 
 	useEffect(() => {
-		(async () => {
-			try {
-				const list = await listProjects();
-				setProjects(list);
-			} catch {
-				// 忽略 — 命令面板降级到不展示项目
-			}
-		})();
-
 		const unsub = themeManager.subscribe(() =>
 			setCurrentTheme(themeManager.getTheme()),
 		);
@@ -54,47 +36,6 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 
 	return useMemo<CommandItem[]>(() => {
 		const items: CommandItem[] = [];
-
-		// 全局导航
-		items.push({
-			id: "nav.dashboard",
-			title: "返回工作台",
-			description: "回到首屏项目列表",
-			icon: LayoutDashboard,
-			keywords: ["dashboard", "home", "shouye", "首页"],
-			group: "导航",
-			action: () => args.onOpenDashboard(),
-		});
-
-		if (args.onCreateProject) {
-			items.push({
-				id: "project.new",
-				title: "新建项目",
-				description: "创建一个新的工作空间",
-				icon: FolderPlus,
-				keywords: ["new", "create", "create project", "xinjian"],
-				group: "项目",
-				action: () => args.onCreateProject?.(),
-			});
-		}
-
-		// 项目快速跳转
-		for (const project of projects.slice(0, 30)) {
-			items.push({
-				id: `project.open.${project.id}`,
-				title: project.name,
-				description: project.description || "打开项目",
-				icon: Folder,
-				keywords: [
-					"project",
-					"open",
-					project.id,
-					...(project.description ? [project.description] : []),
-				],
-				group: "项目",
-				action: () => args.onOpenProject(project.id),
-			});
-		}
 
 		// 工作区操作
 		items.push({
@@ -175,5 +116,5 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 		void FileText;
 
 		return items;
-	}, [args, projects, currentTheme]);
+	}, [args, currentTheme]);
 }
