@@ -1,5 +1,6 @@
 import { Loader2, MessageSquare, MoreHorizontal, Plus } from "lucide-react";
 import { IconButton } from "../ui/Button";
+import { CopilotTtsToggle } from "./CopilotTtsToggle";
 
 interface CopilotHeaderProps {
 	isAgentExecuting: boolean;
@@ -37,6 +38,7 @@ export function CopilotHeader({
 				</div>
 			</div>
 			<div className="flex items-center gap-1">
+				<CopilotTtsToggle />
 				<IconButton
 					onClick={onNewSession}
 					aria-label="新建对话"

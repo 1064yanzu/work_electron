@@ -9,6 +9,7 @@
 import type { PointerEvent } from "react";
 import { Bell, Clock } from "lucide-react";
 import { PetBubbleShell, type PetBubblePlacement } from "./PetBubbleShell";
+import { CloseIconButton } from "./CloseIconButton";
 import { withAlpha } from "./utils";
 
 export type PetReminderKind = "schedule" | "pomodoro" | "approval-waiting";
@@ -88,26 +89,7 @@ export function PetReminderBubble({
 						{title}
 					</div>
 					{onDismiss && (
-						<button
-							type="button"
-							onClick={onDismiss}
-							aria-label="关闭"
-							className="-mt-[1px] -mr-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]"
-						>
-							<svg
-								width="10"
-								height="10"
-								viewBox="0 0 10 10"
-								aria-hidden="true"
-							>
-								<path
-									d="M2 2 L8 8 M8 2 L2 8"
-									stroke="currentColor"
-									strokeWidth="1.6"
-									strokeLinecap="round"
-								/>
-							</svg>
-						</button>
+						<CloseIconButton onClick={onDismiss} />
 					)}
 				</div>
 

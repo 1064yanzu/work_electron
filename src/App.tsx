@@ -33,6 +33,7 @@ import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
+import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
 import {
 	registerBuiltinSlashCommands,
 } from "./lib/slashCommands";
@@ -97,7 +98,7 @@ export default function App() {
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [settingsInitialTab, setSettingsInitialTab] =
-		useState<SettingsTabId>("models");
+		useState<SettingsTabId>("ai.models");
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");
 	const [showMascotOnboarding, setShowMascotOnboarding] = useState(false);
@@ -228,8 +229,8 @@ export default function App() {
 		}
 	}, [setRightSidebarVisible]);
 
-	const handleOpenSettings = useCallback((tab?: SettingsTabId) => {
-		setSettingsInitialTab(tab ?? "models");
+	const handleOpenSettings = useCallback((tab?: string) => {
+		setSettingsInitialTab(resolveSettingsTabId(tab));
 		setIsSettingsOpen(true);
 	}, []);
 
@@ -237,7 +238,7 @@ export default function App() {
 	useEffect(() => {
 		const off = events.on(EVENTS.OPEN_SETTINGS, (payload: { tab?: string } | undefined) => {
 			const tab = typeof payload?.tab === "string" ? payload.tab : undefined;
-			handleOpenSettings(tab as SettingsTabId | undefined);
+			handleOpenSettings(tab);
 		});
 		return off;
 	}, [handleOpenSettings]);
@@ -399,16 +400,14 @@ export default function App() {
 				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡 */}
 				<Suspense fallback={null}>
 					<CommandPalette
-						onOpenSettings={(tab) =>
-							handleOpenSettings(tab as SettingsTabId | undefined)
-						}
+						onOpenSettings={(tab) => handleOpenSettings(tab)}
 					/>
 				</Suspense>
 
 				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制 */}
 				<Suspense fallback={null}>
 					<ReaderApp
-						onOpenSettings={() => handleOpenSettings("reader" as SettingsTabId)}
+						onOpenSettings={() => handleOpenSettings("reader")}
 					/>
 				</Suspense>
 

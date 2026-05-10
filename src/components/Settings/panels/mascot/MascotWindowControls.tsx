@@ -4,7 +4,7 @@
  * 拆分原则：每一项都是「卡片化的可视控件」，避免 SettingsRow 长串纵向流。
  * 启用 / 穿透 → 双开关条；大小 / 停留 → ChipGroup；勿扰 → time pair。
  */
-import { Clock, MoonStar, MousePointerClick, Power, Ruler } from "lucide-react";
+import { Clock, Keyboard, MoonStar, MousePointerClick, Power, Ruler } from "lucide-react";
 import { SettingsChipGroup, SettingsSwitch } from "../../ui/SettingsPrimitives";
 
 type SizePreset = "sm" | "md" | "lg" | "xl";
@@ -22,6 +22,8 @@ interface MascotWindowControlsProps {
 	dndStart: string;
 	dndEnd: string;
 	onDndChange: (start: string, end: string) => void;
+	globalShortcutEnabled: boolean;
+	onGlobalShortcutEnabledChange: (next: boolean) => void;
 	accentColor: string;
 }
 
@@ -50,6 +52,8 @@ export function MascotWindowControls({
 	dndStart,
 	dndEnd,
 	onDndChange,
+	globalShortcutEnabled,
+	onGlobalShortcutEnabledChange,
 	accentColor,
 }: MascotWindowControlsProps) {
 	return (
@@ -126,6 +130,21 @@ export function MascotWindowControls({
 					/>
 				}
 				stack
+				className="lg:col-span-2"
+			/>
+			<ControlCard
+				icon={<Keyboard className="h-4 w-4" strokeWidth={1.6} />}
+				accentColor={accentColor}
+				label="全局热键唤醒"
+				hint="按 Control+Alt+Space 从任意应用唤出桌宠并打开输入框。被其它程序占用时自动失效。"
+				disabled={!enabled}
+				control={
+					<SettingsSwitch
+						checked={globalShortcutEnabled}
+						onChange={onGlobalShortcutEnabledChange}
+						disabled={!enabled}
+					/>
+				}
 				className="lg:col-span-2"
 			/>
 		</div>

@@ -1,78 +1,55 @@
-import { lazy } from "react";
-import type { ComponentType, LazyExoticComponent } from "react";
-import type { SettingsTabId } from "./types";
+/**
+ * panelLoaders.tsx — 基于 `settingsCatalog` 的面板查找器
+ *
+ * Phase 1 起，所有面板注册与 loader 都集中到 `SETTINGS_SUBTABS`；
+ * 本文件只负责把 `SettingsTabId` 映射为 `React.lazy` 组件与预加载入口。
+ */
+import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import {
+	SETTINGS_SUBTABS,
+	SUBTAB_ID_SET,
+	type SettingsTabId,
+} from "./settingsCatalog";
 
-export type { SettingsTabId } from "./types";
+export type { SettingsTabId } from "./settingsCatalog";
 
-type PanelModule = { default: ComponentType };
-type PanelImporter = () => Promise<PanelModule>;
+/** lazy 组件缓存：同一个 tabId 多次查询返回同一个 LazyComponent */
+const lazyCache = new Map<
+	SettingsTabId,
+	LazyExoticComponent<ComponentType>
+>();
 
-function toDefault<T extends Record<string, unknown>, K extends keyof T>(
-	importer: () => Promise<T>,
-	exportName: K,
-): PanelImporter {
-	return async () => {
-		const mod = await importer();
-		return { default: mod[exportName] as ComponentType };
-	};
+function getLoader(
+	tabId: SettingsTabId,
+): (() => Promise<{ default: ComponentType }>) | null {
+	const subtab = SETTINGS_SUBTABS.find((s) => s.id === tabId);
+	return subtab ? subtab.load : null;
 }
 
-const panelImporters: Record<SettingsTabId, PanelImporter> = {
-	dashboard: toDefault(
-		() => import("./panels/DashboardSettings"),
-		"DashboardSettings",
-	),
-	models: toDefault(() => import("./panels/ModelSettings"), "ModelSettings"),
-	prompts: toDefault(() => import("./panels/PromptSettings"), "PromptSettings"),
-	imagegen: toDefault(
-		() => import("./panels/ImageGenSettings"),
-		"ImageGenSettings",
-	),
-	mascot: toDefault(() => import("./panels/MascotSettings"), "MascotSettings"),
-	agent: toDefault(() => import("./panels/AgentSettings"), "AgentSettings"),
+/** 获取指定 tabId 对应的 Lazy 面板组件；未知 id 降级抛 Suspense 错误 */
+export function getSettingsPanelComponent(
+	tabId: SettingsTabId,
+): LazyExoticComponent<ComponentType> {
+	const cached = lazyCache.get(tabId);
+	if (cached) return cached;
 
-	memory: toDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
-	mcp: toDefault(() => import("./panels/MCPSettings"), "MCPSettings"),
-	remoteControl: toDefault(
-		() => import("./panels/RemoteControlSettings"),
-		"RemoteControlSettings",
-	),
-	general: toDefault(
-		() => import("./panels/GeneralSettings"),
-		"GeneralSettings",
-	),
-	performance: toDefault(
-		() => import("./panels/PerformanceSettings"),
-		"PerformanceSettings",
-	),
-	data: toDefault(() => import("./panels/DataSettings"), "DataSettings"),
-	artifacts: toDefault(
-		() => import("./panels/ArtifactSettings"),
-		"ArtifactSettings",
-	),
-	shortcuts: toDefault(
-		() => import("./panels/ShortcutsSettings"),
-		"ShortcutsSettings",
-	),
-	sandboxPreview: toDefault(
-		() => import("./panels/SandboxPreviewSettings"),
-		"SandboxPreviewSettings",
-	),
-	reader: toDefault(() => import("./panels/ReaderSettings"), "ReaderSettings"),
-	tts: toDefault(() => import("./panels/TTSSettings"), "TTSSettings"),
-};
-
-const panelComponents = Object.fromEntries(
-	Object.entries(panelImporters).map(([tabId, importer]) => [
-		tabId,
-		lazy(importer),
-	]),
-) as Record<SettingsTabId, LazyExoticComponent<ComponentType>>;
-
-export function getSettingsPanelComponent(tabId: SettingsTabId) {
-	return panelComponents[tabId];
+	const loader = getLoader(tabId);
+	const lazyComp = lazy(
+		loader ??
+			(() =>
+				Promise.reject(
+					new Error(
+						`[settings] no panel loader registered for tab id: ${tabId}`,
+					),
+				)),
+	);
+	lazyCache.set(tabId, lazyComp);
+	return lazyComp;
 }
 
-export function preloadSettingsPanel(tabId: SettingsTabId) {
-	void panelImporters[tabId]?.();
+/** 预加载指定 tabId 的面板模块；未知 id 静默忽略 */
+export function preloadSettingsPanel(tabId: SettingsTabId): void {
+	if (!SUBTAB_ID_SET.has(tabId)) return;
+	const loader = getLoader(tabId);
+	if (loader) void loader();
 }

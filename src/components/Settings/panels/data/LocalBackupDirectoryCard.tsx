@@ -56,7 +56,11 @@ export function LocalBackupDirectoryCard({
 
 	return (
 		<SettingsSectionCard>
-			<div className="p-5">
+			<div
+				className="p-5"
+				id="data.backup.local_dir"
+				data-settings-anchor="data.backup.local_dir"
+			>
 				<SettingsSectionTitle>本地备份目录</SettingsSectionTitle>
 				<SettingsRow
 					label="备份目录"

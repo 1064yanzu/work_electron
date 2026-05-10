@@ -1082,6 +1082,10 @@ export function registerIpcHandlers({
 		petWindowHandlers.pet_window_set_dwell_preset,
 	);
 	ipcMain.handle("pet_window_set_dnd", petWindowHandlers.pet_window_set_dnd);
+	ipcMain.handle(
+		"pet_window_set_global_shortcut_enabled",
+		petWindowHandlers.pet_window_set_global_shortcut_enabled,
+	);
 	ipcMain.handle("mascot_set_id", petWindowHandlers.mascot_set_id);
 	ipcMain.handle("mascot_get_id", petWindowHandlers.mascot_get_id);
 

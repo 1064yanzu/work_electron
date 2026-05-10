@@ -15,6 +15,10 @@ import {
 	setPetWindowThroughClicks,
 	snapPetWindowToNearestEdge,
 } from "../../services/petWindowService";
+import {
+	getPetGlobalShortcutActive,
+	setPetGlobalShortcutEnabled,
+} from "../../services/petGlobalShortcut";
 import { getPetWindowSettings } from "../../storage/petWindowSettings";
 
 type Handler<K extends keyof IPCSchema> = (
@@ -116,6 +120,11 @@ export function createPetWindowHandlers({
 			});
 			return { success: true };
 		}) satisfies Handler<"pet_window_set_dnd">,
+
+		pet_window_set_global_shortcut_enabled: (async (_event, input) => {
+			setPetGlobalShortcutEnabled(input.enabled);
+			return { success: true, active: getPetGlobalShortcutActive() };
+		}) satisfies Handler<"pet_window_set_global_shortcut_enabled">,
 
 		// IP 同步
 		mascot_set_id: (async (_event, input) => {

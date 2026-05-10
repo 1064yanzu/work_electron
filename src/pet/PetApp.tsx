@@ -25,6 +25,10 @@ import {
 	useState,
 } from "react";
 import { MascotSpriteFader } from "./MascotSpriteFader";
+import { PetGroundShadow } from "./PetGroundShadow";
+import { PEEK_OFFSET_PX, usePetEdgePeek } from "./usePetEdgePeek";
+import { useMouseGaze } from "./useMouseGaze";
+import { useTapBurst } from "./useTapBurst";
 import {
 	getMascotAtlas,
 	getMascotAsset,
@@ -151,10 +155,18 @@ export default function PetApp() {
 	const [blinking, setBlinking] = useState(false);
 	// 拖动倾斜角（限幅 ±6deg）
 	const [dragRotateDeg, setDragRotateDeg] = useState(0);
+	// 连点害羞一次性
+	const [wobbling, setWobbling] = useState(false);
+	// 贴墙半隐藏
+	const edgePeek = usePetEdgePeek(!isDragging);
+	// 视线追随（拖动 / 贴墙半隐藏时禁用，避免与其它 transform 叠加错位）
+	const gaze = useMouseGaze(!isDragging && !edgePeek.peeking);
 
 	const dragStartRef = useRef({ x: 0, y: 0 });
 	// 真位移 > 5px 才置 true，区分"点击"与"拖动"
 	const movedRef = useRef(false);
+	// mousedown 时是否按住 shift：松手时决定是否禁用边缘吸附
+	const shiftHeldRef = useRef(false);
 	const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const notificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
 		null,
@@ -227,6 +239,30 @@ export default function PetApp() {
 			unlisten?.();
 		};
 	}, []);
+
+	// 全局热键唤起：主进程 globalShortcut 触发后转发 pet-focus-input，
+	// 收到后强制打开输入气泡并让 textarea 聚焦
+	useEffect(() => {
+		let unlisten: UnlistenFn | null = null;
+		void (async () => {
+			try {
+				unlisten = await listen("pet-focus-input", () => {
+					uiDispatch({ type: "HIDE_BUBBLE" });
+					// 等一帧后打开，避免与上一帧 HIDE_BUBBLE 合并
+					setTimeout(() => {
+						uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
+						eventState.markRead();
+						inputRef.current?.focus();
+					}, 0);
+				});
+			} catch {
+				// noop
+			}
+		})();
+		return () => {
+			unlisten?.();
+		};
+	}, [eventState]);
 
 	// 当前宠物的"声音颜色"——用于气泡边缘光晕和按钮色
 	const accentColor =
@@ -366,26 +402,36 @@ export default function PetApp() {
 
 	// ── 交互处理 ──
 
+	// 连点害羞：2 秒内 ≥ 3 次 mouseup 触发
+	const registerTap = useTapBurst(
+		useCallback(() => {
+			setWobbling(true);
+			setTimeout(() => setWobbling(false), 300);
+		}, []),
+	);
+
 	const handleMouseEnter = useCallback(() => {
 		if (isDragging) return;
 		isHoveringRef.current = true;
+		edgePeek.onHoverStart();
 		// 150ms 防误触；hover 期间保持 greet，离开才回 idle
 		hoverTimerRef.current = setTimeout(() => {
 			if (isHoveringRef.current && !isDragging) {
 				uiDispatch({ type: "HOVER_START" });
 			}
 		}, 150);
-	}, [isDragging]);
+	}, [isDragging, edgePeek]);
 
 	const handleMouseLeave = useCallback(() => {
 		isHoveringRef.current = false;
+		edgePeek.onHoverEnd();
 		if (hoverTimerRef.current) {
 			clearTimeout(hoverTimerRef.current);
 			hoverTimerRef.current = null;
 		}
 		// 仅当当前是 greet（hover 引起）时才回 idle，避免压掉 thinking/done/sad
 		uiDispatch({ type: "HOVER_END" });
-	}, []);
+	}, [edgePeek]);
 
 	// 长按上下文菜单触发
 	const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -411,7 +457,10 @@ export default function PetApp() {
 			{ x: e.screenX, y: e.screenY, t: performance.now() },
 		];
 		setIsDragging(true);
+		edgePeek.onDragStart();
 		setContextMenuOpen(false); // 任何 mousedown 都关菜单
+		// 记录 shift 状态：按住 Shift → 松手时不做边缘吸附
+		shiftHeldRef.current = e.shiftKey;
 
 		// 长按定时器：600ms 不动就弹菜单
 		if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -428,7 +477,7 @@ export default function PetApp() {
 			mouseX: e.screenX,
 			mouseY: e.screenY,
 		});
-	}, []);
+	}, [edgePeek]);
 
 	useEffect(() => {
 		if (!isDragging) return;
@@ -525,22 +574,28 @@ export default function PetApp() {
 			void invoke("pet_window_drag_end", { vx, vy }).finally(() => {
 				if (wasDrag) {
 					uiDispatch({ type: "SET_MOTION", motion: "idle" });
-					// 边缘吸附（仅真拖动时）。如果速度有效，主进程已经做了惯性飞 + snap，
-					// 这里再调一次 snap 等同 no-op；保留兼容慢拖松手的场景
-					const speed = Math.sqrt(vx * vx + vy * vy);
-					if (speed <= 0.1) {
-						void invoke("pet_window_snap_to_edge", {
-							threshold: SNAP_THRESHOLD_PX,
-						}).catch(() => {});
+					// 边缘吸附（仅真拖动时）。按住 Shift 时跳过 snap，允许"精确放置"。
+					// 如果速度有效，主进程已经做了惯性飞 + snap，这里再调一次 snap 等同 no-op；保留兼容慢拖松手的场景
+					if (shiftHeldRef.current) {
+						// 清掉 shift 标记
+						shiftHeldRef.current = false;
+					} else {
+						const speed = Math.sqrt(vx * vx + vy * vy);
+						if (speed <= 0.1) {
+							void invoke("pet_window_snap_to_edge", {
+								threshold: SNAP_THRESHOLD_PX,
+							}).catch(() => {});
+						}
 					}
 				} else {
-					// 点击行为：检查是否双击
+					// 点击行为：
+					// - 立即 toggle 输入气泡（去掉原来的 280ms 延迟）
+					// - 如果随后 280ms 内又来一次 mouseup → 视为双击，收回气泡 + 聚焦主窗口
 					const now = Date.now();
 					const isDoubleClick = now - lastClickAtRef.current < DOUBLE_CLICK_MS;
-					lastClickAtRef.current = now;
 
 					if (isDoubleClick) {
-						// 双击 → 聚焦主窗口
+						// 双击：撤销上一次的单击 toggle，聚焦主窗口
 						lastClickAtRef.current = 0;
 						void invoke("pet_window_focus_main");
 						uiDispatch({ type: "HIDE_BUBBLE" });
@@ -549,15 +604,13 @@ export default function PetApp() {
 							uiDispatch({ type: "SET_MOTION", motion: "idle" });
 						}, 600);
 					} else {
-						// 单击 → toggle 输入气泡
+						lastClickAtRef.current = now;
 						// 已读：清掉未读
 						eventState.markRead();
-						// 等 280ms 看是否双击；如果没有双击触发就 toggle
-						setTimeout(() => {
-							if (Date.now() - lastClickAtRef.current >= DOUBLE_CLICK_MS) {
-								uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
-							}
-						}, DOUBLE_CLICK_MS);
+						// 立即 toggle 输入气泡，感知延迟消失
+						uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
+						// 连点反馈
+						registerTap();
 					}
 				}
 			});
@@ -818,13 +871,20 @@ export default function PetApp() {
 
 			{/* 角色 + 红点 + 上下文菜单的容器 */}
 			<div className="relative" style={{ order: 1 }}>
-				{/* 未读红点：呼吸式跳动 */}
+				{/* 接地阴影：最底层 z-0，视觉上沉在角色脚下 */}
+				<PetGroundShadow
+					size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
+					isDragging={isDragging}
+					isPeeking={edgePeek.peeking}
+				/>
+
+				{/* 未读红点：呼吸式跳动；位置随 sizePreset 缩放 */}
 				{showUnreadDot && (
 					<div
 						className="absolute z-10 rounded-full pointer-events-none animate-pet-unread-pulse"
 						style={{
-							top: "8px",
-							right: "20px",
+							top: `${Math.max(4, (SIZE_PRESET_TO_PX[sizePreset] ?? 180) * 0.045)}px`,
+							right: `${Math.max(10, (SIZE_PRESET_TO_PX[sizePreset] ?? 180) * 0.112)}px`,
 							width: "10px",
 							height: "10px",
 							backgroundColor: "#E0533C",
@@ -835,7 +895,12 @@ export default function PetApp() {
 
 				{/* 角色本体 */}
 				<div
-					className={`cursor-grab active:cursor-grabbing transition-transform duration-300 ease-out${landBouncing ? " animate-pet-land-bounce" : ""}${blinking ? " pet-blink" : ""}`}
+					className={[
+						"cursor-grab active:cursor-grabbing pet-peek-transition",
+						landBouncing ? "animate-pet-land-bounce" : "",
+						blinking ? "pet-blink" : "",
+						wobbling ? "animate-pet-wobble" : "",
+					].filter(Boolean).join(" ")}
 					style={{
 						transform: (() => {
 							const parts: string[] = [];
@@ -851,6 +916,14 @@ export default function PetApp() {
 								parts.push("scale(1.05)");
 							} else {
 								parts.push("scale(1)");
+							}
+							// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
+							if (edgePeek.peeking && edgePeek.side) {
+								const dx = edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
+								parts.push(`translateX(${dx}px)`);
+							} else if (!isDragging) {
+								// 视线追随（仅在非拖动态叠加，±3px）
+								parts.push(`translate(${gaze.tx.toFixed(2)}px, ${gaze.ty.toFixed(2)}px)`);
 							}
 							return parts.join(" ");
 						})(),
@@ -896,6 +969,8 @@ export default function PetApp() {
 						onHide={handleHidePet}
 						onOpenSettings={handleOpenSettings}
 						onClose={() => setContextMenuOpen(false)}
+						/** 角色贴屏右侧时菜单向左展开，贴左侧 / 屏幕中段时向右展开 */
+						side={edgePeek.side === "right" ? "left" : "right"}
 					/>
 				)}
 			</div>
@@ -912,6 +987,8 @@ interface PetContextMenuProps {
 	onHide: () => void;
 	onOpenSettings: () => void;
 	onClose: () => void;
+	/** 菜单相对角色的展开方向：右（默认）或左 */
+	side?: "left" | "right";
 }
 
 function PetContextMenu({
@@ -920,6 +997,7 @@ function PetContextMenu({
 	onCycleSkin,
 	onHide,
 	onOpenSettings,
+	side = "right",
 }: PetContextMenuProps) {
 	const nextMascotLabel = useMemo(() => {
 		const all = mascotManager.getAllMascotIds();
@@ -936,15 +1014,15 @@ function PetContextMenu({
 		<div
 			className="absolute z-20 animate-pet-bubble-rise"
 			style={{
-				right: "0",
-				top: "0",
-				transform: "translate(108%, 8px)",
+				...(side === "left"
+					? { left: "0", top: "0", transform: "translate(-108%, 8px)" }
+					: { right: "0", top: "0", transform: "translate(108%, 8px)" }),
 				minWidth: "168px",
 			}}
 			onMouseDown={(e) => e.stopPropagation()}
 		>
 			<div
-				className="rounded-2xl py-1.5"
+				className="pet-surface-darkish rounded-2xl py-1.5"
 				style={{
 					backgroundColor: "var(--t-bg-surface, #ffffff)",
 					backdropFilter: "blur(8px)",

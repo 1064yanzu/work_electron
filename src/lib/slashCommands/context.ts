@@ -72,6 +72,7 @@ function buildRecentResumableSessions(): ResumableSessionBrief[] {
 				title: s.title,
 				sdkSessionId: s.sdkSessionId,
 				updatedAt: s.updatedAt,
+				cwd: s.cwd,
 			});
 		}
 		filtered.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -119,11 +120,15 @@ function getActiveSession(): ChatSession | null {
 /** 工作区绝对路径；优先当前线程路径，其次活跃会话 cwd。 */
 function getWorkspacePath(active: ChatSession | null): string | null {
 	try {
+		// 与 `useAgentHandler`（agent 提交消息时使用的 cwd）对齐：
+		// 1) 优先当前 session.cwd —— 即"跑这条会话所用的工作目录"，
+		//    保证 /compact /review /init 等命令与 agent 当初落盘时的 cwd 一致。
+		// 2) 否则退到 workspaceStore.currentThreadPath（线程面板当前目录）。
+		if (active?.cwd && active.cwd.trim()) return active.cwd;
 		const core = workspaceStore.getCoreState();
 		if (core.currentThreadPath && core.currentThreadPath.trim()) {
 			return core.currentThreadPath;
 		}
-		if (active?.cwd && active.cwd.trim()) return active.cwd;
 		return null;
 	} catch (err) {
 		console.warn("[slashCommands] getWorkspacePath 失败，已返回 null。", err);

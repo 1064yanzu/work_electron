@@ -1,20 +1,24 @@
 /**
- * 本地备份管理器弹窗组件
- * 显示本地备份文件列表，支持恢复和删除操作
+ * BackupsManagerModal — 本地备份管理弹窗（原 LocalBackupManagerModal，Phase 5 迁移到 backup/）
+ *
+ * 显示本地备份文件列表，支持恢复、删除、批量删除操作。
+ * 原文件位于 `src/components/Settings/components/LocalBackupManagerModal.tsx`，
+ * Phase 5 随 `data.backup` 面板拆分下沉到 `panels/data/backup/` 目录；
+ * 同时保持 `LocalBackupManagerModal` 作为导出别名，避免下游误用旧 import 报错。
  */
+import { AlertCircle, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
-	listLocalBackupFiles,
 	deleteLocalBackupFile,
-	restoreFromLocalFile,
 	type LocalBackupFileInfo,
-} from "../../../lib/api";
-import { confirmDialog } from "../../ui/ConfirmDialog";
-import { Modal } from "../../ui/Modal";
-import { toast } from "../../ui/Toast";
-import { RefreshCw, Trash2, RotateCcw, AlertCircle } from "lucide-react";
+	listLocalBackupFiles,
+	restoreFromLocalFile,
+} from "../../../../../lib/api";
+import { confirmDialog } from "../../../../ui/ConfirmDialog";
+import { Modal } from "../../../../ui/Modal";
+import { toast } from "../../../../ui/Toast";
 
-interface LocalBackupManagerModalProps {
+interface BackupsManagerModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	backupDir: string;
@@ -40,12 +44,12 @@ function formatTime(isoString: string): string {
 	});
 }
 
-export function LocalBackupManagerModal({
+export function BackupsManagerModal({
 	isOpen,
 	onClose,
 	backupDir,
 	onRestoreSuccess,
-}: LocalBackupManagerModalProps) {
+}: BackupsManagerModalProps) {
 	const [backupFiles, setBackupFiles] = useState<LocalBackupFileInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -316,3 +320,9 @@ export function LocalBackupManagerModal({
 		</Modal>
 	);
 }
+
+/**
+ * @deprecated 旧名称 `LocalBackupManagerModal` 保持为别名，方便历史 import；
+ * 新调用方请使用 `BackupsManagerModal`。
+ */
+export { BackupsManagerModal as LocalBackupManagerModal };

@@ -34,6 +34,8 @@ export interface PetWindowSettingsData {
 	dndStart: string | null;
 	/** 勿扰结束时间（"HH:MM"，null 关闭勿扰段） */
 	dndEnd: string | null;
+	/** 全局热键唤醒是否启用（默认 true） */
+	globalShortcutEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: PetWindowSettingsData = {
@@ -46,6 +48,7 @@ const DEFAULT_SETTINGS: PetWindowSettingsData = {
 	dwellPreset: "normal",
 	dndStart: null,
 	dndEnd: null,
+	globalShortcutEnabled: true,
 };
 
 function getSettingsPath(): string {

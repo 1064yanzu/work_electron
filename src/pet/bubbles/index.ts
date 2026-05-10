@@ -16,3 +16,4 @@ export {
 	type PetReminderKind,
 } from "./PetReminderBubble";
 export { withAlpha, lighten } from "./utils";
+export { CloseIconButton } from "./CloseIconButton";

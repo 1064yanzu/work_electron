@@ -40,3 +40,13 @@ export { synthesizeRemoteAudio } from "./providers/remoteProvider";
 
 export { useTTS } from "./useTTS";
 export { useTTSVoices, inferDefaultProvider } from "./useTTSVoices";
+
+export { sanitizeForSpeech, splitForSpeech } from "./sanitize";
+export type { SanitizeOptions } from "./sanitize";
+export {
+	requestAutoSpeak,
+	cancelChatAutoSpeak,
+	resetChatAutoSpeak,
+	forgetSpokenMessage,
+} from "./chatAutoSpeak";
+export { installChatTtsLifecycle } from "./chatLifecycle";

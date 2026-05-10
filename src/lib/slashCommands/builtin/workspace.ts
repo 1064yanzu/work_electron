@@ -62,7 +62,7 @@ export const reviewCommand: SlashCommandDefinition = {
 	},
 	async execute(ctx: CommandContext): Promise<ExecuteOutcome> {
 		const workspace = ctx.workspacePath;
-		const sessionId = ctx.activeSession?.id ?? null;
+		const lockedSessionId = ctx.activeSession?.id ?? null;
 		if (!workspace) {
 			return {
 				kind: "failed",
@@ -88,13 +88,23 @@ export const reviewCommand: SlashCommandDefinition = {
 				};
 			}
 			const message = buildReviewPrompt(result.diff, result.stat);
+			// 触发时会话守恒：如果用户在 git diff 等待期间切了会话，强制切回
+			// 触发时会话，再提交审查消息，避免把 review 发到错的会话。
+			if (lockedSessionId) {
+				try {
+					const { chatStore } = await import("../../chat/store");
+					if (chatStore.getState().activeSessionId !== lockedSessionId) {
+						chatStore.setActiveSession(lockedSessionId);
+					}
+				} catch (err) {
+					console.warn("[slashCommands] /review 对齐触发时会话失败。", err);
+				}
+			}
 			events.emit(EVENTS.SLASH_SUBMIT_MESSAGE, {
-				sessionId,
+				sessionId: lockedSessionId,
 				message,
 				auto: true,
 			});
-			// 兼容既有 AI_REQUEST 事件链路
-			events.emit(EVENTS.AI_REQUEST, { sessionId, message, auto: true });
 			handle.replaceSuccess(SLASH_MESSAGES.toast.review.success);
 			return { kind: "ok" };
 		} catch (err) {

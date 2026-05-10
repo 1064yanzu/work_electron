@@ -12,8 +12,9 @@
  */
 
 import type { PointerEvent } from "react";
-import { Check, AlertTriangle, HelpCircle, X } from "lucide-react";
+import { Check, AlertTriangle, HelpCircle } from "lucide-react";
 import { PetBubbleShell, type PetBubblePlacement } from "./PetBubbleShell";
+import { CloseIconButton } from "./CloseIconButton";
 import { withAlpha } from "./utils";
 import { selectLine } from "../../lib/mascot/personality";
 import type { MascotSelection } from "../../lib/mascotStore";
@@ -111,16 +112,7 @@ export function PetNotificationBubble({
 							opener
 						)}
 					</div>
-					{onDismiss && (
-						<button
-							type="button"
-							onClick={onDismiss}
-							aria-label="关闭"
-							className="-mt-[1px] -mr-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]"
-						>
-							<X className="h-3 w-3" strokeWidth={2.2} />
-						</button>
-					)}
+					{onDismiss && <CloseIconButton onClick={onDismiss} />}
 				</div>
 
 				{message && (

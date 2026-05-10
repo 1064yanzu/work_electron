@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { appQueryClient } from "./lib/query";
-import { initTtsStore } from "./lib/tts";
+import { initTtsStore, installChatTtsLifecycle } from "./lib/tts";
 import { installThreadPathSync } from "./lib/syncThreadPath";
 import { registerBuiltinSlashCommands } from "./lib/slashCommands";
 import "./index.css";
@@ -12,6 +12,9 @@ const rootEl = document.getElementById("root")!;
 
 // 启动时预加载一次 TTS 设置（主窗口 / 桌宠窗口都用到）
 initTtsStore();
+
+// 将 TTS 播放与会话生命周期挂钩：切换会话 / 窗口隐藏 / 卸载时自动停
+installChatTtsLifecycle();
 
 // 把当前线程的 cwd 同步到 workspaceStore，让左边栏 FILES 面板能跟随当前线程
 installThreadPathSync();

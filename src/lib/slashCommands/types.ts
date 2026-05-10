@@ -123,7 +123,7 @@ export type ExecuteOutcome =
 /** `/resume` 子菜单展示的历史会话最小字段集合。 */
 export type ResumableSessionBrief = Pick<
 	ChatSession,
-	"id" | "title" | "updatedAt"
+	"id" | "title" | "updatedAt" | "cwd"
 > & {
 	/** `buildCommandContext` 保证已通过 `isSdkSessionId` 校验且为非空字符串。 */
 	sdkSessionId: string;

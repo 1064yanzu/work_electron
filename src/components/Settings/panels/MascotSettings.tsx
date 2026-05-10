@@ -56,6 +56,7 @@ export function MascotSettings() {
 	);
 	const [dndStart, setDndStart] = useState("");
 	const [dndEnd, setDndEnd] = useState("");
+	const [globalShortcutEnabled, setGlobalShortcutEnabled] = useState(true);
 	const [petSettingsLoaded, setPetSettingsLoaded] = useState(false);
 
 	useEffect(() => {
@@ -66,6 +67,7 @@ export function MascotSettings() {
 			dwellPreset: "short" | "normal" | "long";
 			dndStart: string | null;
 			dndEnd: string | null;
+			globalShortcutEnabled: boolean;
 		}>("pet_window_get_state")
 			.then((state) => {
 				setPetEnabled(state.enabled);
@@ -74,6 +76,7 @@ export function MascotSettings() {
 				if (state.dwellPreset) setDwellPreset(state.dwellPreset);
 				setDndStart(state.dndStart ?? "");
 				setDndEnd(state.dndEnd ?? "");
+				setGlobalShortcutEnabled(state.globalShortcutEnabled !== false);
 				setPetSettingsLoaded(true);
 			})
 			.catch(() => setPetSettingsLoaded(true));
@@ -107,6 +110,12 @@ export function MascotSettings() {
 		void invoke("pet_window_set_dnd", {
 			start: nextStart || null,
 			end: nextEnd || null,
+		});
+	}, []);
+	const handleGlobalShortcutChange = useCallback((next: boolean) => {
+		setGlobalShortcutEnabled(next);
+		void invoke("pet_window_set_global_shortcut_enabled", {
+			enabled: next,
 		});
 	}, []);
 
@@ -147,6 +156,8 @@ export function MascotSettings() {
 						dndStart={dndStart}
 						dndEnd={dndEnd}
 						onDndChange={handleDndChange}
+						globalShortcutEnabled={globalShortcutEnabled}
+						onGlobalShortcutEnabledChange={handleGlobalShortcutChange}
 						accentColor={accentColor}
 					/>
 				</SettingsCardSection>

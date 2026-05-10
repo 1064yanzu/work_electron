@@ -2450,6 +2450,7 @@ export type IPCSchema = {
 			dwellPreset: "short" | "normal" | "long";
 			dndStart: string | null;
 			dndEnd: string | null;
+			globalShortcutEnabled: boolean;
 		};
 	};
 	pet_window_set_enabled: {
@@ -2517,6 +2518,11 @@ export type IPCSchema = {
 	pet_window_set_dnd: {
 		input: { start: string | null; end: string | null };
 		output: { success: boolean };
+	};
+	/** 启用 / 关闭"桌宠全局热键"（默认 Control+Alt+Space） */
+	pet_window_set_global_shortcut_enabled: {
+		input: { enabled: boolean };
+		output: { success: boolean; active: boolean };
 	};
 	/**
 	 * 让桌宠"说一句话"——主动朗读 + 弹气泡。

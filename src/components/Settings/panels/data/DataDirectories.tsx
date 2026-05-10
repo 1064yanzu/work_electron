@@ -29,7 +29,11 @@ export function DataDirectories({
 }: DataDirectoriesProps) {
 	return (
 		<SettingsSectionCard>
-			<div className="p-5">
+			<div
+				className="p-5"
+				id="data.storage.directories"
+				data-settings-anchor="data.storage.directories"
+			>
 				<SettingsSectionTitle>数据目录</SettingsSectionTitle>
 				<SettingsRow
 					label="应用数据"

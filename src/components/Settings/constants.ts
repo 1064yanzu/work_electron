@@ -1,20 +1,4 @@
-import {
-	Archive,
-	BarChart3,
-	Blocks,
-	Cpu,
-	Database,
-	Gauge,
-	Image,
-	Keyboard,
-	type LucideIcon,
-	MessageSquare,
-	Plug,
-	Settings as SettingsIcon,
-	Shield,
-	Smartphone,
-	Sparkles,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ProviderType } from "../../types";
 import {
 	PROVIDER_TEMPLATES,
@@ -23,23 +7,6 @@ import {
 
 export type { ProviderTemplate } from "./data/providerTemplates";
 export { PROVIDER_TEMPLATES } from "./data/providerTemplates";
-
-export const SETTINGS_MENU = [
-	{ id: "dashboard", label: "使用统计", icon: BarChart3 },
-	{ id: "models", label: "模型配置", icon: Cpu },
-	{ id: "prompts", label: "提示词配置", icon: MessageSquare },
-	{ id: "imagegen", label: "AI 生图", icon: Image },
-	{ id: "mascot", label: "桌面宠物", icon: Sparkles },
-	{ id: "agent", label: "Agent 设置", icon: Shield },
-	{ id: "skills", label: "Agent 技能", icon: Blocks },
-	{ id: "mcp", label: "MCP 配置", icon: Plug },
-	{ id: "remoteControl", label: "远程控制", icon: Smartphone },
-	{ id: "general", label: "常规设置", icon: SettingsIcon },
-	{ id: "shortcuts", label: "键盘快捷键", icon: Keyboard },
-	{ id: "performance", label: "性能优化", icon: Gauge },
-	{ id: "data", label: "数据与同步", icon: Database },
-	{ id: "artifacts", label: "产物管理", icon: Archive },
-];
 
 // 核心服务商 - 这些会在初始化时自动创建
 // 注意：新增的服务商默认不会自动创建，需要用户手动添加

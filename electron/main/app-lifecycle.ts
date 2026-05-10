@@ -17,6 +17,10 @@ import {
 	destroyPetWindow,
 } from "./services/petWindowService";
 import {
+	registerPetGlobalShortcut,
+	unregisterPetGlobalShortcut,
+} from "./services/petGlobalShortcut";
+import {
 	registerMascotProtocolPrivileges,
 	registerMascotProtocolHandler,
 } from "./services/customMascotProtocol";
@@ -105,6 +109,20 @@ export async function bootstrapApp({
 	if (petWindowConfig) {
 		initPetWindowService(petWindowConfig);
 		bootPetWindow();
+		// 桌宠全局热键（默认启用 Ctrl+Alt+Space）
+		try {
+			const { getPetWindowSettings } = await import(
+				"./storage/petWindowSettings"
+			);
+			if (getPetWindowSettings().globalShortcutEnabled !== false) {
+				registerPetGlobalShortcut();
+			}
+		} catch (err) {
+			logger.warn({
+				msg: "Skip pet global shortcut registration",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		}
 	}
 
 	logger.info({
@@ -175,6 +193,8 @@ export async function bootstrapApp({
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();
 		void cloudNodeClient.stop();
+		// 解除桌宠全局热键
+		unregisterPetGlobalShortcut();
 		// 销毁桌面宠物窗口
 		destroyPetWindow();
 		logger.info({ msg: "Pet window destroyed" });
