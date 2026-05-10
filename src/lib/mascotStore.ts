@@ -60,6 +60,8 @@ class MascotManager {
 	private listeners = new Set<() => void>();
 	private version = 0;
 	private ipcInitialized = false;
+	/** IPC 初始化完成（自定义列表已拉取）后置 true，供 PetApp 区分"加载中"和"真的没有" */
+	private ready = false;
 	private ipcUnlisten: UnlistenFn | null = null;
 	private listUnlisten: UnlistenFn | null = null;
 
@@ -85,6 +87,11 @@ class MascotManager {
 
 	getVersion(): number {
 		return this.version;
+	}
+
+	/** IPC 初始化完成（自定义列表已拉取）后返回 true */
+	isReady(): boolean {
+		return this.ready;
 	}
 
 	/** 合并所有可选项（内置 + 自定义）的 id 列表 */
@@ -153,19 +160,31 @@ class MascotManager {
 	async initFromIPC(): Promise<void> {
 		if (this.ipcInitialized) return;
 		this.ipcInitialized = true;
-		if (!isDesktopEnvironment()) return;
+		if (!isDesktopEnvironment()) {
+			this.ready = true;
+			this.notify();
+			return;
+		}
 
 		// 1. 拉自定义列表（先做，让后续 selection 校验能命中）
-		try {
-			const result = await invoke<{ mascots: CustomMascotMeta[] }>(
-				"mascot_list_custom",
-				{},
-			);
-			if (Array.isArray(result?.mascots)) {
-				this.applyCustomList(result.mascots);
+		// 主进程启动时可能还没就绪，最多重试 3 次（间隔 300ms）
+		let listFetched = false;
+		for (let attempt = 0; attempt < 3 && !listFetched; attempt++) {
+			try {
+				if (attempt > 0) {
+					await new Promise((r) => setTimeout(r, 300));
+				}
+				const result = await invoke<{ mascots: CustomMascotMeta[] }>(
+					"mascot_list_custom",
+					{},
+				);
+				if (Array.isArray(result?.mascots)) {
+					this.applyCustomList(result.mascots);
+					listFetched = true;
+				}
+			} catch {
+				// 主进程暂未就绪 / handler 未注册 → 重试
 			}
-		} catch {
-			// 主进程暂未就绪 / handler 未注册 → 静默
 		}
 
 		// 2. 拉权威 mascot id
@@ -214,6 +233,10 @@ class MascotManager {
 		} catch {
 			// noop
 		}
+
+		// 初始化完成：通知订阅者（PetApp 等待此信号后才决定是否渲染）
+		this.ready = true;
+		this.notify();
 	}
 
 	// ── 自定义桌宠 CRUD（薄封装，渲染层 UI 通过这层调主进程） ──
@@ -429,6 +452,8 @@ export interface UseMascotResult {
 	getMergedMeta: (id: MascotId) => MascotMeta | null;
 	getAllMascotIds: () => MascotId[];
 	enabled: boolean;
+	/** IPC 初始化完成（自定义列表已拉取）后为 true；PetApp 用此区分"加载中"和"真的没有" */
+	ready: boolean;
 	importCustom: MascotManager["importCustom"];
 	importCustomDir: MascotManager["importCustomDir"];
 	deleteCustom: MascotManager["deleteCustom"];
@@ -453,6 +478,7 @@ export function useMascot(): UseMascotResult {
 		getMergedMeta: (id) => mascotManager.getMergedMeta(id),
 		getAllMascotIds: () => mascotManager.getAllMascotIds(),
 		enabled: mascotManager.getId() !== "off",
+		ready: mascotManager.isReady(),
 		importCustom: mascotManager.importCustom.bind(mascotManager),
 		importCustomDir: mascotManager.importCustomDir.bind(mascotManager),
 		deleteCustom: mascotManager.deleteCustom.bind(mascotManager),

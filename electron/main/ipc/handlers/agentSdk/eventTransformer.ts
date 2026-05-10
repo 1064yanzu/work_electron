@@ -96,6 +96,17 @@ const FLUSH_IMMEDIATELY_TYPES = new Set([
 ]);
 
 /**
+ * 需要立即 flush 的 transformed 子事件类型。
+ * tool_call_start / tool_input_complete / tool_call_end 是工具卡片渲染的关键边界，
+ * 如果被 BatchedSender 缓冲，会导致卡片"等操作完成后才出现"的视觉延迟。
+ */
+const FLUSH_TRANSFORMED_EVENT_TYPES = new Set([
+	"tool_call_start",
+	"tool_input_complete",
+	"tool_call_end",
+]);
+
+/**
  * 句末标点。历史上曾在此处强制 flush BatchedSender 以"模拟 CLI 节奏"，
  * 但叠加渲染端的节流后，反而造成"流→停一拍→爆出一段"的顿挫感。
  * 现在交给 BatchedSender 的 16ms 帧粒度自然节奏，不再做句末特殊 flush。
@@ -109,9 +120,21 @@ export function emit(
 	if (!win) return;
 	const sender = getAgentSdkSender(getMainWindow);
 	sender.send(payload);
+
+	// 顶层事件类型立即 flush
 	if (FLUSH_IMMEDIATELY_TYPES.has(payload.type)) {
 		sender.flush();
 	}
+	// transformed 事件中包含工具边界事件时也立即 flush，避免卡片渲染延迟
+	else if (payload.type === "transformed" && Array.isArray(payload.events)) {
+		const shouldFlush = (payload.events as any[]).some(
+			(ev) => ev && FLUSH_TRANSFORMED_EVENT_TYPES.has(ev.type),
+		);
+		if (shouldFlush) {
+			sender.flush();
+		}
+	}
+
 	publishAgentSdkBusEvent(payload as any);
 
 	// Fan-out 到桌面宠物窗口

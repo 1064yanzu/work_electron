@@ -134,7 +134,7 @@ const INITIAL_UI_STATE: PetUIState = {
 // ── 主组件 ──
 
 export default function PetApp() {
-	const { id: mascotId } = useMascot();
+	const { id: mascotId, ready: mascotReady } = useMascot();
 	const [uiState, uiDispatch] = useReducer(petUIReducer, INITIAL_UI_STATE);
 	const eventState = usePetEventBridge();
 	const [inputText, setInputText] = useState("");
@@ -694,6 +694,9 @@ export default function PetApp() {
 	}, []);
 
 	// ── 渲染 ──
+
+	// 还在等待 IPC 初始化（自定义桌宠列表未拉取）时，保持透明等待，不要提前 return null
+	if (!mascotReady) return null;
 
 	if (mascotId === "off" || (!atlasUrl && !fallbackHeroUrl)) return null;
 

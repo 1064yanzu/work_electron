@@ -103,7 +103,23 @@ export function buildFileUpdateFromToolInput(input: {
 
 	const toolInput = input.toolInput || {};
 	const filePath = getToolFilePath(toolInput, toolName);
-	if (!filePath) return null;
+
+	// 如果是写入工具但 file_path 还没到（流式传输中），
+	// 仍然生成一个占位 FileUpdate，让卡片立即出现（显示"正在写入..."）
+	if (!filePath) {
+		if (WRITE_TOOL_NAMES.has(toolName) && input.status === "running") {
+			return {
+				fileName: toolName === "write" ? "创建文件中…" : "编辑文件中…",
+				filePath: "",
+				type: toolName === "write" ? "create" : "update",
+				additions: 0,
+				deletions: 0,
+				status: "running",
+				toolCallId: input.toolCallId,
+			};
+		}
+		return null;
+	}
 
 	const isWrite = toolName === "write";
 	const stats = isWrite
