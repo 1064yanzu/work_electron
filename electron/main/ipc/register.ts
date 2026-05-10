@@ -79,6 +79,7 @@ import {
 import { createPreviewServerHandlers } from "./handlers/previewServer";
 import { createReaderHandlers } from "./handlers/reader";
 import { createTtsHandlers } from "./handlers/tts";
+import { createSlashCommandsHandlers } from "./handlers/slashCommands";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -221,6 +222,9 @@ export function registerIpcHandlers({
 		getMainWindow: () => mainWindowRef,
 	});
 
+	// Claude Code 斜杠命令（扫描 / git diff / 写 CLAUDE.md）
+	const slashCommandsHandlers = createSlashCommandsHandlers();
+
 	// ==================
 	// 系统命令
 	// ==================
@@ -294,6 +298,20 @@ export function registerIpcHandlers({
 		agentSandboxHandlers.agent_get_sandbox_dir,
 	);
 	ipcMain.handle("convert_docx_to_html", documentHandlers.convert_docx_to_html);
+
+	// Claude Code 斜杠命令
+	ipcMain.handle(
+		"slash_commands_scan",
+		slashCommandsHandlers.slash_commands_scan satisfies IpcHandler<"slash_commands_scan">,
+	);
+	ipcMain.handle(
+		"slash_commands_git_diff",
+		slashCommandsHandlers.slash_commands_git_diff satisfies IpcHandler<"slash_commands_git_diff">,
+	);
+	ipcMain.handle(
+		"slash_commands_write_init",
+		slashCommandsHandlers.slash_commands_write_init satisfies IpcHandler<"slash_commands_write_init">,
+	);
 	// ==================
 	// Projects
 	// ==================

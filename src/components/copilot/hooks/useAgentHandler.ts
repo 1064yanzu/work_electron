@@ -22,6 +22,7 @@ import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context
 import { isSdkSessionId } from "../../../lib/agent/context/sessionId";
 import { getSourceDetail } from "../../../lib/api";
 import { sessionStore } from "../../../lib/agent/sessionManager";
+import { takeFork as takeForkIntent } from "../../../lib/slashCommands/forkIntentStore";
 import {
 	parseDocProtocolFinal,
 	buildAgentConversationContext,
@@ -814,46 +815,56 @@ export function useAgentHandler({
 						content,
 						systemPrompt,
 						undefined,
-						{
-							// 直接把用户选定的真实目录（session.cwd）作为 agent 工作目录，
-							// 与 Claude Code CLI 一致：agent 在用户目录里操作原文件。
-							workingDirectory:
-								session.cwd ||
-								sessionStore.getCurrentSession()?.cwd ||
-								undefined,
-							conversationContext,
-							fallbackSearchQuery,
-							hasActiveDoc: false,
-							activeDocContent: "",
-							attachedContexts,
-							attachedFiles, // 传递文件路径
-							conversationSessionId: session.id,
-							sandboxKey: boundAgentSessionId || session.id,
-							wikiScopePath: sessionStore.getCurrentSession()?.cwd || undefined,
-							resumeSessionId: (() => {
+						(() => {
+							// 读取并消费一次 /fork 意图（若有）；必须先算好 base 以注入参数
+							const forkIntentBase = takeForkIntent(session.id);
+							const resumeSessionIdForRun = (() => {
+								if (forkIntentBase) return forkIntentBase;
 								if (!session.sdkSessionId) return undefined;
 								if (isSdkSessionId(session.sdkSessionId))
 									return session.sdkSessionId;
 								chatStore.setSessionSdkSessionId(session.id, undefined);
 								return undefined;
-							})(),
-							persistSession: true,
-							forkSession: forceForkSession,
-							parentSdkSessionId: parentSdkSessionIdForRun,
-							documentContextInjected: true,
-							planMode: planModeStore.getState().enabled,
-							confirmedPlan:
-								planModeStore.getState().currentPlan?.status === "confirmed"
-									? (planModeStore.getState().currentPlan ?? undefined)
-									: undefined,
-							onChunk, // 流式输出回调
-							onMessage: handleSdkInlineMessage,
-							onThoughtChunk: (chunk, meta) => {
-								touchActivity();
-								streamBuilder.appendThoughtChunk(chunk, meta);
-								scheduleStreamingUpdate();
-							},
-						},
+							})();
+							const effectiveForkSession = Boolean(
+								forkIntentBase || forceForkSession,
+							);
+							return {
+								// 直接把用户选定的真实目录（session.cwd）作为 agent 工作目录，
+								// 与 Claude Code CLI 一致：agent 在用户目录里操作原文件。
+								workingDirectory:
+									session.cwd ||
+									sessionStore.getCurrentSession()?.cwd ||
+									undefined,
+								conversationContext,
+								fallbackSearchQuery,
+								hasActiveDoc: false,
+								activeDocContent: "",
+								attachedContexts,
+								attachedFiles, // 传递文件路径
+								conversationSessionId: session.id,
+								sandboxKey: boundAgentSessionId || session.id,
+								wikiScopePath:
+									sessionStore.getCurrentSession()?.cwd || undefined,
+								resumeSessionId: resumeSessionIdForRun,
+								persistSession: true,
+								forkSession: effectiveForkSession,
+								parentSdkSessionId: parentSdkSessionIdForRun,
+								documentContextInjected: true,
+								planMode: planModeStore.getState().enabled,
+								confirmedPlan:
+									planModeStore.getState().currentPlan?.status === "confirmed"
+										? (planModeStore.getState().currentPlan ?? undefined)
+										: undefined,
+								onChunk, // 流式输出回调
+								onMessage: handleSdkInlineMessage,
+								onThoughtChunk: (chunk, meta) => {
+									touchActivity();
+									streamBuilder.appendThoughtChunk(chunk, meta);
+									scheduleStreamingUpdate();
+								},
+							};
+						})(),
 					);
 			workspaceStore.clearContexts();
 

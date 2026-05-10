@@ -462,6 +462,43 @@ export type IPCSchema = {
 	};
 
 	// ==================
+	// Claude Code 斜杠命令（扫描 / git diff / 写 CLAUDE.md）
+	// ==================
+	slash_commands_scan: {
+		input: {
+			workspace_dir: string;
+			include_user_home: boolean;
+			max_files?: number;
+		};
+		output: Array<{
+			id: string;
+			name?: string;
+			description?: string;
+			prompt: string;
+			source: "project" | "user";
+			sourcePath: string;
+		}>;
+	};
+	slash_commands_git_diff: {
+		input: { workspace_dir: string; max_bytes?: number };
+		output: { has_changes: boolean; diff: string; stat: string };
+	};
+	slash_commands_write_init: {
+		input: { workspace_dir: string; overwrite: boolean };
+		output: {
+			path: string;
+			created: boolean;
+			overwritten: boolean;
+			/**
+			 * 当 `overwrite=false` 且目标已存在时，主进程返回结构化错误标识，
+			 * 由前端拦截后弹确认对话框，用户同意后带 `overwrite=true` 重调。
+			 * 其它运行时异常仍按抛错处理。
+			 */
+			error?: "exists";
+		};
+	};
+
+	// ==================
 	// Documents
 	// ==================
 	convert_docx_to_html: {

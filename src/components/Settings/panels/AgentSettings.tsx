@@ -33,6 +33,7 @@ import { KbRetrievalSection } from "./agent/KbRetrievalSection";
 import { SessionPersistenceSection } from "./agent/SessionPersistenceSection";
 import { AgentSdkRuntimeSection } from "./agent/AgentSdkRuntimeSection";
 import { PermissionPolicySection } from "./agent/PermissionPolicySection";
+import { SlashCommandsSection } from "../sections/SlashCommandsSection";
 
 const PERMISSION_MODE_OPTIONS: { value: PermissionMode; label: string }[] = [
 	{ value: "auto_approve", label: "自动批准" },
@@ -577,6 +578,9 @@ export function AgentSettings() {
 				toolRiskLevels={toolRiskLevels}
 				onToolRiskLevelChange={handleToolRiskLevelChange}
 			/>
+
+			{/* Claude Code 斜杠命令 */}
+			<SlashCommandsSection />
 
 			{/* 会话持久化 */}
 			<SessionPersistenceSection

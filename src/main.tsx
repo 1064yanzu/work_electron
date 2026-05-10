@@ -5,6 +5,7 @@ import App from "./App";
 import { appQueryClient } from "./lib/query";
 import { initTtsStore } from "./lib/tts";
 import { installThreadPathSync } from "./lib/syncThreadPath";
+import { registerBuiltinSlashCommands } from "./lib/slashCommands";
 import "./index.css";
 
 const rootEl = document.getElementById("root")!;
@@ -14,6 +15,9 @@ initTtsStore();
 
 // 把当前线程的 cwd 同步到 workspaceStore，让左边栏 FILES 面板能跟随当前线程
 installThreadPathSync();
+
+// Claude Code 斜杠命令：启动时注入内置命令（幂等，防重复）
+registerBuiltinSlashCommands();
 
 // 哈希路由：#/pet → 桌面宠物独立窗口
 if (location.hash === "#/pet") {

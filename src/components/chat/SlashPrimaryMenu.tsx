@@ -4,6 +4,7 @@ import {
 	Folder,
 	MessageSquare,
 	Command,
+	Terminal,
 	Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +21,16 @@ export interface SlashCategory {
 }
 
 export const slashCategories: SlashCategory[] = [
+	{
+		id: "command",
+		name: "命令",
+		description: "Claude Code 风格斜杠命令",
+		icon: Terminal,
+		shortcut: "c",
+		gradient:
+			"bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+		iconColor: "text-indigo-600 dark:text-indigo-400",
+	},
 	{
 		id: "file",
 		name: "文件",

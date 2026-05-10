@@ -65,4 +65,11 @@ export const EVENTS = {
 
 	// 远程控制
 	REMOTE_CHAT_INJECT: "REMOTE_CHAT_INJECT", // 远程消息注入到 UI 对话
+
+	// Claude Code 斜杠命令
+	OPEN_SETTINGS: "OPEN_SETTINGS", // 请求打开设置面板（可带 { tab }）
+	SLASH_RENAME_INLINE: "SLASH_RENAME_INLINE", // 触发 /rename 行内输入框
+	SLASH_SCROLL_TO_CONTEXT: "SLASH_SCROLL_TO_CONTEXT", // /context：滚动到上下文块
+	SLASH_FILL_INPUT: "SLASH_FILL_INPUT", // /tab 回填命令 id 或自定义 prompt
+	SLASH_SUBMIT_MESSAGE: "SLASH_SUBMIT_MESSAGE", // /review 等以当前会话提交 AI 请求
 };

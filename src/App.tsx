@@ -33,6 +33,14 @@ import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
+import {
+	registerBuiltinSlashCommands,
+} from "./lib/slashCommands";
+import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
+import { EVENTS, events } from "./lib/events";
+
+// 启动即注入内置斜杠命令（幂等），放在模块级以确保任意窗口进入都生效
+registerBuiltinSlashCommands();
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
@@ -223,6 +231,31 @@ export default function App() {
 	const handleOpenSettings = useCallback((tab?: SettingsTabId) => {
 		setSettingsInitialTab(tab ?? "models");
 		setIsSettingsOpen(true);
+	}, []);
+
+	// 订阅斜杠命令发出的「打开设置」事件（/settings）
+	useEffect(() => {
+		const off = events.on(EVENTS.OPEN_SETTINGS, (payload: { tab?: string } | undefined) => {
+			const tab = typeof payload?.tab === "string" ? payload.tab : undefined;
+			handleOpenSettings(tab as SettingsTabId | undefined);
+		});
+		return off;
+	}, [handleOpenSettings]);
+
+	// 启动 + 工作区目录切换时扫描自定义命令（.claude/commands/）
+	useEffect(() => {
+		void rescanCustomSlashCommands();
+		// 只在 currentThreadPath 变化时重扫，避免 layout 变化触发无谓扫描
+		let lastPath: string | null = workspaceStore.getCoreState()
+			.currentThreadPath;
+		const unsubscribe = workspaceStore.subscribe(() => {
+			const nextPath = workspaceStore.getCoreState().currentThreadPath;
+			if (nextPath !== lastPath) {
+				lastPath = nextPath;
+				void rescanCustomSlashCommands();
+			}
+		});
+		return unsubscribe;
 	}, []);
 
 	return (

@@ -23,6 +23,8 @@ import { type Model, ModelSelector } from "./ModelSelector";
 import type { SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
+import { SlashCommandProvider } from "../../lib/slashCommands/reactContext";
+import { EVENTS, events } from "../../lib/events";
 
 // 提交选项
 export interface SubmitOptions {
@@ -96,6 +98,33 @@ export function ChatInput({
 	}, [value]);
 	const deferredSlashFilter = useDeferredValue(slashFilter);
 
+	// 监听 Slash 命令回填请求（Tab 回填命令 id / 自定义命令 prompt）
+	useEffect(() => {
+		const off = events.on(
+			EVENTS.SLASH_FILL_INPUT,
+			(payload: { text?: string } | undefined) => {
+				const text = typeof payload?.text === "string" ? payload.text : "";
+				setValue(text);
+				setTimeout(() => textareaRef.current?.focus(), 0);
+			},
+		);
+		return off;
+	}, []);
+
+	// 监听 Slash 命令的会话级消息提交（/review）
+	useEffect(() => {
+		const off = events.on(
+			EVENTS.SLASH_SUBMIT_MESSAGE,
+			(payload: { message?: string } | undefined) => {
+				const message =
+					typeof payload?.message === "string" ? payload.message : "";
+				if (!message.trim() || disabled) return;
+				onSubmit(message, undefined);
+			},
+		);
+		return off;
+	}, [disabled, onSubmit]);
+
 	const handleSubmit = useCallback(() => {
 		const { finalMessage, skillName } = buildSubmitMessage(
 			value,
@@ -117,7 +146,11 @@ export function ChatInput({
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		// 如果斜杠菜单打开，让菜单处理键盘事件
 		if (showSlashMenu) {
-			if (["ArrowUp", "ArrowDown", "Enter", "Escape"].includes(e.key)) {
+			if (
+				["ArrowUp", "ArrowDown", "Enter", "Escape", "Tab"].includes(e.key)
+			) {
+				// Tab：阻止默认切焦点，交给菜单处理
+				if (e.key === "Tab") e.preventDefault();
 				return; // 让 SlashCommandMenu 处理
 			}
 		}
@@ -252,7 +285,18 @@ export function ChatInput({
 		[value, selectedChips],
 	);
 
+	// Claude Code 斜杠命令桥接：把 onModelSelect 暴露给 /model 等命令
+	const slashBridgeValue = useMemo(
+		() => ({
+			invokeSelectModel: (modelId: string) => {
+				onModelSelect?.(modelId);
+			},
+		}),
+		[onModelSelect],
+	);
+
 	return (
+		<SlashCommandProvider value={slashBridgeValue}>
 		<div className="relative" data-chat-input-root onBlur={handleBlur}>
 			<input
 				type="file"
@@ -372,5 +416,6 @@ export function ChatInput({
 				</span>
 			</div>
 		</div>
+		</SlashCommandProvider>
 	);
 }

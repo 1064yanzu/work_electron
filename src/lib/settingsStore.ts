@@ -29,6 +29,63 @@ const emitChange = () => {
 	listeners.forEach((l) => l());
 };
 
+// ---------------------------------------------------------------------------
+// Prefs 区块 —— 通用键值偏好仓库
+// ---------------------------------------------------------------------------
+// 用于存放 Claude Code 风格斜杠命令、面板默认偏好等「非核心服务商」配置。
+// MVP 走 localStorage，单一 key = `slashCommands.prefs` 序列化成一个对象；
+// 读异常时返回空对象并 console.warn，不影响 settingsStore 主流程。
+// 订阅器与上面的 providers 订阅共用同一个 `listeners` Set，写入时走 `emitChange`
+// 统一广播，避免多份订阅器状态机。
+
+const PREFS_STORAGE_KEY = "slashCommands.prefs";
+const prefsListeners = new Set<() => void>();
+let prefsCache: Record<string, unknown> | null = null;
+
+function loadPrefsCache(): Record<string, unknown> {
+	if (prefsCache !== null) return prefsCache;
+	if (typeof window === "undefined") {
+		prefsCache = {};
+		return prefsCache;
+	}
+	try {
+		const raw = window.localStorage.getItem(PREFS_STORAGE_KEY);
+		if (!raw) {
+			prefsCache = {};
+			return prefsCache;
+		}
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			prefsCache = parsed as Record<string, unknown>;
+			return prefsCache;
+		}
+	} catch (err) {
+		console.warn("[settingsStore] 读取 prefs 失败，已回退到空对象。", err);
+	}
+	prefsCache = {};
+	return prefsCache;
+}
+
+function persistPrefs(): void {
+	if (typeof window === "undefined") return;
+	try {
+		const cache = loadPrefsCache();
+		window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(cache));
+	} catch (err) {
+		console.warn("[settingsStore] 持久化 prefs 失败。", err);
+	}
+}
+
+function emitPrefsChange(): void {
+	prefsListeners.forEach((l) => {
+		try {
+			l();
+		} catch (err) {
+			console.warn("[settingsStore] prefs 订阅器回调抛错。", err);
+		}
+	});
+}
+
 // Map backend Provider to UI Provider
 const findTemplateByType = (type: ProviderType): ProviderTemplate | undefined =>
 	PROVIDER_TEMPLATES.find((t) => t.providerType === type);
@@ -432,6 +489,56 @@ export const settingsStore = {
 		listeners.add(listener);
 		return () => {
 			listeners.delete(listener);
+		};
+	},
+
+	// ---------------------------------------------------------------------
+	// Prefs API（斜杠命令等"非核心服务商"偏好）
+	// ---------------------------------------------------------------------
+
+	/**
+	 * 读取一条用户偏好。
+	 *
+	 * 读取异常或未知字段 → 回退到 `defaultValue`；
+	 * 不做任何类型判定（调用方自行窄化），与 `slashCommands/settingsSnapshot.ts`
+	 * 的容错逻辑协同。
+	 */
+	getPref<T>(key: string, defaultValue: T): T {
+		try {
+			const cache = loadPrefsCache();
+			if (Object.prototype.hasOwnProperty.call(cache, key)) {
+				return cache[key] as T;
+			}
+		} catch (err) {
+			console.warn(`[settingsStore] 读取 pref "${key}" 失败。`, err);
+		}
+		return defaultValue;
+	},
+
+	/**
+	 * 写入一条用户偏好；立即持久化并广播给所有 `onPrefsChanged` 订阅者。
+	 *
+	 * 约定：传 `undefined` 视为删除该字段。返回 Promise 以便调用方等待持久化完成
+	 * （当前 MVP 走 localStorage，实际为同步操作；未来可替换为异步存储而不破坏 API）。
+	 */
+	async setPref(key: string, value: unknown): Promise<void> {
+		const cache = loadPrefsCache();
+		const prev = cache[key];
+		if (Object.is(prev, value)) return;
+		if (value === undefined) {
+			delete cache[key];
+		} else {
+			cache[key] = value;
+		}
+		persistPrefs();
+		emitPrefsChange();
+	},
+
+	/** 订阅任意 pref 字段变化；返回 unsubscribe。 */
+	onPrefsChanged(listener: () => void): () => void {
+		prefsListeners.add(listener);
+		return () => {
+			prefsListeners.delete(listener);
 		};
 	},
 };
