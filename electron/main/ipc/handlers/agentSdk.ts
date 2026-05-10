@@ -55,6 +55,10 @@ import {
 	createAgentModelSettingsLoader,
 	mergeUpdatedToolInput,
 } from "./agentSdk/modelSettingsLoader";
+import {
+	createLocalWebSearchMcpServer,
+	LOCAL_WEB_SEARCH_MCP_TOOL,
+} from "./agentSdk/localWebSearchMcp";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -399,7 +403,7 @@ export function createAgentSdkHandlers(options: {
 					leaderSummaryModel,
 					teammateExecutionModel,
 				});
-				const mcpServers =
+				const inputMcpServers =
 					(input as any).mcp_servers &&
 					typeof (input as any).mcp_servers === "object"
 						? ((input as any).mcp_servers as any)
@@ -444,8 +448,8 @@ export function createAgentSdkHandlers(options: {
 				const allowedToolsForRun = uniqStrings(
 					multiAgentRuntime.experimentalEnabled &&
 						multiAgentRuntime.multiAgentMode !== "subagent_only"
-						? [...allowed, "Teammate"]
-						: [...allowed],
+						? [...allowed, "Teammate", LOCAL_WEB_SEARCH_MCP_TOOL]
+						: [...allowed, LOCAL_WEB_SEARCH_MCP_TOOL],
 				);
 
 				// 当应用侧传入 skills 数组时，左栏启用状态成为 Skill Tool 的真实边界：
@@ -497,7 +501,22 @@ export function createAgentSdkHandlers(options: {
 					typeof input.system_prompt === "string" && input.system_prompt.trim()
 						? input.system_prompt.trim()
 						: "";
-				const systemPromptAppend = userSystemPrompt || undefined;
+				const localWebSearchPrompt = [
+					"联网搜索说明：本应用已提供本地 MCP 搜索工具",
+					`${LOCAL_WEB_SEARCH_MCP_TOOL}。`,
+					"需要实时联网搜索时优先调用该工具，它会返回真实 URL 和摘要。",
+					"不要调用内置 WebSearch；如果看到 WebSearch 不可用或没有搜索工具的文本，不要把它当作搜索结果。",
+				].join(" ");
+				const systemPromptAppend = userSystemPrompt
+					? `${userSystemPrompt}\n\n${localWebSearchPrompt}`
+					: localWebSearchPrompt;
+				const localWebSearchMcpServer = createLocalWebSearchMcpServer(
+					sdk as any,
+				);
+				const mcpServers = {
+					...(inputMcpServers || {}),
+					ipo_browser_search: localWebSearchMcpServer,
+				};
 
 				const q = sdk.query({
 					// 先使用 SDK 最稳定的首轮字符串 prompt。0.2.132 的
@@ -529,6 +548,7 @@ export function createAgentSdkHandlers(options: {
 							: multiAgentRuntime.experimentalEnabled
 								? allowedToolsForRun
 								: undefined,
+						disallowedTools: ["WebSearch"],
 						/*
 						 * SDK JS hooks are intentionally disabled in the App runtime.
 						 *
@@ -1046,8 +1066,12 @@ export function createAgentSdkHandlers(options: {
 									message: "aborted",
 								};
 							}
+							const isLocalWebSearchTool =
+								toolName === LOCAL_WEB_SEARCH_MCP_TOOL ||
+								toolName === "web_search";
 							if (
 								hasExplicitAllowedTools &&
+								!isLocalWebSearchTool &&
 								!allowedToolsForRun.includes(toolName)
 							) {
 								return {
@@ -1061,6 +1085,12 @@ export function createAgentSdkHandlers(options: {
 									? { ...(toolInput as Record<string, unknown>) }
 									: {};
 							const toolLower = String(toolName || "").toLowerCase();
+							if (toolLower === "websearch") {
+								return {
+									behavior: "deny",
+									message: `内置 WebSearch 在当前供应商下会返回伪搜索文本，请改用 ${LOCAL_WEB_SEARCH_MCP_TOOL} 获取真实搜索结果。`,
+								};
+							}
 							const currentToolUseId =
 								typeof extra?.toolUseID === "string"
 									? String(extra.toolUseID).trim()

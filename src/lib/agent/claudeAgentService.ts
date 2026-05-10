@@ -1806,7 +1806,9 @@ export class ClaudeAgentService {
 			};
 
 			unlisten = await listen("agent-sdk-event", (event) => {
-				console.log("[ClaudeAgentService] Received event:", event);
+				if (debug) {
+					console.log("[ClaudeAgentService] Received event:", event);
+				}
 				handleEvent(event.payload as any);
 			});
 
