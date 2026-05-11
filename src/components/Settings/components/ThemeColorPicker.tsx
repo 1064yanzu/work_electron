@@ -91,7 +91,7 @@ function ModeButton({
 			className={`
 				flex items-center justify-center gap-1.5 
 				px-3 py-2.5 rounded-xl text-sm font-medium
-				transition-all duration-200 cursor-pointer
+				transition-[color,background-color,border-color,box-shadow] duration-200 ease-out cursor-pointer
 				focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
 				${
 					isActive
@@ -126,7 +126,7 @@ function ThemeCard({
 			onClick={onClick}
 			className={`
 				group relative flex flex-col rounded-xl overflow-hidden
-				transition-all duration-200 cursor-pointer
+				transition-[color,background-color,border-color,box-shadow] duration-200 ease-out cursor-pointer
 				focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
 				${
 					isActive

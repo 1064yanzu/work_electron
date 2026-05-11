@@ -66,7 +66,7 @@ const Card = ({
 }) => (
 	<div
 		onClick={onClick}
-		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-cream-400/80 transition-all duration-200 ${className}`}
+		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-cream-400/80 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out ${className}`}
 	>
 		{children}
 	</div>
@@ -394,7 +394,7 @@ export function AgentModelScenarioSettings() {
 										onClick={() =>
 											store.updateContextCompression({ strategy: "summary" })
 										}
-										className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-all ${settings.contextCompression.strategy === "summary" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
+										className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "summary" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
 									>
 										智能摘要
 									</button>
@@ -402,7 +402,7 @@ export function AgentModelScenarioSettings() {
 										onClick={() =>
 											store.updateContextCompression({ strategy: "selection" })
 										}
-										className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-all ${settings.contextCompression.strategy === "selection" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
+										className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "selection" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
 									>
 										关键筛选
 									</button>
@@ -457,7 +457,7 @@ export function AgentModelScenarioSettings() {
 											: config.scenario
 									}
 									style={{ zIndex }}
-									className={`group relative flex items-center justify-between p-4 bg-surface rounded-xl border transition-all duration-200 ${config.enabled ? "border-border/80 shadow-sm hover:border-primary/40 hover:shadow-md" : "border-border bg-warm-50/50 opacity-70"}`}
+									className={`group relative flex items-center justify-between p-4 bg-surface rounded-xl border transition-[color,background-color,border-color,box-shadow] duration-200 ease-out ${config.enabled ? "border-border/80 shadow-sm hover:border-primary/40 hover:shadow-md" : "border-border bg-warm-50/50 opacity-70"}`}
 								>
 									<div className="flex items-center gap-4 flex-1 min-w-0 mr-4">
 										<div
@@ -539,13 +539,13 @@ export function AgentModelScenarioSettings() {
 					<div className="flex p-1 bg-warm-200/80 rounded-xl">
 						<button
 							onClick={() => setActiveTab("preset")}
-							className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "preset" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
+							className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-[color,background-color,border-color,box-shadow] ${activeTab === "preset" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
 						>
 							预设场景
 						</button>
 						<button
 							onClick={() => setActiveTab("custom")}
-							className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "custom" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
+							className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-[color,background-color,border-color,box-shadow] ${activeTab === "custom" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
 						>
 							自定义
 						</button>
@@ -573,7 +573,7 @@ export function AgentModelScenarioSettings() {
 										value={customScenarioName}
 										onChange={(e) => setCustomScenarioName(e.target.value)}
 										placeholder="例如: 创意写作 creative_writing"
-										className="w-full px-4 py-2.5 bg-warm-50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+										className="w-full px-4 py-2.5 bg-warm-50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-[color,background-color,border-color,box-shadow]"
 									/>
 									<p className="text-xs text-text-light px-1">
 										输入唯一的场景标识符（推荐英文），Agent

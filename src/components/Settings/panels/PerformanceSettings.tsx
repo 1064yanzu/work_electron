@@ -7,7 +7,6 @@ import {
 } from "../../../lib/config";
 import { toast } from "../../ui/Toast";
 import Select from "../../ui/Select";
-import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsPageContainer,
@@ -29,7 +28,6 @@ function formatMs(ms: number) {
 }
 
 export function PerformanceSettings() {
-	const { showTechnicalSummaries } = useSettingsExperience();
 	const [settings, setSettings] = useState<PerformanceTuning>({
 		sourceAutoRefreshMs: 10000,
 		remoteSyncIntervalMs: 20000,
@@ -71,61 +69,18 @@ export function PerformanceSettings() {
 		[settings],
 	);
 
-	if (showTechnicalSummaries) {
-		return (
-			<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+	return (
+		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+			<div
+				id="data.performance.overview"
+				data-settings-anchor="data.performance.overview"
+			>
 				<SettingsPanelHeader
 					icon={Gauge}
 					title="性能优化"
-					description="刷新、同步与调试。"
+					description="控制刷新、同步与调试。"
 				/>
-
-				<div className="grid gap-4 sm:grid-cols-3">
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">资料刷新</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{formatMs(settings.sourceAutoRefreshMs)}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">远程同步</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{formatMs(settings.remoteSyncIntervalMs)}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">调试日志</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{settings.enableUiDebugLogs ? "已启用" : "默认关闭"}
-						</div>
-					</div>
-				</div>
-
-				<button
-					type="button"
-					onClick={() =>
-						void patchSettings({
-							sourceAutoRefreshMs: 10000,
-							remoteSyncIntervalMs: 20000,
-							enableUiDebugLogs: false,
-						})
-					}
-					disabled={isSaving}
-					className="min-h-[44px] rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-warm-50 disabled:opacity-60 dark:text-zinc-200"
-				>
-					恢复推荐值
-				</button>
-			</SettingsPageContainer>
-		);
-	}
-
-	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
-			<SettingsPanelHeader
-				icon={Gauge}
-				title="性能优化"
-				description="控制刷新、同步与调试。"
-			/>
+			</div>
 
 			{/* 刷新与同步 */}
 			<SettingsSectionCard>

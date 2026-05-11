@@ -16,6 +16,7 @@ import {
 	SettingsCardSection,
 	SettingsNumberInput,
 } from "../../ui/SettingsPrimitives";
+import { SettingsDisclosure } from "../../ui/SettingsDisclosure";
 import { cn } from "../../../../lib/utils";
 
 const RISK_LEVEL_CONFIG: Record<
@@ -145,28 +146,36 @@ export function PermissionPolicySection({
 				})}
 			</div>
 
-			{/* 超时 */}
-			<div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-cream-50 px-4 py-3">
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary">
-						<Clock className="h-3.5 w-3.5 text-text-muted" strokeWidth={1.8} />
-						权限请求超时
+			{/* 超时（高级）*/}
+			<SettingsDisclosure
+				id="ai.agent.permission.timeout.advanced"
+				title="高级权限设置"
+			>
+				<div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-cream-50 px-4 py-3">
+					<div className="min-w-0 flex-1">
+						<div className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary">
+							<Clock
+								className="h-3.5 w-3.5 text-text-muted"
+								strokeWidth={1.8}
+							/>
+							权限请求超时
+						</div>
+						<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+							timeout_seconds · 超时后自动按「默认拒绝」处理；范围 5–120 秒。
+						</div>
 					</div>
-					<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
-						超时后自动按「默认拒绝」处理；范围 5–120 秒。
+					<div className="flex items-center gap-2 shrink-0">
+						<SettingsNumberInput
+							value={timeoutSeconds}
+							min={5}
+							max={120}
+							width="104px"
+							suffix="秒"
+							onChange={(value) => onTimeoutChange(value)}
+						/>
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					<SettingsNumberInput
-						value={timeoutSeconds}
-						min={5}
-						max={120}
-						width="104px"
-						suffix="秒"
-						onChange={(value) => onTimeoutChange(value)}
-					/>
-				</div>
-			</div>
+			</SettingsDisclosure>
 
 			{/* 内置工具风险等级 */}
 			<div>

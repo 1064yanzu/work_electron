@@ -19,6 +19,7 @@ import type { SettingsTabId } from "./settingsCatalog";
 // ---------- Panel fields imports（Phase 6 起逐步填充） ----------
 import { FIELDS as generalFields } from "./panels/general/fields";
 import { FIELDS as aiDefaultsFields } from "./panels/ai/fields";
+import { PROMPTS_FIELDS as aiPromptsFields } from "./panels/ai/promptsFields";
 import { FIELDS as workshopLayoutFields } from "./panels/workshop/fields";
 
 // ---------- Phase 5 · data.* ----------
@@ -28,6 +29,15 @@ import { FIELDS as dataDangerFields } from "./panels/data/danger/fields";
 import { FIELDS as dataArtifactsFields } from "./panels/data/artifacts/fields";
 import { FIELDS as dataPerformanceFields } from "./panels/data/performance/fields";
 import { FIELDS as dataStatsFields } from "./panels/data/stats/fields";
+
+// ---------- Phase 8 · 补齐 ai.agent / ai.memory / workshop.* / integrations.* ----------
+import { FIELDS as aiAgentFields } from "./panels/agent/fields";
+import { FIELDS as aiMemoryFields } from "./panels/memory/fields";
+import { FIELDS as workshopReaderFields } from "./panels/reader/fields";
+import { FIELDS as workshopTtsFields } from "./panels/tts/fields";
+import { FIELDS as workshopMascotFields } from "./panels/mascot/fields";
+import { IMAGEGEN_FIELDS as workshopImagegenFields } from "./panels/imagegenFields";
+import { INTEGRATIONS_FIELDS as integrationsFields } from "./panels/integrationsFields";
 // =====================================================================
 // 类型
 // =====================================================================
@@ -79,6 +89,15 @@ export const SETTINGS_FIELD_INDEX: readonly FieldDescriptor[] = [
 	...dataArtifactsFields,
 	...dataPerformanceFields,
 	...dataStatsFields,
+	// Phase 8 · 补齐其它面板
+	...aiAgentFields,
+	...aiMemoryFields,
+	...aiPromptsFields,
+	...workshopReaderFields,
+	...workshopTtsFields,
+	...workshopMascotFields,
+	...workshopImagegenFields,
+	...integrationsFields,
 ] as const;
 
 // =====================================================================

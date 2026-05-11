@@ -68,7 +68,7 @@ export function SessionList(props: {
 				return (
 					<div
 						key={item.session_id}
-						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
+						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:border-cream-400 hover:shadow-sm"
 					>
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0 space-y-1.5">

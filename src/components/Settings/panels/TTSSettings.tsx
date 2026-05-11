@@ -166,11 +166,13 @@ export function TTSSettings() {
 
 	return (
 		<SettingsPageContainer>
-			<SettingsPanelHeader
-				icon={Volume2}
-				title="语音朗读"
-				description="管理 TTS Provider、音色与各场景的朗读策略，支持系统语音、OpenAI 兼容、ElevenLabs 与火山引擎。"
-			/>
+			<div id="workshop.tts.global" data-settings-anchor="workshop.tts.global">
+				<SettingsPanelHeader
+					icon={Volume2}
+					title="语音朗读"
+					description="管理 TTS Provider、音色与各场景的朗读策略，支持系统语音、OpenAI 兼容、ElevenLabs 与火山引擎。"
+				/>
+			</div>
 
 			{/* 概览统计 */}
 			<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

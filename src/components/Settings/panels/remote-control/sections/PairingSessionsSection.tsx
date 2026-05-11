@@ -151,7 +151,7 @@ function SegmentButton({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200",
+				"inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 				active
 					? "bg-warm-200 text-text-primary"
 					: "text-text-muted hover:text-text-secondary",

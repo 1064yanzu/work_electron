@@ -117,7 +117,7 @@ export function SlackQuickSetup({
 						}}
 						placeholder="xapp-1-..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 							appValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: app
@@ -146,7 +146,7 @@ export function SlackQuickSetup({
 						}}
 						placeholder="xoxb-..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 							botValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: bot

@@ -7,7 +7,7 @@
  *   - 输入 `DELETE ALL` 确认短语 + 确认按钮
  *
  * 所有 UI 走统一原子组件 `SettingsHint` / `SettingsTextInput` / `SettingsButton`，
- * 禁止 `transition-all` 与手写样式。
+ * 禁止 `transition-[color,background-color,border-color,box-shadow]` 与手写样式。
  */
 import { ShieldAlert, Trash2 } from "lucide-react";
 import { useState } from "react";

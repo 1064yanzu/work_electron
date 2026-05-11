@@ -35,7 +35,7 @@ export function CheckButton({ status, onClick }: CheckButtonProps) {
 		<button
 			onClick={onClick}
 			disabled={status === "checking"}
-			className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-w-[72px] ${config.bg} ${config.text}`}
+			className={`px-4 py-2.5 rounded-full text-sm font-medium transition-[color,background-color,border-color,box-shadow] flex items-center justify-center gap-2 min-w-[72px] ${config.bg} ${config.text}`}
 		>
 			{status === "checking" && <Loader2 className="w-4 h-4 animate-spin" />}
 			{status === "success" && <Check className="w-4 h-4" />}

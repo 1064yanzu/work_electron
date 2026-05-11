@@ -167,7 +167,7 @@ function VoiceCard({
 	return (
 		<div
 			className={cn(
-				"group relative flex items-center gap-3 rounded-xl border bg-surface px-3 py-2 transition-all",
+				"group relative flex items-center gap-3 rounded-xl border bg-surface px-3 py-2 transition-[color,background-color,border-color,box-shadow]",
 				selected
 					? "shadow-bai-card"
 					: "border-border hover:border-cream-500 hover:shadow-bai-card",

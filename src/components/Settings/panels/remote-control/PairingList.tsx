@@ -55,7 +55,7 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.request_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:border-cream-400 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
@@ -119,7 +119,7 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.pairing_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-all duration-200 hover:border-cream-400 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:border-cream-400 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">

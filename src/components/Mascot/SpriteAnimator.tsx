@@ -2,6 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { SPRITE_ATLAS, type SpriteRowSpec } from "../../lib/mascot/manifest";
 
+function useIsVisible(ref: React.RefObject<Element | null>): boolean {
+	const [visible, setVisible] = useState(true);
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		const obs = new IntersectionObserver(
+			([entry]) => setVisible(entry.isIntersecting),
+			{ threshold: 0 },
+		);
+		obs.observe(el);
+		return () => obs.disconnect();
+	}, [ref]);
+	return visible;
+}
+
 export interface SpriteAnimatorProps {
 	atlasUrl: string;
 	row: SpriteRowSpec;
@@ -34,6 +49,8 @@ export function SpriteAnimator({
 }: SpriteAnimatorProps) {
 	const [frame, setFrame] = useState(0);
 	const reducedRef = useRef(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const isVisible = useIsVisible(containerRef);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -47,7 +64,7 @@ export function SpriteAnimator({
 	}, []);
 
 	useEffect(() => {
-		if (paused || reducedRef.current) return;
+		if (paused || !isVisible || reducedRef.current) return;
 		if (row.frameCount <= 1) return;
 
 		let cancelled = false;
@@ -77,7 +94,7 @@ export function SpriteAnimator({
 			if (timer !== null) clearTimeout(timer);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [row.rowIndex, row.frameCount, paused, loop]);
+	}, [row.rowIndex, row.frameCount, paused, loop, isVisible]);
 
 	// reduced-motion 直接停第 0 帧
 	const renderFrame = reducedRef.current ? 0 : frame;
@@ -91,6 +108,7 @@ export function SpriteAnimator({
 
 	return (
 		<div
+			ref={containerRef}
 			role="img"
 			aria-hidden="true"
 			className={cn("inline-block select-none", className)}

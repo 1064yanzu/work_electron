@@ -28,7 +28,6 @@ export function useMouseGaze(active: boolean): GazeOffset {
 
 	useEffect(() => {
 		if (!active) return;
-		// 尊重 prefers-reduced-motion
 		if (
 			typeof window !== "undefined" &&
 			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
@@ -36,10 +35,14 @@ export function useMouseGaze(active: boolean): GazeOffset {
 			return;
 		}
 
+		const startRaf = () => {
+			if (rafRef.current !== null) return;
+			rafRef.current = requestAnimationFrame(tick);
+		};
+
 		const onMove = (e: MouseEvent) => {
 			const cx = window.innerWidth / 2;
 			const cy = window.innerHeight / 2;
-			// 归一化 [-1, 1]，限制到 MAX_OFFSET
 			const nx = Math.max(
 				-1,
 				Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)),
@@ -52,10 +55,12 @@ export function useMouseGaze(active: boolean): GazeOffset {
 				tx: nx * MAX_OFFSET,
 				ty: ny * MAX_OFFSET,
 			};
+			startRaf();
 		};
 
 		const onLeave = () => {
 			targetRef.current = { tx: 0, ty: 0 };
+			startRaf();
 		};
 
 		const tick = () => {
@@ -66,26 +71,32 @@ export function useMouseGaze(active: boolean): GazeOffset {
 				ty: cur.ty + (target.ty - cur.ty) * LERP,
 			};
 			curRef.current = next;
-			// 只在差值有意义时 setState 避免无用重渲染
-			if (
-				Math.abs(next.tx - offset.tx) > 0.05 ||
-				Math.abs(next.ty - offset.ty) > 0.05
-			) {
-				setOffset(next);
+			const moving =
+				Math.abs(next.tx - cur.tx) > 0.01 ||
+				Math.abs(next.ty - cur.ty) > 0.01;
+			if (moving) {
+				setOffset({ ...next });
+				rafRef.current = requestAnimationFrame(tick);
+			} else {
+				// 收敛后停止循环，等下次 mousemove 再重启
+				rafRef.current = null;
+				setOffset({ tx: 0, ty: 0 });
+				curRef.current = { tx: 0, ty: 0 };
 			}
-			rafRef.current = requestAnimationFrame(tick);
 		};
 
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseleave", onLeave);
-		rafRef.current = requestAnimationFrame(tick);
 
 		return () => {
 			window.removeEventListener("mousemove", onMove);
 			window.removeEventListener("mouseleave", onLeave);
-			if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+			if (rafRef.current !== null) {
+				cancelAnimationFrame(rafRef.current);
+				rafRef.current = null;
+			}
 		};
-	}, [active, offset.tx, offset.ty]);
+	}, [active]);
 
 	return offset;
 }

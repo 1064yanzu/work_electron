@@ -96,7 +96,7 @@ export function RemoteControlHeader({
 
 					<div className="flex items-center gap-3">
 						<span
-							className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
+							className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-[color,background-color,border-color,box-shadow] ${
 								enabled
 									? "bg-mint-500/10 text-mint-600"
 									: "bg-warm-200 text-text-muted"

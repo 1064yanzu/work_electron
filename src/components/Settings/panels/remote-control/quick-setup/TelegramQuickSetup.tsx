@@ -129,7 +129,7 @@ export function TelegramQuickSetup({
 						}}
 						placeholder="123456789:ABC..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 							isValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: trimmed

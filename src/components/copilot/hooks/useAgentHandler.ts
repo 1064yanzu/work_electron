@@ -632,7 +632,7 @@ export function useAgentHandler({
 					return;
 				}
 				finalizeFromRawText(raw, "watchdog_inactivity");
-			}, 1000);
+			}, 3000);
 
 			const systemPrompt = undefined;
 			const conversationMessagesForAgent = buildConversationMessagesForAgentRun(

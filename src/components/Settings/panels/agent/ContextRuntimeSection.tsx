@@ -1,7 +1,9 @@
 // Agent 设置 - 上下文治理区段
 //
-// 重设计：用 SettingsCardSection 统一卡片化，所有控件改用 SettingsNumberInput /
-// SettingsTextInput / SettingsCheckbox 等基元，视觉风格与全局对齐。
+// Phase 7.1：把 enable_tool_search / setting_sources / 多 Agent 协作的内部参数 /
+// teammate 预算等专家向字段统一收到 SettingsDisclosure 里；面板默认只展示常用配置，
+// 想调高级参数的用户主动展开。同时把 snake_case label 改为人性化中文，
+// 原 config key 作为 hint 灰字附在描述里。
 
 import { Box, Clock, Cpu, Layers, Network, Users } from "lucide-react";
 import type { AgentModelSettings } from "../../../../lib/models/agentModelConfig";
@@ -16,6 +18,7 @@ import {
 	SettingsNumberInput,
 	SettingsTextInput,
 } from "../../ui/SettingsPrimitives";
+import { SettingsDisclosure } from "../../ui/SettingsDisclosure";
 
 type ContextRuntime = NonNullable<AgentModelSettings["contextRuntime"]>;
 
@@ -54,8 +57,11 @@ export function ContextRuntimeSection({
 			{/* —— 行为策略 —— */}
 			<div>
 				<SubsectionTitle icon={Layers} label="行为策略" />
-				<div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-					<SettingsField label="context_policy" hint="主上下文裁剪策略">
+				<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+					<SettingsField
+						label="上下文裁剪策略"
+						hint="主上下文裁剪策略 · context_policy"
+					>
 						<Select
 							value={contextRuntime.contextPolicy}
 							onChange={(event) =>
@@ -75,8 +81,8 @@ export function ContextRuntimeSection({
 						/>
 					</SettingsField>
 					<SettingsField
-						label="subagent_context_mode"
-						hint="子 Agent 的上下文继承"
+						label="子 Agent 上下文继承"
+						hint="subagent_context_mode"
 					>
 						<Select
 							value={contextRuntime.subagentContextMode}
@@ -94,35 +100,46 @@ export function ContextRuntimeSection({
 							]}
 						/>
 					</SettingsField>
-					<SettingsField label="enable_tool_search" hint="工具懒加载策略">
-						<Select
-							value={contextRuntime.enableToolSearch}
-							onChange={(event) =>
-								void saveContextRuntime({
-									enableToolSearch: event.target.value as
-										| "auto"
-										| "auto:5"
-										| "true"
-										| "false",
-								})
-							}
-							variant="inline"
-							options={[
-								{ value: "false", label: "false（关闭，推荐）" },
-								{ value: "auto", label: "auto" },
-								{ value: "auto:5", label: "auto:5" },
-								{ value: "true", label: "true（始终）" },
-							]}
-						/>
-					</SettingsField>
 				</div>
+
+				<SettingsDisclosure
+					id="ai.agent.context.behavior.advanced"
+					className="mt-3"
+				>
+					<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+						<SettingsField
+							label="工具懒加载"
+							hint="enable_tool_search · 是否在调用前先做工具检索"
+						>
+							<Select
+								value={contextRuntime.enableToolSearch}
+								onChange={(event) =>
+									void saveContextRuntime({
+										enableToolSearch: event.target.value as
+											| "auto"
+											| "auto:5"
+											| "true"
+											| "false",
+									})
+								}
+								variant="inline"
+								options={[
+									{ value: "false", label: "false（关闭，推荐）" },
+									{ value: "auto", label: "auto" },
+									{ value: "auto:5", label: "auto:5" },
+									{ value: "true", label: "true（始终）" },
+								]}
+							/>
+						</SettingsField>
+					</div>
+				</SettingsDisclosure>
 			</div>
 
 			{/* —— 运行预算 —— */}
 			<div>
 				<SubsectionTitle icon={Clock} label="运行预算" />
 				<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-					<SettingsField label="max_turns" hint="单次会话最大轮次（1-200）">
+					<SettingsField label="单次最大轮次" hint="max_turns · 1-200">
 						<SettingsNumberInput
 							value={contextRuntime.maxTurns}
 							min={1}
@@ -130,7 +147,7 @@ export function ContextRuntimeSection({
 							onChange={(value) => void saveContextRuntime({ maxTurns: value })}
 						/>
 					</SettingsField>
-					<SettingsField label="max_thinking_tokens" hint="思考 token 上限">
+					<SettingsField label="思考 Token 上限" hint="max_thinking_tokens">
 						<SettingsNumberInput
 							value={contextRuntime.maxThinkingTokens}
 							min={256}
@@ -141,7 +158,10 @@ export function ContextRuntimeSection({
 							}
 						/>
 					</SettingsField>
-					<SettingsField label="max_budget_usd" hint="美元预算（可空）">
+					<SettingsField
+						label="预算上限（USD）"
+						hint="max_budget_usd · 留空不限制"
+					>
 						<SettingsNumberInput
 							value={contextRuntime.maxBudgetUsd ?? 0}
 							min={0}
@@ -161,7 +181,7 @@ export function ContextRuntimeSection({
 			<div>
 				<SubsectionTitle icon={Box} label="上下文预算" />
 				<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-					<SettingsField label="max_context_chars" hint="总上下文字符上限">
+					<SettingsField label="总上下文字符上限" hint="max_context_chars">
 						<SettingsNumberInput
 							value={contextRuntime.contextBudget.maxContextChars}
 							min={1000}
@@ -173,7 +193,7 @@ export function ContextRuntimeSection({
 							}
 						/>
 					</SettingsField>
-					<SettingsField label="max_files" hint="单次注入文件上限">
+					<SettingsField label="单次注入文件上限" hint="max_files">
 						<SettingsNumberInput
 							value={contextRuntime.contextBudget.maxFiles}
 							min={1}
@@ -185,7 +205,7 @@ export function ContextRuntimeSection({
 							}
 						/>
 					</SettingsField>
-					<SettingsField label="max_file_chars" hint="单文件最大字符">
+					<SettingsField label="单文件最大字符" hint="max_file_chars">
 						<SettingsNumberInput
 							value={contextRuntime.contextBudget.maxFileChars}
 							min={500}
@@ -200,23 +220,28 @@ export function ContextRuntimeSection({
 				</div>
 			</div>
 
-			{/* —— Setting sources —— */}
-			<div>
-				<SubsectionTitle icon={Cpu} label="setting_sources" />
-				<p className="mb-2 text-[11.5px] text-text-muted">
-					Agent 启动时读取的设置来源；至少保留一个。
-				</p>
-				<div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-cream-50 px-4 py-3">
-					{(["user", "project", "local"] as const).map((source) => (
-						<SettingsCheckbox
-							key={source}
-							checked={settingSources.includes(source)}
-							onChange={() => toggleSource(source)}
-							label={source}
-						/>
-					))}
+			{/* —— Setting sources（折到高级）—— */}
+			<SettingsDisclosure
+				id="ai.agent.context.sources.advanced"
+				title="设置来源（setting_sources）"
+			>
+				<div>
+					<SubsectionTitle icon={Cpu} label="设置来源" />
+					<p className="mb-2 text-[11.5px] text-text-muted">
+						Agent 启动时读取的设置来源；至少保留一个。
+					</p>
+					<div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-cream-50 px-4 py-3">
+						{(["user", "project", "local"] as const).map((source) => (
+							<SettingsCheckbox
+								key={source}
+								checked={settingSources.includes(source)}
+								onChange={() => toggleSource(source)}
+								label={source}
+							/>
+						))}
+					</div>
 				</div>
-			</div>
+			</SettingsDisclosure>
 
 			{/* —— 多 Agent 协作（实验）—— */}
 			<MultiAgentBlock
@@ -289,7 +314,7 @@ function MultiAgentBlock({
 			{enabled && (
 				<div className="space-y-4 px-4 py-4">
 					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<SettingsField label="multi_agent_mode">
+						<SettingsField label="多 Agent 模式" hint="multi_agent_mode">
 							<Select
 								value={contextRuntime.multiAgentMode}
 								onChange={(event) =>
@@ -308,7 +333,7 @@ function MultiAgentBlock({
 								]}
 							/>
 						</SettingsField>
-						<SettingsField label="teammate_mode">
+						<SettingsField label="队员运行模式" hint="teammate_mode">
 							<Select
 								value={contextRuntime.teammateMode}
 								onChange={(event) =>
@@ -327,100 +352,116 @@ function MultiAgentBlock({
 								]}
 							/>
 						</SettingsField>
-						<SettingsField label="max_teammates" hint="并行队员上限（1-8）">
-							<SettingsNumberInput
-								value={contextRuntime.maxTeammates}
-								min={1}
-								max={8}
-								onChange={(value) =>
-									void saveContextRuntime({ maxTeammates: value })
-								}
-							/>
-						</SettingsField>
-						<SettingsField label="leader_summary_model" hint="留空沿用主模型">
-							<SettingsTextInput
-								value={contextRuntime.leaderSummaryModel ?? ""}
-								onChange={(next) =>
-									void saveContextRuntime({
-										leaderSummaryModel: next.trim() || undefined,
-									})
-								}
-								placeholder="留空沿用主模型"
-								mono
-							/>
-						</SettingsField>
-						<div className="sm:col-span-2">
-							<SettingsField
-								label="teammate_execution_model"
-								hint="例如 claude-sonnet-4-5；留空则由 SDK / 场景配置决定"
-							>
-								<SettingsTextInput
-									value={contextRuntime.teammateExecutionModel ?? ""}
-									onChange={(next) =>
-										void saveContextRuntime({
-											teammateExecutionModel: next.trim() || undefined,
-										})
-									}
-									placeholder="claude-sonnet-4-5"
-									mono
-								/>
-							</SettingsField>
-						</div>
 					</div>
 
-					<div>
-						<div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-							<Network className="h-3 w-3" strokeWidth={1.8} />
-							teammate 预算
-						</div>
-						<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-							<SettingsField label="max_turns">
-								<SettingsNumberInput
-									value={contextRuntime.teammateBudget.maxTurns}
-									min={1}
-									max={100}
-									onChange={(value) =>
-										void saveContextRuntime({
-											teammateBudget: { maxTurns: value },
-										})
-									}
-								/>
-							</SettingsField>
-							<SettingsField label="max_thinking_tokens">
-								<SettingsNumberInput
-									value={contextRuntime.teammateBudget.maxThinkingTokens}
-									min={256}
-									max={65536}
-									step={256}
-									onChange={(value) =>
-										void saveContextRuntime({
-											teammateBudget: { maxThinkingTokens: value },
-										})
-									}
-								/>
-							</SettingsField>
-							<SettingsField label="max_budget_usd">
-								<SettingsNumberInput
-									value={contextRuntime.teammateBudget.maxBudgetUsd ?? 0}
-									min={0}
-									step={0.1}
-									suffix="$"
-									onChange={(value) =>
-										void saveContextRuntime({
-											teammateBudget: {
-												maxBudgetUsd: value === 0 ? undefined : value,
-											},
-										})
-									}
-								/>
-							</SettingsField>
-						</div>
-					</div>
+					<SettingsDisclosure
+						id="ai.agent.multiagent.advanced"
+						title="高级队员设置"
+					>
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<SettingsField label="并行队员上限" hint="max_teammates · 1-8">
+									<SettingsNumberInput
+										value={contextRuntime.maxTeammates}
+										min={1}
+										max={8}
+										onChange={(value) =>
+											void saveContextRuntime({ maxTeammates: value })
+										}
+									/>
+								</SettingsField>
+								<SettingsField
+									label="Leader 总结模型"
+									hint="leader_summary_model · 留空沿用主模型"
+								>
+									<SettingsTextInput
+										value={contextRuntime.leaderSummaryModel ?? ""}
+										onChange={(next) =>
+											void saveContextRuntime({
+												leaderSummaryModel: next.trim() || undefined,
+											})
+										}
+										placeholder="留空沿用主模型"
+										mono
+									/>
+								</SettingsField>
+								<div className="sm:col-span-2">
+									<SettingsField
+										label="队员执行模型"
+										hint="teammate_execution_model · 例如 claude-sonnet-4-5；留空由 SDK / 场景配置决定"
+									>
+										<SettingsTextInput
+											value={contextRuntime.teammateExecutionModel ?? ""}
+											onChange={(next) =>
+												void saveContextRuntime({
+													teammateExecutionModel: next.trim() || undefined,
+												})
+											}
+											placeholder="claude-sonnet-4-5"
+											mono
+										/>
+									</SettingsField>
+								</div>
+							</div>
 
-					<SettingsHint icon={Users}>
-						队员失败时会回退到稳定子代理；建议在主模型与队员模型之间选择规模相近的搭配，避免
-						token 开销失控。
-					</SettingsHint>
+							<div>
+								<div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+									<Network className="h-3 w-3" strokeWidth={1.8} />
+									队员预算（teammate_budget）
+								</div>
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+									<SettingsField label="单次最大轮次" hint="max_turns">
+										<SettingsNumberInput
+											value={contextRuntime.teammateBudget.maxTurns}
+											min={1}
+											max={100}
+											onChange={(value) =>
+												void saveContextRuntime({
+													teammateBudget: { maxTurns: value },
+												})
+											}
+										/>
+									</SettingsField>
+									<SettingsField
+										label="思考 Token 上限"
+										hint="max_thinking_tokens"
+									>
+										<SettingsNumberInput
+											value={contextRuntime.teammateBudget.maxThinkingTokens}
+											min={256}
+											max={65536}
+											step={256}
+											onChange={(value) =>
+												void saveContextRuntime({
+													teammateBudget: { maxThinkingTokens: value },
+												})
+											}
+										/>
+									</SettingsField>
+									<SettingsField label="预算上限（USD）" hint="max_budget_usd">
+										<SettingsNumberInput
+											value={contextRuntime.teammateBudget.maxBudgetUsd ?? 0}
+											min={0}
+											step={0.1}
+											suffix="$"
+											onChange={(value) =>
+												void saveContextRuntime({
+													teammateBudget: {
+														maxBudgetUsd: value === 0 ? undefined : value,
+													},
+												})
+											}
+										/>
+									</SettingsField>
+								</div>
+							</div>
+
+							<SettingsHint icon={Users}>
+								队员失败时会回退到稳定子代理；建议在主模型与队员模型之间选择规模相近的搭配，避免
+								token 开销失控。
+							</SettingsHint>
+						</div>
+					</SettingsDisclosure>
 				</div>
 			)}
 		</div>

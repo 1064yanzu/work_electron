@@ -181,10 +181,7 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		category: "general",
 		label: "关于与更新",
 		icon: Info,
-		load: asDefault(
-			() => import("./panels/general/AboutPanel"),
-			"AboutPanel",
-		),
+		load: asDefault(() => import("./panels/general/AboutPanel"), "AboutPanel"),
 	},
 
 	// ---------- ai ----------
@@ -193,10 +190,7 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		category: "ai",
 		label: "服务商与模型",
 		icon: Boxes,
-		load: asDefault(
-			() => import("./panels/ai/models"),
-			"ModelSettings",
-		),
+		load: asDefault(() => import("./panels/ai/models"), "ModelSettings"),
 	},
 	{
 		id: "ai.agent",
@@ -211,30 +205,21 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		label: "Agent 记忆",
 		icon: Brain,
 		badge: { tone: "neutral", text: "数据" },
-		load: asDefault(
-			() => import("./panels/MemorySettings"),
-			"MemorySettings",
-		),
+		load: asDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
 	},
 	{
 		id: "ai.prompts",
 		category: "ai",
 		label: "提示词模板",
 		icon: MessageSquare,
-		load: asDefault(
-			() => import("./panels/PromptSettings"),
-			"PromptSettings",
-		),
+		load: asDefault(() => import("./panels/ai/PromptsPanel"), "PromptsPanel"),
 	},
 	{
 		id: "ai.defaults",
 		category: "ai",
 		label: "默认模型分工",
 		icon: Sparkles,
-		load: asDefault(
-			() => import("./panels/ai/DefaultsPanel"),
-			"DefaultsPanel",
-		),
+		load: asDefault(() => import("./panels/ai/DefaultsPanel"), "DefaultsPanel"),
 	},
 
 	// ---------- workshop ----------
@@ -253,10 +238,7 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		category: "workshop",
 		label: "阅读器",
 		icon: BookOpen,
-		load: asDefault(
-			() => import("./panels/ReaderSettings"),
-			"ReaderSettings",
-		),
+		load: asDefault(() => import("./panels/ReaderSettings"), "ReaderSettings"),
 	},
 	{
 		id: "workshop.tts",
@@ -270,10 +252,7 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		category: "workshop",
 		label: "桌面宠物",
 		icon: Sparkles,
-		load: asDefault(
-			() => import("./panels/MascotSettings"),
-			"MascotSettings",
-		),
+		load: asDefault(() => import("./panels/MascotSettings"), "MascotSettings"),
 	},
 	{
 		id: "workshop.layout",
@@ -394,8 +373,6 @@ export const CATEGORY_ID_SET: ReadonlySet<SettingsNavCategoryId> = new Set(
 );
 
 /** 根据子 Tab id 反查所属的一级分类 id */
-export function getCategoryOf(
-	id: SettingsTabId,
-): SettingsNavCategoryId | null {
+export function getCategoryOf(id: SettingsTabId): SettingsNavCategoryId | null {
 	return getSubtab(id)?.category ?? null;
 }

@@ -68,7 +68,7 @@ function EmotionCell({
 	const src = getMascotAsset(id, slot);
 	return (
 		<div
-			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
+			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
 			style={{
 				background: `linear-gradient(180deg, ${accentColor}0E 0%, var(--t-bg-surface, #FFFFFF) 60%)`,
 			}}

@@ -7,7 +7,7 @@
  *     `SettingsDisclosure id="data.storage.advanced"` 下。
  *   - 每个字段容器挂 `id={anchorId}` + `data-settings-anchor`，供 SettingsSearch 滚定位。
  *   - 原子组件复用 `SettingsSectionCard` / `SettingsRow` / `SettingsSwitch` /
- *     `SettingsButton` / `SettingsHint`，禁用手写 button 样式与 `transition-all`。
+ *     `SettingsButton` / `SettingsHint`，禁用手写 button 样式与 `transition-[color,background-color,border-color,box-shadow]`。
  */
 import { FolderOpen, HardDrive } from "lucide-react";
 import { useCallback } from "react";
@@ -115,9 +115,7 @@ export function StorageSection({
 								action={
 									<SettingsSwitch
 										checked={storageSettings.obsidian_frontmatter}
-										onChange={(v) =>
-											void onUpdate({ obsidian_frontmatter: v })
-										}
+										onChange={(v) => void onUpdate({ obsidian_frontmatter: v })}
 										disabled={isUpdating}
 									/>
 								}
@@ -133,9 +131,7 @@ export function StorageSection({
 								action={
 									<SettingsSwitch
 										checked={storageSettings.obsidian_wiki_links}
-										onChange={(v) =>
-											void onUpdate({ obsidian_wiki_links: v })
-										}
+										onChange={(v) => void onUpdate({ obsidian_wiki_links: v })}
 										disabled={isUpdating}
 									/>
 								}

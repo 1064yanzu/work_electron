@@ -1,17 +1,14 @@
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useMemo,
-	useState,
-	type ReactNode,
-} from "react";
-import {
-	getSettingsExperienceMode,
-	getTechnicalGroupExpandedPreference,
-	setSettingsExperienceMode,
-	setTechnicalGroupExpandedPreference,
-} from "../../../lib/settingsUiPreferences";
+/**
+ * SettingsExperienceContext — 已废弃的体验模式上下文（Phase 7.5 起 no-op）
+ *
+ * 旧模型把面板分为 simple / geek 两档，配合 `showTechnicalSummaries`
+ * 渲染只读摘要。重构后所有面板都直接展示完整 UI，本文件保留是为了让
+ * 仍引用 `useSettingsExperience` / `SettingsExperienceProvider` 的旧代码
+ * 不报错；语义上 `mode` 永远是 `geek`，`showTechnicalSummaries` 永远
+ * 为 `false`。Phase 7.5 完成后下游引用会被逐步删除，本文件最终也会被
+ * 整体清理。
+ */
+import { type ReactNode } from "react";
 import type { SettingsExperienceMode } from "../types";
 
 interface SettingsExperienceContextValue {
@@ -22,55 +19,26 @@ interface SettingsExperienceContextValue {
 	showTechnicalSummaries: boolean;
 }
 
-const SettingsExperienceContext =
-	createContext<SettingsExperienceContextValue | null>(null);
+const NOOP_VALUE: SettingsExperienceContextValue = {
+	mode: "geek",
+	setMode: () => {
+		/* no-op */
+	},
+	technicalGroupExpanded: false,
+	setTechnicalGroupExpanded: () => {
+		/* no-op */
+	},
+	showTechnicalSummaries: false,
+};
 
 export function SettingsExperienceProvider({
 	children,
 }: {
 	children: ReactNode;
 }) {
-	const [mode, setModeState] = useState<SettingsExperienceMode>(() =>
-		getSettingsExperienceMode(),
-	);
-	const [technicalGroupExpanded, setTechnicalGroupExpandedState] = useState(
-		() => getTechnicalGroupExpandedPreference(),
-	);
-
-	const setMode = useCallback((nextMode: SettingsExperienceMode) => {
-		setModeState(nextMode);
-		setSettingsExperienceMode(nextMode);
-	}, []);
-
-	const setTechnicalGroupExpanded = useCallback((expanded: boolean) => {
-		setTechnicalGroupExpandedState(expanded);
-		setTechnicalGroupExpandedPreference(expanded);
-	}, []);
-
-	const value = useMemo<SettingsExperienceContextValue>(
-		() => ({
-			mode,
-			setMode,
-			technicalGroupExpanded,
-			setTechnicalGroupExpanded,
-			showTechnicalSummaries: mode === "simple",
-		}),
-		[mode, setMode, technicalGroupExpanded, setTechnicalGroupExpanded],
-	);
-
-	return (
-		<SettingsExperienceContext.Provider value={value}>
-			{children}
-		</SettingsExperienceContext.Provider>
-	);
+	return <>{children}</>;
 }
 
-export function useSettingsExperience() {
-	const context = useContext(SettingsExperienceContext);
-	if (!context) {
-		throw new Error(
-			"useSettingsExperience 必须在 SettingsExperienceProvider 内使用",
-		);
-	}
-	return context;
+export function useSettingsExperience(): SettingsExperienceContextValue {
+	return NOOP_VALUE;
 }

@@ -408,7 +408,7 @@ function ReadyView({
 					<div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-warm-300">
 						<div
 							className={cn(
-								"h-full rounded-full transition-all duration-1000 ease-linear",
+								"h-full rounded-full transition-[width,background-color] duration-1000 ease-linear",
 								progress > 0.3 ? "bg-primary" : "bg-peach-500",
 							)}
 							style={{ width: `${progress * 100}%` }}

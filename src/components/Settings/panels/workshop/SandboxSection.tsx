@@ -3,8 +3,10 @@
  *
  * Phase 6 拆分自 `LayoutPanel.tsx` 以保持单文件 ≤ 400 行。
  * 承载断点 / 自动启动 dev server / 包管理器 / dev 命令模板 / 端口范围。
+ *
+ * Phase 7.3：dev 命令文本字段改用 `useCommittedValue({ mode: "blur" })`，
+ * 替代手写的 draft + onBlur + onKeyDown 样板。
  */
-import { useEffect, useState } from "react";
 import { Select } from "../../../ui/Select";
 import {
 	SettingsCardSection,
@@ -13,6 +15,7 @@ import {
 	SettingsSwitch,
 	SettingsTextInput,
 } from "../../ui/SettingsPrimitives";
+import { useCommittedValue } from "../../hooks/useCommittedValue";
 
 export type Breakpoint = "mobile" | "tablet" | "desktop" | "auto";
 export type PackageManager = "auto" | "npm" | "yarn" | "pnpm";
@@ -40,30 +43,14 @@ interface SandboxSectionProps {
 }
 
 export function SandboxSection({ prefs, onChange }: SandboxSectionProps) {
-	// devCommandTemplate 走失焦提交语义（失焦或 Enter 写回）；本地 draft 缓存用户输入
-	const [devCommandDraft, setDevCommandDraft] = useState(
-		prefs.devCommandTemplate,
-	);
-
-	// 上游变化（首次加载 / 上层 rollback）时同步 draft；只在非聚焦态下才覆盖本地输入
-	useEffect(() => {
-		const active = document.activeElement;
-		const inputFocused =
-			active instanceof HTMLInputElement ||
-			active instanceof HTMLTextAreaElement;
-		if (!inputFocused) {
-			setDevCommandDraft(prefs.devCommandTemplate);
-		}
-	}, [prefs.devCommandTemplate]);
-
-	const handleDevCommandChange = (v: string) => {
-		setDevCommandDraft(v);
-	};
-	const handleDevCommandCommit = () => {
-		if (devCommandDraft !== prefs.devCommandTemplate) {
-			void onChange({ devCommandTemplate: devCommandDraft });
-		}
-	};
+	const devCommand = useCommittedValue<string>({
+		value: prefs.devCommandTemplate,
+		mode: "blur",
+		errorMessage: "保存自定义 dev 命令失败",
+		onCommit: async (next) => {
+			await onChange({ devCommandTemplate: next });
+		},
+	});
 
 	return (
 		<SettingsCardSection
@@ -146,22 +133,14 @@ export function SandboxSection({ prefs, onChange }: SandboxSectionProps) {
 			>
 				<SettingsRow
 					label="自定义 dev 命令"
-					description="覆盖默认的 dev server 启动命令，留空即使用 npm run dev。"
+					description="覆盖默认的 dev server 启动命令，留空即使用 npm run dev。失焦或回车自动保存。"
 					action={
 						<div className="w-60">
 							<SettingsTextInput
-								value={devCommandDraft}
-								onChange={handleDevCommandChange}
-								onBlur={handleDevCommandCommit}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										handleDevCommandCommit();
-									} else if (e.key === "Escape") {
-										e.preventDefault();
-										setDevCommandDraft(prefs.devCommandTemplate);
-									}
-								}}
+								value={devCommand.draft}
+								onChange={devCommand.handleChange}
+								onBlur={devCommand.handleBlur}
+								onKeyDown={devCommand.handleKeyDown}
 								placeholder="npm run dev"
 								size="sm"
 							/>

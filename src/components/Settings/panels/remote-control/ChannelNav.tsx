@@ -78,7 +78,7 @@ export function ChannelNav({
 							if (e.key === "Enter" || e.key === " ") onSelect(item.id);
 						}}
 						className={cn(
-							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200",
+							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 							isActive
 								? "bg-surface ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:ring-primary/50"
 								: "hover:bg-warm-200/60",
@@ -87,7 +87,7 @@ export function ChannelNav({
 						{/* 左侧强调条 */}
 						<span
 							className={cn(
-								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 								isActive
 									? "bg-primary opacity-100"
 									: "bg-primary opacity-0 group-hover:opacity-40",

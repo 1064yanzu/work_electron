@@ -1,7 +1,8 @@
 // Agent 设置 - 资料库检索区段
 //
-// 重设计：检索模式做成卡片式 segmented control（带描述与 active accent），
-// 数值参数走 SettingsNumberInput，重建按钮 + 统计放底部 Hint 条。
+// Phase 7.1：把 vector_min_score / embedding_max_chars / fallback_concurrency
+// 等专家向参数收到 SettingsDisclosure 里。常用配置（检索模式 + Embedding 模型）
+// 默认展示；统计 + 立即补齐保留在主区。
 
 import { Database, Sparkles, Wrench } from "lucide-react";
 import type { KbEmbeddingStats } from "../../../../lib/api";
@@ -14,6 +15,7 @@ import {
 	SettingsHint,
 	SettingsNumberInput,
 } from "../../ui/SettingsPrimitives";
+import { SettingsDisclosure } from "../../ui/SettingsDisclosure";
 import { cn } from "../../../../lib/utils";
 
 interface RetrievalModeOption {
@@ -91,7 +93,8 @@ export function KbRetrievalSection({
 								type="button"
 								onClick={() => void onModeChange(opt.value)}
 								className={cn(
-									"group relative rounded-2xl border p-4 text-left transition-all duration-150",
+									"group relative rounded-2xl border p-4 text-left",
+									"transition-[background-color,border-color,box-shadow] duration-150 ease-out",
 									active
 										? "border-primary bg-primary/[0.04] shadow-bai-card"
 										: "border-border bg-surface hover:border-cream-500 hover:bg-warm-50/60",
@@ -117,69 +120,73 @@ export function KbRetrievalSection({
 				</div>
 			</div>
 
-			{/* 参数（grid） */}
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+			{/* 常用参数 */}
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-1">
 				<SettingsField
-					label="Embedding 输入最大字符"
-					hint="规避 512 tokens 限制；超出会先截断（默认 480）"
+					label="Embedding 模型"
+					hint="kb.embedding_model · 必须选择服务商支持的 embedding 专用模型，例如 OpenAI 的 text-embedding-3-small"
 				>
-					<SettingsNumberInput
-						value={kbEmbeddingMaxChars}
-						min={32}
-						max={4096}
-						step={16}
-						onChange={(value) => void onMaxCharsChange(value)}
-						suffix="字符"
-					/>
-				</SettingsField>
-				<SettingsField
-					label="向量命中阈值"
-					hint="低于此值会回退到 FTS / LIKE（建议 0.15-0.35）"
-				>
-					<SettingsNumberInput
-						value={kbVectorMinScore}
-						min={0}
-						max={1}
-						step={0.01}
-						onChange={(value) =>
-							void onMinScoreChange(Number(value.toFixed(2)))
+					<Select
+						value={kbEmbeddingModel}
+						onChange={(event) =>
+							void onEmbeddingModelChange(event.target.value)
 						}
-					/>
-				</SettingsField>
-				<div className="sm:col-span-2">
-					<SettingsField
-						label="Embedding 模型"
-						hint="必须选择服务商支持的 embedding 专用模型，例如 OpenAI 的 text-embedding-3-small"
-					>
-						<Select
-							value={kbEmbeddingModel}
-							onChange={(event) =>
-								void onEmbeddingModelChange(event.target.value)
-							}
-							variant="inline"
-							placeholder="未选择（回退到 FTS / LIKE）"
-							options={[
-								{ value: "", label: "未选择（回退到 FTS / LIKE）" },
-								...allModels.map((m) => ({
-									value: m.id,
-									label: `${m.id} · ${m.provider}`,
-								})),
-							]}
-						/>
-					</SettingsField>
-				</div>
-				<SettingsField
-					label="补齐并发（兼容模式）"
-					hint="当服务商不支持批量 embeddings 时，按此并发逐条请求"
-				>
-					<SettingsNumberInput
-						value={kbEmbeddingFallbackConcurrency}
-						min={1}
-						max={16}
-						onChange={(value) => void onFallbackConcurrencyChange(value)}
+						variant="inline"
+						placeholder="未选择（回退到 FTS / LIKE）"
+						options={[
+							{ value: "", label: "未选择（回退到 FTS / LIKE）" },
+							...allModels.map((m) => ({
+								value: m.id,
+								label: `${m.id} · ${m.provider}`,
+							})),
+						]}
 					/>
 				</SettingsField>
 			</div>
+
+			{/* 高级参数 */}
+			<SettingsDisclosure id="ai.agent.kb.advanced" title="高级检索参数">
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+					<SettingsField
+						label="Embedding 输入最大字符"
+						hint="kb.embedding_max_chars · 规避 512 tokens 限制；超出会先截断（默认 480）"
+					>
+						<SettingsNumberInput
+							value={kbEmbeddingMaxChars}
+							min={32}
+							max={4096}
+							step={16}
+							onChange={(value) => void onMaxCharsChange(value)}
+							suffix="字符"
+						/>
+					</SettingsField>
+					<SettingsField
+						label="向量命中阈值"
+						hint="kb.vector_min_score · 低于此值会回退到 FTS / LIKE（建议 0.15-0.35）"
+					>
+						<SettingsNumberInput
+							value={kbVectorMinScore}
+							min={0}
+							max={1}
+							step={0.01}
+							onChange={(value) =>
+								void onMinScoreChange(Number(value.toFixed(2)))
+							}
+						/>
+					</SettingsField>
+					<SettingsField
+						label="补齐并发（兼容模式）"
+						hint="kb.embedding_fallback_concurrency · 当服务商不支持批量 embeddings 时，按此并发逐条请求"
+					>
+						<SettingsNumberInput
+							value={kbEmbeddingFallbackConcurrency}
+							min={1}
+							max={16}
+							onChange={(value) => void onFallbackConcurrencyChange(value)}
+						/>
+					</SettingsField>
+				</div>
+			</SettingsDisclosure>
 
 			{/* 统计 + 重建 */}
 			<div className="rounded-2xl border border-border bg-cream-50 p-4">
@@ -212,7 +219,7 @@ export function KbRetrievalSection({
 						{kbStats && total > 0 && (
 							<div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-cream-200">
 								<div
-									className="h-full rounded-full bg-primary transition-all duration-500"
+									className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
 									style={{ width: `${coverage.toFixed(1)}%` }}
 								/>
 							</div>

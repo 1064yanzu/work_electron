@@ -488,7 +488,7 @@ export function SettingsChipGroup<T extends string = string>({
 						disabled={opt.disabled}
 						onClick={() => onChange(opt.value)}
 						className={cn(
-							"relative inline-flex items-center justify-center gap-1.5 rounded-full transition-all duration-150",
+							"relative inline-flex items-center justify-center gap-1.5 rounded-full transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							size === "sm"
 								? "px-3 py-1 text-[11.5px]"
 								: "px-3.5 py-1.5 text-[12.5px]",

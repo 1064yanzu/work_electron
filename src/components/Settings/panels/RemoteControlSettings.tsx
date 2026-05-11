@@ -41,13 +41,7 @@ import {
 } from "../../../lib/api";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
-import { useSettingsExperience } from "../context/SettingsExperienceContext";
-import {
-	SettingsPageContainer,
-	SettingsSectionCard,
-	SettingsSwitch,
-} from "../ui/SettingsPrimitives";
-import { RemoteStatusBadge } from "./remote-control/RemoteStatusBadge";
+import { SettingsPageContainer } from "../ui/SettingsPrimitives";
 import { RemoteTabNav, type RemoteTabKey } from "./remote-control/RemoteTabNav";
 import { OverviewSection } from "./remote-control/sections/OverviewSection";
 import { ChannelsSection } from "./remote-control/sections/ChannelsSection";
@@ -55,7 +49,6 @@ import { PairingSessionsSection } from "./remote-control/sections/PairingSession
 import { AdvancedSection } from "./remote-control/sections/AdvancedSection";
 
 export function RemoteControlSettings() {
-	const { showTechnicalSummaries } = useSettingsExperience();
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
@@ -373,75 +366,18 @@ export function RemoteControlSettings() {
 		);
 	}
 
-	// 精简视图（showTechnicalSummaries）保留：只展示总开关 + 仪表盘
-	if (showTechnicalSummaries) {
-		const enabledChannels = Object.values(config.channels).filter(
-			(channel) => channel && "enabled" in channel && channel.enabled,
-		).length;
-		return (
-			<SettingsPageContainer contentClassName="max-w-4xl space-y-6">
+	return (
+		<SettingsPageContainer contentClassName="max-w-5xl space-y-6">
+			<div
+				id="integrations.remote.overview"
+				data-settings-anchor="integrations.remote.overview"
+			>
 				<SettingsPanelHeader
 					icon={Smartphone}
 					title="远程控制"
-					description="远程控制与通道配置。"
+					description="通过飞书、Telegram、Slack 等渠道远程操控 Agent。"
 				/>
-
-				<SettingsSectionCard className="p-5">
-					<div className="flex flex-wrap items-center justify-between gap-4">
-						<div className="text-sm font-medium text-text-primary">总开关</div>
-						<SettingsSwitch
-							checked={config.enabled}
-							onChange={(next) => {
-								void saveConfig((draft) => ({ ...draft, enabled: next }));
-							}}
-							disabled={saving}
-						/>
-					</div>
-				</SettingsSectionCard>
-
-				<div className="grid gap-4 sm:grid-cols-4">
-					<MiniStat
-						label="状态"
-						value={
-							runtime?.enabled ? "运行中" : config.enabled ? "待启动" : "已关闭"
-						}
-					/>
-					<MiniStat label="已启用通道" value={String(enabledChannels)} />
-					<MiniStat
-						label="待配对"
-						value={String(runtime?.pending_pairings ?? 0)}
-					/>
-					<MiniStat
-						label="活跃运行"
-						value={String(runtime?.active_runs ?? 0)}
-					/>
-				</div>
-
-				<div className="flex flex-wrap items-center gap-3">
-					<RemoteStatusBadge
-						text={runtime?.enabled ? "已启用" : "已禁用"}
-						tone={runtime?.enabled ? "green" : "zinc"}
-					/>
-					<RemoteStatusBadge
-						text={`活跃运行 ${runtime?.active_runs ?? 0}`}
-						tone={(runtime?.active_runs ?? 0) > 0 ? "green" : "zinc"}
-					/>
-					<RemoteStatusBadge
-						text={`待配对 ${runtime?.pending_pairings ?? 0}`}
-						tone={(runtime?.pending_pairings ?? 0) > 0 ? "amber" : "zinc"}
-					/>
-				</div>
-			</SettingsPageContainer>
-		);
-	}
-
-	return (
-		<SettingsPageContainer contentClassName="max-w-5xl space-y-6">
-			<SettingsPanelHeader
-				icon={Smartphone}
-				title="远程控制"
-				description="通过飞书、Telegram、Slack 等渠道远程操控 Agent。"
-			/>
+			</div>
 
 			{/* Tabs */}
 			<div className="sticky top-0 z-10 -mx-1 px-1 pt-1 pb-2 backdrop-blur-md">
@@ -506,16 +442,5 @@ export function RemoteControlSettings() {
 				/>
 			) : null}
 		</SettingsPageContainer>
-	);
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-			<div className="text-xs text-text-muted">{label}</div>
-			<div className="mt-2 text-sm font-semibold text-text-primary">
-				{value}
-			</div>
-		</div>
 	);
 }

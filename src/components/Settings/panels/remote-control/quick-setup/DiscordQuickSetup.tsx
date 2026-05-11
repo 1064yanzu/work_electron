@@ -117,7 +117,7 @@ export function DiscordQuickSetup({
 						}}
 						placeholder="MT..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 							tokenValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: trimmed
@@ -143,7 +143,7 @@ export function DiscordQuickSetup({
 						value={appId}
 						onChange={(e) => setAppId(e.target.value)}
 						placeholder="应用 ID（可选）"
-						className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+						className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
 					/>
 				</StepBlock>
 			</div>

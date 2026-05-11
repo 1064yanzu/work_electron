@@ -20,7 +20,6 @@ import { getConfig, setConfig } from "../../../lib/config";
 import { useAgentModelSettingsStore } from "../../../lib/models/agentModelSettingsStore";
 import { useSettingsStore } from "../../../lib/settingsStore";
 import { toast } from "../../ui/Toast";
-import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsButton,
@@ -56,7 +55,6 @@ const RETRIEVAL_MODE_OPTIONS = [
 ];
 
 export function AgentSettings() {
-	const { showTechnicalSummaries } = useSettingsExperience();
 	const { policy, updatePolicy, clearSessionRemembered } = usePermissionStore();
 	const { providers } = useSettingsStore();
 	const { settings: modelSettings, store: modelSettingsStore } =
@@ -463,41 +461,6 @@ export function AgentSettings() {
 		RETRIEVAL_MODE_OPTIONS.find((option) => option.value === kbRetrievalMode)
 			?.label ?? kbRetrievalMode;
 
-	if (showTechnicalSummaries) {
-		return (
-			<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
-				<SettingsPanelHeader
-					icon={Cog}
-					title="Agent 设置"
-					description="Agent 权限、模型场景与检索的概览。"
-				/>
-
-				<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-					<SettingsStat
-						label="默认权限"
-						value={permissionModeLabel}
-						hint="未指定时的策略"
-					/>
-					<SettingsStat
-						label="默认模型"
-						value={modelSettings.defaultModelId || "未指定"}
-						hint="Agent 启动时使用"
-					/>
-					<SettingsStat
-						label="启用场景"
-						value={enabledScenarioCount}
-						hint="模型场景数量"
-					/>
-					<SettingsStat
-						label="资料检索"
-						value={retrievalModeLabel}
-						hint="知识库召回方式"
-					/>
-				</div>
-			</SettingsPageContainer>
-		);
-	}
-
 	return (
 		<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
 			<SettingsPanelHeader
@@ -545,71 +508,100 @@ export function AgentSettings() {
 			</div>
 
 			{/* 模型场景 */}
-			<AgentModelScenarioSettings />
+			<div id="ai.agent.scenarios" data-settings-anchor="ai.agent.scenarios">
+				<AgentModelScenarioSettings />
+			</div>
 
 			{/* SDK 运行时 */}
-			<AgentSdkRuntimeSection
-				sdkInteractiveApproval={sdkInteractiveApproval}
-				onInteractiveApprovalChange={(v) => void saveSdkInteractiveApproval(v)}
-				sdkCompatMode={sdkCompatMode}
-				onCompatModeChange={(v) => void saveSdkCompatMode(v)}
-				sdkPermissionMode={sdkPermissionMode}
-				onPermissionModeChange={(v) => void saveSdkPermissionMode(v)}
-				sdkPluginPathsDraft={sdkPluginPathsDraft}
-				onPluginPathsDraftChange={setSdkPluginPathsDraft}
-				onPluginPathsCommit={() => void saveSdkPluginPaths()}
-				sdkAdditionalDirsDraft={sdkAdditionalDirsDraft}
-				onAdditionalDirsDraftChange={setSdkAdditionalDirsDraft}
-				onAdditionalDirsCommit={() => void saveSdkAdditionalDirs()}
-			/>
+			<div
+				id="ai.agent.sdk.runtime"
+				data-settings-anchor="ai.agent.sdk.runtime"
+			>
+				<AgentSdkRuntimeSection
+					sdkInteractiveApproval={sdkInteractiveApproval}
+					onInteractiveApprovalChange={(v) =>
+						void saveSdkInteractiveApproval(v)
+					}
+					sdkCompatMode={sdkCompatMode}
+					onCompatModeChange={(v) => void saveSdkCompatMode(v)}
+					sdkPermissionMode={sdkPermissionMode}
+					onPermissionModeChange={(v) => void saveSdkPermissionMode(v)}
+					sdkPluginPathsDraft={sdkPluginPathsDraft}
+					onPluginPathsDraftChange={setSdkPluginPathsDraft}
+					onPluginPathsCommit={() => void saveSdkPluginPaths()}
+					sdkAdditionalDirsDraft={sdkAdditionalDirsDraft}
+					onAdditionalDirsDraftChange={setSdkAdditionalDirsDraft}
+					onAdditionalDirsCommit={() => void saveSdkAdditionalDirs()}
+				/>
+			</div>
 
 			{/* 上下文治理 */}
-			<ContextRuntimeSection
-				contextRuntime={contextRuntime}
-				saveContextRuntime={saveContextRuntime}
-			/>
+			<div
+				id="ai.agent.context.runtime"
+				data-settings-anchor="ai.agent.context.runtime"
+			>
+				<ContextRuntimeSection
+					contextRuntime={contextRuntime}
+					saveContextRuntime={saveContextRuntime}
+				/>
+			</div>
 
 			{/* 权限策略 */}
-			<PermissionPolicySection
-				levelPolicies={policy.levelPolicies}
-				onLevelPolicyChange={handleLevelPolicyChange}
-				timeoutSeconds={policy.timeoutSeconds}
-				onTimeoutChange={handleTimeoutChange}
-				toolRiskLevels={toolRiskLevels}
-				onToolRiskLevelChange={handleToolRiskLevelChange}
-			/>
+			<div
+				id="ai.agent.permission.policy"
+				data-settings-anchor="ai.agent.permission.policy"
+			>
+				<PermissionPolicySection
+					levelPolicies={policy.levelPolicies}
+					onLevelPolicyChange={handleLevelPolicyChange}
+					timeoutSeconds={policy.timeoutSeconds}
+					onTimeoutChange={handleTimeoutChange}
+					toolRiskLevels={toolRiskLevels}
+					onToolRiskLevelChange={handleToolRiskLevelChange}
+				/>
+			</div>
 
 			{/* Claude Code 斜杠命令 */}
 			<SlashCommandsSection />
 
 			{/* 会话持久化 */}
-			<SessionPersistenceSection
-				chatSettings={chatSettings}
-				agentChatSettingsStore={agentChatSettingsStore}
-				replayLimitDraft={replayLimitDraft}
-				onReplayLimitDraftChange={setReplayLimitDraft}
-				onReplayLimitCommit={commitReplayLimit}
-			/>
+			<div
+				id="ai.agent.session.persistence"
+				data-settings-anchor="ai.agent.session.persistence"
+			>
+				<SessionPersistenceSection
+					chatSettings={chatSettings}
+					agentChatSettingsStore={agentChatSettingsStore}
+					replayLimitDraft={replayLimitDraft}
+					onReplayLimitDraftChange={setReplayLimitDraft}
+					onReplayLimitCommit={commitReplayLimit}
+				/>
+			</div>
 
 			{/* 知识库检索 */}
-			<KbRetrievalSection
-				retrievalModeOptions={RETRIEVAL_MODE_OPTIONS}
-				kbRetrievalMode={kbRetrievalMode}
-				onModeChange={handleKbModeChange}
-				kbEmbeddingMaxChars={kbEmbeddingMaxChars}
-				onMaxCharsChange={handleKbEmbeddingMaxCharsChange}
-				kbVectorMinScore={kbVectorMinScore}
-				onMinScoreChange={handleKbVectorMinScoreChange}
-				kbEmbeddingModel={kbEmbeddingModel}
-				onEmbeddingModelChange={handleKbEmbeddingModelChange}
-				allModels={allModels}
-				kbEmbeddingFallbackConcurrency={kbEmbeddingFallbackConcurrency}
-				onFallbackConcurrencyChange={handleKbFallbackConcurrencyChange}
-				kbStats={kbStats}
-				autoHint={autoHint}
-				isRebuilding={isRebuilding}
-				onRebuild={handleKbRebuild}
-			/>
+			<div
+				id="ai.agent.kb.retrieval"
+				data-settings-anchor="ai.agent.kb.retrieval"
+			>
+				<KbRetrievalSection
+					retrievalModeOptions={RETRIEVAL_MODE_OPTIONS}
+					kbRetrievalMode={kbRetrievalMode}
+					onModeChange={handleKbModeChange}
+					kbEmbeddingMaxChars={kbEmbeddingMaxChars}
+					onMaxCharsChange={handleKbEmbeddingMaxCharsChange}
+					kbVectorMinScore={kbVectorMinScore}
+					onMinScoreChange={handleKbVectorMinScoreChange}
+					kbEmbeddingModel={kbEmbeddingModel}
+					onEmbeddingModelChange={handleKbEmbeddingModelChange}
+					allModels={allModels}
+					kbEmbeddingFallbackConcurrency={kbEmbeddingFallbackConcurrency}
+					onFallbackConcurrencyChange={handleKbFallbackConcurrencyChange}
+					kbStats={kbStats}
+					autoHint={autoHint}
+					isRebuilding={isRebuilding}
+					onRebuild={handleKbRebuild}
+				/>
+			</div>
 		</SettingsPageContainer>
 	);
 }

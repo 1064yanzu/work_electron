@@ -79,11 +79,16 @@ export function ReaderSettings() {
 
 	return (
 		<SettingsPageContainer>
-			<SettingsPanelHeader
-				icon={BookOpen}
-				title="阅读器"
-				description="管理阅读器外观、排版、朗读和 AI 副驾驶的默认行为。改动会即时同步到所有阅读器窗口。"
-			/>
+			<div
+				id="workshop.reader.typography"
+				data-settings-anchor="workshop.reader.typography"
+			>
+				<SettingsPanelHeader
+					icon={BookOpen}
+					title="阅读器"
+					description="管理阅读器外观、排版、朗读和 AI 副驾驶的默认行为。改动会即时同步到所有阅读器窗口。"
+				/>
+			</div>
 
 			<ReaderPreviewSample settings={settings} />
 

@@ -7,7 +7,7 @@
  *   - 删除（行内按钮 + `confirmUI.danger`）
  *
  * 使用原子组件 `SettingsSectionCard` / `SettingsTextInput` / `SettingsButton` /
- * `SettingsHint`；禁止 `transition-all` 与手写 `<input>`。
+ * `SettingsHint`；禁止 `transition-[color,background-color,border-color,box-shadow]` 与手写 `<input>`。
  */
 import { useCallback, useState } from "react";
 import {

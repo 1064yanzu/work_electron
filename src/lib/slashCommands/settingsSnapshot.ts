@@ -64,15 +64,37 @@ function readVisibility(): Record<string, "show" | "hide"> {
 // 主要 API
 // ---------------------------------------------------------------------------
 
-/**
- * 装配当前 `SlashCommandsSettingsSnapshot`。
- *
- * 非法值容错：
- * - `enabled` / `customScanEnabled`：非布尔 → 默认 `true`；
- * - `defaultColorThemeId`：非字符串 → 当前主题 id；
- * - `visibility`：非对象或含非 `"show"/"hide"` 值 → 仅保留合法键。
- */
-export function buildSlashCommandsSettingsSnapshot(): SlashCommandsSettingsSnapshot {
+function visibilityEqual(
+	a: Record<string, "show" | "hide">,
+	b: Record<string, "show" | "hide">,
+): boolean {
+	if (a === b) return true;
+	const aKeys = Object.keys(a);
+	const bKeys = Object.keys(b);
+	if (aKeys.length !== bKeys.length) return false;
+	for (const k of aKeys) {
+		if (a[k] !== b[k]) return false;
+	}
+	return true;
+}
+
+function snapshotsEqual(
+	a: SlashCommandsSettingsSnapshot,
+	b: SlashCommandsSettingsSnapshot,
+): boolean {
+	return (
+		a.enabled === b.enabled &&
+		a.customScanEnabled === b.customScanEnabled &&
+		a.defaultColorThemeId === b.defaultColorThemeId &&
+		visibilityEqual(a.visibility, b.visibility)
+	);
+}
+
+// 引用稳定的缓存：避免 `useSyncExternalStore.getSnapshot` 在数据未变时返回新对象，
+// 防止 React 因 Object.is 比对失败而触发无限重渲染。
+let cachedSnapshot: SlashCommandsSettingsSnapshot | null = null;
+
+function computeSnapshot(): SlashCommandsSettingsSnapshot {
 	const enabled = settingsStore.getPref<boolean>(
 		SLASH_COMMAND_PREF_KEYS.enabled,
 		true,
@@ -96,6 +118,25 @@ export function buildSlashCommandsSettingsSnapshot(): SlashCommandsSettingsSnaps
 				: colorThemeDefault,
 		visibility: readVisibility(),
 	};
+}
+
+/**
+ * 装配当前 `SlashCommandsSettingsSnapshot`。
+ *
+ * 非法值容错：
+ * - `enabled` / `customScanEnabled`：非布尔 → 默认 `true`；
+ * - `defaultColorThemeId`：非字符串 → 当前主题 id；
+ * - `visibility`：非对象或含非 `"show"/"hide"` 值 → 仅保留合法键。
+ *
+ * 实现细节：内部以值比对维护一个引用稳定的缓存，未变更时返回同一对象。
+ */
+export function buildSlashCommandsSettingsSnapshot(): SlashCommandsSettingsSnapshot {
+	const next = computeSnapshot();
+	if (cachedSnapshot && snapshotsEqual(cachedSnapshot, next)) {
+		return cachedSnapshot;
+	}
+	cachedSnapshot = next;
+	return next;
 }
 
 /** 订阅任意 `slashCommands.*` 偏好变更。 */

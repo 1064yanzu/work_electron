@@ -196,31 +196,33 @@ export function MemorySettings() {
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-4xl space-y-6">
-			<SettingsPanelHeader
-				icon={Database}
-				title="Agent 记忆"
-				description="管理 Agent 的长期记忆，启动时会按相关性注入到上下文，让助手记住偏好与历史结论。"
-				actions={
-					<div className="flex items-center gap-2">
-						{memories.length > 0 && (
+			<div id="ai.memory.overview" data-settings-anchor="ai.memory.overview">
+				<SettingsPanelHeader
+					icon={Database}
+					title="Agent 记忆"
+					description="管理 Agent 的长期记忆，启动时会按相关性注入到上下文，让助手记住偏好与历史结论。"
+					actions={
+						<div className="flex items-center gap-2">
+							{memories.length > 0 && (
+								<SettingsButton
+									variant="danger"
+									icon={Trash2}
+									onClick={() => setShowClearConfirm(true)}
+								>
+									清空
+								</SettingsButton>
+							)}
 							<SettingsButton
-								variant="danger"
-								icon={Trash2}
-								onClick={() => setShowClearConfirm(true)}
+								variant={showAddForm ? "secondary" : "primary"}
+								icon={showAddForm ? X : Plus}
+								onClick={() => setShowAddForm((v) => !v)}
 							>
-								清空
+								{showAddForm ? "取消" : "添加记忆"}
 							</SettingsButton>
-						)}
-						<SettingsButton
-							variant={showAddForm ? "secondary" : "primary"}
-							icon={showAddForm ? X : Plus}
-							onClick={() => setShowAddForm((v) => !v)}
-						>
-							{showAddForm ? "取消" : "添加记忆"}
-						</SettingsButton>
-					</div>
-				}
-			/>
+						</div>
+					}
+				/>
+			</div>
 
 			{/* 顶部统计 */}
 			{stats && stats.total > 0 && <MemoryStatsGrid stats={stats} />}

@@ -293,11 +293,11 @@ function TokenUsagePanel({
 				{/* 进度条可视化 — 深浅对比代替色相对比 */}
 				<div className="h-3 w-full bg-warm-200 rounded-full overflow-hidden flex mb-6">
 					<div
-						className="h-full bg-cream-900 transition-all duration-500 ease-out"
+						className="h-full bg-cream-900 transition-[width] duration-500 ease-out"
 						style={{ width: `${promptPercent}%` }}
 					/>
 					<div
-						className="h-full bg-cream-500 transition-all duration-500 ease-out"
+						className="h-full bg-cream-500 transition-[width] duration-500 ease-out"
 						style={{ width: `${completionPercent}%` }}
 					/>
 				</div>

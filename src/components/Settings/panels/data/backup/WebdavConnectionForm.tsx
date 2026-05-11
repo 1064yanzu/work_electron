@@ -10,8 +10,18 @@
  *   - 测试连接按钮 + 反馈
  *
  * 不负责实际的接口保存 / 列表加载，所有操作通过 props 回调透传给 index。
+ *
+ * Phase 7.3：4 个文本输入字段（webdav_url / username / password / path）改用
+ * `useCommittedValue({ mode: "blur" })`，避免每输入一个字符就触发一次 setConfig
+ * 与频繁的 toast 失败提示。
  */
-import { AlertCircle, CheckCircle2, ExternalLink, RefreshCw, XCircle } from "lucide-react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	ExternalLink,
+	RefreshCw,
+	XCircle,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { SyncConfig, WebDavConfig } from "../../../../../lib/api";
 import { testWebdavConnection } from "../../../../../lib/api";
@@ -31,6 +41,7 @@ import {
 	SettingsSectionTitle,
 	SettingsTextInput,
 } from "../../../ui/SettingsPrimitives";
+import { useCommittedValue } from "../../../hooks/useCommittedValue";
 
 interface WebdavConnectionFormProps {
 	syncConfig: SyncConfig;
@@ -68,6 +79,41 @@ export function WebdavConnectionForm({
 	const enabled = !!syncConfig.webdav_enabled;
 	const currentProvider = getProviderById(selectedProvider);
 
+	// —— 文本字段统一走 useCommittedValue blur 模式 ——
+	const urlField = useCommittedValue<string>({
+		value: syncConfig.webdav_url ?? "",
+		mode: "blur",
+		errorMessage: "保存 WebDAV 地址失败",
+		onCommit: async (next) => {
+			await saveConfig({ webdav_url: next });
+			setUrlValidation(validateWebdavUrl(next));
+		},
+	});
+	const usernameField = useCommittedValue<string>({
+		value: syncConfig.webdav_username ?? "",
+		mode: "blur",
+		errorMessage: "保存 WebDAV 用户名失败",
+		onCommit: async (next) => {
+			await saveConfig({ webdav_username: next });
+		},
+	});
+	const passwordField = useCommittedValue<string>({
+		value: syncConfig.webdav_password ?? "",
+		mode: "blur",
+		errorMessage: "保存 WebDAV 密码失败",
+		onCommit: async (next) => {
+			await saveConfig({ webdav_password: next });
+		},
+	});
+	const pathField = useCommittedValue<string>({
+		value: syncConfig.webdav_path,
+		mode: "blur",
+		errorMessage: "保存 WebDAV 同步路径失败",
+		onCommit: async (next) => {
+			await saveConfig({ webdav_path: next });
+		},
+	});
+
 	const handleProviderChange = useCallback(
 		(providerId: string) => {
 			setSelectedProvider(providerId);
@@ -78,14 +124,6 @@ export function WebdavConnectionForm({
 					webdav_path: provider.defaultPath,
 				});
 			}
-		},
-		[saveConfig],
-	);
-
-	const handleUrlChange = useCallback(
-		(url: string) => {
-			void saveConfig({ webdav_url: url });
-			setUrlValidation(validateWebdavUrl(url));
 		},
 		[saveConfig],
 	);
@@ -175,8 +213,10 @@ export function WebdavConnectionForm({
 						WebDAV 地址
 					</label>
 					<SettingsTextInput
-						value={syncConfig.webdav_url || ""}
-						onChange={handleUrlChange}
+						value={urlField.draft}
+						onChange={urlField.handleChange}
+						onBlur={urlField.handleBlur}
+						onKeyDown={urlField.handleKeyDown}
 						placeholder="https://dav.example.com/dav/"
 						disabled={!enabled}
 						error={!urlValidation.valid}
@@ -201,8 +241,10 @@ export function WebdavConnectionForm({
 					>
 						<label className="block text-xs text-text-muted">用户名</label>
 						<SettingsTextInput
-							value={syncConfig.webdav_username || ""}
-							onChange={(v) => void saveConfig({ webdav_username: v })}
+							value={usernameField.draft}
+							onChange={usernameField.handleChange}
+							onBlur={usernameField.handleBlur}
+							onKeyDown={usernameField.handleKeyDown}
 							placeholder="用户名"
 							disabled={!enabled}
 							autoComplete="username"
@@ -215,8 +257,10 @@ export function WebdavConnectionForm({
 					>
 						<label className="block text-xs text-text-muted">密码</label>
 						<SettingsPasswordInput
-							value={syncConfig.webdav_password || ""}
-							onChange={(v) => void saveConfig({ webdav_password: v })}
+							value={passwordField.draft}
+							onChange={passwordField.handleChange}
+							onBlur={passwordField.handleBlur}
+							onKeyDown={passwordField.handleKeyDown}
 							placeholder="密码"
 							disabled={!enabled}
 							autoComplete="current-password"
@@ -232,8 +276,10 @@ export function WebdavConnectionForm({
 				>
 					<label className="block text-xs text-text-muted">同步路径</label>
 					<SettingsTextInput
-						value={syncConfig.webdav_path}
-						onChange={(v) => void saveConfig({ webdav_path: v })}
+						value={pathField.draft}
+						onChange={pathField.handleChange}
+						onBlur={pathField.handleBlur}
+						onKeyDown={pathField.handleKeyDown}
 						placeholder="/workbench-sync"
 						disabled={!enabled}
 						autoComplete="off"

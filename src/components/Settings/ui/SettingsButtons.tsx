@@ -85,7 +85,7 @@ export const SettingsButton = forwardRef<
 			{...rest}
 			className={cn(
 				"inline-flex items-center justify-center whitespace-nowrap font-medium",
-				"transition-all duration-150",
+				"transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ease-out",
 				"disabled:cursor-not-allowed disabled:opacity-60",
 				pill ? "rounded-full" : "rounded-xl",
 				SIZE_CLASSES[size],

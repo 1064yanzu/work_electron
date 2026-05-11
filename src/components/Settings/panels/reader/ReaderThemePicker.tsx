@@ -48,7 +48,7 @@ function ThemeCard({
 			type="button"
 			onClick={onSelect}
 			className={cn(
-				"group relative flex flex-col gap-2 rounded-2xl border p-2 text-left transition-all duration-200 hover:-translate-y-0.5",
+				"group relative flex flex-col gap-2 rounded-2xl border p-2 text-left transition-[transform,color,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5",
 				selected
 					? "border-text-primary shadow-bai-pop"
 					: "border-border bg-cream-50 hover:border-cream-500 hover:bg-surface",

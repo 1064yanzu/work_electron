@@ -125,11 +125,16 @@ export function MascotSettings() {
 
 	return (
 		<SettingsPageContainer>
-			<SettingsPanelHeader
-				icon={Sparkles}
-				title="桌面宠物"
-				description="为 IPO Workbench 选一位陪伴你的桌面宠物——墨鱼君。可在内置形象和你上传的自定义桌宠之间切换。"
-			/>
+			<div
+				id="workshop.mascot.window"
+				data-settings-anchor="workshop.mascot.window"
+			>
+				<SettingsPanelHeader
+					icon={Sparkles}
+					title="桌面宠物"
+					description="为 IPO Workbench 选一位陪伴你的桌面宠物——墨鱼君。可在内置形象和你上传的自定义桌宠之间切换。"
+				/>
+			</div>
 
 			{id !== "off" && meta && (
 				<MascotHeroBanner

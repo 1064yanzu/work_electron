@@ -176,7 +176,7 @@ export function ModelDiscoveryModal({
 							placeholder="搜索模型 ID..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-10 pr-4 py-2.5 bg-warm-50 border border-transparent focus:bg-surface focus:border-border rounded-xl text-sm outline-none transition-all"
+							className="w-full pl-10 pr-4 py-2.5 bg-warm-50 border border-transparent focus:bg-surface focus:border-border rounded-xl text-sm outline-none transition-[color,background-color,border-color,box-shadow]"
 						/>
 					</div>
 					<button
@@ -280,7 +280,7 @@ export function ModelDiscoveryModal({
 																!isExisting && toggleModel(model.id)
 															}
 															className={`
-                                group flex items-center justify-between px-4 py-3 transition-all duration-200
+                                group flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out
                                 ${isExisting ? "opacity-60 bg-warm-50/30 cursor-default" : "cursor-pointer hover:bg-warm-50"}
                                 ${isSelected && !isExisting ? "bg-warm-200/60" : ""}
                               `}
@@ -289,7 +289,7 @@ export function ModelDiscoveryModal({
 																{/* Checkbox Icon */}
 																<div
 																	className={`
-                                  w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0
+                                  w-5 h-5 rounded-md border flex items-center justify-center transition-[color,background-color,border-color,box-shadow] shrink-0
                                   ${
 																		isExisting
 																			? "bg-warm-200 border-border text-text-light"
@@ -333,7 +333,7 @@ export function ModelDiscoveryModal({
 															{!isExisting && (
 																<div
 																	className={`
-                                  w-8 h-8 flex items-center justify-center rounded-full transition-all ml-2
+                                  w-8 h-8 flex items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow] ml-2
                                   ${
 																		isSelected
 																			? "text-primary bg-warm-200"
@@ -380,7 +380,7 @@ export function ModelDiscoveryModal({
 						<button
 							onClick={handleConfirm}
 							disabled={selectedModels.size === 0}
-							className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+							className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-medium transition-[color,background-color,border-color,box-shadow] disabled:opacity-50 flex items-center gap-2"
 						>
 							<Star className="w-4 h-4" strokeWidth={1.5} />
 							添加选中模型

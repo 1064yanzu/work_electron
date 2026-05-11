@@ -1,6 +1,6 @@
 // 提示词管理工具
 
-import { DEFAULT_PROMPTS } from "../components/Settings/panels/PromptSettings";
+import { DEFAULT_PROMPTS } from "../components/Settings/panels/ai/PromptsPanel";
 import { getConfig } from "./config";
 import {
 	buildDocumentBudget,

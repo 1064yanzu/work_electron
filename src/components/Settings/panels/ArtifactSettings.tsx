@@ -1,8 +1,10 @@
 /**
  * ArtifactSettings - 产物管理设置面板
- * 配置 Agent 产物的存储路径、清理策略等
+ *
+ * Phase 7.4：手写 button / input 全部替换为 SettingsButton / SettingsNumberInput；
+ * 数字字段改用 SettingsRow 标准 action，避免再写自定义 focus ring 与边框样式。
  */
-import { AlertCircle, Archive, RefreshCw, Trash2 } from "lucide-react";
+import { AlertCircle, Archive, Copy, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	cleanupArtifacts,
@@ -15,9 +17,11 @@ import {
 } from "../../../lib/api";
 import { confirmDialog as confirmUI } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
-import { useSettingsExperience } from "../context/SettingsExperienceContext";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
+	SettingsButton,
+	SettingsHint,
+	SettingsNumberInput,
 	SettingsPageContainer,
 	SettingsRow,
 	SettingsSectionCard,
@@ -35,7 +39,6 @@ function formatSize(bytes: number): string {
 }
 
 export function ArtifactSettings() {
-	const { showTechnicalSummaries } = useSettingsExperience();
 	const [settings, setSettings] = useState<ArtifactSettingsType | null>(null);
 	const [artifacts, setArtifacts] = useState<ArtifactMetadata[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +46,6 @@ export function ArtifactSettings() {
 	const [cleanupResult, setCleanupResult] =
 		useState<ArtifactCleanupResult | null>(null);
 
-	// 加载数据
 	const loadData = useCallback(async () => {
 		try {
 			setIsLoading(true);
@@ -55,6 +57,7 @@ export function ArtifactSettings() {
 			setArtifacts(artifactsList);
 		} catch (error) {
 			console.error("加载产物设置失败:", error);
+			toast.error("加载产物设置失败");
 		} finally {
 			setIsLoading(false);
 		}
@@ -64,19 +67,20 @@ export function ArtifactSettings() {
 		loadData();
 	}, [loadData]);
 
-	// 保存设置
 	const saveSettings = async (updates: Partial<ArtifactSettingsType>) => {
 		if (!settings) return;
+		const previous = settings;
 		const newSettings = { ...settings, ...updates };
 		setSettings(newSettings);
 		try {
 			await updateArtifactSettings(updates);
 		} catch (error) {
 			console.error("保存设置失败:", error);
+			setSettings(previous);
+			toast.error("保存产物设置失败");
 		}
 	};
 
-	// 清理产物
 	const handleCleanup = async (force = false) => {
 		const message = force
 			? "确定要清理所有产物吗？此操作不可撤销！"
@@ -105,7 +109,6 @@ export function ArtifactSettings() {
 		}
 	};
 
-	// 计算统计信息
 	const totalSize = artifacts.reduce((sum, a) => sum + a.file_size, 0);
 	const sessionCount = new Set(artifacts.map((a) => a.session_id)).size;
 
@@ -117,65 +120,21 @@ export function ArtifactSettings() {
 		);
 	}
 
-	if (showTechnicalSummaries) {
-		return (
-			<SettingsPageContainer
-				className="p-6"
-				contentClassName="max-w-2xl mx-auto space-y-6"
-			>
-				<SettingsPanelHeader
-					icon={Archive}
-					title="产物管理"
-					description="管理 Agent 产物。"
-				/>
-
-				<div className="grid gap-4 sm:grid-cols-3">
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">产物数量</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">
-							{artifacts.length}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">涉及会话</div>
-						<div className="mt-2 text-2xl font-semibold text-text-primary">
-							{sessionCount}
-						</div>
-					</div>
-					<div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm">
-						<div className="text-xs text-text-muted">总占用</div>
-						<div className="mt-2 text-lg font-semibold text-text-primary">
-							{formatSize(totalSize)}
-						</div>
-					</div>
-				</div>
-
-				<div className="rounded-2xl border border-border/80 bg-warm-50/90 p-4/80">
-					<div className="text-sm font-medium text-text-primary">当前策略</div>
-					<div className="mt-2 space-y-2 text-xs leading-6 text-text-secondary">
-						<div>存储路径：{settings.storage_path || "默认路径"}</div>
-						<div>
-							自动清理：
-							{settings.auto_cleanup
-								? `开启，保留 ${settings.retention_days} 天`
-								: "关闭"}
-						</div>
-					</div>
-				</div>
-			</SettingsPageContainer>
-		);
-	}
-
 	return (
 		<SettingsPageContainer
 			className="p-6"
 			contentClassName="max-w-2xl mx-auto space-y-6"
 		>
-			<SettingsPanelHeader
-				icon={Archive}
-				title="产物管理"
-				description="管理 Agent 产物。"
-			/>
+			<div
+				id="data.artifacts.overview"
+				data-settings-anchor="data.artifacts.overview"
+			>
+				<SettingsPanelHeader
+					icon={Archive}
+					title="产物管理"
+					description="管理 Agent 产物的存储路径、容量限制与自动清理策略。"
+				/>
+			</div>
 
 			{/* 产物统计 */}
 			<SettingsSectionCard>
@@ -212,32 +171,30 @@ export function ArtifactSettings() {
 						label="存储路径"
 						description={settings.storage_path || "默认路径"}
 						action={
-							<button
+							<SettingsButton
+								variant="ghost"
+								size="sm"
+								icon={Copy}
 								onClick={() => {
 									navigator.clipboard.writeText(settings.storage_path);
 									toast.success("路径已复制");
 								}}
-								className="text-xs text-primary hover:underline"
 							>
 								复制路径
-							</button>
+							</SettingsButton>
 						}
 					/>
 					<SettingsRow
 						label="单会话最大产物数"
 						description="每个会话最多保存的产物数量"
 						action={
-							<input
-								type="number"
+							<SettingsNumberInput
 								value={settings.max_per_session}
-								onChange={(e) =>
-									saveSettings({
-										max_per_session: parseInt(e.target.value) || 50,
-									})
-								}
 								min={1}
 								max={500}
-								className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
+								width="96px"
+								size="sm"
+								onChange={(value) => saveSettings({ max_per_session: value })}
 							/>
 						}
 					/>
@@ -245,22 +202,17 @@ export function ArtifactSettings() {
 						label="总容量限制"
 						description="所有产物的最大总大小（MB）"
 						action={
-							<div className="flex items-center gap-2">
-								<input
-									type="number"
-									value={Math.round(settings.max_total_size / (1024 * 1024))}
-									onChange={(e) =>
-										saveSettings({
-											max_total_size:
-												(parseInt(e.target.value) || 1024) * 1024 * 1024,
-										})
-									}
-									min={100}
-									max={10240}
-									className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
-								/>
-								<span className="text-xs text-text-light">MB</span>
-							</div>
+							<SettingsNumberInput
+								value={Math.round(settings.max_total_size / (1024 * 1024))}
+								min={100}
+								max={10240}
+								width="120px"
+								size="sm"
+								suffix="MB"
+								onChange={(value) =>
+									saveSettings({ max_total_size: value * 1024 * 1024 })
+								}
+							/>
 						}
 					/>
 				</div>
@@ -285,21 +237,15 @@ export function ArtifactSettings() {
 							label="保留天数"
 							description="产物超过指定天数后将被清理"
 							action={
-								<div className="flex items-center gap-2">
-									<input
-										type="number"
-										value={settings.retention_days}
-										onChange={(e) =>
-											saveSettings({
-												retention_days: parseInt(e.target.value) || 7,
-											})
-										}
-										min={1}
-										max={365}
-										className="w-20 px-3 py-1.5 bg-warm-50 border-0 rounded-lg text-sm text-right focus:ring-2 focus:ring-primary/20"
-									/>
-									<span className="text-xs text-text-light">天</span>
-								</div>
+								<SettingsNumberInput
+									value={settings.retention_days}
+									min={1}
+									max={365}
+									width="96px"
+									size="sm"
+									suffix="天"
+									onChange={(value) => saveSettings({ retention_days: value })}
+								/>
 							}
 						/>
 					)}
@@ -313,34 +259,32 @@ export function ArtifactSettings() {
 						手动清理
 					</SettingsSectionTitle>
 					<div className="flex gap-3">
-						<button
-							onClick={() => handleCleanup(false)}
+						<SettingsButton
+							variant="secondary"
+							icon={isCleaning ? RefreshCw : Trash2}
+							onClick={() => void handleCleanup(false)}
 							disabled={isCleaning}
-							className="flex-1 flex items-center justify-center gap-2 py-3 bg-warm-200 hover:bg-warm-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+							className="flex-1"
 						>
-							{isCleaning ? (
-								<RefreshCw className="w-4 h-4 animate-spin" />
-							) : (
-								<Trash2 className="w-4 h-4" />
-							)}
 							清理过期产物
-						</button>
-						<button
-							onClick={() => handleCleanup(true)}
+						</SettingsButton>
+						<SettingsButton
+							variant="danger"
+							icon={AlertCircle}
+							onClick={() => void handleCleanup(true)}
 							disabled={isCleaning}
-							className="flex-1 flex items-center justify-center gap-2 py-3 bg-[rgba(181,51,51,0.08)] hover:bg-[rgba(181,51,51,0.16)] text-error rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+							className="flex-1"
 						>
-							<AlertCircle className="w-4 h-4" />
 							清理全部产物
-						</button>
+						</SettingsButton>
 					</div>
 					{cleanupResult && cleanupResult.errors.length > 0 && (
-						<div className="mt-3 p-3 bg-[rgba(181,51,51,0.08)] rounded-lg text-xs text-error">
+						<SettingsHint tone="error" className="mt-3">
 							<div className="font-medium mb-1">清理过程中出现错误：</div>
 							{cleanupResult.errors.map((err, i) => (
 								<div key={i}>• {err}</div>
 							))}
-						</div>
+						</SettingsHint>
 					)}
 				</div>
 			</SettingsSectionCard>

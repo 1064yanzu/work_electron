@@ -117,7 +117,7 @@ export function QQBotQuickSetup({
 								onChange={(e) => setAppId(e.target.value)}
 								placeholder="102xxxxxx"
 								className={cn(
-									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 									idValid
 										? "border-mint-500 ring-2 ring-mint-500/20"
 										: idTrim
@@ -140,7 +140,7 @@ export function QQBotQuickSetup({
 								onChange={(e) => setClientSecret(e.target.value)}
 								placeholder="client_secret"
 								className={cn(
-									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-all duration-200",
+									"mt-1 w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 									secretTrim.length >= 16
 										? "border-mint-500 ring-2 ring-mint-500/20"
 										: secretTrim
@@ -202,7 +202,7 @@ function EnvPill({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"rounded-lg px-3 py-1 text-xs font-medium transition-all duration-200",
+				"rounded-lg px-3 py-1 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
 				active
 					? "bg-primary/10 text-primary ring-1 ring-primary/20"
 					: "text-text-muted hover:text-text-secondary",

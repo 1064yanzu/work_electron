@@ -171,18 +171,23 @@ export function ImageGenSettings() {
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
-			<SettingsPanelHeader
-				icon={ImageIcon}
-				title="AI 生图"
-				description="配置图像生成模型与默认提示词，编辑器中可对选中文字一键生成配图。"
-				actions={
-					isSaving ? (
-						<SettingsBadge tone="info" icon={Loader2}>
-							保存中
-						</SettingsBadge>
-					) : null
-				}
-			/>
+			<div
+				id="workshop.imagegen.overview"
+				data-settings-anchor="workshop.imagegen.overview"
+			>
+				<SettingsPanelHeader
+					icon={ImageIcon}
+					title="AI 生图"
+					description="配置图像生成模型与默认提示词，编辑器中可对选中文字一键生成配图。"
+					actions={
+						isSaving ? (
+							<SettingsBadge tone="info" icon={Loader2}>
+								保存中
+							</SettingsBadge>
+						) : null
+					}
+				/>
+			</div>
 
 			{/* 状态条 */}
 			<StatusBanner ready={ready} />
@@ -270,7 +275,7 @@ export function ImageGenSettings() {
 												type="button"
 												onClick={() => handleChange("defaultSize", opt.value)}
 												className={cn(
-													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-all",
+													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 													active
 														? "bg-primary text-primary-foreground shadow-bai-card"
 														: "bg-surface border border-border text-text-secondary hover:border-cream-500 hover:text-text-primary",
