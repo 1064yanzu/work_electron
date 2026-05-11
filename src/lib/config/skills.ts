@@ -7,6 +7,8 @@ export interface SkillMetadata {
 	description: string;
 	location: string;
 	enabled: boolean;
+	/** 来自 Claude 插件市场等只读源，本面板不允许删除 */
+	readonly?: boolean;
 }
 
 /** 列出所有已安装的技能 */

@@ -429,15 +429,18 @@ export function useAgentHandler({
 
 		const toolNameByInlineId = new Map<string, string>();
 		const toolInputByInlineId = new Map<string, Record<string, unknown>>();
+		const placeholderShownForToolCallId = new Set<string>();
 
 		const upsertInlineFileUpdate = (
 			message: AgentMessage,
 			status: "running" | "completed" | "error",
+			forceEmptyInput = false,
 		) => {
 			const toolCallId = normalizeSdkToolCallId(message.toolCallId);
 			if (!toolCallId) return false;
-			const mergedInput =
-				message.toolInput || toolInputByInlineId.get(toolCallId) || null;
+			const mergedInput = forceEmptyInput
+				? null
+				: message.toolInput || toolInputByInlineId.get(toolCallId) || null;
 			const mergedToolName =
 				message.toolName || toolNameByInlineId.get(toolCallId);
 			const update = buildFileUpdateFromToolInput({
@@ -462,7 +465,28 @@ export function useAgentHandler({
 					toolNameByInlineId.set(toolCallId, message.toolName);
 				if (message.toolInput)
 					toolInputByInlineId.set(toolCallId, message.toolInput);
-				const didShowFileUpdate = upsertInlineFileUpdate(message, "running");
+
+				// 第一次见到这个 tool_call：先显示占位卡片（"创建文件中…"），
+				// 让用户能立刻感知到工具开始执行。
+				// 即便 SDK 在 content_block_start 就给出完整 input，也强制经历一次占位帧。
+				const isFirstSighting = !placeholderShownForToolCallId.has(toolCallId);
+				if (isFirstSighting) {
+					placeholderShownForToolCallId.add(toolCallId);
+					const placeholderShown = upsertInlineFileUpdate(
+						message,
+						"running",
+						true,
+					);
+					// 下一帧再用真实 input 更新（让占位至少经过一次渲染）
+					if (placeholderShown && message.toolInput) {
+						requestAnimationFrame(() => {
+							upsertInlineFileUpdate(message, "running");
+						});
+					}
+				}
+
+				const didShowFileUpdate =
+					isFirstSighting || upsertInlineFileUpdate(message, "running");
 				if (chatSettings.inlineTraceEnabled) {
 					ensureStreamingMessage();
 					streamBuilder.startToolCall({

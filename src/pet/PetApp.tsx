@@ -748,6 +748,11 @@ export default function PetApp() {
 
 	// ── 渲染 ──
 
+	// ⚠️ React Hooks 规则：所有 Hook 必须在任何条件 return 之前调用。
+	// 之前 useBubblePlacement 被放在 `if (!mascotReady) return null` 之后，
+	// 导致 mascotReady 由 false → true 时 Hook 调用顺序错乱，组件直接报错变成空白窗口。
+	const placement = useBubblePlacement(uiState.bubble !== "none");
+
 	// 还在等待 IPC 初始化（自定义桌宠列表未拉取）时，保持透明等待，不要提前 return null
 	if (!mascotReady) return null;
 
@@ -759,8 +764,6 @@ export default function PetApp() {
 		uiState.bubble !== "notification" &&
 		uiState.bubble !== "reminder";
 
-	// 气泡 placement：贴近屏幕顶部时翻到下方
-	const placement = useBubblePlacement(uiState.bubble !== "none");
 	// 当前活动 IP（上面已 narrow 掉 "off"）
 	const personalityId: MascotId = mascotId;
 	// 任务已运行毫秒（用于 task bubble 选短/中/长 opener）

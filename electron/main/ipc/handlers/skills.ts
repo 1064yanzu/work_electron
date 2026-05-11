@@ -1,10 +1,21 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
-import type { IpcMainInvokeEvent } from "electron";
+import { app, type IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import { getManagedSkillsRootDir } from "./skillRoots";
+
+/**
+ * 额外扫描的只读 Skill 仓库（plugin 市场已安装的 skills）。
+ * 这些 skill 由 Claude Code plugins 体系管理，本应用只读取并允许启用/禁用，
+ * 不允许通过本面板删除或移动。
+ */
+function getReadonlySkillRoots(): string[] {
+	const home = app.getPath("home");
+	return [path.join(home, ".claude", "plugins", "marketplaces")];
+}
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -113,38 +124,105 @@ async function setSkillEnabledInDb(
 }
 
 export function createSkillsHandlers(db: DbContext) {
-	const list_skills: Handler<"list_skills"> = async () => {
-		const root = getManagedSkillsRootDir();
+	async function collectSkillsFromDir(
+		dir: string,
+		enabledMap: Map<string, boolean>,
+		options: { readonly: boolean },
+	): Promise<SkillMetadata[]> {
+		const results: SkillMetadata[] = [];
+		let entries: Dirent[];
 		try {
-			await ensureDir(root);
+			entries = (await fs.readdir(dir, { withFileTypes: true })) as Dirent[];
 		} catch {
-			return [];
+			return results;
 		}
-
-		const enabledMap = await loadEnabledMap(db);
-		const entries = await fs.readdir(root, { withFileTypes: true });
-		const skills: SkillMetadata[] = [];
 
 		for (const ent of entries) {
 			if (!ent.isDirectory()) continue;
-			const location = path.join(root, ent.name);
+			const entryName = String(ent.name);
+			const location = path.join(dir, entryName);
 			const skillMd = path.join(location, "SKILL.md");
-			let md = "";
 			try {
-				md = await fs.readFile(skillMd, "utf-8");
+				const md = await fs.readFile(skillMd, "utf-8");
+				const parsed = parseSkillMetadataFromMarkdown(md, entryName);
+				const enabled = enabledMap.get(parsed.name) ?? true;
+				results.push({
+					name: parsed.name,
+					description: parsed.description,
+					location,
+					enabled,
+					...(options.readonly ? { readonly: true } : null),
+				} as SkillMetadata);
+			} catch {
+				// 没有 SKILL.md 的目录视为非 skill，递归一层看是否是 plugin 容器
+				if (!options.readonly) continue;
+				const nested = await collectSkillsFromDir(location, enabledMap, options);
+				results.push(...nested);
+			}
+		}
+
+		return results;
+	}
+
+	const list_skills: Handler<"list_skills"> = async () => {
+		const enabledMap = await loadEnabledMap(db);
+		const managedRoot = getManagedSkillsRootDir();
+		try {
+			await ensureDir(managedRoot);
+		} catch {
+			// noop —— 不影响只读路径扫描
+		}
+
+		const collected = new Map<string, SkillMetadata>();
+
+		// 1) 用户托管目录（可读写）
+		const managedSkills = await collectSkillsFromDir(managedRoot, enabledMap, {
+			readonly: false,
+		});
+		for (const skill of managedSkills) {
+			collected.set(skill.name, skill);
+		}
+
+		// 2) 只读仓库（plugin 市场已安装的 skills），同名不覆盖托管目录
+		for (const root of getReadonlySkillRoots()) {
+			let subdirs: Dirent[];
+			try {
+				subdirs = (await fs.readdir(root, {
+					withFileTypes: true,
+				})) as Dirent[];
 			} catch {
 				continue;
 			}
-			const parsed = parseSkillMetadataFromMarkdown(md, ent.name);
-			const enabled = enabledMap.get(parsed.name) ?? true;
-			skills.push({
-				name: parsed.name,
-				description: parsed.description,
-				location,
-				enabled,
-			});
+			for (const ent of subdirs) {
+				if (!ent.isDirectory()) continue;
+				// plugin 市场的结构：<marketplace>/plugins/<plugin>/skills/<skill>
+				const pluginsDir = path.join(root, String(ent.name), "plugins");
+				let plugins: Dirent[];
+				try {
+					plugins = (await fs.readdir(pluginsDir, {
+						withFileTypes: true,
+					})) as Dirent[];
+				} catch {
+					continue;
+				}
+				for (const plugin of plugins) {
+					if (!plugin.isDirectory()) continue;
+					const skillsDir = path.join(
+						pluginsDir,
+						String(plugin.name),
+						"skills",
+					);
+					const found = await collectSkillsFromDir(skillsDir, enabledMap, {
+						readonly: true,
+					});
+					for (const skill of found) {
+						if (!collected.has(skill.name)) collected.set(skill.name, skill);
+					}
+				}
+			}
 		}
 
+		const skills = [...collected.values()];
 		skills.sort((a, b) => a.name.localeCompare(b.name));
 		return skills;
 	};
@@ -195,6 +273,12 @@ export function createSkillsHandlers(db: DbContext) {
 		const skills = await list_skills({} as IpcMainInvokeEvent, {});
 		const target = skills.find((s) => s.name === skillName);
 		if (!target) return { success: true };
+
+		if ((target as { readonly?: boolean }).readonly) {
+			throw new Error(
+				"该技能由 Claude 插件市场管理，请在源插件处卸载，不能从此处删除",
+			);
+		}
 
 		await fs.rm(target.location, { recursive: true, force: true });
 		await setSkillEnabledInDb(db, skillName, false);

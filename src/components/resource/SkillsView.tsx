@@ -54,8 +54,8 @@ export function SkillsView(_props: SkillsViewProps) {
 					return false;
 				}
 			}
-			if (filter === "system") return skill.location === "system";
-			if (filter === "custom") return skill.location !== "system";
+			if (filter === "system") return !!skill.readonly;
+			if (filter === "custom") return !skill.readonly;
 			if (filter === "enabled") return skill.enabled;
 			return true;
 		});
@@ -265,7 +265,7 @@ export function SkillsView(_props: SkillsViewProps) {
 						<ul className="space-y-px">
 							{filteredSkills.map((skill) => {
 								const isExpanded = expandedSkillId === skill.name;
-								const isSystem = skill.location === "system";
+								const isSystem = !!skill.readonly;
 								return (
 									<li key={skill.name}>
 										<div
@@ -276,12 +276,19 @@ export function SkillsView(_props: SkillsViewProps) {
 													: "hover:bg-cream-200/60 dark:hover:bg-cream-800/30",
 											)}
 										>
-											<button
-												type="button"
-												className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
+											<div
+												role="button"
+												tabIndex={0}
+												className="w-full flex items-center gap-2 px-3 py-2.5 text-left cursor-pointer"
 												onClick={() =>
 													setExpandedSkillId(isExpanded ? null : skill.name)
 												}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.preventDefault();
+														setExpandedSkillId(isExpanded ? null : skill.name);
+													}
+												}}
 											>
 												{/* Status dot — minimal indicator, ≤1px ring instead of side stripe */}
 												<span
@@ -337,7 +344,7 @@ export function SkillsView(_props: SkillsViewProps) {
 														)}
 													/>
 												</div>
-											</button>
+											</div>
 
 											{/* Expanded details */}
 											{isExpanded && (

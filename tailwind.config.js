@@ -58,6 +58,7 @@ export default {
 					"swarmIndeterminate 1.5s ease-in-out infinite",
 				"mascot-float": "mascotFloat 3.6s ease-in-out infinite",
 				"thinking-dot": "thinkingDot 1.2s ease-in-out infinite",
+				"file-progress": "fileProgress 1.2s ease-in-out infinite",
 			},
 			keyframes: {
 				fadeIn: {
@@ -113,6 +114,11 @@ export default {
 				thinkingDot: {
 					"0%, 80%, 100%": { opacity: "0.25", transform: "scale(0.85)" },
 					"40%": { opacity: "1", transform: "scale(1.1)" },
+				},
+				fileProgress: {
+					"0%": { transform: "translateX(-100%)" },
+					"50%": { transform: "translateX(150%)" },
+					"100%": { transform: "translateX(-100%)" },
 				},
 			},
 			colors: {
