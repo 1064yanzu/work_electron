@@ -18,7 +18,7 @@ import { cn } from "../../lib/utils";
 import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
 
-type FilterType = "all" | "system" | "custom" | "enabled";
+type FilterType = "all" | "enabled";
 type TabType = "installed" | "marketplace";
 
 interface SkillsViewProps {
@@ -28,8 +28,6 @@ interface SkillsViewProps {
 const FILTERS: Array<{ value: FilterType; label: string }> = [
 	{ value: "all", label: "全部" },
 	{ value: "enabled", label: "已启用" },
-	{ value: "system", label: "系统" },
-	{ value: "custom", label: "自定义" },
 ];
 
 export function SkillsView(_props: SkillsViewProps) {
@@ -54,8 +52,6 @@ export function SkillsView(_props: SkillsViewProps) {
 					return false;
 				}
 			}
-			if (filter === "system") return !!skill.readonly;
-			if (filter === "custom") return !skill.readonly;
 			if (filter === "enabled") return skill.enabled;
 			return true;
 		});
@@ -265,7 +261,6 @@ export function SkillsView(_props: SkillsViewProps) {
 						<ul className="space-y-px">
 							{filteredSkills.map((skill) => {
 								const isExpanded = expandedSkillId === skill.name;
-								const isSystem = !!skill.readonly;
 								return (
 									<li key={skill.name}>
 										<div
@@ -311,11 +306,6 @@ export function SkillsView(_props: SkillsViewProps) {
 														>
 															{skill.name}
 														</span>
-														{isSystem && (
-															<span className="text-[9px] text-text-light tracking-[0.1em] uppercase shrink-0">
-																SYS
-															</span>
-														)}
 													</div>
 													<p
 														className={cn(
@@ -359,16 +349,14 @@ export function SkillsView(_props: SkillsViewProps) {
 														>
 															{skill.location}
 														</code>
-														{!isSystem && (
-															<button
-																type="button"
-																onClick={() => handleDelete(skill.name)}
-																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8 mt-1"
-															>
-																<Trash2 className="w-3 h-3" />
-																删除
-															</button>
-														)}
+														<button
+															type="button"
+															onClick={() => handleDelete(skill.name)}
+															className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8 mt-1"
+														>
+															<Trash2 className="w-3 h-3" />
+															删除
+														</button>
 													</div>
 												</div>
 											)}
