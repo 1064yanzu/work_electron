@@ -80,6 +80,7 @@ projects/
 todos/
 plans/
 images/
+!src/assets/images/
 shell-snapshots/
 session-env/
 settings.json
