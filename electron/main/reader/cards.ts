@@ -128,9 +128,7 @@ export async function listCardTags(
 			}
 		} catch {}
 	}
-	return [...counter.entries()]
-		.sort((a, b) => b[1] - a[1])
-		.map(([tag]) => tag);
+	return [...counter.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
 }
 
 export type CreateCardParams = {
@@ -352,15 +350,7 @@ export async function reviewCard(
 			SET interval_days = ?, ease = ?, review_count = ?,
 			    last_reviewed_at = ?, next_review_at = ?, updated_at = ?
 			WHERE id = ?`,
-		args: [
-			interval,
-			ease,
-			reviewCount + 1,
-			now,
-			nextReviewAt,
-			now,
-			params.id,
-		],
+		args: [interval, ease, reviewCount + 1, now, nextReviewAt, now, params.id],
 	});
 	return fetchCard(db, params.id);
 }

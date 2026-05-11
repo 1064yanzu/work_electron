@@ -287,7 +287,12 @@ test("property 1.c: replaceCustom 尝试覆盖内置 id 时保留内置，不抛
 		const reg = new CommandRegistry();
 
 		// 1) 注入一组内置命令（group != "custom"）。
-		const builtinGroups: CommandGroupId[] = ["session", "runtime", "inspect", "workspace"];
+		const builtinGroups: CommandGroupId[] = [
+			"session",
+			"runtime",
+			"inspect",
+			"workspace",
+		];
 		const builtinSize = 1 + Math.floor(rng() * 4);
 		const builtins: SlashCommandDefinition[] = [];
 		const builtinIds = new Set<string>();

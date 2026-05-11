@@ -116,10 +116,7 @@ export function ModelSettings() {
 			<div className="flex-1 overflow-y-auto bg-surface">
 				{selected ? (
 					<div className="max-w-2xl p-8">
-						<ProviderDetailHeader
-							provider={selected}
-							onToggle={handleToggle}
-						/>
+						<ProviderDetailHeader provider={selected} onToggle={handleToggle} />
 
 						<ProviderApiKeySection
 							provider={selected}
@@ -213,9 +210,7 @@ export function ModelSettings() {
 					provider={selected}
 					onAddModels={async (models) => {
 						const currentModels = new Set(selected.models);
-						const modelsToAdd = models.filter(
-							(m) => !currentModels.has(m),
-						);
+						const modelsToAdd = models.filter((m) => !currentModels.has(m));
 						if (modelsToAdd.length > 0) {
 							const updatedModels = [...selected.models, ...modelsToAdd];
 							await settingsStore.updateProvider(selected.id, {

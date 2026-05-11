@@ -143,7 +143,10 @@ function safeGetWorkspaceDir(): string | null {
 		if (typeof path === "string" && path.trim()) return path;
 		return null;
 	} catch (err) {
-		console.warn("[slashCommands] customScanner 读取 workspacePath 失败。", err);
+		console.warn(
+			"[slashCommands] customScanner 读取 workspacePath 失败。",
+			err,
+		);
 		return null;
 	}
 }

@@ -53,7 +53,11 @@ function randomId(rng: () => number, len = 6): string {
 	return out;
 }
 
-function makeDef(id: string, name: string, desc: string): SlashCommandDefinition {
+function makeDef(
+	id: string,
+	name: string,
+	desc: string,
+): SlashCommandDefinition {
 	return {
 		id,
 		name,

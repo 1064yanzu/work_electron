@@ -37,7 +37,7 @@ const GROUPS: readonly CommandGroupId[] = [
 	"inspect",
 	"workspace",
 ];
-const pick = <T,>(rng: () => number, xs: readonly T[]): T =>
+const pick = <T>(rng: () => number, xs: readonly T[]): T =>
 	xs[Math.min(Math.floor(rng() * xs.length), xs.length - 1)] as T;
 const rid = (rng: () => number, n = 5): string => {
 	const abc = "abcdefghijklmnopqrstuvwxyz";

@@ -25,10 +25,7 @@ import {
 	useState,
 } from "react";
 import { cn } from "../../../lib/utils";
-import {
-	type FieldDescriptor,
-	searchSettingsFields,
-} from "../fieldRegistry";
+import { type FieldDescriptor, searchSettingsFields } from "../fieldRegistry";
 import {
 	SETTINGS_CATEGORIES,
 	getSubtab,
@@ -65,7 +62,8 @@ export function SettingsSearch({
 		return searchSettingsFields(query, limit);
 	}, [query, limit]);
 
-	const showEmptyState = open && query.trim().length > 0 && results.length === 0;
+	const showEmptyState =
+		open && query.trim().length > 0 && results.length === 0;
 	const showResults = open && results.length > 0;
 
 	// --- Cmd+F / Ctrl+F：focus 到输入框，阻止浏览器默认查找 ---
@@ -175,7 +173,10 @@ export function SettingsSearch({
 					"focus-within:border-primary/50 focus-within:bg-surface focus-within:ring-2 focus-within:ring-primary/10",
 				)}
 			>
-				<Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.8} />
+				<Search
+					className="h-4 w-4 shrink-0 text-text-muted"
+					strokeWidth={1.8}
+				/>
 				<input
 					ref={inputRef}
 					type="text"
@@ -321,7 +322,8 @@ function EmptyState({ query }: { query: string }) {
 	return (
 		<div className="px-4 py-4">
 			<p className="text-[12.5px] leading-relaxed text-text-secondary">
-				没有找到与 <span className="font-medium text-text-primary">"{query}"</span>{" "}
+				没有找到与{" "}
+				<span className="font-medium text-text-primary">"{query}"</span>{" "}
 				相关的设置项。
 			</p>
 			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">

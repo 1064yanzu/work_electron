@@ -72,8 +72,7 @@ export function useMouseGaze(active: boolean): GazeOffset {
 			};
 			curRef.current = next;
 			const moving =
-				Math.abs(next.tx - cur.tx) > 0.01 ||
-				Math.abs(next.ty - cur.ty) > 0.01;
+				Math.abs(next.tx - cur.tx) > 0.01 || Math.abs(next.ty - cur.ty) > 0.01;
 			if (moving) {
 				setOffset({ ...next });
 				rafRef.current = requestAnimationFrame(tick);

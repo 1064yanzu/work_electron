@@ -23,7 +23,9 @@ export interface ProviderApiBaseSectionProps {
 	provider: Provider;
 }
 
-export function ProviderApiBaseSection({ provider }: ProviderApiBaseSectionProps) {
+export function ProviderApiBaseSection({
+	provider,
+}: ProviderApiBaseSectionProps) {
 	const { settingsStore } = useSettingsStore();
 
 	const template = getTemplateForProvider(provider);
@@ -51,9 +53,7 @@ export function ProviderApiBaseSection({ provider }: ProviderApiBaseSectionProps
 				onChange={(next) =>
 					settingsStore.updateProvider(provider.id, { apiBase: next })
 				}
-				placeholder={
-					template?.defaultApiBase || "https://api.openai.com/v1"
-				}
+				placeholder={template?.defaultApiBase || "https://api.openai.com/v1"}
 				mono
 				size="lg"
 				aria-label="API 地址"

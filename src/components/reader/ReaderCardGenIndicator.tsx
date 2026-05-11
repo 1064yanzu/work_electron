@@ -30,10 +30,7 @@ export function ReaderCardGenIndicator({
 					{count > 0 ? (
 						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
 					) : (
-						<Loader2
-							className="w-3.5 h-3.5 animate-spin"
-							strokeWidth={1.5}
-						/>
+						<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
 					)}
 				</span>
 				<span className="reader-card-gen-indicator__text">

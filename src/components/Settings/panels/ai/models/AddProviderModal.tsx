@@ -91,9 +91,7 @@ export function AddProviderModal({
 					</label>
 					<Select
 						value={providerType}
-						onChange={(e) =>
-							setProviderType(e.target.value as ProviderType)
-						}
+						onChange={(e) => setProviderType(e.target.value as ProviderType)}
 					>
 						{Object.values(ProviderType).map((t) => (
 							<option key={t} value={t}>

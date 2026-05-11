@@ -18,10 +18,7 @@ import test from "node:test";
 
 import { compactCommand, forkCommand, resumeCommand } from "../builtin/session";
 import { modelCommand } from "../builtin/runtime";
-import type {
-	CommandContext,
-	SlashCommandsSettingsSnapshot,
-} from "../types";
+import type { CommandContext, SlashCommandsSettingsSnapshot } from "../types";
 
 function baseSettings(): SlashCommandsSettingsSnapshot {
 	return {

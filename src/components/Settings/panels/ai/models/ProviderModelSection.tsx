@@ -131,9 +131,7 @@ export function ProviderModelSection({
 			{/* 顶部工具条 */}
 			<div className="mb-4 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<span className="text-sm font-medium text-text-secondary">
-						模型
-					</span>
+					<span className="text-sm font-medium text-text-secondary">模型</span>
 					<span className="rounded-md bg-warm-200 px-2 py-0.5 text-xs text-text-muted">
 						({provider.models.length})
 					</span>
@@ -243,7 +241,10 @@ export function ProviderModelSection({
 						id="ai.models.modelOverrides"
 						title="高级：按模型覆盖端点类型"
 					>
-						<ExpandSyncBridge expanded={true} onChange={setShowEndpointOverrides} />
+						<ExpandSyncBridge
+							expanded={true}
+							onChange={setShowEndpointOverrides}
+						/>
 						<p className="pt-3 text-[11.5px] leading-relaxed text-text-muted">
 							展开后可为每个模型单独选择端点类型（兼容型 / Responses），
 							未单独配置的模型会继承服务商默认端点类型。
@@ -348,10 +349,7 @@ function ModelRow({
 						containerClassName="w-full"
 						value={endpointSelection}
 						onChange={(e) =>
-							onEndpointChange(
-								model,
-								e.target.value as ModelEndpointSelection,
-							)
+							onEndpointChange(model, e.target.value as ModelEndpointSelection)
 						}
 					>
 						<option value="inherit">继承默认</option>

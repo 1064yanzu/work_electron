@@ -448,36 +448,39 @@ export default function PetApp() {
 	//   - 如果真位移 > 阈值 → 拖动结束 + 边缘吸附
 	//   - 否则视作点击：触发双击 / 单击 toggle 输入气泡
 
-	const handleMouseDown = useCallback((e: React.MouseEvent) => {
-		if (e.button !== 0) return;
-		dragStartRef.current = { x: e.screenX, y: e.screenY };
-		movedRef.current = false;
-		longPressFiredRef.current = false;
-		dragVelocityRef.current = [
-			{ x: e.screenX, y: e.screenY, t: performance.now() },
-		];
-		setIsDragging(true);
-		edgePeek.onDragStart();
-		setContextMenuOpen(false); // 任何 mousedown 都关菜单
-		// 记录 shift 状态：按住 Shift → 松手时不做边缘吸附
-		shiftHeldRef.current = e.shiftKey;
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			if (e.button !== 0) return;
+			dragStartRef.current = { x: e.screenX, y: e.screenY };
+			movedRef.current = false;
+			longPressFiredRef.current = false;
+			dragVelocityRef.current = [
+				{ x: e.screenX, y: e.screenY, t: performance.now() },
+			];
+			setIsDragging(true);
+			edgePeek.onDragStart();
+			setContextMenuOpen(false); // 任何 mousedown 都关菜单
+			// 记录 shift 状态：按住 Shift → 松手时不做边缘吸附
+			shiftHeldRef.current = e.shiftKey;
 
-		// 长按定时器：600ms 不动就弹菜单
-		if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-		longPressTimerRef.current = setTimeout(() => {
-			if (!movedRef.current) {
-				longPressFiredRef.current = true;
-				setContextMenuOpen(true);
-				setIsDragging(false);
-				void invoke("pet_window_drag_end").catch(() => {});
-			}
-		}, LONG_PRESS_MS);
+			// 长按定时器：600ms 不动就弹菜单
+			if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = setTimeout(() => {
+				if (!movedRef.current) {
+					longPressFiredRef.current = true;
+					setContextMenuOpen(true);
+					setIsDragging(false);
+					void invoke("pet_window_drag_end").catch(() => {});
+				}
+			}, LONG_PRESS_MS);
 
-		void invoke("pet_window_drag_start", {
-			mouseX: e.screenX,
-			mouseY: e.screenY,
-		});
-	}, [edgePeek]);
+			void invoke("pet_window_drag_start", {
+				mouseX: e.screenX,
+				mouseY: e.screenY,
+			});
+		},
+		[edgePeek],
+	);
 
 	useEffect(() => {
 		if (!isDragging) return;
@@ -903,7 +906,9 @@ export default function PetApp() {
 						landBouncing ? "animate-pet-land-bounce" : "",
 						blinking ? "pet-blink" : "",
 						wobbling ? "animate-pet-wobble" : "",
-					].filter(Boolean).join(" ")}
+					]
+						.filter(Boolean)
+						.join(" ")}
 					style={{
 						transform: (() => {
 							const parts: string[] = [];
@@ -922,11 +927,14 @@ export default function PetApp() {
 							}
 							// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
 							if (edgePeek.peeking && edgePeek.side) {
-								const dx = edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
+								const dx =
+									edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
 								parts.push(`translateX(${dx}px)`);
 							} else if (!isDragging) {
 								// 视线追随（仅在非拖动态叠加，±3px）
-								parts.push(`translate(${gaze.tx.toFixed(2)}px, ${gaze.ty.toFixed(2)}px)`);
+								parts.push(
+									`translate(${gaze.tx.toFixed(2)}px, ${gaze.ty.toFixed(2)}px)`,
+								);
 							}
 							return parts.join(" ");
 						})(),

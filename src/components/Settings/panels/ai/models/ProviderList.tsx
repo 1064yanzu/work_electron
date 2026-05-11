@@ -12,7 +12,10 @@ import { useMemo } from "react";
 import { cn } from "../../../../../lib/utils";
 import type { Provider } from "../../../constants";
 import { getProviderIcon } from "../../../providerIcons";
-import { SettingsButton, SettingsTextInput } from "../../../ui/SettingsPrimitives";
+import {
+	SettingsButton,
+	SettingsTextInput,
+} from "../../../ui/SettingsPrimitives";
 
 export interface ProviderListProps {
 	providers: Provider[];
@@ -48,10 +51,7 @@ export function ProviderList({
 					onChange={onSearchChange}
 					placeholder="搜索模型平台..."
 					prefix={
-						<Search
-							className="h-4 w-4 text-text-light"
-							strokeWidth={1.8}
-						/>
+						<Search className="h-4 w-4 text-text-light" strokeWidth={1.8} />
 					}
 					aria-label="搜索模型平台"
 				/>
@@ -91,9 +91,7 @@ export function ProviderList({
 											className="h-full w-full object-cover"
 										/>
 									) : (
-										provider.icon && (
-											<provider.icon className="h-5 w-5" />
-										)
+										provider.icon && <provider.icon className="h-5 w-5" />
 									)}
 								</div>
 								<span className="flex-1 truncate text-sm font-medium text-text-primary">

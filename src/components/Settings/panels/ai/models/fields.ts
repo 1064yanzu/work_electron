@@ -20,15 +20,7 @@ export const FIELDS: readonly FieldDescriptor[] = [
 		anchorId: "ai.models.apiKey",
 		label: "API 密钥",
 		description: "当前服务商的 API Key，支持多密钥以逗号或换行分隔",
-		keywords: [
-			"api",
-			"apikey",
-			"api key",
-			"key",
-			"token",
-			"密钥",
-			"sk-",
-		],
+		keywords: ["api", "apikey", "api key", "key", "token", "密钥", "sk-"],
 	},
 	{
 		tabId: "ai.models",
@@ -42,13 +34,7 @@ export const FIELDS: readonly FieldDescriptor[] = [
 		anchorId: "ai.models.endpointType",
 		label: "端点类型",
 		description: "兼容型 / Responses — OpenAI 兼容服务商可用，属于高级选项",
-		keywords: [
-			"endpoint",
-			"端点",
-			"chat completions",
-			"responses",
-			"兼容型",
-		],
+		keywords: ["endpoint", "端点", "chat completions", "responses", "兼容型"],
 	},
 	{
 		tabId: "ai.models",

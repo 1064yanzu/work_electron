@@ -51,7 +51,7 @@ export function CommandSubmenuView({
 					o.label.toLowerCase().includes(qLower) ||
 					(o.description ?? "").toLowerCase().includes(qLower)
 				);
-		  })
+			})
 		: options;
 
 	// filter 变化时重置 activeIndex

@@ -146,9 +146,7 @@ export function ChatInput({
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		// 如果斜杠菜单打开，让菜单处理键盘事件
 		if (showSlashMenu) {
-			if (
-				["ArrowUp", "ArrowDown", "Enter", "Escape", "Tab"].includes(e.key)
-			) {
+			if (["ArrowUp", "ArrowDown", "Enter", "Escape", "Tab"].includes(e.key)) {
 				// Tab：阻止默认切焦点，交给菜单处理
 				if (e.key === "Tab") e.preventDefault();
 				return; // 让 SlashCommandMenu 处理
@@ -297,42 +295,42 @@ export function ChatInput({
 
 	return (
 		<SlashCommandProvider value={slashBridgeValue}>
-		<div className="relative" data-chat-input-root onBlur={handleBlur}>
-			<input
-				type="file"
-				ref={fileInputRef}
-				className="hidden"
-				multiple
-				onChange={handleFileSelect}
-			/>
-
-			{/* 斜杠命令菜单 - 二级菜单模式 */}
-			<SlashMenuContainer
-				isOpen={showSlashMenu}
-				onClose={() => setShowSlashMenu(false)}
-				onSelect={handleSelectCommand}
-				filter={deferredSlashFilter}
-				dynamicCommands={dynamicCommands}
-				onOpenPromptLibrary={onOpenPromptLibrary}
-			/>
-
-			{/* 模型选择器弹出面板 — 放在 overflow-hidden 外，避免被裁剪 */}
-			{isModelSelectorOpen && models.length > 0 && (
-				<ModelSelector
-					models={models}
-					activeModel={model || null}
-					onSelect={(id) => {
-						onModelSelect?.(id);
-						setIsModelSelectorOpen(false);
-					}}
-					onClose={() => setIsModelSelectorOpen(false)}
-					className="bottom-full left-0 mb-2"
+			<div className="relative" data-chat-input-root onBlur={handleBlur}>
+				<input
+					type="file"
+					ref={fileInputRef}
+					className="hidden"
+					multiple
+					onChange={handleFileSelect}
 				/>
-			)}
 
-			{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
-			<div
-				className={`
+				{/* 斜杠命令菜单 - 二级菜单模式 */}
+				<SlashMenuContainer
+					isOpen={showSlashMenu}
+					onClose={() => setShowSlashMenu(false)}
+					onSelect={handleSelectCommand}
+					filter={deferredSlashFilter}
+					dynamicCommands={dynamicCommands}
+					onOpenPromptLibrary={onOpenPromptLibrary}
+				/>
+
+				{/* 模型选择器弹出面板 — 放在 overflow-hidden 外，避免被裁剪 */}
+				{isModelSelectorOpen && models.length > 0 && (
+					<ModelSelector
+						models={models}
+						activeModel={model || null}
+						onSelect={(id) => {
+							onModelSelect?.(id);
+							setIsModelSelectorOpen(false);
+						}}
+						onClose={() => setIsModelSelectorOpen(false)}
+						className="bottom-full left-0 mb-2"
+					/>
+				)}
+
+				{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
+				<div
+					className={`
 					bg-surface border transition-[border-color,border-radius,box-shadow] duration-300 ease-out
 					${
 						isExpanded
@@ -340,59 +338,59 @@ export function ChatInput({
 							: "rounded-full border-border hover:border-warm-400 shadow-[0_1px_2px_0_rgb(26_26_25/0.04)]"
 					}
 				`}
-			>
-				<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
+				>
+					<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
 
-				{/* 已选择的命令卡片 */}
-				<SlashCommandChipList
-					chips={selectedChips}
-					onRemove={handleRemoveChip}
-					onToggleExpand={handleToggleChipExpand}
-					onUpdate={handleUpdateChip}
-				/>
+					{/* 已选择的命令卡片 */}
+					<SlashCommandChipList
+						chips={selectedChips}
+						onRemove={handleRemoveChip}
+						onToggleExpand={handleToggleChipExpand}
+						onUpdate={handleUpdateChip}
+					/>
 
-				{/* 输入框 */}
-				<div className="relative">
-					<textarea
-						ref={textareaRef}
-						value={value}
-						onChange={(e) => setValue(e.target.value)}
-						onKeyDown={handleKeyDown}
-						onPaste={handlePaste}
-						onFocus={handleFocus}
-						placeholder={placeholder}
-						disabled={disabled}
-						rows={1}
-						className={`
+					{/* 输入框 */}
+					<div className="relative">
+						<textarea
+							ref={textareaRef}
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							onKeyDown={handleKeyDown}
+							onPaste={handlePaste}
+							onFocus={handleFocus}
+							placeholder={placeholder}
+							disabled={disabled}
+							rows={1}
+							className={`
 							w-full bg-transparent text-[14px] text-text-primary
 							placeholder-cream-600 dark:placeholder-text-muted/40
 							resize-none focus:outline-none focus:ring-0 focus:shadow-none disabled:opacity-50 leading-relaxed
 							transition-all duration-200
 							${isExpanded ? "px-5 py-3.5 min-h-[64px]" : "px-5 py-4 min-h-[52px]"}
 						`}
-						style={{ maxHeight: "200px" }}
+							style={{ maxHeight: "200px" }}
+						/>
+					</div>
+
+					<ChatInputToolbar
+						expanded={isExpanded}
+						disabled={disabled}
+						hasContent={hasContent}
+						model={model}
+						models={models}
+						isModelSelectorOpen={isModelSelectorOpen}
+						onToggleModelSelector={() =>
+							setIsModelSelectorOpen(!isModelSelectorOpen)
+						}
+						onTriggerFilePicker={triggerFilePicker}
+						onTriggerSlashMenu={() => setValue("/")}
+						onSubmit={handleSubmit}
 					/>
 				</div>
 
-				<ChatInputToolbar
-					expanded={isExpanded}
-					disabled={disabled}
-					hasContent={hasContent}
-					model={model}
-					models={models}
-					isModelSelectorOpen={isModelSelectorOpen}
-					onToggleModelSelector={() =>
-						setIsModelSelectorOpen(!isModelSelectorOpen)
-					}
-					onTriggerFilePicker={triggerFilePicker}
-					onTriggerSlashMenu={() => setValue("/")}
-					onSubmit={handleSubmit}
-				/>
-			</div>
-
-			{/* 快捷键提示 — 聚焦时显示 */}
-			<div
-				className={`
+				{/* 快捷键提示 — 聚焦时显示 */}
+				<div
+					className={`
 					flex items-center justify-center gap-5 mt-2 text-[10px] select-none
 					transition-all duration-300
 					${
@@ -401,21 +399,21 @@ export function ChatInput({
 							: "opacity-0 text-transparent"
 					}
 				`}
-			>
-				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
-						/
-					</kbd>
-					命令
-				</span>
-				<span className="flex items-center gap-1.5">
-					<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
-						↵
-					</kbd>
-					发送
-				</span>
+				>
+					<span className="flex items-center gap-1.5">
+						<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
+							/
+						</kbd>
+						命令
+					</span>
+					<span className="flex items-center gap-1.5">
+						<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
+							↵
+						</kbd>
+						发送
+					</span>
+				</div>
 			</div>
-		</div>
 		</SlashCommandProvider>
 	);
 }

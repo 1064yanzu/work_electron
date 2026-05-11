@@ -11,13 +11,7 @@
  *   - 无障碍：按钮带 `aria-expanded` / `aria-controls`
  */
 import { ChevronRight } from "lucide-react";
-import {
-	useCallback,
-	useEffect,
-	useId,
-	useState,
-	type ReactNode,
-} from "react";
+import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import { cn } from "../../../lib/utils";
 
 // ---------- localStorage 持久化 ----------

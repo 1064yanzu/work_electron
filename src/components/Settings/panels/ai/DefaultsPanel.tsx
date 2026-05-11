@@ -83,21 +83,15 @@ export function DefaultsPanel() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				const [
-					titleRaw,
-					imageRaw,
-					wikiRaw,
-					skillRaw,
-					strategy,
-					provider,
-				] = await Promise.all([
-					getConfig("title_generation_model"),
-					getConfig("image_extraction_model"),
-					getConfig("wiki_generation_model"),
-					getConfig("skill_llm_model"),
-					getSearchStrategy(),
-					getSearchMcpProvider(),
-				]);
+				const [titleRaw, imageRaw, wikiRaw, skillRaw, strategy, provider] =
+					await Promise.all([
+						getConfig("title_generation_model"),
+						getConfig("image_extraction_model"),
+						getConfig("wiki_generation_model"),
+						getConfig("skill_llm_model"),
+						getSearchStrategy(),
+						getSearchMcpProvider(),
+					]);
 				if (cancelled) return;
 				if (typeof titleRaw === "string") setTitleModel(titleRaw);
 				if (typeof imageRaw === "string") setImageExtractionModel(imageRaw);

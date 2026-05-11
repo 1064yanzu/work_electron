@@ -76,9 +76,9 @@ export function WebdavSyncActions({
 									/>
 									<span className="text-text-muted">
 										上次同步:{" "}
-										{new Date(
-											syncConfig.webdav_last_sync_at,
-										).toLocaleString("zh-CN")}
+										{new Date(syncConfig.webdav_last_sync_at).toLocaleString(
+											"zh-CN",
+										)}
 									</span>
 								</>
 							) : (
@@ -216,9 +216,8 @@ export function WebdavSyncActions({
 			</SettingsSectionCard>
 
 			<SettingsHint icon={AlertCircle} title="多设备同步">
-				在多台设备上使用相同的 WebDAV
-				配置即可实现数据同步。建议每次使用前先从 WebDAV
-				恢复最新数据，使用完毕再备份回去。
+				在多台设备上使用相同的 WebDAV 配置即可实现数据同步。建议每次使用前先从
+				WebDAV 恢复最新数据，使用完毕再备份回去。
 			</SettingsHint>
 		</>
 	);

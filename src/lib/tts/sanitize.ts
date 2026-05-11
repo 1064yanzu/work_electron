@@ -130,7 +130,10 @@ export function sanitizeForSpeech(
 			slice.lastIndexOf("?"),
 			slice.lastIndexOf("\n"),
 		);
-		text = lastPunct > options.maxLength * 0.6 ? slice.slice(0, lastPunct + 1) : slice;
+		text =
+			lastPunct > options.maxLength * 0.6
+				? slice.slice(0, lastPunct + 1)
+				: slice;
 		text = `${text.trim()}……`;
 	}
 

@@ -110,16 +110,6 @@ export function SlashPrimaryMenu({
 		);
 	});
 
-	// 如果过滤后只有一个结果，自动选中
-	useEffect(() => {
-		if (filteredCategories.length === 1 && filter) {
-			const timer = setTimeout(() => {
-				onSelectCategory(filteredCategories[0].id);
-			}, 100);
-			return () => clearTimeout(timer);
-		}
-	}, [filteredCategories, filter, onSelectCategory]);
-
 	// 重置选中项
 	useEffect(() => {
 		setSelectedIndex(0);

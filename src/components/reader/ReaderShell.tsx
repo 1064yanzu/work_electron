@@ -486,7 +486,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 				const updated = await readerReviewCard(id, quality);
 				readerStoreApi.updateCard(updated);
 			} catch (e) {
-				toast.error(`复习记录失败：${e instanceof Error ? e.message : String(e)}`);
+				toast.error(
+					`复习记录失败：${e instanceof Error ? e.message : String(e)}`,
+				);
 			}
 		},
 		[],

@@ -4,7 +4,14 @@
  * 拆分原则：每一项都是「卡片化的可视控件」，避免 SettingsRow 长串纵向流。
  * 启用 / 穿透 → 双开关条；大小 / 停留 → ChipGroup；勿扰 → time pair。
  */
-import { Clock, Keyboard, MoonStar, MousePointerClick, Power, Ruler } from "lucide-react";
+import {
+	Clock,
+	Keyboard,
+	MoonStar,
+	MousePointerClick,
+	Power,
+	Ruler,
+} from "lucide-react";
 import { SettingsChipGroup, SettingsSwitch } from "../../ui/SettingsPrimitives";
 
 type SizePreset = "sm" | "md" | "lg" | "xl";

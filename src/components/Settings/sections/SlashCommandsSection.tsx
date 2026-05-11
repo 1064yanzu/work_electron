@@ -44,7 +44,13 @@ const GROUP_LABEL: Record<string, string> = {
 	custom: "自定义",
 };
 
-const GROUP_ORDER = ["session", "runtime", "inspect", "workspace", "custom"] as const;
+const GROUP_ORDER = [
+	"session",
+	"runtime",
+	"inspect",
+	"workspace",
+	"custom",
+] as const;
 
 /**
  * 写入偏好并在失败时回滚；统一走此函数以保证一致性。
@@ -300,7 +306,10 @@ export function SlashCommandsSection() {
 														type="checkbox"
 														checked={visible}
 														onChange={(e) =>
-															void handleToggleVisibility(c.id, e.target.checked)
+															void handleToggleVisibility(
+																c.id,
+																e.target.checked,
+															)
 														}
 														className="accent-primary"
 													/>

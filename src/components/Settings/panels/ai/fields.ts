@@ -11,13 +11,7 @@ export const FIELDS: FieldDescriptor[] = [
 		anchorId: "ai.defaults.model.title",
 		label: "会话标题生成模型",
 		description: "自动根据对话内容生成简短标题的默认模型。",
-		keywords: [
-			"title",
-			"title_generation_model",
-			"标题",
-			"会话标题",
-			"生成",
-		],
+		keywords: ["title", "title_generation_model", "标题", "会话标题", "生成"],
 	},
 	{
 		tabId: "ai.defaults",
@@ -45,13 +39,7 @@ export const FIELDS: FieldDescriptor[] = [
 		anchorId: "ai.defaults.model.skill",
 		label: "Skill 执行模型",
 		description: "Agent 执行技能（skill_llm_model）时优先使用的模型。",
-		keywords: [
-			"skill",
-			"skill_llm_model",
-			"技能",
-			"skills",
-			"Agent",
-		],
+		keywords: ["skill", "skill_llm_model", "技能", "skills", "Agent"],
 	},
 	{
 		tabId: "ai.defaults",

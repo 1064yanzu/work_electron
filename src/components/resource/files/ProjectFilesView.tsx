@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { safeInvoke } from "../../../lib/tauriBridge";
 import { useWorkspaceStoreSelector } from "../../../lib/workspaceStore";
-import {
-	managedModeStore,
-	getMimeType,
-} from "../../../lib/managedModeStore";
+import { managedModeStore, getMimeType } from "../../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../../lib/sandboxEditorStore";
 import { chatStore, useChatStoreSelector } from "../../../lib/chat/store";
 import {
@@ -21,16 +18,17 @@ import { ContextMenu, type ContextMenuItem } from "../../ui/ContextMenu";
 import { toast } from "../../ui/Toast";
 import { FileTreeHeader } from "./FileTreeHeader";
 import { FileTreeEmptyState } from "./FileTreeEmptyState";
-import {
-	FileTreeNode,
-	InlineCreateRow,
-	type FileEntry,
-} from "./FileTreeNode";
+import { FileTreeNode, InlineCreateRow, type FileEntry } from "./FileTreeNode";
 import { useFileTreeMutations } from "./useFileTreeMutations";
 
 type EditingState =
 	| { mode: "rename"; targetPath: string }
-	| { mode: "create"; parentPath: string; level: number; type: "file" | "folder" };
+	| {
+			mode: "create";
+			parentPath: string;
+			level: number;
+			type: "file" | "folder";
+	  };
 
 function isTextLikeReaderFile(fileName: string): boolean {
 	return /\.(txt|log|md|markdown|html|htm|xhtml)$/i.test(fileName);
@@ -400,10 +398,7 @@ export function ProjectFilesView() {
 			// 仅在面板被悬停或包含 active 元素时响应——否则会与全局快捷键冲突
 			const el = containerRef.current;
 			if (!el) return;
-			if (
-				!el.contains(document.activeElement) &&
-				!el.matches(":hover")
-			) {
+			if (!el.contains(document.activeElement) && !el.matches(":hover")) {
 				return;
 			}
 			const entry = findEntryByPath(entriesByDir, selectedPath);
@@ -465,8 +460,7 @@ export function ProjectFilesView() {
 						setEditing({
 							mode: "create",
 							parentPath: entry.path,
-							level:
-								pathDepth(entry.path, projectPath ?? entry.path) + 1,
+							level: pathDepth(entry.path, projectPath ?? entry.path) + 1,
 							type: "file",
 						});
 					},
@@ -486,8 +480,7 @@ export function ProjectFilesView() {
 						setEditing({
 							mode: "create",
 							parentPath: entry.path,
-							level:
-								pathDepth(entry.path, projectPath ?? entry.path) + 1,
+							level: pathDepth(entry.path, projectPath ?? entry.path) + 1,
 							type: "folder",
 						});
 					},

@@ -84,10 +84,7 @@ test("resolveSettingsTabId 空/未知降级到 ai.models", () => {
 		assert.equal(resolveSettingsTabId(""), "ai.models");
 		assert.equal(resolveSettingsTabId("not-a-real-id"), "ai.models");
 		// 未知 id 应触发一次 warn；空/null 不 warn
-		assert.ok(
-			warnings.length >= 1,
-			"unknown id 应触发 console.warn",
-		);
+		assert.ok(warnings.length >= 1, "unknown id 应触发 console.warn");
 	} finally {
 		console.warn = originalWarn;
 	}

@@ -66,6 +66,50 @@ export const SLASH_MESSAGES = {
 		approvals: {
 			switched: (label: string): string => `已切换审批模式：${label}`,
 		},
+		help: {
+			loading: "正在请 Claude Code 列出命令…",
+		},
+		cost: {
+			loading: "正在请 Claude Code 汇总用量…",
+		},
+		doctor: {
+			loading: "正在跑 Claude Code 健康检查…",
+		},
+		releaseNotes: {
+			loading: "正在请 Claude Code 输出更新日志…",
+		},
+		outputStyle: {
+			switched: (label: string): string => `已切换输出风格：${label}`,
+		},
+		agents: {
+			loading: "正在让 Claude Code 列出子代理…",
+		},
+		permissions: {
+			loading: "正在让 Claude Code 输出当前权限…",
+		},
+		hooks: {
+			loading: "正在让 Claude Code 输出当前 hooks…",
+		},
+		addDir: {
+			loading: (dir: string): string => `正在把目录加入 SDK：${dir}`,
+			canceled: "已取消选择目录。",
+		},
+		securityReview: {
+			loading: "正在跑安全审查…",
+		},
+		export: {
+			canceled: "已取消导出。",
+			success: (filePath: string): string => `已导出到 ${filePath}`,
+			failed: (reason: string): string => `导出失败：${reason}`,
+			emptyMessages: "当前会话没有消息可导出。",
+		},
+		todos: {
+			notReady: "Todos 视图尚未就绪。",
+		},
+		feedback: {
+			opened: "已在浏览器打开反馈页面。",
+			failed: (reason: string): string => `打开反馈页面失败：${reason}`,
+		},
 		// 通用失败（executor 兜底用）
 		generic: {
 			failed: (reason: string): string => `命令执行失败：${reason}`,
@@ -178,6 +222,64 @@ export const SLASH_MESSAGES = {
 		settings: {
 			name: "打开设置",
 			description: "跳转到设置面板的 AI 编程页。",
+		},
+		help: {
+			name: "查看命令清单",
+			description: "让 Claude Code 真实列出所有可用斜杠命令。",
+		},
+		cost: {
+			name: "查看用量",
+			description: "让 Claude Code 统计本会话的 token 用量与花费。",
+		},
+		doctor: {
+			name: "健康检查",
+			description: "让 Claude Code 跑一次诊断,排查 SDK / 代理 / 配置问题。",
+		},
+		releaseNotes: {
+			name: "查看更新日志",
+			description: "让 Claude Code 输出本版本的更新摘要。",
+		},
+		outputStyle: {
+			name: "切换输出风格",
+			description: "切换 Claude 的输出风格(默认 / 讲解型 / 学习型)。",
+			subOptions: {
+				default: "默认",
+				explanatory: "讲解型",
+				learning: "学习型",
+			},
+		},
+		agents: {
+			name: "查看子代理",
+			description: "打开子代理设置,同时让 Claude Code 列出当前可用 agents。",
+		},
+		permissions: {
+			name: "查看权限",
+			description: "打开权限设置,同时让 Claude Code 输出当前工具权限。",
+		},
+		hooks: {
+			name: "查看 Hooks",
+			description: "打开 hooks 设置,同时让 Claude Code 输出当前 hooks。",
+		},
+		addDir: {
+			name: "添加工作目录",
+			description: "选择一个额外目录加入 SDK 的工作目录列表。",
+		},
+		securityReview: {
+			name: "安全审查",
+			description:
+				"让 Claude Code 跑 security-review skill,对工作区做安全审查。",
+		},
+		todos: {
+			name: "查看 Todos",
+			description: "打开右栏 Todos 视图。",
+		},
+		feedback: {
+			name: "提交反馈",
+			description: "打开 GitHub Issues 提交反馈或报 bug。",
+		},
+		export: {
+			name: "导出会话",
+			description: "把当前会话的消息导出为 Markdown 文件。",
 		},
 	},
 

@@ -18,7 +18,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { app, type IpcMainInvokeEvent } from "electron";
+import { app, dialog, type IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 
 // ---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ function parseFrontmatter(raw: string): ParsedMd {
 		if (!key || !value) continue;
 		// 去掉包围引号
 		if (
-			(value.startsWith("\"") && value.endsWith("\"")) ||
+			(value.startsWith('"') && value.endsWith('"')) ||
 			(value.startsWith("'") && value.endsWith("'"))
 		) {
 			value = value.slice(1, -1);
@@ -110,7 +110,10 @@ function parseFrontmatter(raw: string): ParsedMd {
 
 function normalizeCommandId(filename: string): string {
 	const stem = filename.replace(/\.md$/i, "");
-	return stem.toLowerCase().replace(/[^a-z0-9\-_]/g, "-").replace(/^-+|-+$/g, "");
+	return stem
+		.toLowerCase()
+		.replace(/[^a-z0-9\-_]/g, "-")
+		.replace(/^-+|-+$/g, "");
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +133,11 @@ function resolveScanRoots(
 	includeUserHome: boolean,
 ): Array<{ absPath: string; source: "project" | "user" }> {
 	const out: Array<{ absPath: string; source: "project" | "user" }> = [];
-	const projectPath = path.join(ensureAbsolute(workspaceDir), ".claude", "commands");
+	const projectPath = path.join(
+		ensureAbsolute(workspaceDir),
+		".claude",
+		"commands",
+	);
 	out.push({ absPath: projectPath, source: "project" });
 	if (includeUserHome) {
 		const home = app.getPath("home") || os.homedir();
@@ -246,7 +253,10 @@ export function createSlashCommandsHandlers() {
 		_event: IpcMainInvokeEvent,
 		input: HandlerInput<"slash_commands_scan">,
 	): Promise<HandlerOutput<"slash_commands_scan">> => {
-		const roots = resolveScanRoots(input.workspace_dir, input.include_user_home);
+		const roots = resolveScanRoots(
+			input.workspace_dir,
+			input.include_user_home,
+		);
 		const maxFiles = Math.max(
 			1,
 			Math.min(5000, input.max_files ?? DEFAULT_MAX_FILES),
@@ -330,9 +340,67 @@ export function createSlashCommandsHandlers() {
 		};
 	};
 
+	const slash_commands_pick_directory = async (
+		_event: IpcMainInvokeEvent,
+		input: HandlerInput<"slash_commands_pick_directory">,
+	): Promise<HandlerOutput<"slash_commands_pick_directory">> => {
+		const result = await dialog.showOpenDialog({
+			title: input.title || "选择目录",
+			defaultPath:
+				input.default_path && input.default_path.trim()
+					? input.default_path
+					: undefined,
+			properties: ["openDirectory", "createDirectory"],
+		});
+		if (result.canceled || result.filePaths.length === 0) {
+			return { canceled: true, path: "" };
+		}
+		return { canceled: false, path: result.filePaths[0] ?? "" };
+	};
+
+	const slash_commands_save_dialog = async (
+		_event: IpcMainInvokeEvent,
+		input: HandlerInput<"slash_commands_save_dialog">,
+	): Promise<HandlerOutput<"slash_commands_save_dialog">> => {
+		const filters =
+			Array.isArray(input.filters) && input.filters.length > 0
+				? input.filters
+				: [
+						{ name: "Markdown", extensions: ["md"] },
+						{ name: "All Files", extensions: ["*"] },
+					];
+		const result = await dialog.showSaveDialog({
+			title: input.title || "保存到…",
+			defaultPath:
+				input.default_path && input.default_path.trim()
+					? input.default_path
+					: undefined,
+			filters,
+		});
+		if (result.canceled || !result.filePath) {
+			return { canceled: true, path: "" };
+		}
+		return { canceled: false, path: result.filePath };
+	};
+
+	const slash_commands_export_session_md = async (
+		_event: IpcMainInvokeEvent,
+		input: HandlerInput<"slash_commands_export_session_md">,
+	): Promise<HandlerOutput<"slash_commands_export_session_md">> => {
+		const target = ensureAbsolute(input.path);
+		const dir = path.dirname(target);
+		await fs.mkdir(dir, { recursive: true });
+		const content = String(input.content ?? "");
+		await fs.writeFile(target, content, "utf-8");
+		return { path: target, bytes: Buffer.byteLength(content, "utf-8") };
+	};
+
 	return {
 		slash_commands_scan,
 		slash_commands_git_diff,
 		slash_commands_write_init,
+		slash_commands_pick_directory,
+		slash_commands_save_dialog,
+		slash_commands_export_session_md,
 	};
 }

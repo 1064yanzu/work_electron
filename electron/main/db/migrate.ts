@@ -233,7 +233,12 @@ export async function runMigrations(ctx: DbContext) {
 	await safeAddColumn(ctx, "tts_settings", "scene_pet_persona_model", "TEXT");
 
 	// Migration: 阅读器知识卡片 — 标签 / 草稿 / SRS 间隔重复
-	await safeAddColumn(ctx, "reader_cards", "tags", "TEXT NOT NULL DEFAULT '[]'");
+	await safeAddColumn(
+		ctx,
+		"reader_cards",
+		"tags",
+		"TEXT NOT NULL DEFAULT '[]'",
+	);
 	await safeAddColumn(
 		ctx,
 		"reader_cards",

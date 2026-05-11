@@ -78,7 +78,10 @@ function buildRecentResumableSessions(): ResumableSessionBrief[] {
 		filtered.sort((a, b) => b.updatedAt - a.updatedAt);
 		return filtered.slice(0, RESUMABLE_SESSIONS_LIMIT);
 	} catch (err) {
-		console.warn("[slashCommands] buildRecentResumableSessions 失败，已返回空数组。", err);
+		console.warn(
+			"[slashCommands] buildRecentResumableSessions 失败，已返回空数组。",
+			err,
+		);
 		return [];
 	}
 }
@@ -100,7 +103,10 @@ function buildAvailableModels(): Model[] {
 		}
 		return models;
 	} catch (err) {
-		console.warn("[slashCommands] buildAvailableModels 失败，已返回空数组。", err);
+		console.warn(
+			"[slashCommands] buildAvailableModels 失败，已返回空数组。",
+			err,
+		);
 		return [];
 	}
 }
@@ -201,7 +207,10 @@ export function buildCommandContext(overrides?: {
 	try {
 		settings = buildSlashCommandsSettingsSnapshot();
 	} catch (err) {
-		console.warn("[slashCommands] 组合 settings snapshot 失败，使用默认值。", err);
+		console.warn(
+			"[slashCommands] 组合 settings snapshot 失败，使用默认值。",
+			err,
+		);
 		settings = {
 			enabled: true,
 			visibility: {},

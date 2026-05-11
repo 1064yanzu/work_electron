@@ -46,11 +46,7 @@ export function FileTreeHeader({
 				>
 					<ChevronsDownUp className="w-3.5 h-3.5" />
 				</HeaderIconButton>
-				<HeaderIconButton
-					title="刷新"
-					disabled={!hasPath}
-					onClick={onRefresh}
-				>
+				<HeaderIconButton title="刷新" disabled={!hasPath} onClick={onRefresh}>
 					<RefreshCcw
 						className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
 					/>

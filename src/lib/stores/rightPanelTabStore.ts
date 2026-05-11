@@ -57,7 +57,9 @@ const internalStore = createStore<RightPanelTabState>(initialState);
  *   `workspaceStore.setRightSidebarVisible(true)`。
  */
 export function setRightPanelTab(tab: RightPanelTab): void {
-	internalStore.setState((prev) => (prev.active === tab ? prev : { active: tab }));
+	internalStore.setState((prev) =>
+		prev.active === tab ? prev : { active: tab },
+	);
 }
 
 /** 获取当前右侧面板 tab 的即时值（非 React 场景使用）。 */

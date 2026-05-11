@@ -88,9 +88,7 @@ export function PetReminderBubble({
 					<div className="flex-1 text-[13.5px] font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)]">
 						{title}
 					</div>
-					{onDismiss && (
-						<CloseIconButton onClick={onDismiss} />
-					)}
+					{onDismiss && <CloseIconButton onClick={onDismiss} />}
 				</div>
 
 				{detail && (

@@ -37,10 +37,7 @@ export function WebdavStatusCard({
 					<div className="flex items-center gap-3">
 						{enabled ? (
 							<div className="w-10 h-10 rounded-full bg-mint-500/15 flex items-center justify-center">
-								<Cloud
-									className="w-5 h-5 bai-icon-mint"
-									strokeWidth={1.5}
-								/>
+								<Cloud className="w-5 h-5 bai-icon-mint" strokeWidth={1.5} />
 							</div>
 						) : (
 							<div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center">
@@ -48,9 +45,7 @@ export function WebdavStatusCard({
 							</div>
 						)}
 						<div>
-							<div className="font-medium text-text-primary">
-								WebDAV 云同步
-							</div>
+							<div className="font-medium text-text-primary">WebDAV 云同步</div>
 							<div className="text-xs text-text-light">
 								{enabled ? "已启用" : "未启用"}
 							</div>

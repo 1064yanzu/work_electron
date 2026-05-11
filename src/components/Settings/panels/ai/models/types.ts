@@ -34,9 +34,7 @@ export function getModelEndpointTypes(
 	if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
 
 	const result: Record<string, EndpointType> = {};
-	for (const [model, value] of Object.entries(
-		raw as Record<string, unknown>,
-	)) {
+	for (const [model, value] of Object.entries(raw as Record<string, unknown>)) {
 		if (value === "chat_completions" || value === "responses") {
 			result[model] = value;
 		}
@@ -62,8 +60,7 @@ export function computeApiPreviewUrl(
 	endpointType: EndpointType,
 ): string {
 	if (!provider.apiBase) return "";
-	const stripTrailingSlash = (s: string) =>
-		String(s || "").replace(/\/+$/, "");
+	const stripTrailingSlash = (s: string) => String(s || "").replace(/\/+$/, "");
 	const rawBase = stripTrailingSlash(provider.apiBase);
 
 	if (provider.providerType === ProviderType.Anthropic) {

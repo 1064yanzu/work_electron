@@ -30,9 +30,10 @@ export function SettingsSidebar({
 	onPrefetch,
 }: SettingsSidebarProps) {
 	// 初始展开：当前激活 Tab 所属分类；允许 null 表达"全部折起"
-	const [expandedCategory, setExpandedCategory] = useState<
-		SettingsNavCategoryId | null
-	>(() => getCategoryOf(activeTab) ?? "ai");
+	const [expandedCategory, setExpandedCategory] =
+		useState<SettingsNavCategoryId | null>(
+			() => getCategoryOf(activeTab) ?? "ai",
+		);
 
 	// activeTab 外部变化（legacy id 归一、搜索跳转等）→ 自动展开所属分类
 	useEffect(() => {

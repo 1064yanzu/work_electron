@@ -1,16 +1,15 @@
 /**
- * Claude Code 风格斜杠命令 —— 诊断组内置命令（Phase 4）。
+ * Claude Code 风格斜杠命令 —— 诊断组内置命令（Phase 4 + 2026-05 追加）。
  *
- * 覆盖任务：T4.1–T4.6。
- *
- * 本组所有"切 tab"命令都只负责两件事：
- * 1. `setRightPanelTab(target)`；
- * 2. `workspaceStore.setRightSidebarVisible(true)`。
+ * 本组命令分两类：
+ * 1. 切换右栏 tab 的本地命令（/copy /diff /status /context /memory /mcp）—— 复用项目自有 GUI。
+ * 2. 真实化命令（/release-notes /todos /feedback）—— 整条字符串发给 CLI 真实执行。
  *
  * 额外副作用（/context 滚动、/memory 预热、/mcp 预拉）由各命令独立触发。
  */
 
 import type { ChatMessage } from "../../chat/types";
+import { dispatchToSdk } from "../dispatchToSdk";
 import { EVENTS, events } from "../../events";
 import { memoryStore } from "../../agent/memoryStore";
 import { setRightPanelTab } from "../../stores/rightPanelTabStore";
@@ -37,7 +36,12 @@ export function extractPlainText(msg: ChatMessage): string {
 	if (Array.isArray(blocks) && blocks.length > 0) {
 		const parts: string[] = [];
 		for (const b of blocks) {
-			if (b && b.type === "text" && typeof b.text === "string" && b.text.trim()) {
+			if (
+				b &&
+				b.type === "text" &&
+				typeof b.text === "string" &&
+				b.text.trim()
+			) {
 				parts.push(b.text);
 			}
 		}
@@ -113,7 +117,9 @@ export const copyCommand: SlashCommandDefinition = {
 // 内部：通用"切 tab + 显示右侧栏"工具
 // ---------------------------------------------------------------------------
 
-function switchToTab(tab: "changes" | "git" | "context" | "memory" | "mcp"): void {
+function switchToTab(
+	tab: "changes" | "git" | "context" | "memory" | "mcp",
+): void {
 	setRightPanelTab(tab);
 	try {
 		workspaceStore.setRightSidebarVisible(true);
@@ -219,6 +225,75 @@ export const mcpCommand: SlashCommandDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// /release-notes /todos /feedback —— 都让 CLI 真实输出
+// ---------------------------------------------------------------------------
+
+function pickWorkingDirectory(ctx: CommandContext): string | undefined {
+	const fromSession = ctx.activeSession?.cwd;
+	if (fromSession && fromSession.trim()) return fromSession;
+	if (ctx.workspacePath && ctx.workspacePath.trim()) return ctx.workspacePath;
+	return undefined;
+}
+
+export const releaseNotesCommand: SlashCommandDefinition = {
+	id: "release-notes",
+	name: SLASH_MESSAGES.commands.releaseNotes.name,
+	description: SLASH_MESSAGES.commands.releaseNotes.description,
+	group: "inspect",
+	kind: "action",
+	availability() {
+		return { state: "available" };
+	},
+	async execute(ctx: CommandContext): Promise<ExecuteOutcome> {
+		return dispatchToSdk("/release-notes", {
+			workingDirectory: pickWorkingDirectory(ctx),
+			resumeSessionId: ctx.sdkSessionId ?? undefined,
+			timeoutMs: 30_000,
+			loadingMessage: SLASH_MESSAGES.toast.releaseNotes.loading,
+		});
+	},
+};
+
+export const todosCommand: SlashCommandDefinition = {
+	id: "todos",
+	name: SLASH_MESSAGES.commands.todos.name,
+	description: SLASH_MESSAGES.commands.todos.description,
+	group: "inspect",
+	kind: "action",
+	availability() {
+		return { state: "available" };
+	},
+	async execute(ctx: CommandContext): Promise<ExecuteOutcome> {
+		return dispatchToSdk("/todos", {
+			workingDirectory: pickWorkingDirectory(ctx),
+			resumeSessionId: ctx.sdkSessionId ?? undefined,
+			timeoutMs: 30_000,
+			loadingMessage: "正在让 Claude 列出当前 todos…",
+		});
+	},
+};
+
+export const feedbackCommand: SlashCommandDefinition = {
+	id: "feedback",
+	name: SLASH_MESSAGES.commands.feedback.name,
+	description: SLASH_MESSAGES.commands.feedback.description,
+	group: "inspect",
+	kind: "action",
+	availability() {
+		return { state: "available" };
+	},
+	async execute(ctx: CommandContext): Promise<ExecuteOutcome> {
+		// 走 Claude Code CLI 的 /bug 命令路径,让 CLI 引导用户提交反馈
+		return dispatchToSdk("/bug", {
+			workingDirectory: pickWorkingDirectory(ctx),
+			resumeSessionId: ctx.sdkSessionId ?? undefined,
+			timeoutMs: 60_000,
+			loadingMessage: "正在进入反馈流程…",
+		});
+	},
+};
+
+// ---------------------------------------------------------------------------
 // 导出
 // ---------------------------------------------------------------------------
 
@@ -229,4 +304,7 @@ export const INSPECT_COMMANDS: readonly SlashCommandDefinition[] = [
 	contextCommand,
 	memoryCommand,
 	mcpCommand,
+	releaseNotesCommand,
+	todosCommand,
+	feedbackCommand,
 ];

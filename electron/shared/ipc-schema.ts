@@ -497,6 +497,53 @@ export type IPCSchema = {
 			error?: "exists";
 		};
 	};
+	/**
+	 * 唤起原生目录选择对话框；供 `/add-dir` 等命令使用。
+	 * 取消时返回 `canceled: true` 而非抛错。
+	 */
+	slash_commands_pick_directory: {
+		input: {
+			/** 对话框标题；默认 "选择目录"。 */
+			title?: string;
+			/** 起始目录；建议传当前工作区。 */
+			default_path?: string;
+		};
+		output: {
+			canceled: boolean;
+			/** 用户选中的绝对路径；canceled=true 时为空字符串。 */
+			path: string;
+		};
+	};
+	/**
+	 * 唤起原生保存文件对话框；供 `/export` 等命令使用。
+	 * 取消时返回 `canceled: true` 而非抛错。
+	 */
+	slash_commands_save_dialog: {
+		input: {
+			title?: string;
+			default_path?: string;
+			/** 文件扩展名过滤；默认 markdown。 */
+			filters?: Array<{ name: string; extensions: string[] }>;
+		};
+		output: {
+			canceled: boolean;
+			path: string;
+		};
+	};
+	/**
+	 * 把字符串内容写入指定绝对路径；用于 `/export` 输出 Markdown 文件。
+	 * 路径必须是绝对路径；目标目录不存在时会自动 mkdir -p。
+	 */
+	slash_commands_export_session_md: {
+		input: {
+			path: string;
+			content: string;
+		};
+		output: {
+			path: string;
+			bytes: number;
+		};
+	};
 
 	// ==================
 	// Documents

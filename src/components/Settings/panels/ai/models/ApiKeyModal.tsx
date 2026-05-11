@@ -60,7 +60,12 @@ export function ApiKeyModal({
 				</div>
 			</div>
 			<div className="mt-8 flex justify-end gap-3">
-				<SettingsButton variant="ghost" size="md" onClick={onClose} pill={false}>
+				<SettingsButton
+					variant="ghost"
+					size="md"
+					onClick={onClose}
+					pill={false}
+				>
 					取消
 				</SettingsButton>
 				<SettingsButton

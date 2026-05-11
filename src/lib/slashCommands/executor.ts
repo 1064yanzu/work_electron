@@ -42,6 +42,33 @@ const EXECUTE_TIMEOUT_MS = 30_000;
 const inFlightIds: Set<string> = new Set();
 
 // ---------------------------------------------------------------------------
+// 最近使用 LRU：记录最近 8 个被执行成功的命令 id；空 filter 时由 UI 上浮
+// ---------------------------------------------------------------------------
+
+/** LRU 容量。 */
+const RECENT_LIMIT = 8;
+/** 最新在前，旧的在后。 */
+const recentCommandIds: string[] = [];
+
+function trackRecentCommand(id: string): void {
+	const existing = recentCommandIds.indexOf(id);
+	if (existing >= 0) recentCommandIds.splice(existing, 1);
+	recentCommandIds.unshift(id);
+	if (recentCommandIds.length > RECENT_LIMIT) {
+		recentCommandIds.length = RECENT_LIMIT;
+	}
+}
+
+/**
+ * 取最近使用的命令 id 列表（最新在前），副本返回，调用方可安全读写。
+ *
+ * UI 在 filter 为空时可以把 list 里的 id 按此顺序前置展示。
+ */
+export function getRecentCommandIds(): string[] {
+	return recentCommandIds.slice();
+}
+
+// ---------------------------------------------------------------------------
 // 辅助：格式化异常
 // ---------------------------------------------------------------------------
 
@@ -162,11 +189,14 @@ export async function executeSlashCommand(
 		);
 
 		// 6) 成功态反馈（仅当命令显式返回 toast 时才展示）
-		if (outcome.kind === "ok" && outcome.toast) {
-			if (outcome.toast.type === "success") {
-				notify.success(outcome.toast.message);
-			} else {
-				notify.info(outcome.toast.message);
+		if (outcome.kind === "ok") {
+			trackRecentCommand(id);
+			if (outcome.toast) {
+				if (outcome.toast.type === "success") {
+					notify.success(outcome.toast.message);
+				} else {
+					notify.info(outcome.toast.message);
+				}
 			}
 		}
 
@@ -233,4 +263,5 @@ export function useExecuteSlashCommand() {
 /** @internal 仅供测试重置 inFlight 状态。 */
 export function __resetExecutorForTests(): void {
 	inFlightIds.clear();
+	recentCommandIds.length = 0;
 }

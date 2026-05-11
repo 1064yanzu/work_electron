@@ -89,8 +89,9 @@ export function LayoutPanel() {
 		artifactClickBehavior: "select_only",
 		infoDensity: "comfortable",
 	});
-	const [sandboxPrefs, setSandboxPrefs] =
-		useState<SandboxPreviewPrefs>(DEFAULT_SANDBOX_PREFS);
+	const [sandboxPrefs, setSandboxPrefs] = useState<SandboxPreviewPrefs>(
+		DEFAULT_SANDBOX_PREFS,
+	);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -184,9 +185,7 @@ export function LayoutPanel() {
 		}
 	};
 
-	const handleSandboxChange = async (
-		updates: Partial<SandboxPreviewPrefs>,
-	) => {
+	const handleSandboxChange = async (updates: Partial<SandboxPreviewPrefs>) => {
 		const prev = sandboxPrefs;
 		const next = { ...sandboxPrefs, ...updates };
 		setSandboxPrefs(next);
@@ -208,10 +207,7 @@ export function LayoutPanel() {
 				);
 			if (updates.packageManager !== undefined)
 				writes.push(
-					setConfig(
-						SANDBOX_CONFIG_KEYS.packageManager,
-						next.packageManager,
-					),
+					setConfig(SANDBOX_CONFIG_KEYS.packageManager, next.packageManager),
 				);
 			if (updates.devCommandTemplate !== undefined)
 				writes.push(

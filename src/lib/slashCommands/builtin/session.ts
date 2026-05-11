@@ -1,23 +1,24 @@
 /**
- * Claude Code 风格斜杠命令 —— 会话组内置命令（Phase 3）。
+ * Claude Code 风格斜杠命令 —— 会话组内置命令（Phase 3 + 2026-05 重构）。
  *
- * 覆盖任务：T3.1–T3.6；`/fork` 下一次提交的注入逻辑见 `forkIntentStore.ts`
- * 与 `useAgentHandler.ts` 的协作。
+ * `/compact` `/clear` 已迁移到统一的 `dispatchToSdk` 入口，让 SDK 真实执行；
+ * `/new` `/fork` `/resume` `/rename` `/export` 仍是本地会话操作。
  *
  * 所有命令使用 `SLASH_MESSAGES` 的中文文案，禁止硬编码英文或本地字符串。
  */
 
-import { agentExecutor } from "../../agent/executor";
-import { agentStore } from "../../agent/store";
+import type { IPCSchema } from "../../../../electron/shared/ipc-schema";
 import { chatStore } from "../../chat/store";
 import {
 	createMessage,
 	type ChatMessage,
+	type ChatSession,
 } from "../../chat/types";
+import { dispatchToSdk } from "../dispatchToSdk";
 import { EVENTS, events } from "../../events";
 import { markFork } from "../forkIntentStore";
 import { SLASH_MESSAGES } from "../messages";
-import { showLoading } from "../toast";
+import { safeInvoke } from "../../tauriBridge";
 import type {
 	CommandContext,
 	SlashCommandDefinition,
@@ -43,57 +44,8 @@ function cloneMessages(messages: ChatMessage[]): ChatMessage[] {
 }
 
 // ---------------------------------------------------------------------------
-// /compact
+// /compact —— 把 "/compact" 字符串发给 SDK，由 Claude Code CLI 压缩上下文。
 // ---------------------------------------------------------------------------
-
-/**
- * 判断错误字符串是否属于"SDK session 已失效"类型。
- *
- * Claude Code CLI 的会话是按 `cwd + uuid` 存文件的，本地渲染端 chatStore 中
- * 的 `sdkSessionId` 可能与 CLI 侧不同步（例如：CLI 清理过会话目录、工作目录
- * 变了、用户在别处手动删除了 `.claude/projects/...`）。此时 `resume` 会报
- * "No conversation found" —— 这不是用户的错，不应当成普通错误。
- */
-function isSdkSessionMissingError(message: string): boolean {
-	const m = String(message || "");
-	return (
-		m.includes("No conversation found with session ID") ||
-		m.includes("--resume requires a valid session ID")
-	);
-}
-
-/**
- * 等待 `agentStore` 上的 currentTask 触发 `task_completed` 或 `task_error` 事件。
- *
- * 超时则返回 `{ kind: "timeout" }`；默认 60s（/compact 可能需要较长时间）。
- */
-function waitForAgentTaskSettlement(options: {
-	timeoutMs?: number;
-} = {}): Promise<
-	| { kind: "completed"; result: string }
-	| { kind: "error"; error: string }
-	| { kind: "timeout" }
-> {
-	const timeoutMs = options.timeoutMs ?? 60_000;
-	return new Promise((resolve) => {
-		let timer: ReturnType<typeof setTimeout> | null = null;
-		const off = agentStore.onEvent((event) => {
-			if (event.type === "task_completed") {
-				if (timer) clearTimeout(timer);
-				off();
-				resolve({ kind: "completed", result: event.result ?? "" });
-			} else if (event.type === "task_error") {
-				if (timer) clearTimeout(timer);
-				off();
-				resolve({ kind: "error", error: event.error ?? "未知错误" });
-			}
-		});
-		timer = setTimeout(() => {
-			off();
-			resolve({ kind: "timeout" });
-		}, timeoutMs);
-	});
-}
 
 export const compactCommand: SlashCommandDefinition = {
 	id: "compact",
@@ -111,91 +63,24 @@ export const compactCommand: SlashCommandDefinition = {
 		return { state: "available" };
 	},
 	async execute(ctx: CommandContext) {
-		const sessionId = ctx.activeSession?.id ?? null;
-		const resumeSessionId = ctx.sdkSessionId ?? undefined;
-
-		// 关键：Claude Code CLI 按 `cwd + sessionId` 定位会话文件（~/.claude/projects/<hash>/<uuid>.jsonl）。
-		// /compact 必须用"当初跑这条会话时使用的 cwd"——也就是 session.cwd，否则 SDK 会
-		// 报 "No conversation found with session ID"（cwd hash 对不上）。
+		// 关键：CLI 按 `cwd + sessionId` 定位会话文件；必须用当初创建会话的 cwd。
 		const workingDirectory =
 			(ctx.activeSession?.cwd && ctx.activeSession.cwd.trim()) ||
 			(ctx.workspacePath && ctx.workspacePath.trim()) ||
 			undefined;
 
-		// 闭包锁定：即使用户中途切换 session，结果反馈仍打回触发时会话
-		const lockedSessionId = sessionId;
-
-		const handle = showLoading(SLASH_MESSAGES.toast.compact.loading);
-
-		// 同时启动：executeCustomTask（不抛错，失败时走 agentStore.failTask）
-		// 与 agentStore 事件监听；用后者决定最终反馈。
-		const settlePromise = waitForAgentTaskSettlement({ timeoutMs: 60_000 });
-
-		try {
-			await agentExecutor.executeCustomTask(
-				"/compact",
-				undefined,
-				{ autoExecute: true },
-				{ resumeSessionId, workingDirectory },
-			);
-		} catch (err) {
-			// executeCustomTask 自己几乎不会抛；但为鲁棒性兜底
-			const reason = err instanceof Error ? err.message : String(err);
-			handle.replaceFailed(SLASH_MESSAGES.toast.compact.failed(reason));
-			return {
-				kind: "failed" as const,
-				message: SLASH_MESSAGES.toast.compact.failed(reason),
-				cause: err,
-			};
-		}
-
-		const settlement = await settlePromise;
-
-		if (settlement.kind === "completed") {
-			handle.replaceSuccess(SLASH_MESSAGES.toast.compact.success);
-			return { kind: "ok" as const };
-		}
-
-		if (settlement.kind === "timeout") {
-			handle.replaceFailed(
-				SLASH_MESSAGES.toast.compact.failed("等待压缩结果超时"),
-			);
-			return {
-				kind: "failed" as const,
-				message: SLASH_MESSAGES.toast.compact.failed("等待压缩结果超时"),
-			};
-		}
-
-		// settlement.kind === "error"
-		if (isSdkSessionMissingError(settlement.error)) {
-			// 最常见原因：当前 cwd 与当初创建 session 时的 cwd 不同，CLI 按
-			// `cwd + sessionId` 定位文件，cwd 对不上就找不到。
-			// 不自动清 chatStore 里的 sdkSessionId（会话文件本身多半还在，切回正确 cwd 就能找回）。
-			const hint =
-				"Claude Code 无法在当前工作目录下找到该会话记录。这通常是因为当前会话的工作目录与会话最初创建时不同（CLI 按 cwd+sessionId 定位会话文件）。请确认会话工作目录是否正确，或发起一条新消息重建会话。";
-			handle.replaceFailed(hint);
-			if (lockedSessionId) {
-				console.warn(
-					`[slashCommands] /compact 会话 id 在当前 cwd 下未找到 (sessionId=${lockedSessionId}, cwd=${
-						workingDirectory ?? "(process.cwd)"
-					}, sdkSessionId=${resumeSessionId ?? "(none)"})`,
-				);
-			}
-			return { kind: "failed" as const, message: hint };
-		}
-
-		handle.replaceFailed(
-			SLASH_MESSAGES.toast.compact.failed(settlement.error),
-		);
-		return {
-			kind: "failed" as const,
-			message: SLASH_MESSAGES.toast.compact.failed(settlement.error),
-		};
+		return dispatchToSdk("/compact", {
+			workingDirectory,
+			resumeSessionId: ctx.sdkSessionId ?? undefined,
+			timeoutMs: 60_000,
+			loadingMessage: SLASH_MESSAGES.toast.compact.loading,
+			successMessage: SLASH_MESSAGES.toast.compact.success,
+		});
 	},
 };
 
 // ---------------------------------------------------------------------------
-// /clear
+// /clear —— 本地清空消息 + 同步通知 SDK 清上下文
 // ---------------------------------------------------------------------------
 
 export const clearCommand: SlashCommandDefinition = {
@@ -216,15 +101,28 @@ export const clearCommand: SlashCommandDefinition = {
 			};
 		}
 
-		// 1) 清空消息（保留 sdkSessionId）
+		// 1) 本地：清空消息（保留 sdkSessionId）+ 插入快照
 		chatStore.replaceSessionMessages(session.id, []);
-
-		// 2) 插入系统快照消息
 		const snapshot = createMessage(
 			"system",
 			SLASH_MESSAGES.systemSnapshot.clear,
 		);
 		chatStore.addMessage(session.id, snapshot);
+
+		// 2) SDK：如果有活跃会话，同步通知 CLI 清上下文；fire-and-forget，
+		//    SDK 失败不影响本地清空体验（UI 已经清了，不能"回滚"消息）。
+		if (ctx.sdkSessionId) {
+			const workingDirectory =
+				(session.cwd && session.cwd.trim()) ||
+				(ctx.workspacePath && ctx.workspacePath.trim()) ||
+				undefined;
+			void dispatchToSdk("/clear", {
+				workingDirectory,
+				resumeSessionId: ctx.sdkSessionId,
+				timeoutMs: 30_000,
+				waitForSettlement: false,
+			});
+		}
 
 		return { kind: "ok" as const };
 	},
@@ -354,7 +252,9 @@ export const resumeCommand: SlashCommandDefinition = {
 		// 如果选中的历史会话没有绑定 cwd，提示用户可能恢复失败。
 		// CLI 按 `cwd+sessionId` 定位会话文件，缺 cwd 会在下次提交时走 process.cwd
 		// 兜底，极大概率对不上当初的会话目录。
-		const selected = ctx.recentResumableSessions.find((s) => s.id === option.id);
+		const selected = ctx.recentResumableSessions.find(
+			(s) => s.id === option.id,
+		);
 		if (selected && !(selected.cwd && selected.cwd.trim())) {
 			return {
 				kind: "ok" as const,
@@ -398,6 +298,182 @@ export const renameCommand: SlashCommandDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// /export —— 把当前会话消息导出为 Markdown 文件
+// ---------------------------------------------------------------------------
+
+function formatTimestamp(ts: number): string {
+	const d = new Date(ts);
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+		d.getHours(),
+	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function extractMessageText(msg: ChatMessage): string {
+	const blocks = msg.metadata?.blocks;
+	if (Array.isArray(blocks) && blocks.length > 0) {
+		const parts: string[] = [];
+		for (const b of blocks) {
+			if (
+				b &&
+				b.type === "text" &&
+				typeof b.text === "string" &&
+				b.text.trim()
+			) {
+				parts.push(b.text);
+			}
+		}
+		if (parts.length > 0) return parts.join("\n");
+	}
+	return typeof msg.content === "string" ? msg.content : "";
+}
+
+function roleLabel(role: ChatMessage["role"]): string {
+	switch (role) {
+		case "user":
+			return "用户";
+		case "assistant":
+			return "Claude";
+		case "system":
+			return "系统";
+		case "trace":
+			return "追踪";
+		default:
+			return String(role);
+	}
+}
+
+/** 把一条 ChatSession 序列化为 Markdown 文档。 */
+export function serializeSessionToMarkdown(session: ChatSession): string {
+	const lines: string[] = [];
+	lines.push(`# ${session.title || "未命名会话"}`);
+	lines.push("");
+	lines.push(`> 导出时间：${formatTimestamp(Date.now())}`);
+	lines.push(`> 会话 ID：${session.id}`);
+	if (session.sdkSessionId) {
+		lines.push(`> SDK 会话：${session.sdkSessionId}`);
+	}
+	if (session.cwd) {
+		lines.push(`> 工作目录：${session.cwd}`);
+	}
+	lines.push(`> 消息数：${session.messages.length}`);
+	lines.push("");
+	lines.push("---");
+	lines.push("");
+
+	for (const msg of session.messages) {
+		const stamp = formatTimestamp(msg.timestamp);
+		const modelSuffix = msg.model ? ` (${msg.model})` : "";
+		lines.push(`## ${roleLabel(msg.role)}${modelSuffix} — ${stamp}`);
+		lines.push("");
+		const text = extractMessageText(msg).trim();
+		lines.push(text || "_（空消息）_");
+		const usage = msg.metadata?.tokenUsage;
+		if (usage) {
+			const cost =
+				typeof usage.costUsd === "number"
+					? ` · cost: $${usage.costUsd.toFixed(4)}`
+					: "";
+			lines.push("");
+			lines.push(
+				`> token: ${usage.promptTokens} → ${usage.completionTokens} (total ${usage.totalTokens})${cost}`,
+			);
+		}
+		lines.push("");
+		lines.push("---");
+		lines.push("");
+	}
+	return lines.join("\n");
+}
+
+export const exportCommand: SlashCommandDefinition = {
+	id: "export",
+	name: SLASH_MESSAGES.commands.export.name,
+	description: SLASH_MESSAGES.commands.export.description,
+	group: "session",
+	kind: "action",
+	availability(ctx: CommandContext) {
+		return ctx.activeSession ? { state: "available" } : { state: "hidden" };
+	},
+	async execute(ctx: CommandContext) {
+		const session = ctx.activeSession;
+		if (!session) {
+			return {
+				kind: "failed" as const,
+				message: SLASH_MESSAGES.disabled.reason.noActiveSession,
+			};
+		}
+		if (!session.messages || session.messages.length === 0) {
+			return {
+				kind: "ok" as const,
+				toast: {
+					type: "info" as const,
+					message: SLASH_MESSAGES.toast.export.emptyMessages,
+				},
+			};
+		}
+
+		const safeTitle = (session.title || "session")
+			.replace(/[\\/:*?"<>|]/g, "_")
+			.slice(0, 60);
+		const defaultFileName = `${safeTitle}-${Date.now()}.md`;
+
+		let pick: IPCSchema["slash_commands_save_dialog"]["output"];
+		try {
+			pick = await safeInvoke<
+				IPCSchema["slash_commands_save_dialog"]["output"]
+			>("slash_commands_save_dialog", {
+				title: "导出会话为 Markdown",
+				default_path: defaultFileName,
+				filters: [{ name: "Markdown", extensions: ["md"] }],
+			});
+		} catch (err) {
+			const reason = err instanceof Error ? err.message : String(err);
+			return {
+				kind: "failed" as const,
+				message: SLASH_MESSAGES.toast.export.failed(reason),
+				cause: err,
+			};
+		}
+		if (pick.canceled || !pick.path) {
+			return {
+				kind: "ok" as const,
+				toast: {
+					type: "info" as const,
+					message: SLASH_MESSAGES.toast.export.canceled,
+				},
+			};
+		}
+
+		const content = serializeSessionToMarkdown(session);
+		try {
+			await safeInvoke<IPCSchema["slash_commands_export_session_md"]["output"]>(
+				"slash_commands_export_session_md",
+				{
+					path: pick.path,
+					content,
+				},
+			);
+		} catch (err) {
+			const reason = err instanceof Error ? err.message : String(err);
+			return {
+				kind: "failed" as const,
+				message: SLASH_MESSAGES.toast.export.failed(reason),
+				cause: err,
+			};
+		}
+
+		return {
+			kind: "ok" as const,
+			toast: {
+				type: "success" as const,
+				message: SLASH_MESSAGES.toast.export.success(pick.path),
+			},
+		};
+	},
+};
+
+// ---------------------------------------------------------------------------
 // 批量导出
 // ---------------------------------------------------------------------------
 
@@ -408,4 +484,5 @@ export const SESSION_COMMANDS: readonly SlashCommandDefinition[] = [
 	resumeCommand,
 	forkCommand,
 	renameCommand,
+	exportCommand,
 ];

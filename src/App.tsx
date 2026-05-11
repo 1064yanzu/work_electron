@@ -34,9 +34,7 @@ import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
-import {
-	registerBuiltinSlashCommands,
-} from "./lib/slashCommands";
+import { registerBuiltinSlashCommands } from "./lib/slashCommands";
 import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
 
@@ -236,10 +234,13 @@ export default function App() {
 
 	// 订阅斜杠命令发出的「打开设置」事件（/settings）
 	useEffect(() => {
-		const off = events.on(EVENTS.OPEN_SETTINGS, (payload: { tab?: string } | undefined) => {
-			const tab = typeof payload?.tab === "string" ? payload.tab : undefined;
-			handleOpenSettings(tab);
-		});
+		const off = events.on(
+			EVENTS.OPEN_SETTINGS,
+			(payload: { tab?: string } | undefined) => {
+				const tab = typeof payload?.tab === "string" ? payload.tab : undefined;
+				handleOpenSettings(tab);
+			},
+		);
 		return off;
 	}, [handleOpenSettings]);
 
@@ -247,8 +248,8 @@ export default function App() {
 	useEffect(() => {
 		void rescanCustomSlashCommands();
 		// 只在 currentThreadPath 变化时重扫，避免 layout 变化触发无谓扫描
-		let lastPath: string | null = workspaceStore.getCoreState()
-			.currentThreadPath;
+		let lastPath: string | null =
+			workspaceStore.getCoreState().currentThreadPath;
 		const unsubscribe = workspaceStore.subscribe(() => {
 			const nextPath = workspaceStore.getCoreState().currentThreadPath;
 			if (nextPath !== lastPath) {
@@ -399,16 +400,12 @@ export default function App() {
 
 				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡 */}
 				<Suspense fallback={null}>
-					<CommandPalette
-						onOpenSettings={(tab) => handleOpenSettings(tab)}
-					/>
+					<CommandPalette onOpenSettings={(tab) => handleOpenSettings(tab)} />
 				</Suspense>
 
 				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制 */}
 				<Suspense fallback={null}>
-					<ReaderApp
-						onOpenSettings={() => handleOpenSettings("reader")}
-					/>
+					<ReaderApp onOpenSettings={() => handleOpenSettings("reader")} />
 				</Suspense>
 
 				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制（CardsHubView 的"放大"按钮触发） */}

@@ -76,7 +76,9 @@ export function SettingsSidebarCategory({
 				id={`settings-category-panel-${category.id}`}
 				className={cn(
 					"grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-					expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+					expanded
+						? "grid-rows-[1fr] opacity-100"
+						: "grid-rows-[0fr] opacity-0",
 				)}
 				aria-hidden={!expanded}
 			>

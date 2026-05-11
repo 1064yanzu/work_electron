@@ -142,10 +142,7 @@ export function AppearancePanel() {
 			<SettingsSectionCard>
 				<div className="p-5">
 					<SettingsSectionTitle>动效与语言</SettingsSectionTitle>
-					<div
-						id={ANCHOR.motion}
-						data-settings-anchor={ANCHOR.motion}
-					>
+					<div id={ANCHOR.motion} data-settings-anchor={ANCHOR.motion}>
 						<SettingsRow
 							label="动效偏好"
 							description="减少动效会显著缩短过渡与动画时长，适合对动态效果敏感的场景。"
@@ -168,10 +165,7 @@ export function AppearancePanel() {
 							}
 						/>
 					</div>
-					<div
-						id={ANCHOR.language}
-						data-settings-anchor={ANCHOR.language}
-					>
+					<div id={ANCHOR.language} data-settings-anchor={ANCHOR.language}>
 						<SettingsRow
 							label="语言"
 							description="切换界面语言需要重启应用后完全生效。"

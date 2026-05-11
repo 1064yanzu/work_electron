@@ -11,7 +11,13 @@
  * - 不引入额外依赖，仅使用 Tailwind 类。
  */
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 
 interface DisabledTooltipProps {
 	reason: string;

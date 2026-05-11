@@ -1,9 +1,10 @@
 /**
- * Claude Code 风格斜杠命令 —— 二级分组菜单视图（T7.7）。
+ * Claude Code 风格斜杠命令 —— 二级分组菜单视图（T7.7 + 2026-05 字符高亮）。
  *
  * 职责：
  * - 渲染「命令」类别下的所有命令（按 group 分区：会话 / 运行时 / 诊断 / 工作区 / 自定义）；
  * - 支持键盘导航（↑↓ 循环，Enter 选中），高亮态与现有菜单保持一致；
+ * - **2026-05**：根据 matchFilter 返回的 matchPositions 在 name 中高亮命中字符；
  * - 禁用态以降低对比度展示，Tooltip 通过 {@link DisabledTooltip} 延时出现；
  * - 对 `kind === "submenu"` 的命令提供 chevron 指示，点击/Enter 后交由调用方进入三级菜单。
  *
@@ -27,6 +28,7 @@ import { DisabledTooltip } from "./DisabledTooltip";
 // ---------------------------------------------------------------------------
 
 const GROUP_LABEL: Record<string, string> = {
+	recent: "最近使用",
 	session: "会话管理",
 	runtime: "运行时",
 	inspect: "查看与诊断",
@@ -41,6 +43,17 @@ const GROUP_LABEL: Record<string, string> = {
 export interface CommandsCategoryViewItem {
 	definition: SlashCommandDefinition;
 	availability: CommandAvailability;
+	/**
+	 * 在 `definition.name`（小写后）上的命中字符位置数组；
+	 * 由 `matchFilter` 返回的 `matchPositions` 透传过来。
+	 * 空数组表示不渲染高亮（如仅在 id 或 desc 上命中时）。
+	 */
+	matchPositions?: readonly number[];
+	/**
+	 * 自定义分区 id；若设置则覆盖 `definition.group` 进行分组。
+	 * 主要用于"最近使用"虚拟分组（sectionId === "recent"）。
+	 */
+	sectionId?: string;
 }
 
 interface CommandsCategoryViewProps {
@@ -48,6 +61,49 @@ interface CommandsCategoryViewProps {
 	activeId: string | null;
 	onActiveChange: (id: string) => void;
 	onSelect: (item: CommandsCategoryViewItem) => void;
+}
+
+// ---------------------------------------------------------------------------
+// 字符高亮辅助
+// ---------------------------------------------------------------------------
+
+/**
+ * 把 `text` 按 `positions` 拆成普通片段与高亮片段。
+ *
+ * positions 必须升序、范围在 `[0, text.length)`。
+ * 输出为交替的 plain / highlight 段，UI 渲染时按 isHighlight 决定样式。
+ */
+function splitByPositions(
+	text: string,
+	positions: readonly number[],
+): Array<{ text: string; isHighlight: boolean }> {
+	if (!positions || positions.length === 0) {
+		return [{ text, isHighlight: false }];
+	}
+	const out: Array<{ text: string; isHighlight: boolean }> = [];
+	let cursor = 0;
+	const posSet = new Set(positions);
+	let buf = "";
+	let bufHighlight = false;
+	for (let i = 0; i < text.length; i++) {
+		const isHl = posSet.has(i);
+		if (i === 0) {
+			buf = text[i] ?? "";
+			bufHighlight = isHl;
+			continue;
+		}
+		if (isHl === bufHighlight) {
+			buf += text[i] ?? "";
+		} else {
+			out.push({ text: buf, isHighlight: bufHighlight });
+			buf = text[i] ?? "";
+			bufHighlight = isHl;
+		}
+	}
+	if (buf) out.push({ text: buf, isHighlight: bufHighlight });
+	// cursor used below to silence lint; keep simple linear walk above
+	void cursor;
+	return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,13 +145,17 @@ export function CommandsCategoryView({
 		);
 	}
 
-	// 按 group 分区（保持 Registry 的稳定序）
-	const sections: Array<{ groupId: string; items: CommandsCategoryViewItem[] }> = [];
+	// 按 group 分区（保持 Registry 的稳定序）；sectionId 优先于 definition.group
+	const sections: Array<{
+		groupId: string;
+		items: CommandsCategoryViewItem[];
+	}> = [];
 	let currentGroup: string | null = null;
 	for (const item of items) {
-		if (item.definition.group !== currentGroup) {
-			currentGroup = item.definition.group;
-			sections.push({ groupId: currentGroup, items: [] });
+		const groupId = item.sectionId ?? item.definition.group;
+		if (groupId !== currentGroup) {
+			currentGroup = groupId;
+			sections.push({ groupId, items: [] });
 		}
 		sections[sections.length - 1]!.items.push(item);
 	}
@@ -120,6 +180,12 @@ export function CommandsCategoryView({
 							const isSubmenu = definition.kind === "submenu";
 							const disabledReason =
 								availability.state === "disabled" ? availability.reason : "";
+							// matchPositions 是相对 lowerName 的位置；这里用原 name 的相同位置去渲染
+							// （toLowerCase 不会改变字符数与 index 对齐）。
+							const nameSegments = splitByPositions(
+								definition.name,
+								item.matchPositions ?? [],
+							);
 
 							const button = (
 								<div
@@ -140,10 +206,10 @@ export function CommandsCategoryView({
 									<div
 										className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
                       ${
-											isSelected && !disabled
-												? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-												: "bg-[#f5f5f5] dark:bg-[#363636]"
-										}`}
+												isSelected && !disabled
+													? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+													: "bg-[#f5f5f5] dark:bg-[#363636]"
+											}`}
 									>
 										<span
 											className={`font-mono text-[10px] transition-colors duration-[120ms]
@@ -157,12 +223,25 @@ export function CommandsCategoryView({
 											<span
 												className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
                           ${
-													isSelected && !disabled
-														? "text-[#1a1a1a] dark:text-[#eee]"
-														: "text-[#666] dark:text-[#999]"
-												}`}
+														isSelected && !disabled
+															? "text-[#1a1a1a] dark:text-[#eee]"
+															: "text-[#666] dark:text-[#999]"
+													}`}
 											>
-												{definition.name}
+												{nameSegments.map((seg, i) =>
+													seg.isHighlight ? (
+														// biome-ignore lint/suspicious/noArrayIndexKey: 索引在段数组里稳定
+														<mark
+															key={i}
+															className="bg-transparent text-primary dark:text-primary font-semibold"
+														>
+															{seg.text}
+														</mark>
+													) : (
+														// biome-ignore lint/suspicious/noArrayIndexKey: 索引在段数组里稳定
+														<span key={i}>{seg.text}</span>
+													),
+												)}
 											</span>
 											<span className="text-[10px] text-[#ccc] dark:text-[#555] font-mono truncate">
 												/{definition.id}

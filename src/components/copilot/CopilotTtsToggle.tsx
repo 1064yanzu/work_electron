@@ -28,7 +28,8 @@ export function CopilotTtsToggle() {
 
 	const enabled = !!settings?.scene_chat_enabled;
 	const auto = !!settings?.scene_chat_auto;
-	const isSpeaking = scope === "chat" && (status === "playing" || status === "loading");
+	const isSpeaking =
+		scope === "chat" && (status === "playing" || status === "loading");
 
 	const handleClick = useCallback(() => {
 		if (!settings) return;

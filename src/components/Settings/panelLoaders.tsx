@@ -14,10 +14,7 @@ import {
 export type { SettingsTabId } from "./settingsCatalog";
 
 /** lazy 组件缓存：同一个 tabId 多次查询返回同一个 LazyComponent */
-const lazyCache = new Map<
-	SettingsTabId,
-	LazyExoticComponent<ComponentType>
->();
+const lazyCache = new Map<SettingsTabId, LazyExoticComponent<ComponentType>>();
 
 function getLoader(
 	tabId: SettingsTabId,

@@ -4,10 +4,11 @@
  * 负责：
  * 1. 导出核心 API（Registry / Executor / Context / React 桥接 / 类型）；
  * 2. 提供 `registerBuiltinSlashCommands()` 一次性注入全部内置命令；
- * 3. 防重复注入（以 `compact` 命令的 id 是否存在为幂等信号）。
+ * 3. 防重复注入（以 `doctor` 命令的 id 是否存在为幂等信号 —— 2026-05 新增的最后一条诊断命令）。
  */
 
 import { commandRegistry } from "./registry";
+import { DIAGNOSTICS_COMMANDS } from "./builtin/diagnostics";
 import { SESSION_COMMANDS } from "./builtin/session";
 import { INSPECT_COMMANDS } from "./builtin/inspect";
 import { RUNTIME_COMMANDS } from "./builtin/runtime";
@@ -19,6 +20,7 @@ import { WORKSPACE_COMMANDS } from "./builtin/workspace";
 
 export { commandRegistry, type IndexedCommand } from "./registry";
 export {
+	getRecentCommandIds,
 	executeSlashCommand,
 	useExecuteSlashCommand,
 } from "./executor";
@@ -71,12 +73,13 @@ export {
 
 /**
  * 注入全部内置命令到单例 `commandRegistry`；
- * **幂等**：若 `compact` 已在注册表中则视为已注入，直接返回。
+ * **幂等**：若 `doctor` 已在注册表中则视为已注入，直接返回（doctor 是 2026-05
+ * 追加的最后一条命令，能可靠区分新旧注册状态）。
  *
  * 不在此处抛错：所有错误写入 `console.warn`，避免启动期因注册表异常拖垮整个应用。
  */
 export function registerBuiltinSlashCommands(): void {
-	if (commandRegistry.byId("compact") !== null) {
+	if (commandRegistry.byId("doctor") !== null) {
 		// 已注入，直接返回
 		return;
 	}
@@ -86,8 +89,12 @@ export function registerBuiltinSlashCommands(): void {
 			...RUNTIME_COMMANDS,
 			...INSPECT_COMMANDS,
 			...WORKSPACE_COMMANDS,
+			...DIAGNOSTICS_COMMANDS,
 		]);
 	} catch (err) {
-		console.warn("[slashCommands] registerBuiltinSlashCommands 注入失败。", err);
+		console.warn(
+			"[slashCommands] registerBuiltinSlashCommands 注入失败。",
+			err,
+		);
 	}
 }

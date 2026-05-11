@@ -1,4 +1,3 @@
-
 /**
  * Claude Code 风格斜杠命令 —— 注册表（CommandRegistry）。
  *
@@ -43,13 +42,14 @@ const DISABLED_REASON_MAX_LENGTH = 120;
  *
  * 使用字面量对象而非数组查找，避免 `list()` 热路径上的 `indexOf` 扫描。
  */
-const GROUP_ORDER_INDEX: Readonly<Record<CommandGroupId, number>> = Object.freeze({
-	session: 0,
-	runtime: 1,
-	inspect: 2,
-	workspace: 3,
-	custom: 4,
-});
+const GROUP_ORDER_INDEX: Readonly<Record<CommandGroupId, number>> =
+	Object.freeze({
+		session: 0,
+		runtime: 1,
+		inspect: 2,
+		workspace: 3,
+		custom: 4,
+	});
 
 // ---------------------------------------------------------------------------
 // 过滤索引（供 filter.ts 使用）
@@ -366,4 +366,3 @@ export class CommandRegistry {
  * - UI 层调用 `commandRegistry.list(ctx)` 获取当前可见命令。
  */
 export const commandRegistry: CommandRegistry = new CommandRegistry();
-

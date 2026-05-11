@@ -306,17 +306,12 @@ function CardList({
 												className="reader-card-row__chapter"
 												title={chapterLabel}
 											>
-												<BookOpen
-													className="w-3 h-3"
-													strokeWidth={1.5}
-												/>
+												<BookOpen className="w-3 h-3" strokeWidth={1.5} />
 												{chapterLabel}
 											</span>
 										) : null}
 										{dueLabel ? (
-											<span
-												className={`reader-card-row__due ${dueLabel.tone}`}
-											>
+											<span className={`reader-card-row__due ${dueLabel.tone}`}>
 												{dueLabel.text}
 											</span>
 										) : null}

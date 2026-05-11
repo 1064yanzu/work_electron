@@ -2320,11 +2320,7 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 .reader-card-face--front::before {
-	background: color-mix(
-		in oklab,
-		var(--reader-accent, #d96c46) 70%,
-		#ffffff
-	);
+	background: color-mix(in oklab, var(--reader-accent, #d96c46) 70%, #ffffff);
 }
 
 .reader-card-face--back {
@@ -2615,8 +2611,14 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 @keyframes reader-card-quality-in {
-	from { opacity: 0; transform: translateY(4px); }
-	to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .reader-card-quality-btn {
@@ -2665,30 +2667,54 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 .reader-card-quality-btn--bad {
-	border-color: color-mix(in oklab, #c45454 22%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#c45454 22%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 .reader-card-quality-btn--bad:hover {
 	background: color-mix(in oklab, #c45454 6%, var(--reader-bg, #faf9f5));
-	border-color: color-mix(in oklab, #c45454 38%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#c45454 38%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 .reader-card-quality-btn--mid {
-	border-color: color-mix(in oklab, #c4a154 22%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#c4a154 22%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 .reader-card-quality-btn--mid:hover {
 	background: color-mix(in oklab, #c4a154 6%, var(--reader-bg, #faf9f5));
-	border-color: color-mix(in oklab, #c4a154 38%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#c4a154 38%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 .reader-card-quality-btn--good {
-	border-color: color-mix(in oklab, #5a9b6a 22%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#5a9b6a 22%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 .reader-card-quality-btn--good:hover {
 	background: color-mix(in oklab, #5a9b6a 6%, var(--reader-bg, #faf9f5));
-	border-color: color-mix(in oklab, #5a9b6a 38%, var(--reader-border, rgba(0, 0, 0, 0.08)));
+	border-color: color-mix(
+		in oklab,
+		#5a9b6a 38%,
+		var(--reader-border, rgba(0, 0, 0, 0.08))
+	);
 }
 
 /* TOC 列表 row 内的章节 / 到期 / 标签 */
@@ -2744,12 +2770,20 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 .reader-card-list__gen-btn--primary:disabled {
-	background: color-mix(in oklab, var(--reader-accent, #d96c46) 30%, transparent);
+	background: color-mix(
+		in oklab,
+		var(--reader-accent, #d96c46) 30%,
+		transparent
+	);
 	color: #fff;
 }
 
 .reader-card-list__review-btn--due {
-	border-color: color-mix(in oklab, var(--reader-accent, #d96c46) 36%, transparent);
+	border-color: color-mix(
+		in oklab,
+		var(--reader-accent, #d96c46) 36%,
+		transparent
+	);
 	color: var(--reader-accent, #d96c46);
 	font-weight: 600;
 }
@@ -2776,8 +2810,14 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 @keyframes reader-card-draft-in {
-	from { opacity: 0; transform: translateY(12px); }
-	to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .reader-card-draft-review.is-collapsed {
@@ -2790,7 +2830,11 @@ mark[data-reader-highlight][data-color="orange"] {
 	justify-content: space-between;
 	padding: 10px 12px;
 	border-bottom: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
-	background: color-mix(in oklab, var(--reader-fg, #000) 3%, var(--reader-bg, #faf9f5));
+	background: color-mix(
+		in oklab,
+		var(--reader-fg, #000) 3%,
+		var(--reader-bg, #faf9f5)
+	);
 }
 
 .reader-card-draft-review__title {
@@ -2888,7 +2932,11 @@ mark[data-reader-highlight][data-color="orange"] {
 }
 
 .reader-card-draft-review__item.is-checked {
-	background: color-mix(in oklab, var(--reader-accent, #d96c46) 5%, transparent);
+	background: color-mix(
+		in oklab,
+		var(--reader-accent, #d96c46) 5%,
+		transparent
+	);
 }
 
 .reader-card-draft-review__row {
@@ -2967,7 +3015,7 @@ mark[data-reader-highlight][data-color="orange"] {
 	border-radius: 999px;
 	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
 	background: var(--reader-bg, #faf9f5);
-	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.10);
+	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.1);
 	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	animation: reader-card-draft-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }

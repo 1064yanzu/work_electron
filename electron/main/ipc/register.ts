@@ -312,6 +312,18 @@ export function registerIpcHandlers({
 		"slash_commands_write_init",
 		slashCommandsHandlers.slash_commands_write_init satisfies IpcHandler<"slash_commands_write_init">,
 	);
+	ipcMain.handle(
+		"slash_commands_pick_directory",
+		slashCommandsHandlers.slash_commands_pick_directory satisfies IpcHandler<"slash_commands_pick_directory">,
+	);
+	ipcMain.handle(
+		"slash_commands_save_dialog",
+		slashCommandsHandlers.slash_commands_save_dialog satisfies IpcHandler<"slash_commands_save_dialog">,
+	);
+	ipcMain.handle(
+		"slash_commands_export_session_md",
+		slashCommandsHandlers.slash_commands_export_session_md satisfies IpcHandler<"slash_commands_export_session_md">,
+	);
 	// ==================
 	// Projects
 	// ==================
@@ -1235,18 +1247,9 @@ export function registerIpcHandlers({
 		readerHandlers.reader_update_settings,
 	);
 	ipcMain.handle("reader_list_cards", readerHandlers.reader_list_cards);
-	ipcMain.handle(
-		"reader_list_all_cards",
-		readerHandlers.reader_list_all_cards,
-	);
-	ipcMain.handle(
-		"reader_list_due_cards",
-		readerHandlers.reader_list_due_cards,
-	);
-	ipcMain.handle(
-		"reader_list_card_tags",
-		readerHandlers.reader_list_card_tags,
-	);
+	ipcMain.handle("reader_list_all_cards", readerHandlers.reader_list_all_cards);
+	ipcMain.handle("reader_list_due_cards", readerHandlers.reader_list_due_cards);
+	ipcMain.handle("reader_list_card_tags", readerHandlers.reader_list_card_tags);
 	ipcMain.handle("reader_create_card", readerHandlers.reader_create_card);
 	ipcMain.handle(
 		"reader_create_draft_cards",

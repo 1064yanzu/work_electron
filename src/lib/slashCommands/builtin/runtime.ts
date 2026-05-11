@@ -13,10 +13,8 @@
 import { setPlanModeEnabled } from "../../agent/planModeStore";
 import { agentExecutor } from "../../agent/executor";
 import { permissionStore } from "../../agent/permissionStore";
-import type {
-	PermissionMode,
-	ToolPermissionPolicy,
-} from "../../agent/types";
+import type { PermissionMode, ToolPermissionPolicy } from "../../agent/types";
+import { dispatchToSdk } from "../dispatchToSdk";
 import { settingsStore } from "../../settingsStore";
 import { SLASH_COMMAND_PREF_KEYS } from "../settingsSnapshot";
 import { themeManager } from "../../theme";
@@ -287,6 +285,64 @@ export const themeCommand: SlashCommandDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// /output-style（submenu）—— 切换 Claude 输出风格，交给 SDK 真实生效
+// ---------------------------------------------------------------------------
+
+const OUTPUT_STYLE_OPTIONS: readonly SlashCommandSubOption[] = [
+	{
+		id: "default",
+		label: SLASH_MESSAGES.commands.outputStyle.subOptions.default,
+		description: "标准回复风格。",
+	},
+	{
+		id: "explanatory",
+		label: SLASH_MESSAGES.commands.outputStyle.subOptions.explanatory,
+		description: "在回复中加入教学式讲解。",
+	},
+	{
+		id: "learning",
+		label: SLASH_MESSAGES.commands.outputStyle.subOptions.learning,
+		description: "以对话式互动促进学习。",
+	},
+];
+
+export const outputStyleCommand: SlashCommandDefinition = {
+	id: "output-style",
+	name: SLASH_MESSAGES.commands.outputStyle.name,
+	description: SLASH_MESSAGES.commands.outputStyle.description,
+	group: "runtime",
+	kind: "submenu",
+	availability() {
+		return { state: "available" };
+	},
+	getSubmenu() {
+		return [...OUTPUT_STYLE_OPTIONS];
+	},
+	async execute(ctx: CommandContext, option?: SlashCommandSubOption) {
+		if (!option) {
+			return {
+				kind: "failed" as const,
+				message: SLASH_MESSAGES.disabled.reason.unknownSubOption,
+			};
+		}
+		// 与 Claude Code CLI 一致：`/output-style <id>`
+		const outcome = await dispatchToSdk(`/output-style ${option.id}`, {
+			workingDirectory:
+				(ctx.activeSession?.cwd && ctx.activeSession.cwd.trim()) ||
+				ctx.workspacePath ||
+				undefined,
+			resumeSessionId: ctx.sdkSessionId ?? undefined,
+			timeoutMs: 30_000,
+			loadingMessage: SLASH_MESSAGES.toast.outputStyle.switched(option.label),
+		});
+		if (outcome.kind === "ok") {
+			notify.success(SLASH_MESSAGES.toast.outputStyle.switched(option.label));
+		}
+		return outcome;
+	},
+};
+
+// ---------------------------------------------------------------------------
 // 导出
 // ---------------------------------------------------------------------------
 
@@ -296,4 +352,5 @@ export const RUNTIME_COMMANDS: readonly SlashCommandDefinition[] = [
 	planCommand,
 	approvalsCommand,
 	themeCommand,
+	outputStyleCommand,
 ];

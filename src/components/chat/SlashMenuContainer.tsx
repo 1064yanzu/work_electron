@@ -1,7 +1,7 @@
 // 斜杠命令二级菜单容器
-// 整合一级菜单（类型选择）、二级菜单（具体命令 / 自定义分类）与三级子菜单（submenu）。
+// 扁平化版本：默认进入「命令」二级菜单；顶部胶囊条切换其他类型；三级子菜单走 CommandSubmenuView。
 
-import { ArrowLeft, Blocks, ChevronRight, FileText, Plus } from "lucide-react";
+import { Blocks, ChevronRight, FileText, Plus } from "lucide-react";
 import {
 	useCallback,
 	useEffect,
@@ -16,6 +16,7 @@ import {
 	buildCommandContext,
 	commandRegistry,
 	executeSlashCommand,
+	getRecentCommandIds,
 	matchFilter,
 	onSlashCommandsPrefsChanged,
 	useSlashCommandContext,
@@ -25,8 +26,7 @@ import {
 } from "../../lib/slashCommands";
 import { chatStore, useChatStoreSelector } from "../../lib/chat/store";
 import { EVENTS, events } from "../../lib/events";
-import { Terminal as TerminalIcon } from "lucide-react";
-import { SlashPrimaryMenu, slashCategories } from "./SlashPrimaryMenu";
+import { slashCategories } from "./SlashPrimaryMenu";
 import { type SlashCommand, defaultCommands } from "./SlashCommand";
 import {
 	CommandsCategoryView,
@@ -70,6 +70,53 @@ type MenuLevel =
 	| { type: "rename"; sessionId: string; initialTitle: string };
 
 // ---------------------------------------------------------------------------
+// 顶部胶囊条：扁平化菜单的类别切换器
+// ---------------------------------------------------------------------------
+
+interface CategoryPillsProps {
+	selectedId: string;
+	onSelect: (id: string) => void;
+	itemCount?: number;
+}
+
+function CategoryPills({
+	selectedId,
+	onSelect,
+	itemCount,
+}: CategoryPillsProps) {
+	return (
+		<div className="flex items-center gap-1 px-2 py-2 border-b border-[#f0f0f0] dark:border-[#333] overflow-x-auto scrollbar-hide">
+			{slashCategories.map((cat) => {
+				const isActive = cat.id === selectedId;
+				return (
+					<button
+						type="button"
+						key={cat.id}
+						onClick={() => onSelect(cat.id)}
+						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-[120ms] ease-out cursor-pointer select-none
+							${
+								isActive
+									? `${cat.gradient} shadow-[0_1px_2px_rgba(0,0,0,0.04)]`
+									: "text-[#888] dark:text-[#888] hover:bg-[#f3f3f3] dark:hover:bg-[#363636]"
+							}`}
+					>
+						<cat.icon
+							className={`w-3.5 h-3.5 transition-colors duration-[120ms] ${
+								isActive ? "" : "text-[#aaa] dark:text-[#666]"
+							}`}
+						/>
+						<span>{cat.name}</span>
+						{isActive && typeof itemCount === "number" && itemCount >= 0 && (
+							<span className="text-[10px] opacity-60">{itemCount}</span>
+						)}
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+// ---------------------------------------------------------------------------
 // 组件
 // ---------------------------------------------------------------------------
 
@@ -81,13 +128,19 @@ export function SlashMenuContainer({
 	dynamicCommands = [],
 	onOpenPromptLibrary,
 }: SlashMenuContainerProps) {
-	const [level, setLevel] = useState<MenuLevel>({ type: "primary" });
+	// 扁平化：默认直接进入「命令」二级菜单，不再经过 primary 类型选择层。
+	// 顶部胶囊按钮可切换到文件 / 提示词 / 技能 / 操作 等其他类别。
+	const [level, setLevel] = useState<MenuLevel>({
+		type: "secondary",
+		categoryId: "command",
+	});
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 		new Set(),
 	);
 	const [activeCommandIndex, setActiveCommandIndex] = useState(0);
-	const [activeCommandsCategoryId, setActiveCommandsCategoryId] =
-		useState<string | null>(null);
+	const [activeCommandsCategoryId, setActiveCommandsCategoryId] = useState<
+		string | null
+	>(null);
 	const { prompts: customPrompts, folders: customFolders } =
 		useCustomPromptStore();
 	const { enabledSkills } = useSkillsStore();
@@ -108,7 +161,8 @@ export function SlashMenuContainer({
 	// ---- 菜单打开时重置状态 ----
 	useEffect(() => {
 		if (isOpen) {
-			setLevel({ type: "primary" });
+			// 扁平化：每次打开都直接进入「命令」二级菜单
+			setLevel({ type: "secondary", categoryId: "command" });
 			setCollapsedGroups(new Set());
 			setActiveCommandIndex(0);
 			setActiveCommandsCategoryId(null);
@@ -130,22 +184,10 @@ export function SlashMenuContainer({
 		};
 	}, [isOpen, onClose]);
 
-	// ---- 选择一级类别 ----
+	// ---- 选择一级类别（顶部胶囊点击）----
 	const handleSelectCategory = useCallback((categoryId: string) => {
 		setLevel({ type: "secondary", categoryId });
 		setActiveCommandIndex(0);
-	}, []);
-
-	// ---- 返回上一级 ----
-	const handleBack = useCallback(() => {
-		setLevel((prev) => {
-			if (prev.type === "tertiary") {
-				return { type: "secondary", categoryId: "command" };
-			}
-			if (prev.type === "secondary") return { type: "primary" };
-			if (prev.type === "rename") return { type: "secondary", categoryId: "command" };
-			return prev;
-		});
 	}, []);
 
 	const toggleGroup = useCallback((groupId: string) => {
@@ -161,8 +203,7 @@ export function SlashMenuContainer({
 	// 构建"命令"类别的 ctx + 可见命令
 	// ------------------------------------------------------------------
 
-	const selectedCategory =
-		level.type === "secondary" ? level.categoryId : null;
+	const selectedCategory = level.type === "secondary" ? level.categoryId : null;
 
 	const commandCtx: CommandContext | null = useMemo(() => {
 		if (selectedCategory !== "command") return null;
@@ -183,10 +224,30 @@ export function SlashMenuContainer({
 		try {
 			const indexed = commandRegistry.listIndexed(commandCtx);
 			const matched = matchFilter(filter, indexed);
-			return matched.map((m) => ({
+			const allItems = matched.map((m) => ({
 				definition: m.definition,
 				availability: m.definition.availability(commandCtx),
+				matchPositions: m.matchPositions,
 			}));
+
+			// 过滤为空 + 有 LRU 时,把最近使用的命令复制到顶部"最近使用"虚拟分组,
+			// 同时保留它们在原 group 的位置(让用户既能快速找到常用,又能按分类找)。
+			if (!filter.trim() && allItems.length > 0) {
+				const recentIds = getRecentCommandIds();
+				if (recentIds.length > 0) {
+					const idToItem = new Map(
+						allItems.map((it) => [it.definition.id, it] as const),
+					);
+					const recentItems = recentIds
+						.map((id) => idToItem.get(id))
+						.filter((it): it is (typeof allItems)[number] => Boolean(it))
+						.map((it) => ({ ...it, sectionId: "recent" as const }));
+					if (recentItems.length > 0) {
+						return [...recentItems, ...allItems];
+					}
+				}
+			}
+			return allItems;
 		} catch (err) {
 			console.warn("[SlashMenu] 构建命令列表失败。", err);
 			return [];
@@ -363,16 +424,6 @@ export function SlashMenuContainer({
 		enabledSkills,
 	]);
 
-	const getCategoryInfo = useCallback(() => {
-		const cat = slashCategories.find((c) => c.id === selectedCategory);
-		return {
-			name: cat?.name || "",
-			iconColor: cat?.iconColor || "text-[#999]",
-			Icon: cat?.icon,
-			gradient: cat?.gradient || "",
-		};
-	}, [selectedCategory]);
-
 	const categoryGroupSearchIndex = useMemo(
 		() =>
 			categoryGroups.map((group) => ({
@@ -419,7 +470,6 @@ export function SlashMenuContainer({
 		return indexMap;
 	}, [visibleCommands]);
 
-	const { name: categoryName, Icon, gradient } = getCategoryInfo();
 	const showAddPromptButton = selectedCategory === "prompt";
 
 	const totalCommands = filteredGroups.reduce(
@@ -528,11 +578,8 @@ export function SlashMenuContainer({
 			// 命令类别走自己的键盘导航
 			if (level.categoryId === "command") {
 				const items = commandItemsRef.current;
-				if (event.key === "Backspace" && !filterRef.current) {
-					event.preventDefault();
-					setLevel({ type: "primary" });
-					return;
-				}
+				// 命令类别已经是最顶层：Backspace + 空 filter 时不 preventDefault,
+				// 让 ChatInput 自然删除 `/` 字符,从而关闭菜单 —— 符合扁平化直觉。
 				if (items.length === 0) return;
 				switch (event.key) {
 					case "ArrowUp":
@@ -581,7 +628,8 @@ export function SlashMenuContainer({
 			// 其它类别沿用旧的导航
 			if (event.key === "Backspace" && !filterRef.current) {
 				event.preventDefault();
-				setLevel({ type: "primary" });
+				// 扁平化:其他类别 Backspace 切回命令类别(而不是 primary)
+				setLevel({ type: "secondary", categoryId: "command" });
 				return;
 			}
 			const commands = visibleCommandsRef.current;
@@ -615,16 +663,10 @@ export function SlashMenuContainer({
 
 	if (!isOpen) return null;
 
-	// ----------------- 一级菜单 -----------------
+	// 扁平化菜单不再渲染 SlashPrimaryMenu(一级类型选择);若 level 意外为 primary,
+	// 直接关闭以保险。
 	if (level.type === "primary") {
-		return (
-			<SlashPrimaryMenu
-				isOpen={isOpen}
-				onClose={onClose}
-				onSelectCategory={handleSelectCategory}
-				filter={filter}
-			/>
-		);
+		return null;
 	}
 
 	// ----------------- /rename 行内输入框 -----------------
@@ -675,34 +717,13 @@ export function SlashMenuContainer({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+				className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 			>
-				<div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#333]">
-					<div
-						role="button"
-						tabIndex={-1}
-						onClick={() => setLevel({ type: "primary" })}
-						className="w-7 h-7 flex items-center justify-center text-[#999] hover:text-[#666] dark:hover:text-[#bbb] hover:bg-[#f3f3f3] dark:hover:bg-[#363636] rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
-						title="返回"
-					>
-						<ArrowLeft className="w-4 h-4" />
-					</div>
-					<div className="flex items-center gap-2">
-						<div
-							className={`w-5 h-5 rounded-md flex items-center justify-center ${gradient}`}
-						>
-							<TerminalIcon className="w-3 h-3" />
-						</div>
-						<span className="text-[13px] font-medium text-[#1a1a1a] dark:text-[#eee]">
-							{categoryName || "命令"}
-						</span>
-						{commandItems.length > 0 && (
-							<span className="text-[10px] text-[#bbb] dark:text-[#555]">
-								{commandItems.length}
-							</span>
-						)}
-					</div>
-				</div>
+				<CategoryPills
+					selectedId="command"
+					onSelect={handleSelectCategory}
+					itemCount={commandItems.length}
+				/>
 
 				<div className="max-h-[320px] overflow-y-auto">
 					{commandsCategoryDisabled ? (
@@ -724,8 +745,8 @@ export function SlashMenuContainer({
 				<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
 					<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
 						<span className="flex items-center gap-1">
-							<span className="font-mono text-[9px]">⌫</span>
-							<span>返回</span>
+							<span className="font-mono text-[9px]">↑↓</span>
+							<span>导航</span>
 						</span>
 						<span className="flex items-center gap-1">
 							<span className="font-mono text-[9px]">↵</span>
@@ -745,36 +766,13 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[300px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
-			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#333]">
-				<div
-					role="button"
-					tabIndex={-1}
-					onClick={handleBack}
-					className="w-7 h-7 flex items-center justify-center text-[#999] hover:text-[#666] dark:hover:text-[#bbb] hover:bg-[#f3f3f3] dark:hover:bg-[#363636] rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
-					title="返回"
-				>
-					<ArrowLeft className="w-4 h-4" />
-				</div>
-				<div className="flex items-center gap-2">
-					{Icon && (
-						<div
-							className={`w-5 h-5 rounded-md flex items-center justify-center ${gradient}`}
-						>
-							<Icon className="w-3 h-3" />
-						</div>
-					)}
-					<span className="text-[13px] font-medium text-[#1a1a1a] dark:text-[#eee]">
-						{categoryName}
-					</span>
-					{totalCommands > 0 && (
-						<span className="text-[10px] text-[#bbb] dark:text-[#555]">
-							{totalCommands}
-						</span>
-					)}
-				</div>
-			</div>
+			<CategoryPills
+				selectedId={selectedCategory ?? "command"}
+				onSelect={handleSelectCategory}
+				itemCount={totalCommands}
+			/>
 
 			{showAddPromptButton && onOpenPromptLibrary && (
 				<div
@@ -916,10 +914,10 @@ function GroupSection({
 								<div
 									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
                     ${
-										isSelected
-											? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-											: "bg-[#f5f5f5] dark:bg-[#363636]"
-									}`}
+											isSelected
+												? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+												: "bg-[#f5f5f5] dark:bg-[#363636]"
+										}`}
 								>
 									<command.icon
 										className={`w-3.5 h-3.5 transition-colors duration-[120ms]
@@ -931,10 +929,10 @@ function GroupSection({
 									<div
 										className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
                       ${
-											isSelected
-												? "text-[#1a1a1a] dark:text-[#eee]"
-												: "text-[#666] dark:text-[#999]"
-										}`}
+												isSelected
+													? "text-[#1a1a1a] dark:text-[#eee]"
+													: "text-[#666] dark:text-[#999]"
+											}`}
 									>
 										{command.name}
 									</div>
