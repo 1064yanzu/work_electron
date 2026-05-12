@@ -80,11 +80,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          fail_on_unmatched_files: true
           files: |
-            release/**/*.exe
-            release/**/*.exe.blockmap
-            release/**/latest.yml
-          exclude: |
-            release/win-unpacked/**
-            release/**/win-unpacked/**
-            release/**/node_modules/**
+            release/*/*.exe
+            release/*/*.exe.blockmap
+            release/*/latest.yml
