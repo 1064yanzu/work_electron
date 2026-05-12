@@ -25,6 +25,9 @@
   ],
   "asarUnpack": [
     "**/*.{node,dll,dylib,so}",
+    "node_modules/sharp/**",
+    "node_modules/@img/**",
+    "node_modules/node-pty/**",
     "node_modules/@anthropic-ai/claude-agent-sdk/**/*",
     "node_modules/@libsql/**"
   ],

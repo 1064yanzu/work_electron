@@ -44,6 +44,38 @@ jobs:
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
 
+      - name: Smoke check - verify native modules in unpacked asar
+        shell: pwsh
+        run: |
+          $base = "release"
+          $unpacked = Get-ChildItem -Path $base -Recurse -Directory -Filter "app.asar.unpacked" | Select-Object -First 1
+          if (-not $unpacked) {
+            Write-Error "app.asar.unpacked directory not found under release/"
+            exit 1
+          }
+          $root = $unpacked.FullName
+          Write-Host "Checking unpacked asar at: $root"
+          $checks = @(
+            "node_modules\\@img",
+            "node_modules\\sharp",
+            "node_modules\\node-pty"
+          )
+          $failed = 0
+          foreach ($rel in $checks) {
+            $full = Join-Path $root $rel
+            if (Test-Path $full) {
+              Write-Host "[OK]   $rel"
+            } else {
+              Write-Warning "[MISS] $rel — NOT found in unpacked asar!"
+              $failed++
+            }
+          }
+          if ($failed -gt 0) {
+            Write-Error "$failed native module path(s) missing from asar.unpacked. Windows app will crash on launch."
+            exit 1
+          }
+          Write-Host "All native module checks passed."
+
       - name: Upload Windows artifacts
         uses: softprops/action-gh-release@v2
         with:
