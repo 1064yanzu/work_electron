@@ -369,7 +369,13 @@ export function AgentSettings() {
 		contextPolicy: "balanced" as const,
 		subagentContextMode: "capsule" as const,
 		maxTurns: 100,
-		maxThinkingTokens: 8192,
+		thinkingLevel: "high" as
+			| "off"
+			| "low"
+			| "medium"
+			| "high"
+			| "xhigh"
+			| undefined,
 		maxBudgetUsd: undefined as number | undefined,
 		settingSources: ["user", "project"] as Array<"user" | "project" | "local">,
 		enableToolSearch: "false" as const,
@@ -385,7 +391,13 @@ export function AgentSettings() {
 		teammateMode: "auto" as const,
 		teammateBudget: {
 			maxTurns: 40,
-			maxThinkingTokens: 4096,
+			thinkingLevel: "medium" as
+				| "off"
+				| "low"
+				| "medium"
+				| "high"
+				| "xhigh"
+				| undefined,
 			maxBudgetUsd: undefined as number | undefined,
 		},
 		leaderSummaryModel: "" as string | undefined,
@@ -417,7 +429,7 @@ export function AgentSettings() {
 			setConfig("agent.sdk.context_policy", next.contextPolicy),
 			setConfig("agent.sdk.subagent_context_mode", next.subagentContextMode),
 			setConfig("agent.sdk.max_turns", next.maxTurns),
-			setConfig("agent.sdk.max_thinking_tokens", next.maxThinkingTokens),
+			setConfig("agent.sdk.thinking_level", next.thinkingLevel ?? ""),
 			setConfig("agent.sdk.max_budget_usd", next.maxBudgetUsd ?? ""),
 			setConfig("agent.sdk.setting_sources", next.settingSources),
 			setConfig("agent.sdk.enable_tool_search", next.enableToolSearch),
@@ -436,7 +448,7 @@ export function AgentSettings() {
 			setConfig("agent.sdk.teammate_mode", next.teammateMode),
 			setConfig("agent.sdk.teammate_budget", {
 				max_turns: next.teammateBudget.maxTurns,
-				max_thinking_tokens: next.teammateBudget.maxThinkingTokens,
+				thinking_level: next.teammateBudget.thinkingLevel ?? "",
 				max_budget_usd: next.teammateBudget.maxBudgetUsd ?? "",
 			}),
 			setConfig(

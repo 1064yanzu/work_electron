@@ -28,6 +28,24 @@ export type MultiAgentMode = "subagent_only" | "hybrid" | "teammate_preferred";
 export type TeammateSpawnMode = "auto" | "tmux" | "in-process";
 
 /**
+ * 思考档位（直接对应 Claude Agent SDK 的 effort 字段）。
+ * - "off"     → SDK 端 thinking: { type: "disabled" }
+ * - "low"     → effort: "low"，最快响应
+ * - "medium"  → effort: "medium"
+ * - "high"    → effort: "high"（SDK 默认）
+ * - "xhigh"   → effort: "xhigh"（仅 Opus 4.7，其他模型 SDK 自动 fallback）
+ */
+export type ThinkingLevel = "off" | "low" | "medium" | "high" | "xhigh";
+
+export const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
+	off: "关闭",
+	low: "低",
+	medium: "中",
+	high: "高",
+	xhigh: "极高",
+};
+
+/**
  * 场景描述
  */
 export const SCENARIO_LABELS: Record<AgentScenario, string> = {
@@ -97,7 +115,7 @@ export interface AgentModelSettings {
 		contextPolicy: "balanced" | "strict" | "aggressive";
 		subagentContextMode: "capsule" | "inherit";
 		maxTurns: number;
-		maxThinkingTokens: number;
+		thinkingLevel?: ThinkingLevel;
 		maxBudgetUsd?: number;
 		settingSources: Array<"user" | "project" | "local">;
 		enableToolSearch: "auto" | "auto:5" | "true" | "false";
@@ -113,7 +131,7 @@ export interface AgentModelSettings {
 		teammateMode: TeammateSpawnMode;
 		teammateBudget: {
 			maxTurns: number;
-			maxThinkingTokens: number;
+			thinkingLevel?: ThinkingLevel;
 			maxBudgetUsd?: number;
 		};
 		leaderSummaryModel?: string;
@@ -138,7 +156,7 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 		contextPolicy: "balanced",
 		subagentContextMode: "capsule",
 		maxTurns: 100,
-		maxThinkingTokens: 8192,
+		thinkingLevel: "high",
 		maxBudgetUsd: undefined,
 		settingSources: ["user", "project"],
 		enableToolSearch: "auto:5",
@@ -154,7 +172,7 @@ export const DEFAULT_AGENT_MODEL_SETTINGS: AgentModelSettings = {
 		teammateMode: "auto",
 		teammateBudget: {
 			maxTurns: 40,
-			maxThinkingTokens: 4096,
+			thinkingLevel: "medium",
 			maxBudgetUsd: undefined,
 		},
 		leaderSummaryModel: undefined,

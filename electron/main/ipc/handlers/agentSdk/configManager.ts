@@ -107,6 +107,31 @@ export function normalizeToolSearchMode(
 	return "false";
 }
 
+/**
+ * 思考档位（直接透传 SDK 的 effort / thinking 字段）。
+ * - "off" → thinking: { type: "disabled" }
+ * - "low" / "medium" / "high" / "xhigh" → effort
+ * - undefined → 不传任何 thinking 相关字段，SDK 自决（Opus 4.6+ 默认 adaptive + high）
+ */
+export type ThinkingLevel = "off" | "low" | "medium" | "high" | "xhigh";
+
+export function normalizeThinkingLevel(
+	value: unknown,
+): ThinkingLevel | undefined {
+	if (value === undefined || value === null) return undefined;
+	const normalized = String(value).trim().toLowerCase();
+	if (
+		normalized === "off" ||
+		normalized === "low" ||
+		normalized === "medium" ||
+		normalized === "high" ||
+		normalized === "xhigh"
+	) {
+		return normalized;
+	}
+	return undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Writing task detection
 // ---------------------------------------------------------------------------

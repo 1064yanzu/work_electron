@@ -1,5 +1,6 @@
 type MultiAgentMode = "subagent_only" | "hybrid" | "teammate_preferred";
 type TeammateMode = "auto" | "tmux" | "in-process";
+type ThinkingLevel = "off" | "low" | "medium" | "high" | "xhigh";
 
 export type MultiAgentRuntime = {
 	experimentalEnabled: boolean;
@@ -8,7 +9,7 @@ export type MultiAgentRuntime = {
 	teammateMode: TeammateMode;
 	teammateBudget: {
 		maxTurns: number;
-		maxThinkingTokens: number;
+		thinkingLevel?: ThinkingLevel;
 		maxBudgetUsd?: number;
 	};
 	teamId: string;
@@ -25,6 +26,21 @@ function normalizeNumber(value: unknown): number | undefined {
 	if (typeof value === "string" && value.trim()) {
 		const parsed = Number(value);
 		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+function normalizeThinkingLevel(value: unknown): ThinkingLevel | undefined {
+	if (value === undefined || value === null) return undefined;
+	const normalized = String(value).trim().toLowerCase();
+	if (
+		normalized === "off" ||
+		normalized === "low" ||
+		normalized === "medium" ||
+		normalized === "high" ||
+		normalized === "xhigh"
+	) {
+		return normalized;
 	}
 	return undefined;
 }
@@ -74,13 +90,8 @@ export function buildMultiAgentRuntime(input: {
 				normalizeNumber(rawBudget.max_turns ?? rawBudget.maxTurns) ?? 40,
 			),
 		),
-		maxThinkingTokens: Math.max(
-			256,
-			Math.floor(
-				normalizeNumber(
-					rawBudget.max_thinking_tokens ?? rawBudget.maxThinkingTokens,
-				) ?? 4096,
-			),
+		thinkingLevel: normalizeThinkingLevel(
+			rawBudget.thinking_level ?? rawBudget.thinkingLevel,
 		),
 		maxBudgetUsd: normalizeNumber(
 			rawBudget.max_budget_usd ?? rawBudget.maxBudgetUsd,

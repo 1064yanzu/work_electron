@@ -22,7 +22,6 @@ import { EVENTS, events } from "../events";
 import { generateErrorRecoveryStrategy } from "./errorRecoveryStrategies";
 import { isHtmlPreviewPath } from "../frontendPreview";
 import { extractToolErrorMessageFromUnknown } from "./runtimeText";
-import { DEFAULT_AGENT_MODEL_SETTINGS } from "../models/agentModelConfig";
 import { previewServerStore } from "../previewServerStore";
 
 // Include both ASCII and full-width Chinese punctuation that may cause issues with SDK tools
@@ -565,7 +564,7 @@ class AgentExecutor {
 			forkSession?: boolean;
 			resumeSessionAt?: string;
 			maxTurns?: number;
-			maxThinkingTokens?: number;
+			thinkingLevel?: import("../models/agentModelConfig").ThinkingLevel;
 			maxBudgetUsd?: number;
 			settingSources?: Array<"user" | "project" | "local">;
 			betas?: string[];
@@ -584,7 +583,7 @@ class AgentExecutor {
 			teammateMode?: "auto" | "tmux" | "in-process";
 			teammateBudget?: {
 				maxTurns?: number;
-				maxThinkingTokens?: number;
+				thinkingLevel?: import("../models/agentModelConfig").ThinkingLevel;
 				maxBudgetUsd?: number;
 			};
 			leaderSummaryModel?: string;
@@ -694,13 +693,8 @@ class AgentExecutor {
 				? runtimeConfig.settingSources
 				: (["user", "project"] as Array<"user" | "project" | "local">);
 		const resolvedMaxTurns = options.maxTurns ?? runtimeConfig?.maxTurns ?? 100;
-		const runtimeMaxThinkingTokens =
-			runtimeConfig?.maxThinkingTokens !==
-			DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxThinkingTokens
-				? runtimeConfig?.maxThinkingTokens
-				: undefined;
-		const resolvedMaxThinkingTokens =
-			options.maxThinkingTokens ?? runtimeMaxThinkingTokens;
+		const resolvedThinkingLevel =
+			options.thinkingLevel ?? runtimeConfig?.thinkingLevel;
 		const resolvedMaxBudgetUsd =
 			options.maxBudgetUsd ?? runtimeConfig?.maxBudgetUsd;
 		const resolvedBetas =
@@ -730,10 +724,9 @@ class AgentExecutor {
 				options.teammateBudget?.maxTurns ??
 				runtimeConfig?.teammateBudget?.maxTurns ??
 				40,
-			maxThinkingTokens:
-				options.teammateBudget?.maxThinkingTokens ??
-				runtimeConfig?.teammateBudget?.maxThinkingTokens ??
-				4096,
+			thinkingLevel:
+				options.teammateBudget?.thinkingLevel ??
+				runtimeConfig?.teammateBudget?.thinkingLevel,
 			maxBudgetUsd:
 				options.teammateBudget?.maxBudgetUsd ??
 				runtimeConfig?.teammateBudget?.maxBudgetUsd,
@@ -961,7 +954,7 @@ class AgentExecutor {
 				model: activeModel,
 				skills: enabledSkills.map((s) => s.name),
 				maxTurns: resolvedMaxTurns,
-				maxThinkingTokens: resolvedMaxThinkingTokens,
+				thinkingLevel: resolvedThinkingLevel,
 				maxBudgetUsd: resolvedMaxBudgetUsd,
 				settingSources: resolvedSettingSources,
 				betas: resolvedBetas,
@@ -979,7 +972,7 @@ class AgentExecutor {
 				teammateMode: resolvedTeammateMode,
 				teammateBudget: {
 					max_turns: resolvedTeammateBudget.maxTurns,
-					max_thinking_tokens: resolvedTeammateBudget.maxThinkingTokens,
+					thinking_level: resolvedTeammateBudget.thinkingLevel,
 					max_budget_usd: resolvedTeammateBudget.maxBudgetUsd,
 				},
 				leaderSummaryModel: resolvedLeaderSummaryModel,

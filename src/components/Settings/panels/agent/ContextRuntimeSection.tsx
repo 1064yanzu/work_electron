@@ -6,7 +6,11 @@
 // 原 config key 作为 hint 灰字附在描述里。
 
 import { Box, Clock, Cpu, Layers, Network, Users } from "lucide-react";
-import type { AgentModelSettings } from "../../../../lib/models/agentModelConfig";
+import type {
+	AgentModelSettings,
+	ThinkingLevel,
+} from "../../../../lib/models/agentModelConfig";
+import { THINKING_LEVEL_LABELS } from "../../../../lib/models/agentModelConfig";
 import { Select } from "../../../ui/Select";
 import { Toggle } from "../../components";
 import {
@@ -28,6 +32,49 @@ type ContextRuntimePatch = Partial<
 	contextBudget?: Partial<ContextRuntime["contextBudget"]>;
 	teammateBudget?: Partial<ContextRuntime["teammateBudget"]>;
 };
+
+const THINKING_LEVEL_ORDER: ThinkingLevel[] = [
+	"off",
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+];
+
+function ThinkingLevelSegmented({
+	value,
+	onChange,
+}: {
+	value: ThinkingLevel | undefined;
+	onChange: (next: ThinkingLevel) => void;
+}) {
+	const active = value ?? "high";
+	return (
+		<div className="inline-flex items-center gap-0.5 rounded-full bg-warm-100/70 dark:bg-cream-800/40 p-0.5 border border-border/60">
+			{THINKING_LEVEL_ORDER.map((level) => {
+				const isActive = level === active;
+				return (
+					<button
+						key={level}
+						type="button"
+						onClick={() => onChange(level)}
+						className={`
+							px-3 py-1 text-[11px] font-medium rounded-full
+							transition-[background-color,color] duration-150 cursor-pointer
+							${
+								isActive
+									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-[0_1px_2px_0_rgb(26_26_25/0.06)]"
+									: "text-text-muted hover:text-text-primary"
+							}
+						`}
+					>
+						{THINKING_LEVEL_LABELS[level]}
+					</button>
+				);
+			})}
+		</div>
+	);
+}
 
 interface ContextRuntimeSectionProps {
 	contextRuntime: ContextRuntime;
@@ -147,14 +194,14 @@ export function ContextRuntimeSection({
 							onChange={(value) => void saveContextRuntime({ maxTurns: value })}
 						/>
 					</SettingsField>
-					<SettingsField label="思考 Token 上限" hint="max_thinking_tokens">
-						<SettingsNumberInput
-							value={contextRuntime.maxThinkingTokens}
-							min={256}
-							max={131072}
-							step={256}
-							onChange={(value) =>
-								void saveContextRuntime({ maxThinkingTokens: value })
+					<SettingsField
+						label="思考程度"
+						hint="effort · 直接透传 Claude Agent SDK"
+					>
+						<ThinkingLevelSegmented
+							value={contextRuntime.thinkingLevel}
+							onChange={(next) =>
+								void saveContextRuntime({ thinkingLevel: next })
 							}
 						/>
 					</SettingsField>
@@ -423,17 +470,14 @@ function MultiAgentBlock({
 										/>
 									</SettingsField>
 									<SettingsField
-										label="思考 Token 上限"
-										hint="max_thinking_tokens"
+										label="思考程度"
+										hint="effort · 透传给 teammate 的 SDK 调用"
 									>
-										<SettingsNumberInput
-											value={contextRuntime.teammateBudget.maxThinkingTokens}
-											min={256}
-											max={65536}
-											step={256}
-											onChange={(value) =>
+										<ThinkingLevelSegmented
+											value={contextRuntime.teammateBudget.thinkingLevel}
+											onChange={(next) =>
 												void saveContextRuntime({
-													teammateBudget: { maxThinkingTokens: value },
+													teammateBudget: { thinkingLevel: next },
 												})
 											}
 										/>

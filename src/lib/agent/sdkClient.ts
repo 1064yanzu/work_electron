@@ -25,7 +25,7 @@ export interface AgentStartPayload {
 	fork_session?: boolean;
 	resume_session_at?: string;
 	max_turns?: number;
-	max_thinking_tokens?: number;
+	thinking_level?: "off" | "low" | "medium" | "high" | "xhigh";
 	max_budget_usd?: number;
 	setting_sources?: Array<"user" | "project" | "local">;
 	betas?: string[];
@@ -43,7 +43,7 @@ export interface AgentStartPayload {
 	teammate_mode?: "auto" | "tmux" | "in-process";
 	teammate_budget?: {
 		max_turns?: number;
-		max_thinking_tokens?: number;
+		thinking_level?: "off" | "low" | "medium" | "high" | "xhigh";
 		max_budget_usd?: number;
 	};
 	leader_summary_model?: string;

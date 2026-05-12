@@ -5,8 +5,10 @@
  * 通过事件推送实时通知渲染进程下载进度与状态变化。
  */
 import { BrowserWindow } from "electron";
-import { autoUpdater, type UpdateInfo } from "electron-updater";
+import electronUpdater, { type UpdateInfo } from "electron-updater";
 import { createLogger } from "../logging/logger";
+
+const { autoUpdater } = electronUpdater;
 
 const logger = createLogger();
 

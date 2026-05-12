@@ -1614,8 +1614,13 @@ export type IPCSchema = {
 			resume_session_at?: string;
 			/** Max conversation turns */
 			max_turns?: number;
-			/** Max thinking tokens */
-			max_thinking_tokens?: number;
+			/**
+			 * 思考档位（直接透传给 SDK 的 effort / thinking 字段）。
+			 * - "off" → thinking: { type: "disabled" }
+			 * - "low" / "medium" / "high" / "xhigh" → effort
+			 * - 未提供 → 不传，SDK 自行决定（Opus 4.6+ 默认 adaptive + high）
+			 */
+			thinking_level?: "off" | "low" | "medium" | "high" | "xhigh";
 			/** Max budget in USD */
 			max_budget_usd?: number;
 			/** SDK settingSources passthrough */
@@ -1645,7 +1650,7 @@ export type IPCSchema = {
 			/** Default teammate execution budget */
 			teammate_budget?: {
 				max_turns?: number;
-				max_thinking_tokens?: number;
+				thinking_level?: "off" | "low" | "medium" | "high" | "xhigh";
 				max_budget_usd?: number;
 			};
 			/** Optional leader-only summary model hint */

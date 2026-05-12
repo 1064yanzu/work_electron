@@ -1,6 +1,7 @@
 import { ArrowUp, AtSign, ChevronUp, Mic, Plus } from "lucide-react";
 import { prefetchChatContext } from "../../../lib/query";
 import type { Model } from "../ModelSelector";
+import { ThinkingLevelPill } from "../ThinkingLevelPill";
 
 interface ChatInputToolbarProps {
 	expanded: boolean;
@@ -104,6 +105,9 @@ export function ChatInputToolbar({
 								</button>
 							</div>
 						)}
+
+						{/* 思考程度 pill — 紧邻模型选择，直接透传 SDK effort */}
+						<ThinkingLevelPill />
 					</div>
 
 					{/* 右侧：语音 + 发送按钮 */}

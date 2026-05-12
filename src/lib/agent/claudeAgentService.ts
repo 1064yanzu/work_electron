@@ -120,7 +120,7 @@ export interface ClaudeAgentExecutionOptions {
 
 	/** Runtime hard limits */
 	maxTurns?: number;
-	maxThinkingTokens?: number;
+	thinkingLevel?: import("../models/agentModelConfig").ThinkingLevel;
 	maxBudgetUsd?: number;
 
 	/** SDK settings sources */
@@ -144,7 +144,7 @@ export interface ClaudeAgentExecutionOptions {
 	teammateMode?: "auto" | "tmux" | "in-process";
 	teammateBudget?: {
 		max_turns?: number;
-		max_thinking_tokens?: number;
+		thinking_level?: import("../models/agentModelConfig").ThinkingLevel;
 		max_budget_usd?: number;
 	};
 	leaderSummaryModel?: string;
@@ -433,7 +433,7 @@ export class ClaudeAgentService {
 			model: userModel,
 			skills,
 			maxTurns,
-			maxThinkingTokens,
+			thinkingLevel,
 			maxBudgetUsd,
 			settingSources,
 			betas,
@@ -474,7 +474,7 @@ export class ClaudeAgentService {
 			configPluginPaths,
 			configCompatMode,
 			configMaxTurns,
-			configMaxThinkingTokens,
+			configThinkingLevel,
 			configMaxBudgetUsd,
 			configSettingSources,
 			configBetas,
@@ -496,7 +496,7 @@ export class ClaudeAgentService {
 			getConfig("agent.sdk.plugin_paths").catch(() => null),
 			getConfig("agent.sdk.compat_mode").catch(() => null),
 			getConfig("agent.sdk.max_turns").catch(() => null),
-			getConfig("agent.sdk.max_thinking_tokens").catch(() => null),
+			getConfig("agent.sdk.thinking_level").catch(() => null),
 			getConfig("agent.sdk.max_budget_usd").catch(() => null),
 			getConfig("agent.sdk.setting_sources").catch(() => null),
 			getConfig("agent.sdk.betas").catch(() => null),
@@ -521,6 +521,22 @@ export class ClaudeAgentService {
 			if (typeof value === "string" && value.trim()) {
 				const parsed = Number(value);
 				if (Number.isFinite(parsed)) return parsed;
+			}
+			return undefined;
+		};
+		const parseThinkingLevel = (
+			value: unknown,
+		): import("../models/agentModelConfig").ThinkingLevel | undefined => {
+			if (value === undefined || value === null) return undefined;
+			const v = String(value).trim().toLowerCase();
+			if (
+				v === "off" ||
+				v === "low" ||
+				v === "medium" ||
+				v === "high" ||
+				v === "xhigh"
+			) {
+				return v;
 			}
 			return undefined;
 		};
@@ -594,8 +610,8 @@ export class ClaudeAgentService {
 		);
 		const resolvedMaxTurns =
 			parseNumber(maxTurns) ?? parseNumber(configMaxTurns);
-		const resolvedMaxThinkingTokens =
-			parseNumber(maxThinkingTokens) ?? parseNumber(configMaxThinkingTokens);
+		const resolvedThinkingLevel =
+			thinkingLevel ?? parseThinkingLevel(configThinkingLevel);
 		const resolvedMaxBudgetUsd =
 			parseNumber(maxBudgetUsd) ?? parseNumber(configMaxBudgetUsd);
 		const resolvedSettingSources = normalizeSettingSources(
@@ -692,11 +708,8 @@ export class ClaudeAgentService {
 				1,
 				Math.floor(parseNumber((teammateBudgetRaw as any).max_turns) ?? 12),
 			),
-			max_thinking_tokens: Math.max(
-				256,
-				Math.floor(
-					parseNumber((teammateBudgetRaw as any).max_thinking_tokens) ?? 4096,
-				),
+			thinking_level: parseThinkingLevel(
+				(teammateBudgetRaw as any).thinking_level,
 			),
 			max_budget_usd:
 				parseNumber((teammateBudgetRaw as any).max_budget_usd) ?? undefined,
@@ -736,7 +749,7 @@ export class ClaudeAgentService {
 		const resolvedSystemPrompt = (() => {
 			const parts: string[] = [];
 			if (systemPrompt) parts.push(systemPrompt);
-			if (!isClaudeModel && resolvedMaxThinkingTokens === undefined) {
+			if (!isClaudeModel && resolvedThinkingLevel === undefined) {
 				parts.push(
 					"当前运行的不是 Claude 系列模型。请减少隐藏思考，优先尽快进入工具调用或直接输出可执行内容；如长时间停留在 reasoning/thinking 通道，说明该模型与 Claude Agent SDK 的兼容性一般。",
 				);
@@ -1470,7 +1483,7 @@ export class ClaudeAgentService {
 										metadata: {
 											longThinking: true,
 											model,
-											maxThinkingTokens: resolvedMaxThinkingTokens,
+											thinkingLevel: resolvedThinkingLevel,
 										},
 									});
 								}
@@ -1740,7 +1753,7 @@ export class ClaudeAgentService {
 										fork_session: forkSession,
 										resume_session_at: resumeSessionAt,
 										max_turns: resolvedMaxTurns,
-										max_thinking_tokens: resolvedMaxThinkingTokens,
+										thinking_level: resolvedThinkingLevel,
 										max_budget_usd: resolvedMaxBudgetUsd,
 										setting_sources: resolvedSettingSources,
 										betas: resolvedBetas,
@@ -1844,7 +1857,7 @@ export class ClaudeAgentService {
 					fork_session: forkSession,
 					resume_session_at: resumeSessionAt,
 					max_turns: resolvedMaxTurns,
-					max_thinking_tokens: resolvedMaxThinkingTokens,
+					thinking_level: resolvedThinkingLevel,
 					max_budget_usd: resolvedMaxBudgetUsd,
 					setting_sources: resolvedSettingSources,
 					betas: resolvedBetas,

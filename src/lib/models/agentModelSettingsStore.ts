@@ -236,12 +236,11 @@ export const agentModelSettingsStore = {
 				state.contextRuntime?.teammateBudget?.maxTurns ??
 				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget?.maxTurns ??
 				12,
-			maxThinkingTokens:
-				settings.teammateBudget?.maxThinkingTokens ??
-				state.contextRuntime?.teammateBudget?.maxThinkingTokens ??
+			thinkingLevel:
+				settings.teammateBudget?.thinkingLevel ??
+				state.contextRuntime?.teammateBudget?.thinkingLevel ??
 				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget
-					?.maxThinkingTokens ??
-				4096,
+					?.thinkingLevel,
 			maxBudgetUsd:
 				settings.teammateBudget?.maxBudgetUsd ??
 				state.contextRuntime?.teammateBudget?.maxBudgetUsd ??
@@ -266,11 +265,10 @@ export const agentModelSettingsStore = {
 					state.contextRuntime?.maxTurns ??
 					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxTurns ??
 					24,
-				maxThinkingTokens:
-					settings.maxThinkingTokens ??
-					state.contextRuntime?.maxThinkingTokens ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxThinkingTokens ??
-					8192,
+				thinkingLevel:
+					settings.thinkingLevel ??
+					state.contextRuntime?.thinkingLevel ??
+					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.thinkingLevel,
 				maxBudgetUsd:
 					settings.maxBudgetUsd ??
 					state.contextRuntime?.maxBudgetUsd ??
