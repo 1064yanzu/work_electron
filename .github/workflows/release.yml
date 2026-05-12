@@ -49,8 +49,9 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
-            release/*/*.exe
-            release/*/*.blockmap
-            release/*/*.yml
+            release/**/*.exe
+            release/**/*.exe.blockmap
+            release/**/latest.yml
+            release/**/builder-debug.yml
           exclude: |
             release/win-unpacked/**
