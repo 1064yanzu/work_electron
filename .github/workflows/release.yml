@@ -12,6 +12,8 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,5 +45,3 @@ jobs:
             release/**/*.exe
             release/**/*.blockmap
             release/**/latest.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
