@@ -76,12 +76,8 @@ jobs:
           }
           Write-Host "All native module checks passed."
 
-      - name: Upload Windows artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          fail_on_unmatched_files: true
-          files: |
-            release/*/*.exe
-            release/*/*.exe.blockmap
-            release/*/latest.yml
+      # 不需要单独的 Upload 步骤：electron-builder 在 build:win 期间会读取
+      # electron-builder.json5 的 publish 配置 + 当前环境的 GH_TOKEN，
+      # 自动把 nsis/portable/latest.yml 上传到 GitHub Release。
+      # 之前用 softprops/action-gh-release 再上传一次会产生 IPO.Workbench-... 系列
+      # 重复 asset（文件名规范化方式不同），与 latest.yml 内的引用对不上。
