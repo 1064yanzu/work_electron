@@ -5,6 +5,8 @@
 
 import { useSyncExternalStore } from "react";
 import { invoke } from "../../lib/tauriCompat";
+import { getTerminalPrefs } from "../config/terminal";
+import { workspaceStore } from "../workspaceStore";
 
 export interface TerminalInstance {
 	id: string;
@@ -45,13 +47,34 @@ class TerminalStore {
 		for (const fn of this.listeners) fn();
 	}
 
+	/** 根据偏好配置解析 cwd */
+	private async resolveCwd(explicitCwd?: string): Promise<string | undefined> {
+		if (explicitCwd) return explicitCwd;
+		try {
+			const prefs = await getTerminalPrefs();
+			if (prefs.defaultCwdMode === "thread") {
+				const threadPath =
+					workspaceStore.getCoreState().currentThreadPath;
+				if (threadPath) return threadPath;
+			}
+		} catch {
+			// ignore
+		}
+		return undefined; // 后端会 fallback 到 os.homedir()
+	}
+
 	/** 创建新终端 */
 	async createTerminal(cwd?: string): Promise<TerminalInstance | null> {
 		const id = `term-${Date.now()}-${++counter}`;
 		try {
+			const [resolvedCwd, prefs] = await Promise.all([
+				this.resolveCwd(cwd),
+				getTerminalPrefs().catch(() => null),
+			]);
 			const info = await invoke<TerminalInstance>("terminal_create", {
 				id,
-				cwd,
+				cwd: resolvedCwd,
+				...(prefs?.shellPath ? { shell: prefs.shellPath } : {}),
 			});
 			const instance: TerminalInstance = {
 				id: info.id,
@@ -106,8 +129,8 @@ class TerminalStore {
 	/** 切换面板可见性 */
 	toggleVisible() {
 		if (!this.state.isVisible && this.state.terminals.length === 0) {
-			// 没有终端时自动创建一个
-			this.createTerminal();
+			// 没有终端时自动创建一个（createTerminal 内部会解析 cwd）
+			void this.createTerminal();
 			return;
 		}
 		this.state = { ...this.state, isVisible: !this.state.isVisible };

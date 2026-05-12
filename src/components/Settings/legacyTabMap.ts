@@ -24,6 +24,7 @@ export const LEGACY_MAP: Record<string, SettingsTabId> = {
 	tts: "workshop.tts",
 	mascot: "workshop.mascot",
 	sandboxPreview: "workshop.layout",
+	terminal: "workshop.terminal",
 	mcp: "integrations.mcp",
 	remoteControl: "integrations.remote",
 	dashboard: "data.stats",

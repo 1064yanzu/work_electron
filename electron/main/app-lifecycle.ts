@@ -25,6 +25,10 @@ import {
 	registerMascotProtocolHandler,
 } from "./services/customMascotProtocol";
 import { reconcileCustomMascotIndex } from "./services/customMascotService";
+import {
+	initUpdateService,
+	stopUpdateService,
+} from "./services/updateService";
 
 export async function bootstrapApp({
 	createWindow,
@@ -104,6 +108,16 @@ export async function bootstrapApp({
 	logger.info({ msg: "IPC handlers registered successfully" });
 
 	createWindow();
+
+	// 应用自动更新（启动后 30s 首次检查，之后每 4 小时轮询）
+	try {
+		initUpdateService();
+	} catch (err) {
+		logger.error({
+			msg: "Failed to init update service (non-fatal)",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
 
 	// 桌面宠物窗口：初始化服务并根据持久化设置启动
 	if (petWindowConfig) {
@@ -189,6 +203,7 @@ export async function bootstrapApp({
 	})();
 
 	app.on("before-quit", () => {
+		stopUpdateService();
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();

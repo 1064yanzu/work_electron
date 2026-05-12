@@ -109,6 +109,9 @@ export default defineConfig({
 								"zlib-sync",
 								// Native addon
 								"node-pty",
+								// electron-updater 依赖 app-builder-lib（只在 electron-builder 安装链中存在），
+								// bundle 后 require 会失败，必须保留为外部依赖
+								"electron-updater",
 								// PDF 解析依赖 pdf.worker.mjs 通过 import.meta.url 定位同级 worker 文件
 								// 打平进 dist-electron 后路径失效，必须保留为外部 require
 								"pdf-parse",

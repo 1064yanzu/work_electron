@@ -44,7 +44,7 @@ export function ProviderList({
 	);
 
 	return (
-		<div className="flex w-60 flex-col border-r border-border/80 bg-warm-50/50">
+		<div className="flex h-full min-h-0 w-60 flex-col border-r border-border/80 bg-warm-50/50">
 			<div className="p-4">
 				<SettingsTextInput
 					value={searchQuery}
@@ -57,7 +57,7 @@ export function ProviderList({
 				/>
 			</div>
 
-			<div className="flex-1 space-y-1 overflow-y-auto px-3">
+			<div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
 				{filtered.length === 0 ? (
 					<p className="px-3 py-6 text-center text-[12px] text-text-light">
 						没有匹配的服务商

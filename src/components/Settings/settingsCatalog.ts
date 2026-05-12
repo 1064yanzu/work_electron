@@ -30,6 +30,7 @@ import {
 	Smartphone,
 	Sparkles,
 	SlidersHorizontal,
+	Terminal,
 	Volume2,
 	Wrench,
 } from "lucide-react";
@@ -62,6 +63,7 @@ export type SettingsTabId =
 	| "workshop.tts"
 	| "workshop.mascot"
 	| "workshop.layout"
+	| "workshop.terminal"
 	| "integrations.mcp"
 	| "integrations.remote"
 	| "data.stats"
@@ -262,6 +264,16 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/workshop/LayoutPanel"),
 			"LayoutPanel",
+		),
+	},
+	{
+		id: "workshop.terminal",
+		category: "workshop",
+		label: "终端",
+		icon: Terminal,
+		load: asDefault(
+			() => import("./panels/workshop/TerminalPanel"),
+			"TerminalPanel",
 		),
 	},
 

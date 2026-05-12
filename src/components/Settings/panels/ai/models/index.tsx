@@ -99,9 +99,12 @@ export function ModelSettings() {
 	}, [selected, providers, settingsStore]);
 
 	return (
-		<div className="flex h-full">
+		<div className="flex min-h-0 flex-1">
 			{/* 左侧：服务商列表 */}
-			<div {...settingsAnchorProps("ai.models.providerList")}>
+			<div
+				className="flex min-h-0 shrink-0"
+				{...settingsAnchorProps("ai.models.providerList")}
+			>
 				<ProviderList
 					providers={providers}
 					selectedId={selectedId}
@@ -113,7 +116,7 @@ export function ModelSettings() {
 			</div>
 
 			{/* 右侧：配置详情 */}
-			<div className="flex-1 overflow-y-auto bg-surface">
+			<div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface">
 				{selected ? (
 					<div className="max-w-2xl p-8">
 						<ProviderDetailHeader provider={selected} onToggle={handleToggle} />

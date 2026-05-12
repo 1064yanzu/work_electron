@@ -16,7 +16,11 @@ import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
-import { useTerminalStoreSelector } from "./lib/stores/terminalStore";
+import {
+	terminalStore,
+	useTerminalStoreSelector,
+} from "./lib/stores/terminalStore";
+import { getTerminalPrefs } from "./lib/config/terminal";
 import { themeManager } from "./lib/theme";
 import { getMotionPreference } from "./lib/config";
 import { preloadUiDebugSetting } from "./lib/debug/uiDebug";
@@ -140,6 +144,15 @@ export default function App() {
 		}
 	}, []);
 
+	// 终端：启动时自动打开（如果用户开启了 openOnLaunch）
+	useEffect(() => {
+		void getTerminalPrefs().then((prefs) => {
+			if (prefs.openOnLaunch) {
+				terminalStore.toggleVisible();
+			}
+		});
+	}, []);
+
 	const handleMascotOnboardingFinish = useCallback(() => {
 		setShowMascotOnboarding(false);
 		if (typeof window !== "undefined") {
@@ -182,7 +195,7 @@ export default function App() {
 		};
 	}, [motionPreference]);
 
-	// Cmd+L 快捷键切换右侧栏 / Cmd+K 打开命令面板
+	// Cmd+L 切换右侧栏 / Cmd+K 命令面板 / Ctrl+` 终端
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isMod = e.metaKey || e.ctrlKey;
@@ -194,6 +207,9 @@ export default function App() {
 			} else if (key === "k") {
 				e.preventDefault();
 				commandPaletteStore.toggle();
+			} else if (key === "`") {
+				e.preventDefault();
+				terminalStore.toggleVisible();
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);

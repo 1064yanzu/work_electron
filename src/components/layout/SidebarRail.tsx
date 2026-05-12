@@ -6,11 +6,16 @@ import {
 	SlidersHorizontal,
 	Blocks,
 	BookOpen,
+	Terminal,
 } from "lucide-react";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
+import {
+	terminalStore,
+	useTerminalStoreSelector,
+} from "../../lib/stores/terminalStore";
 
 interface SidebarRailProps {
 	onOpenSettings: () => void;
@@ -22,6 +27,7 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	);
 	const setLeftSidebarView =
 		workspaceStore.setLeftSidebarView.bind(workspaceStore);
+	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
 
 	const navItems = [
 		{ id: "files", label: "文件", icon: FolderOpen },
@@ -75,6 +81,24 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 			</div>
 
 			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-border w-full">
+				<button
+					onClick={() => terminalStore.toggleVisible()}
+					className={[
+						"flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-[background-color,color] duration-200",
+						terminalVisible
+							? "bg-warm-200 text-text-primary"
+							: "text-text-muted hover:text-text-primary hover:bg-warm-200/70",
+					].join(" ")}
+					title="终端 (Ctrl+`)"
+				>
+					<Terminal
+						className="w-[20px] h-[20px] mb-0.5"
+						strokeWidth={1.5}
+					/>
+					<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
+						终端
+					</span>
+				</button>
 				<button
 					onClick={onOpenSettings}
 					className="flex items-center justify-center w-12 h-12 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"

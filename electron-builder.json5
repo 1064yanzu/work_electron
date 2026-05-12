@@ -72,6 +72,12 @@
   "portable": {
     "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "1064yanzu",
+    "repo": "work_electron",
+    "releaseType": "release"
+  },
   "linux": {
     "target": [
       "AppImage",

@@ -21,6 +21,7 @@ import { FIELDS as generalFields } from "./panels/general/fields";
 import { FIELDS as aiDefaultsFields } from "./panels/ai/fields";
 import { PROMPTS_FIELDS as aiPromptsFields } from "./panels/ai/promptsFields";
 import { FIELDS as workshopLayoutFields } from "./panels/workshop/fields";
+import { FIELDS as workshopTerminalFields } from "./panels/workshop/terminalFields";
 
 // ---------- Phase 5 · data.* ----------
 import { FIELDS as dataStorageFields } from "./panels/data/storage/fields";
@@ -82,6 +83,7 @@ export const SETTINGS_FIELD_INDEX: readonly FieldDescriptor[] = [
 	...generalFields,
 	...aiDefaultsFields,
 	...workshopLayoutFields,
+	...workshopTerminalFields,
 	// Phase 5 · data.*
 	...dataStorageFields,
 	...dataBackupFields,

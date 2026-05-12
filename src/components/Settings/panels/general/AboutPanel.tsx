@@ -1,14 +1,20 @@
 /**
  * AboutPanel — 通用 · 关于与更新
  *
- * Phase 6 拆分自 `panels/GeneralSettings.tsx` 的「关于」区块。
- *   - 展示当前版本与检查更新按钮；
- *   - 用 `SettingsCardSection` 呈现；字段容器带 `id` + `data-settings-anchor`。
+ * 展示当前版本信息；集成 electron-updater 应用内更新（检测 → 下载 → 重启安装）。
+ * 主进程通过 `update-state-changed` 事件实时推送状态变化。
  */
-import { Info } from "lucide-react";
-import { useState } from "react";
-import { confirmDialog } from "../../../ui/ConfirmDialog";
-import { toast } from "../../../ui/Toast";
+import {
+	Download,
+	Info,
+	RefreshCw,
+	Rocket,
+	CheckCircle2,
+	AlertCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { invoke } from "../../../../lib/tauriCompat";
+import { listen } from "../../../../lib/tauriEventCompat";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
 import {
 	SettingsButton,
@@ -17,101 +23,231 @@ import {
 	SettingsRow,
 } from "../../ui/SettingsPrimitives";
 
-const CURRENT_VERSION = "0.1.0-alpha";
-const RELEASE_API =
-	"https://api.github.com/repos/1064yanzu/ipo-workbench/releases/latest";
-const RELEASE_PAGE = "https://github.com/1064yanzu/ipo-workbench/releases";
+interface UpdateProgress {
+	percent: number;
+	transferred: number;
+	total: number;
+	bytesPerSecond: number;
+}
 
-const ANCHOR = {
-	version: "general.about.version",
-} as const;
+interface UpdateState {
+	status: string;
+	version?: string;
+	releaseName?: string;
+	releaseNotes?: string;
+	progress?: UpdateProgress;
+	error?: string;
+}
 
-function compareVersion(latest: string, current: string): number {
-	const toTuple = (v: string) =>
-		v
-			.replace(/^v/, "")
-			.split(/[.\-]/)
-			.map((s) => (Number.isFinite(Number(s)) ? Number(s) : 0));
-	const a = toTuple(latest);
-	const b = toTuple(current);
-	const len = Math.max(a.length, b.length);
-	for (let i = 0; i < len; i += 1) {
-		const ai = a[i] ?? 0;
-		const bi = b[i] ?? 0;
-		if (ai !== bi) return ai - bi;
-	}
-	return 0;
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatSpeed(bps: number): string {
+	if (bps < 1024) return `${bps} B/s`;
+	if (bps < 1024 * 1024) return `${(bps / 1024).toFixed(0)} KB/s`;
+	return `${(bps / (1024 * 1024)).toFixed(1)} MB/s`;
 }
 
 export function AboutPanel() {
-	const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+	const [appVersion, setAppVersion] = useState("");
+	const [updateState, setUpdateState] = useState<UpdateState>({
+		status: "idle",
+	});
 
-	const handleCheckUpdate = async () => {
-		setIsCheckingUpdate(true);
+	// 获取当前版本
+	useEffect(() => {
+		invoke<{ appVersion: string }>("app_get_version").then((res) => {
+			setAppVersion(res.appVersion);
+		});
+	}, []);
+
+	// 监听更新状态变化事件
+	useEffect(() => {
+		let unlisten: (() => void) | undefined;
+		listen<UpdateState>("update-state-changed", (event) => {
+			setUpdateState(event.payload);
+		}).then((fn) => {
+			unlisten = fn;
+		});
+		return () => {
+			unlisten?.();
+		};
+	}, []);
+
+	// 获取初始状态
+	useEffect(() => {
+		invoke<UpdateState>("update_get_state").then((state) => {
+			setUpdateState(state);
+		});
+	}, []);
+
+	const handleCheckUpdate = useCallback(async () => {
 		try {
-			const response = await fetch(RELEASE_API, {
-				headers: { Accept: "application/vnd.github.v3+json" },
-			});
-
-			if (response.ok) {
-				const data = (await response.json()) as {
-					tag_name?: string;
-					html_url?: string;
-				};
-				const latestVersion = (data.tag_name ?? "0.0.0").replace(/^v/, "");
-				if (compareVersion(latestVersion, CURRENT_VERSION) > 0) {
-					const shouldUpdate = await confirmDialog.warning(
-						`🎉 发现新版本 v${latestVersion}！\n\n当前版本: v${CURRENT_VERSION}\n\n是否前往下载页面？`,
-						"发现新版本",
-					);
-					if (shouldUpdate) {
-						window.open(data.html_url ?? RELEASE_PAGE, "_blank");
-					}
-				} else {
-					toast.success("当前已是最新版本");
-				}
-			} else if (response.status === 404) {
-				toast.info("当前已是最新版本（暂无发布版本）");
-			} else {
-				throw new Error(`HTTP ${response.status}`);
-			}
-		} catch (error) {
-			console.error("[AboutPanel] 检查更新失败:", error);
-			toast.info("当前已是最新版本（无法连接更新服务器）");
-		} finally {
-			setIsCheckingUpdate(false);
+			const state = await invoke<UpdateState>("update_check");
+			setUpdateState(state);
+		} catch (err) {
+			console.error("[AboutPanel] 检查更新失败:", err);
 		}
-	};
+	}, []);
+
+	const handleDownload = useCallback(async () => {
+		try {
+			const state = await invoke<UpdateState>("update_download");
+			setUpdateState(state);
+		} catch (err) {
+			console.error("[AboutPanel] 下载更新失败:", err);
+		}
+	}, []);
+
+	const handleInstall = useCallback(() => {
+		invoke("update_install");
+	}, []);
+
+	const isChecking = updateState.status === "checking";
+	const isDownloading = updateState.status === "downloading";
+	const isDownloaded = updateState.status === "downloaded";
+	const isAvailable = updateState.status === "available";
+	const isError = updateState.status === "error";
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
 			<SettingsPanelHeader
 				icon={Info}
 				title="关于与更新"
-				description="查看当前版本信息并检查是否有新版本。"
+				description="查看当前版本信息，检查并安装应用更新。"
 			/>
 
 			<SettingsCardSection
 				title="应用信息"
-				description="版本号与更新渠道。"
+				description="当前版本与运行环境。"
 				bodyClassName="pt-1"
 			>
-				<div id={ANCHOR.version} data-settings-anchor={ANCHOR.version}>
-					<SettingsRow
-						label="当前版本"
-						value={`v${CURRENT_VERSION}`}
-						action={
-							<SettingsButton
-								variant="secondary"
-								size="md"
-								loading={isCheckingUpdate}
-								onClick={handleCheckUpdate}
-							>
-								{isCheckingUpdate ? "检查中" : "检查更新"}
-							</SettingsButton>
-						}
-					/>
-				</div>
+				<SettingsRow label="当前版本" value={`v${appVersion}`} />
+			</SettingsCardSection>
+
+			<SettingsCardSection
+				title="应用更新"
+				description="检查 GitHub Releases 获取最新版本，支持应用内直接下载安装。"
+				headerAction={
+					<SettingsButton
+						variant="secondary"
+						size="sm"
+						icon={RefreshCw}
+						loading={isChecking}
+						onClick={handleCheckUpdate}
+					>
+						{isChecking ? "检查中..." : "检查更新"}
+					</SettingsButton>
+				}
+				bodyClassName="pt-1"
+			>
+				{/* 有新版本可用 */}
+				{isAvailable && updateState.version && (
+					<div className="space-y-3 py-3">
+						<div className="flex items-center gap-2">
+							<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[12px] font-semibold text-primary">
+								v{updateState.version}
+							</span>
+							<span className="text-[13px] text-text-secondary">
+								{updateState.releaseName ?? "新版本可用"}
+							</span>
+						</div>
+						<SettingsButton
+							variant="primary"
+							size="md"
+							icon={Download}
+							onClick={handleDownload}
+						>
+							下载更新
+						</SettingsButton>
+					</div>
+				)}
+
+				{/* 下载中 — 进度条 */}
+				{isDownloading && updateState.progress && (
+					<div className="space-y-2 py-3">
+						<div className="flex items-center justify-between text-[12px] text-text-secondary">
+							<span>
+								正在下载 v{updateState.version ?? "..."}
+							</span>
+							<span className="tabular-nums">
+								{formatSpeed(updateState.progress.bytesPerSecond)}
+							</span>
+						</div>
+						<div className="h-2 w-full overflow-hidden rounded-full bg-warm-200">
+							<div
+								className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+								style={{ width: `${updateState.progress.percent}%` }}
+							/>
+						</div>
+						<div className="flex items-center justify-between text-[11px] text-text-muted">
+							<span className="tabular-nums">
+								{updateState.progress.percent.toFixed(1)}%
+							</span>
+							<span className="tabular-nums">
+								{formatBytes(updateState.progress.transferred)} /{" "}
+								{formatBytes(updateState.progress.total)}
+							</span>
+						</div>
+					</div>
+				)}
+
+				{/* 下载完成 — 可重启安装 */}
+				{isDownloaded && (
+					<div className="space-y-3 py-3">
+						<div className="flex items-center gap-2 text-[13px] text-text-primary">
+							<CheckCircle2
+								className="h-4 w-4 text-green-600"
+								strokeWidth={1.8}
+							/>
+							<span>
+								v{updateState.version ?? "..."} 已下载完成
+							</span>
+						</div>
+						<SettingsButton
+							variant="primary"
+							size="md"
+							icon={Rocket}
+							onClick={handleInstall}
+						>
+							立即重启安装
+						</SettingsButton>
+						<p className="text-[11.5px] leading-relaxed text-text-muted">
+							应用将立即退出并安装新版本，未保存的工作可能会丢失。
+						</p>
+					</div>
+				)}
+
+				{/* 错误状态 */}
+				{isError && (
+					<div className="flex items-start gap-2 py-3">
+						<AlertCircle
+							className="mt-0.5 h-4 w-4 shrink-0 text-error"
+							strokeWidth={1.8}
+						/>
+						<div className="space-y-1">
+							<p className="text-[13px] text-text-primary">
+								更新检查失败
+							</p>
+							<p className="text-[12px] text-text-muted">
+								{updateState.error ?? "无法连接更新服务器，请稍后重试。"}
+							</p>
+						</div>
+					</div>
+				)}
+
+				{/* idle / not-available 状态 */}
+				{(updateState.status === "idle" ||
+					updateState.status === "not-available") && (
+					<p className="py-3 text-[13px] text-text-muted">
+						{updateState.status === "not-available"
+							? "当前已是最新版本。"
+							: "点击右上角按钮检查是否有新版本。"}
+					</p>
+				)}
 			</SettingsCardSection>
 		</SettingsPageContainer>
 	);

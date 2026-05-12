@@ -1,6 +1,6 @@
 /**
  * 终端实例组件
- * 使用 xterm.js 渲染单个终端
+ * 使用 xterm.js 渲染单个终端，主题跟随系统亮暗模式
  */
 
 import { useEffect, useRef } from "react";
@@ -8,6 +8,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "../../lib/tauriCompat";
+import { themeManager } from "../../lib/theme";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
@@ -16,31 +17,59 @@ interface TerminalInstanceProps {
 	onExit?: () => void;
 }
 
-// Tokyo Night 深色终端主题
 const darkTheme = {
-	background: "#1a1b26",
-	foreground: "#a9b1d6",
-	cursor: "#c0caf5",
-	cursorAccent: "#1a1b26",
-	selectionBackground: "#33467c",
-	selectionForeground: "#c0caf5",
-	black: "#32344a",
-	red: "#f7768e",
-	green: "#9ece6a",
-	yellow: "#e0af68",
-	blue: "#7aa2f7",
-	magenta: "#ad8ee6",
-	cyan: "#449dab",
-	white: "#787c99",
-	brightBlack: "#444b6a",
-	brightRed: "#ff7a93",
-	brightGreen: "#b9f27c",
-	brightYellow: "#ff9e64",
-	brightBlue: "#7da6ff",
-	brightMagenta: "#bb9af7",
-	brightCyan: "#0db9d7",
-	brightWhite: "#acb0d0",
+	background: "#1e1e1e",
+	foreground: "#d4d4d4",
+	cursor: "#aeafad",
+	cursorAccent: "#1e1e1e",
+	selectionBackground: "#264f78",
+	selectionForeground: "#d4d4d4",
+	black: "#1e1e1e",
+	red: "#f44747",
+	green: "#6a9955",
+	yellow: "#d7ba7d",
+	blue: "#569cd6",
+	magenta: "#c586c0",
+	cyan: "#4ec9b0",
+	white: "#d4d4d4",
+	brightBlack: "#808080",
+	brightRed: "#f44747",
+	brightGreen: "#6a9955",
+	brightYellow: "#d7ba7d",
+	brightBlue: "#569cd6",
+	brightMagenta: "#c586c0",
+	brightCyan: "#4ec9b0",
+	brightWhite: "#d4d4d4",
 };
+
+const lightTheme = {
+	background: "#faf9f5",
+	foreground: "#383a42",
+	cursor: "#526fff",
+	cursorAccent: "#faf9f5",
+	selectionBackground: "#bfcef3",
+	selectionForeground: "#383a42",
+	black: "#383a42",
+	red: "#e45649",
+	green: "#50a14f",
+	yellow: "#c18401",
+	blue: "#4078f2",
+	magenta: "#a626a4",
+	cyan: "#0184bc",
+	white: "#a0a1a7",
+	brightBlack: "#696c77",
+	brightRed: "#e45649",
+	brightGreen: "#50a14f",
+	brightYellow: "#c18401",
+	brightBlue: "#4078f2",
+	brightMagenta: "#a626a4",
+	brightCyan: "#0184bc",
+	brightWhite: "#ffffff",
+};
+
+function getTerminalTheme() {
+	return themeManager.isDark() ? darkTheme : lightTheme;
+}
 
 export function TerminalInstance({
 	terminalId,
@@ -69,11 +98,16 @@ export function TerminalInstance({
 			fontFamily:
 				'"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
 			lineHeight: 1.4,
-			theme: darkTheme,
+			theme: getTerminalTheme(),
 			scrollback: 10000,
 			allowTransparency: true,
 			macOptionIsMeta: true,
 			convertEol: true,
+		});
+
+		// 订阅主题变化，动态更新 xterm 配色
+		const unsubTheme = themeManager.subscribe(() => {
+			term.options.theme = getTerminalTheme();
 		});
 
 		const fitAddon = new FitAddon();
@@ -129,6 +163,7 @@ export function TerminalInstance({
 			disposable.dispose();
 			unsubData?.();
 			unsubExit?.();
+			unsubTheme();
 			term.dispose();
 			termRef.current = null;
 			fitAddonRef.current = null;

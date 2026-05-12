@@ -299,6 +299,60 @@ export type IPCSchema = {
 			platform: NodeJS.Platform;
 		};
 	};
+	// ==================
+	// 应用更新
+	// ==================
+	update_check: {
+		input: Record<string, never>;
+		output: {
+			status: string;
+			version?: string;
+			releaseName?: string;
+			releaseNotes?: string;
+			progress?: {
+				percent: number;
+				transferred: number;
+				total: number;
+				bytesPerSecond: number;
+			};
+			error?: string;
+		};
+	};
+	update_download: {
+		input: Record<string, never>;
+		output: {
+			status: string;
+			version?: string;
+			releaseName?: string;
+			progress?: {
+				percent: number;
+				transferred: number;
+				total: number;
+				bytesPerSecond: number;
+			};
+			error?: string;
+		};
+	};
+	update_install: {
+		input: Record<string, never>;
+		output: { success: boolean };
+	};
+	update_get_state: {
+		input: Record<string, never>;
+		output: {
+			status: string;
+			version?: string;
+			releaseName?: string;
+			releaseNotes?: string;
+			progress?: {
+				percent: number;
+				transferred: number;
+				total: number;
+				bytesPerSecond: number;
+			};
+			error?: string;
+		};
+	};
 	http_get_status: {
 		input: Record<string, never>;
 		output: {

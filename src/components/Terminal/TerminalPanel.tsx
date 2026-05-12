@@ -30,29 +30,20 @@ export function TerminalPanel() {
 		};
 	}, []);
 
-	// 快捷键: Ctrl+` 切换终端面板
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === "`") {
-				e.preventDefault();
-				terminalStore.toggleVisible();
-			}
-		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
-
 	const handleTerminalExit = useCallback((id: string) => {
 		terminalStore.handleTerminalExit(id);
 	}, []);
 
 	if (terminals.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full bg-[#1a1b26] text-text-muted">
+			<div
+				className="flex flex-col items-center justify-center h-full text-text-muted"
+				style={{ backgroundColor: "var(--t-bg)" }}
+			>
 				<button
 					type="button"
 					onClick={() => terminalStore.createTerminal()}
-					className="flex items-center gap-2 px-4 py-2.5 text-text-light hover:text-zinc-200 hover:bg-surface/5 rounded-lg transition-colors cursor-pointer"
+					className="flex items-center gap-2 px-4 py-2.5 text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors cursor-pointer"
 				>
 					<Terminal className="w-4 h-4" />
 					<span className="text-sm">新建终端</span>
@@ -64,7 +55,7 @@ export function TerminalPanel() {
 	return (
 		<div className="flex flex-col h-full">
 			<TerminalTabBar />
-			<div className="flex-1 min-h-0 bg-[#1a1b26]">
+			<div className="flex-1 min-h-0">
 				{terminals.map((t) => (
 					<TerminalInstance
 						key={t.id}

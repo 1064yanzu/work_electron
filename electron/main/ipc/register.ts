@@ -80,6 +80,7 @@ import { createPreviewServerHandlers } from "./handlers/previewServer";
 import { createReaderHandlers } from "./handlers/reader";
 import { createTtsHandlers } from "./handlers/tts";
 import { createSlashCommandsHandlers } from "./handlers/slashCommands";
+import { createUpdateHandlers } from "./handlers/update";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 
 type IpcHandler<K extends keyof IPCSchema> = (
@@ -225,6 +226,9 @@ export function registerIpcHandlers({
 	// Claude Code 斜杠命令（扫描 / git diff / 写 CLAUDE.md）
 	const slashCommandsHandlers = createSlashCommandsHandlers();
 
+	// 应用更新 handlers
+	const updateHandlers = createUpdateHandlers();
+
 	// ==================
 	// 系统命令
 	// ==================
@@ -244,6 +248,24 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"system_get_user_info",
 		systemHandlers.get_user_info satisfies IpcHandler<"system_get_user_info">,
+	);
+
+	// 应用更新
+	ipcMain.handle(
+		"update_check",
+		updateHandlers.update_check satisfies IpcHandler<"update_check">,
+	);
+	ipcMain.handle(
+		"update_download",
+		updateHandlers.update_download satisfies IpcHandler<"update_download">,
+	);
+	ipcMain.handle(
+		"update_install",
+		updateHandlers.update_install satisfies IpcHandler<"update_install">,
+	);
+	ipcMain.handle(
+		"update_get_state",
+		updateHandlers.update_get_state satisfies IpcHandler<"update_get_state">,
 	);
 
 	ipcMain.handle("open_external_url", (async (_event, input) => {
