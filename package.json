@@ -1,7 +1,7 @@
 {
 	"name": "ipo-workbench",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"scripts": {
 		"predev": "node scripts/copy-pdfjs-assets.mjs",
@@ -67,11 +67,14 @@
 		"react-pdf": "^10.2.0",
 		"react-resizable-panels": "^3.0.6",
 		"remark-gfm": "^4.0.1",
+		"sharp": "^0.34.5",
 		"shiki": "^4.0.2",
 		"tailwind-merge": "^2.2.2",
 		"utf-8-validate": "^6.0.6",
 		"webdav": "^5.8.0",
 		"winston": "^3.19.0",
+		"winston-daily-rotate-file": "^5.0.0",
+		"ws": "^8.19.0",
 		"zod": "^4.3.5"
 	},
 	"devDependencies": {
@@ -98,14 +101,12 @@
 		"electron": "^40.0.0",
 		"electron-builder": "^26.4.0",
 		"postcss": "^8.4.38",
-		"sharp": "^0.34.5",
 		"tailwindcss": "^3.4.1",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.1",
 		"vite-plugin-electron": "^0.29.0",
-		"vite-plugin-electron-renderer": "^0.14.6",
-		"winston-daily-rotate-file": "^5.0.0"
+		"vite-plugin-electron-renderer": "^0.14.6"
 	},
 	"main": "dist-electron/index.js"
 }
