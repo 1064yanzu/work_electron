@@ -1690,12 +1690,15 @@ export type IPCSchema = {
 				| "mcp_status"
 				| "mcp_reconnect"
 				| "mcp_toggle"
-				| "mcp_set_servers";
+				| "mcp_set_servers"
+				| "stop_task";
 			mode?: string;
 			model?: string;
 			serverName?: string;
 			enabled?: boolean;
 			servers?: Record<string, unknown>;
+			/** SDK 侧 task_id（来自 task_started/task_progress 事件），用于 stop_task。 */
+			taskId?: string;
 		};
 		output: { success: boolean; data?: unknown; error?: string };
 	};

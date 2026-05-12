@@ -81,6 +81,13 @@ export const SLASH_MESSAGES = {
 		outputStyle: {
 			switched: (label: string): string => `已切换输出风格：${label}`,
 		},
+		goal: {
+			running: "目标推进中…",
+			completed: (summary: string): string =>
+				summary ? `目标完成：${summary}` : "目标完成。",
+			failed: (reason: string): string => `目标推进失败：${reason}`,
+			stopped: "目标已停止。",
+		},
 		agents: {
 			loading: "正在让 Claude Code 列出子代理…",
 		},
@@ -247,6 +254,12 @@ export const SLASH_MESSAGES = {
 				explanatory: "讲解型",
 				learning: "学习型",
 			},
+		},
+		goal: {
+			name: "设定完成目标",
+			description:
+				"设定完成条件,Claude 会跨多轮持续推进直到达成(支持随时中断)。",
+			placeholder: "/goal ",
 		},
 		agents: {
 			name: "查看子代理",

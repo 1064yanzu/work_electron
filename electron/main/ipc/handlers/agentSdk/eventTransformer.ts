@@ -89,6 +89,9 @@ const FLUSH_IMMEDIATELY_TYPES = new Set([
 	"error",
 	"session_init",
 	"task_notification",
+	"task_started",
+	"task_progress",
+	"task_updated",
 	"files_persisted",
 	"system_notice",
 	"auth_status",
@@ -388,6 +391,113 @@ export function toUIEvents(
 						: undefined,
 				summary:
 					typeof message.summary === "string" ? message.summary : undefined,
+				usage:
+					message.usage && typeof message.usage === "object"
+						? {
+								totalTokens:
+									typeof message.usage.total_tokens === "number"
+										? message.usage.total_tokens
+										: undefined,
+								toolUses:
+									typeof message.usage.tool_uses === "number"
+										? message.usage.tool_uses
+										: undefined,
+								durationMs:
+									typeof message.usage.duration_ms === "number"
+										? message.usage.duration_ms
+										: undefined,
+							}
+						: undefined,
+			});
+		}
+
+		// Claude Code 2.1.139+ `/goal` 和 Task 工作流的实时进度事件。
+		// 这些事件让前端可渲染 elapsed/turns/tokens 浮层并能调用 stop_task 中断。
+		if (message.subtype === "task_started") {
+			events.push({
+				type: "task_started",
+				taskId:
+					typeof message.task_id === "string" ? message.task_id : undefined,
+				toolUseId:
+					typeof message.tool_use_id === "string"
+						? message.tool_use_id
+						: undefined,
+				description:
+					typeof message.description === "string"
+						? message.description
+						: undefined,
+				taskType:
+					typeof message.task_type === "string" ? message.task_type : undefined,
+				workflowName:
+					typeof message.workflow_name === "string"
+						? message.workflow_name
+						: undefined,
+				prompt: typeof message.prompt === "string" ? message.prompt : undefined,
+				skipTranscript: message.skip_transcript === true,
+			});
+		}
+
+		if (message.subtype === "task_progress") {
+			events.push({
+				type: "task_progress",
+				taskId:
+					typeof message.task_id === "string" ? message.task_id : undefined,
+				toolUseId:
+					typeof message.tool_use_id === "string"
+						? message.tool_use_id
+						: undefined,
+				description:
+					typeof message.description === "string"
+						? message.description
+						: undefined,
+				lastToolName:
+					typeof message.last_tool_name === "string"
+						? message.last_tool_name
+						: undefined,
+				summary:
+					typeof message.summary === "string" ? message.summary : undefined,
+				usage:
+					message.usage && typeof message.usage === "object"
+						? {
+								totalTokens:
+									typeof message.usage.total_tokens === "number"
+										? message.usage.total_tokens
+										: undefined,
+								toolUses:
+									typeof message.usage.tool_uses === "number"
+										? message.usage.tool_uses
+										: undefined,
+								durationMs:
+									typeof message.usage.duration_ms === "number"
+										? message.usage.duration_ms
+										: undefined,
+							}
+						: undefined,
+			});
+		}
+
+		if (message.subtype === "task_updated") {
+			const patch =
+				message.patch && typeof message.patch === "object" ? message.patch : {};
+			events.push({
+				type: "task_updated",
+				taskId:
+					typeof message.task_id === "string" ? message.task_id : undefined,
+				patch: {
+					status: typeof patch.status === "string" ? patch.status : undefined,
+					description:
+						typeof patch.description === "string"
+							? patch.description
+							: undefined,
+					endTime:
+						typeof patch.end_time === "number" ? patch.end_time : undefined,
+					totalPausedMs:
+						typeof patch.total_paused_ms === "number"
+							? patch.total_paused_ms
+							: undefined,
+					error: typeof patch.error === "string" ? patch.error : undefined,
+					isBackgrounded: patch.is_backgrounded === true,
+				},
 			});
 		}
 

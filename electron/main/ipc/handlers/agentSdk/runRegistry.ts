@@ -6,6 +6,8 @@ type QueryControl = {
 	reconnectMcpServer?: (serverName: string) => Promise<void>;
 	toggleMcpServer?: (serverName: string, enabled: boolean) => Promise<void>;
 	setMcpServers?: (servers: Record<string, unknown>) => Promise<unknown>;
+	/** SDK 0.2.139+：停止 `/goal` 或 Task 工作流。 */
+	stopTask?: (taskId: string) => Promise<void>;
 };
 
 export interface PushController {

@@ -91,10 +91,7 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 					].join(" ")}
 					title="终端 (Ctrl+`)"
 				>
-					<Terminal
-						className="w-[20px] h-[20px] mb-0.5"
-						strokeWidth={1.5}
-					/>
+					<Terminal className="w-[20px] h-[20px] mb-0.5" strokeWidth={1.5} />
 					<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
 						终端
 					</span>

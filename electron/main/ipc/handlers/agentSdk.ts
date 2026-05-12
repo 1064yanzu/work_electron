@@ -1785,6 +1785,17 @@ export function createAgentSdkHandlers(options: {
 							input.servers as Record<string, unknown>,
 						),
 					};
+				case "stop_task":
+					// Claude Code 2.1.139+：`/goal` 和子任务的中断入口。
+					// task_id 来自前端透传的 task_started/task_progress 事件。
+					if (typeof run.query.stopTask !== "function") {
+						return { success: false, error: "stopTask not supported" };
+					}
+					if (typeof input.taskId !== "string" || !input.taskId.trim()) {
+						return { success: false, error: "Invalid taskId" };
+					}
+					await run.query.stopTask(input.taskId.trim());
+					return { success: true };
 				default:
 					return {
 						success: false,

@@ -152,10 +152,7 @@ export function ThinkingLevelPill() {
 					}
 				`}
 			>
-				<ThinkingBars
-					level={currentLevel}
-					tone={isOpen ? "active" : "muted"}
-				/>
+				<ThinkingBars level={currentLevel} tone={isOpen ? "active" : "muted"} />
 				<span className="font-medium leading-none">
 					{THINKING_LEVEL_LABELS[currentLevel]}
 				</span>

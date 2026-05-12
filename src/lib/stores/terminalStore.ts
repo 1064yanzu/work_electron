@@ -53,8 +53,7 @@ class TerminalStore {
 		try {
 			const prefs = await getTerminalPrefs();
 			if (prefs.defaultCwdMode === "thread") {
-				const threadPath =
-					workspaceStore.getCoreState().currentThreadPath;
+				const threadPath = workspaceStore.getCoreState().currentThreadPath;
 				if (threadPath) return threadPath;
 			}
 		} catch {

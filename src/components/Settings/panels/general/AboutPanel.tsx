@@ -170,9 +170,7 @@ export function AboutPanel() {
 				{isDownloading && updateState.progress && (
 					<div className="space-y-2 py-3">
 						<div className="flex items-center justify-between text-[12px] text-text-secondary">
-							<span>
-								正在下载 v{updateState.version ?? "..."}
-							</span>
+							<span>正在下载 v{updateState.version ?? "..."}</span>
 							<span className="tabular-nums">
 								{formatSpeed(updateState.progress.bytesPerSecond)}
 							</span>
@@ -203,9 +201,7 @@ export function AboutPanel() {
 								className="h-4 w-4 text-green-600"
 								strokeWidth={1.8}
 							/>
-							<span>
-								v{updateState.version ?? "..."} 已下载完成
-							</span>
+							<span>v{updateState.version ?? "..."} 已下载完成</span>
 						</div>
 						<SettingsButton
 							variant="primary"
@@ -229,9 +225,7 @@ export function AboutPanel() {
 							strokeWidth={1.8}
 						/>
 						<div className="space-y-1">
-							<p className="text-[13px] text-text-primary">
-								更新检查失败
-							</p>
+							<p className="text-[13px] text-text-primary">更新检查失败</p>
 							<p className="text-[12px] text-text-muted">
 								{updateState.error ?? "无法连接更新服务器，请稍后重试。"}
 							</p>

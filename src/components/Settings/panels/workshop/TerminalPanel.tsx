@@ -30,7 +30,9 @@ const CWD_MODE_OPTIONS: SettingsChipOption<"thread" | "home">[] = [
 ];
 
 export function TerminalPanel() {
-	const [prefs, setPrefsState] = useState<TerminalPrefs>(DEFAULT_TERMINAL_PREFS);
+	const [prefs, setPrefsState] = useState<TerminalPrefs>(
+		DEFAULT_TERMINAL_PREFS,
+	);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -75,7 +77,10 @@ export function TerminalPanel() {
 				title="默认行为"
 				description="新终端实例的默认配置。"
 			>
-				<div className="space-y-0" {...settingsAnchorProps("workshop.terminal.defaultCwd")}>
+				<div
+					className="space-y-0"
+					{...settingsAnchorProps("workshop.terminal.defaultCwd")}
+				>
 					<SettingsRow
 						label="默认工作目录"
 						description="新建终端时的起始目录。线程目录会自动跟随当前对话的工作路径。"

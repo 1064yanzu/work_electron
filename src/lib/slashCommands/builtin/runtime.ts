@@ -15,6 +15,7 @@ import { agentExecutor } from "../../agent/executor";
 import { permissionStore } from "../../agent/permissionStore";
 import type { PermissionMode, ToolPermissionPolicy } from "../../agent/types";
 import { dispatchToSdk } from "../dispatchToSdk";
+import { EVENTS, events } from "../../events";
 import { settingsStore } from "../../settingsStore";
 import { SLASH_COMMAND_PREF_KEYS } from "../settingsSnapshot";
 import { themeManager } from "../../theme";
@@ -343,6 +344,43 @@ export const outputStyleCommand: SlashCommandDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// /goal —— 设定完成目标，让 Claude 跨多轮持续推进直到达成
+// ---------------------------------------------------------------------------
+
+/**
+ * `/goal <condition>` 是 Claude Code 2.1.139 新增的内置命令：把"完成条件"作为
+ * 软性 sticky 指令注入 SDK，agent 会在每轮自检是否已达成，未达成则继续推进；
+ * 期间通过 task_started / task_progress / task_notification 事件实时回流
+ * elapsed/turns/tokens 浮层数据。
+ *
+ * 命令需要一个文本参数（目标条件），所以走 prompt 形态：选中后把 `/goal `
+ * 回填到输入框，让用户接着输入条件并回车 —— 整行作为 prompt 发给 SDK，
+ * CLI 内部识别并触发 goal 工作流。
+ */
+export const goalCommand: SlashCommandDefinition = {
+	id: "goal",
+	name: SLASH_MESSAGES.commands.goal.name,
+	description: SLASH_MESSAGES.commands.goal.description,
+	group: "runtime",
+	kind: "prompt",
+	availability(ctx: CommandContext) {
+		if (!ctx.activeSession) {
+			return {
+				state: "disabled",
+				reason: SLASH_MESSAGES.disabled.reason.noActiveSession,
+			};
+		}
+		return { state: "available" };
+	},
+	async execute() {
+		events.emit(EVENTS.SLASH_FILL_INPUT, {
+			text: SLASH_MESSAGES.commands.goal.placeholder,
+		});
+		return { kind: "ok" as const };
+	},
+};
+
+// ---------------------------------------------------------------------------
 // 导出
 // ---------------------------------------------------------------------------
 
@@ -353,4 +391,5 @@ export const RUNTIME_COMMANDS: readonly SlashCommandDefinition[] = [
 	approvalsCommand,
 	themeCommand,
 	outputStyleCommand,
+	goalCommand,
 ];

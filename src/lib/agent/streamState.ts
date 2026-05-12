@@ -112,6 +112,57 @@ export interface TaskNotificationEvent {
 	notificationType?: string | null;
 	title?: string | null;
 	message?: string | null;
+	usage?: {
+		totalTokens?: number;
+		toolUses?: number;
+		durationMs?: number;
+	};
+}
+
+/**
+ * SDK 端 task_started 事件（Claude Code 2.1.139+ `/goal` 与 Task 工作流）。
+ *
+ * 与项目自定义的 AgentEvent.task_started **不同**：本类型对应 SDK 系统消息
+ * subtype="task_started"，taskId 由 CLI 分配，是用于浮层进度卡片的事实源。
+ */
+export interface SdkTaskStartedEvent {
+	type: "task_started";
+	taskId?: string;
+	toolUseId?: string;
+	description?: string;
+	taskType?: string;
+	workflowName?: string;
+	prompt?: string;
+	skipTranscript?: boolean;
+}
+
+/** SDK 端 task_progress 事件：每轮回流的 tokens / tool_uses / duration_ms。 */
+export interface SdkTaskProgressEvent {
+	type: "task_progress";
+	taskId?: string;
+	toolUseId?: string;
+	description?: string;
+	lastToolName?: string;
+	summary?: string;
+	usage?: {
+		totalTokens?: number;
+		toolUses?: number;
+		durationMs?: number;
+	};
+}
+
+/** SDK 端 task_updated 事件：状态机变更（pending/running/completed/failed/killed）。 */
+export interface SdkTaskUpdatedEvent {
+	type: "task_updated";
+	taskId?: string;
+	patch: {
+		status?: "pending" | "running" | "completed" | "failed" | "killed" | string;
+		description?: string;
+		endTime?: number;
+		totalPausedMs?: number;
+		error?: string;
+		isBackgrounded?: boolean;
+	};
 }
 
 export interface LeaderStartEvent {
@@ -210,6 +261,9 @@ export type UIEvent =
 	| SubagentStartEvent
 	| SubagentStopEvent
 	| TaskNotificationEvent
+	| SdkTaskStartedEvent
+	| SdkTaskProgressEvent
+	| SdkTaskUpdatedEvent
 	| LeaderStartEvent
 	| TeammateIdleEvent
 	| TeammateCompleteEvent
@@ -278,6 +332,9 @@ export class AgentStreamState {
 				case "subagent_start":
 				case "subagent_stop":
 				case "task_notification":
+				case "task_started":
+				case "task_progress":
+				case "task_updated":
 				case "leader_start":
 				case "teammate_idle":
 				case "teammate_complete":

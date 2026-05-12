@@ -63,7 +63,8 @@ export function initUpdateService() {
 		info: (msg: string) => logger.info({ msg, scope: "updater" }),
 		warn: (msg: string) => logger.warn({ msg, scope: "updater" }),
 		error: (msg: string) => logger.error({ msg, scope: "updater" }),
-		debug: (msg: string) => logger.info({ msg, scope: "updater", level: "debug" }),
+		debug: (msg: string) =>
+			logger.info({ msg, scope: "updater", level: "debug" }),
 	} as any;
 
 	autoUpdater.on("checking-for-update", () => {
@@ -76,9 +77,7 @@ export function initUpdateService() {
 			version: info.version,
 			releaseName: info.releaseName ?? undefined,
 			releaseNotes:
-				typeof info.releaseNotes === "string"
-					? info.releaseNotes
-					: undefined,
+				typeof info.releaseNotes === "string" ? info.releaseNotes : undefined,
 		});
 	});
 

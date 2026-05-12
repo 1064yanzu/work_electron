@@ -25,10 +25,7 @@ import {
 	registerMascotProtocolHandler,
 } from "./services/customMascotProtocol";
 import { reconcileCustomMascotIndex } from "./services/customMascotService";
-import {
-	initUpdateService,
-	stopUpdateService,
-} from "./services/updateService";
+import { initUpdateService, stopUpdateService } from "./services/updateService";
 
 export async function bootstrapApp({
 	createWindow,

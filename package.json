@@ -19,7 +19,7 @@
 		"postinstall": "npx @electron/rebuild -m . -w node-pty && node scripts/copy-pdfjs-assets.mjs"
 	},
 	"dependencies": {
-		"@anthropic-ai/claude-agent-sdk": "^0.2.132",
+		"@anthropic-ai/claude-agent-sdk": "^0.2.139",
 		"@larksuiteoapi/node-sdk": "^1.58.0",
 		"@libsql/client": "^0.17.0",
 		"@monaco-editor/react": "^4.7.0",
