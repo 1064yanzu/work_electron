@@ -167,7 +167,10 @@ export function createLogger(): Logger {
 	} catch {}
 
 	const hourlyDirPattern = path.join(logDir, "%DATE%");
-	const hourlyDatePattern = "YYYY-MM-DD/HH";
+	// 使用单级目录命名 `YYYY-MM-DD-HH`，避免 datePattern 里出现 `/`。
+	// 原因：file-stream-rotator@0.6.1 的 mkDirForFile 不递归 mkdir，且在 Windows
+	// 上按 path.sep(`\`) 拆路径，无法处理含 `/` 的 %DATE%，会触发 ENOENT。
+	const hourlyDatePattern = "YYYY-MM-DD-HH";
 
 	const consoleLevel = normalizeLogLevel(
 		process.env.LOG_CONSOLE_LEVEL,
