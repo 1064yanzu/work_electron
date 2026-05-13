@@ -52,6 +52,7 @@ export type {
 	ChannelStreamingSession,
 	ChannelStreamingFactory,
 	ChannelStreamingStartOptions,
+	TerminalShortcutAction,
 } from "./channel-streaming";
 export { mergeStreamingText } from "./streaming-merge";
 export { truncateSummary } from "./streaming-merge";

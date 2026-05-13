@@ -3,12 +3,22 @@
  * 管理多个终端标签的切换、创建和关闭
  */
 
-import { Plus, X, Terminal as TerminalIcon } from "lucide-react";
+import { Plus, Radio, Terminal as TerminalIcon, X } from "lucide-react";
 import { useCallback } from "react";
 import {
 	terminalStore,
 	useTerminalStoreSelector,
 } from "../../lib/stores/terminalStore";
+
+const CHANNEL_LABELS: Record<string, string> = {
+	feishu: "飞书",
+	telegram: "Telegram",
+	slack: "Slack",
+	discord: "Discord",
+	qqbot: "QQ",
+	wechat: "微信",
+	generic_webhook: "Webhook",
+};
 
 export function TerminalTabBar() {
 	const terminals = useTerminalStoreSelector((s) => s.terminals);
@@ -31,23 +41,43 @@ export function TerminalTabBar() {
 		<div className="flex items-center h-9 bg-warm-50/80 border-b border-border px-1 gap-0.5 overflow-x-auto">
 			{terminals.map((t) => {
 				const isActive = t.id === activeId;
+				const channel = t.remoteMeta?.channelId;
+				const channelLabel = channel
+					? (CHANNEL_LABELS[channel] ?? channel)
+					: null;
+				const tooltip = t.isRemote
+					? `远控会话 · ${channelLabel ?? ""} · ${t.remoteMeta?.peerName || t.remoteMeta?.peerId || ""}\n命令：${t.remoteMeta?.command || ""}\n关闭仅本地移除，不会终止 IM 端会话`
+					: undefined;
 				return (
 					<button
 						key={t.id}
 						type="button"
 						onClick={() => handleSelect(t.id)}
+						title={tooltip}
 						className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
 							isActive
 								? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
 								: "text-text-muted hover:bg-surface/60"
-						}`}
+						} ${t.isRemote ? "ring-1 ring-accent/30" : ""}`}
 					>
-						<TerminalIcon className="w-3 h-3" />
-						<span className="max-w-[100px] truncate">{t.name}</span>
+						{t.isRemote ? (
+							<Radio className="w-3 h-3 text-accent" />
+						) : (
+							<TerminalIcon className="w-3 h-3" />
+						)}
+						<span className="max-w-[140px] truncate">{t.name}</span>
+						{t.isRemote && channelLabel && (
+							<span className="px-1 py-px text-[9px] font-semibold rounded bg-accent/10 text-accent uppercase tracking-wide">
+								{channelLabel}
+							</span>
+						)}
 						<button
 							type="button"
 							onClick={(e) => handleClose(e, t.id)}
 							className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded p-0.5 transition-all cursor-pointer"
+							title={
+								t.isRemote ? "从桌面端移除（不会终止远端会话）" : "关闭终端"
+							}
 						>
 							<X className="w-2.5 h-2.5" />
 						</button>

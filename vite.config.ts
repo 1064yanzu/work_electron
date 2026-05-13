@@ -109,6 +109,11 @@ export default defineConfig({
 								"zlib-sync",
 								// Native addon
 								"node-pty",
+								// @xterm/headless@6.0.0 的 package.json 把 module 字段指向不存在的
+								// lib/xterm.mjs（实际产物在 lib-headless/），vite 的 commonjs resolver
+								// 会报 "Failed to resolve entry"。作为 node-only 包，让它走 runtime
+								// require 是最稳妥的。
+								"@xterm/headless",
 								// electron-updater 依赖 app-builder-lib（只在 electron-builder 安装链中存在），
 								// bundle 后 require 会失败，必须保留为外部依赖
 								"electron-updater",

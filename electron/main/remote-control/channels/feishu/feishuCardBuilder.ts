@@ -203,3 +203,48 @@ export function parseCardAction(value: unknown): {
 		return null;
 	}
 }
+
+/**
+ * 解析远程终端 (pty 桥) 卡片按钮回调。
+ *
+ * 触发卡片来源：feishuStreamingCard 给 ChannelStreamingStartOptions.terminalShortcuts
+ * 渲染的按钮区。可识别三种 action：
+ *   - pty_key   → 发送特殊键（key 字段需匹配 ptyCommandParser 的别名表）
+ *   - pty_stop  → 停止当前会话
+ *   - pty_text  → 注入任意字符串作为 stdin
+ */
+export type PtyCardAction =
+	| { kind: "key"; key: string }
+	| { kind: "stop" }
+	| { kind: "text"; text: string };
+
+export function parsePtyCardAction(value: unknown): PtyCardAction | null {
+	const normalize = (raw: unknown): PtyCardAction | null => {
+		if (!raw || typeof raw !== "object") return null;
+		const parsed = raw as Record<string, unknown>;
+		const action = parsed.action;
+		if (action === "pty_key") {
+			const key = typeof parsed.key === "string" ? parsed.key.trim() : "";
+			if (!key) return null;
+			return { kind: "key", key };
+		}
+		if (action === "pty_stop") {
+			return { kind: "stop" };
+		}
+		if (action === "pty_text") {
+			const text = typeof parsed.text === "string" ? parsed.text : "";
+			return { kind: "text", text };
+		}
+		return null;
+	};
+
+	if (typeof value === "object" && value) {
+		return normalize(value);
+	}
+	if (typeof value !== "string") return null;
+	try {
+		return normalize(JSON.parse(value));
+	} catch {
+		return null;
+	}
+}

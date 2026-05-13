@@ -35,7 +35,7 @@ import { FeishuMessageResourceService } from "./feishuMessageResourceService";
 import { FeishuDocLinkResolver } from "./feishuDocLinkResolver";
 import { FeishuShareMessageContextService } from "./feishuShareMessageContextService";
 import { FeishuShareContextBuffer } from "./feishuShareContextBuffer";
-import { parseCardAction } from "./feishuCardBuilder";
+import { parseCardAction, parsePtyCardAction } from "./feishuCardBuilder";
 import { createFeishuStreamingFactory } from "./feishuStreamingCard";
 import { createFeishuTypingFactory } from "./feishuTyping";
 import { createFeishuActions } from "./feishuActions";
@@ -547,6 +547,48 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				toast: {
 					type: "error",
 					content: "交互参数不完整，请重试。",
+				},
+			};
+		}
+
+		// 优先识别远程终端 (pty 桥) 按钮回调
+		const ptyAction = parsePtyCardAction(actionValue);
+		if (ptyAction) {
+			const ptyCommandText =
+				ptyAction.kind === "stop"
+					? "/cli stop"
+					: ptyAction.kind === "key"
+						? `/k ${ptyAction.key}`
+						: `/i ${ptyAction.text}`;
+
+			this.logger.info({
+				msg: `feishu card action: pty ${ptyAction.kind}`,
+			});
+
+			queueMicrotask(() => {
+				void this.dispatchCardActionInbound({
+					payload,
+					operatorOpenId,
+					openMessageId,
+					openChatId,
+					commandText: ptyCommandText,
+				}).catch((error) => {
+					this.logger.error({
+						msg: "feishu dispatch pty card action inbound failed",
+						error: error instanceof Error ? error.message : String(error),
+					});
+				});
+			});
+
+			return {
+				toast: {
+					type: "info",
+					content:
+						ptyAction.kind === "stop"
+							? "已发送停止指令"
+							: ptyAction.kind === "key"
+								? `已发送按键：${ptyAction.key}`
+								: "已注入输入",
 				},
 			};
 		}

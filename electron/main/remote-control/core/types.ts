@@ -179,6 +179,36 @@ export type RemoteMobileGatewayConfig = {
 	requirePairing: boolean;
 };
 
+/**
+ * 远程终端 (IM 远控 pty 桥) 配置。
+ *
+ * 用户通过 IM /cli 指令在桌面端 spawn 交互式 CLI（claude / codex / opencode
+ * 等 TUI），输出经 @xterm/headless 渲染为屏幕快照后通过同一渠道的 streaming
+ * 卡片回推。详见 docs/施工文档-IM远程终端.md。
+ */
+export type RemoteTerminalPreset = {
+	id: string;
+	name: string;
+	command: string;
+	cwd?: string;
+};
+
+export type RemoteTerminalConfig = {
+	enabled: boolean;
+	presets: RemoteTerminalPreset[];
+	defaultCwds: string[];
+	cols: number;
+	rows: number;
+	snapshotIntervalMs: number;
+	idleTimeoutMs: number;
+	freeCommandMode: boolean;
+	/**
+	 * 远控 pty 启动时，是否自动在桌面端中下屏 TerminalPanel 里展开同一个会话。
+	 * 默认 true。桌面端展示是只读 + 可输入接管，关闭按钮仅前端 detach，不杀进程。
+	 */
+	autoShowOnDesktop: boolean;
+};
+
 export type RemoteControlConfig = {
 	enabled: boolean;
 	channels: {
@@ -192,6 +222,21 @@ export type RemoteControlConfig = {
 	};
 	security: RemoteSecurityConfig;
 	mobileGateway: RemoteMobileGatewayConfig;
+	terminal: RemoteTerminalConfig;
+};
+
+export type RemoteTerminalSessionStatus = {
+	session_id: string;
+	channel_id: RemoteChannelId;
+	peer_id: string;
+	peer_name?: string;
+	target_id: string;
+	command: string;
+	cwd: string;
+	preset_id?: string;
+	pid?: number;
+	started_at: number;
+	last_activity_at: number;
 };
 
 export type RemotePairingStatus =

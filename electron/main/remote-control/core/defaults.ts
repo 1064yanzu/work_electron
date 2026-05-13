@@ -143,6 +143,24 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 		port: 28777,
 		requirePairing: true,
 	},
+	terminal: {
+		enabled: false,
+		presets: [
+			{ id: "claude", name: "Claude Code", command: "claude" },
+			{ id: "codex", name: "OpenAI Codex", command: "codex" },
+			{ id: "opencode", name: "OpenCode", command: "opencode" },
+		],
+		defaultCwds: [],
+		// IM 卡片显示宽度有限（手机端单行能容纳 48 半角字符左右），
+		// 太宽会触发 TUI 横向布局，导致 Claude Code 等的提示被截断。
+		// 这里给一个更窄的默认值，让 TUI 按窄屏重排。
+		cols: 48,
+		rows: 24,
+		snapshotIntervalMs: 350,
+		idleTimeoutMs: 30 * 60 * 1000,
+		freeCommandMode: false,
+		autoShowOnDesktop: true,
+	},
 };
 
 export const DEFAULT_PAIRING_EXPIRE_MS = 10 * 60 * 1000;

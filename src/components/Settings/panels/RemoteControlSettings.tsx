@@ -14,6 +14,7 @@ import {
 	LayoutList,
 	Settings as SettingsIcon,
 	Smartphone,
+	Terminal as TerminalIcon,
 	Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -46,6 +47,7 @@ import { RemoteTabNav, type RemoteTabKey } from "./remote-control/RemoteTabNav";
 import { OverviewSection } from "./remote-control/sections/OverviewSection";
 import { ChannelsSection } from "./remote-control/sections/ChannelsSection";
 import { PairingSessionsSection } from "./remote-control/sections/PairingSessionsSection";
+import { RemoteTerminalSection } from "./remote-control/sections/RemoteTerminalSection";
 import { AdvancedSection } from "./remote-control/sections/AdvancedSection";
 
 export function RemoteControlSettings() {
@@ -348,12 +350,19 @@ export function RemoteControlSettings() {
 							: undefined,
 			},
 			{
+				key: "terminal" as const,
+				label: "终端",
+				icon: TerminalIcon,
+				badge: config?.terminal?.enabled ? 0 : undefined,
+				badgeTone: "emerald" as const,
+			},
+			{
 				key: "advanced" as const,
 				label: "高级",
 				icon: SettingsIcon,
 			},
 		],
-		[runtime, pendingCount, activeRuns],
+		[runtime, pendingCount, activeRuns, config?.terminal?.enabled],
 	);
 
 	if (loading || !config) {
@@ -421,6 +430,13 @@ export function RemoteControlSettings() {
 					onReject={(id) => void handleReject(id)}
 					onRevoke={(channelId, peerId) => void handleRevoke(channelId, peerId)}
 					onStop={(runId) => void handleStopRun(runId)}
+				/>
+			) : null}
+			{activeTab === "terminal" ? (
+				<RemoteTerminalSection
+					config={config}
+					saving={saving}
+					onSave={(updater) => void saveConfig(updater)}
 				/>
 			) : null}
 			{activeTab === "advanced" ? (

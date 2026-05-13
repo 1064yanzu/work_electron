@@ -113,6 +113,12 @@ export function getRemoteHelpText(): string {
 		"/reject [requestId] [message] 拒绝交互请求（省略 requestId 时默认最近一条）",
 		"/doc.call <tool_name> <json_args> 直接调用 Feishu 文档工具（仅 Feishu 通道）",
 		'示例：/doc.call docx_create_document {"title":"远控创建文档"}',
+		"/cli <subcommand>            远程终端 (TUI 接管 codex / claude code / opencode)",
+		"  /cli start <preset|cmd> [--cwd <path>]  启动 pty 会话",
+		"  /cli stop                                结束 pty 会话",
+		"  /cli ctrl-c | tab | esc | up | down ...  发送特殊键",
+		"  /cli list | status                       查询会话",
+		"  接管后直接发送消息即作为 stdin 注入",
 		"直接发送文本会触发 Agent 运行",
 	].join("\n");
 }

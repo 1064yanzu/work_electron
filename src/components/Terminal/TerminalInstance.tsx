@@ -14,6 +14,12 @@ import "@xterm/xterm/css/xterm.css";
 interface TerminalInstanceProps {
 	terminalId: string;
 	isActive: boolean;
+	/**
+	 * 远控 pty 时为 true。前端会跳过 terminal_resize（后端会拒绝，因为远控
+	 * pty 的尺寸由 IM 卡片渲染决定，桌面 fit() 不能改），但仍然允许 stdin
+	 * 输入与监听 terminal-data 输出。
+	 */
+	isRemote?: boolean;
 	onExit?: () => void;
 }
 
@@ -74,6 +80,7 @@ function getTerminalTheme() {
 export function TerminalInstance({
 	terminalId,
 	isActive,
+	isRemote,
 	onExit,
 }: TerminalInstanceProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -152,12 +159,14 @@ export function TerminalInstance({
 			}
 		});
 
-		// 通知后端初始尺寸
-		invoke("terminal_resize", {
-			id: terminalId,
-			cols: term.cols,
-			rows: term.rows,
-		}).catch(() => {});
+		// 通知后端初始尺寸（远控 pty 跳过：尺寸已由 PtyBridgeService 在创建时锁定）
+		if (!isRemote) {
+			invoke("terminal_resize", {
+				id: terminalId,
+				cols: term.cols,
+				rows: term.rows,
+			}).catch(() => {});
+		}
 
 		return () => {
 			disposable.dispose();
@@ -178,11 +187,14 @@ export function TerminalInstance({
 			if (fitAddonRef.current && termRef.current) {
 				try {
 					fitAddonRef.current.fit();
-					invoke("terminal_resize", {
-						id: terminalId,
-						cols: termRef.current.cols,
-						rows: termRef.current.rows,
-					}).catch(() => {});
+					// 远控 pty 桌面端只观察 + 输入，不允许改尺寸
+					if (!isRemote) {
+						invoke("terminal_resize", {
+							id: terminalId,
+							cols: termRef.current.cols,
+							rows: termRef.current.rows,
+						}).catch(() => {});
+					}
 				} catch {
 					// ignore
 				}

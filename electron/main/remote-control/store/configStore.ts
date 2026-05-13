@@ -8,6 +8,8 @@ import type {
 	RemoteControlConfig,
 	RemoteDmPolicy,
 	RemoteGroupPolicy,
+	RemoteTerminalConfig,
+	RemoteTerminalPreset,
 } from "../core/types";
 import { parseJsonSafely } from "../core/utils";
 
@@ -313,6 +315,67 @@ function mergeConfig(
 		}
 	}
 
+	if (isObject(source.terminal)) {
+		next.terminal = mergeTerminalConfig(source.terminal, next.terminal);
+	}
+
+	return next;
+}
+
+function mergeTerminalConfig(
+	raw: unknown,
+	fallback: RemoteTerminalConfig,
+): RemoteTerminalConfig {
+	if (!isObject(raw)) return fallback;
+	const next = structuredClone(fallback);
+	const source = raw as Record<string, unknown>;
+	if (typeof source.enabled === "boolean") next.enabled = source.enabled;
+	if (typeof source.freeCommandMode === "boolean")
+		next.freeCommandMode = source.freeCommandMode;
+	if (
+		typeof source.cols === "number" &&
+		source.cols >= 40 &&
+		source.cols <= 240
+	)
+		next.cols = Math.floor(source.cols);
+	if (typeof source.rows === "number" && source.rows >= 10 && source.rows <= 80)
+		next.rows = Math.floor(source.rows);
+	if (
+		typeof source.snapshotIntervalMs === "number" &&
+		source.snapshotIntervalMs >= 100 &&
+		source.snapshotIntervalMs <= 5000
+	) {
+		next.snapshotIntervalMs = Math.floor(source.snapshotIntervalMs);
+	}
+	if (
+		typeof source.idleTimeoutMs === "number" &&
+		source.idleTimeoutMs >= 60_000 &&
+		source.idleTimeoutMs <= 24 * 60 * 60 * 1000
+	) {
+		next.idleTimeoutMs = Math.floor(source.idleTimeoutMs);
+	}
+	if (typeof source.autoShowOnDesktop === "boolean") {
+		next.autoShowOnDesktop = source.autoShowOnDesktop;
+	}
+	const defaultCwds = mergeStringArray(source.defaultCwds);
+	if (defaultCwds) next.defaultCwds = defaultCwds;
+	if (Array.isArray(source.presets)) {
+		const presets: RemoteTerminalPreset[] = [];
+		for (const item of source.presets) {
+			if (!isObject(item)) continue;
+			const id = typeof item.id === "string" ? item.id.trim() : "";
+			const name = typeof item.name === "string" ? item.name.trim() : "";
+			const command =
+				typeof item.command === "string" ? item.command.trim() : "";
+			if (!id || !name || !command) continue;
+			const preset: RemoteTerminalPreset = { id, name, command };
+			if (typeof item.cwd === "string" && item.cwd.trim()) {
+				preset.cwd = item.cwd.trim();
+			}
+			presets.push(preset);
+		}
+		next.presets = presets;
+	}
 	return next;
 }
 

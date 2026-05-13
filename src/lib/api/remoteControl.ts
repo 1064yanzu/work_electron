@@ -132,6 +132,53 @@ export interface RemoteControlConfig {
 		host: string;
 		requirePairing: boolean;
 	};
+	terminal: RemoteTerminalConfig;
+}
+
+/**
+ * 远程终端预设（IM 远控 pty 桥）。
+ */
+export interface RemoteTerminalPreset {
+	id: string;
+	name: string;
+	command: string;
+	cwd?: string;
+}
+
+/**
+ * 远程终端配置。手机通过 IM /cli 指令接管桌面端 pty。
+ */
+export interface RemoteTerminalConfig {
+	enabled: boolean;
+	presets: RemoteTerminalPreset[];
+	defaultCwds: string[];
+	cols: number;
+	rows: number;
+	snapshotIntervalMs: number;
+	idleTimeoutMs: number;
+	freeCommandMode: boolean;
+	/**
+	 * 远程会话启动时，是否自动在桌面端弹出终端面板并切到该 tab。
+	 * 关闭时桌面端保持静默，仍可通过命令面板或快捷键手动调出。
+	 */
+	autoShowOnDesktop: boolean;
+}
+
+/**
+ * 远程终端会话运行时快照。
+ */
+export interface RemoteTerminalSession {
+	session_id: string;
+	channel_id: string;
+	peer_id: string;
+	peer_name?: string;
+	target_id: string;
+	command: string;
+	cwd: string;
+	preset_id?: string;
+	pid?: number;
+	started_at: number;
+	last_activity_at: number;
 }
 
 /**
@@ -222,8 +269,35 @@ export interface RemoteEventLog {
 	message: string;
 }
 
+/**
+ * 远程终端默认配置：当主进程尚未升级到包含 `terminal` 字段的版本，
+ * 或本地 SQLite 里残留旧 config 时，前端用这份兜底以避免 UI 崩溃。
+ * 与 electron/main/remote-control/core/defaults.ts 的 DEFAULT_REMOTE_CONTROL_CONFIG.terminal 对齐。
+ */
+export const DEFAULT_REMOTE_TERMINAL_CONFIG: RemoteTerminalConfig = {
+	enabled: false,
+	presets: [
+		{ id: "claude", name: "Claude Code", command: "claude" },
+		{ id: "codex", name: "OpenAI Codex", command: "codex" },
+		{ id: "opencode", name: "OpenCode", command: "opencode" },
+	],
+	defaultCwds: [],
+	cols: 48,
+	rows: 24,
+	snapshotIntervalMs: 350,
+	idleTimeoutMs: 30 * 60 * 1000,
+	freeCommandMode: false,
+	autoShowOnDesktop: true,
+};
+
 export async function getRemoteControlConfig(): Promise<RemoteControlConfig> {
-	return await safeInvoke("get_remote_control_config");
+	const raw = await safeInvoke<RemoteControlConfig>(
+		"get_remote_control_config",
+	);
+	return {
+		...raw,
+		terminal: raw.terminal ?? DEFAULT_REMOTE_TERMINAL_CONFIG,
+	};
 }
 
 export async function setRemoteControlConfig(
@@ -303,4 +377,21 @@ export async function listRemoteEventLogs(
 	limit = 50,
 ): Promise<RemoteEventLog[]> {
 	return await safeInvoke("list_remote_event_logs", { limit });
+}
+
+export async function listRemoteTerminalSessions(): Promise<
+	RemoteTerminalSession[]
+> {
+	const result = await safeInvoke<{ sessions: RemoteTerminalSession[] }>(
+		"remote_terminal_list_sessions",
+	);
+	return result.sessions;
+}
+
+export async function terminateRemoteTerminalSession(
+	sessionId: string,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("remote_terminal_terminate_session", {
+		session_id: sessionId,
+	});
 }

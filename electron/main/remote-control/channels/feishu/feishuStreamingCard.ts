@@ -16,6 +16,7 @@ import {
 	truncateSummary,
 	type ChannelStreamingSession,
 	type ChannelStreamingStartOptions,
+	type TerminalShortcutAction,
 } from "../../sdk";
 
 type FeishuDomain = "feishu" | "lark";
@@ -142,6 +143,76 @@ function resolveFeishuCardTemplate(raw: string | undefined): string {
 	return "blue";
 }
 
+// ─── 终端快捷按钮渲染 ─────────────────────────────────
+
+/**
+ * 把 TerminalShortcutAction 转成 CardKit 2.0 button 元素。
+ * `value` 走 onCardAction 回调，由 parsePtyCardAction 解析。
+ */
+function buildButtonElement(
+	action: TerminalShortcutAction,
+): Record<string, unknown> {
+	const type =
+		action.style === "danger"
+			? "danger"
+			: action.style === "secondary"
+				? "default"
+				: "primary";
+
+	const value: Record<string, unknown> =
+		action.kind === "key"
+			? { action: "pty_key", key: action.key }
+			: action.kind === "stop"
+				? { action: "pty_stop" }
+				: { action: "pty_text", text: action.text };
+
+	return {
+		tag: "button",
+		text: { tag: "plain_text", content: action.label },
+		type,
+		size: "medium",
+		value,
+	};
+}
+
+/**
+ * 把按钮按 4 列一行排进 column_set 元素中。
+ * 末行不足 4 个时留空，避免拉伸单按钮过宽。
+ */
+function buildShortcutElements(
+	shortcuts: TerminalShortcutAction[],
+): Record<string, unknown>[] {
+	const elements: Record<string, unknown>[] = [];
+	if (shortcuts.length === 0) return elements;
+	elements.push({ tag: "hr" });
+
+	const columnsPerRow = 4;
+	for (let i = 0; i < shortcuts.length; i += columnsPerRow) {
+		const slice = shortcuts.slice(i, i + columnsPerRow);
+		const columns: Record<string, unknown>[] = slice.map((action) => ({
+			tag: "column",
+			width: "weighted",
+			weight: 1,
+			elements: [buildButtonElement(action)],
+		}));
+		// 不足 4 列时补空白列，确保按钮宽度一致
+		while (columns.length < columnsPerRow) {
+			columns.push({
+				tag: "column",
+				width: "weighted",
+				weight: 1,
+				elements: [],
+			});
+		}
+		elements.push({
+			tag: "column_set",
+			flex_mode: "stretch",
+			columns,
+		});
+	}
+	return elements;
+}
+
 // ─── 主类 ─────────────────────────────────────────────
 
 export class FeishuStreamingSessionImpl implements ChannelStreamingSession {
@@ -184,6 +255,13 @@ export class FeishuStreamingSessionImpl implements ChannelStreamingSession {
 				content: `<font color='grey'>${options.note}</font>`,
 				element_id: "note",
 			});
+		}
+		// 远程终端快捷按钮（仅 pty 桥使用；用户点击触发 card.action.trigger，
+		// 由 feishuChannel.onCardAction 路由到 pty 桥）
+		if (options?.terminalShortcuts && options.terminalShortcuts.length > 0) {
+			for (const el of buildShortcutElements(options.terminalShortcuts)) {
+				elements.push(el);
+			}
 		}
 		const cardJson: Record<string, unknown> = {
 			schema: "2.0",

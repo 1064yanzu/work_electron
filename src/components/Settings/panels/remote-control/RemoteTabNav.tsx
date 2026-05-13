@@ -8,7 +8,12 @@ import type { LucideIcon } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../../../lib/utils";
 
-export type RemoteTabKey = "overview" | "channels" | "pairing" | "advanced";
+export type RemoteTabKey =
+	| "overview"
+	| "channels"
+	| "pairing"
+	| "terminal"
+	| "advanced";
 
 type RemoteTabItem = {
 	key: RemoteTabKey;

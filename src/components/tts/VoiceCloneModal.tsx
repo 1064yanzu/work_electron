@@ -95,6 +95,7 @@ export function VoiceCloneModal({
 
 	const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
 		event.preventDefault();
+		event.stopPropagation();
 		handleFiles(event.dataTransfer.files);
 	};
 
@@ -147,6 +148,18 @@ export function VoiceCloneModal({
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
 			onClick={(e) => {
 				if (e.target === e.currentTarget && !submitting) onClose();
+			}}
+			onDragEnter={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+			}}
+			onDragOver={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+			}}
+			onDrop={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
 			}}
 		>
 			<div
@@ -213,7 +226,10 @@ export function VoiceCloneModal({
 					>
 						<div
 							className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface p-6 text-center"
-							onDragOver={(e) => e.preventDefault()}
+							onDragOver={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+							}}
 							onDrop={handleDrop}
 						>
 							<Upload className="w-6 h-6 text-text-muted mb-2" />

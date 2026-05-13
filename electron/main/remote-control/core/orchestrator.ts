@@ -32,6 +32,7 @@ import { RemoteControlConfigStore } from "../store/configStore";
 import { RemotePairingStore } from "../store/pairingStore";
 import { RemoteSessionStore } from "../store/sessionStore";
 import { PairingService } from "./pairingService";
+import { PtyBridgeService } from "./ptyBridge/ptyBridgeService";
 import { SlidingWindowRateLimiter } from "./rateLimiter";
 import { nowTs } from "./utils";
 import { RemoteChatHistoryService } from "./remoteChatHistoryService";
@@ -60,6 +61,7 @@ export class RemoteControlOrchestrator {
 	>();
 	private readonly eventMirror: AgentEventMirror;
 	private readonly remoteChatHistory: RemoteChatHistoryService;
+	private readonly ptyBridge: PtyBridgeService;
 	private readonly eventLogs: RemoteEventLog[] = [];
 	private config: RemoteControlConfig | null = null;
 	private startedAt: number | null = null;
@@ -135,6 +137,22 @@ export class RemoteControlOrchestrator {
 							: null,
 				};
 			},
+		});
+		this.ptyBridge = new PtyBridgeService({
+			logger,
+			getConfig: () => this.requireConfig(),
+			resolveChannelStreaming: (channelId) => {
+				const plugin = this.channels.get(channelId);
+				if (!plugin?.streaming) return null;
+				return plugin.streaming.isEnabled() ? plugin.streaming : null;
+			},
+			sendMessage: async (message) => {
+				await this.sendToChannel(message);
+			},
+			appendEventLog: (level, source, message) => {
+				this.appendEventLog(level, source, message);
+			},
+			getMainWindow: () => this.mainWindow,
 		});
 	}
 
@@ -273,6 +291,8 @@ export class RemoteControlOrchestrator {
 			});
 			return;
 		}
+		const handledByPty = await this.ptyBridge.tryHandle(message);
+		if (handledByPty) return;
 		await this.router.handleInbound(message);
 	}
 
@@ -374,6 +394,7 @@ export class RemoteControlOrchestrator {
 	}
 
 	async stop(): Promise<void> {
+		await this.ptyBridge.stopAll("远程控制服务停止");
 		await this.stopAllChannels();
 		if (this.unsubscribeAgentBus) {
 			this.unsubscribeAgentBus();
@@ -387,10 +408,14 @@ export class RemoteControlOrchestrator {
 	}
 
 	async setConfig(next: RemoteControlConfig): Promise<void> {
+		const prevTerminalEnabled = this.config?.terminal?.enabled ?? false;
 		await this.configStore.save(next);
 		this.config = next;
 		await this.stopAllChannels();
 		await this.startEnabledChannels();
+		if (prevTerminalEnabled && !next.terminal.enabled) {
+			await this.ptyBridge.stopAll("终端开关已关闭");
+		}
 	}
 
 	getRuntimeStatus(): RemoteRuntimeStatus {
@@ -472,5 +497,13 @@ export class RemoteControlOrchestrator {
 		const channel = this.channels.get(channelId);
 		if (!channel) return { ok: false, message: `未知通道：${channelId}` };
 		return channel.testConnection();
+	}
+
+	listTerminalSessions() {
+		return this.ptyBridge.listSessions();
+	}
+
+	async terminateTerminalSession(sessionId: string): Promise<boolean> {
+		return this.ptyBridge.terminateSessionById(sessionId);
 	}
 }

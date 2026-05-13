@@ -140,6 +140,42 @@ type RemoteWechatIpc = {
 	acknowledgedRisk: boolean;
 };
 
+/** 远程终端预设（IM 远控 pty 桥） */
+type RemoteTerminalPresetIpc = {
+	id: string;
+	name: string;
+	command: string;
+	cwd?: string;
+};
+
+/** 远程终端配置（IM 远控 pty 桥） */
+type RemoteTerminalIpc = {
+	enabled: boolean;
+	presets: RemoteTerminalPresetIpc[];
+	defaultCwds: string[];
+	cols: number;
+	rows: number;
+	snapshotIntervalMs: number;
+	idleTimeoutMs: number;
+	freeCommandMode: boolean;
+	autoShowOnDesktop: boolean;
+};
+
+/** 远程终端会话快照（运行时） */
+type RemoteTerminalSessionIpc = {
+	session_id: string;
+	channel_id: RemoteChannelId;
+	peer_id: string;
+	peer_name?: string;
+	target_id: string;
+	command: string;
+	cwd: string;
+	preset_id?: string;
+	pid?: number;
+	started_at: number;
+	last_activity_at: number;
+};
+
 type RemotePairingStatus = "pending" | "approved" | "rejected" | "revoked";
 type RemotePairingRecordStatus = "approved" | "revoked";
 type RemoteSessionState =
@@ -1215,6 +1251,7 @@ export type IPCSchema = {
 				host: string;
 				requirePairing: boolean;
 			};
+			terminal: RemoteTerminalIpc;
 		};
 	};
 	set_remote_control_config: {
@@ -1300,6 +1337,7 @@ export type IPCSchema = {
 					host: string;
 					requirePairing: boolean;
 				};
+				terminal: RemoteTerminalIpc;
 			};
 		};
 		output: { success: boolean };
@@ -1414,6 +1452,14 @@ export type IPCSchema = {
 	};
 	terminate_remote_session: {
 		input: { run_id: string };
+		output: { success: boolean };
+	};
+	remote_terminal_list_sessions: {
+		input: Record<string, never>;
+		output: { sessions: RemoteTerminalSessionIpc[] };
+	};
+	remote_terminal_terminate_session: {
+		input: { session_id: string };
 		output: { success: boolean };
 	};
 	test_remote_channel: {

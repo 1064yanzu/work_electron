@@ -7,6 +7,19 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import { getTerminalService } from "../../services/terminalService";
 import { BatchedSender } from "../../utils/batchedSender";
 
+/**
+ * 远控 pty 的 terminalId 前缀。
+ *
+ * 这类终端由 PtyBridgeService 创建并管理生命周期，桌面端只能「看 + 写」，
+ * 不允许从前端调 destroy / resize：
+ *   - destroy：会绕过 PtyBridgeService 留下 stale session 与 IM 卡片
+ *   - resize：会破坏 IM 端期望的窄屏渲染（默认 48x24）
+ *
+ * 二者在 handler 里直接返回 success=false。前端 TerminalTabBar 的「关闭」按钮
+ * 在远控 tab 上应走 detachRemote（仅前端列表移除），不调本 IPC。
+ */
+const REMOTE_PTY_PREFIX = "remote-pty-";
+
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
 	input: IPCSchema[K]["input"],
@@ -73,6 +86,11 @@ export function createTerminalHandlers(deps: {
 	};
 
 	const terminal_resize: Handler<"terminal_resize"> = async (_event, input) => {
+		// 远控 pty 的尺寸由 PtyBridgeService 在创建时锁定为 IM 端期望的窄屏，
+		// 桌面 xterm 的 fit() 调用必须被屏蔽，否则远端卡片会错乱。
+		if (input.id.startsWith(REMOTE_PTY_PREFIX)) {
+			return { success: false };
+		}
 		const ok = service.resizeTerminal(input.id, input.cols, input.rows);
 		return { success: ok };
 	};
@@ -81,6 +99,14 @@ export function createTerminalHandlers(deps: {
 		_event,
 		input,
 	) => {
+		// 远控 pty 的生命周期由 PtyBridgeService 独占管理（包括 IM 端卡片关闭、
+		// session 清理、监听卸载）。从前端绕过它直接 destroy 会留下 stale session
+		// 与"已关闭"的卡片消息。前端 TerminalTabBar 在远控 tab 上要走 detachRemote
+		// 路径（仅本地列表移除），不调本 IPC。
+		if (input.id.startsWith(REMOTE_PTY_PREFIX)) {
+			return { success: false };
+		}
+
 		// 清理监听
 		dataUnsubscribers.get(input.id)?.();
 		dataUnsubscribers.delete(input.id);

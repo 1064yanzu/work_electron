@@ -12,6 +12,35 @@
 
 import { mergeStreamingText } from "./streaming-merge";
 
+/**
+ * 远程终端快捷按钮规格（pty 桥专用扩展）。
+ *
+ * 通过 `ChannelStreamingStartOptions.terminalShortcuts` 传入；当前仅飞书
+ * CardKit streaming card 会渲染成可点击按钮，其它渠道无视该字段并退化到
+ * 文本短指令（参见 ptyCommandParser.tryParseTerminalShortcut）。
+ */
+export type TerminalShortcutAction =
+	| {
+			kind: "key";
+			/** 显示文本（按钮 label） */
+			label: string;
+			/** 对应 ptyCommandParser.CliKeyName */
+			key: string;
+			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "stop";
+			label: string;
+			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "text";
+			label: string;
+			/** 注入 pty 的纯文本（不会自动追加换行；由调用方决定是否带 \n） */
+			text: string;
+			style?: "primary" | "secondary" | "danger";
+	  };
+
 export type ChannelStreamingStartOptions = {
 	/** 可选标题（feishu 卡片的标题，其他渠道可忽略） */
 	title?: string;
@@ -23,6 +52,13 @@ export type ChannelStreamingStartOptions = {
 	replyToMessageId?: string;
 	/** 子线程 id */
 	threadId?: string;
+	/**
+	 * 远程终端快捷按钮组。
+	 *
+	 * 按顺序渲染为一组（飞书 CardKit 内会自动换行），最多建议 12 个，超出可能
+	 * 被截断。每行最多 4 个按钮。
+	 */
+	terminalShortcuts?: TerminalShortcutAction[];
 };
 
 /**

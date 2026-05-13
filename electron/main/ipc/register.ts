@@ -532,6 +532,14 @@ export function registerIpcHandlers({
 		remoteControlHandlers.terminate_remote_session,
 	);
 	ipcMain.handle(
+		"remote_terminal_list_sessions",
+		remoteControlHandlers.remote_terminal_list_sessions,
+	);
+	ipcMain.handle(
+		"remote_terminal_terminate_session",
+		remoteControlHandlers.remote_terminal_terminate_session,
+	);
+	ipcMain.handle(
 		"test_remote_channel",
 		remoteControlHandlers.test_remote_channel,
 	);

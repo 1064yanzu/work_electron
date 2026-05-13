@@ -158,6 +158,24 @@ export function createRemoteControlHandlers(deps?: { logger?: Logger }) {
 		return { success };
 	};
 
+	const remote_terminal_list_sessions: Handler<
+		"remote_terminal_list_sessions"
+	> = async () => {
+		return {
+			sessions: getRemoteControlOrchestrator().listTerminalSessions(),
+		};
+	};
+
+	const remote_terminal_terminate_session: Handler<
+		"remote_terminal_terminate_session"
+	> = async (_event, input) => {
+		const success =
+			await getRemoteControlOrchestrator().terminateTerminalSession(
+				input.session_id,
+			);
+		return { success };
+	};
+
 	const test_remote_channel: Handler<"test_remote_channel"> = async (
 		_event,
 		input,
@@ -222,6 +240,8 @@ export function createRemoteControlHandlers(deps?: { logger?: Logger }) {
 		revoke_remote_pairing,
 		list_remote_sessions,
 		terminate_remote_session,
+		remote_terminal_list_sessions,
+		remote_terminal_terminate_session,
 		test_remote_channel,
 		list_remote_event_logs,
 		feishu_begin_app_registration,

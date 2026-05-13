@@ -6,6 +6,8 @@
 import { useCallback, useEffect } from "react";
 import { Terminal } from "lucide-react";
 import {
+	type RemoteTerminalAttachedPayload,
+	type RemoteTerminalDetachedPayload,
 	terminalStore,
 	useTerminalStoreSelector,
 } from "../../lib/stores/terminalStore";
@@ -18,15 +20,36 @@ export function TerminalPanel() {
 
 	// 监听终端退出事件 -> 更新 store
 	useEffect(() => {
-		const unsub = window.electronAPI?.on<{
+		const unsubExit = window.electronAPI?.on<{
 			id: string;
 			exitCode: number;
 			signal?: number;
 		}>("terminal-exit", (payload) => {
 			terminalStore.handleTerminalExit(payload.id);
 		});
+
+		// 远控 pty 接入桌面端
+		const unsubRemoteAttached =
+			window.electronAPI?.on<RemoteTerminalAttachedPayload>(
+				"remote-terminal-attached",
+				(payload) => {
+					terminalStore.attachRemote(payload);
+				},
+			);
+
+		// 远控 pty 在 IM 端关闭 / 强制终止
+		const unsubRemoteDetached =
+			window.electronAPI?.on<RemoteTerminalDetachedPayload>(
+				"remote-terminal-detached",
+				(payload) => {
+					terminalStore.detachRemote(payload.id);
+				},
+			);
+
 		return () => {
-			unsub?.();
+			unsubExit?.();
+			unsubRemoteAttached?.();
+			unsubRemoteDetached?.();
 		};
 	}, []);
 
@@ -61,6 +84,7 @@ export function TerminalPanel() {
 						key={t.id}
 						terminalId={t.id}
 						isActive={t.id === activeId}
+						isRemote={t.isRemote}
 						onExit={() => handleTerminalExit(t.id)}
 					/>
 				))}
