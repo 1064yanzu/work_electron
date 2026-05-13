@@ -1,29 +1,104 @@
 /**
- * Telegram Streaming —— 基于 editMessageText 的流式输出
+ * Telegram Streaming —— 基于 editMessageText 的流式输出 + inline_keyboard 按钮
  *
- * 思路：首次 send 发送占位文本，拿到 message_id；后续 update() 调用 editMessageText。
- * 注意事项：
- * - Telegram 对 editMessageText 的限流约为 30 次/秒且总 100 次/分钟，需要 throttle
- * - 同样的 text 不能连续 edit（会返回 `message is not modified`），需跳过
+ * 特性：
+ * - 占位文本 + 可选 reply_markup (InlineKeyboardMarkup)
+ * - update() 调用 editMessageText（带 reply_markup 保留按钮）
+ * - updateShortcuts() 通过 editMessageReplyMarkup 单独更新按钮
+ * - format=ansi 时把内容包成 ``` codeblock（Telegram 不渲染 ANSI 但等宽显示）
+ *
+ * 限制：
+ * - Telegram 对 editMessageText ~100 次/min，throttle 700ms
+ * - inline_keyboard 一行最多 8 个按钮，按钮文字 ≤ 64 字符
+ * - callback_data ≤ 64 字节
  */
 
 import type { Bot } from "grammy";
+import type { InlineKeyboardMarkup } from "grammy/types";
 import type { Logger } from "../../../logging/types";
 import {
 	mergeStreamingText,
 	type ChannelStreamingSession,
 	type ChannelStreamingStartOptions,
+	type TerminalShortcutAction,
 } from "../../sdk";
 
-const EDIT_THROTTLE_MS = 700; // 约每秒 1.4 次，留出余量；实际限速 100/min
+const EDIT_THROTTLE_MS = 700;
 const FINAL_NOTE_PREFIX = "\n\n— ";
+const MAX_BUTTONS_PER_ROW = 4;
+const MAX_ROWS = 8;
+const MAX_CALLBACK_LEN = 64;
 
 type State = {
 	messageId: number;
 	chatId: number | string;
 	currentText: string;
+	currentShortcuts: TerminalShortcutAction[];
+	format: "plain" | "ansi" | "markdown";
 	sequence: number;
 };
+
+function encodeCallback(action: TerminalShortcutAction, index: number): string {
+	let raw: string;
+	switch (action.kind) {
+		case "key":
+			raw = `pty:${index}:key:${action.key}`;
+			break;
+		case "stop":
+			raw = `pty:${index}:stop`;
+			break;
+		case "text":
+			raw = `pty:${index}:text:${action.text}`;
+			break;
+		case "scroll": {
+			const amt = action.amount ? `:${action.amount}` : "";
+			raw = `pty:${index}:scroll:${action.dir}${amt}`;
+			break;
+		}
+		case "more":
+			raw = `pty:${index}:more`;
+			break;
+		case "confirm":
+			raw = `pty:${index}:confirm`;
+			break;
+		case "cancel":
+			raw = `pty:${index}:cancel`;
+			break;
+	}
+	// callback_data 必须 ≤ 64 字节
+	return raw.length > MAX_CALLBACK_LEN ? raw.slice(0, MAX_CALLBACK_LEN) : raw;
+}
+
+function buildInlineKeyboard(
+	shortcuts: TerminalShortcutAction[],
+): InlineKeyboardMarkup | undefined {
+	if (!shortcuts || shortcuts.length === 0) return undefined;
+	const limited = shortcuts.slice(0, MAX_BUTTONS_PER_ROW * MAX_ROWS);
+	const rows: { text: string; callback_data: string }[][] = [];
+	for (let i = 0; i < limited.length; i += MAX_BUTTONS_PER_ROW) {
+		const slice = limited.slice(i, i + MAX_BUTTONS_PER_ROW);
+		const row = slice.map((action, j) => ({
+			text: action.label.slice(0, 64),
+			callback_data: encodeCallback(action, i + j),
+		}));
+		rows.push(row);
+	}
+	return { inline_keyboard: rows };
+}
+
+function wrapContent(
+	text: string,
+	format: "plain" | "ansi" | "markdown",
+): { text: string; parseMode: "Markdown" | undefined } {
+	if (format === "ansi") {
+		// Telegram 不渲染 ANSI 序列；用 pre block 让其等宽展示
+		return { text: `\`\`\`\n${text}\n\`\`\``, parseMode: "Markdown" };
+	}
+	if (format === "markdown") {
+		return { text, parseMode: "Markdown" };
+	}
+	return { text, parseMode: "Markdown" };
+}
 
 export class TelegramStreamingSessionImpl implements ChannelStreamingSession {
 	private state: State | null = null;
@@ -42,22 +117,26 @@ export class TelegramStreamingSessionImpl implements ChannelStreamingSession {
 
 	async start(options?: ChannelStreamingStartOptions): Promise<void> {
 		if (this.state) return;
-		const initial = options?.title
-			? `**${options.title}**\n\n⏳ Thinking…`
-			: "⏳ Thinking…";
+		const format = options?.format ?? "markdown";
+		const heading = options?.title ? `**${options.title}**\n\n` : "";
+		const placeholder = `${heading}⏳ Thinking…`;
+		const shortcuts = options?.terminalShortcuts ?? [];
+		const replyMarkup = buildInlineKeyboard(shortcuts);
+
 		try {
-			const sent = await this.bot.api.sendMessage(this.chatId, initial, {
+			const sent = await this.bot.api.sendMessage(this.chatId, placeholder, {
 				parse_mode: "Markdown",
+				...(replyMarkup ? { reply_markup: replyMarkup } : {}),
 				...(this.replyToMessageId
-					? {
-							reply_parameters: { message_id: this.replyToMessageId },
-						}
+					? { reply_parameters: { message_id: this.replyToMessageId } }
 					: {}),
 			});
 			this.state = {
 				messageId: sent.message_id,
 				chatId: this.chatId,
-				currentText: initial,
+				currentText: placeholder,
+				currentShortcuts: shortcuts,
+				format,
 				sequence: 0,
 			};
 		} catch (err) {
@@ -72,24 +151,32 @@ export class TelegramStreamingSessionImpl implements ChannelStreamingSession {
 	private async performEdit(text: string): Promise<void> {
 		if (!this.state) return;
 		if (text === this.state.currentText) return;
+		const { text: body, parseMode } = wrapContent(text, this.state.format);
+		const replyMarkup = buildInlineKeyboard(this.state.currentShortcuts);
 		try {
 			await this.bot.api.editMessageText(
 				this.state.chatId,
 				this.state.messageId,
-				text,
-				{ parse_mode: "Markdown" },
+				body,
+				{
+					...(parseMode ? { parse_mode: parseMode } : {}),
+					...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+				},
 			);
 			this.state.currentText = text;
 			this.state.sequence += 1;
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
-			// 尝试不带 Markdown 再发一次
 			if (msg.includes("can't parse entities")) {
+				// Markdown 失败，去掉 parse_mode 再试
 				try {
 					await this.bot.api.editMessageText(
 						this.state.chatId,
 						this.state.messageId,
-						text,
+						body,
+						{
+							...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+						},
 					);
 					this.state.currentText = text;
 					this.state.sequence += 1;
@@ -101,7 +188,6 @@ export class TelegramStreamingSessionImpl implements ChannelStreamingSession {
 					});
 				}
 			}
-			// message is not modified —— 静默
 			if (!msg.includes("message is not modified")) {
 				this.logger.warn({
 					msg: "telegram streaming edit failed",
@@ -168,8 +254,47 @@ export class TelegramStreamingSessionImpl implements ChannelStreamingSession {
 		if (tail && tail !== this.state.currentText) {
 			await this.performEdit(tail);
 		}
+		// 关闭时移除按钮
+		try {
+			await this.bot.api.editMessageReplyMarkup(
+				this.state.chatId,
+				this.state.messageId,
+				{ reply_markup: { inline_keyboard: [] } },
+			);
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			if (!msg.includes("message is not modified")) {
+				this.logger.warn({
+					msg: "telegram streaming close strip keyboard failed",
+					error: msg,
+				});
+			}
+		}
 		this.state = null;
 		this.pendingText = null;
+	}
+
+	async updateShortcuts(shortcuts: TerminalShortcutAction[]): Promise<void> {
+		if (!this.state || this.closed) return;
+		this.state.currentShortcuts = shortcuts;
+		const replyMarkup = buildInlineKeyboard(shortcuts);
+		try {
+			await this.bot.api.editMessageReplyMarkup(
+				this.state.chatId,
+				this.state.messageId,
+				{
+					reply_markup: replyMarkup ?? { inline_keyboard: [] },
+				},
+			);
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			if (!msg.includes("message is not modified")) {
+				this.logger.warn({
+					msg: "telegram streaming updateShortcuts failed",
+					error: msg,
+				});
+			}
+		}
 	}
 
 	isActive(): boolean {

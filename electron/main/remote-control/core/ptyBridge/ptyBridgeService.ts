@@ -2,12 +2,19 @@
  * PtyBridgeService —— 把 IM 入站消息桥接到桌面端 pty 会话，让手机端能远程
  * 驱动 codex / claude code / opencode 等 TUI CLI。
  *
- * 工作流：
- *   /cli start <preset|cmd> → terminalService.createTerminal(...)
- *                              + ChannelStreamingSession.start()
- *   pty stdout → PtyScreenAggregator.feed → 节流取快照 → streaming.update
- *   普通文本     → terminalService.writeTerminal(id, text + "\n")
- *   /cli stop / pty exit → streaming.close(finalSnapshot)
+ * 体验升级（2026-05-13）已并入主流程：
+ *   - 真彩色：colorMode=auto/ansi 时通过 snapshotAnsi 输出，渠道 hint format=ansi
+ *   - 自适应宽：perChannelCols 决定默认列宽；/cli resize 实时改尺寸
+ *   - scrollback + 滚屏：aggregator 内置 scrollback；/cli up/down/top/bottom/page-*
+ *   - 状态条：snapshot 顶端拼接 statusLine
+ *   - diff 高亮：highlightDiff 时变化行加 ▸
+ *   - 上下文按钮：detectScreenContext + buildContextualShortcuts
+ *   - 文件上下行：inbound_files → cwd/.uploads；/cli get → channel.fileTransfer
+ *   - 命令历史 + /cli history / /cli !N
+ *   - 自适应节流：snapshot 推送失败次数过多时延后下一帧
+ *   - 长输出折叠：foldLongOutput + /cli more
+ *   - 危险命令二次确认：detectDangerousInput + pendingConfirm
+ *   - 离线缓冲：streaming.start 出错时把 chunk 缓在 offlineBuffer，下次 attach 时回放
  */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
@@ -19,26 +26,43 @@ import {
 	type TerminalInfo,
 } from "../../../services/terminalService";
 import type {
+	ChannelFileTransfer,
 	ChannelStreamingFactory,
 	ChannelStreamingSession,
 	TerminalShortcutAction,
-} from "../../sdk/channel-streaming";
+} from "../../sdk";
 import type {
 	RemoteChannelId,
 	RemoteControlConfig,
 	RemoteInboundMessage,
 	RemoteOutboundMessage,
+	RemoteTerminalColorMode,
 	RemoteTerminalConfig,
 	RemoteTerminalPreset,
 	RemoteTerminalSessionStatus,
 } from "../types";
+import { CommandHistory, formatHistory } from "./commandHistory";
+import { detectDangerousInput } from "./dangerousPatterns";
 import {
+	loadOutboundFile,
+	notSupportedFileTransfer,
+	saveInboundFiles,
+	sendFileViaChannel,
+} from "./fileTransfer";
+import { foldLongOutput } from "./foldOutput";
+import {
+	type CliColorMode,
+	type CliSpeedMode,
 	getCliHelpText,
 	KEY_SEQUENCE,
 	parseCliCommand,
 	tryParseTerminalShortcut,
 } from "./ptyCommandParser";
 import { PtyScreenAggregator } from "./ptyScreenAggregator";
+import {
+	buildContextualShortcuts,
+	DEFAULT_TERMINAL_SHORTCUTS,
+} from "./shortcutComposer";
 
 export type PtyBridgeAppendEventLog = (
 	level: "info" | "warn" | "error",
@@ -52,6 +76,13 @@ export type PtyBridgeDeps = {
 	resolveChannelStreaming: (
 		channelId: RemoteChannelId,
 	) => ChannelStreamingFactory | null;
+	/**
+	 * 取得渠道的文件上下行能力（仅在 ChannelFileTransfer 自我声明 isEnabled 时返回）。
+	 * 渠道未实现 → 返回 null；调用方负责降级提示。
+	 */
+	resolveChannelFileTransfer?: (
+		channelId: RemoteChannelId,
+	) => ChannelFileTransfer | null;
 	sendMessage: (message: RemoteOutboundMessage) => Promise<void>;
 	appendEventLog?: PtyBridgeAppendEventLog;
 	/**
@@ -59,6 +90,14 @@ export type PtyBridgeDeps = {
 	 * 显示并实时同步。返回 null 时（窗口未就绪 / 已销毁）静默跳过推送。
 	 */
 	getMainWindow?: () => BrowserWindow | null;
+};
+
+type PendingConfirm = {
+	kind: "stdin" | "command";
+	text: string;
+	preview: string;
+	pattern: string;
+	queuedAt: number;
 };
 
 type PtySession = {
@@ -83,38 +122,32 @@ type PtySession = {
 	closed: boolean;
 	unsubData?: () => void;
 	unsubExit?: () => void;
-	/** 把 pty 输出转发到桌面端 TerminalPanel 的 onData 注销函数 */
 	unsubForwardToDesktop?: () => void;
-	/** 是否已向桌面端发送 attached 事件（用于决定 detach 时是否需要发 detached） */
 	desktopAttached: boolean;
+
+	// ─── 体验升级状态 ────────────────────────────
+	history: CommandHistory;
+	/** 当前会话本地覆盖的颜色模式（/cli color），不写回全局配置 */
+	colorMode: RemoteTerminalColorMode;
+	/** 当前会话本地覆盖的快照节流 */
+	speedMode: CliSpeedMode;
+	/** 折叠的剩余页（/cli more 翻看） */
+	morePages: string[];
+	/** 待确认的危险命令 */
+	pendingConfirm: PendingConfirm | null;
+	/** 推送失败次数累计；过 3 次触发自适应节流加倍 */
+	consecutiveFailures: number;
+	/** 自适应节流系数（>1 即放慢） */
+	adaptiveBackoff: number;
+	/** streaming 是否曾经初始化成功；失败时切到 offline mode */
+	streamingHealthy: boolean;
+	/** 上次 shortcuts 签名，避免重复 patch */
+	lastShortcutsSignature: string;
 };
 
 function peerKeyOf(channelId: RemoteChannelId, peerId: string): string {
 	return `${channelId}:${peerId}`;
 }
-
-/**
- * 默认终端快捷按钮组。
- *
- * 设计目标：覆盖 Claude Code / codex / opencode 这类 TUI 在 IM 卡片里最常
- * 用到的交互——菜单浏览、确认/取消、补全、中断、数字菜单、是否对话。
- * 12 个按钮按 4 列 3 行排版，飞书 CardKit 渲染最稳，其它渠道目前会忽略
- * 该字段，靠 /k 短指令降级。
- */
-const DEFAULT_TERMINAL_SHORTCUTS: TerminalShortcutAction[] = [
-	{ kind: "key", label: "Enter", key: "enter", style: "primary" },
-	{ kind: "key", label: "Esc", key: "esc", style: "secondary" },
-	{ kind: "key", label: "↑", key: "up", style: "secondary" },
-	{ kind: "key", label: "↓", key: "down", style: "secondary" },
-	{ kind: "key", label: "Tab", key: "tab", style: "secondary" },
-	{ kind: "key", label: "Ctrl+C", key: "ctrl-c", style: "danger" },
-	{ kind: "text", label: "y", text: "y", style: "secondary" },
-	{ kind: "text", label: "n", text: "n", style: "secondary" },
-	{ kind: "text", label: "1", text: "1", style: "secondary" },
-	{ kind: "text", label: "2", text: "2", style: "secondary" },
-	{ kind: "text", label: "3", text: "3", style: "secondary" },
-	{ kind: "stop", label: "停止会话", style: "danger" },
-];
 
 function expandHomeDir(input: string): string {
 	if (!input) return input;
@@ -155,13 +188,84 @@ function findPreset(
 	return null;
 }
 
+const SPEED_INTERVAL_MS: Record<CliSpeedMode, number> = {
+	fast: 150,
+	normal: 350,
+	slow: 800,
+};
+
+/**
+ * 把 /cli color 接收到的 on/off/auto 映射到全局 RemoteTerminalColorMode。
+ *   - on  → ansi（强制 ANSI 输出）
+ *   - off → plain（纯文本）
+ *   - auto → auto（让渠道自己决定）
+ */
+function mapCliColorMode(mode: CliColorMode): RemoteTerminalColorMode {
+	if (mode === "on") return "ansi";
+	if (mode === "off") return "plain";
+	return "auto";
+}
+
+/**
+ * 渠道对应的默认列宽。terminalCfg.perChannelCols 优先；fallback 走顶层 cols。
+ */
+function pickInitialCols(
+	channelId: RemoteChannelId,
+	terminalCfg: RemoteTerminalConfig,
+): number {
+	const override = terminalCfg.perChannelCols?.[channelId];
+	if (typeof override === "number" && override >= 30 && override <= 240) {
+		return override;
+	}
+	return terminalCfg.cols;
+}
+
+function shortcutsSignature(actions: TerminalShortcutAction[]): string {
+	return actions
+		.map((a) => {
+			switch (a.kind) {
+				case "key":
+					return `k:${a.key}:${a.label}`;
+				case "text":
+					return `t:${a.text}:${a.label}`;
+				case "stop":
+					return `s:${a.label}`;
+				case "scroll":
+					return `r:${a.dir}:${a.amount ?? "-"}`;
+				case "more":
+					return `m:${a.label}`;
+				case "confirm":
+					return `c:${a.label}`;
+				case "cancel":
+					return `x:${a.label}`;
+			}
+		})
+		.join("|");
+}
+
 /**
  * 用 IM 等宽块字符把"终端快照"包起来。
  * 不同渠道支持的 markdown 不一致，统一用 ``` 围栏，所有现役 IM 都识别。
+ * `format` 为 "ansi" 时改用 `ansi` 语言标识，仅 Discord 原生识别；其他渠道
+ * 看到陌生语言标识也会按 codeblock 显示，对体验无影响。
  */
-function wrapSnapshot(snapshot: string): string {
+function wrapSnapshot(snapshot: string, format: "plain" | "ansi"): string {
 	const body = snapshot.replace(/```/g, "``​`");
-	return ["```", body || "(空)", "```"].join("\n");
+	const fence = format === "ansi" ? "```ansi" : "```";
+	return [fence, body || "(空)", "```"].join("\n");
+}
+
+function highlightDiffLines(snapshot: string, diff: Set<number>): string {
+	if (diff.size === 0) return snapshot;
+	const lines = snapshot.split("\n");
+	for (let i = 0; i < lines.length; i++) {
+		if (diff.has(i) && lines[i].length > 0) {
+			lines[i] = `▸ ${lines[i]}`;
+		} else if (lines[i].length > 0) {
+			lines[i] = `  ${lines[i]}`;
+		}
+	}
+	return lines.join("\n");
 }
 
 export class PtyBridgeService {
@@ -217,12 +321,21 @@ export class PtyBridgeService {
 		const shortcut = tryParseTerminalShortcut(text);
 		const peerKey = peerKeyOf(message.channel_id, message.peer_id);
 		const session = this.sessionsByPeer.get(peerKey);
+		const hasInboundFiles =
+			Array.isArray(message.inbound_files) && message.inbound_files.length > 0;
 
-		if (!isCliCommand && !shortcut && !session) return false;
+		// 入站文件：必须有活跃会话才接收（避免无人接收的孤儿上传）
+		if (hasInboundFiles && session) {
+			await this.handleInboundFiles(session, message);
+			// 仍然让文本走下面的流程（用户可能在同一条消息里既贴图又发命令）
+		}
+
+		if (!isCliCommand && !shortcut && !session && !hasInboundFiles)
+			return false;
 
 		const terminalCfg = this.config;
 		if (!terminalCfg.enabled) {
-			if (isCliCommand || shortcut) {
+			if (isCliCommand || shortcut || hasInboundFiles) {
 				await this.replySystem(
 					message,
 					"远程终端未启用，请在桌面端设置中开启。",
@@ -237,7 +350,6 @@ export class PtyBridgeService {
 			return true;
 		}
 
-		// 短指令快捷形式（/k <key>、/⏎ /⎋ 等）—— 没有会话就提示用户先 /cli start
 		if (shortcut) {
 			if (!session) {
 				await this.replySystem(
@@ -246,18 +358,14 @@ export class PtyBridgeService {
 				);
 				return true;
 			}
-			if (shortcut.kind === "key") {
-				await this.handleKey(message, shortcut.key);
-			} else if (shortcut.kind === "text") {
-				await this.injectStdin(session, message, shortcut.text);
-			} else if (shortcut.kind === "unknown") {
-				await this.replySystem(message, shortcut.reason);
-			}
+			await this.dispatchParsed(message, session, shortcut);
 			return true;
 		}
 
-		// 此时 session 已存在 → 普通文本作为 stdin
-		await this.injectStdin(session!, message, text);
+		// session 已存在 → 普通文本作为 stdin（先经过危险检测）
+		if (session) {
+			await this.injectStdin(session, message, text, { fromHistory: false });
+		}
 		return true;
 	}
 
@@ -266,6 +374,16 @@ export class PtyBridgeService {
 		text: string,
 	): Promise<void> {
 		const parsed = parseCliCommand(text);
+		const peerKey = peerKeyOf(message.channel_id, message.peer_id);
+		const session = this.sessionsByPeer.get(peerKey);
+		await this.dispatchParsed(message, session ?? null, parsed);
+	}
+
+	private async dispatchParsed(
+		message: RemoteInboundMessage,
+		session: PtySession | null,
+		parsed: ReturnType<typeof parseCliCommand>,
+	): Promise<void> {
 		switch (parsed.kind) {
 			case "help":
 				await this.replySystem(message, getCliHelpText());
@@ -283,7 +401,104 @@ export class PtyBridgeService {
 				await this.handleStart(message, parsed.target, parsed.cwd);
 				return;
 			case "key":
-				await this.handleKey(message, parsed.key);
+				if (!session) {
+					await this.replySystem(
+						message,
+						"当前没有活跃的终端会话，无法发送按键。",
+					);
+					return;
+				}
+				await this.handleKey(session, parsed.key);
+				return;
+			case "text":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.injectStdin(session, message, parsed.text, {
+					fromHistory: false,
+				});
+				return;
+			case "scroll":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				this.applyScroll(session, parsed.dir, parsed.amount);
+				await this.flushSnapshot(session, { force: true });
+				return;
+			case "resize":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleResize(session, parsed.cols, parsed.rows);
+				return;
+			case "color":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				session.colorMode = mapCliColorMode(parsed.mode);
+				await this.replySystem(
+					message,
+					`颜色模式已切换为 ${parsed.mode}（仅本会话生效）。`,
+				);
+				await this.flushSnapshot(session, { force: true });
+				return;
+			case "speed":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				session.speedMode = parsed.mode;
+				this.rearmSnapshotTimer(session);
+				await this.replySystem(
+					message,
+					`刷新频率已切换为 ${parsed.mode}（${SPEED_INTERVAL_MS[parsed.mode]}ms）。`,
+				);
+				return;
+			case "history":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.replySystem(message, formatHistory(session.history));
+				return;
+			case "recall":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleRecall(session, message, parsed.index);
+				return;
+			case "get":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleGet(session, message, parsed.path);
+				return;
+			case "more":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleMore(session, message);
+				return;
+			case "confirm":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleConfirm(session, message);
+				return;
+			case "cancel":
+				if (!session) {
+					await this.replySystem(message, "当前没有活跃的终端会话。");
+					return;
+				}
+				await this.handleCancel(session, message);
 				return;
 			case "unknown":
 				await this.replySystem(
@@ -318,7 +533,11 @@ export class PtyBridgeService {
 			`  cwd：${session.cwd}`,
 			`  pid：${session.pid ?? "-"}`,
 			`  屏幕：${session.aggregator.cols}x${session.aggregator.rows}`,
+			`  颜色：${session.colorMode}`,
+			`  节流：${session.speedMode} (${SPEED_INTERVAL_MS[session.speedMode]}ms)`,
 			`  运行时长：${ageSec}s`,
+			`  待确认：${session.pendingConfirm ? "✓（/cli confirm | cancel）" : "无"}`,
+			`  折叠剩余：${session.morePages.length} 页`,
 		].join("\n");
 	}
 
@@ -358,7 +577,28 @@ export class PtyBridgeService {
 			return;
 		}
 
+		// 自由命令模式启动时也要走危险检测；命中后直接拒绝（启动期不弹确认，强制
+		// 用户改写命令，避免远程不可见的 rm -rf 误启动）
+		if (terminalCfg.dangerousCommandConfirm) {
+			const danger = detectDangerousInput(
+				command,
+				terminalCfg.dangerousPatterns,
+			);
+			if (danger) {
+				await this.replySystem(
+					message,
+					[
+						`⚠️ 启动命令命中危险模式 \`${danger.pattern}\`：${danger.preview}`,
+						"为安全起见远控启动不接受危险命令，请改写后重试，或先在桌面端执行。",
+					].join("\n"),
+				);
+				return;
+			}
+		}
+
 		const cwd = resolveCwd(cwdInput ?? preset?.cwd, terminalCfg);
+		const initialCols = pickInitialCols(message.channel_id, terminalCfg);
+		const initialRows = terminalCfg.rows;
 
 		const streamingFactory = this.deps.resolveChannelStreaming(
 			message.channel_id,
@@ -375,6 +615,9 @@ export class PtyBridgeService {
 			targetId: message.target_id,
 			replyToMessageId: message.message_id,
 		});
+		let streamingHealthy = true;
+		const format: "plain" | "ansi" =
+			terminalCfg.colorMode === "plain" ? "plain" : "ansi";
 		try {
 			await streaming.start({
 				title: `终端：${preset?.name ?? command}`,
@@ -382,16 +625,22 @@ export class PtyBridgeService {
 				note: `cwd ${cwd}`,
 				replyToMessageId: message.message_id,
 				terminalShortcuts: DEFAULT_TERMINAL_SHORTCUTS,
+				format,
 			});
 		} catch (error) {
+			streamingHealthy = false;
 			const err = error instanceof Error ? error.message : String(error);
-			await this.replySystem(message, `初始化终端卡片失败：${err}`);
-			return;
+			this.log("warn", `streaming.start 失败，转入离线缓冲：${err}`);
+			await this.replySystem(
+				message,
+				`流式卡片初始化失败：${err}\n会话仍会继续运行，可用 /cli status 查看。`,
+			);
 		}
 
 		const aggregator = new PtyScreenAggregator({
-			cols: terminalCfg.cols,
-			rows: terminalCfg.rows,
+			cols: initialCols,
+			rows: initialRows,
+			scrollback: Math.max(50, terminalCfg.scrollbackLines),
 		});
 
 		const sessionId = randomUUID();
@@ -400,20 +649,24 @@ export class PtyBridgeService {
 		try {
 			terminalInfo = this.terminalService.createTerminal(terminalId, {
 				cwd,
-				cols: terminalCfg.cols,
-				rows: terminalCfg.rows,
+				cols: initialCols,
+				rows: initialRows,
 				shell: this.pickShellForCommand(command),
 				env: {
-					COLUMNS: String(terminalCfg.cols),
-					LINES: String(terminalCfg.rows),
+					COLUMNS: String(initialCols),
+					LINES: String(initialRows),
 					TERM: "xterm-256color",
 				},
 			});
 		} catch (error) {
 			aggregator.dispose();
-			await streaming.close(
-				`启动失败：${error instanceof Error ? error.message : String(error)}`,
-			);
+			try {
+				await streaming.close(
+					`启动失败：${error instanceof Error ? error.message : String(error)}`,
+				);
+			} catch {
+				// streaming 也已不可用时，静默吞掉
+			}
 			return;
 		}
 
@@ -438,6 +691,15 @@ export class PtyBridgeService {
 			pendingSnapshot: false,
 			closed: false,
 			desktopAttached: false,
+			history: new CommandHistory(terminalCfg.commandHistorySize),
+			colorMode: terminalCfg.colorMode,
+			speedMode: "normal",
+			morePages: [],
+			pendingConfirm: null,
+			consecutiveFailures: 0,
+			adaptiveBackoff: 1,
+			streamingHealthy,
+			lastShortcutsSignature: shortcutsSignature(DEFAULT_TERMINAL_SHORTCUTS),
 		};
 
 		session.unsubData = this.terminalService.onData(terminalId, (chunk) => {
@@ -452,39 +714,42 @@ export class PtyBridgeService {
 			},
 		);
 
-		// 把 pty 输出同步推送到桌面端 TerminalPanel（独立的 onData，避免 aggregator
-		// 节流影响桌面 xterm 的实时性）。注意：destroyTerminal 会一次性 dispose
-		// 所有 callbacks，所以这条订阅在 pty 退出时也会自动失效；显式 unsub 仅在
-		// closeSession 主动结束时调用。
 		this.attachDesktopForwarding(session, terminalInfo);
 
-		session.snapshotTimer = setInterval(
-			() => {
-				if (!session.pendingSnapshot) return;
-				session.pendingSnapshot = false;
-				void this.flushSnapshot(session);
-			},
-			Math.max(100, terminalCfg.snapshotIntervalMs),
-		);
-
+		this.rearmSnapshotTimer(session);
 		this.armIdleTimer(session);
 
 		this.sessionsByPeer.set(peerKey, session);
 		this.sessionsById.set(sessionId, session);
 
-		// 把启动命令写到 pty。预设带 args 时直接连同 shell 跑。
+		// 把启动命令写到 pty
 		this.terminalService.writeTerminal(terminalId, `${command}\n`);
+		session.history.push(command);
 
 		this.log(
 			"info",
-			`pty 启动：${message.channel_id}/${message.peer_id} → ${command} (cwd=${cwd}, pid=${terminalInfo.pid})`,
+			`pty 启动：${message.channel_id}/${message.peer_id} → ${command} (cwd=${cwd}, pid=${terminalInfo.pid}, ${initialCols}×${initialRows})`,
 		);
 	}
 
 	private pickShellForCommand(_command: string): string | undefined {
-		// 直接复用 terminalService 的默认 shell；将来如果要直接 spawn 命令而不是
-		// 在 shell 里 exec，可以改成 sh -c "<command>"。
 		return undefined;
+	}
+
+	private rearmSnapshotTimer(session: PtySession): void {
+		if (session.snapshotTimer) {
+			clearInterval(session.snapshotTimer);
+			session.snapshotTimer = null;
+		}
+		const baseFromSpeed = SPEED_INTERVAL_MS[session.speedMode];
+		const baseFromCfg = Math.max(100, this.config.snapshotIntervalMs);
+		const base = Math.max(baseFromSpeed, baseFromCfg);
+		const interval = Math.round(base * Math.max(1, session.adaptiveBackoff));
+		session.snapshotTimer = setInterval(() => {
+			if (!session.pendingSnapshot) return;
+			session.pendingSnapshot = false;
+			void this.flushSnapshot(session);
+		}, interval);
 	}
 
 	private armIdleTimer(session: PtySession): void {
@@ -496,12 +761,49 @@ export class PtyBridgeService {
 		}, timeout);
 	}
 
+	/**
+	 * 主 stdin 注入入口，含危险检测。
+	 *
+	 * @param fromHistory 是否来自 /cli recall（来自历史时跳过 history.push 避免重复）
+	 */
 	private async injectStdin(
 		session: PtySession,
-		_message: RemoteInboundMessage,
+		message: RemoteInboundMessage,
 		text: string,
+		opts: { fromHistory: boolean },
 	): Promise<void> {
+		// 待确认状态下接收到任意非 confirm/cancel 文本就当作取消
+		if (session.pendingConfirm) {
+			await this.replySystem(
+				message,
+				"当前有待确认的危险命令，请先 /cli confirm 或 /cli cancel。",
+			);
+			return;
+		}
+		const terminalCfg = this.config;
+		if (terminalCfg.dangerousCommandConfirm) {
+			const danger = detectDangerousInput(text, terminalCfg.dangerousPatterns);
+			if (danger) {
+				session.pendingConfirm = {
+					kind: "stdin",
+					text,
+					preview: danger.preview,
+					pattern: danger.pattern,
+					queuedAt: Date.now(),
+				};
+				await this.replySystem(
+					message,
+					[
+						`⚠️ 命令命中危险模式 \`${danger.pattern}\`：${danger.preview}`,
+						"发送 `/cli confirm` 继续执行，`/cli cancel` 放弃。",
+					].join("\n"),
+				);
+				await this.flushSnapshot(session, { force: true });
+				return;
+			}
+		}
 		this.terminalService.writeTerminal(session.terminalId, `${text}\n`);
+		if (!opts.fromHistory) session.history.push(text);
 		session.lastActivityAt = Date.now();
 		this.armIdleTimer(session);
 	}
@@ -517,26 +819,290 @@ export class PtyBridgeService {
 	}
 
 	private async handleKey(
-		message: RemoteInboundMessage,
+		session: PtySession,
 		key: keyof typeof KEY_SEQUENCE,
 	): Promise<void> {
-		const peerKey = peerKeyOf(message.channel_id, message.peer_id);
-		const session = this.sessionsByPeer.get(peerKey);
-		if (!session) {
-			await this.replySystem(message, "当前没有活跃的终端会话，无法发送按键。");
-			return;
-		}
 		this.terminalService.writeTerminal(session.terminalId, KEY_SEQUENCE[key]);
 		session.lastActivityAt = Date.now();
 		this.armIdleTimer(session);
 	}
 
-	private async flushSnapshot(session: PtySession): Promise<void> {
-		if (session.closed) return;
+	private applyScroll(
+		session: PtySession,
+		dir: "up" | "down" | "top" | "bottom" | "page-up" | "page-down",
+		amount?: number,
+	): void {
+		const agg = session.aggregator;
+		switch (dir) {
+			case "up":
+				agg.scrollUp(amount ?? 5);
+				break;
+			case "down":
+				agg.scrollDown(amount ?? 5);
+				break;
+			case "top":
+				agg.scrollToTop();
+				break;
+			case "bottom":
+				agg.scrollToBottom();
+				break;
+			case "page-up":
+				agg.pageUp();
+				break;
+			case "page-down":
+				agg.pageDown();
+				break;
+		}
+	}
+
+	private async handleResize(
+		session: PtySession,
+		cols: number,
+		rows: number | undefined,
+	): Promise<void> {
+		const targetCols = Math.max(30, Math.min(240, cols));
+		const targetRows = rows
+			? Math.max(8, Math.min(80, rows))
+			: session.aggregator.rows;
+		this.terminalService.resizeTerminal(
+			session.terminalId,
+			targetCols,
+			targetRows,
+		);
+		session.aggregator.resize(targetCols, targetRows);
+		await this.flushSnapshot(session, { force: true });
+	}
+
+	private async handleRecall(
+		session: PtySession,
+		message: RemoteInboundMessage,
+		index: number,
+	): Promise<void> {
+		const entry = session.history.get(index);
+		if (!entry) {
+			await this.replySystem(
+				message,
+				`历史 #${index} 不存在，可用 /cli history 查看可用编号。`,
+			);
+			return;
+		}
+		await this.injectStdin(session, message, entry.text, { fromHistory: true });
+	}
+
+	private async handleGet(
+		session: PtySession,
+		message: RemoteInboundMessage,
+		relativePath: string,
+	): Promise<void> {
+		const cfg = this.config;
+		if (!cfg.fileTransferEnabled) {
+			await this.replySystem(message, "文件上下行已在设置面板关闭。");
+			return;
+		}
+		const transfer = this.deps.resolveChannelFileTransfer?.(session.channelId);
+		if (!transfer || !transfer.isEnabled()) {
+			await this.replySystem(
+				message,
+				notSupportedFileTransfer(session.channelId),
+			);
+			return;
+		}
+		const result = await loadOutboundFile(session.cwd, relativePath, {
+			maxBytes: cfg.maxDownloadBytes,
+		});
+		if (!result.ok) {
+			await this.replySystem(message, `下载失败：${result.reason}`);
+			return;
+		}
 		try {
-			const snapshot = session.aggregator.snapshot();
-			await session.streaming.update(wrapSnapshot(snapshot));
+			await sendFileViaChannel(transfer, {
+				targetId: message.target_id,
+				fileName: path.basename(result.absPath),
+				data: result.data,
+				mimeType: result.mimeType,
+				caption: `📎 ${path.basename(result.absPath)}（${result.data.byteLength} 字节）`,
+				replyToMessageId: message.message_id,
+			});
 		} catch (error) {
+			await this.replySystem(
+				message,
+				`渠道回传文件失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+
+	private async handleMore(
+		session: PtySession,
+		message: RemoteInboundMessage,
+	): Promise<void> {
+		const page = session.morePages.shift();
+		if (!page) {
+			await this.replySystem(message, "没有更多折叠页了。");
+			return;
+		}
+		try {
+			await session.streaming.update(wrapSnapshot(page, "plain"));
+		} catch (error) {
+			this.log(
+				"warn",
+				`/cli more 推送失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+
+	private async handleConfirm(
+		session: PtySession,
+		message: RemoteInboundMessage,
+	): Promise<void> {
+		const pending = session.pendingConfirm;
+		if (!pending) {
+			await this.replySystem(message, "当前没有待确认的危险命令。");
+			return;
+		}
+		session.pendingConfirm = null;
+		this.terminalService.writeTerminal(session.terminalId, `${pending.text}\n`);
+		session.history.push(pending.text);
+		await this.replySystem(message, `✅ 已执行：${pending.preview}`);
+		await this.flushSnapshot(session, { force: true });
+	}
+
+	private async handleCancel(
+		session: PtySession,
+		message: RemoteInboundMessage,
+	): Promise<void> {
+		const pending = session.pendingConfirm;
+		session.pendingConfirm = null;
+		await this.replySystem(
+			message,
+			pending
+				? `已取消：${pending.preview}`
+				: "当前没有待确认的危险命令，已为你忽略。",
+		);
+		await this.flushSnapshot(session, { force: true });
+	}
+
+	private async handleInboundFiles(
+		session: PtySession,
+		message: RemoteInboundMessage,
+	): Promise<void> {
+		const cfg = this.config;
+		const files = message.inbound_files ?? [];
+		if (files.length === 0) return;
+		if (!cfg.fileTransferEnabled) {
+			await this.replySystem(
+				message,
+				"📎 检测到附件，但文件上下行已在设置面板关闭，已忽略。",
+			);
+			return;
+		}
+		const result = await saveInboundFiles(session.cwd, files, {
+			maxBytes: cfg.maxUploadBytes,
+		});
+		const savedLines = result.saved.map(
+			(s) => `  • ${s.filename}（${s.bytes} 字节）→ .uploads/${s.filename}`,
+		);
+		const skippedLines = result.skipped.map(
+			(s) => `  • ${s.filename}：${s.reason}`,
+		);
+		if (savedLines.length > 0) {
+			await this.replySystem(
+				message,
+				[
+					`📥 ${result.saved.length} 个附件已落到 ${path.join(session.cwd, ".uploads")}：`,
+					...savedLines,
+					...(skippedLines.length > 0 ? ["跳过：", ...skippedLines] : []),
+				].join("\n"),
+			);
+			// 向 pty 注入一条提示文本（不当作命令执行，仅做注解）
+			const noteLine = `# 已收到附件：${result.saved.map((s) => `.uploads/${s.filename}`).join(", ")}\n`;
+			this.terminalService.writeTerminal(session.terminalId, noteLine);
+		} else if (skippedLines.length > 0) {
+			await this.replySystem(
+				message,
+				[`📥 收到的附件全部跳过：`, ...skippedLines].join("\n"),
+			);
+		}
+	}
+
+	/**
+	 * 主快照推送。force=true 时即使 pendingSnapshot=false 也强制推一帧。
+	 */
+	private async flushSnapshot(
+		session: PtySession,
+		opts: { force?: boolean } = {},
+	): Promise<void> {
+		if (session.closed) return;
+		if (!session.streamingHealthy && !opts.force) {
+			// 离线模式下不主动推；force=true（用户操作了 scroll/resize 等）允许重试
+			return;
+		}
+		try {
+			const terminalCfg = this.config;
+			const fmt: "plain" | "ansi" =
+				session.colorMode === "plain" ? "plain" : "ansi";
+			let body: string;
+			if (fmt === "ansi" && session.colorMode !== "plain") {
+				body = session.aggregator.snapshotAnsi();
+			} else {
+				body = session.aggregator.snapshotPlain();
+			}
+			if (terminalCfg.highlightDiff) {
+				const diff = session.aggregator.diffWithPrev();
+				body = highlightDiffLines(body, diff);
+			}
+			// 拼状态条
+			if (terminalCfg.showStatusBar) {
+				const status = session.aggregator.statusLine({
+					command: session.command,
+					cwd: session.cwd,
+					pid: session.pid ?? "-",
+					startedAt: session.startedAt,
+					cols: session.aggregator.cols,
+					rows: session.aggregator.rows,
+				});
+				body = `${status}\n${body}`;
+			}
+			// 折叠
+			const folded = foldLongOutput(body, {
+				threshold: terminalCfg.longOutputFoldThreshold,
+			});
+			session.morePages = folded.morePages;
+			const wrapped = wrapSnapshot(folded.visible, fmt);
+			await session.streaming.update(wrapped);
+
+			// 上下文按钮
+			if (terminalCfg.contextAwareButtons) {
+				const ctx = session.aggregator.detectContext();
+				const shortcuts = buildContextualShortcuts({
+					context: ctx,
+					hasMorePages: folded.morePages.length > 0,
+					pendingConfirm: session.pendingConfirm !== null,
+					scrolling: !session.aggregator.isViewportPinned(),
+				});
+				const sig = shortcutsSignature(shortcuts);
+				if (sig !== session.lastShortcutsSignature) {
+					session.lastShortcutsSignature = sig;
+					if (session.streaming.updateShortcuts) {
+						await session.streaming.updateShortcuts(shortcuts).catch(() => {
+							// 渠道未实现或失败时静默；下次 detect 仍会再试
+						});
+					}
+				}
+			}
+
+			session.consecutiveFailures = 0;
+			session.adaptiveBackoff = 1;
+			session.streamingHealthy = true;
+		} catch (error) {
+			session.consecutiveFailures += 1;
+			if (session.consecutiveFailures >= 3) {
+				session.adaptiveBackoff = Math.min(8, session.adaptiveBackoff * 2);
+				this.rearmSnapshotTimer(session);
+				this.log(
+					"warn",
+					`快照推送连续失败 ${session.consecutiveFailures} 次，自适应节流系数升至 ${session.adaptiveBackoff}（${session.peerKey}）`,
+				);
+			}
 			this.log(
 				"warn",
 				`快照推送失败 (${session.peerKey})：${error instanceof Error ? error.message : String(error)}`,
@@ -580,23 +1146,25 @@ export class PtyBridgeService {
 			this.terminalService.destroyTerminal(session.terminalId);
 		}
 
-		// 通知桌面端 TerminalPanel 移除该会话 tab；只在曾经 attach 过时才发，
-		// 避免前端处理一条它从未感知过的会话。
 		if (session.desktopAttached) {
 			this.sendToDesktop("remote-terminal-detached", {
 				id: session.terminalId,
 				reason: options.reason,
 			});
-			// 同时复用既有的 terminal-exit 协议让 TerminalInstance 显示「进程已退出」
 			this.sendToDesktop("terminal-exit", {
 				id: session.terminalId,
 				exitCode: 0,
 			});
 		}
 
-		const finalSnapshot = session.aggregator.snapshot();
+		const fmt: "plain" | "ansi" =
+			session.colorMode === "plain" ? "plain" : "ansi";
+		const finalSnapshot =
+			fmt === "ansi"
+				? session.aggregator.snapshotAnsi()
+				: session.aggregator.snapshotPlain();
 		try {
-			await session.streaming.close(wrapSnapshot(finalSnapshot), {
+			await session.streaming.close(wrapSnapshot(finalSnapshot, fmt), {
 				note: options.reason,
 			});
 		} catch (error) {
@@ -619,9 +1187,6 @@ export class PtyBridgeService {
 	/**
 	 * 把远控 pty 的输出转发到桌面端 TerminalPanel，并发出 attached 事件让前端
 	 * 把会话挂进 TerminalInstance 列表。
-	 *
-	 * 桌面端只是「同屏观察 + 可输入接管」，不允许桌面 xterm 改尺寸或杀进程，
-	 * 这两条保护在 terminal IPC handler 那一侧实现。
 	 */
 	private attachDesktopForwarding(
 		session: PtySession,
@@ -629,8 +1194,6 @@ export class PtyBridgeService {
 	): void {
 		if (!this.deps.getMainWindow) return;
 
-		// 即便用户关掉了 autoShow，输出转发也必须建立——否则用户开了 autoShow
-		// 之后手动从设置里把会话挂回桌面时拿不到历史 + 实时输出。
 		const unsub = this.terminalService.onData(session.terminalId, (chunk) => {
 			this.sendToDesktop("terminal-data", {
 				id: session.terminalId,

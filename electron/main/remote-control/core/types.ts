@@ -193,6 +193,8 @@ export type RemoteTerminalPreset = {
 	cwd?: string;
 };
 
+export type RemoteTerminalColorMode = "auto" | "ansi" | "plain";
+
 export type RemoteTerminalConfig = {
 	enabled: boolean;
 	presets: RemoteTerminalPreset[];
@@ -207,6 +209,46 @@ export type RemoteTerminalConfig = {
 	 * 默认 true。桌面端展示是只读 + 可输入接管，关闭按钮仅前端 detach，不杀进程。
 	 */
 	autoShowOnDesktop: boolean;
+
+	// ─── 体验升级（2026-05-13） ───────────────────────────
+
+	/**
+	 * 颜色渲染模式：
+	 * - "auto" —— 各渠道自行降级（Discord 用 ANSI codeblock；其他用 markdown 关键色映射）
+	 * - "ansi" —— 强制输出 ANSI 转义序列（仅 Discord 直读，其他渠道会显示乱码）
+	 * - "plain" —— 强制纯文本（最稳，弱网降级）
+	 */
+	colorMode: RemoteTerminalColorMode;
+	/**
+	 * 每渠道默认列宽。未设置时回落到顶层 cols。
+	 * 来源依据：飞书 CardKit 卡片宽（80 列）、Telegram editMessage（60 列）、
+	 * Slack mrkdwn（80 列）、Discord codeblock（100 列）。
+	 */
+	perChannelCols: Partial<Record<RemoteChannelId, number>>;
+	/** scrollback 行数，启用翻屏命令查看历史。默认 200。 */
+	scrollbackLines: number;
+	/** 是否在屏幕首行注入状态条 `[claude·12s·pid 1234·80×24·行 45/200]`。 */
+	showStatusBar: boolean;
+	/** 是否给新增/变化的行加 ▸ 前缀高亮。默认关（实验性）。 */
+	highlightDiff: boolean;
+	/** 上下文感知按钮：识别 y/n 提示、数字菜单等时动态替换按钮组。默认开。 */
+	contextAwareButtons: boolean;
+	/** 危险命令二次确认（rm -rf 等）。默认开。 */
+	dangerousCommandConfirm: boolean;
+	/** 危险命令正则/子串模式列表。 */
+	dangerousPatterns: string[];
+	/** 单帧 snapshot 折叠阈值（字符数）。超出后头尾保留、中间用 [...] 折叠。 */
+	longOutputFoldThreshold: number;
+	/** 离线期间累积的输出行数上限。 */
+	offlineBufferLines: number;
+	/** 命令历史 ring buffer 大小。 */
+	commandHistorySize: number;
+	/** 文件上下行总开关。 */
+	fileTransferEnabled: boolean;
+	/** 单次上传字节上限（IM 入站文件落到 cwd/.uploads）。 */
+	maxUploadBytes: number;
+	/** 单次下载字节上限（/cli get <path>）。 */
+	maxDownloadBytes: number;
 };
 
 export type RemoteControlConfig = {
@@ -321,6 +363,20 @@ export type RemoteInboundContextFile = {
 	metadata?: Record<string, string>;
 };
 
+/**
+ * 入站附件引用（图片/文件）。channel 在 inbound 阶段把附件元信息封进来，
+ * 由 PtyBridgeService 在 IM 远程终端开启时把内容下载到 cwd/.uploads 并向
+ * pty 注入提示行。download() 由 channel 实现：典型路径是去 channel 的对应
+ * API 抓 binary stream。
+ */
+export type RemoteInboundFileRef = {
+	filename: string;
+	mimeType?: string;
+	bytes?: number;
+	/** 拉取附件二进制；返回 Buffer。失败时 throw。 */
+	download: () => Promise<Buffer>;
+};
+
 export type RemoteInboundMessage = {
 	channel_id: RemoteChannelId;
 	peer_id: string;
@@ -334,6 +390,11 @@ export type RemoteInboundMessage = {
 	target_id: string;
 	raw?: unknown;
 	context_files?: RemoteInboundContextFile[];
+	/**
+	 * 入站附件（图片/文件）。仅 IM 远控终端会消费；其它路径仍按既有逻辑走 text。
+	 * 为可选字段，旧渠道未实现时直接缺省。
+	 */
+	inbound_files?: RemoteInboundFileRef[];
 };
 
 export type RemoteOutboundMessage = {

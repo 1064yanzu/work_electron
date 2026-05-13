@@ -5,13 +5,27 @@ import {
 } from "../core/defaults";
 import type {
 	RemoteChannelFeatureConfig,
+	RemoteChannelId,
 	RemoteControlConfig,
 	RemoteDmPolicy,
 	RemoteGroupPolicy,
+	RemoteTerminalColorMode,
 	RemoteTerminalConfig,
 	RemoteTerminalPreset,
 } from "../core/types";
 import { parseJsonSafely } from "../core/utils";
+
+const VALID_CHANNEL_IDS: RemoteChannelId[] = [
+	"feishu",
+	"telegram",
+	"slack",
+	"discord",
+	"qqbot",
+	"wechat",
+	"generic_webhook",
+];
+
+const VALID_COLOR_MODES: RemoteTerminalColorMode[] = ["auto", "ansi", "plain"];
 
 function isObject(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object";
@@ -375,6 +389,82 @@ function mergeTerminalConfig(
 			presets.push(preset);
 		}
 		next.presets = presets;
+	}
+
+	// ─── 体验升级字段（2026-05-13） ─────────────────────
+
+	if (
+		typeof source.colorMode === "string" &&
+		VALID_COLOR_MODES.includes(source.colorMode as RemoteTerminalColorMode)
+	) {
+		next.colorMode = source.colorMode as RemoteTerminalColorMode;
+	}
+	if (isObject(source.perChannelCols)) {
+		const merged: Partial<Record<RemoteChannelId, number>> = {
+			...next.perChannelCols,
+		};
+		for (const [k, v] of Object.entries(
+			source.perChannelCols as Record<string, unknown>,
+		)) {
+			if (!VALID_CHANNEL_IDS.includes(k as RemoteChannelId)) continue;
+			if (typeof v !== "number" || v < 30 || v > 240) continue;
+			merged[k as RemoteChannelId] = Math.floor(v);
+		}
+		next.perChannelCols = merged;
+	}
+	if (
+		typeof source.scrollbackLines === "number" &&
+		source.scrollbackLines >= 0 &&
+		source.scrollbackLines <= 5000
+	) {
+		next.scrollbackLines = Math.floor(source.scrollbackLines);
+	}
+	if (typeof source.showStatusBar === "boolean")
+		next.showStatusBar = source.showStatusBar;
+	if (typeof source.highlightDiff === "boolean")
+		next.highlightDiff = source.highlightDiff;
+	if (typeof source.contextAwareButtons === "boolean")
+		next.contextAwareButtons = source.contextAwareButtons;
+	if (typeof source.dangerousCommandConfirm === "boolean")
+		next.dangerousCommandConfirm = source.dangerousCommandConfirm;
+	const dangerousPatterns = mergeStringArray(source.dangerousPatterns);
+	if (dangerousPatterns) next.dangerousPatterns = dangerousPatterns;
+	if (
+		typeof source.longOutputFoldThreshold === "number" &&
+		source.longOutputFoldThreshold >= 500 &&
+		source.longOutputFoldThreshold <= 20_000
+	) {
+		next.longOutputFoldThreshold = Math.floor(source.longOutputFoldThreshold);
+	}
+	if (
+		typeof source.offlineBufferLines === "number" &&
+		source.offlineBufferLines >= 0 &&
+		source.offlineBufferLines <= 1000
+	) {
+		next.offlineBufferLines = Math.floor(source.offlineBufferLines);
+	}
+	if (
+		typeof source.commandHistorySize === "number" &&
+		source.commandHistorySize >= 0 &&
+		source.commandHistorySize <= 200
+	) {
+		next.commandHistorySize = Math.floor(source.commandHistorySize);
+	}
+	if (typeof source.fileTransferEnabled === "boolean")
+		next.fileTransferEnabled = source.fileTransferEnabled;
+	if (
+		typeof source.maxUploadBytes === "number" &&
+		source.maxUploadBytes >= 1024 &&
+		source.maxUploadBytes <= 50 * 1024 * 1024
+	) {
+		next.maxUploadBytes = Math.floor(source.maxUploadBytes);
+	}
+	if (
+		typeof source.maxDownloadBytes === "number" &&
+		source.maxDownloadBytes >= 1024 &&
+		source.maxDownloadBytes <= 50 * 1024 * 1024
+	) {
+		next.maxDownloadBytes = Math.floor(source.maxDownloadBytes);
 	}
 	return next;
 }

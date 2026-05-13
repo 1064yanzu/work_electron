@@ -208,15 +208,36 @@ export function parseCardAction(value: unknown): {
  * 解析远程终端 (pty 桥) 卡片按钮回调。
  *
  * 触发卡片来源：feishuStreamingCard 给 ChannelStreamingStartOptions.terminalShortcuts
- * 渲染的按钮区。可识别三种 action：
- *   - pty_key   → 发送特殊键（key 字段需匹配 ptyCommandParser 的别名表）
- *   - pty_stop  → 停止当前会话
- *   - pty_text  → 注入任意字符串作为 stdin
+ * 渲染的按钮区。可识别以下 action：
+ *   - pty_key     → 发送特殊键（key 字段需匹配 ptyCommandParser 的别名表）
+ *   - pty_stop    → 停止当前会话
+ *   - pty_text    → 注入任意字符串作为 stdin
+ *   - pty_scroll  → 滚屏（dir + 可选 amount）
+ *   - pty_more    → 翻看折叠后的下一页
+ *   - pty_confirm → 确认执行待确认的危险命令
+ *   - pty_cancel  → 取消待确认的危险命令
  */
 export type PtyCardAction =
 	| { kind: "key"; key: string }
 	| { kind: "stop" }
-	| { kind: "text"; text: string };
+	| { kind: "text"; text: string }
+	| {
+			kind: "scroll";
+			dir: "up" | "down" | "top" | "bottom" | "page-up" | "page-down";
+			amount?: number;
+	  }
+	| { kind: "more" }
+	| { kind: "confirm" }
+	| { kind: "cancel" };
+
+const SCROLL_DIR_SET: ReadonlySet<string> = new Set([
+	"up",
+	"down",
+	"top",
+	"bottom",
+	"page-up",
+	"page-down",
+]);
 
 export function parsePtyCardAction(value: unknown): PtyCardAction | null {
 	const normalize = (raw: unknown): PtyCardAction | null => {
@@ -235,6 +256,24 @@ export function parsePtyCardAction(value: unknown): PtyCardAction | null {
 			const text = typeof parsed.text === "string" ? parsed.text : "";
 			return { kind: "text", text };
 		}
+		if (action === "pty_scroll") {
+			const dir = typeof parsed.dir === "string" ? parsed.dir : "";
+			if (!SCROLL_DIR_SET.has(dir)) return null;
+			const amount =
+				typeof parsed.amount === "number" && Number.isFinite(parsed.amount)
+					? Math.max(1, Math.min(1000, Math.floor(parsed.amount)))
+					: undefined;
+			return {
+				kind: "scroll",
+				dir: dir as PtyCardAction extends { kind: "scroll"; dir: infer D }
+					? D
+					: never,
+				amount,
+			};
+		}
+		if (action === "pty_more") return { kind: "more" };
+		if (action === "pty_confirm") return { kind: "confirm" };
+		if (action === "pty_cancel") return { kind: "cancel" };
 		return null;
 	};
 

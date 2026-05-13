@@ -149,6 +149,8 @@ type RemoteTerminalPresetIpc = {
 };
 
 /** 远程终端配置（IM 远控 pty 桥） */
+type RemoteTerminalColorModeIpc = "auto" | "ansi" | "plain";
+
 type RemoteTerminalIpc = {
 	enabled: boolean;
 	presets: RemoteTerminalPresetIpc[];
@@ -159,6 +161,22 @@ type RemoteTerminalIpc = {
 	idleTimeoutMs: number;
 	freeCommandMode: boolean;
 	autoShowOnDesktop: boolean;
+
+	// ─── 体验升级（2026-05-13） ───────────────────────────
+	colorMode: RemoteTerminalColorModeIpc;
+	perChannelCols: Partial<Record<RemoteChannelId, number>>;
+	scrollbackLines: number;
+	showStatusBar: boolean;
+	highlightDiff: boolean;
+	contextAwareButtons: boolean;
+	dangerousCommandConfirm: boolean;
+	dangerousPatterns: string[];
+	longOutputFoldThreshold: number;
+	offlineBufferLines: number;
+	commandHistorySize: number;
+	fileTransferEnabled: boolean;
+	maxUploadBytes: number;
+	maxDownloadBytes: number;
 };
 
 /** 远程终端会话快照（运行时） */

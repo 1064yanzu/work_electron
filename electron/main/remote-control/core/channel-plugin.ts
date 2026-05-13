@@ -1,5 +1,6 @@
 import type {
 	ChannelActions,
+	ChannelFileTransfer,
 	ChannelStreamingFactory,
 	ChannelTypingFactory,
 } from "../sdk";
@@ -50,4 +51,15 @@ export interface RemoteChannelPlugin {
 	 * 可选：SDK 级别的消息动作（edit/delete/react/pin）。
 	 */
 	actions?: ChannelActions | null;
+
+	/**
+	 * 可选：文件上下行能力（IM 远程终端使用）。
+	 *
+	 * - sendFile: 把桌面端 cwd 内文件经 IM 回传给用户（/cli get 命令）
+	 * - 入站附件直接在 onInboundMessage 的 RemoteInboundMessage.inbound_files
+	 *   字段里以 RemoteInboundFileRef 形式提供（每个 ref 自带 download() 闭包）
+	 *
+	 * 渠道未实现时 PtyBridgeService 对 /cli get 提示「该渠道暂不支持文件回传」。
+	 */
+	fileTransfer?: ChannelFileTransfer | null;
 }

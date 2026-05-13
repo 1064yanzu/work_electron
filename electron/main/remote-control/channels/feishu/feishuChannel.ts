@@ -8,6 +8,7 @@ import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegist
 import type {
 	RemoteInboundMessage,
 	RemoteInboundContextFile,
+	RemoteInboundFileRef,
 	RemoteOutboundMessage,
 } from "../../core/types";
 import {
@@ -15,6 +16,7 @@ import {
 	getChannelDedupe,
 	type ChannelActions,
 	type ChannelDedupe,
+	type ChannelFileTransfer,
 	type ChannelStreamingFactory,
 	type ChannelTypingFactory,
 	type SequentialQueue,
@@ -39,6 +41,7 @@ import { parseCardAction, parsePtyCardAction } from "./feishuCardBuilder";
 import { createFeishuStreamingFactory } from "./feishuStreamingCard";
 import { createFeishuTypingFactory } from "./feishuTyping";
 import { createFeishuActions } from "./feishuActions";
+import { createFeishuFileTransfer } from "./feishuFileTransfer";
 import { FeishuDedupeManager } from "./feishuDedupe";
 import { FeishuOutboundSender } from "./feishuOutbound";
 import { FeishuReconnectScheduler } from "./feishuReconnect";
@@ -123,6 +126,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 	streaming: ChannelStreamingFactory | null = null;
 	typing: ChannelTypingFactory | null = null;
 	actions: ChannelActions | null = null;
+	fileTransfer: ChannelFileTransfer | null = null;
 	private ctx: RemoteChannelContext | null = null;
 	private client: Lark.Client | null = null;
 	private wsClient: Lark.WSClient | null = null;
@@ -334,6 +338,11 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		if (!text.trim()) {
 			return;
 		}
+
+		// IM 远控终端使用的入站附件下载闭包（PtyBridge 用 inbound_files
+		// 把内容落盘到 cwd/.uploads/）。在下面 attachment merge consume
+		// 时填充。
+		const pendingInboundFiles: RemoteInboundFileRef[] = [];
 		const textDedupeConversationKey =
 			conversationKey || `${message.chat_id}::${senderOpenId || "unknown"}`;
 		if (!this.dedupe.touchInboundText(textDedupeConversationKey, text)) {
@@ -358,6 +367,28 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 					this.messageResourceService.buildContextBlock(mergedAttachments);
 				if (attachmentContext) {
 					text = `${text}\n\n${attachmentContext}`;
+				}
+				// 同步给 IM 远控终端：把附件转成 inbound_files，PtyBridge
+				// 会把它们落盘到 cwd/.uploads/ 并在 pty 中提示用户。
+				// 这里不会破坏 attachmentMerge 的 text 注入，只是额外暴露
+				// 二进制下载闭包。
+				if (this.messageResourceService) {
+					const resourceService = this.messageResourceService;
+					for (const attachment of mergedAttachments) {
+						pendingInboundFiles.push({
+							filename:
+								attachment.fileName ||
+								`${attachment.messageType}_${attachment.fileKey.slice(-8)}`,
+							mimeType: attachment.contentType,
+							bytes: attachment.contentLength,
+							download: () =>
+								resourceService.downloadAttachmentBuffer({
+									messageId: attachment.messageId,
+									fileKey: attachment.fileKey,
+									resourceType: attachment.resourceType,
+								}),
+						});
+					}
 				}
 			}
 
@@ -467,6 +498,9 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			reply_to_message_id: message.parent_id ?? message.root_id,
 			target_id: targetId,
 			context_files: contextFiles.length ? contextFiles : undefined,
+			inbound_files: pendingInboundFiles.length
+				? pendingInboundFiles
+				: undefined,
 			raw: payload,
 		};
 
@@ -554,12 +588,26 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		// 优先识别远程终端 (pty 桥) 按钮回调
 		const ptyAction = parsePtyCardAction(actionValue);
 		if (ptyAction) {
-			const ptyCommandText =
-				ptyAction.kind === "stop"
-					? "/cli stop"
-					: ptyAction.kind === "key"
-						? `/k ${ptyAction.key}`
-						: `/i ${ptyAction.text}`;
+			const ptyCommandText = (() => {
+				switch (ptyAction.kind) {
+					case "stop":
+						return "/cli stop";
+					case "key":
+						return `/k ${ptyAction.key}`;
+					case "text":
+						return `/i ${ptyAction.text}`;
+					case "scroll":
+						return ptyAction.amount
+							? `/cli ${ptyAction.dir} ${ptyAction.amount}`
+							: `/cli ${ptyAction.dir}`;
+					case "more":
+						return "/cli more";
+					case "confirm":
+						return "/cli confirm";
+					case "cancel":
+						return "/cli cancel";
+				}
+			})();
 
 			this.logger.info({
 				msg: `feishu card action: pty ${ptyAction.kind}`,
@@ -580,15 +628,29 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 				});
 			});
 
+			const toastContent = (() => {
+				switch (ptyAction.kind) {
+					case "stop":
+						return "已发送停止指令";
+					case "key":
+						return `已发送按键：${ptyAction.key}`;
+					case "text":
+						return "已注入输入";
+					case "scroll":
+						return `已滚屏 ${ptyAction.dir}`;
+					case "more":
+						return "已翻看下一页";
+					case "confirm":
+						return "已确认执行";
+					case "cancel":
+						return "已取消";
+				}
+			})();
+
 			return {
 				toast: {
 					type: "info",
-					content:
-						ptyAction.kind === "stop"
-							? "已发送停止指令"
-							: ptyAction.kind === "key"
-								? `已发送按键：${ptyAction.key}`
-								: "已注入输入",
+					content: toastContent,
 				},
 			};
 		}
@@ -806,6 +868,24 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 			},
 			logger: this.logger,
 		});
+		this.fileTransfer = createFeishuFileTransfer({
+			client: this.client,
+			logger: this.logger,
+			enabled: () => Boolean(this.client),
+			resolveReceiveIdType: (targetId) => {
+				const kind = normalizeTargetType(targetId);
+				if (
+					kind === "chat_id" ||
+					kind === "open_id" ||
+					kind === "user_id" ||
+					kind === "union_id" ||
+					kind === "email"
+				) {
+					return kind;
+				}
+				return "chat_id";
+			},
+		});
 
 		// ─── 能力注册表上报 ───
 		updateChannelCapabilityEntry({
@@ -876,6 +956,7 @@ export class FeishuChannelPlugin implements RemoteChannelPlugin {
 		this.streaming = null;
 		this.typing = null;
 		this.actions = null;
+		this.fileTransfer = null;
 		this.inboundMergeBuffer.clear();
 		this.shareContextBuffer.clear();
 		this.dedupe.clear();

@@ -39,6 +39,29 @@ export type TerminalShortcutAction =
 			/** 注入 pty 的纯文本（不会自动追加换行；由调用方决定是否带 \n） */
 			text: string;
 			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "scroll";
+			label: string;
+			/** 对应 ptyCommandParser.CliScrollDir */
+			dir: "up" | "down" | "top" | "bottom" | "page-up" | "page-down";
+			amount?: number;
+			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "more";
+			label: string;
+			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "confirm";
+			label: string;
+			style?: "primary" | "secondary" | "danger";
+	  }
+	| {
+			kind: "cancel";
+			label: string;
+			style?: "primary" | "secondary" | "danger";
 	  };
 
 export type ChannelStreamingStartOptions = {
@@ -59,6 +82,16 @@ export type ChannelStreamingStartOptions = {
 	 * 被截断。每行最多 4 个按钮。
 	 */
 	terminalShortcuts?: TerminalShortcutAction[];
+	/**
+	 * 内容渲染格式提示。channel 根据自己能力决定如何呈现：
+	 *   - "plain"     纯文本（兜底）
+	 *   - "ansi"      含 ANSI 转义（Discord ```​ansi codeblock 原生渲染；其他渠道
+	 *                 应自行 strip 或降级）
+	 *   - "markdown"  渠道 markdown 友好（飞书：用 **bold** + 区块；slack: mrkdwn）
+	 *
+	 * 仅作提示，channel 可忽略并按自己默认行为渲染。
+	 */
+	format?: "plain" | "ansi" | "markdown";
 };
 
 /**
@@ -75,6 +108,14 @@ export interface ChannelStreamingSession {
 	isActive(): boolean;
 	/** 流式输出的 message_id（供外层做 react/edit/pin 等） */
 	getMessageId(): string | undefined;
+	/**
+	 * 动态替换按钮组（用于上下文感知按钮）。channel 可选实现：
+	 *   - 飞书：通过 CardKit patch 替换 actions 区
+	 *   - telegram：editMessageReplyMarkup
+	 *   - slack/discord：chat.update / message.edit 重写 blocks/components
+	 * 未实现时调用方应静默忽略。
+	 */
+	updateShortcuts?(shortcuts: TerminalShortcutAction[]): Promise<void>;
 }
 
 /**

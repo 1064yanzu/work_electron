@@ -124,6 +124,29 @@ export class FeishuMessageResourceService {
 		private readonly logger: Logger,
 	) {}
 
+	/**
+	 * 直接按 message_id + file_key 下载附件二进制，供 IM 远控终端 inbound_files
+	 * 的 download() 闭包使用。
+	 *
+	 * resourceType=image 走 image_key（飞书 SDK 对 image 类附件下载用 type=image），
+	 * 其他全部走 file。
+	 */
+	async downloadAttachmentBuffer(params: {
+		messageId: string;
+		fileKey: string;
+		resourceType: FeishuAttachmentResourceType;
+	}): Promise<Buffer> {
+		const resourceResp = await this.client.im.messageResource.get({
+			params: { type: params.resourceType },
+			path: {
+				message_id: params.messageId,
+				file_key: params.fileKey,
+			},
+		});
+		const stream = resourceResp.getReadableStream();
+		return streamToBuffer(stream);
+	}
+
 	private extractMeta(
 		message: IncomingAttachmentMessage,
 	): AttachmentMeta | null {

@@ -146,6 +146,26 @@ export interface RemoteTerminalPreset {
 }
 
 /**
+ * 远程终端色彩输出模式。
+ * - auto：按渠道能力自动选择（CardKit 支持 lark_md 用 markdown，Discord 用 ansi codeblock，其余 plain）
+ * - ansi：强制带 ANSI SGR 序列（仅 Discord/Slack 可视；其它渠道会出现乱码）
+ * - plain：强制纯文本
+ */
+export type RemoteTerminalColorMode = "auto" | "ansi" | "plain";
+
+/**
+ * 远控渠道 ID（与 IPC schema 一致；用于 perChannelCols 等键集合）。
+ */
+export type RemoteChannelId =
+	| "feishu"
+	| "telegram"
+	| "slack"
+	| "discord"
+	| "qqbot"
+	| "wechat"
+	| "generic_webhook";
+
+/**
  * 远程终端配置。手机通过 IM /cli 指令接管桌面端 pty。
  */
 export interface RemoteTerminalConfig {
@@ -162,6 +182,36 @@ export interface RemoteTerminalConfig {
 	 * 关闭时桌面端保持静默，仍可通过命令面板或快捷键手动调出。
 	 */
 	autoShowOnDesktop: boolean;
+
+	// ─── 体验升级（2026-05-13） ────────────────────────────────
+	/** 色彩输出模式。auto 让 channel 按能力降级。 */
+	colorMode: RemoteTerminalColorMode;
+	/** 每渠道列宽覆盖；缺省时回退到顶层 cols。 */
+	perChannelCols: Partial<Record<RemoteChannelId, number>>;
+	/** xterm 虚拟终端 scrollback 行数；越大手机端可滚屏越久。 */
+	scrollbackLines: number;
+	/** 是否在快照前面附 statusLine（cmd · pid · 行号）。 */
+	showStatusBar: boolean;
+	/** 是否给最近一帧新增/变更的行加 ▸ 前缀高亮。 */
+	highlightDiff: boolean;
+	/** 是否启用「上下文按钮」根据 TUI 状态动态调整快捷键。 */
+	contextAwareButtons: boolean;
+	/** 是否对疑似危险命令二次确认（pty_confirm/pty_cancel）。 */
+	dangerousCommandConfirm: boolean;
+	/** 危险关键字列表（子串匹配，大小写不敏感）。 */
+	dangerousPatterns: string[];
+	/** 输出超过该字符数时折叠为 head/tail + /cli more 翻页。 */
+	longOutputFoldThreshold: number;
+	/** 断线时缓存的最近行数，重连后回放。 */
+	offlineBufferLines: number;
+	/** 命令历史保留长度（/cli history、/cli !N 使用）。 */
+	commandHistorySize: number;
+	/** 是否开放 IM ↔ pty cwd 的双向文件传输。 */
+	fileTransferEnabled: boolean;
+	/** 单文件上行最大字节（手机 → cwd/.uploads/）。 */
+	maxUploadBytes: number;
+	/** 单文件下行最大字节（cwd → 手机）。 */
+	maxDownloadBytes: number;
 }
 
 /**
@@ -288,7 +338,59 @@ export const DEFAULT_REMOTE_TERMINAL_CONFIG: RemoteTerminalConfig = {
 	idleTimeoutMs: 30 * 60 * 1000,
 	freeCommandMode: false,
 	autoShowOnDesktop: true,
+	colorMode: "auto",
+	perChannelCols: {
+		feishu: 80,
+		telegram: 56,
+		slack: 80,
+		discord: 100,
+		qqbot: 56,
+		wechat: 48,
+	},
+	scrollbackLines: 200,
+	showStatusBar: true,
+	highlightDiff: false,
+	contextAwareButtons: true,
+	dangerousCommandConfirm: true,
+	dangerousPatterns: [
+		"rm -rf /",
+		"rm -rf ~",
+		"rm -rf $HOME",
+		"rm -rf *",
+		"dd of=/dev/",
+		"mkfs.",
+		":(){:|:&};:",
+		"shutdown",
+		"reboot",
+		"halt",
+		"sudo rm",
+		"chmod -R 777 /",
+	],
+	longOutputFoldThreshold: 3500,
+	offlineBufferLines: 80,
+	commandHistorySize: 20,
+	fileTransferEnabled: true,
+	maxUploadBytes: 1_048_576,
+	maxDownloadBytes: 1_048_576,
 };
+
+function mergeTerminalConfig(
+	raw: Partial<RemoteTerminalConfig> | undefined,
+): RemoteTerminalConfig {
+	if (!raw) return { ...DEFAULT_REMOTE_TERMINAL_CONFIG };
+	return {
+		...DEFAULT_REMOTE_TERMINAL_CONFIG,
+		...raw,
+		perChannelCols: {
+			...DEFAULT_REMOTE_TERMINAL_CONFIG.perChannelCols,
+			...(raw.perChannelCols ?? {}),
+		},
+		dangerousPatterns:
+			Array.isArray(raw.dangerousPatterns) && raw.dangerousPatterns.length > 0
+				? raw.dangerousPatterns
+				: DEFAULT_REMOTE_TERMINAL_CONFIG.dangerousPatterns,
+	};
+}
 
 export async function getRemoteControlConfig(): Promise<RemoteControlConfig> {
 	const raw = await safeInvoke<RemoteControlConfig>(
@@ -296,7 +398,7 @@ export async function getRemoteControlConfig(): Promise<RemoteControlConfig> {
 	);
 	return {
 		...raw,
-		terminal: raw.terminal ?? DEFAULT_REMOTE_TERMINAL_CONFIG,
+		terminal: mergeTerminalConfig(raw.terminal),
 	};
 }
 

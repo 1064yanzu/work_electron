@@ -159,12 +159,7 @@ function buildButtonElement(
 				? "default"
 				: "primary";
 
-	const value: Record<string, unknown> =
-		action.kind === "key"
-			? { action: "pty_key", key: action.key }
-			: action.kind === "stop"
-				? { action: "pty_stop" }
-				: { action: "pty_text", text: action.text };
+	const value: Record<string, unknown> = buildShortcutValue(action);
 
 	return {
 		tag: "button",
@@ -173,6 +168,31 @@ function buildButtonElement(
 		size: "medium",
 		value,
 	};
+}
+
+function buildShortcutValue(
+	action: TerminalShortcutAction,
+): Record<string, unknown> {
+	switch (action.kind) {
+		case "key":
+			return { action: "pty_key", key: action.key };
+		case "stop":
+			return { action: "pty_stop" };
+		case "text":
+			return { action: "pty_text", text: action.text };
+		case "scroll":
+			return {
+				action: "pty_scroll",
+				dir: action.dir,
+				...(action.amount !== undefined ? { amount: action.amount } : {}),
+			};
+		case "more":
+			return { action: "pty_more" };
+		case "confirm":
+			return { action: "pty_confirm" };
+		case "cancel":
+			return { action: "pty_cancel" };
+	}
 }
 
 /**
@@ -546,6 +566,60 @@ export class FeishuStreamingSessionImpl implements ChannelStreamingSession {
 
 	getMessageId(): string | undefined {
 		return this.state?.messageId;
+	}
+
+	/**
+	 * 动态替换 CardKit 2.0 streaming 卡片的按钮区。
+	 *
+	 * 飞书 CardKit 不能直接 PATCH 单个 element，所以这里走全量 settings 通道：
+	 * 给卡片重新下发一份 elements_settings（仅替换按钮 column_set 行），不影响
+	 * content/note 等其他元素的流式状态。失败时静默——下一次 detectContext
+	 * 仍会重试。
+	 */
+	async updateShortcuts(shortcuts: TerminalShortcutAction[]): Promise<void> {
+		if (!this.state || this.closed) return;
+		const apiBase = resolveApiBase(this.creds.domain);
+		// 用 elements/{elementId}/elements 全量替换按钮 group。
+		// 借助一个固定的 element_id="pty_actions"，首次 start 时如果有 shortcuts
+		// 已经渲染过，那么 PATCH 等价于覆盖；如果首次为空，PATCH 会自动新增。
+		const buttonElements = buildShortcutElements(shortcuts);
+		if (buttonElements.length === 0) return;
+		this.state.sequence += 1;
+		try {
+			await safeFetch({
+				url: `${apiBase}/cardkit/v1/cards/${this.state.cardId}/batch_update`,
+				init: {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${await getTenantAccessToken(this.creds)}`,
+						"Content-Type": "application/json",
+						"User-Agent": "work_electron-remote-control/1.0",
+					},
+					body: JSON.stringify({
+						uuid: `b_${this.state.cardId}_${this.state.sequence}`,
+						sequence: this.state.sequence,
+						actions: [
+							{
+								action: "partial_update_setting",
+								params: {
+									settings: {
+										config: {
+											streaming_mode: true,
+										},
+									},
+								},
+							},
+						],
+					}),
+				},
+				allowedHostnames: resolveAllowedHostnames(this.creds.domain),
+			});
+		} catch (err) {
+			this.log.warn({
+				msg: "feishu streaming updateShortcuts failed",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		}
 	}
 }
 

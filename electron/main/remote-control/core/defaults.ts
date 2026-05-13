@@ -160,6 +160,44 @@ export const DEFAULT_REMOTE_CONTROL_CONFIG: RemoteControlConfig = {
 		idleTimeoutMs: 30 * 60 * 1000,
 		freeCommandMode: false,
 		autoShowOnDesktop: true,
+		colorMode: "auto",
+		// 每渠道列宽：飞书 CardKit 卡片支持较宽（80），Telegram editMessage 文本块
+		// 在手机上 50-60 较稳，Slack mrkdwn 80，Discord ansi codeblock 100。
+		// QQbot / WeChat 受 UI 限制保守一些。
+		perChannelCols: {
+			feishu: 80,
+			telegram: 56,
+			slack: 80,
+			discord: 100,
+			qqbot: 56,
+			wechat: 48,
+		},
+		scrollbackLines: 200,
+		showStatusBar: true,
+		highlightDiff: false,
+		contextAwareButtons: true,
+		dangerousCommandConfirm: true,
+		// 默认危险关键字。匹配子串即认为危险，避免误伤需要精确（如 "rm -rf /" 而非 "rm -rf"）。
+		dangerousPatterns: [
+			"rm -rf /",
+			"rm -rf ~",
+			"rm -rf $HOME",
+			"rm -rf *",
+			"dd of=/dev/",
+			"mkfs.",
+			":(){:|:&};:",
+			"shutdown",
+			"reboot",
+			"halt",
+			"sudo rm",
+			"chmod -R 777 /",
+		],
+		longOutputFoldThreshold: 3500,
+		offlineBufferLines: 80,
+		commandHistorySize: 20,
+		fileTransferEnabled: true,
+		maxUploadBytes: 1_048_576,
+		maxDownloadBytes: 1_048_576,
 	},
 };
 

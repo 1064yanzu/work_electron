@@ -17,6 +17,7 @@ import type {
 } from "../../core/channel-plugin";
 import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegistry";
 import type {
+	RemoteInboundFileRef,
 	RemoteOutboundMessage,
 	RemoteTelegramConfig,
 } from "../../core/types";
@@ -26,6 +27,7 @@ import {
 	parseApprovalCallback,
 	type ChannelActions,
 	type ChannelDedupe,
+	type ChannelFileTransfer,
 	type ChannelStreamingFactory,
 	type ChannelTypingFactory,
 	type SequentialQueue,
@@ -36,6 +38,7 @@ import {
 	checkBotMentioned,
 	TelegramOutboundRateLimiter,
 } from "./telegramUtils";
+import { createTelegramFileTransfer } from "./telegramFileTransfer";
 import { createTelegramStreamingFactory } from "./telegramStreaming";
 import { createTelegramTypingFactory } from "./telegramTyping";
 
@@ -44,6 +47,7 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 	streaming: ChannelStreamingFactory | null = null;
 	typing: ChannelTypingFactory | null = null;
 	actions: ChannelActions | null = null;
+	fileTransfer: ChannelFileTransfer | null = null;
 
 	private bot: Bot | null = null;
 	private ctx: RemoteChannelContext | null = null;
@@ -87,6 +91,11 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 				this.handleMessage(grammyCtx, config),
 			);
 
+			// 入站文件/图片：转 inbound_files 给 IM 远控终端
+			this.bot.on(["message:document", "message:photo"] as never, (grammyCtx) =>
+				this.handleFileMessage(grammyCtx, config),
+			);
+
 			// 注册交互回调（按钮点击）
 			this.bot.on("callback_query:data", (grammyCtx) =>
 				this.handleCallbackQuery(grammyCtx, config),
@@ -103,6 +112,11 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 				bot: this.bot,
 				logger: this.logger,
 				enabled: () => features?.typing.enabled !== false,
+			});
+			this.fileTransfer = createTelegramFileTransfer({
+				bot: this.bot,
+				logger: this.logger,
+				enabled: () => Boolean(this.bot),
 			});
 
 			// 简易 actions：edit / delete（Telegram 原生 API）
@@ -142,7 +156,7 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 					deleteMessage: true,
 					reactions: false,
 					pin: false,
-					media: false,
+					media: true,
 				},
 			});
 
@@ -179,6 +193,7 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 		this.streaming = null;
 		this.typing = null;
 		this.actions = null;
+		this.fileTransfer = null;
 		await this.persistentDedupe.flush().catch(() => {});
 	}
 
@@ -244,6 +259,120 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 	}
 
 	/**
+	 * 文件/图片消息：把 doc/photo 转 inbound_files 让 IM 远控终端落盘。
+	 * caption 作为 inbound.text 注入；没有 caption 则给一个占位。
+	 */
+	private async handleFileMessage(
+		grammyCtx: Context,
+		config: RemoteTelegramConfig,
+	): Promise<void> {
+		const msg = grammyCtx.message;
+		if (!msg?.from) return;
+		const bot = this.bot;
+		if (!bot) return;
+
+		const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
+		const senderId = String(msg.from.id);
+		const senderName =
+			msg.from.first_name +
+			(msg.from.last_name ? ` ${msg.from.last_name}` : "");
+		const chatId = String(msg.chat.id);
+		const messageId = String(msg.message_id);
+
+		const persistent = config.features?.dedupe.persistent !== false;
+		if (persistent) {
+			const fresh = await this.persistentDedupe.checkAndRecord(
+				`inbound:${chatId}:${messageId}`,
+			);
+			if (!fresh) return;
+		}
+
+		if (isGroup && config.requireMention) {
+			// 群里上传的文件如果没 caption 或没 @bot 不算
+			const captionWith = msg.caption ?? "";
+			if (
+				!checkBotMentioned(
+					captionWith,
+					msg.caption_entities ?? msg.entities,
+					this.botUsername,
+				)
+			) {
+				return;
+			}
+		}
+
+		// 拿 file_id：document 在 msg.document.file_id，photo 取最大尺寸
+		const filesToDownload: {
+			fileId: string;
+			fileName?: string;
+			mimeType?: string;
+			size?: number;
+		}[] = [];
+		if (msg.document) {
+			filesToDownload.push({
+				fileId: msg.document.file_id,
+				fileName: msg.document.file_name,
+				mimeType: msg.document.mime_type,
+				size: msg.document.file_size,
+			});
+		}
+		if (msg.photo && msg.photo.length > 0) {
+			// photo[] 按尺寸排列，取最大
+			const largest = msg.photo[msg.photo.length - 1];
+			filesToDownload.push({
+				fileId: largest.file_id,
+				fileName: `photo_${largest.file_unique_id}.jpg`,
+				mimeType: "image/jpeg",
+				size: largest.file_size,
+			});
+		}
+		if (filesToDownload.length === 0) return;
+
+		let text = msg.caption ?? "";
+		if (isGroup) {
+			text = stripBotMention(text, this.botUsername);
+		}
+		if (!text.trim()) {
+			text = "[附件]";
+		}
+
+		const inboundFiles: RemoteInboundFileRef[] = filesToDownload.map((f) => ({
+			filename: f.fileName ?? `telegram_${f.fileId.slice(-8)}`,
+			mimeType: f.mimeType,
+			bytes: f.size,
+			download: async () => {
+				// Telegram 文件分两步：先 getFile 拿到 file_path，再走 https 下载
+				const fileInfo = await bot.api.getFile(f.fileId);
+				if (!fileInfo.file_path) {
+					throw new Error("telegram getFile returned empty file_path");
+				}
+				const url = `https://api.telegram.org/file/bot${bot.token}/${fileInfo.file_path}`;
+				const resp = await fetch(url);
+				if (!resp.ok) {
+					throw new Error(`telegram file fetch HTTP ${resp.status}`);
+				}
+				const buf = await resp.arrayBuffer();
+				return Buffer.from(buf);
+			},
+		}));
+
+		this.ctx?.onStatusPatch({ last_inbound_at: Date.now() });
+
+		await this.ctx?.onInboundMessage({
+			channel_id: "telegram",
+			peer_id: senderId,
+			peer_name: senderName,
+			sender_id: senderId,
+			sender_name: senderName,
+			is_group: isGroup,
+			text,
+			message_id: messageId,
+			target_id: chatId,
+			inbound_files: inboundFiles,
+		});
+	}
+
+	/**
 	 * callback_query（按钮点击）处理：转换为 `/approve <id>` / `/reject <id>` 等命令。
 	 */
 	private async handleCallbackQuery(
@@ -258,18 +387,50 @@ export class TelegramChannelPlugin implements RemoteChannelPlugin {
 			query.from.first_name +
 			(query.from.last_name ? ` ${query.from.last_name}` : "");
 		const chatId = String(query.message.chat.id);
+		const data = query.data;
 
-		// 尝试解析为审批动作
-		const approval = parseApprovalCallback(query.data, query.data);
-		let commandText: string;
-		if (approval) {
-			commandText =
-				approval.action === "approve"
-					? `/approve ${approval.requestId}`
-					: `/reject ${approval.requestId}`;
-		} else {
-			// 其他 callback 透传
-			commandText = `/${query.data}`;
+		let commandText = "";
+		// pty:<idx>:<kind>[:payload]  → /cli 文本指令
+		if (data.startsWith("pty:")) {
+			const parts = data.split(":");
+			const kind = parts[2] ?? "";
+			const rest = parts.slice(3).join(":");
+			switch (kind) {
+				case "key":
+					commandText = `/cli key ${rest}`;
+					break;
+				case "stop":
+					commandText = "/cli stop";
+					break;
+				case "text":
+					commandText = `/i ${rest}`;
+					break;
+				case "scroll": {
+					const [dir, amt] = rest.split(":");
+					commandText = amt ? `/cli ${dir} ${amt}` : `/cli ${dir}`;
+					break;
+				}
+				case "more":
+					commandText = "/cli more";
+					break;
+				case "confirm":
+					commandText = "/cli confirm";
+					break;
+				case "cancel":
+					commandText = "/cli cancel";
+					break;
+			}
+		}
+		if (!commandText) {
+			const approval = parseApprovalCallback(data, data);
+			if (approval) {
+				commandText =
+					approval.action === "approve"
+						? `/approve ${approval.requestId}`
+						: `/reject ${approval.requestId}`;
+			} else {
+				commandText = `/${data}`;
+			}
 		}
 
 		// ack 按钮避免 loading 状态转圈

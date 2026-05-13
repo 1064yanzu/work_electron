@@ -146,6 +146,11 @@ export class RemoteControlOrchestrator {
 				if (!plugin?.streaming) return null;
 				return plugin.streaming.isEnabled() ? plugin.streaming : null;
 			},
+			resolveChannelFileTransfer: (channelId) => {
+				const plugin = this.channels.get(channelId);
+				if (!plugin?.fileTransfer) return null;
+				return plugin.fileTransfer.isEnabled() ? plugin.fileTransfer : null;
+			},
 			sendMessage: async (message) => {
 				await this.sendToChannel(message);
 			},

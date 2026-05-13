@@ -57,6 +57,12 @@ export type {
 export { mergeStreamingText } from "./streaming-merge";
 export { truncateSummary } from "./streaming-merge";
 
+// File transfer（IM 远程终端 /cli get / 入站附件）
+export type {
+	ChannelFileSendParams,
+	ChannelFileTransfer,
+} from "./channel-file-transfer";
+
 // Typing
 export type {
 	ChannelTypingSession,

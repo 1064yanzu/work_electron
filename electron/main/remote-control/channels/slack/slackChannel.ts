@@ -17,6 +17,7 @@ import type {
 } from "../../core/channel-plugin";
 import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegistry";
 import type {
+	RemoteInboundFileRef,
 	RemoteOutboundMessage,
 	RemoteSlackConfig,
 } from "../../core/types";
@@ -26,6 +27,7 @@ import {
 	parseApprovalCallback,
 	type ChannelActions,
 	type ChannelDedupe,
+	type ChannelFileTransfer,
 	type ChannelStreamingFactory,
 	type ChannelTypingFactory,
 	type SequentialQueue,
@@ -37,6 +39,7 @@ import {
 	resolveUserName,
 	SlackOutboundRateLimiter,
 } from "./slackUtils";
+import { createSlackFileTransfer } from "./slackFileTransfer";
 import { createSlackStreamingFactory } from "./slackStreaming";
 import { createSlackTypingFactory } from "./slackTyping";
 
@@ -45,6 +48,7 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 	streaming: ChannelStreamingFactory | null = null;
 	typing: ChannelTypingFactory | null = null;
 	actions: ChannelActions | null = null;
+	fileTransfer: ChannelFileTransfer | null = null;
 
 	private app: App | null = null;
 	private ctx: RemoteChannelContext | null = null;
@@ -89,19 +93,38 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 
 			// 注册消息监听
 			this.app.message(async ({ message }) => {
-				// 只处理常规文本消息
-				if (message.subtype) return;
-				if (!("text" in message) || !message.text) return;
-				if (!("user" in message) || !message.user) return;
+				// 允许：常规文本消息 (无 subtype) 和 file_share 类型（手机上传文件 + caption）
+				const m = message as {
+					subtype?: string;
+					text?: string;
+					user?: string;
+					channel: string;
+					channel_type?: string;
+					ts: string;
+					thread_ts?: string;
+					files?: Array<{
+						id: string;
+						name?: string;
+						mimetype?: string;
+						size?: number;
+						url_private_download?: string;
+						url_private?: string;
+					}>;
+				};
+				if (m.subtype && m.subtype !== "file_share") return;
+				if (!m.user) return;
+				const hasFiles = Array.isArray(m.files) && m.files.length > 0;
+				if (!m.text && !hasFiles) return;
 
 				await this.handleMessage(
-					message as {
-						text: string;
-						user: string;
-						channel: string;
-						channel_type?: string;
-						ts: string;
-						thread_ts?: string;
+					{
+						text: m.text ?? "",
+						user: m.user,
+						channel: m.channel,
+						channel_type: m.channel_type,
+						ts: m.ts,
+						thread_ts: m.thread_ts,
+						files: m.files,
 					},
 					config,
 				);
@@ -125,6 +148,11 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 				app: this.app,
 				logger: this.logger,
 				enabled: () => features?.typing.enabled !== false,
+			});
+			this.fileTransfer = createSlackFileTransfer({
+				app: this.app,
+				logger: this.logger,
+				enabled: () => Boolean(this.app),
 			});
 
 			const app = this.app;
@@ -198,7 +226,7 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 					deleteMessage: true,
 					reactions: true,
 					pin: true,
-					media: false,
+					media: true,
 				},
 			});
 
@@ -232,6 +260,7 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 		this.streaming = null;
 		this.typing = null;
 		this.actions = null;
+		this.fileTransfer = null;
 		await this.persistentDedupe.flush().catch(() => {});
 	}
 
@@ -245,6 +274,14 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 			channel_type?: string;
 			ts: string;
 			thread_ts?: string;
+			files?: Array<{
+				id: string;
+				name?: string;
+				mimetype?: string;
+				size?: number;
+				url_private_download?: string;
+				url_private?: string;
+			}>;
 		},
 		config: RemoteSlackConfig,
 	): Promise<void> {
@@ -266,11 +303,40 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 		}
 
 		// 清理消息文本
-		let text = msg.text;
+		let text = msg.text ?? "";
 		if (isGroup) {
 			text = stripBotMention(text, this.botUserId);
 		}
+		const hasFiles = Array.isArray(msg.files) && msg.files.length > 0;
+		if (!text.trim() && hasFiles) {
+			text = "[附件]";
+		}
 		if (!text.trim()) return;
+
+		// 包装 inbound_files：手机上传到 Slack 的文件需 Bearer Token 才能下载
+		const botToken = config.botToken;
+		const inboundFiles: RemoteInboundFileRef[] = [];
+		if (hasFiles && botToken && msg.files) {
+			for (const file of msg.files) {
+				const url = file.url_private_download ?? file.url_private;
+				if (!url) continue;
+				inboundFiles.push({
+					filename: file.name ?? `slack_${file.id}`,
+					mimeType: file.mimetype,
+					bytes: file.size,
+					download: async () => {
+						const resp = await fetch(url, {
+							headers: { Authorization: `Bearer ${botToken}` },
+						});
+						if (!resp.ok) {
+							throw new Error(`slack file fetch HTTP ${resp.status}: ${url}`);
+						}
+						const arrayBuffer = await resp.arrayBuffer();
+						return Buffer.from(arrayBuffer);
+					},
+				});
+			}
+		}
 
 		// 解析发送者名称
 		let senderName: string | undefined;
@@ -293,6 +359,7 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 			message_id: msg.ts,
 			reply_to_message_id: msg.thread_ts,
 			target_id: msg.channel,
+			inbound_files: inboundFiles.length > 0 ? inboundFiles : undefined,
 		});
 	}
 
@@ -307,15 +374,49 @@ export class SlackChannelPlugin implements RemoteChannelPlugin {
 	}): Promise<void> {
 		const action = body.actions?.[0];
 		if (!action?.action_id) return;
-		const approval = parseApprovalCallback(action.action_id, action.value);
-		let commandText: string;
-		if (approval) {
-			commandText =
-				approval.action === "approve"
-					? `/approve ${approval.requestId}`
-					: `/reject ${approval.requestId}`;
-		} else {
-			commandText = `/${action.action_id}`;
+		const actionId = action.action_id;
+		let commandText = "";
+		// pty:<idx>:<kind>[:payload]  → 反射成 /cli 文本指令
+		if (actionId.startsWith("pty:")) {
+			const parts = actionId.split(":");
+			const kind = parts[2] ?? "";
+			const rest = parts.slice(3).join(":");
+			switch (kind) {
+				case "key":
+					commandText = `/cli key ${rest}`;
+					break;
+				case "stop":
+					commandText = "/cli stop";
+					break;
+				case "text":
+					commandText = `/i ${rest}`;
+					break;
+				case "scroll": {
+					const [dir, amt] = rest.split(":");
+					commandText = amt ? `/cli ${dir} ${amt}` : `/cli ${dir}`;
+					break;
+				}
+				case "more":
+					commandText = "/cli more";
+					break;
+				case "confirm":
+					commandText = "/cli confirm";
+					break;
+				case "cancel":
+					commandText = "/cli cancel";
+					break;
+			}
+		}
+		if (!commandText) {
+			const approval = parseApprovalCallback(actionId, action.value);
+			if (approval) {
+				commandText =
+					approval.action === "approve"
+						? `/approve ${approval.requestId}`
+						: `/reject ${approval.requestId}`;
+			} else {
+				commandText = `/${actionId}`;
+			}
 		}
 		const senderId = body.user?.id ?? "unknown";
 		const channel = body.channel?.id ?? "unknown";

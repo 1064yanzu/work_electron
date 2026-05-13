@@ -22,6 +22,7 @@ import type {
 } from "../../core/channel-plugin";
 import { updateChannelCapabilityEntry } from "../../core/channelCapabilityRegistry";
 import type {
+	RemoteInboundFileRef,
 	RemoteOutboundMessage,
 	RemoteDiscordConfig,
 } from "../../core/types";
@@ -31,6 +32,7 @@ import {
 	parseApprovalCallback,
 	type ChannelActions,
 	type ChannelDedupe,
+	type ChannelFileTransfer,
 	type ChannelStreamingFactory,
 	type ChannelTypingFactory,
 	type SequentialQueue,
@@ -41,6 +43,7 @@ import {
 	checkBotMentioned,
 	DiscordOutboundRateLimiter,
 } from "./discordUtils";
+import { createDiscordFileTransfer } from "./discordFileTransfer";
 import { createDiscordStreamingFactory } from "./discordStreaming";
 import { createDiscordTypingFactory } from "./discordTyping";
 
@@ -49,6 +52,7 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 	streaming: ChannelStreamingFactory | null = null;
 	typing: ChannelTypingFactory | null = null;
 	actions: ChannelActions | null = null;
+	fileTransfer: ChannelFileTransfer | null = null;
 
 	private client: Client | null = null;
 	private ctx: RemoteChannelContext | null = null;
@@ -144,6 +148,11 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 				client: this.client,
 				logger: this.logger,
 				enabled: () => features?.typing.enabled !== false,
+			});
+			this.fileTransfer = createDiscordFileTransfer({
+				client: this.client,
+				logger: this.logger,
+				enabled: () => Boolean(this.client),
 			});
 
 			const client = this.client;
@@ -246,7 +255,7 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 					deleteMessage: true,
 					reactions: true,
 					pin: true,
-					media: false,
+					media: true,
 				},
 			});
 
@@ -273,6 +282,7 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 		this.streaming = null;
 		this.typing = null;
 		this.actions = null;
+		this.fileTransfer = null;
 		await this.persistentDedupe.flush().catch(() => {});
 	}
 
@@ -284,7 +294,9 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 	): Promise<void> {
 		// 忽略 bot 自身的消息
 		if (msg.author.bot) return;
-		if (!msg.content) return;
+		// content 可以为空（仅附件）但 attachments 也可空，二者都空才略过
+		const hasAttachment = msg.attachments && msg.attachments.size > 0;
+		if (!msg.content && !hasAttachment) return;
 
 		const isDM = !msg.guild;
 		const isGroup = !isDM;
@@ -302,15 +314,42 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 
 		// 群组消息需要 @bot
 		if (isGroup && config.requireMention) {
-			if (!checkBotMentioned(msg.content, this.botUserId)) return;
+			if (!checkBotMentioned(msg.content ?? "", this.botUserId)) return;
 		}
 
 		// 清理消息文本
-		let text = msg.content;
+		let text = msg.content ?? "";
 		if (isGroup) {
 			text = stripBotMention(text, this.botUserId);
 		}
+		// 仅附件、没文字时给一个占位，便于 IM 远控终端识别
+		if (!text.trim() && hasAttachment) {
+			text = "[附件]";
+		}
 		if (!text.trim()) return;
+
+		// 把附件包装成 inbound_files（IM 远控终端 PtyBridge 会下载到 cwd/.uploads/）
+		const inboundFiles: RemoteInboundFileRef[] = [];
+		if (hasAttachment) {
+			for (const attachment of msg.attachments.values()) {
+				inboundFiles.push({
+					filename: attachment.name ?? `file_${attachment.id}`,
+					mimeType: attachment.contentType ?? undefined,
+					bytes: attachment.size,
+					download: async () => {
+						const url = attachment.url;
+						const resp = await fetch(url);
+						if (!resp.ok) {
+							throw new Error(
+								`discord attachment fetch HTTP ${resp.status}: ${url}`,
+							);
+						}
+						const arrayBuffer = await resp.arrayBuffer();
+						return Buffer.from(arrayBuffer);
+					},
+				});
+			}
+		}
 
 		this.ctx?.onStatusPatch({ last_inbound_at: Date.now() });
 
@@ -324,6 +363,7 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 			text,
 			message_id: msg.id,
 			target_id: channelId,
+			inbound_files: inboundFiles.length > 0 ? inboundFiles : undefined,
 		});
 	}
 
@@ -336,15 +376,51 @@ export class DiscordChannelPlugin implements RemoteChannelPlugin {
 	}): Promise<void> {
 		const customId = interaction.customId;
 		if (!customId) return;
-		const approval = parseApprovalCallback(customId, customId);
-		let commandText: string;
-		if (approval) {
-			commandText =
-				approval.action === "approve"
-					? `/approve ${approval.requestId}`
-					: `/reject ${approval.requestId}`;
-		} else {
-			commandText = `/${customId}`;
+		let commandText = "";
+		// pty:<idx>:<kind>[:payload...]  → 反射回 /cli 文本指令，由 ptyCommandParser 解析
+		if (customId.startsWith("pty:")) {
+			const parts = customId.split(":");
+			const kind = parts[2] ?? "";
+			const rest = parts.slice(3).join(":");
+			switch (kind) {
+				case "key":
+					commandText = `/cli key ${rest}`;
+					break;
+				case "stop":
+					commandText = "/cli stop";
+					break;
+				case "text":
+					// /i 是 stdin 注入短形式（含自动换行），比 /cli send 更稳
+					commandText = `/i ${rest}`;
+					break;
+				case "scroll": {
+					const [dir, amt] = rest.split(":");
+					commandText = amt ? `/cli ${dir} ${amt}` : `/cli ${dir}`;
+					break;
+				}
+				case "more":
+					commandText = "/cli more";
+					break;
+				case "confirm":
+					commandText = "/cli confirm";
+					break;
+				case "cancel":
+					commandText = "/cli cancel";
+					break;
+				default:
+					commandText = "";
+			}
+		}
+		if (!commandText) {
+			const approval = parseApprovalCallback(customId, customId);
+			if (approval) {
+				commandText =
+					approval.action === "approve"
+						? `/approve ${approval.requestId}`
+						: `/reject ${approval.requestId}`;
+			} else {
+				commandText = `/${customId}`;
+			}
 		}
 		await interaction.deferUpdate().catch(() => {});
 
