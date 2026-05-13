@@ -35,6 +35,7 @@ import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
+import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
@@ -96,6 +97,7 @@ function PanelLoadingFallback() {
 
 export default function App() {
 	useRemoteChatBridge();
+	useRemoteTerminalBridge();
 	usePetQuickReplyBridge();
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);

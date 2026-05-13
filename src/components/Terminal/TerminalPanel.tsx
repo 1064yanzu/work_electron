@@ -5,12 +5,7 @@
 
 import { useCallback, useEffect } from "react";
 import { Terminal } from "lucide-react";
-import {
-	type RemoteTerminalAttachedPayload,
-	type RemoteTerminalDetachedPayload,
-	terminalStore,
-	useTerminalStoreSelector,
-} from "../../lib/stores/terminalStore";
+import { terminalStore, useTerminalStoreSelector } from "../../lib/stores/terminalStore";
 import { TerminalInstance } from "./TerminalInstance";
 import { TerminalTabBar } from "./TerminalTabBar";
 
@@ -19,6 +14,9 @@ export function TerminalPanel() {
 	const activeId = useTerminalStoreSelector((s) => s.activeTerminalId);
 
 	// 监听终端退出事件 -> 更新 store
+	// （远控 pty 的 attached/detached 由 App 顶层 useRemoteTerminalBridge 处理，
+	//  因为 TerminalPanel 是按 isVisible 条件渲染的，远控首次 attach 必须能在
+	//  面板未挂载时就被接收并把 isVisible 翻 true。）
 	useEffect(() => {
 		const unsubExit = window.electronAPI?.on<{
 			id: string;
@@ -28,28 +26,8 @@ export function TerminalPanel() {
 			terminalStore.handleTerminalExit(payload.id);
 		});
 
-		// 远控 pty 接入桌面端
-		const unsubRemoteAttached =
-			window.electronAPI?.on<RemoteTerminalAttachedPayload>(
-				"remote-terminal-attached",
-				(payload) => {
-					terminalStore.attachRemote(payload);
-				},
-			);
-
-		// 远控 pty 在 IM 端关闭 / 强制终止
-		const unsubRemoteDetached =
-			window.electronAPI?.on<RemoteTerminalDetachedPayload>(
-				"remote-terminal-detached",
-				(payload) => {
-					terminalStore.detachRemote(payload.id);
-				},
-			);
-
 		return () => {
 			unsubExit?.();
-			unsubRemoteAttached?.();
-			unsubRemoteDetached?.();
 		};
 	}, []);
 
