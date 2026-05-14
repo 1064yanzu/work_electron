@@ -369,13 +369,6 @@ export function AgentSettings() {
 		contextPolicy: "balanced" as const,
 		subagentContextMode: "capsule" as const,
 		maxTurns: 100,
-		thinkingLevel: "high" as
-			| "off"
-			| "low"
-			| "medium"
-			| "high"
-			| "xhigh"
-			| undefined,
 		maxBudgetUsd: undefined as number | undefined,
 		settingSources: ["user", "project"] as Array<"user" | "project" | "local">,
 		enableToolSearch: "false" as const,
@@ -385,31 +378,11 @@ export function AgentSettings() {
 			maxFileChars: 6000,
 		},
 		betas: [] as string[],
-		experimentalMultiAgentEnabled: false,
-		multiAgentMode: "hybrid" as const,
-		maxTeammates: 2,
-		teammateMode: "auto" as const,
-		teammateBudget: {
-			maxTurns: 40,
-			thinkingLevel: "medium" as
-				| "off"
-				| "low"
-				| "medium"
-				| "high"
-				| "xhigh"
-				| undefined,
-			maxBudgetUsd: undefined as number | undefined,
-		},
-		leaderSummaryModel: "" as string | undefined,
-		teammateExecutionModel: "" as string | undefined,
 	};
 
 	const saveContextRuntime = async (
-		patch: Partial<
-			Omit<typeof contextRuntime, "contextBudget" | "teammateBudget">
-		> & {
+		patch: Partial<Omit<typeof contextRuntime, "contextBudget">> & {
 			contextBudget?: Partial<typeof contextRuntime.contextBudget>;
-			teammateBudget?: Partial<typeof contextRuntime.teammateBudget>;
 		},
 	): Promise<void> => {
 		const next = {
@@ -419,17 +392,12 @@ export function AgentSettings() {
 				...contextRuntime.contextBudget,
 				...(patch.contextBudget || {}),
 			},
-			teammateBudget: {
-				...contextRuntime.teammateBudget,
-				...(patch.teammateBudget || {}),
-			},
 		};
 		await modelSettingsStore.updateContextRuntime(patch as any);
 		await Promise.all([
 			setConfig("agent.sdk.context_policy", next.contextPolicy),
 			setConfig("agent.sdk.subagent_context_mode", next.subagentContextMode),
 			setConfig("agent.sdk.max_turns", next.maxTurns),
-			setConfig("agent.sdk.thinking_level", next.thinkingLevel ?? ""),
 			setConfig("agent.sdk.max_budget_usd", next.maxBudgetUsd ?? ""),
 			setConfig("agent.sdk.setting_sources", next.settingSources),
 			setConfig("agent.sdk.enable_tool_search", next.enableToolSearch),
@@ -439,26 +407,6 @@ export function AgentSettings() {
 				max_file_chars: next.contextBudget.maxFileChars,
 			}),
 			setConfig("agent.sdk.betas", next.betas),
-			setConfig(
-				"agent.sdk.experimental_multi_agent_enabled",
-				next.experimentalMultiAgentEnabled,
-			),
-			setConfig("agent.sdk.multi_agent_mode", next.multiAgentMode),
-			setConfig("agent.sdk.max_teammates", next.maxTeammates),
-			setConfig("agent.sdk.teammate_mode", next.teammateMode),
-			setConfig("agent.sdk.teammate_budget", {
-				max_turns: next.teammateBudget.maxTurns,
-				thinking_level: next.teammateBudget.thinkingLevel ?? "",
-				max_budget_usd: next.teammateBudget.maxBudgetUsd ?? "",
-			}),
-			setConfig(
-				"agent.sdk.leader_summary_model",
-				next.leaderSummaryModel ?? "",
-			),
-			setConfig(
-				"agent.sdk.teammate_execution_model",
-				next.teammateExecutionModel ?? "",
-			),
 		]);
 	};
 

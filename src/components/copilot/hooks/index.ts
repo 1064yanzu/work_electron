@@ -4,3 +4,5 @@ export { useCopilotProposals } from "./useCopilotProposals";
 export { useSessionTitleGeneration } from "./useSessionTitleGeneration";
 export { useAgentHandler } from "./useAgentHandler";
 export { useChatHandler } from "./useChatHandler";
+export { useCopilotSession } from "./useCopilotSession";
+export { useCopilotMessage } from "./useCopilotMessage";

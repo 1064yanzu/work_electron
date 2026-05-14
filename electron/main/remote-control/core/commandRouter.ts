@@ -457,8 +457,6 @@ export class RemoteCommandRouter {
 						interactive_approval: true,
 						persist_session: true,
 						mcp_servers: mcpServers,
-						// 远程控制 Agent 禁止启动子进程 Electron（沙箱目录不是 Electron app）
-						teammate_mode: "in-process",
 					});
 					this.deps.sessionStore.bindRun(session.session_id, runId);
 					this.deps.sessionStore.update(session.session_id, {

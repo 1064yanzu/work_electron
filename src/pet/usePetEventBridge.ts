@@ -19,6 +19,7 @@ import { selectLine } from "../lib/mascot/personality";
 import { mascotManager } from "../lib/mascotStore";
 import { loadTtsSettings, speakTts } from "../lib/tts";
 import type { TTSScenePetFilter } from "../lib/tts";
+import { useMainWindowForegroundRef } from "./useMainWindowForeground";
 
 interface AgentSdkEventPayload {
 	runId?: string;
@@ -398,6 +399,7 @@ function inDndWindow(start: number | null, end: number | null): boolean {
 
 export function usePetEventBridge(): PetEventBridge {
 	const [state, dispatch] = useReducer(petEventReducer, INITIAL_STATE);
+	const mainWindowForegroundRef = useMainWindowForegroundRef();
 	const [dnd, setDnd] = useState<DndState>({
 		dwellMultiplier: 1,
 		isDoNotDisturb: false,
@@ -708,10 +710,15 @@ export function usePetEventBridge(): PetEventBridge {
 		const item = state.notification;
 		if (!item) return;
 		if (lastSpokenIdRef.current === item.id) return;
+		if (mainWindowForegroundRef.current) {
+			lastSpokenIdRef.current = item.id;
+			return;
+		}
 		// 桌宠 TTS：read settings from store via loadTtsSettings (cached)
 		void (async () => {
 			const s = await loadTtsSettings();
 			if (!s || !s.scene_pet_enabled) return;
+			if (mainWindowForegroundRef.current) return;
 			// 类型映射 + 过滤
 			const filterType: TTSScenePetFilter | null =
 				item.type === "done"
@@ -731,15 +738,20 @@ export function usePetEventBridge(): PetEventBridge {
 					: item.message;
 			void speakTts(text, { scope: "pet" });
 		})();
-	}, [state.notification]);
+	}, [state.notification, mainWindowForegroundRef]);
 
 	useEffect(() => {
 		const reminder = state.reminder;
 		if (!reminder) return;
 		if (lastSpokenIdRef.current === reminder.id) return;
+		if (mainWindowForegroundRef.current) {
+			lastSpokenIdRef.current = reminder.id;
+			return;
+		}
 		void (async () => {
 			const s = await loadTtsSettings();
 			if (!s || !s.scene_pet_enabled) return;
+			if (mainWindowForegroundRef.current) return;
 			if (!s.scene_pet_filter.includes("reminder")) return;
 			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
 			lastSpokenIdRef.current = reminder.id;
@@ -749,7 +761,7 @@ export function usePetEventBridge(): PetEventBridge {
 					: [reminder.title, reminder.detail].filter(Boolean).join("，");
 			void speakTts(text, { scope: "pet" });
 		})();
-	}, [state.reminder]);
+	}, [state.reminder, mainWindowForegroundRef]);
 
 	// 任务启动瞬间：按 task_start filter 朗读一句 thinkingShort 话术（受 dnd 控制）
 	const lastSpokenTaskRef = useRef<string | null>(null);
@@ -757,9 +769,14 @@ export function usePetEventBridge(): PetEventBridge {
 		const task = state.currentTask;
 		if (!task) return;
 		if (lastSpokenTaskRef.current === task.runId) return;
+		if (mainWindowForegroundRef.current) {
+			lastSpokenTaskRef.current = task.runId;
+			return;
+		}
 		void (async () => {
 			const s = await loadTtsSettings();
 			if (!s || !s.scene_pet_enabled) return;
+			if (mainWindowForegroundRef.current) return;
 			if (!s.scene_pet_filter.includes("task_start")) return;
 			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
 			lastSpokenTaskRef.current = task.runId;
@@ -767,7 +784,7 @@ export function usePetEventBridge(): PetEventBridge {
 			if (!line) return;
 			void speakTts(line, { scope: "pet" });
 		})();
-	}, [state.currentTask, getPersonalityId]);
+	}, [state.currentTask, getPersonalityId, mainWindowForegroundRef]);
 
 	// 长时 thinking：60s 后朗读 thinkingMedium，5min 后再朗读 thinkingLong
 	// 每个任务最多触发一次 medium / 一次 long，避免反复打扰
@@ -797,8 +814,13 @@ export function usePetEventBridge(): PetEventBridge {
 			if (state.currentTask?.runId !== task.runId) return;
 			const flag = longThinkingFiredRef.current;
 			if (!flag || flag.medium) return;
+			if (mainWindowForegroundRef.current) {
+				flag.medium = true;
+				return;
+			}
 			const s = await loadTtsSettings();
 			if (!s || !s.scene_pet_enabled) return;
+			if (mainWindowForegroundRef.current) return;
 			if (!s.scene_pet_filter.includes("thinking")) return;
 			if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
 			flag.medium = true;
@@ -810,8 +832,13 @@ export function usePetEventBridge(): PetEventBridge {
 				if (state.currentTask?.runId !== task.runId) return;
 				const flag = longThinkingFiredRef.current;
 				if (!flag || flag.long) return;
+				if (mainWindowForegroundRef.current) {
+					flag.long = true;
+					return;
+				}
 				const s = await loadTtsSettings();
 				if (!s || !s.scene_pet_enabled) return;
+				if (mainWindowForegroundRef.current) return;
 				if (!s.scene_pet_filter.includes("thinking")) return;
 				if (inDndWindow(dndStartRef.current, dndEndRef.current)) return;
 				flag.long = true;
@@ -824,7 +851,7 @@ export function usePetEventBridge(): PetEventBridge {
 			clearTimeout(fireMedium);
 			clearTimeout(fireLong);
 		};
-	}, [state.currentTask, getPersonalityId]);
+	}, [state.currentTask, getPersonalityId, mainWindowForegroundRef]);
 
 	// pet-speak：外部主动让桌宠"说一句话"——主进程 IPC 转发到这里。
 	// 走 notification 队列让气泡正常出现，同时朗读受 force 控制（默认走 scene_pet 设置）。

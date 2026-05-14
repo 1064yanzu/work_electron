@@ -158,6 +158,54 @@ export async function designListSystems(): Promise<
 	return await safeInvoke("design_list_systems", {});
 }
 
+export async function designGetSystemThumbnail(
+	systemId: string,
+): Promise<{ path: string; ready: boolean; mtime_ms?: number }> {
+	return await safeInvoke("design_get_system_thumbnail", { system_id: systemId });
+}
+
+export async function designGetDoc(input: {
+	kind: "system" | "skill";
+	id: string;
+}): Promise<{ title?: string; content: string } | null> {
+	return await safeInvoke("design_get_doc", input);
+}
+
+export interface DesignWorkDirEntry {
+	path: string;
+	relative: string;
+	name: string;
+	size: number;
+	mtime_ms: number;
+	is_dir: boolean;
+}
+
+export async function designListWorkDirFiles(
+	sessionId: string,
+): Promise<DesignWorkDirEntry[]> {
+	return await safeInvoke("design_list_work_dir_files", {
+		session_id: sessionId,
+	});
+}
+
+export interface DesignWorkDirFile {
+	relative_path: string;
+	size: number;
+	mtime_ms: number;
+	mode: "text" | "binary";
+	content?: string;
+	base64?: string;
+	mime?: string;
+}
+
+export async function designReadWorkDirFile(input: {
+	session_id: string;
+	relative_path: string;
+	mode?: "text" | "binary";
+}): Promise<DesignWorkDirFile> {
+	return await safeInvoke("design_read_work_dir_file", input);
+}
+
 export async function designRunCritique(input: {
 	session_id: string;
 	model?: string;

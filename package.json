@@ -7,7 +7,7 @@
 		"predev": "node scripts/copy-pdfjs-assets.mjs",
 		"dev": "vite",
 		"clean:build": "node scripts/clean-build.mjs",
-		"prepare:build": "npm run clean:build && node scripts/copy-pdfjs-assets.mjs",
+		"prepare:build": "npm run clean:build && node scripts/generate-icons.mjs && node scripts/copy-pdfjs-assets.mjs",
 		"build": "npm run prepare:build && tsc && vite build && electron-builder",
 		"build:mac": "npm run prepare:build && tsc && vite build && electron-builder --mac",
 		"build:win": "npm run prepare:build && tsc && vite build && electron-builder --win",

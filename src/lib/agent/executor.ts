@@ -577,17 +577,6 @@ class AgentExecutor {
 				maxFileChars: number;
 			};
 			enableToolSearch?: "auto" | "auto:5" | "true" | "false";
-			experimentalMultiAgent?: boolean;
-			multiAgentMode?: "subagent_only" | "hybrid" | "teammate_preferred";
-			maxTeammates?: number;
-			teammateMode?: "auto" | "tmux" | "in-process";
-			teammateBudget?: {
-				maxTurns?: number;
-				thinkingLevel?: import("../models/agentModelConfig").ThinkingLevel;
-				maxBudgetUsd?: number;
-			};
-			leaderSummaryModel?: string;
-			teammateExecutionModel?: string;
 			parentSdkSessionId?: string;
 			/** 是否启用规划模式 */
 			planMode?: boolean;
@@ -705,36 +694,6 @@ class AgentExecutor {
 			options.enableToolSearch ||
 			runtimeConfig?.enableToolSearch ||
 			("auto:5" as const);
-		const resolvedExperimentalMultiAgent =
-			options.experimentalMultiAgent ??
-			runtimeConfig?.experimentalMultiAgentEnabled ??
-			false;
-		const resolvedMultiAgentMode =
-			options.multiAgentMode ||
-			runtimeConfig?.multiAgentMode ||
-			("hybrid" as const);
-		const resolvedMaxTeammates = Math.max(
-			1,
-			Math.min(8, options.maxTeammates ?? runtimeConfig?.maxTeammates ?? 2),
-		);
-		const resolvedTeammateMode =
-			options.teammateMode || runtimeConfig?.teammateMode || ("auto" as const);
-		const resolvedTeammateBudget = {
-			maxTurns:
-				options.teammateBudget?.maxTurns ??
-				runtimeConfig?.teammateBudget?.maxTurns ??
-				40,
-			thinkingLevel:
-				options.teammateBudget?.thinkingLevel ??
-				runtimeConfig?.teammateBudget?.thinkingLevel,
-			maxBudgetUsd:
-				options.teammateBudget?.maxBudgetUsd ??
-				runtimeConfig?.teammateBudget?.maxBudgetUsd,
-		};
-		const resolvedLeaderSummaryModel =
-			options.leaderSummaryModel || runtimeConfig?.leaderSummaryModel;
-		const resolvedTeammateExecutionModel =
-			options.teammateExecutionModel || runtimeConfig?.teammateExecutionModel;
 		const conversationContextBeforeChars = String(
 			(options.conversationContext || []).join("\n"),
 		).length;
@@ -748,10 +707,6 @@ class AgentExecutor {
 			degradeLevel: 0,
 			compactionCount: 0,
 			agentRole: "leader",
-			delegationMode: resolvedMultiAgentMode,
-			experimentalMultiAgent: resolvedExperimentalMultiAgent,
-			maxTeammates: resolvedMaxTeammates,
-			teammateMode: resolvedTeammateMode,
 			parentSessionId: options.parentSdkSessionId,
 		});
 
@@ -966,17 +921,6 @@ class AgentExecutor {
 					max_file_chars: resolvedContextBudget.maxFileChars,
 				},
 				enableToolSearch: resolvedEnableToolSearch,
-				experimentalMultiAgent: resolvedExperimentalMultiAgent,
-				multiAgentMode: resolvedMultiAgentMode,
-				maxTeammates: resolvedMaxTeammates,
-				teammateMode: resolvedTeammateMode,
-				teammateBudget: {
-					max_turns: resolvedTeammateBudget.maxTurns,
-					thinking_level: resolvedTeammateBudget.thinkingLevel,
-					max_budget_usd: resolvedTeammateBudget.maxBudgetUsd,
-				},
-				leaderSummaryModel: resolvedLeaderSummaryModel,
-				teammateExecutionModel: resolvedTeammateExecutionModel,
 				planMode: options?.planMode,
 				confirmedPlan: options?.confirmedPlan,
 				abortController: this.abortController ?? undefined,

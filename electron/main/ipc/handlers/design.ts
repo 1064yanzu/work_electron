@@ -14,7 +14,8 @@
 
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { app, dialog, type IpcMainInvokeEvent } from "electron";
+import fs from "node:fs/promises";
+import { app, BrowserWindow, dialog, type IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type {
 	DesignSession,
@@ -44,8 +45,13 @@ import {
 	getSkillResourceMap,
 	runCritique,
 	scanDesignSystems,
+	getDesignLibraryRoot,
 } from "../../design";
 import { extractBrand, writeBrandSpec } from "../../design/brandExtract";
+import {
+	getSystemThumbnail,
+	type ThumbnailReadyPayload,
+} from "../../design/thumbnailEngine";
 import {
 	listMediaProviders,
 	runMediaJob,
@@ -667,6 +673,191 @@ export function createDesignHandlers(db: DbContext) {
 		});
 	};
 
+	// === M2：动态系统缩略图 ===
+	function broadcastThumbnailReady(payload: ThumbnailReadyPayload) {
+		const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+		if (!win) return;
+		try {
+			win.webContents.send("design:thumbnail-ready", payload);
+		} catch {
+			// ignore
+		}
+	}
+
+	const get_system_thumbnail: Handler<"design_get_system_thumbnail"> = async (
+		_event,
+		input,
+	) => {
+		return await getSystemThumbnail(input.system_id, broadcastThumbnailReady);
+	};
+
+	// === M3:DocSidebar — 一次性读 system 或 skill 的 markdown ===
+	const get_doc: Handler<"design_get_doc"> = async (_event, input) => {
+		if (input.kind === "system") {
+			const id = input.id.replace(/[^\w-]/g, "");
+			if (!id) return null;
+			const file = path.join(getDesignLibraryRoot(), "systems", id, "DESIGN.md");
+			try {
+				const content = await fs.readFile(file, "utf-8");
+				const summaries = await scanDesignSystems();
+				const summary = summaries.find((s) => s.id === id);
+				return { title: summary?.title ?? id, content };
+			} catch {
+				return null;
+			}
+		}
+		// skill
+		const map = await getSkillResourceMap(input.id);
+		if (!map) return null;
+		return {
+			title: map.frontmatter.name || input.id,
+			content: map.skill_md,
+		};
+	};
+
+	// === M5:工作目录文件管理 ===
+	const list_work_dir_files: Handler<"design_list_work_dir_files"> = async (
+		_event,
+		input,
+	) => {
+		const session = await loadSession(db, input.session_id);
+		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		const entries = await listSessionFiles(session.id);
+		return entries.map((e) => ({
+			path: e.path,
+			relative: e.relative,
+			name: e.name,
+			size: e.size,
+			mtime_ms: e.mtime_ms,
+			is_dir: e.is_dir,
+		}));
+	};
+
+	const TEXT_EXTS = new Set([
+		".html",
+		".htm",
+		".css",
+		".scss",
+		".sass",
+		".less",
+		".js",
+		".jsx",
+		".ts",
+		".tsx",
+		".mjs",
+		".cjs",
+		".json",
+		".md",
+		".markdown",
+		".txt",
+		".log",
+		".yaml",
+		".yml",
+		".toml",
+		".xml",
+		".svg",
+		".sh",
+		".env",
+	]);
+	const IMAGE_EXTS = new Set([
+		".png",
+		".jpg",
+		".jpeg",
+		".gif",
+		".webp",
+		".bmp",
+		".ico",
+	]);
+	const MIME_BY_EXT: Record<string, string> = {
+		".png": "image/png",
+		".jpg": "image/jpeg",
+		".jpeg": "image/jpeg",
+		".gif": "image/gif",
+		".webp": "image/webp",
+		".bmp": "image/bmp",
+		".ico": "image/x-icon",
+		".svg": "image/svg+xml",
+		".pdf": "application/pdf",
+		".woff": "font/woff",
+		".woff2": "font/woff2",
+		".ttf": "font/ttf",
+		".otf": "font/otf",
+	};
+	const MAX_TEXT_BYTES = 4 * 1024 * 1024; // 4MB
+	const MAX_BINARY_BYTES = 12 * 1024 * 1024; // 12MB
+
+	const read_work_dir_file: Handler<"design_read_work_dir_file"> = async (
+		_event,
+		input,
+	) => {
+		const session = await loadSession(db, input.session_id);
+		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+
+		const rel = input.relative_path.replace(/\\/g, "/");
+		if (rel.includes("..")) {
+			throw new Error("非法的相对路径");
+		}
+		const sessionDir = session.work_dir;
+		const absolute = path.resolve(sessionDir, rel);
+		const sessionDirAbs = path.resolve(sessionDir);
+		if (!absolute.startsWith(sessionDirAbs + path.sep) && absolute !== sessionDirAbs) {
+			throw new Error("路径超出工作目录范围");
+		}
+
+		const st = await fs.stat(absolute);
+		const ext = path.extname(absolute).toLowerCase();
+
+		const mode: "text" | "binary" =
+			input.mode === "binary"
+				? "binary"
+				: input.mode === "text"
+					? "text"
+					: TEXT_EXTS.has(ext)
+						? "text"
+						: "binary";
+
+		if (mode === "text") {
+			if (st.size > MAX_TEXT_BYTES) {
+				const buf = await fs.readFile(absolute);
+				const truncated =
+					buf.subarray(0, MAX_TEXT_BYTES).toString("utf-8") +
+					`\n<!-- truncated: ${st.size} bytes total -->\n`;
+				return {
+					relative_path: rel,
+					size: st.size,
+					mtime_ms: st.mtimeMs,
+					mode: "text",
+					content: truncated,
+				};
+			}
+			const content = await fs.readFile(absolute, "utf-8");
+			return {
+				relative_path: rel,
+				size: st.size,
+				mtime_ms: st.mtimeMs,
+				mode: "text",
+				content,
+			};
+		}
+
+		// binary
+		if (st.size > MAX_BINARY_BYTES) {
+			throw new Error(
+				`二进制文件过大无法预览（${(st.size / 1024 / 1024).toFixed(1)} MB），请用「打开目录」直接查看`,
+			);
+		}
+		const buf = await fs.readFile(absolute);
+		const mime = MIME_BY_EXT[ext] || (IMAGE_EXTS.has(ext) ? "image/*" : "application/octet-stream");
+		return {
+			relative_path: rel,
+			size: st.size,
+			mtime_ms: st.mtimeMs,
+			mode: "binary",
+			base64: buf.toString("base64"),
+			mime,
+		};
+	};
+
 	// 启动时确保 media 表已建好（异步即可，失败不影响其他功能）
 	void ensureMediaSchema(db).catch(() => undefined);
 
@@ -695,5 +886,9 @@ export function createDesignHandlers(db: DbContext) {
 		design_media_providers: media_providers,
 		design_media_generate: media_generate,
 		design_media_history: media_history,
+		design_get_system_thumbnail: get_system_thumbnail,
+		design_get_doc: get_doc,
+		design_list_work_dir_files: list_work_dir_files,
+		design_read_work_dir_file: read_work_dir_file,
 	};
 }

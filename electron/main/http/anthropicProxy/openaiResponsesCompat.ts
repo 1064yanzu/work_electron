@@ -23,6 +23,9 @@ export type OpenAIResponsesRequest = {
 	temperature?: number;
 	max_output_tokens?: number;
 	stream?: boolean;
+	reasoning?: {
+		effort: "low" | "medium" | "high";
+	};
 };
 
 export type OpenAIResponsesOutputItem = {

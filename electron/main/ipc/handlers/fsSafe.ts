@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
-import { shell } from "electron";
+import { app, shell } from "electron";
 
 type ReadFileInput = { path: string; encoding?: "utf-8" | "base64" };
 type ReadFileOutput = {
@@ -387,13 +387,7 @@ export function createFsSafeHandlers() {
 
 			// 生成保存路径
 			const fileName = input.fileName || `image-${Date.now()}.${ext}`;
-			const saveDir = path.join(
-				os.homedir(),
-				"Library",
-				"Application Support",
-				"ipo-workbench",
-				"generated-images",
-			);
+			const saveDir = path.join(app.getPath("userData"), "generated-images");
 			await fs.mkdir(saveDir, { recursive: true });
 			const savePath = path.join(saveDir, fileName);
 

@@ -357,6 +357,15 @@ export type IPCSchema = {
 		input: { ts: number };
 		output: { ts: number };
 	};
+	/**
+	 * 查询主窗口当前是否处于前台（focused + visible）。
+	 * 主要给桌宠窗口用：主窗口前台时桌宠抑制 TTS 播报，避免与主窗口的对话朗读重复。
+	 * 实时变化会通过 `main-window-focus-changed` 事件主动推送，此命令用于初次同步。
+	 */
+	main_window_is_focused: {
+		input: Record<string, never>;
+		output: { focused: boolean };
+	};
 	system_get_user_info: {
 		input: Record<string, never>;
 		output: {
@@ -1740,24 +1749,6 @@ export type IPCSchema = {
 			};
 			/** MCP tool search mode */
 			enable_tool_search?: "auto" | "auto:5" | "true" | "false";
-			/** Enable experimental multi-agent collaboration runtime */
-			experimental_multi_agent?: boolean;
-			/** Collaboration mode preference */
-			multi_agent_mode?: "subagent_only" | "hybrid" | "teammate_preferred";
-			/** Maximum number of teammates a leader may delegate concurrently */
-			max_teammates?: number;
-			/** Preferred teammate spawning mode */
-			teammate_mode?: "auto" | "tmux" | "in-process";
-			/** Default teammate execution budget */
-			teammate_budget?: {
-				max_turns?: number;
-				thinking_level?: "off" | "low" | "medium" | "high" | "xhigh";
-				max_budget_usd?: number;
-			};
-			/** Optional leader-only summary model hint */
-			leader_summary_model?: string;
-			/** Optional teammate execution model hint */
-			teammate_execution_model?: string;
 			/** Project root directory (actual user folder, separate from sandbox cwd). Used to locate .llm-wiki/ */
 			wiki_scope_path?: string;
 		};
@@ -3578,6 +3569,47 @@ export type IPCSchema = {
 			kinds: Array<"image" | "video" | "audio" | "music">;
 			requires_key: boolean;
 		}>;
+	};
+
+	// —— 后端动态缩略图（M2）
+	design_get_system_thumbnail: {
+		input: { system_id: string };
+		output: { path: string; ready: boolean; mtime_ms?: number };
+	};
+
+	// —— 系统 / Skill 文档（M3 DocSidebar）
+	design_get_doc: {
+		input: { kind: "system" | "skill"; id: string };
+		output: { title?: string; content: string } | null;
+	};
+
+	// —— 会话工作目录文件管理(M5)
+	design_list_work_dir_files: {
+		input: { session_id: string };
+		output: Array<{
+			path: string;
+			relative: string;
+			name: string;
+			size: number;
+			mtime_ms: number;
+			is_dir: boolean;
+		}>;
+	};
+	design_read_work_dir_file: {
+		input: {
+			session_id: string;
+			relative_path: string;
+			mode?: "text" | "binary";
+		};
+		output: {
+			relative_path: string;
+			size: number;
+			mtime_ms: number;
+			mode: "text" | "binary";
+			content?: string;
+			base64?: string;
+			mime?: string;
+		};
 	};
 };
 

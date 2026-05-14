@@ -73,8 +73,9 @@ import {
 	bindMainWindowGetter,
 	flingAndSnapPetWindow,
 	focusMainWindow as petFocusMainWindow,
-	sendChatToMainWindow as petSendChat,
+	getMascotBroadcastTargets,
 	getPetWindow,
+	sendChatToMainWindow as petSendChat,
 	setPetWindowPosition,
 } from "../services/petWindowService";
 import { createPreviewServerHandlers } from "./handlers/previewServer";
@@ -83,6 +84,7 @@ import { createTtsHandlers } from "./handlers/tts";
 import { createSlashCommandsHandlers } from "./handlers/slashCommands";
 import { createUpdateHandlers } from "./handlers/update";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
+import { isMainWindowForeground } from "../windows/mainWindowFocusState";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -91,6 +93,41 @@ type IpcHandler<K extends keyof IPCSchema> = (
 
 // 主窗口引用，用于流式输出
 let mainWindowRef: BrowserWindow | null = null;
+let cleanupMainWindowFocusTracking: (() => void) | null = null;
+
+function broadcastMainWindowFocusState() {
+	const payload = { focused: isMainWindowForeground(mainWindowRef) };
+	for (const win of getMascotBroadcastTargets()) {
+		try {
+			win.webContents.send("main-window-focus-changed", payload);
+		} catch {
+			// 窗口可能正在关闭
+		}
+	}
+}
+
+function bindMainWindowFocusTracking(window: BrowserWindow | null) {
+	cleanupMainWindowFocusTracking?.();
+	cleanupMainWindowFocusTracking = null;
+	if (!window || window.isDestroyed()) {
+		broadcastMainWindowFocusState();
+		return;
+	}
+
+	const emitSoon = () => {
+		setTimeout(broadcastMainWindowFocusState, 0);
+	};
+	const events = ["focus", "blur", "show", "hide", "minimize", "restore"] as const;
+	for (const eventName of events) {
+		(window as any).on(eventName, emitSoon);
+	}
+	cleanupMainWindowFocusTracking = () => {
+		for (const eventName of events) {
+			(window as any).off(eventName, emitSoon);
+		}
+	};
+	emitSoon();
+}
 
 export function setMainWindow(window: BrowserWindow | null) {
 	mainWindowRef = window;
@@ -109,6 +146,7 @@ export function setMainWindow(window: BrowserWindow | null) {
 	setFileWatcherMainWindow(window);
 	// 让 PetWindowService 能广播给主窗口
 	bindMainWindowGetter(() => mainWindowRef);
+	bindMainWindowFocusTracking(window);
 }
 
 export function registerIpcHandlers({
@@ -248,6 +286,10 @@ export function registerIpcHandlers({
 	ipcMain.handle("health_ping", (async (_event, input) => {
 		return { ts: input.ts };
 	}) satisfies IpcHandler<"health_ping">);
+
+	ipcMain.handle("main_window_is_focused", (async () => {
+		return { focused: isMainWindowForeground(mainWindowRef) };
+	}) satisfies IpcHandler<"main_window_is_focused">);
 
 	ipcMain.handle(
 		"system_get_user_info",
@@ -1395,6 +1437,19 @@ export function registerIpcHandlers({
 	);
 	ipcMain.handle("design_media_generate", designHandlers.design_media_generate);
 	ipcMain.handle("design_media_history", designHandlers.design_media_history);
+	ipcMain.handle(
+		"design_get_system_thumbnail",
+		designHandlers.design_get_system_thumbnail,
+	);
+	ipcMain.handle("design_get_doc", designHandlers.design_get_doc);
+	ipcMain.handle(
+		"design_list_work_dir_files",
+		designHandlers.design_list_work_dir_files,
+	);
+	ipcMain.handle(
+		"design_read_work_dir_file",
+		designHandlers.design_read_work_dir_file,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

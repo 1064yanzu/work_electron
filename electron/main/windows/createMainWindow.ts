@@ -1,12 +1,12 @@
 import path from "node:path";
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow } from "electron";
 import { setMainWindow } from "../ipc/register";
 import { applyMenuBarPolicyToWindow } from "../menu";
 
 export function createMainWindow({
 	rendererUrl,
 	rendererDist,
-	publicDir,
+	publicDir: _publicDir,
 	preloadPath,
 }: {
 	rendererUrl?: string;
@@ -14,8 +14,15 @@ export function createMainWindow({
 	publicDir: string;
 	preloadPath: string;
 }) {
+	// dev 模式用 build/icon.png 兜底 Dock/任务栏；prod 由 electron-builder 通过
+	// .icns / .ico 注入到 .app Info.plist / .exe 资源段，BrowserWindow.icon 不再需要。
+	const iconPath =
+		!app.isPackaged && process.env.APP_ROOT
+			? path.join(process.env.APP_ROOT, "build", "icon.png")
+			: undefined;
+
 	const win = new BrowserWindow({
-		icon: path.join(publicDir, "electron-vite.svg"),
+		...(iconPath ? { icon: iconPath } : {}),
 		width: 1400,
 		height: 900,
 		// Windows / Linux 上默认隐藏顶部菜单栏，避免顶栏冗余；按 Alt 可临时弹出

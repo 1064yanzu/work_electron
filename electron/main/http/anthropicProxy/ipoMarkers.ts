@@ -11,6 +11,12 @@ const IPO_MARKERS_STRIP_RE =
 const IPO_ROUTE_MARKER_RE = /<!--\s*ipo-route:([^:]+):([\s\S]*?)\s*-->/i;
 const IPO_ROUTE_MARKER_STRIP_RE = /<!--\s*ipo-route:[\s\S]*?-->/gi;
 
+// 思考强度标记：<!-- ipo-thinking-level:off|low|medium|high|xhigh -->
+const IPO_THINKING_LEVEL_MARKER_RE =
+	/<!--\s*ipo-thinking-level:(off|low|medium|high|xhigh)\s*-->/i;
+const IPO_THINKING_LEVEL_MARKER_STRIP_RE =
+	/<!--\s*ipo-thinking-level:[\s\S]*?-->/gi;
+
 const IPO_SUBAGENT_FALLBACK_RE =
 	/\bIPO_SUBAGENT_SCENARIO\s*[:=]\s*([^\n\r]+)\s*/i;
 const IPO_SUBAGENT_PROMPT_FALLBACK_RE =
@@ -218,12 +224,40 @@ export function extractIpoRoutingMarker(
 	return null;
 }
 
+export type IpoThinkingLevelMarker = "off" | "low" | "medium" | "high" | "xhigh";
+
+/**
+ * 从请求中提取思考强度标记 <!-- ipo-thinking-level:off|low|medium|high|xhigh -->
+ * marker 由 agentSdk.ts 注入到 systemPromptAppend，因此优先扫描 system 字段。
+ */
+export function extractIpoThinkingLevel(
+	req: AnthropicRequest,
+): IpoThinkingLevelMarker | null {
+	// 优先看 system 字段（marker 来自 agentSdk.ts 注入到 systemPromptAppend）
+	const sysOnly = collectAnthropicRequestText({ ...req, messages: [] } as any, {
+		tailMessages: 0,
+		includeToolUseInputs: false,
+	});
+	const sysMatch = sysOnly.match(IPO_THINKING_LEVEL_MARKER_RE);
+	if (sysMatch?.[1]) {
+		return sysMatch[1].toLowerCase() as IpoThinkingLevelMarker;
+	}
+
+	// 兜底：扫描最近几条消息
+	const haystack = collectAnthropicRequestText(req, { tailMessages: 3 });
+	const match = haystack.match(IPO_THINKING_LEVEL_MARKER_RE);
+	return match?.[1]
+		? (match[1].toLowerCase() as IpoThinkingLevelMarker)
+		: null;
+}
+
 function stripIpoMarkersFromString(input: string): string {
 	// Remove internal routing/log markers so they don't pollute upstream context.
 	return String(input || "")
 		.replaceAll(IPO_MARKERS_STRIP_RE, "")
 		.replaceAll(IPO_SUBAGENT_FALLBACK_STRIP_RE, "")
-		.replaceAll(IPO_ROUTE_MARKER_STRIP_RE, "");
+		.replaceAll(IPO_ROUTE_MARKER_STRIP_RE, "")
+		.replaceAll(IPO_THINKING_LEVEL_MARKER_STRIP_RE, "");
 }
 
 function stripIpoMarkersFromUnknown(value: unknown): unknown {

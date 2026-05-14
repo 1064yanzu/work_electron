@@ -58,11 +58,6 @@ export const agentModelSettingsStore = {
 								{}),
 							...((state as any).contextRuntime?.contextBudget || {}),
 						},
-						teammateBudget: {
-							...(DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget ||
-								{}),
-							...((state as any).contextRuntime?.teammateBudget || {}),
-						},
 						settingSources: Array.isArray(
 							(state as any).contextRuntime?.settingSources,
 						)
@@ -206,9 +201,6 @@ export const agentModelSettingsStore = {
 			contextBudget?: Partial<
 				NonNullable<AgentModelSettings["contextRuntime"]>["contextBudget"]
 			>;
-			teammateBudget?: Partial<
-				NonNullable<AgentModelSettings["contextRuntime"]>["teammateBudget"]
-			>;
 		},
 	): Promise<void> {
 		const mergedBudget = {
@@ -229,23 +221,6 @@ export const agentModelSettingsStore = {
 				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.contextBudget
 					?.maxFileChars ??
 				6000,
-		};
-		const mergedTeammateBudget = {
-			maxTurns:
-				settings.teammateBudget?.maxTurns ??
-				state.contextRuntime?.teammateBudget?.maxTurns ??
-				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget?.maxTurns ??
-				12,
-			thinkingLevel:
-				settings.teammateBudget?.thinkingLevel ??
-				state.contextRuntime?.teammateBudget?.thinkingLevel ??
-				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget
-					?.thinkingLevel,
-			maxBudgetUsd:
-				settings.teammateBudget?.maxBudgetUsd ??
-				state.contextRuntime?.teammateBudget?.maxBudgetUsd ??
-				DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateBudget
-					?.maxBudgetUsd,
 		};
 		state = {
 			...state,
@@ -289,36 +264,6 @@ export const agentModelSettingsStore = {
 					state.contextRuntime?.betas ??
 					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.betas ??
 					[],
-				experimentalMultiAgentEnabled:
-					settings.experimentalMultiAgentEnabled ??
-					state.contextRuntime?.experimentalMultiAgentEnabled ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime
-						?.experimentalMultiAgentEnabled ??
-					false,
-				multiAgentMode:
-					settings.multiAgentMode ??
-					state.contextRuntime?.multiAgentMode ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.multiAgentMode ??
-					"hybrid",
-				maxTeammates:
-					settings.maxTeammates ??
-					state.contextRuntime?.maxTeammates ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.maxTeammates ??
-					2,
-				teammateMode:
-					settings.teammateMode ??
-					state.contextRuntime?.teammateMode ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateMode ??
-					"auto",
-				teammateBudget: mergedTeammateBudget,
-				leaderSummaryModel:
-					settings.leaderSummaryModel ??
-					state.contextRuntime?.leaderSummaryModel ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.leaderSummaryModel,
-				teammateExecutionModel:
-					settings.teammateExecutionModel ??
-					state.contextRuntime?.teammateExecutionModel ??
-					DEFAULT_AGENT_MODEL_SETTINGS.contextRuntime?.teammateExecutionModel,
 				contextBudget: mergedBudget,
 			},
 		};

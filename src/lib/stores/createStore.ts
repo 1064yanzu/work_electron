@@ -67,6 +67,7 @@ export function createUseStoreSelector<T>(store: ReadableStoreApi<T>) {
 
 		const getSnapshot = useCallback(() => {
 			const nextState = store.getState();
+			// 同一份 state 引用：直接复用上次的 selected 结果
 			if (
 				lastStateRef.current === nextState &&
 				lastSelectedRef.current !== null
@@ -75,15 +76,17 @@ export function createUseStoreSelector<T>(store: ReadableStoreApi<T>) {
 			}
 
 			const nextSelected = selectorRef.current(nextState);
+			lastStateRef.current = nextState;
+
+			// state 引用变了但 selector 结果相同（Object.is）：保持上次的引用，
+			// 让 useSyncExternalStore 跳过不必要的更新
 			if (
-				lastStateRef.current === nextState &&
 				lastSelectedRef.current !== null &&
 				Object.is(lastSelectedRef.current, nextSelected)
 			) {
 				return lastSelectedRef.current;
 			}
 
-			lastStateRef.current = nextState;
 			lastSelectedRef.current = nextSelected;
 			return nextSelected;
 		}, []);

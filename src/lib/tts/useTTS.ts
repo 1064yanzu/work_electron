@@ -9,7 +9,7 @@
  * 全局只有一个朗读队列：切换 scope 自动 stop 之前的。
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
 	loadTtsSettings,
 	pauseTts,
@@ -53,14 +53,19 @@ export function useTTS(opts: { scope: TTSScope }): UseTTSResult {
 		setTtsRate(next);
 	}, []);
 
-	return {
-		status,
-		rate,
-		scope,
-		speak,
-		pause: pauseTts,
-		resume: resumeTts,
-		stop: stopTts,
-		setRate,
-	};
+	// 把返回对象用 useMemo 缓存，避免每次渲染都新建对象引用。
+	// 调用方把 tts 整体作为 useMemo 依赖时也能正确命中缓存。
+	return useMemo<UseTTSResult>(
+		() => ({
+			status,
+			rate,
+			scope,
+			speak,
+			pause: pauseTts,
+			resume: resumeTts,
+			stop: stopTts,
+			setRate,
+		}),
+		[status, rate, scope, speak, setRate],
+	);
 }

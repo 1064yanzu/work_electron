@@ -60,7 +60,12 @@
       }
     ],
     "artifactName": "${productName}-${version}-${arch}-Mac.${ext}",
-    "category": "public.app-category.developer-tools"
+    "category": "public.app-category.developer-tools",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "notarize": false
   },
   "dmg": {
     "writeUpdateInfo": false,
@@ -77,7 +82,8 @@
         "arch": ["x64"]
       }
     ],
-    "artifactName": "${productName}-${version}-${arch}-Windows.${ext}"
+    "artifactName": "${productName}-${version}-${arch}-Windows.${ext}",
+    "signingHashAlgorithms": ["sha256"]
   },
   "nsis": {
     "oneClick": false,

@@ -5,7 +5,6 @@ import {
 	Copy,
 	Edit3,
 	FileCode,
-	FileText,
 	RefreshCw,
 	Trash2,
 	Volume2,
@@ -199,15 +198,6 @@ function ChatMessageImpl({
 		setTimeout(() => setCopied(false), 2000);
 	};
 
-	// 应用整个消息内容
-	const handleApply = () => {
-		events.emit(EVENTS.AI_WRITE_TO_OUTPUT, {
-			content: message.content,
-			prompt: "AI 生成内容",
-			type: "append",
-		});
-	};
-
 	// 应用单个代码块（作为 diff）
 	const handleApplyCodeBlock = (index: number) => {
 		const block = codeBlocks[index];
@@ -317,7 +307,7 @@ function ChatMessageImpl({
 		onDelete,
 		message.id,
 		message.content,
-		tts,
+		tts.speak,
 	]);
 
 	return (
@@ -413,13 +403,6 @@ function ChatMessageImpl({
 												<Copy className="w-3 h-3" />
 											)}
 											{copied ? "已复制" : "复制"}
-										</button>
-										<button
-											onClick={handleApply}
-											className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
-										>
-											<FileText className="w-3 h-3" />
-											追加
 										</button>
 										<TTSToolbarButton
 											text={sanitizeForSpeech(message.content)}

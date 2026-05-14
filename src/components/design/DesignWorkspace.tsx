@@ -19,6 +19,7 @@ import {
 	layoutStore,
 } from "../../lib/stores";
 import { toast } from "../ui/Toast";
+import { ChatDiscovery } from "./ChatDiscovery";
 import { DesignArtifactView } from "./DesignArtifactView";
 import { DesignEmpty } from "./DesignEmpty";
 import { DirectionPicker } from "./DirectionPicker";
@@ -39,6 +40,9 @@ export function DesignWorkspace() {
 	const [progressText, setProgressText] = useState<string>("");
 	const [progressDetail, setProgressDetail] = useState<string>("");
 	const [activeRunId, setActiveRunId] = useState<string | null>(null);
+	const [discoveryMode, setDiscoveryMode] = useState<"chat" | "classic">(
+		"chat",
+	);
 
 	// 进入设计视图时确保有最小数据
 	useEffect(() => {
@@ -225,6 +229,15 @@ export function DesignWorkspace() {
 	}
 
 	if (stage === "discovery") {
+		if (discoveryMode === "chat") {
+			return (
+				<ChatDiscovery
+					onCancel={handleCancelDiscovery}
+					onSubmit={handleAdvanceFromDiscovery}
+					onSwitchClassic={() => setDiscoveryMode("classic")}
+				/>
+			);
+		}
 		return (
 			<DiscoveryForm
 				onCancel={handleCancelDiscovery}

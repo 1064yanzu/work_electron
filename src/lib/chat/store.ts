@@ -114,11 +114,67 @@ function loadFromStorage(): ChatState {
 }
 
 // 保存到 localStorage（使用压缩格式）
+// 触发 QuotaExceededError 时降级：临时把最旧的非 pinned / 非 archived 会话排除掉再重试，
+// 让用户至少能保留近期与置顶会话。被剔除的会话仍在内存 state.sessions 中，
+// 用户当次会话仍可访问；下次启动这些会话会从 localStorage 丢失。
+// TODO: 后续把超额会话迁移到 SQLite，详见 plans/performance-optimization-plan.md P3-1。
+const QUOTA_FALLBACK_KEEP_MIN = 50; // 保留至少这么多最近 + 置顶 + 归档的会话
+let quotaWarningShown = false;
+
+function trimSessionsForQuota(state: ChatState): ChatState | null {
+	const sessions = state.sessions;
+	if (sessions.length <= QUOTA_FALLBACK_KEEP_MIN) return null;
+
+	// 优先保留 pinned + archived（用户主动管理过的），其次按 updatedAt 倒序保留最近的
+	const pinned = sessions.filter((s) => s.isPinned || s.isArchived);
+	const others = sessions
+		.filter((s) => !s.isPinned && !s.isArchived)
+		.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+	const keepOthers = others.slice(
+		0,
+		Math.max(0, QUOTA_FALLBACK_KEEP_MIN - pinned.length),
+	);
+	const kept = [...pinned, ...keepOthers].sort(
+		(a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
+	);
+
+	if (kept.length === sessions.length) return null;
+	return { ...state, sessions: kept };
+}
+
 function saveToStorage(state: ChatState) {
 	try {
 		const compressed = serializeForStorage(state);
 		localStorage.setItem(STORAGE_KEY, compressed);
 	} catch (e) {
+		const isQuota =
+			e instanceof DOMException &&
+			(e.name === "QuotaExceededError" ||
+				e.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+				e.code === 22 ||
+				e.code === 1014);
+		if (isQuota) {
+			const trimmed = trimSessionsForQuota(state);
+			if (trimmed) {
+				try {
+					localStorage.setItem(STORAGE_KEY, serializeForStorage(trimmed));
+					if (!quotaWarningShown) {
+						quotaWarningShown = true;
+						console.warn(
+							`[ChatStore] localStorage 配额已满，本次只持久化最近 ${trimmed.sessions.length} / ${state.sessions.length} 条会话；最旧的非置顶/非归档会话将不再保留到下次启动。建议手动归档或导出旧会话。`,
+						);
+					}
+					return;
+				} catch (e2) {
+					console.error(
+						"[ChatStore] 降级写入仍然失败，本次保存被丢弃：",
+						e2,
+					);
+					return;
+				}
+			}
+		}
 		console.error("Failed to save chat sessions:", e);
 	}
 }

@@ -16,7 +16,6 @@ import {
 	Cat,
 	Loader2,
 	Plus,
-	Sparkles,
 	Volume2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -26,6 +25,7 @@ import {
 	updateTtsSettings,
 	useTtsStoreSelector,
 } from "../../../lib/tts";
+import { useSettingsStore } from "../../../lib/settingsStore";
 import { invoke } from "../../../lib/tauriCompat";
 import { toast } from "../../ui/Toast";
 import type {
@@ -45,6 +45,7 @@ import {
 	makeProviderFromTemplate,
 } from "./tts/providerCatalog";
 import { TTSGlobalSection } from "./tts/TTSGlobalSection";
+import { TTSPetPersonaSection } from "./tts/TTSPetPersonaSection";
 import { TTSProviderCard } from "./tts/TTSProviderCard";
 import { TTSSceneSection } from "./tts/TTSSceneSection";
 
@@ -67,6 +68,8 @@ const SCENE_ACCENTS = {
 export function TTSSettings() {
 	const settings = useTtsStoreSelector((s) => s.settings);
 	const isLoading = useTtsStoreSelector((s) => s.isLoadingSettings);
+	const { providers: llmProviders, isLoading: isLoadingLlmProviders } =
+		useSettingsStore();
 	const [showAddMenu, setShowAddMenu] = useState(false);
 
 	useEffect(() => {
@@ -324,62 +327,12 @@ export function TTSSettings() {
 					</div>
 				</div>
 
-				{/* AI 个性化人设：开关 + system prompt（v1 走话术池兜底，留待后续接 LLM） */}
-				<div className="rounded-2xl border border-border bg-cream-50 p-4">
-					<div className="flex items-center justify-between gap-3">
-						<div className="min-w-0">
-							<div className="flex items-center gap-1.5 text-[12.5px] font-medium text-text-primary">
-								<Sparkles
-									className="h-3.5 w-3.5 text-[color:var(--t-text-light,#9d9d98)]"
-									strokeWidth={1.6}
-								/>
-								AI 个性化台词（实验）
-							</div>
-							<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
-								开启后桌宠会用 LLM
-								按你写的人设生成台词；当前版本回落到内置话术池，schema
-								已就绪等待接入。
-							</div>
-						</div>
-						<SettingsSwitch
-							checked={settings.scene_pet_persona_enabled}
-							onChange={(v) => void patch({ scene_pet_persona_enabled: v })}
-						/>
-					</div>
-					<textarea
-						value={settings.scene_pet_persona_prompt ?? ""}
-						onChange={(e) =>
-							void patch({ scene_pet_persona_prompt: e.target.value })
-						}
-						rows={3}
-						placeholder="人设 system prompt，例如：你是一只松弛可爱的小奶猫，说话简短、爱用俏皮的拟声词…"
-						className="mt-3 w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-[12.5px] leading-relaxed text-text-primary outline-none transition focus:border-primary"
-					/>
-					<div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-2">
-						<input
-							type="text"
-							value={settings.scene_pet_persona_provider_id ?? ""}
-							onChange={(e) =>
-								void patch({
-									scene_pet_persona_provider_id: e.target.value.trim() || null,
-								})
-							}
-							placeholder="LLM Provider ID（留空走默认 LLM）"
-							className="rounded-lg border border-border bg-surface px-3 py-1.5 text-[11.5px] outline-none transition focus:border-primary"
-						/>
-						<input
-							type="text"
-							value={settings.scene_pet_persona_model ?? ""}
-							onChange={(e) =>
-								void patch({
-									scene_pet_persona_model: e.target.value.trim() || null,
-								})
-							}
-							placeholder="模型名（如 claude-sonnet-4-6 / gpt-4.1-mini）"
-							className="rounded-lg border border-border bg-surface px-3 py-1.5 text-[11.5px] outline-none transition focus:border-primary"
-						/>
-					</div>
-				</div>
+				<TTSPetPersonaSection
+					settings={settings}
+					llmProviders={llmProviders}
+					isLoadingProviders={isLoadingLlmProviders}
+					onPatch={(next) => void patch(next)}
+				/>
 
 				{/* 主动让桌宠说一句话（试听 / 联调入口） */}
 				<div className="rounded-2xl border border-border bg-cream-50 p-4">

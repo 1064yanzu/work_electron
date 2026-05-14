@@ -24,6 +24,9 @@ let activeMessageId: string | null = null;
 /** debounce: messageId → timer */
 const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+/** debounce 期内对应消息的最新 content；timer 触发时读它 */
+const pendingContents = new Map<string, string>();
+
 /** 每条消息分段播报的队列控制器 */
 interface QueueController {
 	cancelled: boolean;
@@ -54,8 +57,10 @@ interface AutoSpeakInput {
  * 组件内保留 useEffect([message.id, message.content, isStreaming]) 即可。
  *
  * 内部逻辑：
- *  - 仍在流式 → 仅记录一个"待播"定时器；下次来更新时刷新
- *  - 流式结束且字符稳定 → 分段入队朗读
+ *  - 仍在流式 → 直接跳过；等 isStreaming 翻到 false 那一刻再处理
+ *  - 流式刚结束 → 立即把 messageId 计入 spokenMessageIds，
+ *    防止 StrictMode 双跑 / 父组件 re-render 导致的二次进入；
+ *    再用 debounce 等 React 当前批次的所有状态合并完，统一拿到最终 content
  *  - 同一个 messageId 已经播过 → 直接跳过
  */
 export function requestAutoSpeak(input: AutoSpeakInput): void {
@@ -63,10 +68,12 @@ export function requestAutoSpeak(input: AutoSpeakInput): void {
 	if (!messageId) return;
 	if (spokenMessageIds.has(messageId)) return;
 
-	// 历史消息保护：非流式 + 距离现在超过 FRESH_WINDOW_MS 的消息直接标记已播
-	// （流式中说明消息正在产生，不做时间判断）
+	// 流式中：等 isStreaming 翻到 false 再处理。占位定时器对实际播放没有作用，
+	// 反而会让流式过程频繁触发 clearPending+setTimeout，无意义。
+	if (isStreaming) return;
+
+	// 历史消息保护：距离现在超过 FRESH_WINDOW_MS 的消息直接标记已播
 	if (
-		!isStreaming &&
 		typeof timestamp === "number" &&
 		Number.isFinite(timestamp) &&
 		Date.now() - timestamp > FRESH_WINDOW_MS
@@ -75,32 +82,22 @@ export function requestAutoSpeak(input: AutoSpeakInput): void {
 		return;
 	}
 
-	// 流式中：只计划一次延迟触发；每次 content 变化都重置
-	if (isStreaming) {
-		clearPending(messageId);
-		const timer = setTimeout(() => {
-			pendingTimers.delete(messageId);
-			// 如果这时候还在流式（content 还在变），什么都不做，等流结束再来
-			// 这里单纯是"抢占注册"，不重复计时
-		}, COMPLETION_DEBOUNCE_MS);
-		pendingTimers.set(messageId, timer);
-		return;
-	}
+	// 关键：同步标记。后续任何重入（StrictMode 双跑、metadata 抖动）都会被
+	// `spokenMessageIds.has(messageId)` 直接挡掉，杜绝重复播报。
+	spokenMessageIds.add(messageId);
 
-	// 非流式：等一小段 debounce，确保 content 不再变
+	// 暂存最新 content；如果 250ms 内 content 被再次更新，timer 触发时读最新版本。
+	pendingContents.set(messageId, content);
+
 	clearPending(messageId);
 	const timer = setTimeout(() => {
 		pendingTimers.delete(messageId);
-		if (spokenMessageIds.has(messageId)) return;
-		const sanitized = sanitizeForSpeech(content, {
+		const latest = pendingContents.get(messageId) ?? content;
+		pendingContents.delete(messageId);
+		const sanitized = sanitizeForSpeech(latest, {
 			maxLength: AUTO_MAX_CHARS,
 		});
-		if (!sanitized) {
-			// 没有可念的实际内容（全是代码/标记）→ 标记为已播，避免反复尝试
-			spokenMessageIds.add(messageId);
-			return;
-		}
-		spokenMessageIds.add(messageId);
+		if (!sanitized) return;
 		void playQueue(messageId, sanitized);
 	}, COMPLETION_DEBOUNCE_MS);
 	pendingTimers.set(messageId, timer);
@@ -112,6 +109,7 @@ function clearPending(messageId: string) {
 		clearTimeout(t);
 		pendingTimers.delete(messageId);
 	}
+	pendingContents.delete(messageId);
 }
 
 async function playQueue(messageId: string, text: string): Promise<void> {
@@ -158,6 +156,7 @@ function cancelActiveQueue(): void {
 export function cancelChatAutoSpeak(): void {
 	for (const t of pendingTimers.values()) clearTimeout(t);
 	pendingTimers.clear();
+	pendingContents.clear();
 	cancelActiveQueue();
 	stopTts();
 }

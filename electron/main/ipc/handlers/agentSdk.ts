@@ -361,54 +361,20 @@ export function createAgentSdkHandlers(options: {
 				const enableToolSearch = normalizeToolSearchMode(
 					(input as any).enable_tool_search ?? runtimeConfig?.enableToolSearch,
 				);
-				const experimentalMultiAgent =
-					typeof (input as any).experimental_multi_agent === "boolean"
-						? (input as any).experimental_multi_agent
-						: runtimeConfig?.experimentalMultiAgentEnabled === true;
-				const multiAgentMode = normalizeMultiAgentMode(
-					(input as any).multi_agent_mode ?? runtimeConfig?.multiAgentMode,
-				);
-				const maxTeammates =
-					normalizeNumber((input as any).max_teammates) ??
-					normalizeNumber(runtimeConfig?.maxTeammates) ??
-					2;
-				const teammateMode = normalizeTeammateMode(
-					(input as any).teammate_mode ?? runtimeConfig?.teammateMode,
-				);
-				const teammateBudgetRaw =
-					(input as any).teammate_budget &&
-					typeof (input as any).teammate_budget === "object"
-						? ((input as any).teammate_budget as Record<string, unknown>)
-						: runtimeConfig?.teammateBudget &&
-								typeof runtimeConfig.teammateBudget === "object"
-							? (runtimeConfig.teammateBudget as Record<string, unknown>)
-							: {};
-				const leaderSummaryModel =
-					typeof (input as any).leader_summary_model === "string" &&
-					String((input as any).leader_summary_model).trim()
-						? String((input as any).leader_summary_model).trim()
-						: typeof runtimeConfig?.leaderSummaryModel === "string" &&
-								runtimeConfig.leaderSummaryModel.trim()
-							? runtimeConfig.leaderSummaryModel.trim()
-							: undefined;
-				const teammateExecutionModel =
-					typeof (input as any).teammate_execution_model === "string" &&
-					String((input as any).teammate_execution_model).trim()
-						? String((input as any).teammate_execution_model).trim()
-						: typeof runtimeConfig?.teammateExecutionModel === "string" &&
-								runtimeConfig.teammateExecutionModel.trim()
-							? runtimeConfig.teammateExecutionModel.trim()
-							: undefined;
+				// Teammate / multi-agent 实验功能已下线：主进程不再从 input 或独立 config 读取
+				// experimental_multi_agent / multi_agent_mode / max_teammates / teammate_mode /
+				// teammate_budget / leader_summary_model / teammate_execution_model。
+				// 保留 buildMultiAgentRuntime 调用以兼容下游引用（experimentalEnabled 永远为 false）。
 				const multiAgentRuntime = buildMultiAgentRuntime({
 					runId,
 					resumeSessionId,
-					experimentalMultiAgent,
-					multiAgentMode,
-					maxTeammates,
-					teammateMode,
-					teammateBudget: teammateBudgetRaw,
-					leaderSummaryModel,
-					teammateExecutionModel,
+					experimentalMultiAgent: false,
+					multiAgentMode: normalizeMultiAgentMode(undefined),
+					maxTeammates: 2,
+					teammateMode: normalizeTeammateMode(undefined),
+					teammateBudget: {},
+					leaderSummaryModel: undefined,
+					teammateExecutionModel: undefined,
 				});
 				const inputMcpServers =
 					(input as any).mcp_servers &&
@@ -477,6 +443,7 @@ export function createAgentSdkHandlers(options: {
 					allowedToolsCount: allowedToolsForRun.length,
 					allowedToolsHasTask: allowedToolsForRun.includes("Task"),
 					allowedToolsHasTeammate: allowedToolsForRun.includes("Teammate"),
+					thinkingLevel,
 					multiAgentRuntime,
 					agents: "filesystem/native",
 				});
@@ -556,9 +523,16 @@ export function createAgentSdkHandlers(options: {
 					"当用户明确要求「记住」某事、或者你判断某条信息对未来会话有长期价值时，调用该工具的 add/replace/remove 动作写入 user 或 memory 文件。",
 					"不要把一次性任务结果、当前对话临时状态写入记忆。SOUL 文件由用户独占编辑，工具不可写。",
 				].join(" ");
-				const appendParts = [memorySection, userSystemPrompt, localWebSearchPrompt, memoryToolPrompt].filter(
-					(s) => s && s.trim().length > 0,
-				);
+				const thinkingLevelMarker = thinkingLevel
+					? `<!-- ipo-thinking-level:${thinkingLevel} -->`
+					: "";
+				const appendParts = [
+					memorySection,
+					userSystemPrompt,
+					localWebSearchPrompt,
+					memoryToolPrompt,
+					thinkingLevelMarker,
+				].filter((s) => s && s.trim().length > 0);
 				const systemPromptAppend = appendParts.join("\n\n");
 				const localWebSearchMcpServer = createLocalWebSearchMcpServer(
 					sdk as any,

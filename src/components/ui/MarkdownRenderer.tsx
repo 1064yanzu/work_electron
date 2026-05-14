@@ -102,6 +102,125 @@ interface MarkdownRendererProps {
 	sandboxDir?: string;
 }
 
+// 不依赖任何 props 的 markdown 组件提升到模块级，
+// 避免 MarkdownRenderer 每次重建 components 对象时这些函数也跟着失效引用。
+// 注意：a 标签的 onClick 里用到的 safeInvoke / isTauriUnavailableError 都是稳定导入引用。
+const STATIC_COMPONENTS = {
+	p({ children }: { children?: any }) {
+		return <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>;
+	},
+	h1({ children }: { children?: any }) {
+		return (
+			<h1 className="text-xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>
+		);
+	},
+	h2({ children }: { children?: any }) {
+		return (
+			<h2 className="text-lg font-bold mb-3 mt-5 first:mt-0">{children}</h2>
+		);
+	},
+	h3({ children }: { children?: any }) {
+		return (
+			<h3 className="text-base font-bold mb-2 mt-4 first:mt-0">{children}</h3>
+		);
+	},
+	ul({ children }: { children?: any }) {
+		return <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>;
+	},
+	ol({ children }: { children?: any }) {
+		return <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>;
+	},
+	li({ children }: { children?: any }) {
+		return <li className="leading-relaxed">{children}</li>;
+	},
+	a({ href, children }: { href?: string; children?: any }) {
+		const resolvedHref = typeof href === "string" ? href : "";
+		return (
+			<a
+				href={resolvedHref}
+				target="_blank"
+				rel="noreferrer"
+				className="text-focus dark:text-focus hover:underline"
+				onClick={async (e) => {
+					if (!resolvedHref) return;
+					// 在桌面 WebView 里，window.open/target=_blank 往往不会生效，改用后端 open_external_url 走系统浏览器
+					try {
+						e.preventDefault();
+						const result = await safeInvoke<{
+							success: boolean;
+							error?: string;
+						}>("open_external_url", { url: resolvedHref });
+						if (!result?.success) {
+							throw new Error(result?.error || "OPEN_EXTERNAL_URL_FAILED");
+						}
+					} catch (err) {
+						if (isTauriUnavailableError(err)) {
+							// Web 环境回退
+							window.open(resolvedHref, "_blank", "noopener,noreferrer");
+							return;
+						}
+						// 其他错误也回退一次，避免"点了没反应"
+						window.open(resolvedHref, "_blank", "noopener,noreferrer");
+					}
+				}}
+			>
+				{children}
+			</a>
+		);
+	},
+	blockquote({ children }: { children?: any }) {
+		return (
+			<blockquote className="border-l-4 border-cream-400 dark:border-cream-500 pl-4 my-3 italic text-text-secondary">
+				{children}
+			</blockquote>
+		);
+	},
+	table({ children }: { children?: any }) {
+		return (
+			<div className="overflow-x-auto my-3">
+				<table className="min-w-full border-collapse border border-border rounded-lg overflow-hidden">
+					{children}
+				</table>
+			</div>
+		);
+	},
+	th({ children }: { children?: any }) {
+		return (
+			<th className="bg-warm-200 px-4 py-2 text-left font-semibold border-b border-border">
+				{children}
+			</th>
+		);
+	},
+	td({ children }: { children?: any }) {
+		return <td className="px-4 py-2 border-b border-border">{children}</td>;
+	},
+	hr() {
+		return <hr className="my-6 border-border" />;
+	},
+} as const;
+
+// loading 占位图组件（不依赖 props），同样提到模块级
+function LoadingImagePlaceholder({ alt }: { alt?: string }) {
+	return (
+		<span className="block my-4 flex items-center justify-center">
+			<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-border shadow-sm">
+				<span className="relative block w-12 h-12">
+					<span className="absolute inset-0 rounded-full border-4 border-border" />
+					<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-700 animate-spin" />
+				</span>
+				<span className="flex items-center gap-2 text-sm text-text-muted">
+					<Palette
+						className="w-4 h-4 bai-icon-peach animate-pulse"
+						strokeWidth={1.5}
+					/>
+					<span>{alt || "AI 配图生成中..."}</span>
+				</span>
+				<span className="text-xs text-text-light">请稍候，图片即将呈现</span>
+			</span>
+		</span>
+	);
+}
+
 /**
  * 预处理 Markdown 内容：修复模型可能输出的格式问题
  * 例如：![alt]\n(url) -> ![alt](url)
@@ -161,123 +280,35 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 		return defaultUrlTransform(url);
 	}, []);
 
-	const components = useMemo(() => {
-		return {
-			// 自定义代码块样式
-			code({
-				className,
-				children,
-				...props
-			}: {
-				className?: string;
-				children?: any;
-			}) {
-				const match = /language-(\w+)/.exec(className || "");
-				const isInline = !match;
+	// code 渲染函数依赖 isStreaming（流式期间跳过 Shiki/Mermaid 等重渲染）
+	const codeComponent = useMemo(() => {
+		return function CodeBlock({
+			className,
+			children,
+			...props
+		}: {
+			className?: string;
+			children?: any;
+		}) {
+			const match = /language-(\w+)/.exec(className || "");
+			const isInline = !match;
 
-				if (isInline) {
-					return (
-						<code
-							className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-zinc-200"
-							{...props}
-						>
-							{children}
-						</code>
-					);
-				}
+			if (isInline) {
+				return (
+					<code
+						className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-zinc-200"
+						{...props}
+					>
+						{children}
+					</code>
+				);
+			}
 
-				const language = match[1].toLowerCase();
-				const code = String(children).replace(/\n$/, "");
+			const language = match[1].toLowerCase();
+			const code = String(children).replace(/\n$/, "");
 
-				// 检测可预览的代码块 - 渲染预览卡片替代代码块
-				if (language === "html" || language === "htm") {
-					if (isStreaming) {
-						return (
-							<div className="relative group my-3">
-								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
-									{language}
-								</div>
-								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
-									<code className={className} {...props}>
-										{children}
-									</code>
-								</pre>
-							</div>
-						);
-					}
-					return (
-						<div className="my-3">
-							<Suspense fallback={null}>
-								<WebPreviewCard
-									kind="html"
-									html={code}
-									title="前端预览"
-									isStreaming={isStreaming}
-								/>
-							</Suspense>
-						</div>
-					);
-				}
-
-				if (language === "jsx" || language === "tsx" || language === "react") {
-					if (isStreaming) {
-						return (
-							<div className="relative group my-3">
-								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
-									{language}
-								</div>
-								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
-									<code className={className} {...props}>
-										{children}
-									</code>
-								</pre>
-							</div>
-						);
-					}
-					return (
-						<div className="my-3">
-							<Suspense fallback={null}>
-								<WebPreviewCard
-									kind="react"
-									jsx={code}
-									title="React 预览"
-									isStreaming={isStreaming}
-								/>
-							</Suspense>
-						</div>
-					);
-				}
-
-				// Mermaid 渲染很重：流式阶段先用代码块占位，避免每个 chunk 都触发重绘
-				if (language === "mermaid" || language === "drawio") {
-					if (isStreaming) {
-						return (
-							<div className="relative group my-3">
-								<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
-									{language}
-								</div>
-								<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
-									<code className={className} {...props}>
-										{children}
-									</code>
-								</pre>
-							</div>
-						);
-					}
-					return (
-						<Suspense
-							fallback={
-								<div className="my-3 rounded-xl border border-border bg-warm-50 p-4 text-xs text-text-muted">
-									正在加载图表渲染器...
-								</div>
-							}
-						>
-							<MermaidRenderer chart={code} className="my-6" />
-						</Suspense>
-					);
-				}
-
-				// 普通代码块 — 流式输出时保持纯文本，流结束后用 Shiki 高亮
+			// 检测可预览的代码块 - 渲染预览卡片替代代码块
+			if (language === "html" || language === "htm") {
 				if (isStreaming) {
 					return (
 						<div className="relative group my-3">
@@ -292,152 +323,135 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 						</div>
 					);
 				}
-
 				return (
-					<ShikiCodeBlock code={code} language={language} maxHeight={600} />
-				);
-			},
-			// 自定义段落
-			p({ children }: { children?: any }) {
-				return <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>;
-			},
-			// 自定义标题
-			h1({ children }: { children?: any }) {
-				return (
-					<h1 className="text-xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>
-				);
-			},
-			h2({ children }: { children?: any }) {
-				return (
-					<h2 className="text-lg font-bold mb-3 mt-5 first:mt-0">{children}</h2>
-				);
-			},
-			h3({ children }: { children?: any }) {
-				return (
-					<h3 className="text-base font-bold mb-2 mt-4 first:mt-0">
-						{children}
-					</h3>
-				);
-			},
-			// 自定义列表
-			ul({ children }: { children?: any }) {
-				return <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>;
-			},
-			ol({ children }: { children?: any }) {
-				return <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>;
-			},
-			li({ children }: { children?: any }) {
-				return <li className="leading-relaxed">{children}</li>;
-			},
-			// 自定义链接
-			a({ href, children }: { href?: string; children?: any }) {
-				const resolvedHref = typeof href === "string" ? href : "";
-				return (
-					<a
-						href={resolvedHref}
-						target="_blank"
-						rel="noreferrer"
-						className="text-focus dark:text-focus hover:underline"
-						onClick={async (e) => {
-							if (!resolvedHref) return;
-							// 在桌面 WebView 里，window.open/target=_blank 往往不会生效，改用后端 open_external_url 走系统浏览器
-							try {
-								e.preventDefault();
-								const result = await safeInvoke<{
-									success: boolean;
-									error?: string;
-								}>("open_external_url", { url: resolvedHref });
-								if (!result?.success) {
-									throw new Error(result?.error || "OPEN_EXTERNAL_URL_FAILED");
-								}
-							} catch (err) {
-								if (isTauriUnavailableError(err)) {
-									// Web 环境回退
-									window.open(resolvedHref, "_blank", "noopener,noreferrer");
-									return;
-								}
-								// 其他错误也回退一次，避免“点了没反应”
-								window.open(resolvedHref, "_blank", "noopener,noreferrer");
-							}
-						}}
-					>
-						{children}
-					</a>
-				);
-			},
-			// 自定义图片
-			img({ src, alt, title }: { src?: string; alt?: string; title?: string }) {
-				if (!src) return null;
-
-				// 处理占位图：loading: 前缀表示正在生成中
-				if (src.startsWith("loading:")) {
-					// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
-					return (
-						<span className="block my-4 flex items-center justify-center">
-							<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-border shadow-sm">
-								{/* 加载动画 */}
-								<span className="relative block w-12 h-12">
-									<span className="absolute inset-0 rounded-full border-4 border-border" />
-									<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-700 animate-spin" />
-								</span>
-								<span className="flex items-center gap-2 text-sm text-text-muted">
-									<Palette
-										className="w-4 h-4 bai-icon-peach animate-pulse"
-										strokeWidth={1.5}
-									/>
-									<span>{alt || "AI 配图生成中..."}</span>
-								</span>
-								<span className="text-xs text-text-light">
-									请稍候，图片即将呈现
-								</span>
-							</span>
-						</span>
-					);
-				}
-
-				return (
-					<InlineImage
-						path={src}
-						title={String(title || alt || "生成的图片")}
-						sandboxDir={sandboxDir}
-						className="my-3"
-					/>
-				);
-			},
-			// 自定义引用块
-			blockquote({ children }: { children?: any }) {
-				return (
-					<blockquote className="border-l-4 border-cream-400 dark:border-cream-500 pl-4 my-3 italic text-text-secondary">
-						{children}
-					</blockquote>
-				);
-			},
-			// 自定义表格
-			table({ children }: { children?: any }) {
-				return (
-					<div className="overflow-x-auto my-3">
-						<table className="min-w-full border-collapse border border-border rounded-lg overflow-hidden">
-							{children}
-						</table>
+					<div className="my-3">
+						<Suspense fallback={null}>
+							<WebPreviewCard
+								kind="html"
+								html={code}
+								title="前端预览"
+								isStreaming={isStreaming}
+							/>
+						</Suspense>
 					</div>
 				);
-			},
-			th({ children }: { children?: any }) {
+			}
+
+			if (language === "jsx" || language === "tsx" || language === "react") {
+				if (isStreaming) {
+					return (
+						<div className="relative group my-3">
+							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
+								{language}
+							</div>
+							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+								<code className={className} {...props}>
+									{children}
+								</code>
+							</pre>
+						</div>
+					);
+				}
 				return (
-					<th className="bg-warm-200 px-4 py-2 text-left font-semibold border-b border-border">
-						{children}
-					</th>
+					<div className="my-3">
+						<Suspense fallback={null}>
+							<WebPreviewCard
+								kind="react"
+								jsx={code}
+								title="React 预览"
+								isStreaming={isStreaming}
+							/>
+						</Suspense>
+					</div>
 				);
-			},
-			td({ children }: { children?: any }) {
-				return <td className="px-4 py-2 border-b border-border">{children}</td>;
-			},
-			// 自定义分割线
-			hr() {
-				return <hr className="my-6 border-border" />;
-			},
+			}
+
+			// Mermaid 渲染很重：流式阶段先用代码块占位，避免每个 chunk 都触发重绘
+			if (language === "mermaid" || language === "drawio") {
+				if (isStreaming) {
+					return (
+						<div className="relative group my-3">
+							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
+								{language}
+							</div>
+							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+								<code className={className} {...props}>
+									{children}
+								</code>
+							</pre>
+						</div>
+					);
+				}
+				return (
+					<Suspense
+						fallback={
+							<div className="my-3 rounded-xl border border-border bg-warm-50 p-4 text-xs text-text-muted">
+								正在加载图表渲染器...
+							</div>
+						}
+					>
+						<MermaidRenderer chart={code} className="my-6" />
+					</Suspense>
+				);
+			}
+
+			// 普通代码块 — 流式输出时保持纯文本，流结束后用 Shiki 高亮
+			if (isStreaming) {
+				return (
+					<div className="relative group my-3">
+						<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
+							{language}
+						</div>
+						<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+							<code className={className} {...props}>
+								{children}
+							</code>
+						</pre>
+					</div>
+				);
+			}
+
+			return (
+				<ShikiCodeBlock code={code} language={language} maxHeight={600} />
+			);
 		};
-	}, [isStreaming, sandboxDir]);
+	}, [isStreaming]);
+
+	// img 渲染函数依赖 sandboxDir（不同对话/沙盒目录不同）
+	const imgComponent = useMemo(() => {
+		return function MarkdownImage({
+			src,
+			alt,
+			title,
+		}: {
+			src?: string;
+			alt?: string;
+			title?: string;
+		}) {
+			if (!src) return null;
+			if (src.startsWith("loading:")) {
+				return <LoadingImagePlaceholder alt={alt} />;
+			}
+			return (
+				<InlineImage
+					path={src}
+					title={String(title || alt || "生成的图片")}
+					sandboxDir={sandboxDir}
+					className="my-3"
+				/>
+			);
+		};
+	}, [sandboxDir]);
+
+	// 合并静态组件 + 动态组件（code / img）；只有 codeComponent / imgComponent 变化时才重建
+	const components = useMemo(
+		() => ({
+			...STATIC_COMPONENTS,
+			code: codeComponent,
+			img: imgComponent,
+		}),
+		[codeComponent, imgComponent],
+	);
 
 	return (
 		<div className={`max-w-none ${className}`}>

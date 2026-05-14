@@ -43,6 +43,23 @@ export async function bootstrapApp({
 	const logger = createLogger();
 	const bootStartedAt = performance.now();
 
+	// 单实例锁：mac/win 用户重复双击启动器只保留单进程，避免 libSQL 写锁冲突、
+	// 本地 HTTP 端口被自身占用、IPC 派发给错误窗口、文件 watcher 重复触发。
+	// dev 模式下 vite-plugin-electron HMR 重启时旧进程主动 quit 会自然释放 lock。
+	const gotLock = app.requestSingleInstanceLock();
+	if (!gotLock) {
+		app.quit();
+		return;
+	}
+	app.on("second-instance", () => {
+		const main = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+		if (main) {
+			if (main.isMinimized()) main.restore();
+			main.show();
+			main.focus();
+		}
+	});
+
 	// mascot:// protocol 特权必须在 app.whenReady() 之前注册
 	registerMascotProtocolPrivileges();
 

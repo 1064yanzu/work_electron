@@ -9,6 +9,7 @@ import { resolveProviderApiKey } from "../../llm/invoke";
 import type { Logger } from "../../logging/types";
 import {
 	extractIpoConversationId,
+	extractIpoThinkingLevel,
 	stripIpoMarkersFromAnthropicRequest,
 } from "../anthropicProxy/ipoMarkers";
 import { decodeIpoRoutedModel } from "../anthropicProxy/modelRouting";
@@ -254,6 +255,7 @@ export function createAnthropicProxyRouter(options?: {
 
 		try {
 			const incomingModel = anthropicReq.model;
+			const thinkingLevel = extractIpoThinkingLevel(anthropicReq);
 
 			// 0. 清理内部标记，避免把路由/日志 marker 传给上游 Provider 造成上下文污染
 			const cleanedReq = stripIpoMarkersFromAnthropicRequest(anthropicReq);
@@ -402,7 +404,7 @@ export function createAnthropicProxyRouter(options?: {
 					logger,
 					requestId,
 					conversationId,
-					{ anthropicBeta: anthropicBetaHeader },
+					{ anthropicBeta: anthropicBetaHeader, thinkingLevel },
 				);
 				return;
 			}
@@ -415,7 +417,7 @@ export function createAnthropicProxyRouter(options?: {
 				logger,
 				requestId,
 				conversationId,
-				{ anthropicBeta: anthropicBetaHeader },
+				{ anthropicBeta: anthropicBetaHeader, thinkingLevel },
 			);
 			res.json(result);
 		} catch (error) {

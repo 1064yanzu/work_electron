@@ -138,17 +138,6 @@ export interface ClaudeAgentExecutionOptions {
 		max_file_chars: number;
 	};
 	enableToolSearch?: "auto" | "auto:5" | "true" | "false";
-	experimentalMultiAgent?: boolean;
-	multiAgentMode?: "subagent_only" | "hybrid" | "teammate_preferred";
-	maxTeammates?: number;
-	teammateMode?: "auto" | "tmux" | "in-process";
-	teammateBudget?: {
-		max_turns?: number;
-		thinking_level?: import("../models/agentModelConfig").ThinkingLevel;
-		max_budget_usd?: number;
-	};
-	leaderSummaryModel?: string;
-	teammateExecutionModel?: string;
 
 	/** Enabled skills list (used for skill routing and subagents) */
 	skills?: string[];
@@ -206,44 +195,13 @@ export interface ClaudeAgentExecutionOptions {
  *
  * 默认对话流不传 `allowed_tools`，让主进程走 SDK 的
  * `{ type: "preset", preset: "claude_code" }`，自动获得这一整套工具。
- * 这里保留显式列表只用于"必须裁剪/扩展"的场景：
+ * 这里保留显式裁剪只用于：
  *  - Plan 模式（用 PLAN_MODE_ALLOWED_TOOLS 限制为只读）
- *  - Multi-agent 模式（在完整集合上额外追加 "Teammate"）
  */
-const DEFAULT_TOOLS = [
-	"Read",
-	"Edit",
-	"Write",
-	"Glob",
-	"Grep",
-	"Bash",
-	"BashOutput",
-	"KillShell",
-	"NotebookEdit",
-	"TodoWrite",
-	"ExitPlanMode",
-	"Task",
-	"TaskStop",
-	"WebSearch",
-	"WebFetch",
-	"AskUserQuestion",
-	"ListMcpResources",
-	"ReadMcpResource",
-	"Skill", // Claude Code CLI 扩展（依赖 settingSources + filesystem skills）
-] as const;
-
-function buildAllowedTools(
-	experimentalMultiAgent: boolean,
-	mode: "subagent_only" | "hybrid" | "teammate_preferred",
-): string[] | undefined {
+function buildAllowedTools(): string[] | undefined {
 	// 普通对话流不再显式传 allowed_tools，让主进程走 SDK 的
 	// { type: "preset", preset: "claude_code" }，得到完整 Claude Code 工具集。
-	if (!experimentalMultiAgent || mode === "subagent_only") {
-		return undefined;
-	}
-	// Multi-agent (hybrid / teammate_preferred) 需要显式追加 "Teammate" 工具，
-	// SDK 的 tools 字段不支持 preset + append，因此必须列举完整集合。
-	return Array.from(new Set([...DEFAULT_TOOLS, "Teammate"]));
+	return undefined;
 }
 
 function resolveMcpServerLimitByToolSearchMode(
@@ -441,13 +399,6 @@ export class ClaudeAgentService {
 			subagentContextMode,
 			contextBudget,
 			enableToolSearch,
-			experimentalMultiAgent,
-			multiAgentMode,
-			maxTeammates,
-			teammateMode,
-			teammateBudget,
-			leaderSummaryModel,
-			teammateExecutionModel,
 			additionalDirectories,
 			plugins,
 			sandbox,
@@ -474,7 +425,6 @@ export class ClaudeAgentService {
 			configPluginPaths,
 			configCompatMode,
 			configMaxTurns,
-			configThinkingLevel,
 			configMaxBudgetUsd,
 			configSettingSources,
 			configBetas,
@@ -482,13 +432,6 @@ export class ClaudeAgentService {
 			configSubagentContextMode,
 			configContextBudget,
 			configEnableToolSearch,
-			configExperimentalMultiAgent,
-			configMultiAgentMode,
-			configMaxTeammates,
-			configTeammateMode,
-			configTeammateBudget,
-			configLeaderSummaryModel,
-			configTeammateExecutionModel,
 		] = await Promise.all([
 			getConfig("agent.sdk.interactive_approval_enabled").catch(() => null),
 			getConfig("agent.sdk.default_permission_mode").catch(() => null),
@@ -496,7 +439,6 @@ export class ClaudeAgentService {
 			getConfig("agent.sdk.plugin_paths").catch(() => null),
 			getConfig("agent.sdk.compat_mode").catch(() => null),
 			getConfig("agent.sdk.max_turns").catch(() => null),
-			getConfig("agent.sdk.thinking_level").catch(() => null),
 			getConfig("agent.sdk.max_budget_usd").catch(() => null),
 			getConfig("agent.sdk.setting_sources").catch(() => null),
 			getConfig("agent.sdk.betas").catch(() => null),
@@ -504,13 +446,6 @@ export class ClaudeAgentService {
 			getConfig("agent.sdk.subagent_context_mode").catch(() => null),
 			getConfig("agent.sdk.context_budget").catch(() => null),
 			getConfig("agent.sdk.enable_tool_search").catch(() => null),
-			getConfig("agent.sdk.experimental_multi_agent_enabled").catch(() => null),
-			getConfig("agent.sdk.multi_agent_mode").catch(() => null),
-			getConfig("agent.sdk.max_teammates").catch(() => null),
-			getConfig("agent.sdk.teammate_mode").catch(() => null),
-			getConfig("agent.sdk.teammate_budget").catch(() => null),
-			getConfig("agent.sdk.leader_summary_model").catch(() => null),
-			getConfig("agent.sdk.teammate_execution_model").catch(() => null),
 		]);
 		const parseStringArray = (value: unknown): string[] =>
 			Array.isArray(value)
@@ -521,22 +456,6 @@ export class ClaudeAgentService {
 			if (typeof value === "string" && value.trim()) {
 				const parsed = Number(value);
 				if (Number.isFinite(parsed)) return parsed;
-			}
-			return undefined;
-		};
-		const parseThinkingLevel = (
-			value: unknown,
-		): import("../models/agentModelConfig").ThinkingLevel | undefined => {
-			if (value === undefined || value === null) return undefined;
-			const v = String(value).trim().toLowerCase();
-			if (
-				v === "off" ||
-				v === "low" ||
-				v === "medium" ||
-				v === "high" ||
-				v === "xhigh"
-			) {
-				return v;
 			}
 			return undefined;
 		};
@@ -610,8 +529,7 @@ export class ClaudeAgentService {
 		);
 		const resolvedMaxTurns =
 			parseNumber(maxTurns) ?? parseNumber(configMaxTurns);
-		const resolvedThinkingLevel =
-			thinkingLevel ?? parseThinkingLevel(configThinkingLevel);
+		const resolvedThinkingLevel = thinkingLevel;
 		const resolvedMaxBudgetUsd =
 			parseNumber(maxBudgetUsd) ?? parseNumber(configMaxBudgetUsd);
 		const resolvedSettingSources = normalizeSettingSources(
@@ -672,75 +590,10 @@ export class ClaudeAgentService {
 			(typeof configEnableToolSearch === "string"
 				? (configEnableToolSearch as "auto" | "auto:5" | "true" | "false")
 				: "false");
-		const resolvedExperimentalMultiAgent =
-			typeof experimentalMultiAgent === "boolean"
-				? experimentalMultiAgent
-				: configExperimentalMultiAgent === true;
-		const resolvedMultiAgentMode =
-			multiAgentMode === "subagent_only" ||
-			multiAgentMode === "teammate_preferred"
-				? multiAgentMode
-				: configMultiAgentMode === "subagent_only" ||
-						configMultiAgentMode === "teammate_preferred"
-					? (configMultiAgentMode as "subagent_only" | "teammate_preferred")
-					: "hybrid";
-		const resolvedMaxTeammates = Math.max(
-			1,
-			Math.min(
-				8,
-				parseNumber(maxTeammates) ?? parseNumber(configMaxTeammates) ?? 2,
-			),
-		);
-		const resolvedTeammateMode =
-			teammateMode === "tmux" || teammateMode === "in-process"
-				? teammateMode
-				: configTeammateMode === "tmux" || configTeammateMode === "in-process"
-					? (configTeammateMode as "tmux" | "in-process")
-					: "auto";
-		const teammateBudgetRaw =
-			teammateBudget && typeof teammateBudget === "object"
-				? teammateBudget
-				: configTeammateBudget && typeof configTeammateBudget === "object"
-					? (configTeammateBudget as Record<string, unknown>)
-					: {};
-		const resolvedTeammateBudget = {
-			max_turns: Math.max(
-				1,
-				Math.floor(parseNumber((teammateBudgetRaw as any).max_turns) ?? 12),
-			),
-			thinking_level: parseThinkingLevel(
-				(teammateBudgetRaw as any).thinking_level,
-			),
-			max_budget_usd:
-				parseNumber((teammateBudgetRaw as any).max_budget_usd) ?? undefined,
-		};
-		const resolvedLeaderSummaryModel =
-			typeof leaderSummaryModel === "string" && leaderSummaryModel.trim()
-				? leaderSummaryModel.trim()
-				: typeof configLeaderSummaryModel === "string" &&
-						configLeaderSummaryModel.trim()
-					? configLeaderSummaryModel.trim()
-					: undefined;
-		const resolvedTeammateExecutionModel =
-			typeof teammateExecutionModel === "string" &&
-			teammateExecutionModel.trim()
-				? teammateExecutionModel.trim()
-				: typeof configTeammateExecutionModel === "string" &&
-						configTeammateExecutionModel.trim()
-					? configTeammateExecutionModel.trim()
-					: undefined;
-		const resolvedPermissionModeForRun =
-			resolvedExperimentalMultiAgent &&
-			resolvedMultiAgentMode === "teammate_preferred" &&
-			permissionModeForRun !== "plan"
-				? "delegate"
-				: permissionModeForRun;
+		const resolvedPermissionModeForRun = permissionModeForRun;
 		const resolvedAllowedTools: string[] | undefined = planMode
 			? [...PLAN_MODE_ALLOWED_TOOLS]
-			: buildAllowedTools(
-					resolvedExperimentalMultiAgent,
-					resolvedMultiAgentMode,
-				);
+			: buildAllowedTools();
 		const resolvedMcpServerLimit = resolveMcpServerLimitByToolSearchMode(
 			resolvedEnableToolSearch,
 		);
@@ -1761,13 +1614,6 @@ export class ClaudeAgentService {
 										subagent_context_mode: resolvedSubagentContextMode,
 										context_budget: resolvedContextBudget,
 										enable_tool_search: resolvedEnableToolSearch,
-										experimental_multi_agent: resolvedExperimentalMultiAgent,
-										multi_agent_mode: resolvedMultiAgentMode,
-										max_teammates: resolvedMaxTeammates,
-										teammate_mode: resolvedTeammateMode,
-										teammate_budget: resolvedTeammateBudget,
-										leader_summary_model: resolvedLeaderSummaryModel,
-										teammate_execution_model: resolvedTeammateExecutionModel,
 									},
 								});
 								this._activeRunId = runId;
@@ -1865,13 +1711,6 @@ export class ClaudeAgentService {
 					subagent_context_mode: resolvedSubagentContextMode,
 					context_budget: resolvedContextBudget,
 					enable_tool_search: resolvedEnableToolSearch,
-					experimental_multi_agent: resolvedExperimentalMultiAgent,
-					multi_agent_mode: resolvedMultiAgentMode,
-					max_teammates: resolvedMaxTeammates,
-					teammate_mode: resolvedTeammateMode,
-					teammate_budget: resolvedTeammateBudget,
-					leader_summary_model: resolvedLeaderSummaryModel,
-					teammate_execution_model: resolvedTeammateExecutionModel,
 				},
 			});
 			this._activeRunId = runId;

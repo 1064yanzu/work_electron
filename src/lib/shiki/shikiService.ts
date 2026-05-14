@@ -1,5 +1,5 @@
 // Shiki 语法高亮单例服务
-// 延迟初始化 highlighter，支持双主题、大文件保护
+// 延迟初始化 highlighter，按需加载主题/语言，大文件保护
 
 import {
 	type BundledLanguage,
@@ -8,6 +8,7 @@ import {
 	type ThemedToken,
 	createHighlighter,
 } from "shiki";
+import { themeManager } from "../theme";
 import { mapLanguageId, mapLanguageFromPath } from "./languageMap";
 
 // 预加载的常用语言
@@ -33,8 +34,9 @@ const PRELOAD_LANGS: BundledLanguage[] = [
 	"svelte",
 ];
 
-// 双主题
-const THEMES: BundledTheme[] = ["github-dark", "github-light"];
+// 支持的主题（实际只按需加载一套，另一套在用户切换主题时 lazy 加载）
+const DARK_THEME: BundledTheme = "github-dark";
+const LIGHT_THEME: BundledTheme = "github-light";
 
 // 大文件保护阈值
 const MAX_LINES = 5000;
@@ -45,6 +47,15 @@ type ShikiHighlighter = HighlighterGeneric<BundledLanguage, BundledTheme>;
 let highlighterPromise: Promise<ShikiHighlighter> | null = null;
 let highlighterInstance: ShikiHighlighter | null = null;
 
+function pickInitialTheme(): BundledTheme {
+	// 默认按当前主题决定首批加载的 Shiki theme，减少初始内存占用（每套主题约 2-5MB）
+	try {
+		return themeManager.isDark() ? DARK_THEME : LIGHT_THEME;
+	} catch {
+		return DARK_THEME;
+	}
+}
+
 /**
  * 获取或初始化 highlighter 单例
  */
@@ -53,7 +64,7 @@ export async function getHighlighter(): Promise<ShikiHighlighter> {
 
 	if (!highlighterPromise) {
 		highlighterPromise = createHighlighter({
-			themes: THEMES,
+			themes: [pickInitialTheme()],
 			langs: PRELOAD_LANGS,
 		}).then((hl) => {
 			highlighterInstance = hl;
@@ -62,6 +73,26 @@ export async function getHighlighter(): Promise<ShikiHighlighter> {
 	}
 
 	return highlighterPromise;
+}
+
+/**
+ * 确保指定主题已加载（用户切换主题或首次请求另一套主题时延迟加载）
+ */
+async function ensureTheme(
+	hl: ShikiHighlighter,
+	theme: BundledTheme,
+): Promise<BundledTheme> {
+	try {
+		const loaded = hl.getLoadedThemes();
+		if (!loaded.includes(theme)) {
+			await hl.loadTheme(theme);
+		}
+		return theme;
+	} catch {
+		// 加载失败时退回到任意一个已加载主题，避免抛错阻塞代码块渲染
+		const loaded = hl.getLoadedThemes();
+		return (loaded[0] as BundledTheme) ?? DARK_THEME;
+	}
 }
 
 /**
@@ -90,9 +121,10 @@ async function ensureLanguage(
 export async function highlightCode(
 	code: string,
 	lang: string,
-	theme: BundledTheme = "github-dark",
+	theme: BundledTheme = DARK_THEME,
 ): Promise<string> {
 	const hl = await getHighlighter();
+	const safeTheme = await ensureTheme(hl, theme);
 	const resolvedLang = mapLanguageId(lang);
 	const safeLang = await ensureLanguage(hl, resolvedLang);
 
@@ -101,7 +133,7 @@ export async function highlightCode(
 
 	return hl.codeToHtml(processedCode, {
 		lang: safeLang,
-		theme,
+		theme: safeTheme,
 	});
 }
 
@@ -111,9 +143,10 @@ export async function highlightCode(
 export async function highlightToTokens(
 	code: string,
 	lang: string,
-	theme: BundledTheme = "github-dark",
+	theme: BundledTheme = DARK_THEME,
 ): Promise<ThemedToken[][]> {
 	const hl = await getHighlighter();
+	const safeTheme = await ensureTheme(hl, theme);
 	const resolvedLang = mapLanguageId(lang);
 	const safeLang = await ensureLanguage(hl, resolvedLang);
 
@@ -122,7 +155,7 @@ export async function highlightToTokens(
 
 	const result = hl.codeToTokens(processedCode, {
 		lang: safeLang,
-		theme,
+		theme: safeTheme,
 	});
 
 	return result.tokens;
@@ -134,15 +167,16 @@ export async function highlightToTokens(
 export async function highlightLine(
 	line: string,
 	lang: string,
-	theme: BundledTheme = "github-dark",
+	theme: BundledTheme = DARK_THEME,
 ): Promise<ThemedToken[]> {
 	const hl = await getHighlighter();
+	const safeTheme = await ensureTheme(hl, theme);
 	const resolvedLang = mapLanguageId(lang);
 	const safeLang = await ensureLanguage(hl, resolvedLang);
 
 	const result = hl.codeToTokens(line, {
 		lang: safeLang,
-		theme,
+		theme: safeTheme,
 	});
 
 	// 返回第一行的 tokens

@@ -1,4 +1,14 @@
-import { Download, FolderOpen, RefreshCw, ExternalLink, Wand2, Sparkles, SlidersHorizontal, Image as ImageIcon } from "lucide-react";
+import {
+	BookOpen,
+	ExternalLink,
+	FolderOpen,
+	FolderTree,
+	Image as ImageIcon,
+	RefreshCw,
+	SlidersHorizontal,
+	Sparkles,
+	Wand2,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	designFinalizeSession,
@@ -15,11 +25,23 @@ import { convertFileSrc } from "../../lib/tauriCompat";
 import { BrowserShell } from "../sandbox/preview/BrowserShell";
 import { toast } from "../ui/Toast";
 import { CritiqueScorecard } from "./CritiqueScorecard";
-import { ExportDialog } from "./ExportDialog";
 import { ExitDesignButton } from "./ExitDesignButton";
+import { ExportDialog } from "./ExportDialog";
 import { MediaGenerationPanel } from "./MediaGenerationPanel";
 import { ModeBadge } from "./ModeBadge";
 import { TweaksPanel } from "./TweaksPanel";
+import { DesignFilesPanel } from "./preview/DesignFilesPanel";
+import { DesignFileWorkspace } from "./preview/DesignFileWorkspace";
+import { DocSidebar } from "./preview/DocSidebar";
+import { ShareMenu } from "./preview/ShareMenu";
+import { ThemeToggle } from "./preview/ThemeToggle";
+
+const MODE_TO_SKILL_ID: Record<string, string> = {
+	"web-prototype": "ipo-web-prototype",
+	"mobile-mockup": "ipo-mobile-mockup",
+	"pitch-deck": "ipo-pitch-deck",
+	poster: "ipo-poster",
+};
 
 /**
  * DesignArtifactView — 生成完成后的预览 + 操作面板。
@@ -34,7 +56,7 @@ interface DesignArtifactViewProps {
 	runId?: string | null;
 }
 
-type SidebarTab = "critique" | "tweaks" | "media" | null;
+type SidebarTab = "critique" | "tweaks" | "media" | "docs" | "files" | null;
 
 export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewProps) {
 	const session = useDesignStoreSelector((s) => s.currentSession);
@@ -48,8 +70,25 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 	const [refreshKey, setRefreshKey] = useState(0);
 	const [sidebarTab, setSidebarTab] = useState<SidebarTab>("critique");
 	const [critiqueRunning, setCritiqueRunning] = useState(false);
+	const [theme, setTheme] = useState<"light" | "dark">("light");
+	const [openFiles, setOpenFiles] = useState<string[]>([]);
+	const [activeFile, setActiveFile] = useState<string | null>(null);
 	const finalizedRef = useRef<Set<string>>(new Set());
 	const critiqueRanRef = useRef<Set<string>>(new Set());
+
+	const docTarget = useMemo<
+		{ kind: "system" | "skill"; id: string } | null
+	>(() => {
+		if (!session) return null;
+		if (session.system_id) {
+			return { kind: "system", id: session.system_id };
+		}
+		if (session.mode) {
+			const skillId = MODE_TO_SKILL_ID[session.mode];
+			if (skillId) return { kind: "skill", id: skillId };
+		}
+		return null;
+	}, [session]);
 
 	// 主交付物 file:// URL
 	const previewUrl = useMemo(() => {
@@ -249,14 +288,13 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 					<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
 					目录
 				</button>
-				<button
-					type="button"
-					onClick={() => setExportOpen(true)}
-					className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-primary border border-border bg-bg-surface rounded-lg hover:bg-warm-200/60 transition-colors"
-				>
-					<Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-					导出
-				</button>
+				<ThemeToggle value={theme} onChange={setTheme} />
+				<ShareMenu
+					session={session}
+					currentThreadPath={currentThreadPath ?? undefined}
+					currentThreadTitle={currentThreadTitle ?? undefined}
+					onAdvancedExport={() => setExportOpen(true)}
+				/>
 				<ExitDesignButton
 					session={session}
 					threadPath={currentThreadPath ?? undefined}
@@ -276,8 +314,28 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 			</header>
 
 			<div className="flex-1 min-h-0 flex bg-warm-200/30">
-				<div className="flex-1 min-w-0 p-3">
-					{previewUrl ? (
+				<div
+					className="flex-1 min-w-0 p-3"
+					style={{ colorScheme: theme }}
+					data-theme={theme}
+				>
+					{sidebarTab === "files" && session ? (
+						<DesignFileWorkspace
+							sessionId={session.id}
+							openFiles={openFiles}
+							activeFile={activeFile}
+							onCloseFile={(rel) => {
+								setOpenFiles((arr) => arr.filter((p) => p !== rel));
+								if (activeFile === rel) {
+									setActiveFile((_cur) => {
+										const remaining = openFiles.filter((p) => p !== rel);
+										return remaining[remaining.length - 1] ?? null;
+									});
+								}
+							}}
+							onActivateFile={setActiveFile}
+						/>
+					) : previewUrl ? (
 						<BrowserShell
 							src={previewUrl}
 							taskId={`design-${session.id}`}
@@ -293,7 +351,9 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 				<aside className="w-9 shrink-0 border-l border-border bg-background flex flex-col items-center py-2 gap-1">
 					<button
 						type="button"
-						onClick={() => setSidebarTab(sidebarTab === "critique" ? null : "critique")}
+						onClick={() =>
+							setSidebarTab(sidebarTab === "critique" ? null : "critique")
+						}
 						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
 							sidebarTab === "critique"
 								? "bg-primary/10 text-primary"
@@ -305,7 +365,9 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 					</button>
 					<button
 						type="button"
-						onClick={() => setSidebarTab(sidebarTab === "tweaks" ? null : "tweaks")}
+						onClick={() =>
+							setSidebarTab(sidebarTab === "tweaks" ? null : "tweaks")
+						}
 						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
 							sidebarTab === "tweaks"
 								? "bg-primary/10 text-primary"
@@ -317,7 +379,9 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 					</button>
 					<button
 						type="button"
-						onClick={() => setSidebarTab(sidebarTab === "media" ? null : "media")}
+						onClick={() =>
+							setSidebarTab(sidebarTab === "media" ? null : "media")
+						}
 						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
 							sidebarTab === "media"
 								? "bg-primary/10 text-primary"
@@ -327,20 +391,80 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 					>
 						<ImageIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
 					</button>
+					<button
+						type="button"
+						onClick={() =>
+							setSidebarTab(sidebarTab === "files" ? null : "files")
+						}
+						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+							sidebarTab === "files"
+								? "bg-primary/10 text-primary"
+								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
+						}`}
+						title="工作目录文件"
+					>
+						<FolderTree className="w-3.5 h-3.5" strokeWidth={1.5} />
+					</button>
+					{docTarget ? (
+						<button
+							type="button"
+							onClick={() =>
+								setSidebarTab(sidebarTab === "docs" ? null : "docs")
+							}
+							className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+								sidebarTab === "docs"
+									? "bg-primary/10 text-primary"
+									: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
+							}`}
+							title={
+								docTarget.kind === "system"
+									? "查看 DESIGN.md"
+									: "查看 SKILL.md"
+							}
+						>
+							<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
+						</button>
+					) : null}
 				</aside>
-				{sidebarTab ? (
+				{sidebarTab === "files" ? (
+					<DesignFilesPanel
+						sessionId={session.id}
+						activePath={activeFile}
+						onOpenFile={(rel) => {
+							setOpenFiles((arr) =>
+								arr.includes(rel) ? arr : [...arr, rel],
+							);
+							setActiveFile(rel);
+						}}
+						onClose={() => setSidebarTab(null)}
+					/>
+				) : null}
+				{sidebarTab === "docs" && docTarget ? (
+					<DocSidebar
+						kind={docTarget.kind}
+						id={docTarget.id}
+						onClose={() => setSidebarTab(null)}
+					/>
+				) : null}
+				{sidebarTab &&
+				sidebarTab !== "files" &&
+				sidebarTab !== "docs" ? (
 					<aside className="w-72 shrink-0 border-l border-border bg-background overflow-y-auto">
 						{sidebarTab === "critique" ? (
 							session.critique_scores ? (
 								<div className="p-3">
 									<CritiqueScorecard
-										scores={session.critique_scores.scores ?? session.critique_scores}
+										scores={
+											session.critique_scores.scores ?? session.critique_scores
+										}
 										total={session.critique_scores.total}
 										notes={session.critique_scores.notes}
 										fixes={session.critique_scores.fixes}
 										passed={session.critique_scores.passed}
 										lowestDim={session.critique_scores.lowest_dim}
-										regenerateReason={session.critique_scores.regenerate_reason}
+										regenerateReason={
+											session.critique_scores.regenerate_reason
+										}
 										onClose={() => setSidebarTab(null)}
 										onRegenerate={onRegenerate}
 									/>

@@ -5,9 +5,21 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 进程级错误兜底 — 必须在任何业务 import 之前注册
-const _crashLogDir = process.env.APPDATA
-	? path.join(process.env.APPDATA, "IPO Workbench", "logs")
-	: path.join(process.cwd(), "logs");
+// 这里 app 还未 ready，不能用 app.getPath('logs')，所以手工解析平台标准路径。
+function _resolveCrashLogDir(): string {
+	const home = process.env.HOME || process.env.USERPROFILE || "";
+	if (process.platform === "win32" && process.env.APPDATA) {
+		return path.join(process.env.APPDATA, "IPO Workbench", "logs");
+	}
+	if (process.platform === "darwin" && home) {
+		return path.join(home, "Library", "Logs", "IPO Workbench");
+	}
+	if (home) {
+		return path.join(home, ".config", "IPO Workbench", "logs");
+	}
+	return path.join(process.cwd(), "logs");
+}
+const _crashLogDir = _resolveCrashLogDir();
 try {
 	fs.mkdirSync(_crashLogDir, { recursive: true });
 } catch {}

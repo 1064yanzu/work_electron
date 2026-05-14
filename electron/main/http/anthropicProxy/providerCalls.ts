@@ -22,6 +22,7 @@ import {
 	readOpenAIResponsesStream,
 	toOpenAIResponsesRequest,
 	translateResponsesToAnthropic,
+	type OpenAIResponsesRequest,
 	type OpenAIResponsesResponse,
 } from "./openaiResponsesCompat";
 import {
@@ -36,6 +37,7 @@ import type {
 	OpenAIChatMessage,
 	ProviderConfig,
 } from "./types";
+import type { IpoThinkingLevelMarker } from "./ipoMarkers";
 
 const OPENAI_COMPAT_TOOL_NAME_MAX_LEN = 64;
 const OPENAI_COMPAT_TOOL_DESC_MAX_LEN = 1024;
@@ -46,7 +48,70 @@ const OPENAI_COMPAT_SCHEMA_STR_MAX_LEN = 512;
 
 type ProviderCallOptions = {
 	anthropicBeta?: string;
+	thinkingLevel?: IpoThinkingLevelMarker | null;
 };
+
+type OpenAIReasoningEffort = "low" | "medium" | "high";
+
+type OpenAIChatCompletionRequest = {
+	model: string;
+	messages: OpenAIChatMessage[];
+	temperature: number;
+	max_tokens: number;
+	tools?: any[];
+	tool_choice?: "auto";
+	stream: boolean;
+	reasoning_effort?: OpenAIReasoningEffort;
+	extra_body?: Record<string, unknown>;
+	thinking?: { type: "disabled" };
+};
+
+function toOpenAIReasoningEffort(
+	thinkingLevel?: IpoThinkingLevelMarker | null,
+): OpenAIReasoningEffort | null {
+	if (thinkingLevel === "off") return null;
+	if (thinkingLevel === "xhigh") return "high";
+	if (
+		thinkingLevel === "low" ||
+		thinkingLevel === "medium" ||
+		thinkingLevel === "high"
+	) {
+		return thinkingLevel;
+	}
+	return null;
+}
+
+function applyOpenAIChatReasoningControls(
+	req: OpenAIChatCompletionRequest,
+	thinkingLevel?: IpoThinkingLevelMarker | null,
+) {
+	const effort = toOpenAIReasoningEffort(thinkingLevel);
+	if (thinkingLevel === "off") {
+		req.thinking = { type: "disabled" };
+		req.extra_body = {
+			...(req.extra_body || {}),
+			thinking: { type: "disabled" },
+		};
+		return;
+	}
+
+	if (effort) req.reasoning_effort = effort;
+}
+
+function applyOpenAIResponsesReasoningControls(
+	req: OpenAIResponsesRequest,
+	thinkingLevel?: IpoThinkingLevelMarker | null,
+) {
+	const effort = toOpenAIReasoningEffort(thinkingLevel);
+	if (!effort) return;
+	req.reasoning = { effort };
+}
+
+function isReasoningControlInvalidArgument(bodyText: string): boolean {
+	return /\b(reasoning_effort|extra_body|thinking|reasoning)\b/i.test(
+		String(bodyText || ""),
+	);
+}
 
 function sanitizeOpenAICompatibleToolName(name: unknown): string {
 	const raw = typeof name === "string" ? name : "";
@@ -627,6 +692,10 @@ export async function callProvider(
 			tools: toOpenAIResponsesTools(anthropicReq),
 			stream: false,
 		});
+		applyOpenAIResponsesReasoningControls(
+			responsesReq,
+			callOptions?.thinkingLevel,
+		);
 
 		logger?.info({
 			msg: "anthropic proxy: sending to openai responses api",
@@ -682,7 +751,7 @@ export async function callProvider(
 		}
 	}
 
-	const openaiReq = {
+	const openaiReq: OpenAIChatCompletionRequest = {
 		model,
 		messages: openaiMessages,
 		temperature: anthropicReq.temperature ?? 0.7,
@@ -691,6 +760,7 @@ export async function callProvider(
 		tool_choice: openaiTools?.length ? "auto" : undefined,
 		stream: false,
 	};
+	applyOpenAIChatReasoningControls(openaiReq, callOptions?.thinkingLevel);
 
 	logger?.info({
 		msg: "anthropic proxy: sending to provider",
@@ -739,11 +809,17 @@ export async function callProvider(
 
 		// One-shot retry: flatten prior tool history for stricter OpenAI-compatible gateways.
 		if (shouldRetryInvalidArgument) {
+			const dropReasoningControls = isReasoningControlInvalidArgument(errorText);
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),
 				// Some gateways reject tool_choice; omit it in retry.
 				tool_choice: undefined,
+				reasoning_effort: dropReasoningControls
+					? undefined
+					: openaiReq.reasoning_effort,
+				extra_body: dropReasoningControls ? undefined : openaiReq.extra_body,
+				thinking: dropReasoningControls ? undefined : openaiReq.thinking,
 			};
 			logger?.warn({
 				msg: "anthropic proxy: retrying OpenAI request with flattened tool history",
@@ -1747,6 +1823,10 @@ export async function callProviderStream(
 			tools: toOpenAIResponsesTools(anthropicReq),
 			stream: true,
 		});
+		applyOpenAIResponsesReasoningControls(
+			responsesReq,
+			callOptions?.thinkingLevel,
+		);
 
 		logger?.info({
 			msg: "anthropic proxy: streaming via openai responses api",
@@ -1808,7 +1888,7 @@ export async function callProviderStream(
 			return;
 		}
 	}
-	const openaiReq = {
+	const openaiReq: OpenAIChatCompletionRequest = {
 		model,
 		messages: openaiMessages,
 		temperature: anthropicReq.temperature ?? 0.7,
@@ -1817,6 +1897,7 @@ export async function callProviderStream(
 		tool_choice: openaiTools?.length ? "auto" : undefined,
 		stream: true,
 	};
+	applyOpenAIChatReasoningControls(openaiReq, callOptions?.thinkingLevel);
 
 	logger?.info({
 		msg: "anthropic proxy: streaming via openai-compatible provider",
@@ -1905,11 +1986,17 @@ export async function callProviderStream(
 
 		// One-shot retry for strict gateways: flatten tool history and fall back to non-stream JSON.
 		if (shouldRetryInvalidArgument) {
+			const dropReasoningControls = isReasoningControlInvalidArgument(errorText);
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),
 				tool_choice: undefined,
 				stream: false,
+				reasoning_effort: dropReasoningControls
+					? undefined
+					: openaiReq.reasoning_effort,
+				extra_body: dropReasoningControls ? undefined : openaiReq.extra_body,
+				thinking: dropReasoningControls ? undefined : openaiReq.thinking,
 			};
 			logger?.warn({
 				msg: "anthropic proxy: retrying openai stream request as non-stream with flattened tool history",
