@@ -12,6 +12,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { net, protocol } from "electron";
 import { getCustomMascotsRootDir } from "./customMascotService";
 import { createLogger } from "../logging/logger";
@@ -138,10 +139,9 @@ export function registerMascotProtocolHandler(): void {
 				return new Response("Not found", { status: 404 });
 			}
 			// 用 file:// 转换让 net.fetch 流式响应（避免一次性 readFile 大文件占内存）
-			const fileUrl = `file://${resolved.filePath
-				.split(path.sep)
-				.map(encodeURIComponent)
-				.join("/")}`;
+			// 用 pathToFileURL 而非手拼，能正确处理 Windows 盘符（C:\ → file:///C:/）
+			// 与路径中的特殊字符编码。
+			const fileUrl = pathToFileURL(resolved.filePath).toString();
 			const response = await net.fetch(fileUrl);
 			// 覆写 mime（file:// 默认探测可能不准，比如 .webp）
 			return new Response(response.body, {

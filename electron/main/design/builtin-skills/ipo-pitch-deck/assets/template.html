@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta charset="UTF-8"><title>{{title}}</title>
+<!-- 必须使用 library/frames/deck-framework.html：导航、计数器、打印 CSS 都在里面。
+     agent 只需要在 deck-framework <main> 里填一组 <section class="slide">。 -->
+<style>
+  .slide { aspect-ratio: 16/9; padding: 64px; display: grid; gap: 24px; }
+</style></head>
+<body>
+  <main class="deck-root">
+    <section class="slide" data-title="封面">
+      <h1>{{title}}</h1>
+      <p class="byline">{{author}} · {{date}}</p>
+    </section>
+    <!-- TODO(agent): 按 slide_count 生成更多 <section class="slide"> -->
+  </main>
+</body></html>

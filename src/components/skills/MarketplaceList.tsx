@@ -18,12 +18,18 @@ export function MarketplaceList() {
 	const [query, setQuery] = useState("");
 	const [sourceId, setSourceId] = useState("");
 	const [errorsExpanded, setErrorsExpanded] = useState(false);
+	const [visibleCount, setVisibleCount] = useState(50);
 
 	useEffect(() => {
 		const t = setTimeout(() => {
 			skillsMarketplaceStore.search(query, sourceId || undefined);
 		}, 300);
 		return () => clearTimeout(t);
+	}, [query, sourceId]);
+
+	// 切换搜索条件或源筛选时，重置可见条数
+	useEffect(() => {
+		setVisibleCount(50);
 	}, [query, sourceId]);
 
 	const sourceOptions = useMemo(() => {
@@ -152,13 +158,34 @@ export function MarketplaceList() {
 				) : entries.length === 0 ? (
 					<MarketplaceEmpty hasQuery={query.length > 0} />
 				) : (
-					<ul className="space-y-1.5">
-						{entries.map((entry) => (
-							<li key={entry.id}>
-								<MarketplaceCard entry={entry} progress={progress[entry.id]} />
-							</li>
-						))}
-					</ul>
+					<>
+						<ul className="space-y-1.5">
+							{entries.slice(0, visibleCount).map((entry) => (
+								<li key={entry.id}>
+									<MarketplaceCard
+										entry={entry}
+										progress={progress[entry.id]}
+									/>
+								</li>
+							))}
+						</ul>
+						{entries.length > visibleCount && (
+							<div className="mt-3 flex flex-col items-center gap-1.5">
+								<button
+									type="button"
+									onClick={() =>
+										setVisibleCount((c) => Math.min(c + 50, entries.length))
+									}
+									className="px-4 py-1.5 text-[11.5px] font-medium text-text-secondary bg-cream-100/70 hover:bg-cream-200/80 dark:bg-cream-800/30 dark:hover:bg-cream-800/50 border border-cream-300/60 dark:border-cream-500/20 rounded-lg transition"
+								>
+									显示更多（剩 {entries.length - visibleCount} 条）
+								</button>
+								<span className="text-[10px] text-text-light">
+									已显示 {visibleCount} / {entries.length}
+								</span>
+							</div>
+						)}
+					</>
 				)}
 			</div>
 		</div>

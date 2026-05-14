@@ -60,6 +60,8 @@ import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
 import { WikiView } from "../wiki/WikiView";
+import { DesignSessionList } from "../design/DesignSessionList";
+import { useLayoutStoreSelector } from "../../lib/stores/layoutStore";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
 const WebSearchModule = lazy(() => import("../WebSearchModule"));
@@ -71,6 +73,9 @@ interface ResourceSidebarProps {
 export default function ResourceSidebar({
 	onOpenSettings,
 }: ResourceSidebarProps) {
+	const leftSidebarCollapsed = useLayoutStoreSelector(
+		(state) => state.leftSidebarCollapsed,
+	);
 	const [sources, setSources] = useState<Source[]>([]);
 	const [rawSources, setRawSources] = useState<Source[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -526,6 +531,7 @@ export default function ResourceSidebar({
 	return (
 		<div className="flex flex-row h-full w-full min-w-0">
 			<SidebarRail onOpenSettings={onOpenSettings} />
+			{leftSidebarCollapsed ? null : (
 			<aside
 				data-resource-sidebar
 				className="flex-1 bg-transparent flex flex-col h-full font-sans min-w-0 relative"
@@ -627,6 +633,8 @@ export default function ResourceSidebar({
 					<SkillsView />
 				) : leftSidebarView === "wiki" ? (
 					<WikiView />
+				) : leftSidebarView === "design" ? (
+					<DesignSessionList />
 				) : leftSidebarView === "websearch" ? (
 					<div className="flex flex-col h-full">
 						{/* Header */}
@@ -766,6 +774,7 @@ export default function ResourceSidebar({
 					handleCreateSource={handleCreateSource}
 				/>
 			</aside>
+			)}
 		</div>
 	);
 }

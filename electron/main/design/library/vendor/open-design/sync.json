@@ -1,0 +1,14 @@
+{
+  "upstream": "https://github.com/anthropic-labs/open-design",
+  "commit": "7c8305f4862796cebe0e05b6fc6406823a8debf2",
+  "imported_at": "2026-05-14",
+  "files": [
+    {"src": "assets/frames/iphone-15-pro.html", "dst": "library/frames/iphone-15-pro.html", "sha256": "ace5f5394bc904ed42a0128b77817a2d764bc491d680afafb1adbaa5d3ae2473"},
+    {"src": "assets/frames/android-pixel.html", "dst": "library/frames/android-pixel.html", "sha256": "d8e6431c9fc421b2f285a40a5d097e8fea4b90afe7fa62760156801960a9b6fa"},
+    {"src": "assets/frames/ipad-pro.html", "dst": "library/frames/ipad-pro.html", "sha256": "398b4dde22b521ad6698e74acb68855748b09cfbb8a0ffcebd582fa25324fdf5"},
+    {"src": "assets/frames/macbook.html", "dst": "library/frames/macbook.html", "sha256": "899c8dc1b2cc8c3e47c8d5df922adafdde75d289203dec5d76b7e4a4149ccbef"},
+    {"src": "assets/frames/browser-chrome.html", "dst": "library/frames/browser-chrome.html", "sha256": "27fd14c5de358502571a22c907fa152b9d1ae4dd477d2e547e8b0a95eaa60cd0"},
+    {"src": "templates/deck-framework.html", "dst": "library/frames/deck-framework.html", "sha256": "c08fb55de736c038d6f62743250cce1c00cfe1054434c06913fefa60c36be4fd"},
+    {"src": "templates/kami-deck.html", "dst": "library/frames/kami-deck.html", "sha256": "a587d770c6955e60362aba6bc7ee0dcf996fa11ef0c455d1a9e496e863e38c4e"}
+  ]
+}

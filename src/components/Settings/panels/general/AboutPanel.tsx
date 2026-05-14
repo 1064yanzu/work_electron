@@ -6,6 +6,8 @@
  */
 import {
 	Download,
+	FileText,
+	FolderOpen,
 	Info,
 	RefreshCw,
 	Rocket,
@@ -22,6 +24,7 @@ import {
 	SettingsPageContainer,
 	SettingsRow,
 } from "../../ui/SettingsPrimitives";
+import { toast } from "../../../ui/Toast";
 
 interface UpdateProgress {
 	percent: number;
@@ -37,6 +40,14 @@ interface UpdateState {
 	releaseNotes?: string;
 	progress?: UpdateProgress;
 	error?: string;
+}
+
+interface LogsInfo {
+	root: string;
+	exists: boolean;
+	total_bytes: number;
+	subdir_count: number;
+	latest_subdirs: string[];
 }
 
 function formatBytes(bytes: number): string {
@@ -56,6 +67,62 @@ export function AboutPanel() {
 	const [updateState, setUpdateState] = useState<UpdateState>({
 		status: "idle",
 	});
+	const [logsInfo, setLogsInfo] = useState<LogsInfo | null>(null);
+	const [logsBusy, setLogsBusy] = useState<"export" | "reveal" | null>(null);
+
+	const refreshLogsInfo = useCallback(async () => {
+		try {
+			const info = await invoke<LogsInfo>("logs_get_info");
+			setLogsInfo(info);
+		} catch (err) {
+			console.error("[AboutPanel] 获取日志信息失败:", err);
+		}
+	}, []);
+
+	const handleExportLogs = useCallback(async () => {
+		setLogsBusy("export");
+		try {
+			const res = await invoke<{
+				canceled: boolean;
+				path: string;
+				bytes: number;
+				error?: string;
+			}>("logs_export", { days: 7 });
+			if (res.canceled) return;
+			if (res.error) {
+				toast.error(`日志导出失败：${res.error}`);
+				return;
+			}
+			toast.success(`日志已导出（${formatBytes(res.bytes)}） → ${res.path}`);
+		} catch (err) {
+			toast.error(
+				`日志导出失败：${err instanceof Error ? err.message : String(err)}`,
+			);
+		} finally {
+			setLogsBusy(null);
+			void refreshLogsInfo();
+		}
+	}, [refreshLogsInfo]);
+
+	const handleRevealLogs = useCallback(async () => {
+		setLogsBusy("reveal");
+		try {
+			const res = await invoke<{
+				success: boolean;
+				path: string;
+				error?: string;
+			}>("logs_reveal");
+			if (!res.success) {
+				toast.error(`打开日志目录失败：${res.error ?? "未知错误"}`);
+			}
+		} catch (err) {
+			toast.error(
+				`打开日志目录失败：${err instanceof Error ? err.message : String(err)}`,
+			);
+		} finally {
+			setLogsBusy(null);
+		}
+	}, []);
 
 	// 获取当前版本
 	useEffect(() => {
@@ -63,6 +130,11 @@ export function AboutPanel() {
 			setAppVersion(res.appVersion);
 		});
 	}, []);
+
+	// 初次加载日志概览
+	useEffect(() => {
+		void refreshLogsInfo();
+	}, [refreshLogsInfo]);
 
 	// 监听更新状态变化事件
 	useEffect(() => {
@@ -241,6 +313,67 @@ export function AboutPanel() {
 							? "当前已是最新版本。"
 							: "点击右上角按钮检查是否有新版本。"}
 					</p>
+				)}
+			</SettingsCardSection>
+
+			<SettingsCardSection
+				title="日志与诊断"
+				description="排查问题时，可以把日志打包发给开发者；默认导出最近 7 天的运行日志。"
+				bodyClassName="pt-1"
+			>
+				<SettingsRow
+					label="日志目录"
+					description={
+						logsInfo?.root ?? "日志目录会在第一次出问题时自动创建。"
+					}
+					value={
+						logsInfo && logsInfo.exists
+							? `${formatBytes(logsInfo.total_bytes)} · ${logsInfo.subdir_count} 个时段`
+							: undefined
+					}
+					action={
+						<SettingsButton
+							variant="secondary"
+							size="sm"
+							icon={FolderOpen}
+							loading={logsBusy === "reveal"}
+							onClick={handleRevealLogs}
+						>
+							打开目录
+						</SettingsButton>
+					}
+				/>
+				<SettingsRow
+					label="导出日志"
+					description="打包成 zip 文件，包含主进程 / Agent SDK / HTTP 三个分类的最近日志，以及应用版本元信息。"
+					action={
+						<SettingsButton
+							variant="primary"
+							size="sm"
+							icon={Download}
+							loading={logsBusy === "export"}
+							onClick={handleExportLogs}
+						>
+							导出为 ZIP
+						</SettingsButton>
+					}
+				/>
+				{logsInfo && logsInfo.exists && logsInfo.latest_subdirs.length > 0 && (
+					<div className="mt-2 flex flex-wrap items-center gap-1.5 pt-3">
+						<FileText
+							className="h-3.5 w-3.5 text-text-muted"
+							strokeWidth={1.8}
+						/>
+						<span className="text-[11.5px] text-text-muted">最近时段：</span>
+						{logsInfo.latest_subdirs.map((name) => (
+							<span
+								key={name}
+								className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] tabular-nums text-text-secondary"
+							>
+								{name}
+							</span>
+						))}
+					</div>
 				)}
 			</SettingsCardSection>
 		</SettingsPageContainer>

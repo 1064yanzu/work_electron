@@ -247,56 +247,84 @@ export function SourceManager() {
 						{testing ? "测速中…" : "测速"}
 					</button>
 				</div>
-				<div className="space-y-2">
-					{mirrors.map((m, idx) => {
-						const testItem = testResults.find((r) =>
-							r.url.includes(m.id) || m.pattern.split("{")[0].length > 0
-								? testResults.find((r) =>
-										r.url.startsWith(m.pattern.split("{")[0]),
-									)
-								: undefined,
-						);
-						return (
-							<div
-								key={m.id}
-								className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-surface/50"
-							>
-								<input
-									type="checkbox"
-									checked={m.enabled}
-									onChange={(e) => {
-										const next = [...mirrors];
-										next[idx] = { ...m, enabled: e.target.checked };
-										updateMirrors(next);
-									}}
-									className="accent-primary"
-								/>
-								<div className="flex-1 min-w-0">
-									<div className="text-[12.5px] font-medium text-text-primary">
-										{m.name}
-									</div>
-									<div className="text-[11px] text-text-muted font-mono truncate mt-0.5">
-										{m.pattern}
-									</div>
-								</div>
-								{testItem && (
+				<p className="text-[10.5px] text-text-light leading-relaxed -mt-1">
+					后端会自动 race 启用的镜像，取最先返回 200 的那条。无需手动选择。
+				</p>
+				{(() => {
+					// 在已成功的测速结果里找延迟最低者
+					const okResults = testResults.filter((r) => r.ok);
+					const fastestUrl =
+						okResults.length > 0
+							? okResults.reduce((a, b) =>
+									(a.latencyMs ?? Number.POSITIVE_INFINITY) <
+									(b.latencyMs ?? Number.POSITIVE_INFINITY)
+										? a
+										: b,
+								).url
+							: null;
+					return (
+						<div className="space-y-2">
+							{mirrors.map((m, idx) => {
+								// testResults 保持与 templates 同序，按 idx 取
+								const testItem = testResults[idx];
+								const isFastest =
+									!!testItem && testItem.ok && testItem.url === fastestUrl;
+								return (
 									<div
+										key={m.id}
 										className={cn(
-											"text-[10.5px] font-mono px-2 py-0.5 rounded",
-											testItem.ok
-												? "bg-success/8 text-success dark:bg-success/10 dark:text-success"
-												: "bg-[rgba(181,51,51,0.08)] text-error dark:bg-error/10 dark:text-error",
+											"flex items-center gap-3 p-3 rounded-xl border bg-surface/50 transition",
+											isFastest
+												? "border-success/40 bg-success/[0.03] dark:bg-success/[0.06]"
+												: "border-border/60",
 										)}
 									>
-										{testItem.ok
-											? `${testItem.latencyMs}ms`
-											: testItem.error || "unreachable"}
+										<input
+											type="checkbox"
+											checked={m.enabled}
+											onChange={(e) => {
+												const next = [...mirrors];
+												next[idx] = { ...m, enabled: e.target.checked };
+												updateMirrors(next);
+											}}
+											className="accent-primary"
+										/>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-1.5">
+												<span className="text-[12.5px] font-medium text-text-primary">
+													{m.name}
+												</span>
+												{isFastest && (
+													<span className="inline-flex items-center gap-0.5 text-[9.5px] font-medium px-1.5 py-0.5 rounded bg-success/10 text-success">
+														<BadgeCheck className="w-2.5 h-2.5" />
+														最快
+													</span>
+												)}
+											</div>
+											<div className="text-[11px] text-text-muted font-mono truncate mt-0.5">
+												{m.pattern}
+											</div>
+										</div>
+										{testItem && (
+											<div
+												className={cn(
+													"text-[10.5px] font-mono px-2 py-0.5 rounded",
+													testItem.ok
+														? "bg-success/8 text-success dark:bg-success/10 dark:text-success"
+														: "bg-[rgba(181,51,51,0.08)] text-error dark:bg-error/10 dark:text-error",
+												)}
+											>
+												{testItem.ok
+													? `${testItem.latencyMs}ms`
+													: testItem.error || "unreachable"}
+											</div>
+										)}
 									</div>
-								)}
-							</div>
-						);
-					})}
-				</div>
+								);
+							})}
+						</div>
+					);
+				})()}
 			</div>
 		</div>
 	);

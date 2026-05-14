@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>MacBook Pro 14 Frame Template</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #f3f3f1;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, "SF Pro Display", system-ui, sans-serif;
+  }
+  /*
+   * MacBook Pro 14" (M3) — viewport 1512 × 982
+   * Frame outer: 1560 × 1020 (incl. 24 frame + 14 chin)
+   */
+  .device-macbook-pro {
+    position: relative;
+    width: 1560px; height: 1020px;
+    background: #1a1a1a;
+    border-radius: 18px 18px 6px 6px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 20px 60px rgba(0,0,0,0.3);
+    padding: 14px 24px 24px;
+  }
+  .device-macbook-pro .notch {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    width: 220px; height: 32px;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    z-index: 10;
+  }
+  .device-macbook-pro .screen {
+    position: relative;
+    width: 1512px; height: 982px;
+    background: var(--screen-bg, #ffffff);
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .device-macbook-pro .menu-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 28px;
+    padding: 0 16px;
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(20px);
+    font-size: 13px;
+    color: var(--menu-fg, #000);
+    z-index: 5;
+  }
+  .menu-bar .apple { font-weight: 700; }
+  .content {
+    position: absolute;
+    top: 28px; left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+  }
+  /* MacBook chin (bottom hinge area) */
+  .device-macbook-pro::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 10px;
+    background: linear-gradient(to bottom, #1a1a1a, #2a2a2a);
+    border-radius: 0 0 6px 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="device-macbook-pro">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="menu-bar">
+        <span class="apple"></span>
+        <span>App</span>
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span style="margin-left: auto; opacity: 0.6;">9:41</span>
+      </div>
+      <div class="content">
+        <!-- INJECT CONTENT HERE -->
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -106,7 +106,7 @@ export interface AIReviewState {
 // 布局状态
 export interface LayoutState {
 	// 中间栏主视图模式
-	activeMainView: "editor" | "browser" | "wiki-graph";
+	activeMainView: "editor" | "browser" | "wiki-graph" | "design";
 	// 左边栏视图模式
 	leftSidebarView:
 		| "sources"
@@ -118,9 +118,12 @@ export interface LayoutState {
 		| "threads"
 		| "files"
 		| "skills"
-		| "wiki";
+		| "wiki"
+		| "design";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
+	// 左边栏折叠状态（仅留 SidebarRail）
+	leftSidebarCollapsed: boolean;
 	// 卡片视图当前 Tab（知识卡片 / 分享卡片）
 	cardsActiveTab: "knowledge" | "shared";
 }

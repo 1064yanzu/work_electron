@@ -26,6 +26,8 @@ import {
 } from "./services/customMascotProtocol";
 import { reconcileCustomMascotIndex } from "./services/customMascotService";
 import { initUpdateService, stopUpdateService } from "./services/updateService";
+import { ensureDesignsRoot } from "./design";
+import { installApplicationMenu } from "./menu";
 
 export async function bootstrapApp({
 	createWindow,
@@ -79,6 +81,9 @@ export async function bootstrapApp({
 	// 注册 mascot:// protocol handler（whenReady 之后才生效）
 	registerMascotProtocolHandler();
 
+	// 安装中文应用菜单（macOS 顶部菜单栏 + Win/Linux Alt 弹出）
+	installApplicationMenu();
+
 	// 修复自定义桌宠索引（移除指向不存在目录的条目；补齐磁盘上有但索引漏的）
 	void reconcileCustomMascotIndex().catch((err) => {
 		logger.warn({
@@ -89,6 +94,49 @@ export async function bootstrapApp({
 
 	const db = await initDatabase({ logger });
 	logger.info({ msg: "Database initialized successfully" });
+
+	// 确保设计模块工作目录存在：<userData>/designs/
+	try {
+		const designsRoot = await ensureDesignsRoot();
+		logger.info({ msg: "Design root ensured", root: designsRoot });
+	} catch (err) {
+		logger.warn({
+			msg: "Failed to ensure design root",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
+
+	// 同步内置设计 skill 到 ~/.claude/skills/ipo-*
+	try {
+		const { bootstrapDesignBuiltinSkills } = await import("./design");
+		const bootResult = await bootstrapDesignBuiltinSkills();
+		logger.info({
+			msg: "Design builtin skills bootstrapped",
+			installed: bootResult.installed,
+			skipped: bootResult.skipped,
+			failed: bootResult.failed,
+		});
+	} catch (err) {
+		logger.warn({
+			msg: "Failed to bootstrap design builtin skills",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
+
+	// 初始化 Markdown 文件式 Agent 长期记忆（<userData>/agent-memory/）：
+	// 首启创建空的 SOUL/USER/MEMORY 三件套；如有旧 agent_memories 表则一次性 DROP。
+	try {
+		const { ensureMemoryFiles } = await import(
+			"./ipc/handlers/agentSdk/memoryFileStore"
+		);
+		await ensureMemoryFiles(db);
+		logger.info({ msg: "Agent memory files ensured" });
+	} catch (err) {
+		logger.warn({
+			msg: "Failed to ensure agent memory files",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
 
 	const remoteControl = initRemoteControlOrchestrator({ db, logger });
 	const cloudNodeClient = initCloudNodeClient({ db, logger });
@@ -105,6 +153,20 @@ export async function bootstrapApp({
 	logger.info({ msg: "IPC handlers registered successfully" });
 
 	createWindow();
+
+	// 启动 Agent 记忆文件 watcher（chokidar）—— 外部编辑 markdown 时给主窗口推送
+	try {
+		const { memoryFileWatcher } = await import(
+			"./ipc/handlers/agentSdk/memoryFileWatcher"
+		);
+		memoryFileWatcher.start(() => BrowserWindow.getAllWindows()[0] ?? null);
+		logger.info({ msg: "Agent memory file watcher started" });
+	} catch (err) {
+		logger.warn({
+			msg: "Failed to start agent memory file watcher",
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
 
 	// 应用自动更新（启动后 30s 首次检查，之后每 4 小时轮询）
 	try {
@@ -205,6 +267,14 @@ export async function bootstrapApp({
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();
 		void cloudNodeClient.stop();
+		// 停止 Agent 记忆文件 watcher
+		try {
+			void import("./ipc/handlers/agentSdk/memoryFileWatcher").then(
+				({ memoryFileWatcher }) => memoryFileWatcher.stop(),
+			);
+		} catch {
+			// 静默
+		}
 		// 解除桌宠全局热键
 		unregisterPetGlobalShortcut();
 		// 销毁桌面宠物窗口

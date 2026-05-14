@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>iPad Pro 11 Frame Template</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #f3f3f1;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, "SF Pro Display", system-ui, sans-serif;
+  }
+  /*
+   * iPad Pro 11" (M4) — landscape
+   * Logical: 1194 × 834
+   * Frame outer: 1230 × 870
+   */
+  .device-ipad-pro {
+    position: relative;
+    width: 1230px; height: 870px;
+    border-radius: 38px;
+    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 20px 60px rgba(0,0,0,0.3);
+    padding: 18px;
+  }
+  .device-ipad-pro .screen {
+    position: relative;
+    width: 1194px; height: 834px;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--screen-bg, #ffffff);
+  }
+  .device-ipad-pro .top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 24px;
+    padding: 6px 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; font-weight: 600;
+    color: var(--status-fg, #000);
+    z-index: 5;
+  }
+  .content {
+    position: absolute;
+    top: 24px; left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="device-ipad-pro">
+    <div class="screen">
+      <div class="top-bar">
+        <span class="time">9:41</span>
+        <span class="signals">
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="currentColor"><rect x="0" y="6" width="3" height="4"/><rect x="5" y="3" width="3" height="7"/><rect x="10" y="0" width="3" height="10"/></svg>
+        </span>
+      </div>
+      <div class="content">
+        <!-- INJECT CONTENT HERE -->
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -11,6 +11,7 @@ import type { Server } from "node:http";
 import fs from "node:fs/promises";
 import { readdirSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { findAvailablePort } from "../http/ports";
 import { BatchedSender } from "../utils/batchedSender";
@@ -210,9 +211,14 @@ class PreviewServerService {
 		const instance = this.instances.get(taskId);
 		if (!instance || instance.mode !== "single") return null;
 
-		// 从 instance.url 提取文件路径（url 格式: file:///path/to/file.html）
-		const filePath = instance.url.replace("file://", "");
-		return filePath;
+		// instance.url 是 pathToFileURL 生成的 file:// URL；
+		// 反向解析必须用 fileURLToPath，简单 replace 会破坏 Windows 的
+		// `file:///C:/...` 三斜杠形态（误删第一个斜杠）。
+		try {
+			return fileURLToPath(instance.url);
+		} catch {
+			return null;
+		}
 	}
 
 	/**

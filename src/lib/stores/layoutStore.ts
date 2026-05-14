@@ -8,6 +8,7 @@ import {
 import type { LayoutState } from "./types";
 
 const CARDS_ACTIVE_TAB_STORAGE_KEY = "layout.cardsActiveTab";
+const LEFT_SIDEBAR_COLLAPSED_STORAGE_KEY = "layout.leftSidebarCollapsed";
 
 function readPersistedCardsActiveTab(): LayoutState["cardsActiveTab"] {
 	if (typeof window === "undefined") return "shared";
@@ -20,10 +21,21 @@ function readPersistedCardsActiveTab(): LayoutState["cardsActiveTab"] {
 	return "shared";
 }
 
+function readPersistedLeftSidebarCollapsed(): boolean {
+	if (typeof window === "undefined") return false;
+	try {
+		const raw = window.localStorage.getItem(LEFT_SIDEBAR_COLLAPSED_STORAGE_KEY);
+		return raw === "1";
+	} catch {
+		return false;
+	}
+}
+
 const initialLayoutState: LayoutState = {
 	activeMainView: "editor",
 	leftSidebarView: "sources",
 	rightSidebarVisible: true,
+	leftSidebarCollapsed: readPersistedLeftSidebarCollapsed(),
 	cardsActiveTab: readPersistedCardsActiveTab(),
 };
 
@@ -61,6 +73,24 @@ function setCardsActiveTab(tab: LayoutState["cardsActiveTab"]) {
 	}
 }
 
+function setLeftSidebarCollapsed(collapsed: boolean) {
+	store.setState((state) => ({ ...state, leftSidebarCollapsed: collapsed }));
+	if (typeof window !== "undefined") {
+		try {
+			window.localStorage.setItem(
+				LEFT_SIDEBAR_COLLAPSED_STORAGE_KEY,
+				collapsed ? "1" : "0",
+			);
+		} catch {
+			// localStorage 写入失败时静默
+		}
+	}
+}
+
+function toggleLeftSidebar() {
+	setLeftSidebarCollapsed(!store.getState().leftSidebarCollapsed);
+}
+
 /**
  * 项目切换时重置布局状态（由 workspaceStore.setCurrentProject 调用）
  */
@@ -78,6 +108,8 @@ export const layoutStore = {
 	toggleRightSidebar,
 	setRightSidebarVisible,
 	setCardsActiveTab,
+	setLeftSidebarCollapsed,
+	toggleLeftSidebar,
 	resetOnProjectChange,
 };
 

@@ -5,6 +5,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
 import { app, dialog, shell } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
@@ -413,6 +414,9 @@ export function createArtifactHandlers(db: DbContext) {
 
 		const kind = kindMap[artifact.file_type] || "document";
 
+		// pathToFileURL 跨平台处理：Windows 盘符 + 空格/特殊字符编码
+		const fileUrl = pathToFileURL(artifact.file_path).toString();
+
 		// 创建资料
 		await db.client.execute({
 			sql: `INSERT INTO sources (id, title, kind, tags, url, folder_id, source_type, category, description, created_at, updated_at)
@@ -422,7 +426,7 @@ export function createArtifactHandlers(db: DbContext) {
 				artifact.file_name,
 				kind,
 				"[]",
-				`file://${artifact.file_path}`,
+				fileUrl,
 				input.folder_id ?? null,
 				"import",
 				"document",
@@ -437,7 +441,7 @@ export function createArtifactHandlers(db: DbContext) {
 			title: artifact.file_name,
 			kind,
 			tags: [],
-			url: `file://${artifact.file_path}`,
+			url: fileUrl,
 			folder_id: input.folder_id,
 			source_type: "import",
 			category: "document",

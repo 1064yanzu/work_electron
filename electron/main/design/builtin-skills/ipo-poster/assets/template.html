@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta charset="UTF-8"><title>{{title}}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  body { margin: 0; background: #fff; }
+  .poster {
+    width: 210mm; height: 297mm;
+    padding: 24mm 18mm;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    box-sizing: border-box;
+    background: #f5f4ed;
+    color: #141413;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+  }
+  h1 { font-family: ui-serif, Georgia, serif; font-size: 84px; line-height: 1; margin: 0; }
+</style></head>
+<body>
+  <article class="poster">
+    <header>{{eyebrow}}</header>
+    <main><h1>{{title}}</h1></main>
+    <footer>{{footer}}</footer>
+  </article>
+</body></html>

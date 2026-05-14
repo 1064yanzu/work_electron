@@ -41,7 +41,8 @@ export type OutputType =
 	| "report"
 	| "thread"
 	| "note_collection"
-	| "diagram";
+	| "diagram"
+	| "design";
 
 /** Provider 类型 */
 export type ProviderType =
@@ -490,4 +491,136 @@ export interface SaveCheckpointPayload {
 	tool_calls_completed?: string[];
 	accumulated_result?: string;
 	metadata?: Record<string, unknown>;
+}
+
+// ==================
+// 设计模块（Design）
+// ==================
+
+export interface DesignDirection {
+	id: string;
+	label: string;
+	mood: string;
+	palette: { bg: string; fg: string; accent: string; muted: string };
+	display_font: string;
+	body_font: string;
+	references: string[];
+	posture: string[];
+}
+
+export type DiscoveryFieldType = "select" | "multiselect" | "text" | "textarea";
+
+export interface DiscoveryFieldOption {
+	value: string;
+	label: string;
+	description?: string;
+}
+
+export interface DiscoveryField {
+	id: string;
+	type: DiscoveryFieldType;
+	label: string;
+	help?: string;
+	required?: boolean;
+	options?: DiscoveryFieldOption[];
+	default_value?: string | string[];
+	placeholder?: string;
+}
+
+export interface DiscoveryFormSchema {
+	version: string;
+	fields: DiscoveryField[];
+}
+
+export type DiscoveryAnswers = Record<string, string | string[] | undefined>;
+
+export type DesignSessionStatus =
+	| "draft"
+	| "discovery"
+	| "running"
+	| "done"
+	| "error";
+
+export type DesignMode =
+	| "web-prototype"
+	| "mobile-mockup"
+	| "pitch-deck"
+	| "poster";
+
+export interface DesignCritiqueScores {
+	scores: {
+		philosophy: number;
+		hierarchy: number;
+		execution: number;
+		functional: number;
+		innovation: number;
+	};
+	total: number;
+	notes: string;
+	fixes: string[];
+	/** 自检契约：总分 ≥ 40 且每维 ≥ 6 才为 true。仅 gate_mode=true 时填充。 */
+	passed?: boolean;
+	/** 最弱维度名（自检契约字段；gate_mode=true 时填充）。 */
+	lowest_dim?: string;
+	/** 最弱维度得分（gate_mode=true 时填充）。 */
+	lowest_score?: number;
+	/** 一句话告诉下一轮重做该专攻什么（gate_mode=true 时填充）。 */
+	regenerate_reason?: string;
+}
+
+export interface DesignLastExport {
+	format: string;
+	target_kind: string;
+	target_label: string;
+	paths: string[];
+	timestamp: number;
+}
+
+export interface DesignSession {
+	id: string;
+	title: string;
+	status: DesignSessionStatus;
+	work_dir: string;
+	discovery_answers?: DiscoveryAnswers;
+	direction_id?: string;
+	system_id?: string;
+	mode?: string;
+	brand_spec?: Record<string, unknown>;
+	critique_scores?: DesignCritiqueScores;
+	output_asset_id?: string;
+	sdk_session_id?: string;
+	last_export?: DesignLastExport;
+	created_at: number;
+	updated_at: number;
+}
+
+export type DesignExportFormat =
+	| "html-inline"
+	| "html-project"
+	| "pdf"
+	| "screenshots"
+	| "zip"
+	| "markdown";
+
+export type DesignExportTarget =
+	| { kind: "path"; path: string }
+	| { kind: "current-thread"; thread_path?: string }
+	| { kind: "thread"; thread_id?: string; thread_path?: string }
+	| { kind: "folder"; folder_path: string }
+	| { kind: "save-dialog" };
+
+export interface DesignExportOptions {
+	page_size?: "A4" | "Letter" | "16:9";
+	breakpoints?: Array<"desktop" | "tablet" | "mobile">;
+	subfolder_name?: string;
+}
+
+export interface DesignLaunchPayload {
+	prompt: string;
+	model: string;
+	cwd: string;
+	system_prompt: string;
+	skills: string[];
+	permission_mode?: string;
+	allowed_tools?: string[];
 }

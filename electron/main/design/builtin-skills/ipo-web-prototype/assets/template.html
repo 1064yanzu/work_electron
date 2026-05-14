@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{title}}</title>
+  <style>
+    :root {
+      /* 颜色：方向 → brand-spec → 默认；不要硬编码紫色渐变 */
+      --bg: #ffffff;
+      --fg: #0a0a0a;
+      --accent: var(--brand-accent, #635bff);
+      --muted: #6b7280;
+      --surface: #f8fafc;
+      --border: #e5e7eb;
+      --radius: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    /* TODO(agent): 在这里补 hero / features / pricing / footer 等 sections。
+       严禁紫色渐变 hero、客户 logo 灰阶矩阵、sparkle icon。 */
+  </style>
+</head>
+<body>
+  <header><!-- nav --></header>
+  <main>
+    <section><!-- hero --></section>
+    <section><!-- features --></section>
+  </main>
+  <footer><!-- footer --></footer>
+</body>
+</html>

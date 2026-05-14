@@ -66,6 +66,20 @@ export const skillsStore = {
 		emitChange();
 	},
 
+	/**
+	 * 写一个 DB flag 标记某个 skill 在 UI 上「启用 / 禁用」。
+	 *
+	 * ⚠️ 语义边界：这个开关**主要影响**：
+	 *   - UI 列表的「已启用」过滤
+	 *   - 启动 agent 时同步到 `cwd/.claude/skills/` 的 project scope（见
+	 *     electron/main/ipc/handlers/agentSdk/configManager.ts:syncSkillsToCwd）
+	 *
+	 * 但 Claude Agent SDK 的 settingSources 始终包含 `"user"`，意味着 SDK 仍会扫描
+	 * `~/.claude/skills/`，被「禁用」的 skill 文件仍存在于 home 目录里。Claude Code
+	 * 本身也不能精确控制 skills 启停，这是 SDK 行为约束。
+	 *
+	 * 如果你**真的不想让某个 skill 被 agent 用**，请直接 `deleteSkill` 物理删除目录。
+	 */
 	async setEnabled(skillName: string, enabled: boolean): Promise<void> {
 		await setSkillEnabled(skillName, enabled);
 		cachedSkills = cachedSkills.map((s) =>

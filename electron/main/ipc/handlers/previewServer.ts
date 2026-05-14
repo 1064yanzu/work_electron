@@ -5,6 +5,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { app } from "electron";
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
@@ -102,7 +103,8 @@ export function createPreviewServerHandlers(deps: {
 				// 尝试获取 single 模式的文件路径
 				const filePath = await service.getSingleFilePath(taskId);
 				if (filePath) {
-					previewUrl = `file://${filePath}`;
+					// pathToFileURL 跨平台处理盘符与特殊字符
+					previewUrl = pathToFileURL(filePath).toString();
 				} else {
 					throw new Error(
 						`任务 ${taskId} 没有正在运行的预览服务器，且未提供 url`,

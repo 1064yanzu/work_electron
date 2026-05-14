@@ -33,6 +33,7 @@ import {
 } from "./lib/interaction/motionPreference";
 import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
+import { layoutStore } from "./lib/stores/layoutStore";
 import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
@@ -42,6 +43,8 @@ import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
 import { registerBuiltinSlashCommands } from "./lib/slashCommands";
 import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
+import { invoke } from "./lib/tauriCompat";
+import { listen } from "./lib/tauriEventCompat";
 
 // 启动即注入内置斜杠命令（幂等），放在模块级以确保任意窗口进入都生效
 registerBuiltinSlashCommands();
@@ -58,6 +61,11 @@ const SandboxWorkspace = lazy(
 const WikiGraphFullscreen = lazy(() =>
 	import("./components/wiki/WikiGraphFullscreen").then((m) => ({
 		default: m.WikiGraphFullscreen,
+	})),
+);
+const DesignWorkspace = lazy(() =>
+	import("./components/design/DesignWorkspace").then((m) => ({
+		default: m.DesignWorkspace,
 	})),
 );
 const SettingsModal = lazy(async () => {
@@ -109,6 +117,9 @@ export default function App() {
 	const activeMainView = useLayoutStoreSelector(
 		(state) => state.activeMainView,
 	);
+	const leftSidebarCollapsed = useLayoutStoreSelector(
+		(state) => state.leftSidebarCollapsed,
+	);
 	const rightSidebarVisible = useLayoutStoreSelector(
 		(state) => state.rightSidebarVisible,
 	);
@@ -123,10 +134,24 @@ export default function App() {
 	// 记录右侧 Panel 当前尺寸（用于拖动结束时判断）
 	const rightPanelSizeRef = useRef<number>(25);
 
+	// 左侧 Panel 的命令式句柄（用于响应 leftSidebarCollapsed 切换）
+	const leftPanelRef = useRef<ImperativePanelHandle>(null);
+
 	// 项目概念已从 UI 移除，工作区始终处于"无项目（global）"状态
 	useEffect(() => {
 		workspaceStore.setCurrentProject(null);
 	}, []);
+
+	// 把 leftSidebarCollapsed 同步给 PanelGroup 的左 Panel（命令式 collapse/expand）
+	useEffect(() => {
+		const panel = leftPanelRef.current;
+		if (!panel) return;
+		if (leftSidebarCollapsed) {
+			panel.collapse();
+		} else {
+			panel.expand();
+		}
+	}, [leftSidebarCollapsed]);
 
 	// 初始化主题管理器
 	useEffect(() => {
@@ -262,6 +287,30 @@ export default function App() {
 		return off;
 	}, [handleOpenSettings]);
 
+	// 订阅原生菜单事件 — 帮助菜单里的"导出日志…/打开日志目录"
+	// 转发到设置面板的"关于与更新"页，让用户在熟悉的 UI 里完成动作。
+	useEffect(() => {
+		let unlisten: (() => void) | undefined;
+		void listen<{ type: string; action: string }>(
+			"app-menu-action",
+			(evt) => {
+				const payload = evt.payload;
+				if (payload?.type !== "logs") return;
+				handleOpenSettings("general.about");
+				if (payload.action === "reveal") {
+					void invoke("logs_reveal").catch(() => {});
+				} else if (payload.action === "export") {
+					void invoke("logs_export", { days: 7 }).catch(() => {});
+				}
+			},
+		).then((fn) => {
+			unlisten = fn;
+		});
+		return () => {
+			unlisten?.();
+		};
+	}, [handleOpenSettings]);
+
 	// 启动 + 工作区目录切换时扫描自定义命令（.claude/commands/）
 	useEffect(() => {
 		void rescanCustomSlashCommands();
@@ -285,13 +334,27 @@ export default function App() {
 					<PanelGroup
 						direction="horizontal"
 						className="gap-0"
-						autoSaveId="main_three_panel_layout_v2"
+						autoSaveId="main_three_panel_layout_v3"
 					>
 						{/* Left Panel: Resources */}
 						<Panel
+							ref={leftPanelRef}
 							defaultSize={20}
 							minSize={15}
 							maxSize={50}
+							collapsible
+							collapsedSize={4}
+							onCollapse={() => {
+								// Panel 自身被折叠时同步给 store（用户拖到极窄）
+								if (!layoutStore.getState().leftSidebarCollapsed) {
+									layoutStore.setLeftSidebarCollapsed(true);
+								}
+							}}
+							onExpand={() => {
+								if (layoutStore.getState().leftSidebarCollapsed) {
+									layoutStore.setLeftSidebarCollapsed(false);
+								}
+							}}
 							className="overflow-hidden"
 						>
 							<PanelShell>
@@ -330,6 +393,10 @@ export default function App() {
 										) : activeMainView === "browser" ? (
 											<Suspense fallback={<PanelLoadingFallback />}>
 												<BrowserPanel />
+											</Suspense>
+										) : activeMainView === "design" ? (
+											<Suspense fallback={<PanelLoadingFallback />}>
+												<DesignWorkspace />
 											</Suspense>
 										) : (
 											<Suspense fallback={<PanelLoadingFallback />}>

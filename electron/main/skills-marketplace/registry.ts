@@ -11,6 +11,12 @@
  */
 
 import { net } from "electron";
+import {
+	DEFAULT_MIRROR_TEMPLATES,
+	type MirrorTemplate,
+	fetchWithMirrors,
+	parseGithubRawUrl,
+} from "./mirrorRouter";
 import type {
 	MarketplaceArtifactSource,
 	MarketplaceEntry,
@@ -20,13 +26,37 @@ import type {
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-async function fetchJson<T = unknown>(url: string): Promise<T> {
+/**
+ * 通用 JSON 拉取：
+ *   - GitHub raw / github.com 域名 → 走 mirrorRouter，race jsDelivr/ghproxy/Fastly 等镜像
+ *   - 其他域名（skills.sh / 自建 marketplace 站）→ 直连，但显式 redirect:"follow"
+ *
+ * `mirrors` 来自 handler 层从 DB 读取的用户配置，默认为 DEFAULT_MIRROR_TEMPLATES。
+ */
+async function fetchJson<T = unknown>(
+	url: string,
+	mirrors?: MirrorTemplate[],
+): Promise<T> {
+	const isGithubRaw = parseGithubRawUrl(url) != null;
+	const templates =
+		mirrors && mirrors.length > 0 ? mirrors : DEFAULT_MIRROR_TEMPLATES;
+
+	if (isGithubRaw) {
+		const { response } = await fetchWithMirrors(url, templates, {
+			method: "GET",
+			headers: { Accept: "application/json" },
+			timeoutMs: FETCH_TIMEOUT_MS,
+		});
+		return (await response.json()) as T;
+	}
+
 	const ctrl = new AbortController();
 	const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
 	try {
 		const r = await net.fetch(url, {
 			method: "GET",
 			headers: { Accept: "application/json" },
+			redirect: "follow",
 			signal: ctrl.signal,
 		});
 		if (!r.ok) {
@@ -107,8 +137,9 @@ interface AnthropicMarketplaceJson {
 async function fetchAnthropicMarketplace(
 	source: MarketplaceSource,
 	query?: string,
+	mirrors?: MirrorTemplate[],
 ): Promise<MarketplaceEntry[]> {
-	const data = await fetchJson<AnthropicMarketplaceJson>(source.url);
+	const data = await fetchJson<AnthropicMarketplaceJson>(source.url, mirrors);
 	const list = data.plugins ?? data.skills ?? data.items ?? [];
 	const trust = trustOf(source);
 
@@ -209,6 +240,7 @@ function parseSkillsShSource(
 async function fetchSkillsSh(
 	source: MarketplaceSource,
 	query?: string,
+	_mirrors?: MirrorTemplate[],
 ): Promise<MarketplaceEntry[]> {
 	// skills.sh 的 /api/search 要求 query >= 2 字符；浏览态（query 为空）直接跳过该源
 	const q = (query ?? "").trim();
@@ -217,6 +249,7 @@ async function fetchSkillsSh(
 	const base = source.url.replace(/\/+$/, "");
 	// 仅尝试一个真实可用端点；返回非 OK 则抛错，让调用方汇总到 errors 里
 	const url = `${base}/api/search?q=${encodeURIComponent(q)}&limit=50`;
+	// 非 GitHub 域名，fetchJson 会自动走直连 + redirect:"follow"
 	const data = await fetchJson<SkillsShResponse>(url);
 
 	const list = data.skills ?? data.results ?? data.items ?? data.data ?? [];
@@ -252,6 +285,7 @@ async function fetchSkillsSh(
 async function fetchTencentSkillHub(
 	source: MarketplaceSource,
 	query?: string,
+	mirrors?: MirrorTemplate[],
 ): Promise<MarketplaceEntry[]> {
 	// 第一阶段：腾讯 SkillHub REST API 未公开，list 阶段先尝试常见路径，失败时返回空
 	// 主要价值是作为 mirrorRouter 里的镜像基址
@@ -263,7 +297,7 @@ async function fetchTencentSkillHub(
 	];
 	for (const url of candidates) {
 		try {
-			const data = await fetchJson<unknown>(url);
+			const data = await fetchJson<unknown>(url, mirrors);
 			// 如果是 marketplace.json 格式
 			const asMarketplace = data as AnthropicMarketplaceJson;
 			if (
@@ -349,17 +383,18 @@ function fetchAnthropicMarketplaceFromData(
 export async function fetchSourceEntries(
 	source: MarketplaceSource,
 	query?: string,
+	mirrors?: MirrorTemplate[],
 ): Promise<MarketplaceEntry[]> {
 	if (!source.enabled) return [];
 	switch (source.type) {
 		case "anthropic_marketplace_json":
-			return fetchAnthropicMarketplace(source, query);
+			return fetchAnthropicMarketplace(source, query, mirrors);
 		case "custom_json":
-			return fetchAnthropicMarketplace(source, query);
+			return fetchAnthropicMarketplace(source, query, mirrors);
 		case "skills_sh":
-			return fetchSkillsSh(source, query);
+			return fetchSkillsSh(source, query, mirrors);
 		case "tencent_skillhub":
-			return fetchTencentSkillHub(source, query);
+			return fetchTencentSkillHub(source, query, mirrors);
 		default:
 			return [];
 	}
@@ -369,6 +404,7 @@ export async function aggregateSearch(
 	sources: MarketplaceSource[],
 	query?: string,
 	onlySourceId?: string,
+	mirrors?: MirrorTemplate[],
 ): Promise<{
 	entries: MarketplaceEntry[];
 	errors: Array<{ sourceId: string; error: string }>;
@@ -378,7 +414,10 @@ export async function aggregateSearch(
 		: sources;
 	const tasks = filtered.map(async (s) => {
 		try {
-			return { sourceId: s.id, entries: await fetchSourceEntries(s, query) };
+			return {
+				sourceId: s.id,
+				entries: await fetchSourceEntries(s, query, mirrors),
+			};
 		} catch (e) {
 			return {
 				sourceId: s.id,
@@ -413,26 +452,50 @@ export async function aggregateSearch(
 export const DEFAULT_SOURCES: MarketplaceSource[] = [
 	{
 		id: "anthropic-official",
-		name: "Anthropic 官方",
+		name: "Anthropic 官方 Plugins",
 		type: "anthropic_marketplace_json",
 		url: "https://raw.githubusercontent.com/anthropics/claude-plugins-official/main/.claude-plugin/marketplace.json",
 		enabled: true,
 		trust: "official",
 	},
 	{
-		id: "skills-sh",
-		name: "skills.sh 社区",
-		type: "skills_sh",
-		url: "https://skills.sh",
+		id: "anthropic-community",
+		name: "Anthropic 社区 Plugins（量大）",
+		type: "anthropic_marketplace_json",
+		url: "https://raw.githubusercontent.com/anthropics/claude-plugins-community/main/.claude-plugin/marketplace.json",
+		enabled: true,
+		trust: "official",
+	},
+	{
+		id: "anthropic-skills",
+		name: "Anthropic Skills",
+		type: "anthropic_marketplace_json",
+		url: "https://raw.githubusercontent.com/anthropics/skills/main/.claude-plugin/marketplace.json",
+		enabled: true,
+		trust: "official",
+	},
+	{
+		id: "anthropic-claude-code",
+		name: "Anthropic Claude Code",
+		type: "anthropic_marketplace_json",
+		url: "https://raw.githubusercontent.com/anthropics/claude-code/main/.claude-plugin/marketplace.json",
+		enabled: true,
+		trust: "official",
+	},
+	{
+		id: "wshobson-agents",
+		name: "wshobson/agents",
+		type: "anthropic_marketplace_json",
+		url: "https://raw.githubusercontent.com/wshobson/agents/main/.claude-plugin/marketplace.json",
 		enabled: true,
 		trust: "community",
 	},
 	{
-		id: "tencent-skillhub",
-		name: "腾讯 SkillHub（国内镜像）",
-		type: "tencent_skillhub",
-		url: "https://skillhub.tencent.com",
-		enabled: true,
+		id: "xiaolai-marketplace",
+		name: "xiaolai 中文圈 Marketplace",
+		type: "anthropic_marketplace_json",
+		url: "https://raw.githubusercontent.com/xiaolai/claude-plugin-marketplace/main/.claude-plugin/marketplace.json",
+		enabled: false,
 		trust: "community",
 	},
 ];

@@ -64,6 +64,7 @@ export type SettingsTabId =
 	| "workshop.mascot"
 	| "workshop.layout"
 	| "workshop.terminal"
+	| "workshop.design"
 	| "integrations.mcp"
 	| "integrations.remote"
 	| "data.stats"
@@ -274,6 +275,17 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/workshop/TerminalPanel"),
 			"TerminalPanel",
+		),
+	},
+	{
+		id: "workshop.design",
+		category: "workshop",
+		label: "设计模块",
+		icon: Palette,
+		badge: { tone: "primary", text: "新" },
+		load: asDefault(
+			() => import("./panels/workshop/DesignSettings"),
+			"DesignSettings",
 		),
 	},
 

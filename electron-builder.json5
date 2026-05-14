@@ -31,6 +31,23 @@
     "node_modules/@anthropic-ai/claude-agent-sdk/**/*",
     "node_modules/@libsql/**"
   ],
+  "extraResources": [
+    {
+      "from": "electron/main/design/library",
+      "to": "design-library",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/main/design/builtin-skills",
+      "to": "design-builtin-skills",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/main/design/templates",
+      "to": "design-templates",
+      "filter": ["**/*"]
+    }
+  ],
   "mac": {
     "target": [
       {

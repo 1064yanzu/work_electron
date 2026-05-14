@@ -1,373 +1,647 @@
+/**
+ * Agent 长期记忆 · 上下文全景面板
+ *
+ * 把 6 个会影响 Agent 行为的 markdown 文件统一抽象成 Tab：
+ *   - SOUL / USER / MEMORY        ：本应用维护的三件套（<userData>/agent-memory/）
+ *   - ~/.claude/CLAUDE.md         ：SDK 自动加载的全局用户级
+ *   - <线程 cwd>/CLAUDE.md        ：SDK 自动加载的项目级
+ *   - <线程 cwd>/AGENTS.md        ：SDK 自动加载的项目级子 Agent 定义
+ *
+ * 写入 ~/.claude/CLAUDE.md 需要二次确认，避免误改全局配置。
+ * 项目级 Tab 在没有选中线程时给出明确空态而非崩。
+ */
 import {
-	ChevronDown,
-	ChevronRight,
+	AlertTriangle,
 	Database,
-	Eye,
-	EyeOff,
+	FolderOpen,
 	Loader2,
-	Plus,
-	Search,
+	RefreshCw,
+	RotateCcw,
+	Save,
 	Trash2,
-	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-	type Memory,
-	type MemoryCategory,
-	memoryStore,
-} from "../../../lib/agent/memoryStore";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsButton,
 	SettingsCardSection,
 	SettingsPageContainer,
-	SettingsTextInput,
 } from "../ui/SettingsPrimitives";
 import { cn } from "../../../lib/utils";
-import { MEMORY_CATEGORY_STYLES } from "./memory/categoryConfig";
-import { MemoryAddInline } from "./memory/MemoryAddInline";
-import { MemoryItemRow } from "./memory/MemoryItemRow";
+import { workspaceStore } from "../../../lib/workspaceStore";
+import {
+	type MemoryFileInfo,
+	type MemoryFileToken,
+	type MemoryStats,
+	memoryStore,
+} from "../../../lib/agent/memoryStore";
+import { MEMORY_FILE_ORDER, MEMORY_FILE_STYLES } from "./memory/categoryConfig";
 import { MemoryStatsGrid } from "./memory/MemoryStatsGrid";
 
+const MonacoEditor = lazy(() =>
+	import("../../sandbox/workspace/MonacoEditor").then((m) => ({
+		default: m.MonacoEditor,
+	})),
+);
+
+type ContextFileWithSnapshot = MemoryFileInfo & {
+	injectedInActiveSnapshot: boolean;
+};
+
+function formatRelativeTime(ts: number): string {
+	if (!ts) return "未修改";
+	const diff = Date.now() - ts;
+	if (diff < 60_000) return "刚刚";
+	if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+	if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+	const date = new Date(ts);
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function MemorySettings() {
-	const [memories, setMemories] = useState<Memory[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [stats, setStats] = useState<{
-		total: number;
-		byCategory: Record<string, number>;
-	} | null>(null);
-
-	// 新增表单
-	const [showAddForm, setShowAddForm] = useState(false);
-	const [newKey, setNewKey] = useState("");
-	const [newContent, setNewContent] = useState("");
-	const [newCategory, setNewCategory] = useState<MemoryCategory>("fact");
-
-	// 编辑
-	const [editingId, setEditingId] = useState<string | null>(null);
-	const [editContent, setEditContent] = useState("");
-
-	// 上下文预览
-	const [showContextPreview, setShowContextPreview] = useState(false);
-	const [contextPreview, setContextPreview] = useState("");
-	const [contextLoading, setContextLoading] = useState(false);
-
-	// 折叠
-	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-		new Set(),
+	// 当前线程 cwd —— 项目级 Tab 跟随它刷新
+	const currentThreadPath = useSyncExternalStore(
+		workspaceStore.subscribe,
+		() => workspaceStore.getState().currentThreadPath,
+		() => workspaceStore.getState().currentThreadPath,
 	);
 
-	// 清空确认
+	const [activeTab, setActiveTab] = useState<MemoryFileToken>("soul");
+	const [files, setFiles] = useState<Map<MemoryFileToken, ContextFileWithSnapshot>>(
+		new Map(),
+	);
+	const [stats, setStats] = useState<MemoryStats | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [draft, setDraft] = useState<string>("");
+	const [dirty, setDirty] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [showGlobalConfirm, setShowGlobalConfirm] = useState(false);
 	const [showClearConfirm, setShowClearConfirm] = useState(false);
+	const tickRef = useRef(0);
 
-	const loadMemories = useCallback(async (query?: string) => {
+	const refresh = useCallback(async () => {
 		setLoading(true);
 		try {
-			const q = query?.trim() || "all";
-			const result = await memoryStore.searchMemories(q, 50);
-			setMemories(result);
-		} catch {
-			toast.error("加载记忆失败");
+			const [list, s] = await Promise.all([
+				memoryStore.listContextFiles(currentThreadPath ?? null),
+				memoryStore.getStats(true),
+			]);
+			const map = new Map<MemoryFileToken, ContextFileWithSnapshot>();
+			for (const item of list) {
+				map.set(item.token as MemoryFileToken, item);
+			}
+			setFiles(map);
+			setStats(s);
+			tickRef.current += 1;
+		} catch (err) {
+			console.error("[MemorySettings] refresh failed", err);
+			toast.error("加载记忆文件失败");
 		} finally {
 			setLoading(false);
 		}
-	}, []);
-
-	const loadStats = useCallback(async () => {
-		try {
-			const result = await memoryStore.getStats();
-			setStats(result);
-		} catch {
-			// 静默
-		}
-	}, []);
+	}, [currentThreadPath]);
 
 	useEffect(() => {
-		void loadMemories();
-		void loadStats();
-	}, [loadMemories, loadStats]);
+		void refresh();
+	}, [refresh]);
 
-	const handleSearch = () => {
-		void loadMemories(searchQuery);
-	};
+	// 同步当前线程 cwd 给后端 watcher，让项目级 markdown 变更被推送
+	useEffect(() => {
+		void memoryStore.setActiveCwd(currentThreadPath ?? null);
+	}, [currentThreadPath]);
 
-	const handleAdd = async () => {
-		if (!newKey.trim() || !newContent.trim()) {
-			toast.warning("请填写完整的记忆标识和内容");
+	// 订阅 memoryStore 派发（chokidar 推送 / 工具写入），自动 refresh
+	useEffect(() => {
+		const unsub = memoryStore.subscribe(() => {
+			void refresh();
+		});
+		return unsub;
+	}, [refresh]);
+
+	// 切换 tab 时同步 draft，dirty 时弹确认
+	const switchTab = useCallback(
+		(token: MemoryFileToken) => {
+			if (dirty) {
+				const confirmed = window.confirm(
+					"当前编辑有未保存的更改，确认放弃并切换 Tab 吗？",
+				);
+				if (!confirmed) return;
+			}
+			setActiveTab(token);
+			setDirty(false);
+			const f = files.get(token);
+			setDraft(f?.content ?? "");
+		},
+		[dirty, files],
+	);
+
+	// 文件加载完成后初始化 draft（仅当 dirty=false 才覆盖，避免抹去用户编辑）
+	useEffect(() => {
+		if (dirty) return;
+		const f = files.get(activeTab);
+		setDraft(f?.content ?? "");
+	}, [activeTab, files, dirty]);
+
+	const activeFile = files.get(activeTab) ?? null;
+	const activeStyle = MEMORY_FILE_STYLES[activeTab];
+
+	const handleEditorChange = useCallback((value: string | undefined) => {
+		setDraft(value ?? "");
+		setDirty(true);
+	}, []);
+
+	const handleReset = useCallback(() => {
+		const f = files.get(activeTab);
+		setDraft(f?.content ?? "");
+		setDirty(false);
+	}, [activeTab, files]);
+
+	const performSave = useCallback(
+		async (confirmed: boolean) => {
+			if (!activeFile) return;
+			setSaving(true);
+			try {
+				const res = await memoryStore.writeFile(activeTab, draft, {
+					cwd: currentThreadPath ?? null,
+					confirmed,
+				});
+				if (!res.ok) {
+					if (res.error === "REQUIRES_CONFIRMATION") {
+						setShowGlobalConfirm(true);
+						return;
+					}
+					if (res.error?.startsWith("OVER_QUOTA")) {
+						toast.error(`超出字符上限：${res.error}`);
+						return;
+					}
+					toast.error(`保存失败：${res.error ?? "未知错误"}`);
+					return;
+				}
+				toast.success(`${activeStyle.label} 已保存`);
+				setDirty(false);
+				await refresh();
+			} catch (err) {
+				toast.error(
+					`保存失败：${err instanceof Error ? err.message : String(err)}`,
+				);
+			} finally {
+				setSaving(false);
+			}
+		},
+		[activeFile, activeStyle.label, activeTab, currentThreadPath, draft, refresh],
+	);
+
+	const handleSave = useCallback(() => {
+		if (activeTab === "global_claude_md") {
+			setShowGlobalConfirm(true);
 			return;
 		}
+		void performSave(false);
+	}, [activeTab, performSave]);
+
+	const handleConfirmGlobalSave = useCallback(async () => {
+		setShowGlobalConfirm(false);
+		await performSave(true);
+	}, [performSave]);
+
+	const handleClearAll = useCallback(async () => {
+		setShowClearConfirm(false);
 		try {
-			await memoryStore.addMemory(
-				newKey.trim(),
-				newContent.trim(),
-				newCategory,
+			const res = await memoryStore.clearAll();
+			toast.success(`已清空 USER + MEMORY（共 ${res.deleted} 字符）`);
+			await refresh();
+		} catch (err) {
+			toast.error(
+				`清空失败：${err instanceof Error ? err.message : String(err)}`,
 			);
-			toast.success("记忆已添加");
-			setNewKey("");
-			setNewContent("");
-			setNewCategory("fact");
-			setShowAddForm(false);
-			void loadMemories(searchQuery);
-			void loadStats();
-		} catch {
-			toast.error("添加记忆失败");
 		}
-	};
+	}, [refresh]);
 
-	const handleUpdate = async (id: string) => {
-		if (!editContent.trim()) return;
-		try {
-			await memoryStore.updateMemory(id, editContent.trim());
-			toast.success("记忆已更新");
-			setEditingId(null);
-			void loadMemories(searchQuery);
-		} catch {
-			toast.error("更新记忆失败");
-		}
-	};
+	const handleReveal = useCallback(async () => {
+		if (!activeFile?.path) return;
+		await memoryStore.revealInFolder(activeFile.path);
+	}, [activeFile?.path]);
 
-	const handleDelete = async (id: string) => {
-		try {
-			await memoryStore.deleteMemory(id);
-			toast.success("记忆已删除");
-			setMemories((prev) => prev.filter((m) => m.id !== id));
-			void loadStats();
-		} catch {
-			toast.error("删除记忆失败");
-		}
-	};
-
-	const handleClearAll = async () => {
-		try {
-			const result = await memoryStore.clearAll();
-			toast.success(`已清空 ${result.deleted} 条记忆`);
-			setMemories([]);
-			setShowClearConfirm(false);
-			void loadStats();
-		} catch {
-			toast.error("清空记忆失败");
-		}
-	};
-
-	const handlePreviewContext = async () => {
-		const next = !showContextPreview;
-		setShowContextPreview(next);
-		if (next) {
-			setContextLoading(true);
-			try {
-				const result = await memoryStore.getMemoryContext();
-				setContextPreview(
-					result.context ||
-						"（当前无记忆数据，Agent 启动时不会注入记忆上下文）",
-				);
-			} catch {
-				setContextPreview("加载失败");
-			} finally {
-				setContextLoading(false);
-			}
-		}
-	};
-
-	const toggleGroup = (category: string) => {
-		setCollapsedGroups((prev) => {
-			const next = new Set(prev);
-			if (next.has(category)) {
-				next.delete(category);
-			} else {
-				next.add(category);
-			}
-			return next;
-		});
-	};
-
-	const groupedMemories = useMemo(() => {
-		const groups = new Map<MemoryCategory, Memory[]>();
-		for (const m of memories) {
-			const cat = m.category;
-			if (!groups.has(cat)) {
-				groups.set(cat, []);
-			}
-			groups.get(cat)!.push(m);
-		}
-		return groups;
-	}, [memories]);
+	const projectTabUnavailable =
+		(activeTab === "project_claude_md" || activeTab === "project_agents_md") &&
+		!currentThreadPath;
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-4xl space-y-6">
+		<SettingsPageContainer contentClassName="max-w-5xl space-y-6">
 			<div id="ai.memory.overview" data-settings-anchor="ai.memory.overview">
 				<SettingsPanelHeader
 					icon={Database}
 					title="Agent 记忆"
-					description="管理 Agent 的长期记忆，启动时会按相关性注入到上下文，让助手记住偏好与历史结论。"
+					description="管理影响 Agent 行为的 markdown 文件 —— SOUL/USER/MEMORY 由本应用维护、CLAUDE.md/AGENTS.md 由 SDK 自动加载。每个 run 启动时一次性冻结快照，会话中改动在下一个 run 生效。"
 					actions={
 						<div className="flex items-center gap-2">
-							{memories.length > 0 && (
-								<SettingsButton
-									variant="danger"
-									icon={Trash2}
-									onClick={() => setShowClearConfirm(true)}
-								>
-									清空
-								</SettingsButton>
-							)}
 							<SettingsButton
-								variant={showAddForm ? "secondary" : "primary"}
-								icon={showAddForm ? X : Plus}
-								onClick={() => setShowAddForm((v) => !v)}
+								variant="secondary"
+								icon={RefreshCw}
+								onClick={() => void refresh()}
 							>
-								{showAddForm ? "取消" : "添加记忆"}
+								刷新
+							</SettingsButton>
+							<SettingsButton
+								variant="danger"
+								icon={Trash2}
+								onClick={() => setShowClearConfirm(true)}
+							>
+								清空 USER + MEMORY
 							</SettingsButton>
 						</div>
 					}
 				/>
 			</div>
 
-			{/* 顶部统计 */}
-			{stats && stats.total > 0 && <MemoryStatsGrid stats={stats} />}
-
-			{/* 搜索 + 预览 */}
-			<div className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-bai-card">
-				<div className="flex gap-2">
-					<div className="flex-1">
-						<SettingsTextInput
-							value={searchQuery}
-							onChange={(value) => setSearchQuery(value)}
-							onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-							placeholder="按 key 或内容搜索…"
-							prefix={<Search className="h-3.5 w-3.5" strokeWidth={1.8} />}
-						/>
-					</div>
-					<SettingsButton variant="secondary" onClick={handleSearch}>
-						搜索
-					</SettingsButton>
-					<SettingsButton
-						variant={showContextPreview ? "primary" : "secondary"}
-						icon={showContextPreview ? EyeOff : Eye}
-						onClick={handlePreviewContext}
-						title="预览注入到 Agent 的记忆上下文"
-					>
-						{showContextPreview ? "收起预览" : "预览"}
-					</SettingsButton>
-				</div>
-
-				{/* 上下文预览 */}
-				{showContextPreview && (
-					<div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-						<div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.14em] text-text-muted">
-							<Eye className="h-3 w-3" strokeWidth={1.6} />
-							Agent 启动时注入的记忆上下文
-						</div>
-						{contextLoading ? (
-							<div className="flex items-center gap-2 rounded-xl border border-border bg-cream-50 px-4 py-3 text-[12px] text-text-light">
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-								加载中…
-							</div>
-						) : (
-							<pre className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-cream-50 p-3 font-mono text-[11.5px] leading-relaxed text-text-secondary">
-								{contextPreview}
-							</pre>
-						)}
-					</div>
-				)}
-			</div>
-
-			{/* 添加表单 */}
-			{showAddForm && (
-				<MemoryAddInline
-					newKey={newKey}
-					newContent={newContent}
-					newCategory={newCategory}
-					onKeyChange={setNewKey}
-					onContentChange={setNewContent}
-					onCategoryChange={setNewCategory}
-					onSave={handleAdd}
-					onCancel={() => setShowAddForm(false)}
-				/>
-			)}
-
-			{/* 清空确认 */}
 			{showClearConfirm && (
 				<ClearConfirmDialog
-					count={stats?.total ?? memories.length}
+					stats={stats}
 					onConfirm={handleClearAll}
 					onCancel={() => setShowClearConfirm(false)}
 				/>
 			)}
 
-			{/* 记忆列表 */}
-			{loading ? (
-				<div className="flex items-center justify-center py-12 text-text-light">
-					<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-					<span className="text-[13px]">加载中…</span>
-				</div>
-			) : memories.length === 0 ? (
-				<EmptyState />
-			) : (
-				<div className="space-y-3">
-					{Array.from(groupedMemories.entries()).map(([category, items]) => (
-						<MemoryGroup
-							key={category}
-							category={category}
-							memories={items}
-							collapsed={collapsedGroups.has(category)}
-							onToggle={() => toggleGroup(category)}
-							editingId={editingId}
-							editContent={editContent}
-							onEditStart={(id, content) => {
-								setEditingId(id);
-								setEditContent(content);
-							}}
-							onEditCancel={() => setEditingId(null)}
-							onEditChange={setEditContent}
-							onEditSave={(id) => handleUpdate(id)}
-							onDelete={handleDelete}
+			{stats && <MemoryStatsGrid stats={stats} />}
+
+			<SettingsCardSection>
+				<TabBar
+					activeTab={activeTab}
+					files={files}
+					onSwitch={switchTab}
+				/>
+
+				{projectTabUnavailable ? (
+					<ProjectUnavailableState />
+				) : !activeFile ? (
+					<div className="flex items-center justify-center py-16 text-text-light">
+						<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+						<span className="text-[13px]">加载中…</span>
+					</div>
+				) : (
+					<div className="border-t border-border">
+						{activeTab === "global_claude_md" && <GlobalWarningBar />}
+						<FileStatusBar
+							file={activeFile}
+							onReveal={handleReveal}
+							loading={loading}
 						/>
-					))}
-				</div>
+						<div className="px-4 pt-3 pb-4">
+							{!activeFile.exists && activeFile.managedBy === "sdk" ? (
+								<EmptyProjectFileState
+									file={activeFile}
+									onCreate={() => {
+										setDraft("");
+										setDirty(true);
+									}}
+								/>
+							) : null}
+							<div
+								key={`${activeTab}-${tickRef.current}`}
+								className="h-[480px] rounded-xl border border-border overflow-hidden bg-surface"
+							>
+								<Suspense
+									fallback={
+										<div className="flex h-full items-center justify-center text-text-light">
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											<span className="text-[12px]">加载编辑器…</span>
+										</div>
+									}
+								>
+									<MonacoEditor
+										value={draft}
+										language="markdown"
+										path={activeFile.path || activeTab}
+										onChange={handleEditorChange}
+										onSave={handleSave}
+										wordWrap
+										minimap={false}
+									/>
+								</Suspense>
+							</div>
+							<div className="mt-3 flex items-center justify-between gap-3">
+								<div className="text-[11.5px] text-text-muted">
+									{dirty ? (
+										<span className="text-warning">● 有未保存的更改</span>
+									) : (
+										<span>已保存</span>
+									)}
+									{activeFile.limit ? (
+										<span className="ml-2 tabular-nums">
+											{draft.length} / {activeFile.limit}
+										</span>
+									) : (
+										<span className="ml-2 tabular-nums">
+											{draft.length} 字符（无限额）
+										</span>
+									)}
+								</div>
+								<div className="flex items-center gap-2">
+									<SettingsButton
+										variant="secondary"
+										icon={RotateCcw}
+										onClick={handleReset}
+										disabled={!dirty || saving}
+									>
+										撤销
+									</SettingsButton>
+									<SettingsButton
+										variant="primary"
+										icon={saving ? Loader2 : Save}
+										onClick={handleSave}
+										disabled={!dirty || saving}
+									>
+										{saving ? "保存中…" : "保存"}
+									</SettingsButton>
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+			</SettingsCardSection>
+
+			{showGlobalConfirm && (
+				<GlobalConfirmDialog
+					onConfirm={handleConfirmGlobalSave}
+					onCancel={() => setShowGlobalConfirm(false)}
+				/>
 			)}
 		</SettingsPageContainer>
 	);
 }
 
-// ====================
+// =====================================================
 // 内部组件
-// ====================
+// =====================================================
 
-function EmptyState() {
+interface TabBarProps {
+	activeTab: MemoryFileToken;
+	files: Map<MemoryFileToken, ContextFileWithSnapshot>;
+	onSwitch: (token: MemoryFileToken) => void;
+}
+
+function TabBar({ activeTab, files, onSwitch }: TabBarProps) {
+	const grouped = useMemo(() => {
+		const ipo: MemoryFileToken[] = [];
+		const sdk: MemoryFileToken[] = [];
+		for (const token of MEMORY_FILE_ORDER) {
+			const file = files.get(token);
+			if (!file) continue;
+			if (file.managedBy === "ipo") ipo.push(token);
+			else sdk.push(token);
+		}
+		return { ipo, sdk };
+	}, [files]);
+
 	return (
-		<div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-cream-50 px-6 py-16 text-center">
-			<div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface">
-				<Database className="h-5 w-5 text-text-light" strokeWidth={1.5} />
+		<div className="flex flex-wrap items-center gap-1 px-3 py-2.5">
+			{grouped.ipo.map((token) => (
+				<TabButton
+					key={token}
+					token={token}
+					file={files.get(token)!}
+					active={activeTab === token}
+					onClick={() => onSwitch(token)}
+				/>
+			))}
+			<div className="mx-2 h-5 w-px bg-border" aria-hidden />
+			{grouped.sdk.map((token) => (
+				<TabButton
+					key={token}
+					token={token}
+					file={files.get(token)!}
+					active={activeTab === token}
+					onClick={() => onSwitch(token)}
+				/>
+			))}
+		</div>
+	);
+}
+
+interface TabButtonProps {
+	token: MemoryFileToken;
+	file: ContextFileWithSnapshot;
+	active: boolean;
+	onClick: () => void;
+}
+
+function TabButton({ token, file, active, onClick }: TabButtonProps) {
+	const style = MEMORY_FILE_STYLES[token];
+	const Icon = style.icon;
+	const fillPct =
+		file.limit && file.limit > 0
+			? Math.min(100, Math.round((file.charCount / file.limit) * 100))
+			: file.exists
+				? 100
+				: 0;
+	const isWarn = file.limit && file.charCount / (file.limit || 1) >= 0.85;
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"group flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-all duration-150",
+				active
+					? cn("border bg-surface shadow-sm", style.accentBorder)
+					: "border border-transparent hover:bg-cream-50",
+			)}
+		>
+			<span
+				className={cn(
+					"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+					style.accentBg,
+				)}
+			>
+				<Icon className={cn("h-3.5 w-3.5", style.accentText)} strokeWidth={1.8} />
+			</span>
+			<div className="min-w-0">
+				<div
+					className={cn(
+						"text-[12.5px] font-semibold leading-tight",
+						active ? "text-text-primary" : "text-text-secondary",
+					)}
+				>
+					{style.label}
+				</div>
+				<div className="text-[10px] tabular-nums leading-tight text-text-muted">
+					{file.limit ? (
+						<span className={cn(isWarn && "text-error")}>
+							{file.charCount} / {file.limit}
+						</span>
+					) : file.exists ? (
+						<span>{file.charCount} 字符</span>
+					) : (
+						<span className="text-text-muted">未创建</span>
+					)}
+				</div>
 			</div>
-			<p className="text-[13px] font-medium text-text-secondary">
-				暂无记忆数据
+			{file.injectedInActiveSnapshot && (
+				<span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-primary" aria-label="已注入活动会话" />
+			)}
+			{file.limit ? (
+				<span className="ml-1 h-1 w-8 overflow-hidden rounded-full bg-cream-100">
+					<span
+						className={cn(
+							"block h-full rounded-full",
+							isWarn ? "bg-error" : "bg-primary",
+						)}
+						style={{ width: `${fillPct}%`, backgroundColor: !isWarn ? style.accent : undefined }}
+					/>
+				</span>
+			) : null}
+		</button>
+	);
+}
+
+function FileStatusBar({
+	file,
+	onReveal,
+	loading,
+}: {
+	file: ContextFileWithSnapshot;
+	onReveal: () => void | Promise<void>;
+	loading: boolean;
+}) {
+	const style = MEMORY_FILE_STYLES[file.token as MemoryFileToken];
+	return (
+		<div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-cream-50/60 text-[11.5px]">
+			<div className="flex items-center gap-1.5 text-text-muted">
+				<span className={cn("font-medium", style.accentText)}>
+					{style.subtitle}
+				</span>
+			</div>
+			<div className="text-text-light">·</div>
+			<button
+				type="button"
+				onClick={() => void onReveal()}
+				disabled={!file.path}
+				className="inline-flex items-center gap-1 font-mono text-text-secondary hover:text-primary transition-colors disabled:opacity-50"
+				title="在 Finder/Explorer 中显示"
+			>
+				<FolderOpen className="h-3 w-3" strokeWidth={1.6} />
+				<span className="truncate max-w-[420px]">{file.path || "(未确定路径)"}</span>
+			</button>
+			<div className="text-text-light">·</div>
+			<span className="tabular-nums text-text-muted">
+				修改：{formatRelativeTime(file.lastModified)}
+			</span>
+			{file.injectedInActiveSnapshot && (
+				<>
+					<div className="text-text-light">·</div>
+					<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-medium text-primary">
+						<span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+						已注入活动会话
+					</span>
+				</>
+			)}
+			{loading && (
+				<Loader2 className="ml-auto h-3 w-3 animate-spin text-text-muted" />
+			)}
+		</div>
+	);
+}
+
+function GlobalWarningBar() {
+	return (
+		<div className="flex items-start gap-2 border-y border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-2.5">
+			<AlertTriangle
+				className="mt-0.5 h-3.5 w-3.5 shrink-0 text-error"
+				strokeWidth={1.8}
+			/>
+			<div className="text-[11.5px] leading-relaxed text-error">
+				这是全局用户级 <span className="font-mono">~/.claude/CLAUDE.md</span>，会影响
+				<span className="font-semibold"> 所有 Claude Code 实例</span>
+				（含 IDE 插件、CLI、其它桌面应用）。保存时会要求二次确认。
+			</div>
+		</div>
+	);
+}
+
+function EmptyProjectFileState({
+	file,
+	onCreate,
+}: {
+	file: ContextFileWithSnapshot;
+	onCreate: () => void;
+}) {
+	return (
+		<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-cream-50 px-4 py-3">
+			<div className="text-[12px] leading-relaxed text-text-secondary">
+				<span className="font-semibold">{file.displayName}</span> 不存在。点击右侧按钮创建空文件，SDK 在下次 run 启动时会自动加载。
+			</div>
+			<SettingsButton variant="secondary" onClick={onCreate}>
+				创建空文件
+			</SettingsButton>
+		</div>
+	);
+}
+
+function ProjectUnavailableState() {
+	return (
+		<div className="border-t border-border px-6 py-12 text-center">
+			<div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-cream-50">
+				<FolderOpen className="h-5 w-5 text-text-light" strokeWidth={1.5} />
+			</div>
+			<p className="mt-3 text-[13px] font-medium text-text-secondary">
+				尚未选中线程
 			</p>
-			<p className="mt-1 max-w-[280px] text-[11.5px] leading-relaxed text-text-muted">
-				Agent 会在使用过程中自动积累，你也可以点击右上角「添加记忆」手动写入。
+			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+				项目级 CLAUDE.md / AGENTS.md 跟随当前线程的工作目录。请先在左栏选中一个线程。
 			</p>
 		</div>
 	);
 }
 
-function ClearConfirmDialog({
-	count,
+function GlobalConfirmDialog({
 	onConfirm,
 	onCancel,
 }: {
-	count: number;
 	onConfirm: () => void;
 	onCancel: () => void;
 }) {
 	return (
+		<div className="flex items-start justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-200">
+			<div>
+				<div className="flex items-center gap-2 text-[13px] font-semibold text-error">
+					<AlertTriangle className="h-4 w-4" strokeWidth={1.8} />
+					确认写入 ~/.claude/CLAUDE.md
+				</div>
+				<div className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+					该文件是全局级别的 Claude Code 配置，会影响所有 Claude Code 实例。请确认你确实希望修改全局配置。
+				</div>
+			</div>
+			<div className="flex shrink-0 gap-2">
+				<SettingsButton variant="secondary" onClick={onCancel}>
+					取消
+				</SettingsButton>
+				<SettingsButton variant="danger-solid" onClick={onConfirm}>
+					确认保存
+				</SettingsButton>
+			</div>
+		</div>
+	);
+}
+
+function ClearConfirmDialog({
+	stats,
+	onConfirm,
+	onCancel,
+}: {
+	stats: MemoryStats | null;
+	onConfirm: () => void;
+	onCancel: () => void;
+}) {
+	const total = stats ? stats.user.chars + stats.memory.chars : 0;
+	return (
 		<div className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-200">
 			<div>
 				<div className="text-[13px] font-medium text-error">
-					确认清空所有 {count} 条记忆
+					确认清空 USER 与 MEMORY（共 {total} 字符）
 				</div>
 				<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
-					此操作不可恢复，Agent 将失去所有积累的偏好与上下文。
+					SOUL 不受影响。此操作不可恢复，Agent 将失去所有积累的用户偏好与环境事实。
 				</div>
 			</div>
 			<div className="flex gap-2">
@@ -379,84 +653,5 @@ function ClearConfirmDialog({
 				</SettingsButton>
 			</div>
 		</div>
-	);
-}
-
-function MemoryGroup({
-	category,
-	memories,
-	collapsed,
-	onToggle,
-	editingId,
-	editContent,
-	onEditStart,
-	onEditCancel,
-	onEditChange,
-	onEditSave,
-	onDelete,
-}: {
-	category: MemoryCategory;
-	memories: Memory[];
-	collapsed: boolean;
-	onToggle: () => void;
-	editingId: string | null;
-	editContent: string;
-	onEditStart: (id: string, content: string) => void;
-	onEditCancel: () => void;
-	onEditChange: (v: string) => void;
-	onEditSave: (id: string) => void;
-	onDelete: (id: string) => void;
-}) {
-	const style = MEMORY_CATEGORY_STYLES[category];
-	const Icon = style.icon;
-
-	return (
-		<SettingsCardSection>
-			<button
-				type="button"
-				onClick={onToggle}
-				className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-cream-50"
-			>
-				{collapsed ? (
-					<ChevronRight className="h-4 w-4 text-text-light" strokeWidth={1.6} />
-				) : (
-					<ChevronDown className="h-4 w-4 text-text-light" strokeWidth={1.6} />
-				)}
-				<span
-					className={cn(
-						"inline-flex h-7 w-7 items-center justify-center rounded-lg",
-						style.accentBg,
-					)}
-				>
-					<Icon
-						className={cn("h-3.5 w-3.5", style.accentText)}
-						strokeWidth={1.8}
-					/>
-				</span>
-				<span className="text-[13px] font-semibold text-text-primary">
-					{style.label}
-				</span>
-				<span className="text-[11.5px] text-text-muted">
-					{memories.length} 条
-				</span>
-			</button>
-			{!collapsed && (
-				<div className="border-t border-border divide-y divide-border/60">
-					{memories.map((memory) => (
-						<MemoryItemRow
-							key={memory.id}
-							memory={memory}
-							isEditing={editingId === memory.id}
-							editContent={editContent}
-							onEditStart={() => onEditStart(memory.id, memory.content)}
-							onEditCancel={onEditCancel}
-							onEditChange={onEditChange}
-							onEditSave={() => onEditSave(memory.id)}
-							onDelete={() => onDelete(memory.id)}
-						/>
-					))}
-				</div>
-			)}
-		</SettingsCardSection>
 	);
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
 	ChevronDown,
 	FolderOpen,
+	Plus,
 	RefreshCw,
 	Search,
 	Store,
@@ -13,6 +14,7 @@ import {
 import { useSkillsStore } from "../../lib/skillsStore";
 import { useUpdateBadge } from "../../lib/skillsMarketplaceStore";
 import { openDirectory } from "../../lib/dialogCompat";
+import { revealFileSafe } from "../../lib/api/storage";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
 import { MarketplaceList } from "../skills/MarketplaceList";
@@ -111,6 +113,30 @@ export function SkillsView(_props: SkillsViewProps) {
 		}
 	};
 
+	const handleReveal = async (location: string) => {
+		try {
+			await revealFileSafe(location);
+		} catch (err) {
+			setError(`打开目录失败: ${err}`);
+		}
+	};
+
+	const handleOpenSkillsRoot = async () => {
+		// 取任一 skill 的 location 父目录；若无 skill 已安装，无操作
+		const first = skills[0]?.location;
+		if (!first) {
+			setError("尚未安装任何技能。安装一个后即可打开技能目录。");
+			return;
+		}
+		// location 形如 /Users/xxx/.claude/skills/<name>，去掉最后一段
+		const parent = first.replace(/\/[^/]+\/?$/, "");
+		try {
+			await revealFileSafe(parent);
+		} catch (err) {
+			setError(`打开目录失败: ${err}`);
+		}
+	};
+
 	const enabledCount = skills.filter((s) => s.enabled).length;
 
 	return (
@@ -163,13 +189,22 @@ export function SkillsView(_props: SkillsViewProps) {
 							/>
 						</IconButton>
 						{tab === "installed" && (
-							<IconButton
-								onClick={handleImport}
-								disabled={isLoading}
-								title="导入本地技能"
-							>
-								<FolderOpen className="w-3.5 h-3.5" />
-							</IconButton>
+							<>
+								<IconButton
+									onClick={handleOpenSkillsRoot}
+									disabled={isLoading || skills.length === 0}
+									title="打开 ~/.claude/skills/ 目录"
+								>
+									<FolderOpen className="w-3.5 h-3.5" />
+								</IconButton>
+								<IconButton
+									onClick={handleImport}
+									disabled={isLoading}
+									title="导入本地技能文件夹"
+								>
+									<Plus className="w-3.5 h-3.5" />
+								</IconButton>
+							</>
 						)}
 					</div>
 				</div>
@@ -349,14 +384,25 @@ export function SkillsView(_props: SkillsViewProps) {
 														>
 															{skill.location}
 														</code>
-														<button
-															type="button"
-															onClick={() => handleDelete(skill.name)}
-															className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8 mt-1"
-														>
-															<Trash2 className="w-3 h-3" />
-															删除
-														</button>
+														<div className="flex items-center gap-1 mt-1 shrink-0">
+															<button
+																type="button"
+																onClick={() => handleReveal(skill.location)}
+																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-md hover:bg-cream-200/70 dark:hover:bg-cream-800/40"
+																title="在系统文件管理器中打开"
+															>
+																<FolderOpen className="w-3 h-3" />
+																打开
+															</button>
+															<button
+																type="button"
+																onClick={() => handleDelete(skill.name)}
+																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8"
+															>
+																<Trash2 className="w-3 h-3" />
+																删除
+															</button>
+														</div>
 													</div>
 												</div>
 											)}
@@ -463,7 +509,11 @@ function ToggleSwitch({
 			onClick={onClick}
 			role="switch"
 			aria-checked={enabled}
-			title={enabled ? "点击禁用" : "点击启用"}
+			title={
+				enabled
+					? "已启用：在 UI 显示。注意 SDK 仍会扫描 ~/.claude/skills，要彻底屏蔽请删除"
+					: "已禁用：UI 隐藏 + 启动时不同步到 project。要彻底屏蔽请删除"
+			}
 			className={cn(
 				"relative w-7 h-4 rounded-full transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/15",
 				enabled ? "bg-success" : "bg-cream-400/80 dark:bg-cream-700",

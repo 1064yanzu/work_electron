@@ -49,7 +49,8 @@ const DEFAULT_BACKUP_TABLES = [
 	"agent_artifacts",
 	"agent_messages",
 	"agent_audit_logs",
-	"agent_memories",
+	// 注：agent_memories 已迁移到 <userData>/agent-memory/ 下的 markdown 文件，
+	// 不再走数据库备份；导出 / 导入 markdown 文件可由前端单独提供入口。
 	"mcp_servers",
 	"artifacts",
 	"agent_checkpoints",

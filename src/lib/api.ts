@@ -14,6 +14,7 @@ export * from "./api/cloudNode";
 export * from "./api/contentIngest";
 export * from "./api/dashboard";
 export * from "./api/dataAdmin";
+export * from "./api/design";
 export * from "./api/feishu";
 export * from "./api/folders";
 export * from "./api/imageGen";

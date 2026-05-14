@@ -17,6 +17,17 @@ import type {
 	CreateProjectPayload,
 	CreateSourcePayload,
 	DashboardStats,
+	DesignCritiqueScores,
+	DesignDirection,
+	DesignExportFormat,
+	DesignExportOptions,
+	DesignExportTarget,
+	DesignLastExport,
+	DesignLaunchPayload,
+	DesignSession,
+	DesignSessionStatus,
+	DiscoveryAnswers,
+	DiscoveryFormSchema,
 	FileRecord,
 	Folder,
 	InvokeLlmPayload,
@@ -351,6 +362,32 @@ export type IPCSchema = {
 		output: {
 			username: string;
 			platform: NodeJS.Platform;
+		};
+	};
+	// ==================
+	// 日志导出
+	// ==================
+	logs_get_info: {
+		input: Record<string, never>;
+		output: {
+			root: string;
+			exists: boolean;
+			total_bytes: number;
+			subdir_count: number;
+			latest_subdirs: string[];
+		};
+	};
+	logs_reveal: {
+		input: Record<string, never>;
+		output: { success: boolean; path: string; error?: string };
+	};
+	logs_export: {
+		input: { days?: number };
+		output: {
+			canceled: boolean;
+			path: string;
+			bytes: number;
+			error?: string;
 		};
 	};
 	// ==================
@@ -1802,86 +1839,100 @@ export type IPCSchema = {
 	};
 
 	// ==================
-	// Agent 记忆管理
+	// Agent 记忆管理（Markdown 文件式：SOUL/USER/MEMORY + SDK 自动加载的 CLAUDE.md/AGENTS.md）
 	// ==================
-	search_agent_memories: {
-		input: { query: string; limit?: number };
-		output: Array<{
-			id: string;
-			key: string;
-			content: string;
-			category?: string;
-			relevance_score: number;
-			created_at: number;
-			updated_at: number;
-			last_accessed_at?: number;
-			access_count: number;
-		}>;
-	};
-	create_agent_memory: {
-		input: { key: string; content: string; category?: string };
-		output: {
-			id: string;
-			key: string;
-			content: string;
-			category?: string;
-			relevance_score: number;
-			created_at: number;
-			updated_at: number;
-			access_count: number;
-		};
-	};
-	update_agent_memory: {
-		input: { id: string; content: string };
-		output: { success: boolean };
-	};
-	delete_agent_memory: {
-		input: { id: string };
-		output: { success: boolean };
-	};
-	get_agent_memory_by_key: {
-		input: { key: string };
-		output: {
-			id: string;
-			key: string;
-			content: string;
-			category?: string;
-			relevance_score: number;
-			created_at: number;
-			updated_at: number;
-			last_accessed_at?: number;
-			access_count: number;
-		} | null;
-	};
-	update_agent_memory_access_time: {
-		input: { id: string };
-		output: { success: boolean };
-	};
-	agent_get_memory_context: {
-		input: {
-			categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
-			limit?: number;
-			min_relevance_score?: number;
-		};
-		output: { context: string; memory_count: number };
-	};
-	agent_extract_memories: {
-		input: {
-			session_id: string;
-			messages: Array<{ role: "user" | "assistant"; content: string }>;
-		};
-		output: { saved: number; keys: string[] };
-	};
-	agent_clear_all_memories: {
-		input: Record<string, never>;
-		output: { deleted: number };
-	};
 	agent_get_memory_stats: {
 		input: Record<string, never>;
 		output: {
-			total: number;
-			by_category: Record<string, number>;
+			soul: { chars: number; limit: number };
+			user: { chars: number; limit: number; entries: number };
+			memory: { chars: number; limit: number; entries: number };
 		};
+	};
+	agent_get_memory_context: {
+		input: Record<string, never>;
+		output: { context: string; memory_count: number };
+	};
+	agent_clear_all_memories: {
+		input: Record<string, never>;
+		// deleted = 被清空的总字符数（仅 USER + MEMORY；SOUL 不动）
+		output: { deleted: number };
+	};
+	agent_memory_read_file: {
+		input: {
+			file:
+				| "soul"
+				| "user"
+				| "memory"
+				| "global_claude_md"
+				| "project_claude_md"
+				| "project_agents_md";
+			cwd?: string | null;
+		};
+		output: {
+			token: string;
+			displayName: string;
+			path: string;
+			content: string;
+			charCount: number;
+			limit?: number;
+			lastModified: number;
+			exists: boolean;
+			managedBy: "ipo" | "sdk";
+			requiresConfirm: boolean;
+			cwdRelative: boolean;
+		};
+	};
+	agent_memory_write_file: {
+		input: {
+			file:
+				| "soul"
+				| "user"
+				| "memory"
+				| "global_claude_md"
+				| "project_claude_md"
+				| "project_agents_md";
+			content: string;
+			cwd?: string | null;
+			// global_claude_md 写入必须 confirmed=true
+			confirmed?: boolean;
+		};
+		output: { ok: boolean; error?: string; path?: string };
+	};
+	agent_memory_list_context_files: {
+		input: { cwd?: string | null };
+		output: Array<{
+			token: string;
+			displayName: string;
+			path: string;
+			content: string;
+			charCount: number;
+			limit?: number;
+			lastModified: number;
+			exists: boolean;
+			managedBy: "ipo" | "sdk";
+			requiresConfirm: boolean;
+			cwdRelative: boolean;
+			injectedInActiveSnapshot: boolean;
+		}>;
+	};
+	agent_memory_get_snapshot: {
+		input: { runId: string };
+		output: {
+			runId: string;
+			frozenAt: number;
+			soul: string;
+			user: string;
+			memory: string;
+		} | null;
+	};
+	agent_memory_open_folder: {
+		input: { path: string };
+		output: { ok: boolean };
+	};
+	agent_memory_set_active_cwd: {
+		input: { cwd: string | null };
+		output: { ok: boolean };
 	};
 
 	// ==================
@@ -3246,6 +3297,287 @@ export type IPCSchema = {
 			format?: string;
 			error?: string;
 		};
+	};
+
+	// ==================
+	// 设计模块（Design）
+	// ==================
+	design_list_directions: {
+		input: Record<string, never>;
+		output: DesignDirection[];
+	};
+
+	design_list_sessions: {
+		input: { limit?: number; offset?: number };
+		output: DesignSession[];
+	};
+
+	design_get_discovery_form: {
+		input: Record<string, never>;
+		output: DiscoveryFormSchema;
+	};
+
+	design_start_session: {
+		input: { title?: string; initial_brief?: string };
+		output: {
+			session_id: string;
+			work_dir: string;
+			discovery_form: DiscoveryFormSchema;
+		};
+	};
+
+	design_submit_discovery: {
+		input: {
+			session_id: string;
+			answers: DiscoveryAnswers;
+			direction_id?: string;
+			system_id?: string;
+			mode?: string;
+			skills?: string[];
+			model: string;
+		};
+		output: {
+			session_id: string;
+			launch_payload: DesignLaunchPayload;
+		};
+	};
+
+	design_get_session: {
+		input: { session_id: string };
+		output: DesignSession & {
+			output_asset?: OutputAsset;
+			files?: string[];
+		};
+	};
+
+	design_update_session: {
+		input: {
+			session_id: string;
+			title?: string;
+			status?: DesignSessionStatus;
+			sdk_session_id?: string | null;
+			critique_scores?: DesignCritiqueScores | null;
+			brand_spec?: Record<string, unknown> | null;
+			last_export?: DesignLastExport | null;
+		};
+		output: DesignSession;
+	};
+
+	design_finalize_session: {
+		input: { session_id: string; sdk_session_id?: string };
+		output: DesignSession & { output_asset?: OutputAsset };
+	};
+
+	design_delete_session: {
+		input: {
+			session_id: string;
+			delete_output?: boolean;
+			delete_work_dir?: boolean;
+		};
+		output: { success: true };
+	};
+
+	design_reveal_work_dir: {
+		input: { session_id: string };
+		output: { success: true };
+	};
+
+	design_list_export_targets: {
+		input: {
+			current_thread_id?: string;
+			current_thread_title?: string;
+			current_thread_path?: string;
+			recent_threads?: Array<{ id: string; title: string; path: string }>;
+			recent_folders?: Array<{ path: string; label: string }>;
+		};
+		output: {
+			current_thread?: { id: string; title: string; path: string };
+			recent_threads: Array<{ id: string; title: string; path: string }>;
+			recent_folders: Array<{ path: string; label: string }>;
+		};
+	};
+
+	design_export: {
+		input: {
+			session_id: string;
+			format: DesignExportFormat;
+			target: DesignExportTarget;
+			options?: DesignExportOptions;
+		};
+		output: { paths: string[]; target_kind: string; target_label: string };
+	};
+
+	design_finish_to_thread: {
+		input: {
+			session_id: string;
+			thread_id?: string;
+			thread_path?: string;
+			subfolder_name?: string;
+		};
+		output: { thread_path: string; copied_to: string };
+	};
+
+	design_list_systems: {
+		input: Record<string, never>;
+		output: Array<{
+			id: string;
+			title: string;
+			category: string;
+			group: "product" | "style";
+			summary: string;
+			swatches: string[];
+			source?: string;
+			license?: string;
+		}>;
+	};
+
+	design_run_critique: {
+		input: { session_id: string; model?: string; gate_mode?: boolean };
+		output: {
+			scores: {
+				philosophy: number;
+				hierarchy: number;
+				execution: number;
+				functional: number;
+				innovation: number;
+			};
+			total: number;
+			notes: string;
+			fixes: string[];
+			passed?: boolean;
+			lowest_dim?: string;
+			lowest_score?: number;
+			regenerate_reason?: string;
+		};
+	};
+
+	design_list_builtin_skills: {
+		input: Record<string, never>;
+		output: Array<{
+			name: string;
+			description: string;
+			version: string;
+			triggers: string[];
+			group?: string;
+			default_frame?: string;
+			tweaks?: Array<{
+				name: string;
+				type: "select" | "number";
+				values?: string[];
+				min?: number;
+				max?: number;
+				step?: number;
+				default?: string | number;
+			}>;
+		}>;
+	};
+
+	design_get_skill_resource_map: {
+		input: { skill_id: string };
+		output: {
+			id: string;
+			skill_md: string;
+			template_html?: string;
+			checklist_md?: string;
+			layouts_md?: string;
+			components_md?: string;
+			themes_md?: string;
+			example_html?: string;
+			frontmatter: {
+				name: string;
+				description: string;
+				version: string;
+				triggers: string[];
+				group?: string;
+				default_frame?: string;
+				tweaks?: Array<{
+					name: string;
+					type: "select" | "number";
+					values?: string[];
+					min?: number;
+					max?: number;
+					step?: number;
+					default?: string | number;
+				}>;
+			};
+		} | null;
+	};
+
+	design_get_template: {
+		input: { template_id: string };
+		output: { html: string; placeholders: string[] };
+	};
+
+	design_extract_brand: {
+		input: { session_id: string; url: string };
+		output: {
+			brand_spec_path: string;
+			site_name?: string;
+			colors: string[];
+			fonts: string[];
+			logo_url?: string;
+			favicon_url?: string;
+		};
+	};
+
+	design_apply_tweak: {
+		input: {
+			session_id: string;
+			run_id: string;
+			tweak_name: string;
+			tweak_value: string | number;
+		};
+		output: { success: boolean; error?: string };
+	};
+
+	design_apply_annotation: {
+		input: {
+			session_id: string;
+			run_id: string;
+			selector: string;
+			note: string;
+		};
+		output: { success: boolean; error?: string };
+	};
+
+	design_media_generate: {
+		input: {
+			session_id: string;
+			provider: string;
+			kind: "image" | "video" | "audio" | "music";
+			prompt: string;
+			options?: Record<string, unknown>;
+		};
+		output: {
+			job_id: string;
+			status: "queued" | "running" | "done" | "failed";
+			asset_paths?: string[];
+			error?: string;
+		};
+	};
+
+	design_media_history: {
+		input: { session_id?: string; limit?: number };
+		output: Array<{
+			id: string;
+			session_id?: string;
+			provider: string;
+			kind: string;
+			prompt: string;
+			status: string;
+			asset_paths: string[];
+			created_at: number;
+		}>;
+	};
+
+	design_media_providers: {
+		input: Record<string, never>;
+		output: Array<{
+			id: string;
+			label: string;
+			kinds: Array<"image" | "video" | "audio" | "music">;
+			requires_key: boolean;
+		}>;
 	};
 };
 

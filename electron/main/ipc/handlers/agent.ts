@@ -94,16 +94,10 @@ interface AgentAuditLog {
 	created_at: number;
 }
 
-interface AgentMemory {
-	id: string;
-	key: string;
-	content: string;
-	category?: string;
-	relevance_score: number;
-	created_at: number;
-	updated_at: number;
-	last_accessed_at?: number;
-	access_count: number;
+interface AgentMemoryStats {
+	soul: { chars: number; limit: number };
+	user: { chars: number; limit: number; entries: number };
+	memory: { chars: number; limit: number; entries: number };
 }
 
 // ==================
@@ -937,187 +931,135 @@ export function createAgentMessageHandlers(db: DbContext) {
 // Memory Handlers
 // ==================
 
-export function createAgentMemoryHandlers(db: DbContext) {
-	const searchMemories = async (
-		_event: IpcMainInvokeEvent,
-		input: { query: string; limit?: number },
-	): Promise<AgentMemory[]> => {
-		const limit = Math.min(input.limit ?? 10, 50);
-		const rows = await db.client.execute({
-			sql: `SELECT * FROM agent_memories WHERE content LIKE ? OR key LIKE ?
-            ORDER BY relevance_score DESC, access_count DESC
-            LIMIT ?`,
-			args: [`%${input.query}%`, `%${input.query}%`, limit],
-		});
-		return rows.rows.map((row) => ({
-			id: row.id as string,
-			key: row.key as string,
-			content: row.content as string,
-			category: row.category as string | undefined,
-			relevance_score: (row.relevance_score as number) || 0.5,
-			created_at: row.created_at as number,
-			updated_at: row.updated_at as number,
-			last_accessed_at: row.last_accessed_at as number | undefined,
-			access_count: (row.access_count as number) || 0,
-		}));
-	};
-
-	const createMemory = async (
-		_event: IpcMainInvokeEvent,
-		input: { key: string; content: string; category?: string },
-	): Promise<AgentMemory> => {
-		const id = randomUUID();
-		const timestamp = now();
-
-		await db.client.execute({
-			sql: `INSERT INTO agent_memories (id, key, content, category, relevance_score, created_at, updated_at, access_count)
-            VALUES (?, ?, ?, ?, 0.5, ?, ?, 0)`,
-			args: [
-				id,
-				input.key,
-				input.content,
-				input.category ?? null,
-				timestamp,
-				timestamp,
-			],
-		});
-
-		return {
-			id,
-			key: input.key,
-			content: input.content,
-			category: input.category,
-			relevance_score: 0.5,
-			created_at: timestamp,
-			updated_at: timestamp,
-			access_count: 0,
-		};
-	};
-
-	const updateMemory = async (
-		_event: IpcMainInvokeEvent,
-		input: { id: string; content: string },
-	): Promise<{ success: boolean }> => {
-		await db.client.execute({
-			sql: `UPDATE agent_memories SET content = ?, updated_at = ? WHERE id = ?`,
-			args: [input.content, now(), input.id],
-		});
-		return { success: true };
-	};
-
-	const deleteMemory = async (
-		_event: IpcMainInvokeEvent,
-		input: { id: string },
-	): Promise<{ success: boolean }> => {
-		await db.client.execute({
-			sql: `DELETE FROM agent_memories WHERE id = ?`,
-			args: [input.id],
-		});
-		return { success: true };
-	};
-
-	const getMemoryByKey = async (
-		_event: IpcMainInvokeEvent,
-		input: { key: string },
-	): Promise<AgentMemory | null> => {
-		const rows = await db.client.execute({
-			sql: `SELECT * FROM agent_memories WHERE key = ?`,
-			args: [input.key],
-		});
-		if (rows.rows.length === 0) return null;
-		const row = rows.rows[0];
-		return {
-			id: row.id as string,
-			key: row.key as string,
-			content: row.content as string,
-			category: row.category as string | undefined,
-			relevance_score: (row.relevance_score as number) || 0.5,
-			created_at: row.created_at as number,
-			updated_at: row.updated_at as number,
-			last_accessed_at: row.last_accessed_at as number | undefined,
-			access_count: (row.access_count as number) || 0,
-		};
-	};
-
-	const updateMemoryAccessTime = async (
-		_event: IpcMainInvokeEvent,
-		input: { id: string },
-	): Promise<{ success: boolean }> => {
-		await db.client.execute({
-			sql: `UPDATE agent_memories SET last_accessed_at = ?, access_count = access_count + 1 WHERE id = ?`,
-			args: [now(), input.id],
-		});
-		return { success: true };
-	};
-
-	return {
-		search_agent_memories: searchMemories,
-		create_agent_memory: createMemory,
-		update_agent_memory: updateMemory,
-		delete_agent_memory: deleteMemory,
-		get_agent_memory_by_key: getMemoryByKey,
-		update_agent_memory_access_time: updateMemoryAccessTime,
-	};
-}
-
 // ==================
-// Memory Extended Handlers (记忆扩展功能)
+// Memory Handlers (Markdown 文件式)
 // ==================
 
-export function createAgentMemoryExtendedHandlers(db: DbContext) {
+export function createAgentMemoryExtendedHandlers(_db: DbContext) {
+	const getStats = async (
+		_event: IpcMainInvokeEvent,
+		_input: Record<string, never>,
+	): Promise<AgentMemoryStats> => {
+		const { getMemoryStats } = await import("./agentMemoryService");
+		return getMemoryStats();
+	};
+
 	const getMemoryContext = async (
 		_event: IpcMainInvokeEvent,
-		input: {
-			categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
-			limit?: number;
-			min_relevance_score?: number;
-		},
+		_input: Record<string, never>,
 	): Promise<{ context: string; memory_count: number }> => {
-		const { buildMemoryContextForAgent } = await import("./agentMemoryService");
-		const context = await buildMemoryContextForAgent(db, {
-			categories: input.categories,
-			limit: input.limit,
-			minRelevanceScore: input.min_relevance_score,
-		});
-		// 统计记忆数（通过计算行数）
+		const { getMemoryPreview } = await import("./agentMemoryService");
+		const context = await getMemoryPreview();
 		const lineCount = context
-			? context.split("\n").filter((l) => l.startsWith("- ")).length
+			? context.split("\n").filter((l) => l.trim().startsWith("§")).length
 			: 0;
 		return { context, memory_count: lineCount };
-	};
-
-	const extractMemories = async (
-		_event: IpcMainInvokeEvent,
-		input: {
-			session_id: string;
-			messages: Array<{ role: "user" | "assistant"; content: string }>;
-		},
-	): Promise<{ saved: number; keys: string[] }> => {
-		const { extractAndSaveMemories } = await import("./agentMemoryService");
-		return extractAndSaveMemories(db, input.session_id, input.messages);
 	};
 
 	const clearAll = async (
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
 	): Promise<{ deleted: number }> => {
-		const { clearAllMemories } = await import("./agentMemoryService");
-		return clearAllMemories(db);
+		const { writeMemoryFile, readMemoryFile } = await import(
+			"./agentMemoryService"
+		);
+		const beforeUser = await readMemoryFile("user");
+		const beforeMemory = await readMemoryFile("memory");
+		const deletedChars = beforeUser.charCount + beforeMemory.charCount;
+		await Promise.all([
+			writeMemoryFile("user", ""),
+			writeMemoryFile("memory", ""),
+		]);
+		return { deleted: deletedChars };
 	};
 
-	const stats = async (
+	const readFile = async (
 		_event: IpcMainInvokeEvent,
-		_input: Record<string, never>,
-	): Promise<{ total: number; by_category: Record<string, number> }> => {
-		const { getMemoryStats } = await import("./agentMemoryService");
-		const result = await getMemoryStats(db);
-		return { total: result.total, by_category: result.byCategory };
+		input: {
+			file:
+				| "soul"
+				| "user"
+				| "memory"
+				| "global_claude_md"
+				| "project_claude_md"
+				| "project_agents_md";
+			cwd?: string | null;
+		},
+	) => {
+		const { resolveContextFile } = await import("./agentSdk/contextFiles");
+		return resolveContextFile(input.file, input.cwd ?? null);
+	};
+
+	const writeFile = async (
+		_event: IpcMainInvokeEvent,
+		input: {
+			file:
+				| "soul"
+				| "user"
+				| "memory"
+				| "global_claude_md"
+				| "project_claude_md"
+				| "project_agents_md";
+			content: string;
+			cwd?: string | null;
+			confirmed?: boolean;
+		},
+	): Promise<{ ok: boolean; error?: string; path?: string }> => {
+		const { writeContextFile } = await import("./agentSdk/contextFiles");
+		return writeContextFile(
+			input.file,
+			input.content,
+			input.cwd ?? null,
+			!!input.confirmed,
+		);
+	};
+
+	const listContextFiles = async (
+		_event: IpcMainInvokeEvent,
+		input: { cwd?: string | null },
+	) => {
+		const { listAllContextFiles } = await import("./agentSdk/contextFiles");
+		return listAllContextFiles(input.cwd ?? null);
+	};
+
+	const getSnapshot = async (
+		_event: IpcMainInvokeEvent,
+		input: { runId: string },
+	) => {
+		const { getSnapshot } = await import("./agentSdk/memorySnapshot");
+		return getSnapshot(input.runId);
+	};
+
+	const openInFolder = async (
+		_event: IpcMainInvokeEvent,
+		input: { path: string },
+	): Promise<{ ok: boolean }> => {
+		const { shell } = await import("electron");
+		shell.showItemInFolder(input.path);
+		return { ok: true };
+	};
+
+	const setActiveCwd = async (
+		_event: IpcMainInvokeEvent,
+		input: { cwd: string | null },
+	): Promise<{ ok: boolean }> => {
+		const { memoryFileWatcher } = await import(
+			"./agentSdk/memoryFileWatcher"
+		);
+		memoryFileWatcher.setActiveCwd(input.cwd);
+		return { ok: true };
 	};
 
 	return {
+		agent_get_memory_stats: getStats,
 		agent_get_memory_context: getMemoryContext,
-		agent_extract_memories: extractMemories,
 		agent_clear_all_memories: clearAll,
-		agent_get_memory_stats: stats,
+		agent_memory_read_file: readFile,
+		agent_memory_write_file: writeFile,
+		agent_memory_list_context_files: listContextFiles,
+		agent_memory_get_snapshot: getSnapshot,
+		agent_memory_open_folder: openInFolder,
+		agent_memory_set_active_cwd: setActiveCwd,
 	};
 }
+

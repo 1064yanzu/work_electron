@@ -144,6 +144,7 @@ export enum OutputType {
 	Thread = "thread",
 	NoteCollection = "note_collection",
 	Diagram = "diagram",
+	Design = "design",
 }
 
 export interface OutputAsset {

@@ -369,7 +369,7 @@ class WorkspaceStore {
 	}
 
 	// 设置主视图模式 -> layoutStore
-	setMainView(view: "editor" | "browser" | "wiki-graph") {
+	setMainView(view: "editor" | "browser" | "wiki-graph" | "design") {
 		layoutStore.setMainView(view);
 	}
 
@@ -385,7 +385,18 @@ class WorkspaceStore {
 
 	// 设置左边栏视图模式 -> layoutStore
 	setLeftSidebarView(
-		view: "sources" | "research" | "detail" | "agent" | "cards" | "websearch",
+		view:
+			| "sources"
+			| "research"
+			| "detail"
+			| "agent"
+			| "cards"
+			| "websearch"
+			| "threads"
+			| "files"
+			| "skills"
+			| "wiki"
+			| "design",
 	) {
 		layoutStore.setLeftSidebarView(view);
 	}

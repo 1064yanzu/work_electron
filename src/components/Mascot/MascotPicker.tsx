@@ -99,6 +99,23 @@ export function MascotPicker({
 		}
 	};
 
+	// 拖拽导入：根据后缀路由到 zip / 目录 handler。
+	// importCustomDir 的后端会再次校验是否目录，所以这里只看后缀就够了。
+	const handleImportPath = async (filePath: string) => {
+		if (importing) return;
+		setImporting(true);
+		setImportMessage(null);
+		try {
+			const result = filePath.toLowerCase().endsWith(".zip")
+				? await importCustom(filePath)
+				: await importCustomDir(filePath);
+			handleImportResult(result);
+		} finally {
+			setImporting(false);
+			setTimeout(() => setImportMessage(null), 5000);
+		}
+	};
+
 	const handleDelete = async (id: string, label: string) => {
 		if (
 			typeof window !== "undefined" &&
@@ -159,6 +176,7 @@ export function MascotPicker({
 						importing={importing}
 						onZip={handleImportZip}
 						onDir={handleImportDir}
+						onDropPath={handleImportPath}
 					/>
 				</div>
 				{importMessage && (
@@ -374,33 +392,105 @@ interface AddMascotCardProps {
 	importing: boolean;
 	onZip: () => void;
 	onDir: () => void;
+	/** 拖入 .zip 文件或目录时回调，参数为本地绝对路径。 */
+	onDropPath: (filePath: string) => void;
 }
 
-function AddMascotCard({ importing, onZip, onDir }: AddMascotCardProps) {
+function AddMascotCard({
+	importing,
+	onZip,
+	onDir,
+	onDropPath,
+}: AddMascotCardProps) {
+	const [dragOver, setDragOver] = useState(false);
+
+	const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+		// 必须 preventDefault 才能触发 drop；否则浏览器会接管文件
+		event.preventDefault();
+		event.stopPropagation();
+		if (importing) {
+			event.dataTransfer.dropEffect = "none";
+			return;
+		}
+		event.dataTransfer.dropEffect = "copy";
+		if (!dragOver) setDragOver(true);
+	};
+
+	const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+		// 子元素之间互相 drag 也会冒泡 leave，过滤掉
+		if (
+			event.relatedTarget &&
+			event.currentTarget.contains(event.relatedTarget as Node)
+		) {
+			return;
+		}
+		setDragOver(false);
+	};
+
+	const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		event.stopPropagation();
+		setDragOver(false);
+		if (importing) return;
+
+		const file = event.dataTransfer.files?.[0];
+		if (!file) return;
+
+		// Electron 32+ 移除了 File.path，必须走 preload 暴露的 webUtils.getPathForFile
+		const getPath = window.electronAPI?.getPathForFile;
+		const filePath = typeof getPath === "function" ? getPath(file) : "";
+		if (!filePath) return;
+
+		onDropPath(filePath);
+	};
+
 	return (
 		<div
+			onDragOver={handleDragOver}
+			onDragLeave={handleDragLeave}
+			onDrop={handleDrop}
 			className={cn(
 				"group relative flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-4 text-center transition-all",
-				"border-border hover:border-primary/60 hover:bg-primary/5",
 				"min-h-[180px]",
+				dragOver
+					? "border-primary bg-primary/10 scale-[1.01] shadow-bai-card"
+					: "border-border hover:border-primary/60 hover:bg-primary/5",
 			)}
 		>
-			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-warm-100 group-hover:bg-primary/10 transition-colors">
+			<div
+				className={cn(
+					"flex h-14 w-14 items-center justify-center rounded-full transition-colors",
+					dragOver
+						? "bg-primary/15"
+						: "bg-warm-100 group-hover:bg-primary/10",
+				)}
+			>
 				{importing ? (
 					<Loader2 className="h-5 w-5 animate-spin text-primary" />
 				) : (
 					<Plus
-						className="h-5 w-5 text-text-light group-hover:text-primary transition-colors"
+						className={cn(
+							"h-5 w-5 transition-colors",
+							dragOver
+								? "text-primary"
+								: "text-text-light group-hover:text-primary",
+						)}
 						strokeWidth={2}
 					/>
 				)}
 			</div>
 			<div className="mt-1 space-y-0.5">
 				<div className="text-[13px] font-semibold tracking-tight text-text-primary">
-					{importing ? "正在导入…" : "添加自定义桌宠"}
+					{importing
+						? "正在导入…"
+						: dragOver
+							? "松开即可导入"
+							: "添加自定义桌宠"}
 				</div>
 				<div className="text-[10.5px] leading-snug text-text-light px-2">
-					支持自家 zip 包，也兼容 codex hatch-pet
+					{dragOver
+						? "支持 .zip 包或目录"
+						: "可拖入 zip / 目录，也兼容 codex hatch-pet"}
 				</div>
 			</div>
 			<div className="mt-2 flex w-full gap-1.5 px-1">

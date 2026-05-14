@@ -81,7 +81,22 @@ async function writeConfig(db: DbContext, key: string, value: string) {
 async function loadSources(db: DbContext): Promise<MarketplaceSource[]> {
 	const persisted = await readJsonConfig<MarketplaceSource[]>(db, KEY_SOURCES);
 	if (persisted && Array.isArray(persisted) && persisted.length > 0) {
-		return persisted;
+		// 温和迁移：把已弃用的默认源（skills-sh / tencent-skillhub）剔除，
+		// 并补齐新版 DEFAULT_SOURCES 中尚未出现在用户配置里的官方源。
+		// 用户自定义的 source（id 不在 DEFAULT_SOURCES 内）一律保留。
+		const deprecatedIds = new Set(["skills-sh", "tencent-skillhub"]);
+		const defaultIds = new Set(DEFAULT_SOURCES.map((s) => s.id));
+		let migrated = persisted.filter((s) => !deprecatedIds.has(s.id));
+		const existingIds = new Set(migrated.map((s) => s.id));
+		const missing = DEFAULT_SOURCES.filter((s) => !existingIds.has(s.id));
+		const changed = missing.length > 0 || migrated.length !== persisted.length;
+		if (changed) {
+			migrated = [...migrated, ...missing];
+			await writeConfig(db, KEY_SOURCES, JSON.stringify(migrated));
+		}
+		// 兼容旧用户：若 anthropic-official URL 仍然指向旧路径，也无需更正——目前路径未变
+		void defaultIds;
+		return migrated;
 	}
 	// 首次启动：写入默认源并返回
 	await writeConfig(db, KEY_SOURCES, JSON.stringify(DEFAULT_SOURCES));
@@ -180,12 +195,16 @@ export function createSkillsMarketplaceHandlers({
 	const skills_marketplace_search: Handler<
 		"skills_marketplace_search"
 	> = async (_event, input) => {
-		const sources = await loadSources(db);
+		const [sources, mirrors] = await Promise.all([
+			loadSources(db),
+			loadMirrors(db),
+		]);
 		const enabledSources = sources.filter((s) => s.enabled);
 		const { entries, errors } = await aggregateSearch(
 			enabledSources,
 			input.query,
 			input.sourceId,
+			mirrors,
 		);
 		const idx = await loadLocalIndex();
 		const enriched = entries.map((e) => {
@@ -202,13 +221,16 @@ export function createSkillsMarketplaceHandlers({
 	const skills_marketplace_install: Handler<
 		"skills_marketplace_install"
 	> = async (_event, input) => {
-		const sources = await loadSources(db);
+		const [sources, mirrors] = await Promise.all([
+			loadSources(db),
+			loadMirrors(db),
+		]);
 		const enabledSources = sources.filter((s) => s.enabled);
 		let target: MarketplaceEntry | null = null;
 		let aggError: string | undefined;
 		for (const s of enabledSources) {
 			try {
-				const list = await fetchSourceEntries(s);
+				const list = await fetchSourceEntries(s, undefined, mirrors);
 				const found = list.find((e) => e.id === input.entryId);
 				if (found) {
 					target = found;
@@ -227,7 +249,6 @@ export function createSkillsMarketplaceHandlers({
 			};
 		}
 
-		const mirrors = await loadMirrors(db);
 		const win = getMainWindow();
 		const send = (payload: unknown) => {
 			try {
@@ -279,7 +300,10 @@ export function createSkillsMarketplaceHandlers({
 	const skills_marketplace_check_updates: Handler<
 		"skills_marketplace_check_updates"
 	> = async () => {
-		const sources = await loadSources(db);
+		const [sources, mirrors] = await Promise.all([
+			loadSources(db),
+			loadMirrors(db),
+		]);
 		const enabledSources = sources.filter((s) => s.enabled);
 		const idx = await loadLocalIndex();
 		if (Object.keys(idx.installed).length === 0) return { updates: [] };
@@ -288,7 +312,7 @@ export function createSkillsMarketplaceHandlers({
 		const entryByName = new Map<string, MarketplaceEntry>();
 		for (const s of enabledSources) {
 			try {
-				const list = await fetchSourceEntries(s);
+				const list = await fetchSourceEntries(s, undefined, mirrors);
 				for (const e of list) {
 					if (!entryByName.has(e.name)) entryByName.set(e.name, e);
 				}
@@ -338,11 +362,14 @@ export function createSkillsMarketplaceHandlers({
 	const skills_marketplace_preview: Handler<
 		"skills_marketplace_preview"
 	> = async (_event, input) => {
-		const sources = await loadSources(db);
+		const [sources, mirrors] = await Promise.all([
+			loadSources(db),
+			loadMirrors(db),
+		]);
 		let target: MarketplaceEntry | null = null;
 		for (const s of sources.filter((x) => x.enabled)) {
 			try {
-				const list = await fetchSourceEntries(s);
+				const list = await fetchSourceEntries(s, undefined, mirrors);
 				const f = list.find((e) => e.id === input.entryId);
 				if (f) {
 					target = f;
@@ -363,7 +390,6 @@ export function createSkillsMarketplaceHandlers({
 		}
 		const subdirPart = a.subdir ? `${a.subdir.replace(/^\/+|\/+$/g, "")}/` : "";
 		const rawUrl = `https://raw.githubusercontent.com/${a.owner}/${a.repo}/${a.ref}/${subdirPart}SKILL.md`;
-		const mirrors = await loadMirrors(db);
 		const candidates = deriveMirrorUrls(rawUrl, mirrors);
 		const probeCoords = parseGithubRawUrl(rawUrl);
 		void probeCoords;

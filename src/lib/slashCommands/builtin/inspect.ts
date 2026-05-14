@@ -190,10 +190,9 @@ export const memoryCommand: SlashCommandDefinition = {
 		return { state: "available" };
 	},
 	async execute() {
-		// memoryStore.cache 为 private，无法外部判空；做一次 searchMemories("", 1) 轻量预热，
-		// 后端命中缓存时开销可忽略（内部有 5 分钟 searchCache）。
+		// 预热：拉一次上下文文件清单，让 Tab 切换瞬间即时响应。
 		try {
-			await memoryStore.searchMemories("", 1);
+			await memoryStore.getStats(true);
 		} catch (err) {
 			console.warn("[slashCommands] /memory 预热失败，已忽略。", err);
 		}

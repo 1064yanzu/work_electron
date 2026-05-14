@@ -61,6 +61,12 @@ import {
 	createLocalWebSearchMcpServer,
 	LOCAL_WEB_SEARCH_MCP_TOOL,
 } from "./agentSdk/localWebSearchMcp";
+import {
+	loadAndFreezeMemorySnapshot,
+	releaseSnapshot,
+	renderMemoryPromptSection,
+} from "./agentSdk/memorySnapshot";
+import { createMemoryMcpServer } from "./agentSdk/memoryTool";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -518,6 +524,23 @@ export function createAgentSdkHandlers(options: {
 				// system_prompt（plan mode、scenario agent 等场景）时 append，避免
 				// 与 SDK 自加载的内容重复，也不再用 # Source: ... 这种硬标题挤压
 				// preset 的语气指令权重。
+				// 另外，本应用维护的 SOUL/USER/MEMORY 三件套（<userData>/agent-memory/）
+				// 在每个 run 启动时一次性冻结，整个 run 内不变化，避免 Agent 在自身写
+				// 入条目后立刻被自己的快照污染。
+				const memorySnapshot = await loadAndFreezeMemorySnapshot(runId).catch(
+					(err) => {
+						logger.warn({
+							msg: "Failed to load memory snapshot",
+							scope: "agent",
+							runId,
+							error: err instanceof Error ? err.message : String(err),
+						});
+						return null;
+					},
+				);
+				const memorySection = memorySnapshot
+					? renderMemoryPromptSection(memorySnapshot)
+					: "";
 				const userSystemPrompt =
 					typeof input.system_prompt === "string" && input.system_prompt.trim()
 						? input.system_prompt.trim()
@@ -528,15 +551,23 @@ export function createAgentSdkHandlers(options: {
 					"需要实时联网搜索时优先调用该工具，它会返回真实 URL 和摘要。",
 					"不要调用内置 WebSearch；如果看到 WebSearch 不可用或没有搜索工具的文本，不要把它当作搜索结果。",
 				].join(" ");
-				const systemPromptAppend = userSystemPrompt
-					? `${userSystemPrompt}\n\n${localWebSearchPrompt}`
-					: localWebSearchPrompt;
+				const memoryToolPrompt = [
+					"长期记忆工具说明：本应用提供 mcp__ipo_agent_memory__memory 工具，用于显式管理你的长期记忆。",
+					"当用户明确要求「记住」某事、或者你判断某条信息对未来会话有长期价值时，调用该工具的 add/replace/remove 动作写入 user 或 memory 文件。",
+					"不要把一次性任务结果、当前对话临时状态写入记忆。SOUL 文件由用户独占编辑，工具不可写。",
+				].join(" ");
+				const appendParts = [memorySection, userSystemPrompt, localWebSearchPrompt, memoryToolPrompt].filter(
+					(s) => s && s.trim().length > 0,
+				);
+				const systemPromptAppend = appendParts.join("\n\n");
 				const localWebSearchMcpServer = createLocalWebSearchMcpServer(
 					sdk as any,
 				);
+				const memoryMcpServer = createMemoryMcpServer(sdk as any);
 				const mcpServers = {
 					...(inputMcpServers || {}),
 					ipo_browser_search: localWebSearchMcpServer,
+					ipo_agent_memory: memoryMcpServer,
 				};
 
 				const q = sdk.query({
@@ -1072,7 +1103,9 @@ export function createAgentSdkHandlers(options: {
 						includePartialMessages: true,
 						// 使用 Claude Code 原生 preset，保留动态章节（cwd / git 状态 / TodoWrite 引导
 						// / "坚持干完"等指令），这是 agent "活人感"和"自驱续航"的来源。
-						// CLAUDE.md（项目+用户）已在主进程显式读取并通过 append 拼接，作为兜底。
+						// settingSources=["user","project"] 让 SDK 自动加载 ~/.claude/CLAUDE.md
+						// 与 <cwd>/CLAUDE.md / AGENTS.md；本应用维护的 SOUL/USER/MEMORY 三件套
+						// 由 systemPromptAppend 注入（详见 memorySnapshot.ts）。
 						systemPrompt: {
 							type: "preset" as const,
 							preset: "claude_code" as const,
@@ -1627,48 +1660,19 @@ export function createAgentSdkHandlers(options: {
 						: undefined,
 				} as any);
 			} finally {
-				// 异步提取记忆（非阻塞）— 启用 LLM 深度提取
+				// 通知前端 run 已结束（记忆系统不再做后台 LLM 自动提取，
+				// 写入完全由 Agent 显式调用 memory 工具触发）
 				try {
-					const { extractAndSaveMemories } = await import(
-						"./agentMemoryService"
-					);
-					const userPrompt = String(input.prompt ?? "");
-					if (userPrompt.trim()) {
-						const conversationMessages: Array<{
-							role: "user" | "assistant";
-							content: string;
-						}> = [{ role: "user", content: userPrompt }];
-						// 加入 assistant 回复以获得更完整的对话上下文
-						try {
-							const assistantText = assistantTextParts
-								.join("\n")
-								.slice(0, 5000);
-							if (assistantText.trim()) {
-								conversationMessages.push({
-									role: "assistant",
-									content: assistantText,
-								});
-							}
-						} catch {
-							// assistantTextParts 可能不在作用域内（try 块外）
-						}
-
-						extractAndSaveMemories(options.db, runId, conversationMessages, {
-							useLlm: true,
-						}).catch((err) => {
-							logger.warn({
-								msg: "Failed to extract memories after agent run",
-								scope: "agent",
-								runId,
-								error: err instanceof Error ? err.message : String(err),
-							});
-						});
-					}
+					emit(options.getMainWindow, {
+						runId,
+						type: "memory:session_ended",
+					} as any);
 				} catch {
-					// 静默失败
+					// 静默
 				}
 				interactionBroker.clearRun(runId);
 				runRegistry.markCompleted(runId);
+				releaseSnapshot(runId);
 			}
 		})();
 

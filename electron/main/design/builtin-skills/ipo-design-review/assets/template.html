@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta charset="UTF-8"><title>Design Review · {{subject}}</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", sans-serif; max-width: 880px; margin: 48px auto; padding: 0 24px; color: #141413; }
+  h1, h2 { letter-spacing: -0.02em; }
+  .scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 24px 0; }
+  .score { padding: 16px; border-radius: 12px; background: #f5f4ed; }
+  .score .n { font-size: 32px; font-weight: 700; }
+</style></head>
+<body>
+  <h1>Design Review · {{subject}}</h1>
+  <div class="scorecard">
+    <div class="score"><div class="label">哲学一致性</div><div class="n">{{philosophy}}/10</div></div>
+    <div class="score"><div class="label">视觉层级</div><div class="n">{{hierarchy}}/10</div></div>
+    <div class="score"><div class="label">细节执行</div><div class="n">{{execution}}/10</div></div>
+    <div class="score"><div class="label">功能性</div><div class="n">{{functional}}/10</div></div>
+    <div class="score"><div class="label">创新性</div><div class="n">{{innovation}}/10</div></div>
+  </div>
+  <!-- TODO(agent): 修复清单 + 长文评 -->
+</body></html>

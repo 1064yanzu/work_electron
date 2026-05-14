@@ -430,19 +430,9 @@ CREATE TABLE IF NOT EXISTS agent_audit_logs (
   FOREIGN KEY (session_id) REFERENCES agent_sessions(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS agent_memories (
-  id TEXT PRIMARY KEY,
-  key TEXT UNIQUE NOT NULL,
-  content TEXT NOT NULL,
-  category TEXT,
-  relevance_score REAL DEFAULT 0.5,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  last_accessed_at INTEGER,
-  access_count INTEGER DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS idx_agent_memories_key ON agent_memories(key);
-CREATE INDEX IF NOT EXISTS idx_agent_memories_category ON agent_memories(category);
+-- 注：Agent 长期记忆已从 SQLite 表迁移到 <userData>/agent-memory/ 目录下的
+-- SOUL.md / USER.md / MEMORY.md 三件套，由 memoryFileStore 维护。
+-- 旧的 agent_memories 表会在启动时被 ensureMemoryFiles 一次性 DROP。
 
 -- =====================
 -- MCP Server 配置
@@ -624,6 +614,31 @@ CREATE TABLE IF NOT EXISTS tts_settings (
   providers TEXT NOT NULL DEFAULT '[]',
   updated_at INTEGER
 );
+
+-- =====================
+-- 设计模块（Design）
+-- 设计会话 sidecar 表；HTML 内容入 output_assets (output_type='design')，
+-- 工作目录在 <userData>/designs/<session_id>/。
+-- =====================
+CREATE TABLE IF NOT EXISTS design_sessions (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  work_dir TEXT NOT NULL,
+  discovery_answers TEXT,
+  direction_id TEXT,
+  system_id TEXT,
+  mode TEXT,
+  brand_spec TEXT,
+  critique_scores TEXT,
+  output_asset_id TEXT,
+  sdk_session_id TEXT,
+  last_export TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_design_sessions_updated_at ON design_sessions (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_design_sessions_output_asset_id ON design_sessions (output_asset_id);
 
 -- =====================
 -- 初始化默认配置

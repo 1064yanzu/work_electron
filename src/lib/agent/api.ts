@@ -490,110 +490,100 @@ export async function getFullSessionHistory(sessionId: string): Promise<{
 	return { session, tasks, auditLogs };
 }
 
-// ==================== Agent 记忆 API ====================
+// ==================== Agent 记忆 API（Markdown 文件式）====================
 
-// 记忆记录
-export interface MemoryRecord {
-	id: string;
-	key: string;
+export type MemoryFileToken =
+	| "soul"
+	| "user"
+	| "memory"
+	| "global_claude_md"
+	| "project_claude_md"
+	| "project_agents_md";
+
+export interface MemoryFileInfo {
+	token: MemoryFileToken;
+	displayName: string;
+	path: string;
 	content: string;
-	category: "preference" | "fact" | "task_result" | "user_habit";
-	relevance_score: number;
-	created_at: number;
-	updated_at: number;
-	last_accessed_at?: number;
-	access_count: number;
-}
-
-// 搜索记忆
-export async function searchAgentMemories(
-	query: string,
-	limit: number = 5,
-): Promise<MemoryRecord[]> {
-	return safeInvoke<MemoryRecord[]>("search_agent_memories", { query, limit });
-}
-
-// 创建记忆
-export async function createAgentMemory(
-	key: string,
-	content: string,
-	category:
-		| "preference"
-		| "fact"
-		| "task_result"
-		| "user_habit"
-		| "instruction"
-		| "context",
-): Promise<MemoryRecord> {
-	return safeInvoke<MemoryRecord>("create_agent_memory", {
-		key,
-		content,
-		category,
-	});
-}
-
-// 更新记忆
-export async function updateAgentMemory(
-	id: string,
-	content: string,
-): Promise<void> {
-	return safeInvoke("update_agent_memory", { id, content });
-}
-
-// 删除记忆
-export async function deleteAgentMemory(id: string): Promise<void> {
-	return safeInvoke("delete_agent_memory", { id });
-}
-
-// 获取记忆（按 key）
-export async function getAgentMemoryByKey(
-	key: string,
-): Promise<MemoryRecord | null> {
-	return safeInvoke<MemoryRecord | null>("get_agent_memory_by_key", { key });
-}
-
-// 更新记忆访问时间
-export async function updateAgentMemoryAccessTime(id: string): Promise<void> {
-	return safeInvoke("update_agent_memory_access_time", { id });
-}
-
-// 获取格式化的记忆上下文（用于前端预览）
-export async function getAgentMemoryContext(options?: {
-	categories?: Array<"preference" | "fact" | "task_result" | "user_habit">;
+	charCount: number;
 	limit?: number;
-	min_relevance_score?: number;
-}): Promise<{ context: string; memory_count: number }> {
+	lastModified: number;
+	exists: boolean;
+	managedBy: "ipo" | "sdk";
+	requiresConfirm: boolean;
+	cwdRelative: boolean;
+}
+
+export interface MemoryStats {
+	soul: { chars: number; limit: number };
+	user: { chars: number; limit: number; entries: number };
+	memory: { chars: number; limit: number; entries: number };
+}
+
+export async function getAgentMemoryStats(): Promise<MemoryStats> {
+	return safeInvoke<MemoryStats>("agent_get_memory_stats", {});
+}
+
+export async function getAgentMemoryContext(): Promise<{
+	context: string;
+	memory_count: number;
+}> {
 	return safeInvoke<{ context: string; memory_count: number }>(
 		"agent_get_memory_context",
-		options ?? {},
+		{},
 	);
 }
 
-// 手动触发从会话提取记忆
-export async function extractAgentMemories(
-	sessionId: string,
-	messages: Array<{ role: "user" | "assistant"; content: string }>,
-): Promise<{ saved: number; keys: string[] }> {
-	return safeInvoke<{ saved: number; keys: string[] }>(
-		"agent_extract_memories",
-		{ session_id: sessionId, messages },
-	);
-}
-
-// 清空所有记忆
 export async function clearAllAgentMemories(): Promise<{ deleted: number }> {
 	return safeInvoke<{ deleted: number }>("agent_clear_all_memories", {});
 }
 
-// 获取记忆统计
-export async function getAgentMemoryStats(): Promise<{
-	total: number;
-	by_category: Record<string, number>;
-}> {
-	return safeInvoke<{ total: number; by_category: Record<string, number> }>(
-		"agent_get_memory_stats",
-		{},
+export async function readMemoryFile(
+	file: MemoryFileToken,
+	cwd?: string | null,
+): Promise<MemoryFileInfo> {
+	return safeInvoke<MemoryFileInfo>("agent_memory_read_file", { file, cwd });
+}
+
+export async function writeMemoryFile(
+	file: MemoryFileToken,
+	content: string,
+	opts?: { cwd?: string | null; confirmed?: boolean },
+): Promise<{ ok: boolean; error?: string; path?: string }> {
+	return safeInvoke<{ ok: boolean; error?: string; path?: string }>(
+		"agent_memory_write_file",
+		{ file, content, cwd: opts?.cwd, confirmed: opts?.confirmed },
 	);
+}
+
+export async function listMemoryContextFiles(
+	cwd?: string | null,
+): Promise<Array<MemoryFileInfo & { injectedInActiveSnapshot: boolean }>> {
+	return safeInvoke<
+		Array<MemoryFileInfo & { injectedInActiveSnapshot: boolean }>
+	>("agent_memory_list_context_files", { cwd });
+}
+
+export async function getMemorySnapshot(runId: string): Promise<{
+	runId: string;
+	frozenAt: number;
+	soul: string;
+	user: string;
+	memory: string;
+} | null> {
+	return safeInvoke<{
+		runId: string;
+		frozenAt: number;
+		soul: string;
+		user: string;
+		memory: string;
+	} | null>("agent_memory_get_snapshot", { runId });
+}
+
+export async function revealMemoryFileInFolder(
+	path: string,
+): Promise<{ ok: boolean }> {
+	return safeInvoke<{ ok: boolean }>("agent_memory_open_folder", { path });
 }
 
 // ==================== 任务检查点 API (断点续传) ====================
