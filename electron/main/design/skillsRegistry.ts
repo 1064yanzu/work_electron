@@ -19,7 +19,10 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import {
+	getDesignBuiltinSkillsRoot,
+	getDesignFramesRoot,
+} from "./resourcePaths";
 
 export interface DesignSkillTweak {
 	name: string;
@@ -51,22 +54,6 @@ export interface DesignSkillResourceMap {
 	themes_md?: string;
 	example_html?: string;
 	frontmatter: DesignSkillSummary;
-}
-
-function getBuiltinSkillsRoot(): string {
-	if (app.isPackaged) {
-		return path.join(process.resourcesPath, "design-builtin-skills");
-	}
-	return path.join(
-		__dirname,
-		"..",
-		"..",
-		"..",
-		"electron",
-		"main",
-		"design",
-		"builtin-skills",
-	);
 }
 
 async function readFileOptional(p: string): Promise<string | undefined> {
@@ -242,7 +229,7 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 }
 
 export async function listSkillSummaries(): Promise<DesignSkillSummary[]> {
-	const root = getBuiltinSkillsRoot();
+	const root = getDesignBuiltinSkillsRoot();
 	let entries: import("node:fs").Dirent[];
 	try {
 		entries = await fs.readdir(root, { withFileTypes: true });
@@ -264,7 +251,7 @@ export async function listSkillSummaries(): Promise<DesignSkillSummary[]> {
 export async function getSkillResourceMap(
 	id: string,
 ): Promise<DesignSkillResourceMap | null> {
-	const root = getBuiltinSkillsRoot();
+	const root = getDesignBuiltinSkillsRoot();
 	const safeId = id.replace(/[^\w-]/g, "");
 	const dir = path.join(root, safeId);
 	const skillContent = await readFileOptional(path.join(dir, "SKILL.md"));
@@ -296,21 +283,5 @@ export async function getSkillResourceMap(
 export async function getFrameSource(frameId: string): Promise<string | null> {
 	if (!frameId) return null;
 	const safe = frameId.replace(/[^\w-]/g, "");
-	let root: string;
-	if (app.isPackaged) {
-		root = path.join(process.resourcesPath, "design-library", "frames");
-	} else {
-		root = path.join(
-			__dirname,
-			"..",
-			"..",
-			"..",
-			"electron",
-			"main",
-			"design",
-			"library",
-			"frames",
-		);
-	}
-	return (await readFileOptional(path.join(root, `${safe}.html`))) ?? null;
+	return (await readFileOptional(path.join(getDesignFramesRoot(), `${safe}.html`))) ?? null;
 }

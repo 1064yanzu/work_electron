@@ -85,6 +85,7 @@ import { createSlashCommandsHandlers } from "./handlers/slashCommands";
 import { createUpdateHandlers } from "./handlers/update";
 import { setFileWatcherMainWindow } from "../services/fileWatcherService";
 import { isMainWindowForeground } from "../windows/mainWindowFocusState";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 type IpcHandler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -98,11 +99,7 @@ let cleanupMainWindowFocusTracking: (() => void) | null = null;
 function broadcastMainWindowFocusState() {
 	const payload = { focused: isMainWindowForeground(mainWindowRef) };
 	for (const win of getMascotBroadcastTargets()) {
-		try {
-			win.webContents.send("main-window-focus-changed", payload);
-		} catch {
-			// 窗口可能正在关闭
-		}
+		sendToLiveWebContents(win, "main-window-focus-changed", payload);
 	}
 }
 
@@ -547,6 +544,14 @@ export function registerIpcHandlers({
 	// ==================
 	ipcMain.handle("get_config", configHandlers.get_config);
 	ipcMain.handle("set_config", configHandlers.set_config);
+	ipcMain.handle(
+		"app_get_close_behavior",
+		configHandlers.app_get_close_behavior,
+	);
+	ipcMain.handle(
+		"app_set_close_behavior",
+		configHandlers.app_set_close_behavior,
+	);
 	ipcMain.handle(
 		"get_remote_control_config",
 		remoteControlHandlers.get_remote_control_config,

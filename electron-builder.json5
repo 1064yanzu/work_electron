@@ -46,6 +46,10 @@
       "from": "electron/main/design/templates",
       "to": "design-templates",
       "filter": ["**/*"]
+    },
+    {
+      "from": "build/icon.ico",
+      "to": "icon.ico"
     }
   ],
   "mac": {
@@ -83,7 +87,9 @@
       }
     ],
     "artifactName": "${productName}-${version}-${arch}-Windows.${ext}",
-    "signingHashAlgorithms": ["sha256"]
+    "signtoolOptions": {
+      "signingHashAlgorithms": ["sha256"]
+    }
   },
   "nsis": {
     "oneClick": false,

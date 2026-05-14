@@ -7,7 +7,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import { getDesignLibraryRoot } from "./resourcePaths";
 
 export interface DesignDirection {
 	id: string;
@@ -109,17 +109,6 @@ export function getDirection(id: string | undefined): DesignDirection {
 	if (!id) return BUILTIN_DESIGN_DIRECTIONS[0];
 	const hit = BUILTIN_DESIGN_DIRECTIONS.find((d) => d.id === id);
 	return hit ?? BUILTIN_DESIGN_DIRECTIONS.find((d) => d.id === DEFAULT_DIRECTION_ID)!;
-}
-
-/**
- * 计算 design-library 根目录。dev 模式直读源码，packed 走 extraResources。
- */
-export function getDesignLibraryRoot(): string {
-	if (app.isPackaged) {
-		return path.join(process.resourcesPath, "design-library");
-	}
-	// dev mode: source tree
-	return path.join(__dirname, "..", "..", "..", "electron", "main", "design", "library");
 }
 
 /**

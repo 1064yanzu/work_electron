@@ -15,6 +15,7 @@ import {
 	setConfig,
 	setMotionPreference,
 } from "../../../../lib/config";
+import { invoke } from "../../../../lib/tauriCompat";
 import type { MotionPreference } from "../../../../lib/interaction/motionPreference";
 import { type ThemeMode, themeManager } from "../../../../lib/theme";
 import { toast } from "../../../ui/Toast";
@@ -27,11 +28,14 @@ import {
 	SettingsSectionTitle,
 } from "../../ui/SettingsPrimitives";
 
+type AppCloseBehavior = "ask" | "hide_to_tray" | "quit";
+
 /** 锚点 id 常量：与 fields.ts 的 FieldDescriptor 对齐，也是 data-settings-anchor 属性值 */
 const ANCHOR = {
 	theme: "general.appearance.theme",
 	motion: "general.appearance.motion",
 	language: "general.appearance.language",
+	windowsClose: "general.appearance.windows-close",
 } as const;
 
 export function AppearancePanel() {
@@ -40,6 +44,9 @@ export function AppearancePanel() {
 		themeManager.getColorThemeId(),
 	);
 	const [language, setLanguage] = useState<string>("zh-CN");
+	const [platform, setPlatform] = useState<NodeJS.Platform | null>(null);
+	const [windowsCloseBehavior, setWindowsCloseBehavior] =
+		useState<AppCloseBehavior>("ask");
 	const [motionPreference, setMotionPreferenceState] =
 		useState<MotionPreference>("system");
 
@@ -47,13 +54,19 @@ export function AppearancePanel() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				const [lang, motionPref] = await Promise.all([
+				const [lang, motionPref, closeBehavior] = await Promise.all([
 					getConfig("language"),
 					getMotionPreference(),
+					invoke<{
+						windows: AppCloseBehavior;
+						platform: NodeJS.Platform;
+					}>("app_get_close_behavior"),
 				]);
 				if (cancelled) return;
 				if (typeof lang === "string" && lang.trim()) setLanguage(lang);
 				setMotionPreferenceState(motionPref);
+				setPlatform(closeBehavior.platform);
+				setWindowsCloseBehavior(closeBehavior.windows);
 			} catch (error) {
 				console.error("[AppearancePanel] 加载设置失败:", error);
 			}
@@ -110,6 +123,22 @@ export function AppearancePanel() {
 			console.error("[AppearancePanel] 保存动效偏好失败:", error);
 			setMotionPreferenceState(prev);
 			toast.error("保存动效偏好失败");
+		}
+	};
+
+	const handleWindowsCloseBehaviorChange = async (value: AppCloseBehavior) => {
+		const prev = windowsCloseBehavior;
+		setWindowsCloseBehavior(value);
+		try {
+			const result = await invoke<{
+				success: boolean;
+				windows: AppCloseBehavior;
+			}>("app_set_close_behavior", { windows: value });
+			setWindowsCloseBehavior(result.windows);
+		} catch (error) {
+			console.error("[AppearancePanel] 保存关闭按钮行为失败:", error);
+			setWindowsCloseBehavior(prev);
+			toast.error("保存关闭按钮行为失败");
 		}
 	};
 
@@ -183,6 +212,34 @@ export function AppearancePanel() {
 							}
 						/>
 					</div>
+					{platform === "win32" && (
+						<div
+							id={ANCHOR.windowsClose}
+							data-settings-anchor={ANCHOR.windowsClose}
+						>
+							<SettingsRow
+								label="Windows 关闭按钮"
+								description="控制点击窗口右上角 X 时的行为。隐藏到后台会保留桌宠和后台服务运行；彻底退出会关闭应用与桌宠。"
+								action={
+									<Select
+										value={windowsCloseBehavior}
+										onChange={(e) =>
+											handleWindowsCloseBehaviorChange(
+												e.target.value as AppCloseBehavior,
+											)
+										}
+										variant="inline"
+										containerClassName="w-auto min-w-[190px]"
+										options={[
+											{ value: "ask", label: "每次询问" },
+											{ value: "hide_to_tray", label: "隐藏到后台" },
+											{ value: "quit", label: "彻底退出" },
+										]}
+									/>
+								}
+							/>
+						</div>
+					)}
 				</div>
 			</SettingsSectionCard>
 		</SettingsPageContainer>

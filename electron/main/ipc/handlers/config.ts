@@ -5,6 +5,10 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { AppConfig } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
+import {
+	getWindowsCloseBehavior,
+	setWindowsCloseBehavior,
+} from "../../services/windowClosePreference";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -66,11 +70,28 @@ export function createConfigHandlers(db: DbContext) {
 		return { success: true };
 	};
 
+	const getCloseBehavior: Handler<"app_get_close_behavior"> = async () => {
+		return {
+			windows: await getWindowsCloseBehavior(db),
+			platform: process.platform,
+		};
+	};
+
+	const setCloseBehavior: Handler<"app_set_close_behavior"> = async (
+		_event,
+		input,
+	) => {
+		const windows = await setWindowsCloseBehavior(db, input.windows);
+		return { success: true, windows };
+	};
+
 	return {
 		get_config: getConfig,
 		set_config: setConfig,
 		get_all_configs: getAllConfigs,
 		get_active_model: getActiveModel,
 		set_active_model: setActiveModel,
+		app_get_close_behavior: getCloseBehavior,
+		app_set_close_behavior: setCloseBehavior,
 	};
 }

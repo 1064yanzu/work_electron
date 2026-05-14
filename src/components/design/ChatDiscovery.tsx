@@ -9,9 +9,13 @@
  * - 必填字段未填会禁用「下一步」
  * - 父组件控制 onSubmit / onCancel,本组件只管推进
  */
-import { ArrowRight, Check, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Check, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DiscoveryField } from "../../../electron/shared/types";
+import {
+	designGetDiscoveryForm,
+	designListDirections,
+} from "../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../lib/stores";
 import { BrandExtractInput } from "./BrandExtractInput";
 
@@ -38,7 +42,39 @@ export function ChatDiscovery({
 	const fields = useMemo(() => form?.fields ?? [], [form]);
 
 	const [activeIndex, setActiveIndex] = useState(0);
+	const [formLoading, setFormLoading] = useState(false);
+	const [formError, setFormError] = useState<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const formLoadingRef = useRef(false);
+
+	const loadForm = useCallback(async () => {
+		if (formLoadingRef.current) return;
+		formLoadingRef.current = true;
+		setFormLoading(true);
+		setFormError(null);
+		try {
+			const [nextForm, dirs] = await Promise.all([
+				designGetDiscoveryForm(),
+				designListDirections(),
+			]);
+			designStore.setDiscoveryForm(nextForm);
+			designStore.setDirections(dirs);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			console.error("[ChatDiscovery] form init failed", err);
+			setFormError(message);
+			designStore.setError(message);
+		} finally {
+			formLoadingRef.current = false;
+			setFormLoading(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (!form) {
+			void loadForm();
+		}
+	}, [form, loadForm]);
 
 	useEffect(() => {
 		// 切到新激活字段时滚动到底部
@@ -48,8 +84,49 @@ export function ChatDiscovery({
 
 	if (!form) {
 		return (
-			<div className="h-full flex items-center justify-center text-sm text-text-muted">
-				正在加载表单…
+			<div className="h-full flex items-center justify-center bg-background px-6">
+				<div className="max-w-sm rounded-xl border border-border bg-bg-surface px-5 py-4 shadow-sm flex flex-col gap-3">
+					<div className="flex items-center gap-2.5">
+						{formLoading ? (
+							<Loader2
+								className="w-4 h-4 text-primary animate-spin"
+								strokeWidth={1.8}
+							/>
+						) : (
+							<Sparkles className="w-4 h-4 text-primary" strokeWidth={1.6} />
+						)}
+						<div className="text-sm font-medium text-text-primary">
+							{formLoading ? "正在加载表单…" : "表单暂时没加载出来"}
+						</div>
+					</div>
+					{formError ? (
+						<div className="text-xs text-text-muted leading-relaxed break-words">
+							{formError}
+						</div>
+					) : (
+						<div className="text-xs text-text-muted leading-relaxed">
+							正在从主进程读取设计发现表单。
+						</div>
+					)}
+					<div className="flex items-center justify-end gap-2 pt-1">
+						<button
+							type="button"
+							onClick={onCancel}
+							className="px-3 py-1.5 rounded-full text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 transition-colors"
+						>
+							取消
+						</button>
+						<button
+							type="button"
+							onClick={() => void loadForm()}
+							disabled={formLoading}
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+						>
+							<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.8} />
+							重试
+						</button>
+					</div>
+				</div>
 			</div>
 		);
 	}

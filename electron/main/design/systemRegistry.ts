@@ -8,7 +8,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getDesignLibraryRoot } from "./directions";
+import { getDesignLibraryRoot } from "./resourcePaths";
 
 export interface DesignSystemSummary {
 	id: string;

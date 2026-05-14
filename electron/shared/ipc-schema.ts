@@ -340,6 +340,8 @@ export type ReaderSearchHit = {
 	score: number;
 };
 
+export type AppCloseBehavior = "ask" | "hide_to_tray" | "quit";
+
 export type IPCSchema = {
 	// ==================
 	// 系统命令
@@ -365,6 +367,20 @@ export type IPCSchema = {
 	main_window_is_focused: {
 		input: Record<string, never>;
 		output: { focused: boolean };
+	};
+	/**
+	 * Windows 主窗口关闭按钮行为。
+	 * - ask：每次点 X 弹出原生选择框
+	 * - hide_to_tray：隐藏主窗口，后台服务与桌宠继续运行
+	 * - quit：彻底退出应用，before-quit 会同步销毁桌宠
+	 */
+	app_get_close_behavior: {
+		input: Record<string, never>;
+		output: { windows: AppCloseBehavior; platform: NodeJS.Platform };
+	};
+	app_set_close_behavior: {
+		input: { windows: AppCloseBehavior };
+		output: { success: boolean; windows: AppCloseBehavior };
 	};
 	system_get_user_info: {
 		input: Record<string, never>;

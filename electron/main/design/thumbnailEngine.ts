@@ -18,7 +18,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { app, BrowserWindow } from "electron";
-import { getDesignLibraryRoot } from "./directions";
+import { getDesignLibraryRoot } from "./resourcePaths";
 import { scanDesignSystems, type DesignSystemSummary } from "./systemRegistry";
 
 const THUMBS_DIRNAME = "design-thumbnails";

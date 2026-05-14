@@ -28,12 +28,16 @@ import { reconcileCustomMascotIndex } from "./services/customMascotService";
 import { initUpdateService, stopUpdateService } from "./services/updateService";
 import { ensureDesignsRoot } from "./design";
 import { installApplicationMenu } from "./menu";
+import {
+	installWindowsCloseBehavior,
+	markAppQuittingForWindowClose,
+} from "./services/windowsCloseBehaviorService";
 
 export async function bootstrapApp({
 	createWindow,
 	petWindowConfig,
 }: {
-	createWindow: () => void;
+	createWindow: () => BrowserWindow;
 	petWindowConfig?: {
 		preloadPath: string;
 		rendererUrl?: string;
@@ -42,6 +46,14 @@ export async function bootstrapApp({
 }) {
 	const logger = createLogger();
 	const bootStartedAt = performance.now();
+	let mainWindow: BrowserWindow | null = null;
+
+	const showMainWindow = () => {
+		if (!mainWindow || mainWindow.isDestroyed()) return;
+		if (mainWindow.isMinimized()) mainWindow.restore();
+		mainWindow.show();
+		mainWindow.focus();
+	};
 
 	// 单实例锁：mac/win 用户重复双击启动器只保留单进程，避免 libSQL 写锁冲突、
 	// 本地 HTTP 端口被自身占用、IPC 派发给错误窗口、文件 watcher 重复触发。
@@ -52,26 +64,23 @@ export async function bootstrapApp({
 		return;
 	}
 	app.on("second-instance", () => {
-		const main = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
-		if (main) {
-			if (main.isMinimized()) main.restore();
-			main.show();
-			main.focus();
-		}
+		showMainWindow();
 	});
 
 	// mascot:// protocol 特权必须在 app.whenReady() 之前注册
 	registerMascotProtocolPrivileges();
 
 	app.on("window-all-closed", () => {
-		if (process.platform !== "darwin") {
+		if (process.platform !== "darwin" && process.platform !== "win32") {
 			app.quit();
 		}
 	});
 
 	app.on("activate", () => {
-		if (BrowserWindow.getAllWindows().length === 0) {
-			createWindow();
+		if (!mainWindow || mainWindow.isDestroyed()) {
+			mainWindow = createWindow();
+		} else {
+			showMainWindow();
 		}
 	});
 
@@ -169,7 +178,10 @@ export async function bootstrapApp({
 	registerIpcHandlers({ logger, getHttpStatus: ensureHttpStatus, db });
 	logger.info({ msg: "IPC handlers registered successfully" });
 
-	createWindow();
+	mainWindow = createWindow();
+	if (mainWindow) {
+		installWindowsCloseBehavior({ win: mainWindow, db, logger });
+	}
 
 	// 启动 Agent 记忆文件 watcher（chokidar）—— 外部编辑 markdown 时给主窗口推送
 	try {
@@ -279,6 +291,7 @@ export async function bootstrapApp({
 	})();
 
 	app.on("before-quit", () => {
+		markAppQuittingForWindowClose();
 		stopUpdateService();
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });

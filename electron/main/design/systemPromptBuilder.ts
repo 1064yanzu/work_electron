@@ -11,12 +11,13 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { renderDirectionSpec, getDesignLibraryRoot } from "./directions";
+import { renderDirectionSpec } from "./directions";
 import {
 	type DiscoveryAnswers,
 	renderDiscoveryAnswers,
 	inferModeFromAnswers,
 } from "./discoveryForm";
+import { getDesignLibraryRoot } from "./resourcePaths";
 import { getSkillResourceMap, getFrameSource } from "./skillsRegistry";
 
 async function readFileSafe(filePath: string, fallback: string): Promise<string> {

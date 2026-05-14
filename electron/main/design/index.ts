@@ -6,9 +6,15 @@ export {
 	BUILTIN_DESIGN_DIRECTIONS,
 	getDirection,
 	renderDirectionSpec,
-	getDesignLibraryRoot,
 	type DesignDirection,
 } from "./directions";
+
+export {
+	getDesignLibraryRoot,
+	getDesignBuiltinSkillsRoot,
+	getDesignTemplatesRoot,
+	getDesignFramesRoot,
+} from "./resourcePaths";
 
 export {
 	ensureDesignsRoot,

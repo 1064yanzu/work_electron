@@ -13,7 +13,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { invokeLlm } from "../llm/invoke";
 import type { DbContext } from "../db/client";
-import { getDesignLibraryRoot } from "./directions";
+import { getDesignLibraryRoot } from "./resourcePaths";
 import { getMainArtifactPath } from "./designsDir";
 
 export interface CritiqueResult {

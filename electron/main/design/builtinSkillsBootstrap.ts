@@ -12,13 +12,16 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
 import { getManagedSkillsRootDir } from "../ipc/handlers/skillRoots";
 import {
 	getInstalledRecord,
 	upsertInstalledRecord,
 } from "../skills-marketplace/localIndex";
 import type { InstalledRecord } from "../skills-marketplace/types";
+import {
+	getDesignBuiltinSkillsRoot,
+	getDesignTemplatesRoot,
+} from "./resourcePaths";
 
 interface BuiltinSkill {
 	name: string;
@@ -29,39 +32,6 @@ interface BuiltinSkill {
 }
 
 const BUILTIN_SOURCE_ID = "ipo:builtin:design";
-
-function getBuiltinSkillsRoot(): string {
-	if (app.isPackaged) {
-		return path.join(process.resourcesPath, "design-builtin-skills");
-	}
-	// dev：从源码读
-	return path.join(
-		__dirname,
-		"..",
-		"..",
-		"..",
-		"electron",
-		"main",
-		"design",
-		"builtin-skills",
-	);
-}
-
-function getDesignTemplatesRoot(): string {
-	if (app.isPackaged) {
-		return path.join(process.resourcesPath, "design-templates");
-	}
-	return path.join(
-		__dirname,
-		"..",
-		"..",
-		"..",
-		"electron",
-		"main",
-		"design",
-		"templates",
-	);
-}
 
 async function readSkillFrontmatter(skillDir: string): Promise<BuiltinSkill | null> {
 	const skillFile = path.join(skillDir, "SKILL.md");
@@ -116,7 +86,7 @@ export interface BootstrapResult {
 
 export async function bootstrapDesignBuiltinSkills(): Promise<BootstrapResult> {
 	const result: BootstrapResult = { installed: [], skipped: [], failed: [] };
-	const sourceRoot = getBuiltinSkillsRoot();
+	const sourceRoot = getDesignBuiltinSkillsRoot();
 
 	let entries: import("node:fs").Dirent[];
 	try {
@@ -198,7 +168,7 @@ export async function listBuiltinSkills(): Promise<
 		triggers: string[];
 	}>
 > {
-	const sourceRoot = getBuiltinSkillsRoot();
+	const sourceRoot = getDesignBuiltinSkillsRoot();
 	let entries: import("node:fs").Dirent[];
 	try {
 		entries = await fs.readdir(sourceRoot, { withFileTypes: true });

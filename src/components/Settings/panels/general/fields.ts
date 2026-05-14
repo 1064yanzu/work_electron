@@ -28,6 +28,13 @@ export const FIELDS: FieldDescriptor[] = [
 		keywords: ["language", "locale", "i18n", "界面语言"],
 	},
 	{
+		tabId: "general.appearance",
+		anchorId: "general.appearance.windows-close",
+		label: "Windows 关闭按钮",
+		description: "控制点击窗口 X 时隐藏到后台、彻底退出或每次询问。",
+		keywords: ["windows", "close", "exit", "quit", "tray", "后台", "退出", "关闭"],
+	},
+	{
 		tabId: "general.about",
 		anchorId: "general.about.version",
 		label: "当前版本",
