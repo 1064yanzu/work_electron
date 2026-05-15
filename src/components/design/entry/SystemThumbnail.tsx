@@ -1,16 +1,5 @@
-/**
- * 设计系统缩略图。
- *
- * 工作流程：
- * 1. mount 时调用 design_get_system_thumbnail；若 ready=true 直接显示图片
- * 2. 若 ready=false，展示渐变占位 + 等待 `design:thumbnail-ready` 事件
- * 3. 收到事件后用同样的本地路径（带 file:// + cache-buster）渲染 <img>
- *
- * 失败时回退到 swatches 渐变占位，保证布局不抖。
- */
 import { useEffect, useRef, useState } from "react";
 import { designGetSystemThumbnail } from "../../../lib/api/design";
-import { convertFileSrc } from "../../../lib/tauriCompat";
 import { listen } from "../../../lib/tauriEventCompat";
 
 interface SystemThumbnailProps {
@@ -23,7 +12,8 @@ interface SystemThumbnailProps {
 interface ThumbnailReadyPayload {
 	system_id: string;
 	path: string;
-	mtime?: number;
+	mtime_ms?: number;
+	base64?: string;
 }
 
 export function SystemThumbnail({
@@ -32,21 +22,45 @@ export function SystemThumbnail({
 	title,
 	className,
 }: SystemThumbnailProps) {
-	const [path, setPath] = useState<string | null>(null);
+	const [imageSrc, setImageSrc] = useState<string | null>(null);
 	const [ready, setReady] = useState(false);
+	const [visible, setVisible] = useState(false);
 	const [version, setVersion] = useState(0);
+	const containerRef = useRef<HTMLDivElement>(null);
 	const aliveRef = useRef(true);
 
 	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					setVisible(true);
+					observer.disconnect();
+				}
+			},
+			{ rootMargin: "100px" }
+		);
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
+
+	useEffect(() => {
+		if (!visible) return;
+
 		aliveRef.current = true;
-		setPath(null);
+		setImageSrc(null);
 		setReady(false);
 
 		void (async () => {
 			try {
 				const r = await designGetSystemThumbnail(systemId);
 				if (!aliveRef.current) return;
-				setPath(r.path);
+				if (r.ready && r.base64) {
+					setImageSrc(`data:image/png;base64,${r.base64}`);
+				}
 				setReady(r.ready);
 				if (r.ready) setVersion((v) => v + 1);
 			} catch {
@@ -60,8 +74,8 @@ export function SystemThumbnail({
 				if (!aliveRef.current) return;
 				const p = event?.payload;
 				if (!p || p.system_id !== systemId) return;
-				if (p.path) {
-					setPath(p.path);
+				if (p.base64) {
+					setImageSrc(`data:image/png;base64,${p.base64}`);
 					setReady(true);
 					setVersion((v) => v + 1);
 				}
@@ -72,7 +86,7 @@ export function SystemThumbnail({
 			aliveRef.current = false;
 			void off.then((fn) => fn?.());
 		};
-	}, [systemId]);
+	}, [systemId, visible]);
 
 	const sw =
 		swatches && swatches.length > 0 ? swatches : ["#F2E9DC", "#E0CFB6", "#C9A98D"];
@@ -81,13 +95,14 @@ export function SystemThumbnail({
 
 	return (
 		<div
+			ref={containerRef}
 			className={`relative w-full overflow-hidden ${className ?? ""}`}
 			style={{ background: gradient }}
 		>
-			{ready && path ? (
+			{ready && imageSrc ? (
 				<img
-					key={`${path}-${version}`}
-					src={`${convertFileSrc(path)}?_=${version}`}
+					key={`${imageSrc.slice(-20)}-${version}`}
+					src={imageSrc}
 					alt={title ?? systemId}
 					loading="lazy"
 					className="absolute inset-0 w-full h-full object-cover object-top opacity-0 animate-thumbnail-fade-in"
@@ -98,7 +113,7 @@ export function SystemThumbnail({
 			) : (
 				<div className="absolute inset-0 flex items-end p-4">
 					<div className="flex flex-col gap-1.5">
-						<div className="text-base font-semibold text-text-primary truncate max-w-[14rem]">
+						<div className="text-[12px] font-semibold text-text-primary truncate max-w-[14rem] opacity-70">
 							{title ?? systemId}
 						</div>
 						<div className="flex gap-1">
@@ -106,7 +121,7 @@ export function SystemThumbnail({
 								<div
 									// biome-ignore lint/suspicious/noArrayIndexKey: swatch
 									key={i}
-									className="w-3 h-3 rounded-full ring-1 ring-black/5"
+									className="w-2.5 h-2.5 rounded-full ring-1 ring-black/5"
 									style={{ backgroundColor: c }}
 								/>
 							))}

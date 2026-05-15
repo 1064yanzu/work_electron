@@ -173,8 +173,10 @@ export async function designListSystems(): Promise<
 
 export async function designGetSystemThumbnail(
 	systemId: string,
-): Promise<{ path: string; ready: boolean; mtime_ms?: number }> {
-	return await safeInvoke("design_get_system_thumbnail", { system_id: systemId });
+): Promise<{ path: string; ready: boolean; mtime_ms?: number; base64?: string }> {
+	return await safeInvoke("design_get_system_thumbnail", {
+		system_id: systemId,
+	});
 }
 
 export async function designGetDoc(input: {

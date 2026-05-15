@@ -102,11 +102,18 @@ function ToggleRow({
 	onChange: (v: boolean) => void;
 }) {
 	return (
-		<button
-			type="button"
+		<div
+			role="button"
+			tabIndex={0}
 			onClick={() => onChange(!checked)}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onChange(!checked);
+				}
+			}}
 			className={cn(
-				"flex items-center gap-3 px-3 py-2 rounded-xl text-left w-full",
+				"flex items-center gap-3 px-3 py-2 rounded-xl text-left w-full cursor-pointer",
 				"border border-cream-300 dark:border-cream-500/60",
 				"bg-cream-50 dark:bg-cream-900 hover:bg-cream-100/60 dark:hover:bg-cream-800/40",
 				"transition-colors duration-150",
@@ -123,7 +130,7 @@ function ToggleRow({
 				)}
 			</div>
 			<Toggle checked={checked} onChange={() => onChange(!checked)} size="sm" />
-		</button>
+		</div>
 	);
 }
 

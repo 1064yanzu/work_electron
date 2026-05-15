@@ -342,14 +342,21 @@ function schedule<T>(task: () => Promise<T>): Promise<T> {
  */
 export async function getSystemThumbnail(
 	systemId: string,
-	broadcast: (payload: ThumbnailReadyPayload) => void,
-): Promise<{ path: string; ready: boolean; mtime_ms?: number }> {
+	broadcast: (payload: ThumbnailReadyPayload & { base64?: string }) => void,
+): Promise<{ path: string; ready: boolean; mtime_ms?: number; base64?: string }> {
 	const id = safeId(systemId);
 	if (!id) throw new Error(`非法的 system_id: ${systemId}`);
 
 	const cache = await isCacheValid(id);
 	if (cache.valid) {
-		return { path: cache.path, ready: true, mtime_ms: cache.mtime_ms };
+		let base64: string | undefined;
+		try {
+			const buf = await fs.readFile(cache.path);
+			base64 = buf.toString("base64");
+		} catch {
+			// ignore
+		}
+		return { path: cache.path, ready: true, mtime_ms: cache.mtime_ms, base64 };
 	}
 
 	// 后台触发生成（去重）
@@ -359,10 +366,15 @@ export async function getSystemThumbnail(
 		});
 		inflight.set(id, job);
 		void job
-			.then((r) => {
+			.then(async (r) => {
 				if (!r) return;
 				try {
-					broadcast({ system_id: id, path: r.pngPath, mtime_ms: r.mtime_ms });
+					let base64: string | undefined;
+					try {
+						const buf = await fs.readFile(r.pngPath);
+						base64 = buf.toString("base64");
+					} catch {}
+					broadcast({ system_id: id, path: r.pngPath, mtime_ms: r.mtime_ms, base64 });
 				} catch {
 					// ignore
 				}

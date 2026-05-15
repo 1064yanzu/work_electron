@@ -3585,7 +3585,7 @@ export type IPCSchema = {
 	// —— 后端动态缩略图（M2）
 	design_get_system_thumbnail: {
 		input: { system_id: string };
-		output: { path: string; ready: boolean; mtime_ms?: number };
+		output: { path: string; ready: boolean; mtime_ms?: number; base64?: string };
 	};
 
 	// —— 系统 / Skill 文档（M3 DocSidebar）
