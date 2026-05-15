@@ -1,33 +1,29 @@
 /**
  * Design 模块入口首屏（重构自 DesignEmpty）
  *
- * 4 Tab：最近设计 / 设计系统库 / 内置 Skill / 品牌
- * 右下角 FAB：新建空白设计
+ * 两栏布局：
+ * - 左 420px：NewProjectPanel（创建项目）
+ * - 右 flex：浏览（最近设计 / 设计系统 / 内置 Skill / 品牌）
  *
  * 视觉规范：
- * - Tab 用 pill 风格（borderRadius 999）
- * - 卡片 3-4 列响应式网格；卡面 16:9 缩略图（M2 起为真实截图）
- * - hover 升阴影 + translateY(-2px)，140ms 过渡
+ * - 创建按钮在左栏底部 CTA；不再有右下 FAB
+ * - 右栏 EntryTabs 用 underline variant，与左栏 tab 风格统一
  */
-import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	designListDirections,
 	designListSessions,
-	designStartSession,
 } from "../../../lib/api/design";
-import { designStore, useDesignStoreSelector } from "../../../lib/stores";
-import { Button } from "../../ui/Button";
-import { toast } from "../../ui/Toast";
+import { designStore } from "../../../lib/stores";
 import { BrandExtractTab } from "./BrandExtractTab";
 import { BuiltinSkillsTab } from "./BuiltinSkillsTab";
 import { EntryHeader } from "./EntryHeader";
 import { EntryTabs, type EntryTabKey } from "./EntryTabs";
+import { NewProjectPanel } from "./newProject/NewProjectPanel";
 import { RecentDesignsTab } from "./RecentDesignsTab";
 import { SystemsLibraryTab } from "./SystemsLibraryTab";
 
 export function DesignEntryView() {
-	const isStarting = useDesignStoreSelector((s) => s.isStarting);
 	const [activeTab, setActiveTab] = useState<EntryTabKey>("recent");
 	const [initialLoading, setInitialLoading] = useState(true);
 
@@ -53,41 +49,18 @@ export function DesignEntryView() {
 		};
 	}, []);
 
-	const handleStartBlank = async () => {
-		try {
-			designStore.setStarting(true);
-			const result = await designStartSession({ title: "未命名设计" });
-			designStore.setDiscoveryForm(result.discovery_form);
-			designStore.setCurrentSession({
-				id: result.session_id,
-				title: "未命名设计",
-				status: "draft",
-				work_dir: result.work_dir,
-				created_at: Date.now(),
-				updated_at: Date.now(),
-			});
-			designStore.resetDraft();
-			designStore.setStage("discovery");
-			const list = await designListSessions({ limit: 50 });
-			designStore.setSessionsList(list);
-		} catch (err) {
-			console.error("[DesignEntryView] start failed", err);
-			toast.error(
-				`新建设计失败: ${err instanceof Error ? err.message : String(err)}`,
-			);
-		} finally {
-			designStore.setStarting(false);
-		}
-	};
-
 	return (
-		<div className="h-full w-full flex flex-col bg-background relative overflow-hidden">
-			<div className="flex-1 min-h-0 overflow-y-auto">
-				<div className="max-w-6xl mx-auto px-8 pt-12 pb-24 flex flex-col gap-8">
+		<div className="h-full w-full flex bg-background overflow-hidden">
+			{/* 左栏：创建面板 */}
+			<aside className="w-[420px] shrink-0 h-full">
+				<NewProjectPanel />
+			</aside>
+
+			{/* 右栏：浏览 */}
+			<section className="flex-1 min-w-0 h-full overflow-y-auto">
+				<div className="max-w-5xl mx-auto px-8 pt-10 pb-16 flex flex-col gap-6">
 					<EntryHeader />
-
 					<EntryTabs value={activeTab} onChange={setActiveTab} />
-
 					<div className="min-h-[320px]">
 						{activeTab === "recent" ? (
 							<RecentDesignsTab loading={initialLoading} />
@@ -97,20 +70,7 @@ export function DesignEntryView() {
 						{activeTab === "brand" ? <BrandExtractTab /> : null}
 					</div>
 				</div>
-			</div>
-
-			<Button
-				type="button"
-				variant="action"
-				size="lg"
-				onClick={() => void handleStartBlank()}
-				disabled={isStarting}
-				title="新建空白设计"
-				className="design-entry-fab absolute bottom-8 right-8"
-				icon={<Plus className="w-4 h-4" strokeWidth={2.2} />}
-			>
-				{isStarting ? "正在新建…" : "新建空白设计"}
-			</Button>
+			</section>
 		</div>
 	);
 }

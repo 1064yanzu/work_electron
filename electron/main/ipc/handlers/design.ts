@@ -19,6 +19,7 @@ import { app, BrowserWindow, dialog, type IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type {
 	DesignSession,
+	DesignSessionMetadata,
 	DesignExportTarget,
 	OutputAsset,
 } from "../../../shared/types";
@@ -43,6 +44,8 @@ import {
 	listSessionFiles,
 	listSkillSummaries,
 	getSkillResourceMap,
+	listTemplateSummaries,
+	getTemplateDetail,
 	runCritique,
 	scanDesignSystems,
 	getDesignLibraryRoot,
@@ -75,6 +78,39 @@ function resolveSkillsForMode(
 	if (!mode) return ["ipo-web-prototype", "ipo-design-review"];
 	return MODE_TO_SKILLS[mode] ?? ["ipo-web-prototype", "ipo-design-review"];
 }
+
+/**
+ * 根据创建面板快照推断 mode；用户在 discovery 表单里仍可以覆盖。
+ * - 媒体 tab（image/video/audio）走 design_media_generate，本函数不应被调用，返回 undefined。
+ * - prototype + 含移动端平台 → mobile-mockup；否则 → web-prototype。
+ * - deck → pitch-deck；template 默认 web-prototype（具体模板可在 discovery 里再调）。
+ */
+function inferModeFromMetadata(
+	metadata: DesignSessionMetadata | undefined,
+): string | null {
+	if (!metadata) return null;
+	const kind = metadata.kind;
+	if (!kind) return null;
+	switch (kind) {
+		case "prototype": {
+			const platforms = metadata.platforms ?? [];
+			const isMobile = platforms.some(
+				(p) => p === "mobile-ios" || p === "mobile-android",
+			);
+			return isMobile ? "mobile-mockup" : "web-prototype";
+		}
+		case "deck":
+			return "pitch-deck";
+		case "template":
+			return "web-prototype";
+		case "image":
+		case "video":
+		case "audio":
+			return null;
+		default:
+			return null;
+	}
+}
 import { syncOutputToVault } from "../../storage/sync";
 
 type Handler<K extends keyof IPCSchema> = (
@@ -106,6 +142,7 @@ function rowToSession(row: Record<string, unknown>): DesignSession {
 		output_asset_id: (row.output_asset_id as string | null) ?? undefined,
 		sdk_session_id: (row.sdk_session_id as string | null) ?? undefined,
 		last_export: parseJson(row.last_export, undefined as never),
+		metadata: parseJson(row.metadata, undefined as never),
 		created_at: Number(row.created_at ?? Date.now()),
 		updated_at: Number(row.updated_at ?? Date.now()),
 	};
@@ -227,10 +264,20 @@ export function createDesignHandlers(db: DbContext) {
 		const title = (input?.title?.trim() || "未命名设计").slice(0, 80);
 		const workDir = await createSessionDir(id);
 		const ts = now();
+		const metadata = input?.metadata ?? undefined;
 		await db.client.execute({
-			sql: `INSERT INTO design_sessions (id, title, status, work_dir, discovery_answers, direction_id, system_id, mode, brand_spec, critique_scores, output_asset_id, sdk_session_id, last_export, created_at, updated_at)
-			      VALUES (?, ?, 'draft', ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?)`,
-			args: [id, title, workDir, ts, ts],
+			sql: `INSERT INTO design_sessions (id, title, status, work_dir, discovery_answers, direction_id, system_id, mode, brand_spec, critique_scores, output_asset_id, sdk_session_id, last_export, metadata, created_at, updated_at)
+			      VALUES (?, ?, 'draft', ?, NULL, NULL, ?, ?, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)`,
+			args: [
+				id,
+				title,
+				workDir,
+				metadata?.design_system_id ?? null,
+				metadata?.kind ? inferModeFromMetadata(metadata) : null,
+				metadata ? JSON.stringify(metadata) : null,
+				ts,
+				ts,
+			],
 		});
 		return {
 			session_id: id,
@@ -243,10 +290,12 @@ export function createDesignHandlers(db: DbContext) {
 		const session = await loadSession(db, input.session_id);
 		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
 
-		const mode = input.mode || inferModeFromAnswers(input.answers);
+		const metadataMode = inferModeFromMetadata(session.metadata) ?? undefined;
+		const mode =
+			input.mode || session.mode || metadataMode || inferModeFromAnswers(input.answers);
 		const directionId =
 			input.direction_id || (typeof input.answers?.tone === "string" ? String(input.answers.tone) : "modern-minimal");
-		const systemId = input.system_id;
+		const systemId = input.system_id || session.system_id;
 
 		const systemPrompt = await composeDesignSystemPrompt({
 			answers: input.answers,
@@ -861,6 +910,39 @@ export function createDesignHandlers(db: DbContext) {
 	// 启动时确保 media 表已建好（异步即可，失败不影响其他功能）
 	void ensureMediaSchema(db).catch(() => undefined);
 
+	const list_templates: Handler<"design_list_templates"> = async (_event, input) => {
+		let templates = await listTemplateSummaries();
+		// 按 mode 过滤
+		if (input?.mode) {
+			templates = templates.filter((t) => t.mode === input.mode);
+		}
+		// 按关键字过滤（name / description / triggers）
+		if (input?.query?.trim()) {
+			const q = input.query.trim().toLowerCase();
+			templates = templates.filter(
+				(t) =>
+					t.name.toLowerCase().includes(q) ||
+					t.description.toLowerCase().includes(q) ||
+					t.triggers.some((tr) => tr.toLowerCase().includes(q)),
+			);
+		}
+		return templates.map((t) => ({
+			id: t.id,
+			name: t.name,
+			description: t.description,
+			mode: t.mode,
+			platform: t.platform,
+			scenario: t.scenario,
+			category: t.category,
+			triggers: t.triggers,
+			has_example: t.has_example,
+		}));
+	};
+
+	const get_template_detail: Handler<"design_get_template_detail"> = async (_event, input) => {
+		return await getTemplateDetail(input.template_id);
+	};
+
 	return {
 		design_list_directions: list_directions,
 		design_list_sessions: list_sessions,
@@ -890,5 +972,7 @@ export function createDesignHandlers(db: DbContext) {
 		design_get_doc: get_doc,
 		design_list_work_dir_files: list_work_dir_files,
 		design_read_work_dir_file: read_work_dir_file,
+		design_list_templates: list_templates,
+		design_get_template_detail: get_template_detail,
 	};
 }

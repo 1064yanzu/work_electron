@@ -1455,6 +1455,11 @@ export function registerIpcHandlers({
 		"design_read_work_dir_file",
 		designHandlers.design_read_work_dir_file,
 	);
+	ipcMain.handle("design_list_templates", designHandlers.design_list_templates);
+	ipcMain.handle(
+		"design_get_template_detail",
+		designHandlers.design_get_template_detail,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

@@ -547,6 +547,113 @@ export type DesignMode =
 	| "pitch-deck"
 	| "poster";
 
+export type DesignSkillMode =
+	| "prototype"
+	| "deck"
+	| "template"
+	| "design-system";
+
+export type DesignSkillPreviewType = "html" | "jsx" | "pptx" | "markdown";
+
+export type DesignSkillParameterType =
+	| "select"
+	| "number"
+	| "hue"
+	| "spacing"
+	| "font-scale"
+	| "opacity";
+
+export type DesignSkillInputType = "string" | "integer" | "enum" | "boolean";
+
+export type DesignSkillCritiquePolicy = "required" | "opt-in" | "opt-out";
+
+export interface DesignSkillTweak {
+	name: string;
+	type: "select" | "number";
+	values?: string[];
+	min?: number;
+	max?: number;
+	step?: number;
+	default?: string | number;
+}
+
+export interface DesignSkillPreviewConfig {
+	type: DesignSkillPreviewType;
+	entry?: string;
+	reload?: string;
+}
+
+export interface DesignSkillDesignSystemConfig {
+	requires?: boolean;
+	sections?: string[];
+}
+
+export interface DesignSkillInputConfig {
+	name: string;
+	type: DesignSkillInputType;
+	required?: boolean;
+	default?: string | number | boolean;
+	min?: number;
+	max?: number;
+	values?: string[];
+}
+
+export interface DesignSkillParameterConfig {
+	name: string;
+	type: DesignSkillParameterType;
+	default?: string | number;
+	range?: [number, number];
+	values?: string[];
+}
+
+export interface DesignSkillOutputConfig {
+	primary?: string;
+	secondary?: string[];
+}
+
+export interface DesignSkillReferenceDoc {
+	id: string;
+	title: string;
+	content: string;
+}
+
+export interface DesignSkillSummary {
+	name: string;
+	description: string;
+	version: string;
+	triggers: string[];
+	group?: string;
+	category?: string;
+	default_frame?: string;
+	mode?: DesignSkillMode;
+	surface?: string;
+	platform?: string;
+	skill_type?: string;
+	upstream?: string;
+	tweaks?: DesignSkillTweak[];
+	preview?: DesignSkillPreviewConfig;
+	design_system?: DesignSkillDesignSystemConfig;
+	craft_requires?: string[];
+	inputs?: DesignSkillInputConfig[];
+	parameters?: DesignSkillParameterConfig[];
+	outputs?: DesignSkillOutputConfig;
+	capabilities_required?: string[];
+	critique_policy?: DesignSkillCritiquePolicy;
+}
+
+export interface DesignSkillResourceMap {
+	id: string;
+	skill_md: string;
+	template_html?: string;
+	checklist_md?: string;
+	layouts_md?: string;
+	components_md?: string;
+	themes_md?: string;
+	example_html?: string;
+	references?: DesignSkillReferenceDoc[];
+	frontmatter: DesignSkillSummary;
+}
+
 export interface DesignCritiqueScores {
 	scores: {
 		philosophy: number;
@@ -590,8 +697,50 @@ export interface DesignSession {
 	output_asset_id?: string;
 	sdk_session_id?: string;
 	last_export?: DesignLastExport;
+	/**
+	 * 创建面板预选项快照：kind / platform / precision / 模板 / 媒体类型 / toggle 等。
+	 * 不影响 discovery 表单的答卷（answers）；只用于在新建那一刻把
+	 * 用户选的形态保留下来，供 submit_discovery 推断 mode、UI 二次进入时回显。
+	 */
+	metadata?: DesignSessionMetadata;
 	created_at: number;
 	updated_at: number;
+}
+
+/**
+ * 创建面板字段快照。每个 tab 用到的字段不同，全部 optional。
+ */
+export type DesignProjectKind =
+	| "prototype"
+	| "deck"
+	| "template"
+	| "image"
+	| "video"
+	| "audio";
+
+export type DesignProjectPlatform =
+	| "responsive"
+	| "web-desktop"
+	| "mobile-ios"
+	| "mobile-android"
+	| "tablet"
+	| "desktop-app";
+
+export type DesignProjectPrecision = "wireframe" | "high-fidelity";
+
+export interface DesignSessionMetadata {
+	kind?: DesignProjectKind;
+	platforms?: DesignProjectPlatform[];
+	precision?: DesignProjectPrecision;
+	design_system_id?: string | null;
+	include_landing_page?: boolean;
+	include_os_widgets?: boolean;
+	speaker_notes?: boolean;
+	animations?: boolean;
+	template_id?: string | null;
+	media_model?: string;
+	media_aspect?: string;
+	media_duration_sec?: number;
 }
 
 export type DesignExportFormat =

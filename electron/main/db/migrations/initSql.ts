@@ -634,6 +634,7 @@ CREATE TABLE IF NOT EXISTS design_sessions (
   output_asset_id TEXT,
   sdk_session_id TEXT,
   last_export TEXT,
+  metadata TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

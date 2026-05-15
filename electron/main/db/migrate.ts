@@ -232,6 +232,9 @@ export async function runMigrations(ctx: DbContext) {
 	);
 	await safeAddColumn(ctx, "tts_settings", "scene_pet_persona_model", "TEXT");
 
+	// Migration: design_sessions 加 metadata 列（kind/platform/precision/include_*/template_id/...）
+	await safeAddColumn(ctx, "design_sessions", "metadata", "TEXT");
+
 	// Migration: 阅读器知识卡片 — 标签 / 草稿 / SRS 间隔重复
 	await safeAddColumn(
 		ctx,

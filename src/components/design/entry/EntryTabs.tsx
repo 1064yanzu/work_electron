@@ -37,7 +37,7 @@ export function EntryTabs({ value, onChange }: EntryTabsProps) {
 			value={value}
 			onChange={onChange}
 			items={TABS}
-			variant="pills"
+			variant="underline"
 			size="sm"
 			aria-label="设计入口"
 		/>

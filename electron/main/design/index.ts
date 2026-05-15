@@ -77,3 +77,9 @@ export {
 	type DesignSkillResourceMap,
 	type DesignSkillTweak,
 } from "./skillsRegistry";
+
+export {
+	listTemplateSummaries,
+	getTemplateDetail,
+	type DesignTemplateSummary,
+} from "./templateRegistry";

@@ -1,9 +1,13 @@
 /**
  * 设计系统库扫描器
  *
- * - 启动时（按需）扫描 `library/systems/*.DESIGN.md`
+ * 扫描根目录（多路径合并）：
+ *   1. library/systems/           — 手写精选（优先级高）
+ *   2. library/vendor/open-design/systems/ — 从 open-design 导入的大量 systems
+ *
  * - 用极简 frontmatter 解析（title / category / swatches / summary）
  * - 不依赖任何 markdown / yaml 第三方库；frontmatter 块用文本切片
+ * - 同 id 时手写目录优先（导入版本被跳过）
  */
 
 import fs from "node:fs/promises";
@@ -119,26 +123,21 @@ function deriveSwatchesFromMarkdown(content: string, max = 5): string[] {
 	return out;
 }
 
-export async function scanDesignSystems(forceRefresh = false): Promise<
-	DesignSystemSummary[]
-> {
-	if (scanned && !forceRefresh) {
-		return Array.from(cache.values());
-	}
-	cache.clear();
-
-	const root = path.join(getDesignLibraryRoot(), "systems");
+/** 扫描单个目录并填充 cache（同 id 时，cache 已有的不覆盖） */
+async function scanSystemsDir(root: string, allowOverwrite = false): Promise<void> {
 	let entries: import("node:fs").Dirent[];
 	try {
 		entries = await fs.readdir(root, { withFileTypes: true });
 	} catch {
-		scanned = true;
-		return [];
+		return; // 目录不存在则跳过
 	}
 
 	for (const ent of entries) {
 		if (!ent.isDirectory()) continue;
 		const id = ent.name;
+		if (id.startsWith("_") || id.startsWith(".")) continue;
+		// 手写目录优先：如果 cache 已有该 id，导入目录不覆盖
+		if (!allowOverwrite && cache.has(id)) continue;
 		const designFile = path.join(root, id, "DESIGN.md");
 		try {
 			let content = "";
@@ -170,6 +169,23 @@ export async function scanDesignSystems(forceRefresh = false): Promise<
 			// 文件不存在或解析失败 → 跳过
 		}
 	}
+}
+
+export async function scanDesignSystems(forceRefresh = false): Promise<
+	DesignSystemSummary[]
+> {
+	if (scanned && !forceRefresh) {
+		return Array.from(cache.values());
+	}
+	cache.clear();
+
+	const lib = getDesignLibraryRoot();
+
+	// 1. 手写精选系统（优先级高，先扫描）
+	await scanSystemsDir(path.join(lib, "systems"), true);
+
+	// 2. 从 open-design 导入的系统（同 id 时跳过，不覆盖手写版本）
+	await scanSystemsDir(path.join(lib, "vendor/open-design/systems"), false);
 
 	scanned = true;
 	return Array.from(cache.values());

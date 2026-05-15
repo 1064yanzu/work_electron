@@ -24,6 +24,8 @@ import type {
 	DesignExportTarget,
 	DesignLastExport,
 	DesignLaunchPayload,
+	DesignSkillResourceMap,
+	DesignSkillSummary,
 	DesignSession,
 	DesignSessionStatus,
 	DiscoveryAnswers,
@@ -3325,7 +3327,11 @@ export type IPCSchema = {
 	};
 
 	design_start_session: {
-		input: { title?: string; initial_brief?: string };
+		input: {
+			title?: string;
+			initial_brief?: string;
+			metadata?: import("./types").DesignSessionMetadata;
+		};
 		output: {
 			session_id: string;
 			work_dir: string;
@@ -3460,53 +3466,42 @@ export type IPCSchema = {
 
 	design_list_builtin_skills: {
 		input: Record<string, never>;
-		output: Array<{
-			name: string;
-			description: string;
-			version: string;
-			triggers: string[];
-			group?: string;
-			default_frame?: string;
-			tweaks?: Array<{
-				name: string;
-				type: "select" | "number";
-				values?: string[];
-				min?: number;
-				max?: number;
-				step?: number;
-				default?: string | number;
-			}>;
-		}>;
+		output: DesignSkillSummary[];
 	};
 
 	design_get_skill_resource_map: {
 		input: { skill_id: string };
+		output: DesignSkillResourceMap | null;
+	};
+
+	/** 列出所有从 open-design 导入的模板摘要（用于 TemplatePicker） */
+	design_list_templates: {
+		input: {
+			/** 过滤模式，如 prototype / deck */
+			mode?: string;
+			/** 过滤关键字（匹配 name / description / triggers） */
+			query?: string;
+		};
+		output: Array<{
+			id: string;
+			name: string;
+			description: string;
+			mode?: string;
+			platform?: string;
+			scenario?: string;
+			category?: string;
+			triggers: string[];
+			has_example?: boolean;
+		}>;
+	};
+
+	/** 获取单个模板的详情（含 SKILL.md 原文 + example html） */
+	design_get_template_detail: {
+		input: { template_id: string };
 		output: {
 			id: string;
 			skill_md: string;
-			template_html?: string;
-			checklist_md?: string;
-			layouts_md?: string;
-			components_md?: string;
-			themes_md?: string;
 			example_html?: string;
-			frontmatter: {
-				name: string;
-				description: string;
-				version: string;
-				triggers: string[];
-				group?: string;
-				default_frame?: string;
-				tweaks?: Array<{
-					name: string;
-					type: "select" | "number";
-					values?: string[];
-					min?: number;
-					max?: number;
-					step?: number;
-					default?: string | number;
-				}>;
-			};
 		} | null;
 	};
 
@@ -3549,7 +3544,7 @@ export type IPCSchema = {
 
 	design_media_generate: {
 		input: {
-			session_id: string;
+			session_id?: string;
 			provider: string;
 			kind: "image" | "video" | "audio" | "music";
 			prompt: string;

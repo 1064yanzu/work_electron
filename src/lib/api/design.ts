@@ -12,7 +12,13 @@ import type {
 	DesignExportTarget,
 	DesignLastExport,
 	DesignLaunchPayload,
+	DesignSkillResourceMap,
+	DesignSkillSummary,
+	DesignProjectKind,
+	DesignProjectPlatform,
+	DesignProjectPrecision,
 	DesignSession,
+	DesignSessionMetadata,
 	DesignSessionStatus,
 	DiscoveryAnswers,
 	DiscoveryFormSchema,
@@ -24,6 +30,10 @@ export type {
 	DesignDirection,
 	DesignSession,
 	DesignSessionStatus,
+	DesignSessionMetadata,
+	DesignProjectKind,
+	DesignProjectPlatform,
+	DesignProjectPrecision,
 	DiscoveryAnswers,
 	DiscoveryFormSchema,
 	DesignExportFormat,
@@ -32,6 +42,8 @@ export type {
 	DesignLastExport,
 	DesignLaunchPayload,
 	DesignCritiqueScores,
+	DesignSkillSummary,
+	DesignSkillResourceMap,
 };
 
 export async function designListDirections(): Promise<DesignDirection[]> {
@@ -52,6 +64,7 @@ export async function designGetDiscoveryForm(): Promise<DiscoveryFormSchema> {
 export async function designStartSession(input: {
 	title?: string;
 	initial_brief?: string;
+	metadata?: DesignSessionMetadata;
 }): Promise<{
 	session_id: string;
 	work_dir: string;
@@ -229,55 +242,13 @@ export async function designRunCritique(input: {
 	return await safeInvoke("design_run_critique", input);
 }
 
-export async function designListBuiltinSkills(): Promise<
-	Array<{
-		name: string;
-		description: string;
-		version: string;
-		triggers: string[];
-		group?: string;
-		default_frame?: string;
-		tweaks?: Array<{
-			name: string;
-			type: "select" | "number";
-			values?: string[];
-			min?: number;
-			max?: number;
-			step?: number;
-			default?: string | number;
-		}>;
-	}>
-> {
+export async function designListBuiltinSkills(): Promise<DesignSkillSummary[]> {
 	return await safeInvoke("design_list_builtin_skills", {});
 }
 
-export async function designGetSkillResourceMap(skillId: string): Promise<{
-	id: string;
-	skill_md: string;
-	template_html?: string;
-	checklist_md?: string;
-	layouts_md?: string;
-	components_md?: string;
-	themes_md?: string;
-	example_html?: string;
-	frontmatter: {
-		name: string;
-		description: string;
-		version: string;
-		triggers: string[];
-		group?: string;
-		default_frame?: string;
-		tweaks?: Array<{
-			name: string;
-			type: "select" | "number";
-			values?: string[];
-			min?: number;
-			max?: number;
-			step?: number;
-			default?: string | number;
-		}>;
-	};
-} | null> {
+export async function designGetSkillResourceMap(
+	skillId: string,
+): Promise<DesignSkillResourceMap | null> {
 	return await safeInvoke("design_get_skill_resource_map", { skill_id: skillId });
 }
 
@@ -332,7 +303,7 @@ export async function designMediaProviders(): Promise<DesignMediaProvider[]> {
 }
 
 export async function designMediaGenerate(input: {
-	session_id: string;
+	session_id?: string;
 	provider: string;
 	kind: "image" | "video" | "audio" | "music";
 	prompt: string;
@@ -362,4 +333,35 @@ export async function designMediaHistory(input?: {
 	}>
 > {
 	return await safeInvoke("design_media_history", input ?? {});
+}
+
+// ─── open-design 模板库 ────────────────────────────────────────────────────
+
+export interface DesignTemplateSummary {
+	id: string;
+	name: string;
+	description: string;
+	mode?: string;
+	platform?: string;
+	scenario?: string;
+	category?: string;
+	triggers: string[];
+	has_example?: boolean;
+}
+
+export async function designListTemplates(input?: {
+	mode?: string;
+	query?: string;
+}): Promise<DesignTemplateSummary[]> {
+	return await safeInvoke("design_list_templates", input ?? {});
+}
+
+export async function designGetTemplateDetail(templateId: string): Promise<{
+	id: string;
+	skill_md: string;
+	example_html?: string;
+} | null> {
+	return await safeInvoke("design_get_template_detail", {
+		template_id: templateId,
+	});
 }
