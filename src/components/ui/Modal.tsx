@@ -123,9 +123,9 @@ export function Modal({
 			<FocusTrap
 				className={cn(
 					"relative w-full rounded-2xl",
-					"bg-surface",
-					"shadow-[0_8px_32px_0_rgb(26_26_25/0.08)]",
-					"border border-border",
+					"bg-cream-50 dark:bg-cream-900",
+					"shadow-bai-pop",
+					"border border-cream-300 dark:border-cream-500",
 					"overflow-hidden",
 					isClosing ? "animate-scale-out" : "animate-scale-in",
 					sizeStyles[size],
@@ -136,7 +136,7 @@ export function Modal({
 				initialFocusRef={initialFocusRef}
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-border px-6 py-4">
+				<div className="flex items-center justify-between border-b border-cream-300 dark:border-cream-500/60 px-6 py-4">
 					<h3
 						id="modal-title"
 						className="font-semibold text-base text-text-primary tracking-tight"
@@ -168,7 +168,7 @@ export function Modal({
 
 				{/* Footer */}
 				{footer && (
-					<div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+					<div className="flex items-center justify-end gap-3 border-t border-cream-300 dark:border-cream-500/60 px-6 py-4">
 						{footer}
 					</div>
 				)}

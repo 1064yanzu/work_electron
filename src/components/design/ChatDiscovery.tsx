@@ -9,7 +9,14 @@
  * - 必填字段未填会禁用「下一步」
  * - 父组件控制 onSubmit / onCancel,本组件只管推进
  */
-import { ArrowRight, Check, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
+import {
+	ArrowRight,
+	Check,
+	Loader2,
+	RefreshCw,
+	Sparkles,
+	X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DiscoveryField } from "../../../electron/shared/types";
 import {
@@ -17,6 +24,8 @@ import {
 	designListDirections,
 } from "../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../lib/stores";
+import { Button } from "../ui/Button";
+import { RadioCardGroup } from "../ui/RadioCard";
 import { BrandExtractInput } from "./BrandExtractInput";
 
 interface ChatDiscoveryProps {
@@ -85,7 +94,7 @@ export function ChatDiscovery({
 	if (!form) {
 		return (
 			<div className="h-full flex items-center justify-center bg-background px-6">
-				<div className="max-w-sm rounded-xl border border-border bg-bg-surface px-5 py-4 shadow-sm flex flex-col gap-3">
+				<div className="max-w-sm rounded-2xl border border-cream-300 bg-cream-50 px-5 py-4 shadow-bai-card flex flex-col gap-3 dark:border-cream-500/60 dark:bg-cream-900">
 					<div className="flex items-center gap-2.5">
 						{formLoading ? (
 							<Loader2
@@ -109,22 +118,18 @@ export function ChatDiscovery({
 						</div>
 					)}
 					<div className="flex items-center justify-end gap-2 pt-1">
-						<button
-							type="button"
-							onClick={onCancel}
-							className="px-3 py-1.5 rounded-full text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 transition-colors"
-						>
+						<Button variant="ghost" size="sm" onClick={onCancel}>
 							取消
-						</button>
-						<button
-							type="button"
+						</Button>
+						<Button
+							variant="action"
+							size="sm"
 							onClick={() => void loadForm()}
 							disabled={formLoading}
-							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+							icon={<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.8} />}
 						>
-							<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.8} />
 							重试
-						</button>
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -139,7 +144,8 @@ export function ChatDiscovery({
 	const reachedEnd = activeIndex >= fields.length - 1;
 	const activeField = fields[activeIndex];
 	const activeFilled = activeField
-		? !activeField.required || fieldHasValue(activeField, draft.answers[activeField.id])
+		? !activeField.required ||
+			fieldHasValue(activeField, draft.answers[activeField.id])
 		: true;
 
 	const handleAdvance = () => {
@@ -153,7 +159,7 @@ export function ChatDiscovery({
 
 	return (
 		<div className="h-full w-full flex flex-col bg-background">
-			<header className="px-6 py-4 border-b border-border bg-bg-surface flex items-center gap-3">
+			<header className="px-6 py-4 border-b border-cream-300 bg-cream-50/95 backdrop-blur flex items-center gap-3 dark:border-cream-500/60 dark:bg-cream-900/95">
 				<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
 					<Sparkles className="w-4 h-4 text-primary" strokeWidth={1.5} />
 				</div>
@@ -215,32 +221,30 @@ export function ChatDiscovery({
 				</div>
 			</div>
 
-			<footer className="px-6 py-3.5 border-t border-border bg-bg-surface flex items-center justify-between">
+			<footer className="px-6 py-3.5 border-t border-cream-300 bg-cream-50/95 backdrop-blur flex items-center justify-between dark:border-cream-500/60 dark:bg-cream-900/95">
 				<div className="text-[11px] text-text-muted">
 					{activeIndex + 1} / {fields.length}
 					{!allRequiredFilled ? " · 有必填项未完成" : ""}
 				</div>
 				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={onCancel}
-						className="px-3 py-1.5 text-xs text-text-muted hover:text-text-primary rounded-full hover:bg-warm-200/60 transition-colors"
-					>
+					<Button type="button" variant="ghost" size="sm" onClick={onCancel}>
 						取消
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="action"
+						size="sm"
 						disabled={!activeFilled || (reachedEnd && !allRequiredFilled)}
 						onClick={handleAdvance}
-						className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						icon={<ArrowRight className="w-3.5 h-3.5" strokeWidth={1.8} />}
+						iconPosition="right"
 					>
 						{reachedEnd
 							? draft.answers.brand === "brand-spec"
 								? "选择品牌系统"
 								: "选方向"
 							: "下一步"}
-						<ArrowRight className="w-3.5 h-3.5" strokeWidth={1.8} />
-					</button>
+					</Button>
 				</div>
 			</footer>
 		</div>
@@ -254,8 +258,9 @@ function IntroBubble() {
 				<Sparkles className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
 			</div>
 			<div className="flex-1 min-w-0">
-				<div className="rounded-2xl rounded-tl-sm bg-bg-surface border border-border px-4 py-3 text-sm text-text-primary leading-relaxed">
-					我会根据你接下来的回答拼装 system prompt,你不用一次填完——<span className="text-text-muted">每一项都可以粗一点。</span>
+				<div className="rounded-2xl rounded-tl-sm bg-cream-50 border border-cream-300 px-4 py-3 text-sm text-text-primary leading-relaxed shadow-bai-card dark:border-cream-500/60 dark:bg-cream-900">
+					我会根据你接下来的回答拼装 system prompt,你不用一次填完——
+					<span className="text-text-muted">每一项都可以粗一点。</span>
 				</div>
 			</div>
 		</div>
@@ -277,12 +282,10 @@ function QuestionBubble({
 				</span>
 			</div>
 			<div className="flex-1 min-w-0">
-				<div className="rounded-2xl rounded-tl-sm bg-bg-surface border border-border px-4 py-3">
+				<div className="rounded-2xl rounded-tl-sm bg-cream-50 border border-cream-300 px-4 py-3 shadow-bai-card dark:border-cream-500/60 dark:bg-cream-900">
 					<div className="text-sm font-medium text-text-primary flex items-center gap-1">
 						{field.label}
-						{field.required ? (
-							<span className="text-primary">*</span>
-						) : null}
+						{field.required ? <span className="text-primary">*</span> : null}
 					</div>
 					{field.help ? (
 						<div className="text-xs text-text-muted mt-1 leading-relaxed">
@@ -308,11 +311,9 @@ function AnswerControl({
 				<textarea
 					value={typeof value === "string" ? value : ""}
 					placeholder={field.placeholder}
-					onChange={(e) =>
-						designStore.setAnswerField(field.id, e.target.value)
-					}
+					onChange={(e) => designStore.setAnswerField(field.id, e.target.value)}
 					rows={3}
-					className="w-full px-3.5 py-2.5 rounded-2xl rounded-tr-sm border border-border bg-background text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 resize-vertical leading-relaxed"
+					className={`${chatInputClass} resize-vertical leading-relaxed`}
 				/>
 			</div>
 		);
@@ -324,10 +325,8 @@ function AnswerControl({
 					type="text"
 					value={typeof value === "string" ? value : ""}
 					placeholder={field.placeholder}
-					onChange={(e) =>
-						designStore.setAnswerField(field.id, e.target.value)
-					}
-					className="w-full px-3.5 py-2.5 rounded-2xl rounded-tr-sm border border-border bg-background text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+					onChange={(e) => designStore.setAnswerField(field.id, e.target.value)}
+					className={chatInputClass}
 				/>
 			</div>
 		);
@@ -343,46 +342,32 @@ function AnswerControl({
 					? value
 					: (field.default_value as string | undefined);
 		return (
-			<div className="flex flex-wrap gap-2">
-				{options.map((opt) => {
-					const isSelected =
-						field.type === "multiselect"
-							? (current as string[]).includes(opt.value)
-							: current === opt.value;
-					return (
-						<button
-							type="button"
-							key={opt.value}
-							onClick={() => {
-								if (field.type === "multiselect") {
-									const arr = Array.isArray(current)
-										? (current as string[])
-										: [];
-									const next = isSelected
-										? arr.filter((v) => v !== opt.value)
-										: [...arr, opt.value];
-									designStore.setAnswerField(field.id, next);
-								} else {
-									designStore.setAnswerField(field.id, opt.value);
-								}
-							}}
-							className={[
-								"px-3.5 py-2 rounded-full text-xs border transition-colors text-left max-w-full",
-								isSelected
-									? "border-primary bg-primary/10 text-primary"
-									: "border-border bg-background text-text-muted hover:border-primary/30 hover:text-text-primary",
-							].join(" ")}
-							title={opt.description}
-						>
-							<span className="font-medium">{opt.label}</span>
-						</button>
-					);
-				})}
-			</div>
+			<RadioCardGroup
+				{...(field.type === "multiselect"
+					? {
+							multi: true as const,
+							value: current as string[],
+							onChange: (next: string[]) =>
+								designStore.setAnswerField(field.id, next),
+						}
+					: {
+							value: (current as string | undefined) ?? "",
+							onChange: (next: string) =>
+								designStore.setAnswerField(field.id, next),
+						})}
+				items={options}
+				size="sm"
+				layout="horizontal"
+				accent="primary"
+				aria-label={field.label}
+			/>
 		);
 	}
 	return null;
 }
+
+const chatInputClass =
+	"w-full px-3.5 py-2.5 rounded-2xl rounded-tr-sm border border-cream-300 bg-cream-100/60 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] dark:border-cream-500/60 dark:bg-cream-800/40";
 
 function AnsweredSummary({
 	field,

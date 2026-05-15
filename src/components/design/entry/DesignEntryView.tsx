@@ -17,6 +17,7 @@ import {
 	designStartSession,
 } from "../../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../../lib/stores";
+import { Button } from "../../ui/Button";
 import { toast } from "../../ui/Toast";
 import { BrandExtractTab } from "./BrandExtractTab";
 import { BuiltinSkillsTab } from "./BuiltinSkillsTab";
@@ -98,16 +99,18 @@ export function DesignEntryView() {
 				</div>
 			</div>
 
-			<button
+			<Button
 				type="button"
+				variant="action"
+				size="lg"
 				onClick={() => void handleStartBlank()}
 				disabled={isStarting}
 				title="新建空白设计"
-				className="design-entry-fab fixed bottom-8 right-8 h-12 pl-4 pr-5 rounded-full bg-primary text-white shadow-lg hover:shadow-xl hover:bg-primary/95 active:scale-95 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+				className="design-entry-fab absolute bottom-8 right-8"
+				icon={<Plus className="w-4 h-4" strokeWidth={2.2} />}
 			>
-				<Plus className="w-4 h-4" strokeWidth={2.2} />
 				{isStarting ? "正在新建…" : "新建空白设计"}
-			</button>
+			</Button>
 		</div>
 	);
 }

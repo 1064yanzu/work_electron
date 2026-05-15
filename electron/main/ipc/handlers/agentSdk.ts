@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { IpcMainInvokeEvent } from "electron";
@@ -67,6 +66,10 @@ import {
 	renderMemoryPromptSection,
 } from "./agentSdk/memorySnapshot";
 import { createMemoryMcpServer } from "./agentSdk/memoryTool";
+import {
+	getExpectedClaudeCodeExecutablePath,
+	resolveClaudeCodeExecutablePath,
+} from "./agentSdk/claudeExecutable";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -448,43 +451,20 @@ export function createAgentSdkHandlers(options: {
 					agents: "filesystem/native",
 				});
 
-				// Fix: SDK uses import.meta.url to resolve cli.js at runtime. When the SDK
-				// gets bundled into dist-electron/sdk-*.js, import.meta.url points to
-				// dist-electron/ instead of node_modules/, causing "Cannot find module
-				// dist-electron/cli.js". Passing pathToClaudeCodeExecutable explicitly
-				// bypasses the import.meta.url lookup entirely.
-				//
-				// IMPORTANT: In production Electron, APP_ROOT resolves to inside app.asar
-				// (a virtual filesystem). Electron monkey-patches fs.existsSync() to work
-				// with .asar paths, so the check returns true. However child_process.spawn()
-				// bypasses the patch entirely — the OS sees app.asar as a plain file, not a
-				// directory, and returns ENOTDIR. The asarUnpack config already extracts the
-				// SDK to app.asar.unpacked/, so we must resolve to that physical path first.
-				const sdkCliPath = (() => {
-					const appRoot = process.env.APP_ROOT ?? "";
-					if (!appRoot) return undefined;
-					const candidate = path.join(
-						appRoot,
-						"node_modules",
-						"@anthropic-ai",
-						"claude-agent-sdk",
-						"cli.js",
-					);
-					// Prefer the physically-extracted .asar.unpacked path (production).
-					// Regex matches .asar/ or .asar\ to handle both macOS/Linux and Windows.
-					const unpackedCandidate = candidate.replace(
-						/\.asar([/\\])/g,
-						".asar.unpacked$1",
-					);
-					if (
-						unpackedCandidate !== candidate &&
-						fs.existsSync(unpackedCandidate)
-					) {
-						return unpackedCandidate;
-					}
-					// Development or non-asar build: use candidate directly.
-					return fs.existsSync(candidate) ? candidate : undefined;
-				})();
+				// SDK 0.2.139+ ships platform-native Claude Code binaries as optional
+				// packages. Always pass the physical binary path so spawn never targets
+				// app.asar virtual paths in packaged Electron builds.
+				const sdkCliPath = resolveClaudeCodeExecutablePath();
+				if (!sdkCliPath) {
+					logger.error({
+						msg: "Claude Code native executable is missing",
+						scope: "agent",
+						runId,
+						expectedPath: getExpectedClaudeCodeExecutablePath(),
+						platform: process.platform,
+						arch: process.arch,
+					});
+				}
 
 				// CLAUDE_CONFIG_DIR 已指向 ~/.claude，SDK 通过 settingSources 自动加载
 				// user-level / project-level CLAUDE.md。这里仅在 caller 显式传入

@@ -11,6 +11,7 @@ import {
 	designApplyTweak,
 	designListBuiltinSkills,
 } from "../../lib/api/design";
+import { RadioCardGroup } from "../ui/RadioCard";
 import { toast } from "../ui/Toast";
 
 interface DesignSkillTweak {
@@ -84,7 +85,9 @@ export function TweaksPanel({
 			const hit = skills.find((s) => s.name === target);
 			if (hit) return hit;
 		}
-		return skills.find((s) => Array.isArray(s.tweaks) && s.tweaks.length > 0) ?? null;
+		return (
+			skills.find((s) => Array.isArray(s.tweaks) && s.tweaks.length > 0) ?? null
+		);
 	}, [skills, mode]);
 
 	const tweaks = activeSkill?.tweaks ?? [];
@@ -124,7 +127,9 @@ export function TweaksPanel({
 					toast.error(`调整失败：${res.error ?? "未知错误"}`);
 				}
 			} catch (err) {
-				toast.error(`调整失败：${err instanceof Error ? err.message : String(err)}`);
+				toast.error(
+					`调整失败：${err instanceof Error ? err.message : String(err)}`,
+				);
 			} finally {
 				setPendingTweak((prev) => (prev === tweak.name ? null : prev));
 			}
@@ -153,9 +158,14 @@ export function TweaksPanel({
 		<div className="flex flex-col gap-3 p-3">
 			<header className="flex items-center justify-between">
 				<div className="flex items-center gap-1.5">
-					<SlidersHorizontal className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
+					<SlidersHorizontal
+						className="w-3.5 h-3.5 text-text-muted"
+						strokeWidth={1.5}
+					/>
 					<span className="text-xs font-medium text-text-primary">Tweaks</span>
-					<span className="text-[10px] text-text-muted">· {activeSkill.name}</span>
+					<span className="text-[10px] text-text-muted">
+						· {activeSkill.name}
+					</span>
 				</div>
 				{onClose ? (
 					<button
@@ -175,7 +185,9 @@ export function TweaksPanel({
 					return (
 						<div key={tweak.name} className="flex flex-col gap-1.5">
 							<div className="flex items-center justify-between text-xs">
-								<span className="text-text-primary font-medium">{tweak.name}</span>
+								<span className="text-text-primary font-medium">
+									{tweak.name}
+								</span>
 								<span
 									className={`text-[10px] ${
 										isPending ? "text-primary" : "text-text-muted"
@@ -185,26 +197,18 @@ export function TweaksPanel({
 								</span>
 							</div>
 							{tweak.type === "select" && tweak.values ? (
-								<div className="flex flex-wrap gap-1">
-									{tweak.values.map((v) => {
-										const isActive = String(currentValue) === v;
-										return (
-											<button
-												type="button"
-												key={v}
-												onClick={() => triggerApply(tweak, v)}
-												disabled={!runId}
-												className={`px-2 py-1 rounded-md text-[11px] border transition-colors ${
-													isActive
-														? "border-primary bg-primary/10 text-text-primary"
-														: "border-border bg-bg-surface text-text-muted hover:border-primary/30"
-												} disabled:opacity-50`}
-											>
-												{v}
-											</button>
-										);
-									})}
-								</div>
+								<RadioCardGroup
+									value={String(currentValue)}
+									onChange={(next) => triggerApply(tweak, next)}
+									items={tweak.values.map((v) => ({
+										value: v,
+										label: v,
+										disabled: !runId,
+									}))}
+									size="sm"
+									layout="horizontal"
+									aria-label={tweak.name}
+								/>
 							) : null}
 							{tweak.type === "number" ? (
 								<div className="flex items-center gap-2">
@@ -229,7 +233,8 @@ export function TweaksPanel({
 
 			{!runId ? (
 				<div className="text-[10px] text-text-muted leading-relaxed border-t border-border pt-2">
-					当前没有活跃的 Agent 运行，调节只会更新本地状态，不会同步到 HTML。下次"重做"会带入这些参数作为初始值。
+					当前没有活跃的 Agent 运行，调节只会更新本地状态，不会同步到
+					HTML。下次"重做"会带入这些参数作为初始值。
 				</div>
 			) : null}
 		</div>

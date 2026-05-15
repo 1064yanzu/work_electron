@@ -164,7 +164,7 @@ function ToastItemView({
 		<div
 			role="status"
 			className={cn(
-				"pointer-events-auto relative overflow-hidden rounded-xl border bg-surface p-4 shadow-[rgba(0,0,0,0.06)_0px_8px_32px]",
+				"pointer-events-auto relative overflow-hidden rounded-2xl border bg-cream-50 dark:bg-cream-900 p-4 shadow-bai-pop",
 				"transition-[opacity,transform] duration-200 ease-out",
 				isExiting ? "translate-x-4 scale-[0.98] opacity-0" : "opacity-100",
 				styles.border,

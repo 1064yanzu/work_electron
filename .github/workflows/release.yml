@@ -58,7 +58,8 @@ jobs:
           $checks = @(
             "node_modules\\@img",
             "node_modules\\sharp",
-            "node_modules\\node-pty"
+            "node_modules\\node-pty",
+            "node_modules\\@anthropic-ai\\claude-agent-sdk-win32-x64\\claude.exe"
           )
           $failed = 0
           foreach ($rel in $checks) {

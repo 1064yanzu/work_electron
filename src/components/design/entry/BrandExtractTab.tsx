@@ -14,6 +14,7 @@ import {
 	designStartSession,
 } from "../../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../../lib/stores";
+import { Button } from "../../ui/Button";
 import { toast } from "../../ui/Toast";
 
 interface ExtractResult {
@@ -32,7 +33,9 @@ export function BrandExtractTab() {
 
 	const ensureSession = async (): Promise<string> => {
 		if (sessionId) return sessionId;
-		const r = await designStartSession({ title: url ? `品牌：${url}` : "品牌设计" });
+		const r = await designStartSession({
+			title: url ? `品牌：${url}` : "品牌设计",
+		});
 		designStore.setDiscoveryForm(r.discovery_form);
 		designStore.setCurrentSession({
 			id: r.session_id,
@@ -96,8 +99,9 @@ export function BrandExtractTab() {
 					<span className="text-sm font-medium">从站点提取品牌</span>
 				</div>
 				<p className="text-xs text-text-muted leading-relaxed">
-					填一个你想参照的站点 URL（例如 <code>linear.app</code> / <code>cohere.com</code>），
-					我会抓取主色、字体与 logo，落盘成 <code>brand-spec.md</code> 注入 system prompt。
+					填一个你想参照的站点 URL（例如 <code>linear.app</code> /{" "}
+					<code>cohere.com</code>）， 我会抓取主色、字体与 logo，落盘成{" "}
+					<code>brand-spec.md</code> 注入 system prompt。
 				</p>
 			</div>
 
@@ -114,32 +118,36 @@ export function BrandExtractTab() {
 							void handleExtract();
 						}
 					}}
-					className="flex-1 px-3.5 py-2 rounded-full border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+					className="flex-1 px-3.5 py-2.5 rounded-full border border-cream-300 bg-cream-100/60 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] dark:border-cream-500/60 dark:bg-cream-800/40"
 				/>
-				<button
+				<Button
 					type="button"
+					variant="action"
+					size="md"
 					onClick={() => void handleExtract()}
 					disabled={running || !url.trim()}
-					className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+					icon={
+						running ? (
+							<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.6} />
+						) : (
+							<Sparkles className="w-3.5 h-3.5" strokeWidth={1.6} />
+						)
+					}
 				>
-					{running ? (
-						<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.6} />
-					) : (
-						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.6} />
-					)}
 					{running ? "抓取中…" : "提取"}
-				</button>
+				</Button>
 			</div>
 
 			{result ? (
-				<div className="flex flex-col gap-3 p-4 rounded-2xl border border-border bg-bg-surface">
+				<div className="flex flex-col gap-3 p-4 rounded-2xl border border-cream-300 bg-cream-50 shadow-bai-card dark:border-cream-500/60 dark:bg-cream-900">
 					<div className="flex items-center gap-2 text-xs text-text-primary">
 						<CheckCircle2 className="w-4 h-4 text-primary" strokeWidth={1.6} />
 						<span className="font-medium">
 							{result.site_name ?? "已识别站点"}
 						</span>
 						<span className="text-text-muted">
-							已落盘到 <code className="bg-warm-200/40 px-1 rounded">brand-spec.md</code>
+							已落盘到{" "}
+							<code className="bg-warm-200/40 px-1 rounded">brand-spec.md</code>
 						</span>
 					</div>
 					{result.colors.length > 0 ? (
@@ -176,14 +184,17 @@ export function BrandExtractTab() {
 						</div>
 					) : null}
 					<div className="flex justify-end pt-1">
-						<button
+						<Button
 							type="button"
+							variant="action"
+							size="sm"
 							disabled={isStarting}
 							onClick={() => void handleContinue()}
-							className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+							icon={<Sparkles className="w-3.5 h-3.5" strokeWidth={1.6} />}
+							iconPosition="right"
 						>
-							继续填答卷 →
-						</button>
+							继续填答卷
+						</Button>
 					</div>
 				</div>
 			) : null}

@@ -111,7 +111,7 @@ function InputDialogView({
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-[440px] rounded-[24px] border border-border bg-surface shadow-bai-pop overflow-hidden"
+				className="relative w-full max-w-[440px] rounded-[24px] border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden"
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
@@ -155,7 +155,7 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full resize-none rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-focus/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+								className="w-full resize-none rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
 							/>
 						) : (
 							<input
@@ -168,7 +168,7 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:bg-black/[0.04] dark:hover:bg-white/[0.04] focus:border-focus/50 focus:bg-transparent focus:ring-4 focus:ring-blue-500/10"
+								className="w-full rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
 							/>
 						)}
 

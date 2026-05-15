@@ -1,4 +1,11 @@
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Sparkles, X } from "lucide-react";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	ChevronDown,
+	ChevronUp,
+	Sparkles,
+	X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface CritiqueScores {
@@ -60,7 +67,7 @@ export function CritiqueScorecard({
 	}, [scores]);
 
 	return (
-		<div className="flex flex-col gap-3 rounded-2xl border border-border bg-bg-surface p-4 shadow-lg">
+		<div className="flex flex-col gap-3 rounded-2xl border border-cream-300 bg-cream-50 p-4 shadow-bai-card dark:border-cream-500/60 dark:bg-cream-900">
 			<header className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<Sparkles className="w-4 h-4 text-primary" strokeWidth={1.5} />
@@ -103,14 +110,20 @@ export function CritiqueScorecard({
 						<div
 							className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${
 								passed
-									? "border-primary/40 bg-primary/5 text-text-primary"
+									? "border-cream-400 bg-cream-100/70 text-text-primary dark:border-cream-500 dark:bg-cream-800/50"
 									: "border-amber-400/50 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200"
 							}`}
 						>
 							{passed ? (
-								<CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
+								<CheckCircle2
+									className="w-3.5 h-3.5 mt-0.5 shrink-0"
+									strokeWidth={1.5}
+								/>
 							) : (
-								<AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
+								<AlertTriangle
+									className="w-3.5 h-3.5 mt-0.5 shrink-0"
+									strokeWidth={1.5}
+								/>
 							)}
 							<div className="flex-1 min-w-0 leading-relaxed">
 								{passed ? (
@@ -119,7 +132,11 @@ export function CritiqueScorecard({
 									<>
 										<div>
 											未通过门控
-											{lowestDim ? <>，最弱：<span className="font-mono">{lowestDim}</span></> : null}
+											{lowestDim ? (
+												<>
+													，最弱：<span className="font-mono">{lowestDim}</span>
+												</>
+											) : null}
 										</div>
 										{regenerateReason ? (
 											<div className="text-[11px] mt-0.5 opacity-90">
@@ -182,7 +199,10 @@ export function CritiqueScorecard({
 							{DIM.map((dim) => {
 								const score = scores[dim.key];
 								return (
-									<div key={dim.key} className="flex items-center gap-2 text-xs">
+									<div
+										key={dim.key}
+										className="flex items-center gap-2 text-xs"
+									>
 										<span className="w-20 shrink-0 text-text-muted">
 											{dim.label}
 										</span>

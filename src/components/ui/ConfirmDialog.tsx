@@ -95,7 +95,7 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative w-full max-w-[440px] rounded-[24px] border border-border bg-surface shadow-bai-pop overflow-hidden",
+					"relative w-full max-w-[440px] rounded-[24px] border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}

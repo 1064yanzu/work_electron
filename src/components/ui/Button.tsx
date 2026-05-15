@@ -8,7 +8,14 @@ import { cn } from "../../lib/utils";
 
 export interface ButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "primary" | "secondary" | "ghost" | "danger" | "outline" | "peach";
+	variant?:
+		| "primary"
+		| "secondary"
+		| "ghost"
+		| "danger"
+		| "outline"
+		| "peach"
+		| "action";
 	size?: "sm" | "md" | "lg";
 	/** 形状：pill 全胶囊（B.AI 主推），rounded 大圆角（兼容旧调用） */
 	shape?: "pill" | "rounded";
@@ -61,6 +68,16 @@ const variantStyles = {
 		hover:bg-[#F2C4A8]
 		border border-transparent
 		dark:bg-[rgba(248,220,203,0.18)] dark:text-[#F8DCCB]
+	`,
+	// 赤陶橙强行动 CTA — 仅用于「创建 / 确认 / 继续 / 提交」类关键动作
+	action: `
+		bg-[#D96C46] text-white
+		hover:bg-[#C25A38]
+		active:bg-[#A8482B]
+		border border-transparent
+		shadow-bai-card
+		dark:bg-[#D96C46] dark:text-white
+		dark:hover:bg-[#C25A38]
 	`,
 };
 
@@ -138,7 +155,7 @@ export function Button({
  */
 export interface IconButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "primary" | "secondary" | "ghost" | "danger" | "peach";
+	variant?: "primary" | "secondary" | "ghost" | "danger" | "peach" | "action";
 	size?: "sm" | "md" | "lg";
 	loading?: boolean;
 }

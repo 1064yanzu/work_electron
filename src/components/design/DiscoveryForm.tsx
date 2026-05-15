@@ -1,9 +1,12 @@
+import { ArrowRight } from "lucide-react";
 import { useEffect } from "react";
 import {
 	designGetDiscoveryForm,
 	designListDirections,
 } from "../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../lib/stores";
+import { Button } from "../ui/Button";
+import { RadioCardGroup } from "../ui/RadioCard";
 import { BrandExtractInput } from "./BrandExtractInput";
 
 /**
@@ -51,12 +54,14 @@ export function DiscoveryForm({ onCancel, onSubmit }: DiscoveryFormProps) {
 		.filter((f) => f.required)
 		.every((f) => {
 			const v = draft.answers[f.id];
-			return v != null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
+			return (
+				v != null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")
+			);
 		});
 
 	return (
 		<div className="h-full w-full overflow-y-auto bg-background">
-			<div className="max-w-2xl mx-auto px-8 py-12 flex flex-col gap-6">
+			<div className="max-w-3xl mx-auto px-8 py-12 flex flex-col gap-7">
 				<header className="flex flex-col gap-2">
 					<span className="text-xs uppercase tracking-wider text-text-muted">
 						Discovery · 第 1 轮
@@ -65,7 +70,8 @@ export function DiscoveryForm({ onCancel, onSubmit }: DiscoveryFormProps) {
 						告诉我一些细节
 					</h2>
 					<p className="text-sm text-text-muted leading-relaxed">
-						这些信息会拼装到 Agent 的 system prompt，决定生成方向。可以粗一点，每个字段都不阻塞。
+						这些信息会拼装到 Agent 的 system
+						prompt，决定生成方向。可以粗一点，每个字段都不阻塞。
 					</p>
 				</header>
 
@@ -82,7 +88,7 @@ export function DiscoveryForm({ onCancel, onSubmit }: DiscoveryFormProps) {
 											designStore.setAnswerField(field.id, e.target.value)
 										}
 										rows={4}
-										className="w-full px-3 py-2 rounded-lg border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 resize-vertical leading-relaxed"
+										className={discoveryTextareaClass}
 									/>
 								</FieldShell>
 							);
@@ -97,63 +103,53 @@ export function DiscoveryForm({ onCancel, onSubmit }: DiscoveryFormProps) {
 										onChange={(e) =>
 											designStore.setAnswerField(field.id, e.target.value)
 										}
-										className="w-full px-3 py-2 rounded-lg border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+										className={discoveryInputClass}
 									/>
 								</FieldShell>
 							);
 						}
 						if (field.type === "select" || field.type === "multiselect") {
 							const options = field.options || [];
-							const current = field.type === "multiselect"
-								? Array.isArray(value)
-									? (value as string[])
-									: []
-								: typeof value === "string"
-									? value
-									: (field.default_value as string | undefined);
+							const current =
+								field.type === "multiselect"
+									? Array.isArray(value)
+										? (value as string[])
+										: []
+									: typeof value === "string"
+										? value
+										: (field.default_value as string | undefined);
 							return (
 								<FieldShell key={field.id} field={field}>
-									<div className="flex flex-col gap-1.5">
-										{options.map((opt) => {
-											const isSelected = field.type === "multiselect"
-												? (current as string[]).includes(opt.value)
-												: current === opt.value;
-											return (
-												<button
-													type="button"
-													key={opt.value}
-													onClick={() => {
-														if (field.type === "multiselect") {
-															const arr = Array.isArray(current)
-																? (current as string[])
-																: [];
-															const next = isSelected
-																? arr.filter((v) => v !== opt.value)
-																: [...arr, opt.value];
-															designStore.setAnswerField(field.id, next);
-														} else {
-															designStore.setAnswerField(field.id, opt.value);
-														}
-													}}
-													className={[
-														"w-full text-left px-3 py-2.5 rounded-lg border transition-colors",
-														isSelected
-															? "border-primary bg-primary/5 text-text-primary"
-															: "border-border bg-bg-surface text-text-muted hover:border-primary/30",
-													].join(" ")}
-												>
-													<div className="text-sm font-medium text-text-primary">
-														{opt.label}
-													</div>
-													{opt.description ? (
-														<div className="text-xs text-text-muted mt-0.5 leading-relaxed">
-															{opt.description}
-														</div>
-													) : null}
-												</button>
-											);
-										})}
-									</div>
+									{field.type === "multiselect" ? (
+										<RadioCardGroup
+											multi
+											value={current as string[]}
+											onChange={(next) =>
+												designStore.setAnswerField(field.id, next)
+											}
+											items={options}
+											size="md"
+											layout="vertical"
+											columns={2}
+											accent="primary"
+											aria-label={field.label}
+											className="max-sm:grid-cols-1"
+										/>
+									) : (
+										<RadioCardGroup
+											value={(current as string | undefined) ?? ""}
+											onChange={(next) =>
+												designStore.setAnswerField(field.id, next)
+											}
+											items={options}
+											size="md"
+											layout="vertical"
+											columns={2}
+											accent="primary"
+											aria-label={field.label}
+											className="max-sm:grid-cols-1"
+										/>
+									)}
 								</FieldShell>
 							);
 						}
@@ -165,27 +161,31 @@ export function DiscoveryForm({ onCancel, onSubmit }: DiscoveryFormProps) {
 					) : null}
 				</div>
 
-				<footer className="flex items-center justify-end gap-3 pt-2 sticky bottom-0 bg-background py-4">
-					<button
-						type="button"
-						onClick={onCancel}
-						className="px-4 py-2 text-sm text-text-muted hover:text-text-primary rounded-lg hover:bg-warm-200/60 transition-colors"
-					>
+				<footer className="flex items-center justify-end gap-3 pt-2 sticky bottom-0 bg-background/95 backdrop-blur py-4">
+					<Button type="button" variant="ghost" size="md" onClick={onCancel}>
 						取消
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="action"
+						size="md"
 						disabled={!isValid}
 						onClick={onSubmit}
-						className="px-5 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						icon={<ArrowRight className="w-4 h-4" strokeWidth={1.8} />}
+						iconPosition="right"
 					>
-						{draft.answers.brand === "brand-spec" ? "选择品牌系统 →" : "选方向 →"}
-					</button>
+						{draft.answers.brand === "brand-spec" ? "选择品牌系统" : "选方向"}
+					</Button>
 				</footer>
 			</div>
 		</div>
 	);
 }
+
+const discoveryInputClass =
+	"w-full px-3.5 py-2.5 rounded-2xl border border-cream-300 bg-cream-100/60 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] dark:border-cream-500/60 dark:bg-cream-800/40";
+
+const discoveryTextareaClass = `${discoveryInputClass} resize-vertical leading-relaxed`;
 
 function FieldShell({
 	field,
@@ -201,7 +201,9 @@ function FieldShell({
 				{field.required ? <span className="text-primary">*</span> : null}
 			</label>
 			{field.help ? (
-				<div className="text-xs text-text-muted leading-relaxed">{field.help}</div>
+				<div className="text-xs text-text-muted leading-relaxed">
+					{field.help}
+				</div>
 			) : null}
 			{children}
 		</div>

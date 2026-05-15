@@ -8,6 +8,7 @@
 import { CheckCircle2, Globe, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { designExtractBrand } from "../../lib/api/design";
+import { Button } from "../ui/Button";
 import { toast } from "../ui/Toast";
 
 interface BrandExtractInputProps {
@@ -31,7 +32,9 @@ export function BrandExtractInput({ sessionId }: BrandExtractInputProps) {
 	const handleExtract = async () => {
 		const trimmed = url.trim();
 		if (!trimmed) return;
-		const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+		const normalized = /^https?:\/\//i.test(trimmed)
+			? trimmed
+			: `https://${trimmed}`;
 		try {
 			setRunning(true);
 			const res = await designExtractBrand({
@@ -43,14 +46,16 @@ export function BrandExtractInput({ sessionId }: BrandExtractInputProps) {
 				`已提取 ${res.colors.length} 个颜色 · ${res.fonts.length} 个字体`,
 			);
 		} catch (err) {
-			toast.error(`提取失败：${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`提取失败：${err instanceof Error ? err.message : String(err)}`,
+			);
 		} finally {
 			setRunning(false);
 		}
 	};
 
 	return (
-		<div className="flex flex-col gap-2.5 p-3 rounded-lg border border-border bg-bg-surface/50">
+		<div className="flex flex-col gap-2.5 p-3 rounded-2xl border border-cream-300 bg-cream-50/70 shadow-bai-card dark:border-cream-500/60 dark:bg-cream-900/70">
 			<div className="flex items-center gap-1.5">
 				<Globe className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
 				<span className="text-xs font-medium text-text-primary">
@@ -74,21 +79,25 @@ export function BrandExtractInput({ sessionId }: BrandExtractInputProps) {
 							void handleExtract();
 						}
 					}}
-					className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-background text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+					className="flex-1 px-3 py-2 rounded-xl border border-cream-300 bg-cream-100/60 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] dark:border-cream-500/60 dark:bg-cream-800/40"
 				/>
-				<button
+				<Button
 					type="button"
+					variant="action"
+					size="sm"
+					shape="rounded"
 					onClick={() => void handleExtract()}
 					disabled={running || !url.trim()}
-					className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+					icon={
+						running ? (
+							<Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />
+						) : (
+							<Sparkles className="w-3 h-3" strokeWidth={1.5} />
+						)
+					}
 				>
-					{running ? (
-						<Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />
-					) : (
-						<Sparkles className="w-3 h-3" strokeWidth={1.5} />
-					)}
 					{running ? "抓取中…" : "提取"}
-				</button>
+				</Button>
 			</div>
 
 			{result ? (
@@ -114,7 +123,9 @@ export function BrandExtractInput({ sessionId }: BrandExtractInputProps) {
 										className="w-3 h-3 rounded-sm border border-border"
 										style={{ background: c }}
 									/>
-									<span className="text-[10px] font-mono text-text-muted">{c}</span>
+									<span className="text-[10px] font-mono text-text-muted">
+										{c}
+									</span>
 								</span>
 							))}
 						</div>

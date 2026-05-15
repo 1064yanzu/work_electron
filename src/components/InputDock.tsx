@@ -23,7 +23,9 @@ import {
 import { workspaceStore } from "../lib/workspaceStore";
 import { type Source, SourceType } from "../types";
 import { Modal } from "./ui/Modal";
+import { Tabs } from "./ui/Tabs";
 import { toast } from "./ui/Toast";
+import { Button } from "./ui/Button";
 
 interface InputDockProps {
 	onOpenSettings: () => void;
@@ -259,41 +261,29 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 			>
 				<div className="space-y-6">
 					{/* Tabs */}
-					<div className="flex p-1 bg-cream-100 dark:bg-cream-800 rounded-full border border-cream-300 dark:border-cream-500">
-						<button
-							onClick={() => setActiveTab("web")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
-								activeTab === "web"
-									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
-									: "text-text-secondary hover:text-text-primary"
-							}`}
-						>
-							<Link className="w-4 h-4" strokeWidth={1.5} />
-							网页
-						</button>
-						<button
-							onClick={() => setActiveTab("text")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
-								activeTab === "text"
-									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
-									: "text-text-secondary hover:text-text-primary"
-							}`}
-						>
-							<AlignLeft className="w-4 h-4" strokeWidth={1.5} />
-							文本
-						</button>
-						<button
-							onClick={() => setActiveTab("file")}
-							className={`flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-medium rounded-full transition-all ${
-								activeTab === "file"
-									? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card"
-									: "text-text-secondary hover:text-text-primary"
-							}`}
-						>
-							<Upload className="w-4 h-4" strokeWidth={1.5} />
-							文件
-						</button>
-					</div>
+					<Tabs
+						value={activeTab}
+						onChange={setActiveTab}
+						fullWidth
+						items={[
+							{
+								value: "web",
+								label: "网页",
+								icon: <Link className="w-4 h-4" strokeWidth={1.5} />,
+							},
+							{
+								value: "text",
+								label: "文本",
+								icon: <AlignLeft className="w-4 h-4" strokeWidth={1.5} />,
+							},
+							{
+								value: "file",
+								label: "文件",
+								icon: <Upload className="w-4 h-4" strokeWidth={1.5} />,
+							},
+						]}
+						aria-label="新增来源类型"
+					/>
 
 					{/* Fields */}
 					<div className="space-y-4">
@@ -410,12 +400,14 @@ export default function InputDock({ onOpenSettings }: InputDockProps) {
 
 					{/* Footer */}
 					<div className="flex justify-end pt-2">
-						<button
+						<Button
+							variant="action"
+							size="md"
+							icon={<Plus className="w-4 h-4" strokeWidth={2} />}
 							onClick={handleCreateSource}
-							className="px-5 py-2 bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 rounded-full hover:bg-cream-800 dark:hover:bg-cream-100 transition-colors text-[13px] font-medium"
 						>
 							导入来源
-						</button>
+						</Button>
 					</div>
 				</div>
 			</Modal>

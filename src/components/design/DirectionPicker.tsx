@@ -1,5 +1,6 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { designStore, useDesignStoreSelector } from "../../lib/stores";
+import { Button } from "../ui/Button";
 
 /**
  * 5 个内置方向的卡片网格。OKLch swatches + display font 预览 + mood + posture 摘要。
@@ -39,14 +40,17 @@ export function DirectionPicker({ onBack, onConfirm }: DirectionPickerProps) {
 							</h2>
 						</div>
 					</div>
-					<button
+					<Button
 						type="button"
+						variant="action"
+						size="md"
 						disabled={!selected}
 						onClick={onConfirm}
-						className="px-5 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						icon={<ArrowRight className="w-4 h-4" strokeWidth={1.8} />}
+						iconPosition="right"
 					>
-						开始生成 →
-					</button>
+						开始生成
+					</Button>
 				</header>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -60,8 +64,8 @@ export function DirectionPicker({ onBack, onConfirm }: DirectionPickerProps) {
 								className={[
 									"flex flex-col text-left rounded-2xl border-2 transition-all overflow-hidden",
 									isSelected
-										? "border-primary ring-2 ring-primary/15"
-										: "border-border hover:border-primary/40",
+										? "border-text-primary bg-cream-100 shadow-bai-card dark:bg-cream-800"
+										: "border-cream-300 bg-cream-50 hover:border-cream-400 hover:bg-cream-100/60 dark:border-cream-500/60 dark:bg-cream-900 dark:hover:bg-cream-800/40",
 								].join(" ")}
 							>
 								<div
@@ -69,7 +73,8 @@ export function DirectionPicker({ onBack, onConfirm }: DirectionPickerProps) {
 									style={{
 										backgroundColor: d.palette.bg,
 										color: d.palette.fg,
-										fontFamily: d.display_font.split("/")[0]?.trim() ||
+										fontFamily:
+											d.display_font.split("/")[0]?.trim() ||
 											"system-ui, sans-serif",
 									}}
 								>
@@ -95,7 +100,7 @@ export function DirectionPicker({ onBack, onConfirm }: DirectionPickerProps) {
 									/>
 								</div>
 
-								<div className="p-4 flex flex-col gap-2 bg-bg-surface">
+								<div className="p-4 flex flex-col gap-2 bg-cream-50 dark:bg-cream-900">
 									<div className="flex items-center justify-between gap-2">
 										<span className="text-sm font-semibold text-text-primary">
 											{d.label}

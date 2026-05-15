@@ -351,15 +351,15 @@ function SelectComponent(
 				className={`
 					group relative w-full flex items-center justify-between gap-2
 					${variantStyles.trigger}
-					bg-surface
-					border border-border/80
+					bg-cream-50 dark:bg-cream-900
+					border border-cream-300 dark:border-cream-500
 					rounded-xl
 					text-text-primary font-medium
 					cursor-pointer
 					shadow-[0_1px_2px_rgba(0,0,0,0.03)]
 					text-left
 
-					hover:bg-warm-50/80
+					hover:bg-cream-100 dark:hover:bg-cream-800
 					hover:border-cream-400 dark:hover:border-cream-500
 					hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]
 
@@ -372,7 +372,7 @@ function SelectComponent(
 					disabled:cursor-not-allowed
 					disabled:bg-warm-200 dark:disabled:bg-dark-surface
 					disabled:hover:bg-warm-200 dark:disabled:hover:bg-dark-surface
-					disabled:hover:border-border/80 dark:disabled:hover:border-dark-border
+					disabled:hover:border-cream-300 dark:disabled:hover:border-dark-border
 					disabled:shadow-none
 
 					transition-all duration-200 ease-out
@@ -440,10 +440,10 @@ function SelectComponent(
 											${opt.disabled ? "opacity-40 cursor-not-allowed" : ""}
 											${
 												isSelected
-													? "bg-warm-200 text-text-primary font-medium"
+													? "bg-cream-200 dark:bg-cream-800 text-text-primary font-medium"
 													: isActive
-														? "bg-warm-50/70 text-text-primary"
-														: "text-text-secondary hover:bg-warm-50/50"
+														? "bg-cream-100 dark:bg-cream-800/60 text-text-primary"
+														: "text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800/40"
 											}
 										`}
 									>

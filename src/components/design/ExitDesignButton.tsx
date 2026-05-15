@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { designFinishToThread } from "../../lib/api/design";
 import { layoutStore, workspaceStore } from "../../lib/stores";
+import { Button } from "../ui/Button";
 import { toast } from "../ui/Toast";
 import type { DesignSession } from "../../../electron/shared/types";
 
@@ -48,18 +49,23 @@ export function ExitDesignButton({
 			toast.success(`设计稿已落到「${threadTitle || "线程"}/designs/」`);
 		} catch (err) {
 			console.error("[ExitDesignButton] finish failed", err);
-			toast.error(`完成失败: ${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`完成失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		} finally {
 			setRunning(false);
 		}
 	};
 
 	return (
-		<button
+		<Button
 			type="button"
+			variant="action"
+			size="sm"
 			disabled={running || !threadPath}
 			onClick={() => void handleClick()}
-			className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			icon={<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />}
+			iconPosition="right"
 			title={
 				threadPath
 					? "把设计稿安置到当前线程并切回编辑器"
@@ -67,7 +73,6 @@ export function ExitDesignButton({
 			}
 		>
 			{running ? "完成中..." : "完成 → 写代码"}
-			<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
-		</button>
+		</Button>
 	);
 }

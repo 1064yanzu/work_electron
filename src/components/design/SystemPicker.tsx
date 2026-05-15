@@ -1,7 +1,9 @@
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { designListSystems } from "../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../lib/stores";
+import { Button } from "../ui/Button";
+import { Tabs } from "../ui/Tabs";
 
 interface DesignSystemItem {
 	id: string;
@@ -102,14 +104,17 @@ export function SystemPicker({ onBack, onConfirm }: SystemPickerProps) {
 							</h2>
 						</div>
 					</div>
-					<button
+					<Button
 						type="button"
+						variant="action"
+						size="md"
 						disabled={!selected}
 						onClick={onConfirm}
-						className="px-5 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						icon={<ArrowRight className="w-4 h-4" strokeWidth={1.8} />}
+						iconPosition="right"
 					>
-						开始生成 →
-					</button>
+						开始生成
+					</Button>
 				</header>
 
 				<div className="mb-5 relative">
@@ -122,32 +127,22 @@ export function SystemPicker({ onBack, onConfirm }: SystemPickerProps) {
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder="搜索 Linear / Vercel / Claude…"
-						className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+						className="w-full pl-9 pr-3 py-2.5 rounded-2xl border border-cream-300 bg-cream-100/60 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] dark:border-cream-500/60 dark:bg-cream-800/40"
 					/>
 				</div>
 
-				<div className="mb-4 flex items-center gap-2 text-xs">
-					{(Object.keys(TAB_LABEL) as GroupTab[]).map((t) => {
-						const active = tab === t;
-						const c = counts[t];
-						return (
-							<button
-								key={t}
-								type="button"
-								onClick={() => setTab(t)}
-								className={[
-									"px-3 py-1.5 rounded-full border transition-colors",
-									active
-										? "bg-primary text-white border-primary"
-										: "border-border text-text-muted hover:text-text-primary hover:bg-warm-200/60",
-								].join(" ")}
-							>
-								{TAB_LABEL[t]}
-								<span className="ml-1.5 opacity-70">{c}</span>
-							</button>
-						);
-					})}
-				</div>
+				<Tabs
+					value={tab}
+					onChange={setTab}
+					variant="segmented"
+					size="sm"
+					aria-label="系统分组"
+					className="mb-4"
+					items={(Object.keys(TAB_LABEL) as GroupTab[]).map((t) => ({
+						value: t,
+						label: `${TAB_LABEL[t]} ${counts[t]}`,
+					}))}
+				/>
 
 				{loading ? (
 					<div className="text-sm text-text-muted">加载中…</div>
@@ -167,22 +162,23 @@ export function SystemPicker({ onBack, onConfirm }: SystemPickerProps) {
 										designStore.patchDraftAnswers({ system_id: s.id })
 									}
 									className={[
-										"flex flex-col text-left rounded-2xl border-2 transition-all overflow-hidden bg-bg-surface",
+										"flex flex-col text-left rounded-2xl border-2 transition-all overflow-hidden",
 										isSelected
-											? "border-primary ring-2 ring-primary/15"
-											: "border-border hover:border-primary/40",
+											? "border-text-primary bg-cream-100 shadow-bai-card dark:bg-cream-800"
+											: "border-cream-300 bg-cream-50 hover:border-cream-400 hover:bg-cream-100/60 dark:border-cream-500/60 dark:bg-cream-900 dark:hover:bg-cream-800/40",
 									].join(" ")}
 								>
 									<div className="flex h-3">
-										{(s.swatches.length ? s.swatches : ["#ccc", "#999", "#666", "#333"]).map(
-											(c, i) => (
-												<div
-													key={`${s.id}-${i}`}
-													className="flex-1"
-													style={{ backgroundColor: c }}
-												/>
-											),
-										)}
+										{(s.swatches.length
+											? s.swatches
+											: ["#ccc", "#999", "#666", "#333"]
+										).map((c, i) => (
+											<div
+												key={`${s.id}-${i}`}
+												className="flex-1"
+												style={{ backgroundColor: c }}
+											/>
+										))}
 									</div>
 									<div className="p-4 flex flex-col gap-1.5">
 										<div className="flex items-center justify-between">
