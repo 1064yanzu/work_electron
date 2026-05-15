@@ -3,6 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.ipo.workbench",
   "asar": true,
+  "npmRebuild": false,
   "productName": "IPO Workbench",
   "electronLanguages": [
     "zh-CN",
@@ -58,10 +59,6 @@
       {
         "target": "dmg",
         "arch": ["x64", "arm64"]
-      },
-      {
-        "target": "zip",
-        "arch": ["x64", "arm64"]
       }
     ],
     "artifactName": "${productName}-${version}-${arch}-Mac.${ext}",
@@ -81,10 +78,6 @@
       {
         "target": "nsis",
         "arch": ["x64"]
-      },
-      {
-        "target": "portable",
-        "arch": ["x64"]
       }
     ],
     "artifactName": "${productName}-${version}-${arch}-Windows.${ext}",
@@ -101,9 +94,6 @@
     "createStartMenuShortcut": true,
     "deleteAppDataOnUninstall": false,
     "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
-  },
-  "portable": {
-    "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
   },
   "publish": {
     "provider": "github",

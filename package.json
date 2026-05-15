@@ -1,7 +1,7 @@
 {
 	"name": "ipo-workbench",
 	"private": true,
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"type": "module",
 	"scripts": {
 		"predev": "node scripts/copy-pdfjs-assets.mjs",
@@ -11,7 +11,7 @@
 		"verify:claude-native": "node scripts/verify-claude-native-binaries.mjs",
 		"build": "npm run prepare:build && tsc && vite build && electron-builder",
 		"build:mac": "npm run prepare:build && tsc && vite build && electron-builder --mac",
-		"build:win": "npm run prepare:build && npm run verify:claude-native -- --targets=win32-x64 && tsc && vite build && electron-builder --win",
+		"build:win": "npm run prepare:build && npm run verify:claude-native -- --targets=win32-x64 && tsc && vite build && electron-builder --win nsis",
 		"build:all": "npm run prepare:build && tsc && vite build && electron-builder --mac --win",
 		"lint": "biome check src electron vite.config.ts package.json tsconfig*.json",
 		"format": "biome format src electron vite.config.ts package.json tsconfig*.json --write",
