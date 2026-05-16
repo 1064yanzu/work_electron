@@ -1,10 +1,6 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-	designListSessions,
-	designListSystems,
-	designStartSession,
-} from "../../../lib/api/design";
+import { designListSystems } from "../../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../../lib/stores";
 import { toast } from "../../ui/Toast";
 import { SystemThumbnail } from "./SystemThumbnail";
@@ -75,34 +71,16 @@ export function SystemsLibraryTab() {
 		return { all: systems.length, product, style };
 	}, [systems]);
 
-	const handlePickSystem = async (system: SystemItem) => {
-		try {
-			designStore.setStarting(true);
-			const result = await designStartSession({ title: `基于 ${system.title}` });
-			designStore.setDiscoveryForm(result.discovery_form);
-			designStore.setCurrentSession({
-				id: result.session_id,
-				title: `基于 ${system.title}`,
-				status: "draft",
-				work_dir: result.work_dir,
-				created_at: Date.now(),
-				updated_at: Date.now(),
-			});
-			designStore.resetDraft();
-			designStore.patchDraftAnswers({
-				system_id: system.id,
-				answers: { brand: "brand-spec" },
-			});
-			designStore.setStage("discovery");
-			const list = await designListSessions({ limit: 50 });
-			designStore.setSessionsList(list);
-		} catch (err) {
-			toast.error(
-				`新建失败: ${err instanceof Error ? err.message : String(err)}`,
-			);
-		} finally {
-			designStore.setStarting(false);
-		}
+	const handlePickSystem = (system: SystemItem) => {
+		// 预填 NewProjectPanel（左栏 420px 已常驻），不再 startSession + 跳 discovery
+		designStore.setNewProjectSeed({
+			kind: "prototype",
+			systemId: system.id,
+			titleHint: `基于 ${system.title}`,
+		});
+		toast.success(
+			`已选定「${system.title}」，请在左栏填写简介后点击「创建并生成」`,
+		);
 	};
 
 	return (
@@ -165,7 +143,7 @@ export function SystemsLibraryTab() {
 							key={s.id}
 							type="button"
 							disabled={isStarting}
-							onClick={() => void handlePickSystem(s)}
+							onClick={() => handlePickSystem(s)}
 							className="group text-left flex flex-col rounded-2xl border border-border bg-bg-surface overflow-hidden hover:border-primary/40 hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
 						>
 							<div className="aspect-[16/10] w-full border-b border-border/60">

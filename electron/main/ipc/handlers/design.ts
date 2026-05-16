@@ -46,6 +46,11 @@ import {
 	getSkillResourceMap,
 	listTemplateSummaries,
 	getTemplateDetail,
+	listMediaTemplateSummaries,
+	getMediaTemplate,
+	saveMediaTemplate,
+	importMediaTemplateFromFile,
+	deleteUserMediaTemplate,
 	runCritique,
 	scanDesignSystems,
 	getDesignLibraryRoot,
@@ -943,6 +948,130 @@ export function createDesignHandlers(db: DbContext) {
 		return await getTemplateDetail(input.template_id);
 	};
 
+	const list_media_templates: Handler<"design_list_media_templates"> = async (_event, input) => {
+		const list = await listMediaTemplateSummaries(input);
+		return list.map((t) => ({
+			id: t.id,
+			source: t.source,
+			kind: t.kind,
+			title: t.title,
+			summary: t.summary,
+			category: t.category,
+			tags: t.tags,
+			model: t.model,
+			aspect: t.aspect,
+			duration_sec: t.duration_sec,
+			preview_image_url: t.preview_image_url,
+			preview_video_url: t.preview_video_url,
+			created_at: t.created_at,
+			updated_at: t.updated_at,
+		}));
+	};
+
+	const get_media_template: Handler<"design_get_media_template"> = async (_event, input) => {
+		const detail = await getMediaTemplate(input.id, input.source);
+		if (!detail) return null;
+		return {
+			id: detail.id,
+			source: detail.source,
+			kind: detail.kind,
+			title: detail.title,
+			summary: detail.summary,
+			category: detail.category,
+			tags: detail.tags,
+			model: detail.model,
+			aspect: detail.aspect,
+			duration_sec: detail.duration_sec,
+			preview_image_url: detail.preview_image_url,
+			preview_video_url: detail.preview_video_url,
+			prompt: detail.prompt,
+			source_path: detail.source_path,
+			created_at: detail.created_at,
+			updated_at: detail.updated_at,
+		};
+	};
+
+	const save_media_template: Handler<"design_save_media_template"> = async (_event, input) => {
+		const saved = await saveMediaTemplate(input);
+		return {
+			id: saved.id,
+			source: "user",
+			kind: saved.kind,
+			source_path: saved.source_path,
+		};
+	};
+
+	const import_media_template: Handler<"design_import_media_template"> = async (_event, input) => {
+		const saved = await importMediaTemplateFromFile(input.file_path);
+		return {
+			id: saved.id,
+			source: "user",
+			kind: saved.kind,
+			source_path: saved.source_path,
+		};
+	};
+
+	const pick_media_template_file: Handler<"design_pick_media_template_file"> = async (event) => {
+		const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+		const result = await dialog.showOpenDialog(
+			win ?? new BrowserWindow({ show: false }),
+			{
+				title: "选择媒体模板 JSON",
+				properties: ["openFile"],
+				filters: [{ name: "JSON 模板", extensions: ["json"] }],
+			},
+		);
+		if (result.canceled || !result.filePaths?.length) {
+			return { file_path: null };
+		}
+		return { file_path: result.filePaths[0] };
+	};
+
+	const delete_media_template: Handler<"design_delete_media_template"> = async (_event, input) => {
+		const success = await deleteUserMediaTemplate(input.id, input.kind);
+		return { success };
+	};
+
+	const list_user_design_templates: Handler<"design_list_user_design_templates"> = async (_event, input) => {
+		// 「从模板」tab 数据源：从历史 design_sessions 抽取用户沉淀的成功设计。
+		// 当前实现：列出已完成状态的 sessions，标题为名，metadata.kind 透出。
+		try {
+			const r = await db.client.execute({
+				sql:
+					"SELECT id, title, status, work_dir, metadata, updated_at FROM design_sessions " +
+					"WHERE status IN ('finalized', 'succeeded', 'done') " +
+					"ORDER BY updated_at DESC LIMIT 200",
+				args: [],
+			});
+			const q = input?.query?.trim().toLowerCase();
+			const items = r.rows
+				.map((row) => {
+					let kind: string | undefined;
+					try {
+						const m = JSON.parse(String(row.metadata ?? "{}"));
+						kind = typeof m?.kind === "string" ? m.kind : undefined;
+					} catch {
+						// ignore
+					}
+					return {
+						id: String(row.id),
+						source: "user" as const,
+						title: String(row.title || "未命名设计"),
+						summary: "",
+						thumbnail_url: undefined,
+						kind,
+						updated_at: Number(row.updated_at ?? 0),
+					};
+				})
+				.filter((it) =>
+					q ? it.title.toLowerCase().includes(q) : true,
+				);
+			return items;
+		} catch {
+			return [];
+		}
+	};
+
 	return {
 		design_list_directions: list_directions,
 		design_list_sessions: list_sessions,
@@ -974,5 +1103,12 @@ export function createDesignHandlers(db: DbContext) {
 		design_read_work_dir_file: read_work_dir_file,
 		design_list_templates: list_templates,
 		design_get_template_detail: get_template_detail,
+		design_list_media_templates: list_media_templates,
+		design_get_media_template: get_media_template,
+		design_save_media_template: save_media_template,
+		design_import_media_template: import_media_template,
+		design_pick_media_template_file: pick_media_template_file,
+		design_delete_media_template: delete_media_template,
+		design_list_user_design_templates: list_user_design_templates,
 	};
 }

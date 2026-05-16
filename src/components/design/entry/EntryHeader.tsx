@@ -12,8 +12,9 @@ export function EntryHeader() {
 				</h1>
 			</div>
 			<p className="text-sm text-text-muted leading-relaxed max-w-2xl">
-				从一句简介到 hi-fi HTML 设计稿。选一个内置设计系统、挑一个 Skill，或者直接新建空白设计。
-				完成后会自动跑 5 维自检，并可一键导出到当前线程让 Copilot 接着写代码。
+				从一句简介到 hi-fi HTML 设计稿。选一个内置设计系统、挑一个
+				Skill，或者直接新建空白设计。 完成后会自动跑 5
+				维自检，并可一键导出到当前线程让 Copilot 接着写代码。
 			</p>
 		</header>
 	);

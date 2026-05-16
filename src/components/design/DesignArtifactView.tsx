@@ -58,7 +58,10 @@ interface DesignArtifactViewProps {
 
 type SidebarTab = "critique" | "tweaks" | "media" | "docs" | "files" | null;
 
-export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewProps) {
+export function DesignArtifactView({
+	onRegenerate,
+	runId,
+}: DesignArtifactViewProps) {
 	const session = useDesignStoreSelector((s) => s.currentSession);
 	const currentThreadPath = useWorkspaceStoreSelector(
 		(state) => state.currentThreadPath,
@@ -76,9 +79,10 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 	const finalizedRef = useRef<Set<string>>(new Set());
 	const critiqueRanRef = useRef<Set<string>>(new Set());
 
-	const docTarget = useMemo<
-		{ kind: "system" | "skill"; id: string } | null
-	>(() => {
+	const docTarget = useMemo<{
+		kind: "system" | "skill";
+		id: string;
+	} | null>(() => {
 		if (!session) return null;
 		if (session.system_id) {
 			return { kind: "system", id: session.system_id };
@@ -184,7 +188,9 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 			});
 			toast.success("已重新评分");
 		} catch (err) {
-			toast.error(`评分失败: ${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`评分失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		} finally {
 			setCritiqueRunning(false);
 		}
@@ -212,7 +218,9 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 		try {
 			await designRevealWorkDir(session.id);
 		} catch (err) {
-			toast.error(`打开目录失败: ${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`打开目录失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	};
 
@@ -231,9 +239,7 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 						<ModeBadge mode={session.mode ?? undefined} />
 					</div>
 					<div className="text-[11px] text-text-muted flex items-center gap-1.5">
-						{session.direction_id ? (
-							<span>{session.direction_id}</span>
-						) : null}
+						{session.direction_id ? <span>{session.direction_id}</span> : null}
 						{session.system_id ? (
 							<>
 								<span>·</span>
@@ -417,9 +423,7 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 									: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
 							}`}
 							title={
-								docTarget.kind === "system"
-									? "查看 DESIGN.md"
-									: "查看 SKILL.md"
+								docTarget.kind === "system" ? "查看 DESIGN.md" : "查看 SKILL.md"
 							}
 						>
 							<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -431,9 +435,7 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 						sessionId={session.id}
 						activePath={activeFile}
 						onOpenFile={(rel) => {
-							setOpenFiles((arr) =>
-								arr.includes(rel) ? arr : [...arr, rel],
-							);
+							setOpenFiles((arr) => (arr.includes(rel) ? arr : [...arr, rel]));
 							setActiveFile(rel);
 						}}
 						onClose={() => setSidebarTab(null)}
@@ -446,9 +448,7 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 						onClose={() => setSidebarTab(null)}
 					/>
 				) : null}
-				{sidebarTab &&
-				sidebarTab !== "files" &&
-				sidebarTab !== "docs" ? (
+				{sidebarTab && sidebarTab !== "files" && sidebarTab !== "docs" ? (
 					<aside className="w-72 shrink-0 border-l border-border bg-background overflow-y-auto">
 						{sidebarTab === "critique" ? (
 							session.critique_scores ? (
@@ -462,9 +462,7 @@ export function DesignArtifactView({ onRegenerate, runId }: DesignArtifactViewPr
 										fixes={session.critique_scores.fixes}
 										passed={session.critique_scores.passed}
 										lowestDim={session.critique_scores.lowest_dim}
-										regenerateReason={
-											session.critique_scores.regenerate_reason
-										}
+										regenerateReason={session.critique_scores.regenerate_reason}
 										onClose={() => setSidebarTab(null)}
 										onRegenerate={onRegenerate}
 									/>

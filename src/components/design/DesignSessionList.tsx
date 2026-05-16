@@ -1,11 +1,16 @@
-import { Palette, Plus, MoreHorizontal, Trash2, FolderOpen } from "lucide-react";
+import {
+	Palette,
+	Plus,
+	MoreHorizontal,
+	Trash2,
+	FolderOpen,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	designDeleteSession,
 	designGetSession,
 	designListSessions,
 	designRevealWorkDir,
-	designStartSession,
 	type DesignSession,
 } from "../../lib/api/design";
 import {
@@ -19,9 +24,9 @@ import { toast } from "../ui/Toast";
 /**
  * 左栏「设计」子视图。
  *
- * - 顶部：标题 + 新建按钮
+ * - 顶部：标题 + 新建按钮（切到 design 入口，让用户在 NewProjectPanel 填写）
  * - 列表：DesignSession[] 按 updated_at 倒序
- * - 点击：切到该会话；如果 status=done 直接进 preview，否则 discovery
+ * - 点击：切到该会话；已完成 → preview，未完成 → preview（让用户看工作目录）
  * - 右键：删除 / 在 Finder 打开
  */
 export function DesignSessionList() {
@@ -53,7 +58,8 @@ export function DesignSessionList() {
 		try {
 			const fresh = await designGetSession(session.id);
 			designStore.setCurrentSession(fresh);
-			designStore.setStage(fresh.status === "done" ? "preview" : "discovery");
+			// 已完成 → preview；未完成 → preview（不再回二次答卷，让用户在 Copilot 里继续）
+			designStore.setStage("preview");
 			layoutStore.setMainView("design");
 		} catch (err) {
 			toast.error(
@@ -62,24 +68,12 @@ export function DesignSessionList() {
 		}
 	};
 
-	const handleCreate = async () => {
-		try {
-			const result = await designStartSession({ title: "未命名设计" });
-			designStore.setDiscoveryForm(result.discovery_form);
-			designStore.setCurrentSession({
-				id: result.session_id,
-				title: "未命名设计",
-				status: "draft",
-				work_dir: result.work_dir,
-				created_at: Date.now(),
-				updated_at: Date.now(),
-			});
-			designStore.setStage("discovery");
-			layoutStore.setMainView("design");
-			await reload();
-		} catch (err) {
-			toast.error(`新建失败: ${err instanceof Error ? err.message : String(err)}`);
-		}
+	const handleCreate = () => {
+		// 不再直接 startSession；切到 design 入口，让用户在左栏 NewProjectPanel 填写
+		designStore.setCurrentSession(null);
+		designStore.setStage("empty");
+		layoutStore.setMainView("design");
+		layoutStore.setLeftSidebarView("design");
 	};
 
 	const handleDelete = async (session: DesignSession) => {
@@ -96,7 +90,9 @@ export function DesignSessionList() {
 			await reload();
 			toast.success("已删除");
 		} catch (err) {
-			toast.error(`删除失败: ${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`删除失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	};
 
@@ -104,7 +100,9 @@ export function DesignSessionList() {
 		try {
 			await designRevealWorkDir(session.id);
 		} catch (err) {
-			toast.error(`打开目录失败: ${err instanceof Error ? err.message : String(err)}`);
+			toast.error(
+				`打开目录失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	};
 
@@ -136,7 +134,7 @@ export function DesignSessionList() {
 				</div>
 				<button
 					type="button"
-					onClick={() => void handleCreate()}
+					onClick={() => handleCreate()}
 					className="p-1.5 text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded-lg transition-colors"
 					title="新建设计"
 				>
@@ -164,7 +162,11 @@ export function DesignSessionList() {
 										onClick={() => void handleOpen(s)}
 										onContextMenu={(e) => {
 											e.preventDefault();
-											setContextMenu({ x: e.clientX, y: e.clientY, session: s });
+											setContextMenu({
+												x: e.clientX,
+												y: e.clientY,
+												session: s,
+											});
 										}}
 										className={[
 											"w-full text-left px-3 py-2 rounded-lg transition-colors group flex flex-col gap-0.5",
@@ -182,7 +184,11 @@ export function DesignSessionList() {
 												strokeWidth={1.5}
 												onClick={(e) => {
 													e.stopPropagation();
-													setContextMenu({ x: e.clientX, y: e.clientY, session: s });
+													setContextMenu({
+														x: e.clientX,
+														y: e.clientY,
+														session: s,
+													});
 												}}
 											/>
 										</div>
@@ -195,9 +201,7 @@ export function DesignSessionList() {
 												</>
 											) : null}
 											<span>·</span>
-											<span>
-												{new Date(s.updated_at).toLocaleDateString()}
-											</span>
+											<span>{new Date(s.updated_at).toLocaleDateString()}</span>
 										</div>
 									</button>
 								</li>

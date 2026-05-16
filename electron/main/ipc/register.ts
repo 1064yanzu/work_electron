@@ -1460,6 +1460,34 @@ export function registerIpcHandlers({
 		"design_get_template_detail",
 		designHandlers.design_get_template_detail,
 	);
+	ipcMain.handle(
+		"design_list_media_templates",
+		designHandlers.design_list_media_templates,
+	);
+	ipcMain.handle(
+		"design_get_media_template",
+		designHandlers.design_get_media_template,
+	);
+	ipcMain.handle(
+		"design_save_media_template",
+		designHandlers.design_save_media_template,
+	);
+	ipcMain.handle(
+		"design_import_media_template",
+		designHandlers.design_import_media_template,
+	);
+	ipcMain.handle(
+		"design_pick_media_template_file",
+		designHandlers.design_pick_media_template_file,
+	);
+	ipcMain.handle(
+		"design_delete_media_template",
+		designHandlers.design_delete_media_template,
+	);
+	ipcMain.handle(
+		"design_list_user_design_templates",
+		designHandlers.design_list_user_design_templates,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

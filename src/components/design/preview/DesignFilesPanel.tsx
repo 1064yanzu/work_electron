@@ -28,7 +28,8 @@ function formatSize(n: number): string {
 
 function iconFor(name: string) {
 	if (/\.(png|jpe?g|gif|webp|svg|ico|bmp)$/i.test(name)) return FileText;
-	if (/\.(html?|css|m?js|tsx?|json|ya?ml|toml|md|txt)$/i.test(name)) return FileText;
+	if (/\.(html?|css|m?js|tsx?|json|ya?ml|toml|md|txt)$/i.test(name))
+		return FileText;
 	return File;
 }
 
@@ -124,9 +125,7 @@ export function DesignFilesPanel({
 						{error}
 					</div>
 				) : groups.length === 0 ? (
-					<div className="px-3 py-4 text-xs text-text-muted">
-						工作目录为空
-					</div>
+					<div className="px-3 py-4 text-xs text-text-muted">工作目录为空</div>
 				) : (
 					groups.map(({ dir, items }) => (
 						<div key={dir} className="mb-1.5">
@@ -149,10 +148,7 @@ export function DesignFilesPanel({
 												}`}
 												title={entry.relative}
 											>
-												<Icon
-													className="w-3 h-3 shrink-0"
-													strokeWidth={1.5}
-												/>
+												<Icon className="w-3 h-3 shrink-0" strokeWidth={1.5} />
 												<span className="flex-1 truncate">{entry.name}</span>
 												<span className="text-[10px] text-text-muted shrink-0">
 													{formatSize(entry.size)}

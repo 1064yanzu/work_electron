@@ -3510,6 +3510,115 @@ export type IPCSchema = {
 		output: { html: string; placeholders: string[] };
 	};
 
+	/** 列出媒体提示词模板（内置 + 用户保存/导入） */
+	design_list_media_templates: {
+		input: {
+			kind?: "image" | "video" | "audio";
+			source?: "builtin" | "user";
+			query?: string;
+		};
+		output: Array<{
+			id: string;
+			source: "builtin" | "user";
+			kind: "image" | "video" | "audio";
+			title: string;
+			summary: string;
+			category?: string;
+			tags: string[];
+			model?: string;
+			aspect?: string;
+			duration_sec?: number;
+			preview_image_url?: string;
+			preview_video_url?: string;
+			created_at?: number;
+			updated_at?: number;
+		}>;
+	};
+
+	/** 获取媒体模板详情（含完整 prompt） */
+	design_get_media_template: {
+		input: { id: string; source?: "builtin" | "user" };
+		output: {
+			id: string;
+			source: "builtin" | "user";
+			kind: "image" | "video" | "audio";
+			title: string;
+			summary: string;
+			category?: string;
+			tags: string[];
+			model?: string;
+			aspect?: string;
+			duration_sec?: number;
+			preview_image_url?: string;
+			preview_video_url?: string;
+			prompt: string;
+			source_path: string;
+			created_at?: number;
+			updated_at?: number;
+		} | null;
+	};
+
+	/** 保存（新建/覆盖）一个用户媒体模板；用于「保存为模板」 */
+	design_save_media_template: {
+		input: {
+			id?: string;
+			kind: "image" | "video" | "audio";
+			title: string;
+			summary?: string;
+			category?: string;
+			tags?: string[];
+			model?: string;
+			aspect?: string;
+			duration_sec?: number;
+			prompt: string;
+			preview_image_url?: string;
+			preview_video_url?: string;
+		};
+		output: {
+			id: string;
+			source: "user";
+			kind: "image" | "video" | "audio";
+			source_path: string;
+		};
+	};
+
+	/** 通过本地 JSON 文件导入用户媒体模板 */
+	design_import_media_template: {
+		input: { file_path: string };
+		output: {
+			id: string;
+			source: "user";
+			kind: "image" | "video" | "audio";
+			source_path: string;
+		};
+	};
+
+	/** 弹出原生文件选择对话框选 JSON 模板（返回单个绝对路径或 null） */
+	design_pick_media_template_file: {
+		input: Record<string, never>;
+		output: { file_path: string | null };
+	};
+
+	/** 删除用户媒体模板（内置不可删） */
+	design_delete_media_template: {
+		input: { id: string; kind: "image" | "video" | "audio" };
+		output: { success: boolean };
+	};
+
+	/** 列出用户沉淀的设计模板（项目沉淀 / 导入），供「从模板」tab 使用 */
+	design_list_user_design_templates: {
+		input: { query?: string };
+		output: Array<{
+			id: string;
+			source: "user";
+			title: string;
+			summary: string;
+			thumbnail_url?: string;
+			kind?: string;
+			updated_at?: number;
+		}>;
+	};
+
 	design_extract_brand: {
 		input: { session_id: string; url: string };
 		output: {

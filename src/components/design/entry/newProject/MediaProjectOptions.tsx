@@ -192,11 +192,12 @@ export function MediaProjectOptions({
 								onDurationChange(Math.max(1, Math.min(60, Math.round(n))));
 						}}
 						className={cn(
-							"w-full px-3 py-2 text-[13px]",
-							"bg-cream-50 dark:bg-cream-900",
-							"border border-cream-300 dark:border-cream-500",
-							"rounded-xl text-text-primary",
-							"focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40",
+							"w-full px-3 py-2.5 text-[13px] transition-all duration-200",
+							"bg-white/80 dark:bg-cream-900/50 backdrop-blur-sm",
+							"border border-cream-200 dark:border-cream-600/60",
+							"rounded-xl text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
+							"hover:border-cream-300 dark:hover:border-cream-500 hover:bg-white dark:hover:bg-cream-900",
+							"focus:outline-none focus:ring-4 focus:ring-[#D96C46]/10 focus:border-[#D96C46]/40 focus:bg-white dark:focus:bg-cream-900",
 						)}
 					/>
 				</div>

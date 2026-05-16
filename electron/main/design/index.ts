@@ -83,3 +83,16 @@ export {
 	getTemplateDetail,
 	type DesignTemplateSummary,
 } from "./templateRegistry";
+
+export {
+	listMediaTemplateSummaries,
+	getMediaTemplate,
+	saveMediaTemplate,
+	importMediaTemplateFromFile,
+	deleteUserMediaTemplate,
+	getUserMediaTemplatesRoot,
+	type DesignMediaTemplateSummary,
+	type DesignMediaTemplateDetail,
+	type MediaTemplateKind,
+	type MediaTemplateSource,
+} from "./mediaTemplateRegistry";

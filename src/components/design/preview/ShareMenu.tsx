@@ -14,10 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import {
-	designExport,
-	type DesignSession,
-} from "../../../lib/api/design";
+import { designExport, type DesignSession } from "../../../lib/api/design";
 import type { DesignExportFormat } from "../../../../electron/shared/types";
 import { toast } from "../../ui/Toast";
 
@@ -181,10 +178,7 @@ export function ShareMenu({
 							className="w-full text-left px-3.5 py-2.5 hover:bg-warm-200/60 transition-colors flex items-center gap-2.5 border-b border-border disabled:opacity-50"
 						>
 							<div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-								<Send
-									className="w-3.5 h-3.5 text-primary"
-									strokeWidth={1.6}
-								/>
+								<Send className="w-3.5 h-3.5 text-primary" strokeWidth={1.6} />
 							</div>
 							<div className="flex-1 min-w-0">
 								<div className="text-[12.5px] font-medium text-text-primary">
@@ -210,9 +204,7 @@ export function ShareMenu({
 									strokeWidth={1.5}
 								/>
 								<div className="flex-1 min-w-0">
-									<div className="text-[12.5px] text-text-primary">
-										{label}
-									</div>
+									<div className="text-[12.5px] text-text-primary">{label}</div>
 									<div className="text-[10.5px] text-text-muted">
 										{description}
 									</div>

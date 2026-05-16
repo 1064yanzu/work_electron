@@ -1,16 +1,15 @@
 /**
- * Brand Tab：让用户先从一个 URL 提取品牌色板/字体，再用它启动一次设计。
+ * Brand Tab：从一个 URL 提取品牌色板/字体，落盘为 brand-spec.md 后让
+ * NewProjectPanel 接管这个 session（不再独立走 discovery 表单）。
  *
- * 与 src/components/design/BrandExtractInput 的区别：
- * - 它在 Discovery 表单中作为字段附属；
- * - 本组件在入口首屏，先「占位创建一个 session」再 extract，最后跳到 discovery，
- *   draftAnswers.answers.brand 自动设为 brand-spec。
+ * - extractBrand 必须有目标工作目录，所以这里仍先 startSession 占位
+ * - 提取成功后通过 designStore.setNewProjectSeed 把 sessionId/workDir
+ *   透传给左栏 NewProjectPanel，让用户填好简介后点「创建并生成」
  */
 import { CheckCircle2, Globe, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import {
 	designExtractBrand,
-	designListSessions,
 	designStartSession,
 } from "../../../lib/api/design";
 import { designStore, useDesignStoreSelector } from "../../../lib/stores";
@@ -31,12 +30,15 @@ export function BrandExtractTab() {
 	const [result, setResult] = useState<ExtractResult | null>(null);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
-	const ensureSession = async (): Promise<string> => {
-		if (sessionId) return sessionId;
+	const [sessionWorkDir, setSessionWorkDir] = useState<string | null>(null);
+
+	const ensureSession = async (): Promise<{ id: string; workDir: string }> => {
+		if (sessionId && sessionWorkDir) {
+			return { id: sessionId, workDir: sessionWorkDir };
+		}
 		const r = await designStartSession({
 			title: url ? `品牌：${url}` : "品牌设计",
 		});
-		designStore.setDiscoveryForm(r.discovery_form);
 		designStore.setCurrentSession({
 			id: r.session_id,
 			title: url ? `品牌：${url}` : "品牌设计",
@@ -45,10 +47,9 @@ export function BrandExtractTab() {
 			created_at: Date.now(),
 			updated_at: Date.now(),
 		});
-		designStore.resetDraft();
-		designStore.patchDraftAnswers({ answers: { brand: "brand-spec" } });
 		setSessionId(r.session_id);
-		return r.session_id;
+		setSessionWorkDir(r.work_dir);
+		return { id: r.session_id, workDir: r.work_dir };
 	};
 
 	const handleExtract = async () => {
@@ -59,7 +60,7 @@ export function BrandExtractTab() {
 			: `https://${trimmed}`;
 		try {
 			setRunning(true);
-			const id = await ensureSession();
+			const { id } = await ensureSession();
 			const res = await designExtractBrand({
 				session_id: id,
 				url: normalized,
@@ -80,12 +81,19 @@ export function BrandExtractTab() {
 	const handleContinue = async () => {
 		try {
 			designStore.setStarting(true);
-			if (!sessionId) {
-				await ensureSession();
-			}
-			designStore.setStage("discovery");
-			const list = await designListSessions({ limit: 50 });
-			designStore.setSessionsList(list);
+			const { id, workDir } = await ensureSession();
+			// 把已就绪的 session + brand-spec.md 透传给 NewProjectPanel
+			designStore.setNewProjectSeed({
+				kind: "prototype",
+				sessionId: id,
+				workDir,
+				titleHint: result?.site_name
+					? `品牌：${result.site_name}`
+					: url
+						? `品牌：${url}`
+						: "品牌设计",
+			});
+			toast.success("品牌已就绪，请在左栏填写简介后点击「创建并生成」");
 		} finally {
 			designStore.setStarting(false);
 		}
@@ -193,7 +201,7 @@ export function BrandExtractTab() {
 							icon={<Sparkles className="w-3.5 h-3.5" strokeWidth={1.6} />}
 							iconPosition="right"
 						>
-							继续填答卷
+							去左栏填简介
 						</Button>
 					</div>
 				</div>

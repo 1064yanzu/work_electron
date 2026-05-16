@@ -57,10 +57,6 @@ export async function designListSessions(input?: {
 	return await safeInvoke("design_list_sessions", input ?? {});
 }
 
-export async function designGetDiscoveryForm(): Promise<DiscoveryFormSchema> {
-	return await safeInvoke("design_get_discovery_form", {});
-}
-
 export async function designStartSession(input: {
 	title?: string;
 	initial_brief?: string;
@@ -85,9 +81,9 @@ export async function designSubmitDiscovery(input: {
 	return await safeInvoke("design_submit_discovery", input);
 }
 
-export async function designGetSession(sessionId: string): Promise<
-	DesignSession & { output_asset?: OutputAsset; files?: string[] }
-> {
+export async function designGetSession(
+	sessionId: string,
+): Promise<DesignSession & { output_asset?: OutputAsset; files?: string[] }> {
 	return await safeInvoke("design_get_session", { session_id: sessionId });
 }
 
@@ -173,7 +169,12 @@ export async function designListSystems(): Promise<
 
 export async function designGetSystemThumbnail(
 	systemId: string,
-): Promise<{ path: string; ready: boolean; mtime_ms?: number; base64?: string }> {
+): Promise<{
+	path: string;
+	ready: boolean;
+	mtime_ms?: number;
+	base64?: string;
+}> {
 	return await safeInvoke("design_get_system_thumbnail", {
 		system_id: systemId,
 	});
@@ -251,7 +252,9 @@ export async function designListBuiltinSkills(): Promise<DesignSkillSummary[]> {
 export async function designGetSkillResourceMap(
 	skillId: string,
 ): Promise<DesignSkillResourceMap | null> {
-	return await safeInvoke("design_get_skill_resource_map", { skill_id: skillId });
+	return await safeInvoke("design_get_skill_resource_map", {
+		skill_id: skillId,
+	});
 }
 
 export async function designGetTemplate(templateId: string): Promise<{
@@ -366,4 +369,112 @@ export async function designGetTemplateDetail(templateId: string): Promise<{
 	return await safeInvoke("design_get_template_detail", {
 		template_id: templateId,
 	});
+}
+
+// ─── 媒体提示词模板（内置 + 用户保存/导入）────────────────────────────────────
+
+export type MediaTemplateKind = "image" | "video" | "audio";
+export type MediaTemplateSource = "builtin" | "user";
+
+export interface DesignMediaTemplateSummary {
+	id: string;
+	source: MediaTemplateSource;
+	kind: MediaTemplateKind;
+	title: string;
+	summary: string;
+	category?: string;
+	tags: string[];
+	model?: string;
+	aspect?: string;
+	duration_sec?: number;
+	preview_image_url?: string;
+	preview_video_url?: string;
+	created_at?: number;
+	updated_at?: number;
+}
+
+export interface DesignMediaTemplateDetail extends DesignMediaTemplateSummary {
+	prompt: string;
+	source_path: string;
+}
+
+export async function designListMediaTemplates(input?: {
+	kind?: MediaTemplateKind;
+	source?: MediaTemplateSource;
+	query?: string;
+}): Promise<DesignMediaTemplateSummary[]> {
+	return await safeInvoke("design_list_media_templates", input ?? {});
+}
+
+export async function designGetMediaTemplate(
+	id: string,
+	source?: MediaTemplateSource,
+): Promise<DesignMediaTemplateDetail | null> {
+	return await safeInvoke("design_get_media_template", { id, source });
+}
+
+export async function designSaveMediaTemplate(input: {
+	id?: string;
+	kind: MediaTemplateKind;
+	title: string;
+	summary?: string;
+	category?: string;
+	tags?: string[];
+	model?: string;
+	aspect?: string;
+	duration_sec?: number;
+	prompt: string;
+	preview_image_url?: string;
+	preview_video_url?: string;
+}): Promise<{
+	id: string;
+	source: "user";
+	kind: MediaTemplateKind;
+	source_path: string;
+}> {
+	return await safeInvoke("design_save_media_template", input);
+}
+
+export async function designImportMediaTemplate(filePath: string): Promise<{
+	id: string;
+	source: "user";
+	kind: MediaTemplateKind;
+	source_path: string;
+}> {
+	return await safeInvoke("design_import_media_template", {
+		file_path: filePath,
+	});
+}
+
+export async function designPickMediaTemplateFile(): Promise<string | null> {
+	const r = await safeInvoke<{ file_path: string | null }>(
+		"design_pick_media_template_file",
+		{},
+	);
+	return r?.file_path ?? null;
+}
+
+export async function designDeleteMediaTemplate(
+	id: string,
+	kind: MediaTemplateKind,
+): Promise<{ success: boolean }> {
+	return await safeInvoke("design_delete_media_template", { id, kind });
+}
+
+// ─── 用户沉淀设计模板（项目沉淀 / 导入）──────────────────────────────────────
+
+export interface DesignUserTemplateSummary {
+	id: string;
+	source: "user";
+	title: string;
+	summary: string;
+	thumbnail_url?: string;
+	kind?: string;
+	updated_at?: number;
+}
+
+export async function designListUserDesignTemplates(input?: {
+	query?: string;
+}): Promise<DesignUserTemplateSummary[]> {
+	return await safeInvoke("design_list_user_design_templates", input ?? {});
 }

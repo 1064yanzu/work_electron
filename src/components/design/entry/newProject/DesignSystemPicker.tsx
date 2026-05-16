@@ -45,7 +45,12 @@ export function DesignSystemPicker({
 	const [query, setQuery] = useState("");
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const popRef = useRef<HTMLDivElement>(null);
-	const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width: number }>({
+	const [pos, setPos] = useState<{
+		top?: number;
+		bottom?: number;
+		left: number;
+		width: number;
+	}>({
 		top: 0,
 		left: 0,
 		width: 340,
@@ -75,7 +80,7 @@ export function DesignSystemPicker({
 			(s) =>
 				s.title.toLowerCase().includes(q) ||
 				s.category.toLowerCase().includes(q) ||
-				s.summary.toLowerCase().includes(q)
+				s.summary.toLowerCase().includes(q),
 		);
 	}, [systems, query]);
 
@@ -84,7 +89,7 @@ export function DesignSystemPicker({
 		const el = triggerRef.current;
 		if (!el) return;
 		const r = el.getBoundingClientRect();
-		
+
 		const width = 340;
 		let left = r.left;
 		if (left + width > window.innerWidth - 20) {
@@ -129,7 +134,7 @@ export function DesignSystemPicker({
 		document.addEventListener("keydown", onEsc);
 		// 监听全局捕获阶段的滚动，任意非弹窗内的滚动都关闭弹窗
 		window.addEventListener("scroll", onScroll, true);
-		
+
 		return () => {
 			document.removeEventListener("mousedown", handle);
 			document.removeEventListener("keydown", onEsc);
@@ -150,15 +155,15 @@ export function DesignSystemPicker({
 				disabled={disabled}
 				onClick={() => setOpen((v) => !v)}
 				className={cn(
-					"w-full flex items-center gap-2 px-3 py-2.5 text-[13px]",
-					"bg-white/60 dark:bg-cream-900/60 backdrop-blur-sm",
-					"border border-cream-300 dark:border-cream-500/60",
-					"rounded-xl text-left shadow-sm",
-					"hover:bg-white dark:hover:bg-cream-800 hover:border-cream-400",
-					"transition-all duration-200",
-					"focus:outline-none focus:ring-2 focus:ring-[#D96C46]/20 focus:border-[#D96C46]/50",
+					"w-full flex items-center gap-2 px-3 py-2.5 text-[13px] transition-all duration-200",
+					"bg-white/80 dark:bg-cream-900/50 backdrop-blur-sm",
+					"border border-cream-200 dark:border-cream-600/60",
+					"rounded-xl text-left shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
+					"hover:border-cream-300 dark:hover:border-cream-500 hover:bg-white dark:hover:bg-cream-900",
+					"focus:outline-none focus:ring-4 focus:ring-[#D96C46]/10 focus:border-[#D96C46]/40 focus:bg-white dark:focus:bg-cream-900",
 					"disabled:opacity-50 disabled:cursor-not-allowed",
-					open && "ring-2 ring-[#D96C46]/20 border-[#D96C46]/50 bg-white dark:bg-cream-800",
+					open &&
+						"ring-4 ring-[#D96C46]/10 border-[#D96C46]/40 bg-white dark:bg-cream-900",
 				)}
 			>
 				{selected ? (
@@ -243,18 +248,24 @@ export function DesignSystemPicker({
 									}}
 									className={cn(
 										"w-full text-left rounded-xl border p-3 transition-all duration-200 group relative overflow-hidden",
-										!value 
-											? "border-[#D96C46] bg-[#D96C46]/5 shadow-[0_0_0_1px_#D96C46]" 
-											: "border-cream-300 dark:border-cream-700 bg-white dark:bg-cream-800 hover:border-[#D96C46]/40 hover:shadow-sm"
+										!value
+											? "border-[#D96C46] bg-[#D96C46]/5 shadow-[0_0_0_1px_#D96C46]"
+											: "border-cream-300 dark:border-cream-700 bg-white dark:bg-cream-800 hover:border-[#D96C46]/40 hover:shadow-sm",
 									)}
 								>
-									<div className={cn(
-										"font-semibold text-[13px] transition-colors",
-										!value ? "text-[#D96C46]" : "text-text-primary group-hover:text-[#D96C46]"
-									)}>
+									<div
+										className={cn(
+											"font-semibold text-[13px] transition-colors",
+											!value
+												? "text-[#D96C46]"
+												: "text-text-primary group-hover:text-[#D96C46]",
+										)}
+									>
 										不绑定（让 Agent 自由发挥）
 									</div>
-									<div className="text-[11px] text-text-muted mt-1">默认选项，Agent 将根据提示词推断设计风格</div>
+									<div className="text-[11px] text-text-muted mt-1">
+										默认选项，Agent 将根据提示词推断设计风格
+									</div>
 									{!value && (
 										<div className="absolute top-1/2 right-3 -translate-y-1/2 text-[#D96C46]">
 											<Check className="w-4 h-4" />
@@ -277,17 +288,17 @@ export function DesignSystemPicker({
 											}}
 											className={cn(
 												"group relative flex flex-col text-left rounded-xl border overflow-hidden transition-all duration-300",
-												isActive 
-													? "border-[#D96C46] ring-1 ring-[#D96C46] shadow-sm z-10" 
-													: "border-cream-200 dark:border-cream-700 bg-white dark:bg-cream-900 hover:border-cream-400 hover:shadow-md hover:-translate-y-0.5"
+												isActive
+													? "border-[#D96C46] ring-1 ring-[#D96C46] shadow-sm z-10"
+													: "border-cream-200 dark:border-cream-700 bg-white dark:bg-cream-900 hover:border-cream-400 hover:shadow-md hover:-translate-y-0.5",
 											)}
 										>
 											<div className="h-24 w-full relative bg-cream-100 dark:bg-cream-800 overflow-hidden">
-												<SystemThumbnail 
-													systemId={s.id} 
-													swatches={s.swatches} 
-													title={s.title} 
-													className="w-full h-full transform transition-transform duration-500 group-hover:scale-105" 
+												<SystemThumbnail
+													systemId={s.id}
+													swatches={s.swatches}
+													title={s.title}
+													className="w-full h-full transform transition-transform duration-500 group-hover:scale-105"
 												/>
 												{isActive && (
 													<div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#D96C46] text-white flex items-center justify-center shadow-md animate-in zoom-in duration-200">
@@ -296,10 +307,14 @@ export function DesignSystemPicker({
 												)}
 											</div>
 											<div className="p-2.5 bg-white/95 dark:bg-cream-900/95 backdrop-blur-sm border-t border-cream-100 dark:border-cream-800">
-												<div className={cn(
-													"font-bold text-[12px] truncate transition-colors",
-													isActive ? "text-[#D96C46]" : "text-text-primary group-hover:text-[#D96C46]"
-												)}>
+												<div
+													className={cn(
+														"font-bold text-[12px] truncate transition-colors",
+														isActive
+															? "text-[#D96C46]"
+															: "text-text-primary group-hover:text-[#D96C46]",
+													)}
+												>
 													{s.title}
 												</div>
 												<div className="flex items-center justify-between mt-1">

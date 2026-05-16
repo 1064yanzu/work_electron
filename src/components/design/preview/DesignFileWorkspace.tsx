@@ -177,9 +177,7 @@ function FileBody({
 		return <MarkdownViewer content={data.content} />;
 	}
 	if (kind === "image" && data.base64) {
-		return (
-			<ImageViewer base64={data.base64} mime={data.mime ?? "image/*"} />
-		);
+		return <ImageViewer base64={data.base64} mime={data.mime ?? "image/*"} />;
 	}
 	if (kind === "pdf" && data.base64) {
 		return <PdfFrameViewer base64={data.base64} />;

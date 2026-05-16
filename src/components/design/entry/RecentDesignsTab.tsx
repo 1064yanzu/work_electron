@@ -14,7 +14,10 @@ interface RecentDesignsTabProps {
 	loading: boolean;
 }
 
-const STATUS_LABEL: Record<DesignSessionStatus, { label: string; cls: string }> = {
+const STATUS_LABEL: Record<
+	DesignSessionStatus,
+	{ label: string; cls: string }
+> = {
 	draft: { label: "草稿", cls: "bg-warm-200 text-text-muted" },
 	discovery: { label: "答卷中", cls: "bg-warm-200 text-text-muted" },
 	running: { label: "生成中", cls: "bg-primary/10 text-primary" },
@@ -59,7 +62,7 @@ export function RecentDesignsTab({ loading }: RecentDesignsTabProps) {
 		try {
 			const fresh = await designGetSession(session.id);
 			designStore.setCurrentSession(fresh);
-			designStore.setStage(fresh.status === "done" ? "preview" : "discovery");
+			designStore.setStage("preview");
 			// 顺手刷新列表
 			void designListSessions({ limit: 50 }).then((list) =>
 				designStore.setSessionsList(list),
@@ -95,7 +98,8 @@ export function RecentDesignsTab({ loading }: RecentDesignsTabProps) {
 					还没有设计稿
 				</div>
 				<div className="text-xs text-text-muted leading-relaxed max-w-xs">
-					点击右下角「新建空白设计」开始你的第一个设计；或先从「设计系统」/「内置 Skill」挑一个起点。
+					点击右下角「新建空白设计」开始你的第一个设计；或先从「设计系统」/「内置
+					Skill」挑一个起点。
 				</div>
 			</div>
 		);

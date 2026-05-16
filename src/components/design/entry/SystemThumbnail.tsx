@@ -16,6 +16,47 @@ interface ThumbnailReadyPayload {
 	base64?: string;
 }
 
+type ThumbnailListener = (payload: ThumbnailReadyPayload) => void;
+
+const thumbnailListeners = new Map<string, Set<ThumbnailListener>>();
+let globalUnlistenPromise: Promise<() => void> | null = null;
+
+function ensureGlobalListener() {
+	if (globalUnlistenPromise) return;
+	globalUnlistenPromise = listen<ThumbnailReadyPayload>(
+		"design:thumbnail-ready",
+		(event) => {
+			const p = event?.payload;
+			if (!p?.system_id) return;
+			const bucket = thumbnailListeners.get(p.system_id);
+			if (!bucket) return;
+			for (const fn of bucket) {
+				try {
+					fn(p);
+				} catch (err) {
+					console.error("[SystemThumbnail] listener error", err);
+				}
+			}
+		},
+	);
+}
+
+function subscribeThumbnail(systemId: string, fn: ThumbnailListener) {
+	ensureGlobalListener();
+	let bucket = thumbnailListeners.get(systemId);
+	if (!bucket) {
+		bucket = new Set();
+		thumbnailListeners.set(systemId, bucket);
+	}
+	bucket.add(fn);
+	return () => {
+		const b = thumbnailListeners.get(systemId);
+		if (!b) return;
+		b.delete(fn);
+		if (b.size === 0) thumbnailListeners.delete(systemId);
+	};
+}
+
 export function SystemThumbnail({
 	systemId,
 	swatches,
@@ -40,7 +81,7 @@ export function SystemThumbnail({
 					observer.disconnect();
 				}
 			},
-			{ rootMargin: "100px" }
+			{ rootMargin: "100px" },
 		);
 
 		observer.observe(el);
@@ -68,28 +109,25 @@ export function SystemThumbnail({
 			}
 		})();
 
-		const off = listen<ThumbnailReadyPayload>(
-			"design:thumbnail-ready",
-			(event) => {
-				if (!aliveRef.current) return;
-				const p = event?.payload;
-				if (!p || p.system_id !== systemId) return;
-				if (p.base64) {
-					setImageSrc(`data:image/png;base64,${p.base64}`);
-					setReady(true);
-					setVersion((v) => v + 1);
-				}
-			},
-		);
+		const off = subscribeThumbnail(systemId, (p) => {
+			if (!aliveRef.current) return;
+			if (p.base64) {
+				setImageSrc(`data:image/png;base64,${p.base64}`);
+				setReady(true);
+				setVersion((v) => v + 1);
+			}
+		});
 
 		return () => {
 			aliveRef.current = false;
-			void off.then((fn) => fn?.());
+			off();
 		};
 	}, [systemId, visible]);
 
 	const sw =
-		swatches && swatches.length > 0 ? swatches : ["#F2E9DC", "#E0CFB6", "#C9A98D"];
+		swatches && swatches.length > 0
+			? swatches
+			: ["#F2E9DC", "#E0CFB6", "#C9A98D"];
 
 	const gradient = `linear-gradient(135deg, ${sw[0]}, ${sw[Math.min(sw.length - 1, 2)] || sw[0]})`;
 

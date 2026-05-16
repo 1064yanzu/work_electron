@@ -551,7 +551,11 @@ export type DesignSkillMode =
 	| "prototype"
 	| "deck"
 	| "template"
-	| "design-system";
+	| "design-system"
+	| "image"
+	| "video"
+	| "audio"
+	| "utility";
 
 export type DesignSkillPreviewType = "html" | "jsx" | "pptx" | "markdown";
 
@@ -639,6 +643,8 @@ export interface DesignSkillSummary {
 	outputs?: DesignSkillOutputConfig;
 	capabilities_required?: string[];
 	critique_policy?: DesignSkillCritiquePolicy;
+	featured?: number;
+	scenario?: string;
 }
 
 export interface DesignSkillResourceMap {

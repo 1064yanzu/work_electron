@@ -426,7 +426,11 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 			od.mode === "prototype" ||
 			od.mode === "deck" ||
 			od.mode === "template" ||
-			od.mode === "design-system"
+			od.mode === "design-system" ||
+			od.mode === "image" ||
+			od.mode === "video" ||
+			od.mode === "audio" ||
+			od.mode === "utility"
 				? od.mode
 				: undefined,
 		surface: typeof od.surface === "string" ? od.surface : undefined,
@@ -458,6 +462,8 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 			critiqueRaw?.policy === "opt-out"
 				? critiqueRaw.policy
 				: undefined,
+		featured: typeof od.featured === "number" ? od.featured : undefined,
+		scenario: typeof od.scenario === "string" ? od.scenario : undefined,
 	};
 }
 

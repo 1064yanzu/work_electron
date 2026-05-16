@@ -1,4 +1,10 @@
-import { Layers, Monitor, Smartphone, Square, type LucideIcon } from "lucide-react";
+import {
+	Layers,
+	Monitor,
+	Smartphone,
+	Square,
+	type LucideIcon,
+} from "lucide-react";
 
 interface ModeBadgeProps {
 	mode?: string;

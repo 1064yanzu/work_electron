@@ -1,8 +1,7 @@
 /**
  * Design 模块前端 Store
  *
- * 状态机：
- *   empty → discovery → direction-pick → running → preview
+ * 状态机：empty → running → preview
  *
  * 不持久化到 localStorage —— 会话列表由后端 design_list_sessions 直接拉。
  * 当前会话也只在内存里，刷新 / 重启会重新从 design_get_session 加载。
@@ -10,9 +9,9 @@
 
 import type {
 	DesignDirection,
+	DesignLaunchPayload,
+	DesignProjectKind,
 	DesignSession,
-	DiscoveryAnswers,
-	DiscoveryFormSchema,
 	OutputAsset,
 } from "../../../electron/shared/types";
 import {
@@ -21,18 +20,24 @@ import {
 	createUseStoreSelector,
 } from "./createStore";
 
-export type DesignWorkspaceStage =
-	| "empty"
-	| "discovery"
-	| "direction-pick"
-	| "running"
-	| "preview";
+export type DesignWorkspaceStage = "empty" | "running" | "preview";
 
-export interface DesignDraftAnswers {
-	answers: DiscoveryAnswers;
-	direction_id?: string;
-	system_id?: string;
+/**
+ * 二级入口（SystemsLibrary / BuiltinSkills / BrandExtract）点了卡片后，
+ * 不直接 startSession，而是把"预填给 NewProjectPanel 用"的信号塞进这里；
+ * NewProjectPanel 启动时一次性消费并清掉。
+ *
+ * 当 `sessionId` 不为空时表示该 session 已经被二级入口提前创建（典型场景：
+ * BrandExtractTab 抓 brand-spec 必须先有工作目录），NewProjectPanel 提交时
+ * 应当**接管**它而不是再 startSession。
+ */
+export interface DesignNewProjectSeed {
+	kind?: DesignProjectKind;
+	systemId?: string;
 	mode?: string;
+	sessionId?: string;
+	workDir?: string;
+	titleHint?: string;
 }
 
 export interface DesignWorkspaceState {
@@ -42,12 +47,14 @@ export interface DesignWorkspaceState {
 		| (DesignSession & { output_asset?: OutputAsset; files?: string[] })
 		| null;
 	directions: DesignDirection[];
-	discoveryForm: DiscoveryFormSchema | null;
-	draftAnswers: DesignDraftAnswers;
 	sessionsList: DesignSession[];
 	isStarting: boolean;
 	isExporting: boolean;
 	lastError: string | null;
+	/** 提交后等待 DesignWorkspace 消费并启动 SDK 的 payload。 */
+	pendingLaunch: { sessionId: string; payload: DesignLaunchPayload } | null;
+	/** 二级入口预填 NewProjectPanel 的种子。NewProjectPanel 消费后会清掉。 */
+	newProjectSeed: DesignNewProjectSeed | null;
 }
 
 const INITIAL: DesignWorkspaceState = {
@@ -55,12 +62,12 @@ const INITIAL: DesignWorkspaceState = {
 	currentSessionId: null,
 	currentSession: null,
 	directions: [],
-	discoveryForm: null,
-	draftAnswers: { answers: {} },
 	sessionsList: [],
 	isStarting: false,
 	isExporting: false,
 	lastError: null,
+	pendingLaunch: null,
+	newProjectSeed: null,
 };
 
 const store = createStore<DesignWorkspaceState>(INITIAL);
@@ -71,10 +78,6 @@ function setStage(stage: DesignWorkspaceStage) {
 
 function setDirections(directions: DesignDirection[]) {
 	store.setState((s) => ({ ...s, directions }));
-}
-
-function setDiscoveryForm(form: DiscoveryFormSchema | null) {
-	store.setState((s) => ({ ...s, discoveryForm: form }));
 }
 
 function setSessionsList(sessions: DesignSession[]) {
@@ -97,27 +100,6 @@ function setCurrentSession(
 	}));
 }
 
-function patchDraftAnswers(patch: Partial<DesignDraftAnswers>) {
-	store.setState((s) => ({
-		...s,
-		draftAnswers: { ...s.draftAnswers, ...patch },
-	}));
-}
-
-function setAnswerField(field: string, value: string | string[] | undefined) {
-	store.setState((s) => ({
-		...s,
-		draftAnswers: {
-			...s.draftAnswers,
-			answers: { ...s.draftAnswers.answers, [field]: value },
-		},
-	}));
-}
-
-function resetDraft() {
-	store.setState((s) => ({ ...s, draftAnswers: { answers: {} } }));
-}
-
 function setStarting(v: boolean) {
 	store.setState((s) => ({ ...s, isStarting: v }));
 }
@@ -130,6 +112,24 @@ function setError(msg: string | null) {
 	store.setState((s) => ({ ...s, lastError: msg }));
 }
 
+function setPendingLaunch(
+	payload: { sessionId: string; payload: DesignLaunchPayload } | null,
+) {
+	store.setState((s) => ({ ...s, pendingLaunch: payload }));
+}
+
+function clearPendingLaunch() {
+	store.setState((s) => ({ ...s, pendingLaunch: null }));
+}
+
+function setNewProjectSeed(seed: DesignNewProjectSeed | null) {
+	store.setState((s) => ({ ...s, newProjectSeed: seed }));
+}
+
+function clearNewProjectSeed() {
+	store.setState((s) => ({ ...s, newProjectSeed: null }));
+}
+
 function reset() {
 	store.setState(() => ({ ...INITIAL }));
 }
@@ -138,16 +138,16 @@ export const designStore = {
 	...store,
 	setStage,
 	setDirections,
-	setDiscoveryForm,
 	setSessionsList,
 	setCurrentSessionId,
 	setCurrentSession,
-	patchDraftAnswers,
-	setAnswerField,
-	resetDraft,
 	setStarting,
 	setExporting,
 	setError,
+	setPendingLaunch,
+	clearPendingLaunch,
+	setNewProjectSeed,
+	clearNewProjectSeed,
 	reset,
 };
 
