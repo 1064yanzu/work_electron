@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import {
 	deleteSkill,
+	getSkillsDesignMode,
 	importSkill,
 	listSkills,
 	type SkillMetadata,
 	setSkillEnabled,
+	setSkillsDesignMode,
 } from "./config";
 
 // Event emitter for store updates
@@ -14,6 +16,7 @@ function emitChange() {
 }
 
 let cachedSkills: SkillMetadata[] = [];
+let cachedDesignMode = false;
 let isInitialized = false;
 let initPromise: Promise<void> | null = null;
 
@@ -24,7 +27,12 @@ export const skillsStore = {
 
 		initPromise = (async () => {
 			try {
-				cachedSkills = await listSkills();
+				const [skills, dm] = await Promise.all([
+					listSkills(),
+					getSkillsDesignMode(),
+				]);
+				cachedSkills = skills;
+				cachedDesignMode = dm.active;
 				isInitialized = true;
 				emitChange();
 			} catch (err) {
@@ -38,7 +46,12 @@ export const skillsStore = {
 
 	async refresh() {
 		try {
-			cachedSkills = await listSkills();
+			const [skills, dm] = await Promise.all([
+				listSkills(),
+				getSkillsDesignMode(),
+			]);
+			cachedSkills = skills;
+			cachedDesignMode = dm.active;
 			emitChange();
 		} catch (err) {
 			console.error("[skillsStore] 刷新失败:", err);
@@ -51,6 +64,10 @@ export const skillsStore = {
 
 	getEnabledSkills(): SkillMetadata[] {
 		return cachedSkills.filter((s) => s.enabled);
+	},
+
+	getDesignModeActive(): boolean {
+		return cachedDesignMode;
 	},
 
 	async importSkill(sourcePath: string): Promise<SkillMetadata> {
@@ -67,25 +84,32 @@ export const skillsStore = {
 	},
 
 	/**
-	 * 写一个 DB flag 标记某个 skill 在 UI 上「启用 / 禁用」。
+	 * 手动写入一个 skill 的启用状态。
 	 *
-	 * ⚠️ 语义边界：这个开关**主要影响**：
-	 *   - UI 列表的「已启用」过滤
-	 *   - 启动 agent 时同步到 `cwd/.claude/skills/` 的 project scope（见
-	 *     electron/main/ipc/handlers/agentSdk/configManager.ts:syncSkillsToCwd）
+	 * 语义边界（**已重新设计**）：
+	 *   - 新逻辑下，default 由 modeClass + designModeActive 决定。
+	 *   - 调用此方法会写入 app_config 的 override，覆盖默认值。
+	 *   - 用户手动调过的项不再跟随设计模式开关。
+	 *   - UI 控件：列表的「已启用」过滤；启动 agent 时同步到 cwd/.claude/skills/。
 	 *
-	 * 但 Claude Agent SDK 的 settingSources 始终包含 `"user"`，意味着 SDK 仍会扫描
-	 * `~/.claude/skills/`，被「禁用」的 skill 文件仍存在于 home 目录里。Claude Code
-	 * 本身也不能精确控制 skills 启停，这是 SDK 行为约束。
-	 *
-	 * 如果你**真的不想让某个 skill 被 agent 用**，请直接 `deleteSkill` 物理删除目录。
+	 * SDK 仍会扫描 `~/.claude/skills/`，被禁用的 skill 文件物理还在。彻底屏蔽请删除。
 	 */
 	async setEnabled(skillName: string, enabled: boolean): Promise<void> {
 		await setSkillEnabled(skillName, enabled);
-		cachedSkills = cachedSkills.map((s) =>
-			s.name === skillName ? { ...s, enabled } : s,
-		);
-		emitChange();
+		// 写完直接刷新一次，让后端重新算 effective enabled / userOverride
+		await this.refresh();
+	},
+
+	/**
+	 * 切换"设计模式"全局开关：
+	 *   - active=true → 所有 design 类技能默认启用（已 override 的项保持 override）
+	 *   - active=false → 所有 design 类技能默认关闭
+	 */
+	async setDesignModeActive(active: boolean): Promise<void> {
+		const result = await setSkillsDesignMode(active);
+		cachedDesignMode = result.active;
+		// 设计模式翻转后，没有 override 的 design 类技能 effective enabled 会变
+		await this.refresh();
 	},
 
 	subscribe(listener: () => void) {
@@ -99,11 +123,14 @@ export const skillsStore = {
 // React hook
 export function useSkillsStore() {
 	const [skills, setSkills] = useState<SkillMetadata[]>(cachedSkills);
+	const [designModeActive, setDesignModeActiveState] =
+		useState<boolean>(cachedDesignMode);
 
 	useEffect(() => {
 		skillsStore.init();
 		const unsubscribe = skillsStore.subscribe(() => {
 			setSkills(skillsStore.getSkills());
+			setDesignModeActiveState(skillsStore.getDesignModeActive());
 		});
 		return unsubscribe;
 	}, []);
@@ -111,9 +138,11 @@ export function useSkillsStore() {
 	return {
 		skills,
 		enabledSkills: skills.filter((s) => s.enabled),
+		designModeActive,
 		refresh: skillsStore.refresh,
 		importSkill: skillsStore.importSkill,
 		deleteSkill: skillsStore.deleteSkill,
 		setEnabled: skillsStore.setEnabled,
+		setDesignModeActive: skillsStore.setDesignModeActive.bind(skillsStore),
 	};
 }

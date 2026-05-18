@@ -9,8 +9,10 @@
  * 上限 + 兜底超时清理，防止异常路径下的 entry 残留。
  */
 
-const MAX_REGISTRY_SIZE = 200;
-const ENTRY_MAX_LIFETIME_MS = 10 * 60 * 1000; // 10 分钟兜底
+const MAX_REGISTRY_SIZE = 100;
+// invoke.ts 中 LLM_STREAM_TIMEOUT_MS = 5 分钟；兜底超时设为 8 分钟（1.6× margin），
+// 极端路径下的孤儿 entry 在 8 分钟后强制释放，比原 10 分钟更早回收。
+const ENTRY_MAX_LIFETIME_MS = 8 * 60 * 1000;
 
 type Entry = {
 	controller: AbortController;

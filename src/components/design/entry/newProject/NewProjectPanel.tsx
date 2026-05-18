@@ -4,8 +4,10 @@
  * 4 tab：原型 / 幻灯片 / 从模板 / 媒体。
  * - 前三个：在本面板里**一次性**完成 startSession + submitDiscovery，把
  *   prompt / metadata / systemId 直接 mapping 成 discovery answers，拿到
- *   launch_payload 写进 designStore.pendingLaunch；DesignWorkspace 监听到
- *   pendingLaunch 后启动 SDK 并切 preview。**不再跳 discovery 表单。**
+ *   launch_payload 写进 designStore.draftLaunch（**草稿态**）；同时把简介
+ *   注入右栏 Copilot 输入框。**不直接启动 SDK**——用户需要在 Copilot 里
+ *   按发送（携带最终 prompt），或在中栏「开始生成」按钮上确认，才会真正
+ *   把 draftLaunch 转成 pendingLaunch 启动 Agent。
  * - 媒体走 design_media_generate（不创建 design session）。
  *
  * 二级入口（SystemsLibrary / BuiltinSkills / BrandExtract）通过
@@ -42,6 +44,7 @@ import {
 	useDesignStoreSelector,
 } from "../../../../lib/stores";
 import { invoke } from "../../../../lib/tauriCompat";
+import { EVENTS, events } from "../../../../lib/events";
 import { Button } from "../../../ui/Button";
 import { Tabs, type TabItem } from "../../../ui/Tabs";
 import { Toggle } from "../../../Settings/components/Toggle";
@@ -407,22 +410,26 @@ export function NewProjectPanel() {
 			designStore.setCurrentSession({
 				id: sessionId,
 				title: resolvedTitle,
-				status: "running",
+				status: "draft",
 				work_dir: workDir,
 				system_id: systemId ?? undefined,
 				metadata,
 				created_at: Date.now(),
 				updated_at: Date.now(),
 			});
-			designStore.setPendingLaunch({
+			designStore.setDraftLaunch({
 				sessionId,
 				payload: submitResult.launch_payload,
+				initialPrompt: prompt.trim(),
 			});
-			designStore.setStage("running");
+			designStore.setStage("draft");
 			designStore.clearNewProjectSeed();
 
 			// 中栏切到 design 主视图（如果用户从其它视图过来）
 			layoutStore.setMainView("design");
+
+			// 把简介作为草稿注入 Copilot 输入框，让用户继续在右栏对话
+			events.emit(EVENTS.SLASH_FILL_INPUT, { text: prompt.trim() });
 
 			// 刷新最近设计列表
 			try {

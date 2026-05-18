@@ -24,9 +24,9 @@ export type AgentSdkRunState = {
 	alive?: boolean;
 };
 
-const MAX_REGISTRY_SIZE = 100;
-const CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
-const ALIVE_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes for alive runs
+const MAX_REGISTRY_SIZE = 50;
+const CLEANUP_DELAY_MS = 2 * 60 * 1000; // 2 分钟（原 5 分钟）：渲染端有足够时间请求结果，又能更快释放内存
+const ALIVE_IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 分钟（原 30 分钟）：仍宽裕，但减少长 idle 资源占用
 
 export class AgentSdkRunRegistry {
 	private runs = new Map<string, AgentSdkRunState>();

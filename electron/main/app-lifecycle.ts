@@ -26,6 +26,14 @@ import {
 } from "./services/customMascotProtocol";
 import { reconcileCustomMascotIndex } from "./services/customMascotService";
 import { initUpdateService, stopUpdateService } from "./services/updateService";
+import {
+	startDbMaintenance,
+	stopDbMaintenance,
+} from "./services/dbMaintenance";
+import {
+	startPerfTelemetry,
+	stopPerfTelemetry,
+} from "./services/perfTelemetry";
 import { ensureDesignsRoot } from "./design";
 import { installApplicationMenu } from "./menu";
 import {
@@ -121,48 +129,47 @@ export async function bootstrapApp({
 	const db = await initDatabase({ logger });
 	logger.info({ msg: "Database initialized successfully" });
 
-	// 确保设计模块工作目录存在：<userData>/designs/
-	try {
-		const designsRoot = await ensureDesignsRoot();
-		logger.info({ msg: "Design root ensured", root: designsRoot });
-	} catch (err) {
-		logger.warn({
-			msg: "Failed to ensure design root",
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
-
-	// 同步内置设计 skill 到 ~/.claude/skills/ipo-*
-	try {
-		const { bootstrapDesignBuiltinSkills } = await import("./design");
-		const bootResult = await bootstrapDesignBuiltinSkills();
-		logger.info({
-			msg: "Design builtin skills bootstrapped",
-			installed: bootResult.installed,
-			skipped: bootResult.skipped,
-			failed: bootResult.failed,
-		});
-	} catch (err) {
-		logger.warn({
-			msg: "Failed to bootstrap design builtin skills",
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
-
-	// 初始化 Markdown 文件式 Agent 长期记忆（<userData>/agent-memory/）：
-	// 首启创建空的 SOUL/USER/MEMORY 三件套；如有旧 agent_memories 表则一次性 DROP。
-	try {
-		const { ensureMemoryFiles } = await import(
-			"./ipc/handlers/agentSdk/memoryFileStore"
-		);
-		await ensureMemoryFiles(db);
-		logger.info({ msg: "Agent memory files ensured" });
-	} catch (err) {
-		logger.warn({
-			msg: "Failed to ensure agent memory files",
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
+	// DB 就绪后，三项独立的文件 IO 任务并行：设计根目录 / 内置 skill 同步 / agent 记忆文件
+	// 三者无依赖关系；任一失败不阻塞主窗口创建。
+	await Promise.allSettled([
+		ensureDesignsRoot()
+			.then((designsRoot) =>
+				logger.info({ msg: "Design root ensured", root: designsRoot }),
+			)
+			.catch((err) => {
+				logger.warn({
+					msg: "Failed to ensure design root",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}),
+		import("./design")
+			.then(({ bootstrapDesignBuiltinSkills }) =>
+				bootstrapDesignBuiltinSkills(),
+			)
+			.then((bootResult) =>
+				logger.info({
+					msg: "Design builtin skills bootstrapped",
+					installed: bootResult.installed,
+					skipped: bootResult.skipped,
+					failed: bootResult.failed,
+				}),
+			)
+			.catch((err) => {
+				logger.warn({
+					msg: "Failed to bootstrap design builtin skills",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}),
+		import("./ipc/handlers/agentSdk/memoryFileStore")
+			.then(({ ensureMemoryFiles }) => ensureMemoryFiles(db))
+			.then(() => logger.info({ msg: "Agent memory files ensured" }))
+			.catch((err) => {
+				logger.warn({
+					msg: "Failed to ensure agent memory files",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}),
+	]);
 
 	const remoteControl = initRemoteControlOrchestrator({ db, logger });
 	const cloudNodeClient = initCloudNodeClient({ db, logger });
@@ -183,48 +190,70 @@ export async function bootstrapApp({
 		installWindowsCloseBehavior({ win: mainWindow, db, logger });
 	}
 
-	// 启动 Agent 记忆文件 watcher（chokidar）—— 外部编辑 markdown 时给主窗口推送
-	try {
-		const { memoryFileWatcher } = await import(
-			"./ipc/handlers/agentSdk/memoryFileWatcher"
-		);
-		memoryFileWatcher.start(() => BrowserWindow.getAllWindows()[0] ?? null);
-		logger.info({ msg: "Agent memory file watcher started" });
-	} catch (err) {
-		logger.warn({
-			msg: "Failed to start agent memory file watcher",
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
+	// 主窗口创建后，把 non-critical 的服务延迟到下一个 idle tick，
+	// 让首屏渲染先拿到 CPU；watcher / updateService / pet window 都不阻塞首屏交互。
+	const scheduleIdle = (fn: () => void) => {
+		const handle = setImmediate(fn);
+		// 不阻止 event loop 退出
+		handle.unref?.();
+	};
 
-	// 应用自动更新（启动后 30s 首次检查，之后每 4 小时轮询）
-	try {
-		initUpdateService();
-	} catch (err) {
-		logger.error({
-			msg: "Failed to init update service (non-fatal)",
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
+	scheduleIdle(() => {
+		void (async () => {
+			try {
+				const { memoryFileWatcher } = await import(
+					"./ipc/handlers/agentSdk/memoryFileWatcher"
+				);
+				memoryFileWatcher.start(() => BrowserWindow.getAllWindows()[0] ?? null);
+				logger.info({ msg: "Agent memory file watcher started" });
+			} catch (err) {
+				logger.warn({
+					msg: "Failed to start agent memory file watcher",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
+	});
+
+	scheduleIdle(() => {
+		try {
+			initUpdateService();
+		} catch (err) {
+			logger.error({
+				msg: "Failed to init update service (non-fatal)",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		}
+	});
+
+	// SQLite 周期维护（idle 首检 + 每 24h 周期检查；空间碎片高或距上次 > 7 天才 VACUUM）
+	startDbMaintenance(db, logger);
+
+	// 性能 telemetry（每分钟 RSS/heap/handles/loop-lag 写入 perf_metrics，7 天滚动保留）
+	startPerfTelemetry(db, logger);
 
 	// 桌面宠物窗口：初始化服务并根据持久化设置启动
 	if (petWindowConfig) {
 		initPetWindowService(petWindowConfig);
-		bootPetWindow();
-		// 桌宠全局热键（默认启用 Ctrl+Alt+Space）
-		try {
-			const { getPetWindowSettings } = await import(
-				"./storage/petWindowSettings"
-			);
-			if (getPetWindowSettings().globalShortcutEnabled !== false) {
-				registerPetGlobalShortcut();
-			}
-		} catch (err) {
-			logger.warn({
-				msg: "Skip pet global shortcut registration",
-				error: err instanceof Error ? err.message : String(err),
-			});
-		}
+		scheduleIdle(() => {
+			bootPetWindow();
+			// 桌宠全局热键（默认启用 Ctrl+Alt+Space）
+			void (async () => {
+				try {
+					const { getPetWindowSettings } = await import(
+						"./storage/petWindowSettings"
+					);
+					if (getPetWindowSettings().globalShortcutEnabled !== false) {
+						registerPetGlobalShortcut();
+					}
+				} catch (err) {
+					logger.warn({
+						msg: "Skip pet global shortcut registration",
+						error: err instanceof Error ? err.message : String(err),
+					});
+				}
+			})();
+		});
 	}
 
 	logger.info({
@@ -293,6 +322,8 @@ export async function bootstrapApp({
 	app.on("before-quit", () => {
 		markAppQuittingForWindowClose();
 		stopUpdateService();
+		stopDbMaintenance();
+		stopPerfTelemetry();
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();

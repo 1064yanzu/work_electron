@@ -122,21 +122,6 @@ async function loadAutoCheck(db: DbContext): Promise<boolean> {
 	return v === "1" || v === "true";
 }
 
-async function setSkillEnabledHelper(
-	db: DbContext,
-	name: string,
-	enabled: boolean,
-) {
-	const key = `skills.enabled.${name}`;
-	const ts = Date.now();
-	await db.client.execute({
-		sql: `INSERT INTO app_config (key, value, updated_at)
-      VALUES (?, ?, ?)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-		args: [key, enabled ? "1" : "0", ts],
-	});
-}
-
 // 简易版本号比较（语义化版本，缺位补 0；非数字段做字符串比较）
 function compareVersions(a?: string, b?: string): number {
 	if (!a && !b) return 0;
@@ -267,8 +252,8 @@ export function createSkillsMarketplaceHandlers({
 					send({ entryId: target?.id, phase, percent, message });
 				},
 			});
-			// 默认启用
-			await setSkillEnabledHelper(db, target.name, true);
+			// 不再写入 skills.enabled.* override：默认状态由 list_skills 按
+			// modeClass + 设计模式开关 决定。用户想强制启用可在 UI 上手动 toggle。
 			send({ entryId: target.id, phase: "done", percent: 100 });
 			return {
 				success: true,
@@ -293,7 +278,11 @@ export function createSkillsMarketplaceHandlers({
 		const name = String(input.skillName ?? "").trim();
 		if (!name) throw new Error("skillName 不能为空");
 		await uninstallByName(name);
-		await setSkillEnabledHelper(db, name, false);
+		// 卸载时清除 override，避免重装后被旧 override 锁住状态
+		await db.client.execute({
+			sql: `DELETE FROM app_config WHERE key = ?`,
+			args: [`skills.enabled.${name}`],
+		});
 		return { success: true };
 	};
 

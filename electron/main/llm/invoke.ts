@@ -119,12 +119,23 @@ function getStreamSender(
 	mainWindow: BrowserWindow,
 ): BatchedSender<StreamChunk> {
 	if (cachedSender && cachedSenderWindow === mainWindow) return cachedSender;
+	// 切换/重建窗口时先释放旧 sender，避免遗留 maxDelayTimer 占用句柄。
+	if (cachedSender) cachedSender.dispose();
+	const ownedWindow = mainWindow;
 	cachedSender = new BatchedSender<StreamChunk>("llm-stream-chunk", () =>
 		cachedSenderWindow && !cachedSenderWindow.isDestroyed()
 			? cachedSenderWindow
 			: null,
 	);
-	cachedSenderWindow = mainWindow;
+	cachedSenderWindow = ownedWindow;
+	// 窗口关闭时立即 dispose 并清空缓存，防止下次重建时拿到 destroyed 引用。
+	ownedWindow.once("closed", () => {
+		if (cachedSenderWindow === ownedWindow) {
+			cachedSender?.dispose();
+			cachedSender = null;
+			cachedSenderWindow = null;
+		}
+	});
 	return cachedSender;
 }
 
@@ -398,14 +409,33 @@ function extractThoughtDeltaFromOpenAIChunk(chunk: any): string {
 
 /**
  * 获取活跃模型
+ *
+ * 30s TTL 缓存：active_model 在 set_active_model handler 处显式 invalidate，
+ * 同时复用 provider 缓存的失效路径（invalidateProviderCache 一并清掉）。
  */
+const ACTIVE_MODEL_CACHE_TTL_MS = 30_000;
+let activeModelCacheValue: string | null = null;
+let activeModelCacheTimestamp = 0;
+
 async function getActiveModel(db: DbContext): Promise<string> {
+	const now = Date.now();
+	if (
+		activeModelCacheValue &&
+		now - activeModelCacheTimestamp < ACTIVE_MODEL_CACHE_TTL_MS
+	) {
+		return activeModelCacheValue;
+	}
 	const rows = await db.client.execute({
 		sql: `SELECT value FROM app_config WHERE key = 'active_model'`,
 		args: [],
 	});
-	if (rows.rows.length === 0) return DEFAULT_MODEL;
-	return (rows.rows[0].value as string) || DEFAULT_MODEL;
+	const value =
+		rows.rows.length === 0
+			? DEFAULT_MODEL
+			: (rows.rows[0].value as string) || DEFAULT_MODEL;
+	activeModelCacheValue = value;
+	activeModelCacheTimestamp = now;
+	return value;
 }
 
 /**
@@ -476,11 +506,13 @@ async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
 	return providerCacheInFlight;
 }
 
-/** 主动失效 provider 缓存（在 provider 变更时调用） */
+/** 主动失效 provider 与 active_model 缓存（在 provider/active_model 变更时调用） */
 export function invalidateProviderCache() {
 	providerCacheTimestamp = 0;
 	providerCacheData = [];
 	providerCacheInFlight = null;
+	activeModelCacheValue = null;
+	activeModelCacheTimestamp = 0;
 }
 
 /**

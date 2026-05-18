@@ -2,6 +2,7 @@
  * WebDAV 自动同步调度器
  * 实现后台定时备份、启动时同步、变更时同步等功能
  */
+import { powerMonitor } from "electron";
 import { BackupManager } from "./BackupManager";
 import type { WebDavConfig } from "./WebDavService";
 import { getDbContext } from "../db/client";
@@ -233,6 +234,13 @@ export class AutoSyncScheduler {
 		// 防止重复同步
 		if (this.isSyncing) {
 			console.log("[AutoSyncScheduler] Sync already in progress, skipping");
+			return;
+		}
+
+		// 电池模式下跳过定时同步（startup / change / manual 仍然执行，
+		// 这些都是用户显式触发或会话内的关键操作，不能跳）。
+		if (trigger === "scheduled" && powerMonitor.onBatteryPower) {
+			console.log("[AutoSyncScheduler] On battery, skipping scheduled sync");
 			return;
 		}
 

@@ -6,7 +6,15 @@
  * - cwd 来源优先级：chatSession.cwd → 关联 AgentSession.cwd → "通用对话"
  * - 支持通过 "+" 新建线程（选目录后同时创建 AgentSession + ChatSession）
  */
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import {
+	useState,
+	useMemo,
+	useCallback,
+	useRef,
+	useEffect,
+	useSyncExternalStore,
+	useDeferredValue,
+} from "react";
 import {
 	Plus,
 	Search,
@@ -109,12 +117,18 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	const { expandedGroupKeys, toggleExpandedGroup } = useThreadGroupVisibility();
 
 	// 订阅 sessionStore 以在 AgentSession 变化时刷新（桥接旧数据 cwd）
-	const [agentSessionTick, setAgentSessionTick] = useState(0);
-	useEffect(() => {
-		return sessionStore.subscribe(() => setAgentSessionTick((t) => t + 1));
-	}, []);
+	// 用 useSyncExternalStore 替代 useState + subscribe + setState：
+	// React 18 下自动 batch，避免高频 emit 触发多次 re-render；
+	// snapshot 返回内部版本号（每次变更 +1），引用变化即视为更新。
+	const agentSessionTick = useSyncExternalStore(
+		useCallback((cb) => sessionStore.subscribe(cb), []),
+		useCallback(() => sessionStore.getRevision?.() ?? 0, []),
+	);
 
 	const [searchQuery, setSearchQuery] = useState("");
+	// useDeferredValue：输入框立即更新（用户感知不到延迟），过滤计算用旧值，
+	// React 在空闲时再用新值重算。多字符快速输入时合并为一次过滤。
+	const deferredSearchQuery = useDeferredValue(searchQuery);
 	const [searchVisible, setSearchVisible] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -169,8 +183,10 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			);
 		}) as ChatSession[];
 
-		if (searchQuery.trim()) {
-			const q = searchQuery.trim().toLowerCase();
+		// 用 deferred 版本的搜索词，避免输入框每打一个字就阻塞主线程
+		// 做整个 sessions 的全文过滤（特别是几千条 session 时）。
+		if (deferredSearchQuery.trim()) {
+			const q = deferredSearchQuery.trim().toLowerCase();
 			filtered = filtered.filter(
 				(s) =>
 					s.title.toLowerCase().includes(q) ||
@@ -179,7 +195,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		}
 
 		return filtered.sort((a, b) => b.updatedAt - a.updatedAt);
-	}, [sessions, searchQuery]);
+	}, [sessions, deferredSearchQuery]);
 
 	const folderGroups = useMemo(
 		() =>
@@ -524,7 +540,16 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						(s) => s.id === activeSessionId,
 					);
 					return (
-						<div key={group.key} className="mb-3">
+						<div
+							key={group.key}
+							className="mb-3"
+							style={{
+								// 浏览器原生延迟渲染：视口外的 folder section 跳过 layout/paint，
+								// 视口内/即将进入视口时再渲染。contain-intrinsic-size 给出占位高度避免滚动跳变。
+								contentVisibility: "auto",
+								containIntrinsicSize: "auto 400px",
+							}}
+						>
 							{/* Folder Header */}
 							<div
 								onContextMenu={(e) => {

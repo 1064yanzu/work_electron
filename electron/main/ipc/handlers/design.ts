@@ -330,7 +330,7 @@ export function createDesignHandlers(db: DbContext) {
 		});
 
 		const launchPrompt =
-			"请按上述发现答卷与方向规格开始生成设计稿。最终输出 `index.html`，必要时写入 `./assets/`。完成后给出 5 维自检报告。";
+			"请按上述发现答卷与方向规格开始生成设计稿。最终输出 `index.html`，必要时写入 `./assets/`。";
 
 		const skills = resolveSkillsForMode(mode, input.skills);
 

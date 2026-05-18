@@ -9,7 +9,9 @@ import { onPlanModifyFeedback } from "../../../lib/agent/planModifyEvent";
 import { agentStore } from "../../../lib/agent/store";
 import { parseDocProtocolFinal } from "../../../lib/chat/docProtocol";
 import { createMessage } from "../../../lib/chat/types";
+import { beginCopilotMirror } from "../../../lib/design/copilotMirror";
 import { EVENTS, events } from "../../../lib/events";
+import { designStore } from "../../../lib/stores";
 import { workspaceStore } from "../../../lib/workspaceStore";
 import type { SlashCommand } from "../../chat/SlashCommand";
 import { toast } from "../../ui/Toast";
@@ -201,6 +203,29 @@ export function useCopilotMessage({
 
 	const handleSendMessage = useCallback(
 		async (content: string, submitOptions?: SendMessageOptions) => {
+			// 设计模式草稿态：劫持发送，用用户输入覆盖 launch_payload.prompt
+			// 后启动 design SDK；不进 Copilot 消息流。
+			const designState = designStore.getState();
+			if (designState.stage === "draft" && designState.draftLaunch) {
+				const trimmed = content.trim();
+				if (!trimmed) {
+					toast.warning("请先描述你想要的设计");
+					return;
+				}
+				const designSession = designState.currentSession;
+				if (!designSession) {
+					toast.error("当前没有活跃的设计会话");
+					return;
+				}
+				// 关键时序：必须先 beginCopilotMirror 把 user 消息写进 chatStore，
+				// 再触发 consumeDraftLaunch + setStage("running")。否则 pendingLaunch
+				// 的 useEffect 异步链可能先跑到中栏 stage 切换，右栏还没拿到消息。
+				beginCopilotMirror(trimmed, designSession.id, designSession.title);
+				designStore.consumeDraftLaunch(trimmed);
+				designStore.setStage("running");
+				return;
+			}
+
 			const command = submitOptions?.command;
 			const forcedSkillId = submitOptions?.forcedSkillId;
 			const skipUserMessage = submitOptions?.skipUserMessage;

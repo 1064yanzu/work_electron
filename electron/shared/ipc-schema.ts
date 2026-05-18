@@ -417,6 +417,64 @@ export type IPCSchema = {
 			error?: string;
 		};
 	};
+	/**
+	 * 渲染端把全局未捕获错误 / unhandled promise rejection / 警告
+	 * 推送给主进程的 winston，弥补生产构建剥离 console 后的盲区。
+	 * 渲染端在 src/main.tsx 注册 window error/unhandledrejection 监听并调用此命令。
+	 */
+	log_renderer_event: {
+		input: {
+			level: "warn" | "error";
+			message: string;
+			source?: string;
+			stack?: string;
+			location?: { url?: string; line?: number; column?: number };
+		};
+		output: { success: boolean };
+	};
+	/**
+	 * 主进程性能 telemetry：渲染端 Settings → About 面板获取最近 N 条 perf_metrics 样本。
+	 */
+	perf_get_recent_metrics: {
+		input: { limit?: number };
+		output: {
+			samples: Array<{
+				ts: number;
+				rss: number;
+				heap_used: number;
+				heap_total: number;
+				external: number;
+				active_handles: number;
+				active_requests: number;
+				event_loop_lag_ms?: number;
+			}>;
+		};
+	};
+	/**
+	 * userData 缓存清理：扫描 + 报告 + 执行。
+	 * 默认 dry-run 仅返回可清理项；execute=true 时真正删除。
+	 */
+	userdata_janitor_scan: {
+		input: Record<string, never>;
+		output: {
+			scopes: Array<{
+				key: string;
+				label: string;
+				root: string;
+				files: number;
+				bytes: number;
+			}>;
+			total_bytes: number;
+		};
+	};
+	userdata_janitor_execute: {
+		input: { scopes?: string[] };
+		output: {
+			removed: number;
+			bytes: number;
+			errors: Array<{ path: string; error: string }>;
+		};
+	};
 	// ==================
 	// 应用更新
 	// ==================
@@ -878,6 +936,12 @@ export type IPCSchema = {
 			description: string;
 			location: string;
 			enabled: boolean;
+			/** 来自 SKILL.md `od.mode` 或描述启发，决定该技能是否归属"设计/媒体"类 */
+			modeClass: "design" | "general";
+			/** 原始 od.mode（若存在），用于 UI 展示 chip */
+			modeTag?: string;
+			/** 用户是否手动设置过启用状态；未手动调过的项跟随设计模式开关 */
+			userOverride: boolean;
 			/** 来自 Claude 插件市场等只读源，本面板不允许删除 */
 			readonly?: boolean;
 		}>;
@@ -889,6 +953,9 @@ export type IPCSchema = {
 			description: string;
 			location: string;
 			enabled: boolean;
+			modeClass: "design" | "general";
+			modeTag?: string;
+			userOverride: boolean;
 		};
 	};
 	delete_skill: {
@@ -898,6 +965,18 @@ export type IPCSchema = {
 	set_skill_enabled: {
 		input: { skillName: string; enabled: boolean };
 		output: { success: boolean };
+	};
+	/** 读取/写入"设计模式"全局开关。
+	 * - active=true：design 类技能整体启用
+	 * - active=false：design 类技能整体关闭（已手动开启的项保留 override）
+	 */
+	get_skills_design_mode: {
+		input: Record<string, never>;
+		output: { active: boolean };
+	};
+	set_skills_design_mode: {
+		input: { active: boolean };
+		output: { active: boolean };
 	};
 
 	// ==================
@@ -3694,7 +3773,12 @@ export type IPCSchema = {
 	// —— 后端动态缩略图（M2）
 	design_get_system_thumbnail: {
 		input: { system_id: string };
-		output: { path: string; ready: boolean; mtime_ms?: number; base64?: string };
+		output: {
+			path: string;
+			ready: boolean;
+			mtime_ms?: number;
+			base64?: string;
+		};
 	};
 
 	// —— 系统 / Skill 文档（M3 DocSidebar）

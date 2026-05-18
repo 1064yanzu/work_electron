@@ -59,6 +59,7 @@ class SessionStore {
 	private sessions = new Map<string, AgentSession>();
 	private currentSessionId: string | null = null;
 	private listeners = new Set<() => void>();
+	private revision = 0;
 
 	constructor() {
 		this.loadFromStorage();
@@ -241,9 +242,17 @@ class SessionStore {
 	}
 
 	/**
+	 * 内部版本号，配合 useSyncExternalStore 让消费者比对引用而非每次都重渲染
+	 */
+	getRevision(): number {
+		return this.revision;
+	}
+
+	/**
 	 * 通知监听器
 	 */
 	private notifyListeners(): void {
+		this.revision++;
 		this.listeners.forEach((l) => l());
 	}
 

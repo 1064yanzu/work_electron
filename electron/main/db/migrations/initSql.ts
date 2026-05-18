@@ -642,6 +642,21 @@ CREATE INDEX IF NOT EXISTS idx_design_sessions_updated_at ON design_sessions (up
 CREATE INDEX IF NOT EXISTS idx_design_sessions_output_asset_id ON design_sessions (output_asset_id);
 
 -- =====================
+-- 主进程性能指标采样（perfTelemetry 写入；本地展示，不上报）
+-- =====================
+CREATE TABLE IF NOT EXISTS perf_metrics (
+  ts INTEGER PRIMARY KEY,
+  rss INTEGER NOT NULL,
+  heap_used INTEGER NOT NULL,
+  heap_total INTEGER NOT NULL,
+  external INTEGER NOT NULL,
+  active_handles INTEGER NOT NULL,
+  active_requests INTEGER NOT NULL,
+  event_loop_lag_ms REAL
+);
+CREATE INDEX IF NOT EXISTS idx_perf_metrics_ts ON perf_metrics(ts DESC);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');

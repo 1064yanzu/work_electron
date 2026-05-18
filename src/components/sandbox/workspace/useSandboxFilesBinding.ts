@@ -267,15 +267,23 @@ export function useSandboxFilesBinding({
 		store.scanSandboxDir(sandboxDir);
 
 		if (!isLiveBoundTask) return;
+		// 仅当标签页可见时轮询，标签隐藏期间跳过；重新可见时立刻补扫一次。
 		refreshTimerRef.current = setInterval(() => {
+			if (document.visibilityState !== "visible") return;
 			store.scanSandboxDir(sandboxDir);
 		}, 5000);
+		const onVisibility = () => {
+			if (document.visibilityState === "visible")
+				store.scanSandboxDir(sandboxDir);
+		};
+		document.addEventListener("visibilitychange", onVisibility);
 
 		return () => {
 			if (refreshTimerRef.current) {
 				clearInterval(refreshTimerRef.current);
 				refreshTimerRef.current = null;
 			}
+			document.removeEventListener("visibilitychange", onVisibility);
 		};
 	}, [isLiveBoundTask, sandboxDir, store]);
 

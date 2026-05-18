@@ -66,10 +66,6 @@ export async function composeDesignSystemPrompt(
 		path.join(libRoot, "anti-slop.md"),
 		"# 反 AI Slop：禁止紫色渐变、sparkle icon、客户 logo 灰阶矩阵、Bootstrap card。",
 	);
-	const critique = await readFileSafe(
-		path.join(libRoot, "critique-rubric.md"),
-		"# 交付前自检：philosophy / hierarchy / execution / functional / innovation 各 1-10 分。",
-	);
 	const directionSpec = await renderDirectionSpec(opts.directionId);
 	const answersBlock = renderDiscoveryAnswers(opts.answers);
 
@@ -170,8 +166,6 @@ export async function composeDesignSystemPrompt(
 		);
 	}
 
-	parts.push("", "# 交付前自检契约", critique);
-
 	parts.push(
 		"",
 		"---",
@@ -180,11 +174,16 @@ export async function composeDesignSystemPrompt(
 		"",
 		"1. **必须生成** `index.html` 文件，并将所有 CSS / JS 内联到 `<head>` 与 `<body>` 之中；图片优先用 SVG 或 emoji，必要时用 `data:` URL 内联。",
 		"2. **禁止**引用任何远程 CDN，包括 Google Fonts、unpkg、jsdelivr；字体走 system font stack。",
-		"3. 生成完后在最后一条助手消息里附 5 维自检报告（philosophy / hierarchy / execution / functional / innovation 各 1-10 分 + 修复清单）。",
-		"4. 你已经在线程目录里运行（cwd 已经是设计会话目录）；写文件用相对路径 `./index.html` 即可。",
+		"3. 你已经在线程目录里运行（cwd 已经是设计会话目录）；写文件用相对路径 `./index.html` 即可。",
+		"4. **不要**在助手消息里写「自检报告 / 5 维评分 / 修复清单」之类的总结；用户会通过单独的 Critique 工具按需发起检查。完成后只用一两句简短说明改了什么即可。",
 	);
 
 	if (opts.gateMode) {
+		const critique = await readFileSafe(
+			path.join(libRoot, "critique-rubric.md"),
+			"# 交付前自检：philosophy / hierarchy / execution / functional / innovation 各 1-10 分。",
+		);
+		parts.push("", "# 交付前自检契约（gate_mode 启用）", critique);
 		parts.push(
 			"",
 			"## Self-Gate 协议（gate_mode=true 时启用）",

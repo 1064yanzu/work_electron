@@ -260,5 +260,25 @@ export function createLogsHandlers(deps: { logger: Logger }) {
 		}
 	};
 
-	return { logs_get_info, logs_reveal, logs_export };
+	const log_renderer_event: Handler<"log_renderer_event"> = async (
+		_event,
+		input,
+	) => {
+		const level = input.level === "warn" ? "warn" : "error";
+		const payload: Record<string, unknown> = {
+			scope: "renderer",
+			msg: input.message || "(renderer event)",
+		};
+		if (input.source) payload.source = input.source;
+		if (input.stack) payload.stack = input.stack;
+		if (input.location) payload.location = input.location;
+		try {
+			deps.logger[level](payload);
+		} catch {
+			// 写日志失败不抛出
+		}
+		return { success: true };
+	};
+
+	return { logs_get_info, logs_reveal, logs_export, log_renderer_event };
 }

@@ -260,6 +260,14 @@ export async function syncOutputToVault(
 	const row = rows.rows[0];
 	if (Number(row.is_deleted ?? 0) === 1) return row.storage_path as string;
 
+	// 设计产物（output_type=design）的 storage_path 直接指向 work_dir/index.html，
+	// 不能像普通笔记/产物那样改写为 .md 文件再 unlink 原始 html —— 那会让 BrowserShell
+	// 预览的 file:// 链路 404。Design 自有 export 流水线（design_export / finish_to_thread）
+	// 负责把成果搬到 vault 或线程目录，sync 不重复参与。
+	if ((row.output_type as string) === "design") {
+		return (row.storage_path as string | undefined) ?? null;
+	}
+
 	let tags: string[] = [];
 	try {
 		tags = JSON.parse((row.tags as string) || "[]");

@@ -51,6 +51,8 @@ import { createSourceHandlers } from "./handlers/sources";
 import { createSyncHandlers } from "./handlers/sync";
 import { createSystemHandlers } from "./handlers/system";
 import { createLogsHandlers } from "./handlers/logs";
+import { createPerfHandlers } from "./handlers/perf";
+import { createUserDataJanitorHandlers } from "./handlers/userDataJanitor";
 import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
@@ -114,7 +116,14 @@ function bindMainWindowFocusTracking(window: BrowserWindow | null) {
 	const emitSoon = () => {
 		setTimeout(broadcastMainWindowFocusState, 0);
 	};
-	const events = ["focus", "blur", "show", "hide", "minimize", "restore"] as const;
+	const events = [
+		"focus",
+		"blur",
+		"show",
+		"hide",
+		"minimize",
+		"restore",
+	] as const;
 	for (const eventName of events) {
 		(window as any).on(eventName, emitSoon);
 	}
@@ -175,6 +184,8 @@ export function registerIpcHandlers({
 	const webContentHandlers = createWebContentHandlers();
 	const systemHandlers = createSystemHandlers();
 	const logsHandlers = createLogsHandlers({ logger });
+	const perfHandlers = createPerfHandlers({ db });
+	const userDataJanitorHandlers = createUserDataJanitorHandlers();
 	const skillsHandlers = createSkillsHandlers(db);
 	const skillsMarketplaceHandlers = createSkillsMarketplaceHandlers({
 		db,
@@ -305,6 +316,22 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"logs_export",
 		logsHandlers.logs_export satisfies IpcHandler<"logs_export">,
+	);
+	ipcMain.handle(
+		"log_renderer_event",
+		logsHandlers.log_renderer_event satisfies IpcHandler<"log_renderer_event">,
+	);
+	ipcMain.handle(
+		"perf_get_recent_metrics",
+		perfHandlers.perf_get_recent_metrics satisfies IpcHandler<"perf_get_recent_metrics">,
+	);
+	ipcMain.handle(
+		"userdata_janitor_scan",
+		userDataJanitorHandlers.userdata_janitor_scan satisfies IpcHandler<"userdata_janitor_scan">,
+	);
+	ipcMain.handle(
+		"userdata_janitor_execute",
+		userDataJanitorHandlers.userdata_janitor_execute satisfies IpcHandler<"userdata_janitor_execute">,
 	);
 
 	// 应用更新
@@ -470,6 +497,14 @@ export function registerIpcHandlers({
 	ipcMain.handle("import_skill", skillsHandlers.import_skill);
 	ipcMain.handle("delete_skill", skillsHandlers.delete_skill);
 	ipcMain.handle("set_skill_enabled", skillsHandlers.set_skill_enabled);
+	ipcMain.handle(
+		"get_skills_design_mode",
+		skillsHandlers.get_skills_design_mode,
+	);
+	ipcMain.handle(
+		"set_skills_design_mode",
+		skillsHandlers.set_skills_design_mode,
+	);
 
 	// Skills Marketplace
 	ipcMain.handle(

@@ -124,7 +124,8 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		chapterId: string;
 		seek:
 			| { kind: "offset"; offset: number; nonce: number }
-			| { kind: "pdfPage"; page: number; nonce: number };
+			| { kind: "pdfPage"; page: number; nonce: number }
+			| { kind: "percent"; percent: number; nonce: number };
 	} | null>(null);
 
 	const [editingCard, setEditingCard] = useState<ReaderKnowledgeCard | null>(
@@ -779,26 +780,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		if (activeChapterId === chapterId) {
 			setSeekRequest(seek);
 		} else {
-			// pendingSeekRef 类型只支持 offset / pdfPage（百分比可以等切章后用 seekPercentRequest），
-			// 但简单起见也走 pendingSeekRef 的扩展：直接放进 setTimeout 等切章后下发
-			pendingSeekRef.current = {
-				chapterId,
-				seek: { kind: "offset", offset: 0, nonce }, // 先到顶
-			};
+			// 切章后由下方的 useEffect (rAF 兜底) 统一下发，避免 setInterval 轮询。
+			pendingSeekRef.current = { chapterId, seek };
 			setActiveChapterId(chapterId);
-			// 章节加载完成后再追加一次百分比 seek
-			const persistedNonce = nonce;
-			const interval = window.setInterval(() => {
-				if (chapter?.id === chapterId) {
-					setSeekRequest({
-						kind: "percent",
-						percent: pct,
-						nonce: persistedNonce,
-					});
-					window.clearInterval(interval);
-				}
-			}, 80);
-			window.setTimeout(() => window.clearInterval(interval), 4000);
 		}
 	}
 

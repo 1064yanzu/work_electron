@@ -6,7 +6,6 @@ import {
 	Image as ImageIcon,
 	RefreshCw,
 	SlidersHorizontal,
-	Sparkles,
 	Wand2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +13,6 @@ import {
 	designFinalizeSession,
 	designGetSession,
 	designRevealWorkDir,
-	designRunCritique,
 } from "../../lib/api/design";
 import {
 	designStore,
@@ -24,7 +22,6 @@ import {
 import { convertFileSrc } from "../../lib/tauriCompat";
 import { BrowserShell } from "../sandbox/preview/BrowserShell";
 import { toast } from "../ui/Toast";
-import { CritiqueScorecard } from "./CritiqueScorecard";
 import { ExitDesignButton } from "./ExitDesignButton";
 import { ExportDialog } from "./ExportDialog";
 import { MediaGenerationPanel } from "./MediaGenerationPanel";
@@ -56,7 +53,7 @@ interface DesignArtifactViewProps {
 	runId?: string | null;
 }
 
-type SidebarTab = "critique" | "tweaks" | "media" | "docs" | "files" | null;
+type SidebarTab = "tweaks" | "media" | "docs" | "files" | null;
 
 export function DesignArtifactView({
 	onRegenerate,
@@ -71,13 +68,11 @@ export function DesignArtifactView({
 	);
 	const [exportOpen, setExportOpen] = useState(false);
 	const [refreshKey, setRefreshKey] = useState(0);
-	const [sidebarTab, setSidebarTab] = useState<SidebarTab>("critique");
-	const [critiqueRunning, setCritiqueRunning] = useState(false);
+	const [sidebarTab, setSidebarTab] = useState<SidebarTab>(null);
 	const [theme, setTheme] = useState<"light" | "dark">("light");
 	const [openFiles, setOpenFiles] = useState<string[]>([]);
 	const [activeFile, setActiveFile] = useState<string | null>(null);
 	const finalizedRef = useRef<Set<string>>(new Set());
-	const critiqueRanRef = useRef<Set<string>>(new Set());
 
 	const docTarget = useMemo<{
 		kind: "system" | "skill";
@@ -97,11 +92,15 @@ export function DesignArtifactView({
 	// 主交付物 file:// URL
 	const previewUrl = useMemo(() => {
 		if (!session) return undefined;
-		// 优先用 output_asset.storage_path（已 finalize），否则用 work_dir/index.html
+		// 优先用 output_asset.storage_path（已 finalize），但仅当它仍然指向 .html
+		// 文件时——历史会话被 syncOutputToVault 改写成过 .md 路径，那种情况要
+		// fallback 到 work_dir/index.html，不然 BrowserShell 加载到的是空 markdown。
 		// convertFileSrc 跨平台处理盘符 + encodeURI，避免手拼 file:// 在 Windows
 		// 上漏掉根斜杠或没编码空格的问题。
 		const storagePath = session.output_asset?.storage_path;
-		const target = storagePath ?? `${session.work_dir}/index.html`;
+		const isHtmlPath =
+			typeof storagePath === "string" && /\.html?$/i.test(storagePath);
+		const target = isHtmlPath ? storagePath : `${session.work_dir}/index.html`;
 		return `${convertFileSrc(target)}?_=${refreshKey}`;
 	}, [session, refreshKey]);
 
@@ -129,72 +128,7 @@ export function DesignArtifactView({
 	}, [session]);
 
 	// 自动跑一次 5 维自检（如果还没跑过）
-	useEffect(() => {
-		if (!session) return;
-		if (session.status !== "done") return;
-		if (session.critique_scores) return;
-		if (critiqueRanRef.current.has(session.id)) return;
-		critiqueRanRef.current.add(session.id);
-		void (async () => {
-			try {
-				setCritiqueRunning(true);
-				const gateMode =
-					(typeof window !== "undefined" &&
-						(localStorage.getItem("design.gateMode") === "1" ||
-							localStorage.getItem("design.gateMode") === "true")) ||
-					false;
-				const model =
-					(typeof window !== "undefined" &&
-						localStorage.getItem("design.critiqueModel")) ||
-					undefined;
-				const scores = await designRunCritique({
-					session_id: session.id,
-					gate_mode: gateMode,
-					model: model || undefined,
-				});
-				designStore.setCurrentSession({
-					...session,
-					critique_scores: scores,
-				});
-			} catch (err) {
-				console.warn("[DesignArtifactView] critique failed", err);
-			} finally {
-				setCritiqueRunning(false);
-			}
-		})();
-	}, [session]);
-
-	const handleRunCritique = async () => {
-		if (!session) return;
-		try {
-			setCritiqueRunning(true);
-			const gateMode =
-				(typeof window !== "undefined" &&
-					(localStorage.getItem("design.gateMode") === "1" ||
-						localStorage.getItem("design.gateMode") === "true")) ||
-				false;
-			const model =
-				(typeof window !== "undefined" &&
-					localStorage.getItem("design.critiqueModel")) ||
-				undefined;
-			const scores = await designRunCritique({
-				session_id: session.id,
-				gate_mode: gateMode,
-				model: model || undefined,
-			});
-			designStore.setCurrentSession({
-				...session,
-				critique_scores: scores,
-			});
-			toast.success("已重新评分");
-		} catch (err) {
-			toast.error(
-				`评分失败: ${err instanceof Error ? err.message : String(err)}`,
-			);
-		} finally {
-			setCritiqueRunning(false);
-		}
-	};
+	// —— 自检 UI 已下线，相关 useEffect / handler 已移除。
 
 	if (!session) {
 		return (
@@ -257,16 +191,6 @@ export function DesignArtifactView({
 
 				<div className="flex-1" />
 
-				<button
-					type="button"
-					onClick={() => void handleRunCritique()}
-					disabled={critiqueRunning}
-					className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded-lg transition-colors disabled:opacity-50"
-					title="重新跑 5 维自检"
-				>
-					<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
-					{critiqueRunning ? "评分中..." : "评分"}
-				</button>
 				<button
 					type="button"
 					onClick={handleRegenerate}
@@ -358,20 +282,6 @@ export function DesignArtifactView({
 					<button
 						type="button"
 						onClick={() =>
-							setSidebarTab(sidebarTab === "critique" ? null : "critique")
-						}
-						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-							sidebarTab === "critique"
-								? "bg-primary/10 text-primary"
-								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
-						}`}
-						title="评分"
-					>
-						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
-					</button>
-					<button
-						type="button"
-						onClick={() =>
 							setSidebarTab(sidebarTab === "tweaks" ? null : "tweaks")
 						}
 						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
@@ -450,29 +360,6 @@ export function DesignArtifactView({
 				) : null}
 				{sidebarTab && sidebarTab !== "files" && sidebarTab !== "docs" ? (
 					<aside className="w-72 shrink-0 border-l border-border bg-background overflow-y-auto">
-						{sidebarTab === "critique" ? (
-							session.critique_scores ? (
-								<div className="p-3">
-									<CritiqueScorecard
-										scores={
-											session.critique_scores.scores ?? session.critique_scores
-										}
-										total={session.critique_scores.total}
-										notes={session.critique_scores.notes}
-										fixes={session.critique_scores.fixes}
-										passed={session.critique_scores.passed}
-										lowestDim={session.critique_scores.lowest_dim}
-										regenerateReason={session.critique_scores.regenerate_reason}
-										onClose={() => setSidebarTab(null)}
-										onRegenerate={onRegenerate}
-									/>
-								</div>
-							) : (
-								<div className="p-6 text-center text-xs text-text-muted">
-									{critiqueRunning ? "评分中…" : "尚无评分，点击顶部「评分」"}
-								</div>
-							)
-						) : null}
 						{sidebarTab === "tweaks" ? (
 							<TweaksPanel
 								sessionId={session.id}

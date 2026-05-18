@@ -37,7 +37,7 @@ export function MascotLoadingPreview({
 					loop
 					muted
 					playsInline
-					preload="auto"
+					preload="metadata"
 					className="h-full w-full object-contain"
 				/>
 				<div className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface/80 shadow-bai-card backdrop-blur-sm">

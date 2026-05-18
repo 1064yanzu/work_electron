@@ -66,7 +66,7 @@ export function MascotLoadingVideo({
 				loop
 				muted
 				playsInline
-				preload="auto"
+				preload="metadata"
 				disablePictureInPicture
 				disableRemotePlayback
 				className={cn(

@@ -132,8 +132,6 @@ export function createAgentSdkHandlers(options: {
 		runRegistry.set(runId, { abortController, alive: false });
 
 		(async () => {
-			// 收集 assistant 回复文本用于记忆提取（声明在 try 外层以便 finally 可访问）
-			const assistantTextParts: string[] = [];
 			try {
 				const sdk = await import("@anthropic-ai/claude-agent-sdk");
 				// 收集 stderr 关键错误信息，用于在 sawResult=false 时提供更有意义的错误
@@ -1439,9 +1437,6 @@ export function createAgentSdkHandlers(options: {
 							? msgAny.message.content
 							: [];
 						for (const b of blocks) {
-							if (b?.type === "text" && typeof b.text === "string") {
-								assistantTextParts.push(b.text);
-							}
 							if (b?.type !== "tool_use") continue;
 							const id = String(b?.id || "");
 							const name = String(b?.name || "");

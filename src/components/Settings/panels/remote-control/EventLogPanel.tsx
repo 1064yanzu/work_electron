@@ -60,10 +60,26 @@ export function EventLogPanel() {
 	}, []);
 
 	useEffect(() => {
+		// 折叠时不启动轮询，避免设置面板常驻 5s tick。
+		if (!expanded) return;
 		void refresh();
-		const timer = setInterval(() => void refresh(), 5000);
-		return () => clearInterval(timer);
-	}, [refresh]);
+		let timer: number | null = window.setInterval(() => {
+			// 标签页隐藏时跳过一次刷新（IPC 仍在主进程持续记录，重新可见后立即拉一次）。
+			if (document.visibilityState !== "visible") return;
+			void refresh();
+		}, 5000);
+		const onVisibility = () => {
+			if (document.visibilityState === "visible") void refresh();
+		};
+		document.addEventListener("visibilitychange", onVisibility);
+		return () => {
+			if (timer !== null) {
+				clearInterval(timer);
+				timer = null;
+			}
+			document.removeEventListener("visibilitychange", onVisibility);
+		};
+	}, [expanded, refresh]);
 
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });

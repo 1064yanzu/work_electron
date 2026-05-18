@@ -11,7 +11,17 @@ export default defineConfig({
 		},
 		dedupe: ["react", "react-dom"],
 	},
+	esbuild: {
+		// 生产构建剥离 debugger 与非关键 console；保留 console.warn/error 用作
+		// 兜底排查（P2-5 渲染端 error 收口会把它们经 IPC 写入 winston）。
+		drop: process.env.NODE_ENV === "production" ? ["debugger"] : [],
+		pure:
+			process.env.NODE_ENV === "production"
+				? ["console.log", "console.info", "console.debug", "console.trace"]
+				: [],
+	},
 	build: {
+		sourcemap: false,
 		rollupOptions: {
 			external: [
 				"@anthropic-ai/claude-agent-sdk",
@@ -89,7 +99,20 @@ export default defineConfig({
 				// Shortcut of `build.lib.entry`.
 				entry: "electron/main/index.ts",
 				vite: {
+					esbuild: {
+						drop: process.env.NODE_ENV === "production" ? ["debugger"] : [],
+						pure:
+							process.env.NODE_ENV === "production"
+								? [
+										"console.log",
+										"console.info",
+										"console.debug",
+										"console.trace",
+									]
+								: [],
+					},
 					build: {
+						sourcemap: false,
 						rollupOptions: {
 							external: [
 								// Must be external: SDK uses import.meta.url to locate cli.js at
@@ -140,6 +163,23 @@ export default defineConfig({
 				// Shortcut of `build.rollupOptions.input`.
 				// Preload scripts may contain Web assets, so use the `build.rollupOptions.input` instead `build.lib.entry`.
 				input: path.join(__dirname, "electron/preload/index.ts"),
+				vite: {
+					esbuild: {
+						drop: process.env.NODE_ENV === "production" ? ["debugger"] : [],
+						pure:
+							process.env.NODE_ENV === "production"
+								? [
+										"console.log",
+										"console.info",
+										"console.debug",
+										"console.trace",
+									]
+								: [],
+					},
+					build: {
+						sourcemap: false,
+					},
+				},
 			},
 			// Ployfill the Electron and Node.js API for Renderer process.
 			// If you want use Node.js in Renderer process, the `nodeIntegration` needs to be enabled in the Main process.

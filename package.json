@@ -4,7 +4,7 @@
 	"version": "0.2.2",
 	"type": "module",
 	"scripts": {
-		"predev": "node scripts/copy-pdfjs-assets.mjs",
+		"predev": "node scripts/copy-pdfjs-assets.mjs && node scripts/clean-build.mjs --dev",
 		"dev": "vite",
 		"clean:build": "node scripts/clean-build.mjs",
 		"prepare:build": "npm run clean:build && node scripts/generate-icons.mjs && node scripts/copy-pdfjs-assets.mjs",

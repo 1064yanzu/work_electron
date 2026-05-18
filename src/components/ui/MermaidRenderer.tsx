@@ -9,21 +9,35 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import mermaid from "mermaid";
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
-// 懒初始化标记，确保 mermaid 只初始化一次
+// 懒加载 mermaid：首次渲染图表时才动态 import，避免静态 import 把整个 mermaid bundle
+// （> 4MB gzip）拉进首屏 chunk。共享一个 Promise 让多次实例化只触发一次下载。
+type MermaidModule = typeof import("mermaid");
+let mermaidLoader: Promise<MermaidModule> | null = null;
 let mermaidInitialized = false;
-function ensureMermaidInit() {
-	if (mermaidInitialized) return;
-	mermaidInitialized = true;
-	mermaid.initialize({
-		startOnLoad: false,
-		theme: "default",
-		securityLevel: "loose",
-		fontFamily: "ui-sans-serif, system-ui, sans-serif",
-	});
+
+async function loadMermaid(): Promise<MermaidModule> {
+	if (!mermaidLoader) {
+		mermaidLoader = import("mermaid");
+	}
+	return mermaidLoader;
+}
+
+async function ensureMermaidInit(): Promise<MermaidModule["default"]> {
+	const mod = await loadMermaid();
+	const mermaid = mod.default;
+	if (!mermaidInitialized) {
+		mermaidInitialized = true;
+		mermaid.initialize({
+			startOnLoad: false,
+			theme: "default",
+			securityLevel: "loose",
+			fontFamily: "ui-sans-serif, system-ui, sans-serif",
+		});
+	}
+	return mermaid;
 }
 
 interface MermaidRendererProps {
@@ -52,13 +66,14 @@ const MermaidRenderer = memo(function MermaidRenderer({
 		const renderChart = async () => {
 			if (!chart || !containerRef.current) return;
 
-			// 确保 mermaid 已初始化
-			ensureMermaidInit();
-
 			try {
 				setError(null);
 				// Clear previous SVG
 				setSvg("");
+
+				// 动态 import + 初始化
+				const mermaid = await ensureMermaidInit();
+				if (!mounted) return;
 
 				// mermaid.render usually returns an object with svg field in newer versions
 				// In older versions, it returned just string.

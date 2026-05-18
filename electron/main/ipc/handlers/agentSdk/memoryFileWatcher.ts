@@ -35,7 +35,9 @@ class MemoryFileWatcher {
 			[path.join(dir, "*.md"), globalClaude],
 			{
 				ignoreInitial: true,
-				awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 30 },
+				// 记忆文件多为人工编辑，写入完成判定不必激进；放宽 poll 间隔与稳定窗口，
+				// 降低主进程后台轮询开销（30ms → 250ms / 100ms → 300ms）。
+				awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 250 },
 				persistent: true,
 			},
 		);
@@ -64,7 +66,7 @@ class MemoryFileWatcher {
 			],
 			{
 				ignoreInitial: true,
-				awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 30 },
+				awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 250 },
 				persistent: true,
 			},
 		);

@@ -1,0 +1,118 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "electron/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "scripts/check-bundle-size.mjs"
+      - "scripts/.bundle-size-baseline.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  bundle-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Skip override via PR label
+        id: skip-check
+        if: contains(github.event.pull_request.labels.*.name, 'skip-bundle-check')
+        run: echo "skipping bundle size check (label: skip-bundle-check)" && echo "skip=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: steps.skip-check.outputs.skip != 'true'
+        run: npm ci --ignore-scripts
+
+      - name: Build renderer + main
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          node scripts/clean-build.mjs
+          node scripts/copy-pdfjs-assets.mjs
+          npx tsc -p tsconfig.json --noEmit
+          npx vite build
+
+      - name: Compare bundle size
+        if: steps.skip-check.outputs.skip != 'true'
+        id: size
+        run: |
+          node scripts/check-bundle-size.mjs --json > bundle-size-report.json
+          cat bundle-size-report.json
+        continue-on-error: true
+
+      - name: Post PR comment
+        if: steps.skip-check.outputs.skip != 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('bundle-size-report.json', 'utf-8'));
+            } catch (err) {
+              core.warning('bundle-size-report.json not generated');
+              return;
+            }
+            const fmt = (n) => {
+              const abs = Math.abs(n);
+              if (abs < 1024) return `${n.toFixed(0)} B`;
+              if (abs < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+              return `${(n / 1024 / 1024).toFixed(2)} MB`;
+            };
+            if (report.noBaseline) {
+              const body = `📦 **Bundle size**: no baseline yet (total ${fmt(report.total)}).`;
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+              return;
+            }
+            const ratioPct = (report.deltaRatio * 100).toFixed(2);
+            const sign = report.deltaBytes >= 0 ? '+' : '-';
+            const status = report.exceeded ? '🔴 EXCEEDED THRESHOLD' : '✅ within budget';
+            const perDir = Object.entries(report.perDir)
+              .map(([k, v]) => `- \`${k}\`: ${fmt(v)}`)
+              .join('\n');
+            const body = [
+              `### 📦 Bundle size: ${status}`,
+              '',
+              `| | Bytes |`,
+              `|---|---|`,
+              `| baseline | ${fmt(report.baseline)} |`,
+              `| this PR | ${fmt(report.total)} |`,
+              `| delta | ${sign}${fmt(Math.abs(report.deltaBytes))} (${sign}${ratioPct}%) |`,
+              `| threshold | +${(report.threshold * 100).toFixed(0)}% |`,
+              '',
+              perDir,
+              '',
+              report.exceeded
+                ? '> 如该增长是预期的，请评审后用 `node scripts/check-bundle-size.mjs --update` 更新 baseline，再提交一次。或者给 PR 加上 `skip-bundle-check` 标签跳过本次检查。'
+                : '',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail on threshold exceeded
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          if [ -f bundle-size-report.json ] && jq -e '.exceeded == true' bundle-size-report.json > /dev/null; then
+            echo "Bundle size exceeded threshold, failing job."
+            exit 1
+          fi

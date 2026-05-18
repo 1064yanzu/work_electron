@@ -5,6 +5,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { AppConfig } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
+import { invalidateProviderCache } from "../../llm/invoke";
 import {
 	getWindowsCloseBehavior,
 	setWindowsCloseBehavior,
@@ -67,6 +68,8 @@ export function createConfigHandlers(db: DbContext) {
             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
 			args: [input.model, timestamp],
 		});
+		// 让 invoke.ts 中的 active_model 缓存与 provider 缓存即时失效，避免 30s 窗口期间继续走旧值。
+		invalidateProviderCache();
 		return { success: true };
 	};
 

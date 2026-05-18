@@ -160,9 +160,13 @@ export class CloudNodeClient {
 	private startHeartbeat(): void {
 		this.clearHeartbeatTimer();
 		this.heartbeatTimer = setInterval(() => {
+			// 仅在连接打开时发送，断开/连接中状态下空跑会被 send() 拦截但仍计入轮询
+			if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 			this.send({ type: "node.heartbeat", ts: Date.now() });
 			this.patchStatus({ lastHeartbeatAt: Date.now() });
 		}, Math.max(5, this.config.heartbeatSec) * 1000);
+		// 心跳不阻止 Node event loop 退出（应用关闭时不会因此卡死）
+		this.heartbeatTimer.unref?.();
 	}
 
 	private async resolveActiveModel(): Promise<string> {
