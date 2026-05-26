@@ -181,12 +181,16 @@ export async function runCritique(
 	}
 
 	// 大文件截断到 60k 字符（评分不需要完整 HTML）
-	const truncated = html.length > 60000 ? `${html.slice(0, 60000)}\n<!-- truncated -->` : html;
+	const truncated =
+		html.length > 60000 ? `${html.slice(0, 60000)}\n<!-- truncated -->` : html;
 
 	const libRoot = getDesignLibraryRoot();
 	let rubric = "";
 	try {
-		rubric = await fs.readFile(path.join(libRoot, "critique-rubric.md"), "utf-8");
+		rubric = await fs.readFile(
+			path.join(libRoot, "critique-rubric.md"),
+			"utf-8",
+		);
 	} catch {
 		rubric =
 			"按 philosophy / hierarchy / execution / functional / innovation 各打 1-10 分。";
@@ -219,7 +223,7 @@ export async function runCritique(
 		'  "notes": "整体克制、像 Linear；hero 字号差异不够拉开",',
 		'  "fixes": ["把 H2 改成 clamp(24px, 4vw, 32px)", "icon 描边改 1.5px"]' +
 			(gate
-				? ",\n  \"passed\": false,\n  \"lowest_dim\": \"innovation\",\n  \"lowest_score\": 6,\n  \"regenerate_reason\": \"hero 缺少记忆点\""
+				? ',\n  "passed": false,\n  "lowest_dim": "innovation",\n  "lowest_score": 6,\n  "regenerate_reason": "hero 缺少记忆点"'
 				: ""),
 		"}",
 		"```",

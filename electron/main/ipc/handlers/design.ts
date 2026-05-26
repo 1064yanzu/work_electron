@@ -153,7 +153,10 @@ function rowToSession(row: Record<string, unknown>): DesignSession {
 	};
 }
 
-async function loadSession(db: DbContext, id: string): Promise<DesignSession | null> {
+async function loadSession(
+	db: DbContext,
+	id: string,
+): Promise<DesignSession | null> {
 	const r = await db.client.execute({
 		sql: "SELECT * FROM design_sessions WHERE id = ?",
 		args: [id],
@@ -162,7 +165,10 @@ async function loadSession(db: DbContext, id: string): Promise<DesignSession | n
 	return rowToSession(r.rows[0] as Record<string, unknown>);
 }
 
-async function loadOutputAsset(db: DbContext, id: string | undefined | null): Promise<OutputAsset | undefined> {
+async function loadOutputAsset(
+	db: DbContext,
+	id: string | undefined | null,
+): Promise<OutputAsset | undefined> {
 	if (!id) return undefined;
 	const r = await db.client.execute({
 		sql: "SELECT * FROM output_assets WHERE id = ?",
@@ -221,7 +227,11 @@ async function resolveExportTargetDir(
 		}
 		case "folder": {
 			if (!target.folder_path) throw new Error("缺少文件夹路径");
-			return { dir: target.folder_path, label: target.folder_path, kind: "folder" };
+			return {
+				dir: target.folder_path,
+				label: target.folder_path,
+				kind: "folder",
+			};
 		}
 		case "save-dialog": {
 			const result = await dialog.showOpenDialog({
@@ -239,7 +249,9 @@ async function resolveExportTargetDir(
 			};
 		}
 		default:
-			throw new Error(`不支持的导出目标：${(target as { kind?: string }).kind}`);
+			throw new Error(
+				`不支持的导出目标：${(target as { kind?: string }).kind}`,
+			);
 	}
 }
 
@@ -250,7 +262,10 @@ export function createDesignHandlers(db: DbContext) {
 		return BUILTIN_DESIGN_DIRECTIONS;
 	};
 
-	const list_sessions: Handler<"design_list_sessions"> = async (_event, input) => {
+	const list_sessions: Handler<"design_list_sessions"> = async (
+		_event,
+		input,
+	) => {
 		const limit = Math.min(Math.max(input?.limit ?? 50, 1), 200);
 		const offset = Math.max(input?.offset ?? 0, 0);
 		const r = await db.client.execute({
@@ -264,7 +279,10 @@ export function createDesignHandlers(db: DbContext) {
 		return DISCOVERY_FORM_SCHEMA;
 	};
 
-	const start_session: Handler<"design_start_session"> = async (_event, input) => {
+	const start_session: Handler<"design_start_session"> = async (
+		_event,
+		input,
+	) => {
 		const id = randomUUID();
 		const title = (input?.title?.trim() || "未命名设计").slice(0, 80);
 		const workDir = await createSessionDir(id);
@@ -291,15 +309,25 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
-	const submit_discovery: Handler<"design_submit_discovery"> = async (_event, input) => {
+	const submit_discovery: Handler<"design_submit_discovery"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const metadataMode = inferModeFromMetadata(session.metadata) ?? undefined;
 		const mode =
-			input.mode || session.mode || metadataMode || inferModeFromAnswers(input.answers);
+			input.mode ||
+			session.mode ||
+			metadataMode ||
+			inferModeFromAnswers(input.answers);
 		const directionId =
-			input.direction_id || (typeof input.answers?.tone === "string" ? String(input.answers.tone) : "modern-minimal");
+			input.direction_id ||
+			(typeof input.answers?.tone === "string"
+				? String(input.answers.tone)
+				: "modern-minimal");
 		const systemId = input.system_id || session.system_id;
 
 		const systemPrompt = await composeDesignSystemPrompt({
@@ -350,7 +378,8 @@ export function createDesignHandlers(db: DbContext) {
 
 	const get_session: Handler<"design_get_session"> = async (_event, input) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const output_asset = await loadOutputAsset(db, session.output_asset_id);
 		let files: string[] = [];
@@ -363,9 +392,13 @@ export function createDesignHandlers(db: DbContext) {
 		return { ...session, output_asset, files };
 	};
 
-	const update_session: Handler<"design_update_session"> = async (_event, input) => {
+	const update_session: Handler<"design_update_session"> = async (
+		_event,
+		input,
+	) => {
 		const existing = await loadSession(db, input.session_id);
-		if (!existing) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!existing)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const fields: string[] = [];
 		const args: (string | number | null)[] = [];
@@ -409,9 +442,13 @@ export function createDesignHandlers(db: DbContext) {
 		return session;
 	};
 
-	const finalize_session: Handler<"design_finalize_session"> = async (_event, input) => {
+	const finalize_session: Handler<"design_finalize_session"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const mainPath = await getMainArtifactPath(session.id);
 		if (!mainPath) {
@@ -430,7 +467,8 @@ export function createDesignHandlers(db: DbContext) {
 		const MAX_INLINE = 5 * 1024 * 1024;
 		const content =
 			htmlContent.length > MAX_INLINE
-				? htmlContent.slice(0, 2000) + `\n<!-- truncated; full file at ${mainPath} -->`
+				? htmlContent.slice(0, 2000) +
+					`\n<!-- truncated; full file at ${mainPath} -->`
 				: htmlContent;
 
 		const ts = Date.now();
@@ -461,7 +499,10 @@ export function createDesignHandlers(db: DbContext) {
 		return { ...(updated as DesignSession), output_asset };
 	};
 
-	const delete_session: Handler<"design_delete_session"> = async (_event, input) => {
+	const delete_session: Handler<"design_delete_session"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
 		if (!session) return { success: true };
 
@@ -481,15 +522,22 @@ export function createDesignHandlers(db: DbContext) {
 		return { success: true };
 	};
 
-	const reveal_work_dir: Handler<"design_reveal_work_dir"> = async (_event, input) => {
+	const reveal_work_dir: Handler<"design_reveal_work_dir"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 		const { shell } = await import("electron");
 		shell.openPath(session.work_dir);
 		return { success: true };
 	};
 
-	const list_export_targets: Handler<"design_list_export_targets"> = async (_event, input) => {
+	const list_export_targets: Handler<"design_list_export_targets"> = async (
+		_event,
+		input,
+	) => {
 		return {
 			current_thread: input?.current_thread_path
 				? {
@@ -505,7 +553,8 @@ export function createDesignHandlers(db: DbContext) {
 
 	const export_session: Handler<"design_export"> = async (_event, input) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const ctx = {
 			session_id: session.id,
@@ -525,13 +574,21 @@ export function createDesignHandlers(db: DbContext) {
 				result = await exportHtmlInline(ctx, targetResolved.dir);
 				break;
 			case "html-project":
-				result = await exportHtmlProject(ctx, targetResolved.dir, input.options);
+				result = await exportHtmlProject(
+					ctx,
+					targetResolved.dir,
+					input.options,
+				);
 				break;
 			case "pdf":
 				result = await exportPdf(ctx, targetResolved.dir, input.options);
 				break;
 			case "screenshots":
-				result = await exportScreenshots(ctx, targetResolved.dir, input.options);
+				result = await exportScreenshots(
+					ctx,
+					targetResolved.dir,
+					input.options,
+				);
 				break;
 			case "zip":
 				result = await exportZip(ctx, targetResolved.dir, input.options);
@@ -563,16 +620,24 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
-	const finish_to_thread: Handler<"design_finish_to_thread"> = async (_event, input) => {
+	const finish_to_thread: Handler<"design_finish_to_thread"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const threadPath = input.thread_path;
 		if (!threadPath) {
 			throw new Error("未指定线程目录；请先在 Threads 选一个线程或新建线程");
 		}
 
-		const subfolderName = (input.subfolder_name?.trim() || session.title || "design")
+		const subfolderName = (
+			input.subfolder_name?.trim() ||
+			session.title ||
+			"design"
+		)
 			.replace(/[\\/:*?"<>|]/g, "-")
 			.slice(0, 80);
 		const designsDir = path.join(threadPath, "designs", subfolderName);
@@ -599,9 +664,13 @@ export function createDesignHandlers(db: DbContext) {
 		return systems;
 	};
 
-	const run_critique: Handler<"design_run_critique"> = async (_event, input) => {
+	const run_critique: Handler<"design_run_critique"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 		const result = await runCritique(db, {
 			sessionId: session.id,
 			model: input.model,
@@ -615,7 +684,9 @@ export function createDesignHandlers(db: DbContext) {
 		return result;
 	};
 
-	const list_builtin_skills: Handler<"design_list_builtin_skills"> = async () => {
+	const list_builtin_skills: Handler<
+		"design_list_builtin_skills"
+	> = async () => {
 		// 优先用新 resource-map 扫描器（带 od.tweaks / group / default_frame）；
 		// 旧 listBuiltinSkills 作为 fallback，确保旧 SKILL.md（没 od:）也能列出。
 		const fromRegistry = await listSkillSummaries();
@@ -623,20 +694,26 @@ export function createDesignHandlers(db: DbContext) {
 		return await listBuiltinSkills();
 	};
 
-	const get_skill_resource_map: Handler<"design_get_skill_resource_map"> = async (
-		_event,
-		input,
-	) => {
+	const get_skill_resource_map: Handler<
+		"design_get_skill_resource_map"
+	> = async (_event, input) => {
 		return await getSkillResourceMap(input.skill_id);
 	};
 
-	const get_template: Handler<"design_get_template"> = async (_event, input) => {
+	const get_template: Handler<"design_get_template"> = async (
+		_event,
+		input,
+	) => {
 		return await getTemplateHtml(input.template_id);
 	};
 
-	const extract_brand: Handler<"design_extract_brand"> = async (_event, input) => {
+	const extract_brand: Handler<"design_extract_brand"> = async (
+		_event,
+		input,
+	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 		const spec = await extractBrand(input.url);
 		const brandSpecPath = await writeBrandSpec(session.work_dir, spec);
 		return {
@@ -710,7 +787,10 @@ export function createDesignHandlers(db: DbContext) {
 		return listMediaProviders();
 	};
 
-	const media_generate: Handler<"design_media_generate"> = async (_event, input) => {
+	const media_generate: Handler<"design_media_generate"> = async (
+		_event,
+		input,
+	) => {
 		return await runMediaJob(db, {
 			session_id: input.session_id,
 			provider: input.provider,
@@ -720,7 +800,10 @@ export function createDesignHandlers(db: DbContext) {
 		});
 	};
 
-	const media_history: Handler<"design_media_history"> = async (_event, input) => {
+	const media_history: Handler<"design_media_history"> = async (
+		_event,
+		input,
+	) => {
 		return await listMediaHistory(db, {
 			session_id: input?.session_id,
 			limit: input?.limit,
@@ -750,7 +833,12 @@ export function createDesignHandlers(db: DbContext) {
 		if (input.kind === "system") {
 			const id = input.id.replace(/[^\w-]/g, "");
 			if (!id) return null;
-			const file = path.join(getDesignLibraryRoot(), "systems", id, "DESIGN.md");
+			const file = path.join(
+				getDesignLibraryRoot(),
+				"systems",
+				id,
+				"DESIGN.md",
+			);
 			try {
 				const content = await fs.readFile(file, "utf-8");
 				const summaries = await scanDesignSystems();
@@ -775,7 +863,8 @@ export function createDesignHandlers(db: DbContext) {
 		input,
 	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 		const entries = await listSessionFiles(session.id);
 		return entries.map((e) => ({
 			path: e.path,
@@ -845,7 +934,8 @@ export function createDesignHandlers(db: DbContext) {
 		input,
 	) => {
 		const session = await loadSession(db, input.session_id);
-		if (!session) throw new Error(`Design session not found: ${input.session_id}`);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
 
 		const rel = input.relative_path.replace(/\\/g, "/");
 		if (rel.includes("..")) {
@@ -854,7 +944,10 @@ export function createDesignHandlers(db: DbContext) {
 		const sessionDir = session.work_dir;
 		const absolute = path.resolve(sessionDir, rel);
 		const sessionDirAbs = path.resolve(sessionDir);
-		if (!absolute.startsWith(sessionDirAbs + path.sep) && absolute !== sessionDirAbs) {
+		if (
+			!absolute.startsWith(sessionDirAbs + path.sep) &&
+			absolute !== sessionDirAbs
+		) {
 			throw new Error("路径超出工作目录范围");
 		}
 
@@ -901,7 +994,9 @@ export function createDesignHandlers(db: DbContext) {
 			);
 		}
 		const buf = await fs.readFile(absolute);
-		const mime = MIME_BY_EXT[ext] || (IMAGE_EXTS.has(ext) ? "image/*" : "application/octet-stream");
+		const mime =
+			MIME_BY_EXT[ext] ||
+			(IMAGE_EXTS.has(ext) ? "image/*" : "application/octet-stream");
 		return {
 			relative_path: rel,
 			size: st.size,
@@ -912,10 +1007,52 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
+	const write_work_dir_file: Handler<"design_write_work_dir_file"> = async (
+		_event,
+		input,
+	) => {
+		const session = await loadSession(db, input.session_id);
+		if (!session)
+			throw new Error(`Design session not found: ${input.session_id}`);
+
+		const rel = input.relative_path.replace(/\\/g, "/");
+		if (rel.includes("..")) {
+			throw new Error("非法的相对路径");
+		}
+		const sessionDir = session.work_dir;
+		const absolute = path.resolve(sessionDir, rel);
+		const sessionDirAbs = path.resolve(sessionDir);
+		if (
+			!absolute.startsWith(sessionDirAbs + path.sep) &&
+			absolute !== sessionDirAbs
+		) {
+			throw new Error("路径超出工作目录范围");
+		}
+
+		const byteLength = Buffer.byteLength(input.content, "utf-8");
+		if (byteLength > MAX_TEXT_BYTES) {
+			throw new Error(
+				`写入内容过大(${(byteLength / 1024 / 1024).toFixed(1)} MB),最大 ${MAX_TEXT_BYTES / 1024 / 1024} MB`,
+			);
+		}
+
+		await fs.mkdir(path.dirname(absolute), { recursive: true });
+		await fs.writeFile(absolute, input.content, "utf-8");
+		const st = await fs.stat(absolute);
+		return {
+			relative_path: rel,
+			written_bytes: byteLength,
+			mtime_ms: st.mtimeMs,
+		};
+	};
+
 	// 启动时确保 media 表已建好（异步即可，失败不影响其他功能）
 	void ensureMediaSchema(db).catch(() => undefined);
 
-	const list_templates: Handler<"design_list_templates"> = async (_event, input) => {
+	const list_templates: Handler<"design_list_templates"> = async (
+		_event,
+		input,
+	) => {
 		let templates = await listTemplateSummaries();
 		// 按 mode 过滤
 		if (input?.mode) {
@@ -944,11 +1081,17 @@ export function createDesignHandlers(db: DbContext) {
 		}));
 	};
 
-	const get_template_detail: Handler<"design_get_template_detail"> = async (_event, input) => {
+	const get_template_detail: Handler<"design_get_template_detail"> = async (
+		_event,
+		input,
+	) => {
 		return await getTemplateDetail(input.template_id);
 	};
 
-	const list_media_templates: Handler<"design_list_media_templates"> = async (_event, input) => {
+	const list_media_templates: Handler<"design_list_media_templates"> = async (
+		_event,
+		input,
+	) => {
 		const list = await listMediaTemplateSummaries(input);
 		return list.map((t) => ({
 			id: t.id,
@@ -968,7 +1111,10 @@ export function createDesignHandlers(db: DbContext) {
 		}));
 	};
 
-	const get_media_template: Handler<"design_get_media_template"> = async (_event, input) => {
+	const get_media_template: Handler<"design_get_media_template"> = async (
+		_event,
+		input,
+	) => {
 		const detail = await getMediaTemplate(input.id, input.source);
 		if (!detail) return null;
 		return {
@@ -991,7 +1137,10 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
-	const save_media_template: Handler<"design_save_media_template"> = async (_event, input) => {
+	const save_media_template: Handler<"design_save_media_template"> = async (
+		_event,
+		input,
+	) => {
 		const saved = await saveMediaTemplate(input);
 		return {
 			id: saved.id,
@@ -1001,7 +1150,10 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
-	const import_media_template: Handler<"design_import_media_template"> = async (_event, input) => {
+	const import_media_template: Handler<"design_import_media_template"> = async (
+		_event,
+		input,
+	) => {
 		const saved = await importMediaTemplateFromFile(input.file_path);
 		return {
 			id: saved.id,
@@ -1011,7 +1163,9 @@ export function createDesignHandlers(db: DbContext) {
 		};
 	};
 
-	const pick_media_template_file: Handler<"design_pick_media_template_file"> = async (event) => {
+	const pick_media_template_file: Handler<
+		"design_pick_media_template_file"
+	> = async (event) => {
 		const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
 		const result = await dialog.showOpenDialog(
 			win ?? new BrowserWindow({ show: false }),
@@ -1027,12 +1181,17 @@ export function createDesignHandlers(db: DbContext) {
 		return { file_path: result.filePaths[0] };
 	};
 
-	const delete_media_template: Handler<"design_delete_media_template"> = async (_event, input) => {
+	const delete_media_template: Handler<"design_delete_media_template"> = async (
+		_event,
+		input,
+	) => {
 		const success = await deleteUserMediaTemplate(input.id, input.kind);
 		return { success };
 	};
 
-	const list_user_design_templates: Handler<"design_list_user_design_templates"> = async (_event, input) => {
+	const list_user_design_templates: Handler<
+		"design_list_user_design_templates"
+	> = async (_event, input) => {
 		// 「从模板」tab 数据源：从历史 design_sessions 抽取用户沉淀的成功设计。
 		// 当前实现：列出已完成状态的 sessions，标题为名，metadata.kind 透出。
 		try {
@@ -1063,9 +1222,7 @@ export function createDesignHandlers(db: DbContext) {
 						updated_at: Number(row.updated_at ?? 0),
 					};
 				})
-				.filter((it) =>
-					q ? it.title.toLowerCase().includes(q) : true,
-				);
+				.filter((it) => (q ? it.title.toLowerCase().includes(q) : true));
 			return items;
 		} catch {
 			return [];
@@ -1101,6 +1258,7 @@ export function createDesignHandlers(db: DbContext) {
 		design_get_doc: get_doc,
 		design_list_work_dir_files: list_work_dir_files,
 		design_read_work_dir_file: read_work_dir_file,
+		design_write_work_dir_file: write_work_dir_file,
 		design_list_templates: list_templates,
 		design_get_template_detail: get_template_detail,
 		design_list_media_templates: list_media_templates,

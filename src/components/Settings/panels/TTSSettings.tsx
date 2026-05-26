@@ -10,14 +10,7 @@
  *  - 加载：useTtsStore 的 settings；首屏触发 loadTtsSettings
  *  - 保存：updateTtsSettings → store 更新 → 组件 re-render
  */
-import {
-	Bot,
-	BookOpen,
-	Cat,
-	Loader2,
-	Plus,
-	Volume2,
-} from "lucide-react";
+import { Bot, BookOpen, Cat, Loader2, Plus, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Select } from "../../ui/Select";
 import {

@@ -54,8 +54,7 @@ const INJECTION_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
 
 // 零宽空格、零宽连接符、双向重写控制符、不间断空格变体、BOM 等
 // 显式 \u 写法避免源码里出现不可见字符
-const INVISIBLE_CHAR_PATTERN =
-	/[​-‏‪-‮⁠-⁤­﻿]/;
+const INVISIBLE_CHAR_PATTERN = /[​-‏‪-‮⁠-⁤­﻿]/;
 
 const DANGEROUS_HTML_PATTERNS: Array<{ pattern: RegExp; description: string }> =
 	[

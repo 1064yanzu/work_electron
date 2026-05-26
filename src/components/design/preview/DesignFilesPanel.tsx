@@ -17,7 +17,13 @@ interface DesignFilesPanelProps {
 	sessionId: string;
 	activePath: string | null;
 	onOpenFile: (relative: string) => void;
-	onClose: () => void;
+	onClose?: () => void;
+	/**
+	 * inline 模式:嵌在主体而不是右侧侧栏。
+	 * - 占满父容器宽度,无左边框,无关闭按钮
+	 * - 用网格展示而非紧凑列表
+	 */
+	inline?: boolean;
 }
 
 function formatSize(n: number): string {
@@ -38,6 +44,7 @@ export function DesignFilesPanel({
 	activePath,
 	onOpenFile,
 	onClose,
+	inline = false,
 }: DesignFilesPanelProps) {
 	const [entries, setEntries] = useState<DesignWorkDirEntry[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -84,7 +91,13 @@ export function DesignFilesPanel({
 	}, [entries]);
 
 	return (
-		<div className="w-72 h-full flex flex-col border-l border-border bg-background">
+		<div
+			className={
+				inline
+					? "w-full h-full flex flex-col bg-background"
+					: "w-72 h-full flex flex-col border-l border-border bg-background"
+			}
+		>
 			<header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-bg-surface">
 				<div className="flex items-center gap-1.5 min-w-0">
 					<FolderTree
@@ -107,14 +120,16 @@ export function DesignFilesPanel({
 					>
 						<RefreshCw className="w-3 h-3" strokeWidth={1.5} />
 					</button>
-					<button
-						type="button"
-						onClick={onClose}
-						className="p-1 text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded transition-colors"
-						title="关闭"
-					>
-						<X className="w-3.5 h-3.5" />
-					</button>
+					{onClose && !inline ? (
+						<button
+							type="button"
+							onClick={onClose}
+							className="p-1 text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded transition-colors"
+							title="关闭"
+						>
+							<X className="w-3.5 h-3.5" />
+						</button>
+					) : null}
 				</div>
 			</header>
 			<div className="flex-1 min-h-0 overflow-y-auto py-1.5">

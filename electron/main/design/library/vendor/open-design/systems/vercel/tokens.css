@@ -86,7 +86,7 @@
  * ─────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* ─── Surface (3 levels — schema slot) ─────────────────────────────
+	/* ─── Surface (3 levels — schema slot) ─────────────────────────────
    * Vercel's canvas is famously achromatic: pure white page, pure
    * white cards, no warm tier. `--surface-warm` aliases to surface
    * because the brand explicitly forbids background-color variation
@@ -94,11 +94,11 @@
    * tinting one surface warmer than another. (DESIGN.md §5: "White
    * sections alternate with white sections — there's no color
    * variation between sections.") */
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-warm: var(--surface);     /* alias — Vercel has no warm tier */
+	--bg: #ffffff;
+	--surface: #ffffff;
+	--surface-warm: var(--surface); /* alias — Vercel has no warm tier */
 
-  /* ─── Foreground ramp (4 levels) ──────────────────────────────────
+	/* ─── Foreground ramp (4 levels) ──────────────────────────────────
    * Gray 900 → 600 → 500 → 400, the documented neutral scale from
    * DESIGN.md §2. `#171717` instead of `#000000` matters — the
    * yellow-undertone warmth is what keeps the page from reading as
@@ -106,12 +106,12 @@
    * because Vercel genuinely uses four distinct text tiers: heading
    * black, body description gray, tertiary caption gray, and
    * placeholder/disabled gray. */
-  --fg: #171717;                       /* Gray 900 — headings, primary text */
-  --fg-2: #4d4d4d;                     /* Gray 600 — body description */
-  --muted: #666666;                    /* Gray 500 — captions, tertiary text */
-  --meta: #808080;                     /* Gray 400 — placeholder, disabled */
+	--fg: #171717; /* Gray 900 — headings, primary text */
+	--fg-2: #4d4d4d; /* Gray 600 — body description */
+	--muted: #666666; /* Gray 500 — captions, tertiary text */
+	--meta: #808080; /* Gray 400 — placeholder, disabled */
 
-  /* ─── Border (2 levels) ──────────────────────────────────────────
+	/* ─── Border (2 levels) ──────────────────────────────────────────
    * Shadow-as-border is THE signature: `rgba(0, 0, 0, 0.08)` at 1px
    * spread replaces traditional borders throughout. Binding `--border`
    * to the alpha (not a solid hex) lets `--elev-ring` reproduce the
@@ -120,10 +120,10 @@
    * (e.g. image-card top edge per DESIGN.md §4). `--border-soft`
    * drops to 0.04 alpha for inner row separators that should not
    * visually compete with the card edge. */
-  --border: rgba(0, 0, 0, 0.08);       /* signature shadow-as-border alpha */
-  --border-soft: rgba(0, 0, 0, 0.04);  /* inner row separator */
+	--border: rgba(0, 0, 0, 0.08); /* signature shadow-as-border alpha */
+	--border-soft: rgba(0, 0, 0, 0.04); /* inner row separator */
 
-  /* ─── Accent ─────────────────────────────────────────────────────
+	/* ─── Accent ─────────────────────────────────────────────────────
    * The single chromatic move: Vercel/Console Blue. Used in links,
    * focus rings, pill-badge tints, and console syntax highlighting.
    * Hard cap of ≤2 visible uses per screen — DESIGN.md §7 forbids
@@ -134,23 +134,23 @@
    * encodes that pattern via `background: var(--fg)` on the primary
    * button, so `--accent` stays reserved for the chromatic moments
    * where blue actually appears. */
-  --accent: #0070f3;                   /* Vercel Blue / Console Blue */
-  --accent-on: #ffffff;                /* white label on saturated blue */
-  --accent-hover: color-mix(in oklab, var(--accent), black 8%);
-  --accent-active: color-mix(in oklab, var(--accent), black 14%);
+	--accent: #0070f3; /* Vercel Blue / Console Blue */
+	--accent-on: #ffffff; /* white label on saturated blue */
+	--accent-hover: color-mix(in oklab, var(--accent), black 8%);
+	--accent-active: color-mix(in oklab, var(--accent), black 14%);
 
-  /* ─── Semantic ───────────────────────────────────────────────────
+	/* ─── Semantic ───────────────────────────────────────────────────
    * Vercel's marketing surface rarely renders state. We inherit the
    * schema defaults (no warm-shift) because the brand has no defined
    * success/warn/danger palette of its own; the workflow accents
    * (Ship Red, Preview Pink, Develop Blue from DESIGN.md §2) are
    * pipeline labels, not status colors, and intentionally do NOT
    * bind here. */
-  --success: #16a34a;
-  --warn: #eab308;
-  --danger: #dc2626;
+	--success: #16a34a;
+	--warn: #eab308;
+	--danger: #dc2626;
 
-  /* ─── Typography ─────────────────────────────────────────────────
+	/* ─── Typography ─────────────────────────────────────────────────
    * Geist Sans is Vercel's open-source typeface — `--font-display`
    * and `--font-body` share the stack; size, weight, and tracking
    * carry hierarchy, not face. The Arial/system fallbacks come from
@@ -158,68 +158,72 @@
    * is not loaded. Geist Mono for code and technical labels
    * preserves the "developer console voice" that connects the
    * marketing site to the product. */
-  --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace;
+	--font-display:
+		"Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+	--font-body:
+		"Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+	--font-mono:
+		"Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco,
+		"Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace;
 
-  /* Type scale (px) — derived from DESIGN.md §3 hierarchy table.
+	/* Type scale (px) — derived from DESIGN.md §3 hierarchy table.
    * The scale tops out at 48px (display hero); Vercel reads BIG
    * because of -0.05em compression on display, not because of a
    * larger px ceiling. */
-  --text-xs: 12px;                     /* caption, metadata, tags */
-  --text-sm: 14px;                     /* button, link, small UI */
-  --text-base: 16px;                   /* body small, navigation */
-  --text-lg: 20px;                     /* body large, introductions */
-  --text-xl: 24px;                     /* card title */
-  --text-2xl: 32px;                    /* sub-heading, large card */
-  --text-3xl: 40px;                    /* section heading */
-  --text-4xl: 48px;                    /* display hero */
+	--text-xs: 12px; /* caption, metadata, tags */
+	--text-sm: 14px; /* button, link, small UI */
+	--text-base: 16px; /* body small, navigation */
+	--text-lg: 20px; /* body large, introductions */
+	--text-xl: 24px; /* card title */
+	--text-2xl: 32px; /* sub-heading, large card */
+	--text-3xl: 40px; /* section heading */
+	--text-4xl: 48px; /* display hero */
 
-  /* `--leading-tight` is 1.1 (DESIGN.md says 1.00–1.17 at display),
+	/* `--leading-tight` is 1.1 (DESIGN.md says 1.00–1.17 at display),
    * `--leading-body` is 1.5 (the documented 16px / 24px ratio).
    * `--tracking-display` is `-0.05em`, the em-relative form of
    * Vercel's `-2.4px at 48px` — letter-spacing in em scales
    * proportionally with size, matching DESIGN.md §3's principle
    * that "tracking scales with font size". */
-  --leading-body: 1.5;
-  --leading-tight: 1.1;
-  --tracking-display: -0.05em;
+	--leading-body: 1.5;
+	--leading-tight: 1.1;
+	--tracking-display: -0.05em;
 
-  /* ─── Spacing ────────────────────────────────────────────────────
+	/* ─── Spacing ────────────────────────────────────────────────────
    * 4px-grid base scale. Vercel's documented spacing (DESIGN.md §5)
    * uses 1–6px sub-tier increments for micro-padding (button
    * `0px 6px`, etc.); those are inlined per-component because they
    * are too fine to belong in the shared schema. The 4/8/12/16/20/
    * 24/32/48 tier covers the structural rhythm. */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-12: 48px;
 
-  /* Section rhythm — DESIGN.md §5: 80–120px+ vertical padding between
+	/* Section rhythm — DESIGN.md §5: 80–120px+ vertical padding between
    * sections desktop, collapsing to 48px on mobile. We sit in the
    * middle at 96px desktop, drop to 64px on tablet (still generous),
    * and 48px on phone (the documented mobile floor). */
-  --section-y-desktop: 96px;
-  --section-y-tablet: 64px;
-  --section-y-phone: 48px;
+	--section-y-desktop: 96px;
+	--section-y-tablet: 64px;
+	--section-y-phone: 48px;
 
-  /* ─── Radius ─────────────────────────────────────────────────────
+	/* ─── Radius ─────────────────────────────────────────────────────
    * DESIGN.md §5 radius scale: 2/4/6/8/12/64/100/9999. We bind the
    * four schema tiers to: 6 (button/input/functional), 8 (card),
    * 12 (image/featured card), 9999 (badge/pill). The 64px and
    * 100px "navigation pill" radii from DESIGN.md are component-
    * specific and not part of the shared schema. */
-  --radius-sm: 6px;                    /* buttons, inputs, functional */
-  --radius-md: 8px;                    /* cards, modals */
-  --radius-lg: 12px;                   /* image cards, featured */
-  --radius-pill: 9999px;               /* badges, status pills */
+	--radius-sm: 6px; /* buttons, inputs, functional */
+	--radius-md: 8px; /* cards, modals */
+	--radius-lg: 12px; /* image cards, featured */
+	--radius-pill: 9999px; /* badges, status pills */
 
-  /* ─── Elevation (3 levels) ───────────────────────────────────────
+	/* ─── Elevation (3 levels) ───────────────────────────────────────
    * Vercel's depth system is shadow-LED, not blur-led. Three levels:
    *
    *   --elev-flat    no shadow (page background, text blocks)
@@ -234,37 +238,35 @@
    *   close (2px 2px soft elevation, just below the surface)
    *   far   (8px blur -8px spread, ambient depth at distance)
    *   inner (1px #fafafa ring, the subtle highlight) */
-  --elev-flat: none;
-  --elev-ring: 0 0 0 1px var(--border);
-  --elev-raised:
-    0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 2px 2px rgba(0, 0, 0, 0.04),
-    0 8px 8px -8px rgba(0, 0, 0, 0.04),
-    0 0 0 1px #fafafa;
+	--elev-flat: none;
+	--elev-ring: 0 0 0 1px var(--border);
+	--elev-raised:
+		0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px rgba(0, 0, 0, 0.04),
+		0 8px 8px -8px rgba(0, 0, 0, 0.04), 0 0 0 1px #fafafa;
 
-  /* ─── Focus ring ─────────────────────────────────────────────────
+	/* ─── Focus ring ─────────────────────────────────────────────────
    * Vercel's `--ds-focus-color` is `hsla(212, 100%, 48%, 1)`; the
    * outline is `2px solid` on every interactive element. We
    * reproduce that as a sharp 2px box-shadow at `var(--accent)`,
    * NOT the schema's 3px alpha glow — Vercel's focus is engineered,
    * not atmospheric. */
-  --focus-ring: 0 0 0 2px var(--accent);
+	--focus-ring: 0 0 0 2px var(--accent);
 
-  /* ─── Motion ─────────────────────────────────────────────────────
+	/* ─── Motion ─────────────────────────────────────────────────────
    * Two durations + one easing curve, per anti-ai-slop's "short,
    * purposeful transitions (150–250ms) with stable easing". Vercel
    * transitions are quick and unobtrusive — never a long-form
    * choreographed entrance. */
-  --motion-fast: 150ms;
-  --motion-base: 200ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+	--motion-fast: 150ms;
+	--motion-base: 200ms;
+	--ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
-  /* ─── Layout ─────────────────────────────────────────────────────
+	/* ─── Layout ─────────────────────────────────────────────────────
    * 1200px max content width per DESIGN.md §5. Gutters narrow on
    * mobile to preserve the line-length-as-craft feel — Vercel does
    * NOT edge-bleed body copy on phones, only screenshots. */
-  --container-max: 1200px;
-  --container-gutter-desktop: 24px;
-  --container-gutter-tablet: 16px;
-  --container-gutter-phone: 12px;
+	--container-max: 1200px;
+	--container-gutter-desktop: 24px;
+	--container-gutter-tablet: 16px;
+	--container-gutter-phone: 12px;
 }

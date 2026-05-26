@@ -323,9 +323,7 @@ export function AboutPanel() {
 			>
 				<SettingsRow
 					label="日志目录"
-					description={
-						logsInfo?.root ?? "日志目录会在第一次出问题时自动创建。"
-					}
+					description={logsInfo?.root ?? "日志目录会在第一次出问题时自动创建。"}
 					value={
 						logsInfo && logsInfo.exists
 							? `${formatBytes(logsInfo.total_bytes)} · ${logsInfo.subdir_count} 个时段`

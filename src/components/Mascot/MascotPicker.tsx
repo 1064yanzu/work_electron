@@ -460,9 +460,7 @@ function AddMascotCard({
 			<div
 				className={cn(
 					"flex h-14 w-14 items-center justify-center rounded-full transition-colors",
-					dragOver
-						? "bg-primary/15"
-						: "bg-warm-100 group-hover:bg-primary/10",
+					dragOver ? "bg-primary/15" : "bg-warm-100 group-hover:bg-primary/10",
 				)}
 			>
 				{importing ? (

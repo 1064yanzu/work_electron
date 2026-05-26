@@ -5,7 +5,10 @@
 
 import { useCallback, useEffect } from "react";
 import { Terminal } from "lucide-react";
-import { terminalStore, useTerminalStoreSelector } from "../../lib/stores/terminalStore";
+import {
+	terminalStore,
+	useTerminalStoreSelector,
+} from "../../lib/stores/terminalStore";
 import { TerminalInstance } from "./TerminalInstance";
 import { TerminalTabBar } from "./TerminalTabBar";
 

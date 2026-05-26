@@ -1043,9 +1043,7 @@ export function createAgentMemoryExtendedHandlers(_db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		input: { cwd: string | null },
 	): Promise<{ ok: boolean }> => {
-		const { memoryFileWatcher } = await import(
-			"./agentSdk/memoryFileWatcher"
-		);
+		const { memoryFileWatcher } = await import("./agentSdk/memoryFileWatcher");
 		memoryFileWatcher.setActiveCwd(input.cwd);
 		return { ok: true };
 	};
@@ -1062,4 +1060,3 @@ export function createAgentMemoryExtendedHandlers(_db: DbContext) {
 		agent_memory_set_active_cwd: setActiveCwd,
 	};
 }
-

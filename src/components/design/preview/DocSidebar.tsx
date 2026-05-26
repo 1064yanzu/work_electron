@@ -12,9 +12,16 @@ interface DocSidebarProps {
 	kind: "system" | "skill";
 	id: string;
 	onClose: () => void;
+	/** floating=true 时渲染为右上角浮动卡片(同其他 overlay 风格) */
+	floating?: boolean;
 }
 
-export function DocSidebar({ kind, id, onClose }: DocSidebarProps) {
+export function DocSidebar({
+	kind,
+	id,
+	onClose,
+	floating = false,
+}: DocSidebarProps) {
 	const [content, setContent] = useState<string | null>(null);
 	const [title, setTitle] = useState<string>("");
 	const [loading, setLoading] = useState(true);
@@ -53,7 +60,13 @@ export function DocSidebar({ kind, id, onClose }: DocSidebarProps) {
 	}, [kind, id, reloadKey]);
 
 	return (
-		<div className="w-80 h-full flex flex-col border-l border-border bg-background">
+		<div
+			className={
+				floating
+					? "absolute top-3.5 right-3.5 z-[5] w-80 max-h-[calc(100%-28px)] rounded-xl bg-background border border-border shadow-bai-pop overflow-hidden flex flex-col"
+					: "w-80 h-full flex flex-col border-l border-border bg-background"
+			}
+		>
 			<header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-bg-surface">
 				<div className="flex items-center gap-1.5 min-w-0">
 					<BookOpen

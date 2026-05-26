@@ -99,9 +99,10 @@ class MemoryStore {
 
 	async setActiveCwd(cwd: string | null): Promise<void> {
 		try {
-			await (
-				await import("../tauriBridge")
-			).safeInvoke("agent_memory_set_active_cwd", { cwd });
+			await (await import("../tauriBridge")).safeInvoke(
+				"agent_memory_set_active_cwd",
+				{ cwd },
+			);
 		} catch {
 			// 静默
 		}

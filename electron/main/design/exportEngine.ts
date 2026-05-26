@@ -21,7 +21,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { BrowserWindow } from "electron";
-import { copySessionDirTo, getMainArtifactPath, listSessionFiles } from "./designsDir";
+import {
+	copySessionDirTo,
+	getMainArtifactPath,
+	listSessionFiles,
+} from "./designsDir";
 
 export type DesignExportFormat =
 	| "html-inline"
@@ -81,23 +85,24 @@ async function readBinaryAsDataURI(filePath: string): Promise<string | null> {
 	try {
 		const buf = await fs.readFile(filePath);
 		const ext = path.extname(filePath).toLowerCase().slice(1);
-		const mime = (
-			{
-				png: "image/png",
-				jpg: "image/jpeg",
-				jpeg: "image/jpeg",
-				gif: "image/gif",
-				svg: "image/svg+xml",
-				webp: "image/webp",
-				woff: "font/woff",
-				woff2: "font/woff2",
-				ttf: "font/ttf",
-				otf: "font/otf",
-				ico: "image/x-icon",
-				css: "text/css",
-				js: "application/javascript",
-			} as Record<string, string>
-		)[ext] || "application/octet-stream";
+		const mime =
+			(
+				{
+					png: "image/png",
+					jpg: "image/jpeg",
+					jpeg: "image/jpeg",
+					gif: "image/gif",
+					svg: "image/svg+xml",
+					webp: "image/webp",
+					woff: "font/woff",
+					woff2: "font/woff2",
+					ttf: "font/ttf",
+					otf: "font/otf",
+					ico: "image/x-icon",
+					css: "text/css",
+					js: "application/javascript",
+				} as Record<string, string>
+			)[ext] || "application/octet-stream";
 		return `data:${mime};base64,${buf.toString("base64")}`;
 	} catch {
 		return null;
@@ -118,7 +123,8 @@ async function inlineAssetsInHtml(htmlPath: string): Promise<string> {
 	const seen = new Set<string>();
 	while ((m = pattern.exec(html))) {
 		const url = m[3];
-		if (!url || /^(https?:|data:|#|mailto:|javascript:|file:)/i.test(url)) continue;
+		if (!url || /^(https?:|data:|#|mailto:|javascript:|file:)/i.test(url))
+			continue;
 		if (seen.has(m[0])) continue;
 		seen.add(m[0]);
 		const resolved = path.resolve(baseDir, url);
@@ -136,7 +142,8 @@ async function inlineAssetsInHtml(htmlPath: string): Promise<string> {
 
 	// <link rel="stylesheet" href="x.css"> 不会被 data URI 直接命中——这里再补一次：
 	// 把 link[rel=stylesheet] 替换成 <style>...</style>
-	const linkPattern = /<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>(?:<\/link>)?/gi;
+	const linkPattern =
+		/<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>(?:<\/link>)?/gi;
 	const linkReplacements: Array<{ match: string; replacement: string }> = [];
 	let lm: RegExpExecArray | null;
 	while ((lm = linkPattern.exec(html))) {
@@ -160,8 +167,15 @@ async function inlineAssetsInHtml(htmlPath: string): Promise<string> {
 	return html;
 }
 
-async function resolveSubfolder(target: string, ctx: ExportContext, options?: ExportOptions): Promise<string> {
-	const subfolder = safeSegment(options?.subfolder_name || ctx.session_title || "design", "design");
+async function resolveSubfolder(
+	target: string,
+	ctx: ExportContext,
+	options?: ExportOptions,
+): Promise<string> {
+	const subfolder = safeSegment(
+		options?.subfolder_name || ctx.session_title || "design",
+		"design",
+	);
 	const full = path.join(target, subfolder);
 	await ensureDir(full);
 	return full;
@@ -180,7 +194,13 @@ export async function exportHtmlInline(
 	const inlined = await inlineAssetsInHtml(mainHtml);
 
 	const ext = path.extname(targetPath).toLowerCase();
-	const outFile = ext === ".html" ? targetPath : path.join(targetPath, `${safeSegment(ctx.session_title, "design")}.html`);
+	const outFile =
+		ext === ".html"
+			? targetPath
+			: path.join(
+					targetPath,
+					`${safeSegment(ctx.session_title, "design")}.html`,
+				);
 	await ensureDir(path.dirname(outFile));
 	await fs.writeFile(outFile, inlined, "utf-8");
 	return { paths: [outFile] };
@@ -251,9 +271,13 @@ export async function exportPdf(
 	const mainHtml = await getMainArtifactPath(ctx.session_id);
 	if (!mainHtml) throw new Error("当前会话没有可导出的 HTML");
 
-	const outFile = path.extname(targetPath).toLowerCase() === ".pdf"
-		? targetPath
-		: path.join(targetPath, `${safeSegment(ctx.session_title, "design")}.pdf`);
+	const outFile =
+		path.extname(targetPath).toLowerCase() === ".pdf"
+			? targetPath
+			: path.join(
+					targetPath,
+					`${safeSegment(ctx.session_title, "design")}.pdf`,
+				);
 	await ensureDir(path.dirname(outFile));
 
 	const pageSize = options?.page_size ?? "A4";
@@ -285,9 +309,10 @@ export async function exportScreenshots(
 	if (!mainHtml) throw new Error("当前会话没有可导出的 HTML");
 
 	const outDir = await resolveSubfolder(targetDir, ctx, options);
-	const breakpoints = options?.breakpoints && options.breakpoints.length > 0
-		? options.breakpoints
-		: (["desktop", "tablet", "mobile"] as DesignBreakpoint[]);
+	const breakpoints =
+		options?.breakpoints && options.breakpoints.length > 0
+			? options.breakpoints
+			: (["desktop", "tablet", "mobile"] as DesignBreakpoint[]);
 
 	const outPaths: string[] = [];
 
@@ -295,10 +320,15 @@ export async function exportScreenshots(
 		const width = BREAKPOINT_WIDTH[bp];
 		const height = PAGE_SIZE_HEIGHT[bp];
 		const out = path.join(outDir, `cover-${bp}.png`);
-		await renderWithHiddenWindow(fileUrl(mainHtml), width, height, async (win) => {
-			const image = await win.webContents.capturePage();
-			await fs.writeFile(out, image.toPNG());
-		});
+		await renderWithHiddenWindow(
+			fileUrl(mainHtml),
+			width,
+			height,
+			async (win) => {
+				const image = await win.webContents.capturePage();
+				await fs.writeFile(out, image.toPNG());
+			},
+		);
 		outPaths.push(out);
 	}
 
@@ -355,9 +385,10 @@ export async function exportMarkdown(
 	ctx: ExportContext,
 	targetPath: string,
 ): Promise<ExportResult> {
-	const outFile = path.extname(targetPath).toLowerCase() === ".md"
-		? targetPath
-		: path.join(targetPath, `${safeSegment(ctx.session_title, "design")}.md`);
+	const outFile =
+		path.extname(targetPath).toLowerCase() === ".md"
+			? targetPath
+			: path.join(targetPath, `${safeSegment(ctx.session_title, "design")}.md`);
 	await ensureDir(path.dirname(outFile));
 
 	const lines: string[] = [

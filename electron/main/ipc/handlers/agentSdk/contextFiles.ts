@@ -225,9 +225,7 @@ export async function writeContextFile(
 
 export async function listAllContextFiles(
 	cwd: string | null,
-): Promise<
-	Array<ContextFileInfo & { injectedInActiveSnapshot: boolean }>
-> {
+): Promise<Array<ContextFileInfo & { injectedInActiveSnapshot: boolean }>> {
 	const tokens: ContextFileToken[] = [
 		"soul",
 		"user",

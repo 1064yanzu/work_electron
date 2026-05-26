@@ -1490,6 +1490,10 @@ export function registerIpcHandlers({
 		"design_read_work_dir_file",
 		designHandlers.design_read_work_dir_file,
 	);
+	ipcMain.handle(
+		"design_write_work_dir_file",
+		designHandlers.design_write_work_dir_file,
+	);
 	ipcMain.handle("design_list_templates", designHandlers.design_list_templates);
 	ipcMain.handle(
 		"design_get_template_detail",

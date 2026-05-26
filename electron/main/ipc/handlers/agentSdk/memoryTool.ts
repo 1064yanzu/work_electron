@@ -93,9 +93,7 @@ export function createMemoryMcpServer(sdk: ClaudeAgentSdkLike) {
 					action: z
 						.enum(["add", "replace", "remove", "read"])
 						.describe("Memory action."),
-					target: z
-						.enum(["user", "memory", "soul"])
-						.describe(TARGET_DESC),
+					target: z.enum(["user", "memory", "soul"]).describe(TARGET_DESC),
 					content: z
 						.string()
 						.optional()

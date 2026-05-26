@@ -32,7 +32,9 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	const leftSidebarView = useWorkspaceStoreSelector(
 		(state) => state.leftSidebarView,
 	);
-	const activeMainView = useLayoutStoreSelector((state) => state.activeMainView);
+	const activeMainView = useLayoutStoreSelector(
+		(state) => state.activeMainView,
+	);
 	const leftSidebarCollapsed = useLayoutStoreSelector(
 		(state) => state.leftSidebarCollapsed,
 	);

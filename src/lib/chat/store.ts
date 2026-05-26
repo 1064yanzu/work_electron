@@ -167,10 +167,7 @@ function saveToStorage(state: ChatState) {
 					}
 					return;
 				} catch (e2) {
-					console.error(
-						"[ChatStore] 降级写入仍然失败，本次保存被丢弃：",
-						e2,
-					);
+					console.error("[ChatStore] 降级写入仍然失败，本次保存被丢弃：", e2);
 					return;
 				}
 			}
@@ -646,10 +643,7 @@ class ChatStore {
 		);
 	}
 
-	setSessionDesignId(
-		sessionId: string,
-		designSessionId: string | undefined,
-	) {
+	setSessionDesignId(sessionId: string, designSessionId: string | undefined) {
 		this.setState(
 			(state) => ({
 				...state,
@@ -665,9 +659,8 @@ class ChatStore {
 
 	findSessionByDesignId(designSessionId: string): ChatSession | null {
 		return (
-			this.state.sessions.find(
-				(s) => s.designSessionId === designSessionId,
-			) ?? null
+			this.state.sessions.find((s) => s.designSessionId === designSessionId) ??
+			null
 		);
 	}
 

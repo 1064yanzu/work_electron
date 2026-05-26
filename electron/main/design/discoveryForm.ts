@@ -70,7 +70,8 @@ export const DISCOVERY_FORM_SCHEMA: DiscoveryFormSchema = {
 			label: "简介",
 			help: "一句话说清这是给谁、解决什么问题、想传达什么气质（30–200 字）",
 			required: true,
-			placeholder: "例：一款给独立创作者用的写作工具，主打「无干扰长写作」，气质沉静、像翻一本质感书。",
+			placeholder:
+				"例：一款给独立创作者用的写作工具，主打「无干扰长写作」，气质沉静、像翻一本质感书。",
 		},
 		{
 			id: "tone",

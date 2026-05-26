@@ -505,7 +505,9 @@ export function createSkillsHandlers(db: DbContext) {
 		return { success: true };
 	};
 
-	const get_skills_design_mode: Handler<"get_skills_design_mode"> = async () => {
+	const get_skills_design_mode: Handler<
+		"get_skills_design_mode"
+	> = async () => {
 		await ensurePolicyV2Migrated(db);
 		const active = await readConfigBool(db, KEY_DESIGN_MODE, false);
 		return { active };

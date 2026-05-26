@@ -53,7 +53,9 @@ export interface SessionFileEntry {
 	is_dir: boolean;
 }
 
-export async function listSessionFiles(sessionId: string): Promise<SessionFileEntry[]> {
+export async function listSessionFiles(
+	sessionId: string,
+): Promise<SessionFileEntry[]> {
 	const root = getSessionDir(sessionId);
 	const out: SessionFileEntry[] = [];
 
@@ -93,7 +95,9 @@ export async function listSessionFiles(sessionId: string): Promise<SessionFileEn
  * 找到当前会话工作目录的主交付物路径：
  *   优先 index.html → home.html → 第一个 .html 文件
  */
-export async function getMainArtifactPath(sessionId: string): Promise<string | null> {
+export async function getMainArtifactPath(
+	sessionId: string,
+): Promise<string | null> {
 	const root = getSessionDir(sessionId);
 	try {
 		await fs.access(path.join(root, "index.html"));
@@ -108,7 +112,9 @@ export async function getMainArtifactPath(sessionId: string): Promise<string | n
 		// fall through
 	}
 	const files = await listSessionFiles(sessionId);
-	const html = files.find((f) => !f.is_dir && f.name.toLowerCase().endsWith(".html"));
+	const html = files.find(
+		(f) => !f.is_dir && f.name.toLowerCase().endsWith(".html"),
+	);
 	return html?.path ?? null;
 }
 
@@ -116,7 +122,10 @@ export async function getMainArtifactPath(sessionId: string): Promise<string | n
  * 递归复制整个会话目录到目标。target 必须是绝对路径。
  * 如果 target 不存在会创建；存在但已有同名子目录则合并（覆盖同名文件）。
  */
-export async function copySessionDirTo(sessionId: string, target: string): Promise<string> {
+export async function copySessionDirTo(
+	sessionId: string,
+	target: string,
+): Promise<string> {
 	const src = getSessionDir(sessionId);
 	if (!path.isAbsolute(target)) {
 		throw new Error(`目标路径必须是绝对路径: ${target}`);

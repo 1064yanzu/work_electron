@@ -809,7 +809,8 @@ export async function callProvider(
 
 		// One-shot retry: flatten prior tool history for stricter OpenAI-compatible gateways.
 		if (shouldRetryInvalidArgument) {
-			const dropReasoningControls = isReasoningControlInvalidArgument(errorText);
+			const dropReasoningControls =
+				isReasoningControlInvalidArgument(errorText);
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),
@@ -1986,7 +1987,8 @@ export async function callProviderStream(
 
 		// One-shot retry for strict gateways: flatten tool history and fall back to non-stream JSON.
 		if (shouldRetryInvalidArgument) {
-			const dropReasoningControls = isReasoningControlInvalidArgument(errorText);
+			const dropReasoningControls =
+				isReasoningControlInvalidArgument(errorText);
 			const retryReq = {
 				...openaiReq,
 				messages: flattenToolHistoryForOpenAICompatible(openaiReq.messages),

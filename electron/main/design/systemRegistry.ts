@@ -124,7 +124,10 @@ function deriveSwatchesFromMarkdown(content: string, max = 5): string[] {
 }
 
 /** 扫描单个目录并填充 cache（同 id 时，cache 已有的不覆盖） */
-async function scanSystemsDir(root: string, allowOverwrite = false): Promise<void> {
+async function scanSystemsDir(
+	root: string,
+	allowOverwrite = false,
+): Promise<void> {
 	let entries: import("node:fs").Dirent[];
 	try {
 		entries = await fs.readdir(root, { withFileTypes: true });
@@ -171,9 +174,9 @@ async function scanSystemsDir(root: string, allowOverwrite = false): Promise<voi
 	}
 }
 
-export async function scanDesignSystems(forceRefresh = false): Promise<
-	DesignSystemSummary[]
-> {
+export async function scanDesignSystems(
+	forceRefresh = false,
+): Promise<DesignSystemSummary[]> {
 	if (scanned && !forceRefresh) {
 		return Array.from(cache.values());
 	}

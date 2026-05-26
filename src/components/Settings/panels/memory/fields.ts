@@ -11,7 +11,8 @@ export const FIELDS: FieldDescriptor[] = [
 		tabId: "ai.memory",
 		anchorId: "ai.memory.overview",
 		label: "Agent 记忆",
-		description: "管理 SOUL/USER/MEMORY 三件套与 SDK 自动加载的 CLAUDE.md / AGENTS.md",
+		description:
+			"管理 SOUL/USER/MEMORY 三件套与 SDK 自动加载的 CLAUDE.md / AGENTS.md",
 		keywords: [
 			"memory",
 			"记忆",

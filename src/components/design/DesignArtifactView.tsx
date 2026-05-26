@@ -1,37 +1,49 @@
-import {
-	BookOpen,
-	ExternalLink,
-	FolderOpen,
-	FolderTree,
-	Image as ImageIcon,
-	RefreshCw,
-	SlidersHorizontal,
-	Wand2,
-} from "lucide-react";
+/**
+ * DesignArtifactView — 生成完成后的预览 + 操作面板。
+ *
+ * 新结构(对标 Open Design):
+ *
+ *   ┌─ DesignChromeHeader (h-12)          ⟵ 标题/副文/演示/分享/完成 + 左侧返回
+ *   ├─ DesignTabsBar (h-11)               ⟵ [设计文件] sticky + 已打开文件 tabs
+ *   ├─ DesignViewerToolbar (h-11)         ⟵ 刷新 / 预览-源代码 / 视口 / 缩放 / 4 个 overlay 触发
+ *   ├─ 主体(根据 activeTab + viewerMode 切换)
+ *   │    设计文件 tab → DesignFilesPanel inline
+ *   │    文件 tab + preview → DesignViewportFrame (iframe)
+ *   │    文件 tab + source  → DesignSourceView (Monaco)
+ *   │  + 浮动 overlays(Tweaks / Comment / Inspect / Doc)
+ *   └─ (ExportDialog 仍走 modal)
+ *
+ * 演示模式:`presentationMode=true` 时把 Header/Tabs/Toolbar 折叠到几乎不可见,
+ * 主体占满,ESC 退出。
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-	designFinalizeSession,
-	designGetSession,
-	designRevealWorkDir,
-} from "../../lib/api/design";
+import { designFinalizeSession, designGetSession } from "../../lib/api/design";
 import {
 	designStore,
+	layoutStore,
 	useDesignStoreSelector,
 	useWorkspaceStoreSelector,
 } from "../../lib/stores";
+import {
+	designPreviewStore,
+	useDesignPreviewStoreSelector,
+} from "../../lib/stores/designPreviewStore";
 import { convertFileSrc } from "../../lib/tauriCompat";
-import { BrowserShell } from "../sandbox/preview/BrowserShell";
-import { toast } from "../ui/Toast";
-import { ExitDesignButton } from "./ExitDesignButton";
 import { ExportDialog } from "./ExportDialog";
-import { MediaGenerationPanel } from "./MediaGenerationPanel";
-import { ModeBadge } from "./ModeBadge";
-import { TweaksPanel } from "./TweaksPanel";
+import { DesignChromeHeader } from "./preview/DesignChromeHeader";
+import { DesignCommentOverlay } from "./preview/DesignCommentOverlay";
 import { DesignFilesPanel } from "./preview/DesignFilesPanel";
-import { DesignFileWorkspace } from "./preview/DesignFileWorkspace";
+import { DesignInspectOverlay } from "./preview/DesignInspectOverlay";
+import { DesignSourceView } from "./preview/DesignSourceView";
+import { DesignTabsBar } from "./preview/DesignTabsBar";
+import { DesignTweaksOverlay } from "./preview/DesignTweaksOverlay";
+import { DesignViewerToolbar } from "./preview/DesignViewerToolbar";
+import {
+	type DesignViewportFrameHandle,
+	DesignViewportFrame,
+} from "./preview/DesignViewportFrame";
 import { DocSidebar } from "./preview/DocSidebar";
-import { ShareMenu } from "./preview/ShareMenu";
-import { ThemeToggle } from "./preview/ThemeToggle";
+import { DESIGN_FILES_TAB } from "./preview/constants";
 
 const MODE_TO_SKILL_ID: Record<string, string> = {
 	"web-prototype": "ipo-web-prototype",
@@ -40,39 +52,35 @@ const MODE_TO_SKILL_ID: Record<string, string> = {
 	poster: "ipo-poster",
 };
 
-/**
- * DesignArtifactView — 生成完成后的预览 + 操作面板。
- *
- * 顶部工具栏：
- *   [设计标题 · 方向 · 系统] ········· [重新生成] [刷新] [打开目录] [导出 ▾] [完成 → 写代码]
- *
- * 主体：BrowserShell（src=file://<work_dir>/index.html）。
- */
 interface DesignArtifactViewProps {
 	onRegenerate?: () => void;
 	runId?: string | null;
 }
 
-type SidebarTab = "tweaks" | "media" | "docs" | "files" | null;
-
-export function DesignArtifactView({
-	onRegenerate,
-	runId,
-}: DesignArtifactViewProps) {
+export function DesignArtifactView({ runId }: DesignArtifactViewProps) {
 	const session = useDesignStoreSelector((s) => s.currentSession);
 	const currentThreadPath = useWorkspaceStoreSelector(
-		(state) => state.currentThreadPath,
+		(s) => s.currentThreadPath,
 	);
 	const currentThreadTitle = useWorkspaceStoreSelector(
-		(state) => state.currentThreadTitle,
+		(s) => s.currentThreadTitle,
 	);
+
+	const activeTab = useDesignPreviewStoreSelector((s) => s.activeTab);
+	const openTabs = useDesignPreviewStoreSelector((s) => s.openTabs);
+	const viewerMode = useDesignPreviewStoreSelector((s) => s.viewerMode);
+	const viewport = useDesignPreviewStoreSelector((s) => s.viewport);
+	const zoom = useDesignPreviewStoreSelector((s) => s.zoom);
+	const overlays = useDesignPreviewStoreSelector((s) => s.overlays);
+	const presentationMode = useDesignPreviewStoreSelector(
+		(s) => s.presentationMode,
+	);
+	const refreshKey = useDesignPreviewStoreSelector((s) => s.refreshKey);
+
 	const [exportOpen, setExportOpen] = useState(false);
-	const [refreshKey, setRefreshKey] = useState(0);
-	const [sidebarTab, setSidebarTab] = useState<SidebarTab>(null);
-	const [theme, setTheme] = useState<"light" | "dark">("light");
-	const [openFiles, setOpenFiles] = useState<string[]>([]);
-	const [activeFile, setActiveFile] = useState<string | null>(null);
+	const [docOpen, setDocOpen] = useState(false);
 	const finalizedRef = useRef<Set<string>>(new Set());
+	const viewportFrameRef = useRef<DesignViewportFrameHandle | null>(null);
 
 	const docTarget = useMemo<{
 		kind: "system" | "skill";
@@ -89,22 +97,16 @@ export function DesignArtifactView({
 		return null;
 	}, [session]);
 
-	// 主交付物 file:// URL
-	const previewUrl = useMemo(() => {
-		if (!session) return undefined;
-		// 优先用 output_asset.storage_path（已 finalize），但仅当它仍然指向 .html
-		// 文件时——历史会话被 syncOutputToVault 改写成过 .md 路径，那种情况要
-		// fallback 到 work_dir/index.html，不然 BrowserShell 加载到的是空 markdown。
-		// convertFileSrc 跨平台处理盘符 + encodeURI，避免手拼 file:// 在 Windows
-		// 上漏掉根斜杠或没编码空格的问题。
-		const storagePath = session.output_asset?.storage_path;
-		const isHtmlPath =
-			typeof storagePath === "string" && /\.html?$/i.test(storagePath);
-		const target = isHtmlPath ? storagePath : `${session.work_dir}/index.html`;
-		return `${convertFileSrc(target)}?_=${refreshKey}`;
-	}, [session, refreshKey]);
+	// session 切换时重置预览本地 UI 状态
+	useEffect(() => {
+		if (!session) return;
+		designPreviewStore.reset({
+			activeTab: DESIGN_FILES_TAB,
+			openTabs: ["index.html"],
+		});
+	}, [session?.id]);
 
-	// 当 status=done 但还没收纳为 output_asset 时尝试 finalize
+	// status=done 但未收纳 → finalize
 	useEffect(() => {
 		if (!session) return;
 		if (session.status !== "done") return;
@@ -117,18 +119,25 @@ export function DesignArtifactView({
 					session_id: session.id,
 					sdk_session_id: session.sdk_session_id ?? undefined,
 				});
-				designStore.setCurrentSession({
-					...session,
-					...updated,
-				});
+				designStore.setCurrentSession({ ...session, ...updated });
 			} catch (err) {
 				console.warn("[DesignArtifactView] finalize failed", err);
 			}
 		})();
 	}, [session]);
 
-	// 自动跑一次 5 维自检（如果还没跑过）
-	// —— 自检 UI 已下线，相关 useEffect / handler 已移除。
+	// 演示模式:全局 ESC 退出
+	useEffect(() => {
+		if (!presentationMode) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				const snap = designPreviewStore.exitPresentation();
+				layoutStore.setRightSidebarVisible(snap ?? true);
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [presentationMode]);
 
 	if (!session) {
 		return (
@@ -138,8 +147,27 @@ export function DesignArtifactView({
 		);
 	}
 
+	// 文件预览 file:// URL (仅在 activeTab 是具体文件时计算)
+	const previewSrc = (() => {
+		if (!session) return "";
+		const rel = activeTab === DESIGN_FILES_TAB ? "index.html" : activeTab;
+		// 优先用 output_asset.storage_path(已 finalize),且仅当指向 .html
+		const storagePath = session.output_asset?.storage_path;
+		const isHtmlPath =
+			typeof storagePath === "string" && /\.html?$/i.test(storagePath);
+		const useStorage =
+			isHtmlPath && (rel === "index.html" || rel === activeTab);
+		const target =
+			useStorage && rel === "index.html"
+				? (storagePath as string)
+				: `${session.work_dir}/${rel}`;
+		return `${convertFileSrc(target)}?_=${refreshKey}`;
+	})();
+
+	const isFileTab = activeTab !== DESIGN_FILES_TAB;
+
 	const handleRefresh = async () => {
-		setRefreshKey((k) => k + 1);
+		designPreviewStore.bumpRefreshKey();
 		try {
 			const fresh = await designGetSession(session.id);
 			designStore.setCurrentSession(fresh);
@@ -148,230 +176,110 @@ export function DesignArtifactView({
 		}
 	};
 
-	const handleReveal = async () => {
-		try {
-			await designRevealWorkDir(session.id);
-		} catch (err) {
-			toast.error(
-				`打开目录失败: ${err instanceof Error ? err.message : String(err)}`,
-			);
-		}
-	};
-
-	const handleRegenerate = () => {
-		if (onRegenerate) onRegenerate();
-	};
-
 	return (
-		<div className="h-full w-full flex flex-col bg-background">
-			<header className="px-4 py-2.5 flex items-center gap-3 border-b border-border bg-bg-surface">
-				<div className="flex flex-col min-w-0">
-					<div className="flex items-center gap-2">
-						<span className="text-sm font-medium text-text-primary truncate">
-							{session.title}
-						</span>
-						<ModeBadge mode={session.mode ?? undefined} />
-					</div>
-					<div className="text-[11px] text-text-muted flex items-center gap-1.5">
-						{session.direction_id ? <span>{session.direction_id}</span> : null}
-						{session.system_id ? (
-							<>
-								<span>·</span>
-								<span>{session.system_id}</span>
-							</>
-						) : null}
-						{session.status ? (
-							<>
-								<span>·</span>
-								<span className="capitalize">{session.status}</span>
-							</>
-						) : null}
-					</div>
-				</div>
-
-				<div className="flex-1" />
-
-				<button
-					type="button"
-					onClick={handleRegenerate}
-					className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded-lg transition-colors"
-					title="重新做答卷生成"
-				>
-					<Wand2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-					重做
-				</button>
-				<button
-					type="button"
-					onClick={() => void handleRefresh()}
-					className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded-lg transition-colors"
-					title="刷新预览"
-				>
-					<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
-					刷新
-				</button>
-				<button
-					type="button"
-					onClick={() => void handleReveal()}
-					className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-text-muted hover:text-text-primary hover:bg-warm-200/60 rounded-lg transition-colors"
-					title="在 Finder 打开工作目录"
-				>
-					<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-					目录
-				</button>
-				<ThemeToggle value={theme} onChange={setTheme} />
-				<ShareMenu
-					session={session}
-					currentThreadPath={currentThreadPath ?? undefined}
-					currentThreadTitle={currentThreadTitle ?? undefined}
-					onAdvancedExport={() => setExportOpen(true)}
-				/>
-				<ExitDesignButton
-					session={session}
-					threadPath={currentThreadPath ?? undefined}
-					threadTitle={currentThreadTitle ?? undefined}
-				/>
-				{previewUrl ? (
-					<a
-						href={previewUrl}
-						target="_blank"
-						rel="noreferrer noopener"
-						className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-primary rounded-lg transition-colors"
-						title="在新窗口打开"
-					>
-						<ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
-					</a>
-				) : null}
-			</header>
-
-			<div className="flex-1 min-h-0 flex bg-warm-200/30">
-				<div
-					className="flex-1 min-w-0 p-3"
-					style={{ colorScheme: theme }}
-					data-theme={theme}
-				>
-					{sidebarTab === "files" && session ? (
-						<DesignFileWorkspace
-							sessionId={session.id}
-							openFiles={openFiles}
-							activeFile={activeFile}
-							onCloseFile={(rel) => {
-								setOpenFiles((arr) => arr.filter((p) => p !== rel));
-								if (activeFile === rel) {
-									setActiveFile((_cur) => {
-										const remaining = openFiles.filter((p) => p !== rel);
-										return remaining[remaining.length - 1] ?? null;
-									});
-								}
-							}}
-							onActivateFile={setActiveFile}
-						/>
-					) : previewUrl ? (
-						<BrowserShell
-							src={previewUrl}
-							taskId={`design-${session.id}`}
-							title={session.title}
-							className="h-full"
-						/>
-					) : (
-						<div className="h-full flex items-center justify-center text-sm text-text-muted">
-							尚未生成 HTML
-						</div>
-					)}
-				</div>
-				<aside className="w-9 shrink-0 border-l border-border bg-background flex flex-col items-center py-2 gap-1">
-					<button
-						type="button"
-						onClick={() =>
-							setSidebarTab(sidebarTab === "tweaks" ? null : "tweaks")
+		<div
+			className="h-full w-full flex flex-col bg-warm-100 relative"
+			data-presentation={presentationMode ? "true" : "false"}
+		>
+			{!presentationMode ? (
+				<>
+					<DesignChromeHeader
+						session={session}
+						currentThreadPath={currentThreadPath ?? undefined}
+						currentThreadTitle={currentThreadTitle ?? undefined}
+						onAdvancedExport={() => setExportOpen(true)}
+						docButton={
+							docTarget
+								? {
+										active: docOpen,
+										title:
+											docTarget.kind === "system"
+												? "查看 DESIGN.md"
+												: "查看 SKILL.md",
+										onToggle: () => setDocOpen((v) => !v),
+									}
+								: undefined
 						}
-						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-							sidebarTab === "tweaks"
-								? "bg-primary/10 text-primary"
-								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
-						}`}
-						title="Tweaks"
-					>
-						<SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={1.5} />
-					</button>
-					<button
-						type="button"
-						onClick={() =>
-							setSidebarTab(sidebarTab === "media" ? null : "media")
-						}
-						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-							sidebarTab === "media"
-								? "bg-primary/10 text-primary"
-								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
-						}`}
-						title="媒体生成"
-					>
-						<ImageIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
-					</button>
-					<button
-						type="button"
-						onClick={() =>
-							setSidebarTab(sidebarTab === "files" ? null : "files")
-						}
-						className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-							sidebarTab === "files"
-								? "bg-primary/10 text-primary"
-								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
-						}`}
-						title="工作目录文件"
-					>
-						<FolderTree className="w-3.5 h-3.5" strokeWidth={1.5} />
-					</button>
-					{docTarget ? (
-						<button
-							type="button"
-							onClick={() =>
-								setSidebarTab(sidebarTab === "docs" ? null : "docs")
-							}
-							className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-								sidebarTab === "docs"
-									? "bg-primary/10 text-primary"
-									: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary"
-							}`}
-							title={
-								docTarget.kind === "system" ? "查看 DESIGN.md" : "查看 SKILL.md"
-							}
-						>
-							<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-						</button>
-					) : null}
-				</aside>
-				{sidebarTab === "files" ? (
+					/>
+					<DesignTabsBar
+						activeTab={activeTab}
+						openTabs={openTabs}
+						onActivate={(tab) => designPreviewStore.setActiveTab(tab)}
+						onClose={(rel) => designPreviewStore.closeTab(rel)}
+					/>
+					<DesignViewerToolbar
+						showFileControls={isFileTab}
+						viewerMode={viewerMode}
+						viewport={viewport}
+						zoom={zoom}
+						overlays={overlays}
+						onRefresh={() => void handleRefresh()}
+						onModeChange={(m) => designPreviewStore.setViewerMode(m)}
+						onViewportChange={(v) => designPreviewStore.setViewport(v)}
+						onZoomChange={(z) => designPreviewStore.setZoom(z)}
+						onToggleOverlay={(k) => designPreviewStore.toggleOverlay(k)}
+					/>
+				</>
+			) : (
+				<PresentationHint />
+			)}
+
+			<div className="flex-1 min-h-0 relative bg-cream-200/40">
+				{activeTab === DESIGN_FILES_TAB ? (
 					<DesignFilesPanel
 						sessionId={session.id}
-						activePath={activeFile}
-						onOpenFile={(rel) => {
-							setOpenFiles((arr) => (arr.includes(rel) ? arr : [...arr, rel]));
-							setActiveFile(rel);
-						}}
-						onClose={() => setSidebarTab(null)}
+						activePath={null}
+						onOpenFile={(rel) => designPreviewStore.openTab(rel)}
+						inline
+					/>
+				) : viewerMode === "source" ? (
+					<DesignSourceView
+						sessionId={session.id}
+						relativePath={activeTab}
+						editable={overlays.edit}
+					/>
+				) : previewSrc ? (
+					<DesignViewportFrame
+						ref={viewportFrameRef}
+						src={previewSrc}
+						viewport={viewport}
+						zoom={zoom}
+						refreshKey={refreshKey}
+					/>
+				) : (
+					<div className="h-full flex items-center justify-center text-sm text-text-muted">
+						尚未生成 HTML
+					</div>
+				)}
+
+				{!presentationMode && overlays.tweaks ? (
+					<DesignTweaksOverlay
+						sessionId={session.id}
+						runId={runId ?? null}
+						mode={session.mode ?? undefined}
+						onClose={() => designPreviewStore.setOverlay("tweaks", false)}
 					/>
 				) : null}
-				{sidebarTab === "docs" && docTarget ? (
+				{!presentationMode && overlays.comment ? (
+					<DesignCommentOverlay
+						sessionId={session.id}
+						runId={runId ?? null}
+						onClose={() => designPreviewStore.setOverlay("comment", false)}
+					/>
+				) : null}
+				{!presentationMode && overlays.inspect && isFileTab ? (
+					<DesignInspectOverlay
+						frameRef={viewportFrameRef}
+						onClose={() => designPreviewStore.setOverlay("inspect", false)}
+					/>
+				) : null}
+				{!presentationMode && docOpen && docTarget ? (
 					<DocSidebar
 						kind={docTarget.kind}
 						id={docTarget.id}
-						onClose={() => setSidebarTab(null)}
+						onClose={() => setDocOpen(false)}
+						floating
 					/>
-				) : null}
-				{sidebarTab && sidebarTab !== "files" && sidebarTab !== "docs" ? (
-					<aside className="w-72 shrink-0 border-l border-border bg-background overflow-y-auto">
-						{sidebarTab === "tweaks" ? (
-							<TweaksPanel
-								sessionId={session.id}
-								runId={runId ?? null}
-								mode={session.mode ?? undefined}
-								onClose={() => setSidebarTab(null)}
-							/>
-						) : null}
-						{sidebarTab === "media" ? (
-							<MediaGenerationPanel sessionId={session.id} />
-						) : null}
-					</aside>
 				) : null}
 			</div>
 
@@ -383,6 +291,20 @@ export function DesignArtifactView({
 					onClose={() => setExportOpen(false)}
 				/>
 			) : null}
+		</div>
+	);
+}
+
+function PresentationHint() {
+	const [visible, setVisible] = useState(true);
+	useEffect(() => {
+		const t = setTimeout(() => setVisible(false), 2400);
+		return () => clearTimeout(t);
+	}, []);
+	if (!visible) return null;
+	return (
+		<div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-background/95 border border-border text-[11.5px] text-text-muted shadow-bai-pop pointer-events-none animate-thumbnail-fade-in">
+			演示模式 · 按 ESC 退出
 		</div>
 	);
 }

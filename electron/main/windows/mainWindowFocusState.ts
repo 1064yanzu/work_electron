@@ -1,4 +1,7 @@
-import { BrowserWindow, type BrowserWindow as BrowserWindowType } from "electron";
+import {
+	BrowserWindow,
+	type BrowserWindow as BrowserWindowType,
+} from "electron";
 
 /**
  * 判断主应用是否处于用户前台语境。

@@ -20,7 +20,15 @@ import {
 	Save,
 	Trash2,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Suspense,
+	lazy,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useSyncExternalStore } from "react";
 import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
@@ -69,9 +77,9 @@ export function MemorySettings() {
 	);
 
 	const [activeTab, setActiveTab] = useState<MemoryFileToken>("soul");
-	const [files, setFiles] = useState<Map<MemoryFileToken, ContextFileWithSnapshot>>(
-		new Map(),
-	);
+	const [files, setFiles] = useState<
+		Map<MemoryFileToken, ContextFileWithSnapshot>
+	>(new Map());
 	const [stats, setStats] = useState<MemoryStats | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [draft, setDraft] = useState<string>("");
@@ -190,7 +198,14 @@ export function MemorySettings() {
 				setSaving(false);
 			}
 		},
-		[activeFile, activeStyle.label, activeTab, currentThreadPath, draft, refresh],
+		[
+			activeFile,
+			activeStyle.label,
+			activeTab,
+			currentThreadPath,
+			draft,
+			refresh,
+		],
 	);
 
 	const handleSave = useCallback(() => {
@@ -267,11 +282,7 @@ export function MemorySettings() {
 			{stats && <MemoryStatsGrid stats={stats} />}
 
 			<SettingsCardSection>
-				<TabBar
-					activeTab={activeTab}
-					files={files}
-					onSwitch={switchTab}
-				/>
+				<TabBar activeTab={activeTab} files={files} onSwitch={switchTab} />
 
 				{projectTabUnavailable ? (
 					<ProjectUnavailableState />
@@ -454,7 +465,10 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 					style.accentBg,
 				)}
 			>
-				<Icon className={cn("h-3.5 w-3.5", style.accentText)} strokeWidth={1.8} />
+				<Icon
+					className={cn("h-3.5 w-3.5", style.accentText)}
+					strokeWidth={1.8}
+				/>
 			</span>
 			<div className="min-w-0">
 				<div
@@ -478,7 +492,10 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 				</div>
 			</div>
 			{file.injectedInActiveSnapshot && (
-				<span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-primary" aria-label="已注入活动会话" />
+				<span
+					className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-primary"
+					aria-label="已注入活动会话"
+				/>
 			)}
 			{file.limit ? (
 				<span className="ml-1 h-1 w-8 overflow-hidden rounded-full bg-cream-100">
@@ -487,7 +504,10 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 							"block h-full rounded-full",
 							isWarn ? "bg-error" : "bg-primary",
 						)}
-						style={{ width: `${fillPct}%`, backgroundColor: !isWarn ? style.accent : undefined }}
+						style={{
+							width: `${fillPct}%`,
+							backgroundColor: !isWarn ? style.accent : undefined,
+						}}
 					/>
 				</span>
 			) : null}
@@ -521,7 +541,9 @@ function FileStatusBar({
 				title="在 Finder/Explorer 中显示"
 			>
 				<FolderOpen className="h-3 w-3" strokeWidth={1.6} />
-				<span className="truncate max-w-[420px]">{file.path || "(未确定路径)"}</span>
+				<span className="truncate max-w-[420px]">
+					{file.path || "(未确定路径)"}
+				</span>
 			</button>
 			<div className="text-text-light">·</div>
 			<span className="tabular-nums text-text-muted">
@@ -551,7 +573,8 @@ function GlobalWarningBar() {
 				strokeWidth={1.8}
 			/>
 			<div className="text-[11.5px] leading-relaxed text-error">
-				这是全局用户级 <span className="font-mono">~/.claude/CLAUDE.md</span>，会影响
+				这是全局用户级 <span className="font-mono">~/.claude/CLAUDE.md</span>
+				，会影响
 				<span className="font-semibold"> 所有 Claude Code 实例</span>
 				（含 IDE 插件、CLI、其它桌面应用）。保存时会要求二次确认。
 			</div>
@@ -569,7 +592,8 @@ function EmptyProjectFileState({
 	return (
 		<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-cream-50 px-4 py-3">
 			<div className="text-[12px] leading-relaxed text-text-secondary">
-				<span className="font-semibold">{file.displayName}</span> 不存在。点击右侧按钮创建空文件，SDK 在下次 run 启动时会自动加载。
+				<span className="font-semibold">{file.displayName}</span>{" "}
+				不存在。点击右侧按钮创建空文件，SDK 在下次 run 启动时会自动加载。
 			</div>
 			<SettingsButton variant="secondary" onClick={onCreate}>
 				创建空文件
@@ -588,7 +612,8 @@ function ProjectUnavailableState() {
 				尚未选中线程
 			</p>
 			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
-				项目级 CLAUDE.md / AGENTS.md 跟随当前线程的工作目录。请先在左栏选中一个线程。
+				项目级 CLAUDE.md / AGENTS.md
+				跟随当前线程的工作目录。请先在左栏选中一个线程。
 			</p>
 		</div>
 	);
@@ -609,7 +634,8 @@ function GlobalConfirmDialog({
 					确认写入 ~/.claude/CLAUDE.md
 				</div>
 				<div className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
-					该文件是全局级别的 Claude Code 配置，会影响所有 Claude Code 实例。请确认你确实希望修改全局配置。
+					该文件是全局级别的 Claude Code 配置，会影响所有 Claude Code
+					实例。请确认你确实希望修改全局配置。
 				</div>
 			</div>
 			<div className="flex shrink-0 gap-2">
@@ -641,7 +667,8 @@ function ClearConfirmDialog({
 					确认清空 USER 与 MEMORY（共 {total} 字符）
 				</div>
 				<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
-					SOUL 不受影响。此操作不可恢复，Agent 将失去所有积累的用户偏好与环境事实。
+					SOUL 不受影响。此操作不可恢复，Agent
+					将失去所有积累的用户偏好与环境事实。
 				</div>
 			</div>
 			<div className="flex gap-2">

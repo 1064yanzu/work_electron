@@ -291,19 +291,16 @@ export default function App() {
 	// 转发到设置面板的"关于与更新"页，让用户在熟悉的 UI 里完成动作。
 	useEffect(() => {
 		let unlisten: (() => void) | undefined;
-		void listen<{ type: string; action: string }>(
-			"app-menu-action",
-			(evt) => {
-				const payload = evt.payload;
-				if (payload?.type !== "logs") return;
-				handleOpenSettings("general.about");
-				if (payload.action === "reveal") {
-					void invoke("logs_reveal").catch(() => {});
-				} else if (payload.action === "export") {
-					void invoke("logs_export", { days: 7 }).catch(() => {});
-				}
-			},
-		).then((fn) => {
+		void listen<{ type: string; action: string }>("app-menu-action", (evt) => {
+			const payload = evt.payload;
+			if (payload?.type !== "logs") return;
+			handleOpenSettings("general.about");
+			if (payload.action === "reveal") {
+				void invoke("logs_reveal").catch(() => {});
+			} else if (payload.action === "export") {
+				void invoke("logs_export", { days: 7 }).catch(() => {});
+			}
+		}).then((fn) => {
 			unlisten = fn;
 		});
 		return () => {

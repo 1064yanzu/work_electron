@@ -14,7 +14,6 @@
  *   - 全程 try/catch，失败时返回 ready:false 让前端继续回退到 swatches 渐变。
  */
 
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import { app, BrowserWindow } from "electron";
@@ -73,7 +72,9 @@ async function writeMeta(meta: CacheMeta): Promise<void> {
 	await fs.writeFile(metaPath(meta.id), JSON.stringify(meta, null, 2), "utf-8");
 }
 
-async function statSafe(p: string): Promise<{ mtimeMs: number; size: number } | null> {
+async function statSafe(
+	p: string,
+): Promise<{ mtimeMs: number; size: number } | null> {
 	try {
 		const st = await fs.stat(p);
 		return { mtimeMs: st.mtimeMs, size: st.size };
@@ -88,17 +89,33 @@ function safeId(id: string): string {
 
 async function resolveShowcaseSource(
 	systemId: string,
-): Promise<{ kind: "file"; file: string; mtime_ms: number } | { kind: "fallback"; mtime_ms: number }> {
+): Promise<
+	| { kind: "file"; file: string; mtime_ms: number }
+	| { kind: "fallback"; mtime_ms: number }
+> {
 	const id = safeId(systemId);
-	const showcaseFile = path.join(getDesignLibraryRoot(), "systems", id, "showcase.html");
+	const showcaseFile = path.join(
+		getDesignLibraryRoot(),
+		"systems",
+		id,
+		"showcase.html",
+	);
 	const st = await statSafe(showcaseFile);
 	if (st) return { kind: "file", file: showcaseFile, mtime_ms: st.mtimeMs };
-	const designFile = path.join(getDesignLibraryRoot(), "systems", id, "DESIGN.md");
+	const designFile = path.join(
+		getDesignLibraryRoot(),
+		"systems",
+		id,
+		"DESIGN.md",
+	);
 	const stMd = await statSafe(designFile);
 	return { kind: "fallback", mtime_ms: stMd?.mtimeMs ?? 0 };
 }
 
-function fallbackHtmlForSystem(summary: DesignSystemSummary | undefined, systemId: string): string {
+function fallbackHtmlForSystem(
+	summary: DesignSystemSummary | undefined,
+	systemId: string,
+): string {
 	const title = summary?.title ?? systemId;
 	const category = summary?.category ?? "design system";
 	const summaryText = summary?.summary ?? "";
@@ -196,8 +213,7 @@ function fallbackHtmlForSystem(summary: DesignSystemSummary | undefined, systemI
     <div class="footer">
       <div class="swatches">${swatches
 				.map(
-					(c) =>
-						`<div class="chip" style="background:${escapeHtml(c)}"></div>`,
+					(c) => `<div class="chip" style="background:${escapeHtml(c)}"></div>`,
 				)
 				.join("")}</div>
       <div class="id">/ ${escapeHtml(systemId)} · design system</div>
@@ -215,7 +231,6 @@ function escapeHtml(s: string): string {
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#39;");
 }
-
 
 async function loadShowcaseHtml(systemId: string): Promise<{
 	html: string;
@@ -312,7 +327,10 @@ async function isCacheValid(systemId: string): Promise<{
 }
 
 // —— 并发控制 ——
-const inflight = new Map<string, Promise<{ pngPath: string; mtime_ms: number } | null>>();
+const inflight = new Map<
+	string,
+	Promise<{ pngPath: string; mtime_ms: number } | null>
+>();
 const queue: Array<() => void> = [];
 let running = 0;
 
@@ -343,7 +361,12 @@ function schedule<T>(task: () => Promise<T>): Promise<T> {
 export async function getSystemThumbnail(
 	systemId: string,
 	broadcast: (payload: ThumbnailReadyPayload & { base64?: string }) => void,
-): Promise<{ path: string; ready: boolean; mtime_ms?: number; base64?: string }> {
+): Promise<{
+	path: string;
+	ready: boolean;
+	mtime_ms?: number;
+	base64?: string;
+}> {
 	const id = safeId(systemId);
 	if (!id) throw new Error(`非法的 system_id: ${systemId}`);
 
@@ -374,7 +397,12 @@ export async function getSystemThumbnail(
 						const buf = await fs.readFile(r.pngPath);
 						base64 = buf.toString("base64");
 					} catch {}
-					broadcast({ system_id: id, path: r.pngPath, mtime_ms: r.mtime_ms, base64 });
+					broadcast({
+						system_id: id,
+						path: r.pngPath,
+						mtime_ms: r.mtime_ms,
+						base64,
+					});
 				} catch {
 					// ignore
 				}

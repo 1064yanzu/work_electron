@@ -156,9 +156,9 @@ export function ShareMenu({
 				type="button"
 				onClick={() => setOpen((v) => !v)}
 				disabled={submitting}
-				className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-primary border border-border bg-bg-surface rounded-full hover:bg-warm-200/60 transition-colors disabled:opacity-60"
+				className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] font-medium text-text-muted hover:text-text-primary hover:bg-warm-200/60 transition-colors disabled:opacity-60"
 			>
-				<Download className="w-3.5 h-3.5" strokeWidth={1.5} />
+				<Download className="w-3.5 h-3.5" strokeWidth={1.6} />
 				分享
 				<ChevronDown
 					className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`}

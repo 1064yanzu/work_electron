@@ -28,99 +28,104 @@
  * ─────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* ─── Surface ──────────────────────────────────────────────────── */
-  --bg:           #ffffff;
-  --surface:      #ffffff;              /* gallery wall — no surface tint */
-  --surface-warm: var(--surface);       /* no warm tier in B&W system */
+	/* ─── Surface ──────────────────────────────────────────────────── */
+	--bg: #ffffff;
+	--surface: #ffffff; /* gallery wall — no surface tint */
+	--surface-warm: var(--surface); /* no warm tier in B&W system */
 
-  /* ─── Foreground ───────────────────────────────────────────────── */
-  --fg:   #000000;
-  --fg-2: #000000;                      /* B&W — no secondary ink tier */
-  --muted: rgba(0, 0, 0, 0.55);        /* secondary text on white */
-  --meta:  rgba(0, 0, 0, 0.40);        /* metadata, captions */
+	/* ─── Foreground ───────────────────────────────────────────────── */
+	--fg: #000000;
+	--fg-2: #000000; /* B&W — no secondary ink tier */
+	--muted: rgba(0, 0, 0, 0.55); /* secondary text on white */
+	--meta: rgba(0, 0, 0, 0.4); /* metadata, captions */
 
-  /* ─── Border ───────────────────────────────────────────────────── */
-  --border:      rgba(0, 0, 0, 0.12);  /* minimal — only where structurally needed */
-  --border-soft: rgba(0, 0, 0, 0.06);
+	/* ─── Border ───────────────────────────────────────────────────── */
+	--border: rgba(0, 0, 0, 0.12); /* minimal — only where structurally needed */
+	--border-soft: rgba(0, 0, 0, 0.06);
 
-  /* ─── Accent ───────────────────────────────────────────────────── */
-  /* In a strictly B&W system, black IS the accent (solid CTA). */
-  --accent:        #000000;
-  --accent-on:     #ffffff;
-  --accent-hover:  rgba(0, 0, 0, 0.85);
-  --accent-active: rgba(0, 0, 0, 0.08); /* glass dark — secondary button bg */
+	/* ─── Accent ───────────────────────────────────────────────────── */
+	/* In a strictly B&W system, black IS the accent (solid CTA). */
+	--accent: #000000;
+	--accent-on: #ffffff;
+	--accent-hover: rgba(0, 0, 0, 0.85);
+	--accent-active: rgba(0, 0, 0, 0.08); /* glass dark — secondary button bg */
 
-  /* ─── Semantic ─────────────────────────────────────────────────── */
-  --success: #16a34a;
-  --warn:    #eab308;
-  --danger:  #dc2626;
+	/* ─── Semantic ─────────────────────────────────────────────────── */
+	--success: #16a34a;
+	--warn: #eab308;
+	--danger: #dc2626;
 
-  /* ─── Typography ───────────────────────────────────────────────── */
-  --font-display: "figmaSans", "figmaSans Fallback", "SF Pro Display", system-ui, Helvetica, sans-serif;
-  --font-body:    "figmaSans", "figmaSans Fallback", "SF Pro Display", system-ui, Helvetica, sans-serif;
-  --font-mono:    "figmaMono", "figmaMono Fallback", "SF Mono", Menlo, ui-monospace, monospace;
+	/* ─── Typography ───────────────────────────────────────────────── */
+	--font-display:
+		"figmaSans", "figmaSans Fallback", "SF Pro Display", system-ui, Helvetica,
+		sans-serif;
+	--font-body:
+		"figmaSans", "figmaSans Fallback", "SF Pro Display", system-ui, Helvetica,
+		sans-serif;
+	--font-mono:
+		"figmaMono", "figmaMono Fallback", "SF Mono", Menlo, ui-monospace, monospace;
 
-  /* Type scale — DESIGN.md §Typography Hierarchy.
+	/* Type scale — DESIGN.md §Typography Hierarchy.
    * Figma's display range 86px→12px. The schema spine: 86px hero,
    * 64px section, 26px sub-heading, 20px body-large, 16px body. */
-  --text-xs:   12px;                   /* mono small — uppercase tiny labels */
-  --text-sm:   16px;                   /* body / button */
-  --text-base: 16px;                   /* body baseline */
-  --text-lg:   20px;                   /* body large — descriptions */
-  --text-xl:   26px;                   /* sub-heading */
-  --text-2xl:  26px;                   /* sub-heading (same tier, weight varies) */
-  --text-3xl:  64px;                   /* section heading */
-  --text-4xl:  86px;                   /* display / hero */
+	--text-xs: 12px; /* mono small — uppercase tiny labels */
+	--text-sm: 16px; /* body / button */
+	--text-base: 16px; /* body baseline */
+	--text-lg: 20px; /* body large — descriptions */
+	--text-xl: 26px; /* sub-heading */
+	--text-2xl: 26px; /* sub-heading (same tier, weight varies) */
+	--text-3xl: 64px; /* section heading */
+	--text-4xl: 86px; /* display / hero */
 
-  /* Leading + tracking.
+	/* Leading + tracking.
    * --leading-tight=1.00: 86px hero compression.
    * --tracking-display: -0.02em = -1.72px / 86px normalized.
    * Body text: -0.14px inline; mono labels: +0.54px inline. */
-  --leading-body:     1.40;
-  --leading-tight:    1.00;
-  --tracking-display: -0.02em;
+	--leading-body: 1.4;
+	--leading-tight: 1;
+	--tracking-display: -0.02em;
 
-  /* ─── Spacing ──────────────────────────────────────────────────── */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-8:  32px;
-  --space-12: 48px;
+	/* ─── Spacing ──────────────────────────────────────────────────── */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-12: 48px;
 
-  /* Section rhythm — gallery-like pacing between product sections. */
-  --section-y-desktop: 96px;
-  --section-y-tablet:  64px;
-  --section-y-phone:   40px;
+	/* Section rhythm — gallery-like pacing between product sections. */
+	--section-y-desktop: 96px;
+	--section-y-tablet: 64px;
+	--section-y-phone: 40px;
 
-  /* ─── Radius ───────────────────────────────────────────────────── */
-  /* Figma uses pill (50px) for all CTAs/tabs; 8px for card containers. */
-  --radius-sm:   50px;                 /* pill — all interactive elements */
-  --radius-md:   8px;                  /* cards, images, dialogs */
-  --radius-lg:   8px;
-  --radius-pill: 9999px;
+	/* ─── Radius ───────────────────────────────────────────────────── */
+	/* Figma uses pill (50px) for all CTAs/tabs; 8px for card containers. */
+	--radius-sm: 50px; /* pill — all interactive elements */
+	--radius-md: 8px; /* cards, images, dialogs */
+	--radius-lg: 8px;
+	--radius-pill: 9999px;
 
-  /* ─── Elevation ────────────────────────────────────────────────── */
-  /* Depth via background contrast, not shadows. */
-  --elev-flat:   none;
-  --elev-ring:   0 0 0 1px var(--border);
-  --elev-raised: 0 4px 16px rgba(0, 0, 0, 0.08);
+	/* ─── Elevation ────────────────────────────────────────────────── */
+	/* Depth via background contrast, not shadows. */
+	--elev-flat: none;
+	--elev-ring: 0 0 0 1px var(--border);
+	--elev-raised: 0 4px 16px rgba(0, 0, 0, 0.08);
 
-  /* ─── Focus ────────────────────────────────────────────────────── */
-  /* Figma's signature: dashed 2px outline encoded at component level.
+	/* ─── Focus ────────────────────────────────────────────────────── */
+	/* Figma's signature: dashed 2px outline encoded at component level.
      --focus-ring is used as the fallback shadow for keyboard nav. */
-  --focus-ring: 0 0 0 2px rgba(0, 0, 0, 0.8);
+	--focus-ring: 0 0 0 2px rgba(0, 0, 0, 0.8);
 
-  /* ─── Motion ───────────────────────────────────────────────────── */
-  --motion-fast:   150ms;
-  --motion-base:   200ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+	/* ─── Motion ───────────────────────────────────────────────────── */
+	--motion-fast: 150ms;
+	--motion-base: 200ms;
+	--ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
-  /* ─── Layout ───────────────────────────────────────────────────── */
-  --container-max:            1920px;
-  --container-gutter-desktop: 40px;
-  --container-gutter-tablet:  24px;
-  --container-gutter-phone:   16px;
+	/* ─── Layout ───────────────────────────────────────────────────── */
+	--container-max: 1920px;
+	--container-gutter-desktop: 40px;
+	--container-gutter-tablet: 24px;
+	--container-gutter-phone: 16px;
 }

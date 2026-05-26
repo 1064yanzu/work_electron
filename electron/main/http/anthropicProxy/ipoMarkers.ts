@@ -224,7 +224,12 @@ export function extractIpoRoutingMarker(
 	return null;
 }
 
-export type IpoThinkingLevelMarker = "off" | "low" | "medium" | "high" | "xhigh";
+export type IpoThinkingLevelMarker =
+	| "off"
+	| "low"
+	| "medium"
+	| "high"
+	| "xhigh";
 
 /**
  * 从请求中提取思考强度标记 <!-- ipo-thinking-level:off|low|medium|high|xhigh -->
@@ -246,9 +251,7 @@ export function extractIpoThinkingLevel(
 	// 兜底：扫描最近几条消息
 	const haystack = collectAnthropicRequestText(req, { tailMessages: 3 });
 	const match = haystack.match(IPO_THINKING_LEVEL_MARKER_RE);
-	return match?.[1]
-		? (match[1].toLowerCase() as IpoThinkingLevelMarker)
-		: null;
+	return match?.[1] ? (match[1].toLowerCase() as IpoThinkingLevelMarker) : null;
 }
 
 function stripIpoMarkersFromString(input: string): string {

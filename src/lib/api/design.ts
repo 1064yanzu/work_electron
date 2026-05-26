@@ -167,9 +167,7 @@ export async function designListSystems(): Promise<
 	return await safeInvoke("design_list_systems", {});
 }
 
-export async function designGetSystemThumbnail(
-	systemId: string,
-): Promise<{
+export async function designGetSystemThumbnail(systemId: string): Promise<{
 	path: string;
 	ready: boolean;
 	mtime_ms?: number;
@@ -220,6 +218,18 @@ export async function designReadWorkDirFile(input: {
 	mode?: "text" | "binary";
 }): Promise<DesignWorkDirFile> {
 	return await safeInvoke("design_read_work_dir_file", input);
+}
+
+export async function designWriteWorkDirFile(input: {
+	session_id: string;
+	relative_path: string;
+	content: string;
+}): Promise<{
+	relative_path: string;
+	written_bytes: number;
+	mtime_ms: number;
+}> {
+	return await safeInvoke("design_write_work_dir_file", input);
 }
 
 export async function designRunCritique(input: {

@@ -20,7 +20,10 @@ import {
 import { getDesignLibraryRoot } from "./resourcePaths";
 import { getSkillResourceMap, getFrameSource } from "./skillsRegistry";
 
-async function readFileSafe(filePath: string, fallback: string): Promise<string> {
+async function readFileSafe(
+	filePath: string,
+	fallback: string,
+): Promise<string> {
 	try {
 		return await fs.readFile(filePath, "utf-8");
 	} catch {
@@ -89,7 +92,10 @@ export async function composeDesignSystemPrompt(
 	// brand-spec.md 是 M2 品牌提取流水线的产物，优先级最高
 	let brandSpec = "";
 	if (opts.workDir) {
-		brandSpec = await readFileSafe(path.join(opts.workDir, "brand-spec.md"), "");
+		brandSpec = await readFileSafe(
+			path.join(opts.workDir, "brand-spec.md"),
+			"",
+		);
 	}
 
 	// Frame：mobile / web / deck 模式从 skill frontmatter 或 mode 默认取
@@ -131,13 +137,27 @@ export async function composeDesignSystemPrompt(
 			parts.push(skill.frontmatter.description);
 		}
 		if (skill.template_html) {
-			parts.push("", "## 起手骨架（assets/template.html）", "```html", skill.template_html, "```");
+			parts.push(
+				"",
+				"## 起手骨架（assets/template.html）",
+				"```html",
+				skill.template_html,
+				"```",
+			);
 		}
 		if (skill.checklist_md) {
-			parts.push("", "## 检查清单（references/checklist.md）", skill.checklist_md);
+			parts.push(
+				"",
+				"## 检查清单（references/checklist.md）",
+				skill.checklist_md,
+			);
 		}
 		if (skill.components_md) {
-			parts.push("", "## 组件片段（references/components.md）", skill.components_md);
+			parts.push(
+				"",
+				"## 组件片段（references/components.md）",
+				skill.components_md,
+			);
 		}
 		if (skill.themes_md) {
 			parts.push("", "## 主题约束（references/themes.md）", skill.themes_md);

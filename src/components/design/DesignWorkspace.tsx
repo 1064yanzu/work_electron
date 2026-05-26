@@ -322,7 +322,8 @@ export function DesignWorkspace() {
 							简介已准备好
 						</div>
 						<div className="text-[13px] text-text-muted leading-relaxed max-w-md">
-							在右侧 AI 助手里继续描述细节，按发送即可启动 Agent。<br />
+							在右侧 AI 助手里继续描述细节，按发送即可启动 Agent。
+							<br />
 							也可以直接用现在的简介开始。
 						</div>
 					</div>
@@ -389,10 +390,7 @@ export function DesignWorkspace() {
 				<div className="flex-1 flex items-center justify-center px-8">
 					<div className="flex flex-col items-center gap-4 opacity-60 select-none text-center">
 						<div className="w-14 h-14 rounded-2xl border-2 border-dashed border-border flex items-center justify-center">
-							<Sparkles
-								className="w-5 h-5 text-text-muted"
-								strokeWidth={1.4}
-							/>
+							<Sparkles className="w-5 h-5 text-text-muted" strokeWidth={1.4} />
 						</div>
 						<div className="flex flex-col gap-1.5">
 							<div className="text-[13px] font-medium text-text-primary">

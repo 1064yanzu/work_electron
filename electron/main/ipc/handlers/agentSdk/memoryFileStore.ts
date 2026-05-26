@@ -507,6 +507,10 @@ async function ensureEmptyFile(
 	} catch {
 		// 不存在则创建
 	}
-	const content = starter ? (starter.endsWith("\n") ? starter : `${starter}\n`) : "";
+	const content = starter
+		? starter.endsWith("\n")
+			? starter
+			: `${starter}\n`
+		: "";
 	await fsp.writeFile(filePath, content, "utf8");
 }

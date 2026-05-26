@@ -165,7 +165,11 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 		: undefined;
 }
 
-function parseMap(lines: string[], start: number, indent: number): [Record<string, unknown>, number] {
+function parseMap(
+	lines: string[],
+	start: number,
+	indent: number,
+): [Record<string, unknown>, number] {
 	const out: Record<string, unknown> = {};
 	let i = start;
 	while (i < lines.length) {
@@ -223,7 +227,11 @@ function parseMap(lines: string[], start: number, indent: number): [Record<strin
 	return [out, i];
 }
 
-function parseList(lines: string[], start: number, indent: number): [unknown[], number] {
+function parseList(
+	lines: string[],
+	start: number,
+	indent: number,
+): [unknown[], number] {
 	const out: unknown[] = [];
 	let i = start;
 	while (i < lines.length) {
@@ -302,7 +310,10 @@ function parseFrontmatter(content: string): Record<string, unknown> {
 	return parseMap(block.split("\n"), 0, 0)[0];
 }
 
-function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkillSummary {
+function normalizeSummary(
+	name: string,
+	fm: Record<string, unknown>,
+): DesignSkillSummary {
 	const od = asRecord(fm.od) ?? {};
 	const previewRaw = asRecord(od.preview);
 	const designSystemRaw = asRecord(od.design_system);
@@ -367,8 +378,10 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 					previewRaw.type === "markdown"
 						? previewRaw.type
 						: "html",
-				entry: typeof previewRaw.entry === "string" ? previewRaw.entry : undefined,
-				reload: typeof previewRaw.reload === "string" ? previewRaw.reload : undefined,
+				entry:
+					typeof previewRaw.entry === "string" ? previewRaw.entry : undefined,
+				reload:
+					typeof previewRaw.reload === "string" ? previewRaw.reload : undefined,
 			}
 		: undefined;
 
@@ -384,7 +397,9 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 					? item.default
 					: undefined,
 			range:
-				typeof min === "number" && typeof max === "number" ? [min, max] : undefined,
+				typeof min === "number" && typeof max === "number"
+					? [min, max]
+					: undefined,
 			values: asStringArray(item?.values),
 		};
 	});
@@ -421,7 +436,8 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 					? od.category
 					: undefined,
 		category: typeof od.category === "string" ? od.category : undefined,
-		default_frame: typeof od.default_frame === "string" ? od.default_frame : undefined,
+		default_frame:
+			typeof od.default_frame === "string" ? od.default_frame : undefined,
 		mode:
 			od.mode === "prototype" ||
 			od.mode === "deck" ||
@@ -451,7 +467,9 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 		outputs: outputsRaw
 			? {
 					primary:
-						typeof outputsRaw.primary === "string" ? outputsRaw.primary : undefined,
+						typeof outputsRaw.primary === "string"
+							? outputsRaw.primary
+							: undefined,
 					secondary: asStringArray(outputsRaw.secondary),
 				}
 			: undefined,
@@ -467,7 +485,9 @@ function normalizeSummary(name: string, fm: Record<string, unknown>): DesignSkil
 	};
 }
 
-async function listReferenceDocs(dir: string): Promise<DesignSkillReferenceDoc[]> {
+async function listReferenceDocs(
+	dir: string,
+): Promise<DesignSkillReferenceDoc[]> {
 	let entries: import("node:fs").Dirent[];
 	try {
 		entries = await fs.readdir(dir, { withFileTypes: true });
@@ -519,21 +539,28 @@ export async function getSkillResourceMap(
 	if (!skillContent) return null;
 	const fm = parseFrontmatter(skillContent);
 	const referencesDir = path.join(dir, "references");
-	const [template, checklist, layouts, components, themes, example, references] =
-		await Promise.all([
-			readFileOptional(path.join(dir, "assets", "template.html")) ??
-				readFileOptional(path.join(dir, "template.html")),
-			readFileOptional(path.join(referencesDir, "checklist.md")) ??
-				readFileOptional(path.join(dir, "checklist.md")),
-			readFileOptional(path.join(referencesDir, "layouts.md")) ??
-				readFileOptional(path.join(dir, "layouts.md")),
-			readFileOptional(path.join(referencesDir, "components.md")) ??
-				readFileOptional(path.join(dir, "components.md")),
-			readFileOptional(path.join(referencesDir, "themes.md")) ??
-				readFileOptional(path.join(dir, "themes.md")),
-			readFileOptional(path.join(dir, "example.html")),
-			listReferenceDocs(referencesDir),
-		]);
+	const [
+		template,
+		checklist,
+		layouts,
+		components,
+		themes,
+		example,
+		references,
+	] = await Promise.all([
+		readFileOptional(path.join(dir, "assets", "template.html")) ??
+			readFileOptional(path.join(dir, "template.html")),
+		readFileOptional(path.join(referencesDir, "checklist.md")) ??
+			readFileOptional(path.join(dir, "checklist.md")),
+		readFileOptional(path.join(referencesDir, "layouts.md")) ??
+			readFileOptional(path.join(dir, "layouts.md")),
+		readFileOptional(path.join(referencesDir, "components.md")) ??
+			readFileOptional(path.join(dir, "components.md")),
+		readFileOptional(path.join(referencesDir, "themes.md")) ??
+			readFileOptional(path.join(dir, "themes.md")),
+		readFileOptional(path.join(dir, "example.html")),
+		listReferenceDocs(referencesDir),
+	]);
 
 	return {
 		id: safeId,
@@ -552,5 +579,9 @@ export async function getSkillResourceMap(
 export async function getFrameSource(frameId: string): Promise<string | null> {
 	if (!frameId) return null;
 	const safe = frameId.replace(/[^\w-]/g, "");
-	return (await readFileOptional(path.join(getDesignFramesRoot(), `${safe}.html`))) ?? null;
+	return (
+		(await readFileOptional(
+			path.join(getDesignFramesRoot(), `${safe}.html`),
+		)) ?? null
+	);
 }

@@ -74,7 +74,9 @@ export function TTSPetPersonaSection({
 		const options = [
 			{
 				value: "",
-				label: selectedProvider ? "跟随 Provider 默认模型" : "跟随默认 LLM 模型",
+				label: selectedProvider
+					? "跟随 Provider 默认模型"
+					: "跟随默认 LLM 模型",
 			},
 			...modelValues.map((model) => ({ value: model, label: model })),
 		];
@@ -131,7 +133,9 @@ export function TTSPetPersonaSection({
 					variant="inline"
 					options={providerOptions}
 					disabled={isLoadingProviders}
-					placeholder={isLoadingProviders ? "正在加载 Provider…" : "选择 LLM Provider"}
+					placeholder={
+						isLoadingProviders ? "正在加载 Provider…" : "选择 LLM Provider"
+					}
 					aria-label="桌宠 AI 台词 LLM Provider"
 				/>
 				<Select

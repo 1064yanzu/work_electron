@@ -108,13 +108,17 @@ const DEFAULT_DIRECTION_ID = "modern-minimal";
 export function getDirection(id: string | undefined): DesignDirection {
 	if (!id) return BUILTIN_DESIGN_DIRECTIONS[0];
 	const hit = BUILTIN_DESIGN_DIRECTIONS.find((d) => d.id === id);
-	return hit ?? BUILTIN_DESIGN_DIRECTIONS.find((d) => d.id === DEFAULT_DIRECTION_ID)!;
+	return (
+		hit ?? BUILTIN_DESIGN_DIRECTIONS.find((d) => d.id === DEFAULT_DIRECTION_ID)!
+	);
 }
 
 /**
  * 读取方向规格 markdown 文件；找不到时回退到内存中的简要描述。
  */
-export async function renderDirectionSpec(id: string | undefined): Promise<string> {
+export async function renderDirectionSpec(
+	id: string | undefined,
+): Promise<string> {
 	const direction = getDirection(id);
 	const libRoot = getDesignLibraryRoot();
 	const filePath = path.join(libRoot, "directions", `${direction.id}.md`);

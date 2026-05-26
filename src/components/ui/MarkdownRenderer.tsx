@@ -411,9 +411,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 				);
 			}
 
-			return (
-				<ShikiCodeBlock code={code} language={language} maxHeight={600} />
-			);
+			return <ShikiCodeBlock code={code} language={language} maxHeight={600} />;
 		};
 	}, [isStreaming]);
 

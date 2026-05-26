@@ -20,21 +20,19 @@ import {
 
 export function useRemoteTerminalBridge(): void {
 	useEffect(() => {
-		const unsubAttached =
-			window.electronAPI?.on<RemoteTerminalAttachedPayload>(
-				"remote-terminal-attached",
-				(payload) => {
-					terminalStore.attachRemote(payload);
-				},
-			);
+		const unsubAttached = window.electronAPI?.on<RemoteTerminalAttachedPayload>(
+			"remote-terminal-attached",
+			(payload) => {
+				terminalStore.attachRemote(payload);
+			},
+		);
 
-		const unsubDetached =
-			window.electronAPI?.on<RemoteTerminalDetachedPayload>(
-				"remote-terminal-detached",
-				(payload) => {
-					terminalStore.detachRemote(payload.id);
-				},
-			);
+		const unsubDetached = window.electronAPI?.on<RemoteTerminalDetachedPayload>(
+			"remote-terminal-detached",
+			(payload) => {
+				terminalStore.detachRemote(payload.id);
+			},
+		);
 
 		return () => {
 			unsubAttached?.();

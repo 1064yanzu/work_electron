@@ -8,7 +8,12 @@
  * 帮助菜单里的"导出日志…"/"打开日志目录"会通过 IPC 转给主窗口去执行，
  * 这样和设置面板"关于"页的导出按钮共用同一条主进程链路。
  */
-import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from "electron";
+import {
+	app,
+	BrowserWindow,
+	Menu,
+	type MenuItemConstructorOptions,
+} from "electron";
 
 function emitLogAction(action: "export" | "reveal") {
 	const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
@@ -127,9 +132,7 @@ function buildMenuTemplate(): MenuItemConstructorOptions[] {
 				label: "项目主页（GitHub）",
 				click: async () => {
 					const { shell } = await import("electron");
-					await shell.openExternal(
-						"https://github.com/anthropics/claude-code",
-					);
+					await shell.openExternal("https://github.com/anthropics/claude-code");
 				},
 			},
 		],

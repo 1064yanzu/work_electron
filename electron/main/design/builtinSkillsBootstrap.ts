@@ -33,7 +33,9 @@ interface BuiltinSkill {
 
 const BUILTIN_SOURCE_ID = "ipo:builtin:design";
 
-async function readSkillFrontmatter(skillDir: string): Promise<BuiltinSkill | null> {
+async function readSkillFrontmatter(
+	skillDir: string,
+): Promise<BuiltinSkill | null> {
 	const skillFile = path.join(skillDir, "SKILL.md");
 	let content: string;
 	try {

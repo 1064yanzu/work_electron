@@ -83,7 +83,11 @@ function extractFonts(text: string): string[] {
 			.replace(/['"!]+/g, "")
 			.replace(/important/i, "")
 			.trim();
-		if (first && first.length < 60 && !/^(sans-serif|serif|monospace|system-ui)$/i.test(first)) {
+		if (
+			first &&
+			first.length < 60 &&
+			!/^(sans-serif|serif|monospace|system-ui)$/i.test(first)
+		) {
 			fonts.push(first);
 		}
 	}
@@ -110,7 +114,8 @@ function extractLogo(html: string, baseUrl: string): string | undefined {
 }
 
 function extractFavicon(html: string, baseUrl: string): string | undefined {
-	const linkRe = /<link\b[^>]*rel=["']([^"']*icon[^"']*)["'][^>]*href=["']([^"']+)["']/gi;
+	const linkRe =
+		/<link\b[^>]*rel=["']([^"']*icon[^"']*)["'][^>]*href=["']([^"']+)["']/gi;
 	for (const m of html.matchAll(linkRe)) {
 		return toAbsolute(baseUrl, m[2]);
 	}
@@ -154,7 +159,9 @@ async function fetchText(url: string, timeoutMs = 8000): Promise<string> {
 export async function extractBrand(url: string): Promise<BrandSpec> {
 	const baseUrl = url.endsWith("/") ? url : `${url}/`;
 	const html = await fetchText(url);
-	const inlineStyles = Array.from(html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi))
+	const inlineStyles = Array.from(
+		html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi),
+	)
 		.map((m) => m[1])
 		.join("\n");
 

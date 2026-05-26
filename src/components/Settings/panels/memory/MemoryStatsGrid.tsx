@@ -89,7 +89,10 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 									"h-full rounded-full transition-all duration-300",
 									isWarning ? "bg-error" : "bg-primary",
 								)}
-								style={{ width: `${pct}%`, backgroundColor: !isWarning ? style.accent : undefined }}
+								style={{
+									width: `${pct}%`,
+									backgroundColor: !isWarning ? style.accent : undefined,
+								}}
 							/>
 						</div>
 					</div>

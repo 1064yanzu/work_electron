@@ -22,10 +22,25 @@ export interface MediaProvider {
 }
 
 const PROVIDERS: MediaProvider[] = [
-	{ id: "gpt-image-2", label: "GPT-Image-2", kinds: ["image"], requires_key: true },
+	{
+		id: "gpt-image-2",
+		label: "GPT-Image-2",
+		kinds: ["image"],
+		requires_key: true,
+	},
 	{ id: "seedance", label: "Seedance", kinds: ["video"], requires_key: true },
-	{ id: "hyper-frames", label: "HyperFrames", kinds: ["video"], requires_key: true },
-	{ id: "elevenlabs", label: "ElevenLabs", kinds: ["audio"], requires_key: true },
+	{
+		id: "hyper-frames",
+		label: "HyperFrames",
+		kinds: ["video"],
+		requires_key: true,
+	},
+	{
+		id: "elevenlabs",
+		label: "ElevenLabs",
+		kinds: ["audio"],
+		requires_key: true,
+	},
 	{ id: "suno", label: "Suno", kinds: ["music"], requires_key: true },
 	{ id: "udio", label: "Udio", kinds: ["music"], requires_key: true },
 ];
@@ -82,7 +97,11 @@ export async function runMediaJob(
 
 	const provider = PROVIDERS.find((p) => p.id === input.provider);
 	if (!provider) {
-		return { job_id: "", status: "failed", error: `Unknown provider: ${input.provider}` };
+		return {
+			job_id: "",
+			status: "failed",
+			error: `Unknown provider: ${input.provider}`,
+		};
 	}
 	if (!provider.kinds.includes(input.kind)) {
 		return {

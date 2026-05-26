@@ -34,7 +34,10 @@ function showMainWindow(win: BrowserWindow) {
 	win.focus();
 }
 
-function ensureTray(win: BrowserWindow, quitIncludingPet: () => void): Tray | null {
+function ensureTray(
+	win: BrowserWindow,
+	quitIncludingPet: () => void,
+): Tray | null {
 	if (process.platform !== "win32") return null;
 	if (tray && !tray.isDestroyed()) return tray;
 

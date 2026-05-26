@@ -157,7 +157,9 @@ export function DesignSettings() {
 			<section className="rounded-2xl border border-border bg-bg-surface p-5 space-y-3">
 				<div className="flex items-center justify-between">
 					<div>
-						<h3 className="text-sm font-semibold text-text-primary">工作目录</h3>
+						<h3 className="text-sm font-semibold text-text-primary">
+							工作目录
+						</h3>
 						<p className="text-xs text-text-muted mt-0.5">
 							所有设计会话的 HTML / assets 都生成在{" "}
 							<code className="text-[11px] bg-warm-200 px-1.5 py-0.5 rounded">
@@ -171,8 +173,8 @@ export function DesignSettings() {
 						onClick={() => void handleRevealDesignsRoot()}
 						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-bg-surface text-text-primary border border-border hover:bg-warm-200/60 transition-colors"
 					>
-						<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-						在 Finder 中打开
+						<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />在 Finder
+						中打开
 					</button>
 				</div>
 			</section>
@@ -180,12 +182,15 @@ export function DesignSettings() {
 			<section className="rounded-2xl border border-border bg-bg-surface p-5 space-y-4">
 				<div>
 					<h3 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-						<Sparkles className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-						5 维自检
+						<Sparkles className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />5
+						维自检
 					</h3>
 					<p className="text-xs text-text-muted mt-0.5">
-						每次生成完成后自动调用一次 Critique 引擎；开启「Gate 模式」时引擎额外输出{" "}
-						<code className="text-[11px]">passed / lowest_dim / regenerate_reason</code>{" "}
+						每次生成完成后自动调用一次 Critique 引擎；开启「Gate
+						模式」时引擎额外输出{" "}
+						<code className="text-[11px]">
+							passed / lowest_dim / regenerate_reason
+						</code>{" "}
 						字段，便于一键发起重做。
 					</p>
 				</div>
@@ -230,7 +235,8 @@ export function DesignSettings() {
 						className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
 					/>
 					<div className="text-[11px] text-text-muted mt-1">
-						推荐 Haiku 系列（评分负载轻、单次 60k 字符以内）。也可填入 GPT-4.1-mini / DeepSeek 等。
+						推荐 Haiku 系列（评分负载轻、单次 60k 字符以内）。也可填入
+						GPT-4.1-mini / DeepSeek 等。
 					</div>
 				</div>
 			</section>
@@ -242,7 +248,8 @@ export function DesignSettings() {
 							内置方向（{directions.length} 个）
 						</h3>
 						<p className="text-xs text-text-muted mt-0.5">
-							在 Discovery 表单的「品牌资产 → 我没有品牌」分支供选择；写入 system prompt 的设计语言契约。
+							在 Discovery 表单的「品牌资产 → 我没有品牌」分支供选择；写入
+							system prompt 的设计语言契约。
 						</p>
 					</div>
 					{loading ? (
@@ -289,7 +296,8 @@ export function DesignSettings() {
 					Design Systems（{systems.length} 个）
 				</h3>
 				<p className="text-xs text-text-muted mb-3">
-					Product = 真实产品风（Linear / Stripe…）；Style = 风格流派（Glassmorphism / Brutalism…）。
+					Product = 真实产品风（Linear / Stripe…）；Style =
+					风格流派（Glassmorphism / Brutalism…）。
 				</p>
 				{productSystems.length > 0 ? (
 					<>
@@ -323,7 +331,8 @@ export function DesignSettings() {
 					内置 Skill（{skills.length} 个）
 				</h3>
 				<p className="text-xs text-text-muted mb-3">
-					每个 Skill 对应一个生成 mode（web-prototype / mobile-mockup / pitch-deck / poster…）。
+					每个 Skill 对应一个生成 mode（web-prototype / mobile-mockup /
+					pitch-deck / poster…）。
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
 					{skills.map((s) => (
@@ -353,7 +362,8 @@ export function DesignSettings() {
 					媒体生成 Provider（{providers.length} 个）
 				</h3>
 				<p className="text-xs text-text-muted mb-3">
-					图像 / 视频 / 音频 / 音乐生成入口；标 🔑 的 provider 需要在「Providers」面板中配置对应 API Key。
+					图像 / 视频 / 音频 / 音乐生成入口；标 🔑 的 provider
+					需要在「Providers」面板中配置对应 API Key。
 				</p>
 				<div className="flex flex-col gap-1.5">
 					{providers.map((p) => (
@@ -371,8 +381,7 @@ export function DesignSettings() {
 							</div>
 							{p.requires_key ? (
 								<span className="text-[10px] text-amber-600 inline-flex items-center gap-1">
-									<KeyRound className="w-3 h-3" strokeWidth={1.5} />
-									需 Key
+									<KeyRound className="w-3 h-3" strokeWidth={1.5} />需 Key
 								</span>
 							) : (
 								<span className="text-[10px] text-primary inline-flex items-center gap-1">

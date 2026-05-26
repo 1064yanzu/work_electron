@@ -88,10 +88,14 @@ export function beginCopilotMirror(
  */
 export function appendCopilotMirror(text: string): void {
 	if (!mirrorState) return;
-	chatStore.updateMessage(mirrorState.chatSessionId, mirrorState.assistantMsgId, {
-		content: text,
-		isStreaming: true,
-	});
+	chatStore.updateMessage(
+		mirrorState.chatSessionId,
+		mirrorState.assistantMsgId,
+		{
+			content: text,
+			isStreaming: true,
+		},
+	);
 }
 
 /**
@@ -100,10 +104,14 @@ export function appendCopilotMirror(text: string): void {
 export function completeCopilotMirror(finalText: string): void {
 	if (!mirrorState) return;
 	const body = finalText.trim() || "设计已生成。";
-	chatStore.updateMessage(mirrorState.chatSessionId, mirrorState.assistantMsgId, {
-		content: body,
-		isStreaming: false,
-	});
+	chatStore.updateMessage(
+		mirrorState.chatSessionId,
+		mirrorState.assistantMsgId,
+		{
+			content: body,
+			isStreaming: false,
+		},
+	);
 	chatStore.setStatus("idle");
 	agentStore.completeTask(body);
 	mirrorState = null;
@@ -117,10 +125,14 @@ export function failCopilotMirror(message: string, partial: string): void {
 	const tail = partial.trim()
 		? `${partial.trim()}\n\n⚠️ 生成失败：${message}`
 		: `⚠️ 生成失败：${message}`;
-	chatStore.updateMessage(mirrorState.chatSessionId, mirrorState.assistantMsgId, {
-		content: tail,
-		isStreaming: false,
-	});
+	chatStore.updateMessage(
+		mirrorState.chatSessionId,
+		mirrorState.assistantMsgId,
+		{
+			content: tail,
+			isStreaming: false,
+		},
+	);
 	chatStore.setStatus("error", message);
 	agentStore.failTask(message);
 	mirrorState = null;
@@ -134,10 +146,14 @@ export function cancelCopilotMirror(partial: string): void {
 	const tail = partial.trim()
 		? `${partial.trim()}\n\n— 已中止 —`
 		: "— 已中止 —";
-	chatStore.updateMessage(mirrorState.chatSessionId, mirrorState.assistantMsgId, {
-		content: tail,
-		isStreaming: false,
-	});
+	chatStore.updateMessage(
+		mirrorState.chatSessionId,
+		mirrorState.assistantMsgId,
+		{
+			content: tail,
+			isStreaming: false,
+		},
+	);
 	chatStore.setStatus("idle");
 	agentStore.cancelTask();
 	mirrorState = null;

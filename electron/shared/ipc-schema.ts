@@ -3815,6 +3815,18 @@ export type IPCSchema = {
 			mime?: string;
 		};
 	};
+	design_write_work_dir_file: {
+		input: {
+			session_id: string;
+			relative_path: string;
+			content: string;
+		};
+		output: {
+			relative_path: string;
+			written_bytes: number;
+			mtime_ms: number;
+		};
+	};
 };
 
 // =====================
