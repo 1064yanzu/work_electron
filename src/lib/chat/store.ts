@@ -643,26 +643,6 @@ class ChatStore {
 		);
 	}
 
-	setSessionDesignId(sessionId: string, designSessionId: string | undefined) {
-		this.setState(
-			(state) => ({
-				...state,
-				sessions: state.sessions.map((s) =>
-					s.id === sessionId
-						? { ...s, designSessionId, updatedAt: Date.now() }
-						: s,
-				),
-			}),
-			"normal",
-		);
-	}
-
-	findSessionByDesignId(designSessionId: string): ChatSession | null {
-		return (
-			this.state.sessions.find((s) => s.designSessionId === designSessionId) ??
-			null
-		);
-	}
 
 	setSessionSdkSessionId(sessionId: string, sdkSessionId: string | undefined) {
 		this.setState(
@@ -807,8 +787,6 @@ const chatActions = {
 	replaceSessionMessages: chatStore.replaceSessionMessages.bind(chatStore),
 	updateSessionTitle: chatStore.updateSessionTitle.bind(chatStore),
 	setSessionAgentSessionId: chatStore.setSessionAgentSessionId.bind(chatStore),
-	setSessionDesignId: chatStore.setSessionDesignId.bind(chatStore),
-	findSessionByDesignId: chatStore.findSessionByDesignId.bind(chatStore),
 	setSessionSdkSessionId: chatStore.setSessionSdkSessionId.bind(chatStore),
 	setSessionCwd: chatStore.setSessionCwd.bind(chatStore),
 	setSessionPinned: chatStore.setSessionPinned.bind(chatStore),

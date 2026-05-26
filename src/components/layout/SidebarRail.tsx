@@ -6,7 +6,6 @@ import {
 	SlidersHorizontal,
 	Blocks,
 	BookOpen,
-	Palette,
 	Terminal,
 	PanelLeftClose,
 	PanelLeftOpen,
@@ -50,24 +49,15 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 		{ id: "cards", label: "卡片", icon: LayoutGrid },
 		{ id: "wiki", label: "Wiki", icon: BookOpen },
 		{ id: "skills", label: "技能", icon: Blocks },
-		{ id: "design", label: "设计", icon: Palette },
 	] as const;
 
 	type NavId = (typeof navItems)[number]["id"];
 
 	const handleNavClick = (id: NavId) => {
-		if (id === "design") {
-			// 进入设计中栏视图并自动折叠左栏（VSCode 式）
-			setMainView("design");
-			layoutStore.setLeftSidebarView("design");
-			layoutStore.setLeftSidebarCollapsed(true);
-			return;
-		}
 		setLeftSidebarView(id);
-		// 如果当前停在 design 主视图，回到 editor
-		if (activeMainView === "design") {
+		// 如果当前停在非 editor 主视图，回到 editor
+		if (activeMainView !== "editor") {
 			setMainView("editor");
-			layoutStore.setLeftSidebarCollapsed(false);
 		}
 	};
 
@@ -95,10 +85,8 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 						"agent",
 					].includes(leftSidebarView);
 					const isActive =
-						item.id === "design"
-							? activeMainView === "design"
-							: leftSidebarView === item.id ||
-								(item.id === "sources" && isSourceSubView);
+						leftSidebarView === item.id ||
+						(item.id === "sources" && isSourceSubView);
 
 					return (
 						<button

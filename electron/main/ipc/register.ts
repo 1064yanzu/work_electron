@@ -70,7 +70,6 @@ import { createWikiHandlers } from "./handlers/wiki";
 import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 import { createPetWindowHandlers } from "./handlers/petWindow";
 import { createCustomMascotHandlers } from "./handlers/customMascot";
-import { createDesignHandlers } from "./handlers/design";
 import {
 	bindMainWindowGetter,
 	flingAndSnapPetWindow,
@@ -275,9 +274,6 @@ export function registerIpcHandlers({
 
 	// 应用更新 handlers
 	const updateHandlers = createUpdateHandlers();
-
-	// 设计模块 handlers（中栏「设计」主视图）
-	const designHandlers = createDesignHandlers(db);
 
 	// ==================
 	// 系统命令
@@ -497,14 +493,6 @@ export function registerIpcHandlers({
 	ipcMain.handle("import_skill", skillsHandlers.import_skill);
 	ipcMain.handle("delete_skill", skillsHandlers.delete_skill);
 	ipcMain.handle("set_skill_enabled", skillsHandlers.set_skill_enabled);
-	ipcMain.handle(
-		"get_skills_design_mode",
-		skillsHandlers.get_skills_design_mode,
-	);
-	ipcMain.handle(
-		"set_skills_design_mode",
-		skillsHandlers.set_skills_design_mode,
-	);
 
 	// Skills Marketplace
 	ipcMain.handle(
@@ -1416,117 +1404,6 @@ export function registerIpcHandlers({
 	ipcMain.handle("tts_synthesize_stream", ttsHandlers.tts_synthesize_stream);
 	ipcMain.handle("tts_cancel", ttsHandlers.tts_cancel);
 	ipcMain.handle("tts_test", ttsHandlers.tts_test);
-
-	// ==================
-	// 设计模块（Design）
-	// ==================
-	ipcMain.handle(
-		"design_list_directions",
-		designHandlers.design_list_directions,
-	);
-	ipcMain.handle("design_list_sessions", designHandlers.design_list_sessions);
-	ipcMain.handle(
-		"design_get_discovery_form",
-		designHandlers.design_get_discovery_form,
-	);
-	ipcMain.handle("design_start_session", designHandlers.design_start_session);
-	ipcMain.handle(
-		"design_submit_discovery",
-		designHandlers.design_submit_discovery,
-	);
-	ipcMain.handle("design_get_session", designHandlers.design_get_session);
-	ipcMain.handle("design_update_session", designHandlers.design_update_session);
-	ipcMain.handle(
-		"design_finalize_session",
-		designHandlers.design_finalize_session,
-	);
-	ipcMain.handle("design_delete_session", designHandlers.design_delete_session);
-	ipcMain.handle(
-		"design_reveal_work_dir",
-		designHandlers.design_reveal_work_dir,
-	);
-	ipcMain.handle(
-		"design_list_export_targets",
-		designHandlers.design_list_export_targets,
-	);
-	ipcMain.handle("design_export", designHandlers.design_export);
-	ipcMain.handle(
-		"design_finish_to_thread",
-		designHandlers.design_finish_to_thread,
-	);
-	ipcMain.handle("design_list_systems", designHandlers.design_list_systems);
-	ipcMain.handle("design_run_critique", designHandlers.design_run_critique);
-	ipcMain.handle(
-		"design_list_builtin_skills",
-		designHandlers.design_list_builtin_skills,
-	);
-	ipcMain.handle("design_get_template", designHandlers.design_get_template);
-	ipcMain.handle(
-		"design_get_skill_resource_map",
-		designHandlers.design_get_skill_resource_map,
-	);
-	ipcMain.handle("design_extract_brand", designHandlers.design_extract_brand);
-	ipcMain.handle("design_apply_tweak", designHandlers.design_apply_tweak);
-	ipcMain.handle(
-		"design_apply_annotation",
-		designHandlers.design_apply_annotation,
-	);
-	ipcMain.handle(
-		"design_media_providers",
-		designHandlers.design_media_providers,
-	);
-	ipcMain.handle("design_media_generate", designHandlers.design_media_generate);
-	ipcMain.handle("design_media_history", designHandlers.design_media_history);
-	ipcMain.handle(
-		"design_get_system_thumbnail",
-		designHandlers.design_get_system_thumbnail,
-	);
-	ipcMain.handle("design_get_doc", designHandlers.design_get_doc);
-	ipcMain.handle(
-		"design_list_work_dir_files",
-		designHandlers.design_list_work_dir_files,
-	);
-	ipcMain.handle(
-		"design_read_work_dir_file",
-		designHandlers.design_read_work_dir_file,
-	);
-	ipcMain.handle(
-		"design_write_work_dir_file",
-		designHandlers.design_write_work_dir_file,
-	);
-	ipcMain.handle("design_list_templates", designHandlers.design_list_templates);
-	ipcMain.handle(
-		"design_get_template_detail",
-		designHandlers.design_get_template_detail,
-	);
-	ipcMain.handle(
-		"design_list_media_templates",
-		designHandlers.design_list_media_templates,
-	);
-	ipcMain.handle(
-		"design_get_media_template",
-		designHandlers.design_get_media_template,
-	);
-	ipcMain.handle(
-		"design_save_media_template",
-		designHandlers.design_save_media_template,
-	);
-	ipcMain.handle(
-		"design_import_media_template",
-		designHandlers.design_import_media_template,
-	);
-	ipcMain.handle(
-		"design_pick_media_template_file",
-		designHandlers.design_pick_media_template_file,
-	);
-	ipcMain.handle(
-		"design_delete_media_template",
-		designHandlers.design_delete_media_template,
-	);
-	ipcMain.handle(
-		"design_list_user_design_templates",
-		designHandlers.design_list_user_design_templates,
-	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

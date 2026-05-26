@@ -14,7 +14,6 @@ type Handler<K extends keyof IPCSchema> = (
 
 type SkillMetadata = IPCSchema["list_skills"]["output"][number];
 
-const KEY_DESIGN_MODE = "skills.design_mode_active";
 const KEY_POLICY_V2 = "skills.policy.v2_applied";
 
 async function ensureDir(dir: string) {
@@ -340,15 +339,12 @@ async function ensurePolicyV2Migrated(db: DbContext) {
 // -----------------------------------------------------------------------------
 
 function computeEffectiveEnabled(
-	modeClass: "design" | "general",
 	override: boolean | undefined,
-	designModeActive: boolean,
 ): { enabled: boolean; userOverride: boolean } {
 	if (typeof override === "boolean") {
 		return { enabled: override, userOverride: true };
 	}
-	if (modeClass === "general") return { enabled: true, userOverride: false };
-	return { enabled: designModeActive, userOverride: false };
+	return { enabled: true, userOverride: false };
 }
 
 // -----------------------------------------------------------------------------
@@ -359,7 +355,6 @@ export function createSkillsHandlers(db: DbContext) {
 	async function collectSkillsFromDir(
 		dir: string,
 		overrideMap: Map<string, boolean>,
-		designModeActive: boolean,
 	): Promise<SkillMetadata[]> {
 		const results: SkillMetadata[] = [];
 		let entries: Dirent[];
@@ -383,11 +378,7 @@ export function createSkillsHandlers(db: DbContext) {
 					parsed.odMode,
 				);
 				const override = overrideMap.get(parsed.name);
-				const { enabled, userOverride } = computeEffectiveEnabled(
-					modeClass,
-					override,
-					designModeActive,
-				);
+				const { enabled, userOverride } = computeEffectiveEnabled(override);
 				results.push({
 					name: parsed.name,
 					description: parsed.description,
@@ -407,10 +398,7 @@ export function createSkillsHandlers(db: DbContext) {
 
 	const list_skills: Handler<"list_skills"> = async () => {
 		await ensurePolicyV2Migrated(db);
-		const [overrideMap, designModeActive] = await Promise.all([
-			loadOverrideMap(db),
-			readConfigBool(db, KEY_DESIGN_MODE, false),
-		]);
+		const overrideMap = await loadOverrideMap(db);
 		const managedRoot = getManagedSkillsRootDir();
 		try {
 			await ensureDir(managedRoot);
@@ -421,7 +409,6 @@ export function createSkillsHandlers(db: DbContext) {
 		const skills = await collectSkillsFromDir(
 			managedRoot,
 			overrideMap,
-			designModeActive,
 		);
 		skills.sort((a, b) => a.name.localeCompare(b.name));
 		return skills;
@@ -455,17 +442,12 @@ export function createSkillsHandlers(db: DbContext) {
 			errorOnExist: true,
 		});
 
-		const designModeActive = await readConfigBool(db, KEY_DESIGN_MODE, false);
 		const modeClass = classifyMode(
 			parsed.name,
 			parsed.description,
 			parsed.odMode,
 		);
-		const { enabled, userOverride } = computeEffectiveEnabled(
-			modeClass,
-			undefined,
-			designModeActive,
-		);
+		const { enabled, userOverride } = computeEffectiveEnabled(undefined);
 
 		return {
 			name: parsed.name,
@@ -505,29 +487,10 @@ export function createSkillsHandlers(db: DbContext) {
 		return { success: true };
 	};
 
-	const get_skills_design_mode: Handler<
-		"get_skills_design_mode"
-	> = async () => {
-		await ensurePolicyV2Migrated(db);
-		const active = await readConfigBool(db, KEY_DESIGN_MODE, false);
-		return { active };
-	};
-
-	const set_skills_design_mode: Handler<"set_skills_design_mode"> = async (
-		_event,
-		input,
-	) => {
-		const active = Boolean(input.active);
-		await writeConfig(db, KEY_DESIGN_MODE, active ? "1" : "0");
-		return { active };
-	};
-
 	return {
 		list_skills,
 		import_skill,
 		delete_skill,
 		set_skill_enabled,
-		get_skills_design_mode,
-		set_skills_design_mode,
 	};
 }

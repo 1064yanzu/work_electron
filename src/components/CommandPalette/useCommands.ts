@@ -7,7 +7,6 @@ import {
 	FileText,
 	MessageSquare,
 	Moon,
-	Palette,
 	Settings,
 	Sparkles,
 	Sun,
@@ -16,8 +15,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { themeManager } from "../../lib/theme";
 import { workspaceStore } from "../../lib/workspaceStore";
-import { layoutStore } from "../../lib/stores/layoutStore";
-import { designStore } from "../../lib/stores/designStore";
 import type { CommandItem } from "./types";
 
 interface UseCommandsArgs {
@@ -117,51 +114,6 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 
 		// FileText 仅作为 prefetch 防止 tree-shake 误删（实际未使用，但保留导入便于未来扩展）
 		void FileText;
-
-		// 设计模块
-		items.push({
-			id: "design.new",
-			title: "新建设计",
-			description: "进入设计模式，在左栏「创建项目」面板填写",
-			icon: Palette,
-			keywords: ["design", "new", "create", "shèjì", "xinjian"],
-			group: "设计",
-			action: () => {
-				// 清掉残留 current，让 DesignWorkspace 显示 entry view（含 NewProjectPanel）
-				designStore.setCurrentSession(null);
-				designStore.setStage("empty");
-				layoutStore.setMainView("design");
-				layoutStore.setLeftSidebarView("design");
-				layoutStore.setLeftSidebarCollapsed(true);
-			},
-		});
-
-		items.push({
-			id: "design.open",
-			title: "进入设计模式",
-			description: "切换到中栏「设计」主视图",
-			icon: Palette,
-			keywords: ["design", "open", "mode", "panel"],
-			group: "设计",
-			action: () => {
-				layoutStore.setMainView("design");
-				layoutStore.setLeftSidebarView("design");
-				layoutStore.setLeftSidebarCollapsed(true);
-			},
-		});
-
-		items.push({
-			id: "design.exit",
-			title: "退出设计模式",
-			description: "切回 editor 视图并展开左栏",
-			icon: Palette,
-			keywords: ["design", "exit", "back", "editor"],
-			group: "设计",
-			action: () => {
-				layoutStore.setMainView("editor");
-				layoutStore.setLeftSidebarCollapsed(false);
-			},
-		});
 
 		return items;
 	}, [args, currentTheme]);

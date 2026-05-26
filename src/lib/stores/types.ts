@@ -106,7 +106,7 @@ export interface AIReviewState {
 // 布局状态
 export interface LayoutState {
 	// 中间栏主视图模式
-	activeMainView: "editor" | "browser" | "wiki-graph" | "design";
+	activeMainView: "editor" | "browser" | "wiki-graph";
 	// 左边栏视图模式
 	leftSidebarView:
 		| "sources"
@@ -118,8 +118,7 @@ export interface LayoutState {
 		| "threads"
 		| "files"
 		| "skills"
-		| "wiki"
-		| "design";
+		| "wiki";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 	// 左边栏折叠状态（仅留 SidebarRail）

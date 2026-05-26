@@ -63,11 +63,6 @@ const WikiGraphFullscreen = lazy(() =>
 		default: m.WikiGraphFullscreen,
 	})),
 );
-const DesignWorkspace = lazy(() =>
-	import("./components/design/DesignWorkspace").then((m) => ({
-		default: m.DesignWorkspace,
-	})),
-);
 const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
@@ -390,10 +385,6 @@ export default function App() {
 										) : activeMainView === "browser" ? (
 											<Suspense fallback={<PanelLoadingFallback />}>
 												<BrowserPanel />
-											</Suspense>
-										) : activeMainView === "design" ? (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<DesignWorkspace />
 											</Suspense>
 										) : (
 											<Suspense fallback={<PanelLoadingFallback />}>

@@ -7,7 +7,6 @@ import {
 	Plus,
 	RefreshCw,
 	Search,
-	Sparkles,
 	Store,
 	Trash2,
 	X,
@@ -21,7 +20,7 @@ import { cn } from "../../lib/utils";
 import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
 
-type FilterType = "all" | "general" | "design" | "enabled";
+type FilterType = "all" | "general" | "enabled";
 type TabType = "installed" | "marketplace";
 
 interface SkillsViewProps {
@@ -31,19 +30,16 @@ interface SkillsViewProps {
 const FILTERS: Array<{ value: FilterType; label: string }> = [
 	{ value: "all", label: "全部" },
 	{ value: "general", label: "通用" },
-	{ value: "design", label: "设计 / 媒体" },
 	{ value: "enabled", label: "已启用" },
 ];
 
 export function SkillsView(_props: SkillsViewProps) {
 	const {
 		skills,
-		designModeActive,
 		refresh,
 		importSkill,
 		deleteSkill,
 		setEnabled,
-		setDesignModeActive,
 	} = useSkillsStore();
 	const updateCount = useUpdateBadge();
 	const [tab, setTab] = useState<TabType>("installed");
@@ -65,7 +61,6 @@ export function SkillsView(_props: SkillsViewProps) {
 				}
 			}
 			if (filter === "enabled") return skill.enabled;
-			if (filter === "design") return skill.modeClass === "design";
 			if (filter === "general") return skill.modeClass === "general";
 			return true;
 		});
@@ -79,18 +74,6 @@ export function SkillsView(_props: SkillsViewProps) {
 			await setEnabled(skillName, !currentEnabled);
 		} catch (err) {
 			setError(`更新失败: ${err}`);
-		}
-	};
-
-	const handleToggleDesignMode = async () => {
-		try {
-			setIsLoading(true);
-			setError(null);
-			await setDesignModeActive(!designModeActive);
-		} catch (err) {
-			setError(`切换设计模式失败: ${err}`);
-		} finally {
-			setIsLoading(false);
 		}
 	};
 
@@ -162,10 +145,6 @@ export function SkillsView(_props: SkillsViewProps) {
 	};
 
 	const enabledCount = skills.filter((s) => s.enabled).length;
-	const designCount = skills.filter((s) => s.modeClass === "design").length;
-	const designEnabledCount = skills.filter(
-		(s) => s.modeClass === "design" && s.enabled,
-	).length;
 
 	return (
 		<div className="flex flex-col h-full bg-transparent">
@@ -279,61 +258,6 @@ export function SkillsView(_props: SkillsViewProps) {
 				<MarketplaceList />
 			) : (
 				<>
-					{/* 设计模式开关 — 控制所有 design 类技能的默认启用 */}
-					{designCount > 0 && (
-						<div className="px-5 pt-4 shrink-0">
-							<button
-								type="button"
-								onClick={handleToggleDesignMode}
-								disabled={isLoading}
-								className={cn(
-									"w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left",
-									designModeActive
-										? "bg-primary/8 border-primary/25 hover:bg-primary/12"
-										: "bg-cream-100/60 dark:bg-cream-900/30 border-cream-300/70 dark:border-cream-500/25 hover:bg-cream-200/60",
-								)}
-								title={
-									designModeActive
-										? "已开启：design / 媒体类技能整体启用（手动改过的项保留独立状态）"
-										: "已关闭：design / 媒体类技能整体隐藏。打开后进入设计模式，像 open-design 一样按需启用。"
-								}
-							>
-								<div
-									className={cn(
-										"shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-										designModeActive
-											? "bg-primary text-primary-foreground"
-											: "bg-cream-200 dark:bg-cream-800/60 text-text-muted",
-									)}
-								>
-									<Sparkles className="w-3.5 h-3.5" />
-								</div>
-								<div className="flex-1 min-w-0">
-									<div className="flex items-baseline gap-1.5">
-										<span className="text-[12.5px] font-medium text-text-primary">
-											设计模式
-										</span>
-										<span className="text-[10px] text-text-light tabular-nums">
-											{designEnabledCount} / {designCount}
-										</span>
-									</div>
-									<p className="text-[10.5px] text-text-muted leading-snug mt-0.5">
-										{designModeActive
-											? "design / 媒体类技能跟随该开关整体启用"
-											: "关闭时只暴露通用技能，design 类全部隐藏"}
-									</p>
-								</div>
-								<ToggleSwitch
-									enabled={designModeActive}
-									onClick={(e) => {
-										e.stopPropagation();
-										handleToggleDesignMode();
-									}}
-								/>
-							</button>
-						</div>
-					)}
-
 					{/* Search & Filter */}
 					<div className="px-5 pt-4 pb-3 shrink-0 space-y-2.5">
 						<div className="relative">
@@ -435,12 +359,6 @@ export function SkillsView(_props: SkillsViewProps) {
 															>
 																{skill.modeTag || "design"}
 															</span>
-														)}
-														{skill.userOverride && (
-															<span
-																className="shrink-0 w-1 h-1 rounded-full bg-amber-500/80"
-																title="已手动调整，不再跟随设计模式开关"
-															/>
 														)}
 													</div>
 													<p

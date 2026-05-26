@@ -47,14 +47,6 @@ export {
 	useResearchStoreSelector,
 } from "./researchStore";
 export { tabStore, useTabStore, useTabStoreSelector } from "./tabStore";
-export {
-	designStore,
-	useDesignStore,
-	useDesignStoreSelector,
-	type DesignWorkspaceStage,
-	type DesignWorkspaceState,
-} from "./designStore";
-
 // ───── 顶层业务 Store（住在 src/lib/）─────
 export * from "../customPromptStore";
 export * from "../managedModeStore";

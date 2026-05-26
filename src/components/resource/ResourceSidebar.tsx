@@ -60,7 +60,6 @@ import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
 import { WikiView } from "../wiki/WikiView";
-import { DesignSessionList } from "../design/DesignSessionList";
 import { useLayoutStoreSelector } from "../../lib/stores/layoutStore";
 
 const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
@@ -633,8 +632,6 @@ export default function ResourceSidebar({
 						<SkillsView />
 					) : leftSidebarView === "wiki" ? (
 						<WikiView />
-					) : leftSidebarView === "design" ? (
-						<DesignSessionList />
 					) : leftSidebarView === "websearch" ? (
 						<div className="flex flex-col h-full">
 							{/* Header */}

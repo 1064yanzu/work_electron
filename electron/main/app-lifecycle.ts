@@ -34,7 +34,6 @@ import {
 	startPerfTelemetry,
 	stopPerfTelemetry,
 } from "./services/perfTelemetry";
-import { ensureDesignsRoot } from "./design";
 import { installApplicationMenu } from "./menu";
 import {
 	installWindowsCloseBehavior,
@@ -129,37 +128,9 @@ export async function bootstrapApp({
 	const db = await initDatabase({ logger });
 	logger.info({ msg: "Database initialized successfully" });
 
-	// DB 就绪后，三项独立的文件 IO 任务并行：设计根目录 / 内置 skill 同步 / agent 记忆文件
-	// 三者无依赖关系；任一失败不阻塞主窗口创建。
+	// DB 就绪后，两项独立的文件 IO 任务并行：内置 skill 同步 / agent 记忆文件
+	// 两者无依赖关系；任一失败不阻塞主窗口创建。
 	await Promise.allSettled([
-		ensureDesignsRoot()
-			.then((designsRoot) =>
-				logger.info({ msg: "Design root ensured", root: designsRoot }),
-			)
-			.catch((err) => {
-				logger.warn({
-					msg: "Failed to ensure design root",
-					error: err instanceof Error ? err.message : String(err),
-				});
-			}),
-		import("./design")
-			.then(({ bootstrapDesignBuiltinSkills }) =>
-				bootstrapDesignBuiltinSkills(),
-			)
-			.then((bootResult) =>
-				logger.info({
-					msg: "Design builtin skills bootstrapped",
-					installed: bootResult.installed,
-					skipped: bootResult.skipped,
-					failed: bootResult.failed,
-				}),
-			)
-			.catch((err) => {
-				logger.warn({
-					msg: "Failed to bootstrap design builtin skills",
-					error: err instanceof Error ? err.message : String(err),
-				});
-			}),
 		import("./ipc/handlers/agentSdk/memoryFileStore")
 			.then(({ ensureMemoryFiles }) => ensureMemoryFiles(db))
 			.then(() => logger.info({ msg: "Agent memory files ensured" }))

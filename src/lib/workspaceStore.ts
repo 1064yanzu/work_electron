@@ -369,7 +369,7 @@ class WorkspaceStore {
 	}
 
 	// 设置主视图模式 -> layoutStore
-	setMainView(view: "editor" | "browser" | "wiki-graph" | "design") {
+	setMainView(view: "editor" | "browser" | "wiki-graph") {
 		layoutStore.setMainView(view);
 	}
 
@@ -395,8 +395,7 @@ class WorkspaceStore {
 			| "threads"
 			| "files"
 			| "skills"
-			| "wiki"
-			| "design",
+			| "wiki",
 	) {
 		layoutStore.setLeftSidebarView(view);
 	}

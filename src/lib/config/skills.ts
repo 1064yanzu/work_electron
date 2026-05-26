@@ -7,12 +7,10 @@ export interface SkillMetadata {
 	description: string;
 	location: string;
 	enabled: boolean;
-	/** 来自 SKILL.md `od.mode` 或描述启发，决定该技能是否归属"设计/媒体"类 */
+	/** 来自 SKILL.md `od.mode` 或描述启发的分类标签 */
 	modeClass: "design" | "general";
 	/** 原始 od.mode 值（若存在），用于在 UI 上展示分类 chip */
 	modeTag?: string;
-	/** 用户是否手动调过启用状态；未手动调过时跟随"设计模式"开关 */
-	userOverride: boolean;
 	/** 来自 Claude 插件市场等只读源，本面板不允许删除 */
 	readonly?: boolean;
 }
@@ -32,24 +30,12 @@ export async function deleteSkill(skillName: string): Promise<void> {
 	return invoke("delete_skill", { skillName });
 }
 
-/** 设置技能启用状态（手动 override，覆盖设计模式的默认行为） */
+/** 设置技能启用状态（手动 override） */
 export async function setSkillEnabled(
 	skillName: string,
 	enabled: boolean,
 ): Promise<void> {
 	return invoke("set_skill_enabled", { skillName, enabled });
-}
-
-/** 读取"设计模式"全局开关 */
-export async function getSkillsDesignMode(): Promise<{ active: boolean }> {
-	return invoke("get_skills_design_mode");
-}
-
-/** 切换"设计模式"全局开关（影响所有无 override 的 design 类技能） */
-export async function setSkillsDesignMode(
-	active: boolean,
-): Promise<{ active: boolean }> {
-	return invoke("set_skills_design_mode", { active });
 }
 
 // ==================== Skills Marketplace API ====================
