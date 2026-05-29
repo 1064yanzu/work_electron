@@ -11,6 +11,7 @@ import {
 	getPetWindowPosition,
 	getPetWindowState,
 	setPetWindowEnabled,
+	setPetWindowMouseIgnore,
 	setPetWindowPosition,
 	setPetWindowThroughClicks,
 	snapPetWindowToNearestEdge,
@@ -65,6 +66,11 @@ export function createPetWindowHandlers({
 			setPetWindowThroughClicks(input.enabled);
 			return { success: true };
 		}) satisfies Handler<"pet_window_set_through_clicks">,
+
+		pet_window_set_mouse_ignore: (async (_event, input) => {
+			setPetWindowMouseIgnore(input.ignore);
+			return { success: true };
+		}) satisfies Handler<"pet_window_set_mouse_ignore">,
 
 		pet_window_focus_main: (async () => {
 			focusMainWindow();

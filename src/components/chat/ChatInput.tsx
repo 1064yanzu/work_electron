@@ -140,6 +140,8 @@ export function ChatInput({
 
 			setValue("");
 			setSelectedChips([]);
+			// 清空附件/上下文（图片、文件等），避免发送后仍滞留在输入框上方
+			workspaceStore.clearContexts();
 		}
 	}, [value, selectedChips, disabled, onSubmit]);
 
@@ -328,17 +330,18 @@ export function ChatInput({
 					/>
 				)}
 
-				{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
-				<div
-					className={`
-					bg-surface border transition-[border-color,border-radius,box-shadow] duration-300 ease-out
+			{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
+			<div
+				className={`
+				bg-surface border overflow-hidden transition-[border-color,border-radius,box-shadow] duration-300 ease-out
 					${
 						isExpanded
 							? "rounded-3xl border-warm-400 dark:border-warm-500/40 shadow-[0_4px_12px_0_rgb(26_26_25/0.06)]"
 							: "rounded-full border-border hover:border-warm-400 shadow-[0_1px_2px_0_rgb(26_26_25/0.04)]"
 					}
 				`}
-				>
+				style={{ transform: "translateZ(0)" }}
+			>
 					<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
 
 					{/* 已选择的命令卡片 */}

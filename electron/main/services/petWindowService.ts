@@ -266,7 +266,25 @@ export function flingAndSnapPetWindow(
 export function setPetWindowThroughClicks(enabled: boolean) {
 	updatePetWindowSettings({ throughClicks: enabled });
 	if (petWindow && !petWindow.isDestroyed()) {
-		petWindow.setIgnoreMouseEvents(enabled, { forward: true });
+		// 无论开启或关闭，都先进入 forward 模式：
+		// - throughClicks=true：永久穿透（渲染层动态逻辑会感知到并禁用自身）
+		// - throughClicks=false：动态模式，渲染层的 usePetHitTest 负责后续管理
+		petWindow.setIgnoreMouseEvents(true, { forward: true });
+	}
+}
+
+/**
+ * 动态设置鼠标事件忽略（由渲染层精确命中检测驱动）。
+ * ignore=true  → 透明区域穿透，鼠标事件转发给背后的窗口
+ * ignore=false → 窗口正常捕获鼠标事件（光标在宠物/气泡上时）
+ */
+export function setPetWindowMouseIgnore(ignore: boolean) {
+	if (petWindow && !petWindow.isDestroyed()) {
+		if (ignore) {
+			petWindow.setIgnoreMouseEvents(true, { forward: true });
+		} else {
+			petWindow.setIgnoreMouseEvents(false);
+		}
 	}
 }
 

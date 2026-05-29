@@ -72,10 +72,11 @@ export function createPetWindow({
 	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 	win.setAlwaysOnTop(true, "floating");
 
-	// 勿扰模式：鼠标事件穿透
-	if (settings.throughClicks) {
-		win.setIgnoreMouseEvents(true, { forward: true });
-	}
+	// 精确命中检测模式：始终以 forward 模式启动。
+	// - throughClicks=true：永久穿透，渲染层动态逻辑感知后会保持 ignore=true
+	// - throughClicks=false：动态模式，渲染层 usePetHitTest 实时切换捕获/穿透
+	// 两种情况都先调 setIgnoreMouseEvents(true, { forward: true })，mousemove 仍能转发到 renderer
+	win.setIgnoreMouseEvents(true, { forward: true });
 
 	// 加载页面：#/pet 哈希路由复用主渲染进程入口
 	if (rendererUrl) {

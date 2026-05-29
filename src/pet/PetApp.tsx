@@ -44,6 +44,7 @@ import { invoke } from "../lib/tauriCompat";
 import { listen, type UnlistenFn } from "../lib/tauriEventCompat";
 import { usePetEventBridge } from "./usePetEventBridge";
 import { useBubblePlacement } from "./useBubblePlacement";
+import { usePetHitTest } from "./usePetHitTest";
 import {
 	PetTaskBubble,
 	PetNotificationBubble,
@@ -147,6 +148,7 @@ export default function PetApp() {
 
 	// 设置：尺寸 / 勿扰 / dwell（从主进程持久化拉取，并跟踪 pet-settings-changed 事件实时更新）
 	const [sizePreset, setSizePreset] = useState<string>("lg");
+	const [throughClicks, setThroughClicks] = useState(false);
 	// 是否处于 sink（关闭气泡的退场动画）
 	const [bubbleSinking, setBubbleSinking] = useState(false);
 	// 落地反弹一次性 class
@@ -195,9 +197,12 @@ export default function PetApp() {
 			dwellPreset: string;
 			dndStart: string | null;
 			dndEnd: string | null;
+			throughClicks: boolean;
 		}>("pet_window_get_state")
 			.then((state) => {
 				if (state?.sizePreset) setSizePreset(state.sizePreset);
+				if (typeof state?.throughClicks === "boolean")
+					setThroughClicks(state.throughClicks);
 			})
 			.catch(() => {});
 
@@ -210,6 +215,9 @@ export default function PetApp() {
 						const patch = event.payload?.patch ?? {};
 						if (typeof patch.sizePreset === "string") {
 							setSizePreset(patch.sizePreset);
+						}
+						if (typeof patch.throughClicks === "boolean") {
+							setThroughClicks(patch.throughClicks);
 						}
 					},
 				);
@@ -756,6 +764,9 @@ export default function PetApp() {
 	// 导致 mascotReady 由 false → true 时 Hook 调用顺序错乱，组件直接报错变成空白窗口。
 	const placement = useBubblePlacement(uiState.bubble !== "none");
 
+	// 精确命中检测：透明区域自动穿透，鼠标悬停在宠物/气泡上时才捕获事件
+	usePetHitTest(throughClicks);
+
 	// 还在等待 IPC 初始化（自定义桌宠列表未拉取）时，保持透明等待，不要提前 return null
 	if (!mascotReady) return null;
 
@@ -866,6 +877,7 @@ export default function PetApp() {
 
 	return (
 		<div
+			data-pet-passthrough="true"
 			className="relative w-full h-full flex flex-col items-center justify-end select-none"
 			style={{
 				background: "transparent",

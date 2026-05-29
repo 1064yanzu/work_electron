@@ -1181,6 +1181,10 @@ export function registerIpcHandlers({
 		petWindowHandlers.pet_window_set_through_clicks,
 	);
 	ipcMain.handle(
+		"pet_window_set_mouse_ignore",
+		petWindowHandlers.pet_window_set_mouse_ignore,
+	);
+	ipcMain.handle(
 		"pet_window_focus_main",
 		petWindowHandlers.pet_window_focus_main,
 	);

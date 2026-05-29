@@ -2837,6 +2837,15 @@ export type IPCSchema = {
 		output: { success: boolean; active: boolean };
 	};
 	/**
+	 * 动态设置鼠标事件忽略模式（精确命中检测用）。
+	 * ignore=true  → setIgnoreMouseEvents(true, { forward: true })：透明区域穿透，mousemove 仍转发
+	 * ignore=false → setIgnoreMouseEvents(false)：窗口正常捕获全部鼠标事件
+	 */
+	pet_window_set_mouse_ignore: {
+		input: { ignore: boolean };
+		output: { success: boolean };
+	};
+	/**
 	 * 让桌宠"说一句话"——主动朗读 + 弹气泡。
 	 * 任何地方都可以调用：远程控制 / 番茄钟 / 工作流 / 设置面板试听 等。
 	 * 朗读会走 TTSScope: pet（受 scene_pet_enabled / dnd 控制；force=true 可强制）。
