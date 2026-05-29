@@ -16,6 +16,7 @@ interface AttachedFile {
 interface AttachmentCardProps {
 	file: AttachedFile;
 	onRemove?: () => void;
+	onOpen?: () => void;
 	variant?: "card" | "chip";
 }
 
@@ -96,6 +97,7 @@ function getOriginLabel(
 export function AttachmentCard({
 	file,
 	onRemove,
+	onOpen,
 	variant = "card",
 }: AttachmentCardProps) {
 	const icon = getFileIcon(file.title);
@@ -118,10 +120,15 @@ export function AttachmentCard({
 				"border border-border",
 				"hover:border-cream-400 dark:hover:border-cream-500",
 				"transition-colors duration-200",
-				"cursor-default shadow-sm",
+				onOpen ? "cursor-pointer" : "cursor-default",
+				"shadow-sm",
 				variant === "chip" ? "px-2.5 py-1.5" : "px-3 py-2",
 			)}
 			title={`${file.title}${meta ? `\n${meta}` : ""}`}
+			onClick={onOpen}
+			onKeyDown={onOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+			role={onOpen ? "button" : undefined}
+			tabIndex={onOpen ? 0 : undefined}
 		>
 			{/* 图标容器 */}
 			<div
@@ -162,15 +169,20 @@ export function AttachmentCard({
 // 附件列表组件
 interface AttachmentListProps {
 	files: AttachedFile[];
+	onOpen?: (file: AttachedFile) => void;
 }
 
-export function AttachmentList({ files }: AttachmentListProps) {
+export function AttachmentList({ files, onOpen }: AttachmentListProps) {
 	if (!files || files.length === 0) return null;
 
 	return (
 		<div className="flex flex-col gap-2 mb-2">
 			{files.map((file, index) => (
-				<AttachmentCard key={`${file.path}-${index}`} file={file} />
+				<AttachmentCard
+					key={`${file.path}-${index}`}
+					file={file}
+					onOpen={onOpen ? () => onOpen(file) : undefined}
+				/>
 			))}
 		</div>
 	);

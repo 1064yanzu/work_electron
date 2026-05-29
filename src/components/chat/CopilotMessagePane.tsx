@@ -1,10 +1,12 @@
 import { CircleUser, Loader2 } from "lucide-react";
 import { memo } from "react";
-import type { RefObject } from "react";
+import type { MutableRefObject, RefObject } from "react";
 import type { AskUserQuestionRequest } from "../../lib/agent/askUserQuestionStore";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { AskUserQuestionList } from "../agent/AskUserQuestionCard";
 import { Button } from "../ui/Button";
+import { ScrollToBottomFab } from "../copilot/ScrollToBottomFab";
+import { CopilotMessageJumper } from "../copilot/CopilotMessageJumper";
 import { CopilotMessageList } from "./CopilotMessageList";
 import { WelcomeScreen } from "./WelcomeScreen";
 
@@ -21,10 +23,14 @@ interface CopilotMessagePaneProps {
 	isWaitingForLLM: boolean;
 	chatMode: "chat" | "agent";
 	preferBlocks: boolean;
+	sessionHasError?: boolean;
 	pendingAskUserRequests: AskUserQuestionRequest[];
+	shouldAutoScrollRef: MutableRefObject<boolean>;
 	onScroll: () => void;
 	onLoadOlderMessages: () => void;
 	onRegenerateMessage: (messageId: string) => void;
+	onEditMessage?: (messageId: string, newContent: string) => void;
+	onDeleteMessage?: (messageId: string) => void;
 	onOpenResearch: () => void;
 	onAllowAskUserQuestion: (
 		requestId: string,
@@ -43,10 +49,14 @@ function CopilotMessagePaneImpl({
 	isWaitingForLLM,
 	chatMode,
 	preferBlocks,
+	sessionHasError,
 	pendingAskUserRequests,
+	shouldAutoScrollRef,
 	onScroll,
 	onLoadOlderMessages,
 	onRegenerateMessage,
+	onEditMessage,
+	onDeleteMessage,
 	onOpenResearch,
 	onAllowAskUserQuestion,
 	onDenyAskUserQuestion,
@@ -102,8 +112,11 @@ function CopilotMessagePaneImpl({
 							hiddenMessageCount={hiddenMessageCount}
 							preferBlocks={preferBlocks}
 							canRegenerateMessages={!isStreaming && !isAgentExecuting}
+							sessionHasError={sessionHasError}
 							onLoadOlderMessages={onLoadOlderMessages}
 							onRegenerateMessage={onRegenerateMessage}
+							onEditMessage={onEditMessage}
+							onDeleteMessage={onDeleteMessage}
 						/>
 
 						{isWaitingForLLM && chatMode === "agent" && (
@@ -147,6 +160,22 @@ function CopilotMessagePaneImpl({
 				)}
 			</div>
 
+			{/* 滚到底部浮动按钮 */}
+			<ScrollToBottomFab
+				scrollContainerRef={scrollContainerRef}
+				shouldAutoScrollRef={shouldAutoScrollRef}
+				messageCount={messages.length}
+			/>
+
+			{/* DeepSeek 风格消息导航条 */}
+			{messages.length > 0 && (
+				<CopilotMessageJumper
+					messages={messages}
+					scrollContainerRef={scrollContainerRef}
+					onDeleteMessage={onDeleteMessage}
+				/>
+			)}
+
 			{/* AskUserQuestion 浮动弹窗 — 覆盖在聊天区域上方 */}
 			{pendingAskUserRequests.length > 0 && (
 				<AskUserQuestionList
@@ -172,10 +201,14 @@ export const CopilotMessagePane = memo(
 		prev.isWaitingForLLM === next.isWaitingForLLM &&
 		prev.chatMode === next.chatMode &&
 		prev.preferBlocks === next.preferBlocks &&
+		prev.sessionHasError === next.sessionHasError &&
 		prev.pendingAskUserRequests === next.pendingAskUserRequests &&
+		prev.shouldAutoScrollRef === next.shouldAutoScrollRef &&
 		prev.onScroll === next.onScroll &&
 		prev.onLoadOlderMessages === next.onLoadOlderMessages &&
 		prev.onRegenerateMessage === next.onRegenerateMessage &&
+		prev.onEditMessage === next.onEditMessage &&
+		prev.onDeleteMessage === next.onDeleteMessage &&
 		prev.onOpenResearch === next.onOpenResearch &&
 		prev.onAllowAskUserQuestion === next.onAllowAskUserQuestion &&
 		prev.onDenyAskUserQuestion === next.onDenyAskUserQuestion,

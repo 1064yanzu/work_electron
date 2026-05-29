@@ -335,7 +335,11 @@ class ChatStore {
 		updater: (state: ChatState) => ChatState,
 		persist: PersistMode,
 	) {
-		this.state = updater(this.state);
+		const nextState = updater(this.state);
+		if (Object.is(nextState, this.state)) {
+			return;
+		}
+		this.state = nextState;
 		this.scheduleSave(persist);
 		this.scheduleEmit();
 	}
@@ -642,7 +646,6 @@ class ChatStore {
 			"normal",
 		);
 	}
-
 
 	setSessionSdkSessionId(sessionId: string, sdkSessionId: string | undefined) {
 		this.setState(

@@ -30,10 +30,9 @@ function openSourceInMainView(
 		const existingTab = state.tabs.find((t) => t.id === tabId);
 		if (existingTab) {
 			// 已打开，直接激活
-			return {
-				...state,
-				activeTabId: tabId,
-			};
+			return state.activeTabId === tabId
+				? state
+				: { ...state, activeTabId: tabId };
 		}
 
 		// 新建标签页
@@ -62,6 +61,7 @@ function openSourceInMainView(
 // 关闭标签页
 function closeTab(tabId: string) {
 	store.setState((state) => {
+		if (!state.tabs.some((t) => t.id === tabId)) return state;
 		const newTabs = state.tabs.filter((t) => t.id !== tabId);
 
 		// 如果关闭的是当前激活标签，切换到最后一个
@@ -90,10 +90,9 @@ function closeTab(tabId: string) {
 
 // 切换激活标签页
 function setActiveTab(tabId: string) {
-	store.setState((state) => ({
-		...state,
-		activeTabId: tabId,
-	}));
+	store.setState((state) =>
+		state.activeTabId === tabId ? state : { ...state, activeTabId: tabId },
+	);
 }
 
 // 获取当前激活的标签页
@@ -113,7 +112,9 @@ function openDiffInMainView(
 		// 检查是否已打开
 		const existingTab = state.tabs.find((t) => t.id === tabId);
 		if (existingTab) {
-			return { ...state, activeTabId: tabId };
+			return state.activeTabId === tabId
+				? state
+				: { ...state, activeTabId: tabId };
 		}
 
 		// 新建 diff 标签页

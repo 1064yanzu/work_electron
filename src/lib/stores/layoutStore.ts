@@ -44,11 +44,17 @@ const store = createStore<LayoutState>(initialLayoutState);
 // === 操作方法 ===
 
 function setMainView(view: LayoutState["activeMainView"]) {
-	store.setState((state) => ({ ...state, activeMainView: view }));
+	store.setState((state) =>
+		state.activeMainView === view ? state : { ...state, activeMainView: view },
+	);
 }
 
 function setLeftSidebarView(view: LayoutState["leftSidebarView"]) {
-	store.setState((state) => ({ ...state, leftSidebarView: view }));
+	store.setState((state) =>
+		state.leftSidebarView === view
+			? state
+			: { ...state, leftSidebarView: view },
+	);
 }
 
 function toggleRightSidebar() {
@@ -59,11 +65,19 @@ function toggleRightSidebar() {
 }
 
 function setRightSidebarVisible(visible: boolean) {
-	store.setState((state) => ({ ...state, rightSidebarVisible: visible }));
+	store.setState((state) =>
+		state.rightSidebarVisible === visible
+			? state
+			: { ...state, rightSidebarVisible: visible },
+	);
 }
 
 function setCardsActiveTab(tab: LayoutState["cardsActiveTab"]) {
-	store.setState((state) => ({ ...state, cardsActiveTab: tab }));
+	const prev = store.getState().cardsActiveTab;
+	store.setState((state) =>
+		state.cardsActiveTab === tab ? state : { ...state, cardsActiveTab: tab },
+	);
+	if (prev === tab) return;
 	if (typeof window !== "undefined") {
 		try {
 			window.localStorage.setItem(CARDS_ACTIVE_TAB_STORAGE_KEY, tab);
@@ -74,7 +88,13 @@ function setCardsActiveTab(tab: LayoutState["cardsActiveTab"]) {
 }
 
 function setLeftSidebarCollapsed(collapsed: boolean) {
-	store.setState((state) => ({ ...state, leftSidebarCollapsed: collapsed }));
+	const prev = store.getState().leftSidebarCollapsed;
+	store.setState((state) =>
+		state.leftSidebarCollapsed === collapsed
+			? state
+			: { ...state, leftSidebarCollapsed: collapsed },
+	);
+	if (prev === collapsed) return;
 	if (typeof window !== "undefined") {
 		try {
 			window.localStorage.setItem(

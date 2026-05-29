@@ -3,11 +3,11 @@
  * 统一管理生图配置和请求，支持多提供商
  */
 
-import { app } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { DbContext } from "../db/client";
 import type { Provider, ProviderType } from "../../shared/types";
+import { getCacheDir } from "../storage/cacheRoots";
 
 // ==================== 配置接口 ====================
 
@@ -337,7 +337,7 @@ function detectImageMimeType(base64: string): string | null {
  * 获取图片存储目录
  */
 function getImageStorageDir(): string {
-	return path.join(app.getPath("userData"), "generated-images");
+	return getCacheDir("generated-images");
 }
 
 /**

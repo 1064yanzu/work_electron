@@ -2146,6 +2146,30 @@ export type IPCSchema = {
 		input: Record<string, never>;
 		output: { success: boolean; error?: string };
 	};
+	// ==================
+	// 缓存根目录（可清理缓存的统一存储位置，独立于 Vault）
+	// ==================
+	cache_root_get: {
+		input: Record<string, never>;
+		output: { current: string; isDefault: boolean; defaultRoot: string };
+	};
+	cache_root_pick: {
+		input: undefined;
+		output: { path: string | null };
+	};
+	cache_root_update: {
+		input: { newRoot: string; migrate: boolean };
+		output: {
+			current: string;
+			isDefault: boolean;
+			migration?: {
+				copied: number;
+				bytes: number;
+				skipped: number;
+				errors: Array<{ path: string; error: string }>;
+			};
+		};
+	};
 	project_reveal_directory: {
 		input: { project_id: string };
 		output: { success: boolean; path: string; error?: string };

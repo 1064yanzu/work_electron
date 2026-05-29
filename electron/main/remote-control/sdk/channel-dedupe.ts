@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import { getCacheDir } from "../../storage/cacheRoots";
 
 // ─── 配置 ──────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ let defaultDir: string | null = null;
 function resolveDefaultDir(): string {
 	if (defaultDir) return defaultDir;
 	try {
-		defaultDir = path.join(app.getPath("userData"), "remote-control", "dedupe");
+		defaultDir = getCacheDir("remote-control/dedupe");
 	} catch {
 		// 非 Electron 环境（测试）fallback
 		defaultDir = path.join(

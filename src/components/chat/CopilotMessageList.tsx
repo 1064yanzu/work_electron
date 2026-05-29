@@ -11,8 +11,12 @@ interface CopilotMessageListProps {
 	hiddenMessageCount: number;
 	preferBlocks: boolean;
 	canRegenerateMessages: boolean;
+	/** 当前会话是否处于错误状态，用于在最后一条用户消息显示重试 */
+	sessionHasError?: boolean;
 	onLoadOlderMessages: () => void;
 	onRegenerateMessage: (messageId: string) => void;
+	onEditMessage?: (messageId: string, newContent: string) => void;
+	onDeleteMessage?: (messageId: string) => void;
 }
 
 const VIRTUALIZE_MESSAGE_THRESHOLD = 60;
@@ -24,8 +28,11 @@ function CopilotMessageListImpl({
 	hiddenMessageCount,
 	preferBlocks,
 	canRegenerateMessages,
+	sessionHasError,
 	onLoadOlderMessages,
 	onRegenerateMessage,
+	onEditMessage,
+	onDeleteMessage,
 }: CopilotMessageListProps) {
 	const shouldVirtualizeMessages =
 		messages.length > VIRTUALIZE_MESSAGE_THRESHOLD;
@@ -38,6 +45,35 @@ function CopilotMessageListImpl({
 	const regenerateHandler = useMemo(
 		() => (canRegenerateMessages ? onRegenerateMessage : undefined),
 		[canRegenerateMessages, onRegenerateMessage],
+	);
+
+	// 计算最后一条用户消息的 id（用于 C.4 失败重试）
+	const lastUserMessageId = useMemo(() => {
+		if (!sessionHasError) return null;
+		for (let i = messages.length - 1; i >= 0; i--) {
+			if (messages[i].role === "user") return messages[i].id;
+		}
+		return null;
+	}, [messages, sessionHasError]);
+
+	const renderMessage = (message: ChatMessageType) => (
+		<ChatMessageComponent
+			key={message.id}
+			message={message}
+			preferBlocks={preferBlocks}
+			onRegenerate={
+				message.role === "assistant" ? regenerateHandler : undefined
+			}
+			onEditSubmit={
+				message.role === "user" ? onEditMessage : undefined
+			}
+			onDelete={onDeleteMessage}
+			isFailedUserMessage={
+				sessionHasError
+					? message.id === lastUserMessageId
+					: undefined
+			}
+		/>
 	);
 
 	return (
@@ -77,28 +113,13 @@ function CopilotMessageListImpl({
 									transform: `translateY(${virtualRow.start}px)`,
 								}}
 							>
-								<ChatMessageComponent
-									message={message}
-									preferBlocks={preferBlocks}
-									onRegenerate={
-										message.role === "assistant" ? regenerateHandler : undefined
-									}
-								/>
+								{renderMessage(message)}
 							</div>
 						);
 					})}
 				</div>
 			) : (
-				messages.map((message) => (
-					<ChatMessageComponent
-						key={message.id}
-						message={message}
-						preferBlocks={preferBlocks}
-						onRegenerate={
-							message.role === "assistant" ? regenerateHandler : undefined
-						}
-					/>
-				))
+				messages.map((message) => renderMessage(message))
 			)}
 
 			<div ref={messagesEndRef} />
@@ -115,6 +136,9 @@ export const CopilotMessageList = memo(
 		prev.hiddenMessageCount === next.hiddenMessageCount &&
 		prev.preferBlocks === next.preferBlocks &&
 		prev.canRegenerateMessages === next.canRegenerateMessages &&
+		prev.sessionHasError === next.sessionHasError &&
 		prev.onLoadOlderMessages === next.onLoadOlderMessages &&
-		prev.onRegenerateMessage === next.onRegenerateMessage,
+		prev.onRegenerateMessage === next.onRegenerateMessage &&
+		prev.onEditMessage === next.onEditMessage &&
+		prev.onDeleteMessage === next.onDeleteMessage,
 );

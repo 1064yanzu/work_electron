@@ -273,6 +273,36 @@ export function useCopilotMessage({
 		],
 	);
 
+	const handleEditUserMessage = useCallback(
+		(messageId: string, newContent: string) => {
+			const session = chatStore.activeSession;
+			if (!session) return;
+			const idx = session.messages.findIndex((m) => m.id === messageId);
+			if (idx < 0 || session.messages[idx].role !== "user") return;
+
+			// 删除该用户消息及其后的全部消息（含 assistant 回复 / trace）
+			const ids = session.messages.slice(idx).map((m) => m.id);
+			for (const id of ids) {
+				chatStore.deleteMessage(session.id, id);
+			}
+
+			void handleSendMessage(newContent, {
+				forceForkSession: true,
+				parentSdkSessionId: session.sdkSessionId,
+			});
+		},
+		[chatStore, handleSendMessage],
+	);
+
+	const handleDeleteMessage = useCallback(
+		(messageId: string) => {
+			const session = chatStore.activeSession;
+			if (!session) return;
+			chatStore.deleteMessage(session.id, messageId);
+		},
+		[chatStore],
+	);
+
 	const handleRegenerateMessage = useCallback(
 		(messageId: string) => {
 			const session = chatStore.activeSession;
@@ -332,6 +362,8 @@ export function useCopilotMessage({
 	return {
 		handleSendMessage,
 		handleRegenerateMessage,
+		handleEditUserMessage,
+		handleDeleteMessage,
 		stop,
 	};
 }

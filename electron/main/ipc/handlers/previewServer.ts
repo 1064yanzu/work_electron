@@ -6,11 +6,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { app } from "electron";
 import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import { getPreviewServerService } from "../../services/previewServerService";
 import { openPreviewWindow } from "../../services/previewWindowService";
+import { getCacheDir } from "../../storage/cacheRoots";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -22,7 +22,7 @@ type Handler<K extends keyof IPCSchema> = (
  * 与 agentSandbox.ts 中的路径保持一致
  */
 function getAgentSandboxRoot(): string {
-	return path.join(app.getPath("userData"), "agent-sandboxes");
+	return getCacheDir("agent-sandboxes");
 }
 
 export function createPreviewServerHandlers(deps: {

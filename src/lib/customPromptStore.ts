@@ -98,7 +98,11 @@ class CustomPromptStore {
 	}
 
 	private setState(updater: (state: CustomPromptState) => CustomPromptState) {
-		this.state = updater(this.state);
+		const nextState = updater(this.state);
+		if (Object.is(nextState, this.state)) {
+			return;
+		}
+		this.state = nextState;
 		this.emit();
 	}
 

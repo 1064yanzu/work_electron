@@ -59,6 +59,7 @@ import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
 import { createLocalBackupHandlers } from "./handlers/localBackup";
 import { createImageGenHandlers } from "./handlers/imageGen";
 import { createStorageHandlers } from "./handlers/storage";
+import { createCacheRootHandlers } from "./handlers/cacheRoot";
 import { createFileHandlers } from "./handlers/files";
 import { createRemoteControlHandlers } from "./handlers/remoteControl";
 import { getRemoteControlOrchestrator } from "../remote-control/core/service";
@@ -193,6 +194,7 @@ export function registerIpcHandlers({
 	const kbEmbeddingHandlers = createKbEmbeddingHandlers(db);
 	const dataStatsHandlers = createDataStatsHandlers(db);
 	const storageHandlers = createStorageHandlers(db);
+	const cacheRootHandlers = createCacheRootHandlers();
 	const fileHandlers = createFileHandlers(db);
 	const fsSafeHandlers = createFsSafeHandlers();
 	const tempFileHandlers = createTempFileHandlers();
@@ -773,6 +775,10 @@ export function registerIpcHandlers({
 		"project_reveal_directory",
 		storageHandlers.project_reveal_directory,
 	);
+	// 缓存根目录
+	ipcMain.handle("cache_root_get", cacheRootHandlers.cache_root_get);
+	ipcMain.handle("cache_root_pick", cacheRootHandlers.cache_root_pick);
+	ipcMain.handle("cache_root_update", cacheRootHandlers.cache_root_update);
 	ipcMain.handle("file_list", fileHandlers.file_list);
 	ipcMain.handle("file_move", fileHandlers.file_move);
 	ipcMain.handle("file_delete", fileHandlers.file_delete);

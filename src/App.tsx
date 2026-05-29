@@ -40,14 +40,10 @@ import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
-import { registerBuiltinSlashCommands } from "./lib/slashCommands";
 import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
 import { invoke } from "./lib/tauriCompat";
 import { listen } from "./lib/tauriEventCompat";
-
-// 启动即注入内置斜杠命令（幂等），放在模块级以确保任意窗口进入都生效
-registerBuiltinSlashCommands();
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;

@@ -7,6 +7,7 @@ import { app } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
 import { getDatabaseFilePath } from "../../db/paths";
+import { getCacheDir } from "../../storage/cacheRoots";
 
 // 递归计算文件夹大小
 async function getFolderSize(folderPath: string): Promise<number> {
@@ -113,7 +114,7 @@ export function createDataStatsHandlers(db: DbContext) {
 
 		try {
 			// 媒体文件大小（遍历 media 目录）
-			const mediaPath = path.join(app.getPath("userData"), "media");
+			const mediaPath = getCacheDir("media");
 			mediaSize = await getFolderSize(mediaPath);
 		} catch {
 			// media 目录可能不存在
@@ -121,7 +122,7 @@ export function createDataStatsHandlers(db: DbContext) {
 
 		try {
 			// 缓存大小（遍历 cache 目录）
-			const cachePath = path.join(app.getPath("userData"), "cache");
+			const cachePath = getCacheDir("cache");
 			cacheSize = await getFolderSize(cachePath);
 		} catch {
 			// cache 目录可能不存在
@@ -149,7 +150,7 @@ export function createDataStatsHandlers(db: DbContext) {
 		_input: Record<string, never>,
 	): Promise<number> => {
 		const fs = await import("node:fs/promises");
-		const cachePath = path.join(app.getPath("userData"), "cache");
+		const cachePath = getCacheDir("cache");
 
 		let totalSize = 0;
 		try {
@@ -206,7 +207,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			}
 
 			// 清除媒体文件
-			const mediaPath = path.join(app.getPath("userData"), "media");
+			const mediaPath = getCacheDir("media");
 			try {
 				await fs.rm(mediaPath, { recursive: true, force: true });
 				await fs.mkdir(mediaPath, { recursive: true });
@@ -215,7 +216,7 @@ export function createDataStatsHandlers(db: DbContext) {
 			}
 
 			// 清除缓存
-			const cachePath = path.join(app.getPath("userData"), "cache");
+			const cachePath = getCacheDir("cache");
 			try {
 				await fs.rm(cachePath, { recursive: true, force: true });
 				await fs.mkdir(cachePath, { recursive: true });

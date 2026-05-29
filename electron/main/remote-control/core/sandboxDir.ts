@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import { getCacheDir } from "../../storage/cacheRoots";
 
 function normalizeSessionKey(raw: string): string {
 	const value = String(raw || "").trim();
@@ -17,8 +17,7 @@ export async function ensureRemoteSessionSandboxDir(
 	sessionId: string,
 ): Promise<string> {
 	const key = normalizeSessionKey(sessionId);
-	const root = path.join(app.getPath("userData"), "agent-sandboxes");
-	const dir = path.join(root, key);
+	const dir = path.join(getCacheDir("agent-sandboxes"), key);
 	await fs.mkdir(dir, { recursive: true });
 	return dir;
 }

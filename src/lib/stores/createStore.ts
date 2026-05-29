@@ -34,7 +34,11 @@ export function createStore<T>(initialState: T): StoreApi<T> {
 			};
 		},
 		setState: (updater: (prev: T) => T) => {
-			state = updater(state);
+			const nextState = updater(state);
+			if (Object.is(nextState, state)) {
+				return;
+			}
+			state = nextState;
 			emit();
 		},
 	};

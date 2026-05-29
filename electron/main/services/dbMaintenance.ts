@@ -3,7 +3,7 @@
  *
  * 设计要点：
  * - 启动时（应用 idle 后）检查 freelist 占比，超阈值时跑完整 VACUUM
- * - 每 24h 周期 tick，距上次 vacuum > 7 天且 freelist 比例 > 阈值时再跑
+ * - 每 24h 周期 tick，仅在 freelist 比例超过阈值时才跑，避免无碎片时做空 VACUUM
  * - VACUUM 需要全库写锁，整个过程异步执行；放在 idle 阶段避免阻塞主路径
  * - 时间戳存在 app_config 表的 `last_vacuum_at` 键里
  *
@@ -15,6 +15,7 @@ import type { Logger } from "../logging/types";
 const CONFIG_KEY = "last_vacuum_at";
 const VACUUM_MIN_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 const FREELIST_RATIO_THRESHOLD = 0.2; // freelist 占比超过 20% 触发
+const FREELIST_IMMEDIATE_RATIO_THRESHOLD = 0.35; // 删除量很大时不等 7 天
 const TICK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 每 24h 检查一次
 
 let tickTimer: ReturnType<typeof setInterval> | null = null;
@@ -69,13 +70,17 @@ async function runVacuumIfDue(db: DbContext, logger?: Logger): Promise<void> {
 		const overdue = now - lastAt >= VACUUM_MIN_INTERVAL_MS;
 		const ratio = await computeFreelistRatio(db);
 		const fragmented = ratio >= FREELIST_RATIO_THRESHOLD;
-		if (!overdue && !fragmented) return;
+		const heavilyFragmented = ratio >= FREELIST_IMMEDIATE_RATIO_THRESHOLD;
+		const shouldVacuum =
+			fragmented && (overdue || lastAt === 0 || heavilyFragmented);
+		if (!shouldVacuum) return;
 
 		const started = Date.now();
 		logger?.info({
 			msg: "SQLite VACUUM starting",
 			overdue,
 			fragmented,
+			heavilyFragmented,
 			freelistRatio: Number(ratio.toFixed(3)),
 		});
 		await db.client.execute("VACUUM");

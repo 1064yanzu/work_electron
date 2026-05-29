@@ -1,12 +1,18 @@
-import { Gauge, Trash2, Activity } from "lucide-react";
+import { Gauge, Trash2, Activity, FolderCog } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	getPerformanceTuning,
 	setPerformanceTuning,
 	type PerformanceTuning,
 } from "../../../lib/config";
+import {
+	getCacheRoot,
+	pickCacheRoot,
+	updateCacheRoot,
+} from "../../../lib/api/dataAdmin";
 import { invoke } from "../../../lib/tauriCompat";
 import { toast } from "../../ui/Toast";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import Select from "../../ui/Select";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
@@ -69,6 +75,14 @@ export function PerformanceSettings() {
 	const [janitorLoading, setJanitorLoading] = useState(false);
 	const [janitorExecuting, setJanitorExecuting] = useState(false);
 
+	// 缓存根目录
+	const [cacheRoot, setCacheRoot] = useState<{
+		current: string;
+		isDefault: boolean;
+		defaultRoot: string;
+	} | null>(null);
+	const [cacheRootBusy, setCacheRootBusy] = useState(false);
+
 	// 主进程性能样本
 	const [perfSamples, setPerfSamples] = useState<PerfSample[]>([]);
 	const [perfLoading, setPerfLoading] = useState(false);
@@ -116,6 +130,93 @@ export function PerformanceSettings() {
 		[reloadJanitor],
 	);
 
+	const reloadCacheRoot = useCallback(async () => {
+		try {
+			const result = await getCacheRoot();
+			setCacheRoot(result);
+		} catch (error) {
+			console.error("[Settings] cache root load failed:", error);
+		}
+	}, []);
+
+	const handleChangeCacheRoot = useCallback(async () => {
+		setCacheRootBusy(true);
+		try {
+			const picked = await pickCacheRoot();
+			if (!picked.path) return;
+			const confirmed = await confirmDialog.warning(
+				`确定把缓存目录迁移到：\n${picked.path}\n\n` +
+					"阅读器图书、Agent 沙盒、生成图片等缓存会被复制到新位置，" +
+					"完成后删除旧位置数据。\n建议先停止后台任务（生成 / 同步 / 阅读）再迁移。",
+				"更改缓存目录",
+			);
+			if (!confirmed) return;
+			const result = await updateCacheRoot({
+				newRoot: picked.path,
+				migrate: true,
+			});
+			setCacheRoot({
+				current: result.current,
+				isDefault: result.isDefault,
+				defaultRoot: cacheRoot?.defaultRoot ?? result.current,
+			});
+			const m = result.migration;
+			if (m) {
+				toast.success(
+					`已迁移 ${m.copied} 个文件（${formatBytes(m.bytes)}）` +
+						(m.errors.length > 0 ? `，${m.errors.length} 项失败` : ""),
+				);
+				if (m.errors.length > 0) {
+					console.warn("[Settings] cache migration errors:", m.errors);
+				}
+			} else {
+				toast.success("缓存目录已更新");
+			}
+			await reloadJanitor();
+		} catch (error) {
+			toast.error(
+				`更改失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		} finally {
+			setCacheRootBusy(false);
+		}
+	}, [cacheRoot, reloadJanitor]);
+
+	const handleResetCacheRoot = useCallback(async () => {
+		if (!cacheRoot || cacheRoot.isDefault) return;
+		setCacheRootBusy(true);
+		try {
+			const confirmed = await confirmDialog.warning(
+				`确定恢复默认缓存目录吗？\n${cacheRoot.defaultRoot}\n\n` +
+					"当前位置的缓存会被迁移回默认位置。",
+				"恢复默认",
+			);
+			if (!confirmed) return;
+			const result = await updateCacheRoot({
+				newRoot: cacheRoot.defaultRoot,
+				migrate: true,
+			});
+			setCacheRoot({
+				current: result.current,
+				isDefault: result.isDefault,
+				defaultRoot: cacheRoot.defaultRoot,
+			});
+			const m = result.migration;
+			toast.success(
+				m
+					? `已迁回默认目录（${formatBytes(m.bytes)}）`
+					: "已恢复默认缓存目录",
+			);
+			await reloadJanitor();
+		} catch (error) {
+			toast.error(
+				`恢复失败：${error instanceof Error ? error.message : String(error)}`,
+			);
+		} finally {
+			setCacheRootBusy(false);
+		}
+	}, [cacheRoot, reloadJanitor]);
+
 	const reloadPerf = useCallback(async () => {
 		setPerfLoading(true);
 		try {
@@ -134,7 +235,8 @@ export function PerformanceSettings() {
 	useEffect(() => {
 		void reloadJanitor();
 		void reloadPerf();
-	}, [reloadJanitor, reloadPerf]);
+		void reloadCacheRoot();
+	}, [reloadJanitor, reloadPerf, reloadCacheRoot]);
 
 	const latestSample =
 		perfSamples.length > 0 ? perfSamples[perfSamples.length - 1] : null;
@@ -258,6 +360,58 @@ export function PerformanceSettings() {
 							/>
 						}
 					/>
+				</div>
+			</SettingsSectionCard>
+
+			{/* 缓存目录 */}
+			<SettingsSectionCard>
+				<div className="p-5">
+					<SettingsSectionTitle>
+						<span className="inline-flex items-center gap-2">
+							<FolderCog className="w-4 h-4 text-text-muted" />
+							缓存目录
+						</span>
+					</SettingsSectionTitle>
+					<p className="text-xs text-text-muted mt-1 mb-3">
+						阅读器图书、Agent 沙盒、生成图片、媒体与通用缓存的统一存储位置。
+						更改后会把现有缓存迁移到新位置，可换到外置硬盘 / NAS 释放系统盘空间。
+					</p>
+					<div className="rounded-lg border border-border bg-cream-50 px-3 py-2.5">
+						<div className="text-[11px] text-text-muted mb-0.5">
+							当前位置
+							{cacheRoot && !cacheRoot.isDefault && (
+								<span className="ml-1.5 rounded bg-peach-500/10 text-peach-500 px-1.5 py-0.5 text-[10px]">
+									自定义
+								</span>
+							)}
+							{cacheRoot?.isDefault && (
+								<span className="ml-1.5 text-text-light">（默认）</span>
+							)}
+						</div>
+						<div className="text-sm text-text-primary break-all">
+							{cacheRoot ? cacheRoot.current : "加载中…"}
+						</div>
+					</div>
+					<div className="mt-3 flex items-center justify-end gap-2">
+						{cacheRoot && !cacheRoot.isDefault && (
+							<button
+								type="button"
+								onClick={() => void handleResetCacheRoot()}
+								disabled={cacheRootBusy}
+								className="text-xs rounded-md border border-border bg-surface px-3 py-1.5 hover:bg-warm-200 disabled:opacity-50"
+							>
+								恢复默认
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={() => void handleChangeCacheRoot()}
+							disabled={cacheRootBusy || !cacheRoot}
+							className="text-xs rounded-md bg-peach-500/10 border border-peach-500/40 text-peach-500 px-3 py-1.5 hover:bg-peach-500/20 disabled:opacity-50"
+						>
+							{cacheRootBusy ? "处理中…" : "更改…"}
+						</button>
+					</div>
 				</div>
 			</SettingsSectionCard>
 

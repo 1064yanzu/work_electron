@@ -116,7 +116,11 @@ class AgentStore {
 	}
 
 	private setState(updater: (state: AgentState) => AgentState) {
-		this.state = updater(this.state);
+		const nextState = updater(this.state);
+		if (Object.is(nextState, this.state)) {
+			return;
+		}
+		this.state = nextState;
 		this.scheduleEmit();
 	}
 

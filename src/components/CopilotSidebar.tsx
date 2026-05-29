@@ -157,7 +157,13 @@ export default function CopilotSidebar() {
 	});
 
 	// === 消息发送 / 取消 ===
-	const { handleSendMessage, handleRegenerateMessage, stop } =
+	const {
+		handleSendMessage,
+		handleRegenerateMessage,
+		handleEditUserMessage,
+		handleDeleteMessage,
+		stop,
+	} =
 		useCopilotMessage({
 			chatStore,
 			activeModel,
@@ -390,10 +396,14 @@ export default function CopilotSidebar() {
 				isWaitingForLLM={isWaitingForLLM}
 				chatMode={chatMode}
 				preferBlocks={chatSettings.blocksFirstEnabled}
+				sessionHasError={chatStore.status === "error"}
 				pendingAskUserRequests={pendingAskUserRequests}
+				shouldAutoScrollRef={shouldAutoScrollRef}
 				onScroll={updateAutoScrollState}
 				onLoadOlderMessages={handleLoadOlderMessages}
 				onRegenerateMessage={handleRegenerateMessage}
+				onEditMessage={handleEditUserMessage}
+				onDeleteMessage={handleDeleteMessage}
 				onOpenResearch={handleOpenResearch}
 				onAllowAskUserQuestion={handleAllowAskUserQuestion}
 				onDenyAskUserQuestion={handleDenyAskUserQuestion}

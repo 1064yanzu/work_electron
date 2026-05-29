@@ -338,9 +338,10 @@ async function ensurePolicyV2Migrated(db: DbContext) {
 // 计算有效启用状态
 // -----------------------------------------------------------------------------
 
-function computeEffectiveEnabled(
-	override: boolean | undefined,
-): { enabled: boolean; userOverride: boolean } {
+function computeEffectiveEnabled(override: boolean | undefined): {
+	enabled: boolean;
+	userOverride: boolean;
+} {
 	if (typeof override === "boolean") {
 		return { enabled: override, userOverride: true };
 	}
@@ -406,10 +407,7 @@ export function createSkillsHandlers(db: DbContext) {
 			// noop
 		}
 
-		const skills = await collectSkillsFromDir(
-			managedRoot,
-			overrideMap,
-		);
+		const skills = await collectSkillsFromDir(managedRoot, overrideMap);
 		skills.sort((a, b) => a.name.localeCompare(b.name));
 		return skills;
 	};

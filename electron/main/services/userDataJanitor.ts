@@ -14,7 +14,7 @@
  */
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import { getCacheDir } from "../storage/cacheRoots";
 
 export interface JanitorScopeReport {
 	key: string;
@@ -48,31 +48,31 @@ const SCOPES: ScopeDef[] = [
 	{
 		key: "reader-library",
 		label: "阅读器图书与封面缓存",
-		dir: () => path.join(app.getPath("userData"), "reader-library"),
+		dir: () => getCacheDir("reader-library"),
 		keepDays: 60,
 	},
 	{
 		key: "agent-sandboxes",
 		label: "Agent 沙盒工作目录",
-		dir: () => path.join(app.getPath("userData"), "agent-sandboxes"),
+		dir: () => getCacheDir("agent-sandboxes"),
 		keepDays: 30,
 	},
 	{
 		key: "cache",
 		label: "通用缓存（含生成图片等）",
-		dir: () => path.join(app.getPath("userData"), "cache"),
+		dir: () => getCacheDir("cache"),
 		keepDays: 30,
 	},
 	{
 		key: "media",
 		label: "媒体缓存（TTS 音频等）",
-		dir: () => path.join(app.getPath("userData"), "media"),
+		dir: () => getCacheDir("media"),
 		keepDays: 30,
 	},
 	{
 		key: "remote-control-dedupe",
 		label: "远控去重缓存",
-		dir: () => path.join(app.getPath("userData"), "remote-control", "dedupe"),
+		dir: () => getCacheDir("remote-control/dedupe"),
 		keepDays: 14,
 	},
 ];

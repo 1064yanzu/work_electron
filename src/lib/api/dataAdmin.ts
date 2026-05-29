@@ -56,3 +56,32 @@ export interface DataStats {
 export async function getDataStats(): Promise<DataStats> {
 	return await safeInvoke("get_data_stats");
 }
+
+/** 缓存根目录（可清理缓存的统一存储位置） */
+export async function getCacheRoot(): Promise<{
+	current: string;
+	isDefault: boolean;
+	defaultRoot: string;
+}> {
+	return await safeInvoke("cache_root_get");
+}
+
+export async function pickCacheRoot(): Promise<{ path: string | null }> {
+	return await safeInvoke("cache_root_pick");
+}
+
+export async function updateCacheRoot(payload: {
+	newRoot: string;
+	migrate: boolean;
+}): Promise<{
+	current: string;
+	isDefault: boolean;
+	migration?: {
+		copied: number;
+		bytes: number;
+		skipped: number;
+		errors: Array<{ path: string; error: string }>;
+	};
+}> {
+	return await safeInvoke("cache_root_update", payload);
+}

@@ -1,15 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { app } from "electron";
-
-let cachedRoot: string | null = null;
+import { getCacheDir } from "../storage/cacheRoots";
 
 export function getReaderRoot(): string {
-	if (cachedRoot) return cachedRoot;
-	const root = path.join(app.getPath("userData"), "reader-library");
-	cachedRoot = root;
-	return root;
+	return getCacheDir("reader-library");
 }
 
 export function getBookDir(bookId: string): string {

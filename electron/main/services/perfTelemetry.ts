@@ -1,23 +1,38 @@
 /**
  * 主进程性能 telemetry（本地持久化，不上报）
  *
- * 每分钟采集一次 RSS / heap / activeHandles / activeRequests / eventLoopLag，
+ * 前台每分钟采集一次 RSS / heap / activeHandles / activeRequests / eventLoopLag，
+ * 所有窗口隐藏后降频到 5 分钟一次。
  * 写入 SQLite perf_metrics 表，用于在 Settings → About 面板做本地折线图，
  * 帮助用户与开发者排查"是不是又涨内存了"。
  *
  * 保留窗口：固定 7 天（启动时清理过期行）。
  */
 import { monitorEventLoopDelay } from "node:perf_hooks";
+import { BrowserWindow } from "electron";
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
 
 const SAMPLE_INTERVAL_MS = 60 * 1000;
+const BACKGROUND_SAMPLE_INTERVAL_MS = 5 * 60 * 1000;
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 每 6h 清一次
 
-let sampleTimer: ReturnType<typeof setInterval> | null = null;
+let sampleTimer: ReturnType<typeof setTimeout> | null = null;
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 let loopDelayHistogram: ReturnType<typeof monitorEventLoopDelay> | null = null;
+
+function hasVisibleWindow(): boolean {
+	return BrowserWindow.getAllWindows().some(
+		(win) => !win.isDestroyed() && win.isVisible(),
+	);
+}
+
+function getNextSampleDelayMs(): number {
+	return hasVisibleWindow()
+		? SAMPLE_INTERVAL_MS
+		: BACKGROUND_SAMPLE_INTERVAL_MS;
+}
 
 async function insertSample(db: DbContext, logger?: Logger): Promise<void> {
 	try {
@@ -81,21 +96,24 @@ async function cleanupOldSamples(
 
 export function startPerfTelemetry(db: DbContext, logger?: Logger): void {
 	try {
-		loopDelayHistogram = monitorEventLoopDelay({ resolution: 20 });
+		loopDelayHistogram = monitorEventLoopDelay({ resolution: 50 });
 		loopDelayHistogram.enable();
 	} catch {
 		loopDelayHistogram = null;
 	}
 
 	// 启动后 30s 落第一条样本，避免与启动期高负载重合
-	const firstSample = setTimeout(() => void insertSample(db, logger), 30_000);
-	firstSample.unref?.();
-
-	if (sampleTimer) clearInterval(sampleTimer);
-	sampleTimer = setInterval(() => {
-		void insertSample(db, logger);
-	}, SAMPLE_INTERVAL_MS);
-	sampleTimer.unref?.();
+	const scheduleSample = (delayMs: number) => {
+		if (sampleTimer) clearTimeout(sampleTimer);
+		sampleTimer = setTimeout(() => {
+			void insertSample(db, logger).finally(() => {
+				if (!sampleTimer) return;
+				scheduleSample(getNextSampleDelayMs());
+			});
+		}, delayMs);
+		sampleTimer.unref?.();
+	};
+	scheduleSample(30_000);
 
 	// 启动时清理一次过期数据
 	void cleanupOldSamples(db, logger);
@@ -108,7 +126,7 @@ export function startPerfTelemetry(db: DbContext, logger?: Logger): void {
 
 export function stopPerfTelemetry(): void {
 	if (sampleTimer) {
-		clearInterval(sampleTimer);
+		clearTimeout(sampleTimer);
 		sampleTimer = null;
 	}
 	if (cleanupTimer) {

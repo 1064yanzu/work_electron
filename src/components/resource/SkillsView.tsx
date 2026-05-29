@@ -34,13 +34,8 @@ const FILTERS: Array<{ value: FilterType; label: string }> = [
 ];
 
 export function SkillsView(_props: SkillsViewProps) {
-	const {
-		skills,
-		refresh,
-		importSkill,
-		deleteSkill,
-		setEnabled,
-	} = useSkillsStore();
+	const { skills, refresh, importSkill, deleteSkill, setEnabled } =
+		useSkillsStore();
 	const updateCount = useUpdateBadge();
 	const [tab, setTab] = useState<TabType>("installed");
 	const [searchQuery, setSearchQuery] = useState("");
