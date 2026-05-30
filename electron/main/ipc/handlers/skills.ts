@@ -366,9 +366,19 @@ export function createSkillsHandlers(db: DbContext) {
 		}
 
 		for (const ent of entries) {
-			if (!ent.isDirectory()) continue;
+			// 同时支持真实目录和符号链接（symlink 指向目录），
+			// ent.isDirectory() 对 symlink 返回 false，需用 fs.stat 跟随链接确认。
+			if (!ent.isDirectory() && !ent.isSymbolicLink()) continue;
 			const entryName = String(ent.name);
 			const location = path.join(dir, entryName);
+			if (ent.isSymbolicLink()) {
+				try {
+					const st = await fs.stat(location); // 跟随 symlink
+					if (!st.isDirectory()) continue;
+				} catch {
+					continue; // 断链或无权限，跳过
+				}
+			}
 			const skillMd = path.join(location, "SKILL.md");
 			try {
 				const md = await fs.readFile(skillMd, "utf-8");
@@ -429,10 +439,40 @@ export function createSkillsHandlers(db: DbContext) {
 		const destName = sanitizeDirName(parsed.name || path.basename(sourcePath));
 		const destDir = path.join(root, destName);
 
+		let destExists = false;
 		try {
 			await fs.access(destDir);
-			throw new Error(`技能已存在: ${destName}`);
-		} catch {}
+			destExists = true;
+		} catch {
+			// ENOENT：目标目录不存在，正常继续
+		}
+
+		if (destExists) {
+			// 幂等：skill 已存在于 managedRoot，读取现有元数据返回，不再报错。
+			// 这样拖拽重复导入时前端能正常刷新列表，不会出现"明明存在却不显示"的问题。
+			const existingMdPath = path.join(destDir, "SKILL.md");
+			let existingMd = "";
+			try {
+				existingMd = await fs.readFile(existingMdPath, "utf-8");
+			} catch {
+				// SKILL.md 不可读时降级用目录名
+			}
+			const existingParsed = existingMd
+				? parseFrontmatter(existingMd, destName)
+				: { name: destName, description: "", odMode: undefined, odCategory: undefined };
+			const overrideMap = await loadOverrideMap(db);
+			const override = overrideMap.get(existingParsed.name);
+			const { enabled, userOverride } = computeEffectiveEnabled(override);
+			return {
+				name: existingParsed.name,
+				description: existingParsed.description,
+				location: destDir,
+				enabled,
+				modeClass: classifyMode(existingParsed.name, existingParsed.description, existingParsed.odMode),
+				modeTag: existingParsed.odMode,
+				userOverride,
+			};
+		}
 
 		await fs.cp(sourcePath, destDir, {
 			recursive: true,

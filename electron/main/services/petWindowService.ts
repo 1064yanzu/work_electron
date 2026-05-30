@@ -105,10 +105,10 @@ export function setPetWindowPosition(x: number, y: number) {
 
 /**
  * 拖动结束后，把宠物窗口"贴墙"。
- * - 若离左/右边缘小于 threshold（默认 80px），则用 ~180ms 帧动画滑到该边缘外侧 4px
- *   末段轻微弹性（cubic-bezier(0.34, 1.56, 0.64, 1)），落地后通知渲染端做"反弹"动效
- * - 否则保持原位
- * - 上下方向不强制（用户可能想放在屏幕中段）
+ * - 若离任意边缘小于 threshold（默认 80px），则用帧动画滑到该边缘外侧 4px
+ *   距离 < 40px 时用 120ms out-cubic（轻柔落地）；≥ 40px 用 180ms elastic-out（弹性）
+ * - 优先选择最近的"外边缘"（显示器间相邻边界不做吸附，允许宠物跨屏）
+ * - 支持四个方向：左 / 右 / 上 / 下
  */
 export function snapPetWindowToNearestEdge(threshold = 80): {
 	snapped: boolean;
@@ -125,28 +125,71 @@ export function snapPetWindowToNearestEdge(threshold = 80): {
 		y: curY + Math.round(winH / 2),
 	});
 	const wa = display.workArea;
+	const allDisplays = screen.getAllDisplays();
+
+	/** 判断该方向的边界是否为外边缘（没有相邻显示器），才做吸附 */
+	function isOuterEdge(side: "left" | "right" | "top" | "bottom"): boolean {
+		const TOLERANCE = 4;
+		return !allDisplays.some((d) => {
+			if (d.id === display.id) return false;
+			const dwa = d.workArea;
+			switch (side) {
+				case "left":
+					return Math.abs(dwa.x + dwa.width - wa.x) <= TOLERANCE;
+				case "right":
+					return Math.abs(dwa.x - (wa.x + wa.width)) <= TOLERANCE;
+				case "top":
+					return Math.abs(dwa.y + dwa.height - wa.y) <= TOLERANCE;
+				case "bottom":
+					return Math.abs(dwa.y - (wa.y + wa.height)) <= TOLERANCE;
+			}
+		});
+	}
 
 	const distLeft = curX - wa.x;
 	const distRight = wa.x + wa.width - (curX + winW);
+	const distTop = curY - wa.y;
+	const distBottom = wa.y + wa.height - (curY + winH);
+	const margin = 4;
+
+	// 找出 threshold 内最近的外边缘
+	type Side = "left" | "right" | "top" | "bottom";
+	const candidates: Array<{ side: Side; dist: number }> = [];
+	if (distLeft <= threshold && isOuterEdge("left"))
+		candidates.push({ side: "left", dist: distLeft });
+	if (distRight <= threshold && isOuterEdge("right"))
+		candidates.push({ side: "right", dist: distRight });
+	if (distTop <= threshold && isOuterEdge("top"))
+		candidates.push({ side: "top", dist: distTop });
+	if (distBottom <= threshold && isOuterEdge("bottom"))
+		candidates.push({ side: "bottom", dist: distBottom });
+
+	if (candidates.length === 0) return { snapped: false, x: curX, y: curY };
+	candidates.sort((a, b) => a.dist - b.dist);
+	const best = candidates[0];
 
 	let nextX = curX;
-	let snapped = false;
-	const margin = 4;
-	if (distLeft <= threshold && distLeft <= distRight) {
-		nextX = wa.x + margin;
-		snapped = nextX !== curX;
-	} else if (distRight <= threshold && distRight < distLeft) {
-		nextX = wa.x + wa.width - winW - margin;
-		snapped = nextX !== curX;
-	}
+	let nextY = curY;
+	if (best.side === "left") nextX = wa.x + margin;
+	else if (best.side === "right") nextX = wa.x + wa.width - winW - margin;
+	else if (best.side === "top") nextY = wa.y + margin;
+	else if (best.side === "bottom") nextY = wa.y + wa.height - winH - margin;
 
-	if (snapped) {
-		const clamped = clampToWorkArea(nextX, curY, winW, winH);
-		animatePetWindowTo(clamped.x, clamped.y, 180, "elastic-out");
-		updatePetWindowSettings({ x: clamped.x, y: clamped.y });
-		return { snapped: true, x: clamped.x, y: clamped.y };
-	}
-	return { snapped: false, x: curX, y: curY };
+	const snapped = nextX !== curX || nextY !== curY;
+	if (!snapped) return { snapped: false, x: curX, y: curY };
+
+	const clamped = clampToWorkArea(nextX, nextY, winW, winH);
+	const snapDist = Math.max(
+		Math.abs(clamped.x - curX),
+		Math.abs(clamped.y - curY),
+	);
+	// 短距离用平滑过渡，长距离用弹性
+	const duration = snapDist < 40 ? 120 : 180;
+	const easing: "elastic-out" | "out-cubic" =
+		snapDist < 40 ? "out-cubic" : "elastic-out";
+	animatePetWindowTo(clamped.x, clamped.y, duration, easing);
+	updatePetWindowSettings({ x: clamped.x, y: clamped.y });
+	return { snapped: true, x: clamped.x, y: clamped.y };
 }
 
 /** 动画跑动控制锁：fling 或 snap 期间禁用其它 setPosition */

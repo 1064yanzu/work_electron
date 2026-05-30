@@ -24,6 +24,10 @@ interface DragAndDropImportUIProps<TResult = unknown> {
 	onCancel: () => void;
 	onClear: () => void;
 	onRemoveItem: (id: string) => void;
+	/** 拖拽悬停时的主文字，默认"松开以导入到资料库" */
+	dragLabel?: string;
+	/** 拖拽悬停时的副文字，默认显示支持的格式提示 */
+	dragSubLabel?: string;
 }
 
 export function DragAndDropImportUI<TResult = unknown>({
@@ -34,6 +38,8 @@ export function DragAndDropImportUI<TResult = unknown>({
 	onCancel,
 	onClear,
 	onRemoveItem,
+	dragLabel = "松开以导入到资料库",
+	dragSubLabel = "支持文本 / PDF / Word / 图片等常见格式",
 }: DragAndDropImportUIProps<TResult>) {
 	const summary = useMemo(() => {
 		const total = queue.length;
@@ -74,10 +80,10 @@ export function DragAndDropImportUI<TResult = unknown>({
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-semibold text-text-primary">
-										松开以导入到资料库
+										{dragLabel}
 									</p>
 									<p className="text-xs text-text-muted mt-0.5">
-										支持文本 / PDF / Word / 图片等常见格式
+										{dragSubLabel}
 									</p>
 								</div>
 							</div>

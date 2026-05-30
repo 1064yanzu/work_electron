@@ -1,0 +1,4 @@
+shamefully-hoist=true
+public-hoist-pattern[]=*@radix-ui/*
+public-hoist-pattern[]=react-redux
+public-hoist-pattern[]=@reduxjs/*

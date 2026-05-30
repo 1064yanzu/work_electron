@@ -2,12 +2,12 @@
  * usePetEdgePeek — 贴墙后"半隐藏/hover 完整露出"
  *
  * 触发时机：
- * - 落地反弹事件（pet-landed）后，若宠物离屏幕左右边缘 ≤ 8px，判定为"贴墙"
- * - 贴墙后 800ms 内若无 hover → 切换到"peek" 状态，角色 translateX 向屏幕外偏出一截（露 60%）
+ * - 落地反弹事件（pet-landed）后，若宠物离屏幕任意边缘 ≤ 8px，判定为"贴墙"
+ * - 贴墙后 800ms 内若无 hover → 切换到"peek" 状态，角色向屏幕外偏出一截（露 60%）
  * - hover 角色 / 进入拖动 / 离开贴墙位置 → 回到完整显示
  *
  * 返回：
- * - side: 当前贴墙方向（"left" | "right" | null）
+ * - side: 当前贴墙方向（"left" | "right" | "top" | "bottom" | null）
  * - peeking: 是否当前处于半隐藏状态（CSS transform 让角色向外偏出）
  * - onHoverStart / onHoverEnd：hover 回调，由 PetApp 挂到角色容器
  *
@@ -20,7 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "../lib/tauriCompat";
 import { listen, type UnlistenFn } from "../lib/tauriEventCompat";
 
-export type PetEdgeSide = "left" | "right" | null;
+export type PetEdgeSide = "left" | "right" | "top" | "bottom" | null;
 
 export interface PetEdgePeekApi {
 	side: PetEdgeSide;
@@ -31,7 +31,7 @@ export interface PetEdgePeekApi {
 	onDragStart: () => void;
 }
 
-/** 判定贴墙的阈值：窗口距工作区左右边缘 ≤ 这个值算贴墙 */
+/** 判定贴墙的阈值：窗口距工作区任意边缘 ≤ 这个值算贴墙 */
 const STUCK_PX = 8;
 /** 落地后多久进入 peek */
 const PEEK_DELAY_MS = 800;
@@ -55,22 +55,42 @@ export function usePetEdgePeek(enabled: boolean): PetEdgePeekApi {
 		try {
 			const pos = await invoke<{
 				x: number;
+				y: number;
 				width: number;
+				height: number;
 				displayX: number;
+				displayY: number;
 				displayWidth: number;
+				displayHeight: number;
 			}>("pet_window_get_position");
 			const distLeft = pos.x - pos.displayX;
-			const distRight = pos.displayX + pos.displayWidth - (pos.x + pos.width);
-			if (distLeft <= STUCK_PX && distLeft <= distRight) {
-				setSide("left");
-				return "left" as const;
+			const distRight =
+				pos.displayX + pos.displayWidth - (pos.x + pos.width);
+			const distTop = pos.y - pos.displayY;
+			const distBottom =
+				pos.displayY + pos.displayHeight - (pos.y + pos.height);
+
+			// 选最近的贴墙方向（仅 STUCK_PX 内才触发）
+			type Candidate = {
+				side: Exclude<PetEdgeSide, null>;
+				dist: number;
+			};
+			const candidates: Candidate[] = [];
+			if (distLeft <= STUCK_PX) candidates.push({ side: "left", dist: distLeft });
+			if (distRight <= STUCK_PX)
+				candidates.push({ side: "right", dist: distRight });
+			if (distTop <= STUCK_PX) candidates.push({ side: "top", dist: distTop });
+			if (distBottom <= STUCK_PX)
+				candidates.push({ side: "bottom", dist: distBottom });
+
+			if (candidates.length === 0) {
+				setSide(null);
+				return null;
 			}
-			if (distRight <= STUCK_PX) {
-				setSide("right");
-				return "right" as const;
-			}
-			setSide(null);
-			return null;
+			candidates.sort((a, b) => a.dist - b.dist);
+			const nearest = candidates[0].side;
+			setSide(nearest);
+			return nearest;
 		} catch {
 			setSide(null);
 			return null;

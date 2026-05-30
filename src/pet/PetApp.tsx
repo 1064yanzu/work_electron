@@ -51,6 +51,7 @@ import {
 	PetInputBubble,
 	PetProgressBubble,
 	PetReminderBubble,
+	PetHistoryBubble,
 	withAlpha,
 } from "./bubbles";
 
@@ -74,7 +75,8 @@ type BubbleKind =
 	| "progress"
 	| "notification"
 	| "reminder"
-	| "input";
+	| "input"
+	| "history";
 
 // ── 宠物 UI 状态机 ──
 
@@ -98,8 +100,13 @@ function petUIReducer(state: PetUIState, action: PetUIAction): PetUIState {
 		case "SET_MOTION":
 			return { ...state, motion: action.motion };
 		case "SHOW_BUBBLE":
-			// 用户正在输入时，不抢气泡（除了 reminder 这种主动提醒）
-			if (state.inputOpenedByUser && action.bubble !== "reminder") return state;
+			// 用户正在输入时，不抢气泡（除了 reminder/history 这类用户主动触发的）
+			if (
+				state.inputOpenedByUser &&
+				action.bubble !== "reminder" &&
+				action.bubble !== "history"
+			)
+				return state;
 			return { ...state, bubble: action.bubble };
 		case "TOGGLE_INPUT_BUBBLE": {
 			const opening = state.bubble !== "input";
@@ -418,9 +425,29 @@ export default function PetApp() {
 		}, []),
 	);
 
+	// 连点庆祝彩蛋：5 秒内 ≥ 10 次触发（两个 burst hook 独立计数）
+	const registerCelebrate = useTapBurst(
+		useCallback(() => {
+			uiDispatch({ type: "SET_MOTION", motion: "done" });
+			setTimeout(() => {
+				uiDispatch({ type: "SET_MOTION", motion: "greet" });
+				setTimeout(() => {
+					uiDispatch({ type: "SET_MOTION", motion: "idle" });
+				}, 1200);
+			}, 400);
+		}, []),
+		{ threshold: 10, windowMs: 5000 },
+	);
+
 	const handleMouseEnter = useCallback(() => {
 		if (isDragging) return;
 		isHoveringRef.current = true;
+		// 角色本体 hover 同样冻结通知 dwell 计时器（与气泡 hover 行为一致）
+		bubbleHoveredRef.current = true;
+		if (notificationTimerRef.current) {
+			clearTimeout(notificationTimerRef.current);
+			notificationTimerRef.current = null;
+		}
 		edgePeek.onHoverStart();
 		// 150ms 防误触；hover 期间保持 greet，离开才回 idle
 		hoverTimerRef.current = setTimeout(() => {
@@ -432,6 +459,7 @@ export default function PetApp() {
 
 	const handleMouseLeave = useCallback(() => {
 		isHoveringRef.current = false;
+		bubbleHoveredRef.current = false;
 		edgePeek.onHoverEnd();
 		if (hoverTimerRef.current) {
 			clearTimeout(hoverTimerRef.current);
@@ -439,7 +467,20 @@ export default function PetApp() {
 		}
 		// 仅当当前是 greet（hover 引起）时才回 idle，避免压掉 thinking/done/sad
 		uiDispatch({ type: "HOVER_END" });
-	}, [edgePeek]);
+		// 离开角色本体时，若当前显示通知气泡，重启 dwell 计时器（1.5s 缓冲）
+		if (uiState.bubble === "notification" && eventState.notification) {
+			notificationTimerRef.current = setTimeout(() => {
+				if (bubbleHoveredRef.current) return;
+				setBubbleSinking(true);
+				setTimeout(() => {
+					uiDispatch({ type: "HIDE_BUBBLE" });
+					uiDispatch({ type: "SET_MOTION", motion: "idle" });
+					setBubbleSinking(false);
+					eventState.consumeNextNotification?.();
+				}, 180);
+			}, 1500);
+		}
+	}, [edgePeek, uiState.bubble, eventState]);
 
 	// 长按上下文菜单触发
 	const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -615,13 +656,24 @@ export default function PetApp() {
 							uiDispatch({ type: "SET_MOTION", motion: "idle" });
 						}, 600);
 					} else {
-						lastClickAtRef.current = now;
-						// 已读：清掉未读
-						eventState.markRead();
+					lastClickAtRef.current = now;
+					// 已读：清掉未读
+					eventState.markRead();
+					// 睡着状态：第一次点击唤醒，不打开输入气泡
+					if (eventState.petState === "sleepy") {
+						eventState.wakeUp();
+						uiDispatch({ type: "SET_MOTION", motion: "greet" });
+						setTimeout(
+							() => uiDispatch({ type: "SET_MOTION", motion: "idle" }),
+							900,
+						);
+					} else {
 						// 立即 toggle 输入气泡，感知延迟消失
 						uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
-						// 连点反馈
-						registerTap();
+					}
+					// 连点反馈（害羞 & 庆祝彩蛋）
+					registerTap();
+					registerCelebrate();
 					}
 				}
 			});
@@ -757,12 +809,17 @@ export default function PetApp() {
 		void invoke("pet_window_focus_main");
 	}, []);
 
+	const handleShowHistory = useCallback(() => {
+		setContextMenuOpen(false);
+		uiDispatch({ type: "SHOW_BUBBLE", bubble: "history" });
+	}, []);
+
 	// ── 渲染 ──
 
 	// ⚠️ React Hooks 规则：所有 Hook 必须在任何条件 return 之前调用。
 	// 之前 useBubblePlacement 被放在 `if (!mascotReady) return null` 之后，
 	// 导致 mascotReady 由 false → true 时 Hook 调用顺序错乱，组件直接报错变成空白窗口。
-	const placement = useBubblePlacement(uiState.bubble !== "none");
+	const { placement, offsetX: bubbleOffsetX } = useBubblePlacement(uiState.bubble !== "none");
 
 	// 精确命中检测：透明区域自动穿透，鼠标悬停在宠物/气泡上时才捕获事件
 	usePetHitTest(throughClicks);
@@ -788,7 +845,10 @@ export default function PetApp() {
 	const bubbleNode = uiState.bubble !== "none" && (
 		<div
 			className={`flex justify-center w-full ${placement === "top" ? "mb-[10px]" : "mt-[10px]"}`}
-			style={{ order: placement === "top" ? 0 : 2 }}
+			style={{
+				order: placement === "top" ? 0 : 2,
+				transform: bubbleOffsetX !== 0 ? `translateX(${bubbleOffsetX}px)` : undefined,
+			}}
 		>
 			{uiState.bubble === "task" && eventState.currentTask && (
 				<PetTaskBubble
@@ -855,25 +915,39 @@ export default function PetApp() {
 				/>
 			)}
 
-			{uiState.bubble === "input" && (
-				<PetInputBubble
-					ref={inputRef}
-					value={inputText}
-					onChange={setInputText}
-					onSubmit={handleSendQuickReply}
-					onClose={handleCloseBubble}
-					onOpenMain={handleFocusMain}
-					accentColor={accentColor}
-					noInteract={isDragging}
-					onPointerEnter={handleBubblePointerEnter}
-					onPointerLeave={handleBubblePointerLeave}
-					placement={placement}
-					sinking={bubbleSinking}
-					mascotId={personalityId}
-				/>
-			)}
-		</div>
-	);
+		{uiState.bubble === "input" && (
+			<PetInputBubble
+				ref={inputRef}
+				value={inputText}
+				onChange={setInputText}
+				onSubmit={handleSendQuickReply}
+				onClose={handleCloseBubble}
+				onOpenMain={handleFocusMain}
+				accentColor={accentColor}
+				noInteract={isDragging}
+				onPointerEnter={handleBubblePointerEnter}
+				onPointerLeave={handleBubblePointerLeave}
+				placement={placement}
+				sinking={bubbleSinking}
+				mascotId={personalityId}
+			/>
+		)}
+
+		{uiState.bubble === "history" && (
+			<PetHistoryBubble
+				items={eventState.notificationHistory}
+				onClose={handleCloseBubble}
+				onClear={eventState.clearHistory}
+				accentColor={accentColor}
+				noInteract={isDragging}
+				onPointerEnter={handleBubblePointerEnter}
+				onPointerLeave={handleBubblePointerLeave}
+				placement={placement}
+				sinking={bubbleSinking}
+			/>
+		)}
+	</div>
+);
 
 	return (
 		<div
@@ -937,11 +1011,24 @@ export default function PetApp() {
 							} else {
 								parts.push("scale(1)");
 							}
-							// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
-							if (edgePeek.peeking && edgePeek.side) {
+						// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
+						if (edgePeek.peeking && edgePeek.side) {
+							if (
+								edgePeek.side === "left" ||
+								edgePeek.side === "right"
+							) {
 								const dx =
-									edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
+									edgePeek.side === "left"
+										? -PEEK_OFFSET_PX
+										: PEEK_OFFSET_PX;
 								parts.push(`translateX(${dx}px)`);
+							} else {
+								const dy =
+									edgePeek.side === "top"
+										? -PEEK_OFFSET_PX
+										: PEEK_OFFSET_PX;
+								parts.push(`translateY(${dy}px)`);
+							}
 							} else if (!isDragging) {
 								// 视线追随（仅在非拖动态叠加，±3px）
 								parts.push(
@@ -984,18 +1071,19 @@ export default function PetApp() {
 				</div>
 
 				{/* 上下文菜单（长按 / 右键触发） */}
-				{contextMenuOpen && (
-					<PetContextMenu
-						accentColor={accentColor}
-						currentMascotId={mascotId}
-						onCycleSkin={handleCycleSkin}
-						onHide={handleHidePet}
-						onOpenSettings={handleOpenSettings}
-						onClose={() => setContextMenuOpen(false)}
-						/** 角色贴屏右侧时菜单向左展开，贴左侧 / 屏幕中段时向右展开 */
-						side={edgePeek.side === "right" ? "left" : "right"}
-					/>
-				)}
+			{contextMenuOpen && (
+				<PetContextMenu
+					accentColor={accentColor}
+					currentMascotId={mascotId}
+					onCycleSkin={handleCycleSkin}
+					onHide={handleHidePet}
+					onOpenSettings={handleOpenSettings}
+					onShowHistory={handleShowHistory}
+					onClose={() => setContextMenuOpen(false)}
+					/** 角色贴屏右侧时菜单向左展开，贴左侧 / 屏幕中段时向右展开 */
+					side={edgePeek.side === "right" ? "left" : "right"}
+				/>
+			)}
 			</div>
 		</div>
 	);
@@ -1009,6 +1097,7 @@ interface PetContextMenuProps {
 	onCycleSkin: () => void;
 	onHide: () => void;
 	onOpenSettings: () => void;
+	onShowHistory: () => void;
 	onClose: () => void;
 	/** 菜单相对角色的展开方向：右（默认）或左 */
 	side?: "left" | "right";
@@ -1020,6 +1109,7 @@ function PetContextMenu({
 	onCycleSkin,
 	onHide,
 	onOpenSettings,
+	onShowHistory,
 	side = "right",
 }: PetContextMenuProps) {
 	const nextMascotLabel = useMemo(() => {
@@ -1057,16 +1147,19 @@ function PetContextMenu({
 					`,
 				}}
 			>
-				<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
-					<span>切换皮肤</span>
-					<span className="ml-auto text-[11px] text-[color:var(--t-text-light,#9d9d98)]">
-						下一个：{nextMascotLabel}
-					</span>
-				</MenuButton>
-				<MenuButton onClick={onOpenSettings} accentColor={accentColor}>
-					打开主窗口
-				</MenuButton>
-				<div
+			<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
+				<span>切换皮肤</span>
+				<span className="ml-auto text-[11px] text-[color:var(--t-text-light,#9d9d98)]">
+					下一个：{nextMascotLabel}
+				</span>
+			</MenuButton>
+			<MenuButton onClick={onOpenSettings} accentColor={accentColor}>
+				打开主窗口
+			</MenuButton>
+			<MenuButton onClick={onShowHistory} accentColor={accentColor}>
+				最近通知
+			</MenuButton>
+			<div
 					className="my-1 mx-3 h-[1px]"
 					style={{
 						backgroundColor: "var(--t-border-subtle, rgba(0,0,0,0.06))",

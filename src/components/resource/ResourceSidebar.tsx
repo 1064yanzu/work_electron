@@ -239,7 +239,14 @@ export default function ResourceSidebar({
 		deleteSourcesWithUndo,
 	});
 
-	const sourceImport = useSourceImport({ fetchSources });
+	const sourceImport = useSourceImport({
+		fetchSources,
+		// 仅当用户激活了资料库相关视图时，才注册全局 window drop 监听
+		// 其他面板（技能库、wiki 等）有自己的拖拽逻辑，不应被此处拦截
+		enabled: ["sources", "detail", "research", "websearch"].includes(
+			leftSidebarView,
+		),
+	});
 
 	const sourcesQuery = useSourcesQuery(currentProjectId, {
 		refetchInterval:

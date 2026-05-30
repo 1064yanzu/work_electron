@@ -85,6 +85,7 @@ export interface PetEventState {
 	progress: PetProgress | null;
 	notification: PetNotificationItem | null;
 	notificationQueue: PetNotificationItem[];
+	notificationHistory: PetNotificationItem[];
 	unreadCount: number;
 	reminder: PetReminder | null;
 	sessionStats: SessionStats;
@@ -92,9 +93,11 @@ export interface PetEventState {
 }
 
 const SEEN_DATE_KEY = "mascotLastSeenDate";
+const HISTORY_KEY = "mascotNotificationHistory";
 const APPROVAL_TIMEOUT_MS = 30_000;
 const IDLE_TIMEOUT_MS = 60_000;
 const QUEUE_MAX = 3;
+const HISTORY_MAX = 20;
 
 type PetEventAction =
 	| { type: "AGENT_START"; task: PetTask }
@@ -123,7 +126,8 @@ type PetEventAction =
 			type: "BUMP_LAST_SEEN";
 			date: string;
 	  }
-	| { type: "CLEAR_PENDING_APPROVAL" };
+	| { type: "CLEAR_PENDING_APPROVAL" }
+	| { type: "CLEAR_HISTORY" };
 
 function humanizeToolName(name: string): string {
 	const map: Record<string, string> = {
@@ -206,6 +210,7 @@ function petEventReducer(
 				prefix,
 			);
 			const queueAfter = enqueue(state.notificationQueue, state.notification);
+			const historyAfter = pushHistory(state.notificationHistory, item);
 			return {
 				...state,
 				petState: "done",
@@ -213,6 +218,7 @@ function petEventReducer(
 				progress: null,
 				notification: item,
 				notificationQueue: queueAfter,
+				notificationHistory: historyAfter,
 				unreadCount: state.unreadCount + 1,
 				sessionStats: {
 					...state.sessionStats,
@@ -231,6 +237,7 @@ function petEventReducer(
 					: undefined;
 			const item = newNotification("error", action.error || "任务出错", prefix);
 			const queueAfter = enqueue(state.notificationQueue, state.notification);
+			const historyAfter = pushHistory(state.notificationHistory, item);
 			return {
 				...state,
 				petState: "error",
@@ -238,6 +245,7 @@ function petEventReducer(
 				progress: null,
 				notification: item,
 				notificationQueue: queueAfter,
+				notificationHistory: historyAfter,
 				unreadCount: state.unreadCount + 1,
 				sessionStats: {
 					...state.sessionStats,
@@ -250,11 +258,13 @@ function petEventReducer(
 		case "AGENT_APPROVAL": {
 			const item = newNotification("approval", action.message || "需要审批");
 			const queueAfter = enqueue(state.notificationQueue, state.notification);
+			const historyAfter = pushHistory(state.notificationHistory, item);
 			return {
 				...state,
 				petState: "error",
 				notification: item,
 				notificationQueue: queueAfter,
+				notificationHistory: historyAfter,
 				unreadCount: state.unreadCount + 1,
 				pendingApprovalSince: Date.now(),
 			};
@@ -320,6 +330,9 @@ function petEventReducer(
 		case "CLEAR_PENDING_APPROVAL":
 			return { ...state, pendingApprovalSince: null };
 
+		case "CLEAR_HISTORY":
+			return { ...state, notificationHistory: [] };
+
 		default:
 			return state;
 	}
@@ -336,12 +349,34 @@ function enqueue(
 	return next.length > QUEUE_MAX ? next.slice(next.length - QUEUE_MAX) : next;
 }
 
+/** 把新通知推到历史记录头部（最新在前），保持不超过 HISTORY_MAX */
+function pushHistory(
+	history: PetNotificationItem[],
+	item: PetNotificationItem,
+): PetNotificationItem[] {
+	const next = [item, ...history];
+	return next.length > HISTORY_MAX ? next.slice(0, HISTORY_MAX) : next;
+}
+
+function loadNotificationHistory(): PetNotificationItem[] {
+	try {
+		if (typeof window === "undefined") return [];
+		const raw = window.localStorage?.getItem(HISTORY_KEY);
+		if (!raw) return [];
+		const parsed = JSON.parse(raw);
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+}
+
 const INITIAL_STATE: PetEventState = {
 	petState: "idle",
 	currentTask: null,
 	progress: null,
 	notification: null,
 	notificationQueue: [],
+	notificationHistory: loadNotificationHistory(),
 	unreadCount: 0,
 	reminder: null,
 	sessionStats: {
@@ -360,6 +395,10 @@ export interface PetEventBridge extends PetEventState {
 	dismissNotification: () => void;
 	consumeNextNotification: () => void;
 	dismissReminder: () => void;
+	/** 唤醒：sleepy → idle，重置空闲计时器 */
+	wakeUp: () => void;
+	/** 清空通知历史 */
+	clearHistory: () => void;
 	/** 当前 dwell 系数（设置面板提供，默认 1） */
 	dwellMultiplier: number;
 	/** 是否处于勿扰时段 */
@@ -415,6 +454,8 @@ export function usePetEventBridge(): PetEventBridge {
 	} | null>(null);
 	const dndStartRef = useRef<number | null>(null);
 	const dndEndRef = useRef<number | null>(null);
+	// 防止 streaming 每个 text_delta chunk 都触发 AGENT_START（逐字闪烁问题）
+	const startedRunIdRef = useRef<string | null>(null);
 
 	const resetIdleTimer = useCallback(() => {
 		if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -608,7 +649,10 @@ export function usePetEventBridge(): PetEventBridge {
 								typeof e.content === "string" &&
 								e.content.trim(),
 						);
-						if (hasUserPrompt) {
+					if (hasUserPrompt) {
+						// 每个 runId 只触发一次 AGENT_START，防止 streaming 每个 chunk 都更新标题
+						if (startedRunIdRef.current !== runId) {
+							startedRunIdRef.current = runId;
 							dispatch({
 								type: "AGENT_START",
 								task: {
@@ -618,6 +662,7 @@ export function usePetEventBridge(): PetEventBridge {
 								},
 							});
 						}
+					}
 						// tool 调用 progress（debounce 120ms 取最后一次）
 						for (const ev of events) {
 							if (
@@ -917,6 +962,26 @@ export function usePetEventBridge(): PetEventBridge {
 		() => dispatch({ type: "DISMISS_REMINDER" }),
 		[],
 	);
+	const wakeUp = useCallback(() => {
+		dispatch({ type: "SET_STATE", state: "idle" });
+		resetIdleTimer();
+	}, [resetIdleTimer]);
+	const clearHistory = useCallback(
+		() => dispatch({ type: "CLEAR_HISTORY" }),
+		[],
+	);
+
+	// 历史记录持久化到 localStorage
+	useEffect(() => {
+		try {
+			window.localStorage?.setItem(
+				HISTORY_KEY,
+				JSON.stringify(state.notificationHistory),
+			);
+		} catch {
+			// noop
+		}
+	}, [state.notificationHistory]);
 
 	return {
 		...state,
@@ -924,6 +989,8 @@ export function usePetEventBridge(): PetEventBridge {
 		dismissNotification,
 		consumeNextNotification,
 		dismissReminder,
+		wakeUp,
+		clearHistory,
 		dwellMultiplier: dnd.dwellMultiplier,
 		isDoNotDisturb: dnd.isDoNotDisturb,
 	};
@@ -940,6 +1007,8 @@ function extractTaskTitle(
 			ev.content.trim()
 		) {
 			const text = ev.content.trim();
+			// 流式首个 chunk 可能只有几个字符，长度不足时用占位文本
+			if (text.length < 8) return "任务进行中";
 			return text.length > 40 ? `${text.slice(0, 40)}…` : text;
 		}
 	}

@@ -12,9 +12,11 @@ import type { SourceDetail } from "../../../types";
 
 interface UseSourceImportOptions {
 	fetchSources: () => Promise<void>;
+	/** 是否启用全局窗口拖拽监听，仅在资料库视图激活时应为 true */
+	enabled?: boolean;
 }
 
-export function useSourceImport({ fetchSources }: UseSourceImportOptions) {
+export function useSourceImport({ fetchSources, enabled = true }: UseSourceImportOptions) {
 	const importSupportedExts = useMemo(
 		() =>
 			new Set([
@@ -226,7 +228,7 @@ export function useSourceImport({ fetchSources }: UseSourceImportOptions) {
 	);
 
 	const dragImport = useDragAndDropImport<SourceDetail>({
-		enabled: true,
+		enabled,
 		accept: acceptImportPath,
 		onReject: useCallback((info: DragAndDropRejectInfo) => {
 			// 给用户可见的反馈，避免「拖进去什么都没发生」的静默失败

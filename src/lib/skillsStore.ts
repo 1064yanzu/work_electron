@@ -57,8 +57,10 @@ export const skillsStore = {
 
 	async importSkill(sourcePath: string): Promise<SkillMetadata> {
 		const skill = await importSkill(sourcePath);
-		cachedSkills = [...cachedSkills, skill];
-		emitChange();
+		// 用 refresh() 重新从磁盘拉取全量列表，而非手动 push：
+		// 1. 避免技能已在缓存时出现重复条目
+		// 2. 确保「已在磁盘但不在缓存」的 skill 也能被正确显示
+		await skillsStore.refresh();
 		return skill;
 	},
 
@@ -79,7 +81,8 @@ export const skillsStore = {
 	async setEnabled(skillName: string, enabled: boolean): Promise<void> {
 		await setSkillEnabled(skillName, enabled);
 		// 写完直接刷新一次，让后端重新算 effective enabled / userOverride
-		await this.refresh();
+		// 注意：使用 skillsStore.refresh() 而非 this.refresh()，避免解构调用时 this 丢失
+		await skillsStore.refresh();
 	},
 
 	subscribe(listener: () => void) {

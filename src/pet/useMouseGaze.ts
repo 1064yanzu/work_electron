@@ -17,8 +17,8 @@ export interface GazeOffset {
 	ty: number;
 }
 
-const MAX_OFFSET = 3; // px
-const LERP = 0.15;
+const MAX_OFFSET = 6; // px
+const LERP = 0.2;
 
 export function useMouseGaze(active: boolean): GazeOffset {
 	const [offset, setOffset] = useState<GazeOffset>({ tx: 0, ty: 0 });

@@ -15,5 +15,10 @@ export {
 	type PetReminderBubbleProps,
 	type PetReminderKind,
 } from "./PetReminderBubble";
+export {
+	PetHistoryBubble,
+	type PetHistoryBubbleProps,
+} from "./PetHistoryBubble";
 export { withAlpha, lighten } from "./utils";
 export { CloseIconButton } from "./CloseIconButton";
+

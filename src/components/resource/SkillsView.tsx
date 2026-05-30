@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+	ArrowDownToLine,
 	ChevronDown,
 	FolderOpen,
 	Plus,
@@ -19,6 +20,8 @@ import { confirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
 import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
+import { useWorkspaceStoreSelector } from "../../lib/workspaceStore";
+import { useSkillDragImport } from "./hooks/useSkillDragImport";
 
 type FilterType = "all" | "general" | "enabled";
 type TabType = "installed" | "marketplace";
@@ -43,6 +46,13 @@ export function SkillsView(_props: SkillsViewProps) {
 	const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	const leftSidebarView = useWorkspaceStoreSelector(
+		(state) => state.leftSidebarView,
+	);
+	const skillDrag = useSkillDragImport({
+		enabled: leftSidebarView === "skills",
+	});
 
 	const filteredSkills = useMemo(() => {
 		return skills.filter((skill) => {
@@ -142,7 +152,30 @@ export function SkillsView(_props: SkillsViewProps) {
 	const enabledCount = skills.filter((s) => s.enabled).length;
 
 	return (
-		<div className="flex flex-col h-full bg-transparent">
+		<div className="flex flex-col h-full bg-transparent relative">
+			{/* 拖拽导入 overlay */}
+			{skillDrag.isDragging && (
+				<div className="absolute inset-0 z-40 pointer-events-none">
+					<div className="absolute inset-0 bg-surface/60 dark:bg-black/40 backdrop-blur-md" />
+					<div className="absolute inset-0 flex items-center justify-center p-6">
+						<div className="w-full max-w-sm rounded-3xl bg-surface/85/80 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
+							<div className="flex items-center gap-4">
+								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
+									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-zinc-200" />
+								</div>
+								<div className="flex-1">
+									<p className="text-sm font-semibold text-text-primary">
+										松开以导入技能
+									</p>
+									<p className="text-xs text-text-muted mt-0.5">
+										将技能文件夹拖入即可安装
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 			{/* Header — editorial */}
 			<div className="px-5 pt-6 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-2">
