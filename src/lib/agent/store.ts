@@ -69,7 +69,7 @@ class AgentStore {
 	// 节流相关状态
 	private emitScheduled = false;
 	private lastEmitTime = 0;
-	private readonly THROTTLE_MS = 16; // 约 60fps
+	private readonly THROTTLE_MS = 50; // 约 20fps，减少流式输出时的 React 重渲染频率
 
 	getState = () => this.state;
 

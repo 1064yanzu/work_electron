@@ -39,7 +39,7 @@ export function SettingsSidebarCategory({
 	const Icon = category.icon;
 
 	return (
-		<section className="space-y-1">
+			<section className="space-y-1 overflow-hidden">
 			{/* 分类标题 —— 可点击 toggle */}
 			<button
 				type="button"
@@ -49,14 +49,16 @@ export function SettingsSidebarCategory({
 				className={cn(
 					"group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left",
 					"min-h-[36px]",
-					"text-text-secondary hover:bg-cream-200/60 dark:hover:bg-cream-700/40",
 					"transition-[background-color,color] duration-150 ease-out",
 					"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+					expanded
+						? "bg-warm-100/50 dark:bg-warm-800/30 text-text-primary"
+						: "text-text-secondary hover:bg-cream-200/60 dark:hover:bg-cream-700/40",
 				)}
 			>
 				<Icon
 					className="h-[15px] w-[15px] shrink-0 text-text-muted"
-					strokeWidth={1.75}
+					strokeWidth={1.5}
 				/>
 				<span className="flex-1 truncate text-[13px] font-semibold tracking-[0.01em]">
 					{category.label}
@@ -67,7 +69,7 @@ export function SettingsSidebarCategory({
 						"transition-transform duration-200 ease-out",
 						expanded ? "rotate-0" : "-rotate-90",
 					)}
-					strokeWidth={2}
+					strokeWidth={1.5}
 				/>
 			</button>
 
@@ -83,7 +85,7 @@ export function SettingsSidebarCategory({
 				aria-hidden={!expanded}
 			>
 				<div className="min-h-0 overflow-hidden">
-					<div className="mt-1 space-y-0.5 pl-1">
+					<div className="mt-1 space-y-0.5 pl-2">
 						{subtabs.map((item) => {
 							const SubIcon = item.icon;
 							const isActive = activeTab === item.id;

@@ -241,13 +241,13 @@ export function SettingsPasswordInput({
 					type="button"
 					tabIndex={-1}
 					onClick={() => setReveal((v) => !v)}
-					className="-mr-1 flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-cream-200 hover:text-text-primary"
+					className="-mr-1 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-cream-200 hover:text-text-primary"
 					title={reveal ? "隐藏" : "显示"}
 				>
 					{reveal ? (
-						<EyeOff className="h-3.5 w-3.5" strokeWidth={1.6} />
-					) : (
-						<Eye className="h-3.5 w-3.5" strokeWidth={1.6} />
+					<EyeOff className="h-3.5 w-3.5" strokeWidth={1.5} />
+				) : (
+					<Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
 					)}
 				</button>
 			}
@@ -483,7 +483,7 @@ export function SettingsNumberInput({
 						onClick={() => handleStep(1)}
 						className="flex h-1/2 w-6 items-center justify-center text-text-muted transition-colors hover:bg-cream-100 hover:text-text-primary disabled:opacity-30"
 					>
-						<ChevronUp className="h-3 w-3" strokeWidth={1.8} />
+						<ChevronUp className="h-3 w-3" strokeWidth={1.5} />
 					</button>
 					<button
 						type="button"
@@ -492,7 +492,7 @@ export function SettingsNumberInput({
 						onClick={() => handleStep(-1)}
 						className="flex h-1/2 w-6 items-center justify-center border-t border-border/70 text-text-muted transition-colors hover:bg-cream-100 hover:text-text-primary disabled:opacity-30"
 					>
-						<ChevronDown className="h-3 w-3" strokeWidth={1.8} />
+						<ChevronDown className="h-3 w-3" strokeWidth={1.5} />
 					</button>
 				</div>
 			)}

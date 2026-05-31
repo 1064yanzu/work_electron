@@ -1,6 +1,7 @@
 import { ArrowUp, AtSign, ChevronUp, Mic, Plus } from "lucide-react";
 import { prefetchChatContext } from "../../../lib/query";
 import type { Model } from "../ModelSelector";
+import { StyleProfilePill } from "../StyleProfilePill";
 import { ThinkingLevelPill } from "../ThinkingLevelPill";
 
 interface ChatInputToolbarProps {
@@ -44,7 +45,7 @@ export function ChatInputToolbar({
 		${
 			hasContent
 				? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
-				: "bg-warm-200 dark:bg-cream-700/50 text-text-muted/40 disabled:cursor-not-allowed"
+				: "bg-warm-200 dark:bg-cream-700/50 text-text-muted disabled:cursor-not-allowed"
 		}
 	`;
 
@@ -108,6 +109,9 @@ export function ChatInputToolbar({
 
 						{/* 思考程度 pill — 紧邻模型选择，直接透传 SDK effort */}
 						<ThinkingLevelPill />
+
+						{/* 语言风格包 pill */}
+						<StyleProfilePill />
 					</div>
 
 					{/* 右侧：语音 + 发送按钮 */}

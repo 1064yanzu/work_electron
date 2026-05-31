@@ -173,10 +173,10 @@ export function SettingsSearch({
 					"focus-within:border-primary/50 focus-within:bg-surface focus-within:ring-2 focus-within:ring-primary/10",
 				)}
 			>
-				<Search
-					className="h-4 w-4 shrink-0 text-text-muted"
-					strokeWidth={1.8}
-				/>
+			<Search
+				className="h-4 w-4 shrink-0 text-text-muted"
+				strokeWidth={1.5}
+			/>
 				<input
 					ref={inputRef}
 					type="text"
@@ -205,23 +205,23 @@ export function SettingsSearch({
 						type="button"
 						onClick={clear}
 						aria-label="清空搜索"
-						className={cn(
-							"inline-flex h-6 w-6 items-center justify-center rounded-md text-text-muted",
-							"hover:bg-warm-200 hover:text-text-primary",
-							"transition-[background-color,color] duration-150",
-						)}
+				className={cn(
+						"inline-flex h-6 w-6 items-center justify-center rounded-full text-text-muted",
+						"hover:bg-warm-200 hover:text-text-primary",
+						"transition-[background-color,color] duration-150",
+					)}
 					>
-						<X className="h-3.5 w-3.5" strokeWidth={2} />
+						<X className="h-3.5 w-3.5" strokeWidth={1.5} />
 					</button>
 				) : (
-					<span
-						className={cn(
-							"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
-							"text-[10px] font-mono tabular-nums text-text-muted",
-						)}
-					>
-						⌘F
-					</span>
+				<span
+					className={cn(
+						"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
+						"text-[10px] font-sans tabular-nums text-text-muted",
+					)}
+				>
+					⌘F
+				</span>
 				)}
 			</div>
 
@@ -291,15 +291,23 @@ function SearchResultRow({
 					"flex w-full items-start gap-2.5 px-3 py-2 text-left",
 					"transition-[background-color,color] duration-150",
 					active
-						? "bg-cream-200/80 text-text-primary"
+						? "bg-cream-200 text-text-primary"
 						: "text-text-secondary hover:bg-cream-100",
 				)}
 			>
-				<span
-					className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-					style={{ backgroundColor: "var(--t-primary, #1A1A19)" }}
-					aria-hidden
-				/>
+				{subtab?.icon ? (
+					<subtab.icon
+						className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted"
+						strokeWidth={1.5}
+						aria-hidden
+					/>
+				) : (
+					<span
+						className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+						style={{ backgroundColor: "var(--t-primary, #1A1A19)" }}
+						aria-hidden
+					/>
+				)}
 				<span className="min-w-0 flex-1">
 					<span className="block text-[13px] font-medium leading-snug text-text-primary">
 						{field.label}

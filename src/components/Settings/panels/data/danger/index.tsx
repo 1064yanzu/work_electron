@@ -17,6 +17,7 @@ import { SettingsPanelHeader } from "../../../components/SettingsPanelHeader";
 import {
 	SettingsButton,
 	SettingsHint,
+	SettingsPageContainer,
 	SettingsSectionCard,
 	SettingsSectionTitle,
 	SettingsTextInput,
@@ -46,13 +47,12 @@ export function DataDangerSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-background overflow-y-auto p-6 text-text-primary">
-			<div className="max-w-2xl mx-auto space-y-6">
-				<SettingsPanelHeader
-					icon={ShieldAlert}
-					title="危险区"
-					description="这里的操作不可撤销。执行前请先用 WebDAV / 本地备份导出你的数据。"
-				/>
+		<SettingsPageContainer contentClassName="max-w-2xl mx-auto">
+			<SettingsPanelHeader
+				icon={ShieldAlert}
+				title="危险区"
+				description="这里的操作不可撤销。执行前请先用 WebDAV / 本地备份导出你的数据。"
+			/>
 
 				<SettingsHint
 					tone="error"
@@ -104,8 +104,7 @@ export function DataDangerSettings() {
 						</div>
 					</div>
 				</SettingsSectionCard>
-			</div>
-		</div>
+			</SettingsPageContainer>
 	);
 }
 

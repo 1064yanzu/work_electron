@@ -18,15 +18,15 @@ export function SettingsPanelHeader({
 	className,
 }: SettingsPanelHeaderProps) {
 	return (
-		<div className={cn("mb-8 pb-6 border-b border-border/80", className)}>
+		<div className={cn("mb-5 pb-4 border-b border-border/80", className)}>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3.5">
-					{/* 图标容器 — B.AI 风格暖描边 */}
-					<div className="mt-0.5 w-9 h-9 rounded-xl bg-warm-200 border border-border flex items-center justify-center shrink-0">
+					{/* 图标容器 — 渐变 + 内光精炼感 */}
+					<div className="mt-0.5 w-9 h-9 rounded-xl bg-gradient-to-br from-warm-100 to-warm-300 border border-border/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] flex items-center justify-center shrink-0">
 						<Icon className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
 					</div>
 					<div>
-						<h2 className="text-[1.05rem] font-semibold leading-[1.25] tracking-[-0.01em] text-text-primary dark:text-zinc-50">
+						<h2 className="text-[1.1rem] font-semibold leading-[1.25] tracking-[-0.01em] text-text-primary dark:text-zinc-50">
 							{title}
 						</h2>
 						<p className="mt-1 text-[12.5px] leading-relaxed text-text-muted max-w-[460px]">

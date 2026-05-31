@@ -18,9 +18,9 @@ export function SettingsPageContainer({
 				"flex-1 h-full overflow-y-auto p-8 text-text-primary transition-colors duration-300",
 				className,
 			)}
-			style={{ backgroundColor: "var(--t-bg-surface)" }}
+			style={{ backgroundColor: "var(--t-bg)" }}
 		>
-			<div className={cn("space-y-8", contentClassName)}>{children}</div>
+			<div className={cn("space-y-6", contentClassName)}>{children}</div>
 		</div>
 	);
 }
@@ -37,7 +37,7 @@ export function SettingsSectionCard({
 	return (
 		<div
 			className={cn(
-				"rounded-2xl border border-border shadow-bai-card transition-colors duration-300",
+				"rounded-2xl border border-border shadow-bai-card",
 				className,
 			)}
 			style={{ backgroundColor: "var(--t-bg-surface)" }}
@@ -59,7 +59,7 @@ export function SettingsSectionTitle({
 	return (
 		<h4
 			className={cn(
-				"mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted",
+				"mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-text-muted",
 				className,
 			)}
 		>
@@ -86,7 +86,7 @@ export function SettingsRow({
 	return (
 		<div
 			className={cn(
-				"flex items-center justify-between border-b border-border py-4 last:border-0",
+				"flex items-center justify-between border-b border-border py-3.5 last:border-0",
 				className,
 			)}
 		>
@@ -95,7 +95,7 @@ export function SettingsRow({
 					{label}
 				</div>
 				{description && (
-					<div className="mt-1 text-[12px] leading-relaxed text-text-muted">
+					<div className="mt-1 text-[12px] leading-relaxed text-text-secondary">
 						{description}
 					</div>
 				)}
@@ -133,8 +133,8 @@ export function SettingsSwitch({
 				if (!disabled) onChange(!checked);
 			}}
 			className={cn(
-				"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
-				checked ? "bg-primary" : "bg-warm-300",
+			"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
+			checked ? "bg-primary" : "bg-warm-400/80",
 				disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
 				className,
 			)}
@@ -142,9 +142,9 @@ export function SettingsSwitch({
 			<span
 				className={cn(
 					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-200",
-					checked
-						? "translate-x-[20px] bg-primary-foreground"
-						: "translate-x-[3px] bg-surface",
+				checked
+					? "translate-x-[20px] bg-primary-foreground"
+					: "translate-x-[3px] bg-white dark:bg-zinc-100",
 				)}
 			/>
 		</button>
@@ -171,7 +171,7 @@ export function SettingsHeader({
 	return (
 		<div
 			className={cn(
-				"flex items-start justify-between gap-4 border-b border-border px-5 py-4",
+				"flex items-start justify-between gap-4 border-b border-border px-5 py-3.5",
 				className,
 			)}
 		>

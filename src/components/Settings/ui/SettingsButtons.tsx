@@ -96,7 +96,7 @@ export const SettingsButton = forwardRef<
 			{loading ? (
 				<span className="inline-flex h-3 w-3 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
 			) : (
-				Icon && <Icon className="h-3 w-3" strokeWidth={1.8} />
+				Icon && <Icon className="h-3 w-3" strokeWidth={1.5} />
 			)}
 			{children}
 		</button>
@@ -170,7 +170,7 @@ export function SettingsBadge({
 					)}
 				/>
 			)}
-			{Icon && <Icon className="h-2.5 w-2.5" strokeWidth={2} />}
+			{Icon && <Icon className="h-2.5 w-2.5" strokeWidth={1.5} />}
 			{children}
 		</span>
 	);
@@ -220,10 +220,10 @@ export function SettingsHint({
 			)}
 		>
 			{Icon && (
-				<Icon
-					className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", HINT_ICON_TONE[tone])}
-					strokeWidth={1.8}
-				/>
+			<Icon
+				className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", HINT_ICON_TONE[tone])}
+				strokeWidth={1.5}
+			/>
 			)}
 			<div className="min-w-0 flex-1">
 				{title && (

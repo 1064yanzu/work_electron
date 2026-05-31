@@ -182,25 +182,26 @@ export function SettingsModal({
 					onPrefetch={preloadSettingsPanel}
 				/>
 
-				<main
-					ref={contentRef}
-					className="flex-1 flex flex-col min-w-0 overflow-hidden relative transition-colors duration-300"
-					style={{ backgroundColor: "var(--t-bg-surface)" }}
-				>
+			<main
+				ref={contentRef}
+				className="flex-1 flex flex-col min-w-0 overflow-hidden relative transition-colors duration-300"
+				style={{ backgroundColor: "var(--t-bg-surface)" }}
+			>
+				{/* 顶部搜索 + 关闭按钮：flex 行布局 */}
+				<div className="shrink-0 flex items-center gap-2 border-b border-border/60 px-6 pt-4 pb-3">
+					<div className="flex-1 min-w-0">
+						<SettingsSearch onResultClick={navigateTo} />
+					</div>
 					<button
 						ref={closeButtonRef}
 						onClick={handleClose}
-						className="absolute top-3 right-3 z-10 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full cursor-pointer hover:bg-warm-200 text-text-muted hover:text-text-primary transition-transform duration-150 ease-out-expo active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+						className="shrink-0 p-2 flex items-center justify-center rounded-full cursor-pointer hover:bg-warm-200 text-text-muted hover:text-text-primary transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
 						title="关闭"
 						aria-label="关闭设置"
 					>
-						<X className="w-5 h-5" />
+						<X className="w-4 h-4" strokeWidth={1.5} />
 					</button>
-
-					{/* 顶部搜索：始终可见，占据 close 按钮左侧空间 */}
-					<div className="shrink-0 border-b border-border/60 px-6 pr-14 pt-4 pb-3">
-						<SettingsSearch onResultClick={navigateTo} />
-					</div>
+				</div>
 
 					<Suspense
 						fallback={

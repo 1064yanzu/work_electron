@@ -70,6 +70,7 @@ import {
 	getExpectedClaudeCodeExecutablePath,
 	resolveClaudeCodeExecutablePath,
 } from "./agentSdk/claudeExecutable";
+import { getActiveStylePrompt } from "./styleProfile/styleProfileInjector";
 
 type AgentSdkStartInput = IPCSchema["agent_sdk_start"]["input"];
 type AgentSdkStartOutput = IPCSchema["agent_sdk_start"]["output"];
@@ -504,9 +505,11 @@ export function createAgentSdkHandlers(options: {
 				const thinkingLevelMarker = thinkingLevel
 					? `<!-- ipo-thinking-level:${thinkingLevel} -->`
 					: "";
+				const activeStylePrompt = await getActiveStylePrompt(options.db);
 				const appendParts = [
 					memorySection,
 					userSystemPrompt,
+					activeStylePrompt,
 					localWebSearchPrompt,
 					memoryToolPrompt,
 					thinkingLevelMarker,

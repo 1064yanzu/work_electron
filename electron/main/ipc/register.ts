@@ -72,6 +72,14 @@ import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 import { createPetWindowHandlers } from "./handlers/petWindow";
 import { createCustomMascotHandlers } from "./handlers/customMascot";
 import {
+	createStyleProfileCrudHandlers,
+	createStyleSampleHandlers,
+	createStyleAnalyzerHandlers,
+	createStyleAnalysisCrudHandlers,
+	createStyleRendererHandlers,
+	createStyleFeedbackHandlers,
+} from "./handlers/styleProfile";
+import {
 	bindMainWindowGetter,
 	flingAndSnapPetWindow,
 	focusMainWindow as petFocusMainWindow,
@@ -1414,6 +1422,38 @@ export function registerIpcHandlers({
 	ipcMain.handle("tts_synthesize_stream", ttsHandlers.tts_synthesize_stream);
 	ipcMain.handle("tts_cancel", ttsHandlers.tts_cancel);
 	ipcMain.handle("tts_test", ttsHandlers.tts_test);
+
+	// ==================
+	// 语言风格包
+	// ==================
+	const styleProfileCrudHandlers = createStyleProfileCrudHandlers(db);
+	ipcMain.handle("style_profile_create", styleProfileCrudHandlers.style_profile_create);
+	ipcMain.handle("style_profile_list", styleProfileCrudHandlers.style_profile_list);
+	ipcMain.handle("style_profile_get", styleProfileCrudHandlers.style_profile_get);
+	ipcMain.handle("style_profile_update", styleProfileCrudHandlers.style_profile_update);
+	ipcMain.handle("style_profile_delete", styleProfileCrudHandlers.style_profile_delete);
+	ipcMain.handle("style_profile_archive", styleProfileCrudHandlers.style_profile_archive);
+
+	const styleSampleHandlers = createStyleSampleHandlers(db);
+	ipcMain.handle("style_sample_add", styleSampleHandlers.style_sample_add);
+	ipcMain.handle("style_sample_remove", styleSampleHandlers.style_sample_remove);
+	ipcMain.handle("style_sample_list", styleSampleHandlers.style_sample_list);
+	ipcMain.handle("style_sample_parse_file", styleSampleHandlers.style_sample_parse_file);
+	ipcMain.handle("style_sample_import_from_zip", styleSampleHandlers.style_sample_import_from_zip);
+
+	const styleAnalyzerHandlers = createStyleAnalyzerHandlers(db, () => mainWindowRef);
+	ipcMain.handle("style_analysis_start", styleAnalyzerHandlers.style_analysis_start);
+
+	const styleAnalysisCrudHandlers = createStyleAnalysisCrudHandlers(db);
+	ipcMain.handle("style_analysis_get", styleAnalysisCrudHandlers.style_analysis_get);
+	ipcMain.handle("style_analysis_update", styleAnalysisCrudHandlers.style_analysis_update);
+
+	const styleRendererHandlers = createStyleRendererHandlers(db);
+	ipcMain.handle("style_profile_render_prompt", styleRendererHandlers.style_profile_render_prompt);
+
+	const styleFeedbackHandlers = createStyleFeedbackHandlers(db);
+	ipcMain.handle("style_feedback_submit", styleFeedbackHandlers.style_feedback_submit);
+	ipcMain.handle("style_feedback_list", styleFeedbackHandlers.style_feedback_list);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

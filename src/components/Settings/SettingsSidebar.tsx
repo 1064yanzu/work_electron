@@ -62,7 +62,7 @@ export function SettingsSidebar({
 			className="w-[248px] shrink-0 border-r border-border bg-background px-4 py-6 backdrop-blur-sm transition-colors duration-300"
 			aria-label="设置"
 		>
-			<div className="mb-6 px-2 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-text-muted">
+			<div className="mb-6 px-2 text-[13px] font-semibold text-text-primary">
 				设置
 			</div>
 

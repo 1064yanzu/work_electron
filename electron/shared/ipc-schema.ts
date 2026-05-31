@@ -3393,6 +3393,128 @@ export type IPCSchema = {
 			error?: string;
 		};
 	};
+
+	// ==================================================================================
+	// 语言风格包（Style Profile）IPC channels
+	// ==================================================================================
+
+	/** 创建风格包 */
+	style_profile_create: {
+		input: {
+			name: string;
+			description?: string;
+			language?: string;
+			analyze_model_id?: string;
+		};
+		output: StyleProfile;
+	};
+	/** 获取风格包列表 */
+	style_profile_list: {
+		input: { include_archived?: boolean };
+		output: StyleProfile[];
+	};
+	/** 获取风格包详情（含分析结果和样本） */
+	style_profile_get: {
+		input: { id: string };
+		output: StyleProfileDetail;
+	};
+	/** 更新风格包基本信息 */
+	style_profile_update: {
+		input: {
+			id: string;
+			name?: string;
+			description?: string;
+			language?: string;
+			analyze_model_id?: string;
+			generation_config?: StyleProfile["generation_config"];
+			is_default?: boolean;
+		};
+		output: StyleProfile;
+	};
+	/** 删除风格包（含级联删除样本、分析、反馈） */
+	style_profile_delete: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 归档/恢复风格包 */
+	style_profile_archive: {
+		input: { id: string; archive: boolean };
+		output: StyleProfile;
+	};
+
+	/** 添加样本 */
+	style_sample_add: {
+		input: {
+			profile_id: string;
+			title?: string;
+			content: string;
+			content_type?: StyleSampleContentType;
+			authorization_status?: StyleSampleAuthStatus;
+		};
+		output: StyleSample;
+	};
+	/** 删除样本 */
+	style_sample_remove: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 获取某风格包的所有样本 */
+	style_sample_list: {
+		input: { profile_id: string };
+		output: StyleSample[];
+	};
+	/** 主进程解析文件（txt/md/docx/pdf）→ 返回文本 */
+	style_sample_parse_file: {
+		input: { file_path: string };
+		output: { content: string; title: string; word_count: number };
+	};
+	/** 从 zip 压缩包批量导入样本（主进程解压 + 解析） */
+	style_sample_import_from_zip: {
+		input: { profile_id: string; zip_path: string };
+		output: {
+			imported: number;
+			failed: number;
+			results: Array<{ file: string; success: boolean; error?: string }>;
+		};
+	};
+
+	/** 触发 LLM 分步分析（通过 style-analysis-progress 事件推送进度） */
+	style_analysis_start: {
+		input: { profile_id: string; model_id?: string };
+		output: { job_id: string };
+	};
+	/** 获取已完成的分析结果 */
+	style_analysis_get: {
+		input: { profile_id: string };
+		output: StyleAnalysisData | null;
+	};
+	/** 手动更新（校准）分析结果 */
+	style_analysis_update: {
+		input: { profile_id: string; data: Partial<StyleAnalysisData> };
+		output: StyleAnalysisData;
+	};
+
+	/** 将风格包渲染为注入用的 system prompt XML 块 */
+	style_profile_render_prompt: {
+		input: { profile_id: string; intensity?: StyleIntensity };
+		output: { prompt: string };
+	};
+
+	/** 提交风格反馈 */
+	style_feedback_submit: {
+		input: {
+			profile_id: string;
+			feedback_type: StyleFeedbackType;
+			session_context?: string;
+			note?: string;
+		};
+		output: StyleFeedback;
+	};
+	/** 获取风格包的历史反馈 */
+	style_feedback_list: {
+		input: { profile_id: string; limit?: number };
+		output: StyleFeedback[];
+	};
 };
 
 // =====================
@@ -3519,6 +3641,124 @@ export interface TTSCloneProgressEvent {
 	stage: "uploading" | "training" | "ready" | "error";
 	progress: number; // 0~1
 	message?: string;
+}
+
+// ==================================================================================
+// 语言风格包（Style Profile）共享类型
+// ==================================================================================
+
+/** 风格轴维度分析结果 */
+export interface StyleAxisAnalysis {
+	/** 维度名称 */
+	name: string;
+	/** 描述性文本 */
+	description: string;
+	/** 强度标注 */
+	intensity: "low" | "medium" | "high" | "insufficient_evidence";
+	/** 条件/触发场景（可选） */
+	conditions?: string;
+}
+
+/** 校准锚点 */
+export interface StyleCalibrationAnchors {
+	/** 正向示例（倾向使用的表达方式） */
+	positive: string[];
+	/** 负向示例（应避免的表达方式） */
+	negative: string[];
+	/** 缺失特征（分析时样本不足的维度） */
+	missing: string[];
+}
+
+/** 风格分析结果完整结构 */
+export interface StyleAnalysisData {
+	/** 第一层：文本认知模式 */
+	cognitive_pattern: StyleAxisAnalysis[];
+	/** 第二层：话语姿态 */
+	rhetorical_stance: StyleAxisAnalysis[];
+	/** 第三层：语言审美 */
+	language_aesthetic: StyleAxisAnalysis[];
+	/** 校准锚点 */
+	calibration_anchors: StyleCalibrationAnchors;
+	/** 任务适配规则（key=任务类型，value=特殊调整说明） */
+	task_adaptation_rules: Record<string, string>;
+}
+
+/** 风格包状态 */
+export type StyleProfileStatus = "active" | "archived";
+
+/** 风格强度 */
+export type StyleIntensity = "low" | "medium" | "high";
+
+/** 样本内容类型 */
+export type StyleSampleContentType = "article" | "email" | "social" | "other";
+
+/** 样本授权状态 */
+export type StyleSampleAuthStatus =
+	| "self_authored"
+	| "licensed"
+	| "public_domain";
+
+/** 风格包基本信息（列表用） */
+export interface StyleProfile {
+	id: string;
+	name: string;
+	description: string | null;
+	status: StyleProfileStatus;
+	language: string;
+	generation_config: {
+		default_intensity?: StyleIntensity;
+	};
+	analyze_model_id: string | null;
+	is_default: boolean;
+	created_at: number;
+	updated_at: number;
+}
+
+/** 风格包详情（含分析结果） */
+export interface StyleProfileDetail extends StyleProfile {
+	analysis: StyleAnalysisData | null;
+	samples: StyleSample[];
+}
+
+/** 样本记录 */
+export interface StyleSample {
+	id: string;
+	profile_id: string;
+	title: string | null;
+	content: string;
+	content_type: StyleSampleContentType;
+	authorization_status: StyleSampleAuthStatus;
+	word_count: number;
+	created_at: number;
+}
+
+/** 风格反馈类型 */
+export type StyleFeedbackType =
+	| "too_weak"
+	| "too_heavy"
+	| "too_imitative"
+	| "unnatural"
+	| "great";
+
+/** 风格反馈记录 */
+export interface StyleFeedback {
+	id: string;
+	profile_id: string;
+	session_context: string | null;
+	feedback_type: StyleFeedbackType;
+	note: string | null;
+	created_at: number;
+}
+
+/** 分析进度推送事件（通过 style-analysis-progress 通道） */
+export interface StyleAnalysisProgressEvent {
+	profile_id: string;
+	step: number;        // 1-4
+	total_steps: number; // 4
+	step_name: string;
+	status: "running" | "done" | "error";
+	partial_result?: Partial<StyleAnalysisData>;
+	error?: string;
 }
 
 export type IPCChannel = keyof IPCSchema;

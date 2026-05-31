@@ -195,7 +195,13 @@ export function PermissionCard({
 
 	return (
 		<div
-			className={`rounded-xl border ${riskConfig.bgColor} border-black/5 dark:border-white/10 overflow-hidden`}
+			className={`rounded-xl border ${riskConfig.bgColor} border-black/5 dark:border-white/10 overflow-hidden border-l-[3px] ${
+				request.riskLevel === "L2"
+					? "border-l-error/60"
+					: request.riskLevel === "L1"
+						? "border-l-peach-500/70"
+						: "border-l-success/50"
+			}`}
 		>
 			{/* 头部 */}
 			<div className="p-4">

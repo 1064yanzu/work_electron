@@ -4,16 +4,35 @@ import { SPRITE_ATLAS, type SpriteRowSpec } from "../../lib/mascot/manifest";
 
 function useIsVisible(ref: React.RefObject<Element | null>): boolean {
 	const [visible, setVisible] = useState(true);
+	// 用 ref 保存最新的 IntersectionObserver 状态，避免闭包陷阱
+	const isIntersectingRef = useRef(true);
+
 	useEffect(() => {
 		const el = ref.current;
 		if (!el) return;
+
+		const update = () => {
+			setVisible(isIntersectingRef.current && !document.hidden);
+		};
+
 		const obs = new IntersectionObserver(
-			([entry]) => setVisible(entry.isIntersecting),
+			([entry]) => {
+				isIntersectingRef.current = entry.isIntersecting;
+				update();
+			},
 			{ threshold: 0 },
 		);
 		obs.observe(el);
-		return () => obs.disconnect();
+
+		// 监听窗口/标签页可见性变化（最小化、切换后台等场景）
+		document.addEventListener("visibilitychange", update);
+
+		return () => {
+			obs.disconnect();
+			document.removeEventListener("visibilitychange", update);
+		};
 	}, [ref]);
+
 	return visible;
 }
 

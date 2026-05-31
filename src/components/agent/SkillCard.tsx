@@ -75,11 +75,11 @@ export function SkillCard({
 					"rounded-xl overflow-hidden transition-all duration-300",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
-						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm"
+						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm border-l-[3px] border-l-focus/50"
 						: hasError && !hideHeader
-							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm"
+							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm border-l-[3px] border-l-error/50"
 							: !hideHeader
-								? "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30"
+								? "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 border-l-[3px] border-l-mint-500/40"
 								: "",
 				)}
 			>

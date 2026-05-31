@@ -25,6 +25,7 @@ import {
 	type LucideIcon,
 	MessageSquare,
 	Palette,
+	Pen,
 	Plug,
 	Shield,
 	Smartphone,
@@ -64,6 +65,7 @@ export type SettingsTabId =
 	| "workshop.mascot"
 	| "workshop.layout"
 	| "workshop.terminal"
+	| "workshop.styleprofile"
 	| "integrations.mcp"
 	| "integrations.remote"
 	| "data.stats"
@@ -274,6 +276,16 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/workshop/TerminalPanel"),
 			"TerminalPanel",
+		),
+	},
+	{
+		id: "workshop.styleprofile",
+		category: "workshop",
+		label: "语言风格包",
+		icon: Pen,
+		load: asDefault(
+			() => import("./panels/styleProfile/StyleProfilePanel"),
+			"StyleProfilePanel",
 		),
 	},
 

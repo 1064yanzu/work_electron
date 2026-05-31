@@ -348,7 +348,7 @@ function ChatMessageImpl({
 								onCancel={() => setIsEditing(false)}
 							/>
 						) : (
-							<div className="bg-text-primary text-surface rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm text-sm leading-6 selection:bg-dark-surface dark:selection:bg-border select-text">
+							<div className="bg-text-primary text-surface rounded-2xl rounded-tr-sm px-5 py-3 shadow-whisper text-sm leading-6 selection:bg-dark-surface dark:selection:bg-border select-text">
 								<div className="whitespace-pre-wrap break-words">
 									{message.content}
 								</div>
@@ -357,7 +357,7 @@ function ChatMessageImpl({
 
 						{/* Hover 工具栏（仅非编辑态） */}
 						{!isEditing && (
-							<div className="flex items-center gap-3 opacity-0 group-hover/user:opacity-100 transition-opacity duration-200">
+							<div className="flex items-center gap-3 opacity-0 translate-y-1 group-hover/user:opacity-100 group-hover/user:translate-y-0 transition-[opacity,transform] duration-200 ease-out">
 								<button
 									type="button"
 									onClick={handleCopy}

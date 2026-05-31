@@ -657,6 +657,68 @@ CREATE TABLE IF NOT EXISTS perf_metrics (
 CREATE INDEX IF NOT EXISTS idx_perf_metrics_ts ON perf_metrics(ts DESC);
 
 -- =====================
+-- 语言风格包（Style Profile）模块
+-- =====================
+
+-- 风格包基本信息表
+CREATE TABLE IF NOT EXISTS style_profiles (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active',   -- active | archived
+  language TEXT NOT NULL DEFAULT 'zh',     -- zh | en | auto
+  generation_config TEXT NOT NULL DEFAULT '{}',  -- JSON: 默认强度、任务适配规则等
+  analyze_model_id TEXT,                   -- 分析时使用的模型标识
+  is_default INTEGER NOT NULL DEFAULT 0,   -- 是否为全局默认风格包
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_style_profiles_status ON style_profiles(status);
+CREATE INDEX IF NOT EXISTS idx_style_profiles_is_default ON style_profiles(is_default);
+
+-- 风格分析结果表
+CREATE TABLE IF NOT EXISTS style_analyses (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  cognitive_pattern TEXT,         -- JSON: 第一层 - 文本认知模式
+  rhetorical_stance TEXT,         -- JSON: 第二层 - 话语姿态
+  language_aesthetic TEXT,        -- JSON: 第三层 - 语言审美
+  calibration_anchors TEXT,       -- JSON: 校准锚点（正向/负向/缺失）
+  task_adaptation_rules TEXT,     -- JSON: 任务适配规则
+  analysis_version INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES style_profiles(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_style_analyses_profile ON style_analyses(profile_id);
+
+-- 样本文本表（原文持久化）
+CREATE TABLE IF NOT EXISTS style_samples (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  title TEXT,
+  content TEXT NOT NULL,
+  content_type TEXT NOT NULL DEFAULT 'article',  -- article | email | social | other
+  authorization_status TEXT NOT NULL DEFAULT 'self_authored',  -- self_authored | licensed | public_domain
+  word_count INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES style_profiles(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_style_samples_profile ON style_samples(profile_id);
+
+-- 风格反馈表
+CREATE TABLE IF NOT EXISTS style_feedback (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  session_context TEXT,           -- 产生反馈时的上下文简述
+  feedback_type TEXT NOT NULL,    -- too_weak | too_heavy | too_imitative | unnatural | great
+  note TEXT,                      -- 用户备注
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES style_profiles(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_style_feedback_profile ON style_feedback(profile_id);
+
+-- =====================
 -- 初始化默认配置
 -- =====================
 INSERT OR IGNORE INTO sync_config (id) VALUES ('default');

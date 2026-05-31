@@ -125,10 +125,10 @@ export function PlanCard({
 			className={cn(
 				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
 				isExecuting
-					? "bg-surface/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20"
+					? "bg-surface/80 border-[#D96C46]/30 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/20 border-l-[3px] border-l-[#D96C46]/60"
 					: isCompleted
-						? "bg-success/8/30 dark:bg-emerald-900/5 border-success/30 dark:border-success/30"
-						: "bg-surface border-border",
+						? "bg-success/8/30 dark:bg-emerald-900/5 border-success/30 dark:border-success/30 border-l-[3px] border-l-success/50"
+						: "bg-surface border-border border-l-[3px] border-l-violetx-500/40 dark:border-l-violetx-500/30",
 			)}
 		>
 			{/* 执行中呼吸动画 */}

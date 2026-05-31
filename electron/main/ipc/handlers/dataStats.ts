@@ -9,6 +9,33 @@ import type { DbContext } from "../../db/client";
 import { getDatabaseFilePath } from "../../db/paths";
 import { getCacheDir } from "../../storage/cacheRoots";
 
+// ─── 进程内缓存（5 分钟 TTL）────────────────────────────────────────────────
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟
+
+interface DataStatsResult {
+	projects_count: number;
+	sources_count: number;
+	notes_count: number;
+	outputs_count: number;
+	agent_sessions_count: number;
+	agent_tasks_count: number;
+	mcp_servers_count: number;
+	skills_count: number;
+	providers_count: number;
+	database_size: number;
+	media_size: number;
+	cache_size: number;
+}
+
+let statsCache: { data: DataStatsResult; expireAt: number } | null = null;
+
+/** 使进程内缓存失效，下次调用 getDataStats 时将重新查询 */
+function invalidateStatsCache(): void {
+	statsCache = null;
+}
+
+// ─── 工具函数 ─────────────────────────────────────────────────────────────────
+
 // 递归计算文件夹大小
 async function getFolderSize(folderPath: string): Promise<number> {
 	const fs = await import("node:fs/promises");
@@ -35,6 +62,8 @@ async function getFolderSize(folderPath: string): Promise<number> {
 	return totalSize;
 }
 
+// ─── Handlers ─────────────────────────────────────────────────────────────────
+
 export function createDataStatsHandlers(db: DbContext) {
 	// 获取数据目录
 	const getDataDirectory = async (
@@ -52,26 +81,18 @@ export function createDataStatsHandlers(db: DbContext) {
 		return db.filePath || getDatabaseFilePath();
 	};
 
-	// 获取数据统计
+	// 获取数据统计（带 5 分钟进程内缓存）
 	const getDataStats = async (
 		_event: IpcMainInvokeEvent,
 		_input: Record<string, never>,
-	): Promise<{
-		projects_count: number;
-		sources_count: number;
-		notes_count: number;
-		outputs_count: number;
-		agent_sessions_count: number;
-		agent_tasks_count: number;
-		mcp_servers_count: number;
-		skills_count: number;
-		providers_count: number;
-		database_size: number;
-		media_size: number;
-		cache_size: number;
-	}> => {
-		// 获取各表的记录数
-		const tables = [
+	): Promise<DataStatsResult> => {
+		// 命中缓存则直接返回
+		if (statsCache !== null && Date.now() < statsCache.expireAt) {
+			return statsCache.data;
+		}
+
+		// ── 1. 并行执行所有 COUNT 查询 ────────────────────────────────────────
+		const tableEntries: Array<{ key: string; table: string }> = [
 			{ key: "projects", table: "projects" },
 			{ key: "sources", table: "sources" },
 			{ key: "notes", table: "notes" },
@@ -83,52 +104,60 @@ export function createDataStatsHandlers(db: DbContext) {
 			{ key: "providers", table: "providers" },
 		];
 
+		const countResults = await Promise.all(
+			tableEntries.map(async ({ key, table }) => {
+				try {
+					const result = await db.client.execute(
+						`SELECT COUNT(*) as count FROM ${table}`,
+					);
+					return { key, count: (result.rows[0]?.count as number) ?? 0 };
+				} catch {
+					// 表可能不存在
+					return { key, count: 0 };
+				}
+			}),
+		);
+
 		const stats: Record<string, number> = {};
-
-		for (const { key, table } of tables) {
-			try {
-				const result = await db.client.execute(
-					`SELECT COUNT(*) as count FROM ${table}`,
-				);
-				stats[key] = (result.rows[0]?.count as number) ?? 0;
-			} catch {
-				// 表可能不存在
-				stats[key] = 0;
-			}
+		for (const { key, count } of countResults) {
+			stats[key] = count;
 		}
 
-		// 计算文件大小
+		// ── 2. 并行计算文件大小 ───────────────────────────────────────────────
 		const fs = await import("node:fs/promises");
-		let databaseSize = 0;
-		let mediaSize = 0;
-		let cacheSize = 0;
 
-		try {
+		const [databaseSize, mediaSize, cacheSize] = await Promise.all([
 			// 数据库大小
-			const dbPath = getDatabaseFilePath();
-			const dbStat = await fs.stat(dbPath);
-			databaseSize = dbStat.size;
-		} catch {
-			// 数据库文件可能不存在
-		}
-
-		try {
+			(async () => {
+				try {
+					const dbPath = getDatabaseFilePath();
+					const dbStat = await fs.stat(dbPath);
+					return dbStat.size;
+				} catch {
+					return 0;
+				}
+			})(),
 			// 媒体文件大小（遍历 media 目录）
-			const mediaPath = getCacheDir("media");
-			mediaSize = await getFolderSize(mediaPath);
-		} catch {
-			// media 目录可能不存在
-		}
-
-		try {
+			(async () => {
+				try {
+					const mediaPath = getCacheDir("media");
+					return await getFolderSize(mediaPath);
+				} catch {
+					return 0;
+				}
+			})(),
 			// 缓存大小（遍历 cache 目录）
-			const cachePath = getCacheDir("cache");
-			cacheSize = await getFolderSize(cachePath);
-		} catch {
-			// cache 目录可能不存在
-		}
+			(async () => {
+				try {
+					const cachePath = getCacheDir("cache");
+					return await getFolderSize(cachePath);
+				} catch {
+					return 0;
+				}
+			})(),
+		]);
 
-		return {
+		const result: DataStatsResult = {
 			projects_count: stats.projects || 0,
 			sources_count: stats.sources || 0,
 			notes_count: stats.notes || 0,
@@ -142,6 +171,11 @@ export function createDataStatsHandlers(db: DbContext) {
 			media_size: mediaSize,
 			cache_size: cacheSize,
 		};
+
+		// 写入缓存
+		statsCache = { data: result, expireAt: Date.now() + CACHE_TTL_MS };
+
+		return result;
 	};
 
 	// 清除缓存
@@ -164,6 +198,9 @@ export function createDataStatsHandlers(db: DbContext) {
 			// 缓存目录可能不存在
 			console.warn("清除缓存失败:", error);
 		}
+
+		// 数据已变更，使统计缓存失效
+		invalidateStatsCache();
 
 		return totalSize;
 	};
@@ -227,6 +264,9 @@ export function createDataStatsHandlers(db: DbContext) {
 			console.error("清除数据失败:", error);
 			throw error;
 		}
+
+		// 数据已全部清除，使统计缓存失效
+		invalidateStatsCache();
 	};
 
 	return {

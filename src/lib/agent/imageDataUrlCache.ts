@@ -6,7 +6,7 @@ type CacheEntry = {
 };
 
 const MAX_CACHE_SIZE = 50;
-const MAX_CACHE_BYTES = 100 * 1024 * 1024; // 100MB
+const MAX_CACHE_BYTES = 20 * 1024 * 1024; // 20MB
 
 // Map 的迭代顺序保持插入顺序：命中时 delete+set 把 key 移到末尾，淘汰时从 keys().next() 取最旧。
 const cache = new Map<string, CacheEntry>();
