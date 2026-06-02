@@ -53,15 +53,20 @@ function main() {
 		Math.max(...entries.map((entry) => entry.mtimeMs)),
 	).toISOString();
 
+	// GitHub Release 上传 asset 时会把文件名里的空格规范化为点（"IPO Workbench-..." → "IPO.Workbench-..."）。
+	// electron-updater 用 latest-mac.yml 的 url 逐字符拼接下载地址并匹配 asset 名，
+	// 因此 url/path 必须与 GitHub 上的实际 asset 名一致——统一用点名，否则自动更新 404。
+	const toAssetName = (name) => name.replace(/ /g, ".");
+
 	const lines = [
 		`version: ${version}`,
 		"files:",
 		...entries.flatMap((entry) => [
-			`  - url: ${entry.name}`,
+			`  - url: ${toAssetName(entry.name)}`,
 			`    sha512: ${entry.sha512}`,
 			`    size: ${entry.size}`,
 		]),
-		`path: ${primary.name}`,
+		`path: ${toAssetName(primary.name)}`,
 		`sha512: ${primary.sha512}`,
 		`releaseDate: '${releaseDate}'`,
 		"",
