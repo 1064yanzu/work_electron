@@ -41,6 +41,7 @@ import { SkillCard } from "./SkillCard";
 import StreamingThought from "./StreamingThought";
 import TaskProgress from "./TaskProgress";
 import TaskSteps from "./TaskSteps";
+import { Tooltip } from "../ui/Tooltip";
 
 // 工具图标映射
 const ToolIconMap: Record<string, React.ElementType> = {
@@ -289,12 +290,14 @@ export default function AgentTaskPanel({
 			{/* Header */}
 			<div className="px-4 py-3 flex items-center gap-3 border-b border-border shrink-0">
 				{onBack && (
-					<button
-						onClick={onBack}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-					>
-						<ArrowLeft className="w-4 h-4" />
-					</button>
+					<Tooltip content="返回" placement="bottom">
+						<button
+							onClick={onBack}
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+						>
+							<ArrowLeft className="w-4 h-4" />
+						</button>
+					</Tooltip>
 				)}
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
@@ -347,25 +350,27 @@ export default function AgentTaskPanel({
 							>
 								模型
 							</button>
-							<button
-								onClick={() => agentExecutor.cancel()}
-								className="p-1.5 text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
-								title="取消任务"
-							>
-								<Square className="w-4 h-4" />
-							</button>
+							<Tooltip content="取消任务" placement="bottom">
+								<button
+									onClick={() => agentExecutor.cancel()}
+									className="p-1.5 text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
+								>
+									<Square className="w-4 h-4" />
+								</button>
+							</Tooltip>
 						</>
 					) : currentTask.status === "completed" ||
 						currentTask.status === "error" ? (
-						<button
-							onClick={() => {
-								// 可以添加重新执行逻辑
-							}}
-							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-							title="重新执行"
-						>
-							<Play className="w-4 h-4" />
-						</button>
+						<Tooltip content="重新执行" placement="bottom">
+							<button
+								onClick={() => {
+									// 可以添加重新执行逻辑
+								}}
+								className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+							>
+								<Play className="w-4 h-4" />
+							</button>
+						</Tooltip>
 					) : null}
 				</div>
 			</div>

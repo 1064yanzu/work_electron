@@ -189,37 +189,34 @@ export function useFolderManagement(rawSources: Source[]) {
 		return path;
 	}, [currentFolderId, foldersById]);
 
-	const handleCreateFolder = useCallback(async () => {
-		const name = newFolderName.trim();
-		if (!name) return;
+	const handleCreateFolder = useCallback(
+		async (name: string) => {
+			const trimmed = name.trim();
+			if (!trimmed) return;
 
-		try {
-			const parent_id =
-				currentFolderId && currentFolderId !== UNASSIGNED_FOLDER_ID
-					? currentFolderId
-					: undefined;
-			const folder = await createFolder({
-				name,
-				project_id: currentProjectId || undefined,
-				parent_id,
-			});
-			setIsFolderModalOpen(false);
-			setNewFolderName("");
-			await fetchFolders();
-			setCurrentFolder(folder.id);
-		} catch (error) {
-			console.error("创建文件夹失败:", error);
-			toast.error(
-				`创建文件夹失败: ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}, [
-		newFolderName,
-		currentFolderId,
-		currentProjectId,
-		fetchFolders,
-		setCurrentFolder,
-	]);
+			try {
+				const parent_id =
+					currentFolderId && currentFolderId !== UNASSIGNED_FOLDER_ID
+						? currentFolderId
+						: undefined;
+				const folder = await createFolder({
+					name: trimmed,
+					project_id: currentProjectId || undefined,
+					parent_id,
+				});
+				setIsFolderModalOpen(false);
+				setNewFolderName("");
+				await fetchFolders();
+				setCurrentFolder(folder.id);
+			} catch (error) {
+				console.error("创建文件夹失败:", error);
+				toast.error(
+					`创建文件夹失败: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			}
+		},
+		[currentFolderId, currentProjectId, fetchFolders, setCurrentFolder],
+	);
 
 	// 文件夹右键菜单处理
 	const handleFolderContextMenu = useCallback(

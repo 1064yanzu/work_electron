@@ -36,6 +36,7 @@ import { ContextMenu } from "../ui/ContextMenu";
 import { DragAndDropImportUI } from "../ui/DragAndDropImportUI";
 import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
+import { Tooltip } from "../ui/Tooltip";
 
 // Extracted hooks
 import {
@@ -644,23 +645,27 @@ export default function ResourceSidebar({
 							{/* Header */}
 							<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 								<div className="flex items-center gap-2">
-									<button
-										onClick={() => setLeftSidebarView("sources")}
-										className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-									>
-										<ArrowLeft className="w-4 h-4" />
-									</button>
+									<Tooltip content="返回" placement="bottom">
+										<button
+											onClick={() => setLeftSidebarView("sources")}
+											className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+										>
+											<ArrowLeft className="w-4 h-4" />
+										</button>
+									</Tooltip>
 									<Search className="w-4 h-4 text-focus" />
 									<h2 className="font-semibold text-sm text-text-primary">
 										网络搜索
 									</h2>
 								</div>
-								<button
-									onClick={onOpenSettings}
-									className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-								>
-									<Settings className="w-4 h-4" />
-								</button>
+								<Tooltip content="设置" placement="bottom">
+									<button
+										onClick={onOpenSettings}
+										className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+									>
+										<Settings className="w-4 h-4" />
+									</button>
+								</Tooltip>
 							</div>
 
 							{/* Search Module */}

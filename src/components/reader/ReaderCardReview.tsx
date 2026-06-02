@@ -8,6 +8,7 @@ import {
 	X,
 } from "lucide-react";
 import type { ReaderKnowledgeCard } from "../../lib/api/reader";
+import { Tooltip } from "../ui/Tooltip";
 
 interface ReaderCardReviewProps {
 	open: boolean;
@@ -180,44 +181,47 @@ export function ReaderCardReview({
 
 				{flipped ? (
 					<div className="reader-card-review__quality" role="group">
-						<button
-							type="button"
-							className="reader-card-quality-btn reader-card-quality-btn--bad"
-							onClick={() => handleQuality(0)}
-							disabled={submitting}
-							title="快捷键 1"
-						>
+						<Tooltip content="快捷键 1" placement="top">
+							<button
+								type="button"
+								className="reader-card-quality-btn reader-card-quality-btn--bad"
+								onClick={() => handleQuality(0)}
+								disabled={submitting}
+							>
 							<span className="reader-card-quality-btn__label">
 								{QUALITY_LABELS[0]}
 							</span>
 							<span className="reader-card-quality-btn__hint">10 分钟后</span>
-						</button>
-						<button
-							type="button"
-							className="reader-card-quality-btn reader-card-quality-btn--mid"
-							onClick={() => handleQuality(1)}
-							disabled={submitting}
-							title="快捷键 2"
-						>
+							</button>
+						</Tooltip>
+						<Tooltip content="快捷键 2" placement="top">
+							<button
+								type="button"
+								className="reader-card-quality-btn reader-card-quality-btn--mid"
+								onClick={() => handleQuality(1)}
+								disabled={submitting}
+							>
 							<span className="reader-card-quality-btn__label">
 								{QUALITY_LABELS[1]}
 							</span>
 							<span className="reader-card-quality-btn__hint">明天</span>
-						</button>
-						<button
-							type="button"
-							className="reader-card-quality-btn reader-card-quality-btn--good"
-							onClick={() => handleQuality(2)}
-							disabled={submitting}
-							title="快捷键 3"
-						>
+							</button>
+						</Tooltip>
+						<Tooltip content="快捷键 3" placement="top">
+							<button
+								type="button"
+								className="reader-card-quality-btn reader-card-quality-btn--good"
+								onClick={() => handleQuality(2)}
+								disabled={submitting}
+							>
 							<span className="reader-card-quality-btn__label">
 								{QUALITY_LABELS[2]}
 							</span>
 							<span className="reader-card-quality-btn__hint">
-								{nextIntervalLabel(card)}
+									{nextIntervalLabel(card)}
 							</span>
-						</button>
+							</button>
+						</Tooltip>
 					</div>
 				) : null}
 
@@ -232,15 +236,16 @@ export function ReaderCardReview({
 						上一张
 					</button>
 					{onJumpToSource && card.locator ? (
-						<button
-							type="button"
-							className="reader-card-review__btn"
-							onClick={() => onJumpToSource(card)}
-							title="跳转到原文"
-						>
-							<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-							回原文
-						</button>
+						<Tooltip content="跳转到原文" placement="top">
+							<button
+								type="button"
+								className="reader-card-review__btn"
+								onClick={() => onJumpToSource(card)}
+							>
+								<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
+								回原文
+							</button>
+						</Tooltip>
 					) : null}
 					<button
 						type="button"

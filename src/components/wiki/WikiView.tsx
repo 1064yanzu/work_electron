@@ -31,6 +31,7 @@ import { confirmDialog } from "../ui/ConfirmDialog";
 import { useActiveThreadScope } from "../../lib/chat/threadScope";
 import { WikiGraphPanel } from "./WikiGraphPanel";
 import { WikiLintPanel } from "./WikiLintPanel";
+import { Tooltip } from "../ui/Tooltip";
 
 type WikiViewMode = "list" | "detail" | "create" | "edit";
 
@@ -383,27 +384,30 @@ export function WikiView() {
 						</h2>
 					</div>
 					<div className="flex items-center gap-1">
-						<button
-							onClick={() => openInEditor(selectedPage.id, selectedPage.title)}
-							className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-							title="在文档编辑器中打开（支持分屏预览、语法高亮、完整 Markdown 编辑）"
-						>
-							<ExternalLink className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() => setViewMode("edit")}
-							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-							title="快速编辑"
-						>
-							<Pencil className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() => handleDeletePage(selectedPage)}
-							className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-950/30 rounded-lg transition-colors"
-							title="删除"
-						>
-							<Trash2 className="w-4 h-4" />
-						</button>
+						<Tooltip content="在编辑器中打开" placement="bottom">
+							<button
+								onClick={() => openInEditor(selectedPage.id, selectedPage.title)}
+								className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+							>
+								<ExternalLink className="w-4 h-4" />
+							</button>
+						</Tooltip>
+						<Tooltip content="快速编辑" placement="bottom">
+							<button
+								onClick={() => setViewMode("edit")}
+								className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+							>
+								<Pencil className="w-4 h-4" />
+							</button>
+						</Tooltip>
+						<Tooltip content="删除" placement="bottom">
+							<button
+								onClick={() => handleDeletePage(selectedPage)}
+								className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-950/30 rounded-lg transition-colors"
+							>
+								<Trash2 className="w-4 h-4" />
+							</button>
+						</Tooltip>
 					</div>
 				</div>
 
@@ -499,51 +503,56 @@ export function WikiView() {
 					</span>
 				</div>
 				<div className="flex items-center gap-1">
-					<button
-						onClick={refresh}
-						disabled={loading}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
-						title="刷新"
-					>
-						<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-					</button>
-					<button
-						onClick={runLint}
-						disabled={
-							loading || isInitializing || lintLoading || pages.length === 0
-						}
-						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
-						title="Wiki 健康检查（孤儿页 / stub / 断链 / 未摄入源）"
-					>
-						<ShieldCheck
-							className={`w-4 h-4 ${lintLoading ? "animate-pulse" : ""}`}
-						/>
-					</button>
-					<button
-						onClick={handleRebuildWiki}
-						disabled={loading || isInitializing}
-						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
-						title="重建 Wiki 结构"
-					>
-						<RotateCcw className="w-4 h-4" />
-					</button>
-					<button
-						onClick={handleGenerateWiki}
-						disabled={loading || isInitializing || isGenerating}
-						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
-						title="AI 生成 Wiki 页面"
-					>
-						<BookOpen
-							className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`}
-						/>
-					</button>
-					<button
-						onClick={() => setViewMode("create")}
-						className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-						title="新建知识页面"
-					>
-						<Plus className="w-4 h-4" />
-					</button>
+					<Tooltip content="刷新" placement="bottom">
+						<button
+							onClick={refresh}
+							disabled={loading}
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
+						>
+							<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+						</button>
+					</Tooltip>
+					<Tooltip content="Wiki 健康检查" placement="bottom">
+						<button
+							onClick={runLint}
+							disabled={
+								loading || isInitializing || lintLoading || pages.length === 0
+							}
+							className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+						>
+							<ShieldCheck
+								className={`w-4 h-4 ${lintLoading ? "animate-pulse" : ""}`}
+							/>
+						</button>
+					</Tooltip>
+					<Tooltip content="重建 Wiki 结构" placement="bottom">
+						<button
+							onClick={handleRebuildWiki}
+							disabled={loading || isInitializing}
+							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
+						>
+							<RotateCcw className="w-4 h-4" />
+						</button>
+					</Tooltip>
+					<Tooltip content="AI 生成 Wiki 页面" placement="bottom">
+						<button
+							onClick={handleGenerateWiki}
+							disabled={loading || isInitializing || isGenerating}
+							className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+						>
+							<BookOpen
+								className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`}
+							/>
+						</button>
+					</Tooltip>
+					<Tooltip content="新建知识页面" placement="bottom">
+						<button
+							onClick={() => setViewMode("create")}
+							className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+						>
+							<Plus className="w-4 h-4" />
+						</button>
+					</Tooltip>
 				</div>
 			</div>
 
@@ -567,15 +576,17 @@ export function WikiView() {
 						className="w-full pl-8 pr-8 py-1.5 text-sm bg-warm-50/60 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
 					/>
 					{searchQuery && (
-						<button
-							onClick={() => {
-								setSearchQuery("");
-								setSearchResults(null);
-							}}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded"
-						>
-							<X className="w-3.5 h-3.5" />
-						</button>
+						<Tooltip content="清空搜索" placement="top">
+							<button
+								onClick={() => {
+									setSearchQuery("");
+									setSearchResults(null);
+								}}
+								className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded"
+							>
+								<X className="w-3.5 h-3.5" />
+							</button>
+						</Tooltip>
 					)}
 				</div>
 			</div>

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { ArtifactFileType } from "./ArtifactCard";
 import { ZoomableImageViewer } from "../ui/ZoomableImageViewer";
+import { Tooltip } from "../ui/Tooltip";
 
 export interface ArtifactPreviewModalProps {
 	isOpen: boolean;
@@ -319,18 +320,20 @@ export default function ArtifactPreviewModal({
 								onClick={onReveal}
 							/>
 						)}
-						<button
-							type="button"
-							onClick={onClose}
-							className={cn(
-								"ml-2 p-2 rounded-lg",
-								"text-text-light hover:text-text-secondary dark:hover:text-text-light",
-								"hover:bg-warm-200",
-								"transition-colors duration-200",
-							)}
-						>
-							<X className="w-5 h-5" />
-						</button>
+						<Tooltip content="关闭" placement="bottom">
+							<button
+								type="button"
+								onClick={onClose}
+								className={cn(
+									"ml-2 p-2 rounded-lg",
+									"text-text-light hover:text-text-secondary dark:hover:text-text-light",
+									"hover:bg-warm-200",
+									"transition-colors duration-200",
+								)}
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</Tooltip>
 					</div>
 				</div>
 

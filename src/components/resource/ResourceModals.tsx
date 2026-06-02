@@ -1,18 +1,19 @@
 // 资料侧边栏模态框组件
 
 import { Folder as FolderIcon, Paperclip } from "lucide-react";
+import { memo, useCallback, useRef, useEffect } from "react";
 import { Modal } from "../ui/Modal";
 import type { Folder, Source } from "../../types";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
 import { Select } from "../ui/Select";
 
 interface ResourceModalsProps {
-	// 新建文件夹
+	// 新建文件夹（由 NewFolderModal 独立处理，这里只保留 open 状态用于向后兼容）
 	isFolderModalOpen: boolean;
 	setIsFolderModalOpen: (open: boolean) => void;
 	newFolderName: string;
 	setNewFolderName: (name: string) => void;
-	handleCreateFolder: () => void;
+	handleCreateFolder: (name: string) => void;
 	currentFolderId: string | null;
 	foldersById: Map<string, Folder>;
 
@@ -67,7 +68,84 @@ interface ResourceModalsProps {
 	handleCreateSource: () => void;
 }
 
-export function ResourceModals({
+export function NewFolderModal({
+	isOpen,
+	onClose,
+	currentFolderId,
+	foldersById,
+	onCreate,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	currentFolderId: string | null;
+	foldersById: Map<string, Folder>;
+	onCreate: (name: string) => void;
+}) {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	// 打开时重置输入框
+	useEffect(() => {
+		if (isOpen && inputRef.current) {
+			inputRef.current.value = "";
+			// 延迟 focus 等动画完成
+			requestAnimationFrame(() => inputRef.current?.focus());
+		}
+	}, [isOpen]);
+
+	const handleSubmit = useCallback(() => {
+		const name = inputRef.current?.value.trim();
+		if (!name) return;
+		onCreate(name);
+	}, [onCreate]);
+
+	const parentName =
+		currentFolderId && currentFolderId !== UNASSIGNED_FOLDER_ID
+			? foldersById.get(currentFolderId)?.name || "（未知）"
+			: "根目录";
+
+	return (
+		<Modal
+			isOpen={isOpen}
+			onClose={onClose}
+			title="新建文件夹"
+			footer={
+				<>
+					<button
+						onClick={onClose}
+						className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
+					>
+						取消
+					</button>
+					<button
+						onClick={handleSubmit}
+						className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						创建
+					</button>
+				</>
+			}
+		>
+			<div className="space-y-4">
+				<div className="text-xs text-text-muted">
+					父文件夹：{parentName}
+				</div>
+				<input
+					ref={inputRef}
+					type="text"
+					defaultValue=""
+					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+					placeholder="输入文件夹名称..."
+					autoFocus
+					onKeyDown={(e) => {
+						if (e.key === "Enter") handleSubmit();
+					}}
+				/>
+			</div>
+		</Modal>
+	);
+}
+
+const ResourceModalsInner = memo(function ResourceModalsInner({
 	isFolderModalOpen,
 	setIsFolderModalOpen,
 	newFolderName,
@@ -116,46 +194,14 @@ export function ResourceModals({
 }: ResourceModalsProps) {
 	return (
 		<>
-			{/* Folder Modal */}
-			<Modal
+			{/* Folder Modal — 独立组件，避免输入卡顿 */}
+			<NewFolderModal
 				isOpen={isFolderModalOpen}
 				onClose={() => setIsFolderModalOpen(false)}
-				title="新建文件夹"
-			>
-				<div className="space-y-4">
-					<div className="text-xs text-text-muted">
-						{currentFolderId && currentFolderId !== UNASSIGNED_FOLDER_ID
-							? `父文件夹：${foldersById.get(currentFolderId)?.name || "（未知）"}`
-							: "父文件夹：根目录"}
-					</div>
-					<input
-						type="text"
-						value={newFolderName}
-						onChange={(e) => setNewFolderName(e.target.value)}
-						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
-						placeholder="输入文件夹名称..."
-						autoFocus
-						onKeyDown={(e) => {
-							if (e.key === "Enter") handleCreateFolder();
-						}}
-					/>
-					<div className="flex items-center justify-end gap-2">
-						<button
-							onClick={() => setIsFolderModalOpen(false)}
-							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
-						>
-							取消
-						</button>
-						<button
-							onClick={handleCreateFolder}
-							disabled={!newFolderName.trim()}
-							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							创建
-						</button>
-					</div>
-				</div>
-			</Modal>
+				currentFolderId={currentFolderId}
+				foldersById={foldersById}
+				onCreate={handleCreateFolder}
+			/>
 
 			{/* Move Folder Modal */}
 			<Modal
@@ -456,4 +502,22 @@ export function ResourceModals({
 			</Modal>
 		</>
 	);
+});
+
+/**
+ * ResourceModals 包装：将 handleCreateFolder 改为接收 name 参数，
+ * 与 NewFolderModal 的 onCreate(name) 对接。
+ */
+export function ResourceModals({
+	handleCreateFolder: _handleCreateFolder,
+	...props
+}: ResourceModalsProps) {
+	const handleCreate = useCallback(
+		(name: string) => {
+			_handleCreateFolder(name);
+		},
+		[_handleCreateFolder],
+	);
+
+	return <ResourceModalsInner {...props} handleCreateFolder={handleCreate} />;
 }

@@ -7,6 +7,7 @@ import { buildSessionContextMenu } from "../../lib/contextMenu/actions";
 import type { ChatSession } from "../../lib/chat/types";
 import { inputDialog } from "../ui/InputDialog";
 import { ContextMenu } from "../ui/ContextMenu";
+import { Tooltip } from "../ui/Tooltip";
 
 /** 虚拟列表行 — 要么是日期分组头，要么是会话条目 */
 type Row =
@@ -177,21 +178,24 @@ export function ChatHistory({
 						对话历史
 					</h3>
 					<div className="flex items-center gap-2">
-						<button
-							onClick={onNewSession}
-							aria-label="新建对话"
-							className="p-2 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-xl transition-all active:scale-95"
-							title="新建对话"
-						>
-							<Plus className="w-5 h-5" />
-						</button>
-						<button
-							onClick={onClose}
-							aria-label="关闭历史记录"
-							className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all active:scale-95"
-						>
-							<X className="w-5 h-5" />
-						</button>
+						<Tooltip content="新建对话" placement="bottom">
+							<button
+								onClick={onNewSession}
+								aria-label="新建对话"
+								className="p-2 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-xl transition-all active:scale-95"
+							>
+								<Plus className="w-5 h-5" />
+							</button>
+						</Tooltip>
+						<Tooltip content="关闭" placement="bottom">
+							<button
+								onClick={onClose}
+								aria-label="关闭历史记录"
+								className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-all active:scale-95"
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</Tooltip>
 					</div>
 				</div>
 
@@ -375,17 +379,18 @@ function SessionItem({
 				</div>
 				<div className="text-xs text-text-light truncate">{lastMessage}</div>
 			</div>
-			<button
-				onClick={(e) => {
-					e.stopPropagation();
-					onDelete();
-				}}
-				aria-label={`删除对话 ${session.title || "新对话"}`}
-				className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded-lg transition-all duration-200"
-				title="删除对话"
-			>
-				<Trash2 className="w-3.5 h-3.5" />
-			</button>
+			<Tooltip content="删除对话" placement="left">
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete();
+					}}
+					aria-label={`删除对话 ${session.title || "新对话"}`}
+					className="absolute right-2 top-2 p-1.5 opacity-0 group-hover:opacity-100 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded-lg transition-all duration-200"
+				>
+					<Trash2 className="w-3.5 h-3.5" />
+				</button>
+			</Tooltip>
 		</div>
 	);
 }

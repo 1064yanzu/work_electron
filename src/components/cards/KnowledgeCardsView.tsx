@@ -22,6 +22,7 @@ import {
 } from "../../lib/api/reader";
 import type { ReaderBook, ReaderKnowledgeCard } from "../../lib/api/reader";
 import { toast } from "../ui/Toast";
+import { Tooltip } from "../ui/Tooltip";
 import { ReaderCardEdit } from "../reader/ReaderCardEdit";
 import { ReaderCardReview } from "../reader/ReaderCardReview";
 
@@ -245,14 +246,16 @@ function KnowledgeCardsViewBase({
 						onChange={(e) => setSearch(e.target.value)}
 					/>
 					{search ? (
-						<button
-							type="button"
-							className="card-library__search-clear"
-							onClick={() => setSearch("")}
-							aria-label="清空"
-						>
-							<X className="w-3 h-3" strokeWidth={1.5} />
-						</button>
+						<Tooltip content="清空" placement="top">
+							<button
+								type="button"
+								className="card-library__search-clear"
+								onClick={() => setSearch("")}
+								aria-label="清空"
+							>
+								<X className="w-3 h-3" strokeWidth={1.5} />
+							</button>
+						</Tooltip>
 					) : null}
 				</label>
 				<div className="card-library__filter-pills">
@@ -334,22 +337,24 @@ function KnowledgeCardsViewBase({
 											: null}
 									</div>
 									<div className="card-library__card-actions">
-										<button
-											type="button"
-											className="reader-card-row__action"
-											onClick={() => setEditing(card)}
-											title="编辑"
-										>
-											<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
-										</button>
-										<button
-											type="button"
-											className="reader-card-row__action"
-											onClick={() => handleDelete(card.id)}
-											title="删除"
-										>
-											<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-										</button>
+										<Tooltip content="编辑" placement="top">
+											<button
+												type="button"
+												className="reader-card-row__action"
+												onClick={() => setEditing(card)}
+											>
+												<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+											</button>
+										</Tooltip>
+										<Tooltip content="删除" placement="top">
+											<button
+												type="button"
+												className="reader-card-row__action"
+												onClick={() => handleDelete(card.id)}
+											>
+												<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+											</button>
+										</Tooltip>
 									</div>
 								</li>
 							);

@@ -23,6 +23,7 @@ import {
 } from "../lib/config";
 import { workspaceStore } from "../lib/workspaceStore";
 import { FocusTrap } from "./ui/FocusTrap";
+import { Tooltip } from "./ui/Tooltip";
 
 interface WebSearchModuleProps {
 	onAddSource?: (sourceId: string) => void;
@@ -363,41 +364,43 @@ export default function WebSearchModule({
 								>
 									<div className="flex items-start gap-2">
 										{/* 预览按钮 */}
-										<button
-											onClick={() => handlePreview(result)}
-											aria-label={`预览 ${result.title}`}
-											className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-warm-200 hover:bg-focus/16 dark:hover:bg-blue-900/30 transition-colors"
-											title="预览内容"
-										>
-											<Eye className="w-3.5 h-3.5 text-text-light group-hover:text-focus" />
-										</button>
+										<Tooltip content="预览内容" placement="top">
+											<button
+												onClick={() => handlePreview(result)}
+												aria-label={`预览 ${result.title}`}
+												className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 bg-warm-200 hover:bg-focus/16 dark:hover:bg-blue-900/30 transition-colors"
+											>
+												<Eye className="w-3.5 h-3.5 text-text-light group-hover:text-focus" />
+											</button>
+										</Tooltip>
 
 										{/* 添加按钮 */}
-										<button
-											onClick={() => handleAddAsSource(result)}
-											disabled={isAdding || isAdded}
-											aria-label={
-												isAdded
-													? `${result.title} 已添加`
-													: `添加 ${result.title} 为资料`
-											}
-											className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 transition-colors ${
-												isAdded
-													? "bg-green-500 text-white cursor-default"
-													: isAdding
-														? "bg-warm-300 dark:bg-cream-700 cursor-wait"
-														: "bg-warm-200 hover:bg-green-100 dark:hover:bg-green-900/30"
-											}`}
-											title={isAdded ? "已添加" : "添加为资料"}
-										>
-											{isAdding ? (
-												<Loader2 className="w-3 h-3 animate-spin text-text-light" />
-											) : isAdded ? (
-												<Check className="w-3 h-3" />
-											) : (
-												<Plus className="w-3 h-3 text-text-light hover:text-green-500" />
-											)}
-										</button>
+										<Tooltip content={isAdded ? "已添加" : "添加为资料"} placement="top">
+											<button
+												onClick={() => handleAddAsSource(result)}
+												disabled={isAdding || isAdded}
+												aria-label={
+													isAdded
+														? `${result.title} 已添加`
+														: `添加 ${result.title} 为资料`
+												}
+												className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 transition-colors ${
+													isAdded
+														? "bg-green-500 text-white cursor-default"
+														: isAdding
+															? "bg-warm-300 dark:bg-cream-700 cursor-wait"
+															: "bg-warm-200 hover:bg-green-100 dark:hover:bg-green-900/30"
+												}`}
+											>
+												{isAdding ? (
+													<Loader2 className="w-3 h-3 animate-spin text-text-light" />
+												) : isAdded ? (
+													<Check className="w-3 h-3" />
+												) : (
+													<Plus className="w-3 h-3 text-text-light hover:text-green-500" />
+												)}
+											</button>
+										</Tooltip>
 
 										{/* 内容 */}
 										<div className="flex-1 min-w-0">
@@ -410,17 +413,18 @@ export default function WebSearchModule({
 										</div>
 
 										{/* 外链按钮 */}
-										<a
-											href={result.url}
-											target="_blank"
-											rel="noopener noreferrer"
-											onClick={(e) => e.stopPropagation()}
-											aria-label={`在浏览器打开 ${result.title}`}
-											className="shrink-0 p-1 text-text-light hover:text-text-muted dark:hover:text-text-light opacity-0 group-hover:opacity-100 transition-opacity"
-											title="在浏览器中打开"
-										>
-											<ExternalLink className="w-3 h-3" />
-										</a>
+										<Tooltip content="在浏览器中打开" placement="top">
+											<a
+												href={result.url}
+												target="_blank"
+												rel="noopener noreferrer"
+												onClick={(e) => e.stopPropagation()}
+												aria-label={`在浏览器打开 ${result.title}`}
+												className="shrink-0 p-1 text-text-light hover:text-text-muted dark:hover:text-text-light opacity-0 group-hover:opacity-100 transition-opacity"
+											>
+												<ExternalLink className="w-3 h-3" />
+											</a>
+										</Tooltip>
 									</div>
 								</div>
 							);

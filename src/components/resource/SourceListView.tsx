@@ -23,6 +23,7 @@ import type { Folder, Source } from "../../types";
 import { ResourceSidebarHeader } from "./sidebar/ResourceSidebarHeader";
 import { SourceCard } from "./cards/SourceCard";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
+import { Tooltip } from "../ui/Tooltip";
 
 interface SourceListViewProps {
 	// Data
@@ -306,15 +307,17 @@ export function SourceListView({
 							</h3>
 							<p className="text-[10px] text-text-light mt-1">{count} 项</p>
 						</div>
-						<button
-							onClick={(e) => {
-								e.stopPropagation();
-								handleFolderContextMenu(e, folder);
-							}}
-							className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary hover:bg-surface/50 dark:hover:bg-black/20 rounded transition-all pointer-events-auto"
-						>
-							<MoreHorizontal className="w-3.5 h-3.5" />
-						</button>
+						<Tooltip content="更多操作" placement="top">
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									handleFolderContextMenu(e, folder);
+								}}
+								className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary hover:bg-surface/50 dark:hover:bg-black/20 rounded transition-all pointer-events-auto"
+							>
+								<MoreHorizontal className="w-3.5 h-3.5" />
+							</button>
+						</Tooltip>
 					</div>
 				);
 			}
@@ -399,15 +402,17 @@ export function SourceListView({
 						</h3>
 						<p className="text-[10px] text-text-light">{count} 项</p>
 					</div>
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							handleFolderContextMenu(e, folder);
-						}}
-						className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded transition-all shrink-0 pointer-events-auto"
-					>
-						<MoreHorizontal className="w-3.5 h-3.5" />
-					</button>
+					<Tooltip content="更多操作" placement="left">
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								handleFolderContextMenu(e, folder);
+							}}
+							className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded transition-all shrink-0 pointer-events-auto"
+						>
+							<MoreHorizontal className="w-3.5 h-3.5" />
+						</button>
+					</Tooltip>
 				</div>
 			);
 		},

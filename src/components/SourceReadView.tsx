@@ -3,6 +3,7 @@ import { BookOpen, X } from "lucide-react";
 import DocumentViewer, { extractDocumentInfo } from "./ui/DocumentViewer";
 import { MarkdownRenderer } from "./ui/MarkdownRenderer";
 import { RichContentWithStyles } from "./ui/RichContentRenderer";
+import { Tooltip } from "./ui/Tooltip";
 
 interface SourceReadViewProps {
 	title: string;
@@ -97,13 +98,14 @@ export default function SourceReadView({
 						{title}
 					</h1>
 				</div>
-				<button
-					onClick={onClose}
-					className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-					title="关闭"
-				>
-					<X className="w-5 h-5" />
-				</button>
+				<Tooltip content="关闭" placement="bottom">
+					<button
+						onClick={onClose}
+						className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+					>
+						<X className="w-5 h-5" />
+					</button>
+				</Tooltip>
 			</div>
 
 			{/* 内容区 */}

@@ -22,6 +22,7 @@ import {
 import { workspaceStore } from "../lib/workspaceStore";
 import { ContextMenu } from "./ui/ContextMenu";
 import { toast } from "./ui/Toast";
+import { Tooltip } from "./ui/Tooltip";
 
 interface BrowserPanelProps {
 	initialUrl?: string;
@@ -294,51 +295,55 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 		<div className="flex flex-col h-full bg-surface dark:bg-[#1E1E1E] relative overflow-hidden">
 			<div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-surface/80 dark:bg-[#1E1E1E]/80 backdrop-blur-xl z-10">
 				<div className="flex items-center gap-1">
-					<button
-						onClick={goBack}
-						disabled={historyIndex <= 0}
-						aria-label="后退"
-						className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
-						title="后退"
-					>
-						<ArrowLeft className="w-4 h-4 text-text-secondary" />
-					</button>
-					<button
-						onClick={goForward}
-						disabled={historyIndex >= history.length - 1}
-						aria-label="前进"
-						className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
-						title="前进"
-					>
-						<ArrowRight className="w-4 h-4 text-text-secondary" />
-					</button>
-					<button
-						onClick={refresh}
-						disabled={!url || navigationStatus === "opening"}
-						aria-label="刷新"
-						className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
-						title="刷新"
-					>
-						{navigationStatus === "opening" ? (
-							<Loader2 className="w-4 h-4 text-primary animate-spin" />
-						) : (
-							<RotateCw className="w-4 h-4 text-text-secondary" />
-						)}
-					</button>
-					<button
-						onClick={() => {
-							setReaderContent(null);
-							setInputValue("");
-							setUrl("");
-							setError(null);
-							setNavigationStatus("idle");
-						}}
-						aria-label="返回主页"
-						className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
-						title="主页"
-					>
-						<Home className="w-4 h-4 text-text-secondary" />
-					</button>
+					<Tooltip content="后退" placement="bottom">
+						<button
+							onClick={goBack}
+							disabled={historyIndex <= 0}
+							aria-label="后退"
+							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+						>
+							<ArrowLeft className="w-4 h-4 text-text-secondary" />
+						</button>
+					</Tooltip>
+					<Tooltip content="前进" placement="bottom">
+						<button
+							onClick={goForward}
+							disabled={historyIndex >= history.length - 1}
+							aria-label="前进"
+							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+						>
+							<ArrowRight className="w-4 h-4 text-text-secondary" />
+						</button>
+					</Tooltip>
+					<Tooltip content="刷新" placement="bottom">
+						<button
+							onClick={refresh}
+							disabled={!url || navigationStatus === "opening"}
+							aria-label="刷新"
+							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+						>
+							{navigationStatus === "opening" ? (
+								<Loader2 className="w-4 h-4 text-primary animate-spin" />
+							) : (
+								<RotateCw className="w-4 h-4 text-text-secondary" />
+							)}
+						</button>
+					</Tooltip>
+					<Tooltip content="主页" placement="bottom">
+						<button
+							onClick={() => {
+								setReaderContent(null);
+								setInputValue("");
+								setUrl("");
+								setError(null);
+								setNavigationStatus("idle");
+							}}
+							aria-label="返回主页"
+							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+						>
+							<Home className="w-4 h-4 text-text-secondary" />
+						</button>
+					</Tooltip>
 				</div>
 
 				<div className="flex-1 max-w-3xl mx-auto relative group">
@@ -368,22 +373,24 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				<div className="flex items-center gap-1">
 					{url && (
 						<>
-							<button
-								onClick={() => void loadReaderMode()}
-								aria-label="阅读模式"
-								className={`p-2 rounded-lg transition-colors ${readerContent ? "bg-primary/10 text-primary" : "hover:bg-black/5 dark:hover:bg-surface/10 text-text-secondary"}`}
-								title="阅读模式"
-							>
-								<BookOpen className="w-4 h-4" />
-							</button>
-							<button
-								onClick={() => void openInNewWindow()}
-								aria-label="在外部窗口打开"
-								className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
-								title="在外部窗口打开"
-							>
-								<ExternalLink className="w-4 h-4 text-text-secondary" />
-							</button>
+							<Tooltip content="阅读模式" placement="bottom">
+								<button
+									onClick={() => void loadReaderMode()}
+									aria-label="阅读模式"
+									className={`p-2 rounded-lg transition-colors ${readerContent ? "bg-primary/10 text-primary" : "hover:bg-black/5 dark:hover:bg-surface/10 text-text-secondary"}`}
+								>
+									<BookOpen className="w-4 h-4" />
+								</button>
+							</Tooltip>
+							<Tooltip content="在外部窗口打开" placement="bottom">
+								<button
+									onClick={() => void openInNewWindow()}
+									aria-label="在外部窗口打开"
+									className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+								>
+									<ExternalLink className="w-4 h-4 text-text-secondary" />
+								</button>
+							</Tooltip>
 							<button
 								onClick={() => void saveAsSource()}
 								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-cream-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
@@ -396,14 +403,15 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 					<div className="w-px h-4 bg-warm-300 dark:bg-cream-700 mx-1" />
 
-					<button
-						onClick={() => workspaceStore.setMainView("editor")}
-						aria-label="返回编辑器"
-						className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-						title="返回编辑器"
-					>
-						<X className="w-4 h-4" />
-					</button>
+					<Tooltip content="返回编辑器" placement="bottom">
+						<button
+							onClick={() => workspaceStore.setMainView("editor")}
+							aria-label="返回编辑器"
+							className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</Tooltip>
 				</div>
 			</div>
 

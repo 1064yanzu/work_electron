@@ -9,6 +9,7 @@ import {
 	terminalStore,
 	useTerminalStoreSelector,
 } from "../../lib/stores/terminalStore";
+import { Tooltip } from "../ui/Tooltip";
 
 const CHANNEL_LABELS: Record<string, string> = {
 	feishu: "飞书",
@@ -45,15 +46,11 @@ export function TerminalTabBar() {
 				const channelLabel = channel
 					? (CHANNEL_LABELS[channel] ?? channel)
 					: null;
-				const tooltip = t.isRemote
-					? `远控会话 · ${channelLabel ?? ""} · ${t.remoteMeta?.peerName || t.remoteMeta?.peerId || ""}\n命令：${t.remoteMeta?.command || ""}\n关闭仅本地移除，不会终止 IM 端会话`
-					: undefined;
 				return (
 					<button
 						key={t.id}
 						type="button"
 						onClick={() => handleSelect(t.id)}
-						title={tooltip}
 						className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
 							isActive
 								? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
@@ -71,29 +68,29 @@ export function TerminalTabBar() {
 								{channelLabel}
 							</span>
 						)}
-						<button
-							type="button"
-							onClick={(e) => handleClose(e, t.id)}
-							className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded p-0.5 transition-all cursor-pointer"
-							title={
-								t.isRemote ? "从桌面端移除（不会终止远端会话）" : "关闭终端"
-							}
-						>
-							<X className="w-2.5 h-2.5" />
-						</button>
+						<Tooltip content={t.isRemote ? "从桌面端移除" : "关闭终端"} placement="top">
+							<button
+								type="button"
+								onClick={(e) => handleClose(e, t.id)}
+								className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded p-0.5 transition-all cursor-pointer"
+							>
+								<X className="w-2.5 h-2.5" />
+							</button>
+						</Tooltip>
 					</button>
 				);
 			})}
 
 			{/* 新建终端按钮 */}
-			<button
-				type="button"
-				onClick={handleNewTerminal}
-				className="flex items-center justify-center w-6 h-6 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded transition-colors cursor-pointer shrink-0"
-				title="新建终端"
-			>
-				<Plus className="w-3.5 h-3.5" />
-			</button>
+			<Tooltip content="新建终端" placement="top">
+				<button
+					type="button"
+					onClick={handleNewTerminal}
+					className="flex items-center justify-center w-6 h-6 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded transition-colors cursor-pointer shrink-0"
+				>
+					<Plus className="w-3.5 h-3.5" />
+				</button>
+			</Tooltip>
 		</div>
 	);
 }

@@ -3,6 +3,7 @@ import { prefetchChatContext } from "../../../lib/query";
 import type { Model } from "../ModelSelector";
 import { StyleProfilePill } from "../StyleProfilePill";
 import { ThinkingLevelPill } from "../ThinkingLevelPill";
+import { Tooltip } from "../../ui/Tooltip";
 
 interface ChatInputToolbarProps {
 	expanded: boolean;
@@ -62,24 +63,26 @@ export function ChatInputToolbar({
 				<div className="flex items-center justify-between px-3 py-2">
 					{/* 左侧：圆形按钮组 */}
 					<div className="flex items-center gap-1">
-						<button
-							onClick={onTriggerFilePicker}
-							aria-label="添加附件"
-							className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
-							title="添加附件"
-						>
-							<Plus className="w-4 h-4" strokeWidth={1.5} />
-						</button>
+						<Tooltip content="添加附件" placement="top">
+							<button
+								onClick={onTriggerFilePicker}
+								aria-label="添加附件"
+								className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+							>
+								<Plus className="w-4 h-4" strokeWidth={1.5} />
+							</button>
+						</Tooltip>
 
-						<button
-							onClick={onTriggerSlashMenu}
-							onMouseEnter={prefetchChatContext}
-							aria-label="命令菜单"
-							className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-mint hover:bg-mint-100/70 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
-							title="命令菜单 (/)"
-						>
-							<AtSign className="w-3.5 h-3.5" strokeWidth={1.5} />
-						</button>
+						<Tooltip content="命令菜单 (/)" placement="top">
+							<button
+								onClick={onTriggerSlashMenu}
+								onMouseEnter={prefetchChatContext}
+								aria-label="命令菜单"
+								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-mint hover:bg-mint-100/70 dark:hover:bg-cream-700/50 transition-all duration-150 cursor-pointer active:scale-95"
+							>
+								<AtSign className="w-3.5 h-3.5" strokeWidth={1.5} />
+							</button>
+						</Tooltip>
 
 						{/* 模型选择器 — pill tag（弹出面板在容器外渲染） */}
 						{models.length > 0 && (
@@ -116,13 +119,14 @@ export function ChatInputToolbar({
 
 					{/* 右侧：语音 + 发送按钮 */}
 					<div className="flex items-center gap-1.5">
-						<button
-							aria-label="语音输入"
-							className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-violet hover:bg-violetx-100/70 dark:hover:bg-cream-700/40 transition-all duration-150 cursor-pointer active:scale-95"
-							title="语音输入"
-						>
-							<Mic className="w-3.5 h-3.5" strokeWidth={1.5} />
-						</button>
+						<Tooltip content="语音输入" placement="top">
+							<button
+								aria-label="语音输入"
+								className="w-8 h-8 flex items-center justify-center rounded-full bai-icon-violet hover:bg-violetx-100/70 dark:hover:bg-cream-700/40 transition-all duration-150 cursor-pointer active:scale-95"
+							>
+								<Mic className="w-3.5 h-3.5" strokeWidth={1.5} />
+							</button>
+						</Tooltip>
 						<button
 							onClick={onSubmit}
 							disabled={submitDisabled}

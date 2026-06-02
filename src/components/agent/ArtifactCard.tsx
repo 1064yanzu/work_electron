@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
+import { Tooltip } from "../ui/Tooltip";
 
 export type ArtifactFileType =
 	| "image"
@@ -178,23 +179,24 @@ function ActionButton({
 	className?: string;
 }) {
 	return (
-		<button
-			type="button"
-			onClick={(e) => {
-				e.stopPropagation();
-				onClick?.();
-			}}
-			className={cn(
-				"p-1.5 rounded-lg transition-all duration-200",
-				"text-text-light hover:text-text-secondary dark:hover:text-text-light",
-				"hover:bg-warm-200",
-				"active:scale-95",
-				className,
-			)}
-			title={tooltip}
-		>
-			<Icon className="w-4 h-4" />
-		</button>
+		<Tooltip content={tooltip} placement="top">
+			<button
+				type="button"
+				onClick={(e) => {
+					e.stopPropagation();
+					onClick?.();
+				}}
+				className={cn(
+					"p-1.5 rounded-lg transition-all duration-200",
+					"text-text-light hover:text-text-secondary dark:hover:text-text-light",
+					"hover:bg-warm-200",
+					"active:scale-95",
+					className,
+				)}
+			>
+				<Icon className="w-4 h-4" />
+			</button>
+		</Tooltip>
 	);
 }
 

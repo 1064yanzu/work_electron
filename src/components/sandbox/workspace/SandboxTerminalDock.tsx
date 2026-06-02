@@ -6,6 +6,7 @@
 import { ChevronDown, Minus, Terminal as TerminalIcon } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../../lib/utils";
+import { Tooltip } from "../../ui/Tooltip";
 
 // ==================== 常量 ====================
 
@@ -179,32 +180,35 @@ export function SandboxTerminalDock({
 
 				{/* 工具按钮 */}
 				<div className="flex items-center gap-0.5 shrink-0">
-					<button
-						type="button"
-						onClick={handleClear}
-						className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
-						title="清空日志"
-					>
-						<Minus className="w-3 h-3" />
-						清空
-					</button>
-					<button
-						type="button"
-						onClick={handleScrollToBottom}
-						className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
-						title="跳到底部"
-					>
-						<ChevronDown className="w-3 h-3" />
-					</button>
-					{onCollapse ? (
+					<Tooltip content="清空日志" placement="top">
 						<button
 							type="button"
-							onClick={onCollapse}
-							className="flex items-center px-1.5 py-1 text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
-							title="折叠面板"
+							onClick={handleClear}
+							className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
 						>
-							<ChevronDown className="w-3.5 h-3.5" />
+							<Minus className="w-3 h-3" />
+							清空
 						</button>
+					</Tooltip>
+					<Tooltip content="跳到底部" placement="top">
+						<button
+							type="button"
+							onClick={handleScrollToBottom}
+							className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
+						>
+							<ChevronDown className="w-3 h-3" />
+						</button>
+					</Tooltip>
+					{onCollapse ? (
+						<Tooltip content="折叠面板" placement="top">
+							<button
+								type="button"
+								onClick={onCollapse}
+								className="flex items-center px-1.5 py-1 text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
+							>
+								<ChevronDown className="w-3.5 h-3.5" />
+							</button>
+						</Tooltip>
 					) : null}
 				</div>
 			</div>

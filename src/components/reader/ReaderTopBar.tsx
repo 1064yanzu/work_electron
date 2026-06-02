@@ -19,6 +19,7 @@ import {
 
 import { READER_THEMES } from "./themes/readerThemes";
 import type { ReaderClientSettings } from "../../lib/api/reader";
+import { Tooltip } from "../ui/Tooltip";
 
 interface ReaderTopBarProps {
 	title: string;
@@ -67,15 +68,16 @@ export function ReaderTopBar({
 			data-immersive={immersive ? "true" : "false"}
 		>
 			<div className="reader-topbar__left">
-				<button
-					type="button"
-					onClick={onClose}
-					className="reader-icon-btn"
-					title="关闭阅读器（Esc）"
-					aria-label="关闭阅读器"
-				>
-					<X className="w-4 h-4" strokeWidth={1.5} />
-				</button>
+				<Tooltip content="关闭阅读器（Esc）" placement="bottom">
+					<button
+						type="button"
+						onClick={onClose}
+						className="reader-icon-btn"
+						aria-label="关闭阅读器"
+					>
+						<X className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
 				<div className="reader-topbar__title">
 					<div className="reader-topbar__title-main" title={title}>
 						{title}
@@ -101,7 +103,6 @@ export function ReaderTopBar({
 					type="button"
 					className={`reader-tab ${leftPanel === "toc" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("toc")}
-					title="目录（⌘1）"
 				>
 					<List className="w-3.5 h-3.5" strokeWidth={1.5} />
 					目录
@@ -110,7 +111,6 @@ export function ReaderTopBar({
 					type="button"
 					className={`reader-tab ${leftPanel === "highlights" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("highlights")}
-					title="高亮（⌘2）"
 				>
 					<Highlighter className="w-3.5 h-3.5" strokeWidth={1.5} />
 					高亮
@@ -119,7 +119,6 @@ export function ReaderTopBar({
 					type="button"
 					className={`reader-tab ${leftPanel === "bookmarks" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("bookmarks")}
-					title="书签"
 				>
 					<BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
 					书签
@@ -128,7 +127,6 @@ export function ReaderTopBar({
 					type="button"
 					className={`reader-tab ${leftPanel === "cards" && leftPanelOpen ? "is-active" : ""}`}
 					onClick={() => onSetLeftPanel("cards")}
-					title="知识卡片（⌘3）"
 				>
 					<Brain className="w-3.5 h-3.5" strokeWidth={1.5} />
 					卡片
@@ -144,81 +142,88 @@ export function ReaderTopBar({
 					value={settings.font_size}
 					onChange={(font_size) => onPatchSettings({ font_size })}
 				/>
-				<button
-					type="button"
-					className={`reader-icon-btn ${settings.column_count === 2 ? "is-active" : ""}`}
-					title={settings.column_count === 2 ? "切换单栏" : "切换双栏"}
-					onClick={() =>
-						onPatchSettings({
-							column_count: settings.column_count === 2 ? 1 : 2,
-						})
-					}
-					aria-label="切换分栏"
-				>
-					{settings.column_count === 2 ? (
-						<Columns2 className="w-4 h-4" strokeWidth={1.5} />
-					) : (
-						<PanelLeft className="w-4 h-4" strokeWidth={1.5} />
-					)}
-				</button>
-				<button
-					type="button"
-					className="reader-icon-btn"
-					title="书内搜索（/）"
-					onClick={onOpenSearch}
-					aria-label="书内搜索"
-				>
-					<Search className="w-4 h-4" strokeWidth={1.5} />
-				</button>
-				<button
-					type="button"
-					className="reader-icon-btn"
-					title="加书签（B）"
-					onClick={onAddBookmark}
-					aria-label="加书签"
-				>
-					<BookmarkPlus className="w-4 h-4" strokeWidth={1.5} />
-				</button>
-				<button
-					type="button"
-					className={`reader-icon-btn ${ttsActive ? "is-active" : ""}`}
-					title="朗读（T）"
-					onClick={onToggleTts}
-					aria-label="朗读"
-				>
-					<Volume2 className="w-4 h-4" strokeWidth={1.5} />
-				</button>
-				<button
-					type="button"
-					className={`reader-icon-btn ${rightPanelOpen ? "is-active" : ""}`}
-					title="AI 副驾驶（⌘K）"
-					onClick={onToggleRightPanel}
-					aria-label="AI 副驾驶"
-				>
-					<Sparkles className="w-4 h-4" strokeWidth={1.5} />
-				</button>
-				<button
-					type="button"
-					className="reader-icon-btn"
-					title={immersive ? "退出沉浸（F11 或 ⌘.）" : "沉浸模式（F11 或 ⌘.）"}
-					onClick={onToggleImmersive}
-					aria-label="沉浸模式"
-				>
-					{immersive ? (
-						<Minimize2 className="w-4 h-4" strokeWidth={1.5} />
-					) : (
-						<Maximize2 className="w-4 h-4" strokeWidth={1.5} />
-					)}
-				</button>
-				<button
-					type="button"
-					className="reader-icon-btn"
-					title="阅读器设置"
-					onClick={onOpenSettings}
-					aria-label="阅读器设置"
-				>
-					<SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
-				</button>
+				<Tooltip content={settings.column_count === 2 ? "切换单栏" : "切换双栏"} placement="bottom">
+					<button
+						type="button"
+						className={`reader-icon-btn ${settings.column_count === 2 ? "is-active" : ""}`}
+						onClick={() =>
+							onPatchSettings({
+								column_count: settings.column_count === 2 ? 1 : 2,
+							})
+						}
+						aria-label="切换分栏"
+					>
+						{settings.column_count === 2 ? (
+							<Columns2 className="w-4 h-4" strokeWidth={1.5} />
+						) : (
+							<PanelLeft className="w-4 h-4" strokeWidth={1.5} />
+						)}
+					</button>
+				</Tooltip>
+				<Tooltip content="书内搜索（/）" placement="bottom">
+					<button
+						type="button"
+						className="reader-icon-btn"
+						onClick={onOpenSearch}
+						aria-label="书内搜索"
+					>
+						<Search className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
+				<Tooltip content="加书签（B）" placement="bottom">
+					<button
+						type="button"
+						className="reader-icon-btn"
+						onClick={onAddBookmark}
+						aria-label="加书签"
+					>
+						<BookmarkPlus className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
+				<Tooltip content="朗读（T）" placement="bottom">
+					<button
+						type="button"
+						className={`reader-icon-btn ${ttsActive ? "is-active" : ""}`}
+						onClick={onToggleTts}
+						aria-label="朗读"
+					>
+						<Volume2 className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
+				<Tooltip content="AI 副驾驶（⌘K）" placement="bottom">
+					<button
+						type="button"
+						className={`reader-icon-btn ${rightPanelOpen ? "is-active" : ""}`}
+						onClick={onToggleRightPanel}
+						aria-label="AI 副驾驶"
+					>
+						<Sparkles className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
+				<Tooltip content={immersive ? "退出沉浸（F11 或 ⌘.）" : "沉浸模式（F11 或 ⌘.）"} placement="bottom">
+					<button
+						type="button"
+						className="reader-icon-btn"
+						onClick={onToggleImmersive}
+						aria-label="沉浸模式"
+					>
+						{immersive ? (
+							<Minimize2 className="w-4 h-4" strokeWidth={1.5} />
+						) : (
+							<Maximize2 className="w-4 h-4" strokeWidth={1.5} />
+						)}
+					</button>
+				</Tooltip>
+				<Tooltip content="阅读器设置" placement="bottom">
+					<button
+						type="button"
+						className="reader-icon-btn"
+						onClick={onOpenSettings}
+						aria-label="阅读器设置"
+					>
+						<SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
 			</div>
 		</header>
 	);

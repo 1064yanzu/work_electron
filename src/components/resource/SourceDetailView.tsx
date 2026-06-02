@@ -46,6 +46,7 @@ import DocumentViewer, { extractDocumentInfo } from "../ui/DocumentViewer";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { RichContentWithStyles } from "../ui/RichContentRenderer";
 import { toast } from "../ui/Toast";
+import { Tooltip } from "../ui/Tooltip";
 
 interface SourceDetailViewProps {
 	fetchSources: () => Promise<void>;
@@ -387,12 +388,14 @@ export const SourceDetailView = forwardRef<
 
 			{/* Header */}
 			<div className="px-4 py-3 flex items-center gap-2 border-b border-border shrink-0 bg-surface/50 backdrop-blur-sm">
-				<button
-					onClick={handleCloseDetail}
-					className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-				>
-					<ArrowLeft className="w-4 h-4" />
-				</button>
+				<Tooltip content="返回" placement="bottom">
+					<button
+						onClick={handleCloseDetail}
+						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+					>
+						<ArrowLeft className="w-4 h-4" />
+					</button>
+				</Tooltip>
 
 				<div className="flex-1 min-w-0">
 					{isEditing ? (
@@ -414,37 +417,40 @@ export const SourceDetailView = forwardRef<
 
 				{isSource && !isEditing && (
 					<div className="flex items-center gap-1">
-						<button
-							onClick={() => setIsEditing(true)}
-							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-							title="编辑"
-						>
-							<Edit2 className="w-4 h-4" />
-						</button>
+						<Tooltip content="编辑" placement="bottom">
+							<button
+								onClick={() => setIsEditing(true)}
+								className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+							>
+								<Edit2 className="w-4 h-4" />
+							</button>
+						</Tooltip>
 					</div>
 				)}
 
 				{isSource && isEditing && (
 					<div className="flex items-center gap-1">
-						<button
-							onClick={() => setIsEditing(false)}
-							className="p-1.5 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded-lg"
-							title="取消"
-						>
-							<X className="w-4 h-4" />
-						</button>
-						<button
-							onClick={handleSaveEdit}
-							disabled={isSaving}
-							className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
-							title="保存"
-						>
-							{isSaving ? (
-								<Loader2 className="w-4 h-4 animate-spin" />
-							) : (
-								<Save className="w-4 h-4" />
-							)}
-						</button>
+						<Tooltip content="取消" placement="bottom">
+							<button
+								onClick={() => setIsEditing(false)}
+								className="p-1.5 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded-lg"
+							>
+								<X className="w-4 h-4" />
+							</button>
+						</Tooltip>
+						<Tooltip content="保存" placement="bottom">
+							<button
+								onClick={handleSaveEdit}
+								disabled={isSaving}
+								className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
+							>
+								{isSaving ? (
+									<Loader2 className="w-4 h-4 animate-spin" />
+								) : (
+									<Save className="w-4 h-4" />
+								)}
+							</button>
+						</Tooltip>
 					</div>
 				)}
 			</div>
@@ -742,13 +748,14 @@ export const SourceDetailView = forwardRef<
 							添加到编辑器
 						</button>
 						{isSource && (
-							<button
-								onClick={() => onDeleteSource(previewSource as Source)}
-								className="p-2.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-colors"
-								title="删除"
-							>
-								<Trash2 className="w-4 h-4" />
-							</button>
+							<Tooltip content="删除" placement="top">
+								<button
+									onClick={() => onDeleteSource(previewSource as Source)}
+									className="p-2.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-colors"
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
+							</Tooltip>
 						)}
 					</div>
 				</div>

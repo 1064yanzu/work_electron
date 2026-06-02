@@ -22,6 +22,7 @@ import {
 import ToolCallInline from "../agent/ToolCallInline";
 import { TTSToolbarButton } from "../tts/TTSToolbarButton";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
+import { Tooltip } from "../ui/Tooltip";
 import { AgentBlocksInline } from "./AgentBlocksInline";
 import { AttachmentList } from "./AttachmentCard";
 import { ChatMessageAssistantContent } from "./ChatMessageAssistantContent";
@@ -362,7 +363,6 @@ function ChatMessageImpl({
 									type="button"
 									onClick={handleCopy}
 									className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary transition-colors"
-									title="复制消息"
 								>
 									{copied ? (
 										<Check className="w-3 h-3" />
@@ -376,7 +376,6 @@ function ChatMessageImpl({
 										type="button"
 										onClick={() => setIsEditing(true)}
 										className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary transition-colors"
-										title="编辑此消息"
 									>
 										<Edit3 className="w-3 h-3" />
 										编辑
@@ -387,7 +386,6 @@ function ChatMessageImpl({
 										type="button"
 										onClick={() => onDelete(message.id)}
 										className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-red-400 transition-colors"
-										title="删除此消息"
 									>
 										<Trash2 className="w-3 h-3" />
 										删除
@@ -433,29 +431,31 @@ function ChatMessageImpl({
 													{block.language || "code"}
 												</span>
 												<div className="h-3 w-px bg-warm-300" />
-												<button
-													onClick={() => handleCopyCodeBlock(idx)}
-													className="p-1.5 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded transition-colors"
-													title="复制代码"
-												>
-													<Copy className="w-3 h-3" />
-												</button>
-												<button
-													onClick={() => handleApplyCodeBlock(idx)}
-													disabled={appliedBlocks.has(idx)}
-													className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
-														appliedBlocks.has(idx)
-															? "text-success bg-success/8 dark:bg-emerald-900/20"
-															: "text-text-muted hover:text-text-primary hover:bg-warm-200"
-													}`}
-													title="应用代码到编辑器"
-												>
-													{appliedBlocks.has(idx) ? (
-														<Check className="w-3 h-3" />
-													) : (
-														<Code className="w-3 h-3" />
-													)}
-												</button>
+												<Tooltip content="复制代码" placement="top">
+													<button
+														onClick={() => handleCopyCodeBlock(idx)}
+														className="p-1.5 text-text-muted hover:text-text-primary hover:bg-warm-200 rounded transition-colors"
+													>
+														<Copy className="w-3 h-3" />
+													</button>
+												</Tooltip>
+												<Tooltip content="应用代码到编辑器" placement="top">
+													<button
+														onClick={() => handleApplyCodeBlock(idx)}
+														disabled={appliedBlocks.has(idx)}
+														className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
+															appliedBlocks.has(idx)
+																? "text-success bg-success/8 dark:bg-emerald-900/20"
+																: "text-text-muted hover:text-text-primary hover:bg-warm-200"
+														}`}
+													>
+														{appliedBlocks.has(idx) ? (
+															<Check className="w-3 h-3" />
+														) : (
+															<Code className="w-3 h-3" />
+														)}
+													</button>
+												</Tooltip>
 											</div>
 										))}
 									</div>
@@ -487,7 +487,6 @@ function ChatMessageImpl({
 													onRegenerate(message.id);
 												}}
 												className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
-												title="重新生成此回复"
 											>
 												<RefreshCw className="w-3 h-3" />
 												重新生成

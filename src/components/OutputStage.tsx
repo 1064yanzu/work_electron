@@ -10,6 +10,7 @@ import { type OutputAsset, OutputType } from "../types";
 import { Button } from "./ui/Button";
 import { inputDialog } from "./ui/InputDialog";
 import { toast } from "./ui/Toast";
+import { Tooltip } from "./ui/Tooltip";
 
 export default function OutputStage() {
 	const [outputs, setOutputs] = useState<OutputAsset[]>([]);
@@ -198,26 +199,28 @@ export default function OutputStage() {
 					)}
 
 					{selectedOutput && (
-						<button
-							onClick={() => setIsEditing(!isEditing)}
-							className="p-2 text-text-muted hover:text-primary hover:bg-surface rounded-full transition-all"
-							title={isEditing ? "预览模式" : "编辑模式"}
-						>
-							{isEditing ? (
-								<Eye className="w-4 h-4" />
-							) : (
-								<Edit2 className="w-4 h-4" />
-							)}
-						</button>
+						<Tooltip content={isEditing ? "预览模式" : "编辑模式"} placement="bottom">
+							<button
+								onClick={() => setIsEditing(!isEditing)}
+								className="p-2 text-text-muted hover:text-primary hover:bg-surface rounded-full transition-all"
+							>
+								{isEditing ? (
+									<Eye className="w-4 h-4" />
+								) : (
+									<Edit2 className="w-4 h-4" />
+								)}
+							</button>
+						</Tooltip>
 					)}
 
-					<button
-						onClick={handleCreateOutput}
-						className="p-2 text-text-muted hover:text-primary hover:bg-surface rounded-full transition-all"
-						title="新建文章"
-					>
-						<FileText className="w-4 h-4" />
-					</button>
+					<Tooltip content="新建文章" placement="bottom">
+						<button
+							onClick={handleCreateOutput}
+							className="p-2 text-text-muted hover:text-primary hover:bg-surface rounded-full transition-all"
+						>
+							<FileText className="w-4 h-4" />
+						</button>
+					</Tooltip>
 				</div>
 			</div>
 

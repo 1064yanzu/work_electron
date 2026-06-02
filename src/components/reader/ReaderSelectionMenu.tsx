@@ -10,6 +10,7 @@ import {
 
 import type { ReaderEngineSelection } from "./engines/types";
 import type { ReaderHighlightColor } from "../../lib/api/reader";
+import { Tooltip } from "../ui/Tooltip";
 
 const COLORS: Array<{
 	id: ReaderHighlightColor;
@@ -70,15 +71,15 @@ export function ReaderSelectionMenu({
 		>
 			<div className="reader-selection-menu__colors">
 				{COLORS.map((c) => (
-					<button
-						key={c.id}
-						type="button"
-						className="reader-selection-menu__color"
-						aria-label={`高亮：${c.label}`}
-						title={`高亮 · ${c.label}`}
-						onClick={() => onHighlight(c.id)}
-						style={{ background: c.swatch }}
-					/>
+					<Tooltip key={c.id} content={`高亮 · ${c.label}`} placement="top">
+						<button
+							type="button"
+							className="reader-selection-menu__color"
+							aria-label={`高亮：${c.label}`}
+							onClick={() => onHighlight(c.id)}
+							style={{ background: c.swatch }}
+						/>
+					</Tooltip>
 				))}
 			</div>
 			<div className="reader-selection-menu__divider" />
@@ -117,14 +118,15 @@ function MenuAction({
 	onClick: () => void;
 }) {
 	return (
-		<button
-			type="button"
-			className="reader-selection-menu__action"
-			title={label}
-			onClick={onClick}
-		>
-			<Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
-			<span>{label}</span>
-		</button>
+		<Tooltip content={label} placement="top">
+			<button
+				type="button"
+				className="reader-selection-menu__action"
+				onClick={onClick}
+			>
+				<Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
+				<span>{label}</span>
+			</button>
+		</Tooltip>
 	);
 }
