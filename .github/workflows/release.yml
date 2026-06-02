@@ -40,6 +40,11 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+          # 用小写 npm_config_* 覆盖 .npmrc 的 npmmirror 镜像（env 优先级高于 project .npmrc，
+          # 且这才是 electron-builder 实际读取的键）。CI 走 GitHub 官方源更稳——
+          # npmmirror 的 win electron zip 曾下载损坏，导致解压缺 electron.exe、打包 rename 失败。
+          npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+          npm_config_electron_builder_binaries_mirror: https://github.com/electron-userland/electron-builder-binaries/releases/download/
 
       - name: Upload macOS x64 assets
         shell: bash
@@ -96,6 +101,11 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+          # 用小写 npm_config_* 覆盖 .npmrc 的 npmmirror 镜像（env 优先级高于 project .npmrc，
+          # 且这才是 electron-builder 实际读取的键）。CI 走 GitHub 官方源更稳——
+          # npmmirror 的 win electron zip 曾下载损坏，导致解压缺 electron.exe、打包 rename 失败。
+          npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+          npm_config_electron_builder_binaries_mirror: https://github.com/electron-userland/electron-builder-binaries/releases/download/
 
       - name: Smoke check - verify native modules in unpacked asar
         shell: pwsh
