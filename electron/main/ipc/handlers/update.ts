@@ -8,6 +8,7 @@ import {
 	downloadUpdate,
 	quitAndInstall,
 	getUpdateState,
+	revealDownloadedUpdate,
 } from "../../services/updateService";
 
 type Handler<K extends keyof IPCSchema> = (
@@ -35,10 +36,15 @@ export function createUpdateHandlers() {
 		return getUpdateState();
 	};
 
+	const update_reveal_pending: Handler<"update_reveal_pending"> = async () => {
+		return revealDownloadedUpdate();
+	};
+
 	return {
 		update_check,
 		update_download,
 		update_install,
 		update_get_state,
+		update_reveal_pending,
 	};
 }

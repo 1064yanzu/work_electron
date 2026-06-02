@@ -516,6 +516,10 @@ export type IPCSchema = {
 			error?: string;
 		};
 	};
+	update_reveal_pending: {
+		input: Record<string, never>;
+		output: { success: boolean; path?: string; error?: string };
+	};
 	http_get_status: {
 		input: Record<string, never>;
 		output: {

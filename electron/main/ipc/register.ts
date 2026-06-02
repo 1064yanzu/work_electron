@@ -357,6 +357,10 @@ export function registerIpcHandlers({
 		"update_get_state",
 		updateHandlers.update_get_state satisfies IpcHandler<"update_get_state">,
 	);
+	ipcMain.handle(
+		"update_reveal_pending",
+		updateHandlers.update_reveal_pending satisfies IpcHandler<"update_reveal_pending">,
+	);
 
 	ipcMain.handle("open_external_url", (async (_event, input) => {
 		try {

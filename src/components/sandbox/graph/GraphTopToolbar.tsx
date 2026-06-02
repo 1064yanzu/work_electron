@@ -1,8 +1,8 @@
 import {
+	Activity,
 	ChevronLeft,
 	ChevronRight,
 	ChevronUp,
-	Loader2,
 	Search,
 	Zap,
 	X,
@@ -31,11 +31,13 @@ function FilterButton({
 			className={cn(
 				"inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors",
 				active
-					? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08]"
-					: "bg-surface/80/60 text-text-secondary border-black/[0.06] dark:border-white/[0.08] hover:bg-surface/70",
+					? "bg-warm-200/90 text-text-primary border-cream-400 shadow-bai-card dark:bg-zinc-800 dark:text-zinc-100 dark:border-white/[0.1]"
+					: "bg-surface/85 text-text-secondary border-black/[0.06] dark:bg-zinc-900/70 dark:text-zinc-300 dark:border-white/[0.08] hover:bg-warm-100 dark:hover:bg-zinc-800",
 			)}
 		>
-			{icon}
+			<span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+				{icon}
+			</span>
 			{label}
 		</button>
 	);
@@ -159,7 +161,7 @@ export function GraphTopToolbar({
 						active={filter === "running"}
 						label="运行中"
 						onClick={() => onFilterChange("running")}
-						icon={<Loader2 className="w-3.5 h-3.5" />}
+						icon={<Activity className="w-3.5 h-3.5" />}
 					/>
 					<FilterButton
 						active={filter === "error"}

@@ -56,14 +56,8 @@
   ],
   "mac": {
     "target": [
-      {
-        "target": "dmg",
-        "arch": ["x64", "arm64"]
-      },
-      {
-        "target": "zip",
-        "arch": ["x64", "arm64"]
-      }
+      "dmg",
+      "zip"
     ],
     "artifactName": "${productName}-${version}-${arch}-Mac.${ext}",
     "category": "public.app-category.developer-tools",
