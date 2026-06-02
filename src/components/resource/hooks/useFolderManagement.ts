@@ -22,7 +22,6 @@ export function useFolderManagement(rawSources: Source[]) {
 	const [folders, setFolders] = useState<Folder[]>([]);
 	const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>([]);
 	const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-	const [newFolderName, setNewFolderName] = useState("");
 
 	// 文件夹右键菜单
 	const [folderContextMenu, setFolderContextMenu] = useState<{
@@ -205,7 +204,6 @@ export function useFolderManagement(rawSources: Source[]) {
 					parent_id,
 				});
 				setIsFolderModalOpen(false);
-				setNewFolderName("");
 				await fetchFolders();
 				setCurrentFolder(folder.id);
 			} catch (error) {
@@ -357,8 +355,6 @@ export function useFolderManagement(rawSources: Source[]) {
 		expandedFolderIds,
 		isFolderModalOpen,
 		setIsFolderModalOpen,
-		newFolderName,
-		setNewFolderName,
 		folderContextMenu,
 		setFolderContextMenu,
 		folderDeleteConfirm,

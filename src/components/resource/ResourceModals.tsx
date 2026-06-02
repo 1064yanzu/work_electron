@@ -11,8 +11,6 @@ interface ResourceModalsProps {
 	// 新建文件夹（由 NewFolderModal 独立处理，这里只保留 open 状态用于向后兼容）
 	isFolderModalOpen: boolean;
 	setIsFolderModalOpen: (open: boolean) => void;
-	newFolderName: string;
-	setNewFolderName: (name: string) => void;
 	handleCreateFolder: (name: string) => void;
 	currentFolderId: string | null;
 	foldersById: Map<string, Folder>;
@@ -148,8 +146,6 @@ export function NewFolderModal({
 const ResourceModalsInner = memo(function ResourceModalsInner({
 	isFolderModalOpen,
 	setIsFolderModalOpen,
-	newFolderName,
-	setNewFolderName,
 	handleCreateFolder,
 	currentFolderId,
 	foldersById,

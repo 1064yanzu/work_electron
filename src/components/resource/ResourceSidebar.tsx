@@ -738,8 +738,6 @@ export default function ResourceSidebar({
 					<ResourceModals
 						isFolderModalOpen={folderMgmt.isFolderModalOpen}
 						setIsFolderModalOpen={folderMgmt.setIsFolderModalOpen}
-						newFolderName={folderMgmt.newFolderName}
-						setNewFolderName={folderMgmt.setNewFolderName}
 						handleCreateFolder={folderMgmt.handleCreateFolder}
 						currentFolderId={currentFolderId}
 						foldersById={folderMgmt.foldersById}
