@@ -35,8 +35,12 @@ function main() {
 	for (const arch of ARCHES) {
 		const zipPath = findZip(releaseDir, productName, version, arch);
 		if (!zipPath) {
-			console.error(`[generate-latest-mac-yml] 缺少 ${arch} zip：${releaseDir}`);
-			process.exit(1);
+			// 渐进发布：某架构 zip 尚未就绪时跳过并告警（而非中断），
+			// 以便先发布已就绪的架构；待该架构 zip 到位后重跑即可合并为双架构。
+			console.warn(
+				`[generate-latest-mac-yml] ⚠️ 缺少 ${arch} zip，已跳过该架构：${releaseDir}`,
+			);
+			continue;
 		}
 		const stat = fs.statSync(zipPath);
 		entries.push({
@@ -46,6 +50,13 @@ function main() {
 			size: stat.size,
 			mtimeMs: stat.mtimeMs,
 		});
+	}
+
+	if (entries.length === 0) {
+		console.error(
+			`[generate-latest-mac-yml] 未找到任何架构的 zip：${releaseDir}`,
+		);
+		process.exit(1);
 	}
 
 	const primary = entries.find((entry) => entry.arch === "x64") ?? entries[0];
