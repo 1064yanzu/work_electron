@@ -51,7 +51,7 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           shopt -s nullglob
-          assets=(release/*/*-x64-Mac.dmg release/*/*-x64-Mac.zip release/*/*-x64-Mac.zip.blockmap)
+          assets=(release/*/*-x64-Mac.dmg release/*/*-x64-Mac.dmg.blockmap release/*/*-x64-Mac.zip release/*/*-x64-Mac.zip.blockmap)
           if [ "${#assets[@]}" -eq 0 ]; then
             echo "No macOS x64 assets found"
             exit 1
@@ -65,7 +65,11 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           mkdir -p "release/$VERSION"
           gh release download "$TAG" --pattern "*-arm64-Mac.zip" --pattern "*-arm64-Mac.zip.blockmap" --dir "release/$VERSION" || true
-          if [ ! -f "release/$VERSION/IPO Workbench-$VERSION-arm64-Mac.zip" ] && [ ! -f "release/$VERSION/IPO-Workbench-$VERSION-arm64-Mac.zip" ]; then
+          # GitHub 会把 asset 名里的空格规范化为点（IPO.Workbench-...），
+          # 故用 glob 兼容点名/空格/连字符，避免漏判导致跳过合并。
+          shopt -s nullglob
+          arm_zips=(release/"$VERSION"/*-arm64-Mac.zip)
+          if [ "${#arm_zips[@]}" -eq 0 ]; then
             echo "macOS arm64 zip is not in the Release yet; skip latest-mac.yml merge."
             exit 0
           fi
