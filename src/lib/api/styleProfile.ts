@@ -4,6 +4,7 @@
 import type {
 	StyleProfile,
 	StyleProfileDetail,
+	StyleProfileRecipe,
 	StyleSample,
 	StyleSampleContentType,
 	StyleSampleAuthStatus,
@@ -168,4 +169,56 @@ export async function listStyleFeedback(
 	limit?: number,
 ): Promise<StyleFeedback[]> {
 	return safeInvoke("style_feedback_list", { profile_id: profileId, limit });
+}
+
+// ── 混搭配方（Recipe）──────────────────────────────────────────────────────
+
+export async function createStyleRecipe(input: {
+	name: string;
+	description?: string;
+	cognitive_profile_id?: string | null;
+	rhetorical_profile_id?: string | null;
+	aesthetic_profile_id?: string | null;
+	anchors_profile_id?: string | null;
+	intensity?: StyleIntensity;
+}): Promise<StyleProfileRecipe> {
+	return safeInvoke("style_recipe_create", input);
+}
+
+export async function listStyleRecipes(): Promise<StyleProfileRecipe[]> {
+	return safeInvoke("style_recipe_list");
+}
+
+export async function getStyleRecipe(id: string): Promise<StyleProfileRecipe> {
+	return safeInvoke("style_recipe_get", { id });
+}
+
+export async function updateStyleRecipe(
+	id: string,
+	updates: {
+		name?: string;
+		description?: string;
+		cognitive_profile_id?: string | null;
+		rhetorical_profile_id?: string | null;
+		aesthetic_profile_id?: string | null;
+		anchors_profile_id?: string | null;
+		intensity?: StyleIntensity;
+	},
+): Promise<StyleProfileRecipe> {
+	return safeInvoke("style_recipe_update", { id, ...updates });
+}
+
+export async function deleteStyleRecipe(id: string): Promise<void> {
+	return safeInvoke("style_recipe_delete", { id });
+}
+
+export async function renderStyleRecipePrompt(
+	recipeId: string,
+	intensity?: StyleIntensity,
+): Promise<string> {
+	const result = await safeInvoke<{ prompt: string }>(
+		"style_recipe_render_prompt",
+		{ recipe_id: recipeId, intensity },
+	);
+	return result.prompt;
 }

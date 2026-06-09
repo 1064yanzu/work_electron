@@ -268,7 +268,17 @@ export function createFsSafeHandlers() {
 		const targetPath = normalizePathInput(input.path);
 		requireAbsolute(targetPath);
 		const recursive = Boolean(input.recursive);
-		const st = await fs.stat(targetPath);
+
+		let st: Awaited<ReturnType<typeof fs.stat>>;
+		try {
+			st = await fs.stat(targetPath);
+		} catch (err) {
+			// 目录不存在（已被清理/尚未创建）→ 返回空数组，不抛错
+			if ((err as NodeJS.ErrnoException)?.code === "ENOENT") {
+				return [];
+			}
+			throw err;
+		}
 
 		if (!st.isDirectory()) {
 			const name = path.basename(targetPath);

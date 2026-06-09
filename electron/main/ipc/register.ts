@@ -78,6 +78,7 @@ import {
 	createStyleAnalysisCrudHandlers,
 	createStyleRendererHandlers,
 	createStyleFeedbackHandlers,
+	createStyleRecipeCrudHandlers,
 } from "./handlers/styleProfile";
 import {
 	bindMainWindowGetter,
@@ -1454,10 +1455,19 @@ export function registerIpcHandlers({
 
 	const styleRendererHandlers = createStyleRendererHandlers(db);
 	ipcMain.handle("style_profile_render_prompt", styleRendererHandlers.style_profile_render_prompt);
+	ipcMain.handle("style_recipe_render_prompt", styleRendererHandlers.style_recipe_render_prompt);
 
 	const styleFeedbackHandlers = createStyleFeedbackHandlers(db);
 	ipcMain.handle("style_feedback_submit", styleFeedbackHandlers.style_feedback_submit);
 	ipcMain.handle("style_feedback_list", styleFeedbackHandlers.style_feedback_list);
+
+	// 混搭配方
+	const styleRecipeCrudHandlers = createStyleRecipeCrudHandlers(db);
+	ipcMain.handle("style_recipe_create", styleRecipeCrudHandlers.style_recipe_create);
+	ipcMain.handle("style_recipe_list", styleRecipeCrudHandlers.style_recipe_list);
+	ipcMain.handle("style_recipe_get", styleRecipeCrudHandlers.style_recipe_get);
+	ipcMain.handle("style_recipe_update", styleRecipeCrudHandlers.style_recipe_update);
+	ipcMain.handle("style_recipe_delete", styleRecipeCrudHandlers.style_recipe_delete);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

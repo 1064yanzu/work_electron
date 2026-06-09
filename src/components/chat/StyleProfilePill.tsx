@@ -6,19 +6,25 @@
  * - active：图标 + 短标签（最多 8 字符）+ peach 点
  * - 弹出菜单用 Portal + fixed，绕开 overflow-hidden 裁切
  */
-import { Check, Pen } from "lucide-react";
+import { Blend, Check, Pen } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { listStyleProfiles } from "../../lib/api/styleProfile";
+import { listStyleProfiles, listStyleRecipes } from "../../lib/api/styleProfile";
 import { getConfig, setConfig } from "../../lib/config";
-import type { StyleProfile } from "../../../electron/shared/ipc-schema";
+import type {
+	StyleProfile,
+	StyleProfileRecipe,
+} from "../../../electron/shared/ipc-schema";
 
 const ACTIVE_PROFILE_KEY = "active_style_profile_id";
+const ACTIVE_RECIPE_KEY = "active_style_recipe_id";
 
 export function StyleProfilePill() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [profiles, setProfiles] = useState<StyleProfile[]>([]);
+	const [recipes, setRecipes] = useState<StyleProfileRecipe[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
+	const [activeRecipeId, setActiveRecipeId] = useState<string | null>(null);
 	const [menuPosition, setMenuPosition] = useState<{
 		left: number;
 		bottom: number;
@@ -30,12 +36,16 @@ export function StyleProfilePill() {
 	useEffect(() => {
 		const load = async () => {
 			try {
-				const [ps, id] = await Promise.all([
+				const [ps, rcs, id, recipeId] = await Promise.all([
 					listStyleProfiles(),
+					listStyleRecipes(),
 					getConfig(ACTIVE_PROFILE_KEY),
+					getConfig(ACTIVE_RECIPE_KEY),
 				]);
 				setProfiles(ps.filter((p) => p.status === "active"));
+				setRecipes(rcs);
 				setActiveId(id ?? null);
+				setActiveRecipeId(recipeId ?? null);
 			} catch {
 				// 静默失败
 			}
@@ -48,8 +58,12 @@ export function StyleProfilePill() {
 		if (!isOpen) return;
 		const refresh = async () => {
 			try {
-				const ps = await listStyleProfiles();
+				const [ps, rcs] = await Promise.all([
+					listStyleProfiles(),
+					listStyleRecipes(),
+				]);
 				setProfiles(ps.filter((p) => p.status === "active"));
+				setRecipes(rcs);
 			} catch {
 				// 静默失败
 			}
@@ -103,14 +117,37 @@ export function StyleProfilePill() {
 		};
 	}, [isOpen]);
 
+	// 单包选择（清空配方）
 	const handleSelect = useCallback(async (id: string | null) => {
 		setActiveId(id);
-		await setConfig(ACTIVE_PROFILE_KEY, id);
+		setActiveRecipeId(null);
+		await Promise.all([
+			setConfig(ACTIVE_PROFILE_KEY, id),
+			setConfig(ACTIVE_RECIPE_KEY, null),
+		]);
+		setIsOpen(false);
+	}, []);
+
+	// 配方选择（清空单包）
+	const handleSelectRecipe = useCallback(async (id: string | null) => {
+		setActiveRecipeId(id);
+		setActiveId(null);
+		await Promise.all([
+			setConfig(ACTIVE_RECIPE_KEY, id),
+			setConfig(ACTIVE_PROFILE_KEY, null),
+		]);
 		setIsOpen(false);
 	}, []);
 
 	const activeProfile = profiles.find((p) => p.id === activeId) ?? null;
-	const hasActive = activeProfile !== null;
+	const activeRecipe = recipes.find((r) => r.id === activeRecipeId) ?? null;
+	const hasActive = activeProfile !== null || activeRecipe !== null;
+	const displayName = activeRecipe?.name ?? activeProfile?.name ?? null;
+	const displayDescription = activeRecipe
+		? (activeRecipe.description ?? activeRecipe.name)
+		: activeProfile
+			? (activeProfile.description?.slice(0, 40) ?? activeProfile.name)
+			: "不使用风格约束，保持默认输出";
 
 	// inactive：w-8 h-8 圆形图标（与工具栏其他按钮一致）
 	// active：图标 + 最多 8 字符名称
@@ -120,7 +157,7 @@ export function StyleProfilePill() {
 				ref={buttonRef}
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				title={activeProfile ? `语言风格：${activeProfile.name}` : "选择语言风格包"}
+				title={displayName ? `语言风格：${displayName}` : "选择语言风格包"}
 				className={`
 					flex items-center justify-center rounded-full
 					transition-all duration-150 cursor-pointer active:scale-95
@@ -131,23 +168,29 @@ export function StyleProfilePill() {
 					${isOpen
 						? "bg-warm-200 dark:bg-cream-700 text-text-primary"
 						: hasActive
-							? "text-peach-600 dark:text-peach-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
+							? activeRecipe
+								? "text-amber-600 dark:text-amber-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
+								: "text-peach-600 dark:text-peach-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
 							: "text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50"
 					}
 				`}
 			>
-				{/* 图标 — 激活时用 peach 色小圆点叠加 */}
+				{/* 图标 — 配方用 Blend，单包用 Pen */}
 				<span className="relative">
-					<Pen className="w-3.5 h-3.5" strokeWidth={1.5} />
+					{activeRecipe ? (
+						<Blend className="w-3.5 h-3.5" strokeWidth={1.5} />
+					) : (
+						<Pen className="w-3.5 h-3.5" strokeWidth={1.5} />
+					)}
 					{hasActive && (
-						<span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-peach-400 dark:bg-peach-300" />
+						<span className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${activeRecipe ? "bg-amber-400 dark:bg-amber-300" : "bg-peach-400 dark:bg-peach-300"}`} />
 					)}
 				</span>
 
 				{/* active 时展示短标签 */}
-				{hasActive && (
+				{hasActive && displayName && (
 					<span className="text-[11px] font-medium leading-none max-w-[60px] truncate">
-						{activeProfile.name.slice(0, 8)}
+						{displayName.slice(0, 8)}
 					</span>
 				)}
 			</button>
@@ -175,9 +218,7 @@ export function StyleProfilePill() {
 								</div>
 							</div>
 							<div className="text-[10px] text-text-muted/80 mt-0.5 leading-snug">
-								{activeProfile
-									? (activeProfile.description?.slice(0, 40) ?? activeProfile.name)
-									: "不使用风格约束，保持默认输出"}
+								{displayDescription}
 							</div>
 						</div>
 
@@ -186,28 +227,53 @@ export function StyleProfilePill() {
 							<MenuOption
 								label="不使用"
 								description="不注入风格约束"
-								isActive={activeId === null}
+								isActive={activeId === null && activeRecipeId === null}
 								onClick={() => void handleSelect(null)}
 							/>
 
-							{profiles.length === 0 ? (
+							{profiles.length === 0 && recipes.length === 0 ? (
 								<div className="px-3 py-3 text-[11px] text-text-muted text-center leading-relaxed">
 									暂无风格包
 									<br />
 									<span className="text-text-muted/60">请前往设置 → 语言风格包 创建</span>
 								</div>
 							) : (
-								profiles.map((p) => (
-									<MenuOption
-										key={p.id}
-										label={p.name}
-										description={p.description ?? undefined}
-										isActive={activeId === p.id}
-										onClick={() => void handleSelect(p.id)}
-									/>
-								))
+								<>
+									{/* 单一风格包 */}
+									{profiles.map((p) => (
+										<MenuOption
+											key={p.id}
+											label={p.name}
+											description={p.description ?? undefined}
+											isActive={activeId === p.id}
+											onClick={() => void handleSelect(p.id)}
+										/>
+									))}
+
+									{/* 混搭配方 */}
+									{recipes.length > 0 && (
+										<>
+											<div className="mx-2 my-1 border-t border-cream-300/50 dark:border-cream-600/30" />
+											<div className="px-2.5 py-1">
+												<div className="text-[9px] font-bold uppercase tracking-[0.08em] text-amber-500/70 dark:text-amber-400/60">
+													混搭配方
+												</div>
+											</div>
+											{recipes.map((r) => (
+												<MenuOption
+													key={r.id}
+													label={r.name}
+													description={r.description ?? undefined}
+													isActive={activeRecipeId === r.id}
+													onClick={() => void handleSelectRecipe(r.id)}
+													isRecipe
+												/>
+											))}
+										</>
+									)}
+								</>
 							)}
-						</div>
+					</div>
 					</div>,
 					document.body,
 				)}
@@ -222,9 +288,13 @@ interface MenuOptionProps {
 	description?: string;
 	isActive: boolean;
 	onClick: () => void;
+	isRecipe?: boolean;
 }
 
-function MenuOption({ label, description, isActive, onClick }: MenuOptionProps) {
+function MenuOption({ label, description, isActive, onClick, isRecipe }: MenuOptionProps) {
+	const checkColor = isRecipe
+		? "text-amber-500 dark:text-amber-300"
+		: "text-peach-500 dark:text-peach-300";
 	return (
 		<button
 			type="button"
@@ -240,8 +310,13 @@ function MenuOption({ label, description, isActive, onClick }: MenuOptionProps) 
 			`}
 		>
 			<div className="flex-1 min-w-0">
-				<div className={`text-[12px] leading-none ${isActive ? "font-semibold" : "font-medium"}`}>
-					{label}
+				<div className="flex items-center gap-1.5">
+					{isRecipe && (
+						<Blend className="w-3 h-3 text-amber-500/70 dark:text-amber-400/60 shrink-0" strokeWidth={1.5} />
+					)}
+					<span className={`text-[12px] leading-none ${isActive ? "font-semibold" : "font-medium"}`}>
+						{label}
+					</span>
 				</div>
 				{description && (
 					<div className="text-[10px] text-text-muted mt-0.5 truncate leading-snug">
@@ -251,7 +326,7 @@ function MenuOption({ label, description, isActive, onClick }: MenuOptionProps) 
 			</div>
 			<Check
 				className={`w-3 h-3 shrink-0 transition-opacity duration-150 ${
-					isActive ? "opacity-100 text-peach-500 dark:text-peach-300" : "opacity-0"
+					isActive ? `opacity-100 ${checkColor}` : "opacity-0"
 				}`}
 				strokeWidth={2.5}
 			/>

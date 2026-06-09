@@ -42,6 +42,15 @@ function renderAxisBlock(
 	return `  <${label}>\n${items}\n  </${label}>`;
 }
 
+function parseAxes(raw: unknown): StyleAxisAnalysis[] {
+	if (!raw) return [];
+	try {
+		return JSON.parse(raw as string) as StyleAxisAnalysis[];
+	} catch {
+		return [];
+	}
+}
+
 export function createStyleRendererHandlers(db: DbContext) {
 	const renderPrompt: Handler<"style_profile_render_prompt"> = async (
 		_event,
@@ -70,15 +79,6 @@ export function createStyleRendererHandlers(db: DbContext) {
 		}
 
 		const ar = analysisRows.rows[0] as Record<string, unknown>;
-
-		function parseAxes(raw: unknown): StyleAxisAnalysis[] {
-			if (!raw) return [];
-			try {
-				return JSON.parse(raw as string) as StyleAxisAnalysis[];
-			} catch {
-				return [];
-			}
-		}
 
 		const cognitivePattern = parseAxes(ar.cognitive_pattern);
 		const rhetoricalStance = parseAxes(ar.rhetorical_stance);
@@ -158,5 +158,125 @@ ${sections.join("\n")}
 		return { prompt };
 	};
 
-	return { style_profile_render_prompt: renderPrompt };
+	const renderRecipePrompt: Handler<"style_recipe_render_prompt"> = async (
+		_event,
+		input,
+	) => {
+		const { recipe_id, intensity: overrideIntensity } = input;
+
+		// 获取配方信息
+		const recipeRows = await db.client.execute({
+			sql: `SELECT * FROM style_profile_recipes WHERE id = ?`,
+			args: [recipe_id],
+		});
+		if (recipeRows.rows.length === 0) {
+			return { prompt: "" };
+		}
+		const recipe = recipeRows.rows[0] as Record<string, unknown>;
+		const recipeName = recipe.name as string;
+		const intensity: StyleIntensity =
+			overrideIntensity ??
+			((recipe.intensity as StyleIntensity) || "medium");
+
+		// 从各来源 profile 获取对应层级的分析数据
+		const layerConfigs = [
+			{
+				profileId: recipe.cognitive_profile_id as string | null,
+				field: "cognitive_pattern",
+				label: "cognitive_pattern",
+			},
+			{
+				profileId: recipe.rhetorical_profile_id as string | null,
+				field: "rhetorical_stance",
+				label: "rhetorical_stance",
+			},
+			{
+				profileId: recipe.aesthetic_profile_id as string | null,
+				field: "language_aesthetic",
+				label: "language_aesthetic",
+			},
+		] as const;
+
+		const sections: string[] = [];
+
+		for (const layer of layerConfigs) {
+			if (!layer.profileId) continue;
+			const analysisRows = await db.client.execute({
+				sql: `SELECT ${layer.field} FROM style_analyses
+					WHERE profile_id = ? ORDER BY analysis_version DESC LIMIT 1`,
+				args: [layer.profileId],
+			});
+			if (analysisRows.rows.length === 0) continue;
+			const raw = (analysisRows.rows[0] as Record<string, unknown>)[
+				layer.field
+			];
+			const axes = parseAxes(raw);
+			const block = renderAxisBlock(layer.label, axes, intensity);
+			if (block) sections.push(block);
+		}
+
+		// 校准锚点
+		const anchorsProfileId = recipe.anchors_profile_id as string | null;
+		if (anchorsProfileId) {
+			const anchorsRows = await db.client.execute({
+				sql: `SELECT calibration_anchors FROM style_analyses
+					WHERE profile_id = ? ORDER BY analysis_version DESC LIMIT 1`,
+				args: [anchorsProfileId],
+			});
+			if (anchorsRows.rows.length > 0) {
+				const rawAnchors = (
+					anchorsRows.rows[0] as Record<string, unknown>
+				).calibration_anchors;
+				const calibrationAnchors = rawAnchors
+					? (() => {
+							try {
+								return JSON.parse(rawAnchors as string) as {
+									positive: string[];
+									negative: string[];
+								};
+							} catch {
+								return { positive: [], negative: [] };
+							}
+						})()
+					: { positive: [], negative: [] };
+
+				if (calibrationAnchors.positive?.length > 0) {
+					const positiveItems = calibrationAnchors.positive
+						.map((p) => `    <positive>${p}</positive>`)
+						.join("\n");
+					let anchorsBlock = `  <calibration_anchors>\n${positiveItems}`;
+					if (
+						intensity === "high" &&
+						calibrationAnchors.negative?.length > 0
+					) {
+						const negativeItems = calibrationAnchors.negative
+							.map((n) => `    <negative>${n}</negative>`)
+							.join("\n");
+						anchorsBlock += `\n${negativeItems}`;
+					}
+					anchorsBlock += `\n  </calibration_anchors>`;
+					sections.push(anchorsBlock);
+				}
+			}
+		}
+
+		if (sections.length === 0) return { prompt: "" };
+
+		const intensityComment: Record<StyleIntensity, string> = {
+			low: "direction-only",
+			medium: "full-rules",
+			high: "full-rules+anchors",
+		};
+
+		const prompt = `<style_profile name="${recipeName}" type="recipe" intensity="${intensity}" mode="${intensityComment[intensity]}">
+${sections.join("\n")}
+</style_profile>`;
+
+		return { prompt };
+	};
+
+	return {
+		style_profile_render_prompt: renderPrompt,
+		style_recipe_render_prompt: renderRecipePrompt,
+	};
 }

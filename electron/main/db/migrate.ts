@@ -280,4 +280,25 @@ export async function runMigrations(ctx: DbContext) {
 	} catch {
 		// 忽略索引创建错误
 	}
+
+	// Migration: 语言风格包混搭配方表
+	await ctx.client.execute({
+		sql: `CREATE TABLE IF NOT EXISTS style_profile_recipes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      cognitive_profile_id TEXT,
+      rhetorical_profile_id TEXT,
+      aesthetic_profile_id TEXT,
+      anchors_profile_id TEXT,
+      intensity TEXT DEFAULT 'medium',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (cognitive_profile_id) REFERENCES style_profiles(id) ON DELETE SET NULL,
+      FOREIGN KEY (rhetorical_profile_id) REFERENCES style_profiles(id) ON DELETE SET NULL,
+      FOREIGN KEY (aesthetic_profile_id) REFERENCES style_profiles(id) ON DELETE SET NULL,
+      FOREIGN KEY (anchors_profile_id) REFERENCES style_profiles(id) ON DELETE SET NULL
+    )`,
+		args: [],
+	});
 }

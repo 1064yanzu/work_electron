@@ -3519,6 +3519,58 @@ export type IPCSchema = {
 		input: { profile_id: string; limit?: number };
 		output: StyleFeedback[];
 	};
+
+	// ==================================================================================
+	// 语言风格包混搭配方（Style Recipe）IPC channels
+	// ==================================================================================
+
+	/** 创建混搭配方 */
+	style_recipe_create: {
+		input: {
+			name: string;
+			description?: string;
+			cognitive_profile_id?: string | null;
+			rhetorical_profile_id?: string | null;
+			aesthetic_profile_id?: string | null;
+			anchors_profile_id?: string | null;
+			intensity?: StyleIntensity;
+		};
+		output: StyleProfileRecipe;
+	};
+	/** 获取混搭配方列表 */
+	style_recipe_list: {
+		input: Record<string, never>;
+		output: StyleProfileRecipe[];
+	};
+	/** 获取混搭配方详情 */
+	style_recipe_get: {
+		input: { id: string };
+		output: StyleProfileRecipe;
+	};
+	/** 更新混搭配方 */
+	style_recipe_update: {
+		input: {
+			id: string;
+			name?: string;
+			description?: string;
+			cognitive_profile_id?: string | null;
+			rhetorical_profile_id?: string | null;
+			aesthetic_profile_id?: string | null;
+			anchors_profile_id?: string | null;
+			intensity?: StyleIntensity;
+		};
+		output: StyleProfileRecipe;
+	};
+	/** 删除混搭配方 */
+	style_recipe_delete: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+	/** 将混搭配方渲染为注入用的 system prompt XML 块 */
+	style_recipe_render_prompt: {
+		input: { recipe_id: string; intensity?: StyleIntensity };
+		output: { prompt: string };
+	};
 };
 
 // =====================
@@ -3763,6 +3815,29 @@ export interface StyleAnalysisProgressEvent {
 	status: "running" | "done" | "error";
 	partial_result?: Partial<StyleAnalysisData>;
 	error?: string;
+}
+
+/** 混搭配方（从多个风格包中挑选不同层级组合） */
+export interface StyleProfileRecipe {
+	id: string;
+	name: string;
+	description: string | null;
+	/** 认知模式来源 profile_id */
+	cognitive_profile_id: string | null;
+	/** 话语姿态来源 profile_id */
+	rhetorical_profile_id: string | null;
+	/** 语言审美来源 profile_id */
+	aesthetic_profile_id: string | null;
+	/** 校准锚点来源 profile_id */
+	anchors_profile_id: string | null;
+	intensity: StyleIntensity;
+	created_at: number;
+	updated_at: number;
+	/** 各层级来源的名称（由后端填充，方便前端展示） */
+	cognitive_profile_name?: string;
+	rhetorical_profile_name?: string;
+	aesthetic_profile_name?: string;
+	anchors_profile_name?: string;
 }
 
 export type IPCChannel = keyof IPCSchema;

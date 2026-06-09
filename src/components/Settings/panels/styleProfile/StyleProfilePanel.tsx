@@ -8,14 +8,19 @@
  * - "不使用风格包"作为列表顶部的特殊选项卡片。
  * - 归档包独立在底部折叠区，平时不干扰视线。
  */
-import { Pen, Plus } from "lucide-react";
+import { Blend, Pen, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	listStyleProfiles,
 	deleteStyleProfile,
 	archiveStyleProfile,
+	listStyleRecipes,
+	deleteStyleRecipe,
 } from "../../../../lib/api/styleProfile";
-import type { StyleProfile } from "../../../../../electron/shared/ipc-schema";
+import type {
+	StyleProfile,
+	StyleProfileRecipe,
+} from "../../../../../electron/shared/ipc-schema";
 import { getConfig, setConfig } from "../../../../lib/config";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
 import {
@@ -28,9 +33,12 @@ import {
 } from "../../ui/SettingsPrimitives";
 import { StyleProfileListItem } from "./StyleProfileListItem";
 import { StyleProfileCreateModal } from "./StyleProfileCreateModal";
+import { StyleRecipeListItem } from "./StyleRecipeListItem";
+import { StyleRecipeCreateModal } from "./StyleRecipeCreateModal";
 
 const ACTIVE_PROFILE_KEY = "active_style_profile_id";
 const ACTIVE_INTENSITY_KEY = "active_style_profile_intensity";
+const ACTIVE_RECIPE_KEY = "active_style_recipe_id";
 
 type Intensity = "low" | "medium" | "high";
 
@@ -42,21 +50,28 @@ const INTENSITY_OPTIONS: SettingsChipOption<Intensity>[] = [
 
 export function StyleProfilePanel() {
 	const [profiles, setProfiles] = useState<StyleProfile[]>([]);
+	const [recipes, setRecipes] = useState<StyleProfileRecipe[]>([]);
 	const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+	const [activeRecipeId, setActiveRecipeId] = useState<string | null>(null);
 	const [intensity, setIntensity] = useState<Intensity>("medium");
 	const [showCreateModal, setShowCreateModal] = useState(false);
+	const [showRecipeModal, setShowRecipeModal] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
 
 	const loadData = useCallback(async () => {
 		try {
-			const [ps, activeId, intensityVal] = await Promise.all([
+			const [ps, rcs, activeId, recipeId, intensityVal] = await Promise.all([
 				listStyleProfiles(),
+				listStyleRecipes(),
 				getConfig(ACTIVE_PROFILE_KEY),
+				getConfig(ACTIVE_RECIPE_KEY),
 				getConfig(ACTIVE_INTENSITY_KEY),
 			]);
 			setProfiles(ps);
+			setRecipes(rcs);
 			setActiveProfileId(activeId ?? null);
+			setActiveRecipeId(recipeId ?? null);
 			setIntensity((intensityVal as Intensity) || "medium");
 		} catch (e) {
 			console.warn("[StyleProfilePanel] load failed:", e);
@@ -69,9 +84,23 @@ export function StyleProfilePanel() {
 		void loadData();
 	}, [loadData]);
 
+	// 单包与配方互斥：选中单包时清空配方，反之亦然
 	const handleSetActive = useCallback(async (id: string | null) => {
 		setActiveProfileId(id);
-		await setConfig(ACTIVE_PROFILE_KEY, id ?? null);
+		setActiveRecipeId(null);
+		await Promise.all([
+			setConfig(ACTIVE_PROFILE_KEY, id ?? null),
+			setConfig(ACTIVE_RECIPE_KEY, null),
+		]);
+	}, []);
+
+	const handleSetActiveRecipe = useCallback(async (id: string | null) => {
+		setActiveRecipeId(id);
+		setActiveProfileId(null);
+		await Promise.all([
+			setConfig(ACTIVE_RECIPE_KEY, id ?? null),
+			setConfig(ACTIVE_PROFILE_KEY, null),
+		]);
 	}, []);
 
 	const handleSetIntensity = useCallback(async (val: Intensity) => {
@@ -110,9 +139,23 @@ export function StyleProfilePanel() {
 		await loadData();
 	}, [loadData]);
 
+	const handleRecipeCreated = useCallback(async (_recipeId: string) => {
+		setShowRecipeModal(false);
+		await loadData();
+	}, [loadData]);
+
+	const handleDeleteRecipe = useCallback(async (id: string) => {
+		await deleteStyleRecipe(id);
+		if (activeRecipeId === id) {
+			setActiveRecipeId(null);
+			await setConfig(ACTIVE_RECIPE_KEY, null);
+		}
+		await loadData();
+	}, [activeRecipeId, loadData]);
+
 	const activeProfiles = profiles.filter((p) => p.status === "active");
 	const archivedProfiles = profiles.filter((p) => p.status === "archived");
-	const hasActiveProfile = activeProfileId !== null;
+	const hasActiveProfile = activeProfileId !== null || activeRecipeId !== null;
 
 	return (
 		<SettingsPageContainer>
@@ -154,8 +197,12 @@ export function StyleProfilePanel() {
 				<div className="flex flex-col gap-2">
 					{/* 「不使用」选项 */}
 					<NoStyleCard
-						selected={activeProfileId === null}
-						onClick={() => void handleSetActive(null)}
+						selected={activeProfileId === null && activeRecipeId === null}
+						onClick={() => {
+							void handleSetActive(null);
+							setActiveRecipeId(null);
+							void setConfig(ACTIVE_RECIPE_KEY, null);
+						}}
 					/>
 
 					{loading ? (
@@ -193,6 +240,43 @@ export function StyleProfilePanel() {
 				</div>
 			</SettingsCardSection>
 
+			{/* 混搭配方 */}
+			<SettingsCardSection
+				title="混搭配方"
+				description="从不同风格包中挑选各层级（认知模式 / 话语姿态 / 语言审美 / 校准锚点），组合成自定义配方。"
+			>
+				<div className="flex flex-col gap-2">
+					{recipes.length === 0 ? (
+						<div className="py-4 text-center text-xs text-text-muted">
+							还没有混搭配方。创建至少两个风格包后，可以将它们的不同维度组合在一起使用。
+						</div>
+					) : (
+						recipes.map((r) => (
+							<StyleRecipeListItem
+								key={r.id}
+								recipe={r}
+								isActive={activeRecipeId === r.id}
+								onSetActive={() => void handleSetActiveRecipe(r.id)}
+								onDelete={() => void handleDeleteRecipe(r.id)}
+							/>
+						))
+					)}
+				</div>
+
+				{activeProfiles.length >= 2 && (
+					<div className="mt-4">
+						<button
+							type="button"
+							onClick={() => setShowRecipeModal(true)}
+							className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-amber-400/60 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 hover:border-amber-500 dark:hover:border-amber-400/60 hover:bg-amber-50/50 dark:hover:bg-amber-900/20 transition-colors duration-150"
+						>
+							<Blend size={14} strokeWidth={1.8} />
+							新建混搭配方
+						</button>
+					</div>
+				)}
+			</SettingsCardSection>
+
 			{/* 已归档（仅有归档包时展示） */}
 			{archivedProfiles.length > 0 && (
 				<SettingsCardSection
@@ -220,6 +304,13 @@ export function StyleProfilePanel() {
 				<StyleProfileCreateModal
 					onClose={() => setShowCreateModal(false)}
 					onCreated={handleCreated}
+				/>
+			)}
+
+			{showRecipeModal && (
+				<StyleRecipeCreateModal
+					onClose={() => setShowRecipeModal(false)}
+					onCreated={handleRecipeCreated}
 				/>
 			)}
 		</SettingsPageContainer>

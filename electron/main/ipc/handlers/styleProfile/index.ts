@@ -7,4 +7,5 @@ export { createStyleAnalyzerHandlers } from "./analyzer";
 export { createStyleAnalysisCrudHandlers } from "./analysisCrud";
 export { createStyleRendererHandlers } from "./renderer";
 export { createStyleFeedbackHandlers } from "./feedback";
+export { createStyleRecipeCrudHandlers } from "./recipeCrud";
 export { getActiveStylePrompt } from "./styleProfileInjector";
