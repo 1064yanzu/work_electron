@@ -1,6 +1,7 @@
 import { Copy, ClipboardPaste, TextSelect, RotateCcw } from "lucide-react";
 import { createElement } from "react";
 import type { ContextMenuItem } from "../../components/ui/ContextMenu";
+import { shortcut } from "../platform";
 
 /**
  * 构建通用区域默认右键菜单
@@ -20,7 +21,7 @@ export function buildDefaultContextMenu(): ContextMenuItem[] {
 				}
 			},
 			disabled: !hasSelection,
-			shortcut: "⌘C",
+			shortcut: shortcut("C"),
 		},
 		{
 			label: "粘贴",
@@ -36,7 +37,7 @@ export function buildDefaultContextMenu(): ContextMenuItem[] {
 					});
 				}
 			},
-			shortcut: "⌘V",
+			shortcut: shortcut("V"),
 		},
 		{
 			label: "全选",
@@ -52,7 +53,7 @@ export function buildDefaultContextMenu(): ContextMenuItem[] {
 					document.execCommand("selectAll");
 				}
 			},
-			shortcut: "⌘A",
+			shortcut: shortcut("A"),
 		},
 		{ separator: true, label: "", onClick: () => {} },
 		{
@@ -61,7 +62,7 @@ export function buildDefaultContextMenu(): ContextMenuItem[] {
 			onClick: () => {
 				window.location.reload();
 			},
-			shortcut: "⌘R",
+			shortcut: shortcut("R"),
 		},
 	];
 }

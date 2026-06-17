@@ -4,6 +4,7 @@
 // 下一阶段（未实现）：允许重映射 — 需要把硬编码的 keydown listener 改为 keymap store 驱动。
 
 import { Command, Keyboard } from "lucide-react";
+import { modKey } from "../../../lib/platform";
 import {
 	SettingsPageContainer,
 	SettingsSectionCard,
@@ -22,9 +23,7 @@ interface ShortcutGroup {
 	entries: ShortcutEntry[];
 }
 
-const isMac =
-	typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
-const Mod = isMac ? "⌘" : "Ctrl";
+const Mod = modKey;
 
 const SHORTCUT_GROUPS: ShortcutGroup[] = [
 	{

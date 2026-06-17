@@ -549,17 +549,38 @@ export function useWorkspaceStore() {
 	return { ...state, ...workspaceActions };
 }
 
-// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
+// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染。
+// 与 stores/createStore.ts 的 createUseStoreSelector 保持同一套缓存策略：
+// 1) 聚合 state 引用没变 → 直接复用上次结果（跳过 selector 执行）
+// 2) state 变了但 selector 结果 Object.is 相同 → 保持旧引用，
+//    让 useSyncExternalStore 跳过这次更新（内联对象 selector 不再每次触发重渲染）
 export function useWorkspaceStoreSelector<T>(
 	selector: (state: WorkspaceState) => T,
 ): T {
 	const selectorRef = useRef(selector);
+	const lastStateRef = useRef<WorkspaceState | null>(null);
+	const lastSelectedRef = useRef<T | null>(null);
 	selectorRef.current = selector;
 
-	const getSnapshot = useCallback(
-		() => selectorRef.current(workspaceStore.getState()),
-		[],
-	);
+	const getSnapshot = useCallback(() => {
+		const nextState = workspaceStore.getState();
+		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+			return lastSelectedRef.current;
+		}
+
+		const nextSelected = selectorRef.current(nextState);
+		lastStateRef.current = nextState;
+
+		if (
+			lastSelectedRef.current !== null &&
+			Object.is(lastSelectedRef.current, nextSelected)
+		) {
+			return lastSelectedRef.current;
+		}
+
+		lastSelectedRef.current = nextSelected;
+		return nextSelected;
+	}, []);
 
 	return useSyncExternalStore(
 		workspaceStore.subscribe,

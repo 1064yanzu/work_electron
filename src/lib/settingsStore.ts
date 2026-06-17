@@ -1,4 +1,5 @@
 import { Cpu } from "lucide-react";
+import { toast } from "../components/ui/Toast";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
 	CORE_PROVIDER_IDS,
@@ -389,6 +390,7 @@ export const settingsStore = {
 			emitChange();
 		} catch (error) {
 			console.error("Failed to update provider:", error);
+			toast.error(`更新服务商配置失败：${error instanceof Error ? error.message : "未知错误"}`);
 		}
 	},
 
@@ -482,6 +484,7 @@ export const settingsStore = {
 			emitChange();
 		} catch (error) {
 			console.error("Failed to set active model:", error);
+			toast.error(`切换模型失败：${error instanceof Error ? error.message : "未知错误"}`);
 		}
 	},
 

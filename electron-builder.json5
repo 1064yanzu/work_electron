@@ -22,7 +22,11 @@
     "!**/{.vscode,.git,.github,.DS_Store}",
     "!**/{README.md,CHANGELOG.md,*.log}",
     "!**/{tsconfig*.json,.eslintrc.cjs,biome.json}",
-    "!**/*.{map,ts,tsx,md}"
+    "!**/*.{map,ts,tsx,md}",
+    // node_modules 瘦身：测试 / 文档 / 示例目录与类型声明对运行时无用
+    "!node_modules/**/{test,tests,__tests__,docs,doc,example,examples,coverage,.github}/**",
+    "!node_modules/**/*.{d.ts,d.mts,d.cts,flow,markdown}",
+    "!node_modules/**/{.editorconfig,.npmignore,.eslintrc.json,.prettierrc}"
   ],
   "asarUnpack": [
     "**/*.{node,dll,dylib,so}",

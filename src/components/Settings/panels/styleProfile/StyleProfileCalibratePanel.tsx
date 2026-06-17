@@ -1,9 +1,8 @@
 /**
  * StyleProfileCalibratePanel — 风格维度手动校准编辑器
  *
- * 展示 AI 分析的三层维度（认知模式/话语姿态/语言审美）和校准锚点，
- * 支持逐条编辑名称、描述、强度，以及添加/删除维度条目。
- * 保存时调用 style_analysis_update。
+ * 展示 AI 分析结果，支持 v1（三层）和 v2（灵魂-骨干-血肉）格式。
+ * v1 支持编辑，v2 当前为只读展示。
  */
 import {
 	Check,
@@ -14,6 +13,7 @@ import {
 	RotateCcw,
 	Save,
 	X,
+	Info,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type {
@@ -25,6 +25,7 @@ import {
 	getStyleAnalysis,
 	updateStyleAnalysis,
 } from "../../../../lib/api/styleProfile";
+import { StyleAnalysisV2Display } from "./StyleAnalysisV2Display";
 
 interface Props {
 	profileId: string;
@@ -122,7 +123,9 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 		) => {
 			setDraft((prev) => {
 				if (!prev) return prev;
-				const group = [...prev[groupKey]];
+				const currentGroup = prev[groupKey];
+				if (!Array.isArray(currentGroup)) return prev;
+				const group = [...currentGroup];
 				group[index] = { ...group[index], [field]: value };
 				return { ...prev, [groupKey]: group };
 			});
@@ -145,7 +148,9 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 			};
 			setDraft((prev) => {
 				if (!prev) return prev;
-				return { ...prev, [groupKey]: [...prev[groupKey], newAxis] };
+				const currentGroup = prev[groupKey];
+				if (!Array.isArray(currentGroup)) return prev;
+				return { ...prev, [groupKey]: [...currentGroup, newAxis] };
 			});
 			setIsDirty(true);
 		},
@@ -162,7 +167,9 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 		) => {
 			setDraft((prev) => {
 				if (!prev) return prev;
-				const group = [...prev[groupKey]];
+				const currentGroup = prev[groupKey];
+				if (!Array.isArray(currentGroup)) return prev;
+				const group = [...currentGroup];
 				group.splice(index, 1);
 				return { ...prev, [groupKey]: group };
 			});
@@ -173,40 +180,43 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 
 	const updateAnchor = useCallback(
 		(
-			field: keyof StyleCalibrationAnchors,
+			field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">,
 			index: number,
 			value: string,
 		) => {
 			setDraft((prev) => {
 				if (!prev) return prev;
 				const anchors = { ...prev.calibration_anchors };
-				const list = [...anchors[field]];
+				const currentList = anchors[field];
+				if (!Array.isArray(currentList)) return prev;
+				const list = [...currentList];
 				list[index] = value;
-				anchors[field] = list;
-				return { ...prev, calibration_anchors: anchors };
+				return { ...prev, calibration_anchors: { ...anchors, [field]: list } };
 			});
 			setIsDirty(true);
 		},
 		[],
 	);
 
-	const addAnchor = useCallback((field: keyof StyleCalibrationAnchors) => {
+	const addAnchor = useCallback((field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">) => {
 		setDraft((prev) => {
 			if (!prev) return prev;
 			const anchors = { ...prev.calibration_anchors };
-			anchors[field] = [...anchors[field], ""];
-			return { ...prev, calibration_anchors: anchors };
+			const currentList = anchors[field];
+			if (!Array.isArray(currentList)) return prev;
+			return { ...prev, calibration_anchors: { ...anchors, [field]: [...currentList, ""] } };
 		});
 		setIsDirty(true);
 	}, []);
 
 	const removeAnchor = useCallback(
-		(field: keyof StyleCalibrationAnchors, index: number) => {
+		(field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">, index: number) => {
 			setDraft((prev) => {
 				if (!prev) return prev;
 				const anchors = { ...prev.calibration_anchors };
-				anchors[field] = anchors[field].filter((_, i) => i !== index);
-				return { ...prev, calibration_anchors: anchors };
+				const currentList = anchors[field];
+				if (!Array.isArray(currentList)) return prev;
+				return { ...prev, calibration_anchors: { ...anchors, [field]: currentList.filter((_, i) => i !== index) } };
 			});
 			setIsDirty(true);
 		},
@@ -254,6 +264,38 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 		);
 	}
 
+	// 检测是否为 v2 数据
+	const isV2 = draft.schema_version === "v2";
+
+	// v2 数据：只读展示
+	if (isV2) {
+		return (
+			<div className="space-y-4">
+				{/* v2 提示 */}
+				<div className="flex items-start gap-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200/70 dark:border-violet-700/40 px-3 py-2">
+					<Info size={12} className="shrink-0 text-violet-600 dark:text-violet-400 mt-0.5" />
+					<div className="flex-1 text-[11px] text-violet-700 dark:text-violet-300">
+						<div className="font-medium mb-0.5">完整「灵魂-骨干-血肉」体系分析</div>
+						<div className="text-violet-600/80 dark:text-violet-400/80">
+							包含 8 层结构和关系性维度（气韵、全息、经变）。当前为只读展示，编辑功能即将推出。
+						</div>
+					</div>
+				</div>
+
+				{/* v2 数据展示 */}
+				<StyleAnalysisV2Display
+					soulLayer={draft.soul_layer}
+					thinkingOperation={draft.thinking_operation}
+					articulationPattern={draft.articulation_pattern}
+					textureLayer={draft.texture_layer}
+					crossCutting={draft.cross_cutting}
+					calibrationAnchors={draft.calibration_anchors}
+				/>
+			</div>
+		);
+	}
+
+	// v1 数据：可编辑
 	return (
 		<div className="space-y-4">
 			{/* 顶部工具栏 */}
@@ -287,6 +329,9 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 			{/* 三层维度 */}
 			{DIMENSION_GROUPS.map(({ key, label, description }) => {
 				const axes = draft[key];
+				// v2 兼容：如果不是数组则跳过
+				if (!Array.isArray(axes)) return null;
+
 				const isExpanded = expandedGroups.has(key);
 				return (
 					<div

@@ -4,8 +4,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { net } from "electron";
-import { JSDOM, VirtualConsole } from "jsdom";
-import mammoth from "mammoth";
+// jsdom / mammoth 懒加载：运行时按需 import，避免主进程启动时大量占用内存
+async function lazyJsdom() {
+	const { JSDOM, VirtualConsole } = await import("jsdom");
+	return { JSDOM, VirtualConsole };
+}
 
 import type { DbContext } from "../db/client";
 import type {
@@ -107,8 +110,9 @@ function parsePublishedAt(value: string): number | undefined {
 	return undefined;
 }
 
-function extractMetaFromHtml(html: string, baseUrl: string): MetaExtract {
+async function extractMetaFromHtml(html: string, baseUrl: string): Promise<MetaExtract> {
 	try {
+		const { JSDOM, VirtualConsole } = await lazyJsdom();
 		const virtualConsole = new VirtualConsole();
 		const dom = new JSDOM(html, { url: baseUrl, virtualConsole });
 		const doc = dom.window.document;
@@ -268,8 +272,9 @@ function guessCategoryForKind(kind: SourceKind): SourceCategory {
 	return "article";
 }
 
-function stripHtmlToText(html: string): string {
+async function stripHtmlToText(html: string): Promise<string> {
 	try {
+		const { JSDOM, VirtualConsole } = await lazyJsdom();
 		const virtualConsole = new VirtualConsole();
 		const dom = new JSDOM(html, { virtualConsole });
 		const text = dom.window.document.body?.textContent || "";
@@ -360,7 +365,7 @@ export async function ingestUrlContent(
 	if (!normalizedUrl) throw new Error("URL 不能为空");
 
 	const { finalUrl, html } = await fetchHtmlDocument(normalizedUrl);
-	const meta = extractMetaFromHtml(html, finalUrl);
+	const meta = await extractMetaFromHtml(html, finalUrl);
 
 	const extracted = extractArticleFromHtml({
 		html,
@@ -379,7 +384,7 @@ export async function ingestUrlContent(
 	const author = extracted.byline || meta.author || undefined;
 	const published_at = meta.published_at;
 
-	const contentText = extracted.text || stripHtmlToText(html);
+	const contentText = extracted.text || await stripHtmlToText(html);
 	const contentHtml = extracted.html || undefined;
 
 	const source = await insertSource(db, {
@@ -427,7 +432,7 @@ export async function ingestUploadedFileContent(
 		fileType.toLowerCase() === "html" || fileType.toLowerCase() === "htm"
 			? content
 			: undefined;
-	const contentText = contentHtml ? stripHtmlToText(contentHtml) : content;
+	const contentText = contentHtml ? await stripHtmlToText(contentHtml) : content;
 
 	const source = await insertSource(db, {
 		id: randomUUID(),
@@ -492,10 +497,11 @@ async function ingestLocalFile(
 		meta: parsedMeta,
 	}: IngestPayload = await (async (): Promise<IngestPayload> => {
 		if (ext === ".docx") {
-			const result = await mammoth.convertToHtml({ path: absPath });
+			const mammoth = await import("mammoth");
+			const result = await mammoth.default.convertToHtml({ path: absPath });
 			const html = result.value || "";
 			return {
-				contentText: stripHtmlToText(html) || baseName,
+				contentText: await stripHtmlToText(html) || baseName,
 				contentHtml: html || undefined,
 			};
 		}
@@ -611,7 +617,7 @@ async function ingestLocalFile(
 				titleHint: baseName,
 			});
 			return {
-				contentText: extracted.text || stripHtmlToText(raw) || baseName,
+				contentText: extracted.text || await stripHtmlToText(raw) || baseName,
 				contentHtml: extracted.html || raw || undefined,
 			};
 		}

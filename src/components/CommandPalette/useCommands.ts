@@ -13,6 +13,7 @@ import {
 	Terminal as TerminalIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { modKey } from "../../lib/platform";
 import { themeManager } from "../../lib/theme";
 import { workspaceStore } from "../../lib/workspaceStore";
 import type { CommandItem } from "./types";
@@ -45,7 +46,7 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			icon: MessageSquare,
 			keywords: ["copilot", "right", "sidebar", "ai", "celebianlan"],
 			group: "工作区",
-			shortcut: ["⌘", "L"],
+			shortcut: [modKey, "L"],
 			action: () => workspaceStore.toggleRightSidebar(),
 		});
 

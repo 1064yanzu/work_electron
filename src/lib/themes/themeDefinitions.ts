@@ -34,6 +34,16 @@ export interface ThemeColors {
 	// 纹理叠加色
 	"--t-texture-a": string;
 	"--t-texture-b": string;
+
+	// 语义状态色（成功 / 错误 / 警告 / 信息）+ muted 背景变体
+	"--t-success": string;
+	"--t-success-muted": string;
+	"--t-error": string;
+	"--t-error-muted": string;
+	"--t-warning": string;
+	"--t-warning-muted": string;
+	"--t-info": string;
+	"--t-info-muted": string;
 }
 
 export interface ThemeDefinition {
@@ -72,6 +82,14 @@ const bai: ThemeDefinition = {
 		"--t-scrollbar-hover": "#D8D4C9",
 		"--t-texture-a": "rgba(248,220,203,0.05)",
 		"--t-texture-b": "rgba(157,157,152,0.02)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#1A1A19",
@@ -93,6 +111,14 @@ const bai: ThemeDefinition = {
 		"--t-scrollbar-hover": "#3D3D3A",
 		"--t-texture-a": "rgba(248,220,203,0.04)",
 		"--t-texture-b": "rgba(157,157,152,0.02)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -122,6 +148,14 @@ const classic: ThemeDefinition = {
 		"--t-scrollbar-hover": "#c2c0b6",
 		"--t-texture-a": "rgba(201,100,66,0.025)",
 		"--t-texture-b": "rgba(93,93,89,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#141413",
@@ -143,6 +177,14 @@ const classic: ThemeDefinition = {
 		"--t-scrollbar-hover": "#4a4845",
 		"--t-texture-a": "rgba(201,100,66,0.04)",
 		"--t-texture-b": "rgba(93,93,89,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -172,6 +214,14 @@ const ocean: ThemeDefinition = {
 		"--t-scrollbar-hover": "#94a3b8",
 		"--t-texture-a": "rgba(37,99,235,0.02)",
 		"--t-texture-b": "rgba(100,116,139,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#0a1629",
@@ -193,6 +243,14 @@ const ocean: ThemeDefinition = {
 		"--t-scrollbar-hover": "#475569",
 		"--t-texture-a": "rgba(59,130,246,0.04)",
 		"--t-texture-b": "rgba(100,116,139,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -222,6 +280,14 @@ const forest: ThemeDefinition = {
 		"--t-scrollbar-hover": "#9cb096",
 		"--t-texture-a": "rgba(22,163,74,0.02)",
 		"--t-texture-b": "rgba(74,99,73,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#0a1c10",
@@ -243,6 +309,14 @@ const forest: ThemeDefinition = {
 		"--t-scrollbar-hover": "#3a5239",
 		"--t-texture-a": "rgba(34,197,94,0.04)",
 		"--t-texture-b": "rgba(74,99,73,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -272,6 +346,14 @@ const lavender: ThemeDefinition = {
 		"--t-scrollbar-hover": "#b09fcf",
 		"--t-texture-a": "rgba(124,58,237,0.02)",
 		"--t-texture-b": "rgba(91,74,122,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#160a26",
@@ -293,6 +375,14 @@ const lavender: ThemeDefinition = {
 		"--t-scrollbar-hover": "#443a5c",
 		"--t-texture-a": "rgba(139,92,246,0.04)",
 		"--t-texture-b": "rgba(91,74,122,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -322,6 +412,14 @@ const rose: ThemeDefinition = {
 		"--t-scrollbar-hover": "#e8a0ab",
 		"--t-texture-a": "rgba(225,29,72,0.02)",
 		"--t-texture-b": "rgba(136,19,55,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#240a14",
@@ -343,6 +441,14 @@ const rose: ThemeDefinition = {
 		"--t-scrollbar-hover": "#522a3d",
 		"--t-texture-a": "rgba(251,113,133,0.04)",
 		"--t-texture-b": "rgba(136,19,55,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -373,6 +479,14 @@ const midnight: ThemeDefinition = {
 		"--t-scrollbar-hover": "#a1a1aa",
 		"--t-texture-a": "rgba(124,58,237,0.015)",
 		"--t-texture-b": "rgba(82,82,91,0.01)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#09090b",
@@ -394,6 +508,14 @@ const midnight: ThemeDefinition = {
 		"--t-scrollbar-hover": "#3f3f46",
 		"--t-texture-a": "rgba(167,139,250,0.03)",
 		"--t-texture-b": "rgba(82,82,91,0.02)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -423,6 +545,14 @@ const amber: ThemeDefinition = {
 		"--t-scrollbar-hover": "#fbbf24",
 		"--t-texture-a": "rgba(217,119,6,0.02)",
 		"--t-texture-b": "rgba(120,53,15,0.015)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
 	},
 	dark: {
 		"--t-bg": "#261605",
@@ -444,6 +574,80 @@ const amber: ThemeDefinition = {
 		"--t-scrollbar-hover": "#523b1a",
 		"--t-texture-a": "rgba(251,191,36,0.04)",
 		"--t-texture-b": "rgba(120,53,15,0.03)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
+	},
+};
+
+// ━━━ 8. Glass（液态玻璃） ━━━
+const glass: ThemeDefinition = {
+	id: "glass",
+	name: "液态玻璃",
+	description: "苹果风液态毛玻璃，搭配炫彩流动渐变背景",
+	preview: { bg: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", accent: "#007aff", text: "#1c1c1e" },
+	light: {
+		"--t-bg": "rgba(255, 255, 255, 0.01)",
+		"--t-bg-surface": "rgba(255, 255, 255, 0.45)",
+		"--t-bg-muted": "rgba(240, 240, 245, 0.5)",
+		"--t-bg-panel": "rgba(255, 255, 255, 0.55)",
+		"--t-bg-panel-strong": "rgba(255, 255, 255, 0.7)",
+		"--t-border": "rgba(255, 255, 255, 0.5)",
+		"--t-border-subtle": "rgba(255, 255, 255, 0.3)",
+		"--t-primary": "#007aff",
+		"--t-primary-hover": "#0062cc",
+		"--t-primary-muted": "rgba(0, 122, 255, 0.12)",
+		"--t-primary-fg": "#ffffff",
+		"--t-text-primary": "#1c1c1e",
+		"--t-text-secondary": "#3a3a3c",
+		"--t-text-muted": "#8e8e93",
+		"--t-ring": "rgba(0, 122, 255, 0.3)",
+		"--t-scrollbar": "rgba(0, 0, 0, 0.12)",
+		"--t-scrollbar-hover": "rgba(0, 0, 0, 0.24)",
+		"--t-texture-a": "rgba(255, 255, 255, 0.12)",
+		"--t-texture-b": "rgba(0, 0, 0, 0.01)",
+		"--t-success": "#16a34a",
+		"--t-success-muted": "rgba(22,163,74,0.12)",
+		"--t-error": "#dc2626",
+		"--t-error-muted": "rgba(220,38,38,0.12)",
+		"--t-warning": "#d97706",
+		"--t-warning-muted": "rgba(217,119,6,0.12)",
+		"--t-info": "#2563eb",
+		"--t-info-muted": "rgba(37,99,235,0.12)",
+	},
+	dark: {
+		"--t-bg": "rgba(0, 0, 0, 0.01)",
+		"--t-bg-surface": "rgba(28, 28, 30, 0.45)",
+		"--t-bg-muted": "rgba(38, 38, 40, 0.5)",
+		"--t-bg-panel": "rgba(22, 22, 24, 0.6)",
+		"--t-bg-panel-strong": "rgba(18, 18, 20, 0.75)",
+		"--t-border": "rgba(255, 255, 255, 0.08)",
+		"--t-border-subtle": "rgba(255, 255, 255, 0.04)",
+		"--t-primary": "#0a84ff",
+		"--t-primary-hover": "#3ea0ff",
+		"--t-primary-muted": "rgba(10, 132, 255, 0.18)",
+		"--t-primary-fg": "#ffffff",
+		"--t-text-primary": "#f5f5f7",
+		"--t-text-secondary": "#aeaeb2",
+		"--t-text-muted": "#636366",
+		"--t-ring": "rgba(10, 132, 255, 0.4)",
+		"--t-scrollbar": "rgba(255, 255, 255, 0.12)",
+		"--t-scrollbar-hover": "rgba(255, 255, 255, 0.24)",
+		"--t-texture-a": "rgba(0, 0, 0, 0.2)",
+		"--t-texture-b": "rgba(255, 255, 255, 0.01)",
+		"--t-success": "#4ade80",
+		"--t-success-muted": "rgba(74,222,128,0.15)",
+		"--t-error": "#f87171",
+		"--t-error-muted": "rgba(248,113,113,0.15)",
+		"--t-warning": "#fbbf24",
+		"--t-warning-muted": "rgba(251,191,36,0.15)",
+		"--t-info": "#60a5fa",
+		"--t-info-muted": "rgba(96,165,250,0.15)",
 	},
 };
 
@@ -457,6 +661,7 @@ export const ALL_THEMES: ThemeDefinition[] = [
 	rose,
 	midnight,
 	amber,
+	glass,
 ];
 
 export const THEME_MAP = new Map<string, ThemeDefinition>(

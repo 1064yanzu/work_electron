@@ -209,10 +209,26 @@ export default {
 					muted: "var(--t-bg-surface, #2A2A28)",
 				},
 
-				// 语义色 — 保持不变
-				error: "#b53333",
-				focus: "#3898ec",
-				success: "#4a7c59",
+				// 语义色 — 接主题 token（themeDefinitions.ts 的 --t-success/--t-error/...），
+				// 旧硬编码值作为 var() 兜底，所有 text-success / bg-error 等类名自动主题化
+				error: "var(--t-error, #b53333)",
+				"error-muted": "var(--t-error-muted, rgba(181,51,51,0.12))",
+				focus: "var(--t-info, #3898ec)",
+				success: "var(--t-success, #4a7c59)",
+				"success-muted": "var(--t-success-muted, rgba(74,124,89,0.12))",
+				warning: "var(--t-warning, #d97706)",
+				"warning-muted": "var(--t-warning-muted, rgba(217,119,6,0.12))",
+				info: "var(--t-info, #2563eb)",
+				"info-muted": "var(--t-info-muted, rgba(37,99,235,0.12))",
+
+				// 品牌签名色 — 赤陶橙（CLAUDE.md 钦定主色）。
+				// 与 --t-primary 不同：primary 随主题变化（bai 主题下是黑色），
+				// terracotta 是跨主题稳定的 1% 签名锚点（Swarm 卡片、action CTA）。
+				terracotta: {
+					DEFAULT: "#D96C46",
+					hover: "#C25A38",
+					active: "#A8482B",
+				},
 
 				// 布局专用色
 				panel: {

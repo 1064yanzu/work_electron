@@ -20,10 +20,11 @@ interface Props {
 }
 
 const LAYER_LABELS = [
-	{ key: "cognitive", label: "认知模式", desc: "观察和处理信息的底层方式" },
-	{ key: "rhetorical", label: "话语姿态", desc: "与读者/议题的关系定位" },
-	{ key: "aesthetic", label: "语言审美", desc: "对语言形式本身的审美偏好" },
-	{ key: "anchors", label: "校准锚点", desc: "正向/负向表达校验标准" },
+	{ key: "soul", label: "灵魂层", desc: "世界观与根本姿态" },
+	{ key: "thinking", label: "思维运作", desc: "这个脑子怎么动" },
+	{ key: "articulation", label: "篇章外化", desc: "思维如何落到篇章上" },
+	{ key: "texture", label: "血肉层", desc: "语言质感与指纹" },
+	{ key: "relational", label: "关系性维度", desc: "气韵 / 全息 / 经变 + 横切话题" },
 ] as const;
 
 const INTENSITY_OPTIONS: { value: StyleIntensity; label: string }[] = [
@@ -37,10 +38,11 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 	const [description, setDescription] = useState("");
 	const [profiles, setProfiles] = useState<StyleProfile[]>([]);
 	const [selections, setSelections] = useState<Record<string, string | null>>({
-		cognitive: null,
-		rhetorical: null,
-		aesthetic: null,
-		anchors: null,
+		soul: null,
+		thinking: null,
+		articulation: null,
+		texture: null,
+		relational: null,
 	});
 	const [intensity, setIntensity] = useState<StyleIntensity>("medium");
 	const [submitting, setSubmitting] = useState(false);
@@ -74,10 +76,11 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 			const recipe = await createStyleRecipe({
 				name: name.trim(),
 				description: description.trim() || undefined,
-				cognitive_profile_id: selections.cognitive,
-				rhetorical_profile_id: selections.rhetorical,
-				aesthetic_profile_id: selections.aesthetic,
-				anchors_profile_id: selections.anchors,
+				soul_profile_id: selections.soul,
+				thinking_profile_id: selections.thinking,
+				articulation_profile_id: selections.articulation,
+				texture_profile_id: selections.texture,
+				relational_profile_id: selections.relational,
 				intensity,
 			});
 			onCreated(recipe.id);

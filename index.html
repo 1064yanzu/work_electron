@@ -5,10 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IPO Workbench</title>
-    <!-- Google Fonts: Inter (Claude-like premium font) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // 防启动闪白：React 挂载前先按持久化主题给 <html> 上色。
+      // ThemeManager 应用主题时会把实际背景色写入 localStorage("window-bg")，
+      // 这里读不到时按 theme 模式 + 系统亮暗兜底。
+      (function () {
+        try {
+          if (location.hash === "#/pet") return; // 宠物窗口走透明背景
+          var root = document.documentElement;
+          var mode = localStorage.getItem("theme") || "light";
+          var isDark =
+            mode === "dark" ||
+            (mode === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (isDark) root.classList.add("dark");
+          var bg = localStorage.getItem("window-bg");
+          if (!bg || !/^#[0-9a-fA-F]{6}$/.test(bg)) {
+            bg = isDark ? "#1a1a19" : "#faf9f5";
+          }
+          root.style.backgroundColor = bg;
+        } catch (e) {
+          /* localStorage 不可用时静默跳过 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

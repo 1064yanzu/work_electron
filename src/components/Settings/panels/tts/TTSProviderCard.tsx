@@ -19,6 +19,7 @@ import { ttsTest } from "../../../../lib/api/tts";
 import type { TTSProviderConfig } from "../../../../lib/tts";
 import { useTTSVoices } from "../../../../lib/tts";
 import { toast } from "../../../ui/Toast";
+import { confirmDialog } from "../../../ui/ConfirmDialog";
 import {
 	SettingsBadge,
 	SettingsButton,
@@ -190,9 +191,11 @@ export function TTSProviderCard({
 						<button
 							type="button"
 							onClick={() => {
-								if (confirm(`确认删除 provider "${provider.name}"？`)) {
-									onDelete();
-								}
+								void confirmDialog
+									.danger(`确认删除 provider "${provider.name}"？`, "删除 Provider")
+									.then((confirmed) => {
+										if (confirmed) onDelete();
+									});
 							}}
 							className="rounded-md p-1.5 text-text-muted transition hover:bg-error/10 hover:text-error"
 							title="删除该 provider"

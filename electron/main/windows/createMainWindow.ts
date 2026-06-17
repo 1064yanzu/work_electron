@@ -1,7 +1,33 @@
+import fs from "node:fs";
 import path from "node:path";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeTheme } from "electron";
 import { setMainWindow } from "../ipc/register";
 import { applyMenuBarPolicyToWindow } from "../menu";
+
+/**
+ * 读取持久化的窗口背景色，避免启动时白屏闪烁。
+ * 渲染端 ThemeManager 应用主题时会把当前背景色写入
+ * userData/window-background.json（双写，主进程只读）。
+ * 读不到时按系统亮暗模式兜底：暗色用暖深色、亮色用奶油白。
+ */
+function resolveStartupBackgroundColor(): string {
+	try {
+		const raw = fs.readFileSync(
+			path.join(app.getPath("userData"), "window-background.json"),
+			"utf-8",
+		);
+		const parsed = JSON.parse(raw) as { backgroundColor?: string };
+		if (
+			typeof parsed.backgroundColor === "string" &&
+			/^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)
+		) {
+			return parsed.backgroundColor;
+		}
+	} catch {
+		// 文件不存在（首次启动）或损坏，走兜底
+	}
+	return nativeTheme.shouldUseDarkColors ? "#1a1a1a" : "#faf9f5";
+}
 
 export function createMainWindow({
 	rendererUrl,
@@ -25,6 +51,9 @@ export function createMainWindow({
 		...(iconPath ? { icon: iconPath } : {}),
 		width: 1400,
 		height: 900,
+		// 先隐藏，ready-to-show 后再显示；配合 backgroundColor 消除启动白屏闪烁
+		show: false,
+		backgroundColor: resolveStartupBackgroundColor(),
 		// Windows / Linux 上默认隐藏顶部菜单栏，避免顶栏冗余；按 Alt 可临时弹出
 		autoHideMenuBar: process.platform !== "darwin",
 		webPreferences: {
@@ -35,6 +64,10 @@ export function createMainWindow({
 	});
 
 	applyMenuBarPolicyToWindow(win);
+
+	win.once("ready-to-show", () => {
+		win.show();
+	});
 
 	// 设置主窗口引用，用于 LLM 流式输出
 	setMainWindow(win);

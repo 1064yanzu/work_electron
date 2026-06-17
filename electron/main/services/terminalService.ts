@@ -40,12 +40,19 @@ class TerminalService {
 
 	/**
 	 * 获取当前平台默认 shell
+	 * Windows 默认改用 PowerShell：cmd.exe 默认 GBK 代码页，中文输出乱码；
+	 * PowerShell 对 UTF-8 的处理好得多。用户显式指定 shell 时仍然尊重。
 	 */
 	private getDefaultShell(): string {
 		if (process.platform === "win32") {
-			return process.env.COMSPEC || "cmd.exe";
+			return "powershell.exe";
 		}
 		return process.env.SHELL || "/bin/zsh";
+	}
+
+	/** 是否是 cmd.exe（用户显式指定时需要注入 UTF-8 代码页） */
+	private isCmdShell(shell: string): boolean {
+		return /(?:^|[\\/])cmd(?:\.exe)?$/i.test(shell.trim());
 	}
 
 	/**
@@ -74,7 +81,20 @@ class TerminalService {
 			COLORTERM: "truecolor",
 		} as Record<string, string>;
 
-		const shellArgs = process.platform === "win32" ? [] : ["-l"];
+		// Windows：PowerShell 走 -NoLogo 去掉版权横幅；
+		// 用户显式指定 cmd.exe 时注入 chcp 65001 切到 UTF-8 代码页，修中文乱码。
+		let shellArgs: string[];
+		if (process.platform === "win32") {
+			if (this.isCmdShell(shell)) {
+				shellArgs = ["/K", "chcp 65001 >nul"];
+			} else if (/powershell|pwsh/i.test(shell)) {
+				shellArgs = ["-NoLogo"];
+			} else {
+				shellArgs = [];
+			}
+		} else {
+			shellArgs = ["-l"];
+		}
 
 		const ptyProcess = pty.spawn(shell, shellArgs, {
 			name: "xterm-256color",

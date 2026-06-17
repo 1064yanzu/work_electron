@@ -19,6 +19,7 @@ import {
 
 import { READER_THEMES } from "./themes/readerThemes";
 import type { ReaderClientSettings } from "../../lib/api/reader";
+import { shortcut } from "../../lib/platform";
 import { Tooltip } from "../ui/Tooltip";
 
 interface ReaderTopBarProps {
@@ -190,7 +191,7 @@ export function ReaderTopBar({
 						<Volume2 className="w-4 h-4" strokeWidth={1.5} />
 					</button>
 				</Tooltip>
-				<Tooltip content="AI 副驾驶（⌘K）" placement="bottom">
+				<Tooltip content={`AI 副驾驶（${shortcut("K")}）`} placement="bottom">
 					<button
 						type="button"
 						className={`reader-icon-btn ${rightPanelOpen ? "is-active" : ""}`}
@@ -200,7 +201,7 @@ export function ReaderTopBar({
 						<Sparkles className="w-4 h-4" strokeWidth={1.5} />
 					</button>
 				</Tooltip>
-				<Tooltip content={immersive ? "退出沉浸（F11 或 ⌘.）" : "沉浸模式（F11 或 ⌘.）"} placement="bottom">
+				<Tooltip content={immersive ? `退出沉浸（F11 或 ${shortcut(".")}）` : `沉浸模式（F11 或 ${shortcut(".")}）`} placement="bottom">
 					<button
 						type="button"
 						className="reader-icon-btn"

@@ -31,6 +31,7 @@ import {
 } from "react";
 import { useSyncExternalStore } from "react";
 import { toast } from "../../ui/Toast";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsButton,
@@ -130,11 +131,15 @@ export function MemorySettings() {
 
 	// 切换 tab 时同步 draft，dirty 时弹确认
 	const switchTab = useCallback(
-		(token: MemoryFileToken) => {
+		async (token: MemoryFileToken) => {
 			if (dirty) {
-				const confirmed = window.confirm(
-					"当前编辑有未保存的更改，确认放弃并切换 Tab 吗？",
-				);
+				const confirmed = await confirmDialog.show({
+					title: "未保存的更改",
+					message: "当前编辑有未保存的更改，确认放弃并切换 Tab 吗？",
+					type: "warning",
+					confirmText: "放弃更改",
+					cancelText: "取消",
+				});
 				if (!confirmed) return;
 			}
 			setActiveTab(token);

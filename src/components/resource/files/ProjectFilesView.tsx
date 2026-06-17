@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { safeInvoke } from "../../../lib/tauriBridge";
 import { useWorkspaceStoreSelector } from "../../../lib/workspaceStore";
 import { managedModeStore, getMimeType } from "../../../lib/managedModeStore";
@@ -20,6 +21,7 @@ import { FileTreeHeader } from "./FileTreeHeader";
 import { FileTreeEmptyState } from "./FileTreeEmptyState";
 import { FileTreeNode, InlineCreateRow, type FileEntry } from "./FileTreeNode";
 import { useFileTreeMutations } from "./useFileTreeMutations";
+import { useFileTreeFlat, type FlatRow } from "./useFileTreeFlat";
 
 type EditingState =
 	| { mode: "rename"; targetPath: string }
@@ -74,6 +76,7 @@ export function ProjectFilesView() {
 		projectPath,
 	);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const scrollRef = useRef<HTMLDivElement>(null);
 
 	// 路径切换：清空所有缓存与编辑态
 	if (projectPath !== lastLoadedPath) {
@@ -525,79 +528,66 @@ export function ProjectFilesView() {
 		startRename,
 	]);
 
-	const renderTree = useCallback(
-		(parentPath: string, level: number): React.ReactNode => {
-			const items = entriesByDir.get(parentPath);
-			const isCreatingHere =
-				editing?.mode === "create" && editing.parentPath === parentPath;
-			if (!items) {
-				if (isCreatingHere) {
-					return (
-						<InlineCreateRow
-							key={`__create_${parentPath}`}
-							level={editing.level}
-							type={editing.type}
-							onSubmit={(name) =>
-								void submitCreate(parentPath, editing.type, name)
-							}
-							onCancel={cancelEditing}
-						/>
-					);
-				}
-				return null;
+	// 将递归树扁平化为一维数组（解耦到 useFileTreeFlat hook）
+	const flatRows = useFileTreeFlat(
+		entriesByDir,
+		expandedDirs,
+		projectPath,
+		editing,
+	);
+
+	const ROW_HEIGHT = 32; // px per row，和 py-1.5 + text-[13px] 匹配
+
+	// 虚拟化 — 只渲染可视区域的行
+	const virtualizer = useVirtualizer({
+		count: flatRows.length,
+		getScrollElement: () => scrollRef.current,
+		estimateSize: () => ROW_HEIGHT,
+		overscan: 8,
+	});
+
+	const renderRow = useCallback(
+		(row: FlatRow) => {
+			if (row.kind === "create") {
+				return (
+					<InlineCreateRow
+						level={row.level}
+						type={row.type}
+						onSubmit={(name) =>
+							void submitCreate(row.parentPath, row.type, name)
+						}
+						onCancel={cancelEditing}
+					/>
+				);
 			}
+			const { entry, level } = row;
+			const isExpanded = expandedDirs.has(entry.path);
+			const isSelected = selectedPath === entry.path;
+			const isRenaming =
+				editing?.mode === "rename" && editing.targetPath === entry.path;
 			return (
-				<>
-					{items.map((entry) => {
-						const isExpanded = expandedDirs.has(entry.path);
-						const isSelected = selectedPath === entry.path;
-						const isRenaming =
-							editing?.mode === "rename" && editing.targetPath === entry.path;
-						return (
-							<div key={entry.path}>
-								<FileTreeNode
-									entry={entry}
-									level={level}
-									isExpanded={isExpanded}
-									isSelected={isSelected}
-									isRenaming={isRenaming}
-									onToggle={(e) => void handleToggleOrOpen(e)}
-									onSelect={handleSelect}
-									onContextMenu={handleContextMenu}
-									onRenameSubmit={(e, nextName) =>
-										void submitRename(e, nextName)
-									}
-									onRenameCancel={cancelEditing}
-								/>
-								{entry.isDir && isExpanded ? (
-									<>{renderTree(entry.path, level + 1)}</>
-								) : null}
-							</div>
-						);
-					})}
-					{isCreatingHere ? (
-						<InlineCreateRow
-							key={`__create_${parentPath}`}
-							level={editing.level}
-							type={editing.type}
-							onSubmit={(name) =>
-								void submitCreate(parentPath, editing.type, name)
-							}
-							onCancel={cancelEditing}
-						/>
-					) : null}
-				</>
+				<FileTreeNode
+					entry={entry}
+					level={level}
+					isExpanded={isExpanded}
+					isSelected={isSelected}
+					isRenaming={isRenaming}
+					onToggle={(e) => void handleToggleOrOpen(e)}
+					onSelect={handleSelect}
+					onContextMenu={handleContextMenu}
+					onRenameSubmit={(e, nextName) => void submitRename(e, nextName)}
+					onRenameCancel={cancelEditing}
+				/>
 			);
 		},
 		[
+			cancelEditing,
 			editing,
-			entriesByDir,
 			expandedDirs,
 			handleContextMenu,
 			handleSelect,
 			handleToggleOrOpen,
 			selectedPath,
-			cancelEditing,
 			submitCreate,
 			submitRename,
 		],
@@ -623,7 +613,7 @@ export function ProjectFilesView() {
 				onRefresh={refreshRoot}
 			/>
 
-			<div className="flex-1 overflow-y-auto scrollbar-hide py-2">
+			<div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide py-2">
 				{!projectPath ? (
 					<FileTreeEmptyState
 						variant="no-path"
@@ -634,7 +624,30 @@ export function ProjectFilesView() {
 				) : !rootEntries || rootEntries.length === 0 ? (
 					<FileTreeEmptyState variant="empty" />
 				) : (
-					<div className="pb-6">{renderTree(projectPath, 0)}</div>
+					<div
+						className="relative w-full"
+						style={{ height: `${virtualizer.getTotalSize()}px` }}
+					>
+						{virtualizer.getVirtualItems().map((vItem) => {
+							const row = flatRows[vItem.index];
+							const key =
+								row.kind === "create"
+									? `__create_${row.parentPath}`
+									: row.entry.path;
+							return (
+								<div
+									key={key}
+									className="absolute top-0 left-0 w-full"
+									style={{
+										height: `${vItem.size}px`,
+										transform: `translateY(${vItem.start}px)`,
+									}}
+								>
+									{renderRow(row)}
+								</div>
+							);
+						})}
+					</div>
 				)}
 			</div>
 

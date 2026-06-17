@@ -1,0 +1,292 @@
+/* ━━━ 苹果风格液态玻璃主题专属样式 ━━━ */
+
+/* ============================================
+   1. 动态液态背景与噪点层
+   ============================================ */
+
+/* 亮色模式下的全局背景：线性渐变底色 + 极细微噪点粒子纹理 */
+html[data-color-theme="glass"] body {
+	background-color: #f3f5f9 !important;
+	background-image: 
+		url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
+		linear-gradient(135deg, #eef2f7 0%, #e0e6f1 50%, #d5def0 100%) !important;
+	position: relative;
+	overflow: hidden;
+	z-index: 0;
+}
+
+/* 暗色模式下的全局背景：深邃紫黑渐变底色 + 极细微噪点粒子纹理 */
+html.dark[data-color-theme="glass"] body {
+	background-color: #0b0713 !important;
+	background-image: 
+		url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E"),
+		linear-gradient(135deg, #0e0817 0%, #060710 50%, #020308 100%) !important;
+}
+
+/* 用伪元素创建流动彩色渐变球 */
+html[data-color-theme="glass"] body::before,
+html[data-color-theme="glass"] body::after,
+html[data-color-theme="glass"] #root::before {
+	content: "";
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(100px);
+	z-index: -1;
+	pointer-events: none;
+	opacity: 0.65;
+	mix-blend-mode: multiply;
+}
+
+/* 暗色模式下混色模式改为 screen 提高通透度 */
+html.dark[data-color-theme="glass"] body::before,
+html.dark[data-color-theme="glass"] body::after,
+html.dark[data-color-theme="glass"] #root::before {
+	mix-blend-mode: screen;
+	filter: blur(120px);
+	opacity: 0.35;
+}
+
+/* 漂浮球 1：左上粉橙色渐变 */
+html[data-color-theme="glass"] body::before {
+	width: 45vw;
+	height: 45vw;
+	max-width: 600px;
+	max-height: 600px;
+	background: radial-gradient(circle, rgba(255, 154, 158, 0.7) 0%, rgba(254, 207, 239, 0) 70%);
+	top: -10%;
+	left: -5%;
+	animation: glassFloat1 28s infinite alternate ease-in-out;
+}
+
+/* 漂浮球 2：右下淡蓝色渐变 */
+html[data-color-theme="glass"] body::after {
+	width: 50vw;
+	height: 50vw;
+	max-width: 700px;
+	max-height: 700px;
+	background: radial-gradient(circle, rgba(161, 196, 253, 0.7) 0%, rgba(194, 233, 251, 0) 70%);
+	bottom: -15%;
+	right: -5%;
+	animation: glassFloat2 32s infinite alternate ease-in-out;
+}
+
+/* 漂浮球 3：中上/右上淡紫色渐变 */
+html[data-color-theme="glass"] #root::before {
+	width: 40vw;
+	height: 40vw;
+	max-width: 500px;
+	max-height: 500px;
+	background: radial-gradient(circle, rgba(195, 194, 232, 0.65) 0%, rgba(195, 194, 232, 0) 70%);
+	top: 20%;
+	right: 15%;
+	animation: glassFloat3 24s infinite alternate ease-in-out;
+}
+
+/* 暗色模式下彩色球配色微调：使其深邃迷幻 */
+html.dark[data-color-theme="glass"] body::before {
+	background: radial-gradient(circle, rgba(74, 14, 78, 0.8) 0%, rgba(74, 14, 78, 0) 70%);
+}
+html.dark[data-color-theme="glass"] body::after {
+	background: radial-gradient(circle, rgba(30, 60, 114, 0.8) 0%, rgba(30, 60, 114, 0) 70%);
+}
+html.dark[data-color-theme="glass"] #root::before {
+	background: radial-gradient(circle, rgba(19, 78, 94, 0.7) 0%, rgba(19, 78, 94, 0) 70%);
+}
+
+/* ============================================
+   2. 流体动画关键帧
+   ============================================ */
+@keyframes glassFloat1 {
+	0% {
+		transform: translate(0, 0) scale(1) rotate(0deg);
+	}
+	50% {
+		transform: translate(60px, 40px) scale(1.08) rotate(120deg);
+	}
+	100% {
+		transform: translate(-30px, 70px) scale(0.92) rotate(240deg);
+	}
+}
+
+@keyframes glassFloat2 {
+	0% {
+		transform: translate(0, 0) scale(0.95) rotate(0deg);
+	}
+	50% {
+		transform: translate(-70px, -50px) scale(1.1) rotate(-120deg);
+	}
+	100% {
+		transform: translate(40px, 30px) scale(1) rotate(-240deg);
+	}
+}
+
+@keyframes glassFloat3 {
+	0% {
+		transform: translate(0, 0) scale(1) rotate(0deg);
+	}
+	50% {
+		transform: translate(-40px, 60px) scale(0.9) rotate(90deg);
+	}
+	100% {
+		transform: translate(50px, -30px) scale(1.05) rotate(180deg);
+	}
+}
+
+/* ============================================
+   3. 面板与模块磨砂玻璃劫持
+   ============================================ */
+
+/* 核心面板壳体 */
+html[data-color-theme="glass"] .panel-shell {
+	background-color: var(--t-bg-panel) !important;
+	backdrop-filter: blur(26px) saturate(190%) !important;
+	-webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+	border: 1px solid var(--t-border) !important;
+	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05) !important;
+	transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+}
+
+html.dark[data-color-theme="glass"] .panel-shell {
+	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 中间主内容面板 */
+html[data-color-theme="glass"] .panel-shell--center {
+	background-color: var(--t-bg-panel-strong) !important;
+	backdrop-filter: blur(30px) saturate(190%) !important;
+	-webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+}
+
+/* 编辑器表面 */
+html[data-color-theme="glass"] .editor-surface {
+	background-color: var(--t-bg-surface) !important;
+	backdrop-filter: blur(20px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+	border: 1px solid var(--t-border) !important;
+	box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 文档阅读表面 */
+html[data-color-theme="glass"] .doc-surface,
+html[data-color-theme="glass"] .doc-card {
+	background-color: var(--t-bg-surface) !important;
+	backdrop-filter: blur(20px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+	border: 1px solid var(--t-border) !important;
+}
+
+html[data-color-theme="glass"] .doc-toolbar {
+	background-color: var(--t-bg-panel) !important;
+	backdrop-filter: blur(24px) saturate(190%) !important;
+	-webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+	border-bottom: 1px solid var(--t-border) !important;
+}
+
+/* ============================================
+   4. 控件、输入框与表单磨砂化
+   ============================================ */
+html[data-color-theme="glass"] input[type="text"],
+html[data-color-theme="glass"] input[type="number"],
+html[data-color-theme="glass"] input[type="search"],
+html[data-color-theme="glass"] textarea,
+html[data-color-theme="glass"] select {
+	background-color: rgba(255, 255, 255, 0.3) !important;
+	backdrop-filter: blur(8px) !important;
+	-webkit-backdrop-filter: blur(8px) !important;
+	border: 1px solid var(--t-border) !important;
+	transition: all 0.2s ease-out !important;
+}
+
+html.dark[data-color-theme="glass"] input[type="text"],
+html.dark[data-color-theme="glass"] input[type="number"],
+html.dark[data-color-theme="glass"] input[type="search"],
+html.dark[data-color-theme="glass"] textarea,
+html.dark[data-color-theme="glass"] select {
+	background-color: rgba(30, 30, 35, 0.3) !important;
+}
+
+html[data-color-theme="glass"] input:focus,
+html[data-color-theme="glass"] textarea:focus,
+html[data-color-theme="glass"] select:focus {
+	background-color: rgba(255, 255, 255, 0.45) !important;
+	border-color: var(--t-primary) !important;
+	box-shadow: 0 0 0 3px var(--t-primary-muted) !important;
+}
+
+html.dark[data-color-theme="glass"] input:focus,
+html.dark[data-color-theme="glass"] textarea:focus,
+html.dark[data-color-theme="glass"] select:focus {
+	background-color: rgba(40, 40, 45, 0.45) !important;
+}
+
+/* ============================================
+   5. 顶层弹窗（Dialog Modals）特化：加深与极光边界
+   ============================================ */
+html[data-color-theme="glass"] [role="dialog"],
+html[data-color-theme="glass"] .modal-content,
+html[data-color-theme="glass"] .settings-modal {
+	background-color: var(--t-bg-panel-strong) !important;
+	backdrop-filter: blur(40px) saturate(200%) !important;
+	-webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+	border: 1px solid rgba(255, 255, 255, 0.4) !important;
+	box-shadow: 0 24px 64px 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+html.dark[data-color-theme="glass"] [role="dialog"],
+html.dark[data-color-theme="glass"] .modal-content,
+html.dark[data-color-theme="glass"] .settings-modal {
+	border: 1px solid rgba(255, 255, 255, 0.08) !important;
+	box-shadow: 0 24px 64px 0 rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Modal 遮罩层模糊苹果化 — 通过稳定语义类 .modal-backdrop 命中，
+   不再依赖 Tailwind 编译类名（构建产物类名顺序变化会让选择器失效） */
+html[data-color-theme="glass"] .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.15) !important;
+	backdrop-filter: blur(16px) !important;
+	-webkit-backdrop-filter: blur(16px) !important;
+}
+
+html.dark[data-color-theme="glass"] .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ============================================
+   6. 细微 UI 优化（按钮悬停、激活、滚动条）
+   ============================================ */
+
+/* 细化滚动条 */
+html[data-color-theme="glass"] ::-webkit-scrollbar-thumb {
+	background-color: var(--t-scrollbar) !important;
+}
+html[data-color-theme="glass"] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--t-scrollbar-hover) !important;
+}
+
+/* 按钮微交互悬浮高亮 */
+html[data-color-theme="glass"] .btn-interactive:hover {
+	backdrop-filter: brightness(1.05) saturate(1.1) !important;
+	-webkit-backdrop-filter: brightness(1.05) saturate(1.1) !important;
+}
+
+/* ============================================
+   7. 减少动画偏好：显式关停 infinite 漂浮动画
+   全局的 animation-duration: 0.01ms 压制对 infinite alternate
+   动画会变成高频闪烁，这里直接 animation: none 并冻结位置。
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+	html[data-color-theme="glass"] body::before,
+	html[data-color-theme="glass"] body::after,
+	html[data-color-theme="glass"] #root::before {
+		animation: none !important;
+	}
+}
+
+html.motion-reduced[data-color-theme="glass"] body::before,
+html.motion-reduced[data-color-theme="glass"] body::after,
+html.motion-reduced[data-color-theme="glass"] #root::before,
+html[data-motion-preference="reduced"][data-color-theme="glass"] body::before,
+html[data-motion-preference="reduced"][data-color-theme="glass"] body::after,
+html[data-motion-preference="reduced"][data-color-theme="glass"] #root::before {
+	animation: none !important;
+}

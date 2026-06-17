@@ -14,8 +14,12 @@ import {
 import type { BeforeMount, OnMount } from "@monaco-editor/react";
 import { cn } from "../../../lib/utils";
 
-// 懒加载 Monaco Editor
-const Monaco = lazy(() => import("@monaco-editor/react"));
+// 懒加载 Monaco Editor：先执行 monacoSetup（loader 指向 vite 打包的 monaco 实例 + 本地 worker），
+// 再加载 @monaco-editor/react，确保不会走 CDN。
+const Monaco = lazy(async () => {
+	await import("./monacoSetup");
+	return import("@monaco-editor/react");
+});
 
 // ==================== 语言映射 ====================
 

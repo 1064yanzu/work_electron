@@ -24,6 +24,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { shortcut } from "../../../lib/platform";
 import { cn } from "../../../lib/utils";
 import { type FieldDescriptor, searchSettingsFields } from "../fieldRegistry";
 import {
@@ -220,7 +221,7 @@ export function SettingsSearch({
 						"text-[10px] font-sans tabular-nums text-text-muted",
 					)}
 				>
-					⌘F
+					{shortcut("F")}
 				</span>
 				)}
 			</div>

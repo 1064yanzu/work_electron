@@ -32,24 +32,24 @@ function getToastStyles(type: ToastType) {
 	switch (type) {
 		case "success":
 			return {
-				border: "border-[rgba(74,124,89,0.22)]",
-				iconBg: "bg-[rgba(74,124,89,0.08)]",
+				border: "border-success-muted",
+				iconBg: "bg-success-muted",
 				icon: <CheckCircle2 size={18} className="text-success" />,
 				progress: "bg-success",
 			};
 		case "error":
 			return {
-				border: "border-[rgba(181,51,51,0.22)]",
-				iconBg: "bg-[rgba(181,51,51,0.08)]",
+				border: "border-error-muted",
+				iconBg: "bg-error-muted",
 				icon: <XCircle size={18} className="text-error" />,
 				progress: "bg-error",
 			};
 		case "warning":
 			return {
-				border: "border-[rgba(232,167,122,0.32)]",
-				iconBg: "bg-[rgba(232,167,122,0.14)]",
-				icon: <Info size={18} className="text-peach-500" />,
-				progress: "bg-peach-500",
+				border: "border-warning-muted",
+				iconBg: "bg-warning-muted",
+				icon: <Info size={18} className="text-warning" />,
+				progress: "bg-warning",
 			};
 		default:
 			return {
@@ -66,7 +66,7 @@ function getActionClass(variant: ToastActionVariant) {
 		case "primary":
 			return "bg-primary text-primary-foreground hover:bg-primary-hover";
 		case "danger":
-			return "bg-error text-white hover:bg-[#9e2b2b]";
+			return "bg-error text-white hover:opacity-90";
 		default:
 			return "bg-warm-200 text-text-primary hover:bg-warm-300";
 	}

@@ -120,6 +120,14 @@ function ThemeCard({
 }) {
 	const colors = isDark ? theme.dark : theme.light;
 
+	// glass 主题在实际应用中是半透明的以透出底层渐变球，但在卡片预览中，我们需要赋予其漂亮的静态渐变底图
+	const isGlass = theme.id === "glass";
+	const cardBg = isGlass
+		? isDark
+			? "linear-gradient(135deg, #2c1a4d 0%, #0c0714 50%, #133a44 100%)"
+			: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%)"
+		: colors["--t-bg"];
+
 	return (
 		<button
 			type="button"
@@ -138,7 +146,7 @@ function ThemeCard({
 			{/* 迷你预览 */}
 			<div
 				className="relative h-[72px] p-2 flex gap-1.5"
-				style={{ backgroundColor: colors["--t-bg"] }}
+				style={{ background: cardBg }}
 			>
 				{/* 左侧栏 */}
 				<div

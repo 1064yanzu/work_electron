@@ -1,5 +1,6 @@
 import { ArrowUp, AtSign, Hash, Lightbulb, Paperclip, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { modKey } from "../../lib/platform";
 import { type SlashCommand, SlashCommandMenu } from "./SlashCommandMenu";
 
 export interface ContextItem {
@@ -239,7 +240,7 @@ export function EnhancedInput({
 						{/* 提示文本 */}
 						<div className="text-xs text-text-muted hidden sm:block">
 							<kbd className="px-1.5 py-0.5 bg-surface border border-border rounded text-xs">
-								⌘
+								{modKey}
 							</kbd>
 							<span className="mx-1">+</span>
 							<kbd className="px-1.5 py-0.5 bg-surface border border-border rounded text-xs">

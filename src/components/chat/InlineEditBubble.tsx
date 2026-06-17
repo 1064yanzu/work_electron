@@ -2,6 +2,7 @@
 // 替换普通消息气泡，展示可编辑的 textarea，⌘↵ 提交 / Esc 取消
 
 import { useEffect, useRef } from "react";
+import { isMac } from "../../lib/platform";
 
 interface InlineEditBubbleProps {
 	initialValue: string;
@@ -74,7 +75,9 @@ export function InlineEditBubble({
 					className="flex items-center gap-1 px-3 py-1 rounded-lg bg-text-primary text-surface hover:bg-text-secondary transition-colors font-medium"
 				>
 					保存并重发
-					<span className="opacity-60 font-normal ml-1">⌘↵</span>
+					<span className="opacity-60 font-normal ml-1">
+						{isMac ? "⌘↵" : "Ctrl+↵"}
+					</span>
 				</button>
 			</div>
 		</div>

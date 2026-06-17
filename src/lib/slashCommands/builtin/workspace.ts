@@ -166,12 +166,19 @@ export const reviewCommand: SlashCommandDefinition = {
 // ---------------------------------------------------------------------------
 
 async function confirmOverwrite(): Promise<boolean> {
-	if (typeof window === "undefined" || typeof window.confirm !== "function") {
+	if (typeof window === "undefined") {
 		return false;
 	}
-	return Promise.resolve(
-		window.confirm(SLASH_MESSAGES.toast.init.existsPrompt),
+	const { confirmDialog } = await import(
+		"../../../components/ui/ConfirmDialog"
 	);
+	return confirmDialog.show({
+		title: "覆盖确认",
+		message: SLASH_MESSAGES.toast.init.existsPrompt,
+		type: "warning",
+		confirmText: "覆盖",
+		cancelText: "取消",
+	});
 }
 
 async function fallbackWriteInitTemplate(

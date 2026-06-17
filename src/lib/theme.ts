@@ -20,6 +20,8 @@ class ThemeManager {
 	constructor() {
 		this.loadTheme();
 		this.applyTheme();
+		// 启动时也同步一次 nativeTheme（桥接未就绪时静默失败，setTheme 时会再同步）
+		this.syncNativeTheme(this.currentMode);
 
 		// 监听系统主题变化
 		if (typeof window !== "undefined") {
@@ -76,6 +78,27 @@ class ThemeManager {
 
 		// 设置 data-theme 属性方便 CSS 选择器
 		root.setAttribute("data-color-theme", this.currentColorThemeId);
+
+		// 把当前背景色持久化，供下次启动消除白屏闪烁：
+		// 1) localStorage → index.html 内联脚本在 React 挂载前给 <html> 上底色
+		// 2) IPC → 主进程写 userData/window-background.json，BrowserWindow 创建时读取
+		this.persistBackgroundColor(colors["--t-bg"]);
+	}
+
+	private persistBackgroundColor(bg: string) {
+		const hex = /^#[0-9a-fA-F]{6}$/.test(bg) ? bg : null;
+		if (!hex) return;
+		try {
+			localStorage.setItem("window-bg", hex);
+		} catch {
+			// 忽略（隐私模式等）
+		}
+		// 主进程双写为 best-effort；动态 import 避免 theme.ts 在桥接就绪前初始化时报错
+		void import("./tauriCompat")
+			.then(({ invoke }) =>
+				invoke("app_set_window_background", { color: hex }),
+			)
+			.catch(() => {});
 	}
 
 	// ━━━ 亮暗模式 ━━━
@@ -87,7 +110,15 @@ class ThemeManager {
 		this.currentMode = mode;
 		localStorage.setItem("theme", mode);
 		this.applyTheme();
+		this.syncNativeTheme(mode);
 		this.notifyListeners();
+	}
+
+	/** 同步 Electron nativeTheme.themeSource，让原生菜单/对话框/滚动条跟随应用主题 */
+	private syncNativeTheme(mode: ThemeMode) {
+		void import("./tauriCompat")
+			.then(({ invoke }) => invoke("app_set_native_theme", { mode }))
+			.catch(() => {});
 	}
 
 	// ━━━ 色彩主题 ━━━

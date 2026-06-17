@@ -7,6 +7,7 @@ import {
 	Plus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { modKey } from "../lib/platform";
 import {
 	createWorkflowNode,
 	invokeLlm,
@@ -338,7 +339,7 @@ export default function ProcessLab() {
 						</kbd>{" "}
 						调出命令，使用{" "}
 						<kbd className="px-1 py-0.5 bg-surface border border-border rounded">
-							⌘ + Enter
+							{modKey} + Enter
 						</kbd>{" "}
 						立即执行
 					</p>

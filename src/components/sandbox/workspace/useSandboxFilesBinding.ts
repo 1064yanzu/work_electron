@@ -4,7 +4,12 @@ import type {
 	ToolArtifact,
 	ToolCall,
 } from "../../../lib/agent/types";
+import { invoke } from "../../../lib/tauriCompat";
+import { listen } from "../../../lib/tauriEventCompat";
 import type { ExecutionGraphSource } from "../graph/types";
+
+/** watcher 启动失败时的退避轮询间隔（替代原 5s 全量重扫） */
+const FALLBACK_POLL_INTERVAL_MS = 15000;
 
 interface UseSandboxFilesBindingArgs {
 	activeSessionId: string | null;
@@ -267,11 +272,51 @@ export function useSandboxFilesBinding({
 		store.scanSandboxDir(sandboxDir);
 
 		if (!isLiveBoundTask) return;
-		// 仅当标签页可见时轮询，标签隐藏期间跳过；重新可见时立刻补扫一次。
-		refreshTimerRef.current = setInterval(() => {
+
+		// 事件驱动刷新：主进程 chokidar watcher 推送 coding-file-changed，
+		// 收到后只在标签可见时重扫；watcher 启动失败时退避到 15s 轮询兜底。
+		let disposed = false;
+		let unlistenFileChanged: (() => void) | undefined;
+		let watcherActive = false;
+
+		const rescanIfVisible = () => {
 			if (document.visibilityState !== "visible") return;
 			store.scanSandboxDir(sandboxDir);
-		}, 5000);
+		};
+
+		void (async () => {
+			try {
+				const result = await invoke<{ success: boolean; error?: string }>(
+					"file_watch_start",
+					{ path: sandboxDir },
+				);
+				if (disposed) {
+					if (result.success) void invoke("file_watch_stop", { path: sandboxDir });
+					return;
+				}
+				if (result.success) {
+					watcherActive = true;
+					unlistenFileChanged = await listen<{
+						projectPath: string;
+						changes: Array<{ type: string; path: string; name: string }>;
+					}>("coding-file-changed", (evt) => {
+						if (evt.payload?.projectPath !== sandboxDir) return;
+						rescanIfVisible();
+					});
+					if (disposed) {
+						unlistenFileChanged?.();
+						unlistenFileChanged = undefined;
+					}
+					return;
+				}
+			} catch {
+				// IPC 不可用（如桥接未就绪），走轮询兜底
+			}
+			if (disposed) return;
+			refreshTimerRef.current = setInterval(rescanIfVisible, FALLBACK_POLL_INTERVAL_MS);
+		})();
+
+		// 标签从隐藏恢复可见时立刻补扫一次（隐藏期间事件被跳过）
 		const onVisibility = () => {
 			if (document.visibilityState === "visible")
 				store.scanSandboxDir(sandboxDir);
@@ -279,9 +324,14 @@ export function useSandboxFilesBinding({
 		document.addEventListener("visibilitychange", onVisibility);
 
 		return () => {
+			disposed = true;
 			if (refreshTimerRef.current) {
 				clearInterval(refreshTimerRef.current);
 				refreshTimerRef.current = null;
+			}
+			unlistenFileChanged?.();
+			if (watcherActive) {
+				void invoke("file_watch_stop", { path: sandboxDir }).catch(() => {});
 			}
 			document.removeEventListener("visibilitychange", onVisibility);
 		};

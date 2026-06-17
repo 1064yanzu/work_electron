@@ -45,11 +45,11 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 			className={cn(
 				"relative flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 transition-all duration-300",
 				status === "running" &&
-					"bg-[#D96C46]/15 text-[#D96C46] ring-1 ring-[#D96C46]/30",
+					"bg-terracotta/15 text-terracotta ring-1 ring-terracotta/30",
 				status === "completed" &&
 					"bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success",
 				status === "error" &&
-					"bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error",
+					"bg-error-muted text-error dark:text-error",
 				status === "pending" && "bg-warm-200 text-text-light",
 			)}
 		>
@@ -63,8 +63,8 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 			{/* 运行中的脉冲指示器 */}
 			{status === "running" && (
 				<span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-					<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D96C46] opacity-60" />
-					<span className="relative inline-flex rounded-full h-2 w-2 bg-[#D96C46]" />
+					<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-terracotta opacity-60" />
+					<span className="relative inline-flex rounded-full h-2 w-2 bg-terracotta" />
 				</span>
 			)}
 		</div>
@@ -88,7 +88,7 @@ const AgentProgressBar = memo(function AgentProgressBar({
 	}
 	if (status === "error") {
 		return (
-			<div className="w-16 h-1 rounded-full bg-[rgba(181,51,51,0.24)] dark:bg-red-800/40 overflow-hidden">
+			<div className="w-16 h-1 rounded-full bg-error-muted overflow-hidden">
 				<div className="h-full w-full bg-error dark:bg-error rounded-full" />
 			</div>
 		);
@@ -104,11 +104,11 @@ const AgentProgressBar = memo(function AgentProgressBar({
 		<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-cream-700 overflow-hidden">
 			{pct > 0 ? (
 				<div
-					className="h-full bg-[#D96C46] rounded-full transition-all duration-500"
+					className="h-full bg-terracotta rounded-full transition-all duration-500"
 					style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
 				/>
 			) : (
-				<div className="h-full w-1/3 bg-[#D96C46]/70 rounded-full animate-swarm-indeterminate" />
+				<div className="h-full w-1/3 bg-terracotta/70 rounded-full animate-swarm-indeterminate" />
 			)}
 		</div>
 	);
@@ -152,10 +152,9 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 			className={cn(
 				"w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-200",
 				agent.status === "running" &&
-					"bg-[#D96C46]/[0.04] dark:bg-[#D96C46]/[0.06]",
+					"bg-terracotta/[0.04] dark:bg-terracotta/[0.06]",
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
-				agent.status === "error" &&
-					"bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
+				agent.status === "error" && "bg-error-muted/50",
 				agent.status === "pending" && "opacity-50",
 				onClick ? "cursor-pointer hover:bg-warm-200/60" : "cursor-default",
 			)}
@@ -174,7 +173,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				</div>
 				{agent.lastActivity && agent.status === "running" && (
 					<div className="flex items-center gap-1 text-[11px] text-text-muted truncate">
-						<Loader2 className="w-2.5 h-2.5 animate-spin text-[#D96C46] shrink-0" />
+						<Loader2 className="w-2.5 h-2.5 animate-spin text-terracotta shrink-0" />
 						<span className="truncate">{agent.lastActivity}</span>
 					</div>
 				)}
@@ -188,7 +187,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				<span
 					className={cn(
 						"text-[10px] font-medium",
-						agent.status === "running" && "text-[#D96C46]",
+						agent.status === "running" && "text-terracotta",
 						agent.status === "completed" && "text-success dark:text-success",
 						agent.status === "error" && "text-error dark:text-error",
 						agent.status === "pending" && "text-text-light",
@@ -250,7 +249,7 @@ export const SwarmCard = memo(function SwarmCard({
 			className={cn(
 				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden mb-2",
 				hasAnyRunning
-					? "bg-surface/80 border-[#D96C46]/20 dark:border-[#D96C46]/15 shadow-lg shadow-[#D96C46]/5 ring-1 ring-[#D96C46]/15"
+					? "bg-surface/80 border-terracotta/20 dark:border-terracotta/15 shadow-lg shadow-terracotta/5 ring-1 ring-terracotta/15"
 					: allDone
 						? "bg-surface border-success/30 dark:border-success/30"
 						: "bg-surface border-border",
@@ -259,8 +258,8 @@ export const SwarmCard = memo(function SwarmCard({
 			{/* 运行中的呼吸背景动画 */}
 			{hasAnyRunning && (
 				<div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
-					<div className="absolute inset-0 bg-gradient-to-r from-[#D96C46]/[0.03] via-orange-500/[0.03] to-[#D96C46]/[0.03] animate-pulse-slow" />
-					<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D96C46]/40 to-transparent w-full animate-scan-line" />
+					<div className="absolute inset-0 bg-gradient-to-r from-terracotta/[0.03] via-orange-500/[0.03] to-terracotta/[0.03] animate-pulse-slow" />
+					<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-terracotta/40 to-transparent w-full animate-scan-line" />
 				</div>
 			)}
 
@@ -271,7 +270,7 @@ export const SwarmCard = memo(function SwarmCard({
 						className={cn(
 							"flex items-center justify-center w-8 h-8 rounded-lg transition-all",
 							hasAnyRunning
-								? "bg-[#D96C46]/10 text-[#D96C46]"
+								? "bg-terracotta/10 text-terracotta"
 								: allDone
 									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: "bg-warm-200 text-text-muted",
@@ -287,8 +286,8 @@ export const SwarmCard = memo(function SwarmCard({
 					</div>
 					{hasAnyRunning && (
 						<span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D96C46] opacity-75" />
-							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#D96C46]" />
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-terracotta opacity-75" />
+							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-terracotta" />
 						</span>
 					)}
 				</div>
@@ -304,10 +303,10 @@ export const SwarmCard = memo(function SwarmCard({
 					</div>
 					<div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
 						{hasAnyRunning && (
-							<Loader2 className="w-3 h-3 animate-spin text-[#D96C46]" />
+							<Loader2 className="w-3 h-3 animate-spin text-terracotta" />
 						)}
 						{allDone && <CheckCircle2 className="w-3 h-3 text-success" />}
-						<span className={cn(hasAnyRunning && "text-[#D96C46] font-medium")}>
+						<span className={cn(hasAnyRunning && "text-terracotta font-medium")}>
 							{summaryText}
 						</span>
 					</div>
@@ -406,7 +405,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 							? "text-peach-500"
 							: pct >= 100
 								? "text-success"
-								: "text-[#D96C46]",
+								: "text-terracotta",
 					)}
 				/>
 			</svg>
@@ -440,7 +439,7 @@ const SwarmMiniStats = memo(function SwarmMiniStats({
 				</span>
 			)}
 			{stats.running > 0 && (
-				<span className="flex items-center gap-1 text-[#D96C46]">
+				<span className="flex items-center gap-1 text-terracotta">
 					<Loader2 className="w-3 h-3 animate-spin" />
 					{stats.running} 运行中
 				</span>

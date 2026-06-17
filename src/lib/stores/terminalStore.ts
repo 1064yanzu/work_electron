@@ -5,6 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import { invoke } from "../../lib/tauriCompat";
+import { toast } from "../../components/ui/Toast";
 import { getTerminalPrefs } from "../config/terminal";
 import { workspaceStore } from "../workspaceStore";
 
@@ -146,6 +147,7 @@ class TerminalStore {
 			return instance;
 		} catch (err) {
 			console.error("[TerminalStore] 创建终端失败:", err);
+			toast.error(`创建终端失败：${err instanceof Error ? err.message : "未知错误"}`);
 			return null;
 		}
 	}

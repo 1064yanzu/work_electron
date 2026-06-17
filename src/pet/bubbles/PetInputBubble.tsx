@@ -70,7 +70,7 @@ export const PetInputBubble = forwardRef<
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (
 			(e.key === "Enter" && !e.shiftKey) ||
-			(e.key === "Enter" && e.metaKey)
+			(e.key === "Enter" && (e.metaKey || e.ctrlKey))
 		) {
 			e.preventDefault();
 			onSubmit();

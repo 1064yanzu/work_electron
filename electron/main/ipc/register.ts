@@ -53,6 +53,7 @@ import { createSystemHandlers } from "./handlers/system";
 import { createLogsHandlers } from "./handlers/logs";
 import { createPerfHandlers } from "./handlers/perf";
 import { createUserDataJanitorHandlers } from "./handlers/userDataJanitor";
+import { createAgentRetentionHandlers } from "./handlers/agentRetention";
 import { createWebContentHandlers } from "./handlers/webContent";
 import { createArtifactHandlers } from "./handlers/artifacts";
 import { createAgentCheckpointHandlers } from "./handlers/agentCheckpoint";
@@ -74,9 +75,9 @@ import { createCustomMascotHandlers } from "./handlers/customMascot";
 import {
 	createStyleProfileCrudHandlers,
 	createStyleSampleHandlers,
-	createStyleAnalyzerHandlers,
+	createStyleAnalyzerHandlersV2,
 	createStyleAnalysisCrudHandlers,
-	createStyleRendererHandlers,
+	createStyleRendererHandlersV2,
 	createStyleFeedbackHandlers,
 	createStyleRecipeCrudHandlers,
 } from "./handlers/styleProfile";
@@ -94,7 +95,11 @@ import { createReaderHandlers } from "./handlers/reader";
 import { createTtsHandlers } from "./handlers/tts";
 import { createSlashCommandsHandlers } from "./handlers/slashCommands";
 import { createUpdateHandlers } from "./handlers/update";
-import { setFileWatcherMainWindow } from "../services/fileWatcherService";
+import {
+	setFileWatcherMainWindow,
+	startWatching,
+	stopWatching,
+} from "../services/fileWatcherService";
 import { isMainWindowForeground } from "../windows/mainWindowFocusState";
 import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
@@ -195,6 +200,7 @@ export function registerIpcHandlers({
 	const logsHandlers = createLogsHandlers({ logger });
 	const perfHandlers = createPerfHandlers({ db });
 	const userDataJanitorHandlers = createUserDataJanitorHandlers();
+	const agentRetentionHandlers = createAgentRetentionHandlers(db);
 	const skillsHandlers = createSkillsHandlers(db);
 	const skillsMarketplaceHandlers = createSkillsMarketplaceHandlers({
 		db,
@@ -306,6 +312,43 @@ export function registerIpcHandlers({
 		return { focused: isMainWindowForeground(mainWindowRef) };
 	}) satisfies IpcHandler<"main_window_is_focused">);
 
+	// 目录文件监听：沙盒工作区文件树事件驱动刷新（替代渲染端高频全量重扫）
+	ipcMain.handle("file_watch_start", (async (_event, input) => {
+		return await startWatching(input.path);
+	}) satisfies IpcHandler<"file_watch_start">);
+	ipcMain.handle("file_watch_stop", (async (_event, input) => {
+		return await stopWatching(input.path);
+	}) satisfies IpcHandler<"file_watch_stop">);
+
+	// 渲染端切换亮暗模式时同步 nativeTheme，原生菜单/对话框跟随应用主题
+	ipcMain.handle("app_set_native_theme", (async (_event, input) => {
+		if (!["light", "dark", "system"].includes(input.mode)) {
+			return { success: false };
+		}
+		const { nativeTheme } = await import("electron");
+		nativeTheme.themeSource = input.mode;
+		return { success: true };
+	}) satisfies IpcHandler<"app_set_native_theme">);
+
+	// 渲染端主题应用后双写窗口背景色，供下次启动消除白屏闪烁
+	ipcMain.handle("app_set_window_background", (async (_event, input) => {
+		if (!/^#[0-9a-fA-F]{6}$/.test(input.color)) {
+			return { success: false };
+		}
+		try {
+			const fs = await import("node:fs/promises");
+			const path = await import("node:path");
+			await fs.writeFile(
+				path.join(app.getPath("userData"), "window-background.json"),
+				JSON.stringify({ backgroundColor: input.color }),
+				"utf-8",
+			);
+			return { success: true };
+		} catch {
+			return { success: false };
+		}
+	}) satisfies IpcHandler<"app_set_window_background">);
+
 	ipcMain.handle(
 		"system_get_user_info",
 		systemHandlers.get_user_info satisfies IpcHandler<"system_get_user_info">,
@@ -339,6 +382,14 @@ export function registerIpcHandlers({
 	ipcMain.handle(
 		"userdata_janitor_execute",
 		userDataJanitorHandlers.userdata_janitor_execute satisfies IpcHandler<"userdata_janitor_execute">,
+	);
+	ipcMain.handle(
+		"agent_retention_scan",
+		agentRetentionHandlers.agent_retention_scan satisfies IpcHandler<"agent_retention_scan">,
+	);
+	ipcMain.handle(
+		"agent_retention_clean",
+		agentRetentionHandlers.agent_retention_clean satisfies IpcHandler<"agent_retention_clean">,
 	);
 
 	// 应用更新
@@ -1446,14 +1497,14 @@ export function registerIpcHandlers({
 	ipcMain.handle("style_sample_parse_file", styleSampleHandlers.style_sample_parse_file);
 	ipcMain.handle("style_sample_import_from_zip", styleSampleHandlers.style_sample_import_from_zip);
 
-	const styleAnalyzerHandlers = createStyleAnalyzerHandlers(db, () => mainWindowRef);
+	const styleAnalyzerHandlers = createStyleAnalyzerHandlersV2(db, () => mainWindowRef);
 	ipcMain.handle("style_analysis_start", styleAnalyzerHandlers.style_analysis_start);
 
 	const styleAnalysisCrudHandlers = createStyleAnalysisCrudHandlers(db);
-	ipcMain.handle("style_analysis_get", styleAnalysisCrudHandlers.style_analysis_get);
+	ipcMain.handle("style_analysis_get", styleAnalyzerHandlers.style_analysis_get);
 	ipcMain.handle("style_analysis_update", styleAnalysisCrudHandlers.style_analysis_update);
 
-	const styleRendererHandlers = createStyleRendererHandlers(db);
+	const styleRendererHandlers = createStyleRendererHandlersV2(db);
 	ipcMain.handle("style_profile_render_prompt", styleRendererHandlers.style_profile_render_prompt);
 	ipcMain.handle("style_recipe_render_prompt", styleRendererHandlers.style_recipe_render_prompt);
 

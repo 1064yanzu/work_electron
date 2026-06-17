@@ -48,10 +48,10 @@ const variantStyles = {
 		hover:bg-warm-200
 		hover:text-text-primary
 	`,
-	// 深红危险按钮
+	// 深红危险按钮 — 接主题语义 token（--t-error）
 	danger: `
-		bg-[#b53333] text-white
-		hover:bg-[#9e2b2b]
+		bg-error text-white
+		hover:opacity-90
 		border border-transparent
 	`,
 	// 描边按钮 — 暖色边框，无填充
@@ -62,12 +62,12 @@ const variantStyles = {
 		hover:bg-warm-200
 		hover:border-warm-400
 	`,
-	// 桃色 pill — 1% 彩色锚点（升级 / 领取等）
+	// 桃色 pill — 1% 彩色锚点（升级 / 领取等），peach 色阶来自 tailwind.config.js
 	peach: `
-		bg-[#F8DCCB] text-cream-900
-		hover:bg-[#F2C4A8]
+		bg-peach-100 text-cream-900
+		hover:bg-peach-200
 		border border-transparent
-		dark:bg-[rgba(248,220,203,0.18)] dark:text-[#F8DCCB]
+		dark:bg-[rgba(248,220,203,0.18)] dark:text-peach-100
 	`,
 	// 赤陶橙强行动 CTA — 仅用于「创建 / 确认 / 继续 / 提交」类关键动作
 	action: `

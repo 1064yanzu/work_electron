@@ -176,6 +176,11 @@ export async function listStyleFeedback(
 export async function createStyleRecipe(input: {
 	name: string;
 	description?: string;
+	soul_profile_id?: string | null;
+	thinking_profile_id?: string | null;
+	articulation_profile_id?: string | null;
+	texture_profile_id?: string | null;
+	relational_profile_id?: string | null;
 	cognitive_profile_id?: string | null;
 	rhetorical_profile_id?: string | null;
 	aesthetic_profile_id?: string | null;
@@ -198,6 +203,11 @@ export async function updateStyleRecipe(
 	updates: {
 		name?: string;
 		description?: string;
+		soul_profile_id?: string | null;
+		thinking_profile_id?: string | null;
+		articulation_profile_id?: string | null;
+		texture_profile_id?: string | null;
+		relational_profile_id?: string | null;
 		cognitive_profile_id?: string | null;
 		rhetorical_profile_id?: string | null;
 		aesthetic_profile_id?: string | null;

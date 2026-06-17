@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import type { IpcMainInvokeEvent } from "electron";
-import mammoth from "mammoth";
 
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import { requireAbsoluteLocalPath } from "../../utils/localPaths";
@@ -17,7 +16,9 @@ export function createDocumentHandlers() {
 			const st = await fs.stat(filePath);
 			if (!st.isFile()) throw new Error("NOT_A_FILE");
 
-			const result = await mammoth.convertToHtml({ path: filePath });
+			// 懒加载 mammoth，避免主进程启动时占用内存
+			const mammoth = await import("mammoth");
+			const result = await mammoth.default.convertToHtml({ path: filePath });
 			return { html: result.value || "" };
 		}) satisfies Handler<"convert_docx_to_html">,
 	};

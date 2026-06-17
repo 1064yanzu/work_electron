@@ -11,6 +11,7 @@
  */
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
+import { cleanExpiredAgentSessions } from "./agentRetention";
 
 const CONFIG_KEY = "last_vacuum_at";
 const VACUUM_MIN_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
@@ -109,6 +110,13 @@ export function startDbMaintenance(db: DbContext, logger?: Logger): void {
 	if (tickTimer) clearInterval(tickTimer);
 	tickTimer = setInterval(() => {
 		void runVacuumIfDue(db, logger);
+		// agent 会话保留策略：每次 tick 时顺便清理过期会话
+		void cleanExpiredAgentSessions(db, logger).catch((err) => {
+			logger?.warn({
+				msg: "Agent retention cleanup failed",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		});
 	}, TICK_INTERVAL_MS);
 	tickTimer.unref?.();
 }

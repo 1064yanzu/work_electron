@@ -378,6 +378,36 @@ export type IPCSchema = {
 			platform: NodeJS.Platform;
 		};
 	};
+	/**
+	 * 渲染端应用主题后把当前窗口背景色持久化到 userData/window-background.json，
+	 * 主进程下次启动创建 BrowserWindow 时读取，消除启动白屏闪烁。
+	 * color 必须是 #RRGGBB 格式。
+	 */
+	app_set_window_background: {
+		input: { color: string };
+		output: { success: boolean };
+	};
+	/**
+	 * 渲染端切换亮暗模式时同步 nativeTheme.themeSource，
+	 * 让原生菜单 / 对话框 / 滚动条等系统 UI 跟随应用主题。
+	 */
+	app_set_native_theme: {
+		input: { mode: "light" | "dark" | "system" };
+		output: { success: boolean };
+	};
+	/**
+	 * 启动 / 停止目录文件监听（chokidar）。
+	 * 变更事件通过 `coding-file-changed` 推送：{ projectPath, changes: FileChangeEvent[] }。
+	 * 用于沙盒工作区文件树的事件驱动刷新，替代渲染端高频全量重扫。
+	 */
+	file_watch_start: {
+		input: { path: string };
+		output: { success: boolean; error?: string };
+	};
+	file_watch_stop: {
+		input: { path: string };
+		output: { success: boolean; error?: string };
+	};
 	// ==================
 	// 日志导出
 	// ==================
@@ -460,6 +490,27 @@ export type IPCSchema = {
 			removed: number;
 			bytes: number;
 			errors: Array<{ path: string; error: string }>;
+		};
+	};
+	/**
+	 * Agent 数据保留策略：扫描过期的 agent 会话数。
+	 * 默认保留最近 90 天，可通过 app_config('agent.retention_days') 调整。
+	 */
+	agent_retention_scan: {
+		input: Record<string, never>;
+		output: {
+			expired_sessions: number;
+			total_sessions: number;
+			retention_days: number;
+			cutoff_date: string;
+		};
+	};
+	/** Agent 数据保留策略：手动触发清理过期会话（级联删除关联 tasks/messages）。 */
+	agent_retention_clean: {
+		input: Record<string, never>;
+		output: {
+			deleted_sessions: number;
+			retention_days: number;
 		};
 	};
 	// ==================
@@ -3529,6 +3580,13 @@ export type IPCSchema = {
 		input: {
 			name: string;
 			description?: string;
+			// v2 层级来源（灵魂 / 思维 / 篇章 / 血肉 / 关系性）
+			soul_profile_id?: string | null;
+			thinking_profile_id?: string | null;
+			articulation_profile_id?: string | null;
+			texture_profile_id?: string | null;
+			relational_profile_id?: string | null;
+			// v1 层级来源（向后兼容）
 			cognitive_profile_id?: string | null;
 			rhetorical_profile_id?: string | null;
 			aesthetic_profile_id?: string | null;
@@ -3553,6 +3611,13 @@ export type IPCSchema = {
 			id: string;
 			name?: string;
 			description?: string;
+			// v2 层级来源
+			soul_profile_id?: string | null;
+			thinking_profile_id?: string | null;
+			articulation_profile_id?: string | null;
+			texture_profile_id?: string | null;
+			relational_profile_id?: string | null;
+			// v1 层级来源（向后兼容）
 			cognitive_profile_id?: string | null;
 			rhetorical_profile_id?: string | null;
 			aesthetic_profile_id?: string | null;
@@ -3700,7 +3765,7 @@ export interface TTSCloneProgressEvent {
 }
 
 // ==================================================================================
-// 语言风格包（Style Profile）共享类型
+// 语言风格包（Style Profile）共享类型 — 完整「灵魂-骨干-血肉」体系
 // ==================================================================================
 
 /** 风格轴维度分析结果 */
@@ -3713,9 +3778,156 @@ export interface StyleAxisAnalysis {
 	intensity: "low" | "medium" | "high" | "insufficient_evidence";
 	/** 条件/触发场景（可选） */
 	conditions?: string;
+	/** 经变标注：该维度是跨题目不变(经)还是会摆动(变) */
+	constancy?: "constant" | "variable";
+	/** 变化范围或触发条件（当 constancy=variable 时有效） */
+	variance_note?: string;
 }
 
-/** 校准锚点 */
+/** 灵魂层 - 世界观与根本姿态 */
+export interface SoulLayerAnalysis {
+	/** 核心关切（最多2-3个） */
+	core_concerns: StyleAxisAnalysis[];
+	/** 对核心关切的基本立场 */
+	core_stance: StyleAxisAnalysis[];
+	/** 认识论姿态（实证↔诠释↔实用） */
+	epistemology: StyleAxisAnalysis[];
+	/** 复杂性与矛盾的处理 */
+	complexity_handling: StyleAxisAnalysis[];
+	/** 不确定性的姿态 */
+	uncertainty_stance: StyleAxisAnalysis[];
+	/** 与时间的关系（历史↔当下↔前瞻） */
+	temporal_orientation: StyleAxisAnalysis[];
+	/** 系统与个案的优先级 */
+	system_vs_case: StyleAxisAnalysis[];
+	/** 与主流/共识的关系 */
+	mainstream_relation: StyleAxisAnalysis[];
+	/** 起笔的触发（反应↔生成） */
+	initiation_trigger: StyleAxisAnalysis[];
+	/** 读者关系的根本姿态 */
+	reader_relation: StyleAxisAnalysis[];
+	/** 自我在场方式 */
+	self_presence: StyleAxisAnalysis[];
+	/** 语言的自觉度 */
+	language_consciousness: StyleAxisAnalysis[];
+	/** 根本气质 */
+	fundamental_temperament: StyleAxisAnalysis[];
+}
+
+/** 骨干层 - 思维运作 */
+export interface ThinkingOperationAnalysis {
+	/** 推理方向（归纳↔演绎↔类比） */
+	reasoning_direction: StyleAxisAnalysis[];
+	/** 抽象-具体的运动 */
+	abstraction_movement: StyleAxisAnalysis[];
+	/** 取景与剪裁 */
+	attention_framing: StyleAxisAnalysis[];
+	/** 论据的质料偏好 */
+	evidence_preference: StyleAxisAnalysis[];
+	/** 论证的构造方式 */
+	argumentation_structure: StyleAxisAnalysis[];
+	/** 收敛方式 */
+	convergence_mode: StyleAxisAnalysis[];
+}
+
+/** 骨干层 - 篇章外化（关节活动范围） */
+export interface ArticulationPatternAnalysis {
+	/** 问题驱动程度 */
+	question_driven: StyleAxisAnalysis[];
+	/** 信息密度的运动范围 */
+	density_movement: StyleAxisAnalysis[];
+	/** 转折/让步的关节范围 */
+	transition_joint: StyleAxisAnalysis[];
+	/** 开篇的重力倾向 */
+	opening_gravity: StyleAxisAnalysis[];
+	/** 结尾的重力倾向 */
+	closing_gravity: StyleAxisAnalysis[];
+	/** 结构的显隐 */
+	structure_visibility: StyleAxisAnalysis[];
+}
+
+/** 血肉层 - 语言质感与指纹 */
+export interface TextureLayerAnalysis {
+	/** 句子节奏 */
+	sentence_rhythm: StyleAxisAnalysis[];
+	/** 词汇层级 */
+	lexical_register: StyleAxisAnalysis[];
+	/** 修辞偏好 */
+	rhetorical_devices: StyleAxisAnalysis[];
+	/** 情感温度及其突破条件 */
+	emotional_temperature: StyleAxisAnalysis[];
+	/** 比喻系统 */
+	metaphor_system: StyleAxisAnalysis[];
+	/** 数据与数字的审美 */
+	data_aesthetics: StyleAxisAnalysis[];
+	/** 人称/称谓的具体使用 */
+	pronoun_usage: StyleAxisAnalysis[];
+	/** 引用与他者声音的处理 */
+	citation_handling: StyleAxisAnalysis[];
+	/** 格式与排版习惯 */
+	formatting_habits: StyleAxisAnalysis[];
+	/** 指纹级小习惯 */
+	fingerprint_habits: StyleAxisAnalysis[];
+}
+
+/** 横切话题（贯穿三层） */
+export interface CrossCuttingTopics {
+	/** 执念意象/反复出现的例证域 */
+	recurring_imagery?: {
+		soul: string; // 为什么重要
+		structure: string; // 在论证什么位置出现、起什么作用
+		texture: string; // 具体怎么措辞
+	};
+	/** 幽默与讽刺 */
+	humor_irony?: {
+		soul: string; // 根在灵魂根本气质
+		structure: string; // 出现在什么阶段、服务什么功能
+		texture: string; // 靠什么手段
+	};
+	/** 标题习惯 */
+	title_habit?: {
+		structure: string; // 在结构中的角色
+		texture: string; // 表层形式
+	};
+	/** 元评论/自我指涉 */
+	meta_commentary?: {
+		soul: string; // 是否是自我在场的延伸
+		structure: string; // 出现在思维转向的什么节点
+		texture: string; // 具体怎么表达
+	};
+}
+
+/** 关系性维度 - 气韵（跨层） */
+export interface LayerHarmony {
+	/** 一句话描述三层之间的比例关系或反差 */
+	description: string;
+}
+
+/** 关系性维度 - 全息性（跨尺度） */
+export interface HolographicPattern {
+	/** 模式名称 */
+	name: string;
+	/** 模式描述 */
+	description: string;
+	/** 句子级表现 */
+	sentence_level?: string;
+	/** 段落级表现 */
+	paragraph_level?: string;
+	/** 全文级表现 */
+	article_level?: string;
+}
+
+/** 关系性维度 - 经变分布（跨篇） */
+export interface ConstancyVarianceMap {
+	/** 综合一句话：经集中在哪些方面，变集中在哪些方面 */
+	summary: string;
+	/** 标记为"经"的维度关键路径 */
+	constants: string[];
+	/** 标记为"变"的维度及其浮动范围 */
+	variables: Array<{ dimension: string; range: string }>;
+}
+
+/** 校准锚点（扩展） */
 export interface StyleCalibrationAnchors {
 	/** 正向示例（倾向使用的表达方式） */
 	positive: string[];
@@ -3723,20 +3935,40 @@ export interface StyleCalibrationAnchors {
 	negative: string[];
 	/** 缺失特征（分析时样本不足的维度） */
 	missing: string[];
+	/** 关系性维度 - 气韵 */
+	layer_harmony?: LayerHarmony;
+	/** 关系性维度 - 全息性 */
+	holographic_patterns?: HolographicPattern[];
+	/** 关系性维度 - 经变分布 */
+	constancy_variance?: ConstancyVarianceMap;
 }
 
 /** 风格分析结果完整结构 */
 export interface StyleAnalysisData {
-	/** 第一层：文本认知模式 */
-	cognitive_pattern: StyleAxisAnalysis[];
-	/** 第二层：话语姿态 */
-	rhetorical_stance: StyleAxisAnalysis[];
-	/** 第三层：语言审美 */
-	language_aesthetic: StyleAxisAnalysis[];
-	/** 校准锚点 */
+	/** schema 版本标识（v2 = 新体系） */
+	schema_version?: "v1" | "v2";
+	/** 灵魂层：世界观与根本姿态 */
+	soul_layer?: SoulLayerAnalysis;
+	/** 骨干层：思维运作 */
+	thinking_operation?: ThinkingOperationAnalysis;
+	/** 骨干层：篇章外化 */
+	articulation_pattern?: ArticulationPatternAnalysis;
+	/** 血肉层：语言质感与指纹 */
+	texture_layer?: TextureLayerAnalysis;
+	/** 横切话题 */
+	cross_cutting?: CrossCuttingTopics;
+	/** 校准锚点（含关系性维度） */
 	calibration_anchors: StyleCalibrationAnchors;
 	/** 任务适配规则（key=任务类型，value=特殊调整说明） */
 	task_adaptation_rules: Record<string, string>;
+
+	// === 向后兼容字段（v1 旧数据） ===
+	/** @deprecated 旧版：文本认知模式 */
+	cognitive_pattern?: StyleAxisAnalysis[];
+	/** @deprecated 旧版：话语姿态 */
+	rhetorical_stance?: StyleAxisAnalysis[];
+	/** @deprecated 旧版：语言审美 */
+	language_aesthetic?: StyleAxisAnalysis[];
 }
 
 /** 风格包状态 */
@@ -3822,18 +4054,35 @@ export interface StyleProfileRecipe {
 	id: string;
 	name: string;
 	description: string | null;
-	/** 认知模式来源 profile_id */
-	cognitive_profile_id: string | null;
-	/** 话语姿态来源 profile_id */
-	rhetorical_profile_id: string | null;
-	/** 语言审美来源 profile_id */
-	aesthetic_profile_id: string | null;
-	/** 校准锚点来源 profile_id */
-	anchors_profile_id: string | null;
+	/** 灵魂层来源 profile_id */
+	soul_profile_id: string | null;
+	/** 骨干层-思维运作来源 profile_id */
+	thinking_profile_id: string | null;
+	/** 骨干层-篇章外化来源 profile_id */
+	articulation_profile_id: string | null;
+	/** 血肉层来源 profile_id */
+	texture_profile_id: string | null;
+	/** 关系性维度来源 profile_id（气韵、全息、经变） */
+	relational_profile_id: string | null;
 	intensity: StyleIntensity;
 	created_at: number;
 	updated_at: number;
 	/** 各层级来源的名称（由后端填充，方便前端展示） */
+	soul_profile_name?: string;
+	thinking_profile_name?: string;
+	articulation_profile_name?: string;
+	texture_profile_name?: string;
+	relational_profile_name?: string;
+
+	// === 向后兼容字段（v1 旧数据） ===
+	/** @deprecated 旧版：认知模式来源 */
+	cognitive_profile_id?: string | null;
+	/** @deprecated 旧版：话语姿态来源 */
+	rhetorical_profile_id?: string | null;
+	/** @deprecated 旧版：语言审美来源 */
+	aesthetic_profile_id?: string | null;
+	/** @deprecated 旧版：校准锚点来源 */
+	anchors_profile_id?: string | null;
 	cognitive_profile_name?: string;
 	rhetorical_profile_name?: string;
 	aesthetic_profile_name?: string;

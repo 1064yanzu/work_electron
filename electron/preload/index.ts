@@ -57,6 +57,7 @@ const api: ElectronAPI = {
 			return "";
 		}
 	},
+	platform: process.platform,
 };
 
 contextBridge.exposeInMainWorld("electronAPI", api);

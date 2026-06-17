@@ -9,6 +9,7 @@ import type { DbContext } from "../../db/client";
 import {
 	collectFullBackupPayload,
 	importBackupPayload,
+	type CollectBackupOptions,
 } from "../../services/backupPayload";
 
 interface BackupFileInfo {
@@ -185,6 +186,9 @@ export function createLocalBackupHandlers(db: DbContext) {
 /**
  * 导出所有数据用于备份
  */
-export async function exportAllDataForBackup(db: DbContext): Promise<object> {
-	return await collectFullBackupPayload(db);
+export async function exportAllDataForBackup(
+	db: DbContext,
+	options?: CollectBackupOptions,
+): Promise<object> {
+	return await collectFullBackupPayload(db, options);
 }

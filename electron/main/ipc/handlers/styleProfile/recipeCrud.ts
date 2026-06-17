@@ -25,6 +25,13 @@ function rowToRecipe(row: Record<string, unknown>): StyleProfileRecipe {
 		id: row.id as string,
 		name: row.name as string,
 		description: (row.description as string | null) ?? null,
+		// v2 新字段
+		soul_profile_id: (row.soul_profile_id as string | null) ?? null,
+		thinking_profile_id: (row.thinking_profile_id as string | null) ?? null,
+		articulation_profile_id: (row.articulation_profile_id as string | null) ?? null,
+		texture_profile_id: (row.texture_profile_id as string | null) ?? null,
+		relational_profile_id: (row.relational_profile_id as string | null) ?? null,
+		// v1 旧字段（向后兼容）
 		cognitive_profile_id: (row.cognitive_profile_id as string | null) ?? null,
 		rhetorical_profile_id:
 			(row.rhetorical_profile_id as string | null) ?? null,
@@ -35,6 +42,11 @@ function rowToRecipe(row: Record<string, unknown>): StyleProfileRecipe {
 		created_at: row.created_at as number,
 		updated_at: row.updated_at as number,
 		// 名称字段由 enrichRecipeNames 填充
+		soul_profile_name: (row.soul_profile_name as string | undefined) ?? undefined,
+		thinking_profile_name: (row.thinking_profile_name as string | undefined) ?? undefined,
+		articulation_profile_name: (row.articulation_profile_name as string | undefined) ?? undefined,
+		texture_profile_name: (row.texture_profile_name as string | undefined) ?? undefined,
+		relational_profile_name: (row.relational_profile_name as string | undefined) ?? undefined,
 		cognitive_profile_name:
 			(row.cognitive_profile_name as string | undefined) ?? undefined,
 		rhetorical_profile_name:
@@ -54,6 +66,13 @@ async function enrichRecipeNames(
 	recipe: StyleProfileRecipe,
 ): Promise<StyleProfileRecipe> {
 	const ids = [
+		// v2 字段
+		recipe.soul_profile_id,
+		recipe.thinking_profile_id,
+		recipe.articulation_profile_id,
+		recipe.texture_profile_id,
+		recipe.relational_profile_id,
+		// v1 字段（向后兼容）
 		recipe.cognitive_profile_id,
 		recipe.rhetorical_profile_id,
 		recipe.aesthetic_profile_id,
@@ -76,6 +95,23 @@ async function enrichRecipeNames(
 
 	return {
 		...recipe,
+		// v2 名称
+		soul_profile_name: recipe.soul_profile_id
+			? nameMap.get(recipe.soul_profile_id)
+			: undefined,
+		thinking_profile_name: recipe.thinking_profile_id
+			? nameMap.get(recipe.thinking_profile_id)
+			: undefined,
+		articulation_profile_name: recipe.articulation_profile_id
+			? nameMap.get(recipe.articulation_profile_id)
+			: undefined,
+		texture_profile_name: recipe.texture_profile_id
+			? nameMap.get(recipe.texture_profile_id)
+			: undefined,
+		relational_profile_name: recipe.relational_profile_id
+			? nameMap.get(recipe.relational_profile_id)
+			: undefined,
+		// v1 名称（向后兼容）
 		cognitive_profile_name: recipe.cognitive_profile_id
 			? nameMap.get(recipe.cognitive_profile_id)
 			: undefined,
@@ -101,13 +137,21 @@ export function createStyleRecipeCrudHandlers(db: DbContext) {
 
 		await db.client.execute({
 			sql: `INSERT INTO style_profile_recipes
-        (id, name, description, cognitive_profile_id, rhetorical_profile_id,
+        (id, name, description,
+         soul_profile_id, thinking_profile_id, articulation_profile_id,
+         texture_profile_id, relational_profile_id,
+         cognitive_profile_id, rhetorical_profile_id,
          aesthetic_profile_id, anchors_profile_id, intensity, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			args: [
 				id,
 				input.name,
 				input.description ?? null,
+				input.soul_profile_id ?? null,
+				input.thinking_profile_id ?? null,
+				input.articulation_profile_id ?? null,
+				input.texture_profile_id ?? null,
+				input.relational_profile_id ?? null,
 				input.cognitive_profile_id ?? null,
 				input.rhetorical_profile_id ?? null,
 				input.aesthetic_profile_id ?? null,
@@ -166,6 +210,28 @@ export function createStyleRecipeCrudHandlers(db: DbContext) {
 			sets.push("description = ?");
 			args.push(input.description ?? null);
 		}
+		// v2 层级
+		if (input.soul_profile_id !== undefined) {
+			sets.push("soul_profile_id = ?");
+			args.push(input.soul_profile_id ?? null);
+		}
+		if (input.thinking_profile_id !== undefined) {
+			sets.push("thinking_profile_id = ?");
+			args.push(input.thinking_profile_id ?? null);
+		}
+		if (input.articulation_profile_id !== undefined) {
+			sets.push("articulation_profile_id = ?");
+			args.push(input.articulation_profile_id ?? null);
+		}
+		if (input.texture_profile_id !== undefined) {
+			sets.push("texture_profile_id = ?");
+			args.push(input.texture_profile_id ?? null);
+		}
+		if (input.relational_profile_id !== undefined) {
+			sets.push("relational_profile_id = ?");
+			args.push(input.relational_profile_id ?? null);
+		}
+		// v1 层级（向后兼容）
 		if (input.cognitive_profile_id !== undefined) {
 			sets.push("cognitive_profile_id = ?");
 			args.push(input.cognitive_profile_id ?? null);

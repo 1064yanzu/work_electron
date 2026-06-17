@@ -16,6 +16,7 @@ import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
+import { Skeleton } from "./components/ui/Skeleton";
 import {
 	terminalStore,
 	useTerminalStoreSelector,
@@ -44,6 +45,7 @@ import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
 import { invoke } from "./lib/tauriCompat";
 import { listen } from "./lib/tauriEventCompat";
+import { shortcut } from "./lib/platform";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
@@ -88,8 +90,13 @@ const MASCOT_ONBOARDING_KEY = "mascotOnboardingShown";
 
 function PanelLoadingFallback() {
 	return (
-		<div className="h-full w-full flex items-center justify-center text-xs text-text-muted">
-			正在加载...
+		<div className="h-full w-full flex flex-col gap-3 p-4">
+			<Skeleton className="h-8 w-2/3" />
+			<Skeleton className="h-4 w-full" />
+			<Skeleton className="h-4 w-5/6" />
+			<Skeleton className="h-4 w-3/4" />
+			<div className="flex-1" />
+			<Skeleton className="h-10 w-full rounded-xl" />
 		</div>
 	);
 }
@@ -442,7 +449,7 @@ export default function App() {
 								border: "1px solid var(--t-border)",
 								boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
 							}}
-							title="打开 AI 对话 (⌘L)"
+							title={`打开 AI 对话 (${shortcut("L")})`}
 						>
 							<MessageCircle className="w-4 h-4" strokeWidth={1.5} />
 							<span className="text-sm font-medium">AI 对话</span>

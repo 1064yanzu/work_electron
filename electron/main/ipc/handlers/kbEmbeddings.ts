@@ -232,22 +232,25 @@ export function createKbEmbeddingHandlers(db: DbContext) {
 				const embedding = vectors[i] || [];
 				const dims = embedding.length;
 				const embedding_json = JSON.stringify(embedding);
+				// Float32Array → Buffer（BLOB 列），约省 80% 空间
+				const embeddingBlob = Buffer.from(new Float32Array(embedding).buffer);
 
 				if (force) {
 					await db.client.execute({
-						sql: `INSERT INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?)
+						sql: `INSERT INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, embedding, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(chunk_id, model) DO UPDATE SET
                 dims = excluded.dims,
                 embedding_json = excluded.embedding_json,
+                embedding = excluded.embedding,
                 updated_at = excluded.updated_at`,
-						args: [chunkId, embedding_model, dims, embedding_json, now, now],
+						args: [chunkId, embedding_model, dims, embedding_json, embeddingBlob, now, now],
 					});
 				} else {
 					await db.client.execute({
-						sql: `INSERT OR IGNORE INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-						args: [chunkId, embedding_model, dims, embedding_json, now, now],
+						sql: `INSERT OR IGNORE INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, embedding, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+						args: [chunkId, embedding_model, dims, embedding_json, embeddingBlob, now, now],
 					});
 				}
 				updated++;

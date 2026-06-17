@@ -10,6 +10,7 @@ import {
 	X,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { confirmDialog } from "../ui/ConfirmDialog";
 import {
 	BUILTIN_MASCOT_LIST,
 	BUILTIN_MASCOT_META,
@@ -117,10 +118,11 @@ export function MascotPicker({
 	};
 
 	const handleDelete = async (id: string, label: string) => {
-		if (
-			typeof window !== "undefined" &&
-			!window.confirm(`确认删除自定义桌宠 "${label}"？此操作不可恢复。`)
-		) {
+		const confirmed = await confirmDialog.danger(
+			`确认删除自定义桌宠 "${label}"？此操作不可恢复。`,
+			"删除桌宠",
+		);
+		if (!confirmed) {
 			return;
 		}
 		const result = await deleteCustom(id);

@@ -1,10 +1,6 @@
 import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
-import {
-	beginAppRegistration,
-	initAppRegistration,
-	pollAppRegistrationOnce,
-} from "../../remote-control/channels/feishu/appRegistration";
+// feishu appRegistration 懒加载：@larksuiteoapi/node-sdk 较大，仅在用户使用飞书注册时动态加载
 import { getRemoteControlOrchestrator } from "../../remote-control/core/service";
 import type {
 	RemoteChannelId,
@@ -196,6 +192,9 @@ export function createRemoteControlHandlers(deps?: { logger?: Logger }) {
 	const feishu_begin_app_registration: Handler<
 		"feishu_begin_app_registration"
 	> = async (_event, input) => {
+		const { initAppRegistration, beginAppRegistration } = await import(
+			"../../remote-control/channels/feishu/appRegistration"
+		);
 		const domain = input.domain ?? "feishu";
 		logger?.info({ msg: `feishu_begin_app_registration: domain=${domain}` });
 		await initAppRegistration(domain);
@@ -209,6 +208,9 @@ export function createRemoteControlHandlers(deps?: { logger?: Logger }) {
 	const feishu_poll_app_registration: Handler<
 		"feishu_poll_app_registration"
 	> = async (_event, input) => {
+		const { pollAppRegistrationOnce } = await import(
+			"../../remote-control/channels/feishu/appRegistration"
+		);
 		const outcome = await pollAppRegistrationOnce({
 			deviceCode: input.deviceCode,
 			currentDomain: input.currentDomain,

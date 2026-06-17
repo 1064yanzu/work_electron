@@ -305,9 +305,12 @@ export class AutoSyncScheduler {
 				disableStream: config.webdav_disable_stream,
 			};
 
-			// 导出数据
-			const exportData = await exportAllDataForBackup(db);
-			const dataJson = JSON.stringify(exportData, null, 2);
+			// 导出数据：自动同步跳过可重建的嵌入向量表，且不做 pretty-print
+			// （缩进会让 JSON 体积膨胀 ~40% 并显著拉高 stringify 的 CPU 峰值）
+			const exportData = await exportAllDataForBackup(db, {
+				excludeTables: ["note_chunk_embeddings"],
+			});
+			const dataJson = JSON.stringify(exportData);
 
 			// 执行备份
 			await this.backupManager.backupToWebdav(

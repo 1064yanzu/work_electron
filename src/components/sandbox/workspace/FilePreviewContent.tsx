@@ -19,6 +19,7 @@ import {
 	useSandboxEditorStoreSelector,
 } from "../../../lib/sandboxEditorStore";
 import { cn } from "../../../lib/utils";
+import { shortcut } from "../../../lib/platform";
 import { convertFileSrc } from "../../../lib/tauriCompat";
 import { isHtmlPreviewExtension } from "../../../lib/frontendPreview";
 import { isReaderSupportedFile } from "../../../lib/reader/formats";
@@ -507,7 +508,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							!canCopyContent &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
-						title="复制内容 (⌘C)"
+						title={`复制内容 (${shortcut("C")})`}
 						aria-label="复制内容"
 					>
 						{copiedAction === "content" ? (
@@ -562,7 +563,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							!canDownload &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
-						title="下载文件 (⌘D)"
+						title={`下载文件 (${shortcut("D")})`}
 						aria-label="下载文件"
 					>
 						<Download className="w-3.5 h-3.5" />

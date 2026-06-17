@@ -156,14 +156,21 @@ const LARGE_TABLE_BATCH_SIZE = 500;
 // 行数超过此阈值的表将使用分批导出
 const LARGE_TABLE_THRESHOLD = 1000;
 
+export type CollectBackupOptions = {
+	/** 跳过的表（如 note_chunk_embeddings 可由嵌入服务重建，自动同步时省体积/CPU） */
+	excludeTables?: readonly string[];
+};
+
 export async function collectFullBackupPayload(
 	db: DbContext,
+	options?: CollectBackupOptions,
 ): Promise<Record<string, unknown>> {
 	const existingTables = await getExistingTables(db);
+	const excluded = new Set(options?.excludeTables ?? []);
 	const tables: Record<string, BackupRow[]> = {};
 
 	for (const table of DEFAULT_BACKUP_TABLES) {
-		if (!existingTables.has(table)) {
+		if (!existingTables.has(table) || excluded.has(table)) {
 			continue;
 		}
 

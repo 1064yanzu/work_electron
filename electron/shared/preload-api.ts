@@ -14,4 +14,6 @@ export interface ElectronAPI {
 	invoke: IpcInvoke;
 	on: IpcOn;
 	getPathForFile: (file: File) => string;
+	/** 主进程平台标识（darwin / win32 / linux），渲染端做快捷键文案等平台适配 */
+	platform: NodeJS.Platform;
 }

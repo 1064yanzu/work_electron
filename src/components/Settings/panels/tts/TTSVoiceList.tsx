@@ -13,6 +13,7 @@ import { useState } from "react";
 import { ttsDeleteVoice, ttsVoicePreview } from "../../../../lib/api/tts";
 import type { TTSVoice } from "../../../../lib/tts";
 import { toast } from "../../../ui/Toast";
+import { confirmDialog } from "../../../ui/ConfirmDialog";
 import { cn } from "../../../../lib/utils";
 
 interface TTSVoiceListProps {
@@ -62,7 +63,11 @@ export function TTSVoiceList({
 	};
 
 	const handleDelete = async (voiceId: string) => {
-		if (!confirm("确认删除这个克隆音色？此操作不可撤销。")) return;
+		const confirmed = await confirmDialog.danger(
+			"确认删除这个克隆音色？此操作不可撤销。",
+			"删除音色",
+		);
+		if (!confirmed) return;
 		setDeletingVoice(voiceId);
 		try {
 			const result = await ttsDeleteVoice({ providerId, voiceId });

@@ -6,10 +6,14 @@ import {
 	buildDocumentBudget,
 	type DocumentBudgetResult,
 } from "./agent/context/documentBudget";
-import { renderStyleProfilePrompt } from "./api/styleProfile";
+import {
+	renderStyleProfilePrompt,
+	renderStyleRecipePrompt,
+} from "./api/styleProfile";
 
 const ACTIVE_STYLE_PROFILE_KEY = "active_style_profile_id";
 const ACTIVE_STYLE_INTENSITY_KEY = "active_style_profile_intensity";
+const ACTIVE_STYLE_RECIPE_KEY = "active_style_recipe_id";
 
 // 提示词配置键
 export const PROMPT_KEYS = {
@@ -96,15 +100,21 @@ export async function getChatSystemPromptWithBudget(input: {
 	});
 	let prompt = await getChatSystemPrompt(budget.injectedDocument);
 
-	// 注入活跃风格包（若未设置则跳过）
+	// 注入活跃风格包（优先配方，与 Agent SDK 注入优先级一致；若未设置则跳过）
 	try {
-		const activeProfileId = await getConfig(ACTIVE_STYLE_PROFILE_KEY);
-		if (activeProfileId) {
-			const intensity = (await getConfig(ACTIVE_STYLE_INTENSITY_KEY)) || "medium";
-			const styleBlock = await renderStyleProfilePrompt(activeProfileId, intensity);
-			if (styleBlock) {
-				prompt = `${prompt}\n\n${styleBlock}`;
+		const intensity = (await getConfig(ACTIVE_STYLE_INTENSITY_KEY)) || "medium";
+		const activeRecipeId = await getConfig(ACTIVE_STYLE_RECIPE_KEY);
+		let styleBlock = "";
+		if (activeRecipeId) {
+			styleBlock = await renderStyleRecipePrompt(activeRecipeId, intensity);
+		} else {
+			const activeProfileId = await getConfig(ACTIVE_STYLE_PROFILE_KEY);
+			if (activeProfileId) {
+				styleBlock = await renderStyleProfilePrompt(activeProfileId, intensity);
 			}
+		}
+		if (styleBlock) {
+			prompt = `${prompt}\n\n${styleBlock}`;
 		}
 	} catch {
 		// 风格包注入失败不阻断正常对话

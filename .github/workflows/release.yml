@@ -58,22 +58,72 @@ jobs:
           fi
           gh release upload "$TAG" "${assets[@]}" --clobber
 
-      - name: Merge macOS update metadata when arm64 assets exist
+  build-mac-arm64:
+    # macos-latest 即 Apple Silicon (arm64) runner
+    runs-on: macos-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+
+      - name: Build macOS arm64
+        run: npm run build:mac:arm64
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+          npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+          npm_config_electron_builder_binaries_mirror: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+
+      - name: Upload macOS arm64 assets
+        shell: bash
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          shopt -s nullglob
+          assets=(release/*/*-arm64-Mac.dmg release/*/*-arm64-Mac.dmg.blockmap release/*/*-arm64-Mac.zip release/*/*-arm64-Mac.zip.blockmap)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No macOS arm64 assets found"
+            exit 1
+          fi
+          gh release upload "$TAG" "${assets[@]}" --clobber
+
+  # 双架构 zip 都上传后统一生成并上传 latest-mac.yml，
+  # 替代旧版"x64 job 内嵌检测 arm64 是否就绪"的手动时序依赖。
+  merge-latest-mac:
+    needs: [build-mac-x64, build-mac-arm64]
+    runs-on: macos-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download both arch zips and generate latest-mac.yml
         shell: bash
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           VERSION="$(node -p "require('./package.json').version")"
           mkdir -p "release/$VERSION"
-          gh release download "$TAG" --pattern "*-arm64-Mac.zip" --pattern "*-arm64-Mac.zip.blockmap" --dir "release/$VERSION" || true
-          # GitHub 会把 asset 名里的空格规范化为点（IPO.Workbench-...），
-          # 故用 glob 兼容点名/空格/连字符，避免漏判导致跳过合并。
-          shopt -s nullglob
-          arm_zips=(release/"$VERSION"/*-arm64-Mac.zip)
-          if [ "${#arm_zips[@]}" -eq 0 ]; then
-            echo "macOS arm64 zip is not in the Release yet; skip latest-mac.yml merge."
-            exit 0
-          fi
-          npm run generate:latest-mac
+          gh release download "$TAG" --pattern "*-Mac.zip" --dir "release/$VERSION"
+          node scripts/generate-latest-mac-yml.mjs
           gh release upload "$TAG" "release/$VERSION/latest-mac.yml" --clobber
 
   build-windows:
@@ -142,6 +192,41 @@ jobs:
             Write-Error "$failed native module path(s) missing from asar.unpacked. Windows app will crash on launch."
             exit 1
           }
+
+          # node-pty 必须有编译产物 *.node，且需要是为 Electron ABI 重建的版本，
+          # 否则终端功能在启动时直接崩（ERR_DLOPEN_FAILED）。
+          $ptyBuild = Join-Path $root "node_modules\node-pty\build\Release"
+          $ptyNodes = @()
+          if (Test-Path $ptyBuild) {
+            $ptyNodes = Get-ChildItem -Path $ptyBuild -Filter "*.node" -ErrorAction SilentlyContinue
+          }
+          if ($ptyNodes.Count -eq 0) {
+            Write-Error "node-pty has no compiled .node binary under build/Release — terminal will crash. Did postinstall (@electron/rebuild) run?"
+            exit 1
+          }
+          Write-Host "[OK]   node-pty binaries: $($ptyNodes.Name -join ', ')"
+
+          # ABI 校验：用打包的 Electron 跑 process.versions.modules，对比 node-pty 重建时
+          # 记录的目标 ABI（@electron/rebuild 会在包内留 .forge-meta / 由 electron 版本推导）。
+          # 最直接的方式：直接让打出来的 Electron 以 node 模式 require node-pty。
+          $exe = Get-ChildItem -Path $base -Recurse -File -Filter "IPO Workbench.exe" | Select-Object -First 1
+          if (-not $exe) {
+            $exe = Get-ChildItem -Path $base -Recurse -File -Filter "*.exe" |
+              Where-Object { $_.Directory.Name -eq "win-unpacked" } | Select-Object -First 1
+          }
+          if ($exe) {
+            $env:ELECTRON_RUN_AS_NODE = "1"
+            $script = "try { require(String.raw``$ptyBuild\..\..``); console.log('PTY_LOAD_OK ABI=' + process.versions.modules); } catch (e) { console.error('PTY_LOAD_FAIL: ' + e.message); process.exit(1); }"
+            & $exe.FullName -e $script
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "node-pty failed to load inside packaged Electron (ABI mismatch?)."
+              exit 1
+            }
+            Remove-Item Env:ELECTRON_RUN_AS_NODE
+          } else {
+            Write-Warning "Packaged exe not found; skipped runtime ABI load check."
+          }
+
           Write-Host "All native module checks passed."
 
       # 不需要单独的 Upload 步骤：electron-builder 在 build:win 期间会读取

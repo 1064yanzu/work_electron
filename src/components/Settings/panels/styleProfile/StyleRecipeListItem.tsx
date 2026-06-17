@@ -15,6 +15,13 @@ interface Props {
 }
 
 const LAYER_DISPLAY = [
+	// v2 层级
+	{ key: "soul_profile_name" as const, label: "灵魂", color: "text-violet-500 dark:text-violet-400" },
+	{ key: "thinking_profile_name" as const, label: "思维", color: "text-blue-500 dark:text-blue-400" },
+	{ key: "articulation_profile_name" as const, label: "篇章", color: "text-cyan-500 dark:text-cyan-400" },
+	{ key: "texture_profile_name" as const, label: "血肉", color: "text-amber-500 dark:text-amber-400" },
+	{ key: "relational_profile_name" as const, label: "关系", color: "text-emerald-500 dark:text-emerald-400" },
+	// v1 层级（向后兼容旧配方）
 	{ key: "cognitive_profile_name" as const, label: "认知", color: "text-blue-500 dark:text-blue-400" },
 	{ key: "rhetorical_profile_name" as const, label: "话语", color: "text-emerald-500 dark:text-emerald-400" },
 	{ key: "aesthetic_profile_name" as const, label: "审美", color: "text-violet-500 dark:text-violet-400" },

@@ -1,4 +1,5 @@
 @import "./components/reader/reader.css";
+@import "./lib/themes/glassTheme.css";
 
 @tailwind base;
 @tailwind components;
@@ -257,6 +258,10 @@ svg.lucide:not([stroke-width]) {
 	background-color: var(--t-scrollbar-hover, #c2c0b6);
 }
 
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
 /* 编辑器区域焦点样式重置 */
 .editor-shell textarea:focus,
 .editor-shell textarea:focus-visible,
@@ -425,7 +430,7 @@ svg.lucide:not([stroke-width]) {
 
 	.btn-interactive:focus-visible {
 		outline: none;
-		box-shadow: 0 0 0 2px rgba(56, 152, 236, 0.5);
+		box-shadow: 0 0 0 2px var(--t-ring, rgba(26, 26, 25, 0.18));
 	}
 
 	/* 卡片悬浮效果 */
@@ -467,13 +472,13 @@ svg.lucide:not([stroke-width]) {
 		background-size: 200% 100%;
 	}
 
-	/* 高亮焦点环 — 唯一冷色（无障碍） */
+	/* 高亮焦点环 — 接主题 --t-ring token（无障碍） */
 	.focus-ring {
 		@apply focus-visible:outline-none;
 	}
 
 	.focus-ring:focus-visible {
-		box-shadow: 0 0 0 2px rgba(56, 152, 236, 0.5);
+		box-shadow: 0 0 0 2px var(--t-ring, rgba(26, 26, 25, 0.18));
 	}
 
 	/* 平滑过渡 */
@@ -1242,28 +1247,4 @@ html[data-motion-preference="reduced"] *::after {
 	transition: box-shadow 80ms ease-out;
 }
 
-/* ---------------------------------------------------------------- */
-/* 全局统一滚动条样式 — 细线、主题感知、仅 WebKit 内核               */
-/* ---------------------------------------------------------------- */
-::-webkit-scrollbar {
-	width: 5px;
-	height: 5px;
-}
-
-::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-	background: var(--t-border, #e8e5dd);
-	border-radius: 9999px;
-	transition: background 150ms ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-	background: var(--t-border-strong, #d8d4c9);
-}
-
-::-webkit-scrollbar-corner {
-	background: transparent;
-}
+/* 滚动条统一样式已合并到文件上方「暖色调滚动条」一节（--t-scrollbar token） */
