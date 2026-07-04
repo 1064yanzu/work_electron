@@ -88,33 +88,35 @@ export function useSkillDragImport({
 				return;
 			}
 
-		setIsImporting(true);
-		let successCount = 0;
-		const errors: string[] = [];
+			setIsImporting(true);
+			let successCount = 0;
+			const errors: string[] = [];
 
-		for (const path of paths) {
-			try {
-				await skillsStore.importSkill(path);
-				successCount += 1;
-			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
-				errors.push(message);
+			for (const path of paths) {
+				try {
+					await skillsStore.importSkill(path);
+					successCount += 1;
+				} catch (err) {
+					const message = err instanceof Error ? err.message : String(err);
+					errors.push(message);
+				}
 			}
-		}
 
-		setIsImporting(false);
+			setIsImporting(false);
 
-		if (successCount > 0) {
-			toast.success(
-				successCount === 1
-					? "技能导入成功"
-					: `成功导入 ${successCount} 个技能`,
-			);
-		}
-		if (errors.length > 0) {
-			toast.error(`导入失败：${errors[0]}${errors.length > 1 ? ` 等 ${errors.length} 个` : ""}`);
-		}
-	};
+			if (successCount > 0) {
+				toast.success(
+					successCount === 1
+						? "技能导入成功"
+						: `成功导入 ${successCount} 个技能`,
+				);
+			}
+			if (errors.length > 0) {
+				toast.error(
+					`导入失败：${errors[0]}${errors.length > 1 ? ` 等 ${errors.length} 个` : ""}`,
+				);
+			}
+		};
 
 		const onDragEnd = () => {
 			dragCounterRef.current = 0;

@@ -65,7 +65,7 @@ export function SubagentCard({
 				isRunning
 					? "bg-surface/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
 					: isError
-						? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10 border-[rgba(181,51,51,0.32)] dark:border-red-800/30"
+						? "bg-error/[0.04] dark:bg-red-900/10 border-error/30 dark:border-red-800/30"
 						: "bg-surface border-border",
 			)}
 		>
@@ -88,7 +88,7 @@ export function SubagentCard({
 						className={cn(
 							"flex items-center justify-center w-8 h-8 rounded-lg transition-all",
 							isRunning
-								? "bg-[#e8e5f7] dark:bg-purple-900/30 bai-icon-violet dark:bai-icon-violet"
+								? "bg-violetx-500/15 dark:bg-purple-900/30 bai-icon-violet dark:bai-icon-violet"
 								: isCompleted
 									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: "bg-warm-200 text-text-muted",
@@ -104,8 +104,8 @@ export function SubagentCard({
 					</div>
 					{isRunning && (
 						<span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8b7fd9] opacity-75"></span>
-							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#8b7fd9]"></span>
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violetx-500 opacity-75"></span>
+							<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violetx-500"></span>
 						</span>
 					)}
 				</div>
@@ -125,7 +125,7 @@ export function SubagentCard({
 							className={cn(
 								"px-1.5 py-0.5 rounded text-[10px] font-medium",
 								isRunning
-									? "bg-[#e8e5f7] dark:bg-purple-900/40 bai-icon-violet dark:bai-icon-violet"
+									? "bg-violetx-500/15 dark:bg-purple-900/40 bai-icon-violet dark:bai-icon-violet"
 									: isCompleted
 										? "bg-success/16 dark:bg-emerald-900/40 text-success dark:text-success"
 										: "bg-warm-200 text-text-muted",
@@ -232,7 +232,7 @@ export function SubagentCard({
 						{/* Error */}
 						{isError && toolCall.error && (
 							<div className="mt-2 pt-2 border-t border-border/50">
-								<div className="px-2 py-1.5 rounded bg-[rgba(181,51,51,0.08)] dark:bg-red-900/10 text-error dark:text-error">
+								<div className="px-2 py-1.5 rounded bg-error/8 dark:bg-red-900/10 text-error dark:text-error">
 									<div className="font-semibold mb-1 flex items-center gap-1.5">
 										<AlertTriangle className="w-3 h-3" /> 错误
 									</div>

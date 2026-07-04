@@ -124,9 +124,7 @@ export function NewFolderModal({
 			}
 		>
 			<div className="space-y-4">
-				<div className="text-xs text-text-muted">
-					父文件夹：{parentName}
-				</div>
+				<div className="text-xs text-text-muted">父文件夹：{parentName}</div>
 				<input
 					ref={inputRef}
 					type="text"
@@ -343,7 +341,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 					<div className="text-xs text-text-muted">
 						将「{singleSourceMoveModal?.title}」移动到：
 					</div>
-					<div className="max-h-[300px] overflow-y-auto border border-border rounded-xl bg-warm-50/50/30">
+					<div className="max-h-[300px] overflow-y-auto border border-border rounded-xl bg-warm-50/50">
 						<div className="p-2 space-y-1">
 							{/* 未归类选项 */}
 							<button

@@ -459,7 +459,12 @@ export function createSkillsHandlers(db: DbContext) {
 			}
 			const existingParsed = existingMd
 				? parseFrontmatter(existingMd, destName)
-				: { name: destName, description: "", odMode: undefined, odCategory: undefined };
+				: {
+						name: destName,
+						description: "",
+						odMode: undefined,
+						odCategory: undefined,
+					};
 			const overrideMap = await loadOverrideMap(db);
 			const override = overrideMap.get(existingParsed.name);
 			const { enabled, userOverride } = computeEffectiveEnabled(override);
@@ -468,7 +473,11 @@ export function createSkillsHandlers(db: DbContext) {
 				description: existingParsed.description,
 				location: destDir,
 				enabled,
-				modeClass: classifyMode(existingParsed.name, existingParsed.description, existingParsed.odMode),
+				modeClass: classifyMode(
+					existingParsed.name,
+					existingParsed.description,
+					existingParsed.odMode,
+				),
 				modeTag: existingParsed.odMode,
 				userOverride,
 			};

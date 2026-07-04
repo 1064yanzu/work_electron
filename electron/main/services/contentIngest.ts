@@ -110,7 +110,10 @@ function parsePublishedAt(value: string): number | undefined {
 	return undefined;
 }
 
-async function extractMetaFromHtml(html: string, baseUrl: string): Promise<MetaExtract> {
+async function extractMetaFromHtml(
+	html: string,
+	baseUrl: string,
+): Promise<MetaExtract> {
 	try {
 		const { JSDOM, VirtualConsole } = await lazyJsdom();
 		const virtualConsole = new VirtualConsole();
@@ -384,7 +387,7 @@ export async function ingestUrlContent(
 	const author = extracted.byline || meta.author || undefined;
 	const published_at = meta.published_at;
 
-	const contentText = extracted.text || await stripHtmlToText(html);
+	const contentText = extracted.text || (await stripHtmlToText(html));
 	const contentHtml = extracted.html || undefined;
 
 	const source = await insertSource(db, {
@@ -432,7 +435,9 @@ export async function ingestUploadedFileContent(
 		fileType.toLowerCase() === "html" || fileType.toLowerCase() === "htm"
 			? content
 			: undefined;
-	const contentText = contentHtml ? await stripHtmlToText(contentHtml) : content;
+	const contentText = contentHtml
+		? await stripHtmlToText(contentHtml)
+		: content;
 
 	const source = await insertSource(db, {
 		id: randomUUID(),
@@ -501,7 +506,7 @@ async function ingestLocalFile(
 			const result = await mammoth.default.convertToHtml({ path: absPath });
 			const html = result.value || "";
 			return {
-				contentText: await stripHtmlToText(html) || baseName,
+				contentText: (await stripHtmlToText(html)) || baseName,
 				contentHtml: html || undefined,
 			};
 		}
@@ -617,7 +622,7 @@ async function ingestLocalFile(
 				titleHint: baseName,
 			});
 			return {
-				contentText: extracted.text || await stripHtmlToText(raw) || baseName,
+				contentText: extracted.text || (await stripHtmlToText(raw)) || baseName,
 				contentHtml: extracted.html || raw || undefined,
 			};
 		}

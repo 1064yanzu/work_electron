@@ -110,7 +110,7 @@ export default function WebSearchPanel({
 	] as const;
 
 	return (
-		<div className="flex flex-col h-full bg-surface dark:bg-[#1E1E1E]">
+		<div className="flex flex-col h-full bg-surface">
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border flex items-center justify-between">
 				<div className="flex items-center gap-2">

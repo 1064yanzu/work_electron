@@ -133,25 +133,34 @@ export function StyleProfilePanel() {
 		[activeProfileId, loadData],
 	);
 
-	const handleCreated = useCallback(async (profileId: string) => {
-		setShowCreateModal(false);
-		setNewlyCreatedId(profileId);
-		await loadData();
-	}, [loadData]);
+	const handleCreated = useCallback(
+		async (profileId: string) => {
+			setShowCreateModal(false);
+			setNewlyCreatedId(profileId);
+			await loadData();
+		},
+		[loadData],
+	);
 
-	const handleRecipeCreated = useCallback(async (_recipeId: string) => {
-		setShowRecipeModal(false);
-		await loadData();
-	}, [loadData]);
+	const handleRecipeCreated = useCallback(
+		async (_recipeId: string) => {
+			setShowRecipeModal(false);
+			await loadData();
+		},
+		[loadData],
+	);
 
-	const handleDeleteRecipe = useCallback(async (id: string) => {
-		await deleteStyleRecipe(id);
-		if (activeRecipeId === id) {
-			setActiveRecipeId(null);
-			await setConfig(ACTIVE_RECIPE_KEY, null);
-		}
-		await loadData();
-	}, [activeRecipeId, loadData]);
+	const handleDeleteRecipe = useCallback(
+		async (id: string) => {
+			await deleteStyleRecipe(id);
+			if (activeRecipeId === id) {
+				setActiveRecipeId(null);
+				await setConfig(ACTIVE_RECIPE_KEY, null);
+			}
+			await loadData();
+		},
+		[activeRecipeId, loadData],
+	);
 
 	const activeProfiles = profiles.filter((p) => p.status === "active");
 	const archivedProfiles = profiles.filter((p) => p.status === "archived");
@@ -178,7 +187,11 @@ export function StyleProfilePanel() {
 					label="强度级别"
 					description="弱：方向性提示；中：完整规则；强：规则 + 语言锚点"
 					action={
-						<div className={hasActiveProfile ? "" : "opacity-40 pointer-events-none"}>
+						<div
+							className={
+								hasActiveProfile ? "" : "opacity-40 pointer-events-none"
+							}
+						>
 							<SettingsChipGroup
 								options={INTENSITY_OPTIONS}
 								value={intensity}

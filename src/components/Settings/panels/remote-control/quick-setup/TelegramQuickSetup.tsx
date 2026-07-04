@@ -133,12 +133,12 @@ export function TelegramQuickSetup({
 							isValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: trimmed
-									? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
+									? "border-error/50 ring-2 ring-error/20"
 									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 						)}
 					/>
 					{trimmed && !isValid ? (
-						<p className="mt-1.5 text-[11px] text-[#b53333]">
+						<p className="mt-1.5 text-[11px] text-error">
 							Token 格式不正确，应形如{" "}
 							<code className="font-mono">数字:字符串</code>
 						</p>

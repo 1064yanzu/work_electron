@@ -386,7 +386,9 @@ export function WikiView() {
 					<div className="flex items-center gap-1">
 						<Tooltip content="在编辑器中打开" placement="bottom">
 							<button
-								onClick={() => openInEditor(selectedPage.id, selectedPage.title)}
+								onClick={() =>
+									openInEditor(selectedPage.id, selectedPage.title)
+								}
 								className="p-1.5 text-text-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 							>
 								<ExternalLink className="w-4 h-4" />
@@ -509,7 +511,9 @@ export function WikiView() {
 							disabled={loading}
 							className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors disabled:opacity-40"
 						>
-							<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+							<RefreshCw
+								className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+							/>
 						</button>
 					</Tooltip>
 					<Tooltip content="Wiki 健康检查" placement="bottom">
@@ -593,7 +597,7 @@ export function WikiView() {
 
 			{/* 提示 Banner */}
 			{pages.length === 0 && !loading && (
-				<div className="mx-3 mt-3 rounded-xl bg-focus/8 dark:bg-blue-950/30 border border-focus/30/60 dark:border-focus/40 p-3">
+				<div className="mx-3 mt-3 rounded-xl bg-focus/8 dark:bg-blue-950/30 border border-focus/30 dark:border-focus/40 p-3">
 					<div className="flex items-start gap-2">
 						<Info className="w-4 h-4 text-focus mt-0.5 flex-shrink-0" />
 						<div className="text-xs text-focus dark:text-focus leading-relaxed">
@@ -773,7 +777,7 @@ export function WikiView() {
 						generationProgress.error && generationProgress.generated_pages === 0
 							? "bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30 border-[rgba(181,51,51,0.32)]/60 dark:border-red-800/40"
 							: generationProgress.generated_pages > 0
-								? "bg-success/8 dark:bg-emerald-950/30 border-success/30/60 dark:border-success/40"
+								? "bg-success/8 dark:bg-emerald-950/30 border-success/30 dark:border-success/40"
 								: "bg-peach-100 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40"
 					}`}
 				>

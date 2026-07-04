@@ -296,7 +296,7 @@ export function AdvancedSection({
 								</span>
 							</div>
 							{cloudNodeRuntime?.lastError ? (
-								<div className="text-[#b53333]">
+								<div className="text-error">
 									最近错误：{cloudNodeRuntime.lastError}
 								</div>
 							) : null}

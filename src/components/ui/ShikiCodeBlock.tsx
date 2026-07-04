@@ -34,6 +34,7 @@ function ShikiCodeBlockInner({
 	}, [code]);
 
 	const isDark = theme === "github-dark";
+	// 画布色与 shiki 高亮主题绑定（github-dark 的画布），不随应用主题走
 	const bgColor = isDark ? "#0d1117" : "#ffffff";
 	const lines = code.split("\n");
 
@@ -41,9 +42,10 @@ function ShikiCodeBlockInner({
 		<div
 			className={cn(
 				"relative group my-3 rounded-xl overflow-hidden ring-1",
-				isDark ? "ring-zinc-800 bg-[#0d1117]" : "ring-zinc-200 bg-surface",
+				isDark ? "ring-zinc-800" : "ring-zinc-200 bg-surface",
 				className,
 			)}
+			style={isDark ? { backgroundColor: bgColor } : undefined}
 		>
 			{/* 顶部栏：语言标签 + 复制按钮 */}
 			<div

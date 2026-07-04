@@ -68,7 +68,10 @@ export function TerminalTabBar() {
 								{channelLabel}
 							</span>
 						)}
-						<Tooltip content={t.isRemote ? "从桌面端移除" : "关闭终端"} placement="top">
+						<Tooltip
+							content={t.isRemote ? "从桌面端移除" : "关闭终端"}
+							placement="top"
+						>
 							<button
 								type="button"
 								onClick={(e) => handleClose(e, t.id)}

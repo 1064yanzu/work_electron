@@ -28,25 +28,29 @@ function rowToRecipe(row: Record<string, unknown>): StyleProfileRecipe {
 		// v2 新字段
 		soul_profile_id: (row.soul_profile_id as string | null) ?? null,
 		thinking_profile_id: (row.thinking_profile_id as string | null) ?? null,
-		articulation_profile_id: (row.articulation_profile_id as string | null) ?? null,
+		articulation_profile_id:
+			(row.articulation_profile_id as string | null) ?? null,
 		texture_profile_id: (row.texture_profile_id as string | null) ?? null,
 		relational_profile_id: (row.relational_profile_id as string | null) ?? null,
 		// v1 旧字段（向后兼容）
 		cognitive_profile_id: (row.cognitive_profile_id as string | null) ?? null,
-		rhetorical_profile_id:
-			(row.rhetorical_profile_id as string | null) ?? null,
+		rhetorical_profile_id: (row.rhetorical_profile_id as string | null) ?? null,
 		aesthetic_profile_id: (row.aesthetic_profile_id as string | null) ?? null,
 		anchors_profile_id: (row.anchors_profile_id as string | null) ?? null,
-		intensity:
-			(row.intensity as StyleProfileRecipe["intensity"]) ?? "medium",
+		intensity: (row.intensity as StyleProfileRecipe["intensity"]) ?? "medium",
 		created_at: row.created_at as number,
 		updated_at: row.updated_at as number,
 		// 名称字段由 enrichRecipeNames 填充
-		soul_profile_name: (row.soul_profile_name as string | undefined) ?? undefined,
-		thinking_profile_name: (row.thinking_profile_name as string | undefined) ?? undefined,
-		articulation_profile_name: (row.articulation_profile_name as string | undefined) ?? undefined,
-		texture_profile_name: (row.texture_profile_name as string | undefined) ?? undefined,
-		relational_profile_name: (row.relational_profile_name as string | undefined) ?? undefined,
+		soul_profile_name:
+			(row.soul_profile_name as string | undefined) ?? undefined,
+		thinking_profile_name:
+			(row.thinking_profile_name as string | undefined) ?? undefined,
+		articulation_profile_name:
+			(row.articulation_profile_name as string | undefined) ?? undefined,
+		texture_profile_name:
+			(row.texture_profile_name as string | undefined) ?? undefined,
+		relational_profile_name:
+			(row.relational_profile_name as string | undefined) ?? undefined,
 		cognitive_profile_name:
 			(row.cognitive_profile_name as string | undefined) ?? undefined,
 		rhetorical_profile_name:

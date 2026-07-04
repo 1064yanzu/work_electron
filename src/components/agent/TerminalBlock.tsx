@@ -35,17 +35,17 @@ export default function TerminalBlock({
 		<div
 			className={cn(
 				"rounded-lg overflow-hidden shadow-lg border border-dark-border/50",
-				"bg-[#1e1e1e] dark:bg-[#0d0d0d]",
+				"bg-console dark:bg-console-deep",
 				className,
 			)}
 		>
 			{/* Mac 风格标题栏 */}
-			<div className="flex items-center gap-2 px-3 py-2 bg-[#2d2d2d] dark:bg-[#1a1a1a] border-b border-dark-border/50">
+			<div className="flex items-center gap-2 px-3 py-2 bg-console-bar dark:bg-console-bar-deep border-b border-dark-border/50">
 				{/* 红黄绿按钮 */}
 				<div className="flex items-center gap-1.5">
-					<span className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-inner" />
-					<span className="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner" />
-					<span className="w-3 h-3 rounded-full bg-[#28c840] shadow-inner" />
+					<span className="w-3 h-3 rounded-full bg-traffic-red shadow-inner" />
+					<span className="w-3 h-3 rounded-full bg-traffic-yellow shadow-inner" />
+					<span className="w-3 h-3 rounded-full bg-traffic-green shadow-inner" />
 				</div>
 
 				{/* 标题 */}

@@ -104,7 +104,7 @@ export function ThoughtInline({
 				onClick={() => setOpen((v) => !v)}
 				className={cn(
 					"w-full flex items-center gap-2 text-left transition-colors py-0.5",
-					"cursor-pointer hover:bg-warm-50/50/30 -mx-1.5 px-1.5 rounded",
+					"cursor-pointer hover:bg-warm-50/50 -mx-1.5 px-1.5 rounded",
 				)}
 				aria-expanded={open}
 			>

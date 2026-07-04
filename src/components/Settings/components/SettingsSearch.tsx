@@ -174,10 +174,10 @@ export function SettingsSearch({
 					"focus-within:border-primary/50 focus-within:bg-surface focus-within:ring-2 focus-within:ring-primary/10",
 				)}
 			>
-			<Search
-				className="h-4 w-4 shrink-0 text-text-muted"
-				strokeWidth={1.5}
-			/>
+				<Search
+					className="h-4 w-4 shrink-0 text-text-muted"
+					strokeWidth={1.5}
+				/>
 				<input
 					ref={inputRef}
 					type="text"
@@ -206,23 +206,23 @@ export function SettingsSearch({
 						type="button"
 						onClick={clear}
 						aria-label="清空搜索"
-				className={cn(
-						"inline-flex h-6 w-6 items-center justify-center rounded-full text-text-muted",
-						"hover:bg-warm-200 hover:text-text-primary",
-						"transition-[background-color,color] duration-150",
-					)}
+						className={cn(
+							"inline-flex h-6 w-6 items-center justify-center rounded-full text-text-muted",
+							"hover:bg-warm-200 hover:text-text-primary",
+							"transition-[background-color,color] duration-150",
+						)}
 					>
 						<X className="h-3.5 w-3.5" strokeWidth={1.5} />
 					</button>
 				) : (
-				<span
-					className={cn(
-						"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
-						"text-[10px] font-sans tabular-nums text-text-muted",
-					)}
-				>
-					{shortcut("F")}
-				</span>
+					<span
+						className={cn(
+							"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
+							"text-[10px] font-sans tabular-nums text-text-muted",
+						)}
+					>
+						{shortcut("F")}
+					</span>
 				)}
 			</div>
 

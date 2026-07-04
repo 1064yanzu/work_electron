@@ -78,14 +78,14 @@ const fileTypeConfig: Record<
 	},
 	text: {
 		icon: FileText,
-		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50/30",
+		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文本",
 	},
 	code: {
 		icon: FileCode,
 		gradient:
-			"from-emerald-500/20 to-teal-500/20 border-success/30/50 dark:border-success/30",
+			"from-emerald-500/20 to-teal-500/20 border-success/30 dark:border-success/30",
 		iconColor: "text-success dark:text-success",
 		label: "代码",
 	},
@@ -99,7 +99,7 @@ const fileTypeConfig: Record<
 	video: {
 		icon: FileVideo,
 		gradient:
-			"from-blue-500/20 to-indigo-500/20 border-focus/30/50 dark:border-focus/30",
+			"from-blue-500/20 to-indigo-500/20 border-focus/30 dark:border-focus/30",
 		iconColor: "text-focus dark:text-focus",
 		label: "视频",
 	},
@@ -120,7 +120,7 @@ const fileTypeConfig: Record<
 	document: {
 		icon: FileText,
 		gradient:
-			"from-blue-500/20 to-cyan-500/20 border-focus/30/50 dark:border-focus/30",
+			"from-blue-500/20 to-cyan-500/20 border-focus/30 dark:border-focus/30",
 		iconColor: "text-focus dark:text-focus",
 		label: "文档",
 	},
@@ -140,7 +140,7 @@ const fileTypeConfig: Record<
 	},
 	other: {
 		icon: File,
-		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50/30",
+		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文件",
 	},

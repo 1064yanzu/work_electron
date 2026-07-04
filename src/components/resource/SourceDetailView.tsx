@@ -318,7 +318,7 @@ export const SourceDetailView = forwardRef<
 
 	const getScopeBadgeClassName = useCallback((source: Source) => {
 		return source.scope === "project"
-			? "bg-warm-200/80/70 text-text-secondary"
+			? "bg-warm-200/80 text-text-secondary"
 			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
 	}, []);
 
@@ -327,7 +327,7 @@ export const SourceDetailView = forwardRef<
 	const isSource = "kind" in previewSource;
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200 bg-surface dark:bg-[#1E1E1E]">
+		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200 bg-surface">
 			{/* 划词引用弹窗 */}
 			{selectionPopup && (
 				<div
@@ -457,7 +457,7 @@ export const SourceDetailView = forwardRef<
 
 			{/* Content */}
 			<div
-				className="flex-1 overflow-y-auto scrollbar-hide bg-[#FDFDFD] dark:bg-[#1E1E1E]"
+				className="flex-1 overflow-y-auto scrollbar-hide bg-surface"
 				onContextMenu={handleContentContextMenu}
 			>
 				{isLoadingDetail ? (
@@ -504,7 +504,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.Import && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70/60 text-text-secondary rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-[10px] font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
 										</span>
@@ -522,7 +522,7 @@ export const SourceDetailView = forwardRef<
 										.map((tag) => (
 											<span
 												key={`${previewSource.id}-detail-tag-${tag}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80/70 text-text-secondary"
+												className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80 text-text-secondary"
 											>
 												#{tag}
 											</span>

@@ -147,7 +147,9 @@ class TerminalStore {
 			return instance;
 		} catch (err) {
 			console.error("[TerminalStore] 创建终端失败:", err);
-			toast.error(`创建终端失败：${err instanceof Error ? err.message : "未知错误"}`);
+			toast.error(
+				`创建终端失败：${err instanceof Error ? err.message : "未知错误"}`,
+			);
 			return null;
 		}
 	}

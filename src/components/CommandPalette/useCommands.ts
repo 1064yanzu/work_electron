@@ -2,18 +2,26 @@
 //
 // 注意：App 本身不持久这个列表。每次 useCommands() 重新构建一次，
 // 因为命令依赖：当前主题、当前面板可见性等动态状态。
+// 快捷键提示统一从 shortcutRegistry 查询（单一事实源），不再手写键位。
+// 动态命令来自 commandRegistry（功能面板可自行注册/反注册）。
 
 import {
-	FileText,
+	Keyboard,
 	MessageSquare,
 	Moon,
+	PanelLeft,
 	Settings,
 	Sparkles,
 	Sun,
 	Terminal as TerminalIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { modKey } from "../../lib/platform";
+import { useCommandRegistrySelector } from "../../lib/commands/commandRegistry";
+import {
+	shortcutRegistry,
+	useShortcutRegistrySelector,
+} from "../../lib/shortcuts";
+import { layoutStore } from "../../lib/stores/layoutStore";
 import { themeManager } from "../../lib/theme";
 import { workspaceStore } from "../../lib/workspaceStore";
 import type { CommandItem } from "./types";
@@ -27,6 +35,9 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 	const [currentTheme, setCurrentTheme] = useState<string>(
 		themeManager.getTheme(),
 	);
+	// 订阅注册中心：scoped 快捷键/动态命令变化时刷新提示
+	const shortcutEntries = useShortcutRegistrySelector((s) => s.entries);
+	const registrySources = useCommandRegistrySelector((s) => s.sources);
 
 	useEffect(() => {
 		const unsub = themeManager.subscribe(() =>
@@ -46,8 +57,20 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			icon: MessageSquare,
 			keywords: ["copilot", "right", "sidebar", "ai", "celebianlan"],
 			group: "工作区",
-			shortcut: [modKey, "L"],
 			action: () => workspaceStore.toggleRightSidebar(),
+		});
+
+		items.push({
+			id: "ws.toggle-left-sidebar",
+			title: "折叠/展开资源栏",
+			description: "收起左侧资源面板，专注中间工作区",
+			icon: PanelLeft,
+			keywords: ["left", "sidebar", "resources", "ziyuanlan", "zhedie"],
+			group: "工作区",
+			action: () =>
+				layoutStore.setLeftSidebarCollapsed(
+					!layoutStore.getState().leftSidebarCollapsed,
+				),
 		});
 
 		if (args.onOpenTerminal) {
@@ -61,6 +84,16 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 				action: () => args.onOpenTerminal?.(),
 			});
 		}
+
+		items.push({
+			id: "ws.shortcut-cheat-sheet",
+			title: "快捷键速查表",
+			description: "查看全部可用快捷键",
+			icon: Keyboard,
+			keywords: ["shortcuts", "keyboard", "hotkey", "kuaijiejian", "help"],
+			group: "工作区",
+			action: () => shortcutRegistry.openCheatSheet(),
+		});
 
 		// 设置
 		const settingsTabs: Array<{
@@ -113,9 +146,19 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			});
 		}
 
-		// FileText 仅作为 prefetch 防止 tree-shake 误删（实际未使用，但保留导入便于未来扩展）
-		void FileText;
+		// 动态注册命令（功能面板通过 commandRegistry.register 注入）
+		for (const sourceItems of registrySources.values()) {
+			items.push(...sourceItems);
+		}
 
-		return items;
-	}, [args, currentTheme]);
+		// 快捷键提示：从 shortcutRegistry 自动带出（覆盖手写 shortcut）
+		return items.map((item) => {
+			const bound = shortcutRegistry.getByCommand(item.id);
+			if (!bound) return item;
+			return {
+				...item,
+				shortcut: bound.keysDisplay ?? shortcutRegistry.formatKeys(bound.keys),
+			};
+		});
+	}, [args, currentTheme, registrySources, shortcutEntries]);
 }

@@ -121,7 +121,7 @@ export function QQBotQuickSetup({
 									idValid
 										? "border-mint-500 ring-2 ring-mint-500/20"
 										: idTrim
-											? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
+											? "border-error/50 ring-2 ring-error/20"
 											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>
@@ -144,7 +144,7 @@ export function QQBotQuickSetup({
 									secretTrim.length >= 16
 										? "border-mint-500 ring-2 ring-mint-500/20"
 										: secretTrim
-											? "border-[#b53333]/50 ring-2 ring-[#b53333]/20"
+											? "border-error/50 ring-2 ring-error/20"
 											: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 								)}
 							/>

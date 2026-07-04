@@ -284,7 +284,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 			tabIndex={0}
 		>
 			{/* 工具栏 */}
-			<div className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 bg-surface/92/92 backdrop-blur-md rounded-t-xl border-b border-border">
+			<div className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 bg-surface/92 backdrop-blur-md rounded-t-xl border-b border-border">
 				{/* 页码导航 */}
 				<div className="flex items-center gap-0.5">
 					<button

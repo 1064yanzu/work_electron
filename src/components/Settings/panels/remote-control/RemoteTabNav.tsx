@@ -81,7 +81,7 @@ export function RemoteTabNav({
 					tab.badgeTone === "emerald"
 						? "bg-mint-500/15 text-mint-600"
 						: tab.badgeTone === "rose"
-							? "bg-[#b53333]/[0.1] text-[#b53333]"
+							? "bg-error/[0.1] text-error"
 							: tab.badgeTone === "amber"
 								? "bg-peach-500/15 text-peach-500"
 								: "bg-warm-300 text-text-secondary";

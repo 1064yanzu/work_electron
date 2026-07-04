@@ -458,7 +458,7 @@ function EndStateView({
 		tone === "emerald"
 			? "text-mint-600 bg-mint-500/15"
 			: tone === "rose"
-				? "text-[#b53333] bg-[#b53333]/[0.08]"
+				? "text-error bg-error/8"
 				: "text-peach-500 bg-peach-500/15";
 	return (
 		<div className="flex flex-col items-center gap-3 py-10 text-center">

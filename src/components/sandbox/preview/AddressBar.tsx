@@ -127,7 +127,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 	} else if (isLocal) {
 		securityIcon = (
 			<Lock
-				className="w-3.5 h-3.5 text-[#6FBF99] flex-shrink-0"
+				className="w-3.5 h-3.5 text-mint-500 flex-shrink-0"
 				strokeWidth={1.75}
 			/>
 		);
@@ -135,7 +135,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 	} else if (secure) {
 		securityIcon = (
 			<Lock
-				className="w-3.5 h-3.5 text-[#6FBF99] flex-shrink-0"
+				className="w-3.5 h-3.5 text-mint-500 flex-shrink-0"
 				strokeWidth={1.75}
 			/>
 		);
@@ -246,7 +246,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 					tabIndex={-1}
 				>
 					{copied ? (
-						<Check className="w-3.5 h-3.5 text-[#6FBF99]" strokeWidth={2} />
+						<Check className="w-3.5 h-3.5 text-mint-500" strokeWidth={2} />
 					) : (
 						<Copy className="w-3.5 h-3.5" strokeWidth={1.75} />
 					)}

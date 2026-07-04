@@ -365,9 +365,7 @@ export function ChannelConfigCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-[#b53333]">
-								{runtimeChannel.last_error}
-							</span>
+							<span className="text-error">{runtimeChannel.last_error}</span>
 						</>
 					) : null}
 					<div className="ml-auto">

@@ -24,9 +24,9 @@ function stateTone(state: string): {
 		};
 	if (state === "error")
 		return {
-			bg: "bg-[#b53333]/[0.08]",
-			text: "text-[#b53333]",
-			dot: "bg-[#b53333]",
+			bg: "bg-error/8",
+			text: "text-error",
+			dot: "bg-error",
 			dotAnimate: false,
 		};
 	return {

@@ -80,7 +80,8 @@ function renderLayerSection(
 				let item = `      <axis name="${a.name}" intensity="${a.intensity}">`;
 				item += a.description;
 				if (a.conditions) item += ` (条件: ${a.conditions})`;
-				if (a.constancy) item += ` [${a.constancy === "constant" ? "经" : "变"}]`;
+				if (a.constancy)
+					item += ` [${a.constancy === "constant" ? "经" : "变"}]`;
 				if (a.variance_note && a.constancy === "variable")
 					item += ` (${a.variance_note})`;
 				item += `</axis>`;
@@ -151,7 +152,11 @@ function renderCalibrationAnchors(
 		const block = [`    <anchors>\n${items}`];
 		// 负向锚点（仅 high 强度）
 		if (intensity === "high" && anchors.negative?.length > 0) {
-			block.push(anchors.negative.map((n) => `      <negative>${n}</negative>`).join("\n"));
+			block.push(
+				anchors.negative
+					.map((n) => `      <negative>${n}</negative>`)
+					.join("\n"),
+			);
 		}
 		block.push(`    </anchors>`);
 		sections.push(block.join("\n"));
@@ -179,7 +184,9 @@ function renderCalibrationAnchors(
 				return item;
 			})
 			.join("\n");
-		sections.push(`    <holographic_patterns>\n${patterns}\n    </holographic_patterns>`);
+		sections.push(
+			`    <holographic_patterns>\n${patterns}\n    </holographic_patterns>`,
+		);
 	}
 
 	// 关系性维度 - 经变分布（summary + 经/变明细）
@@ -203,7 +210,9 @@ function renderCalibrationAnchors(
 			inner.push(`      <variables>\n${varItems}\n      </variables>`);
 		}
 		if (inner.length > 0) {
-			sections.push(`    <constancy_variance>\n${inner.join("\n")}\n    </constancy_variance>`);
+			sections.push(
+				`    <constancy_variance>\n${inner.join("\n")}\n    </constancy_variance>`,
+			);
 		}
 	}
 
@@ -228,7 +237,10 @@ export function renderV2Prompt(
 
 	const thinkingBlock = renderLayerSection(
 		"thinking_operation",
-		analysis.thinking_operation as unknown as Record<string, StyleAxisAnalysis[]>,
+		analysis.thinking_operation as unknown as Record<
+			string,
+			StyleAxisAnalysis[]
+		>,
 		intensity,
 	);
 	if (thinkingBlock) sections.push(thinkingBlock);
@@ -465,7 +477,10 @@ export async function loadAndRenderRecipe(
 			profileId: string | null;
 			field: keyof V2RenderAnalysis;
 		}> = [
-			{ profileId: recipe.soul_profile_id as string | null, field: "soul_layer" },
+			{
+				profileId: recipe.soul_profile_id as string | null,
+				field: "soul_layer",
+			},
 			{
 				profileId: recipe.thinking_profile_id as string | null,
 				field: "thinking_operation",

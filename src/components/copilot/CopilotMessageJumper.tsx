@@ -75,14 +75,31 @@ export function CopilotMessageJumper({
 		(messageId: string) => {
 			const container = scrollContainerRef.current;
 			if (!container) return;
-			const el = container.querySelector(
-				`[data-user-message-id="${messageId}"]`,
-			) as HTMLElement | null;
-			if (!el) return;
-			el.scrollIntoView({ behavior: "smooth", block: "center" });
 			setActiveId(messageId);
+			const tryLocate = (attempt: number) => {
+				const el = container.querySelector(
+					`[data-user-message-id="${messageId}"]`,
+				) as HTMLElement | null;
+				if (el) {
+					el.scrollIntoView({
+						behavior: attempt === 0 ? "smooth" : "auto",
+						block: "center",
+					});
+					return;
+				}
+				if (attempt >= 12) return;
+				// 长对话虚拟化时历史消息可能未渲染：按消息占比先粗跳到目标区域，
+				// 触发该区域挂载后逐帧重试精确定位
+				const index = messages.findIndex((m) => m.id === messageId);
+				if (index < 0) return;
+				const fraction = index / Math.max(1, messages.length - 1);
+				container.scrollTop =
+					fraction * (container.scrollHeight - container.clientHeight);
+				requestAnimationFrame(() => tryLocate(attempt + 1));
+			};
+			tryLocate(0);
 		},
-		[scrollContainerRef],
+		[scrollContainerRef, messages],
 	);
 
 	const handleMouseEnter = () => {
@@ -116,9 +133,7 @@ export function CopilotMessageJumper({
 						<div className="flex-1 overflow-y-auto py-1 scrollbar-hide">
 							{userMessages.map((msg) => {
 								const isActive = msg.id === activeId;
-								const preview = msg.content
-									.replace(/\s+/g, " ")
-									.slice(0, 28);
+								const preview = msg.content.replace(/\s+/g, " ").slice(0, 28);
 								return (
 									<div
 										key={msg.id}

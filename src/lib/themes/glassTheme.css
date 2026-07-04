@@ -7,7 +7,7 @@
 /* 亮色模式下的全局背景：线性渐变底色 + 极细微噪点粒子纹理 */
 html[data-color-theme="glass"] body {
 	background-color: #f3f5f9 !important;
-	background-image: 
+	background-image:
 		url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
 		linear-gradient(135deg, #eef2f7 0%, #e0e6f1 50%, #d5def0 100%) !important;
 	position: relative;
@@ -18,7 +18,7 @@ html[data-color-theme="glass"] body {
 /* 暗色模式下的全局背景：深邃紫黑渐变底色 + 极细微噪点粒子纹理 */
 html.dark[data-color-theme="glass"] body {
 	background-color: #0b0713 !important;
-	background-image: 
+	background-image:
 		url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E"),
 		linear-gradient(135deg, #0e0817 0%, #060710 50%, #020308 100%) !important;
 }
@@ -52,7 +52,11 @@ html[data-color-theme="glass"] body::before {
 	height: 45vw;
 	max-width: 600px;
 	max-height: 600px;
-	background: radial-gradient(circle, rgba(255, 154, 158, 0.7) 0%, rgba(254, 207, 239, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(255, 154, 158, 0.7) 0%,
+		rgba(254, 207, 239, 0) 70%
+	);
 	top: -10%;
 	left: -5%;
 	animation: glassFloat1 28s infinite alternate ease-in-out;
@@ -64,7 +68,11 @@ html[data-color-theme="glass"] body::after {
 	height: 50vw;
 	max-width: 700px;
 	max-height: 700px;
-	background: radial-gradient(circle, rgba(161, 196, 253, 0.7) 0%, rgba(194, 233, 251, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(161, 196, 253, 0.7) 0%,
+		rgba(194, 233, 251, 0) 70%
+	);
 	bottom: -15%;
 	right: -5%;
 	animation: glassFloat2 32s infinite alternate ease-in-out;
@@ -76,7 +84,11 @@ html[data-color-theme="glass"] #root::before {
 	height: 40vw;
 	max-width: 500px;
 	max-height: 500px;
-	background: radial-gradient(circle, rgba(195, 194, 232, 0.65) 0%, rgba(195, 194, 232, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(195, 194, 232, 0.65) 0%,
+		rgba(195, 194, 232, 0) 70%
+	);
 	top: 20%;
 	right: 15%;
 	animation: glassFloat3 24s infinite alternate ease-in-out;
@@ -84,13 +96,25 @@ html[data-color-theme="glass"] #root::before {
 
 /* 暗色模式下彩色球配色微调：使其深邃迷幻 */
 html.dark[data-color-theme="glass"] body::before {
-	background: radial-gradient(circle, rgba(74, 14, 78, 0.8) 0%, rgba(74, 14, 78, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(74, 14, 78, 0.8) 0%,
+		rgba(74, 14, 78, 0) 70%
+	);
 }
 html.dark[data-color-theme="glass"] body::after {
-	background: radial-gradient(circle, rgba(30, 60, 114, 0.8) 0%, rgba(30, 60, 114, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(30, 60, 114, 0.8) 0%,
+		rgba(30, 60, 114, 0) 70%
+	);
 }
 html.dark[data-color-theme="glass"] #root::before {
-	background: radial-gradient(circle, rgba(19, 78, 94, 0.7) 0%, rgba(19, 78, 94, 0) 70%);
+	background: radial-gradient(
+		circle,
+		rgba(19, 78, 94, 0.7) 0%,
+		rgba(19, 78, 94, 0) 70%
+	);
 }
 
 /* ============================================
@@ -143,7 +167,10 @@ html[data-color-theme="glass"] .panel-shell {
 	-webkit-backdrop-filter: blur(26px) saturate(190%) !important;
 	border: 1px solid var(--t-border) !important;
 	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05) !important;
-	transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+	transition:
+		background-color 0.3s,
+		border-color 0.3s,
+		box-shadow 0.3s !important;
 }
 
 html.dark[data-color-theme="glass"] .panel-shell {

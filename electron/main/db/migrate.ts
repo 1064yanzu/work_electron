@@ -305,15 +305,15 @@ export async function runMigrations(ctx: DbContext) {
 	// Migration: 嵌入向量新增 BLOB 列（Float32Array buffer，约省 80% 空间）
 	// 旧数据仍保留在 embedding_json TEXT 列中，读取时透明兼容：
 	// 优先读 BLOB，若为 NULL 则回落 JSON 并转写回 BLOB。
-	await safeAddColumn(
-		ctx,
-		"note_chunk_embeddings",
-		"embedding",
-		"BLOB",
-	);
+	await safeAddColumn(ctx, "note_chunk_embeddings", "embedding", "BLOB");
 
 	// Migration: 语言风格包升级到 v2「灵魂-骨干-血肉」体系
-	await safeAddColumn(ctx, "style_analyses", "schema_version", "TEXT DEFAULT 'v1'");
+	await safeAddColumn(
+		ctx,
+		"style_analyses",
+		"schema_version",
+		"TEXT DEFAULT 'v1'",
+	);
 	await safeAddColumn(ctx, "style_analyses", "soul_layer", "TEXT");
 	await safeAddColumn(ctx, "style_analyses", "thinking_operation", "TEXT");
 	await safeAddColumn(ctx, "style_analyses", "articulation_pattern", "TEXT");
@@ -322,8 +322,28 @@ export async function runMigrations(ctx: DbContext) {
 
 	// Migration: 混搭配方表升级到 v2（新层级字段）
 	await safeAddColumn(ctx, "style_profile_recipes", "soul_profile_id", "TEXT");
-	await safeAddColumn(ctx, "style_profile_recipes", "thinking_profile_id", "TEXT");
-	await safeAddColumn(ctx, "style_profile_recipes", "articulation_profile_id", "TEXT");
-	await safeAddColumn(ctx, "style_profile_recipes", "texture_profile_id", "TEXT");
-	await safeAddColumn(ctx, "style_profile_recipes", "relational_profile_id", "TEXT");
+	await safeAddColumn(
+		ctx,
+		"style_profile_recipes",
+		"thinking_profile_id",
+		"TEXT",
+	);
+	await safeAddColumn(
+		ctx,
+		"style_profile_recipes",
+		"articulation_profile_id",
+		"TEXT",
+	);
+	await safeAddColumn(
+		ctx,
+		"style_profile_recipes",
+		"texture_profile_id",
+		"TEXT",
+	);
+	await safeAddColumn(
+		ctx,
+		"style_profile_recipes",
+		"relational_profile_id",
+		"TEXT",
+	);
 }

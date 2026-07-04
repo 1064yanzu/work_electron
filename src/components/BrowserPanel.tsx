@@ -292,8 +292,8 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 	const recentHistory = useMemo(() => history.slice(-6).reverse(), [history]);
 
 	return (
-		<div className="flex flex-col h-full bg-surface dark:bg-[#1E1E1E] relative overflow-hidden">
-			<div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-surface/80 dark:bg-[#1E1E1E]/80 backdrop-blur-xl z-10">
+		<div className="flex flex-col h-full bg-surface relative overflow-hidden">
+			<div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-surface/80 backdrop-blur-xl z-10">
 				<div className="flex items-center gap-1">
 					<Tooltip content="后退" placement="bottom">
 						<button
@@ -415,10 +415,10 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-hidden relative bg-warm-50/50 dark:bg-[#151515]">
+			<div className="flex-1 overflow-hidden relative bg-warm-50/50 dark:bg-background">
 				{readerContent ? (
 					<div className="h-full overflow-y-auto">
-						<article className="max-w-3xl mx-auto p-8 bg-surface dark:bg-[#1E1E1E] min-h-full">
+						<article className="max-w-3xl mx-auto p-8 bg-surface min-h-full">
 							<header className="mb-8 pb-6 border-b border-border">
 								<div className="flex items-start justify-between gap-4">
 									<div className="min-w-0">
@@ -552,7 +552,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							) : null}
 
 							{error ? (
-								<div className="mt-6 p-4 bg-[#b53333]/[0.08] border border-[#b53333]/20 rounded-xl text-[#b53333] text-sm text-center">
+								<div className="mt-6 p-4 bg-error/8 border border-error/20 rounded-xl text-error text-sm text-center">
 									{error}
 								</div>
 							) : null}

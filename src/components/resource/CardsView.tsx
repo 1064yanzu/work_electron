@@ -313,7 +313,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 											</div>
 										)}
 										{card.theme_id && (
-											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-surface/90/80 text-text-secondary shadow-sm backdrop-blur-sm">
+											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-surface/90 text-text-secondary shadow-sm backdrop-blur-sm">
 												{card.theme_id}
 											</span>
 										)}

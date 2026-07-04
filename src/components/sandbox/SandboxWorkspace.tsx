@@ -15,6 +15,7 @@ import {
 	type SandboxFile,
 } from "../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
+import { useRegisterShortcuts } from "../../lib/shortcuts";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
@@ -22,6 +23,7 @@ import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
+import { ViewTransition } from "../ui/ViewTransition";
 
 const ExecutionGraph = lazy(async () => {
 	const mod = await import("./ExecutionGraph");
@@ -127,30 +129,28 @@ export default function SandboxWorkspace() {
 		});
 	}, [requestAutoPreview]);
 
-	useEffect(() => {
-		const handleShortcuts = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement | null;
-			const tag = target?.tagName?.toLowerCase();
-			const isTyping =
-				tag === "input" ||
-				tag === "textarea" ||
-				tag === "select" ||
-				Boolean(target?.isContentEditable);
-			if (isTyping) return;
-
-			if (e.altKey && e.key === "1") {
-				e.preventDefault();
-				managedModeStore.setCenterView("graph");
-				return;
-			}
-			if (e.altKey && e.key === "2") {
-				e.preventDefault();
-				managedModeStore.setCenterView("preview");
-			}
-		};
-		window.addEventListener("keydown", handleShortcuts);
-		return () => window.removeEventListener("keydown", handleShortcuts);
-	}, []);
+	// Alt+1/2 切换运行图/预览 — 注册进快捷键中心（随本组件挂载生效、卸载失效）
+	useRegisterShortcuts(
+		() => [
+			{
+				id: "sandbox.center-view-graph",
+				keys: "alt+1",
+				label: "切换到运行图",
+				group: "沙盒",
+				scope: "sandbox",
+				handler: () => managedModeStore.setCenterView("graph"),
+			},
+			{
+				id: "sandbox.center-view-preview",
+				keys: "alt+2",
+				label: "切换到预览",
+				group: "沙盒",
+				scope: "sandbox",
+				handler: () => managedModeStore.setCenterView("preview"),
+			},
+		],
+		[],
+	);
 
 	const handleSelectFile = useCallback(
 		async (id: string, source: "user" | "auto" = "user") => {
@@ -295,39 +295,44 @@ export default function SandboxWorkspace() {
 				onRefresh={refreshFiles}
 			/>
 
-			{ui.centerView === "graph" ? (
-				<Suspense
-					fallback={
-						<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70/40">
-							正在加载运行图...
-						</div>
-					}
-				>
-					<ExecutionGraph
-						source={graphSource}
-						onOpenArtifact={async (filePath) => {
-							markUserManualSelection();
-							await openArtifactInPreview(filePath);
-						}}
-						filter={ui.graphFilter || "all"}
-						onFilterChange={(value) => managedModeStore.setGraphFilter(value)}
-						searchQuery={ui.graphSearch || ""}
-						onSearchQueryChange={(value) =>
-							managedModeStore.setGraphSearch(value)
+			<ViewTransition
+				viewKey={ui.centerView === "graph" ? "graph" : "preview"}
+				className="min-h-0 flex-1 flex flex-col"
+			>
+				{ui.centerView === "graph" ? (
+					<Suspense
+						fallback={
+							<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70">
+								正在加载运行图...
+							</div>
 						}
-						pinnedInspector={Boolean(ui.pinnedInspector)}
-						onPinnedInspectorChange={(value) =>
-							managedModeStore.setPinnedInspector(value)
-						}
-						defaultFollow={ui.graphFollow ?? true}
-						onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
-						artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
-						density={ui.centerDensity || "comfortable"}
-					/>
-				</Suspense>
-			) : (
-				<div className="flex-1 min-h-0">{previewPanel}</div>
-			)}
+					>
+						<ExecutionGraph
+							source={graphSource}
+							onOpenArtifact={async (filePath) => {
+								markUserManualSelection();
+								await openArtifactInPreview(filePath);
+							}}
+							filter={ui.graphFilter || "all"}
+							onFilterChange={(value) => managedModeStore.setGraphFilter(value)}
+							searchQuery={ui.graphSearch || ""}
+							onSearchQueryChange={(value) =>
+								managedModeStore.setGraphSearch(value)
+							}
+							pinnedInspector={Boolean(ui.pinnedInspector)}
+							onPinnedInspectorChange={(value) =>
+								managedModeStore.setPinnedInspector(value)
+							}
+							defaultFollow={ui.graphFollow ?? true}
+							onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
+							artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
+							density={ui.centerDensity || "comfortable"}
+						/>
+					</Suspense>
+				) : (
+					<div className="flex-1 min-h-0">{previewPanel}</div>
+				)}
+			</ViewTransition>
 		</div>
 	);
 }

@@ -10,7 +10,6 @@
 
 import {
 	Activity,
-	ChevronDown,
 	ChevronRight,
 	Edit3,
 	Eye,
@@ -27,6 +26,8 @@ import { useAgentStoreSelector } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { EVENTS, events } from "../../lib/events";
 import { cn } from "../../lib/utils";
+import { Collapsible } from "../ui/Collapsible";
+import { Skeleton } from "../ui/Skeleton";
 import { type ArtifactFileType } from "./ArtifactCard";
 import ArtifactPreviewModal from "./ArtifactPreviewModal";
 import TerminalBlock from "./TerminalBlock";
@@ -408,22 +409,22 @@ function ToolCallInlineImpl({
 						? "-mx-2 px-2 py-1.5 rounded-lg cursor-pointer"
 						: "py-0.5 cursor-default",
 					// 运行中：暖色背景 + 柔光环 + 轻投影，让用户立刻看到 Agent 正在工作
-					isRunning && "bg-warm-50/80/60 ring-1 ring-warm-300/60 shadow-sm",
+					isRunning && "bg-warm-50/80 ring-1 ring-warm-300/60 shadow-sm",
 					// 非运行中、有详情：hover 高亮
-					hasDetails && !isRunning && "hover:bg-warm-50/80/40",
+					hasDetails && !isRunning && "hover:bg-warm-50/80",
 					// 错误态：浅红色高亮
-					isError &&
-						"bg-[rgba(181,51,51,0.04)] ring-1 ring-[rgba(181,51,51,0.18)]",
+					isError && "bg-error/5 ring-1 ring-error/20",
 				)}
 			>
-				{/* 折叠箭头 */}
+				{/* 折叠箭头（单图标旋转，保证 transition-transform 生效） */}
 				{hasDetails ? (
 					<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
-						{isExpanded ? (
-							<ChevronDown className="w-3.5 h-3.5" />
-						) : (
-							<ChevronRight className="w-3.5 h-3.5" />
-						)}
+						<ChevronRight
+							className={cn(
+								"w-3.5 h-3.5 transition-transform duration-200 ease-out-expo",
+								isExpanded && "rotate-90",
+							)}
+						/>
 					</span>
 				) : (
 					<span className="w-4 h-4 flex-shrink-0" />
@@ -485,7 +486,7 @@ function ToolCallInlineImpl({
 							)}
 							title={canPreviewFile ? "点击预览" : fileName}
 						>
-							<Icon className="w-3 h-3 text-sky-500 flex-shrink-0" />
+							<Icon className="w-3 h-3 text-focus flex-shrink-0" />
 							<span className="truncate">{fileName}</span>
 						</span>
 					)}
@@ -505,28 +506,42 @@ function ToolCallInlineImpl({
 				)}
 			</button>
 
-			{/* 展开的详情 */}
-			{isExpanded && hasDetails && (
-				<ToolCallDetailsPanel
-					canPreviewFile={canPreviewFile}
-					onPreviewFile={
-						canPreviewFile
-							? () => {
-									void openFilePreview();
+			{/* 展开的详情 — grid 高度动画；运行中输出未到时先给骨架占位，避免内容突现 */}
+			{hasDetails && (
+				<Collapsible open={isExpanded}>
+					{isRunning && !toolCall.output && !toolCall.error ? (
+						<div className="ml-6 py-2 pr-2 space-y-1.5">
+							<Skeleton className="h-3 w-3/4" />
+							<Skeleton className="h-3 w-1/2" />
+						</div>
+					) : (
+						<div
+							key={toolCall.output || toolCall.error ? "content" : "input"}
+							className="animate-in fade-in duration-200"
+						>
+							<ToolCallDetailsPanel
+								canPreviewFile={canPreviewFile}
+								onPreviewFile={
+									canPreviewFile
+										? () => {
+												void openFilePreview();
+											}
+										: undefined
 								}
-							: undefined
-					}
-					input={toolCall.input as Record<string, unknown> | undefined}
-					error={toolCall.error}
-					outputNode={
-						toolCall.output ? (
-							<ToolOutputDisplay
-								output={toolCall.output}
-								toolCallId={toolCall.id}
+								input={toolCall.input as Record<string, unknown> | undefined}
+								error={toolCall.error}
+								outputNode={
+									toolCall.output ? (
+										<ToolOutputDisplay
+											output={toolCall.output}
+											toolCallId={toolCall.id}
+										/>
+									) : undefined
+								}
 							/>
-						) : undefined
-					}
-				/>
+						</div>
+					)}
+				</Collapsible>
 			)}
 
 			{previewFile && (

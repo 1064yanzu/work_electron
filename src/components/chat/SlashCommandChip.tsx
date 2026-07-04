@@ -63,7 +63,7 @@ const CHIP_STYLES: Record<
 	},
 	data: {
 		bg: "bg-success/8 dark:bg-success/10",
-		bgExpanded: "bg-success/8/50 dark:bg-success/10",
+		bgExpanded: "bg-success/8 dark:bg-success/10",
 		border: "border-success/30 dark:border-success/20",
 		text: "text-success dark:text-success",
 		icon: "text-success dark:text-success",

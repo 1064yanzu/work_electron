@@ -613,7 +613,10 @@ export function ProjectFilesView() {
 				onRefresh={refreshRoot}
 			/>
 
-			<div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide py-2">
+			<div
+				ref={scrollRef}
+				className="flex-1 overflow-y-auto scrollbar-hide py-2"
+			>
 				{!projectPath ? (
 					<FileTreeEmptyState
 						variant="no-path"

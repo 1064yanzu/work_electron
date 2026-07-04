@@ -244,13 +244,29 @@ export function createKbEmbeddingHandlers(db: DbContext) {
                 embedding_json = excluded.embedding_json,
                 embedding = excluded.embedding,
                 updated_at = excluded.updated_at`,
-						args: [chunkId, embedding_model, dims, embedding_json, embeddingBlob, now, now],
+						args: [
+							chunkId,
+							embedding_model,
+							dims,
+							embedding_json,
+							embeddingBlob,
+							now,
+							now,
+						],
 					});
 				} else {
 					await db.client.execute({
 						sql: `INSERT OR IGNORE INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, embedding, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-						args: [chunkId, embedding_model, dims, embedding_json, embeddingBlob, now, now],
+						args: [
+							chunkId,
+							embedding_model,
+							dims,
+							embedding_json,
+							embeddingBlob,
+							now,
+							now,
+						],
 					});
 				}
 				updated++;

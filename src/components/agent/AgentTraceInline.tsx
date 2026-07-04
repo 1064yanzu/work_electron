@@ -76,7 +76,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 			<AgentExecutionFlow task={task} isExecuting={isThisTaskExecuting} />
 
 			{/* 原有的详细信息面板 */}
-			<div className="rounded-2xl bg-warm-50/80/40 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+			<div className="rounded-2xl bg-warm-50/80 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 				<button
 					onClick={() => setOpen((v) => !v)}
 					className="w-full flex items-center justify-between px-3 py-2.5 text-left"
@@ -116,7 +116,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 							<div className="w-full">
 								<button
 									onClick={() => setThinkingOpen((v) => !v)}
-									className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-warm-50/50/30 -mx-1.5 px-1.5 rounded"
+									className="w-full flex items-center gap-2 text-left transition-colors py-0.5 cursor-pointer hover:bg-warm-50/50 -mx-1.5 px-1.5 rounded"
 								>
 									<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
 										{thinkingOpen ? (

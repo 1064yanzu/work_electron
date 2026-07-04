@@ -47,7 +47,7 @@ const LogView = memo(function LogView({ lines, scrollRef }: LogViewProps) {
 
 	if (visibleLines.length === 0) {
 		return (
-			<div className="flex-1 flex items-center justify-center text-text-light text-xs bg-[#1a1b26]">
+			<div className="flex-1 flex items-center justify-center text-text-light text-xs bg-console-night">
 				暂无日志输出
 			</div>
 		);
@@ -56,12 +56,12 @@ const LogView = memo(function LogView({ lines, scrollRef }: LogViewProps) {
 	return (
 		<div
 			ref={scrollRef as React.RefObject<HTMLDivElement>}
-			className="flex-1 overflow-y-auto bg-[#1a1b26] p-3 font-mono text-xs leading-5"
+			className="flex-1 overflow-y-auto bg-console-night p-3 font-mono text-xs leading-5"
 		>
 			{visibleLines.map((line, index) => (
 				<div
 					key={index}
-					className="text-[#a9b1d6] whitespace-pre-wrap break-all"
+					className="text-console-night-fg whitespace-pre-wrap break-all"
 				>
 					{stripAnsi(line)}
 				</div>
@@ -80,7 +80,7 @@ const TerminalPlaceholder = memo(function TerminalPlaceholder({
 	sandboxDir,
 }: TerminalPlaceholderProps) {
 	return (
-		<div className="flex-1 flex flex-col items-center justify-center bg-[#1a1b26] text-text-light gap-3">
+		<div className="flex-1 flex flex-col items-center justify-center bg-console-night text-text-light gap-3">
 			<TerminalIcon className="w-8 h-8 opacity-40" />
 			<div className="text-center">
 				<p className="text-xs text-text-muted">沙盒终端</p>

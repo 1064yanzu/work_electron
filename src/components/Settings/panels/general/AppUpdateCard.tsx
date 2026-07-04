@@ -67,7 +67,10 @@ function normalizeUpdateError(error?: string): string {
 
 function pickReleaseNotes(notes?: string): string | undefined {
 	if (!notes) return undefined;
-	const trimmed = notes.replace(/<[^>]*>/g, "").replace(/\s+\n/g, "\n").trim();
+	const trimmed = notes
+		.replace(/<[^>]*>/g, "")
+		.replace(/\s+\n/g, "\n")
+		.trim();
 	return trimmed || undefined;
 }
 
@@ -176,7 +179,8 @@ export function AppUpdateCard() {
 		}
 	}, []);
 
-	const isChecking = updateState.status === "checking" || actionBusy === "check";
+	const isChecking =
+		updateState.status === "checking" || actionBusy === "check";
 	const isDownloading =
 		updateState.status === "downloading" || actionBusy === "download";
 	const isInstalling =
@@ -220,10 +224,7 @@ export function AppUpdateCard() {
 			return {
 				badge: <SettingsBadge tone="success">已就绪</SettingsBadge>,
 				icon: (
-					<CheckCircle2
-						className="h-4 w-4 text-mint-600"
-						strokeWidth={1.7}
-					/>
+					<CheckCircle2 className="h-4 w-4 text-mint-600" strokeWidth={1.7} />
 				),
 				title: `v${updateState.version} 已下载完成`,
 				subtitle: "重启后将自动应用更新。",
@@ -267,10 +268,7 @@ export function AppUpdateCard() {
 			return {
 				badge: <SettingsBadge tone="success">已是最新</SettingsBadge>,
 				icon: (
-					<CheckCircle2
-						className="h-4 w-4 text-mint-600"
-						strokeWidth={1.7}
-					/>
+					<CheckCircle2 className="h-4 w-4 text-mint-600" strokeWidth={1.7} />
 				),
 				title: "你已经在使用最新版本",
 				subtitle: undefined,

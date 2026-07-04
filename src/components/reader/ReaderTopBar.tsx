@@ -143,7 +143,10 @@ export function ReaderTopBar({
 					value={settings.font_size}
 					onChange={(font_size) => onPatchSettings({ font_size })}
 				/>
-				<Tooltip content={settings.column_count === 2 ? "切换单栏" : "切换双栏"} placement="bottom">
+				<Tooltip
+					content={settings.column_count === 2 ? "切换单栏" : "切换双栏"}
+					placement="bottom"
+				>
 					<button
 						type="button"
 						className={`reader-icon-btn ${settings.column_count === 2 ? "is-active" : ""}`}
@@ -201,7 +204,14 @@ export function ReaderTopBar({
 						<Sparkles className="w-4 h-4" strokeWidth={1.5} />
 					</button>
 				</Tooltip>
-				<Tooltip content={immersive ? `退出沉浸（F11 或 ${shortcut(".")}）` : `沉浸模式（F11 或 ${shortcut(".")}）`} placement="bottom">
+				<Tooltip
+					content={
+						immersive
+							? `退出沉浸（F11 或 ${shortcut(".")}）`
+							: `沉浸模式（F11 或 ${shortcut(".")}）`
+					}
+					placement="bottom"
+				>
 					<button
 						type="button"
 						className="reader-icon-btn"

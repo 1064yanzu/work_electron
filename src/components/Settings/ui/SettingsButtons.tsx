@@ -220,10 +220,10 @@ export function SettingsHint({
 			)}
 		>
 			{Icon && (
-			<Icon
-				className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", HINT_ICON_TONE[tone])}
-				strokeWidth={1.5}
-			/>
+				<Icon
+					className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", HINT_ICON_TONE[tone])}
+					strokeWidth={1.5}
+				/>
 			)}
 			<div className="min-w-0 flex-1">
 				{title && (

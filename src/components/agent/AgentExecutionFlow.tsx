@@ -35,16 +35,16 @@ const StepIndicator = memo(function StepIndicator({
 	}
 	if (status === "error") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800">
+			<div className="w-8 h-8 rounded-full bg-error/16 dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800">
 				<AlertCircle className="w-4 h-4 text-error dark:text-error" />
 			</div>
 		);
 	}
 	if (status === "running") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-[#D96C46]/15 flex items-center justify-center ring-2 ring-[#D96C46]/30 relative">
-				<div className="w-4 h-4 rounded-full border-2 border-[#D96C46] border-t-transparent animate-spin" />
-				<div className="absolute inset-0 rounded-full bg-[#D96C46]/20 animate-pulse" />
+			<div className="w-8 h-8 rounded-full bg-terracotta/15 flex items-center justify-center ring-2 ring-terracotta/30 relative">
+				<div className="w-4 h-4 rounded-full border-2 border-terracotta border-t-transparent animate-spin" />
+				<div className="absolute inset-0 rounded-full bg-terracotta/20 animate-pulse" />
 			</div>
 		);
 	}
@@ -78,7 +78,7 @@ const StepCard = memo(function StepCard({
 							step.status === "completed"
 								? "bg-emerald-300 dark:bg-emerald-700"
 								: step.status === "running"
-									? "bg-gradient-to-b from-[#D96C46] to-[#D96C46]/30"
+									? "bg-gradient-to-b from-terracotta to-terracotta/30"
 									: "bg-warm-300 dark:bg-cream-700",
 						)}
 					/>
@@ -89,12 +89,12 @@ const StepCard = memo(function StepCard({
 					className={cn(
 						"rounded-lg p-3 transition-all",
 						step.status === "running"
-							? "bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12] ring-1 ring-[#D96C46]/20 dark:ring-[#D96C46]/30"
+							? "bg-terracotta/[0.08] dark:bg-terracotta/[0.12] ring-1 ring-terracotta/20 dark:ring-terracotta/30"
 							: step.status === "completed"
-								? "bg-success/8/50 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
+								? "bg-success/8 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
 								: step.status === "error"
-									? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
-									: "bg-warm-50/50/30 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+									? "bg-error/[0.04] dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
+									: "bg-warm-50/50 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
 					)}
 				>
 					<div className="flex items-start gap-2 mb-2">
@@ -109,7 +109,7 @@ const StepCard = memo(function StepCard({
 							)}
 						</div>
 						{step.status === "running" && (
-							<span className="text-[10px] font-medium px-2 py-1 rounded-full bg-[#D96C46]/20 text-[#D96C46] dark:text-[#D96C46] whitespace-nowrap">
+							<span className="text-[10px] font-medium px-2 py-1 rounded-full bg-terracotta/20 text-terracotta dark:text-terracotta whitespace-nowrap">
 								进行中
 							</span>
 						)}
@@ -154,9 +154,9 @@ const ToolCallChain = memo(function ToolCallChain({
 								call.status === "completed"
 									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: call.status === "running"
-										? "bg-[#D96C46]/15 text-[#D96C46] ring-1 ring-[#D96C46]/30"
+										? "bg-terracotta/15 text-terracotta ring-1 ring-terracotta/30"
 										: call.status === "error"
-											? "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error"
+											? "bg-error/16 dark:bg-red-900/30 text-error dark:text-error"
 											: "bg-warm-200 text-text-secondary",
 							)}
 						>
@@ -217,7 +217,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 					className={cn(
 						"transition-all duration-500",
 						isRunning
-							? "text-[#D96C46] animate-pulse-slow"
+							? "text-terracotta animate-pulse-slow"
 							: progress >= 100
 								? "text-success"
 								: "text-focus",
@@ -233,7 +233,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 				</span>
 			</div>
 			{isRunning && (
-				<div className="absolute -inset-2 rounded-full border-2 border-[#D96C46]/30 animate-pulse" />
+				<div className="absolute -inset-2 rounded-full border-2 border-terracotta/30 animate-pulse" />
 			)}
 		</div>
 	);
@@ -294,14 +294,14 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<Activity
 							className={cn(
 								"w-4 h-4 transition-colors",
-								isExecuting ? "text-[#D96C46]" : "text-text-light",
+								isExecuting ? "text-terracotta" : "text-text-light",
 							)}
 						/>
 						<h3 className="text-sm font-semibold text-text-primary">
 							执行计划
 						</h3>
 						{isExecuting && (
-							<span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D96C46]/15 text-[#D96C46]">
+							<span className="text-[10px] px-2 py-0.5 rounded-full bg-terracotta/15 text-terracotta">
 								运行中
 							</span>
 						)}
@@ -356,7 +356,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<div className="text-[10px] text-text-muted">成功</div>
 					</div>
 					<div className="text-center">
-						<div className="text-lg font-bold text-[#D96C46]">
+						<div className="text-lg font-bold text-terracotta">
 							{toolStats.running}
 						</div>
 						<div className="text-[10px] text-text-muted">运行中</div>

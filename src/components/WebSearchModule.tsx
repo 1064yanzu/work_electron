@@ -375,7 +375,10 @@ export default function WebSearchModule({
 										</Tooltip>
 
 										{/* 添加按钮 */}
-										<Tooltip content={isAdded ? "已添加" : "添加为资料"} placement="top">
+										<Tooltip
+											content={isAdded ? "已添加" : "添加为资料"}
+											placement="top"
+										>
 											<button
 												onClick={() => handleAddAsSource(result)}
 												disabled={isAdding || isAdded}

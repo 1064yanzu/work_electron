@@ -473,7 +473,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						onClick={() => setSearchVisible((v) => !v)}
 						className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 active:scale-95 ${
 							searchVisible
-								? "text-[#D96C46] bg-[#D96C46]/[0.12]"
+								? "text-terracotta bg-terracotta/[0.12]"
 								: "text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-white/[0.06]"
 						}`}
 						title="搜索"
@@ -507,7 +507,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						placeholder="搜索对话…"
-						className="w-full h-8 pl-8 pr-8 text-[12.5px] rounded-xl bg-warm-100/70 dark:bg-white/[0.05] text-text-primary placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-[#D96C46]/20 transition-shadow"
+						className="w-full h-8 pl-8 pr-8 text-[12.5px] rounded-xl bg-warm-100/70 dark:bg-white/[0.05] text-text-primary placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-terracotta/20 transition-shadow"
 					/>
 					{searchQuery && (
 						<button
@@ -582,7 +582,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									<div
 										className={`shrink-0 transition-colors ${
 											groupHasActive
-												? "text-[#D96C46]"
+												? "text-terracotta"
 												: "text-text-secondary group-hover:text-text-primary"
 										}`}
 									>
@@ -605,7 +605,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 								</button>
 								{group.isPinned && (
 									<Pin
-										className="w-3 h-3 text-[#D96C46]/60 shrink-0"
+										className="w-3 h-3 text-terracotta/60 shrink-0"
 										strokeWidth={2}
 									/>
 								)}
@@ -617,7 +617,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											e.stopPropagation();
 											handleCreateThreadInGroup(group);
 										}}
-										className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/10 dark:hover:bg-[#D96C46]/15 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D96C46]/25 active:scale-95"
+										className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-terracotta hover:bg-terracotta/10 dark:hover:bg-terracotta/15 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/25 active:scale-95"
 										aria-label={`在 ${group.folderName} 新建对话`}
 										title="新建对话"
 									>
@@ -662,14 +662,14 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 													}
 													className={`relative w-full flex items-start justify-between gap-2 pl-3 pr-1.5 py-2 rounded-lg transition-colors duration-150 text-left group ${
 														isActive
-															? "bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12]"
+															? "bg-terracotta/8 dark:bg-terracotta/[0.12]"
 															: "hover:bg-warm-200/45 dark:hover:bg-white/[0.04]"
 													}`}
 												>
 													{isActive && (
 														<span
 															aria-hidden="true"
-															className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[#D96C46]"
+															className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-terracotta"
 														/>
 													)}
 													<button
@@ -683,7 +683,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 																session.title || "Untitled Chat";
 															const titleClasses = `text-[13px] truncate transition-colors ${
 																isActive
-																	? "text-[#D96C46] dark:text-[#E07B52] font-semibold"
+																	? "text-terracotta dark:text-terracotta-light font-semibold"
 																	: "text-text-secondary font-medium group-hover:text-text-primary dark:group-hover:text-text-light"
 															}`;
 
@@ -716,14 +716,14 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 													<div className="flex items-center gap-1 shrink-0 pt-0.5">
 														{session.isPinned && (
 															<Pin
-																className="w-[11px] h-[11px] text-[#D96C46]/70"
+																className="w-[11px] h-[11px] text-terracotta/70"
 																strokeWidth={2}
 															/>
 														)}
 														<span
 															className={`text-[10.5px] whitespace-nowrap transition-colors ${
 																isActive
-																	? "text-[#D96C46]/70 dark:text-[#E07B52]/70"
+																	? "text-terracotta/70 dark:text-terracotta-light/70"
 																	: "text-text-light"
 															}`}
 														>
@@ -751,7 +751,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 											<button
 												type="button"
 												onClick={() => toggleExpandedGroup(group.key)}
-												className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-text-light hover:text-[#D96C46] hover:bg-[#D96C46]/[0.08] dark:hover:bg-[#D96C46]/[0.12] transition-all"
+												className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-text-light hover:text-terracotta hover:bg-terracotta/8 dark:hover:bg-terracotta/[0.12] transition-all"
 											>
 												<ChevronDown
 													className={`w-3 h-3 transition-transform duration-200 ${
@@ -774,9 +774,9 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				{/* Empty State */}
 				{folderGroups.length === 0 && (
 					<div className="text-center py-10 mt-10">
-						<div className="w-12 h-12 bg-[#D96C46]/[0.08] dark:bg-[#D96C46]/[0.12] rounded-2xl flex items-center justify-center mx-auto mb-3">
+						<div className="w-12 h-12 bg-terracotta/8 dark:bg-terracotta/[0.12] rounded-2xl flex items-center justify-center mx-auto mb-3">
 							<MessageSquare
-								className="w-5 h-5 text-[#D96C46]/70"
+								className="w-5 h-5 text-terracotta/70"
 								strokeWidth={1.5}
 							/>
 						</div>

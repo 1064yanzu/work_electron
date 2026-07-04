@@ -26,9 +26,7 @@ function renderAxisBlock(
 
 	const filtered =
 		intensity === "low"
-			? axes.filter(
-					(a) => a.intensity === "high" || a.intensity === "medium",
-				)
+			? axes.filter((a) => a.intensity === "high" || a.intensity === "medium")
 			: axes;
 	if (filtered.length === 0) return "";
 
@@ -66,7 +64,8 @@ export function createStyleRendererHandlers(db: DbContext) {
 		if (profileRows.rows.length === 0) {
 			return { prompt: "" };
 		}
-		const profileName = (profileRows.rows[0] as Record<string, unknown>).name as string;
+		const profileName = (profileRows.rows[0] as Record<string, unknown>)
+			.name as string;
 
 		// 获取最新分析结果
 		const analysisRows = await db.client.execute({
@@ -98,7 +97,10 @@ export function createStyleRendererHandlers(db: DbContext) {
 		const taskAdaptationRules = ar.task_adaptation_rules
 			? (() => {
 					try {
-						return JSON.parse(ar.task_adaptation_rules as string) as Record<string, string>;
+						return JSON.parse(ar.task_adaptation_rules as string) as Record<
+							string,
+							string
+						>;
 					} catch {
 						return {};
 					}
@@ -107,13 +109,25 @@ export function createStyleRendererHandlers(db: DbContext) {
 
 		const sections: string[] = [];
 
-		const cogBlock = renderAxisBlock("cognitive_pattern", cognitivePattern, intensity);
+		const cogBlock = renderAxisBlock(
+			"cognitive_pattern",
+			cognitivePattern,
+			intensity,
+		);
 		if (cogBlock) sections.push(cogBlock);
 
-		const rheBlock = renderAxisBlock("rhetorical_stance", rhetoricalStance, intensity);
+		const rheBlock = renderAxisBlock(
+			"rhetorical_stance",
+			rhetoricalStance,
+			intensity,
+		);
 		if (rheBlock) sections.push(rheBlock);
 
-		const langBlock = renderAxisBlock("language_aesthetic", languageAesthetic, intensity);
+		const langBlock = renderAxisBlock(
+			"language_aesthetic",
+			languageAesthetic,
+			intensity,
+		);
 		if (langBlock) sections.push(langBlock);
 
 		if (calibrationAnchors.positive?.length > 0) {
@@ -139,7 +153,9 @@ export function createStyleRendererHandlers(db: DbContext) {
 				const ruleItems = ruleEntries
 					.map(([k, v]) => `    <rule task="${k}">${v}</rule>`)
 					.join("\n");
-				sections.push(`  <task_adaptation>\n${ruleItems}\n  </task_adaptation>`);
+				sections.push(
+					`  <task_adaptation>\n${ruleItems}\n  </task_adaptation>`,
+				);
 			}
 		}
 
@@ -175,8 +191,7 @@ ${sections.join("\n")}
 		const recipe = recipeRows.rows[0] as Record<string, unknown>;
 		const recipeName = recipe.name as string;
 		const intensity: StyleIntensity =
-			overrideIntensity ??
-			((recipe.intensity as StyleIntensity) || "medium");
+			overrideIntensity ?? ((recipe.intensity as StyleIntensity) || "medium");
 
 		// 从各来源 profile 获取对应层级的分析数据
 		const layerConfigs = [
@@ -224,9 +239,8 @@ ${sections.join("\n")}
 				args: [anchorsProfileId],
 			});
 			if (anchorsRows.rows.length > 0) {
-				const rawAnchors = (
-					anchorsRows.rows[0] as Record<string, unknown>
-				).calibration_anchors;
+				const rawAnchors = (anchorsRows.rows[0] as Record<string, unknown>)
+					.calibration_anchors;
 				const calibrationAnchors = rawAnchors
 					? (() => {
 							try {
@@ -245,10 +259,7 @@ ${sections.join("\n")}
 						.map((p) => `    <positive>${p}</positive>`)
 						.join("\n");
 					let anchorsBlock = `  <calibration_anchors>\n${positiveItems}`;
-					if (
-						intensity === "high" &&
-						calibrationAnchors.negative?.length > 0
-					) {
+					if (intensity === "high" && calibrationAnchors.negative?.length > 0) {
 						const negativeItems = calibrationAnchors.negative
 							.map((n) => `    <negative>${n}</negative>`)
 							.join("\n");

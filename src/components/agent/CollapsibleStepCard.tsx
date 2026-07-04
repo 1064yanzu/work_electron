@@ -5,10 +5,12 @@
  * 设计灵感来自 Claude 风格的思维链展示。
  */
 
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type React from "react";
 import { useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
+import { Collapsible } from "../ui/Collapsible";
+import { Skeleton } from "../ui/Skeleton";
 
 export interface CollapsibleStepCardProps {
 	/** 步骤名称 */
@@ -73,35 +75,35 @@ export function CollapsibleStepCard({
 	const hasContent = !!children;
 	const canToggle = hasContent && !disableCollapse;
 
-	// 状态颜色映射
+	// 状态颜色映射（全 token 化，随主题联动）
 	const statusColors = {
 		pending: {
-			bg: "bg-surface/40/20",
-			ring: "ring-1 ring-zinc-200/40 dark:ring-zinc-700/40",
+			bg: "bg-surface/40",
+			ring: "ring-1 ring-border/40",
 			text: "text-text-light",
 			iconBg: "bg-warm-50/50",
 			iconColor: "text-text-light",
 		},
 		running: {
-			bg: "bg-surface/80/60",
-			ring: "ring-2 ring-blue-200/50 dark:ring-blue-800/30",
+			bg: "bg-surface/80",
+			ring: "ring-2 ring-focus/20",
 			text: "text-text-secondary",
-			iconBg: "bg-focus/8 dark:bg-blue-900/20",
-			iconColor: "text-focus dark:text-focus",
+			iconBg: "bg-focus/10",
+			iconColor: "text-focus",
 		},
 		completed: {
-			bg: "bg-surface/60",
-			ring: "ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+			bg: "bg-surface/80",
+			ring: "ring-1 ring-border/30",
 			text: "text-text-muted",
-			iconBg: "bg-success/8/50 dark:bg-emerald-900/10",
-			iconColor: "text-success dark:text-success",
+			iconBg: "bg-success/10",
+			iconColor: "text-success",
 		},
 		error: {
-			bg: "bg-surface/80/60",
-			ring: "ring-2 ring-red-200/50 dark:ring-red-800/30",
+			bg: "bg-surface/80",
+			ring: "ring-2 ring-error/20",
 			text: "text-text-secondary",
-			iconBg: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
-			iconColor: "text-error dark:text-error",
+			iconBg: "bg-error/10",
+			iconColor: "text-error",
 		},
 	};
 
@@ -123,7 +125,7 @@ export function CollapsibleStepCard({
 				onClick={() => canToggle && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					canToggle && "cursor-pointer hover:bg-surface/90/70",
+					canToggle && "cursor-pointer hover:bg-surface/90",
 					!canToggle && "cursor-default",
 				)}
 				disabled={!canToggle}
@@ -165,14 +167,15 @@ export function CollapsibleStepCard({
 							</div>
 						)}
 
-						{/* 展开/折叠图标 */}
+						{/* 展开/折叠图标（单图标旋转过渡） */}
 						{canToggle && (
 							<div className="ml-auto">
-								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
-								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
-								)}
+								<ChevronRight
+									className={cn(
+										"w-3.5 h-3.5 text-text-light transition-transform duration-200 ease-out-expo",
+										isExpanded && "rotate-90",
+									)}
+								/>
 							</div>
 						)}
 					</div>
@@ -186,10 +189,17 @@ export function CollapsibleStepCard({
 				</div>
 			</button>
 
-			{/* 展开内容 */}
-			{isExpanded && children && (
-				<div className="px-3 pb-3 border-t border-border/30">{children}</div>
-			)}
+			{/* 展开内容 — grid 高度动画；运行中无内容时用骨架占位 */}
+			<Collapsible open={isExpanded && (hasContent || status === "running")}>
+				{children ? (
+					<div className="px-3 pb-3 border-t border-border/30">{children}</div>
+				) : status === "running" ? (
+					<div className="px-3 pb-3 pt-2 border-t border-border/30 space-y-1.5">
+						<Skeleton className="h-3 w-2/3" />
+						<Skeleton className="h-3 w-1/2" />
+					</div>
+				) : null}
+			</Collapsible>
 		</div>
 	);
 }

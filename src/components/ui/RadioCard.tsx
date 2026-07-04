@@ -74,9 +74,9 @@ const accentSelectedStyles: Record<RadioCardAccent, string> = {
 		"text-text-primary",
 	),
 	action: cn(
-		"border-[#D96C46]",
-		"bg-[#D96C46]/8 dark:bg-[#D96C46]/14",
-		"text-[#A8482B] dark:text-[#F2C4A8]",
+		"border-terracotta",
+		"bg-terracotta/8 dark:bg-terracotta/14",
+		"text-terracotta-active dark:text-peach-200",
 		"shadow-bai-card",
 	),
 };
@@ -188,7 +188,7 @@ export function RadioCardGroup<T extends string = string>({
 										"flex-shrink-0 flex items-center justify-center",
 										isSelected
 											? accent === "action"
-												? "text-[#D96C46]"
+												? "text-terracotta"
 												: "text-text-primary"
 											: "text-text-muted",
 									)}
@@ -211,7 +211,7 @@ export function RadioCardGroup<T extends string = string>({
 											"mt-0.5 text-[11.5px] leading-relaxed",
 											isSelected
 												? accent === "action"
-													? "text-[#A8482B]/80 dark:text-[#F2C4A8]/80"
+													? "text-terracotta-active/80 dark:text-peach-200/80"
 													: "text-text-secondary"
 												: "text-text-muted",
 										)}

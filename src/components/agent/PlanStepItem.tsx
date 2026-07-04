@@ -72,7 +72,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 			className={cn(
 				"relative flex gap-3 px-3 py-2.5 rounded-lg transition-all duration-300",
 				isExecuting &&
-					"bg-focus/8/60 dark:bg-blue-900/10 ring-1 ring-blue-200/60 dark:ring-blue-800/40",
+					"bg-focus/8 dark:bg-blue-900/10 ring-1 ring-blue-200/60 dark:ring-blue-800/40",
 				step.status === "completed" && "opacity-75",
 				step.status === "rejected" && "opacity-50",
 			)}

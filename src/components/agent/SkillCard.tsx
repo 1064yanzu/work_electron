@@ -75,9 +75,9 @@ export function SkillCard({
 					"rounded-xl overflow-hidden transition-all duration-300",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
-						? "bg-surface/80/60 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm border-l-[3px] border-l-focus/50"
+						? "bg-surface/80 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm border-l-[3px] border-l-focus/50"
 						: hasError && !hideHeader
-							? "bg-surface/80/60 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm border-l-[3px] border-l-error/50"
+							? "bg-surface/80 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm border-l-[3px] border-l-error/50"
 							: !hideHeader
 								? "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 border-l-[3px] border-l-mint-500/40"
 								: "",
@@ -92,7 +92,7 @@ export function SkillCard({
 								isActive
 									? "bg-focus/8 dark:bg-blue-900/20"
 									: hasError
-										? "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20"
+										? "bg-error/8 dark:bg-red-900/20"
 										: "bg-warm-50/50",
 							)}
 						>
@@ -102,7 +102,7 @@ export function SkillCard({
 									isActive
 										? "bai-icon-violet"
 										: hasError
-											? "text-[#b53333]"
+											? "text-error"
 											: "text-text-muted",
 								)}
 								strokeWidth={1.5}
@@ -180,7 +180,7 @@ export function SkillCard({
 
 				{/* 错误显示 */}
 				{skill.error && (
-					<div className="px-3 py-1.5 bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/20 text-[11px] text-error dark:text-error border-t border-[rgba(181,51,51,0.32)]/30 dark:border-red-800/30">
+					<div className="px-3 py-1.5 bg-error/[0.04] dark:bg-red-900/20 text-[11px] text-error dark:text-error border-t border-error/10 dark:border-red-800/30">
 						错误: {skill.error}
 					</div>
 				)}
@@ -259,7 +259,7 @@ export function SkillCard({
 
 			{/* 错误显示 */}
 			{skill.error && (
-				<div className="px-3 py-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 text-error dark:text-error text-xs border-t border-[rgba(181,51,51,0.16)] dark:border-red-800/30">
+				<div className="px-3 py-2 bg-error/8 dark:bg-red-900/20 text-error dark:text-error text-xs border-t border-error/16 dark:border-red-800/30">
 					错误: {skill.error}
 				</div>
 			)}

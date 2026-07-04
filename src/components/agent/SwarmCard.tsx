@@ -48,8 +48,7 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 					"bg-terracotta/15 text-terracotta ring-1 ring-terracotta/30",
 				status === "completed" &&
 					"bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success",
-				status === "error" &&
-					"bg-error-muted text-error dark:text-error",
+				status === "error" && "bg-error-muted text-error dark:text-error",
 				status === "pending" && "bg-warm-200 text-text-light",
 			)}
 		>
@@ -306,7 +305,9 @@ export const SwarmCard = memo(function SwarmCard({
 							<Loader2 className="w-3 h-3 animate-spin text-terracotta" />
 						)}
 						{allDone && <CheckCircle2 className="w-3 h-3 text-success" />}
-						<span className={cn(hasAnyRunning && "text-terracotta font-medium")}>
+						<span
+							className={cn(hasAnyRunning && "text-terracotta font-medium")}
+						>
 							{summaryText}
 						</span>
 					</div>
@@ -355,7 +356,7 @@ export const SwarmCard = memo(function SwarmCard({
 			</div>
 
 			{/* 底部汇总条 */}
-			<div className="relative z-10 flex items-center gap-3 px-3 py-2 border-t border-border/60 bg-warm-50/50/30">
+			<div className="relative z-10 flex items-center gap-3 px-3 py-2 border-t border-border/60 bg-warm-50/50">
 				<SwarmMiniStats stats={stats} />
 			</div>
 		</div>

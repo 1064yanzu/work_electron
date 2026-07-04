@@ -194,7 +194,7 @@ export const ToolPermissionCard: React.FC<ToolPermissionCardProps> = ({
 		<div
 			className={cn(
 				"rounded-xl overflow-hidden transition-all duration-300 shadow-sm",
-				"bg-surface/80/60",
+				"bg-surface/80",
 				isUrgent
 					? "ring-2 ring-amber-200/50 dark:ring-amber-800/30"
 					: levelStyle.ring,

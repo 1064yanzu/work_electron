@@ -22,6 +22,7 @@ import {
 	terminalStore,
 	useTerminalStoreSelector,
 } from "../../lib/stores/terminalStore";
+import { shortcut } from "../../lib/platform";
 
 interface SidebarRailProps {
 	onOpenSettings: () => void;
@@ -91,7 +92,10 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 					return (
 						<button
 							key={item.id}
+							type="button"
 							onClick={() => handleNavClick(item.id)}
+							aria-label={item.label}
+							aria-current={isActive ? "page" : undefined}
 							className={[
 								"flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-[background-color,color] duration-200",
 								isActive
@@ -114,14 +118,17 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 
 			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-border w-full">
 				<button
+					type="button"
 					onClick={() => terminalStore.toggleVisible()}
+					aria-label="切换终端"
+					aria-pressed={terminalVisible}
 					className={[
 						"flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-[background-color,color] duration-200",
 						terminalVisible
 							? "bg-warm-200 text-text-primary"
 							: "text-text-muted hover:text-text-primary hover:bg-warm-200/70",
 					].join(" ")}
-					title="终端 (Ctrl+`)"
+					title={`终端 (${shortcut("`")})`}
 				>
 					<Terminal className="w-[20px] h-[20px] mb-0.5" strokeWidth={1.5} />
 					<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
@@ -129,7 +136,9 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 					</span>
 				</button>
 				<button
+					type="button"
 					onClick={onOpenSettings}
+					aria-label="打开设置"
 					className="flex items-center justify-center w-12 h-12 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"
 					title="设置"
 				>

@@ -139,15 +139,15 @@ export const ToolCallRow = memo(function ToolCallRow({
 				className={cn(
 					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 					toolCall.status === "running"
-						? "bg-surface/80/60 ring-2 ring-warm-300 shadow-sm"
+						? "bg-surface/80 ring-2 ring-warm-300 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
-							? "bg-surface/80/60 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
+							? "bg-surface/80 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
 							: "bg-surface/60 ring-1 ring-border",
 				)}
 			>
 				<button
 					onClick={() => setIsExpanded((v) => !v)}
-					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-surface/90/70 transition-colors"
+					className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-surface/90 transition-colors"
 				>
 					<div
 						className={cn(
@@ -254,9 +254,9 @@ export const ToolCallRow = memo(function ToolCallRow({
 			className={cn(
 				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
 				toolCall.status === "running"
-					? "bg-surface/80/60 ring-2 ring-warm-300 shadow-sm"
+					? "bg-surface/80 ring-2 ring-warm-300 shadow-sm"
 					: toolCall.status === "error"
-						? "bg-surface/80/60 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
+						? "bg-surface/80 ring-2 ring-[rgba(181,51,51,0.22)] shadow-sm"
 						: "bg-surface/60 ring-1 ring-border",
 			)}
 		>
@@ -264,7 +264,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 				onClick={() => hasDetails && setIsExpanded((v) => !v)}
 				className={cn(
 					"w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors",
-					hasDetails && "cursor-pointer hover:bg-surface/90/70",
+					hasDetails && "cursor-pointer hover:bg-surface/90",
 					!hasDetails && "cursor-default",
 				)}
 				disabled={!hasDetails}

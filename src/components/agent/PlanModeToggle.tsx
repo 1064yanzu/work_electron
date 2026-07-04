@@ -31,7 +31,7 @@ export function PlanModeToggle({
 					className={cn(
 						"absolute top-0.5 h-[calc(100%-4px)] rounded-md transition-all duration-200 ease-out",
 						planMode
-							? "bg-[#D96C46] shadow-sm left-[calc(50%+1px)] w-[calc(50%-3px)]"
+							? "bg-terracotta shadow-sm left-[calc(50%+1px)] w-[calc(50%-3px)]"
 							: "bg-surface dark:bg-cream-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
 					)}
 				/>
@@ -69,7 +69,7 @@ export function PlanModeToggle({
 
 			{/* 模式说明 */}
 			{planMode && (
-				<span className="text-[10px] text-[#D96C46] font-medium animate-in fade-in slide-in-from-left-1 duration-200">
+				<span className="text-[10px] text-terracotta font-medium animate-in fade-in slide-in-from-left-1 duration-200">
 					Agent 将先输出计划，确认后再执行
 				</span>
 			)}

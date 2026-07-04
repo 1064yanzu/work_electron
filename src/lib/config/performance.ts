@@ -4,18 +4,22 @@ export type PerformanceTuning = {
 	sourceAutoRefreshMs: number;
 	remoteSyncIntervalMs: number;
 	enableUiDebugLogs: boolean;
+	/** 长对话虚拟渲染（>60 条时历史区虚拟化；关闭则全量渲染） */
+	chatVirtualization: boolean;
 };
 
 const DEFAULT_PERFORMANCE_TUNING: PerformanceTuning = {
 	sourceAutoRefreshMs: 10000,
 	remoteSyncIntervalMs: 20000,
 	enableUiDebugLogs: false,
+	chatVirtualization: true,
 };
 
 const PERFORMANCE_CONFIG_KEYS = {
 	sourceAutoRefreshMs: "performance.sourceAutoRefreshMs",
 	remoteSyncIntervalMs: "performance.remoteSyncIntervalMs",
 	enableUiDebugLogs: "performance.enableUiDebugLogs",
+	chatVirtualization: "performance.chatVirtualization",
 } as const;
 
 let cachedPerformanceTuning: PerformanceTuning = {
@@ -52,10 +56,12 @@ export async function getPerformanceTuning(
 			sourceAutoRefreshMsRaw,
 			remoteSyncIntervalMsRaw,
 			enableUiDebugLogsRaw,
+			chatVirtualizationRaw,
 		] = await Promise.all([
 			getConfig(PERFORMANCE_CONFIG_KEYS.sourceAutoRefreshMs),
 			getConfig(PERFORMANCE_CONFIG_KEYS.remoteSyncIntervalMs),
 			getConfig(PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs),
+			getConfig(PERFORMANCE_CONFIG_KEYS.chatVirtualization),
 		]);
 		cachedPerformanceTuning = {
 			sourceAutoRefreshMs: normalizeInterval(
@@ -71,6 +77,11 @@ export async function getPerformanceTuning(
 				120_000,
 			),
 			enableUiDebugLogs: Boolean(enableUiDebugLogsRaw),
+			// 未设置时默认开启
+			chatVirtualization:
+				typeof chatVirtualizationRaw === "boolean"
+					? chatVirtualizationRaw
+					: DEFAULT_PERFORMANCE_TUNING.chatVirtualization,
 		};
 	} catch {
 		cachedPerformanceTuning = { ...DEFAULT_PERFORMANCE_TUNING };
@@ -100,6 +111,10 @@ export async function setPerformanceTuning(
 			typeof patch.enableUiDebugLogs === "boolean"
 				? patch.enableUiDebugLogs
 				: current.enableUiDebugLogs,
+		chatVirtualization:
+			typeof patch.chatVirtualization === "boolean"
+				? patch.chatVirtualization
+				: current.chatVirtualization,
 	};
 	cachedPerformanceTuning = next;
 	cachedPerformanceTuningLoaded = true;
@@ -115,6 +130,10 @@ export async function setPerformanceTuning(
 		setConfig(
 			PERFORMANCE_CONFIG_KEYS.enableUiDebugLogs,
 			next.enableUiDebugLogs,
+		),
+		setConfig(
+			PERFORMANCE_CONFIG_KEYS.chatVirtualization,
+			next.chatVirtualization,
 		),
 	]);
 	return next;

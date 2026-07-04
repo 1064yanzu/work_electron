@@ -199,7 +199,10 @@ export default function OutputStage() {
 					)}
 
 					{selectedOutput && (
-						<Tooltip content={isEditing ? "预览模式" : "编辑模式"} placement="bottom">
+						<Tooltip
+							content={isEditing ? "预览模式" : "编辑模式"}
+							placement="bottom"
+						>
 							<button
 								onClick={() => setIsEditing(!isEditing)}
 								className="p-2 text-text-muted hover:text-primary hover:bg-surface rounded-full transition-all"

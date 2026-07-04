@@ -126,7 +126,16 @@ export function AttachmentCard({
 			)}
 			title={`${file.title}${meta ? `\n${meta}` : ""}`}
 			onClick={onOpen}
-			onKeyDown={onOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+			onKeyDown={
+				onOpen
+					? (e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								onOpen();
+							}
+						}
+					: undefined
+			}
 			role={onOpen ? "button" : undefined}
 			tabIndex={onOpen ? 0 : undefined}
 		>

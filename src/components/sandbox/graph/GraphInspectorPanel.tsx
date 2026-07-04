@@ -159,7 +159,7 @@ export function GraphInspectorPanel({
 					: "w-[min(420px,calc(100%-1.5rem))] bottom-3",
 			)}
 		>
-			<div className="h-full rounded-3xl bg-surface/90/70 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
+			<div className="h-full rounded-3xl bg-surface/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-200">
 				<div className="px-4 py-3 border-b border-border/60 flex items-start justify-between gap-3">
 					<div className="min-w-0">
 						<div className="text-sm font-semibold text-text-primary truncate">
@@ -175,7 +175,7 @@ export function GraphInspectorPanel({
 						<button
 							type="button"
 							onClick={() => setCollapsed((v) => !v)}
-							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50 transition-colors"
+							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80 transition-colors"
 							title={collapsed ? "展开" : "收起"}
 						>
 							{collapsed ? (
@@ -191,7 +191,7 @@ export function GraphInspectorPanel({
 								"p-2 rounded-xl transition-colors",
 								pinned
 									? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
-									: "text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50",
+									: "text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80",
 							)}
 							title={pinned ? "取消固定" : "固定详情"}
 						>
@@ -204,7 +204,7 @@ export function GraphInspectorPanel({
 						<button
 							type="button"
 							onClick={onClose}
-							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/50 transition-colors"
+							className="p-2 rounded-xl text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80 transition-colors"
 							title="关闭"
 						>
 							<X className="w-4 h-4" />
@@ -272,7 +272,7 @@ export function GraphInspectorPanel({
 														key={artifact.id}
 														type="button"
 														onClick={() => onOpenArtifact(artifact.url!)}
-														className="w-full text-left inline-flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-surface/70/60 text-xs text-text-secondary dark:text-zinc-200"
+														className="w-full text-left inline-flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-surface/70 text-xs text-text-secondary dark:text-zinc-200"
 													>
 														<span className="truncate mr-2">
 															{artifact.title}

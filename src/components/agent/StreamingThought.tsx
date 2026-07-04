@@ -88,7 +88,7 @@ function ThinkingStepCard({
 				"p-3 rounded-lg transition-all duration-300",
 				isLatest
 					? "bg-surface/80 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-					: "bg-warm-50/50/30",
+					: "bg-warm-50/50",
 			)}
 		>
 			<div className="flex items-center gap-2 mb-2">

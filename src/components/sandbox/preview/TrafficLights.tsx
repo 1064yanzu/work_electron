@@ -26,7 +26,7 @@ export function TrafficLights({
 					"w-3 h-3 rounded-full transition-colors duration-200",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
-						: "bg-[#FF5F57] hover:bg-[#FF5F57]/85",
+						: "bg-traffic-red hover:bg-traffic-red/85",
 					"shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)]",
 				)}
 			/>
@@ -35,7 +35,7 @@ export function TrafficLights({
 					"w-3 h-3 rounded-full transition-colors duration-200",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
-						: "bg-[#FEBC2E] hover:bg-[#FEBC2E]/85",
+						: "bg-traffic-yellow hover:bg-traffic-yellow/85",
 					"shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)]",
 				)}
 			/>
@@ -44,7 +44,7 @@ export function TrafficLights({
 					"w-3 h-3 rounded-full transition-colors duration-200",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
-						: "bg-[#28C840] hover:bg-[#28C840]/85",
+						: "bg-traffic-green hover:bg-traffic-green/85",
 					"shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)]",
 				)}
 			/>

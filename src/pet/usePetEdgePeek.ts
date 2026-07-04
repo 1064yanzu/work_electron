@@ -64,8 +64,7 @@ export function usePetEdgePeek(enabled: boolean): PetEdgePeekApi {
 				displayHeight: number;
 			}>("pet_window_get_position");
 			const distLeft = pos.x - pos.displayX;
-			const distRight =
-				pos.displayX + pos.displayWidth - (pos.x + pos.width);
+			const distRight = pos.displayX + pos.displayWidth - (pos.x + pos.width);
 			const distTop = pos.y - pos.displayY;
 			const distBottom =
 				pos.displayY + pos.displayHeight - (pos.y + pos.height);
@@ -76,7 +75,8 @@ export function usePetEdgePeek(enabled: boolean): PetEdgePeekApi {
 				dist: number;
 			};
 			const candidates: Candidate[] = [];
-			if (distLeft <= STUCK_PX) candidates.push({ side: "left", dist: distLeft });
+			if (distLeft <= STUCK_PX)
+				candidates.push({ side: "left", dist: distLeft });
 			if (distRight <= STUCK_PX)
 				candidates.push({ side: "right", dist: distRight });
 			if (distTop <= STUCK_PX) candidates.push({ side: "top", dist: distTop });

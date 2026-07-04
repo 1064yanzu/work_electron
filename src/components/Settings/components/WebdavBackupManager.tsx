@@ -217,7 +217,7 @@ export function WebdavBackupManager({
 											type="button"
 											onClick={() => handleDelete(file.fileName)}
 											disabled={!!restoring || !!deleting}
-											className="px-3 py-1.5 text-sm bg-[#b53333]/[0.08] hover:bg-[#b53333]/[0.14] text-[#b53333] rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+											className="px-3 py-1.5 text-sm bg-error/8 hover:bg-error/[0.14] text-error rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
 										>
 											{deleting === file.fileName ? (
 												<Loader2 size={14} className="animate-spin" />

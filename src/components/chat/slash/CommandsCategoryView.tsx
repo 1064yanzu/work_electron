@@ -138,7 +138,7 @@ export function CommandsCategoryView({
 	if (items.length === 0) {
 		return (
 			<div className="px-4 py-8 text-center">
-				<p className="text-[13px] text-[#999] dark:text-[#666]">
+				<p className="text-[13px] text-text-muted">
 					{SLASH_MESSAGES.empty.noMatch}
 				</p>
 			</div>
@@ -165,10 +165,10 @@ export function CommandsCategoryView({
 			{sections.map((section) => (
 				<div key={section.groupId}>
 					<div className="px-4 py-1.5">
-						<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
+						<span className="text-[11px] font-medium text-text-light">
 							{GROUP_LABEL[section.groupId] ?? section.groupId}
 						</span>
-						<span className="ml-1.5 text-[10px] text-[#ccc] dark:text-[#555]">
+						<span className="ml-1.5 text-[10px] text-text-light">
 							{section.items.length}
 						</span>
 					</div>
@@ -200,20 +200,20 @@ export function CommandsCategoryView({
 									onClick={() => handleClick(item)}
 									onMouseEnter={() => onActiveChange(definition.id)}
 									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-[120ms] ease-out
-                    ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}
+                    ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
 									<div
 										className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
                       ${
 												isSelected && !disabled
-													? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-													: "bg-[#f5f5f5] dark:bg-[#363636]"
+													? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+													: "bg-warm-200"
 											}`}
 									>
 										<span
 											className={`font-mono text-[10px] transition-colors duration-[120ms]
-                        ${isSelected && !disabled ? "text-[#555] dark:text-[#ccc]" : "text-[#999] dark:text-[#666]"}`}
+                        ${isSelected && !disabled ? "text-text-secondary" : "text-text-muted"}`}
 										>
 											/
 										</span>
@@ -224,8 +224,8 @@ export function CommandsCategoryView({
 												className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
                           ${
 														isSelected && !disabled
-															? "text-[#1a1a1a] dark:text-[#eee]"
-															: "text-[#666] dark:text-[#999]"
+															? "text-text-primary"
+															: "text-text-secondary"
 													}`}
 											>
 												{nameSegments.map((seg, i) =>
@@ -243,21 +243,21 @@ export function CommandsCategoryView({
 													),
 												)}
 											</span>
-											<span className="text-[10px] text-[#ccc] dark:text-[#555] font-mono truncate">
+											<span className="text-[10px] text-text-light font-mono truncate">
 												/{definition.id}
 											</span>
 										</div>
-										<div className="text-[11px] truncate text-[#bbb] dark:text-[#555]">
+										<div className="text-[11px] truncate text-text-light">
 											{definition.description}
 										</div>
 									</div>
 									{isSubmenu ? (
 										<ChevronRight
 											className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-[120ms] ease-out
-                        ${isSelected && !disabled ? "text-[#999] dark:text-[#666] opacity-100" : "text-[#ccc] dark:text-[#555] opacity-60"}`}
+                        ${isSelected && !disabled ? "text-text-muted opacity-100" : "text-text-light opacity-60"}`}
 										/>
 									) : isSelected && !disabled ? (
-										<span className="text-[10px] font-mono text-[#ccc] dark:text-[#555] flex-shrink-0">
+										<span className="text-[10px] font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									) : null}

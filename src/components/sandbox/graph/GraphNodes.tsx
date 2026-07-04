@@ -41,7 +41,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 	return (
 		<div
 			className={cn(
-				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90/70 backdrop-blur-xl",
+				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
@@ -157,7 +157,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 	return (
 		<div
 			className={cn(
-				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85/60 backdrop-blur-xl",
+				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				borderCls,
@@ -257,7 +257,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 									</div>
 								)}
 								{data.outputSummary && (
-									<div className="text-[11px] text-success dark:text-success bg-success/8/50 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
+									<div className="text-[11px] text-success dark:text-success bg-success/8 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
 										<span className="text-success dark:text-success mr-0.5">
 											←
 										</span>
@@ -268,7 +268,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						)}
 
 						{data.lastActivity ? (
-							<div className="mt-2 text-[11px] text-text-secondary bg-warm-50/80/60 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
+							<div className="mt-2 text-[11px] text-text-secondary bg-warm-50/80 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
 								<span className="text-text-light mr-1">最新：</span>
 								{data.lastActivity}
 							</div>
@@ -345,7 +345,7 @@ const ArtifactNode = memo(function ArtifactNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[220px] max-w-[280px] rounded-2xl border bg-surface/90/65 backdrop-blur-xl",
+				"min-w-[220px] max-w-[280px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
@@ -417,7 +417,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[210px] max-w-[250px] rounded-2xl border bg-surface/90/70 backdrop-blur-xl",
+				"min-w-[210px] max-w-[250px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-primary/30 dark:border-primary/25",
@@ -560,7 +560,7 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
 				"text-[11px] font-medium backdrop-blur-sm",
 				isMain
-					? "border-border/70 bg-surface/80/70 text-text-secondary"
+					? "border-border/70 bg-surface/80 text-text-secondary"
 					: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
 			)}
 		>

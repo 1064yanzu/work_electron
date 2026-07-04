@@ -564,7 +564,10 @@ export function useWorkspaceStoreSelector<T>(
 
 	const getSnapshot = useCallback(() => {
 		const nextState = workspaceStore.getState();
-		if (lastStateRef.current === nextState && lastSelectedRef.current !== null) {
+		if (
+			lastStateRef.current === nextState &&
+			lastSelectedRef.current !== null
+		) {
 			return lastSelectedRef.current;
 		}
 

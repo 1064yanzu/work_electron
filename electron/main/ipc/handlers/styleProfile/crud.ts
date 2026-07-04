@@ -82,10 +82,7 @@ export function createStyleProfileCrudHandlers(db: DbContext) {
 		return rowToProfile(rows.rows[0] as Record<string, unknown>);
 	};
 
-	const listProfiles: Handler<"style_profile_list"> = async (
-		_event,
-		input,
-	) => {
+	const listProfiles: Handler<"style_profile_list"> = async (_event, input) => {
 		const includeArchived = input.include_archived ?? false;
 		const rows = await db.client.execute({
 			sql: includeArchived
@@ -93,9 +90,7 @@ export function createStyleProfileCrudHandlers(db: DbContext) {
 				: `SELECT * FROM style_profiles WHERE status = 'active' ORDER BY is_default DESC, updated_at DESC`,
 			args: [],
 		});
-		return rows.rows.map((r) =>
-			rowToProfile(r as Record<string, unknown>),
-		);
+		return rows.rows.map((r) => rowToProfile(r as Record<string, unknown>));
 	};
 
 	const getProfile: Handler<"style_profile_get"> = async (_event, input) => {

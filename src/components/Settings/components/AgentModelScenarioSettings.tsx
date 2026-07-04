@@ -514,7 +514,7 @@ export function AgentModelScenarioSettings() {
 											</button>
 											<button
 												onClick={() => handleRemove(config)}
-												className="p-2 text-text-light hover:text-[#b53333] hover:bg-[#b53333]/[0.08] rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+												className="p-2 text-text-light hover:text-error hover:bg-error/8 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
 												title="删除"
 											>
 												<Trash2 className="w-4 h-4" />

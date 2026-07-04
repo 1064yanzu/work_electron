@@ -192,7 +192,10 @@ export function TTSProviderCard({
 							type="button"
 							onClick={() => {
 								void confirmDialog
-									.danger(`确认删除 provider "${provider.name}"？`, "删除 Provider")
+									.danger(
+										`确认删除 provider "${provider.name}"？`,
+										"删除 Provider",
+									)
 									.then((confirmed) => {
 										if (confirmed) onDelete();
 									});

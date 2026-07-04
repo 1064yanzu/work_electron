@@ -94,7 +94,14 @@ async function insertSampleRow(
 		sql: `INSERT INTO style_samples
       (id, profile_id, title, content, content_type, authorization_status, word_count, created_at)
       VALUES (?, ?, ?, ?, 'article', 'self_authored', ?, ?)`,
-		args: [id, params.profile_id, params.title, params.content, params.word_count, now],
+		args: [
+			id,
+			params.profile_id,
+			params.title,
+			params.content,
+			params.word_count,
+			now,
+		],
 	});
 	await db.client.execute({
 		sql: `UPDATE style_profiles SET updated_at = ? WHERE id = ?`,

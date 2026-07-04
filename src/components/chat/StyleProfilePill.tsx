@@ -7,9 +7,18 @@
  * - 弹出菜单用 Portal + fixed，绕开 overflow-hidden 裁切
  */
 import { Blend, Check, Pen } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
-import { listStyleProfiles, listStyleRecipes } from "../../lib/api/styleProfile";
+import {
+	listStyleProfiles,
+	listStyleRecipes,
+} from "../../lib/api/styleProfile";
 import { getConfig, setConfig } from "../../lib/config";
 import type {
 	StyleProfile,
@@ -161,17 +170,15 @@ export function StyleProfilePill() {
 				className={`
 					flex items-center justify-center rounded-full
 					transition-all duration-150 cursor-pointer active:scale-95
-					${hasActive
-						? "gap-1 pl-1.5 pr-2 py-1 h-auto"
-						: "w-8 h-8"
-					}
-					${isOpen
-						? "bg-warm-200 dark:bg-cream-700 text-text-primary"
-						: hasActive
-							? activeRecipe
-								? "text-amber-600 dark:text-amber-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
-								: "text-peach-600 dark:text-peach-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
-							: "text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50"
+					${hasActive ? "gap-1 pl-1.5 pr-2 py-1 h-auto" : "w-8 h-8"}
+					${
+						isOpen
+							? "bg-warm-200 dark:bg-cream-700 text-text-primary"
+							: hasActive
+								? activeRecipe
+									? "text-amber-600 dark:text-amber-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
+									: "text-peach-600 dark:text-peach-300 hover:text-text-primary hover:bg-warm-200/60 dark:hover:bg-cream-700/40"
+								: "text-text-muted hover:text-text-primary hover:bg-warm-200/80 dark:hover:bg-cream-700/50"
 					}
 				`}
 			>
@@ -183,7 +190,9 @@ export function StyleProfilePill() {
 						<Pen className="w-3.5 h-3.5" strokeWidth={1.5} />
 					)}
 					{hasActive && (
-						<span className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${activeRecipe ? "bg-amber-400 dark:bg-amber-300" : "bg-peach-400 dark:bg-peach-300"}`} />
+						<span
+							className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${activeRecipe ? "bg-amber-400 dark:bg-amber-300" : "bg-peach-400 dark:bg-peach-300"}`}
+						/>
 					)}
 				</span>
 
@@ -198,14 +207,14 @@ export function StyleProfilePill() {
 			{isOpen &&
 				menuPosition &&
 				createPortal(
-				<div
-					ref={menuRef}
-					className="fixed z-[100] w-[220px] bg-cream-50/95 dark:bg-cream-900/95 backdrop-blur-xl border border-cream-400/70 dark:border-cream-500/60 rounded-2xl shadow-bai-pop overflow-hidden animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-150 origin-bottom-left"
-					style={{
-						left: `${menuPosition.left}px`,
-						bottom: `${menuPosition.bottom}px`,
-						pointerEvents: "auto",
-					}}
+					<div
+						ref={menuRef}
+						className="fixed z-[100] w-[220px] bg-cream-50/95 dark:bg-cream-900/95 backdrop-blur-xl border border-cream-400/70 dark:border-cream-500/60 rounded-2xl shadow-bai-pop overflow-hidden animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-150 origin-bottom-left"
+						style={{
+							left: `${menuPosition.left}px`,
+							bottom: `${menuPosition.bottom}px`,
+							pointerEvents: "auto",
+						}}
 					>
 						{/* 头部 */}
 						<div className="px-3 pt-2.5 pb-2 border-b border-cream-300/70 dark:border-cream-500/40">
@@ -235,7 +244,9 @@ export function StyleProfilePill() {
 								<div className="px-3 py-3 text-[11px] text-text-muted text-center leading-relaxed">
 									暂无风格包
 									<br />
-									<span className="text-text-muted/60">请前往设置 → 语言风格包 创建</span>
+									<span className="text-text-muted/60">
+										请前往设置 → 语言风格包 创建
+									</span>
 								</div>
 							) : (
 								<>
@@ -273,7 +284,7 @@ export function StyleProfilePill() {
 									)}
 								</>
 							)}
-					</div>
+						</div>
 					</div>,
 					document.body,
 				)}
@@ -291,7 +302,13 @@ interface MenuOptionProps {
 	isRecipe?: boolean;
 }
 
-function MenuOption({ label, description, isActive, onClick, isRecipe }: MenuOptionProps) {
+function MenuOption({
+	label,
+	description,
+	isActive,
+	onClick,
+	isRecipe,
+}: MenuOptionProps) {
 	const checkColor = isRecipe
 		? "text-amber-500 dark:text-amber-300"
 		: "text-peach-500 dark:text-peach-300";
@@ -312,9 +329,14 @@ function MenuOption({ label, description, isActive, onClick, isRecipe }: MenuOpt
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5">
 					{isRecipe && (
-						<Blend className="w-3 h-3 text-amber-500/70 dark:text-amber-400/60 shrink-0" strokeWidth={1.5} />
+						<Blend
+							className="w-3 h-3 text-amber-500/70 dark:text-amber-400/60 shrink-0"
+							strokeWidth={1.5}
+						/>
 					)}
-					<span className={`text-[12px] leading-none ${isActive ? "font-semibold" : "font-medium"}`}>
+					<span
+						className={`text-[12px] leading-none ${isActive ? "font-semibold" : "font-medium"}`}
+					>
 						{label}
 					</span>
 				</div>

@@ -79,7 +79,9 @@ export async function removeStyleSample(id: string): Promise<void> {
 	return safeInvoke("style_sample_remove", { id });
 }
 
-export async function listStyleSamples(profileId: string): Promise<StyleSample[]> {
+export async function listStyleSamples(
+	profileId: string,
+): Promise<StyleSample[]> {
 	return safeInvoke("style_sample_list", { profile_id: profileId });
 }
 
@@ -134,9 +136,8 @@ export async function updateStyleAnalysis(
 export async function onStyleAnalysisProgress(
 	handler: (event: StyleAnalysisProgressEvent) => void,
 ): Promise<UnlistenFn> {
-	return listen<StyleAnalysisProgressEvent>(
-		"style-analysis-progress",
-		(e) => handler(e.payload),
+	return listen<StyleAnalysisProgressEvent>("style-analysis-progress", (e) =>
+		handler(e.payload),
 	);
 }
 

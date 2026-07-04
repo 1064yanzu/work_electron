@@ -232,7 +232,7 @@ export function ZoomableImageViewer({
 
 	return (
 		<div className={cn("relative w-full h-full overflow-hidden", className)}>
-			<div className="absolute left-1/2 -translate-x-1/2 top-3 z-20 flex items-center gap-1.5 rounded-2xl bg-surface/85/80 backdrop-blur-md px-2 py-1.5 ring-1 ring-black/5 dark:ring-white/10 shadow-[0_12px_35px_-25px_rgba(0,0,0,0.55)]">
+			<div className="absolute left-1/2 -translate-x-1/2 top-3 z-20 flex items-center gap-1.5 rounded-2xl bg-surface/85 backdrop-blur-md px-2 py-1.5 ring-1 ring-black/5 dark:ring-white/10 shadow-[0_12px_35px_-25px_rgba(0,0,0,0.55)]">
 				<button
 					type="button"
 					onClick={zoomOut}

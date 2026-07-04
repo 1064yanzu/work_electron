@@ -27,7 +27,7 @@ interface ChatMessageAssistantContentProps {
 }
 
 const PREVIEW_LOADING_FALLBACK = (
-	<div className="mb-3 rounded-2xl border border-border/70/60 bg-warm-50/70/40 p-4 text-xs text-text-light">
+	<div className="mb-3 rounded-2xl border border-border/70 bg-warm-50/70 p-4 text-xs text-text-light">
 		正在准备预览...
 	</div>
 );

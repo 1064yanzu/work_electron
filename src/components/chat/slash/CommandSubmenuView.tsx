@@ -121,21 +121,21 @@ export function CommandSubmenuView({
 
 	return (
 		<div>
-			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#333]">
+			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
 				<div
 					role="button"
 					tabIndex={-1}
 					onClick={onBack}
-					className="w-7 h-7 flex items-center justify-center text-[#999] hover:text-[#666] dark:hover:text-[#bbb] hover:bg-[#f3f3f3] dark:hover:bg-[#363636] rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
+					className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
 					title="返回上一级"
 				>
 					<ArrowLeft className="w-4 h-4" />
 				</div>
 				<div className="flex items-center gap-2 min-w-0">
-					<span className="font-mono text-[11px] text-[#ccc] dark:text-[#555]">
+					<span className="font-mono text-[11px] text-text-light">
 						/{definition.id}
 					</span>
-					<span className="text-[13px] font-medium text-[#1a1a1a] dark:text-[#eee] truncate">
+					<span className="text-[13px] font-medium text-text-primary truncate">
 						{definition.name}
 					</span>
 				</div>
@@ -144,7 +144,7 @@ export function CommandSubmenuView({
 			<div className="max-h-[300px] overflow-y-auto">
 				{filteredOptions.length === 0 ? (
 					<div className="px-4 py-8 text-center">
-						<p className="text-[13px] text-[#999] dark:text-[#666]">
+						<p className="text-[13px] text-text-muted">
 							{SLASH_MESSAGES.empty.noMatch}
 						</p>
 					</div>
@@ -166,21 +166,21 @@ export function CommandSubmenuView({
 									onClick={() => commit(option)}
 									onMouseEnter={() => setActiveIndex(index)}
 									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-[120ms] ease-out
-                    ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}
+                    ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
 									<div className="flex-1 min-w-0">
-										<div className="text-[13px] font-medium truncate text-[#1a1a1a] dark:text-[#eee]">
+										<div className="text-[13px] font-medium truncate text-text-primary">
 											{option.label}
 										</div>
 										{option.description && (
-											<div className="text-[11px] truncate text-[#bbb] dark:text-[#555] mt-0.5">
+											<div className="text-[11px] truncate text-text-light mt-0.5">
 												{option.description}
 											</div>
 										)}
 									</div>
 									{isSelected && !disabled && (
-										<span className="text-[10px] font-mono text-[#ccc] dark:text-[#555] flex-shrink-0">
+										<span className="text-[10px] font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									)}
@@ -191,8 +191,8 @@ export function CommandSubmenuView({
 				)}
 			</div>
 
-			<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+			<div className="px-4 py-1.5 border-t border-border">
+				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">⌫</span>
 						<span>返回</span>

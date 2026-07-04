@@ -656,24 +656,24 @@ export default function PetApp() {
 							uiDispatch({ type: "SET_MOTION", motion: "idle" });
 						}, 600);
 					} else {
-					lastClickAtRef.current = now;
-					// 已读：清掉未读
-					eventState.markRead();
-					// 睡着状态：第一次点击唤醒，不打开输入气泡
-					if (eventState.petState === "sleepy") {
-						eventState.wakeUp();
-						uiDispatch({ type: "SET_MOTION", motion: "greet" });
-						setTimeout(
-							() => uiDispatch({ type: "SET_MOTION", motion: "idle" }),
-							900,
-						);
-					} else {
-						// 立即 toggle 输入气泡，感知延迟消失
-						uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
-					}
-					// 连点反馈（害羞 & 庆祝彩蛋）
-					registerTap();
-					registerCelebrate();
+						lastClickAtRef.current = now;
+						// 已读：清掉未读
+						eventState.markRead();
+						// 睡着状态：第一次点击唤醒，不打开输入气泡
+						if (eventState.petState === "sleepy") {
+							eventState.wakeUp();
+							uiDispatch({ type: "SET_MOTION", motion: "greet" });
+							setTimeout(
+								() => uiDispatch({ type: "SET_MOTION", motion: "idle" }),
+								900,
+							);
+						} else {
+							// 立即 toggle 输入气泡，感知延迟消失
+							uiDispatch({ type: "TOGGLE_INPUT_BUBBLE" });
+						}
+						// 连点反馈（害羞 & 庆祝彩蛋）
+						registerTap();
+						registerCelebrate();
 					}
 				}
 			});
@@ -819,7 +819,9 @@ export default function PetApp() {
 	// ⚠️ React Hooks 规则：所有 Hook 必须在任何条件 return 之前调用。
 	// 之前 useBubblePlacement 被放在 `if (!mascotReady) return null` 之后，
 	// 导致 mascotReady 由 false → true 时 Hook 调用顺序错乱，组件直接报错变成空白窗口。
-	const { placement, offsetX: bubbleOffsetX } = useBubblePlacement(uiState.bubble !== "none");
+	const { placement, offsetX: bubbleOffsetX } = useBubblePlacement(
+		uiState.bubble !== "none",
+	);
 
 	// 精确命中检测：透明区域自动穿透，鼠标悬停在宠物/气泡上时才捕获事件
 	usePetHitTest(throughClicks);
@@ -847,7 +849,8 @@ export default function PetApp() {
 			className={`flex justify-center w-full ${placement === "top" ? "mb-[10px]" : "mt-[10px]"}`}
 			style={{
 				order: placement === "top" ? 0 : 2,
-				transform: bubbleOffsetX !== 0 ? `translateX(${bubbleOffsetX}px)` : undefined,
+				transform:
+					bubbleOffsetX !== 0 ? `translateX(${bubbleOffsetX}px)` : undefined,
 			}}
 		>
 			{uiState.bubble === "task" && eventState.currentTask && (
@@ -915,39 +918,39 @@ export default function PetApp() {
 				/>
 			)}
 
-		{uiState.bubble === "input" && (
-			<PetInputBubble
-				ref={inputRef}
-				value={inputText}
-				onChange={setInputText}
-				onSubmit={handleSendQuickReply}
-				onClose={handleCloseBubble}
-				onOpenMain={handleFocusMain}
-				accentColor={accentColor}
-				noInteract={isDragging}
-				onPointerEnter={handleBubblePointerEnter}
-				onPointerLeave={handleBubblePointerLeave}
-				placement={placement}
-				sinking={bubbleSinking}
-				mascotId={personalityId}
-			/>
-		)}
+			{uiState.bubble === "input" && (
+				<PetInputBubble
+					ref={inputRef}
+					value={inputText}
+					onChange={setInputText}
+					onSubmit={handleSendQuickReply}
+					onClose={handleCloseBubble}
+					onOpenMain={handleFocusMain}
+					accentColor={accentColor}
+					noInteract={isDragging}
+					onPointerEnter={handleBubblePointerEnter}
+					onPointerLeave={handleBubblePointerLeave}
+					placement={placement}
+					sinking={bubbleSinking}
+					mascotId={personalityId}
+				/>
+			)}
 
-		{uiState.bubble === "history" && (
-			<PetHistoryBubble
-				items={eventState.notificationHistory}
-				onClose={handleCloseBubble}
-				onClear={eventState.clearHistory}
-				accentColor={accentColor}
-				noInteract={isDragging}
-				onPointerEnter={handleBubblePointerEnter}
-				onPointerLeave={handleBubblePointerLeave}
-				placement={placement}
-				sinking={bubbleSinking}
-			/>
-		)}
-	</div>
-);
+			{uiState.bubble === "history" && (
+				<PetHistoryBubble
+					items={eventState.notificationHistory}
+					onClose={handleCloseBubble}
+					onClear={eventState.clearHistory}
+					accentColor={accentColor}
+					noInteract={isDragging}
+					onPointerEnter={handleBubblePointerEnter}
+					onPointerLeave={handleBubblePointerLeave}
+					placement={placement}
+					sinking={bubbleSinking}
+				/>
+			)}
+		</div>
+	);
 
 	return (
 		<div
@@ -1011,24 +1014,17 @@ export default function PetApp() {
 							} else {
 								parts.push("scale(1)");
 							}
-						// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
-						if (edgePeek.peeking && edgePeek.side) {
-							if (
-								edgePeek.side === "left" ||
-								edgePeek.side === "right"
-							) {
-								const dx =
-									edgePeek.side === "left"
-										? -PEEK_OFFSET_PX
-										: PEEK_OFFSET_PX;
-								parts.push(`translateX(${dx}px)`);
-							} else {
-								const dy =
-									edgePeek.side === "top"
-										? -PEEK_OFFSET_PX
-										: PEEK_OFFSET_PX;
-								parts.push(`translateY(${dy}px)`);
-							}
+							// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
+							if (edgePeek.peeking && edgePeek.side) {
+								if (edgePeek.side === "left" || edgePeek.side === "right") {
+									const dx =
+										edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
+									parts.push(`translateX(${dx}px)`);
+								} else {
+									const dy =
+										edgePeek.side === "top" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
+									parts.push(`translateY(${dy}px)`);
+								}
 							} else if (!isDragging) {
 								// 视线追随（仅在非拖动态叠加，±3px）
 								parts.push(
@@ -1071,19 +1067,19 @@ export default function PetApp() {
 				</div>
 
 				{/* 上下文菜单（长按 / 右键触发） */}
-			{contextMenuOpen && (
-				<PetContextMenu
-					accentColor={accentColor}
-					currentMascotId={mascotId}
-					onCycleSkin={handleCycleSkin}
-					onHide={handleHidePet}
-					onOpenSettings={handleOpenSettings}
-					onShowHistory={handleShowHistory}
-					onClose={() => setContextMenuOpen(false)}
-					/** 角色贴屏右侧时菜单向左展开，贴左侧 / 屏幕中段时向右展开 */
-					side={edgePeek.side === "right" ? "left" : "right"}
-				/>
-			)}
+				{contextMenuOpen && (
+					<PetContextMenu
+						accentColor={accentColor}
+						currentMascotId={mascotId}
+						onCycleSkin={handleCycleSkin}
+						onHide={handleHidePet}
+						onOpenSettings={handleOpenSettings}
+						onShowHistory={handleShowHistory}
+						onClose={() => setContextMenuOpen(false)}
+						/** 角色贴屏右侧时菜单向左展开，贴左侧 / 屏幕中段时向右展开 */
+						side={edgePeek.side === "right" ? "left" : "right"}
+					/>
+				)}
 			</div>
 		</div>
 	);
@@ -1147,19 +1143,19 @@ function PetContextMenu({
 					`,
 				}}
 			>
-			<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
-				<span>切换皮肤</span>
-				<span className="ml-auto text-[11px] text-[color:var(--t-text-light,#9d9d98)]">
-					下一个：{nextMascotLabel}
-				</span>
-			</MenuButton>
-			<MenuButton onClick={onOpenSettings} accentColor={accentColor}>
-				打开主窗口
-			</MenuButton>
-			<MenuButton onClick={onShowHistory} accentColor={accentColor}>
-				最近通知
-			</MenuButton>
-			<div
+				<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
+					<span>切换皮肤</span>
+					<span className="ml-auto text-[11px] text-[color:var(--t-text-light,#9d9d98)]">
+						下一个：{nextMascotLabel}
+					</span>
+				</MenuButton>
+				<MenuButton onClick={onOpenSettings} accentColor={accentColor}>
+					打开主窗口
+				</MenuButton>
+				<MenuButton onClick={onShowHistory} accentColor={accentColor}>
+					最近通知
+				</MenuButton>
+				<div
 					className="my-1 mx-3 h-[1px]"
 					style={{
 						backgroundColor: "var(--t-border-subtle, rgba(0,0,0,0.06))",

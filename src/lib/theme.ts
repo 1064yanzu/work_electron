@@ -16,6 +16,7 @@ class ThemeManager {
 	private currentMode: ThemeMode = "light";
 	private currentColorThemeId: string = DEFAULT_THEME_ID;
 	private listeners = new Set<() => void>();
+	private themeTransitionTimer: number | null = null;
 
 	constructor() {
 		this.loadTheme();
@@ -28,11 +29,35 @@ class ThemeManager {
 			const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 			mediaQuery.addEventListener("change", () => {
 				if (this.currentMode === "system") {
-					this.applyTheme();
+					this.withThemeTransition(() => this.applyTheme());
 					this.notifyListeners();
 				}
 			});
 		}
+	}
+
+	/**
+	 * 主题切换全局过渡：给 <html> 挂 .theme-transitioning（index.css 里
+	 * 对应规则让全局颜色属性做 250ms 过渡），下一帧应用主题，280ms 后摘除。
+	 * 仅切换瞬间生效，避免常驻全局 transition 的性能开销；
+	 * reduce-motion 用户由 CSS :not() 豁免。
+	 */
+	private withThemeTransition(apply: () => void) {
+		if (typeof document === "undefined") {
+			apply();
+			return;
+		}
+		const root = document.documentElement;
+		if (this.themeTransitionTimer !== null) {
+			window.clearTimeout(this.themeTransitionTimer);
+		}
+		root.classList.add("theme-transitioning");
+		// 下一帧再改变量，保证过渡规则先于颜色变化生效
+		requestAnimationFrame(() => apply());
+		this.themeTransitionTimer = window.setTimeout(() => {
+			root.classList.remove("theme-transitioning");
+			this.themeTransitionTimer = null;
+		}, 280);
 	}
 
 	private loadTheme() {
@@ -95,9 +120,7 @@ class ThemeManager {
 		}
 		// 主进程双写为 best-effort；动态 import 避免 theme.ts 在桥接就绪前初始化时报错
 		void import("./tauriCompat")
-			.then(({ invoke }) =>
-				invoke("app_set_window_background", { color: hex }),
-			)
+			.then(({ invoke }) => invoke("app_set_window_background", { color: hex }))
 			.catch(() => {});
 	}
 
@@ -109,7 +132,7 @@ class ThemeManager {
 	setTheme(mode: ThemeMode) {
 		this.currentMode = mode;
 		localStorage.setItem("theme", mode);
-		this.applyTheme();
+		this.withThemeTransition(() => this.applyTheme());
 		this.syncNativeTheme(mode);
 		this.notifyListeners();
 	}
@@ -137,7 +160,7 @@ class ThemeManager {
 		if (!THEME_MAP.has(id)) return;
 		this.currentColorThemeId = id;
 		localStorage.setItem("colorTheme", id);
-		this.applyTheme();
+		this.withThemeTransition(() => this.applyTheme());
 		this.notifyListeners();
 	}
 

@@ -46,14 +46,14 @@ const toolConfig: Record<
 	web_search: {
 		icon: Search,
 		gradient:
-			"from-blue-500/10 via-indigo-500/10 to-violet-500/10 border-focus/30/50 dark:border-focus/30",
+			"from-blue-500/10 via-indigo-500/10 to-violet-500/10 border-focus/30 dark:border-focus/30",
 		iconColor: "text-focus dark:text-focus",
 		label: "Web Search",
 	},
 	fetch_url: {
 		icon: Globe,
 		gradient:
-			"from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border-success/30/50 dark:border-success/30",
+			"from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border-success/30 dark:border-success/30",
 		iconColor: "text-success dark:text-success",
 		label: "Fetch URL",
 	},
@@ -81,7 +81,7 @@ const toolConfig: Record<
 	default: {
 		icon: Zap,
 		gradient:
-			"from-zinc-500/10 via-zinc-500/10 to-zinc-500/10 border-border/50/30",
+			"from-zinc-500/10 via-zinc-500/10 to-zinc-500/10 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "Tool Call",
 	},
@@ -144,7 +144,7 @@ function CopyButton({ text }: { text: string }) {
 // 结构化结果渲染
 function StructuredOutput({ type, output }: { type: string; output: any }) {
 	const codeBlockClass =
-		"text-[10px] bg-success/8/50 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
+		"text-[10px] bg-success/8 dark:bg-emerald-900/10 rounded-lg p-2 overflow-x-auto text-text-secondary font-mono border border-emerald-100/50 dark:border-emerald-900/20 max-h-40 overflow-y-auto";
 
 	// 1. 资料库检索
 	if (type === "kb_search_chunks") {
@@ -299,7 +299,7 @@ function ToolCallCard({
 				>
 					<button
 						onClick={() => setIsExpanded(!isExpanded)}
-						className="w-full flex items-center gap-3 p-3 text-left hover:bg-warm-50/50/30 transition-colors"
+						className="w-full flex items-center gap-3 p-3 text-left hover:bg-warm-50/50 transition-colors"
 					>
 						<div
 							className={cn(
@@ -475,7 +475,7 @@ export default function ToolCallTrace({
 					className={cn(
 						"flex-none p-4 border-t",
 						task.status === "completed"
-							? "bg-success/8/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20"
+							? "bg-success/8 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20"
 							: "bg-[rgba(181,51,51,0.08)]/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/20",
 					)}
 				>

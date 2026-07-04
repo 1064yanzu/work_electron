@@ -56,19 +56,19 @@ export function DevServerStatusBadge({
 				<span
 					className={cn(
 						"block w-1.5 h-1.5 rounded-full",
-						status === "ready" && "bg-[#6FBF99]",
-						status === "starting" && "bg-[#E8A77A]",
+						status === "ready" && "bg-mint-500",
+						status === "starting" && "bg-peach-500",
 						status === "error" && "bg-error",
 					)}
 				/>
 				{status === "starting" ? (
 					<span className="absolute inset-0 flex items-center">
-						<span className="block w-1.5 h-1.5 rounded-full bg-[#E8A77A] animate-ping opacity-60" />
+						<span className="block w-1.5 h-1.5 rounded-full bg-peach-500 animate-ping opacity-60" />
 					</span>
 				) : null}
 				{status === "ready" ? (
 					<span className="absolute inset-0 flex items-center">
-						<span className="block w-1.5 h-1.5 rounded-full bg-[#6FBF99] opacity-50 animate-pulse-slow" />
+						<span className="block w-1.5 h-1.5 rounded-full bg-mint-500 opacity-50 animate-pulse-slow" />
 					</span>
 				) : null}
 			</span>

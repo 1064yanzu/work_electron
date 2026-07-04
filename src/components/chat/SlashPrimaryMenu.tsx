@@ -182,12 +182,10 @@ export function SlashPrimaryMenu({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50"
+				className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50"
 			>
 				<div className="px-4 py-8 text-center">
-					<p className="text-[13px] text-[#999] dark:text-[#666]">
-						未找到匹配的命令类型
-					</p>
+					<p className="text-[13px] text-text-muted">未找到匹配的命令类型</p>
 				</div>
 			</div>
 		);
@@ -196,11 +194,11 @@ export function SlashPrimaryMenu({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
 			{/* 头部标签 */}
 			<div className="px-4 pt-3 pb-1">
-				<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666] tracking-wide">
+				<span className="text-[11px] font-medium text-text-light tracking-wide">
 					选择类型
 				</span>
 			</div>
@@ -222,7 +220,7 @@ export function SlashPrimaryMenu({
 							onMouseEnter={() => setSelectedIndex(index)}
 							className={`w-full flex items-center gap-3 px-2.5 py-[9px] rounded-xl text-left cursor-pointer select-none
                 transition-all duration-[120ms] ease-out
-                ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}`}
+                ${isSelected ? "bg-warm-200" : ""}`}
 						>
 							{/* 图标容器 — 选中时用品牌色底 */}
 							<div
@@ -231,7 +229,7 @@ export function SlashPrimaryMenu({
                   ${
 										isSelected
 											? `${category.gradient} shadow-sm`
-											: "bg-[#f5f5f5] dark:bg-[#363636]"
+											: "bg-warm-200"
 									}`}
 							>
 								<category.icon
@@ -239,7 +237,7 @@ export function SlashPrimaryMenu({
                     ${
 											isSelected
 												? "" // gradient 类里已有颜色
-												: "text-[#999] dark:text-[#666]"
+												: "text-text-muted"
 										}`}
 								/>
 							</div>
@@ -250,26 +248,20 @@ export function SlashPrimaryMenu({
 									<span
 										className={`text-[13px] font-medium leading-tight transition-colors duration-[120ms]
                       ${
-												isSelected
-													? "text-[#1a1a1a] dark:text-[#eee]"
-													: "text-[#666] dark:text-[#999]"
+												isSelected ? "text-text-primary" : "text-text-secondary"
 											}`}
 									>
 										{category.name}
 									</span>
 									{category.shortcut && (
-										<span className="text-[10px] text-[#ccc] dark:text-[#555] font-mono">
+										<span className="text-[10px] text-text-light font-mono">
 											/{category.shortcut}
 										</span>
 									)}
 								</div>
 								<p
 									className={`text-[11px] leading-tight mt-0.5 transition-colors duration-[120ms]
-                    ${
-											isSelected
-												? "text-[#999] dark:text-[#777]"
-												: "text-[#bbb] dark:text-[#555]"
-										}`}
+                    ${isSelected ? "text-text-muted" : "text-text-light"}`}
 								>
 									{category.description}
 								</p>
@@ -280,7 +272,7 @@ export function SlashPrimaryMenu({
 								className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-[120ms] ease-out
                   ${
 										isSelected
-											? "text-[#999] dark:text-[#666] translate-x-px opacity-100"
+											? "text-text-muted translate-x-px opacity-100"
 											: "text-transparent opacity-0"
 									}`}
 							/>
@@ -290,8 +282,8 @@ export function SlashPrimaryMenu({
 			</div>
 
 			{/* 底部快捷键 */}
-			<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+			<div className="px-4 py-1.5 border-t border-border">
+				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">↑↓</span>
 						<span>导航</span>

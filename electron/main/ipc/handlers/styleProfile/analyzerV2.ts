@@ -81,7 +81,8 @@ function backfillConstancy(
 	const variables = Array.isArray(cv.variables) ? cv.variables : [];
 
 	const hit = (haystack: string, needle: string): boolean =>
-		needle.length >= 2 && (haystack.includes(needle) || needle.includes(haystack));
+		needle.length >= 2 &&
+		(haystack.includes(needle) || needle.includes(haystack));
 
 	for (const layer of layers) {
 		if (!layer || typeof layer !== "object") continue;
@@ -90,7 +91,8 @@ function backfillConstancy(
 			for (const axis of axes as StyleAxisAnalysis[]) {
 				if (!axis?.name || axis.constancy) continue;
 				const matchedVar = variables.find(
-					(v) => typeof v?.dimension === "string" && hit(v.dimension, axis.name),
+					(v) =>
+						typeof v?.dimension === "string" && hit(v.dimension, axis.name),
 				);
 				if (matchedVar) {
 					axis.constancy = "variable";
@@ -148,7 +150,11 @@ export function createStyleAnalyzerHandlersV2(
 		// 优先读取新字段，若无则fallback到旧字段
 		const data: StyleAnalysisData = {
 			schema_version:
-				ar.schema_version === "v2" ? "v2" : ar.schema_version === "v1" ? "v1" : undefined,
+				ar.schema_version === "v2"
+					? "v2"
+					: ar.schema_version === "v1"
+						? "v1"
+						: undefined,
 			calibration_anchors: ar.calibration_anchors
 				? JSON.parse(ar.calibration_anchors as string)
 				: { positive: [], negative: [], missing: [] },
@@ -239,8 +245,9 @@ async function runAnalysisPipelineV2(
 			});
 			if (profileRows.rows.length > 0) {
 				model =
-					((profileRows.rows[0] as Record<string, unknown>)
-						.analyze_model_id as string | undefined) ?? "";
+					((profileRows.rows[0] as Record<string, unknown>).analyze_model_id as
+						| string
+						| undefined) ?? "";
 			}
 		}
 
@@ -316,7 +323,9 @@ async function runAnalysisPipelineV2(
 			context: systemContext,
 			temperature: 0.3,
 		});
-		const textureLayer = tryParseJson<TextureLayerAnalysis>(step4Result.content);
+		const textureLayer = tryParseJson<TextureLayerAnalysis>(
+			step4Result.content,
+		);
 		emit(4, "分析血肉层", "done", {
 			texture_layer: textureLayer ?? undefined,
 		});
@@ -513,7 +522,13 @@ async function runAnalysisPipelineV2(
             (id, profile_id, cognitive_pattern, rhetorical_stance, language_aesthetic,
              calibration_anchors, task_adaptation_rules, analysis_version, created_at, updated_at)
             VALUES (?, ?, '[]', '[]', '[]', ?, '{}', 1, ?, ?)`,
-					args: [analysisId, profileId, JSON.stringify(calibrationAnchors), now, now],
+					args: [
+						analysisId,
+						profileId,
+						JSON.stringify(calibrationAnchors),
+						now,
+						now,
+					],
 				});
 			}
 		}

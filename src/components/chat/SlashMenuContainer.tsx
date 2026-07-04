@@ -85,7 +85,7 @@ function CategoryPills({
 	itemCount,
 }: CategoryPillsProps) {
 	return (
-		<div className="flex items-center gap-1 px-2 py-2 border-b border-[#f0f0f0] dark:border-[#333] overflow-x-auto scrollbar-hide">
+		<div className="flex items-center gap-1 px-2 py-2 border-b border-border overflow-x-auto scrollbar-hide">
 			{slashCategories.map((cat) => {
 				const isActive = cat.id === selectedId;
 				return (
@@ -97,12 +97,12 @@ function CategoryPills({
 							${
 								isActive
 									? `${cat.gradient} shadow-[0_1px_2px_rgba(0,0,0,0.04)]`
-									: "text-[#888] dark:text-[#888] hover:bg-[#f3f3f3] dark:hover:bg-[#363636]"
+									: "text-text-muted hover:bg-warm-200"
 							}`}
 					>
 						<cat.icon
 							className={`w-3.5 h-3.5 transition-colors duration-[120ms] ${
-								isActive ? "" : "text-[#aaa] dark:text-[#666]"
+								isActive ? "" : "text-text-light"
 							}`}
 						/>
 						<span>{cat.name}</span>
@@ -699,7 +699,7 @@ export function SlashMenuContainer({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+				className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 			>
 				<CommandSubmenuView
 					definition={level.command}
@@ -717,7 +717,7 @@ export function SlashMenuContainer({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+				className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 			>
 				<CategoryPills
 					selectedId="command"
@@ -728,7 +728,7 @@ export function SlashMenuContainer({
 				<div className="max-h-[320px] overflow-y-auto">
 					{commandsCategoryDisabled ? (
 						<div className="px-4 py-8 text-center">
-							<p className="text-[13px] text-[#999] dark:text-[#666]">
+							<p className="text-[13px] text-text-muted">
 								命令类别已在设置中关闭。
 							</p>
 						</div>
@@ -742,8 +742,8 @@ export function SlashMenuContainer({
 					)}
 				</div>
 
-				<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
-					<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+				<div className="px-4 py-1.5 border-t border-border">
+					<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
 						<span className="flex items-center gap-1">
 							<span className="font-mono text-[9px]">↑↓</span>
 							<span>导航</span>
@@ -766,7 +766,7 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface dark:bg-[#2b2b2b] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
 			<CategoryPills
 				selectedId={selectedCategory ?? "command"}
@@ -782,13 +782,13 @@ export function SlashMenuContainer({
 						onOpenPromptLibrary();
 						onClose();
 					}}
-					className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-[#f0f0f0] dark:border-[#333] hover:bg-[#f8f8f8] dark:hover:bg-[#333] transition-colors duration-100 cursor-pointer select-none group"
+					className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-border hover:bg-warm-100 transition-colors duration-100 cursor-pointer select-none group"
 				>
-					<div className="w-6 h-6 rounded-md bg-[#f3f3f3] dark:bg-[#363636] flex items-center justify-center group-hover:bg-[#eee] dark:group-hover:bg-[#404040] transition-colors duration-100">
-						<Plus className="w-3.5 h-3.5 text-[#999] group-hover:text-[#666]" />
+					<div className="w-6 h-6 rounded-md bg-warm-200 flex items-center justify-center group-hover:bg-warm-300 transition-colors duration-100">
+						<Plus className="w-3.5 h-3.5 text-text-muted group-hover:text-text-secondary" />
 					</div>
 					<div>
-						<span className="text-[12px] font-medium text-[#666] dark:text-[#999] group-hover:text-[#333] dark:group-hover:text-[#ddd]">
+						<span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">
 							添加提示词
 						</span>
 					</div>
@@ -798,7 +798,7 @@ export function SlashMenuContainer({
 			<div className="max-h-[300px] overflow-y-auto">
 				{filteredGroups.length === 0 && totalCommands === 0 ? (
 					<div className="px-4 py-8 text-center">
-						<p className="text-[13px] text-[#999] dark:text-[#666]">
+						<p className="text-[13px] text-text-muted">
 							{selectedCategory === "prompt"
 								? "暂无自定义提示词"
 								: "暂无可用命令"}
@@ -827,8 +827,8 @@ export function SlashMenuContainer({
 				)}
 			</div>
 
-			<div className="px-4 py-1.5 border-t border-[#f0f0f0] dark:border-[#333]">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-[#ccc] dark:text-[#555]">
+			<div className="px-4 py-1.5 border-t border-border">
+				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">⌫</span>
 						<span>返回</span>
@@ -873,23 +873,23 @@ function GroupSection({
 					role="button"
 					tabIndex={-1}
 					onClick={onToggle}
-					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-[#fafafa] dark:hover:bg-[#333]/60 transition-colors duration-100 cursor-pointer select-none"
+					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-warm-100 transition-colors duration-100 cursor-pointer select-none"
 				>
 					<ChevronRight
-						className={`w-3 h-3 text-[#ccc] dark:text-[#555] transition-transform duration-150 ${
+						className={`w-3 h-3 text-text-light transition-transform duration-150 ${
 							isCollapsed ? "" : "rotate-90"
 						}`}
 					/>
-					<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
+					<span className="text-[11px] font-medium text-text-light">
 						{group.name}
 					</span>
-					<span className="text-[10px] text-[#ccc] dark:text-[#555]">
+					<span className="text-[10px] text-text-light">
 						{filteredCommands.length}
 					</span>
 				</div>
 			) : (
 				<div className="px-4 py-1.5">
-					<span className="text-[11px] font-medium text-[#aaa] dark:text-[#666]">
+					<span className="text-[11px] font-medium text-text-light">
 						{group.name}
 					</span>
 				</div>
@@ -909,19 +909,19 @@ function GroupSection({
 								onMouseEnter={() => onHoverCommand(command.id)}
 								className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left cursor-pointer select-none
                   transition-all duration-[120ms] ease-out
-                  ${isSelected ? "bg-[#f3f3f3] dark:bg-[#363636]" : ""}`}
+                  ${isSelected ? "bg-warm-200" : ""}`}
 							>
 								<div
 									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
                     ${
 											isSelected
-												? "bg-surface dark:bg-[#404040] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-												: "bg-[#f5f5f5] dark:bg-[#363636]"
+												? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+												: "bg-warm-200"
 										}`}
 								>
 									<command.icon
 										className={`w-3.5 h-3.5 transition-colors duration-[120ms]
-                      ${isSelected ? "text-[#555] dark:text-[#ccc]" : "text-[#999] dark:text-[#666]"}`}
+                      ${isSelected ? "text-text-secondary" : "text-text-muted"}`}
 									/>
 								</div>
 
@@ -929,20 +929,18 @@ function GroupSection({
 									<div
 										className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
                       ${
-												isSelected
-													? "text-[#1a1a1a] dark:text-[#eee]"
-													: "text-[#666] dark:text-[#999]"
+												isSelected ? "text-text-primary" : "text-text-secondary"
 											}`}
 									>
 										{command.name}
 									</div>
-									<div className="text-[11px] truncate text-[#bbb] dark:text-[#555]">
+									<div className="text-[11px] truncate text-text-light">
 										{command.description}
 									</div>
 								</div>
 
 								{isSelected && (
-									<span className="text-[10px] font-mono text-[#ccc] dark:text-[#555] flex-shrink-0">
+									<span className="text-[10px] font-mono text-text-light flex-shrink-0">
 										↵
 									</span>
 								)}

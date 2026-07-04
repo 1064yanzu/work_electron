@@ -130,32 +130,32 @@ function PromptCard({
 					className={`flex items-center gap-1 transition-all duration-200 ${isHovered || isSelected ? "opacity-100" : "opacity-0"}`}
 				>
 					<Tooltip content="复制">
-					<button
-						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
-					>
-						{hasCopied ? (
-							<Check className="w-5 h-5 text-green-500" />
-						) : (
-							<Copy className="w-5 h-5" />
-						)}
-					</button>
+						<button
+							onClick={handleCopy}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+						>
+							{hasCopied ? (
+								<Check className="w-5 h-5 text-green-500" />
+							) : (
+								<Copy className="w-5 h-5" />
+							)}
+						</button>
 					</Tooltip>
 					<Tooltip content="编辑">
-					<button
-						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
-					>
-						<Edit3 className="w-5 h-5" />
-					</button>
+						<button
+							onClick={onEdit}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+						>
+							<Edit3 className="w-5 h-5" />
+						</button>
 					</Tooltip>
 					<Tooltip content="删除">
-					<button
-						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
-					>
-						<Trash2 className="w-5 h-5" />
-					</button>
+						<button
+							onClick={onDelete}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						>
+							<Trash2 className="w-5 h-5" />
+						</button>
 					</Tooltip>
 				</div>
 			</div>
@@ -194,32 +194,32 @@ function PromptCard({
 					className={`flex gap-0.5 transition-all duration-200 ${isHovered || isSelected ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}`}
 				>
 					<Tooltip content="复制">
-					<button
-						onClick={handleCopy}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
-					>
-						{hasCopied ? (
-							<Check className="w-5 h-5 text-green-500" />
-						) : (
-							<Copy className="w-5 h-5" />
-						)}
-					</button>
+						<button
+							onClick={handleCopy}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+						>
+							{hasCopied ? (
+								<Check className="w-5 h-5 text-green-500" />
+							) : (
+								<Copy className="w-5 h-5" />
+							)}
+						</button>
 					</Tooltip>
 					<Tooltip content="编辑">
-					<button
-						onClick={onEdit}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
-					>
-						<Edit3 className="w-5 h-5" />
-					</button>
+						<button
+							onClick={onEdit}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+						>
+							<Edit3 className="w-5 h-5" />
+						</button>
 					</Tooltip>
 					<Tooltip content="删除">
-					<button
-						onClick={onDelete}
-						className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
-					>
-						<Trash2 className="w-5 h-5" />
-					</button>
+						<button
+							onClick={onDelete}
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+						>
+							<Trash2 className="w-5 h-5" />
+						</button>
 					</Tooltip>
 				</div>
 			</div>
@@ -679,20 +679,20 @@ export function PromptLibraryModal({
 
 						<div className="flex items-center gap-0.5 bg-cream-100/60 dark:bg-cream-800/60 p-1 rounded-full border border-cream-300/60 dark:border-cream-500/60">
 							<Tooltip content="网格视图">
-							<button
-								onClick={() => setViewMode("grid")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
-							>
-								<LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
-							</button>
+								<button
+									onClick={() => setViewMode("grid")}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+								>
+									<LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
+								</button>
 							</Tooltip>
 							<Tooltip content="列表视图">
-							<button
-								onClick={() => setViewMode("list")}
-								className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
-							>
-								<LayoutList className="w-4 h-4" strokeWidth={1.5} />
-							</button>
+								<button
+									onClick={() => setViewMode("list")}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+								>
+									<LayoutList className="w-4 h-4" strokeWidth={1.5} />
+								</button>
 							</Tooltip>
 						</div>
 
@@ -707,28 +707,28 @@ export function PromptLibraryModal({
 								onChange={handleImport}
 							/>
 							<Tooltip content="导入">
-							<button
-								onClick={() => fileInputRef.current?.click()}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
-							>
-								<Upload className="w-4.5 h-4.5" strokeWidth={1.5} />
-							</button>
+								<button
+									onClick={() => fileInputRef.current?.click()}
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+								>
+									<Upload className="w-4.5 h-4.5" strokeWidth={1.5} />
+								</button>
 							</Tooltip>
 							<Tooltip content="导出">
-							<button
-								onClick={handleExport}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
-							>
-								<Download className="w-4.5 h-4.5" strokeWidth={1.5} />
-							</button>
+								<button
+									onClick={handleExport}
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+								>
+									<Download className="w-4.5 h-4.5" strokeWidth={1.5} />
+								</button>
 							</Tooltip>
 							<Tooltip content="关闭">
-							<button
-								onClick={onClose}
-								className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
-							>
-								<X className="w-4.5 h-4.5" strokeWidth={1.5} />
-							</button>
+								<button
+									onClick={onClose}
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+								>
+									<X className="w-4.5 h-4.5" strokeWidth={1.5} />
+								</button>
 							</Tooltip>
 						</div>
 					</div>
@@ -803,7 +803,7 @@ export function PromptLibraryModal({
 
 					{/* Editor Overlay */}
 					{isEditing && (
-						<div className="absolute inset-0 z-20 bg-surface dark:bg-[#121212] flex flex-col animate-in slide-in-from-bottom-[5%] duration-300">
+						<div className="absolute inset-0 z-20 bg-surface dark:bg-background flex flex-col animate-in slide-in-from-bottom-[5%] duration-300">
 							<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 								<div className="flex items-center gap-4">
 									<button

@@ -5,7 +5,14 @@
 //   - 通过 memo 化的子组件（CopilotInputArea / CopilotStatusBar）隔离重渲染
 
 import { Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { type DragItem, useMouseDropZone } from "../hooks/useMouseDrag";
 import {
 	askUserQuestionStore,
@@ -25,6 +32,7 @@ import { getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { managedModeStore } from "../lib/managedModeStore";
 import { settingsStore, useSettingsStoreSelector } from "../lib/settingsStore";
+import { useRegisterShortcuts } from "../lib/shortcuts";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -163,16 +171,36 @@ export default function CopilotSidebar() {
 		handleEditUserMessage,
 		handleDeleteMessage,
 		stop,
-	} =
-		useCopilotMessage({
-			chatStore,
-			activeModel,
-			chatSettings,
-			chatMode,
-			enabledModels,
-			debugLog,
-			debugWarn,
-		});
+	} = useCopilotMessage({
+		chatStore,
+		activeModel,
+		chatSettings,
+		chatMode,
+		enabledModels,
+		debugLog,
+		debugWarn,
+	});
+
+	// ⌘. 停止响应 — 仅在流式/Agent 执行中生效；输入框聚焦时也可触发
+	const canStopRef = useRef(false);
+	canStopRef.current =
+		chatStore.status === "streaming" || isAgentExecuting || isWaitingForLLM;
+	useRegisterShortcuts(
+		() => [
+			{
+				id: "chat.stop-response",
+				keys: "mod+.",
+				label: "停止响应",
+				description: "中止正在进行的回复或 Agent 执行",
+				group: "对话",
+				scope: "chat",
+				allowInInput: true,
+				when: () => canStopRef.current,
+				handler: () => stop(),
+			},
+		],
+		[stop],
+	);
 
 	// === 滚动管理 ===
 	const {

@@ -12,8 +12,8 @@ const LEVEL_STYLES: Record<string, { text: string; badge: string }> = {
 		badge: "bg-peach-500/10 text-peach-500",
 	},
 	error: {
-		text: "text-[#b53333]",
-		badge: "bg-[#b53333]/[0.08] text-[#b53333]",
+		text: "text-error",
+		badge: "bg-error/8 text-error",
 	},
 };
 

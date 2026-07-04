@@ -70,10 +70,10 @@ function SuggestionButton({
 	const colorClasses: Record<RecoverySuggestion["action"], string> = {
 		retry: "bg-focus hover:bg-focus text-white",
 		skip: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary",
-		alternative: "bg-[#8b7fd9] hover:bg-[#7a6dc7] text-white",
+		alternative: "bg-violetx-500 hover:bg-violetx-600 text-white",
 		manual: "bg-peach-500 hover:bg-peach-500 text-white",
 		abort:
-			"bg-[rgba(181,51,51,0.16)] hover:bg-[rgba(181,51,51,0.24)] dark:bg-red-900/30 dark:hover:bg-red-900/50 text-error dark:text-error",
+			"bg-error/16 hover:bg-error/25 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-error dark:text-error",
 	};
 
 	return (
@@ -124,7 +124,7 @@ function ErrorDetails({
 						"p-2 rounded-lg",
 						strategy.category === "unknown"
 							? "bg-warm-200"
-							: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
+							: "bg-error/8 dark:bg-red-900/20",
 					)}
 				>
 					<Icon className={cn("w-5 h-5", config.color)} />
@@ -234,7 +234,7 @@ export default function ErrorRecovery({
 	return (
 		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-red-200 dark:ring-red-800/50 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
 			{/* 警告条 */}
-			<div className="px-4 py-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 flex items-center gap-2">
+			<div className="px-4 py-2 bg-error/8 dark:bg-red-900/20 flex items-center gap-2">
 				<AlertTriangle className="w-4 h-4 text-error" />
 				<span className="text-sm font-medium text-error dark:text-error">
 					任务执行遇到问题
@@ -284,7 +284,7 @@ export function ErrorRecoveryInline({
 	const Icon = getCategoryIcon(config.icon);
 
 	return (
-		<div className="p-3 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-lg space-y-3">
+		<div className="p-3 bg-error/8 dark:bg-red-900/20 rounded-lg space-y-3">
 			<div className="flex items-center gap-2">
 				<Icon className={cn("w-4 h-4", config.color)} />
 				<span className="text-sm font-medium text-error dark:text-error">

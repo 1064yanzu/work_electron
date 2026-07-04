@@ -24,7 +24,11 @@ const LAYER_LABELS = [
 	{ key: "thinking", label: "思维运作", desc: "这个脑子怎么动" },
 	{ key: "articulation", label: "篇章外化", desc: "思维如何落到篇章上" },
 	{ key: "texture", label: "血肉层", desc: "语言质感与指纹" },
-	{ key: "relational", label: "关系性维度", desc: "气韵 / 全息 / 经变 + 横切话题" },
+	{
+		key: "relational",
+		label: "关系性维度",
+		desc: "气韵 / 全息 / 经变 + 横切话题",
+	},
 ] as const;
 
 const INTENSITY_OPTIONS: { value: StyleIntensity; label: string }[] = [

@@ -4041,7 +4041,7 @@ export interface StyleFeedback {
 /** 分析进度推送事件（通过 style-analysis-progress 通道） */
 export interface StyleAnalysisProgressEvent {
 	profile_id: string;
-	step: number;        // 1-4
+	step: number; // 1-4
 	total_steps: number; // 4
 	step_name: string;
 	status: "running" | "done" | "error";

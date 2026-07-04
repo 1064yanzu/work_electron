@@ -54,57 +54,57 @@ export function DataDangerSettings() {
 				description="这里的操作不可撤销。执行前请先用 WebDAV / 本地备份导出你的数据。"
 			/>
 
-				<SettingsHint
-					tone="error"
-					icon={ShieldAlert}
-					title="清空全部数据将移除以下内容"
-				>
-					<ul className="mt-1 space-y-1 text-[11.5px] leading-relaxed">
-						<li>• 所有资料、笔记与同步配置</li>
-						<li>• 所有工作流与输出文稿</li>
-						<li>• 所有模型服务商配置</li>
-						<li>• 应用内的个性化设置（主题、桌宠、偏好等）</li>
-					</ul>
-				</SettingsHint>
+			<SettingsHint
+				tone="error"
+				icon={ShieldAlert}
+				title="清空全部数据将移除以下内容"
+			>
+				<ul className="mt-1 space-y-1 text-[11.5px] leading-relaxed">
+					<li>• 所有资料、笔记与同步配置</li>
+					<li>• 所有工作流与输出文稿</li>
+					<li>• 所有模型服务商配置</li>
+					<li>• 应用内的个性化设置（主题、桌宠、偏好等）</li>
+				</ul>
+			</SettingsHint>
 
-				<SettingsSectionCard className="ring-1 ring-[rgba(181,51,51,0.2)]">
-					<div
-						className="p-5 space-y-4"
-						id="data.danger.clear_all"
-						data-settings-anchor="data.danger.clear_all"
-					>
-						<SettingsSectionTitle className="text-error">
-							清空全部数据
-						</SettingsSectionTitle>
-						<p className="text-[12.5px] leading-relaxed text-text-muted">
-							请输入
-							<span className="mx-1 font-mono font-semibold text-error">
-								{CONFIRM_PHRASE}
-							</span>
-							以确认执行。操作无法撤销，执行后页面会自动刷新。
-						</p>
-						<SettingsTextInput
-							value={confirmPhrase}
-							onChange={setConfirmPhrase}
-							placeholder={CONFIRM_PHRASE}
-							disabled={isClearing}
-							autoComplete="off"
-							aria-label="确认短语"
-						/>
-						<div className="flex justify-end">
-							<SettingsButton
-								variant="danger-solid"
-								icon={Trash2}
-								loading={isClearing}
-								disabled={!phraseOk || isClearing}
-								onClick={() => void handleClear()}
-							>
-								{isClearing ? "重置中…" : "确认重置全部数据"}
-							</SettingsButton>
-						</div>
+			<SettingsSectionCard className="ring-1 ring-[rgba(181,51,51,0.2)]">
+				<div
+					className="p-5 space-y-4"
+					id="data.danger.clear_all"
+					data-settings-anchor="data.danger.clear_all"
+				>
+					<SettingsSectionTitle className="text-error">
+						清空全部数据
+					</SettingsSectionTitle>
+					<p className="text-[12.5px] leading-relaxed text-text-muted">
+						请输入
+						<span className="mx-1 font-mono font-semibold text-error">
+							{CONFIRM_PHRASE}
+						</span>
+						以确认执行。操作无法撤销，执行后页面会自动刷新。
+					</p>
+					<SettingsTextInput
+						value={confirmPhrase}
+						onChange={setConfirmPhrase}
+						placeholder={CONFIRM_PHRASE}
+						disabled={isClearing}
+						autoComplete="off"
+						aria-label="确认短语"
+					/>
+					<div className="flex justify-end">
+						<SettingsButton
+							variant="danger-solid"
+							icon={Trash2}
+							loading={isClearing}
+							disabled={!phraseOk || isClearing}
+							onClick={() => void handleClear()}
+						>
+							{isClearing ? "重置中…" : "确认重置全部数据"}
+						</SettingsButton>
 					</div>
-				</SettingsSectionCard>
-			</SettingsPageContainer>
+				</div>
+			</SettingsSectionCard>
+		</SettingsPageContainer>
 	);
 }
 

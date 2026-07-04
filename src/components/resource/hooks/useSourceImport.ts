@@ -16,7 +16,10 @@ interface UseSourceImportOptions {
 	enabled?: boolean;
 }
 
-export function useSourceImport({ fetchSources, enabled = true }: UseSourceImportOptions) {
+export function useSourceImport({
+	fetchSources,
+	enabled = true,
+}: UseSourceImportOptions) {
 	const importSupportedExts = useMemo(
 		() =>
 			new Set([

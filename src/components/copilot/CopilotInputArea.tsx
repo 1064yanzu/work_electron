@@ -92,9 +92,7 @@ function CopilotInputAreaImpl({
 				const successCount = await appendFilesToContext(files);
 				if (successCount > 0) {
 					toast.success(
-						successCount === 1
-							? "已添加附件"
-							: `已添加 ${successCount} 个附件`,
+						successCount === 1 ? "已添加附件" : `已添加 ${successCount} 个附件`,
 					);
 				} else {
 					toast.error("添加附件失败");

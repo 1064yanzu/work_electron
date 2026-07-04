@@ -83,15 +83,15 @@ export function PetProgressBubble({
 				</div>
 
 				{/* 第二行：当前步骤名 */}
-			{stepLabel && (
-				<div
-					key={stepLabel}
-					className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1 animate-pet-content-row"
-					style={{ animationDelay: "60ms" }}
-				>
-					{stepLabel}
-				</div>
-			)}
+				{stepLabel && (
+					<div
+						key={stepLabel}
+						className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1 animate-pet-content-row"
+						style={{ animationDelay: "60ms" }}
+					>
+						{stepLabel}
+					</div>
+				)}
 
 				{/* 第三行：进度条 */}
 				<div

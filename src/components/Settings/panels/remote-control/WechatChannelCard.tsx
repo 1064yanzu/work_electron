@@ -141,17 +141,15 @@ export function WechatChannelCard({
 				</div>
 
 				{/* 风险提示 */}
-				<div className="space-y-3 rounded-xl border border-[#b53333]/30 bg-[#b53333]/[0.06] p-4">
+				<div className="space-y-3 rounded-xl border border-error/30 bg-error/[0.06] p-4">
 					<div className="flex items-start gap-2.5">
 						<AlertTriangle
-							className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#b53333]"
+							className="mt-0.5 h-4 w-4 flex-shrink-0 text-error"
 							strokeWidth={1.5}
 						/>
 						<div className="space-y-1.5 text-sm">
-							<div className="font-medium text-[#b53333]">
-								使用前请了解以下风险
-							</div>
-							<ul className="list-disc space-y-0.5 pl-4 text-xs leading-relaxed text-[#b53333]/85">
+							<div className="font-medium text-error">使用前请了解以下风险</div>
+							<ul className="list-disc space-y-0.5 pl-4 text-xs leading-relaxed text-error/85">
 								<li>微信无官方 Bot API，所有方案都是机器人伪装成客户端</li>
 								<li>
 									新注册账号 / 频繁发消息 / 大群广播 均可能触发封号或功能限制
@@ -170,14 +168,14 @@ export function WechatChannelCard({
 								href="https://wechaty.js.org/"
 								target="_blank"
 								rel="noreferrer"
-								className="inline-flex items-center gap-1 text-xs font-medium text-[#b53333] underline-offset-2 hover:underline"
+								className="inline-flex items-center gap-1 text-xs font-medium text-error underline-offset-2 hover:underline"
 							>
 								了解 Wechaty 文档
 								<ExternalLink className="h-3 w-3" />
 							</a>
 						</div>
 					</div>
-					<label className="flex items-start gap-2 rounded-lg border border-[#b53333]/30 bg-surface/70 px-3 py-2 text-xs text-[#b53333]">
+					<label className="flex items-start gap-2 rounded-lg border border-error/30 bg-surface/70 px-3 py-2 text-xs text-error">
 						<input
 							type="checkbox"
 							checked={channelConfig.acknowledgedRisk}
@@ -193,7 +191,7 @@ export function WechatChannelCard({
 								});
 							}}
 							disabled={saving}
-							className="mt-0.5 h-3.5 w-3.5 rounded border-[#b53333]/40"
+							className="mt-0.5 h-3.5 w-3.5 rounded border-error/40"
 						/>
 						<span>
 							我已了解上述风险；启用本渠道造成的账号限制或封禁由我自行承担。
@@ -435,9 +433,7 @@ export function WechatChannelCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-[#b53333]">
-								{runtimeChannel.last_error}
-							</span>
+							<span className="text-error">{runtimeChannel.last_error}</span>
 						</>
 					) : null}
 					<div className="ml-auto">

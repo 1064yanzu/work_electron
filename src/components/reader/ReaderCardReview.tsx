@@ -188,10 +188,10 @@ export function ReaderCardReview({
 								onClick={() => handleQuality(0)}
 								disabled={submitting}
 							>
-							<span className="reader-card-quality-btn__label">
-								{QUALITY_LABELS[0]}
-							</span>
-							<span className="reader-card-quality-btn__hint">10 分钟后</span>
+								<span className="reader-card-quality-btn__label">
+									{QUALITY_LABELS[0]}
+								</span>
+								<span className="reader-card-quality-btn__hint">10 分钟后</span>
 							</button>
 						</Tooltip>
 						<Tooltip content="快捷键 2" placement="top">
@@ -201,10 +201,10 @@ export function ReaderCardReview({
 								onClick={() => handleQuality(1)}
 								disabled={submitting}
 							>
-							<span className="reader-card-quality-btn__label">
-								{QUALITY_LABELS[1]}
-							</span>
-							<span className="reader-card-quality-btn__hint">明天</span>
+								<span className="reader-card-quality-btn__label">
+									{QUALITY_LABELS[1]}
+								</span>
+								<span className="reader-card-quality-btn__hint">明天</span>
 							</button>
 						</Tooltip>
 						<Tooltip content="快捷键 3" placement="top">
@@ -214,12 +214,12 @@ export function ReaderCardReview({
 								onClick={() => handleQuality(2)}
 								disabled={submitting}
 							>
-							<span className="reader-card-quality-btn__label">
-								{QUALITY_LABELS[2]}
-							</span>
-							<span className="reader-card-quality-btn__hint">
+								<span className="reader-card-quality-btn__label">
+									{QUALITY_LABELS[2]}
+								</span>
+								<span className="reader-card-quality-btn__hint">
 									{nextIntervalLabel(card)}
-							</span>
+								</span>
 							</button>
 						</Tooltip>
 					</div>

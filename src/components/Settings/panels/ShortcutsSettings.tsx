@@ -1,10 +1,19 @@
 // 键盘快捷键设置面板
 //
-// 当前阶段：只读展示已注册的快捷键，让用户可见。
-// 下一阶段（未实现）：允许重映射 — 需要把硬编码的 keydown listener 改为 keymap store 驱动。
+// 数据来自 src/lib/shortcuts 注册中心（单一事实源），注册什么就展示什么；
+// scoped 快捷键（沙盒/对话）随对应视图挂载注册，列表会实时反映当前生效项。
+// 用户自定义重映射：registry 数据结构已预留，待后续版本开放。
 
-import { Command, Keyboard } from "lucide-react";
+import { Command, Keyboard, SquareSlash } from "lucide-react";
+import { useMemo } from "react";
 import { modKey } from "../../../lib/platform";
+import {
+	formatKeys,
+	shortcutRegistry,
+	useShortcutRegistrySelector,
+	type RegisteredShortcut,
+	type ShortcutGroup,
+} from "../../../lib/shortcuts";
 import {
 	SettingsPageContainer,
 	SettingsSectionCard,
@@ -12,110 +21,81 @@ import {
 	SettingsHeader,
 } from "../ui/SettingsPrimitives";
 
-interface ShortcutEntry {
-	keys: string[]; // 显示给用户的 kbd 序列
-	label: string;
-	description: string;
-}
-
-interface ShortcutGroup {
-	title: string;
-	entries: ShortcutEntry[];
-}
-
-const Mod = modKey;
-
-const SHORTCUT_GROUPS: ShortcutGroup[] = [
-	{
-		title: "全局",
-		entries: [
-			{
-				keys: [Mod, "K"],
-				label: "打开命令面板",
-				description: "搜索项目、设置、主题、命令",
-			},
-			{
-				keys: [Mod, "L"],
-				label: "切换 Copilot 侧边栏",
-				description: "显示或隐藏右侧 AI 对话栏",
-			},
-		],
-	},
-	{
-		title: "命令面板内",
-		entries: [
-			{
-				keys: ["↑", "↓"],
-				label: "选择候选",
-				description: "在搜索结果间上下移动",
-			},
-			{ keys: ["Enter"], label: "执行", description: "运行当前选中的命令" },
-			{ keys: ["Esc"], label: "关闭", description: "关闭命令面板" },
-		],
-	},
-	{
-		title: "对话框 / Modal",
-		entries: [
-			{ keys: ["Esc"], label: "关闭", description: "关闭当前对话框 / Modal" },
-			{ keys: ["Tab"], label: "切换焦点", description: "在表单元素间循环" },
-			{
-				keys: ["Shift", "Tab"],
-				label: "反向切换焦点",
-				description: "反向遍历表单元素",
-			},
-		],
-	},
+const GROUP_ORDER: ShortcutGroup[] = [
+	"全局",
+	"工作区",
+	"对话",
+	"沙盒",
+	"面板与对话框",
 ];
 
+function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
+	const keys = entry.keysDisplay ?? formatKeys(entry.keys);
+	return (
+		<div className="flex items-center justify-between gap-4 py-2.5 border-b border-border last:border-0">
+			<div className="min-w-0 flex-1">
+				<div className="text-[13px] font-medium text-text-primary">
+					{entry.label}
+				</div>
+				{entry.description ? (
+					<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						{entry.description}
+					</div>
+				) : null}
+			</div>
+			<div className="flex items-center gap-1 shrink-0">
+				{keys.map((key, idx) => (
+					<span key={`${entry.id}-${idx}`} className="flex items-center gap-1">
+						<kbd className="px-2 py-1 rounded-md text-[11px] font-medium text-text-secondary bg-warm-200 border border-border">
+							{key}
+						</kbd>
+						{idx < keys.length - 1 && (
+							<span className="text-text-muted text-[10px]">+</span>
+						)}
+					</span>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export function ShortcutsSettings() {
+	const entries = useShortcutRegistrySelector((s) => s.entries);
+
+	const groups = useMemo(() => {
+		const byId = new Map<string, RegisteredShortcut>();
+		for (const entry of entries) byId.set(entry.id, entry);
+		const grouped = new Map<ShortcutGroup, RegisteredShortcut[]>();
+		for (const entry of byId.values()) {
+			const list = grouped.get(entry.group) ?? [];
+			list.push(entry);
+			grouped.set(entry.group, list);
+		}
+		return GROUP_ORDER.filter((g) => grouped.has(g)).map((g) => ({
+			title: g,
+			items: grouped.get(g) as RegisteredShortcut[],
+		}));
+	}, [entries]);
+
 	return (
 		<SettingsPageContainer>
 			<div>
 				<SettingsSectionTitle>键盘快捷键</SettingsSectionTitle>
 				<SettingsSectionCard>
 					<SettingsHeader
-						title="已注册的快捷键"
-						description="目前快捷键固定，未来版本将支持自定义"
+						title="当前生效的快捷键"
+						description="沙盒 / 对话等场景快捷键随对应视图出现；自定义键位将在后续版本开放"
 					/>
 					<div className="px-5 py-4 space-y-6">
-						{SHORTCUT_GROUPS.map((group) => (
+						{groups.map((group) => (
 							<div key={group.title}>
 								<h4 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-text-muted mb-3 flex items-center gap-1.5">
 									<Keyboard className="w-3 h-3" strokeWidth={1.5} />
 									{group.title}
 								</h4>
 								<div className="space-y-2">
-									{group.entries.map((entry) => (
-										<div
-											key={entry.label}
-											className="flex items-center justify-between gap-4 py-2.5 border-b border-border last:border-0"
-										>
-											<div className="min-w-0 flex-1">
-												<div className="text-[13px] font-medium text-text-primary">
-													{entry.label}
-												</div>
-												<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
-													{entry.description}
-												</div>
-											</div>
-											<div className="flex items-center gap-1 shrink-0">
-												{entry.keys.map((key, idx) => (
-													<span
-														key={`${key}-${idx}`}
-														className="flex items-center gap-1"
-													>
-														<kbd className="px-2 py-1 rounded-md text-[11px] font-medium text-text-secondary bg-warm-200 border border-border">
-															{key}
-														</kbd>
-														{idx < entry.keys.length - 1 && (
-															<span className="text-text-muted text-[10px]">
-																+
-															</span>
-														)}
-													</span>
-												))}
-											</div>
-										</div>
+									{group.items.map((entry) => (
+										<ShortcutRow key={entry.id} entry={entry} />
 									))}
 								</div>
 							</div>
@@ -133,14 +113,23 @@ export function ShortcutsSettings() {
 						</div>
 						<div className="text-[13px] text-text-secondary leading-relaxed">
 							<p>
-								命令面板（{Mod}+K）是访问绝大多数功能的最快方式 ——
+								命令面板（{modKey}+K）是访问绝大多数功能的最快方式 ——
 								新建项目、切换主题、跳转到任意设置 tab、唤起终端等都能直接搜索。
 							</p>
 							<p className="mt-2 text-text-muted text-[12px]">
-								键盘自定义功能将在后续版本中开放。如有快捷键冲突或建议，请通过设置
-								→ 反馈提交。
+								在任意界面按 {modKey}+/ 可随时唤起快捷键速查表。
 							</p>
 						</div>
+					</div>
+					<div className="px-5 pb-4">
+						<button
+							type="button"
+							onClick={() => shortcutRegistry.openCheatSheet()}
+							className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12.5px] font-medium text-text-primary bg-warm-200 border border-border hover:bg-warm-300 transition-colors active:scale-[0.98]"
+						>
+							<SquareSlash className="w-3.5 h-3.5" strokeWidth={1.5} />
+							打开速查表（{modKey}+/）
+						</button>
 					</div>
 				</SettingsSectionCard>
 			</div>

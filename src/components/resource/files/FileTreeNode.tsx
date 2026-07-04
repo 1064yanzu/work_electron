@@ -62,7 +62,7 @@ export function FileTreeNode({
 				</span>
 				<span className="mr-2 shrink-0 text-text-light">
 					{entry.isDir ? (
-						<Folder className="w-4 h-4 text-[#D96C46]/80" />
+						<Folder className="w-4 h-4 text-terracotta/80" />
 					) : (
 						<File className="w-4 h-4 text-text-light" />
 					)}
@@ -106,9 +106,9 @@ export function FileTreeNode({
 			<span className="mr-2 shrink-0 text-text-light group-hover:text-text-muted">
 				{entry.isDir ? (
 					isExpanded ? (
-						<FolderOpen className="w-4 h-4 text-[#D96C46]/80" />
+						<FolderOpen className="w-4 h-4 text-terracotta/80" />
 					) : (
-						<Folder className="w-4 h-4 text-[#D96C46]/80" />
+						<Folder className="w-4 h-4 text-terracotta/80" />
 					)
 				) : (
 					<File className="w-4 h-4 text-text-light" />
@@ -151,7 +151,7 @@ export function InlineCreateRow({
 			<span className="w-4 h-4 mr-1 shrink-0" />
 			<span className="mr-2 shrink-0 text-text-light">
 				{type === "folder" ? (
-					<Folder className="w-4 h-4 text-[#D96C46]/80" />
+					<Folder className="w-4 h-4 text-terracotta/80" />
 				) : (
 					<File className="w-4 h-4 text-text-light" />
 				)}

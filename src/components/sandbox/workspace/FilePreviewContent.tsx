@@ -329,13 +329,13 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 								<div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cream-200 to-cream-300 dark:from-cream-700 dark:to-cream-800 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_8px_rgba(26,26,25,0.04)]" />
 								<div className="absolute inset-0 flex items-center justify-center">
 									<Package
-										className="w-7 h-7 text-[#D96C46]"
+										className="w-7 h-7 text-terracotta"
 										strokeWidth={1.5}
 									/>
 								</div>
 								{/* 呼吸光环 */}
-								<div className="absolute -inset-1.5 rounded-full border border-[#D96C46]/30 animate-pulse-slow" />
-								<div className="absolute -inset-3 rounded-full border border-[#D96C46]/15 animate-pulse-slow" />
+								<div className="absolute -inset-1.5 rounded-full border border-terracotta/30 animate-pulse-slow" />
+								<div className="absolute -inset-3 rounded-full border border-terracotta/15 animate-pulse-slow" />
 							</div>
 							<h3 className="text-base font-semibold text-text-primary mb-1.5">
 								正在启动开发服务器
@@ -347,7 +347,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							</p>
 							{/* 进度条 */}
 							<div className="w-56 h-1 rounded-full bg-cream-200 dark:bg-cream-800 overflow-hidden mb-3">
-								<div className="h-full w-1/3 bg-gradient-to-r from-[#D96C46] via-[#E8A77A] to-[#D96C46] rounded-full animate-swarm-indeterminate" />
+								<div className="h-full w-1/3 bg-gradient-to-r from-terracotta via-peach-500 to-terracotta rounded-full animate-swarm-indeterminate" />
 							</div>
 							<div className="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
 								<TerminalIcon className="w-3 h-3" strokeWidth={1.5} />

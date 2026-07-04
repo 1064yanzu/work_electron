@@ -14,6 +14,8 @@ import {
 } from "react-resizable-panels";
 import { PanelShell } from "./components/layout/PanelShell";
 import ResizeHandle from "./components/layout/ResizeHandle";
+import { ViewTransition } from "./components/ui/ViewTransition";
+import { PanelErrorBoundary } from "./components/ui/PanelErrorBoundary";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
 import { Skeleton } from "./components/ui/Skeleton";
@@ -35,7 +37,11 @@ import {
 import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { layoutStore } from "./lib/stores/layoutStore";
-import { commandPaletteStore } from "./lib/stores/commandPaletteStore";
+import {
+	installGlobalShortcutListener,
+	registerDefaultShortcuts,
+} from "./lib/shortcuts";
+import { ShortcutCheatSheet } from "./components/ui/ShortcutCheatSheet";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
@@ -46,6 +52,7 @@ import { EVENTS, events } from "./lib/events";
 import { invoke } from "./lib/tauriCompat";
 import { listen } from "./lib/tauriEventCompat";
 import { shortcut } from "./lib/platform";
+import { cn } from "./lib/utils";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
@@ -121,8 +128,6 @@ export default function App() {
 	const rightSidebarVisible = useLayoutStoreSelector(
 		(state) => state.rightSidebarVisible,
 	);
-	const toggleRightSidebar =
-		workspaceStore.toggleRightSidebar.bind(workspaceStore);
 	const setRightSidebarVisible =
 		workspaceStore.setRightSidebarVisible.bind(workspaceStore);
 	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
@@ -131,6 +136,16 @@ export default function App() {
 	const rightPanelRef = useRef<ImperativePanelHandle>(null);
 	// 记录右侧 Panel 当前尺寸（用于拖动结束时判断）
 	const rightPanelSizeRef = useRef<number>(25);
+	// 拖拽状态：拖拽中禁用 flex 过渡（否则拖动有迟滞感）
+	const [isLeftHandleDragging, setIsLeftHandleDragging] = useState(false);
+	const [isRightHandleDragging, setIsRightHandleDragging] = useState(false);
+	// 吸附收起预告（拖到阈值内 handle 变签名色）
+	const [rightSnapPreview, setRightSnapPreview] = useState(false);
+	const anyHandleDragging = isLeftHandleDragging || isRightHandleDragging;
+	// 面板收起/展开的平滑过渡（拖拽中必须禁用）
+	const panelTransitionClass = anyHandleDragging
+		? ""
+		: "transition-[flex] duration-200 ease-out-expo";
 
 	// 左侧 Panel 的命令式句柄（用于响应 leftSidebarCollapsed 切换）
 	const leftPanelRef = useRef<ImperativePanelHandle>(null);
@@ -150,6 +165,18 @@ export default function App() {
 			panel.expand();
 		}
 	}, [leftSidebarCollapsed]);
+
+	// 把 rightSidebarVisible 同步给右 Panel：collapse 而非卸载，
+	// 保留 Copilot 的滚动位置与输入草稿，且收起/展开有 flex 过渡
+	useEffect(() => {
+		const panel = rightPanelRef.current;
+		if (!panel) return;
+		if (rightSidebarVisible) {
+			if (panel.isCollapsed()) panel.expand();
+		} else if (!panel.isCollapsed()) {
+			panel.collapse();
+		}
+	}, [rightSidebarVisible]);
 
 	// 初始化主题管理器
 	useEffect(() => {
@@ -220,36 +247,31 @@ export default function App() {
 		};
 	}, [motionPreference]);
 
-	// Cmd+L 切换右侧栏 / Cmd+K 命令面板 / Ctrl+` 终端
+	// 全局快捷键：唯一 keydown 分发器 + 注册中心
+	// （⌘K 命令面板 / ⌘L 右栏 / ⌘B 左栏 / ⌘` 终端 / ⌘/ 速查表，见 defaultShortcuts.ts）
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const isMod = e.metaKey || e.ctrlKey;
-			if (!isMod) return;
-			const key = e.key.toLowerCase();
-			if (key === "l") {
-				e.preventDefault();
-				toggleRightSidebar();
-			} else if (key === "k") {
-				e.preventDefault();
-				commandPaletteStore.toggle();
-			} else if (key === "`") {
-				e.preventDefault();
-				terminalStore.toggleVisible();
-			}
+		const uninstall = installGlobalShortcutListener();
+		const unregister = registerDefaultShortcuts();
+		return () => {
+			unregister();
+			uninstall();
 		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [toggleRightSidebar]);
-
-	// 处理右侧 Panel 尺寸变化（只记录尺寸，不触发隐藏）
-	const handleRightPanelResize = useCallback((size: number) => {
-		rightPanelSizeRef.current = size;
 	}, []);
 
-	// 处理右侧 ResizeHandle 拖动状态变化（拖动结束时检查是否隐藏）
+	// 处理右侧 Panel 尺寸变化：记录尺寸 + 维护吸附预告（仅跨越阈值时 setState，低频）
+	const handleRightPanelResize = useCallback((size: number) => {
+		rightPanelSizeRef.current = size;
+		setRightSnapPreview((prev) => {
+			const next = size > 0 && size < RIGHT_PANEL_COLLAPSE_THRESHOLD + 2;
+			return prev === next ? prev : next;
+		});
+	}, []);
+
+	// 处理右侧 ResizeHandle 拖动状态变化（拖动结束时检查是否吸附收起）
 	const handleRightResizeHandleDragging = useCallback(
 		(isDragging: boolean) => {
-			// 拖动结束时检查尺寸
+			setIsRightHandleDragging(isDragging);
+			// 拖动结束时检查尺寸（collapsible 面板通常已自动吸附，此处兜底同步 store）
 			if (!isDragging && rightSidebarVisible) {
 				if (rightPanelSizeRef.current < RIGHT_PANEL_COLLAPSE_THRESHOLD) {
 					setRightSidebarVisible(false);
@@ -350,24 +372,29 @@ export default function App() {
 									layoutStore.setLeftSidebarCollapsed(false);
 								}
 							}}
-							className="overflow-hidden"
+							className={cn("overflow-hidden", panelTransitionClass)}
 						>
 							<PanelShell>
-								<Suspense fallback={<PanelLoadingFallback />}>
-									<ResourceSidebar
-										onOpenSettings={() => handleOpenSettings()}
-									/>
-								</Suspense>
+								<PanelErrorBoundary label="资源栏">
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<ResourceSidebar
+											onOpenSettings={() => handleOpenSettings()}
+										/>
+									</Suspense>
+								</PanelErrorBoundary>
 							</PanelShell>
 						</Panel>
 
-						<ResizeHandle />
+						<ResizeHandle
+							onDragging={setIsLeftHandleDragging}
+							onDoubleClick={() => leftPanelRef.current?.resize(20)}
+						/>
 
 						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
 						<Panel
-							defaultSize={rightSidebarVisible ? 55 : 80}
+							defaultSize={55}
 							minSize={30}
-							className="overflow-hidden"
+							className={cn("overflow-hidden", panelTransitionClass)}
 						>
 							<PanelShell variant="center" className="relative">
 								<PanelGroup
@@ -381,19 +408,23 @@ export default function App() {
 										minSize={20}
 										className="overflow-hidden"
 									>
-										{activeMainView === "wiki-graph" ? (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<WikiGraphFullscreen />
-											</Suspense>
-										) : activeMainView === "browser" ? (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<BrowserPanel />
-											</Suspense>
-										) : (
-											<Suspense fallback={<PanelLoadingFallback />}>
-												<SandboxWorkspace />
-											</Suspense>
-										)}
+										<PanelErrorBoundary label="工作区">
+											<ViewTransition viewKey={activeMainView}>
+												{activeMainView === "wiki-graph" ? (
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<WikiGraphFullscreen />
+													</Suspense>
+												) : activeMainView === "browser" ? (
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<BrowserPanel />
+													</Suspense>
+												) : (
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<SandboxWorkspace />
+													</Suspense>
+												)}
+											</ViewTransition>
+										</PanelErrorBoundary>
 									</Panel>
 
 									{/* 终端面板 - 仅在可见时渲染 */}
@@ -416,25 +447,40 @@ export default function App() {
 							</PanelShell>
 						</Panel>
 
-						{rightSidebarVisible && (
-							<>
-								<ResizeHandle onDragging={handleRightResizeHandleDragging} />
-								<Panel
-									ref={rightPanelRef}
-									defaultSize={25}
-									minSize={5}
-									maxSize={50}
-									onResize={handleRightPanelResize}
-									className="overflow-hidden"
-								>
-									<PanelShell>
-										<Suspense fallback={<PanelLoadingFallback />}>
-											<CopilotSidebar />
-										</Suspense>
-									</PanelShell>
-								</Panel>
-							</>
-						)}
+						{/* Right Panel: Copilot — 始终挂载，collapse 而非卸载（保留滚动位置/输入草稿） */}
+						<ResizeHandle
+							onDragging={handleRightResizeHandleDragging}
+							onDoubleClick={() => rightPanelRef.current?.resize(25)}
+							willSnapCollapse={isRightHandleDragging && rightSnapPreview}
+						/>
+						<Panel
+							ref={rightPanelRef}
+							defaultSize={25}
+							minSize={12}
+							maxSize={50}
+							collapsible
+							collapsedSize={0}
+							onResize={handleRightPanelResize}
+							onCollapse={() => {
+								if (layoutStore.getState().rightSidebarVisible) {
+									setRightSidebarVisible(false);
+								}
+							}}
+							onExpand={() => {
+								if (!layoutStore.getState().rightSidebarVisible) {
+									setRightSidebarVisible(true);
+								}
+							}}
+							className={cn("overflow-hidden", panelTransitionClass)}
+						>
+							<PanelShell>
+								<PanelErrorBoundary label="AI 对话栏">
+									<Suspense fallback={<PanelLoadingFallback />}>
+										<CopilotSidebar />
+									</Suspense>
+								</PanelErrorBoundary>
+							</PanelShell>
+						</Panel>
 					</PanelGroup>
 
 					{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
@@ -478,6 +524,9 @@ export default function App() {
 				<Suspense fallback={null}>
 					<CommandPalette onOpenSettings={(tab) => handleOpenSettings(tab)} />
 				</Suspense>
+
+				{/* 快捷键速查表 — Cmd+/ 唤起，数据来自 shortcutRegistry */}
+				<ShortcutCheatSheet />
 
 				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制 */}
 				<Suspense fallback={null}>

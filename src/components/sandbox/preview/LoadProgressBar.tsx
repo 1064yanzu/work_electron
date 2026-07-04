@@ -70,7 +70,7 @@ export function LoadProgressBar({ loading, className }: LoadProgressBarProps) {
 				<div
 					className={cn(
 						"h-full transition-[width] duration-200 ease-out",
-						"bg-gradient-to-r from-[#D96C46] via-[#E8A77A] to-[#D96C46]",
+						"bg-gradient-to-r from-terracotta via-peach-500 to-terracotta",
 					)}
 					style={{ width: `${progress}%` }}
 				/>

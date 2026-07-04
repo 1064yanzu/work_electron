@@ -247,7 +247,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 								? "text-text-light cursor-not-allowed opacity-50"
 								: item.danger
 									? "text-error dark:text-error hover:bg-[rgba(181,51,51,0.08)]/80 dark:hover:bg-red-900/20"
-									: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200/80/60",
+									: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200/80",
 							// 高级 hover 效果
 							!item.disabled && "hover:scale-[1.02] active:scale-[0.98]",
 						)}

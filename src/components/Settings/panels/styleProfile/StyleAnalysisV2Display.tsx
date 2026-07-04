@@ -24,7 +24,13 @@ interface Props {
 	calibrationAnchors: StyleCalibrationAnchors;
 }
 
-type LayerKey = "soul" | "thinking" | "articulation" | "texture" | "cross" | "relational";
+type LayerKey =
+	| "soul"
+	| "thinking"
+	| "articulation"
+	| "texture"
+	| "cross"
+	| "relational";
 
 const LAYER_CONFIGS = [
 	{
@@ -62,7 +68,8 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 		high: "text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20",
 		medium: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20",
 		low: "text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20",
-		insufficient_evidence: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
+		insufficient_evidence:
+			"text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
 	};
 
 	const constancyLabel = {
@@ -72,8 +79,12 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 
 	return (
 		<div className="flex gap-2 items-start text-[11px]">
-			<span className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${intensityColors[axis.intensity]}`}>
-				{axis.intensity === "insufficient_evidence" ? "证据不足" : axis.intensity}
+			<span
+				className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${intensityColors[axis.intensity]}`}
+			>
+				{axis.intensity === "insufficient_evidence"
+					? "证据不足"
+					: axis.intensity}
 			</span>
 			<div className="flex-1 min-w-0">
 				<div className="font-medium text-text-primary mb-0.5 flex items-center gap-1.5">
@@ -131,7 +142,7 @@ function LayerSection({
 	isExpanded,
 	onToggle,
 }: {
-	config: typeof LAYER_CONFIGS[number];
+	config: (typeof LAYER_CONFIGS)[number];
 	data: Record<string, StyleAxisAnalysis[]> | undefined;
 	isExpanded: boolean;
 	onToggle: () => void;
@@ -222,30 +233,60 @@ function CrossCuttingSection({
 				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-[11px]">
 					{crossCutting.recurring_imagery && (
 						<div>
-							<div className="font-semibold text-text-primary mb-1">执念意象</div>
+							<div className="font-semibold text-text-primary mb-1">
+								执念意象
+							</div>
 							<div className="space-y-1 text-text-secondary">
-								<div><span className="text-text-muted">灵魂：</span>{crossCutting.recurring_imagery.soul}</div>
-								<div><span className="text-text-muted">骨干：</span>{crossCutting.recurring_imagery.structure}</div>
-								<div><span className="text-text-muted">血肉：</span>{crossCutting.recurring_imagery.texture}</div>
+								<div>
+									<span className="text-text-muted">灵魂：</span>
+									{crossCutting.recurring_imagery.soul}
+								</div>
+								<div>
+									<span className="text-text-muted">骨干：</span>
+									{crossCutting.recurring_imagery.structure}
+								</div>
+								<div>
+									<span className="text-text-muted">血肉：</span>
+									{crossCutting.recurring_imagery.texture}
+								</div>
 							</div>
 						</div>
 					)}
 					{crossCutting.humor_irony && (
 						<div>
-							<div className="font-semibold text-text-primary mb-1">幽默与讽刺</div>
+							<div className="font-semibold text-text-primary mb-1">
+								幽默与讽刺
+							</div>
 							<div className="space-y-1 text-text-secondary">
-								<div><span className="text-text-muted">灵魂：</span>{crossCutting.humor_irony.soul}</div>
-								<div><span className="text-text-muted">骨干：</span>{crossCutting.humor_irony.structure}</div>
-								<div><span className="text-text-muted">血肉：</span>{crossCutting.humor_irony.texture}</div>
+								<div>
+									<span className="text-text-muted">灵魂：</span>
+									{crossCutting.humor_irony.soul}
+								</div>
+								<div>
+									<span className="text-text-muted">骨干：</span>
+									{crossCutting.humor_irony.structure}
+								</div>
+								<div>
+									<span className="text-text-muted">血肉：</span>
+									{crossCutting.humor_irony.texture}
+								</div>
 							</div>
 						</div>
 					)}
 					{crossCutting.title_habit && (
 						<div>
-							<div className="font-semibold text-text-primary mb-1">标题习惯</div>
+							<div className="font-semibold text-text-primary mb-1">
+								标题习惯
+							</div>
 							<div className="space-y-1 text-text-secondary">
-								<div><span className="text-text-muted">骨干：</span>{crossCutting.title_habit.structure}</div>
-								<div><span className="text-text-muted">血肉：</span>{crossCutting.title_habit.texture}</div>
+								<div>
+									<span className="text-text-muted">骨干：</span>
+									{crossCutting.title_habit.structure}
+								</div>
+								<div>
+									<span className="text-text-muted">血肉：</span>
+									{crossCutting.title_habit.texture}
+								</div>
 							</div>
 						</div>
 					)}
@@ -253,9 +294,18 @@ function CrossCuttingSection({
 						<div>
 							<div className="font-semibold text-text-primary mb-1">元评论</div>
 							<div className="space-y-1 text-text-secondary">
-								<div><span className="text-text-muted">灵魂：</span>{crossCutting.meta_commentary.soul}</div>
-								<div><span className="text-text-muted">骨干：</span>{crossCutting.meta_commentary.structure}</div>
-								<div><span className="text-text-muted">血肉：</span>{crossCutting.meta_commentary.texture}</div>
+								<div>
+									<span className="text-text-muted">灵魂：</span>
+									{crossCutting.meta_commentary.soul}
+								</div>
+								<div>
+									<span className="text-text-muted">骨干：</span>
+									{crossCutting.meta_commentary.structure}
+								</div>
+								<div>
+									<span className="text-text-muted">血肉：</span>
+									{crossCutting.meta_commentary.texture}
+								</div>
 							</div>
 						</div>
 					)}
@@ -307,39 +357,61 @@ function RelationalSection({
 				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-[11px]">
 					{anchors.layer_harmony && (
 						<div>
-							<div className="font-semibold text-text-primary mb-1">气韵（跨层）</div>
+							<div className="font-semibold text-text-primary mb-1">
+								气韵（跨层）
+							</div>
 							<div className="text-text-secondary leading-relaxed">
 								{anchors.layer_harmony.description}
 							</div>
 						</div>
 					)}
-					{anchors.holographic_patterns && anchors.holographic_patterns.length > 0 && (
-						<div>
-							<div className="font-semibold text-text-primary mb-2">全息性（跨尺度）</div>
-							<div className="space-y-2">
-								{anchors.holographic_patterns.map((pattern, i) => (
-									<div key={i} className="rounded-lg bg-cream-50/50 dark:bg-cream-800/30 p-2.5">
-										<div className="font-medium text-text-primary mb-1">{pattern.name}</div>
-										<div className="text-text-secondary mb-1.5">{pattern.description}</div>
-										<div className="space-y-1 text-[10px] text-text-muted">
-											{pattern.sentence_level && <div>句子级：{pattern.sentence_level}</div>}
-											{pattern.paragraph_level && <div>段落级：{pattern.paragraph_level}</div>}
-											{pattern.article_level && <div>全文级：{pattern.article_level}</div>}
+					{anchors.holographic_patterns &&
+						anchors.holographic_patterns.length > 0 && (
+							<div>
+								<div className="font-semibold text-text-primary mb-2">
+									全息性（跨尺度）
+								</div>
+								<div className="space-y-2">
+									{anchors.holographic_patterns.map((pattern, i) => (
+										<div
+											key={i}
+											className="rounded-lg bg-cream-50/50 dark:bg-cream-800/30 p-2.5"
+										>
+											<div className="font-medium text-text-primary mb-1">
+												{pattern.name}
+											</div>
+											<div className="text-text-secondary mb-1.5">
+												{pattern.description}
+											</div>
+											<div className="space-y-1 text-[10px] text-text-muted">
+												{pattern.sentence_level && (
+													<div>句子级：{pattern.sentence_level}</div>
+												)}
+												{pattern.paragraph_level && (
+													<div>段落级：{pattern.paragraph_level}</div>
+												)}
+												{pattern.article_level && (
+													<div>全文级：{pattern.article_level}</div>
+												)}
+											</div>
 										</div>
-									</div>
-								))}
+									))}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 					{anchors.constancy_variance && (
 						<div>
-							<div className="font-semibold text-text-primary mb-1">经变分布（跨篇）</div>
+							<div className="font-semibold text-text-primary mb-1">
+								经变分布（跨篇）
+							</div>
 							<div className="text-text-secondary leading-relaxed mb-2">
 								{anchors.constancy_variance.summary}
 							</div>
 							<div className="grid grid-cols-2 gap-2 text-[10px]">
 								<div className="rounded-lg bg-mint-50 dark:bg-mint-900/20 p-2">
-									<div className="font-medium text-mint-700 dark:text-mint-300 mb-1">经（不变）</div>
+									<div className="font-medium text-mint-700 dark:text-mint-300 mb-1">
+										经（不变）
+									</div>
 									<div className="space-y-0.5 text-text-muted">
 										{anchors.constancy_variance.constants.map((c, i) => (
 											<div key={i}>• {c}</div>
@@ -347,7 +419,9 @@ function RelationalSection({
 									</div>
 								</div>
 								<div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-2">
-									<div className="font-medium text-amber-700 dark:text-amber-300 mb-1">变（摆动）</div>
+									<div className="font-medium text-amber-700 dark:text-amber-300 mb-1">
+										变（摆动）
+									</div>
 									<div className="space-y-0.5 text-text-muted">
 										{anchors.constancy_variance.variables.map((v, i) => (
 											<div key={i}>
@@ -395,10 +469,20 @@ export function StyleAnalysisV2Display({
 			{/* 三个内容层 + 横切话题 */}
 			{LAYER_CONFIGS.map((config) => {
 				let data: Record<string, StyleAxisAnalysis[]> | undefined;
-				if (config.key === "soul") data = soulLayer as unknown as Record<string, StyleAxisAnalysis[]>;
-				if (config.key === "thinking") data = thinkingOperation as unknown as Record<string, StyleAxisAnalysis[]>;
-				if (config.key === "articulation") data = articulationPattern as unknown as Record<string, StyleAxisAnalysis[]>;
-				if (config.key === "texture") data = textureLayer as unknown as Record<string, StyleAxisAnalysis[]>;
+				if (config.key === "soul")
+					data = soulLayer as unknown as Record<string, StyleAxisAnalysis[]>;
+				if (config.key === "thinking")
+					data = thinkingOperation as unknown as Record<
+						string,
+						StyleAxisAnalysis[]
+					>;
+				if (config.key === "articulation")
+					data = articulationPattern as unknown as Record<
+						string,
+						StyleAxisAnalysis[]
+					>;
+				if (config.key === "texture")
+					data = textureLayer as unknown as Record<string, StyleAxisAnalysis[]>;
 
 				return (
 					<LayerSection

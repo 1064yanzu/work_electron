@@ -44,8 +44,7 @@ const INTENSITY_LABELS: Record<IntensityValue, string> = {
 
 const INTENSITY_COLORS: Record<IntensityValue, string> = {
 	low: "bg-cream-200 text-cream-700 dark:bg-cream-700/50 dark:text-cream-300",
-	medium:
-		"bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-300",
+	medium: "bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-300",
 	high: "bg-violetx-100 text-violetx-700 dark:bg-violetx-900/30 dark:text-violetx-300",
 	insufficient_evidence:
 		"bg-warm-200 text-text-muted dark:bg-cream-700/30 dark:text-text-muted",
@@ -180,7 +179,10 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 
 	const updateAnchor = useCallback(
 		(
-			field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">,
+			field: keyof Pick<
+				StyleCalibrationAnchors,
+				"positive" | "negative" | "missing"
+			>,
 			index: number,
 			value: string,
 		) => {
@@ -198,25 +200,48 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 		[],
 	);
 
-	const addAnchor = useCallback((field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">) => {
-		setDraft((prev) => {
-			if (!prev) return prev;
-			const anchors = { ...prev.calibration_anchors };
-			const currentList = anchors[field];
-			if (!Array.isArray(currentList)) return prev;
-			return { ...prev, calibration_anchors: { ...anchors, [field]: [...currentList, ""] } };
-		});
-		setIsDirty(true);
-	}, []);
-
-	const removeAnchor = useCallback(
-		(field: keyof Pick<StyleCalibrationAnchors, "positive" | "negative" | "missing">, index: number) => {
+	const addAnchor = useCallback(
+		(
+			field: keyof Pick<
+				StyleCalibrationAnchors,
+				"positive" | "negative" | "missing"
+			>,
+		) => {
 			setDraft((prev) => {
 				if (!prev) return prev;
 				const anchors = { ...prev.calibration_anchors };
 				const currentList = anchors[field];
 				if (!Array.isArray(currentList)) return prev;
-				return { ...prev, calibration_anchors: { ...anchors, [field]: currentList.filter((_, i) => i !== index) } };
+				return {
+					...prev,
+					calibration_anchors: { ...anchors, [field]: [...currentList, ""] },
+				};
+			});
+			setIsDirty(true);
+		},
+		[],
+	);
+
+	const removeAnchor = useCallback(
+		(
+			field: keyof Pick<
+				StyleCalibrationAnchors,
+				"positive" | "negative" | "missing"
+			>,
+			index: number,
+		) => {
+			setDraft((prev) => {
+				if (!prev) return prev;
+				const anchors = { ...prev.calibration_anchors };
+				const currentList = anchors[field];
+				if (!Array.isArray(currentList)) return prev;
+				return {
+					...prev,
+					calibration_anchors: {
+						...anchors,
+						[field]: currentList.filter((_, i) => i !== index),
+					},
+				};
 			});
 			setIsDirty(true);
 		},
@@ -273,11 +298,17 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 			<div className="space-y-4">
 				{/* v2 提示 */}
 				<div className="flex items-start gap-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200/70 dark:border-violet-700/40 px-3 py-2">
-					<Info size={12} className="shrink-0 text-violet-600 dark:text-violet-400 mt-0.5" />
+					<Info
+						size={12}
+						className="shrink-0 text-violet-600 dark:text-violet-400 mt-0.5"
+					/>
 					<div className="flex-1 text-[11px] text-violet-700 dark:text-violet-300">
-						<div className="font-medium mb-0.5">完整「灵魂-骨干-血肉」体系分析</div>
+						<div className="font-medium mb-0.5">
+							完整「灵魂-骨干-血肉」体系分析
+						</div>
 						<div className="text-violet-600/80 dark:text-violet-400/80">
-							包含 8 层结构和关系性维度（气韵、全息、经变）。当前为只读展示，编辑功能即将推出。
+							包含 8
+							层结构和关系性维度（气韵、全息、经变）。当前为只读展示，编辑功能即将推出。
 						</div>
 					</div>
 				</div>
@@ -421,14 +452,12 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 								{
 									field: "positive" as const,
 									label: "正向示例",
-									color:
-										"text-mint-600 dark:text-mint-400",
+									color: "text-mint-600 dark:text-mint-400",
 								},
 								{
 									field: "negative" as const,
 									label: "负向示例",
-									color:
-										"text-peach-600 dark:text-peach-400",
+									color: "text-peach-600 dark:text-peach-400",
 								},
 								{
 									field: "missing" as const,
@@ -447,9 +476,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 											<input
 												type="text"
 												value={item}
-												onChange={(e) =>
-													updateAnchor(field, i, e.target.value)
-												}
+												onChange={(e) => updateAnchor(field, i, e.target.value)}
 												className="flex-1 text-xs bg-cream-100/60 dark:bg-cream-800/40 rounded-lg px-3 py-1.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-cream-400 dark:focus:ring-cream-500/50 placeholder-text-muted/40"
 												placeholder={`输入${label}示例`}
 											/>
@@ -477,7 +504,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 				)}
 			</div>
 
-		{/* 无改动时无需显示底部按钮 */}
+			{/* 无改动时无需显示底部按钮 */}
 		</div>
 	);
 }

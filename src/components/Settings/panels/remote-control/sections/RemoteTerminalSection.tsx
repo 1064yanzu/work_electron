@@ -460,7 +460,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 			<SettingsSectionCard
 				className={cn(
 					"p-5 space-y-3",
-					terminal.freeCommandMode ? "border-[#b53333]/40" : undefined,
+					terminal.freeCommandMode ? "border-error/40" : undefined,
 				)}
 			>
 				<div className="flex items-start justify-between gap-4">
@@ -469,7 +469,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							className={cn(
 								"flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
 								terminal.freeCommandMode
-									? "bg-[#b53333]/[0.08] text-[#b53333]"
+									? "bg-error/8 text-error"
 									: "bg-warm-200 text-text-muted",
 							)}
 						>
@@ -500,7 +500,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 					/>
 				</div>
 				{terminal.freeCommandMode ? (
-					<div className="flex items-start gap-2 rounded-lg bg-[#b53333]/[0.06] p-3 text-xs text-[#b53333]">
+					<div className="flex items-start gap-2 rounded-lg bg-error/[0.06] p-3 text-xs text-error">
 						<AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
 						<span>
 							自由命令模式已开启。任何已配对 IM 用户都可以远程执行任意 shell
@@ -1068,7 +1068,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 												size="sm"
 												loading={busySessionId === s.session_id}
 												onClick={() => void handleTerminate(s.session_id)}
-												className="text-[#b53333] hover:bg-[#b53333]/[0.08]"
+												className="text-error hover:bg-error/8"
 											>
 												<Trash2 className="h-3.5 w-3.5" />
 												结束

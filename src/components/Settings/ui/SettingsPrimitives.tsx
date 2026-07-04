@@ -133,8 +133,8 @@ export function SettingsSwitch({
 				if (!disabled) onChange(!checked);
 			}}
 			className={cn(
-			"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
-			checked ? "bg-primary" : "bg-warm-400/80",
+				"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
+				checked ? "bg-primary" : "bg-warm-400/80",
 				disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
 				className,
 			)}
@@ -142,9 +142,9 @@ export function SettingsSwitch({
 			<span
 				className={cn(
 					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-200",
-				checked
-					? "translate-x-[20px] bg-primary-foreground"
-					: "translate-x-[3px] bg-white dark:bg-zinc-100",
+					checked
+						? "translate-x-[20px] bg-primary-foreground"
+						: "translate-x-[3px] bg-white dark:bg-zinc-100",
 				)}
 			/>
 		</button>

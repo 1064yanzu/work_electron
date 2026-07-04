@@ -126,7 +126,7 @@ export function WikiGraphFullscreen() {
 	return (
 		<div className="flex flex-col h-full bg-warm-50">
 			{/* Toolbar */}
-			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70/60 backdrop-blur-sm shrink-0">
+			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70 backdrop-blur-sm shrink-0">
 				<button
 					onClick={handleClose}
 					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"
@@ -204,7 +204,7 @@ export function WikiGraphFullscreen() {
 			<div className="flex-1 flex overflow-hidden">
 				{/* Left filter panel — collapsible */}
 				<aside
-					className={`shrink-0 border-r border-border/70 bg-surface/50/30 overflow-y-auto transition-all duration-200 ${
+					className={`shrink-0 border-r border-border/70 bg-surface/50 overflow-y-auto transition-all duration-200 ${
 						sidebarOpen ? "w-44" : "w-0 opacity-0 pointer-events-none"
 					}`}
 				>
@@ -221,7 +221,7 @@ export function WikiGraphFullscreen() {
 									<label
 										key={meta.type}
 										className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
-											checked ? "bg-warm-200/70/50" : "hover:bg-warm-50/30"
+											checked ? "bg-warm-200/70" : "hover:bg-warm-50/30"
 										}`}
 									>
 										<input

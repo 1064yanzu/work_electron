@@ -330,9 +330,9 @@ export function ChatInput({
 					/>
 				)}
 
-			{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
-			<div
-				className={`
+				{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
+				<div
+					className={`
 				bg-surface border overflow-hidden transition-[border-color,border-radius,box-shadow] duration-300 ease-out
 					${
 						isExpanded
@@ -340,8 +340,8 @@ export function ChatInput({
 							: "rounded-full border-border hover:border-warm-400 shadow-[0_1px_2px_0_rgb(26_26_25/0.04)]"
 					}
 				`}
-				style={{ transform: "translateZ(0)" }}
-			>
+					style={{ transform: "translateZ(0)" }}
+				>
 					<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
 
 					{/* 已选择的命令卡片 */}

@@ -301,7 +301,7 @@ export function RichContentWithStyles({
         prose-blockquote:bg-warm-50/70 dark:prose-blockquote:bg-surface/5 prose-blockquote:rounded-r-2xl
 
         /* 代码样式 */
-        prose-pre:bg-[#0f0f11] dark:prose-pre:bg-black prose-pre:text-sm prose-pre:text-surface prose-pre:rounded-2xl prose-pre:my-6 prose-pre:px-6 prose-pre:py-4
+        prose-pre:bg-console-canvas dark:prose-pre:bg-black prose-pre:text-sm prose-pre:text-surface prose-pre:rounded-2xl prose-pre:my-6 prose-pre:px-6 prose-pre:py-4
         prose-code:text-text-primary dark:prose-code:text-surface
         prose-code:bg-warm-200/80 dark:prose-code:bg-surface/10 prose-code:px-2 prose-code:py-0.5 prose-code:rounded-lg
         prose-code:before:content-none prose-code:after:content-none prose-code:font-medium

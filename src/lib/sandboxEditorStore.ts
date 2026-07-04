@@ -248,7 +248,9 @@ class SandboxEditorStore {
 			}
 		} catch (error) {
 			console.error("[SandboxEditorStore] 加载文件内容失败:", error);
-			toast.error(`加载文件失败：${error instanceof Error ? error.message : "未知错误"}`);
+			toast.error(
+				`加载文件失败：${error instanceof Error ? error.message : "未知错误"}`,
+			);
 		}
 
 		return undefined;
@@ -275,7 +277,9 @@ class SandboxEditorStore {
 			return true;
 		} catch (error) {
 			console.error("[SandboxEditorStore] 保存文件失败:", error);
-			toast.error(`保存文件失败：${error instanceof Error ? error.message : "未知错误"}`);
+			toast.error(
+				`保存文件失败：${error instanceof Error ? error.message : "未知错误"}`,
+			);
 			return false;
 		}
 	}

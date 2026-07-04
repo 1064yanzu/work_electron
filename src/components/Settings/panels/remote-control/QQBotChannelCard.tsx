@@ -85,7 +85,7 @@ export function QQBotChannelCard({
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#12B7F5] to-[#0D6EFF] opacity-60" />
+			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-qq to-brand-qq-deep opacity-60" />
 
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
@@ -439,9 +439,7 @@ export function QQBotChannelCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-[#b53333]">
-								{runtimeChannel.last_error}
-							</span>
+							<span className="text-error">{runtimeChannel.last_error}</span>
 						</>
 					) : null}
 					<div className="ml-auto">

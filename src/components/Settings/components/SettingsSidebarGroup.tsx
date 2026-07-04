@@ -39,7 +39,7 @@ export function SettingsSidebarCategory({
 	const Icon = category.icon;
 
 	return (
-			<section className="space-y-1 overflow-hidden">
+		<section className="space-y-1 overflow-hidden">
 			{/* 分类标题 —— 可点击 toggle */}
 			<button
 				type="button"

@@ -5,7 +5,10 @@
  * 本文件只做 DB 层的读取和手动更新（校准）。
  */
 import type { IpcMainInvokeEvent } from "electron";
-import type { IPCSchema, StyleAnalysisData } from "../../../../shared/ipc-schema";
+import type {
+	IPCSchema,
+	StyleAnalysisData,
+} from "../../../../shared/ipc-schema";
 import type { DbContext } from "../../../db/client";
 
 type Handler<K extends keyof IPCSchema> = (
@@ -56,7 +59,9 @@ export function createStyleAnalysisCrudHandlers(db: DbContext) {
 		const now = Date.now();
 
 		// 读当前最新
-		const existing = await getAnalysis(_event, { profile_id: input.profile_id });
+		const existing = await getAnalysis(_event, {
+			profile_id: input.profile_id,
+		});
 
 		const merged: StyleAnalysisData = {
 			cognitive_pattern:
@@ -65,14 +70,16 @@ export function createStyleAnalysisCrudHandlers(db: DbContext) {
 				input.data.rhetorical_stance ?? existing?.rhetorical_stance ?? [],
 			language_aesthetic:
 				input.data.language_aesthetic ?? existing?.language_aesthetic ?? [],
-			calibration_anchors:
-				input.data.calibration_anchors ?? existing?.calibration_anchors ?? {
+			calibration_anchors: input.data.calibration_anchors ??
+				existing?.calibration_anchors ?? {
 					positive: [],
 					negative: [],
 					missing: [],
 				},
 			task_adaptation_rules:
-				input.data.task_adaptation_rules ?? existing?.task_adaptation_rules ?? {},
+				input.data.task_adaptation_rules ??
+				existing?.task_adaptation_rules ??
+				{},
 		};
 
 		// UPSERT（若无行则插入 version=1，否则更新最新版本行）

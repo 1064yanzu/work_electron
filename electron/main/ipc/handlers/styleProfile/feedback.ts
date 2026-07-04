@@ -42,7 +42,10 @@ export function createStyleFeedbackHandlers(db: DbContext) {
 		} satisfies StyleFeedback;
 	};
 
-	const listFeedback: Handler<"style_feedback_list"> = async (_event, input) => {
+	const listFeedback: Handler<"style_feedback_list"> = async (
+		_event,
+		input,
+	) => {
 		const limit = input.limit ?? 50;
 		const rows = await db.client.execute({
 			sql: `SELECT * FROM style_feedback WHERE profile_id = ? ORDER BY created_at DESC LIMIT ?`,

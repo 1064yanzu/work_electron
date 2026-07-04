@@ -649,20 +649,20 @@ export function usePetEventBridge(): PetEventBridge {
 								typeof e.content === "string" &&
 								e.content.trim(),
 						);
-					if (hasUserPrompt) {
-						// 每个 runId 只触发一次 AGENT_START，防止 streaming 每个 chunk 都更新标题
-						if (startedRunIdRef.current !== runId) {
-							startedRunIdRef.current = runId;
-							dispatch({
-								type: "AGENT_START",
-								task: {
-									title: extractTaskTitle(events),
-									runId,
-									startedAt: Date.now(),
-								},
-							});
+						if (hasUserPrompt) {
+							// 每个 runId 只触发一次 AGENT_START，防止 streaming 每个 chunk 都更新标题
+							if (startedRunIdRef.current !== runId) {
+								startedRunIdRef.current = runId;
+								dispatch({
+									type: "AGENT_START",
+									task: {
+										title: extractTaskTitle(events),
+										runId,
+										startedAt: Date.now(),
+									},
+								});
+							}
 						}
-					}
 						// tool 调用 progress（debounce 120ms 取最后一次）
 						for (const ev of events) {
 							if (

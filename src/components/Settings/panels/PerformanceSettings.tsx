@@ -66,6 +66,7 @@ export function PerformanceSettings() {
 		sourceAutoRefreshMs: 10000,
 		remoteSyncIntervalMs: 20000,
 		enableUiDebugLogs: false,
+		chatVirtualization: true,
 	});
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -203,9 +204,7 @@ export function PerformanceSettings() {
 			});
 			const m = result.migration;
 			toast.success(
-				m
-					? `已迁回默认目录（${formatBytes(m.bytes)}）`
-					: "已恢复默认缓存目录",
+				m ? `已迁回默认目录（${formatBytes(m.bytes)}）` : "已恢复默认缓存目录",
 			);
 			await reloadJanitor();
 		} catch (error) {
@@ -339,6 +338,20 @@ export function PerformanceSettings() {
 							</Select>
 						}
 					/>
+					<SettingsRow
+						label="长对话虚拟渲染"
+						description="超过 60 条消息时只渲染可视区域附近的历史消息，大幅降低长对话的内存与滚动开销。遇到定位/显示异常可关闭回退为全量渲染。"
+						action={
+							<SettingsSwitch
+								checked={settings.chatVirtualization}
+								onChange={() => {
+									void patchSettings({
+										chatVirtualization: !settings.chatVirtualization,
+									});
+								}}
+							/>
+						}
+					/>
 				</div>
 			</SettingsSectionCard>
 
@@ -374,7 +387,8 @@ export function PerformanceSettings() {
 					</SettingsSectionTitle>
 					<p className="text-xs text-text-muted mt-1 mb-3">
 						阅读器图书、Agent 沙盒、生成图片、媒体与通用缓存的统一存储位置。
-						更改后会把现有缓存迁移到新位置，可换到外置硬盘 / NAS 释放系统盘空间。
+						更改后会把现有缓存迁移到新位置，可换到外置硬盘 / NAS
+						释放系统盘空间。
 					</p>
 					<div className="rounded-lg border border-border bg-cream-50 px-3 py-2.5">
 						<div className="text-[11px] text-text-muted mb-0.5">

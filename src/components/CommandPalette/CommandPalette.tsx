@@ -1,17 +1,21 @@
-// 命令面板主组件 — Cmd+K 唤起，键盘导航 + 模糊匹配
+// 命令面板主组件 — Cmd+K 唤起，键盘导航 + 模糊匹配 + 最近使用
 //
 // 设计：
 // - 使用 Modal 而非 Dialog 元素，控制焦点 + a11y
-// - 顶部输入框，下方分组列表
-// - ↑↓ 选项 / Enter 触发 / Esc 关闭
-// - 简单子串匹配（title + description + keywords），不引第三方 fuzzy 库
-// - 不含 cmdk 依赖，~150 行自研，符合 CLAUDE.md "尽量解耦"
+// - 顶部输入框，下方分组列表；空查询时「最近使用」置顶
+// - ↑↓ 选项 / Enter 触发 / Esc 关闭；键盘顺序与视觉顺序严格一致
+// - 自研 fuzzy（见 fuzzy.ts）：标题命中高亮，keywords/描述降权
+// - 不含 cmdk 依赖，符合 CLAUDE.md "尽量解耦"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Command, CornerDownLeft } from "lucide-react";
-import { commandPaletteStore } from "../../lib/stores/commandPaletteStore";
+import { Command, CornerDownLeft, History } from "lucide-react";
+import {
+	commandPaletteStore,
+	useCommandPaletteStoreSelector,
+} from "../../lib/stores/commandPaletteStore";
 import { cn } from "../../lib/utils";
 import { FocusTrap } from "../ui/FocusTrap";
+import { scoreCommandItem } from "./fuzzy";
 import type { CommandItem } from "./types";
 
 interface CommandPaletteProps {
@@ -20,33 +24,43 @@ interface CommandPaletteProps {
 	initialQuery?: string;
 }
 
-function scoreCommand(item: CommandItem, query: string): number {
-	if (!query) return 1;
-	const q = query.toLowerCase();
-	const title = item.title.toLowerCase();
-	const desc = (item.description || "").toLowerCase();
-	const keywords = (item.keywords || []).join(" ").toLowerCase();
-	const group = item.group.toLowerCase();
+const RECENT_GROUP = "最近使用";
 
-	// 完全匹配 title 起始
-	if (title.startsWith(q)) return 100;
-	// 子串命中 title
-	if (title.includes(q)) return 80;
-	// 子串命中 keywords
-	if (keywords.includes(q)) return 60;
-	// 子串命中 description
-	if (desc.includes(q)) return 40;
-	// 子串命中 group
-	if (group.includes(q)) return 20;
-
-	// 字符序列匹配 (fuzzy lite)
-	let qi = 0;
-	for (let i = 0; i < title.length && qi < q.length; i++) {
-		if (title[i] === q[qi]) qi++;
+/** 按命中下标切片高亮标题 */
+function HighlightedTitle({
+	title,
+	indices,
+}: {
+	title: string;
+	indices: number[];
+}) {
+	if (indices.length === 0) return <>{title}</>;
+	const hitSet = new Set(indices);
+	const segments: Array<{ text: string; hit: boolean }> = [];
+	for (let i = 0; i < title.length; i++) {
+		const hit = hitSet.has(i);
+		const last = segments[segments.length - 1];
+		if (last && last.hit === hit) {
+			last.text += title[i];
+		} else {
+			segments.push({ text: title[i], hit });
+		}
 	}
-	if (qi === q.length) return 10;
-
-	return 0;
+	return (
+		<>
+			{segments.map((seg, i) =>
+				seg.hit ? (
+					// biome-ignore lint/suspicious/noArrayIndexKey: 纯展示切片，顺序稳定
+					<span key={i} className="text-primary font-semibold">
+						{seg.text}
+					</span>
+				) : (
+					// biome-ignore lint/suspicious/noArrayIndexKey: 纯展示切片，顺序稳定
+					<span key={i}>{seg.text}</span>
+				),
+			)}
+		</>
+	);
 }
 
 export function CommandPalette({
@@ -58,6 +72,7 @@ export function CommandPalette({
 	const [activeIndex, setActiveIndex] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLDivElement>(null);
+	const recentIds = useCommandPaletteStoreSelector((s) => s.recentIds);
 
 	// 打开时重置 + 聚焦输入框
 	useEffect(() => {
@@ -69,27 +84,58 @@ export function CommandPalette({
 		}
 	}, [isOpen, initialQuery]);
 
-	// 过滤 + 排序
-	const filtered = useMemo(() => {
+	// 过滤 + 排序 + 标题命中下标
+	const { grouped, flatList, titleIndices } = useMemo(() => {
+		const indicesMap = new Map<string, number[]>();
 		const scored = commands
-			.map((c) => ({ command: c, score: scoreCommand(c, query) }))
-			.filter((x) => x.score > 0);
-		scored.sort((a, b) => b.score - a.score);
-		return scored.map((x) => x.command);
-	}, [commands, query]);
-
-	// 按 group 分组（保留排序）
-	const grouped = useMemo(() => {
-		const map = new Map<string, CommandItem[]>();
-		for (const item of filtered) {
-			if (!map.has(item.group)) map.set(item.group, []);
-			map.get(item.group)?.push(item);
+			.map((c) => ({ command: c, result: scoreCommandItem(c, query) }))
+			.filter(
+				(
+					x,
+				): x is {
+					command: CommandItem;
+					result: NonNullable<typeof x.result>;
+				} => x.result !== null,
+			);
+		scored.sort((a, b) => b.result.score - a.result.score);
+		for (const { command, result } of scored) {
+			if (result.titleIndices.length > 0) {
+				indicesMap.set(command.id, result.titleIndices);
+			}
 		}
-		return Array.from(map.entries());
-	}, [filtered]);
+		const matched = scored.map((x) => x.command);
 
-	// flat list 给键盘导航使用
-	const flatList = filtered;
+		const groups: Array<[string, CommandItem[]]> = [];
+		if (!query && recentIds.length > 0) {
+			// 空查询：最近使用置顶，且不在原分组中重复出现
+			const byId = new Map(matched.map((c) => [c.id, c]));
+			const recentItems = recentIds
+				.map((id) => byId.get(id))
+				.filter((c): c is CommandItem => Boolean(c));
+			if (recentItems.length > 0) {
+				groups.push([RECENT_GROUP, recentItems]);
+			}
+			const recentSet = new Set(recentItems.map((c) => c.id));
+			const rest = matched.filter((c) => !recentSet.has(c.id));
+			const map = new Map<string, CommandItem[]>();
+			for (const item of rest) {
+				if (!map.has(item.group)) map.set(item.group, []);
+				map.get(item.group)?.push(item);
+			}
+			groups.push(...Array.from(map.entries()));
+		} else {
+			const map = new Map<string, CommandItem[]>();
+			for (const item of matched) {
+				if (!map.has(item.group)) map.set(item.group, []);
+				map.get(item.group)?.push(item);
+			}
+			groups.push(...Array.from(map.entries()));
+		}
+
+		// flat list 与渲染顺序严格一致（键盘导航依赖）
+		const flat = groups.flatMap(([, items]) => items);
+		return { grouped: groups, flatList: flat, titleIndices: indicesMap };
+	}, [commands, query, recentIds]);
 
 	// 选中项越界保护
 	useEffect(() => {
@@ -113,6 +159,7 @@ export function CommandPalette({
 
 	const handleExecute = useCallback(
 		async (item: CommandItem) => {
+			commandPaletteStore.markRecent(item.id);
 			try {
 				await item.action();
 			} catch (e) {
@@ -143,6 +190,9 @@ export function CommandPalette({
 		[activeIndex, flatList, handleExecute, handleClose],
 	);
 
+	// 渲染项的全局序号（与 flatList 对齐）
+	let renderIndex = -1;
+
 	if (!isOpen) return null;
 
 	return (
@@ -155,7 +205,7 @@ export function CommandPalette({
 		>
 			{/* Backdrop — 暖色蒙版，不用毛玻璃避免 impeccable glassmorphism 违规 */}
 			<div
-				className="absolute inset-0 bg-[rgba(26,26,25,0.32)] animate-in fade-in duration-150"
+				className="absolute inset-0 bg-cream-900/30 animate-in fade-in duration-150"
 				onClick={handleClose}
 				aria-hidden="true"
 			/>
@@ -209,16 +259,34 @@ export function CommandPalette({
 						) : (
 							grouped.map(([groupName, groupItems]) => (
 								<div key={groupName} className="mb-2 last:mb-0">
-									<div className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
-										{groupName}
+									<div className="px-5 pt-2 pb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+										<span className="flex items-center gap-1">
+											{groupName === RECENT_GROUP && (
+												<History className="w-3 h-3" strokeWidth={1.5} />
+											)}
+											{groupName}
+										</span>
+										{groupName === RECENT_GROUP && (
+											<button
+												type="button"
+												onClick={() => commandPaletteStore.clearRecent()}
+												className="normal-case tracking-normal font-normal text-[10.5px] text-text-light hover:text-text-secondary transition-colors"
+											>
+												清除
+											</button>
+										)}
 									</div>
 									{groupItems.map((item) => {
-										const flatIdx = flatList.indexOf(item);
+										renderIndex += 1;
+										const flatIdx = renderIndex;
 										const isActive = flatIdx === activeIndex;
 										const Icon = item.icon;
+										const indices = query
+											? (titleIndices.get(item.id) ?? [])
+											: [];
 										return (
 											<button
-												key={item.id}
+												key={`${groupName}-${item.id}`}
 												id={`cmd-item-${item.id}`}
 												type="button"
 												data-cmd-index={flatIdx}
@@ -251,7 +319,10 @@ export function CommandPalette({
 															isActive ? "text-text-primary" : "",
 														)}
 													>
-														{item.title}
+														<HighlightedTitle
+															title={item.title}
+															indices={indices}
+														/>
 													</div>
 													{item.description && (
 														<div className="text-[11.5px] text-text-muted truncate">

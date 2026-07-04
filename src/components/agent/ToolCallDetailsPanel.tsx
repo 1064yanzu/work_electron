@@ -22,7 +22,7 @@ function Section({
 	return (
 		<section
 			className={cn(
-				"rounded-xl border border-border/70/60 bg-surface/70/50 p-2.5",
+				"rounded-xl border border-border/70 bg-surface/70 p-2.5",
 				className,
 			)}
 		>
@@ -62,7 +62,7 @@ export function ToolCallDetailsPanel({
 						{Object.entries(input).map(([key, value]) => (
 							<div key={key} className="text-[11px] leading-relaxed">
 								<div className="text-text-muted">{key}</div>
-								<div className="mt-1 rounded-md bg-warm-200/70/60 p-2 text-text-secondary dark:text-zinc-200 break-all whitespace-pre-wrap">
+								<div className="mt-1 rounded-md bg-warm-200/70 p-2 text-text-secondary dark:text-zinc-200 break-all whitespace-pre-wrap">
 									{typeof value === "string"
 										? value
 										: JSON.stringify(value, null, 2)}

@@ -250,7 +250,7 @@ export function PermissionCard({
 						查看参数
 					</button>
 					{expanded && (
-						<pre className="mt-2 p-3 rounded-lg bg-black/5/5 text-xs text-text-secondary overflow-x-auto max-h-40 overflow-y-auto">
+						<pre className="mt-2 p-3 rounded-lg bg-black/5 text-xs text-text-secondary overflow-x-auto max-h-40 overflow-y-auto">
 							{request.inputPreview}
 						</pre>
 					)}
@@ -321,7 +321,7 @@ export function PermissionCard({
 				>
 					拒绝 (N)
 				</button>
-				<div className="w-px bg-black/5/10" />
+				<div className="w-px bg-black/10 dark:bg-white/10" />
 				<button
 					onClick={handleAllowAlways}
 					className="px-4 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
@@ -329,7 +329,7 @@ export function PermissionCard({
 				>
 					全允 (A)
 				</button>
-				<div className="w-px bg-black/5/10" />
+				<div className="w-px bg-black/10 dark:bg-white/10" />
 				<button
 					onClick={handleAllow}
 					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 dark:hover:bg-emerald-900/20 transition-colors"

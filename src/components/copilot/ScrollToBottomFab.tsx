@@ -27,8 +27,7 @@ export function ScrollToBottomFab({
 		if (!el) return;
 
 		const handleScroll = () => {
-			const distanceToBottom =
-				el.scrollHeight - el.scrollTop - el.clientHeight;
+			const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 			const atBottom = distanceToBottom < 120;
 			setVisible(!atBottom);
 			if (atBottom) {

@@ -27,21 +27,23 @@ ALTER TABLE style_analyses ADD COLUMN texture_layer TEXT;
 ALTER TABLE style_analyses ADD COLUMN cross_cutting TEXT;
 `;
 
-export function applyStyleProfileV2Migration(db: { execute: (opts: { sql: string }) => Promise<unknown> }) {
+export function applyStyleProfileV2Migration(db: {
+	execute: (opts: { sql: string }) => Promise<unknown>;
+}) {
 	const statements = upgradeStyleProfileToV2
-		.split(';')
-		.map(s => s.trim())
-		.filter(s => s.length > 0 && !s.startsWith('--'));
+		.split(";")
+		.map((s) => s.trim())
+		.filter((s) => s.length > 0 && !s.startsWith("--"));
 
 	return Promise.all(
-		statements.map(sql =>
-			db.execute({ sql }).catch(err => {
+		statements.map((sql) =>
+			db.execute({ sql }).catch((err) => {
 				// 忽略"列已存在"错误（幂等性）
-				if (err.message?.includes('duplicate column name')) {
+				if (err.message?.includes("duplicate column name")) {
 					return;
 				}
 				throw err;
-			})
-		)
+			}),
+		),
 	);
 }

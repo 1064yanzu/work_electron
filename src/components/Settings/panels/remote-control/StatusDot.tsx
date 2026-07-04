@@ -18,8 +18,8 @@ const TONE_CLASS: Record<StatusTone, { solid: string; ring: string }> = {
 		ring: "ring-peach-500/20",
 	},
 	rose: {
-		solid: "bg-[#b53333]",
-		ring: "ring-[#b53333]/20",
+		solid: "bg-error",
+		ring: "ring-error/20",
 	},
 	sky: {
 		solid: "bg-violetx-500",
@@ -81,7 +81,7 @@ export function StatusPill({
 	const toneText: Record<StatusTone, string> = {
 		emerald: "text-mint-600 bg-mint-500/10",
 		amber: "text-peach-500 bg-peach-500/10",
-		rose: "text-[#b53333] bg-[#b53333]/[0.08]",
+		rose: "text-error bg-error/8",
 		sky: "text-violetx-500 bg-violetx-500/10",
 		zinc: "text-text-muted bg-warm-200",
 	};

@@ -245,9 +245,9 @@ export function SettingsPasswordInput({
 					title={reveal ? "隐藏" : "显示"}
 				>
 					{reveal ? (
-					<EyeOff className="h-3.5 w-3.5" strokeWidth={1.5} />
-				) : (
-					<Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
+						<EyeOff className="h-3.5 w-3.5" strokeWidth={1.5} />
+					) : (
+						<Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
 					)}
 				</button>
 			}

@@ -195,11 +195,11 @@ export function ModelDiscoveryModal({
 				<div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
 					{error ? (
 						<div className="flex flex-col items-center justify-center h-full text-text-muted gap-3">
-							<div className="p-4 bg-[#b53333]/[0.08] rounded-full text-[#b53333] mb-2">
+							<div className="p-4 bg-error/8 rounded-full text-error mb-2">
 								<Server className="w-8 h-8" />
 							</div>
 							<p className="font-medium text-text-secondary">获取失败</p>
-							<p className="text-sm text-center max-w-xs opacity-80 bg-surface px-4 py-2 rounded-lg border border-[#b53333]/30 text-[#b53333]">
+							<p className="text-sm text-center max-w-xs opacity-80 bg-surface px-4 py-2 rounded-lg border border-error/30 text-error">
 								{error}
 							</p>
 							<button

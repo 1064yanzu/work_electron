@@ -590,7 +590,11 @@ const glass: ThemeDefinition = {
 	id: "glass",
 	name: "液态玻璃",
 	description: "苹果风液态毛玻璃，搭配炫彩流动渐变背景",
-	preview: { bg: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", accent: "#007aff", text: "#1c1c1e" },
+	preview: {
+		bg: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+		accent: "#007aff",
+		text: "#1c1c1e",
+	},
 	light: {
 		"--t-bg": "rgba(255, 255, 255, 0.01)",
 		"--t-bg-surface": "rgba(255, 255, 255, 0.45)",

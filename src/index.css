@@ -1072,6 +1072,39 @@ svg.lucide:not([stroke-width]) {
 }
 
 /* ============================================
+   长对话渐进渲染（非虚拟化路径）
+   离屏消息跳过渲染计算；280px 与虚拟化估高保持一致
+   ============================================ */
+.chat-cv-auto {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 280px;
+}
+
+/* ============================================
+   主题切换全局过渡
+   theme.ts 在应用主题前给 <html> 挂 .theme-transitioning，280ms 后移除；
+   仅这段窗口内全局颜色属性做过渡，避免常驻 transition 的性能开销。
+   reduce-motion 用户通过 :not() 直接豁免（其全局 0.01ms 规则依然兜底）。
+   ============================================ */
+html.theme-transitioning:not(.motion-reduced):not(
+	[data-motion-preference="reduced"]
+)
+*,
+html.theme-transitioning:not(.motion-reduced):not(
+		[data-motion-preference="reduced"]
+	)
+	*::before,
+html.theme-transitioning:not(.motion-reduced):not(
+		[data-motion-preference="reduced"]
+	)
+	*::after {
+	transition-property:
+		background-color, border-color, color, fill, stroke, box-shadow !important;
+	transition-duration: 0.25s !important;
+	transition-timing-function: ease-out !important;
+}
+
+/* ============================================
    减少动画偏好支持（可访问性）
    ============================================ */
 html.motion-reduced *,

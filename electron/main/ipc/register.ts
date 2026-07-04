@@ -1483,42 +1483,105 @@ export function registerIpcHandlers({
 	// 语言风格包
 	// ==================
 	const styleProfileCrudHandlers = createStyleProfileCrudHandlers(db);
-	ipcMain.handle("style_profile_create", styleProfileCrudHandlers.style_profile_create);
-	ipcMain.handle("style_profile_list", styleProfileCrudHandlers.style_profile_list);
-	ipcMain.handle("style_profile_get", styleProfileCrudHandlers.style_profile_get);
-	ipcMain.handle("style_profile_update", styleProfileCrudHandlers.style_profile_update);
-	ipcMain.handle("style_profile_delete", styleProfileCrudHandlers.style_profile_delete);
-	ipcMain.handle("style_profile_archive", styleProfileCrudHandlers.style_profile_archive);
+	ipcMain.handle(
+		"style_profile_create",
+		styleProfileCrudHandlers.style_profile_create,
+	);
+	ipcMain.handle(
+		"style_profile_list",
+		styleProfileCrudHandlers.style_profile_list,
+	);
+	ipcMain.handle(
+		"style_profile_get",
+		styleProfileCrudHandlers.style_profile_get,
+	);
+	ipcMain.handle(
+		"style_profile_update",
+		styleProfileCrudHandlers.style_profile_update,
+	);
+	ipcMain.handle(
+		"style_profile_delete",
+		styleProfileCrudHandlers.style_profile_delete,
+	);
+	ipcMain.handle(
+		"style_profile_archive",
+		styleProfileCrudHandlers.style_profile_archive,
+	);
 
 	const styleSampleHandlers = createStyleSampleHandlers(db);
 	ipcMain.handle("style_sample_add", styleSampleHandlers.style_sample_add);
-	ipcMain.handle("style_sample_remove", styleSampleHandlers.style_sample_remove);
+	ipcMain.handle(
+		"style_sample_remove",
+		styleSampleHandlers.style_sample_remove,
+	);
 	ipcMain.handle("style_sample_list", styleSampleHandlers.style_sample_list);
-	ipcMain.handle("style_sample_parse_file", styleSampleHandlers.style_sample_parse_file);
-	ipcMain.handle("style_sample_import_from_zip", styleSampleHandlers.style_sample_import_from_zip);
+	ipcMain.handle(
+		"style_sample_parse_file",
+		styleSampleHandlers.style_sample_parse_file,
+	);
+	ipcMain.handle(
+		"style_sample_import_from_zip",
+		styleSampleHandlers.style_sample_import_from_zip,
+	);
 
-	const styleAnalyzerHandlers = createStyleAnalyzerHandlersV2(db, () => mainWindowRef);
-	ipcMain.handle("style_analysis_start", styleAnalyzerHandlers.style_analysis_start);
+	const styleAnalyzerHandlers = createStyleAnalyzerHandlersV2(
+		db,
+		() => mainWindowRef,
+	);
+	ipcMain.handle(
+		"style_analysis_start",
+		styleAnalyzerHandlers.style_analysis_start,
+	);
 
 	const styleAnalysisCrudHandlers = createStyleAnalysisCrudHandlers(db);
-	ipcMain.handle("style_analysis_get", styleAnalyzerHandlers.style_analysis_get);
-	ipcMain.handle("style_analysis_update", styleAnalysisCrudHandlers.style_analysis_update);
+	ipcMain.handle(
+		"style_analysis_get",
+		styleAnalyzerHandlers.style_analysis_get,
+	);
+	ipcMain.handle(
+		"style_analysis_update",
+		styleAnalysisCrudHandlers.style_analysis_update,
+	);
 
 	const styleRendererHandlers = createStyleRendererHandlersV2(db);
-	ipcMain.handle("style_profile_render_prompt", styleRendererHandlers.style_profile_render_prompt);
-	ipcMain.handle("style_recipe_render_prompt", styleRendererHandlers.style_recipe_render_prompt);
+	ipcMain.handle(
+		"style_profile_render_prompt",
+		styleRendererHandlers.style_profile_render_prompt,
+	);
+	ipcMain.handle(
+		"style_recipe_render_prompt",
+		styleRendererHandlers.style_recipe_render_prompt,
+	);
 
 	const styleFeedbackHandlers = createStyleFeedbackHandlers(db);
-	ipcMain.handle("style_feedback_submit", styleFeedbackHandlers.style_feedback_submit);
-	ipcMain.handle("style_feedback_list", styleFeedbackHandlers.style_feedback_list);
+	ipcMain.handle(
+		"style_feedback_submit",
+		styleFeedbackHandlers.style_feedback_submit,
+	);
+	ipcMain.handle(
+		"style_feedback_list",
+		styleFeedbackHandlers.style_feedback_list,
+	);
 
 	// 混搭配方
 	const styleRecipeCrudHandlers = createStyleRecipeCrudHandlers(db);
-	ipcMain.handle("style_recipe_create", styleRecipeCrudHandlers.style_recipe_create);
-	ipcMain.handle("style_recipe_list", styleRecipeCrudHandlers.style_recipe_list);
+	ipcMain.handle(
+		"style_recipe_create",
+		styleRecipeCrudHandlers.style_recipe_create,
+	);
+	ipcMain.handle(
+		"style_recipe_list",
+		styleRecipeCrudHandlers.style_recipe_list,
+	);
 	ipcMain.handle("style_recipe_get", styleRecipeCrudHandlers.style_recipe_get);
-	ipcMain.handle("style_recipe_update", styleRecipeCrudHandlers.style_recipe_update);
-	ipcMain.handle("style_recipe_delete", styleRecipeCrudHandlers.style_recipe_delete);
+	ipcMain.handle(
+		"style_recipe_update",
+		styleRecipeCrudHandlers.style_recipe_update,
+	);
+	ipcMain.handle(
+		"style_recipe_delete",
+		styleRecipeCrudHandlers.style_recipe_delete,
+	);
 
 	logger.info({ msg: "IPC handlers registered", count: 100 });
 }

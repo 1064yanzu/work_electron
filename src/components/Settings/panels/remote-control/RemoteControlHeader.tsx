@@ -29,7 +29,7 @@ function StatusPill({
 	const toneClasses = {
 		emerald: "bg-mint-500/10 text-mint-600",
 		amber: "bg-peach-500/10 text-peach-500",
-		rose: "bg-[#b53333]/[0.08] text-[#b53333]",
+		rose: "bg-error/8 text-error",
 		zinc: "bg-warm-200 text-text-secondary",
 	} as const;
 

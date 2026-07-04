@@ -92,7 +92,7 @@ export function GraphTopToolbar({
 							onKeyDown={onSearchInputKeyDown}
 							placeholder="搜索节点..."
 							className={cn(
-								"max-w-[68vw] pl-8 pr-8 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-surface/85/70 backdrop-blur-xl text-text-secondary dark:text-zinc-200 placeholder:text-text-muted dark:placeholder:text-text-muted focus-ring",
+								"max-w-[68vw] pl-8 pr-8 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-surface/85 backdrop-blur-xl text-text-secondary dark:text-zinc-200 placeholder:text-text-muted dark:placeholder:text-text-muted focus-ring",
 								density === "compact" ? "w-48 py-1.5" : "w-56 py-2",
 							)}
 							aria-label="搜索运行图节点"
@@ -101,7 +101,7 @@ export function GraphTopToolbar({
 							<button
 								type="button"
 								onClick={onClearSearch}
-								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80/70 transition-colors"
+								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80 transition-colors"
 								title="清空搜索"
 								aria-label="清空搜索"
 							>
@@ -110,7 +110,7 @@ export function GraphTopToolbar({
 						) : null}
 					</div>
 					{searchQuery.trim() ? (
-						<div className="inline-flex items-center gap-1 bg-surface/85/70 border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-1.5 py-1.5 text-xs">
+						<div className="inline-flex items-center gap-1 bg-surface/85 border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-1.5 py-1.5 text-xs">
 							<button
 								type="button"
 								onClick={onFocusFirstSearchMatch}
@@ -183,7 +183,7 @@ export function GraphTopToolbar({
 							"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 							follow
 								? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08]"
-								: "bg-surface/85/60 text-text-secondary dark:text-zinc-200 border-black/[0.06] dark:border-white/[0.08] hover:bg-surface/70",
+								: "bg-surface/85 text-text-secondary dark:text-zinc-200 border-black/[0.06] dark:border-white/[0.08] hover:bg-surface/70",
 						)}
 						title={
 							follow ? "正在跟随运行节点（Alt+F）" : "暂停自动聚焦（Alt+F）"

@@ -93,7 +93,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 	);
 
 	return (
-		<div className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/90/60 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<div className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/90 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border/70 flex items-center justify-between">
 				<div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 展开的 issue 列表 */}
 				{expandedKind && grouped[expandedKind].length > 0 && (
-					<div className="rounded-xl border border-border/70 bg-warm-50/50/30 max-h-60 overflow-y-auto">
+					<div className="rounded-xl border border-border/70 bg-warm-50/50 max-h-60 overflow-y-auto">
 						{grouped[expandedKind].slice(0, 50).map((issue, i) => (
 							<button
 								key={`${issue.page_slug}-${i}`}
@@ -191,8 +191,8 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 未摄入文件 */}
 				{report.un_ingested_sources.length > 0 && (
-					<div className="rounded-xl border border-focus/30/50 dark:border-blue-900/40 bg-focus/8/50 dark:bg-blue-950/20">
-						<div className="px-3 py-2 border-b border-focus/30/50 dark:border-blue-900/40 flex items-center gap-2">
+					<div className="rounded-xl border border-focus/30 dark:border-blue-900/40 bg-focus/8 dark:bg-blue-950/20">
+						<div className="px-3 py-2 border-b border-focus/30 dark:border-blue-900/40 flex items-center gap-2">
 							<Package className="w-3.5 h-3.5 text-focus" />
 							<span className="text-xs font-medium text-focus dark:text-focus">
 								未摄入原始文件（{report.un_ingested_sources.length}）
@@ -202,7 +202,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 							{report.un_ingested_sources.slice(0, 20).map((s) => (
 								<div
 									key={s.path}
-									className="px-3 py-1.5 text-[11px] text-focus/80 dark:text-focus/80 truncate border-b border-focus/16/50 dark:border-blue-900/30 last:border-b-0"
+									className="px-3 py-1.5 text-[11px] text-focus/80 dark:text-focus/80 truncate border-b border-focus/16 dark:border-blue-900/30 last:border-b-0"
 									title={s.path}
 								>
 									· {s.name}
@@ -222,7 +222,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 
 				{/* 无问题状态 */}
 				{!hasAnyIssue && (
-					<div className="rounded-xl bg-success/8/60 dark:bg-emerald-950/20 border border-success/30/50 dark:border-emerald-900/40 px-3 py-2.5 text-xs text-success dark:text-success leading-relaxed">
+					<div className="rounded-xl bg-success/8 dark:bg-emerald-950/20 border border-success/30 dark:border-emerald-900/40 px-3 py-2.5 text-xs text-success dark:text-success leading-relaxed">
 						Wiki 当前状态健康，未发现机械问题。如需检查矛盾或过时内容，让 Agent
 						读完 SCHEMA 后帮你做语义级审计。
 					</div>

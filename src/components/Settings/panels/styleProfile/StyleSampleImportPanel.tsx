@@ -60,8 +60,9 @@ export function StyleSampleImportPanel({ profileId, onComplete }: Props) {
 			input.type = "file";
 			if (folderMode) {
 				// 文件夹选择：浏览器会递归列出所有文件
-				(input as HTMLInputElement & { webkitdirectory: boolean }).webkitdirectory =
-					true;
+				(
+					input as HTMLInputElement & { webkitdirectory: boolean }
+				).webkitdirectory = true;
 			} else {
 				input.multiple = true;
 				input.accept = SUPPORTED_EXTS.join(",");
@@ -189,12 +190,7 @@ export function StyleSampleImportPanel({ profileId, onComplete }: Props) {
 	// ── 渲染 ─────────────────────────────────────────────────────────────────
 
 	if (state.running || state.results.length > 0) {
-		return (
-			<ImportProgress
-				state={state}
-				onClose={resetState}
-			/>
-		);
+		return <ImportProgress state={state} onClose={resetState} />;
 	}
 
 	return (
@@ -259,7 +255,10 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 			{/* 顶部状态栏 */}
 			<div className="flex items-center gap-2 px-3 py-2 border-b border-cream-200/50 dark:border-cream-600/20">
 				{state.running ? (
-					<Loader2 size={12} className="animate-spin text-violet-500 shrink-0" />
+					<Loader2
+						size={12}
+						className="animate-spin text-violet-500 shrink-0"
+					/>
 				) : successCount > 0 ? (
 					<CheckCircle2 size={12} className="text-mint-500 shrink-0" />
 				) : (
@@ -298,10 +297,7 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 									className="shrink-0 mt-0.5 text-mint-500"
 								/>
 							) : (
-								<XCircle
-									size={11}
-									className="shrink-0 mt-0.5 text-red-400"
-								/>
+								<XCircle size={11} className="shrink-0 mt-0.5 text-red-400" />
 							)}
 							<span className="flex-1 min-w-0 text-[10px] text-text-secondary truncate">
 								{r.file}

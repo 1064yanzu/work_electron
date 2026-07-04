@@ -37,7 +37,9 @@ export async function getActiveStylePrompt(db: DbContext): Promise<string> {
 	try {
 		const intensityRaw = await readConfigValue(db, ACTIVE_INTENSITY_KEY);
 		const intensity: StyleIntensity =
-			intensityRaw === "low" || intensityRaw === "medium" || intensityRaw === "high"
+			intensityRaw === "low" ||
+			intensityRaw === "medium" ||
+			intensityRaw === "high"
 				? intensityRaw
 				: "medium";
 

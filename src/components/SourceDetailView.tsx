@@ -88,7 +88,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 			case SourceType.Web:
 				return "bg-focus";
 			case SourceType.Audio:
-				return "bg-[#8b7fd9]";
+				return "bg-violetx-500";
 			case SourceType.Document:
 				return "bg-orange-500";
 			case SourceType.Text:

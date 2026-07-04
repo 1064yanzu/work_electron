@@ -147,7 +147,10 @@ export function StyleProfileListItem({
 				},
 			);
 			unlistenRef.current = unlisten;
-			await startStyleAnalysis(profile.id, profile.analyze_model_id ?? undefined);
+			await startStyleAnalysis(
+				profile.id,
+				profile.analyze_model_id ?? undefined,
+			);
 		} catch (err) {
 			setAnalyzeError(err instanceof Error ? err.message : String(err));
 			setAnalyzing(false);
@@ -319,9 +322,7 @@ export function StyleProfileListItem({
 								<div key={s.step} className="flex items-center gap-2">
 									<div
 										className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-300 ${
-											s.done
-												? "bg-mint-500"
-												: "bg-violet-400 animate-pulse"
+											s.done ? "bg-mint-500" : "bg-violet-400 animate-pulse"
 										}`}
 									/>
 									<span

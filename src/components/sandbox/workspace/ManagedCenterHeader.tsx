@@ -24,7 +24,7 @@ export function ManagedCenterHeader({
 	return (
 		<div
 			className={cn(
-				"flex items-center justify-between border-b border-border/80 bg-surface/92/88 backdrop-blur-sm shrink-0",
+				"flex items-center justify-between border-b border-border/80 bg-surface/92 backdrop-blur-sm shrink-0",
 				density === "compact" ? "px-3 py-2" : "px-4 py-2.5",
 			)}
 		>

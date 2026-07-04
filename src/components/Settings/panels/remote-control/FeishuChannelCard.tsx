@@ -93,14 +93,14 @@ export function FeishuChannelCard({
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d6b9] via-[#00b6ed] to-[#465bff] opacity-70" />
+			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-feishu via-brand-feishu-mid to-brand-feishu-deep opacity-70" />
 
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3">
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00d6b9]/20 to-[#465bff]/15">
-							<MessageSquareMore className="h-4.5 w-4.5 text-[#0089ff] dark:text-[#4aaaff]" />
+						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-feishu/20 to-brand-feishu-deep/15">
+							<MessageSquareMore className="h-4.5 w-4.5 text-brand-feishu-icon dark:text-brand-feishu-icon-dark" />
 						</div>
 						<div>
 							<SettingsSectionTitle className="mb-0">
@@ -517,9 +517,7 @@ export function FeishuChannelCard({
 					{runtimeChannel?.last_error ? (
 						<>
 							<span className="text-text-muted">·</span>
-							<span className="text-[#b53333]">
-								{runtimeChannel.last_error}
-							</span>
+							<span className="text-error">{runtimeChannel.last_error}</span>
 						</>
 					) : null}
 					<div className="ml-auto">
@@ -557,11 +555,11 @@ function DocToggle({
 	return (
 		<div
 			className={`flex items-center justify-between rounded-xl border bg-surface px-3 py-2 transition-colors ${
-				danger ? "border-[#b53333]/30" : "border-border"
+				danger ? "border-error/30" : "border-border"
 			} ${span2 ? "md:col-span-2" : ""}`}
 		>
 			<div
-				className={`text-sm font-medium ${danger ? "text-[#b53333]" : "text-text-secondary"}`}
+				className={`text-sm font-medium ${danger ? "text-error" : "text-text-secondary"}`}
 			>
 				{label}
 			</div>

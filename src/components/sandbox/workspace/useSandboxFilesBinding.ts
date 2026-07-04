@@ -291,7 +291,8 @@ export function useSandboxFilesBinding({
 					{ path: sandboxDir },
 				);
 				if (disposed) {
-					if (result.success) void invoke("file_watch_stop", { path: sandboxDir });
+					if (result.success)
+						void invoke("file_watch_stop", { path: sandboxDir });
 					return;
 				}
 				if (result.success) {
@@ -313,7 +314,10 @@ export function useSandboxFilesBinding({
 				// IPC 不可用（如桥接未就绪），走轮询兜底
 			}
 			if (disposed) return;
-			refreshTimerRef.current = setInterval(rescanIfVisible, FALLBACK_POLL_INTERVAL_MS);
+			refreshTimerRef.current = setInterval(
+				rescanIfVisible,
+				FALLBACK_POLL_INTERVAL_MS,
+			);
 		})();
 
 		// 标签从隐藏恢复可见时立刻补扫一次（隐藏期间事件被跳过）

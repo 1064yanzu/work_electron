@@ -81,7 +81,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				"my-2 rounded-xl ring-1 transition-all overflow-hidden",
 				isPending && "ring-zinc-200 dark:ring-zinc-700/60 bg-surface",
 				isAccepted &&
-					"ring-emerald-200 dark:ring-emerald-800/40 bg-success/8/30 dark:bg-emerald-950/10",
+					"ring-emerald-200 dark:ring-emerald-800/40 bg-success/8 dark:bg-emerald-950/10",
 				isRejected &&
 					"ring-red-200 dark:ring-red-800/40 bg-[rgba(181,51,51,0.08)]/20 dark:bg-red-950/10 opacity-60",
 			)}
@@ -90,7 +90,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-warm-50/50/30 transition-colors"
+				className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-warm-50/50 transition-colors"
 			>
 				{/* 折叠箭头 */}
 				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-text-light">
@@ -156,7 +156,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 								className={cn(
 									"flex",
 									line.type === "added" &&
-										"bg-success/8/70 dark:bg-emerald-950/20",
+										"bg-success/8 dark:bg-emerald-950/20",
 									line.type === "removed" &&
 										"bg-[rgba(181,51,51,0.08)]/70 dark:bg-red-950/20",
 								)}
@@ -201,13 +201,13 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 					{/* 截断提示 */}
 					{preview.truncated && (
-						<div className="px-3 py-1.5 text-center text-[11px] text-text-light bg-warm-50/50/30 border-t border-border">
+						<div className="px-3 py-1.5 text-center text-[11px] text-text-light bg-warm-50/50 border-t border-border">
 							还有 {preview.totalChangedLines - 10} 行变更未显示
 						</div>
 					)}
 
 					{/* 操作栏 */}
-					<div className="flex items-center justify-between px-3 py-2 border-t border-border bg-warm-50/50/20">
+					<div className="flex items-center justify-between px-3 py-2 border-t border-border bg-warm-50/50">
 						{/* 查看完整 diff */}
 						<button
 							type="button"

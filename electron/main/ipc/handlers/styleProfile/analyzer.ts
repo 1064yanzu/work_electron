@@ -73,7 +73,13 @@ export function createStyleAnalyzerHandlers(
 		const jobId = randomUUID();
 
 		// 异步执行分析 pipeline，立即返回 job_id
-		void runAnalysisPipeline(db, getMainWindow, input.profile_id, input.model_id, jobId);
+		void runAnalysisPipeline(
+			db,
+			getMainWindow,
+			input.profile_id,
+			input.model_id,
+			jobId,
+		);
 
 		return { job_id: jobId };
 	};
@@ -146,7 +152,13 @@ async function runAnalysisPipeline(
 		});
 
 		if (sampleRows.rows.length === 0) {
-			emit(1, "准备样本", "error", undefined, "没有可用的样本，请先添加至少一篇样本文章");
+			emit(
+				1,
+				"准备样本",
+				"error",
+				undefined,
+				"没有可用的样本，请先添加至少一篇样本文章",
+			);
 			return;
 		}
 
@@ -158,7 +170,10 @@ async function runAnalysisPipeline(
 				args: [profileId],
 			});
 			if (profileRows.rows.length > 0) {
-				model = (profileRows.rows[0] as Record<string, unknown>).analyze_model_id as string | undefined ?? "";
+				model =
+					((profileRows.rows[0] as Record<string, unknown>).analyze_model_id as
+						| string
+						| undefined) ?? "";
 			}
 		}
 
@@ -183,7 +198,9 @@ async function runAnalysisPipeline(
 		});
 		const cognitivePattern =
 			tryParseJson<StyleAxisAnalysis[]>(step1Result.content) ?? [];
-		emit(1, "分析文本认知模式", "done", { cognitive_pattern: cognitivePattern });
+		emit(1, "分析文本认知模式", "done", {
+			cognitive_pattern: cognitivePattern,
+		});
 
 		// Step 2: 话语姿态
 		emit(2, "分析话语姿态", "running");

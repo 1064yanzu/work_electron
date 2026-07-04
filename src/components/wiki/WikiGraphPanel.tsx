@@ -44,7 +44,7 @@ export function WikiGraphPanel({
 	};
 
 	return (
-		<section className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/80/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
+		<section className="mx-3 mt-3 rounded-2xl border border-border/80 bg-surface/80 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)] overflow-hidden">
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-border/70">
 				<div className="flex items-center justify-between gap-3">
@@ -77,7 +77,7 @@ export function WikiGraphPanel({
 			<div ref={containerRef} className="relative px-2 py-2">
 				{pages.length === 0 ? (
 					<div
-						className="flex flex-col items-center justify-center rounded-xl bg-warm-50/60/30"
+						className="flex flex-col items-center justify-center rounded-xl bg-warm-50/60"
 						style={{ height: GRAPH_HEIGHT }}
 					>
 						<BookOpen className="h-8 w-8 text-text-light mb-2" />
@@ -93,7 +93,7 @@ export function WikiGraphPanel({
 				)}
 
 				{/* Hint */}
-				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-surface/92/88 px-2 py-1 text-[11px] text-text-muted shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-surface/92 px-2 py-1 text-[11px] text-text-muted shadow-sm ring-1 ring-black/5 dark:ring-white/10">
 					<FileText className="h-3.5 w-3.5" />
 					点击节点打开页面 · 拖拽移动 · 滚轮缩放
 				</div>

@@ -7,7 +7,7 @@ export function RemoteStatusBadge(props: {
 	const toneClass = {
 		green: "border-mint-500/30 bg-mint-500/10 text-mint-600",
 		amber: "border-peach-500/30 bg-peach-500/10 text-peach-500",
-		red: "border-[#b53333]/30 bg-[#b53333]/[0.08] text-[#b53333]",
+		red: "border-error/30 bg-error/8 text-error",
 		zinc: "border-border bg-warm-200 text-text-secondary",
 	} as const;
 	return (

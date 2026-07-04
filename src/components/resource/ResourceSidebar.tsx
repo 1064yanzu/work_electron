@@ -37,6 +37,7 @@ import { DragAndDropImportUI } from "../ui/DragAndDropImportUI";
 import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
+import { ViewTransition } from "../ui/ViewTransition";
 
 // Extracted hooks
 import {
@@ -598,141 +599,150 @@ export default function ResourceSidebar({
 						/>
 					) : null}
 
-					{/* 主内容区域 - 根据视图模式切换 */}
-					{leftSidebarView === "detail" && previewSource ? (
-						<SourceDetailView
-							ref={sourceDetailViewRef}
-							fetchSources={fetchSources}
-							onDeleteSource={(source) => void handleDeleteSource(source)}
-						/>
-					) : leftSidebarView === "research" ? (
-						<ResearchView
-							onOpenResearchSource={(source) => {
-								setPreviewSource(source);
-							}}
-						/>
-					) : leftSidebarView === "agent" ? (
-						<Suspense
-							fallback={
-								<div className="flex h-full items-center justify-center text-xs text-text-muted">
-									正在加载 Agent 面板...
-								</div>
-							}
-						>
-							<div onMouseEnter={preloadAgentTaskPanel}>
-								<AgentTaskPanel
-									onBack={() => setLeftSidebarView("sources")}
-									onArtifactClick={(artifact) => {
-										if (artifact.url) {
-											workspaceStore.setMainView("browser");
-										}
-									}}
-								/>
-							</div>
-						</Suspense>
-					) : leftSidebarView === "cards" ? (
-						<CardsHubView />
-					) : leftSidebarView === "threads" ? (
-						<ThreadsView />
-					) : leftSidebarView === "files" ? (
-						<ProjectFilesView />
-					) : leftSidebarView === "skills" ? (
-						<SkillsView />
-					) : leftSidebarView === "wiki" ? (
-						<WikiView />
-					) : leftSidebarView === "websearch" ? (
-						<div className="flex flex-col h-full">
-							{/* Header */}
-							<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
-								<div className="flex items-center gap-2">
-									<Tooltip content="返回" placement="bottom">
-										<button
-											onClick={() => setLeftSidebarView("sources")}
-											className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-										>
-											<ArrowLeft className="w-4 h-4" />
-										</button>
-									</Tooltip>
-									<Search className="w-4 h-4 text-focus" />
-									<h2 className="font-semibold text-sm text-text-primary">
-										网络搜索
-									</h2>
-								</div>
-								<Tooltip content="设置" placement="bottom">
-									<button
-										onClick={onOpenSettings}
-										className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-									>
-										<Settings className="w-4 h-4" />
-									</button>
-								</Tooltip>
-							</div>
-
-							{/* Search Module */}
-							<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
-								<Suspense
-									fallback={
-										<div className="flex h-full items-center justify-center text-xs text-text-muted">
-											正在加载搜索模块...
-										</div>
-									}
-								>
-									<WebSearchModule
-										onAddSource={(_sourceId) => {
-											void fetchSources();
+					{/* 主内容区域 - 根据视图模式切换（ViewTransition 提供统一进场过渡） */}
+					<ViewTransition
+						viewKey={
+							leftSidebarView === "detail"
+								? `detail:${previewSource?.id ?? "none"}`
+								: leftSidebarView
+						}
+						className="min-h-0 flex-1"
+					>
+						{leftSidebarView === "detail" && previewSource ? (
+							<SourceDetailView
+								ref={sourceDetailViewRef}
+								fetchSources={fetchSources}
+								onDeleteSource={(source) => void handleDeleteSource(source)}
+							/>
+						) : leftSidebarView === "research" ? (
+							<ResearchView
+								onOpenResearchSource={(source) => {
+									setPreviewSource(source);
+								}}
+							/>
+						) : leftSidebarView === "agent" ? (
+							<Suspense
+								fallback={
+									<div className="flex h-full items-center justify-center text-xs text-text-muted">
+										正在加载 Agent 面板...
+									</div>
+								}
+							>
+								<div onMouseEnter={preloadAgentTaskPanel}>
+									<AgentTaskPanel
+										onBack={() => setLeftSidebarView("sources")}
+										onArtifactClick={(artifact) => {
+											if (artifact.url) {
+												workspaceStore.setMainView("browser");
+											}
 										}}
 									/>
-								</Suspense>
+								</div>
+							</Suspense>
+						) : leftSidebarView === "cards" ? (
+							<CardsHubView />
+						) : leftSidebarView === "threads" ? (
+							<ThreadsView />
+						) : leftSidebarView === "files" ? (
+							<ProjectFilesView />
+						) : leftSidebarView === "skills" ? (
+							<SkillsView />
+						) : leftSidebarView === "wiki" ? (
+							<WikiView />
+						) : leftSidebarView === "websearch" ? (
+							<div className="flex flex-col h-full">
+								{/* Header */}
+								<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
+									<div className="flex items-center gap-2">
+										<Tooltip content="返回" placement="bottom">
+											<button
+												onClick={() => setLeftSidebarView("sources")}
+												className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+											>
+												<ArrowLeft className="w-4 h-4" />
+											</button>
+										</Tooltip>
+										<Search className="w-4 h-4 text-focus" />
+										<h2 className="font-semibold text-sm text-text-primary">
+											网络搜索
+										</h2>
+									</div>
+									<Tooltip content="设置" placement="bottom">
+										<button
+											onClick={onOpenSettings}
+											className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
+										>
+											<Settings className="w-4 h-4" />
+										</button>
+									</Tooltip>
+								</div>
+
+								{/* Search Module */}
+								<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
+									<Suspense
+										fallback={
+											<div className="flex h-full items-center justify-center text-xs text-text-muted">
+												正在加载搜索模块...
+											</div>
+										}
+									>
+										<WebSearchModule
+											onAddSource={(_sourceId) => {
+												void fetchSources();
+											}}
+										/>
+									</Suspense>
+								</div>
 							</div>
-						</div>
-					) : (
-						<SourceListView
-							sources={sources}
-							setSources={setSources}
-							setRawSources={setRawSources}
-							errorMessage={errorMessage}
-							isLoading={isLoading}
-							viewMode={viewMode}
-							setViewMode={setViewMode}
-							currentSubfolders={folderMgmt.currentSubfolders}
-							breadcrumbPath={folderMgmt.breadcrumbPath}
-							getFolderSubtreeCount={folderMgmt.getFolderSubtreeCount}
-							draggedSourceId={dragDrop.draggedSourceId}
-							dragOverFolderId={dragDrop.dragOverFolderId}
-							setDragOverFolderId={dragDrop.setDragOverFolderId}
-							handleDragStart={dragDrop.handleDragStart}
-							handleDragEnd={dragDrop.handleDragEnd}
-							handleFolderDragOver={dragDrop.handleFolderDragOver}
-							handleFolderDragLeave={dragDrop.handleFolderDragLeave}
-							handleFolderDrop={dragDrop.handleFolderDrop}
-							selectionMode={selection.selectionMode}
-							setSelectionMode={selection.setSelectionMode}
-							selectedIds={selection.selectedIds}
-							selectedIdSet={selection.selectedIdSet}
-							selectedSources={selection.selectedSources}
-							exitSelectionMode={selection.exitSelectionMode}
-							toggleSelection={selection.toggleSelection}
-							handleSelectAll={selection.handleSelectAll}
-							handleBulkAddToContext={selection.handleBulkAddToContext}
-							handleDeleteSelected={selection.handleDeleteSelected}
-							setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
-							setMoveFolderTargetId={selection.setMoveFolderTargetId}
-							handleFolderContextMenu={folderMgmt.handleFolderContextMenu}
-							setContextMenu={setContextMenu}
-							fetchSources={fetchSources}
-							onOpenDetail={handleOpenDetail}
-							onOpenSettings={onOpenSettings}
-							onDeleteSource={(source) => void handleDeleteSource(source)}
-							onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
-							setActiveTab={setActiveTab}
-							setIsAddModalOpen={setIsAddModalOpen}
-							viewTabs={null}
-							currentResearch={currentResearch}
-							uiDebugLogsEnabled={uiDebugLogsEnabled}
-							debugLog={debugLog}
-							debugWarn={debugWarn}
-						/>
-					)}
+						) : (
+							<SourceListView
+								sources={sources}
+								setSources={setSources}
+								setRawSources={setRawSources}
+								errorMessage={errorMessage}
+								isLoading={isLoading}
+								viewMode={viewMode}
+								setViewMode={setViewMode}
+								currentSubfolders={folderMgmt.currentSubfolders}
+								breadcrumbPath={folderMgmt.breadcrumbPath}
+								getFolderSubtreeCount={folderMgmt.getFolderSubtreeCount}
+								draggedSourceId={dragDrop.draggedSourceId}
+								dragOverFolderId={dragDrop.dragOverFolderId}
+								setDragOverFolderId={dragDrop.setDragOverFolderId}
+								handleDragStart={dragDrop.handleDragStart}
+								handleDragEnd={dragDrop.handleDragEnd}
+								handleFolderDragOver={dragDrop.handleFolderDragOver}
+								handleFolderDragLeave={dragDrop.handleFolderDragLeave}
+								handleFolderDrop={dragDrop.handleFolderDrop}
+								selectionMode={selection.selectionMode}
+								setSelectionMode={selection.setSelectionMode}
+								selectedIds={selection.selectedIds}
+								selectedIdSet={selection.selectedIdSet}
+								selectedSources={selection.selectedSources}
+								exitSelectionMode={selection.exitSelectionMode}
+								toggleSelection={selection.toggleSelection}
+								handleSelectAll={selection.handleSelectAll}
+								handleBulkAddToContext={selection.handleBulkAddToContext}
+								handleDeleteSelected={selection.handleDeleteSelected}
+								setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
+								setMoveFolderTargetId={selection.setMoveFolderTargetId}
+								handleFolderContextMenu={folderMgmt.handleFolderContextMenu}
+								setContextMenu={setContextMenu}
+								fetchSources={fetchSources}
+								onOpenDetail={handleOpenDetail}
+								onOpenSettings={onOpenSettings}
+								onDeleteSource={(source) => void handleDeleteSource(source)}
+								onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
+								setActiveTab={setActiveTab}
+								setIsAddModalOpen={setIsAddModalOpen}
+								viewTabs={null}
+								currentResearch={currentResearch}
+								uiDebugLogsEnabled={uiDebugLogsEnabled}
+								debugLog={debugLog}
+								debugWarn={debugWarn}
+							/>
+						)}
+					</ViewTransition>
 
 					{/* Modals */}
 					<ResourceModals

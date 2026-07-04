@@ -25,8 +25,8 @@ export function CheckButton({ status, onClick }: CheckButtonProps) {
 			label: "成功",
 		},
 		error: {
-			bg: "bg-[#b53333]/[0.08] hover:bg-[#b53333]/[0.14]",
-			text: "text-[#b53333]",
+			bg: "bg-error/8 hover:bg-error/[0.14]",
+			text: "text-error",
 			label: "失败",
 		},
 	}[status];

@@ -72,7 +72,7 @@ export function PreviewStatusOverlay({
 				<div className="absolute inset-0 flex items-center justify-center bg-surface/40 backdrop-blur-[1.5px]">
 					<div className="flex items-center gap-2.5 rounded-full bg-surface/95 dark:bg-cream-900/95 border border-border px-4 py-2 shadow-[0_4px_12px_0_rgba(26,26,25,0.06)]">
 						<svg
-							className="w-3.5 h-3.5 text-[#D96C46]"
+							className="w-3.5 h-3.5 text-terracotta"
 							viewBox="0 0 24 24"
 							fill="none"
 							aria-hidden="true"
