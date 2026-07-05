@@ -15,6 +15,14 @@ type ReadFileOutput = {
 	path: string;
 };
 
+type ReadFileBytesInput = { path: string };
+type ReadFileBytesOutput = {
+	data: Uint8Array;
+	size: number;
+	mtime_ms: number;
+	path: string;
+};
+
 type WriteFileInput = {
 	path: string;
 	content: string;
@@ -169,6 +177,28 @@ export function createFsSafeHandlers() {
 		return {
 			content,
 			encoding,
+			size: buf.byteLength,
+			mtime_ms: st.mtimeMs,
+			path: filePath,
+		};
+	};
+
+	// F4：二进制文件读取，结构化克隆直传 Uint8Array，避免 base64 编解码开销（PDF 等大文件场景）
+	const read_file_bytes_safe = async (
+		_event: IpcMainInvokeEvent,
+		rawInput: ReadFileBytesInput | { payload?: ReadFileBytesInput },
+	): Promise<ReadFileBytesOutput> => {
+		const input = unwrapPayload(rawInput);
+		const filePath = normalizePathInput(input.path);
+		requireAbsolute(filePath);
+		const buf = await fs.readFile(filePath);
+		const st = await fs.stat(filePath);
+		// Buffer 是 Uint8Array 的子类，但底层 ArrayBuffer 可能来自 Node 的共享内存池，
+		// 这里显式拷贝为独立的纯 Uint8Array，既避免结构化克隆携带 Node Buffer 原型信息，
+		// 也避免跨进程传输时意外引用到池化 buffer 的其他区域。
+		const data = new Uint8Array(buf);
+		return {
+			data,
 			size: buf.byteLength,
 			mtime_ms: st.mtimeMs,
 			path: filePath,
@@ -418,6 +448,7 @@ export function createFsSafeHandlers() {
 
 	return {
 		read_file_safe,
+		read_file_bytes_safe,
 		write_file_safe,
 		list_files_safe,
 		mkdir_safe,

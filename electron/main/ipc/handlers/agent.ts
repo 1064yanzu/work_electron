@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
+import { deleteArtifactsBySession } from "./artifacts";
 
 const now = () => Date.now();
 
@@ -287,6 +288,23 @@ export function createAgentSessionHandlers(db: DbContext) {
 		_event: IpcMainInvokeEvent,
 		input: { id: string },
 	): Promise<{ success: boolean }> => {
+		// D3：artifacts / agent_checkpoints 表无外键约束，删除会话前显式级联清理，
+		// 避免留下「行 + 磁盘文件」双孤儿。清理失败只跳过，不阻断会话删除本身。
+		// （checkpoint 的 sandbox_dir 指向 agent-sandboxes 缓存目录，由 userDataJanitor 按访问时间统一回收）
+		try {
+			await deleteArtifactsBySession(db, input.id);
+		} catch {
+			// 产物清理失败不阻断；孤儿行由 dbMaintenance 的孤儿清理兜底
+		}
+		try {
+			await db.client.execute({
+				sql: `DELETE FROM agent_checkpoints WHERE session_id = ?`,
+				args: [input.id],
+			});
+		} catch {
+			// 同上：由孤儿清理兜底
+		}
+
 		await db.client.execute({
 			sql: `DELETE FROM agent_sessions WHERE id = ?`,
 			args: [input.id],
@@ -657,20 +675,37 @@ export function createAgentToolCallHandlers(db: DbContext) {
 
 	const listToolCalls = async (
 		_event: IpcMainInvokeEvent,
-		input: { task_id?: string; node_id?: string },
+		input: {
+			task_id?: string;
+			node_id?: string;
+			/** 最多返回条数（取最近 N 条后按时间正序返回）。不传默认 500；传 0 或负数表示不限制（全量） */
+			limit?: number;
+			/** 向前翻页偏移（跳过最近的 offset 条，与 limit 配合使用） */
+			offset?: number;
+		},
 	): Promise<AgentToolCall[]> => {
-		let sql = `SELECT * FROM agent_tool_calls WHERE 1=1`;
-		const args: string[] = [];
+		let where = `WHERE 1=1`;
+		const args: (string | number)[] = [];
 
 		if (input.task_id) {
-			sql += ` AND task_id = ?`;
+			where += ` AND task_id = ?`;
 			args.push(input.task_id);
 		}
 		if (input.node_id) {
-			sql += ` AND node_id = ?`;
+			where += ` AND node_id = ?`;
 			args.push(input.node_id);
 		}
-		sql += ` ORDER BY created_at ASC`;
+
+		// 默认只取最近 500 条（result_json/args_json 为大字段，避免全量拉取）；
+		// 取最近 N 条后按 created_at 正序返回，保持原有排序语义。
+		const limit = input.limit === undefined ? 500 : input.limit;
+		let sql: string;
+		if (limit > 0) {
+			sql = `SELECT * FROM (SELECT * FROM agent_tool_calls ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?) ORDER BY created_at ASC`;
+			args.push(limit, input.offset ?? 0);
+		} else {
+			sql = `SELECT * FROM agent_tool_calls ${where} ORDER BY created_at ASC`;
+		}
 
 		const rows = await db.client.execute({ sql, args });
 		return rows.rows.map((row) => ({
@@ -779,14 +814,32 @@ export function createAgentMessageHandlers(db: DbContext) {
 
 	const listMessages = async (
 		_event: IpcMainInvokeEvent,
-		input: { session_id: string; limit?: number },
+		input: {
+			session_id: string;
+			task_id?: string;
+			/** 最多返回条数（取最近 N 条后按时间正序返回）。不传默认 500；传 0 或负数表示不限制（全量） */
+			limit?: number;
+			/** 向前翻页偏移（跳过最近的 offset 条，与 limit 配合使用） */
+			offset?: number;
+		},
 	): Promise<AgentMessage[]> => {
-		let sql = `SELECT * FROM agent_messages WHERE session_id = ? ORDER BY created_at ASC`;
+		let where = `WHERE session_id = ?`;
 		const args: (string | number)[] = [input.session_id];
 
-		if (input.limit) {
-			sql += ` LIMIT ?`;
-			args.push(input.limit);
+		if (input.task_id) {
+			where += ` AND task_id = ?`;
+			args.push(input.task_id);
+		}
+
+		// 默认只取最近 500 条（content_json 为大字段，避免全量拉取）；
+		// 取最近 N 条后按 created_at 正序返回，保持原有排序语义。
+		const limit = input.limit === undefined ? 500 : input.limit;
+		let sql: string;
+		if (limit > 0) {
+			sql = `SELECT * FROM (SELECT * FROM agent_messages ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?) ORDER BY created_at ASC`;
+			args.push(limit, input.offset ?? 0);
+		} else {
+			sql = `SELECT * FROM agent_messages ${where} ORDER BY created_at ASC`;
 		}
 
 		const rows = await db.client.execute({ sql, args });

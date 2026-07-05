@@ -298,11 +298,15 @@ export async function loadAgentSessionMessagesAsChatMessages(
 	agentSessionId: string,
 	options?: { limit?: number },
 ): Promise<ChatMessage[]> {
-	const records = await api.listAgentMessages(agentSessionId);
+	const limit = options?.limit;
+	// limit > 0：把截断下推到 IPC/SQL，只传输最近 N 条；
+	// 未传或 <= 0：显式传 0 拉全量，保持本函数原有"不传 = 全部"的语义。
+	const records = await api.listAgentMessages(agentSessionId, {
+		limit: typeof limit === "number" && limit > 0 ? limit : 0,
+	});
 	const decoded = records.map(decodeAgentMessageToChatMessage);
 	decoded.sort((a, b) => a.timestamp - b.timestamp);
 
-	const limit = options?.limit;
 	if (typeof limit === "number" && limit > 0 && decoded.length > limit) {
 		return decoded.slice(decoded.length - limit);
 	}

@@ -8,6 +8,10 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import { getRecentPerfMetrics } from "../../services/perfTelemetry";
+import {
+	getRecentPerfEvents,
+	recordPerfEvent,
+} from "../../services/perfEvents";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -26,5 +30,33 @@ export function createPerfHandlers(deps: { db: DbContext }) {
 		return { samples };
 	};
 
-	return { perf_get_recent_metrics };
+	const perf_get_recent_events: Handler<"perf_get_recent_events"> = async (
+		_event,
+		input,
+	) => {
+		const events = await getRecentPerfEvents(deps.db, {
+			kind: input.kind,
+			limit: input.limit,
+		});
+		events.reverse();
+		return { events };
+	};
+
+	const perf_report_renderer_longtasks: Handler<
+		"perf_report_renderer_longtasks"
+	> = async (_event, input) => {
+		await recordPerfEvent(deps.db, {
+			kind: "renderer_longtask",
+			name: "longtask_summary",
+			durationMs: input.totalDurationMs,
+			meta: { count: input.count, windowMs: input.windowMs },
+		});
+		return { success: true };
+	};
+
+	return {
+		perf_get_recent_metrics,
+		perf_get_recent_events,
+		perf_report_renderer_longtasks,
+	};
 }

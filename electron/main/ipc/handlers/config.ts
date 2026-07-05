@@ -2,10 +2,12 @@
  * Config IPC Handlers
  */
 import type { IpcMainInvokeEvent } from "electron";
+import { app } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { AppConfig } from "../../../shared/types";
 import type { DbContext } from "../../db/client";
 import { invalidateProviderCache } from "../../llm/invoke";
+import { setFileLogLevel } from "../../logging/logger";
 import {
 	getWindowsCloseBehavior,
 	setWindowsCloseBehavior,
@@ -88,6 +90,29 @@ export function createConfigHandlers(db: DbContext) {
 		return { success: true, windows };
 	};
 
+	// 文件日志级别：持久化到 app_config 并立即生效（B9 设置面板闭环）。
+	// "default" = 清除自定义配置，恢复默认（env LOG_FILE_LEVEL > 生产 info / 开发 debug）。
+	const setLogFileLevel: Handler<"set_log_file_level"> = async (
+		_event,
+		input,
+	) => {
+		if (input.level === "default") {
+			await db.client.execute({
+				sql: `DELETE FROM app_config WHERE key = 'log_file_level'`,
+				args: [],
+			});
+			const fallback =
+				process.env.LOG_FILE_LEVEL ?? (app.isPackaged ? "info" : "debug");
+			return { success: true, effective_level: setFileLogLevel(fallback) };
+		}
+		await db.client.execute({
+			sql: `INSERT INTO app_config (key, value, updated_at) VALUES ('log_file_level', ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+			args: [input.level, now()],
+		});
+		return { success: true, effective_level: setFileLogLevel(input.level) };
+	};
+
 	return {
 		get_config: getConfig,
 		set_config: setConfig,
@@ -96,5 +121,6 @@ export function createConfigHandlers(db: DbContext) {
 		set_active_model: setActiveModel,
 		app_get_close_behavior: getCloseBehavior,
 		app_set_close_behavior: setCloseBehavior,
+		set_log_file_level: setLogFileLevel,
 	};
 }

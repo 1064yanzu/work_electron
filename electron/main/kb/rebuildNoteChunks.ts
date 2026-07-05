@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import type { InStatement } from "@libsql/client";
 import type { DbContext } from "../db/client";
+import { withBatch } from "../db/batch";
 import { buildChunks } from "./chunking";
 
 /**
@@ -8,6 +10,9 @@ import { buildChunks } from "./chunking";
  * - 重新切分并写入
  *
  * 注意：此函数只负责 chunking，不负责 embedding（embedding 由其它流程处理）。
+ *
+ * B6：删除 + 全部写入合并为一次 `client.batch()` 事务，避免一本书数千个
+ * chunk 逐条 execute() 各自隐式提交（各自触发 FTS 触发器 + fsync）。
  */
 export async function rebuildNoteChunks(options: {
 	db: DbContext;
@@ -18,27 +23,21 @@ export async function rebuildNoteChunks(options: {
 	const { db, noteId, sourceId, content } = options;
 	const now = Date.now();
 
-	// 删除旧 chunks
-	await db.client.execute({
-		sql: `DELETE FROM note_chunks WHERE note_id = ?`,
-		args: [noteId],
-	});
-
 	const normalized = String(content || "").trim();
-	if (!normalized) return 0;
+	const chunks = normalized ? buildChunks(normalized) : [];
 
-	// 切分内容
-	const chunks = buildChunks(normalized);
-
-	// 写入新 chunks
+	const statements: InStatement[] = [
+		{ sql: `DELETE FROM note_chunks WHERE note_id = ?`, args: [noteId] },
+	];
 	for (let i = 0; i < chunks.length; i++) {
-		const chunkId = randomUUID();
-		await db.client.execute({
+		statements.push({
 			sql: `INSERT INTO note_chunks (id, note_id, source_id, chunk_index, content, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			args: [chunkId, noteId, sourceId, i, chunks[i], now, now],
+			args: [randomUUID(), noteId, sourceId, i, chunks[i], now, now],
 		});
 	}
+
+	await withBatch(db, statements);
 
 	return chunks.length;
 }

@@ -8,11 +8,12 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { safeInvoke } from "../../../lib/tauriBridge";
+import { usePdfDocumentSource } from "../../pdf/usePdfDocumentSource";
+import { VirtualizedPdfPageList } from "../../pdf/VirtualizedPdfPageList";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 	"pdfjs-dist/build/pdf.worker.min.mjs",
@@ -24,158 +25,43 @@ interface PdfViewerProps {
 	className?: string;
 }
 
-/** 虚拟化单页：只有进入视口附近时才渲染 */
-const VirtualPage = memo(function VirtualPage({
-	pageNumber,
-	width,
-	scale,
-	onVisible,
-}: {
-	pageNumber: number;
-	width: number | undefined;
-	scale: number;
-	onVisible?: (pageNumber: number) => void;
-}) {
-	const ref = useRef<HTMLDivElement>(null);
-	const [isVisible, setIsVisible] = useState(false);
-	const [wasVisible, setWasVisible] = useState(false);
-
-	useEffect(() => {
-		const el = ref.current;
-		if (!el) return;
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				const visible = entry.isIntersecting;
-				setIsVisible(visible);
-				if (visible) {
-					setWasVisible(true);
-					onVisible?.(pageNumber);
-				}
-			},
-			{ rootMargin: "300px 0px" },
-		);
-		observer.observe(el);
-		return () => observer.disconnect();
-	}, [pageNumber, onVisible]);
-
-	const shouldRender = isVisible || wasVisible;
-	const estimatedHeight = (width || 600) * 1.414 * scale;
-
-	return (
-		<div
-			ref={ref}
-			data-page-container=""
-			className="bg-surface shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)] rounded-sm relative"
-			style={{ minHeight: shouldRender ? undefined : estimatedHeight }}
-		>
-			{shouldRender ? (
-				<Page
-					pageNumber={pageNumber}
-					width={width}
-					scale={scale}
-					renderTextLayer={true}
-					renderAnnotationLayer={true}
-					loading={
-						<div
-							className="flex items-center justify-center"
-							style={{ height: estimatedHeight }}
-						>
-							<Loader2 className="w-5 h-5 animate-spin text-text-light" />
-						</div>
-					}
-				/>
-			) : (
-				<div
-					className="flex items-center justify-center bg-warm-50/50"
-					style={{ height: estimatedHeight }}
-				>
-					<span className="text-[11px] text-text-light">{pageNumber}</span>
-				</div>
-			)}
-		</div>
-	);
-});
-
 export default function PdfViewer({ src, className }: PdfViewerProps) {
+	const { documentSource: documentFile, error: loadError } =
+		usePdfDocumentSource(src);
 	const [numPages, setNumPages] = useState<number>(0);
 	const [scale, setScale] = useState<number>(1.0);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const [renderError, setRenderError] = useState<string | null>(null);
 	const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-	const [documentFile, setDocumentFile] = useState<
-		string | { data: Uint8Array } | null
-	>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [jumpInput, setJumpInput] = useState("");
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 	const [pageWidth, setPageWidth] = useState<number>(0);
 
-	const isRemote = useMemo(
-		() =>
-			src.startsWith("http://") ||
-			src.startsWith("https://") ||
-			src.startsWith("data:") ||
-			src.startsWith("blob:"),
-		[src],
-	);
+	const error = loadError ? "PDF 文件读取失败" : renderError;
 
+	// 每次 src 切换时重置页面/缩放/加载状态（实际字节加载由 usePdfDocumentSource 接管）。
 	useEffect(() => {
-		let cancelled = false;
-		let createdUrl: string | null = null;
 		setLoading(true);
-		setError(null);
+		setRenderError(null);
 		setNumPages(0);
 		setCurrentPage(1);
-		setDocumentFile(null);
-		setDownloadUrl((prev) => {
-			if (prev) URL.revokeObjectURL(prev);
-			return null;
-		});
+	}, [src]);
 
-		if (isRemote) {
-			setDocumentFile(src);
+	// 本地文件额外生成一个 Blob URL 供“下载”按钮使用（远程/data//blob: 来源直接用 src 本身下载即可）。
+	useEffect(() => {
+		if (!documentFile || typeof documentFile === "string") {
+			setDownloadUrl(null);
 			return;
 		}
-
-		(async () => {
-			try {
-				const result = await safeInvoke<{
-					content: string;
-					encoding: string;
-				}>("read_file_safe", {
-					payload: { path: src, encoding: "base64" },
-				});
-				if (cancelled) return;
-
-				const base64 = result?.content || "";
-				if (!base64) throw new Error("PDF 内容为空");
-
-				const binaryStr = atob(base64);
-				const len = binaryStr.length;
-				const bytes = new Uint8Array(len);
-				for (let i = 0; i < len; i++) {
-					bytes[i] = binaryStr.charCodeAt(i);
-				}
-
-				setDocumentFile({ data: bytes });
-				const blob = new Blob([bytes], { type: "application/pdf" });
-				const url = URL.createObjectURL(blob);
-				createdUrl = url;
-				setDownloadUrl(url);
-			} catch (e) {
-				if (cancelled) return;
-				console.error("[PDFViewer] Failed to load local pdf:", e);
-				setError("PDF 文件读取失败");
-				setLoading(false);
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-			if (createdUrl) URL.revokeObjectURL(createdUrl);
-		};
-	}, [isRemote, src]);
+		const blob = new Blob([documentFile.data as Uint8Array<ArrayBuffer>], {
+			type: "application/pdf",
+		});
+		const url = URL.createObjectURL(blob);
+		setDownloadUrl(url);
+		return () => URL.revokeObjectURL(url);
+	}, [documentFile]);
 
 	useEffect(() => {
 		const node = containerRef.current;
@@ -193,7 +79,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 	const onDocumentLoadSuccess = useCallback(
 		({ numPages }: { numPages: number }) => {
 			setNumPages(numPages);
-			setError(null);
+			setRenderError(null);
 			setLoading(false);
 		},
 		[],
@@ -201,7 +87,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 
 	const onDocumentLoadError = useCallback((loadError: Error) => {
 		console.error("PDF 加载失败:", loadError);
-		setError(
+		setRenderError(
 			loadError?.message
 				? `PDF 加载失败：${loadError.message}`
 				: "PDF 加载失败",
@@ -376,15 +262,12 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 						loading={null}
 						className="flex flex-col items-center gap-4"
 					>
-						{Array.from({ length: numPages }, (_, index) => (
-							<VirtualPage
-								key={`page-${index + 1}`}
-								pageNumber={index + 1}
-								width={pageWidth || undefined}
-								scale={scale}
-								onVisible={handlePageVisible}
-							/>
-						))}
+						<VirtualizedPdfPageList
+							numPages={numPages}
+							pageWidth={pageWidth || undefined}
+							scale={scale}
+							onActivePageChange={handlePageVisible}
+						/>
 					</Document>
 				) : null}
 			</div>

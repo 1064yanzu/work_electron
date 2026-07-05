@@ -40,7 +40,7 @@ export function MascotLoadingPreview({
 					preload="metadata"
 					className="h-full w-full object-contain"
 				/>
-				<div className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface/80 shadow-bai-card backdrop-blur-sm">
+				<div className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface/90 shadow-bai-card">
 					<Play
 						className="h-2.5 w-2.5 ml-0.5"
 						strokeWidth={2}

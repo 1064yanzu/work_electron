@@ -317,7 +317,7 @@ export default function ArtifactCard({
 					className={cn(
 						"absolute left-0 right-0 -bottom-8 z-10",
 						"px-3 py-1.5",
-						"bg-dark-muted/90 backdrop-blur-sm",
+						"bg-dark-muted/90",
 						"text-[10px] text-text-light font-mono truncate",
 						"rounded-lg shadow-lg",
 						"animate-in fade-in slide-in-from-top-1 duration-200",

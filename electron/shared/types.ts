@@ -179,6 +179,8 @@ export interface OutputAsset {
 	id: string;
 	title: string;
 	content: string;
+	/** meta_only 列表模式下的正文总长度（此时 content 仅为前 200 字符摘要） */
+	content_length?: number;
 	output_type: OutputType;
 	related_notes: string[];
 	scope?: SourceScope;

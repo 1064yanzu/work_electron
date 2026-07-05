@@ -177,6 +177,11 @@ export const forkCommand: SlashCommandDefinition = {
 			};
 		}
 
+		// sqlite 后端：克隆前确保源会话消息全文已加载（避免 fork 出空会话）
+		await chatStore.ensureSessionLoaded(src.id);
+		const srcLoaded =
+			chatStore.getState().sessions.find((item) => item.id === src.id) ?? src;
+
 		// 1) 新建一条 fork session（标题加 "(Fork)" 后缀）
 		const forkedTitle = `${src.title}（Fork）`;
 		// 2) 通过 chatStore 暴露的 API 创建 session；
@@ -184,7 +189,10 @@ export const forkCommand: SlashCommandDefinition = {
 		const created = chatStore.createFreshSession(forkedTitle);
 
 		// 3) 深拷贝原 session 的消息到新 session；新 session 的 sdkSessionId 保持 undefined
-		chatStore.replaceSessionMessages(created.id, cloneMessages(src.messages));
+		chatStore.replaceSessionMessages(
+			created.id,
+			cloneMessages(srcLoaded.messages),
+		);
 
 		// 4) 关键：把源会话的 cwd 继承到 fork 会话，否则下一次提交时 useAgentHandler
 		//    用的 cwd 与源会话 cwd 不一致，CLI 按 cwd+sessionId 找不到源会话
@@ -396,13 +404,18 @@ export const exportCommand: SlashCommandDefinition = {
 		return ctx.activeSession ? { state: "available" } : { state: "hidden" };
 	},
 	async execute(ctx: CommandContext) {
-		const session = ctx.activeSession;
+		let session = ctx.activeSession;
 		if (!session) {
 			return {
 				kind: "failed" as const,
 				message: SLASH_MESSAGES.disabled.reason.noActiveSession,
 			};
 		}
+		// sqlite 后端：导出前确保消息全文已加载
+		await chatStore.ensureSessionLoaded(session.id);
+		session =
+			chatStore.getState().sessions.find((item) => item.id === session?.id) ??
+			session;
 		if (!session.messages || session.messages.length === 0) {
 			return {
 				kind: "ok" as const,

@@ -37,6 +37,9 @@ import {
 import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { layoutStore } from "./lib/stores/layoutStore";
+import { useCommandPaletteStoreSelector } from "./lib/stores/commandPaletteStore";
+import { useReaderStoreSelector } from "./lib/stores/readerStore";
+import { useCardLibraryStoreSelector } from "./lib/stores/cardLibraryStore";
 import {
 	installGlobalShortcutListener,
 	registerDefaultShortcuts,
@@ -50,7 +53,7 @@ import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
 import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
 import { invoke } from "./lib/tauriCompat";
-import { listen } from "./lib/tauriEventCompat";
+import { useIpcListen } from "./hooks/useIpcListen";
 import { shortcut } from "./lib/platform";
 import { cn } from "./lib/utils";
 
@@ -119,6 +122,11 @@ export default function App() {
 	const [motionPreference, setMotionPreference] =
 		useState<MotionPreference>("system");
 	const [showMascotOnboarding, setShowMascotOnboarding] = useState(false);
+	// 三个全屏 overlay 的开关状态：只有为 true 时才挂载对应的 lazy 组件，
+	// 避免 React.lazy 在应用启动时就立即拉取对应 chunk（尤其 ReaderApp 相关代码量较大）
+	const isCommandPaletteOpen = useCommandPaletteStoreSelector((s) => s.isOpen);
+	const isReaderOpen = useReaderStoreSelector((s) => s.openedBookId !== null);
+	const isCardLibraryOpen = useCardLibraryStoreSelector((s) => s.open);
 	const activeMainView = useLayoutStoreSelector(
 		(state) => state.activeMainView,
 	);
@@ -309,10 +317,10 @@ export default function App() {
 
 	// 订阅原生菜单事件 — 帮助菜单里的"导出日志…/打开日志目录"
 	// 转发到设置面板的"关于与更新"页，让用户在熟悉的 UI 里完成动作。
-	useEffect(() => {
-		let unlisten: (() => void) | undefined;
-		void listen<{ type: string; action: string }>("app-menu-action", (evt) => {
-			const payload = evt.payload;
+	// 用 useIpcListen 统一处理异步订阅的竞态清理（避免组件在 .then() 回调前卸载产生孤儿监听器）
+	useIpcListen<{ type: string; action: string }>(
+		"app-menu-action",
+		(payload) => {
 			if (payload?.type !== "logs") return;
 			handleOpenSettings("general.about");
 			if (payload.action === "reveal") {
@@ -320,13 +328,9 @@ export default function App() {
 			} else if (payload.action === "export") {
 				void invoke("logs_export", { days: 7 }).catch(() => {});
 			}
-		}).then((fn) => {
-			unlisten = fn;
-		});
-		return () => {
-			unlisten?.();
-		};
-	}, [handleOpenSettings]);
+		},
+		[handleOpenSettings],
+	);
 
 	// 启动 + 工作区目录切换时扫描自定义命令（.claude/commands/）
 	useEffect(() => {
@@ -520,23 +524,31 @@ export default function App() {
 					</Suspense>
 				) : null}
 
-				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡 */}
-				<Suspense fallback={null}>
-					<CommandPalette onOpenSettings={(tab) => handleOpenSettings(tab)} />
-				</Suspense>
+				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡。
+        					全局快捷键监听在 registerDefaultShortcuts 中注册，与本组件是否挂载无关，
+        					因此这里可以安全地在关闭状态下完全不挂载该 lazy 组件，避免启动时预拉取 chunk */}
+				{isCommandPaletteOpen ? (
+					<Suspense fallback={null}>
+						<CommandPalette onOpenSettings={(tab) => handleOpenSettings(tab)} />
+					</Suspense>
+				) : null}
 
 				{/* 快捷键速查表 — Cmd+/ 唤起，数据来自 shortcutRegistry */}
 				<ShortcutCheatSheet />
 
-				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制 */}
-				<Suspense fallback={null}>
-					<ReaderApp onOpenSettings={() => handleOpenSettings("reader")} />
-				</Suspense>
+				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制，关闭时完全不挂载 */}
+				{isReaderOpen ? (
+					<Suspense fallback={null}>
+						<ReaderApp onOpenSettings={() => handleOpenSettings("reader")} />
+					</Suspense>
+				) : null}
 
-				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制（CardsHubView 的"放大"按钮触发） */}
-				<Suspense fallback={null}>
-					<KnowledgeCardsApp />
-				</Suspense>
+				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制（CardsHubView 的"放大"按钮触发），关闭时完全不挂载 */}
+				{isCardLibraryOpen ? (
+					<Suspense fallback={null}>
+						<KnowledgeCardsApp />
+					</Suspense>
+				) : null}
 			</MouseDragProvider>
 		</GlobalContextMenuProvider>
 	);

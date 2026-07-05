@@ -1,4 +1,6 @@
+import { useCallback, useEffect, useRef } from "react";
 import { PanelResizeHandle } from "react-resizable-panels";
+import { setPerfDegraded } from "../../lib/interaction/perfDegraded";
 import { cn } from "../../lib/utils";
 
 interface ResizeHandleProps {
@@ -21,9 +23,32 @@ export default function ResizeHandle({
 }: ResizeHandleProps = {}) {
 	const isHorizontal = direction === "horizontal";
 
+	// F10 性能降级：拖拽分栏期间给 <html> 挂 .perf-degraded，
+	// CSS 侧临时关停 backdrop-filter，松手恢复；卸载时兜底释放。
+	const draggingRef = useRef(false);
+	const handleDragging = useCallback(
+		(isDragging: boolean) => {
+			if (isDragging !== draggingRef.current) {
+				draggingRef.current = isDragging;
+				setPerfDegraded(isDragging);
+			}
+			onDragging?.(isDragging);
+		},
+		[onDragging],
+	);
+	useEffect(
+		() => () => {
+			if (draggingRef.current) {
+				draggingRef.current = false;
+				setPerfDegraded(false);
+			}
+		},
+		[],
+	);
+
 	return (
 		<PanelResizeHandle
-			onDragging={onDragging}
+			onDragging={handleDragging}
 			className={cn(
 				"group relative flex items-center justify-center select-none outline-none",
 				"transition-colors duration-150",

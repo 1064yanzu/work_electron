@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listCards } from "../api/cards";
-import { listOutputAssets } from "../api/output";
+import { listOutputAssetsMeta } from "../api/output";
 import { listSources } from "../api/sources";
 import type { OutputAsset, Source } from "../../types";
 import type { Card } from "../../types";
@@ -59,7 +59,8 @@ export function useCardsQuery(options?: QueryEnabledOptions) {
 export function useOutputAssetsQuery(options?: QueryEnabledOptions) {
 	return useQuery<OutputAsset[]>({
 		queryKey: queryKeys.outputAssets(),
-		queryFn: listOutputAssets,
+		// 列表场景走 meta_only 瘦身模式（content 仅摘要）；需要全文用 getOutputAsset(id)
+		queryFn: listOutputAssetsMeta,
 		enabled: options?.enabled,
 	});
 }

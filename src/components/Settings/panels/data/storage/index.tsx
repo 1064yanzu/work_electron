@@ -30,6 +30,7 @@ import { toast } from "../../../../ui/Toast";
 import { SettingsPanelHeader } from "../../../components/SettingsPanelHeader";
 import { DataDirectories } from "../DataDirectories";
 import { DataOverview } from "../DataOverview";
+import { SoftDeleteRetentionCard } from "../SoftDeleteRetentionCard";
 import { formatSize } from "../utils";
 import { StorageSection } from "./StorageSection";
 import { ThemesManagerSection } from "./ThemesManagerSection";
@@ -163,6 +164,8 @@ export function DataStorageSettings() {
 				/>
 
 				<DataOverview dataStats={dataStats} formatSize={formatSize} />
+
+				<SoftDeleteRetentionCard />
 
 				<DataDirectories
 					dataDir={dataDir}

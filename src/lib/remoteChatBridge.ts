@@ -479,7 +479,7 @@ export function useRemoteChatBridge(): void {
 
 			unlistenInject = await listen<RemoteChatInjectPayload>(
 				"remote-chat-inject",
-				(event) => {
+				async (event) => {
 					const payload = event.payload;
 					const runId = String(payload.runId || "").trim();
 					if (!runId) return;
@@ -523,6 +523,13 @@ export function useRemoteChatBridge(): void {
 
 					const channelLabel = getChannelLabel(payload.channelId);
 					const peerDisplay = payload.peerName || payload.peerId || "未知来源";
+					// sqlite 后端：先确保该会话消息已加载，否则 hasUserForTask 会在
+					// 未加载的空 messages 上误判、重复注入用户消息。
+					try {
+						await chatStore.ensureSessionLoaded(session.id);
+					} catch {
+						// 加载失败不阻断注入流程
+					}
 					const hasUserForTask = getChatSessionById(session.id)?.messages.some(
 						(msg) => msg.role === "user" && msg.metadata?.taskId === taskId,
 					);

@@ -1,5 +1,6 @@
 import { FileText, Folder, Image as ImageIcon } from "lucide-react";
 import { useMemo } from "react";
+import { getOutputAsset } from "../../../lib/api/output";
 import {
 	filterSourcesByProjectAndFolder,
 	useCardsQuery,
@@ -121,7 +122,14 @@ export function useDynamicSlashCommands({
 				category: "data",
 				group: "文档",
 				action: () => {
-					addSelectionToContext(output.content, output.title);
+					// 列表缓存是 meta_only 摘要，注入上下文前按需拉全文
+					void (async () => {
+						const full = await getOutputAsset(output.id).catch(() => null);
+						addSelectionToContext(
+							full?.content ?? output.content,
+							output.title,
+						);
+					})();
 				},
 			});
 		});

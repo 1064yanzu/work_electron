@@ -17,7 +17,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../../../../lib/utils";
 import { invoke } from "../../../../lib/tauriCompat";
-import { listen } from "../../../../lib/tauriEventCompat";
+import { useIpcListen } from "../../../../hooks/useIpcListen";
 import { SettingsButton, SettingsBadge } from "../../ui/SettingsButtons";
 import { SettingsCardSection } from "../../ui/SettingsPrimitives";
 import { toast } from "../../../ui/Toast";
@@ -83,22 +83,21 @@ export function AppUpdateCard() {
 	>(null);
 	const installTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+	// 用 useIpcListen 统一处理异步订阅的竞态清理（避免组件在 .then() 回调前卸载产生孤儿监听器）
+	useIpcListen<UpdateState>("update-state-changed", (payload) => {
+		setUpdateState(payload);
+		if (
+			payload.status !== "checking" &&
+			payload.status !== "downloading" &&
+			payload.status !== "installing"
+		) {
+			setActionBusy(null);
+		}
+	});
+
+	// 卸载时清理安装倒计时定时器（与 IPC 监听解耦，各自独立清理）
 	useEffect(() => {
-		let unlisten: (() => void) | undefined;
-		listen<UpdateState>("update-state-changed", (event) => {
-			setUpdateState(event.payload);
-			if (
-				event.payload.status !== "checking" &&
-				event.payload.status !== "downloading" &&
-				event.payload.status !== "installing"
-			) {
-				setActionBusy(null);
-			}
-		}).then((fn) => {
-			unlisten = fn;
-		});
 		return () => {
-			unlisten?.();
 			if (installTimerRef.current) clearTimeout(installTimerRef.current);
 		};
 	}, []);

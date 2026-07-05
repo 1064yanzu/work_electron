@@ -54,6 +54,11 @@ export function getSessionPreview(session: ChatSession): string {
 			return text.length > 48 ? `${text.slice(0, 48)}…` : text;
 		}
 	}
+	// sqlite 后端：未加载全文的会话用 DB 派生的末条 user 消息预览
+	const preview = (session.lastUserPreview ?? "").trim();
+	if (preview) {
+		return preview.length > 48 ? `${preview.slice(0, 48)}…` : preview;
+	}
 	return "";
 }
 

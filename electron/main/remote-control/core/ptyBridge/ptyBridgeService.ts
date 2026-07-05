@@ -21,6 +21,7 @@ import path from "node:path";
 import os from "node:os";
 import type { BrowserWindow } from "electron";
 import type { Logger } from "../../../logging/types";
+import { BatchedSender } from "../../../utils/batchedSender";
 import {
 	getTerminalService,
 	type TerminalInfo,
@@ -272,6 +273,12 @@ export class PtyBridgeService {
 	private readonly sessionsByPeer = new Map<string, PtySession>();
 	private readonly sessionsById = new Map<string, PtySession>();
 	private readonly terminalService = getTerminalService();
+	/**
+	 * terminal-data 高频镜像走 BatchedSender 合帧（preload 的 BATCHED_CHANNELS
+	 * 已包含 "terminal-data"，渲染端自动展开 { items } 为逐条回调，消费方无感知）。
+	 * 单通道 FIFO 缓冲保证 chunk 顺序；低频边界事件发送前先 flush 保证跨通道时序。
+	 */
+	private desktopDataSender: BatchedSender<unknown> | null = null;
 
 	constructor(private readonly deps: PtyBridgeDeps) {}
 
@@ -303,6 +310,8 @@ export class PtyBridgeService {
 		for (const session of [...this.sessionsById.values()]) {
 			await this.closeSession(session, { reason });
 		}
+		// closeSession 内的边界事件已触发 flush，这里兜底清掉残留缓冲与定时器
+		this.desktopDataSender?.dispose();
 	}
 
 	async terminateSessionById(sessionId: string): Promise<boolean> {
@@ -1225,10 +1234,31 @@ export class PtyBridgeService {
 		session.desktopAttached = true;
 	}
 
+	private getDesktopDataSender(): BatchedSender<unknown> {
+		if (!this.desktopDataSender) {
+			this.desktopDataSender = new BatchedSender<unknown>(
+				"terminal-data",
+				() => {
+					const win = this.deps.getMainWindow?.();
+					return win && !win.isDestroyed() ? win : null;
+				},
+			);
+		}
+		return this.desktopDataSender;
+	}
+
 	private sendToDesktop(channel: string, payload: unknown): void {
 		const win = this.deps.getMainWindow?.();
 		if (!win || win.isDestroyed()) return;
 		try {
+			if (channel === "terminal-data") {
+				// 高频输出镜像：合帧发送，降低 structured clone / 渲染端 setState 频率
+				this.getDesktopDataSender().send(payload);
+				return;
+			}
+			// 边界事件（attached / detached / exit 等）：先冲掉批量缓冲再直发，
+			// 保证渲染端看到的 data 与边界事件顺序一致
+			this.desktopDataSender?.flush();
 			win.webContents.send(channel, payload);
 		} catch (error) {
 			this.log(

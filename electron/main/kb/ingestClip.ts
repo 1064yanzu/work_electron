@@ -3,19 +3,19 @@ import type { ClipPayload, StoredClip } from "../clip/types";
 import type { DbContext } from "../db/client";
 import { chunkTextByLength } from "./chunking";
 import { htmlToText } from "./htmlToText";
-import { extractArticleFromHtml } from "./extractArticleFromHtml";
+import { extractArticle } from "./extractArticle";
 import { sanitizeHtml } from "./sanitizeHtml";
 
-function resolveClipContent(payload: ClipPayload): {
+async function resolveClipContent(payload: ClipPayload): Promise<{
 	text: string;
 	html: string | null;
-} {
+}> {
 	if (payload.selectedText && payload.selectedText.trim().length > 0) {
 		return { text: payload.selectedText.trim(), html: null };
 	}
 
 	if (payload.html && payload.html.trim().length > 0 && payload.url) {
-		const extracted = extractArticleFromHtml({
+		const extracted = await extractArticle({
 			html: payload.html,
 			url: payload.url,
 			titleHint: payload.title,
@@ -50,7 +50,7 @@ function resolveTitle(payload: ClipPayload, text: string) {
 
 export async function ingestClipToDb(db: DbContext, clip: StoredClip) {
 	const now = Date.now();
-	const resolved = resolveClipContent(clip.payload);
+	const resolved = await resolveClipContent(clip.payload);
 	const text = resolved.text;
 
 	const sourceId = clip.id;

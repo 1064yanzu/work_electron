@@ -26,6 +26,7 @@ import {
 	SettingsRow,
 	SettingsSectionCard,
 	SettingsSectionTitle,
+	SettingsSwitch,
 } from "../../ui/SettingsPrimitives";
 
 type AppCloseBehavior = "ask" | "hide_to_tray" | "quit";
@@ -33,6 +34,7 @@ type AppCloseBehavior = "ask" | "hide_to_tray" | "quit";
 /** 锚点 id 常量：与 fields.ts 的 FieldDescriptor 对齐，也是 data-settings-anchor 属性值 */
 const ANCHOR = {
 	theme: "general.appearance.theme",
+	glassPerf: "general.appearance.glass-perf",
 	motion: "general.appearance.motion",
 	language: "general.appearance.language",
 	windowsClose: "general.appearance.windows-close",
@@ -42,6 +44,9 @@ export function AppearancePanel() {
 	const [theme, setTheme] = useState<ThemeMode>(themeManager.getTheme());
 	const [colorThemeId, setColorThemeId] = useState<string>(
 		themeManager.getColorThemeId(),
+	);
+	const [glassPerfMode, setGlassPerfMode] = useState<boolean>(
+		themeManager.getGlassPerformanceMode(),
 	);
 	const [language, setLanguage] = useState<string>("zh-CN");
 	const [platform, setPlatform] = useState<NodeJS.Platform | null>(null);
@@ -75,6 +80,7 @@ export function AppearancePanel() {
 		const unsubscribe = themeManager.subscribe(() => {
 			setTheme(themeManager.getTheme());
 			setColorThemeId(themeManager.getColorThemeId());
+			setGlassPerfMode(themeManager.getGlassPerformanceMode());
 		});
 		return () => {
 			cancelled = true;
@@ -99,6 +105,17 @@ export function AppearancePanel() {
 		} catch (error) {
 			console.error("[AppearancePanel] 保存色彩主题失败:", error);
 			toast.error("保存色彩主题失败");
+		}
+	};
+
+	const handleGlassPerfModeChange = async (enabled: boolean) => {
+		themeManager.setGlassPerformanceMode(enabled);
+		setGlassPerfMode(enabled);
+		try {
+			await setConfig("glassPerformanceMode", enabled);
+		} catch (error) {
+			console.error("[AppearancePanel] 保存玻璃主题性能模式失败:", error);
+			toast.error("保存性能模式失败");
 		}
 	};
 
@@ -164,6 +181,25 @@ export function AppearancePanel() {
 						onColorThemeChange={handleColorThemeChange}
 						onModeChange={handleThemeChange}
 					/>
+					{/* 玻璃主题专属：性能模式（关停毛玻璃模糊，改用高不透明度纯色） */}
+					{colorThemeId === "glass" && (
+						<div
+							id={ANCHOR.glassPerf}
+							data-settings-anchor={ANCHOR.glassPerf}
+							className="mt-4 border-t border-border pt-1"
+						>
+							<SettingsRow
+								label="玻璃主题性能模式"
+								description="用高不透明度纯色替代毛玻璃模糊，显著降低 GPU 开销与拖拽/滚动掉帧。视觉层次保留，磨砂质感关闭。"
+								action={
+									<SettingsSwitch
+										checked={glassPerfMode}
+										onChange={handleGlassPerfModeChange}
+									/>
+								}
+							/>
+						</div>
+					)}
 				</div>
 			</SettingsSectionCard>
 

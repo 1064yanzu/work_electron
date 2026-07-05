@@ -18,6 +18,8 @@ import {
 	backupToWebdav,
 	deleteWebdavBackup,
 	exportAllData,
+	exportAllDataToFile,
+	deleteFileSafe,
 	getSyncConfig,
 	importDataFromJson,
 	listWebdavBackups,
@@ -28,6 +30,7 @@ import {
 	updateSyncConfig,
 	backupToLocal,
 } from "../../../../../lib/api";
+import { safeInvoke } from "../../../../../lib/tauriBridge";
 import { confirmDialog as confirmUI } from "../../../../ui/ConfirmDialog";
 import { toast } from "../../../../ui/Toast";
 import { SettingsPanelHeader } from "../../../components/SettingsPanelHeader";
@@ -99,12 +102,19 @@ export function DataBackupSettings() {
 	// WebDAV 备份
 	const handleBackupToWebdav = useCallback(async () => {
 		setIsSyncing(true);
+		let exportedPath: string | null = null;
 		try {
-			const data = await exportAllData();
+			// D9：导出内容落在主进程临时文件，IPC 只传 { path, bytes }；
+			// 上传需要 JSON 内容时再按路径读取（backup_to_webdav 协议仍接收 data 字符串）
+			const exported = await exportAllData();
+			exportedPath = exported.path;
+			const file = await safeInvoke<{ content: string }>("read_file_safe", {
+				path: exported.path,
+			});
 			const config = buildWebdavConfig(
 				`backup_${new Date().toISOString().replace(/[:.]/g, "-")}.zip`,
 			);
-			await backupToWebdav(data, config);
+			await backupToWebdav(file.content, config);
 			toast.success("备份成功！");
 			await loadData();
 			try {
@@ -118,6 +128,10 @@ export function DataBackupSettings() {
 				`备份失败：${error instanceof Error ? error.message : String(error)}`,
 			);
 		} finally {
+			// 上传完成后清理临时导出文件（失败不影响主流程）
+			if (exportedPath) {
+				void deleteFileSafe(exportedPath).catch(() => {});
+			}
 			setIsSyncing(false);
 		}
 	}, [buildWebdavConfig, loadData]);
@@ -202,18 +216,12 @@ export function DataBackupSettings() {
 		}
 	}, [loadData]);
 
-	// 导出 JSON
+	// 导出 JSON（D9：主进程保存对话框 + 直接写盘，整串 JSON 不再经过渲染端）
 	const handleExport = useCallback(async () => {
 		try {
-			const data = await exportAllData();
-			const blob = new Blob([data], { type: "application/json" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `workbench-backup-${new Date().toISOString().split("T")[0]}.json`;
-			a.click();
-			URL.revokeObjectURL(url);
-			toast.success("数据导出成功！");
+			const result = await exportAllDataToFile();
+			if (result.canceled) return;
+			toast.success(`数据已导出到：${result.path}`, 5000);
 		} catch (error) {
 			toast.error(
 				`导出失败：${error instanceof Error ? error.message : String(error)}`,

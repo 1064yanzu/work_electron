@@ -18,7 +18,7 @@ import type {
 	SourceKind,
 	SourceOrigin,
 } from "../../shared/types";
-import { extractArticleFromHtml } from "../kb/extractArticleFromHtml";
+import { extractArticle } from "../kb/extractArticle";
 import { rebuildNoteChunks } from "../kb/rebuildNoteChunks";
 import { importBookFromPath } from "../reader/bookService";
 import { epubFormatHandler } from "../reader/formats/epub";
@@ -370,7 +370,7 @@ export async function ingestUrlContent(
 	const { finalUrl, html } = await fetchHtmlDocument(normalizedUrl);
 	const meta = await extractMetaFromHtml(html, finalUrl);
 
-	const extracted = extractArticleFromHtml({
+	const extracted = await extractArticle({
 		html,
 		url: finalUrl,
 		titleHint: payload.title || meta.title,
@@ -616,7 +616,7 @@ async function ingestLocalFile(
 
 		const raw = await fs.readFile(absPath, "utf-8");
 		if (ext === ".html" || ext === ".htm") {
-			const extracted = extractArticleFromHtml({
+			const extracted = await extractArticle({
 				html: raw,
 				url: fileUrl,
 				titleHint: baseName,

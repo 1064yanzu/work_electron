@@ -468,6 +468,31 @@ export type IPCSchema = {
 		};
 	};
 	/**
+	 * M0 度量基建：获取 perf_events 表中的事件（启动里程碑 / 渲染端 longtask / 慢 IPC 调用），
+	 * 给 Settings → About 面板绘制 startup/longtask/slow_ipc 曲线。
+	 */
+	perf_get_recent_events: {
+		input: { kind?: string; limit?: number };
+		output: {
+			events: Array<{
+				id: number;
+				ts: number;
+				kind: string;
+				name: string;
+				duration_ms: number | null;
+				meta_json: string | null;
+			}>;
+		};
+	};
+	/**
+	 * M0.2：渲染端 PerformanceObserver('longtask') 每分钟汇总一次，上报长任务计数 + 总时长，
+	 * 主进程批量写入 perf_events（kind='renderer_longtask'）。
+	 */
+	perf_report_renderer_longtasks: {
+		input: { count: number; totalDurationMs: number; windowMs: number };
+		output: { success: boolean };
+	};
+	/**
 	 * userData 缓存清理：扫描 + 报告 + 执行。
 	 * 默认 dry-run 仅返回可清理项；execute=true 时真正删除。
 	 */
@@ -665,6 +690,19 @@ export type IPCSchema = {
 		output: {
 			content: string;
 			encoding: string;
+			size: number;
+			mtime_ms: number;
+			path: string;
+		};
+	};
+	/**
+	 * F4：二进制文件读取（结构化克隆直传 Uint8Array，无 base64 编解码开销）。
+	 * 用于 PDF 等二进制大文件，消灭 read_file_safe(base64) + 渲染端 atob 逐字节循环解码。
+	 */
+	read_file_bytes_safe: {
+		input: { path: string };
+		output: {
+			data: Uint8Array;
 			size: number;
 			mtime_ms: number;
 			path: string;
@@ -917,7 +955,11 @@ export type IPCSchema = {
 	// Notes 命令
 	// ==================
 	list_notes: {
-		input: { source_id?: string };
+		input: {
+			source_id?: string;
+			/** 是否返回 content_html（默认 false，列表瘦身；详情/编辑需要时显式传 true） */
+			include_html?: boolean;
+		};
 		output: Note[];
 	};
 	create_note: {
@@ -1357,6 +1399,75 @@ export type IPCSchema = {
 	set_config: {
 		input: { key: string; value: string };
 		output: { success: boolean };
+	};
+
+	// ==================
+	// Chat 历史（SQLite 后端，F2）
+	// ==================
+	/** 列出全部会话（仅元数据 + 消息数 + 末条预览，不带全文） */
+	chat_history_list_sessions: {
+		input: Record<string, never>;
+		output: { sessions: ChatHistorySessionRow[] };
+	};
+	/** 拉取单个会话的全部消息（按 seq 升序） */
+	chat_history_get_messages: {
+		input: { session_id: string };
+		output: { messages: ChatHistoryMessageRow[] };
+	};
+	/**
+	 * 批量 upsert 会话消息（单事务）。
+	 * - `replace: true` 时先清空该会话已有消息再写入（整会话重排/替换）；
+	 * - `delete_ids` 与 upsert 同批执行（用于截断式删除）。
+	 */
+	chat_history_save_messages: {
+		input: {
+			session_id: string;
+			messages: ChatHistoryMessageInput[];
+			replace?: boolean;
+			delete_ids?: string[];
+		};
+		output: { success: boolean; saved: number; deleted: number };
+	};
+	/** upsert 会话元数据行 */
+	chat_history_upsert_session: {
+		input: ChatHistorySessionInput;
+		output: { success: boolean };
+	};
+	/** 删除会话（消息级联删除） */
+	chat_history_delete_session: {
+		input: { session_id: string };
+		output: { success: boolean };
+	};
+	/** localStorage → SQLite 分片导入（幂等，INSERT OR REPLACE） */
+	chat_history_migrate_import: {
+		input: {
+			sessions: Array<
+				ChatHistorySessionInput & { messages: ChatHistoryMessageInput[] }
+			>;
+		};
+		output: {
+			success: boolean;
+			imported_sessions: number;
+			imported_messages: number;
+		};
+	};
+	/** 消息全文搜索（SQL LIKE），按时间倒序 */
+	chat_history_search: {
+		input: { q: string; limit?: number };
+		output: {
+			results: Array<{
+				session_id: string;
+				message_id: string;
+				role: string;
+				snippet: string;
+				created_at: number;
+			}>;
+		};
+	};
+
+	set_log_file_level: {
+		input: { level: "error" | "warn" | "info" | "debug" | "default" };
+		output: { success: boolean; effective_level: string };
 	};
 	get_remote_control_config: {
 		input: Record<string, never>;
@@ -1811,7 +1922,14 @@ export type IPCSchema = {
 		output: AgentMessage;
 	};
 	agent_list_messages: {
-		input: { session_id: string; task_id?: string; limit?: number };
+		input: {
+			session_id: string;
+			task_id?: string;
+			/** 最多返回条数（取最近 N 条后按时间正序返回）。不传默认 500；传 0 或负数表示不限制（全量） */
+			limit?: number;
+			/** 向前翻页偏移（跳过最近的 offset 条，与 limit 配合使用） */
+			offset?: number;
+		};
 		output: AgentMessage[];
 	};
 
@@ -2148,7 +2266,13 @@ export type IPCSchema = {
 	// Output Assets 命令
 	// ==================
 	list_output_assets: {
-		input: { project_id?: string };
+		input: {
+			project_id?: string;
+			/** 只取指定 id 的产物（详情场景，返回全文） */
+			id?: string;
+			/** 元数据模式：content 只返回前 200 字符摘要，并附带 content_length（列表场景瘦身） */
+			meta_only?: boolean;
+		};
 		output: OutputAsset[];
 	};
 	create_output_asset: {
@@ -2409,6 +2533,24 @@ export type IPCSchema = {
 	clear_all_data: {
 		input: Record<string, never>;
 		output: void;
+	};
+
+	// ==================
+	// 导入导出命令
+	// ==================
+	/**
+	 * 导出全量数据（D9 流式化）：主进程分块序列化写入临时文件，
+	 * IPC 只返回 { path, bytes }，不再传整串 JSON。
+	 * 需要内容的调用方（WebDAV 备份）拿到 path 后用 read_file_safe 读取。
+	 */
+	export_all_data: {
+		input: Record<string, never>;
+		output: { path: string; bytes: number };
+	};
+	/** 导出全量数据到用户选择的文件（主进程 showSaveDialog + 直接写盘，同 logs_export 模式） */
+	export_all_data_to_file: {
+		input: Record<string, never>;
+		output: { canceled: boolean; path: string; bytes: number };
 	};
 
 	// ==================
@@ -4087,6 +4229,75 @@ export interface StyleProfileRecipe {
 	rhetorical_profile_name?: string;
 	aesthetic_profile_name?: string;
 	anchors_profile_name?: string;
+}
+
+// ==================
+// Chat 历史（SQLite 后端，F2）行类型
+// ==================
+
+/** chat_sessions 表行（list 输出，附带派生统计字段） */
+export interface ChatHistorySessionRow {
+	id: string;
+	title: string;
+	folder_id: string | null;
+	cwd: string | null;
+	agent_session_id: string | null;
+	is_pinned: boolean;
+	is_archived: boolean;
+	created_at: number;
+	updated_at: number;
+	/** 装不下的会话字段（model / sdkSessionId / threadSource 等）的 JSON */
+	meta_json: string | null;
+	/** 该会话消息总数（派生） */
+	message_count: number;
+	/** 末条消息角色（派生，可能为 null） */
+	last_message_role: string | null;
+	/** 末条消息内容预览（截断，派生） */
+	last_message_preview: string | null;
+	/** 末条消息时间（派生） */
+	last_message_at: number | null;
+	/** 末条 user 消息内容预览（截断，派生；线程列表预览用） */
+	last_user_preview: string | null;
+}
+
+/** chat_sessions upsert 输入 */
+export interface ChatHistorySessionInput {
+	id: string;
+	title: string;
+	folder_id?: string | null;
+	cwd?: string | null;
+	agent_session_id?: string | null;
+	is_pinned?: boolean;
+	is_archived?: boolean;
+	created_at: number;
+	updated_at: number;
+	meta_json?: string | null;
+}
+
+/** chat_messages 表行 */
+export interface ChatHistoryMessageRow {
+	id: string;
+	session_id: string;
+	role: string;
+	content: string;
+	/** metadata.blocks 的 JSON */
+	blocks_json: string | null;
+	/** 其余消息字段（model / suggestedContent / originalContent / metadata 去 blocks）的 JSON */
+	metadata_json: string | null;
+	/** 会话内顺序号 */
+	seq: number;
+	created_at: number;
+}
+
+/** chat_messages upsert 输入（session_id 由命令参数携带） */
+export interface ChatHistoryMessageInput {
+	id: string;
+	role: string;
+	content: string;
+	blocks_json?: string | null;
+	metadata_json?: string | null;
+	seq: number;
+	created_at: number;
 }
 
 export type IPCChannel = keyof IPCSchema;

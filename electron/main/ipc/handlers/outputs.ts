@@ -41,8 +41,14 @@ function parseOutputAsset(row: Record<string, unknown>): OutputAsset {
 		version: (row.version as number) || 1,
 		created_at: row.created_at as number,
 		updated_at: row.updated_at as number,
+		...(row.content_length != null
+			? { content_length: Number(row.content_length) }
+			: {}),
 	};
 }
+
+/** meta_only 模式下 content 摘要的最大长度 */
+const META_CONTENT_PREVIEW_CHARS = 200;
 
 export function createOutputHandlers(db: DbContext) {
 	const now = () => Date.now();
@@ -51,9 +57,17 @@ export function createOutputHandlers(db: DbContext) {
 		_event,
 		input,
 	) => {
-		let sql = `SELECT * FROM output_assets WHERE COALESCE(is_deleted, 0) = 0`;
+		// meta_only：列表瘦身模式，不拉全文，content 只带前 N 字符摘要 + content_length
+		const columns = input.meta_only
+			? `id, title, substr(content, 1, ${META_CONTENT_PREVIEW_CHARS}) AS content, length(content) AS content_length, output_type, related_notes, scope, tags, storage_path, is_deleted, project_id, version, created_at, updated_at`
+			: "*";
+		let sql = `SELECT ${columns} FROM output_assets WHERE is_deleted = 0`;
 		const args: (string | number)[] = [];
 
+		if (input.id) {
+			sql += ` AND id = ?`;
+			args.push(input.id);
+		}
 		if (input.project_id) {
 			sql += ` AND (scope = 'global' OR project_id = ?)`;
 			args.push(input.project_id);

@@ -96,8 +96,14 @@ export default defineConfig({
 		react(),
 		electron({
 			main: {
-				// Shortcut of `build.lib.entry`.
-				entry: "electron/main/index.ts",
+				// `build.lib.entry`：index 为主进程入口；parser-worker 为
+				// utilityProcess 解析进程入口（JSDOM/Readability/EPUB 重解析
+				// 移出主线程，见 electron/main/workers/）。产物均落在
+				// dist-electron/ 下（entryFileNames: "[name].js"）。
+				entry: {
+					index: "electron/main/index.ts",
+					"parser-worker": "electron/main/workers/parser-worker.ts",
+				},
 				vite: {
 					esbuild: {
 						drop: process.env.NODE_ENV === "production" ? ["debugger"] : [],

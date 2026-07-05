@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BundledTheme, ThemedToken } from "shiki";
-import { highlightCode, highlightToTokens } from "../lib/shiki";
+import { highlightToTokens } from "../lib/shiki";
 
 type ShikiTheme = "github-dark" | "github-light";
 
@@ -45,8 +45,6 @@ function usePrefersDark(): boolean {
 }
 
 interface ShikiHighlightResult {
-	/** 高亮后的 HTML（用于 dangerouslySetInnerHTML） */
-	html: string;
 	/** 结构化 token 数据（用于逐行自定义渲染） */
 	tokens: ThemedToken[][] | null;
 	/** 是否正在加载 */
@@ -58,9 +56,12 @@ interface ShikiHighlightResult {
 /**
  * 对代码进行 Shiki 语法高亮的 Hook
  *
+ * 仅获取结构化 tokens（不再同时计算 html 字符串，因为下游消费方只使用 tokens，
+ * 双路高亮会造成不必要的重复计算）。shikiService 内部已对 tokens 结果做 LRU 缓存。
+ *
  * @param code 代码文本
  * @param language 语言标识（扩展名或别名）
- * @returns { html, tokens, loading, theme }
+ * @returns { tokens, loading, theme }
  */
 export function useShikiHighlight(
 	code: string,
@@ -69,7 +70,6 @@ export function useShikiHighlight(
 	const isDark = usePrefersDark();
 	const theme: ShikiTheme = isDark ? "github-dark" : "github-light";
 
-	const [html, setHtml] = useState("");
 	const [tokens, setTokens] = useState<ThemedToken[][] | null>(null);
 	const [loading, setLoading] = useState(true);
 
@@ -78,7 +78,6 @@ export function useShikiHighlight(
 
 	useEffect(() => {
 		if (!code) {
-			setHtml("");
 			setTokens(null);
 			setLoading(false);
 			return;
@@ -87,29 +86,21 @@ export function useShikiHighlight(
 		const requestId = ++requestIdRef.current;
 		setLoading(true);
 
-		Promise.all([
-			highlightCode(code, language, theme as BundledTheme),
-			highlightToTokens(code, language, theme as BundledTheme),
-		])
-			.then(([htmlResult, tokensResult]) => {
+		highlightToTokens(code, language, theme as BundledTheme)
+			.then((tokensResult) => {
 				// 只接受最新请求的结果
 				if (requestId !== requestIdRef.current) return;
-				setHtml(htmlResult);
 				setTokens(tokensResult);
 				setLoading(false);
 			})
 			.catch(() => {
 				if (requestId !== requestIdRef.current) return;
-				setHtml("");
 				setTokens(null);
 				setLoading(false);
 			});
 	}, [code, language, theme]);
 
-	return useMemo(
-		() => ({ html, tokens, loading, theme }),
-		[html, tokens, loading, theme],
-	);
+	return useMemo(() => ({ tokens, loading, theme }), [tokens, loading, theme]);
 }
 
 /**

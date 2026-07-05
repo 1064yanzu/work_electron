@@ -317,3 +317,86 @@ html[data-motion-preference="reduced"][data-color-theme="glass"] body::after,
 html[data-motion-preference="reduced"][data-color-theme="glass"] #root::before {
 	animation: none !important;
 }
+
+/* ============================================
+   8. 性能降级（F10）
+   ---------------------------------------------
+   a) html.perf-degraded — 拖拽分栏 / 拖拽卡片期间由
+      src/lib/interaction/perfDegraded.ts 挂载，临时关停本主题
+      的全部 backdrop-filter 并暂停漂浮球动画，松手即恢复。
+   b) html.glass-perf — 玻璃主题「性能模式」（设置 → 通用 →
+      外观与主题，仅玻璃主题激活时可见）。持久关停
+      backdrop-filter，背景改用高不透明度纯色（变量覆盖见
+      themeDefinitions.ts 的 GLASS_PERF_OVERRIDES），漂浮球
+      渐变背景保留但停止动画。
+   ============================================ */
+
+/* 两种降级共用：关停玻璃主题命中的所有 backdrop-filter */
+html:is(.perf-degraded, .glass-perf)[data-color-theme="glass"]
+:is(
+	.panel-shell,
+	.panel-shell--center,
+	.editor-surface,
+	.doc-surface,
+	.doc-card,
+	.doc-toolbar,
+	input,
+	textarea,
+	select,
+	[role="dialog"],
+	.modal-content,
+	.settings-modal,
+	.modal-backdrop,
+	.btn-interactive
+) {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+/* 拖拽期间：漂浮球动画暂停（位置冻结，松手继续），
+   避免 blur(100px) 大图层在 reflow 中反复合成 */
+html.perf-degraded[data-color-theme="glass"] body::before,
+html.perf-degraded[data-color-theme="glass"] body::after,
+html.perf-degraded[data-color-theme="glass"] #root::before {
+	animation-play-state: paused !important;
+}
+
+/* 性能模式：漂浮球彻底停动（静态渐变只合成一次，仍保留氛围底色） */
+html.glass-perf[data-color-theme="glass"] body::before,
+html.glass-perf[data-color-theme="glass"] body::after,
+html.glass-perf[data-color-theme="glass"] #root::before {
+	animation: none !important;
+}
+
+/* 性能模式：Tailwind backdrop-blur 工具类同样关停（持久生效） */
+html.glass-perf[data-color-theme="glass"] [class*="backdrop-blur"],
+html.glass-perf[data-color-theme="glass"] [class*="backdrop-saturate"] {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+/* 性能模式：输入控件失去模糊后，用更高不透明度背景保持可读性 */
+html.glass-perf[data-color-theme="glass"] input[type="text"],
+html.glass-perf[data-color-theme="glass"] input[type="number"],
+html.glass-perf[data-color-theme="glass"] input[type="search"],
+html.glass-perf[data-color-theme="glass"] textarea,
+html.glass-perf[data-color-theme="glass"] select {
+	background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+html.dark.glass-perf[data-color-theme="glass"] input[type="text"],
+html.dark.glass-perf[data-color-theme="glass"] input[type="number"],
+html.dark.glass-perf[data-color-theme="glass"] input[type="search"],
+html.dark.glass-perf[data-color-theme="glass"] textarea,
+html.dark.glass-perf[data-color-theme="glass"] select {
+	background-color: rgba(32, 32, 36, 0.82) !important;
+}
+
+/* 性能模式：Modal 遮罩不再模糊，稍加深保证前后景分离 */
+html.glass-perf[data-color-theme="glass"] .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark.glass-perf[data-color-theme="glass"] .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.55) !important;
+}

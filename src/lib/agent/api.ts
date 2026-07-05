@@ -293,8 +293,16 @@ export async function updateToolCall(
 	});
 }
 
-export async function listToolCalls(taskId: string): Promise<ToolCallRecord[]> {
-	return await safeInvoke("agent_list_tool_calls", { task_id: taskId });
+export async function listToolCalls(
+	taskId: string,
+	options?: { limit?: number; offset?: number },
+): Promise<ToolCallRecord[]> {
+	// 后端默认只取最近 500 条；传 limit: 0 可拉全量
+	return await safeInvoke("agent_list_tool_calls", {
+		task_id: taskId,
+		...(options?.limit !== undefined ? { limit: options.limit } : {}),
+		...(options?.offset !== undefined ? { offset: options.offset } : {}),
+	});
 }
 
 // ==================== 权限 API ====================
@@ -367,8 +375,14 @@ export async function createAgentMessage(payload: {
 
 export async function listAgentMessages(
 	sessionId: string,
+	options?: { limit?: number; offset?: number },
 ): Promise<AgentMessageRecord[]> {
-	return await safeInvoke("agent_list_messages", { session_id: sessionId });
+	// 后端默认只取最近 500 条（按时间正序返回）；传 limit: 0 可拉全量
+	return await safeInvoke("agent_list_messages", {
+		session_id: sessionId,
+		...(options?.limit !== undefined ? { limit: options.limit } : {}),
+		...(options?.offset !== undefined ? { offset: options.offset } : {}),
+	});
 }
 
 export async function updateAgentMessage(payload: {

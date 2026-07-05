@@ -22,7 +22,7 @@ export function CopilotHeader({
 	onNewSession,
 }: CopilotHeaderProps) {
 	return (
-		<div className="px-4 py-3.5 flex items-center justify-between shrink-0 bg-cream-50/80 dark:bg-cream-900/80 backdrop-blur-sm z-10 border-b border-cream-300/60 dark:border-cream-500/60">
+		<div className="px-4 py-3.5 flex items-center justify-between shrink-0 bg-cream-50/80 dark:bg-cream-900/80 z-10 border-b border-cream-300/60 dark:border-cream-500/60">
 			<div className="flex items-center gap-3">
 				<div className="w-8 h-8 rounded-full bai-avatar-glow shrink-0" />
 				<div>

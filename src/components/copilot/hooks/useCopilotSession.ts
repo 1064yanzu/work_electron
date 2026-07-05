@@ -9,7 +9,10 @@ import {
 	agentPersistence,
 	resumePersistentSession,
 } from "../../../lib/agent/persistence";
-import { useChatStoreSelector } from "../../../lib/chat/store";
+import {
+	chatStore as chatStoreSingleton,
+	useChatStoreSelector,
+} from "../../../lib/chat/store";
 import { normalizeAgentReplayMessages } from "../../../lib/chat/messageNormalization";
 import type { ChatMessage as ChatMessageType } from "../../../lib/chat/types";
 import { chatActions } from "../copilotSidebarConstants";
@@ -98,8 +101,15 @@ export function useCopilotSession({
 						},
 					);
 					if (replayMessages.length > 0 && s) {
+						// sqlite 后端：合并前确保会话全文已加载，
+						// 否则 replace 会用「replay 消息」覆盖掉 DB 里的完整历史。
+						await chatStoreSingleton.ensureSessionLoaded(s.id);
+						const latest =
+							chatStoreSingleton
+								.getState()
+								.sessions.find((item) => item.id === s.id) ?? s;
 						const mergedById = new Map<string, ChatMessageType>();
-						for (const m of s.messages || []) mergedById.set(m.id, m);
+						for (const m of latest.messages || []) mergedById.set(m.id, m);
 						for (const m of replayMessages) {
 							if (!mergedById.has(m.id)) mergedById.set(m.id, m);
 						}

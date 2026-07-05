@@ -209,31 +209,25 @@ export function createAgentCheckpointHandlers(options: {
 	};
 
 	/**
-	 * 清理过期的检查点
+	 * 清理过期的检查点（逻辑抽为模块级 cleanupExpiredCheckpoints，供 dbMaintenance 调度共用）
 	 */
 	const agent_checkpoint_cleanup = async (
 		_event: IpcMainInvokeEvent,
 		input: AgentCheckpointCleanupInput,
 	): Promise<AgentCheckpointCleanupOutput> => {
-		const { client } = db();
 		const days = input.days ?? 7;
-		const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
+		const deleted = await cleanupExpiredCheckpoints(db(), days);
 
-		const result = await client.execute({
-			sql: "DELETE FROM agent_checkpoints WHERE updated_at < ?",
-			args: [cutoffTime],
-		});
-
-		if (result.rowsAffected > 0) {
+		if (deleted > 0) {
 			logger.info({
 				msg: "checkpoints cleanup",
 				scope: "agent",
-				deleted_count: result.rowsAffected,
+				deleted_count: deleted,
 				days,
 			});
 		}
 
-		return { deleted_count: result.rowsAffected };
+		return { deleted_count: deleted };
 	};
 
 	return {
@@ -242,4 +236,29 @@ export function createAgentCheckpointHandlers(options: {
 		agent_checkpoint_delete,
 		agent_checkpoint_cleanup,
 	};
+}
+
+// =====================================================================
+// 模块级清理函数（IPC handler 与 dbMaintenance 24h 调度共用）
+// =====================================================================
+
+/** 删除 updated_at 早于 N 天前的检查点，返回删除行数。 */
+export async function cleanupExpiredCheckpoints(
+	db: DbContext,
+	days = 7,
+): Promise<number> {
+	const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
+	const result = await db.client.execute({
+		sql: "DELETE FROM agent_checkpoints WHERE updated_at < ?",
+		args: [cutoffTime],
+	});
+	return result.rowsAffected ?? 0;
+}
+
+/** D3：删除孤儿检查点 —— 所属 agent 会话已被删除（表无外键，需应用层兜底）。 */
+export async function cleanupOrphanCheckpoints(db: DbContext): Promise<number> {
+	const result = await db.client.execute(
+		"DELETE FROM agent_checkpoints WHERE session_id NOT IN (SELECT id FROM agent_sessions)",
+	);
+	return result.rowsAffected ?? 0;
 }

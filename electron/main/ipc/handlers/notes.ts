@@ -29,7 +29,11 @@ export function createNoteHandlers(db: DbContext) {
 	const now = () => Date.now();
 
 	const listNotes: Handler<"list_notes"> = async (_event, input) => {
-		let sql = `SELECT * FROM notes`;
+		// 列表默认瘦身：不返回 content_html 大字段；需要 html 时显式传 include_html: true
+		const columns = input.include_html
+			? "*"
+			: "id, source_id, content, created_at, updated_at";
+		let sql = `SELECT ${columns} FROM notes`;
 		const args: (string | number)[] = [];
 
 		if (input.source_id) {

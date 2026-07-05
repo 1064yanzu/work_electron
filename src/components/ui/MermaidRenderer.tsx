@@ -194,7 +194,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 	};
 
 	const Controls = () => (
-		<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/90 backdrop-blur-sm p-1 rounded-lg border border-border shadow-sm">
+		<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/90 p-1 rounded-lg border border-border shadow-sm">
 			<button
 				onClick={handleZoomOut}
 				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
@@ -298,7 +298,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			{isFullscreen && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-900/40 backdrop-blur-sm p-8 animate-in fade-in duration-200">
 					<div className="relative w-full h-full bg-surface rounded-2xl overflow-hidden shadow-bai-pop border border-border flex flex-col">
-						<div className="absolute top-4 right-4 flex items-center gap-2 z-10 bg-surface/50 backdrop-blur-sm p-1 rounded-lg border border-border shadow-sm">
+						<div className="absolute top-4 right-4 flex items-center gap-2 z-10 bg-surface/90 p-1 rounded-lg border border-border shadow-sm">
 							<button
 								onClick={() => setIsFullscreen(false)}
 								className="p-2 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary transition-colors"
@@ -318,7 +318,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 						</div>
 
 						{/* Toolbar at bottom */}
-						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-cream-50/90 dark:bg-cream-900/90 backdrop-blur shadow-bai-pop border border-cream-400 dark:border-cream-500 rounded-full px-4 py-2">
+						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-cream-50/90 dark:bg-cream-900/90 shadow-bai-pop border border-cream-400 dark:border-cream-500 rounded-full px-4 py-2">
 							<button
 								onClick={handleZoomOut}
 								className="p-2 hover:bg-warm-200 rounded-full"

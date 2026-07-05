@@ -1,6 +1,8 @@
 import type { IpcMainInvokeEvent } from "electron";
+import type { InStatement } from "@libsql/client";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
+import { withBatch } from "../../db/batch";
 import { resolveProviderApiKey } from "../../llm/invoke";
 import {
 	getOpenAICompatibleAuthHeaders,
@@ -227,6 +229,8 @@ export function createKbEmbeddingHandlers(db: DbContext) {
 			);
 
 			const now = Date.now();
+			// B6：本批次内所有 INSERT 合并为一次 batch 事务，避免逐条 execute() 各自隐式提交（每批最大 128 条，在安全范围内）。
+			const statements: InStatement[] = [];
 			for (let i = 0; i < chunks.length; i++) {
 				const chunkId = String(chunks[i].chunk_id);
 				const embedding = vectors[i] || [];
@@ -236,7 +240,7 @@ export function createKbEmbeddingHandlers(db: DbContext) {
 				const embeddingBlob = Buffer.from(new Float32Array(embedding).buffer);
 
 				if (force) {
-					await db.client.execute({
+					statements.push({
 						sql: `INSERT INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, embedding, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(chunk_id, model) DO UPDATE SET
@@ -255,7 +259,7 @@ export function createKbEmbeddingHandlers(db: DbContext) {
 						],
 					});
 				} else {
-					await db.client.execute({
+					statements.push({
 						sql: `INSERT OR IGNORE INTO note_chunk_embeddings (chunk_id, model, dims, embedding_json, embedding, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)`,
 						args: [
@@ -271,6 +275,7 @@ export function createKbEmbeddingHandlers(db: DbContext) {
 				}
 				updated++;
 			}
+			await withBatch(db, statements);
 		}
 
 		return updated;

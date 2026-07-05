@@ -5,6 +5,15 @@
  * - 数据来自 chatStore（实际对话记录），按文件夹（cwd）分组展示
  * - cwd 来源优先级：chatSession.cwd → 关联 AgentSession.cwd → "通用对话"
  * - 支持通过 "+" 新建线程（选目录后同时创建 AgentSession + ChatSession）
+ *
+ * 渲染治理（F5）：
+ * - 订阅收窄：不再整店订阅 chatStore，改用 useThreadSessionsSnapshot 的
+ *   签名缓存窄订阅——Agent 流式期间（仅活跃会话消息内容变化）列表零重渲染
+ * - 分组/排序基于稳定引用 useMemo，输入不变不重算
+ * - 大列表走 @tanstack/react-virtual 虚拟化（分组标题行/会话行扁平化混排）；
+ *   小列表保留原生渲染路径（折叠动画等交互细节不变）
+ * - 搜索：标题走内存元数据；全文走 chat_history_search IPC（防抖 250ms），
+ *   sqlite 后端不可用时回落内存兜底
  */
 import {
 	useState,
@@ -18,12 +27,8 @@ import {
 import {
 	Plus,
 	Search,
-	ChevronDown,
 	MessageSquare,
-	Folder,
-	FolderOpen,
 	X,
-	MoreHorizontal,
 	Pin,
 	PinOff,
 	Archive,
@@ -32,7 +37,7 @@ import {
 	Edit3,
 	ExternalLink,
 } from "lucide-react";
-import { useChatStore, chatStore } from "../../lib/chat/store";
+import { chatStore, useChatStoreSelector } from "../../lib/chat/store";
 import type { ChatSession } from "../../lib/chat/types";
 import {
 	createThreadSessionForPath,
@@ -51,8 +56,6 @@ import { listAgentSessions } from "../../lib/agent/api";
 import { buildBackendThreadMetadataMap } from "./threads/backendThreadMetadata";
 import { useThreadProjectPins } from "./threads/threadProjectPins";
 import {
-	formatRelativeTime,
-	getSessionPreview,
 	groupThreadsByFolder,
 	type BackendThreadMetadata,
 	type ThreadFolderGroup,
@@ -62,14 +65,22 @@ import {
 	getVisibleSessionsForGroup,
 	useThreadGroupVisibility,
 } from "./threads/threadGroupVisibility";
+import {
+	buildThreadRows,
+	filterAndSortVisibleSessions,
+	useThreadFullTextSearch,
+	useThreadSessionsSnapshot,
+} from "./threads/threadListModel";
+import {
+	ThreadGroupHeader,
+	ThreadOverflowToggle,
+	ThreadSessionItem,
+	VirtualizedThreadList,
+} from "./threads/ThreadListRows";
 import { workspaceStore } from "../../lib/workspaceStore";
-import { ShinyText } from "../ui/ShinyText";
 
-/** 检测 session 是否正在流式输出（agent 正在工作） */
-function isSessionStreaming(session: ChatSession): boolean {
-	const lastMsg = session.messages.at(-1);
-	return lastMsg?.role === "assistant" && lastMsg.isStreaming === true;
-}
+/** 行数超过该阈值才启用虚拟化；小列表保留普通渲染（折叠动画等体感不变） */
+const VIRTUALIZE_ROW_THRESHOLD = 60;
 
 interface ThreadsViewProps {
 	onNavigateWorkbench?: () => void;
@@ -103,16 +114,12 @@ function resolveCwd(
 }
 
 export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
-	const {
-		sessions,
-		activeSessionId,
-		setActiveSession,
-		deleteSessionWithUndo,
-		undoDeleteSession,
-		updateSessionTitle,
-		setSessionPinned,
-		setSessionArchived,
-	} = useChatStore();
+	// 订阅收窄：sessions 走签名缓存快照（流式期间元数据不变 ⇒ 引用不变、零重渲染），
+	// activeSessionId 单独窄订阅；actions 直接调 chatStore 单例（无需订阅）。
+	const sessions = useThreadSessionsSnapshot();
+	const activeSessionId = useChatStoreSelector(
+		(state) => state.activeSessionId,
+	);
 	const { pinnedProjectKeys, toggleProjectPin } = useThreadProjectPins();
 	const { expandedGroupKeys, toggleExpandedGroup } = useThreadGroupVisibility();
 
@@ -129,6 +136,9 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	// useDeferredValue：输入框立即更新（用户感知不到延迟），过滤计算用旧值，
 	// React 在空闲时再用新值重算。多字符快速输入时合并为一次过滤。
 	const deferredSearchQuery = useDeferredValue(searchQuery);
+	// 全文搜索：sqlite 后端走 chat_history_search（防抖 250ms）；
+	// null = 不参与（空查询/后端不可用），过滤时保持内存兜底逻辑。
+	const ftsMatchedIds = useThreadFullTextSearch(deferredSearchQuery);
 	const [searchVisible, setSearchVisible] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -138,6 +148,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		Map<string, BackendThreadMetadata>
 	>(() => new Map());
 	const hasInitializedRef = useRef(false);
+	const scrollParentRef = useRef<HTMLDivElement>(null);
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
 		y: number;
@@ -174,28 +185,17 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		};
 	}, []);
 
-	// 隐藏完全没有归属的临时空白会话；已有 cwd/来源/agent 绑定的空线程要立即显示。
-	const visibleSessions = useMemo(() => {
-		let filtered = sessions.filter((session) => {
-			if (session.messages.length > 0) return true;
-			return Boolean(
-				session.cwd || session.agentSessionId || session.threadSource?.type,
-			);
-		}) as ChatSession[];
-
-		// 用 deferred 版本的搜索词，避免输入框每打一个字就阻塞主线程
-		// 做整个 sessions 的全文过滤（特别是几千条 session 时）。
-		if (deferredSearchQuery.trim()) {
-			const q = deferredSearchQuery.trim().toLowerCase();
-			filtered = filtered.filter(
-				(s) =>
-					s.title.toLowerCase().includes(q) ||
-					s.messages.some((m) => m.content.toLowerCase().includes(q)),
-			);
-		}
-
-		return filtered.sort((a, b) => b.updatedAt - a.updatedAt);
-	}, [sessions, deferredSearchQuery]);
+	// 可见会话过滤 + 排序：输入是签名稳定的 sessions 快照，
+	// 流式期间引用不变 ⇒ 不重算。
+	const visibleSessions = useMemo(
+		() =>
+			filterAndSortVisibleSessions(
+				sessions,
+				deferredSearchQuery,
+				ftsMatchedIds,
+			),
+		[sessions, deferredSearchQuery, ftsMatchedIds],
+	);
 
 	const folderGroups = useMemo(
 		() =>
@@ -242,14 +242,14 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		}
 	}, [folderGroups]);
 
-	const toggleGroup = (key: string) => {
+	const toggleGroup = useCallback((key: string) => {
 		setCollapsedGroups((prev) => {
 			const next = new Set(prev);
 			if (next.has(key)) next.delete(key);
 			else next.add(key);
 			return next;
 		});
-	};
+	}, []);
 
 	const createThreadForPath = useCallback(
 		async (path: string) => {
@@ -275,7 +275,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 	const handleSelectSession = useCallback(
 		(session: ChatSession) => {
-			setActiveSession(session.id);
+			chatStore.setActiveSession(session.id);
 
 			// 如果对话有关联 cwd，同步到 sessionStore 的当前会话
 			const cwd = resolveCwd(session, backendMetadataBySessionId);
@@ -305,7 +305,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 			onNavigateWorkbench?.();
 		},
-		[setActiveSession, onNavigateWorkbench, backendMetadataBySessionId],
+		[onNavigateWorkbench, backendMetadataBySessionId],
 	);
 
 	const handleSessionContextMenu = useCallback(
@@ -316,6 +316,17 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				x: e.clientX,
 				y: e.clientY,
 				target: { type: "session", session },
+			});
+		},
+		[],
+	);
+
+	const handleGroupContextMenu = useCallback(
+		(e: React.MouseEvent, group: ThreadFolderGroup) => {
+			setContextMenu({
+				x: e.clientX,
+				y: e.clientY,
+				target: { type: "group", group },
 			});
 		},
 		[],
@@ -392,7 +403,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						session.title || "Untitled Chat",
 					);
 					if (newTitle?.trim()) {
-						updateSessionTitle(session.id, newTitle.trim());
+						chatStore.updateSessionTitle(session.id, newTitle.trim());
 						toast.success("已重命名");
 					}
 				},
@@ -405,7 +416,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 					<Pin className="w-4 h-4" />
 				),
 				onClick: () => {
-					setSessionPinned(session.id, !session.isPinned);
+					chatStore.setSessionPinned(session.id, !session.isPinned);
 					toast.success(session.isPinned ? "已取消置顶" : "已置顶");
 				},
 			},
@@ -418,13 +429,13 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				),
 				onClick: () => {
 					const nextArchived = !session.isArchived;
-					setSessionArchived(session.id, nextArchived);
+					chatStore.setSessionArchived(session.id, nextArchived);
 					toast.show(nextArchived ? "已归档对话" : "已取消归档", {
 						type: "success",
 						duration: 5000,
 						actionLabel: "撤销",
 						onAction: () => {
-							setSessionArchived(session.id, !nextArchived);
+							chatStore.setSessionArchived(session.id, !nextArchived);
 						},
 					});
 				},
@@ -435,14 +446,14 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				icon: <Trash2 className="w-4 h-4" />,
 				danger: true,
 				onClick: () => {
-					const result = deleteSessionWithUndo(session.id);
+					const result = chatStore.deleteSessionWithUndo(session.id);
 					if (result) {
 						toast.show("已删除线程", {
 							type: "success",
 							duration: 5000,
 							actionLabel: "撤销",
 							onAction: () => {
-								if (undoDeleteSession(session.id)) {
+								if (chatStore.undoDeleteSession(session.id)) {
 									toast.success("已恢复线程");
 								}
 							},
@@ -451,17 +462,28 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				},
 			},
 		];
-	}, [
-		contextMenu,
-		handleSelectSession,
-		updateSessionTitle,
-		setSessionPinned,
-		setSessionArchived,
-		deleteSessionWithUndo,
-		undoDeleteSession,
-		createThreadForPath,
-		toggleProjectPin,
-	]);
+	}, [contextMenu, handleSelectSession, createThreadForPath, toggleProjectPin]);
+
+	// 扁平化行（标题行/会话行/展开更多行混排），虚拟化路径直接消费；
+	// 同时用行数决定是否启用虚拟化。
+	const threadRows = useMemo(
+		() =>
+			buildThreadRows({
+				groups: folderGroups,
+				collapsedGroupKeys: collapsedGroups,
+				expandedGroupKeys,
+				activeSessionId,
+				searching: Boolean(searchQuery.trim()),
+			}),
+		[
+			folderGroups,
+			collapsedGroups,
+			expandedGroupKeys,
+			activeSessionId,
+			searchQuery,
+		],
+	);
+	const shouldVirtualize = threadRows.length > VIRTUALIZE_ROW_THRESHOLD;
 
 	return (
 		<div className="flex flex-col h-full bg-transparent">
@@ -521,255 +543,90 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			</div>
 
 			{/* Folder Groups */}
-			<div className="flex-1 overflow-y-auto px-2.5 pb-6">
-				{folderGroups.map((group) => {
-					const isCollapsed = collapsedGroups.has(group.key);
-					const isOverflowExpanded = expandedGroupKeys.has(group.key);
-					const visibleGroupSessions = getVisibleSessionsForGroup({
-						sessions: group.sessions,
-						activeSessionId: activeSessionId || undefined,
-						expanded: isOverflowExpanded,
-						searching: Boolean(searchQuery.trim()),
-					});
-					const hiddenSessionCount =
-						group.sessions.length - visibleGroupSessions.length;
-					const canToggleOverflow =
-						!searchQuery.trim() &&
-						group.sessions.length > DEFAULT_VISIBLE_THREAD_COUNT;
-					const groupHasActive = group.sessions.some(
-						(s) => s.id === activeSessionId,
-					);
-					return (
-						<div
-							key={group.key}
-							className="mb-3"
-							style={{
-								// 浏览器原生延迟渲染：视口外的 folder section 跳过 layout/paint，
-								// 视口内/即将进入视口时再渲染。contain-intrinsic-size 给出占位高度避免滚动跳变。
-								contentVisibility: "auto",
-								containIntrinsicSize: "auto 400px",
-							}}
-						>
-							{/* Folder Header */}
+			<div ref={scrollParentRef} className="flex-1 overflow-y-auto px-2.5 pb-6">
+				{shouldVirtualize ? (
+					<VirtualizedThreadList
+						scrollParentRef={scrollParentRef}
+						rows={threadRows}
+						activeSessionId={activeSessionId}
+						onToggleCollapse={toggleGroup}
+						onGroupContextMenu={handleGroupContextMenu}
+						onCreateThreadInGroup={handleCreateThreadInGroup}
+						onSelectSession={handleSelectSession}
+						onSessionContextMenu={handleSessionContextMenu}
+						onToggleOverflow={toggleExpandedGroup}
+					/>
+				) : (
+					folderGroups.map((group) => {
+						const isCollapsed = collapsedGroups.has(group.key);
+						const isOverflowExpanded = expandedGroupKeys.has(group.key);
+						const visibleGroupSessions = getVisibleSessionsForGroup({
+							sessions: group.sessions,
+							activeSessionId: activeSessionId || undefined,
+							expanded: isOverflowExpanded,
+							searching: Boolean(searchQuery.trim()),
+						});
+						const hiddenSessionCount =
+							group.sessions.length - visibleGroupSessions.length;
+						const canToggleOverflow =
+							!searchQuery.trim() &&
+							group.sessions.length > DEFAULT_VISIBLE_THREAD_COUNT;
+						const groupHasActive = group.sessions.some(
+							(s) => s.id === activeSessionId,
+						);
+						return (
 							<div
-								onContextMenu={(e) => {
-									e.preventDefault();
-									setContextMenu({
-										x: e.clientX,
-										y: e.clientY,
-										target: { type: "group", group },
-									});
+								key={group.key}
+								className="mb-3"
+								style={{
+									// 浏览器原生延迟渲染：视口外的 folder section 跳过 layout/paint，
+									// 视口内/即将进入视口时再渲染。contain-intrinsic-size 给出占位高度避免滚动跳变。
+									contentVisibility: "auto",
+									containIntrinsicSize: "auto 400px",
 								}}
-								className="flex items-center gap-1.5 w-full px-2.5 py-2 group hover:bg-warm-200/35 dark:hover:bg-white/[0.035] rounded-lg transition-colors duration-150"
 							>
-								<button
-									type="button"
-									onClick={() => toggleGroup(group.key)}
-									className="flex min-w-0 flex-1 items-center gap-2 text-left"
-									aria-expanded={!isCollapsed}
-									aria-label={`${group.folderName} 分组`}
-								>
-									{/* Caret hit-area 16x16 */}
-									<div className="flex items-center justify-center w-4 h-4 shrink-0 text-text-light group-hover:text-text-secondary transition-colors">
-										<ChevronDown
-											className={`w-3.5 h-3.5 transition-transform duration-200 ${
-												isCollapsed ? "-rotate-90" : ""
-											}`}
-											strokeWidth={2}
-										/>
-									</div>
-									{/* Folder/Source icon */}
-									<div
-										className={`shrink-0 transition-colors ${
-											groupHasActive
-												? "text-terracotta"
-												: "text-text-secondary group-hover:text-text-primary"
-										}`}
-									>
-										{group.source === "archive" ? (
-											<Archive className="w-4 h-4" strokeWidth={1.5} />
-										) : group.source === "remote" ? (
-											<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
-										) : isCollapsed ? (
-											<Folder className="w-4 h-4" strokeWidth={1.5} />
-										) : (
-											<FolderOpen className="w-4 h-4" strokeWidth={1.5} />
-										)}
-									</div>
-									<span
-										className="text-[13.5px] font-semibold text-text-primary truncate flex-1"
-										title={group.folderPath || undefined}
-									>
-										{group.folderName}
-									</span>
-								</button>
-								{group.isPinned && (
-									<Pin
-										className="w-3 h-3 text-terracotta/60 shrink-0"
-										strokeWidth={2}
-									/>
-								)}
-								{group.source === "local" && group.folderPath ? (
-									<button
-										type="button"
-										onClick={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											handleCreateThreadInGroup(group);
-										}}
-										className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-terracotta hover:bg-terracotta/10 dark:hover:bg-terracotta/15 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/25 active:scale-95"
-										aria-label={`在 ${group.folderName} 新建对话`}
-										title="新建对话"
-									>
-										<Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
-									</button>
-								) : null}
-								<button
-									type="button"
-									onClick={(e) => {
-										e.preventDefault();
-										e.stopPropagation();
-										setContextMenu({
-											x: e.clientX,
-											y: e.clientY,
-											target: { type: "group", group },
-										});
-									}}
-									className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus-visible:opacity-100 active:scale-95"
-									aria-label={`${group.folderName} 更多操作`}
-									title="更多操作"
-								>
-									<MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
-								</button>
-							</div>
+								{/* Folder Header */}
+								<ThreadGroupHeader
+									group={group}
+									isCollapsed={isCollapsed}
+									groupHasActive={groupHasActive}
+									onToggleCollapse={toggleGroup}
+									onGroupContextMenu={handleGroupContextMenu}
+									onCreateThreadInGroup={handleCreateThreadInGroup}
+								/>
 
-							{/* Sessions List — 用 grid-rows trick 做平滑折叠 */}
-							<div
-								className={`grid transition-[grid-template-rows] duration-200 ease-out ${
-									isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
-								}`}
-							>
-								<div className="overflow-hidden">
-									<div className="pl-[18px] pr-1.5 pt-0.5 space-y-0.5">
-										{visibleGroupSessions.map((session) => {
-											const isActive = session.id === activeSessionId;
-											const preview = getSessionPreview(session);
-											return (
-												<div
+								{/* Sessions List — 用 grid-rows trick 做平滑折叠 */}
+								<div
+									className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+										isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+									}`}
+								>
+									<div className="overflow-hidden">
+										<div className="pl-[18px] pr-1.5 pt-0.5 space-y-0.5">
+											{visibleGroupSessions.map((session) => (
+												<ThreadSessionItem
 													key={session.id}
-													onContextMenu={(e) =>
-														handleSessionContextMenu(e, session)
-													}
-													className={`relative w-full flex items-start justify-between gap-2 pl-3 pr-1.5 py-2 rounded-lg transition-colors duration-150 text-left group ${
-														isActive
-															? "bg-terracotta/8 dark:bg-terracotta/[0.12]"
-															: "hover:bg-warm-200/45 dark:hover:bg-white/[0.04]"
-													}`}
-												>
-													{isActive && (
-														<span
-															aria-hidden="true"
-															className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-terracotta"
-														/>
-													)}
-													<button
-														type="button"
-														onClick={() => handleSelectSession(session)}
-														className="flex flex-col gap-0.5 min-w-0 flex-1 text-left"
-													>
-														{(() => {
-															const streaming = isSessionStreaming(session);
-															const titleText =
-																session.title || "Untitled Chat";
-															const titleClasses = `text-[13px] truncate transition-colors ${
-																isActive
-																	? "text-terracotta dark:text-terracotta-light font-semibold"
-																	: "text-text-secondary font-medium group-hover:text-text-primary dark:group-hover:text-text-light"
-															}`;
-
-															if (streaming) {
-																return (
-																	<ShinyText
-																		text={titleText}
-																		className={titleClasses}
-																		color="#D96C46"
-																		shineColor="#ffa07a"
-																		speed={1.2}
-																		delay={0.2}
-																		spread={130}
-																		direction="left"
-																	/>
-																);
-															}
-															return (
-																<span className={titleClasses}>
-																	{titleText}
-																</span>
-															);
-														})()}
-														{preview && (
-															<span className="text-[11px] leading-tight text-text-light truncate mt-0.5">
-																{preview}
-															</span>
-														)}
-													</button>
-													<div className="flex items-center gap-1 shrink-0 pt-0.5">
-														{session.isPinned && (
-															<Pin
-																className="w-[11px] h-[11px] text-terracotta/70"
-																strokeWidth={2}
-															/>
-														)}
-														<span
-															className={`text-[10.5px] whitespace-nowrap transition-colors ${
-																isActive
-																	? "text-terracotta/70 dark:text-terracotta-light/70"
-																	: "text-text-light"
-															}`}
-														>
-															{formatRelativeTime(session.updatedAt)}
-														</span>
-														<button
-															type="button"
-															onClick={(e) =>
-																handleSessionContextMenu(e, session)
-															}
-															className="flex items-center justify-center w-6 h-6 rounded-md text-text-light opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:opacity-100 active:scale-95"
-															aria-label={`${session.title || "对话"} 更多操作`}
-															title="更多操作"
-														>
-															<MoreHorizontal
-																className="w-3.5 h-3.5"
-																strokeWidth={1.75}
-															/>
-														</button>
-													</div>
-												</div>
-											);
-										})}
-										{canToggleOverflow ? (
-											<button
-												type="button"
-												onClick={() => toggleExpandedGroup(group.key)}
-												className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-text-light hover:text-terracotta hover:bg-terracotta/8 dark:hover:bg-terracotta/[0.12] transition-all"
-											>
-												<ChevronDown
-													className={`w-3 h-3 transition-transform duration-200 ${
-														isOverflowExpanded ? "" : "-rotate-90"
-													}`}
-													strokeWidth={2.25}
+													session={session}
+													isActive={session.id === activeSessionId}
+													onSelect={handleSelectSession}
+													onSessionContextMenu={handleSessionContextMenu}
 												/>
-												{isOverflowExpanded
-													? `收起，仅显示最近 ${DEFAULT_VISIBLE_THREAD_COUNT} 条`
-													: `展开其余 ${hiddenSessionCount} 条`}
-											</button>
-										) : null}
+											))}
+											{canToggleOverflow ? (
+												<ThreadOverflowToggle
+													groupKey={group.key}
+													expanded={isOverflowExpanded}
+													hiddenCount={hiddenSessionCount}
+													onToggleOverflow={toggleExpandedGroup}
+												/>
+											) : null}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					);
-				})}
+						);
+					})
+				)}
 
 				{/* Empty State */}
 				{folderGroups.length === 0 && (

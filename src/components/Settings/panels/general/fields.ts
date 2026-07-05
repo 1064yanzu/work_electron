@@ -15,6 +15,23 @@ export const FIELDS: FieldDescriptor[] = [
 	},
 	{
 		tabId: "general.appearance",
+		anchorId: "general.appearance.glass-perf",
+		label: "玻璃主题性能模式",
+		description:
+			"用高不透明度纯色替代毛玻璃模糊，降低 GPU 开销（仅玻璃主题下显示）。",
+		keywords: [
+			"glass",
+			"performance",
+			"blur",
+			"gpu",
+			"玻璃",
+			"性能模式",
+			"毛玻璃",
+			"掉帧",
+		],
+	},
+	{
+		tabId: "general.appearance",
 		anchorId: "general.appearance.motion",
 		label: "动效偏好",
 		description: "控制过渡与动画的时长；减少动效模式下 ≤ 80ms。",
@@ -49,5 +66,22 @@ export const FIELDS: FieldDescriptor[] = [
 		label: "当前版本",
 		description: "查看当前应用版本，并检查是否有新版本发布。",
 		keywords: ["version", "about", "update", "关于", "检查更新"],
+	},
+	{
+		tabId: "general.about",
+		anchorId: "general.about.logs",
+		label: "日志与诊断",
+		description: "导出运行日志、打开日志目录、调整文件日志级别。",
+		keywords: [
+			"log",
+			"logs",
+			"debug",
+			"diagnostic",
+			"level",
+			"日志",
+			"诊断",
+			"导出日志",
+			"日志级别",
+		],
 	},
 ];

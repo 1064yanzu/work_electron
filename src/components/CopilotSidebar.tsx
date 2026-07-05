@@ -378,7 +378,7 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl backdrop-blur-[1px] transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-cream-400"}`}
+					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-cream-400"}`}
 				>
 					<div className="bg-surface px-4 py-3 rounded-xl shadow-bai-pop border border-border flex items-center gap-3">
 						<div className="w-10 h-10 rounded-lg bg-warm-200 border border-border flex items-center justify-center">

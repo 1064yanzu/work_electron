@@ -29,19 +29,27 @@ function replaceProtocolWithMarker(
 	return s;
 }
 
-function renderText(text: string, keyBase: string): ReactNode[] {
-	const withUpdate = replaceProtocolWithMarker(
-		text,
-		":::update-doc",
-		"<<<AI_UPDATE_PENDING>>>",
-	);
-	const withCreate = replaceProtocolWithMarker(
-		withUpdate,
-		":::create-doc",
-		"<<<AI_CREATE_PENDING>>>",
-	);
+function renderText(
+	text: string,
+	keyBase: string,
+	isStreaming: boolean,
+): ReactNode[] {
+	// 只有真的包含协议标记时才执行全文扫描替换，避免流式期间每个 tick 都做无意义的正则扫描
+	let processed = text;
+	if (processed.includes(":::")) {
+		processed = replaceProtocolWithMarker(
+			processed,
+			":::update-doc",
+			"<<<AI_UPDATE_PENDING>>>",
+		);
+		processed = replaceProtocolWithMarker(
+			processed,
+			":::create-doc",
+			"<<<AI_CREATE_PENDING>>>",
+		);
+	}
 
-	const parts = withCreate.split(
+	const parts = processed.split(
 		/(<<<AI_UPDATE_PENDING>>>|<<<AI_CREATE_PENDING>>>)/,
 	);
 
@@ -59,7 +67,7 @@ function renderText(text: string, keyBase: string): ReactNode[] {
 					key={`${keyBase}-md-${idx}`}
 					className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
 				>
-					<MarkdownRenderer content={part} />
+					<MarkdownRenderer content={part} isStreaming={isStreaming} />
 				</div>
 			);
 		})
@@ -129,7 +137,7 @@ function AgentBlocksInlineImpl({
 					key={i}
 					className="text-sm text-text-primary dark:text-zinc-200 leading-7 w-full overflow-hidden"
 				>
-					{renderText(b.text, `text-${i}`)}
+					{renderText(b.text, `text-${i}`, isStreaming)}
 				</div>,
 			);
 			continue;

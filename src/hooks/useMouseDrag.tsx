@@ -9,6 +9,7 @@ import {
 	useState,
 } from "react";
 import { debugUiLog } from "../lib/debug/uiDebug";
+import { setPerfDegraded } from "../lib/interaction/perfDegraded";
 
 // 拖拽数据类型
 export interface DragItem {
@@ -45,18 +46,39 @@ export function MouseDragProvider({ children }: { children: ReactNode }) {
 	});
 
 	const dragItemRef = useRef<DragItem | null>(null);
-
-	const startDrag = useCallback((item: DragItem, e: React.MouseEvent) => {
-		e.preventDefault();
-		dragItemRef.current = item;
-		setState({
-			isDragging: true,
-			dragItem: item,
-			dragPosition: { x: e.clientX, y: e.clientY },
-			dragOffset: { x: 0, y: 0 },
-		});
-		debugUiLog("[MouseDrag] 开始拖拽:", item.sourceId);
+	// F10 性能降级：卡片拖拽期间挂 .perf-degraded，关停 backdrop-filter
+	const perfDegradedRef = useRef(false);
+	const markPerfDegraded = useCallback((active: boolean) => {
+		if (perfDegradedRef.current === active) return;
+		perfDegradedRef.current = active;
+		setPerfDegraded(active);
 	}, []);
+	// 卸载兜底释放
+	useEffect(
+		() => () => {
+			if (perfDegradedRef.current) {
+				perfDegradedRef.current = false;
+				setPerfDegraded(false);
+			}
+		},
+		[],
+	);
+
+	const startDrag = useCallback(
+		(item: DragItem, e: React.MouseEvent) => {
+			e.preventDefault();
+			dragItemRef.current = item;
+			markPerfDegraded(true);
+			setState({
+				isDragging: true,
+				dragItem: item,
+				dragPosition: { x: e.clientX, y: e.clientY },
+				dragOffset: { x: 0, y: 0 },
+			});
+			debugUiLog("[MouseDrag] 开始拖拽:", item.sourceId);
+		},
+		[markPerfDegraded],
+	);
 
 	const updatePosition = useCallback((e: MouseEvent) => {
 		setState((prev) => ({
@@ -68,13 +90,14 @@ export function MouseDragProvider({ children }: { children: ReactNode }) {
 	const endDrag = useCallback(() => {
 		debugUiLog("[MouseDrag] 结束拖拽");
 		dragItemRef.current = null;
+		markPerfDegraded(false);
 		setState({
 			isDragging: false,
 			dragItem: null,
 			dragPosition: null,
 			dragOffset: { x: 0, y: 0 },
 		});
-	}, []);
+	}, [markPerfDegraded]);
 
 	const getDragItem = useCallback(() => dragItemRef.current, []);
 

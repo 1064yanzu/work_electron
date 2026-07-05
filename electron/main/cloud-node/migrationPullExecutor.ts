@@ -454,7 +454,7 @@ export class MigrationPullExecutor {
 	private async querySources(): Promise<SourceRow[]> {
 		if (!(await this.hasTable("sources"))) return [];
 		const rows = await this.db.client.execute(
-			"SELECT id, title, kind, url, project_id, description, tags, created_at, updated_at FROM sources WHERE COALESCE(is_deleted, 0) = 0 ORDER BY updated_at DESC",
+			"SELECT id, title, kind, url, project_id, description, tags, created_at, updated_at FROM sources WHERE is_deleted = 0 ORDER BY updated_at DESC",
 		);
 		return rows.rows as unknown as SourceRow[];
 	}
@@ -480,7 +480,7 @@ export class MigrationPullExecutor {
 	private async queryOutputAssets(): Promise<OutputAssetRow[]> {
 		if (!(await this.hasTable("output_assets"))) return [];
 		const rows = await this.db.client.execute(
-			"SELECT id, title, content, output_type, project_id, scope, tags, storage_path, version, created_at, updated_at FROM output_assets WHERE COALESCE(is_deleted, 0) = 0 ORDER BY updated_at DESC",
+			"SELECT id, title, content, output_type, project_id, scope, tags, storage_path, version, created_at, updated_at FROM output_assets WHERE is_deleted = 0 ORDER BY updated_at DESC",
 		);
 		return rows.rows as unknown as OutputAssetRow[];
 	}

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useThrottledValue } from "../../../hooks/useThrottledValue";
 import type {
 	AgentTaskStatus,
 	ToolArtifact,
 	ToolCall,
 } from "../../../lib/agent/types";
+import { useChatStoreSelector } from "../../../lib/chat/store";
+import type { ChatMessage, ChatState } from "../../../lib/chat/types";
 import { invoke } from "../../../lib/tauriCompat";
 import { listen } from "../../../lib/tauriEventCompat";
 import type { ExecutionGraphSource } from "../graph/types";
@@ -11,18 +14,95 @@ import type { ExecutionGraphSource } from "../graph/types";
 /** watcher 启动失败时的退避轮询间隔（替代原 5s 全量重扫） */
 const FALLBACK_POLL_INTERVAL_MS = 15000;
 
+/** 流式期间 graphSource 相关重算/下发的节流间隔 */
+const GRAPH_SOURCE_THROTTLE_MS = 250;
+
 interface UseSandboxFilesBindingArgs {
 	activeSessionId: string | null;
-	activeSession: any;
 	currentTask: any;
 	taskHistory: any[];
 	isExecuting: boolean;
 	store: any;
 }
 
+function selectActiveSession(state: ChatState) {
+	if (!state.activeSessionId) return null;
+	return state.sessions.find((s) => s.id === state.activeSessionId) ?? null;
+}
+
+/** 从消息列表倒序扫出最近一次 agent 任务的 taskId */
+function scanSessionTaskId(messages: ChatMessage[]): string | null {
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const msg = messages[i];
+		const metadata = msg?.metadata as any;
+		if (typeof metadata?.taskId === "string" && metadata.taskId)
+			return metadata.taskId;
+		const trace = metadata?.trace;
+		if (trace?.type === "agent_task") return trace.taskId;
+		if (trace?.type === "tool_call") return trace.taskId;
+		if (Array.isArray(metadata?.blocks)) {
+			for (let j = metadata.blocks.length - 1; j >= 0; j--) {
+				const b = metadata.blocks[j] as any;
+				if (b?.type === "agent_task" || b?.type === "task_list")
+					return b.taskId;
+				if (b?.type === "tool_call") return b.taskId;
+			}
+		}
+	}
+	return null;
+}
+
+/** 从消息列表倒序扫出最近的 sandboxDir */
+function scanSessionSandboxDir(messages: ChatMessage[]): string | undefined {
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const msg = messages[i] as any;
+		if (msg?.metadata?.sandboxDir) return msg.metadata.sandboxDir as string;
+	}
+	return undefined;
+}
+
+interface SessionScanResult {
+	key: string;
+	taskId: string | null;
+	sandboxDir: string | undefined;
+}
+
+/**
+ * graphSource 的轻量签名：节点 id/status、工具数、最后一个工具的流式进度、产物集合。
+ * 签名不变 ⇒ 复用上一次的 graphSource 引用，下游 useMemo / React.memo 全部短路。
+ */
+function computeGraphSourceSig(source: ExecutionGraphSource | null): string {
+	if (!source) return "null";
+	const parts: string[] = [
+		source.id,
+		String(source.status),
+		source.title || "",
+		String(source.subtitle?.length ?? 0),
+		String(source.toolCalls.length),
+		String(source.artifacts.length),
+	];
+	for (const tc of source.toolCalls) {
+		parts.push(
+			`${tc.id}:${tc.status}:${tc.subagentActivities?.length ?? 0}:${
+				tc.output !== undefined ? 1 : 0
+			}:${tc.duration ?? ""}`,
+		);
+	}
+	// 运行中的最后一个工具，其 input 还在流式累积（影响节点 inputSummary），用长度参与签名
+	const last = source.toolCalls[source.toolCalls.length - 1];
+	if (last && (last.status === "running" || last.status === "pending")) {
+		try {
+			parts.push(String(JSON.stringify(last.input ?? {}).length));
+		} catch {
+			parts.push("x");
+		}
+	}
+	for (const a of source.artifacts) parts.push(String(a.id));
+	return parts.join("|");
+}
+
 export function useSandboxFilesBinding({
 	activeSessionId,
-	activeSession,
 	currentTask,
 	taskHistory,
 	isExecuting,
@@ -31,38 +111,57 @@ export function useSandboxFilesBinding({
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-	const sessionTaskId = useMemo(() => {
-		if (!activeSession) return null;
+	// ---- 订阅收窄：细粒度 selector 只取原始值 / 稳定引用 ----------------------
+	// 流式期间 chat store 每 ~16ms 换一次 state 引用，但 taskId / sandboxDir 这类
+	// 派生值几乎不变。selector 返回原始值时 useSyncExternalStore 用 Object.is 比较，
+	// 值不变就不会触发重渲染。扫描结果按「会话 id + 消息数 + 末条消息 id + 末两条
+	// blocks 数」做 key 缓存，key 不变直接复用，避免每次 emit 都全量扫描。
+	const scanCacheRef = useRef<SessionScanResult | null>(null);
+	const getSessionScan = useCallback(
+		(state: ChatState): SessionScanResult | null => {
+			const session = selectActiveSession(state);
+			if (!session) return null;
+			const msgs = session.messages;
+			const last = msgs[msgs.length - 1];
+			const prev = msgs[msgs.length - 2];
+			const key = `${session.id}|${msgs.length}|${last?.id ?? ""}|${
+				last?.metadata?.blocks?.length ?? 0
+			}|${prev?.metadata?.blocks?.length ?? 0}`;
+			const cached = scanCacheRef.current;
+			if (cached && cached.key === key) return cached;
+			const next: SessionScanResult = {
+				key,
+				taskId: scanSessionTaskId(msgs),
+				sandboxDir: scanSessionSandboxDir(msgs),
+			};
+			scanCacheRef.current = next;
+			return next;
+		},
+		[],
+	);
 
-		for (let i = activeSession.messages.length - 1; i >= 0; i--) {
-			const msg = activeSession.messages[i];
-			const metadata = msg.metadata;
-			if (typeof metadata?.taskId === "string" && metadata.taskId)
-				return metadata.taskId;
-			const trace = metadata?.trace;
-			if (trace?.type === "agent_task") return trace.taskId;
-			if (trace?.type === "tool_call") return trace.taskId;
-			if (Array.isArray(metadata?.blocks)) {
-				for (let j = metadata.blocks.length - 1; j >= 0; j--) {
-					const b = metadata.blocks[j] as any;
-					if (b?.type === "agent_task" || b?.type === "task_list")
-						return b.taskId;
-					if (b?.type === "tool_call") return b.taskId;
-				}
-			}
-		}
+	const sessionTaskId = useChatStoreSelector(
+		(state) => getSessionScan(state)?.taskId ?? null,
+	);
+	const sessionSandboxDir = useChatStoreSelector(
+		(state) => getSessionScan(state)?.sandboxDir,
+	);
+	const sessionAgentSessionId = useChatStoreSelector((state) =>
+		String(selectActiveSession(state)?.agentSessionId ?? "").trim(),
+	);
+	const sessionTitle = useChatStoreSelector(
+		(state) => selectActiveSession(state)?.title ?? "",
+	);
+	const activeMessages = useChatStoreSelector(
+		(state) => selectActiveSession(state)?.messages ?? null,
+	);
 
-		return null;
-	}, [activeSession]);
-
-	const sessionSandboxDir = useMemo(() => {
-		if (!activeSession) return undefined;
-		for (let i = activeSession.messages.length - 1; i >= 0; i--) {
-			const msg = activeSession.messages[i];
-			if (msg.metadata?.sandboxDir) return msg.metadata.sandboxDir as string;
-		}
-		return undefined;
-	}, [activeSession]);
+	// 流式期间消息数组每 tick 换引用，兜底路径的全消息扫描按 250ms 节流执行
+	const throttledMessages = useThrottledValue(
+		activeMessages,
+		GRAPH_SOURCE_THROTTLE_MS,
+		isExecuting,
+	);
 
 	const boundTask = useMemo(() => {
 		if (sessionTaskId) {
@@ -71,9 +170,6 @@ export function useSandboxFilesBinding({
 			if (matched) return matched;
 		}
 
-		const sessionAgentSessionId = String(
-			activeSession?.agentSessionId || "",
-		).trim();
 		if (!sessionAgentSessionId) return null;
 
 		const currentTaskSessionId = String(
@@ -94,21 +190,16 @@ export function useSandboxFilesBinding({
 				return taskSessionId === sessionAgentSessionId;
 			}) || null
 		);
-	}, [activeSession, currentTask, sessionTaskId, taskHistory]);
+	}, [currentTask, sessionAgentSessionId, sessionTaskId, taskHistory]);
 
-	useEffect(() => {
-		// 工作目录现在来自 caller 传入的 session.cwd（即用户选定的真实目录），
-		// 已写入 task.metadata.sandboxDir 与每条消息的 metadata.sandboxDir。
-		// 不再需要为没有显式 sandboxDir 的 session 兜底创建隔离目录——
-		// 没有就显示为空，符合"agent 直接在用户目录工作"的语义。
-	}, [activeSession]);
-
+	// 工作目录来自 session.cwd（用户选定的真实目录），已写入 task.metadata.sandboxDir
+	// 与每条消息的 metadata.sandboxDir；没有就显示为空，符合"agent 直接在用户目录工作"的语义。
 	const sandboxDir = useMemo(() => {
 		const fromTask = boundTask?.metadata?.sandboxDir as string | undefined;
 		return fromTask || sessionSandboxDir;
 	}, [boundTask, sessionSandboxDir]);
 
-	const graphSource = useMemo<ExecutionGraphSource | null>(() => {
+	const rawGraphSource = useMemo<ExecutionGraphSource | null>(() => {
 		if (boundTask) {
 			return {
 				id: boundTask.id,
@@ -120,7 +211,7 @@ export function useSandboxFilesBinding({
 			};
 		}
 
-		if (!activeSession) return null;
+		if (!throttledMessages) return null;
 		if (!sessionTaskId) return null;
 
 		const normalizeToolCallStatus = (v: unknown): ToolCall["status"] => {
@@ -149,7 +240,7 @@ export function useSandboxFilesBinding({
 		};
 		const toolCallById = new Map<string, ToolCallBlockLike>();
 
-		for (const msg of activeSession.messages) {
+		for (const msg of throttledMessages) {
 			const blocks = msg.metadata?.blocks;
 			if (!Array.isArray(blocks)) continue;
 			for (const b of blocks as any[]) {
@@ -191,7 +282,7 @@ export function useSandboxFilesBinding({
 		);
 		const artifacts: ToolArtifact[] = [];
 		const seenArtifacts = new Set<string>();
-		for (const msg of activeSession.messages) {
+		for (const msg of throttledMessages) {
 			const blocks = msg.metadata?.blocks;
 			if (!Array.isArray(blocks)) continue;
 			for (const block of blocks as any[]) {
@@ -220,8 +311,8 @@ export function useSandboxFilesBinding({
 
 		return {
 			id: sessionTaskId,
-			title: activeSession.title || "托管任务",
-			subtitle: activeSession.messages
+			title: sessionTitle || "托管任务",
+			subtitle: throttledMessages
 				.slice()
 				.reverse()
 				.find((m: any) => m.role === "user")?.content,
@@ -229,7 +320,27 @@ export function useSandboxFilesBinding({
 			toolCalls,
 			artifacts,
 		};
-	}, [activeSession, boundTask, sessionTaskId]);
+	}, [boundTask, sessionTaskId, sessionTitle, throttledMessages]);
+
+	// ---- 签名稳定化：sig 不变 ⇒ 返回旧引用，下游整链短路 ----------------------
+	const graphSourceCacheRef = useRef<{
+		sig: string;
+		source: ExecutionGraphSource | null;
+	} | null>(null);
+	const stableGraphSource = useMemo(() => {
+		const sig = computeGraphSourceSig(rawGraphSource);
+		const cached = graphSourceCacheRef.current;
+		if (cached && cached.sig === sig) return cached.source;
+		graphSourceCacheRef.current = { sig, source: rawGraphSource };
+		return rawGraphSource;
+	}, [rawGraphSource]);
+
+	// 流式期间再叠一层 250ms 节流；空闲时立即透传
+	const graphSource = useThrottledValue(
+		stableGraphSource,
+		GRAPH_SOURCE_THROTTLE_MS,
+		isExecuting,
+	);
 
 	const refreshFiles = useCallback(async () => {
 		if (!sandboxDir) return;
@@ -343,6 +454,7 @@ export function useSandboxFilesBinding({
 
 	return {
 		sandboxDir,
+		sessionTitle,
 		graphSource,
 		isRefreshing,
 		refreshFiles,

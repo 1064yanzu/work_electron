@@ -76,7 +76,7 @@ export function MascotHeroBanner({
 							<div
 								key={slot}
 								aria-hidden
-								className="absolute rounded-full bg-surface/90 shadow-bai-card backdrop-blur-sm animate-mascot-float"
+								className="absolute rounded-full bg-surface/90 shadow-bai-card animate-mascot-float"
 								style={{
 									left: x,
 									top: y,

@@ -64,7 +64,7 @@ export function RemoteTabNav({
 		<div
 			ref={containerRef}
 			className={cn(
-				"relative flex items-center gap-1 rounded-2xl border border-border bg-surface/80 p-1 shadow-bai-card backdrop-blur/60",
+				"relative flex items-center gap-1 rounded-2xl border border-border bg-surface/80 p-1 shadow-bai-card",
 				className,
 			)}
 		>

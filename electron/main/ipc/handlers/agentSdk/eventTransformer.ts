@@ -115,34 +115,71 @@ const FLUSH_TRANSFORMED_EVENT_TYPES = new Set([
  * 现在交给 BatchedSender 的 16ms 帧粒度自然节奏，不再做句末特殊 flush。
  */
 
+/**
+ * 渲染端（主窗口 + 宠物窗口）真正消费的原始 sdk_message 子集：
+ * - `assistant` / `user`：重复工具错误检测（eventHandler / claudeAgentService）、
+ *   子代理活动提取（parent_tool_use_id → tool_progress）
+ * - `stream_event` 且为 text_delta：eventHandler.extractTextFromMessage 的
+ *   onMessage("assistant") 流式路径
+ *
+ * 其余原始消息（message_start/delta、input_json_delta、thinking_delta、
+ * content_block_start/stop、system、result、tool_use_summary 等）在渲染端
+ * 与 `transformed` UI 事件完全重复且无人消费——流式期间它们是双份 IPC 流量的
+ * 主要来源。这类消息只发布到主进程事件总线（remote-control / cloud-node
+ * 行为完全不变），不再经窗口 IPC 下发。
+ */
+function isRawSdkMessageConsumedByRenderer(message: unknown): boolean {
+	const msg = message as any;
+	const type = msg?.type;
+	if (type === "assistant" || type === "user") return true;
+	if (type === "stream_event") {
+		return (
+			msg?.event?.type === "content_block_delta" &&
+			msg?.event?.delta?.type === "text_delta"
+		);
+	}
+	return false;
+}
+
 export function emit(
 	getMainWindow: GetMainWindow,
 	payload: AgentSdkEventPayload,
 ) {
 	const win = getMainWindow();
 	if (!win) return;
+
+	// 原始 sdk_message 去重：渲染端不消费的子集只进事件总线，不走窗口 IPC
+	if (
+		payload.type === "sdk_message" &&
+		!isRawSdkMessageConsumedByRenderer(payload.message)
+	) {
+		publishAgentSdkBusEvent(payload as any);
+		return;
+	}
+
 	const sender = getAgentSdkSender(getMainWindow);
 	sender.send(payload);
 
-	// 顶层事件类型立即 flush
-	if (FLUSH_IMMEDIATELY_TYPES.has(payload.type)) {
-		sender.flush();
-	}
+	// 顶层事件类型立即 flush；
 	// transformed 事件中包含工具边界事件时也立即 flush，避免卡片渲染延迟
-	else if (payload.type === "transformed" && Array.isArray(payload.events)) {
-		const shouldFlush = (payload.events as any[]).some(
-			(ev) => ev && FLUSH_TRANSFORMED_EVENT_TYPES.has(ev.type),
-		);
-		if (shouldFlush) {
-			sender.flush();
-		}
+	const shouldFlush =
+		FLUSH_IMMEDIATELY_TYPES.has(payload.type) ||
+		(payload.type === "transformed" &&
+			Array.isArray(payload.events) &&
+			(payload.events as any[]).some(
+				(ev) => ev && FLUSH_TRANSFORMED_EVENT_TYPES.has(ev.type),
+			));
+	if (shouldFlush) {
+		sender.flush();
 	}
 
 	publishAgentSdkBusEvent(payload as any);
 
-	// Fan-out 到桌面宠物窗口
+	// Fan-out 到桌面宠物窗口：与主窗口相同的 BatchedSender 合帧机制
+	// （见 petWindowService.forwardToPetWindow），关键边界与主窗口同步 flush，
+	// 保证宠物窗口的消息顺序与最终一致性。
 	try {
-		forwardToPetWindow("agent-sdk-event", { items: [payload] });
+		forwardToPetWindow("agent-sdk-event", payload, { flush: shouldFlush });
 	} catch {
 		// petWindowService 可能未初始化，静默忽略
 	}

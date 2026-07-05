@@ -10,8 +10,10 @@ import {
 	setTerminalPrefs,
 	type TerminalPrefs,
 	DEFAULT_TERMINAL_PREFS,
+	TERMINAL_SCROLLBACK_OPTIONS,
 } from "../../../../lib/config/terminal";
 import { toast } from "../../../ui/Toast";
+import Select from "../../../ui/Select";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
 import {
 	SettingsCardSection,
@@ -28,6 +30,28 @@ const CWD_MODE_OPTIONS: SettingsChipOption<"thread" | "home">[] = [
 	{ value: "thread", label: "线程目录", hint: "跟随当前线程" },
 	{ value: "home", label: "主目录", hint: "~" },
 ];
+
+function formatScrollbackLabel(lines: number): string {
+	if (lines >= 10000) return `${lines / 10000} 万行`;
+	return `${lines} 行`;
+}
+
+const SCROLLBACK_SELECT_OPTIONS = TERMINAL_SCROLLBACK_OPTIONS.map((lines) => ({
+	value: String(lines),
+	label: formatScrollbackLabel(lines),
+}));
+
+/** 当前值不在预设档位时（如通过配置文件写入的自定义值），追加为一个选项以便正确回显 */
+function getScrollbackOptions(current: number) {
+	const value = String(current);
+	if (SCROLLBACK_SELECT_OPTIONS.some((o) => o.value === value)) {
+		return SCROLLBACK_SELECT_OPTIONS;
+	}
+	return [
+		...SCROLLBACK_SELECT_OPTIONS,
+		{ value, label: formatScrollbackLabel(current) },
+	].sort((a, b) => Number(a.value) - Number(b.value));
+}
 
 export function TerminalPanel() {
 	const [prefs, setPrefsState] = useState<TerminalPrefs>(
@@ -93,6 +117,28 @@ export function TerminalPanel() {
 									options={CWD_MODE_OPTIONS}
 									onChange={(v) => handleUpdate({ defaultCwdMode: v })}
 									size="sm"
+								/>
+							)
+						}
+					/>
+				</div>
+				<div {...settingsAnchorProps("workshop.terminal.scrollback")}>
+					<SettingsRow
+						label="回滚缓冲行数"
+						description="终端可向上回滚查看的历史输出行数。行数越大内存占用越高；修改后对新开的终端生效。"
+						action={
+							loading ? (
+								<span className="text-[12px] text-text-muted">加载中…</span>
+							) : (
+								<Select
+									variant="compact"
+									containerClassName="w-32"
+									aria-label="回滚缓冲行数"
+									value={String(prefs.scrollbackLines)}
+									options={getScrollbackOptions(prefs.scrollbackLines)}
+									onChange={(e) =>
+										handleUpdate({ scrollbackLines: Number(e.target.value) })
+									}
 								/>
 							)
 						}

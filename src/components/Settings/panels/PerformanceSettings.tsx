@@ -22,6 +22,7 @@ import {
 	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../ui/SettingsPrimitives";
+import { PerfObservabilityCard } from "./data/performance/PerfObservabilityCard";
 
 const SOURCE_REFRESH_OPTIONS = [
 	2000, 5000, 10000, 15000, 30000, 60000,
@@ -580,6 +581,9 @@ export function PerformanceSettings() {
 					</p>
 				</div>
 			</SettingsSectionCard>
+
+			{/* 性能观测：启动趋势 / 长任务 / 慢 IPC */}
+			<PerfObservabilityCard />
 		</SettingsPageContainer>
 	);
 }

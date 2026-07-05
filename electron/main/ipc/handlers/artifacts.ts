@@ -452,53 +452,12 @@ export function createArtifactHandlers(db: DbContext) {
 		};
 	};
 
-	// 清理过期产物
+	// 清理过期产物（逻辑抽为模块级 cleanupExpiredArtifacts，供 dbMaintenance 调度共用）
 	const artifact_cleanup: Handler<"artifact_cleanup"> = async (
 		_event,
 		input,
 	) => {
-		const result: ArtifactCleanupResult = {
-			deleted_count: 0,
-			freed_bytes: 0,
-			errors: [],
-		};
-
-		const now = Date.now();
-
-		// 查找过期的产物
-		let sql = `SELECT * FROM artifacts WHERE expires_at IS NOT NULL`;
-		const args: number[] = [];
-
-		if (!input.force) {
-			sql += ` AND expires_at < ?`;
-			args.push(now);
-		}
-
-		const rows = await db.client.execute({ sql, args });
-
-		for (const row of rows.rows) {
-			const artifact = parseArtifact(row as Record<string, unknown>);
-
-			try {
-				// 删除文件
-				await fs.unlink(artifact.file_path);
-				result.freed_bytes += artifact.file_size;
-
-				// 从数据库删除
-				await db.client.execute({
-					sql: `DELETE FROM artifacts WHERE id = ?`,
-					args: [artifact.id],
-				});
-
-				result.deleted_count++;
-			} catch (err) {
-				result.errors.push(
-					`删除 ${artifact.file_name} 失败: ${err instanceof Error ? err.message : String(err)}`,
-				);
-			}
-		}
-
-		return result;
+		return cleanupExpiredArtifacts(db, Boolean(input.force));
 	};
 
 	// 获取设置
@@ -535,4 +494,109 @@ export function createArtifactHandlers(db: DbContext) {
 		artifact_get_settings,
 		artifact_update_settings,
 	};
+}
+
+// =====================================================================
+// 模块级清理函数（IPC handler 与 dbMaintenance 24h 调度共用）
+// =====================================================================
+
+/** 删除一批产物行 + 对应磁盘文件。文件不存在视为已删除；其他文件错误记入 errors 并跳过该行。 */
+async function removeArtifactRows(
+	db: DbContext,
+	rows: Record<string, unknown>[],
+): Promise<ArtifactCleanupResult> {
+	const result: ArtifactCleanupResult = {
+		deleted_count: 0,
+		freed_bytes: 0,
+		errors: [],
+	};
+
+	for (const row of rows) {
+		const id = row.id as string;
+		const filePath = row.file_path as string | null;
+		const fileName = (row.file_name as string) || id;
+		const fileSize = Number(row.file_size ?? 0);
+
+		try {
+			if (filePath) {
+				try {
+					await fs.unlink(filePath);
+					result.freed_bytes += Number.isFinite(fileSize) ? fileSize : 0;
+				} catch (err) {
+					// ENOENT：文件已不存在，行照删；其他错误保留行，下次重试
+					if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") throw err;
+				}
+			}
+
+			await db.client.execute({
+				sql: `DELETE FROM artifacts WHERE id = ?`,
+				args: [id],
+			});
+			result.deleted_count++;
+		} catch (err) {
+			result.errors.push(
+				`删除 ${fileName} 失败: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
+	}
+
+	return result;
+}
+
+/** 清理过期产物（expires_at 已到期）。force=true 时删除所有设置了 expires_at 的产物。 */
+export async function cleanupExpiredArtifacts(
+	db: DbContext,
+	force = false,
+): Promise<ArtifactCleanupResult> {
+	let sql = `SELECT id, file_path, file_name, file_size FROM artifacts WHERE expires_at IS NOT NULL`;
+	const args: number[] = [];
+	if (!force) {
+		sql += ` AND expires_at < ?`;
+		args.push(Date.now());
+	}
+	const rows = await db.client.execute({ sql, args });
+	return removeArtifactRows(db, rows.rows as Record<string, unknown>[]);
+}
+
+/** D3：清理孤儿产物 —— 所属 agent 会话已被删除（artifacts 表无外键，需应用层兜底）。 */
+export async function cleanupOrphanArtifacts(
+	db: DbContext,
+): Promise<ArtifactCleanupResult> {
+	const rows = await db.client.execute(
+		`SELECT a.id, a.file_path, a.file_name, a.file_size FROM artifacts a
+		 LEFT JOIN agent_sessions s ON s.id = a.session_id
+		 WHERE s.id IS NULL`,
+	);
+	return removeArtifactRows(db, rows.rows as Record<string, unknown>[]);
+}
+
+/** D3：删除指定会话的全部产物行 + 磁盘文件（删除 agent 会话时显式级联调用）。 */
+export async function deleteArtifactsBySession(
+	db: DbContext,
+	sessionId: string,
+): Promise<ArtifactCleanupResult> {
+	const rows = await db.client.execute({
+		sql: `SELECT id, file_path, file_name, file_size FROM artifacts WHERE session_id = ?`,
+		args: [sessionId],
+	});
+	const result = await removeArtifactRows(
+		db,
+		rows.rows as Record<string, unknown>[],
+	);
+
+	// 尝试移除产物的会话子目录（仅当已空；非空/不存在时静默跳过）
+	const dirs = new Set<string>();
+	for (const row of rows.rows) {
+		const filePath = row.file_path as string | null;
+		if (filePath) dirs.add(path.dirname(filePath));
+	}
+	for (const dir of dirs) {
+		try {
+			await fs.rmdir(dir);
+		} catch {
+			// 目录非空或不存在，忽略
+		}
+	}
+
+	return result;
 }

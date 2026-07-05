@@ -114,7 +114,7 @@ async function listSourceFiles(
 	let sql = "SELECT * FROM sources WHERE 1=1";
 	const args: (string | number)[] = [];
 	if (!input.include_deleted) {
-		sql += " AND COALESCE(is_deleted, 0) = 0";
+		sql += " AND is_deleted = 0";
 	}
 	if (input.project_id) {
 		sql += " AND (scope = 'global' OR project_id = ?)";
@@ -158,7 +158,7 @@ async function listOutputFiles(
 	let sql = "SELECT * FROM output_assets WHERE 1=1";
 	const args: (string | number)[] = [];
 	if (!input.include_deleted) {
-		sql += " AND COALESCE(is_deleted, 0) = 0";
+		sql += " AND is_deleted = 0";
 	}
 	if (input.project_id) {
 		sql += " AND (scope = 'global' OR project_id = ?)";

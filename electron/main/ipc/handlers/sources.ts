@@ -53,7 +53,7 @@ export function createSourceHandlers(db: DbContext) {
 	const now = () => Date.now();
 
 	const listSources: Handler<"list_sources"> = async (_event, input) => {
-		let sql = `SELECT * FROM sources WHERE COALESCE(is_deleted, 0) = 0`;
+		let sql = `SELECT * FROM sources WHERE is_deleted = 0`;
 		const args: (string | number)[] = [];
 
 		if (input.project_id) {
@@ -231,7 +231,7 @@ export function createSourceHandlers(db: DbContext) {
 					: "";
 		if (!rawQuery) return [];
 
-		let sql = `SELECT * FROM sources WHERE COALESCE(is_deleted, 0) = 0 AND title LIKE ?`;
+		let sql = `SELECT * FROM sources WHERE is_deleted = 0 AND title LIKE ?`;
 		const args: (string | number)[] = [`%${rawQuery}%`];
 
 		if (input.project_id) {

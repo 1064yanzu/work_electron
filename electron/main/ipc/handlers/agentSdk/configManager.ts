@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { app } from "electron";
+import { getDbContext } from "../../../db/client";
 import {
 	getManagedSkillsRootDir,
 	getProjectSkillsRootDir,
@@ -19,22 +20,86 @@ import {
 const execFileAsync = promisify(execFile);
 
 // ---------------------------------------------------------------------------
-// Shell / PATH resolution
+// Shell / PATH resolution (with 24h cache: memory + app_config persistence)
 // ---------------------------------------------------------------------------
 
-export async function resolveUserPathFromShell(
-	shell: string | null,
-): Promise<string | null> {
-	const s = (shell || "").trim();
-	if (!s) return null;
+const SHELL_PATH_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const SHELL_PATH_CONFIG_KEY = "agent_sdk_shell_path_cache";
 
+type ShellPathCacheEntry = {
+	shell: string;
+	path: string;
+	resolvedAt: number;
+};
+
+const shellPathMemoryCache = new Map<string, ShellPathCacheEntry>();
+const shellPathRefreshInFlight = new Set<string>();
+let shellPathPersistLoadPromise: Promise<void> | null = null;
+
+function isValidShellPathCacheEntry(v: unknown): v is ShellPathCacheEntry {
+	if (!v || typeof v !== "object") return false;
+	const entry = v as Partial<ShellPathCacheEntry>;
+	return (
+		typeof entry.shell === "string" &&
+		entry.shell.trim().length > 0 &&
+		typeof entry.path === "string" &&
+		entry.path.includes(":") &&
+		typeof entry.resolvedAt === "number" &&
+		Number.isFinite(entry.resolvedAt)
+	);
+}
+
+/** 从 app_config 表加载持久化的 PATH 缓存（仅加载一次，失败静默）。 */
+function loadPersistedShellPathCache(): Promise<void> {
+	if (!shellPathPersistLoadPromise) {
+		shellPathPersistLoadPromise = (async () => {
+			try {
+				const db = getDbContext();
+				const rows = await db.client.execute({
+					sql: `SELECT value FROM app_config WHERE key = ?`,
+					args: [SHELL_PATH_CONFIG_KEY],
+				});
+				if (rows.rows.length === 0) return;
+				const parsed = JSON.parse(String(rows.rows[0].value ?? ""));
+				if (
+					isValidShellPathCacheEntry(parsed) &&
+					!shellPathMemoryCache.has(parsed.shell)
+				) {
+					shellPathMemoryCache.set(parsed.shell, parsed);
+				}
+			} catch {
+				// 持久化缓存不可用时静默降级为无缓存路径
+			}
+		})();
+	}
+	return shellPathPersistLoadPromise;
+}
+
+/** 把 PATH 缓存写入 app_config 表（复用 config handlers 的 upsert 模式）。 */
+async function persistShellPathCache(
+	entry: ShellPathCacheEntry,
+): Promise<void> {
+	try {
+		const db = getDbContext();
+		await db.client.execute({
+			sql: `INSERT INTO app_config (key, value, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+			args: [SHELL_PATH_CONFIG_KEY, JSON.stringify(entry), Date.now()],
+		});
+	} catch {
+		// 持久化失败不影响本次启动（内存缓存仍有效）
+	}
+}
+
+/** 实际 spawn 登录 shell 探测 PATH（原 resolveUserPathFromShell 主体，无缓存）。 */
+async function probeUserPathFromShell(shell: string): Promise<string | null> {
 	for (const args of [
 		["-ilc", "echo -n $PATH"],
 		["-lc", "echo -n $PATH"],
 		["-c", "echo -n $PATH"],
 	]) {
 		try {
-			const { stdout } = await execFileAsync(s, args, {
+			const { stdout } = await execFileAsync(shell, args, {
 				env: process.env,
 				timeout: 2000,
 				maxBuffer: 1024 * 1024,
@@ -50,6 +115,69 @@ export async function resolveUserPathFromShell(
 		}
 	}
 	return null;
+}
+
+/** 过期后后台异步刷新（去重并发），不阻塞当前启动。 */
+function refreshShellPathInBackground(shell: string): void {
+	if (shellPathRefreshInFlight.has(shell)) return;
+	shellPathRefreshInFlight.add(shell);
+	void (async () => {
+		try {
+			const probed = await probeUserPathFromShell(shell);
+			// 失败不写缓存：保留旧值，下次仍会尝试刷新
+			if (probed) {
+				const entry: ShellPathCacheEntry = {
+					shell,
+					path: probed,
+					resolvedAt: Date.now(),
+				};
+				shellPathMemoryCache.set(shell, entry);
+				await persistShellPathCache(entry);
+			}
+		} finally {
+			shellPathRefreshInFlight.delete(shell);
+		}
+	})();
+}
+
+/**
+ * 解析用户登录 shell 的 PATH（带缓存）。
+ *
+ * - 内存缓存 + app_config 表持久化，TTL 24 小时；
+ * - 命中且未过期：直接返回；
+ * - 命中但已过期：立即返回旧值，同时后台异步刷新（不阻塞本次启动）；
+ * - 无缓存（首次）：同步探测，行为与旧实现一致；探测失败不写缓存。
+ */
+export async function resolveUserPathFromShell(
+	shell: string | null,
+): Promise<string | null> {
+	const s = (shell || "").trim();
+	if (!s) return null;
+
+	await loadPersistedShellPathCache();
+
+	const cached = shellPathMemoryCache.get(s);
+	if (cached) {
+		if (Date.now() - cached.resolvedAt < SHELL_PATH_CACHE_TTL_MS) {
+			return cached.path;
+		}
+		// 过期：先用旧值立即返回，后台刷新
+		refreshShellPathInBackground(s);
+		return cached.path;
+	}
+
+	// 无缓存：同步探测（与旧行为一致）
+	const probed = await probeUserPathFromShell(s);
+	if (probed) {
+		const entry: ShellPathCacheEntry = {
+			shell: s,
+			path: probed,
+			resolvedAt: Date.now(),
+		};
+		shellPathMemoryCache.set(s, entry);
+		void persistShellPathCache(entry);
+	}
+	return probed;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +299,75 @@ async function ensureDir(dir: string) {
 	await fsp.mkdir(dir, { recursive: true });
 }
 
+/** mtime 比较容差（毫秒）：吸收 utimes 写回时亚毫秒精度损失。 */
+const MTIME_TOLERANCE_MS = 2;
+
+/**
+ * 增量目录同步（代替 rm -rf + 全量 cp）：
+ * - 逐文件对比源/目标的 size + mtime，一致则跳过，只复制变化的文件；
+ * - 复制后用 utimes 保留源文件时间戳，保证下次对比仍然命中；
+ * - prune=true 时删除目标端源里不存在的条目（对应旧实现"删掉整个目录再复制"的镜像语义）；
+ * - 跟随符号链接（与旧 fsp.cp 的 dereference: true 一致），坏链接跳过。
+ */
+async function syncDirIncremental(
+	src: string,
+	dest: string,
+	opts: { prune: boolean },
+): Promise<void> {
+	await fsp.mkdir(dest, { recursive: true });
+	const srcEntries = await fsp.readdir(src, { withFileTypes: true });
+	const srcNames = new Set<string>();
+
+	for (const ent of srcEntries) {
+		const s = path.join(src, ent.name);
+		const d = path.join(dest, ent.name);
+		let st: import("node:fs").Stats;
+		try {
+			st = await fsp.stat(s); // 跟随符号链接（dereference）
+		} catch {
+			continue; // 坏链接/竞态删除 — 跳过
+		}
+		srcNames.add(ent.name);
+
+		if (st.isDirectory()) {
+			const destLstat = await fsp.lstat(d).catch(() => null);
+			if (destLstat && !destLstat.isDirectory()) {
+				await removeIfExists(d);
+			}
+			await syncDirIncremental(s, d, opts);
+		} else if (st.isFile()) {
+			const destLstat = await fsp.lstat(d).catch(() => null);
+			if (destLstat?.isFile()) {
+				const destStat = await fsp.stat(d).catch(() => null);
+				if (
+					destStat &&
+					destStat.size === st.size &&
+					Math.abs(destStat.mtimeMs - st.mtimeMs) <= MTIME_TOLERANCE_MS
+				) {
+					continue; // 未变化 — 跳过
+				}
+			} else if (destLstat) {
+				// 目标同名但类型不同（目录/链接）— 先移除
+				await removeIfExists(d);
+			}
+			await fsp.copyFile(s, d);
+			// 保留源时间戳，让后续增量对比可命中（失败不影响正确性，只影响下次跳过）
+			await fsp.utimes(d, st.atimeMs / 1000, st.mtimeMs / 1000).catch(() => {});
+		}
+		// 其他类型（socket/fifo 等）忽略，与旧 cp dereference 行为兼容
+	}
+
+	if (opts.prune) {
+		const destEntries = await fsp
+			.readdir(dest, { withFileTypes: true })
+			.catch(() => [] as Array<import("node:fs").Dirent>);
+		for (const ent of destEntries) {
+			if (srcNames.has(ent.name)) continue;
+			await removeIfExists(path.join(dest, ent.name));
+		}
+	}
+}
+
 /**
  * Compare SKILL.md modification times between source and destination.
  * Returns true if source is newer than dest (or dest doesn't exist).
@@ -185,7 +382,7 @@ async function isSkillNewer(srcDir: string, destDir: string): Promise<boolean> {
 		]);
 		if (!srcStat) return false; // source has no SKILL.md — skip
 		if (!destStat) return true; // dest doesn't exist — needs sync
-		return srcStat.mtimeMs > destStat.mtimeMs;
+		return srcStat.mtimeMs > destStat.mtimeMs + MTIME_TOLERANCE_MS;
 	} catch {
 		return false;
 	}
@@ -255,25 +452,14 @@ export async function syncSkillsToCwd(
 			// 检查是否有更新：比较 SKILL.md 的 mtime
 			const newer = await isSkillNewer(srcDir, destDir);
 			if (!newer) continue;
-
-			// 源更新 — 重新同步（删除旧的，复制新的）
-			try {
-				await fsp.rm(destDir, { recursive: true, force: true });
-			} catch {
-				// 删除失败就跳过
-				continue;
-			}
 			updatedCount++;
 		} else {
 			newCount++;
 		}
 
 		try {
-			await fsp.cp(srcDir, destDir, {
-				recursive: true,
-				dereference: true,
-				errorOnExist: false,
-			});
+			// 增量同步：只复制变化的文件；prune 镜像旧实现"整目录重建"的语义
+			await syncDirIncremental(srcDir, destDir, { prune: true });
 		} catch (e) {
 			stderr(
 				`[agent_sdk_start] Failed to sync skill '${ent.name}' to project skills dir. ${e instanceof Error ? e.message : String(e)}`,
@@ -529,19 +715,29 @@ async function removeIfExists(targetPath: string): Promise<void> {
 }
 
 async function linkOrCopyDirectory(src: string, dest: string): Promise<void> {
-	await removeIfExists(dest);
-	try {
-		await fsp.symlink(src, dest, "dir");
-		return;
-	} catch {
-		// 某些打包/权限环境不允许 symlink，降级为复制。
+	const destLstat = await fsp.lstat(dest).catch(() => null);
+
+	if (destLstat?.isSymbolicLink()) {
+		// 已是指向 src 的符号链接 — 无需任何操作
+		const target = await fsp.readlink(dest).catch(() => null);
+		if (target === src) return;
+		await removeIfExists(dest);
+	} else if (destLstat && !destLstat.isDirectory()) {
+		await removeIfExists(dest);
 	}
-	await fsp.cp(src, dest, {
-		recursive: true,
-		dereference: true,
-		errorOnExist: false,
-		force: true,
-	});
+
+	// 目标不存在（或刚被清掉）时优先尝试符号链接（与旧行为一致）
+	if (!destLstat?.isDirectory()) {
+		try {
+			await fsp.symlink(src, dest, "dir");
+			return;
+		} catch {
+			// 某些打包/权限环境不允许 symlink，降级为复制。
+		}
+	}
+	// 目标已是真实目录（历史上 symlink 失败的环境）或本次 symlink 失败：
+	// 增量镜像复制，只更新变化的文件（prune 对应旧实现的整目录重建语义）。
+	await syncDirIncremental(src, dest, { prune: true });
 }
 
 // 从用户 ~/.claude/settings.json 中剥除会干扰 App 内 Agent 运行的字段：
@@ -589,11 +785,13 @@ export async function prepareIsolatedClaudeConfigDir(opts: {
 	} catch {
 		settingsObj = {};
 	}
-	await fsp.writeFile(
-		targetSettingsPath,
-		JSON.stringify(settingsObj, null, 2),
-		"utf8",
-	);
+	const serializedSettings = JSON.stringify(settingsObj, null, 2);
+	const existingSettings = await fsp
+		.readFile(targetSettingsPath, "utf8")
+		.catch(() => null);
+	if (existingSettings !== serializedSettings) {
+		await fsp.writeFile(targetSettingsPath, serializedSettings, "utf8");
+	}
 
 	for (const dirName of CLAUDE_CONFIG_RESOURCE_DIRS) {
 		const src = path.join(opts.sourceClaudeConfigDir, dirName);

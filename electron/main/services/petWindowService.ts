@@ -14,6 +14,7 @@ import {
 	type PetWindowSettingsData,
 } from "../storage/petWindowSettings";
 import { createLogger } from "../logging/logger";
+import { BatchedSender } from "../utils/batchedSender";
 
 let petWindow: BrowserWindow | null = null;
 let preloadPath = "";
@@ -446,9 +447,46 @@ export function sendChatToMainWindow(
 	}
 }
 
-export function forwardToPetWindow(channel: string, payload: unknown) {
+/**
+ * 走 BatchedSender 合帧的宠物窗口通道。
+ * 必须与 electron/preload/index.ts 的 BATCHED_CHANNELS 保持一致——
+ * 宠物窗口复用同一 preload，渲染端会把 { items: T[] } 自动展开为多次单条回调，
+ * 消费方（src/pet/usePetEventBridge.ts 等）完全无感知。
+ */
+const PET_BATCHED_CHANNELS = new Set<string>(["agent-sdk-event"]);
+
+/** 每个通道一个 BatchedSender，单通道 FIFO 缓冲保证消息顺序 */
+const petBatchedSenders = new Map<string, BatchedSender<unknown>>();
+
+function getPetBatchedSender(channel: string): BatchedSender<unknown> {
+	let sender = petBatchedSenders.get(channel);
+	if (!sender) {
+		sender = new BatchedSender<unknown>(channel, () =>
+			petWindow && !petWindow.isDestroyed() ? petWindow : null,
+		);
+		petBatchedSenders.set(channel, sender);
+	}
+	return sender;
+}
+
+export function forwardToPetWindow(
+	channel: string,
+	payload: unknown,
+	options?: {
+		/** 关键边界（result / 工具卡片边界等）立即 flush，保证最终一致性 */
+		flush?: boolean;
+	},
+) {
+	// 窗口不存在时行为不变：直接丢弃，不缓冲
 	if (!petWindow || petWindow.isDestroyed()) return;
 	try {
+		if (PET_BATCHED_CHANNELS.has(channel)) {
+			const sender = getPetBatchedSender(channel);
+			sender.send(payload);
+			if (options?.flush) sender.flush();
+			return;
+		}
+		// 低频通道（pet-focus-input / reminder 等）保持逐条直发
 		petWindow.webContents.send(channel, payload);
 	} catch {
 		// 窗口可能正在关闭，静默忽略
@@ -457,6 +495,10 @@ export function forwardToPetWindow(channel: string, payload: unknown) {
 
 export function destroyPetWindow() {
 	if (petWindow && !petWindow.isDestroyed()) {
+		// 销毁前冲掉批量缓冲，避免残留 pending flush 定时器
+		for (const sender of petBatchedSenders.values()) {
+			sender.dispose();
+		}
 		petWindow.destroy();
 	}
 	petWindow = null;

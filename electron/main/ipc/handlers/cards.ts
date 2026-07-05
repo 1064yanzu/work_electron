@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
@@ -52,6 +53,32 @@ export function createCardHandlers(db: DbContext) {
 	};
 
 	const deleteCard: Handler<"delete_card"> = async (_event, input) => {
+		// D6：删除卡片时同步删除其图片文件。
+		// 安全约束：仅删除本应用受管目录（userData/cards）内的文件，绝不触碰目录外的任意路径。
+		try {
+			const rows = await db.client.execute({
+				sql: `SELECT image_path FROM cards WHERE id = ?`,
+				args: [input.id],
+			});
+			const imagePath = rows.rows[0]?.image_path as string | undefined;
+			if (imagePath) {
+				const absolutePath = resolveCardImageAbsolutePath(imagePath);
+				const managedDir = path.join(app.getPath("userData"), "cards");
+				const relative = path.relative(managedDir, absolutePath);
+				const insideManagedDir =
+					relative.length > 0 &&
+					!relative.startsWith("..") &&
+					!path.isAbsolute(relative);
+				if (insideManagedDir) {
+					await fs.unlink(absolutePath).catch(() => {
+						// 图片可能已不存在，忽略
+					});
+				}
+			}
+		} catch {
+			// 删图片失败不阻断删卡片
+		}
+
 		await db.client.execute({
 			sql: `DELETE FROM cards WHERE id = ?`,
 			args: [input.id],

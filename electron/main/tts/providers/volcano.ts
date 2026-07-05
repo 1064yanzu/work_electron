@@ -283,12 +283,5 @@ async function safeText(response: Response): Promise<string> {
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
-	const bytes = new Uint8Array(buffer);
-	let binary = "";
-	const chunkSize = 0x8000;
-	for (let i = 0; i < bytes.length; i += chunkSize) {
-		const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-		binary += String.fromCharCode.apply(null, slice as unknown as number[]);
-	}
-	return Buffer.from(binary, "binary").toString("base64");
+	return Buffer.from(buffer).toString("base64");
 }

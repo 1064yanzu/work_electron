@@ -16,6 +16,7 @@ import {
 } from "../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
 import { useRegisterShortcuts } from "../../lib/shortcuts";
+import type { GraphFilter } from "./graph/types";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
@@ -42,16 +43,15 @@ export default function SandboxWorkspace() {
 
 	const taskId = currentTask?.id;
 
+	// 只订阅原始值：流式期间 sessions 数组每 ~16ms 换引用，
+	// 这里不再整体订阅 sessions / activeSession 对象（细粒度派生在 useSandboxFilesBinding 内完成）
 	const activeSessionId = useChatStoreSelector(
 		(state) => state.activeSessionId,
 	);
-	const sessions = useChatStoreSelector((state) => state.sessions);
-	const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
 
-	const { sandboxDir, graphSource, isRefreshing, refreshFiles } =
+	const { sandboxDir, sessionTitle, graphSource, isRefreshing, refreshFiles } =
 		useSandboxFilesBinding({
 			activeSessionId,
-			activeSession,
 			currentTask,
 			taskHistory,
 			isExecuting,
@@ -93,6 +93,32 @@ export default function SandboxWorkspace() {
 			openArtifactInPreview,
 		});
 
+	// ExecutionGraph 已被 React.memo 包裹：以下回调必须引用稳定，
+	// 否则 memo 短路失效（graphSource 引用未变时不应重渲染整图）。
+	const handleOpenArtifactFromGraph = useCallback(
+		async (filePath: string) => {
+			markUserManualSelection();
+			await openArtifactInPreview(filePath);
+		},
+		[markUserManualSelection, openArtifactInPreview],
+	);
+	const handleGraphFilterChange = useCallback(
+		(value: GraphFilter) => managedModeStore.setGraphFilter(value),
+		[],
+	);
+	const handleGraphSearchChange = useCallback(
+		(value: string) => managedModeStore.setGraphSearch(value),
+		[],
+	);
+	const handlePinnedInspectorChange = useCallback(
+		(value: boolean) => managedModeStore.setPinnedInspector(value),
+		[],
+	);
+	const handleGraphFollowChange = useCallback(
+		(value: boolean) => managedModeStore.setGraphFollow(value),
+		[],
+	);
+
 	useEffect(() => {
 		let cancelled = false;
 		void getCenterUxPrefs().then((prefs) => {
@@ -111,11 +137,8 @@ export default function SandboxWorkspace() {
 	// 让左侧 FILES 面板（ProjectFilesView）能跟随当前线程而不是停留在"无工作路径"。
 	useEffect(() => {
 		if (!sandboxDir) return;
-		workspaceStore.setCurrentThreadScope(
-			sandboxDir,
-			activeSession?.title ?? null,
-		);
-	}, [sandboxDir, activeSession?.title]);
+		workspaceStore.setCurrentThreadScope(sandboxDir, sessionTitle || null);
+	}, [sandboxDir, sessionTitle]);
 
 	useEffect(() => {
 		return events.on(EVENTS.AGENT_FOCUS_TOOL_CALL, async (payload) => {
@@ -309,22 +332,15 @@ export default function SandboxWorkspace() {
 					>
 						<ExecutionGraph
 							source={graphSource}
-							onOpenArtifact={async (filePath) => {
-								markUserManualSelection();
-								await openArtifactInPreview(filePath);
-							}}
+							onOpenArtifact={handleOpenArtifactFromGraph}
 							filter={ui.graphFilter || "all"}
-							onFilterChange={(value) => managedModeStore.setGraphFilter(value)}
+							onFilterChange={handleGraphFilterChange}
 							searchQuery={ui.graphSearch || ""}
-							onSearchQueryChange={(value) =>
-								managedModeStore.setGraphSearch(value)
-							}
+							onSearchQueryChange={handleGraphSearchChange}
 							pinnedInspector={Boolean(ui.pinnedInspector)}
-							onPinnedInspectorChange={(value) =>
-								managedModeStore.setPinnedInspector(value)
-							}
+							onPinnedInspectorChange={handlePinnedInspectorChange}
 							defaultFollow={ui.graphFollow ?? true}
-							onFollowChange={(value) => managedModeStore.setGraphFollow(value)}
+							onFollowChange={handleGraphFollowChange}
 							artifactClickBehavior={ui.artifactClickBehavior || "select_only"}
 							density={ui.centerDensity || "comfortable"}
 						/>

@@ -1,10 +1,26 @@
 import type { DbContext } from "./client";
 import { initSql } from "./migrations/initSql";
-import {
-	wikiTablesSql,
-	wikiWorkspaceTablesSql,
-	ensureWikiColumns,
-} from "./migrations/addWikiTables";
+import { runV2Migrations } from "./migrations/v2Migrations";
+import { runV3Migrations } from "./migrations/v3Migrations";
+import { runV4Migrations } from "./migrations/v4Migrations";
+
+/**
+ * 当前数据库 schema 版本号（B12：版本化迁移）。
+ *
+ * 历史上 runMigrations 每次启动都无条件重跑全部 40+ CREATE TABLE、56+ ALTER、
+ * 49+ CREATE INDEX 语句（即使全部是 IF NOT EXISTS / 安全加列，语句本身仍要走一次
+ * SQLite 解析 + 执行），拖慢每次冷启动的 db init 阶段。
+ *
+ * 新方案：用 `PRAGMA user_version` 记录已迁移到的版本号。
+ * - 全新安装：user_version 从 0 开始，跑完所有步骤后写入 CURRENT_SCHEMA_VERSION。
+ * - 已是最新版本：runMigrations 直接返回，不重跑任何语句。
+ * - 从旧版本升级：只跑 (旧版本, 新版本] 区间对应的步骤。
+ *
+ * 新增一批迁移时：追加一个新的 `runVN Migrations` 步骤文件，提升
+ * CURRENT_SCHEMA_VERSION，并在下面的判断链里追加 `if (currentVersion < N)`。
+ * 不要修改已发布版本对应的迁移函数内容（迁移历史应保持可追溯、不可变）。
+ */
+const CURRENT_SCHEMA_VERSION = 4;
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -30,7 +46,32 @@ async function safeAddColumn(
 	}
 }
 
-export async function runMigrations(ctx: DbContext) {
+async function readSchemaVersion(ctx: DbContext): Promise<number> {
+	try {
+		const result = await ctx.client.execute("PRAGMA user_version");
+		const raw = (result.rows[0] as Record<string, unknown> | undefined)
+			?.user_version;
+		const n = Number(raw ?? 0);
+		return Number.isFinite(n) ? n : 0;
+	} catch {
+		return 0;
+	}
+}
+
+async function writeSchemaVersion(
+	ctx: DbContext,
+	version: number,
+): Promise<void> {
+	// PRAGMA 不支持绑定参数，version 是内部常量，非用户输入，可安全内联
+	await ctx.client.execute(`PRAGMA user_version = ${version}`);
+}
+
+/**
+ * 版本 1（历史全量迁移，内容保持原样不变，仅移除了已确认为死 schema 的
+ * Wiki 表创建——Wiki 功能已改为文件系统驱动，见 kb/wikiService.ts 顶部注释；
+ * 相关表的清理放在 v2Migrations 里统一 DROP）。
+ */
+async function runLegacyMigrations(ctx: DbContext): Promise<void> {
 	// 运行基础初始化SQL(创建表)
 	await ctx.client.executeMultiple(initSql);
 
@@ -192,18 +233,11 @@ export async function runMigrations(ctx: DbContext) {
 		// 忽略索引创建错误
 	}
 
-	// Migration: Wiki 知识页面系统
-	await ctx.client.executeMultiple(wikiTablesSql);
-	await ctx.client.executeMultiple(wikiWorkspaceTablesSql);
-	await ensureWikiColumns(ctx.client);
-
-	// Migration: Wiki 页面类型字段
-	await safeAddColumn(
-		ctx,
-		"wiki_workspace_pages",
-		"page_type",
-		"TEXT DEFAULT 'entity'",
-	);
+	// 注：历史上这里曾创建 Wiki DB 表（wiki_pages / wiki_page_sources /
+	// wiki_workspaces / wiki_workspace_pages 及其 FTS + 触发器）。
+	// 该功能已于后续版本改为文件系统驱动（.llm-wiki/ 目录），DB 表已确认
+	// 零应用代码引用（D8，2026-07 复核）。新安装不再创建；已存在的旧库
+	// 由 v2Migrations 统一 DROP，见 migrations/v2Migrations.ts。
 
 	// Migration: Reader 书架幂等导入 — 记录源文件路径并加唯一索引
 	await safeAddColumn(ctx, "reader_books", "source_path", "TEXT");
@@ -346,4 +380,28 @@ export async function runMigrations(ctx: DbContext) {
 		"relational_profile_id",
 		"TEXT",
 	);
+}
+
+export async function runMigrations(ctx: DbContext): Promise<void> {
+	const currentVersion = await readSchemaVersion(ctx);
+
+	if (currentVersion >= CURRENT_SCHEMA_VERSION) {
+		// 已是最新版本：全部表/列/索引均已存在，跳过整套重跑（B12 性能优化核心）
+		return;
+	}
+
+	if (currentVersion < 1) {
+		await runLegacyMigrations(ctx);
+	}
+	if (currentVersion < 2) {
+		await runV2Migrations(ctx);
+	}
+	if (currentVersion < 3) {
+		await runV3Migrations(ctx);
+	}
+	if (currentVersion < 4) {
+		await runV4Migrations(ctx);
+	}
+
+	await writeSchemaVersion(ctx, CURRENT_SCHEMA_VERSION);
 }

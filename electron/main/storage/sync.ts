@@ -390,7 +390,7 @@ export async function migrateAllRecordsToVault(db: DbContext): Promise<{
 	const backupPath = await backupDatabaseToVault(db, settings.vault_root);
 
 	const sourceRows = await db.client.execute({
-		sql: "SELECT id FROM sources WHERE COALESCE(is_deleted, 0) = 0",
+		sql: "SELECT id FROM sources WHERE is_deleted = 0",
 		args: [],
 	});
 	let sourceCount = 0;
@@ -401,7 +401,7 @@ export async function migrateAllRecordsToVault(db: DbContext): Promise<{
 	}
 
 	const outputRows = await db.client.execute({
-		sql: "SELECT id FROM output_assets WHERE COALESCE(is_deleted, 0) = 0",
+		sql: "SELECT id FROM output_assets WHERE is_deleted = 0",
 		args: [],
 	});
 	let outputCount = 0;

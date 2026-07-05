@@ -293,7 +293,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-surface relative overflow-hidden">
-			<div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-surface/80 backdrop-blur-xl z-10">
+			<div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-surface/80 z-10">
 				<div className="flex items-center gap-1">
 					<Tooltip content="后退" placement="bottom">
 						<button

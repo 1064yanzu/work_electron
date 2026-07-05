@@ -100,8 +100,49 @@ function getLogDirectory(): string {
 	return path.join(process.cwd(), "logs");
 }
 
-const conversationMinuteById = new Map<string, string>();
-const conversationSeqById = new Map<string, number>();
+/**
+ * conversations 审计日志根目录（与 logger 同源：开发 <repo>/logs，生产 userData/logs）。
+ * 供 services/conversationLogRetention 清理服务复用，保证写入与清理指向同一目录。
+ */
+export function getConversationsLogDir(): string {
+	return path.join(getLogDirectory(), "conversations");
+}
+
+/**
+ * 会话日志状态（分钟目录 key + 递增序号），带上限的 LRU：
+ * loggedFetch 是通用工具层，拿不到可靠的"会话结束"事件（会话生命周期归
+ * agentSdk / 各调用方管），因此不用"结束即 delete"，改为容量上限淘汰，
+ * 避免模块级 Map 随会话数无界增长。
+ *
+ * 淘汰的副作用仅是：极旧会话若再次活跃，会落到新的分钟目录、seq 从 1 重新计数
+ * ——只影响日志分组，不影响写入格式与正确性。
+ */
+const CONVERSATION_STATE_LIMIT = 500;
+
+interface ConversationLogState {
+	minuteKey: string | null;
+	seq: number;
+}
+
+const conversationStateById = new Map<string, ConversationLogState>();
+
+function getConversationState(conversationId: string): ConversationLogState {
+	const existing = conversationStateById.get(conversationId);
+	if (existing) {
+		// LRU touch：删掉重插，保持 Map 迭代顺序 = 最近使用顺序
+		conversationStateById.delete(conversationId);
+		conversationStateById.set(conversationId, existing);
+		return existing;
+	}
+	const created: ConversationLogState = { minuteKey: null, seq: 0 };
+	conversationStateById.set(conversationId, created);
+	while (conversationStateById.size > CONVERSATION_STATE_LIMIT) {
+		const oldest = conversationStateById.keys().next().value;
+		if (oldest === undefined) break;
+		conversationStateById.delete(oldest);
+	}
+	return created;
+}
 
 function sanitizePathComponent(raw: string): string {
 	return String(raw || "")
@@ -148,12 +189,11 @@ async function appendConversationHttpLog(entry: {
 	error?: string;
 	durationMs: number;
 }) {
-	const baseDir = path.join(getLogDirectory(), "conversations");
-	const minuteKey =
-		conversationMinuteById.get(entry.conversationId) ||
-		formatMinuteKey(entry.ts);
-	if (!conversationMinuteById.has(entry.conversationId)) {
-		conversationMinuteById.set(entry.conversationId, minuteKey);
+	const baseDir = getConversationsLogDir();
+	const state = getConversationState(entry.conversationId);
+	const minuteKey = state.minuteKey ?? formatMinuteKey(entry.ts);
+	if (state.minuteKey === null) {
+		state.minuteKey = minuteKey;
 	}
 
 	const safeConversationId = sanitizePathComponent(entry.conversationId);
@@ -203,10 +243,9 @@ export async function loggedFetch(
 
 	const conversationLogSeq = (() => {
 		if (!conversationId) return null;
-		const prev = conversationSeqById.get(conversationId) ?? 0;
-		const next = prev + 1;
-		conversationSeqById.set(conversationId, next);
-		return next;
+		const state = getConversationState(conversationId);
+		state.seq += 1;
+		return state.seq;
 	})();
 
 	let response: Response;

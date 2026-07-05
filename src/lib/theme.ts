@@ -1,6 +1,7 @@
 import {
 	ALL_THEMES,
 	DEFAULT_THEME_ID,
+	GLASS_PERF_OVERRIDES,
 	THEME_MAP,
 	type ThemeDefinition,
 } from "./themes/themeDefinitions";
@@ -15,6 +16,8 @@ export type ThemeMode = "light" | "dark" | "system";
 class ThemeManager {
 	private currentMode: ThemeMode = "light";
 	private currentColorThemeId: string = DEFAULT_THEME_ID;
+	/** 玻璃主题性能模式：关停 backdrop-filter，改用高不透明度纯色背景 */
+	private glassPerfMode = false;
 	private listeners = new Set<() => void>();
 	private themeTransitionTimer: number | null = null;
 
@@ -73,6 +76,7 @@ class ThemeManager {
 			this.currentColorThemeId = "classic";
 			localStorage.setItem("colorTheme", "classic");
 		}
+		this.glassPerfMode = localStorage.getItem("glassPerformanceMode") === "1";
 	}
 
 	private applyTheme() {
@@ -100,6 +104,21 @@ class ThemeManager {
 		for (const [key, value] of Object.entries(colors)) {
 			root.style.setProperty(key, value);
 		}
+
+		// 玻璃主题性能模式：背景变量覆盖为高不透明度纯色 + 挂 .glass-perf
+		// 供 glassTheme.css 关停 backdrop-filter（CSS 变量走 inline style，
+		// 样式表覆盖不了，只能在这里合并注入）
+		const glassPerfActive =
+			this.currentColorThemeId === "glass" && this.glassPerfMode;
+		if (glassPerfActive) {
+			const overrides = isDark
+				? GLASS_PERF_OVERRIDES.dark
+				: GLASS_PERF_OVERRIDES.light;
+			for (const [key, value] of Object.entries(overrides)) {
+				root.style.setProperty(key, value);
+			}
+		}
+		root.classList.toggle("glass-perf", glassPerfActive);
 
 		// 设置 data-theme 属性方便 CSS 选择器
 		root.setAttribute("data-color-theme", this.currentColorThemeId);
@@ -166,6 +185,19 @@ class ThemeManager {
 
 	getAllThemes(): ThemeDefinition[] {
 		return ALL_THEMES;
+	}
+
+	// ━━━ 玻璃主题性能模式 ━━━
+	getGlassPerformanceMode(): boolean {
+		return this.glassPerfMode;
+	}
+
+	setGlassPerformanceMode(enabled: boolean) {
+		if (this.glassPerfMode === enabled) return;
+		this.glassPerfMode = enabled;
+		localStorage.setItem("glassPerformanceMode", enabled ? "1" : "0");
+		this.withThemeTransition(() => this.applyTheme());
+		this.notifyListeners();
 	}
 
 	/** 当前实际是否为暗色（考虑 system） */

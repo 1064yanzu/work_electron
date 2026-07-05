@@ -13,6 +13,22 @@ import {
 } from "../utils/deviceId";
 import { backupHistoryManager } from "./BackupHistoryManager";
 import { exportAllDataForBackup } from "../ipc/handlers/localBackup";
+import {
+	cleanupStaleIncrementals,
+	collectIncrementalPayload,
+	commitFullBaseline,
+	commitIncrementalWatermarks,
+	decideBackupMode,
+	generateIncrementalFileName,
+	stringifyBackupPayloadChunked,
+	uploadIncrementalPackage,
+} from "./incrementalBackup";
+
+/**
+ * 自动同步导出时跳过的表：note_chunk_embeddings 可由嵌入服务重建，
+ * 跳过可大幅省体积 / CPU（全量与增量两条路径共用同一份排除表）。
+ */
+const AUTO_SYNC_EXCLUDED_TABLES = ["note_chunk_embeddings"] as const;
 
 interface SyncConfig {
 	webdav_enabled: boolean;
@@ -268,7 +284,18 @@ export class AutoSyncScheduler {
 		const deviceId = (deviceResult.rows[0]?.device_id as string) || "unknown";
 		const deviceName =
 			(deviceResult.rows[0]?.device_name as string) || "Unknown Device";
-		const fileName = await this.generateBackupFileNameWithDevice();
+
+		// 【B8 增量化】决定本轮打全量基线还是增量包：
+		// - manual / 首次 / 增量满 24 次 / 距上次全量 > 7 天 → 全量（格式与旧版完全一致）
+		// - 其余周期 → 增量（只导出 updated_at > 水位的行，命名 incr_*.json）
+		// 恢复路径只认 backup_*.zip 全量包，增量仅作上行备份优化，不影响恢复。
+		const mode = await decideBackupMode(db, trigger);
+		const fileName =
+			mode === "incremental"
+				? generateIncrementalFileName(deviceId)
+				: await this.generateBackupFileNameWithDevice();
+
+		console.log(`[AutoSyncScheduler] Backup mode: ${mode} (file: ${fileName})`);
 
 		// 记录备份开始
 		const backupRecordId = await backupHistoryManager.recordBackup({
@@ -278,7 +305,7 @@ export class AutoSyncScheduler {
 			device_name: deviceName,
 			is_encrypted: false,
 			is_compact: false,
-			is_incremental: false,
+			is_incremental: mode === "incremental",
 			status: "in_progress",
 		});
 
@@ -305,19 +332,87 @@ export class AutoSyncScheduler {
 				disableStream: config.webdav_disable_stream,
 			};
 
-			// 导出数据：自动同步跳过可重建的嵌入向量表，且不做 pretty-print
-			// （缩进会让 JSON 体积膨胀 ~40% 并显著拉高 stringify 的 CPU 峰值）
-			const exportData = await exportAllDataForBackup(db, {
-				excludeTables: ["note_chunk_embeddings"],
-			});
-			const dataJson = JSON.stringify(exportData);
+			if (mode === "full") {
+				// ===== 全量基线：包格式与旧版完全一致（backup_*.zip，data.json 结构不变）=====
+				const exportStartTs = Date.now();
+				const exportData = await exportAllDataForBackup(db, {
+					excludeTables: [...AUTO_SYNC_EXCLUDED_TABLES],
+				});
+				// 分块序列化（逐表 stringify + 批间让出事件循环），
+				// 替代一次性同步 JSON.stringify 整库，输出字节与旧实现等价。
+				const dataJson = await stringifyBackupPayloadChunked(
+					exportData as Record<string, unknown>,
+				);
 
-			// 执行备份
-			await this.backupManager.backupToWebdav(
-				{} as any,
-				dataJson,
-				webdavConfig,
-			);
+				// 执行备份（沿用现有 zip 打包 + WebDAV 上传流程）
+				await this.backupManager.backupToWebdav(
+					{} as any,
+					dataJson,
+					webdavConfig,
+				);
+
+				// 基线成功后刷新全部水位、重置增量计数
+				await commitFullBaseline(
+					db,
+					exportStartTs,
+					fileName,
+					AUTO_SYNC_EXCLUDED_TABLES,
+				);
+
+				// 清理早于新基线的本设备旧增量包（.json 不在现有 .zip 清理范围内）
+				try {
+					const staleCount = await cleanupStaleIncrementals(
+						webdavConfig,
+						deviceId,
+						exportStartTs,
+					);
+					if (staleCount > 0) {
+						console.log(
+							`[AutoSyncScheduler] Cleaned up ${staleCount} stale incremental packages`,
+						);
+					}
+				} catch (incrCleanupError) {
+					// 增量清理失败不影响备份成功
+					console.error(
+						"[AutoSyncScheduler] Incremental cleanup failed:",
+						incrCleanupError,
+					);
+				}
+			} else {
+				// ===== 增量包：只导出各表水位之后的变更行 =====
+				const { payload, newWatermarks, changedRowCount } =
+					await collectIncrementalPayload(db, {
+						deviceId,
+						excludeTables: AUTO_SYNC_EXCLUDED_TABLES,
+					});
+
+				if (changedRowCount === 0) {
+					// 水位表无任何变更 → 跳过上传（无 updated_at 的退化全量表内容
+					// 大概率也未变；即便变了，也会被下一次有变更的增量或基线覆盖）。
+					// 不提交水位、不递增计数，本轮视为成功空转。
+					console.log(
+						"[AutoSyncScheduler] No changes since last watermark, skipping upload",
+					);
+					await backupHistoryManager.updateBackupStatus(
+						backupRecordId,
+						"success",
+					);
+					await this.updateSyncStatus(true, null);
+					this.lastSyncTime = now;
+					this.retryCount = 0;
+					return;
+				}
+
+				const dataJson = await stringifyBackupPayloadChunked(payload);
+				await uploadIncrementalPackage(webdavConfig, fileName, dataJson);
+
+				// 上传成功后才提交新水位（失败则水位不动，下轮幂等重导）
+				await commitIncrementalWatermarks(db, newWatermarks);
+
+				console.log(
+					`[AutoSyncScheduler] Incremental package uploaded (${changedRowCount} changed rows)`,
+				);
+			}
 
 			// 更新备份历史为成功
 			await backupHistoryManager.updateBackupStatus(backupRecordId, "success");

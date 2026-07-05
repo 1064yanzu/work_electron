@@ -29,6 +29,22 @@ export const FIELDS: FieldDescriptor[] = [
 	},
 	{
 		tabId: "workshop.terminal",
+		anchorId: "workshop.terminal.scrollback",
+		label: "回滚缓冲行数",
+		description: "终端可回滚查看的历史输出行数；修改后对新开的终端生效。",
+		keywords: [
+			"scrollback",
+			"buffer",
+			"terminal",
+			"回滚",
+			"缓冲",
+			"历史",
+			"行数",
+			"终端",
+		],
+	},
+	{
+		tabId: "workshop.terminal",
 		anchorId: "workshop.terminal.openOnLaunch",
 		label: "启动时自动打开终端",
 		description: "应用启动后自动展开终端面板。",

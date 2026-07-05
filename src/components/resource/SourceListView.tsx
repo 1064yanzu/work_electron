@@ -520,7 +520,7 @@ export function SourceListView({
 			{renderBreadcrumb()}
 
 			{selectionMode && (
-				<div className="px-4 py-2 flex items-center gap-3 border-b border-border bg-warm-50/30 backdrop-blur-sm text-xs">
+				<div className="px-4 py-2 flex items-center gap-3 border-b border-border bg-warm-50/30 text-xs">
 					<span className="text-text-muted">已选 {selectedIds.length} 条</span>
 					<button
 						onClick={handleSelectAll}

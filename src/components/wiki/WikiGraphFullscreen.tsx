@@ -126,7 +126,7 @@ export function WikiGraphFullscreen() {
 	return (
 		<div className="flex flex-col h-full bg-warm-50">
 			{/* Toolbar */}
-			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70 backdrop-blur-sm shrink-0">
+			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70 shrink-0">
 				<button
 					onClick={handleClose}
 					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"

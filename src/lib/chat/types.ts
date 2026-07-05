@@ -140,6 +140,35 @@ export interface ChatSession {
 		peerName?: string;
 		peerId?: string;
 	};
+	// ===== SQLite 后端的瞬态字段（不持久化进 localStorage 压缩格式） =====
+	/**
+	 * 消息全文是否已加载进内存。
+	 * undefined / true = 已加载（localstorage 模式、新建会话、已按需加载）；
+	 * false = 仅元数据（sqlite 模式下的未加载会话，messages 为 []）。
+	 */
+	messagesLoaded?: boolean;
+	/** 消息总数（sqlite 模式下未加载会话由 DB 派生；已加载时与 messages.length 一致） */
+	messageCount?: number;
+	/** 末条消息预览（sqlite 模式下未加载会话的列表展示用） */
+	lastPreview?: {
+		role: ChatMessage["role"];
+		content: string;
+		timestamp: number;
+	};
+	/** 末条 user 消息预览（线程列表 getSessionPreview 用） */
+	lastUserPreview?: string;
+}
+
+/** 会话消息是否已加载进内存（undefined 视为已加载，兼容 localstorage 模式） */
+export function isSessionLoaded(session: ChatSession): boolean {
+	return session.messagesLoaded !== false;
+}
+
+/** 会话消息数（未加载会话读 DB 派生的 messageCount） */
+export function getSessionMessageCount(session: ChatSession): number {
+	return isSessionLoaded(session)
+		? session.messages.length
+		: (session.messageCount ?? session.messages.length);
 }
 
 export interface ChatContext {

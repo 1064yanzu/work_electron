@@ -5,7 +5,6 @@ import { AgentSdkExecutor } from "./agentSdkExecutor";
 import { clampString } from "./utils";
 import { getRemoteHelpText, parseRemoteInboundCommand } from "./commandParser";
 import { ensureRemoteSessionSandboxDir } from "./sandboxDir";
-import { FeishuDocxToolExecutor } from "../feishu-docx/toolExecutor";
 import {
 	buildContextFilesPrompt,
 	persistInboundContextFiles,
@@ -372,6 +371,11 @@ export class RemoteCommandRouter {
 				}
 
 				try {
+					// 懒加载：feishu-docx 内部静态依赖 @larksuiteoapi/node-sdk，
+					// 只有真正执行 /doc.call 时才加载，避免拖慢冷启动。
+					const { FeishuDocxToolExecutor } = await import(
+						"../feishu-docx/toolExecutor"
+					);
 					const toolExecutor = new FeishuDocxToolExecutor({
 						appId: String(config.channels.feishu.appId || "").trim(),
 						appSecret: String(config.channels.feishu.appSecret || "").trim(),

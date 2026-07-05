@@ -21,10 +21,11 @@ const NOOP_LOGGER: BackupLogger = {
 	error: () => {},
 };
 
-const BACKUP_VERSION = "2.0.0";
+export const BACKUP_VERSION = "2.0.0";
 
 // 仅包含真实业务数据表；FTS 虚表为派生数据，不直接备份。
-const DEFAULT_BACKUP_TABLES = [
+// （AutoSync 的增量导出 incrementalBackup.ts 复用此列表，保持两边表集合一致）
+export const DEFAULT_BACKUP_TABLES = [
 	"projects",
 	"project_visits",
 	"folders",
@@ -187,19 +188,24 @@ export async function collectFullBackupPayload(
 			);
 			tables[table] = rows.rows.map((row) => ({ ...(row as BackupRow) }));
 		} else {
-			// 大表分批导出，降低内存峰值
+			// 大表分批导出，降低内存峰值。
+			// D9：用 rowid keyset 分页替代 LIMIT/OFFSET 递增（OFFSET 每批都要重扫前缀，整体 O(n²)；
+			// keyset 每批走 rowid 索引直接定位，整体 O(n)）。schema 无 WITHOUT ROWID 表，rowid 恒可用。
 			const allRows: BackupRow[] = [];
-			let offset = 0;
+			let lastRowid: number | bigint = Number.MIN_SAFE_INTEGER;
 			for (;;) {
 				const batch = await db.client.execute({
-					sql: `SELECT * FROM ${quoteIdentifier(table)} LIMIT ? OFFSET ?`,
-					args: [LARGE_TABLE_BATCH_SIZE, offset],
+					sql: `SELECT rowid AS __kb_rowid, * FROM ${quoteIdentifier(table)} WHERE rowid > ? ORDER BY rowid LIMIT ?`,
+					args: [lastRowid, LARGE_TABLE_BATCH_SIZE],
 				});
 				if (batch.rows.length === 0) break;
 				for (const row of batch.rows) {
-					allRows.push({ ...(row as BackupRow) });
+					const { __kb_rowid, ...rest } = row as unknown as BackupRow & {
+						__kb_rowid: number | bigint;
+					};
+					lastRowid = __kb_rowid;
+					allRows.push(rest);
 				}
-				offset += batch.rows.length;
 				if (batch.rows.length < LARGE_TABLE_BATCH_SIZE) break;
 			}
 			tables[table] = allRows;

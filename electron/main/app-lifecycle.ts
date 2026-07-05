@@ -4,7 +4,7 @@ import { initCloudNodeClient } from "./cloud-node/service";
 import { initDatabase } from "./db/init";
 import { startHttpServers, type HttpStatus } from "./http/start";
 import { registerIpcHandlers } from "./ipc/register";
-import { createLogger } from "./logging/logger";
+import { createLogger, setFileLogLevel } from "./logging/logger";
 import { initRemoteControlOrchestrator } from "./remote-control/core/service";
 import { autoSyncScheduler } from "./services/AutoSyncScheduler";
 
@@ -34,6 +34,11 @@ import {
 	startPerfTelemetry,
 	stopPerfTelemetry,
 } from "./services/perfTelemetry";
+import {
+	recordPerfEventsBatch,
+	startPerfEventsCleanup,
+	stopPerfEventsCleanup,
+} from "./services/perfEvents";
 import { installApplicationMenu } from "./menu";
 import {
 	installWindowsCloseBehavior,
@@ -125,8 +130,26 @@ export async function bootstrapApp({
 		});
 	});
 
+	const dbInitStartedAt = performance.now();
 	const db = await initDatabase({ logger });
+	const dbInitMs = performance.now() - dbInitStartedAt;
 	logger.info({ msg: "Database initialized successfully" });
+
+	// 应用用户自定义的文件日志级别（设置面板持久化在 app_config；env LOG_FILE_LEVEL 优先级更高）
+	if (!process.env.LOG_FILE_LEVEL) {
+		try {
+			const rows = await db.client.execute({
+				sql: `SELECT value FROM app_config WHERE key = 'log_file_level'`,
+				args: [],
+			});
+			const saved = rows.rows[0]?.value;
+			if (typeof saved === "string" && saved) {
+				setFileLogLevel(saved);
+			}
+		} catch {
+			// 配置读取失败不影响启动，保持默认级别
+		}
+	}
 
 	// DB 就绪后，两项独立的文件 IO 任务并行：内置 skill 同步 / agent 记忆文件
 	// 两者无依赖关系；任一失败不阻塞主窗口创建。
@@ -153,12 +176,30 @@ export async function bootstrapApp({
 		return httpStatusPromise;
 	};
 
+	const ipcRegisterStartedAt = performance.now();
 	registerIpcHandlers({ logger, getHttpStatus: ensureHttpStatus, db });
+	const ipcRegisterMs = performance.now() - ipcRegisterStartedAt;
 	logger.info({ msg: "IPC handlers registered successfully" });
 
+	const createWindowStartedAt = performance.now();
 	mainWindow = createWindow();
+	const createWindowMs = performance.now() - createWindowStartedAt;
 	if (mainWindow) {
 		installWindowsCloseBehavior({ win: mainWindow, db, logger });
+		// M0：ready-to-show 是用户感受到“首窗可交互”的关键里程碑
+		const readyToShowStartedAt = performance.now();
+		mainWindow.once("ready-to-show", () => {
+			void recordPerfEventsBatch(db, [
+				{
+					kind: "startup_milestone",
+					name: "ready_to_show",
+					durationMs: performance.now() - bootStartedAt,
+					meta: {
+						fromWindowCreateMs: performance.now() - readyToShowStartedAt,
+					},
+				},
+			]).catch(() => {});
+		});
 	}
 
 	// 主窗口创建后，把 non-critical 的服务延迟到下一个 idle tick，
@@ -197,11 +238,54 @@ export async function bootstrapApp({
 		}
 	});
 
+	// D1+D2：trigram 中文 FTS（note_chunks_fts_v2）分批回填。
+	// v3 迁移只建表/触发器，存量行在这里按 rowid 区间批量补索引：
+	// 断点续跑（游标在 app_config），完成后写 fts_version=2 切换读路径。
+	scheduleIdle(() => {
+		void (async () => {
+			try {
+				const { runFtsBackfill } = await import("./kb/ftsRebuild");
+				await runFtsBackfill(db, logger);
+			} catch (err) {
+				logger.warn({
+					msg: "FTS trigram backfill failed (will resume next launch)",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
+	});
+
 	// SQLite 周期维护（idle 首检 + 每 24h 周期检查；空间碎片高或距上次 > 7 天才 VACUUM）
 	startDbMaintenance(db, logger);
 
 	// 性能 telemetry（每分钟 RSS/heap/handles/loop-lag 写入 perf_metrics，7 天滚动保留）
 	startPerfTelemetry(db, logger);
+
+	// M0：启动里程碑一次性落库 + 启动 perf_events 表清理周期
+	startPerfEventsCleanup(db, logger);
+	void recordPerfEventsBatch(db, [
+		{ kind: "startup_milestone", name: "db_init", durationMs: dbInitMs },
+		{
+			kind: "startup_milestone",
+			name: "ipc_register",
+			durationMs: ipcRegisterMs,
+		},
+		{
+			kind: "startup_milestone",
+			name: "create_main_window",
+			durationMs: createWindowMs,
+		},
+		{
+			kind: "startup_milestone",
+			name: "core_phase_total",
+			durationMs: performance.now() - corePhaseStartedAt,
+		},
+		{
+			kind: "startup_milestone",
+			name: "boot_total",
+			durationMs: performance.now() - bootStartedAt,
+		},
+	]).catch(() => {});
 
 	// 桌面宠物窗口：初始化服务并根据持久化设置启动
 	if (petWindowConfig) {
@@ -281,13 +365,19 @@ export async function bootstrapApp({
 			});
 		}
 
+		const backgroundPhaseMs = performance.now() - backgroundPhaseStartedAt;
 		logger.info({
 			msg: "App background phase settled",
 			scope: "performance",
-			backgroundPhaseMs: Math.round(
-				performance.now() - backgroundPhaseStartedAt,
-			),
+			backgroundPhaseMs: Math.round(backgroundPhaseMs),
 		});
+		void recordPerfEventsBatch(db, [
+			{
+				kind: "startup_milestone",
+				name: "background_services_ready",
+				durationMs: backgroundPhaseMs,
+			},
+		]).catch(() => {});
 	})();
 
 	app.on("before-quit", () => {
@@ -295,6 +385,7 @@ export async function bootstrapApp({
 		stopUpdateService();
 		stopDbMaintenance();
 		stopPerfTelemetry();
+		stopPerfEventsCleanup();
 		autoSyncScheduler.stop();
 		logger.info({ message: "AutoSyncScheduler stopped" });
 		void remoteControl.stop();

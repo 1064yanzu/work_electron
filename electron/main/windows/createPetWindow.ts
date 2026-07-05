@@ -65,6 +65,8 @@ export function createPetWindow({
 			preload: preloadPath,
 			contextIsolation: true,
 			nodeIntegration: false,
+			// preload 只使用 contextBridge/ipcRenderer/webUtils，显式声明沙箱加固
+			sandbox: true,
 		},
 	});
 

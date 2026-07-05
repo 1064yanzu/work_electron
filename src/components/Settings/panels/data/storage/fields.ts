@@ -44,6 +44,22 @@ export const FIELDS: FieldDescriptor[] = [
 	},
 	{
 		tabId: "data.storage",
+		anchorId: "data.storage.soft_delete_retention",
+		label: "软删除保留期",
+		description: "已删除资料与输出文稿的自动物理清除周期；0 = 永不清除",
+		keywords: [
+			"soft delete",
+			"retention",
+			"recycle",
+			"软删除",
+			"保留期",
+			"回收",
+			"清理",
+			"删除",
+		],
+	},
+	{
+		tabId: "data.storage",
 		anchorId: "data.storage.directories",
 		label: "数据目录 · 数据库",
 		description: "应用数据与数据库路径、迁移数据库、清除缓存",

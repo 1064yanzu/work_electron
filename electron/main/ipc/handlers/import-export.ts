@@ -2,15 +2,17 @@
  * 导入导出 IPC Handlers
  */
 
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { IpcMainInvokeEvent } from "electron";
+import { app, dialog, type IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import {
 	collectFullBackupPayload,
 	importBackupPayload,
 } from "../../services/backupPayload";
+import { stringifyBackupPayloadChunked } from "../../services/incrementalBackup";
 
 const now = () => Date.now();
 
@@ -70,14 +72,60 @@ export function createImportExportHandlers(db: DbContext, logger: Logger) {
 	};
 
 	/**
-	 * 导出所有数据为 JSON 字符串（前端内存导出 / WebDAV）
+	 * 导出所有数据（D9 流式化）：主进程分块序列化后写入临时文件，
+	 * IPC 只返回 { path, bytes }，整串 JSON 不再经过 IPC 通道。
+	 * 需要内容的调用方（如 WebDAV 备份）拿到路径后再用 read_file_safe 读取。
 	 */
 	const exportAllData = async (
 		_event: IpcMainInvokeEvent,
 		_input?: Record<string, never>,
-	): Promise<string> => {
+	): Promise<{ path: string; bytes: number }> => {
 		const exportData = await collectFullBackupPayload(db);
-		return JSON.stringify(exportData, null, 2);
+		const jsonStr = await stringifyBackupPayloadChunked(exportData);
+
+		const baseDir = path.join(app.getPath("temp"), "ipo-workbench");
+		await fs.mkdir(baseDir, { recursive: true });
+		const filePath = path.join(
+			baseDir,
+			`export-${Date.now()}-${randomUUID().slice(0, 8)}.json`,
+		);
+		await fs.writeFile(filePath, jsonStr, "utf-8");
+
+		const bytes = Buffer.byteLength(jsonStr, "utf-8");
+		logger.info({
+			msg: "All data exported to temp file",
+			path: filePath,
+			bytes,
+		});
+		return { path: filePath, bytes };
+	};
+
+	/**
+	 * 导出所有数据到用户选择的文件（logs_export 同款模式）：
+	 * 主进程弹保存对话框并直接写盘，渲染端只拿到最终路径。
+	 */
+	const exportAllDataToFile = async (
+		_event: IpcMainInvokeEvent,
+		_input?: Record<string, never>,
+	): Promise<{ canceled: boolean; path: string; bytes: number }> => {
+		const defaultName = `workbench-backup-${new Date().toISOString().split("T")[0]}.json`;
+		const result = await dialog.showSaveDialog({
+			title: "导出数据",
+			defaultPath: path.join(app.getPath("downloads"), defaultName),
+			filters: [{ name: "JSON", extensions: ["json"] }],
+		});
+		if (result.canceled || !result.filePath) {
+			return { canceled: true, path: "", bytes: 0 };
+		}
+
+		const exportData = await collectFullBackupPayload(db);
+		const jsonStr = await stringifyBackupPayloadChunked(exportData);
+		await fs.mkdir(path.dirname(result.filePath), { recursive: true });
+		await fs.writeFile(result.filePath, jsonStr, "utf-8");
+
+		const bytes = Buffer.byteLength(jsonStr, "utf-8");
+		logger.info({ msg: "All data exported", path: result.filePath, bytes });
+		return { canceled: false, path: result.filePath, bytes };
 	};
 
 	/**
@@ -223,6 +271,7 @@ export function createImportExportHandlers(db: DbContext, logger: Logger) {
 
 	return {
 		export_all_data: exportAllData,
+		export_all_data_to_file: exportAllDataToFile,
 		export_project: exportProject,
 		import_data: importData,
 		import_data_from_json: importDataFromJson,

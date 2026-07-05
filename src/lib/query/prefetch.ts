@@ -4,7 +4,7 @@
 import { listAgentSessions } from "../agent/api";
 import { listCards } from "../api/cards";
 import { listFolders } from "../api/folders";
-import { listOutputAssets } from "../api/output";
+import { listOutputAssetsMeta } from "../api/output";
 import { listSources } from "../api/sources";
 import { appQueryClient, QUERY_STALE_TIME_MS } from "./client";
 import { queryKeys } from "./keys";
@@ -67,7 +67,8 @@ export function prefetchCards(): void {
 export function prefetchOutputAssets(): void {
 	void appQueryClient.prefetchQuery({
 		queryKey: queryKeys.outputAssets(),
-		queryFn: listOutputAssets,
+		// 与 useOutputAssetsQuery 同一 queryKey，必须同为 meta_only 模式，避免缓存串味
+		queryFn: listOutputAssetsMeta,
 		staleTime: QUERY_STALE_TIME_MS,
 	});
 }

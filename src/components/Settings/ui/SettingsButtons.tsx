@@ -262,7 +262,7 @@ export function SettingsToolbar({
 	return (
 		<div
 			className={cn(
-				"sticky bottom-0 -mx-2 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface/95 px-4 py-3 shadow-bai-pop backdrop-blur",
+				"sticky bottom-0 -mx-2 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface/95 px-4 py-3 shadow-bai-pop",
 				className,
 			)}
 		>

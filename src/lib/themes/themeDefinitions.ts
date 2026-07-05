@@ -672,4 +672,29 @@ export const THEME_MAP = new Map<string, ThemeDefinition>(
 	ALL_THEMES.map((t) => [t.id, t]),
 );
 
+/**
+ * 玻璃主题「性能模式」变量覆盖（F10）。
+ * 性能模式关停 backdrop-filter 后，半透明背景会直接透出底层内容
+ * 而不再有磨砂遮蔽，因此把面板背景提到高不透明度纯色，
+ * 保持层次感与可读性。由 theme.ts 在 applyTheme 时按需注入
+ * （CSS 变量通过 inline style 写入，样式表无法覆盖，只能在 JS 侧合并）。
+ */
+export const GLASS_PERF_OVERRIDES: {
+	light: Partial<ThemeColors>;
+	dark: Partial<ThemeColors>;
+} = {
+	light: {
+		"--t-bg-surface": "rgba(255, 255, 255, 0.88)",
+		"--t-bg-muted": "rgba(240, 240, 245, 0.92)",
+		"--t-bg-panel": "rgba(250, 251, 254, 0.9)",
+		"--t-bg-panel-strong": "rgba(255, 255, 255, 0.96)",
+	},
+	dark: {
+		"--t-bg-surface": "rgba(28, 28, 30, 0.9)",
+		"--t-bg-muted": "rgba(38, 38, 40, 0.92)",
+		"--t-bg-panel": "rgba(22, 22, 24, 0.92)",
+		"--t-bg-panel-strong": "rgba(18, 18, 20, 0.96)",
+	},
+};
+
 export const DEFAULT_THEME_ID = "bai";

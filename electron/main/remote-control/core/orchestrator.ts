@@ -1,13 +1,6 @@
 import type { BrowserWindow } from "electron";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
-import { FeishuChannelPlugin } from "../channels/feishu/feishuChannel";
-import { TelegramChannelPlugin } from "../channels/telegram/telegramChannel";
-import { SlackChannelPlugin } from "../channels/slack/slackChannel";
-import { DiscordChannelPlugin } from "../channels/discord/discordChannel";
-import { QqbotChannelPlugin } from "../channels/qqbot/qqbotChannel";
-import { WechatChannelPlugin } from "../channels/wechat/wechatChannel";
-import { PlaceholderChannelPlugin } from "../channels/template/placeholderChannel";
 import {
 	AgentSdkExecutor,
 	type AgentSdkHandlersLike,
@@ -47,6 +40,66 @@ export type RemoteEventLog = {
 	message: string;
 };
 
+/**
+ * 渠道插件懒加载工厂：只有该渠道真正需要启动/使用时才 `await import()`
+ * 对应实现模块，避免冷启动加载 lark / discord.js / grammy / @slack/bolt
+ * 等重型 SDK。
+ */
+type RemoteChannelPluginFactory = () => Promise<RemoteChannelPlugin>;
+
+function createChannelPluginFactories(
+	logger: Logger,
+): Map<RemoteChannelId, RemoteChannelPluginFactory> {
+	const factories = new Map<RemoteChannelId, RemoteChannelPluginFactory>();
+	factories.set("feishu", async () => {
+		const { FeishuChannelPlugin } = await import(
+			"../channels/feishu/feishuChannel"
+		);
+		return new FeishuChannelPlugin(logger);
+	});
+	factories.set("telegram", async () => {
+		const { TelegramChannelPlugin } = await import(
+			"../channels/telegram/telegramChannel"
+		);
+		return new TelegramChannelPlugin(logger);
+	});
+	factories.set("slack", async () => {
+		const { SlackChannelPlugin } = await import(
+			"../channels/slack/slackChannel"
+		);
+		return new SlackChannelPlugin(logger);
+	});
+	factories.set("discord", async () => {
+		const { DiscordChannelPlugin } = await import(
+			"../channels/discord/discordChannel"
+		);
+		return new DiscordChannelPlugin(logger);
+	});
+	factories.set("qqbot", async () => {
+		const { QqbotChannelPlugin } = await import(
+			"../channels/qqbot/qqbotChannel"
+		);
+		return new QqbotChannelPlugin(logger);
+	});
+	factories.set("wechat", async () => {
+		const { WechatChannelPlugin } = await import(
+			"../channels/wechat/wechatChannel"
+		);
+		return new WechatChannelPlugin(logger);
+	});
+	factories.set("generic_webhook", async () => {
+		const { PlaceholderChannelPlugin } = await import(
+			"../channels/template/placeholderChannel"
+		);
+		return new PlaceholderChannelPlugin(
+			"generic_webhook",
+			logger,
+			"模板通道，后续接入通用 Webhook",
+		);
+	});
+	return factories;
+}
+
 export class RemoteControlOrchestrator {
 	private readonly configStore: RemoteControlConfigStore;
 	private readonly pairingStore: RemotePairingStore;
@@ -54,7 +107,16 @@ export class RemoteControlOrchestrator {
 	private readonly pairingService: PairingService;
 	private readonly executor = new AgentSdkExecutor();
 	private readonly rateLimiter = new SlidingWindowRateLimiter();
+	private readonly channelFactories: Map<
+		RemoteChannelId,
+		RemoteChannelPluginFactory
+	>;
+	/** 已实际加载并实例化的渠道插件（懒加载后缓存） */
 	private readonly channels = new Map<RemoteChannelId, RemoteChannelPlugin>();
+	private readonly channelLoadPromises = new Map<
+		RemoteChannelId,
+		Promise<RemoteChannelPlugin>
+	>();
 	private readonly channelStatus = new Map<
 		RemoteChannelId,
 		RemoteChannelRuntimeStatus
@@ -80,22 +142,9 @@ export class RemoteControlOrchestrator {
 		this.pairingService = new PairingService(this.pairingStore);
 		this.remoteChatHistory = new RemoteChatHistoryService(db, logger);
 
-		this.channels.set("feishu", new FeishuChannelPlugin(logger));
-		this.channels.set("telegram", new TelegramChannelPlugin(logger));
-		this.channels.set("slack", new SlackChannelPlugin(logger));
-		this.channels.set("discord", new DiscordChannelPlugin(logger));
-		this.channels.set("qqbot", new QqbotChannelPlugin(logger));
-		this.channels.set("wechat", new WechatChannelPlugin(logger));
-		this.channels.set(
-			"generic_webhook",
-			new PlaceholderChannelPlugin(
-				"generic_webhook",
-				logger,
-				"模板通道，后续接入通用 Webhook",
-			),
-		);
+		this.channelFactories = createChannelPluginFactories(logger);
 
-		for (const channelId of this.channels.keys()) {
+		for (const channelId of this.channelFactories.keys()) {
 			this.channelStatus.set(channelId, {
 				channel_id: channelId,
 				enabled: false,
@@ -186,13 +235,45 @@ export class RemoteControlOrchestrator {
 		return DEFAULT_MODEL;
 	}
 
+	/**
+	 * 懒加载并缓存渠道插件实例。
+	 * 首次调用时才动态 import 对应 channel 模块（及其 SDK），后续复用同一实例，
+	 * 保证 stop/重启拿到的是同一个插件对象。
+	 */
+	private async ensureChannel(
+		channelId: RemoteChannelId,
+	): Promise<RemoteChannelPlugin> {
+		const loaded = this.channels.get(channelId);
+		if (loaded) return loaded;
+		const pending = this.channelLoadPromises.get(channelId);
+		if (pending) return pending;
+		const factory = this.channelFactories.get(channelId);
+		if (!factory) {
+			throw new Error(`Unsupported channel: ${channelId}`);
+		}
+		const loading = factory()
+			.then((plugin) => {
+				this.channels.set(channelId, plugin);
+				return plugin;
+			})
+			.finally(() => {
+				this.channelLoadPromises.delete(channelId);
+			});
+		this.channelLoadPromises.set(channelId, loading);
+		return loading;
+	}
+
 	private async startEnabledChannels(): Promise<void> {
 		const config = this.requireConfig();
-		for (const [channelId, channel] of this.channels.entries()) {
+		for (const channelId of this.channelFactories.keys()) {
 			const channelConfig = config.channels[channelId];
 			const enabled = config.enabled && channelConfig?.enabled;
 			if (!enabled) {
-				await channel.stop();
+				// 未启用：只对已加载的实例做 stop，从未加载的渠道保持零加载
+				const loadedChannel = this.channels.get(channelId);
+				if (loadedChannel) {
+					await loadedChannel.stop();
+				}
 				this.patchChannelStatus(channelId, {
 					enabled: false,
 					running: false,
@@ -203,6 +284,7 @@ export class RemoteControlOrchestrator {
 				continue;
 			}
 			try {
+				const channel = await this.ensureChannel(channelId);
 				await channel.start({
 					config,
 					onInboundMessage: async (message) => {
@@ -238,6 +320,19 @@ export class RemoteControlOrchestrator {
 	}
 
 	private async stopAllChannels(): Promise<void> {
+		// 等待仍在加载中的渠道完成，避免 stop 期间实例悬空
+		for (const [channelId, loading] of this.channelLoadPromises.entries()) {
+			try {
+				await loading;
+			} catch (error) {
+				this.logger.warn({
+					msg: "remote channel lazy load failed during stop",
+					channel: channelId,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+		// 只 stop 已加载的实例；未加载渠道本来就没有运行
 		for (const [channelId, channel] of this.channels.entries()) {
 			try {
 				await channel.stop();
@@ -248,6 +343,8 @@ export class RemoteControlOrchestrator {
 					error: error instanceof Error ? error.message : String(error),
 				});
 			}
+		}
+		for (const channelId of this.channelFactories.keys()) {
 			this.patchChannelStatus(channelId, {
 				running: false,
 				connected: false,
@@ -342,10 +439,10 @@ export class RemoteControlOrchestrator {
 	}
 
 	async sendToChannel(message: RemoteOutboundMessage): Promise<void> {
-		const plugin = this.channels.get(message.channel_id);
-		if (!plugin) {
+		if (!this.channelFactories.has(message.channel_id)) {
 			throw new Error(`Unsupported channel: ${message.channel_id}`);
 		}
+		const plugin = await this.ensureChannel(message.channel_id);
 		if (message.use_card) {
 			await plugin.send(message);
 			return;
@@ -499,9 +596,20 @@ export class RemoteControlOrchestrator {
 	async testChannel(
 		channelId: RemoteChannelId,
 	): Promise<{ ok: boolean; message: string }> {
-		const channel = this.channels.get(channelId);
-		if (!channel) return { ok: false, message: `未知通道：${channelId}` };
-		return channel.testConnection();
+		if (!this.channelFactories.has(channelId)) {
+			return { ok: false, message: `未知通道：${channelId}` };
+		}
+		try {
+			const channel = await this.ensureChannel(channelId);
+			return channel.testConnection();
+		} catch (error) {
+			return {
+				ok: false,
+				message: `通道模块加载失败：${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			};
+		}
 	}
 
 	listTerminalSessions() {

@@ -1281,3 +1281,15 @@ html[data-motion-preference="reduced"] *::after {
 }
 
 /* 滚动条统一样式已合并到文件上方「暖色调滚动条」一节（--t-scrollbar token） */
+
+/* ━━━ F10 性能降级：拖拽期间临时关停毛玻璃重采样 ━━━
+   拖拽分栏（ResizeHandle）/ 拖拽资料卡片（useMouseDrag）时由
+   src/lib/interaction/perfDegraded.ts 给 <html> 挂 .perf-degraded，
+   松手立即移除。backdrop-filter 的 GPU 重采样是拖拽掉帧主因，
+   此处只命中显式使用 backdrop-blur / backdrop-saturate 工具类的元素，
+   不影响其他任何样式；玻璃主题专属选择器见 glassTheme.css 第 8 节。 */
+html.perf-degraded [class*="backdrop-blur"],
+html.perf-degraded [class*="backdrop-saturate"] {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}

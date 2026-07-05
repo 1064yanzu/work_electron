@@ -1,6 +1,5 @@
 export {
 	getHighlighter,
-	highlightCode,
 	highlightToTokens,
 	highlightLine,
 	mapLanguageId,

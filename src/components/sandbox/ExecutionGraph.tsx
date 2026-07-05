@@ -10,6 +10,7 @@ import {
 } from "@xyflow/react";
 import { Workflow } from "lucide-react";
 import {
+	memo,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -23,6 +24,7 @@ import { nodeTypes } from "./graph/GraphNodes";
 import { GraphTopToolbar } from "./graph/GraphTopToolbar";
 import {
 	type ArtifactClickBehavior,
+	type ExecutionGraphBuild,
 	type ExecutionGraphSource,
 	type GraphFilter,
 	type ExecutionGraphNode,
@@ -121,7 +123,68 @@ function ExecutionGraphInner({
 	artifactClickBehavior?: ArtifactClickBehavior;
 	density?: "comfortable" | "compact";
 }) {
-	const graphBuild = useMemo(() => buildExecutionGraph(source), [source]);
+	// ---- 布局缓存：拓扑（节点/边 id 序列）不变时不重跑布局，仅原位 patch ----
+	// buildExecutionGraph 每次都产出全新的 node/edge 对象；流式期间大多数 tick
+	// 只是某个节点 status/摘要变化，拓扑并没有变。这里按「有序 id 序列」做缓存键：
+	// 键相同 ⇒ 复用旧节点对象（位置引用稳定、图不跳动，ReactFlow 对未变节点零重渲染），
+	// 只有 data 真正变化的节点才换新对象；拓扑变化才整体接受新布局。
+	const layoutCacheRef = useRef<{
+		topoKey: string;
+		build: ExecutionGraphBuild;
+	} | null>(null);
+	const graphBuild = useMemo(() => {
+		const built = buildExecutionGraph(source);
+		const topoKey = `${built.nodes.map((n) => n.id).join("\u0001")}#${built.edges
+			.map((e) => e.id)
+			.join("\u0001")}`;
+		const cached = layoutCacheRef.current;
+		if (!cached || cached.topoKey !== topoKey) {
+			layoutCacheRef.current = { topoKey, build: built };
+			return built;
+		}
+
+		const prevNodeById = new Map(cached.build.nodes.map((n) => [n.id, n]));
+		let nodesChanged = false;
+		const nodes = built.nodes.map((node): ExecutionGraphNode => {
+			const prev = prevNodeById.get(node.id);
+			if (!prev) {
+				nodesChanged = true;
+				return node;
+			}
+			if (JSON.stringify(prev.data) === JSON.stringify(node.data)) return prev;
+			nodesChanged = true;
+			// 拓扑不变 ⇒ 布局坐标不变：沿用旧 position 引用，只更新 data
+			return { ...node, position: prev.position } as ExecutionGraphNode;
+		});
+
+		const prevEdgeById = new Map(cached.build.edges.map((e) => [e.id, e]));
+		let edgesChanged = false;
+		const edges = built.edges.map((edge) => {
+			const prev = prevEdgeById.get(edge.id);
+			if (!prev) {
+				edgesChanged = true;
+				return edge;
+			}
+			if (
+				prev.animated === edge.animated &&
+				JSON.stringify(prev.style) === JSON.stringify(edge.style)
+			) {
+				return prev;
+			}
+			edgesChanged = true;
+			return edge;
+		});
+
+		if (!nodesChanged && !edgesChanged) return cached.build;
+		const nextBuild: ExecutionGraphBuild = {
+			nodes: nodesChanged ? nodes : cached.build.nodes,
+			edges: edgesChanged ? edges : cached.build.edges,
+			taskNodeId: built.taskNodeId,
+			laneCount: built.laneCount,
+		};
+		layoutCacheRef.current = { topoKey, build: nextBuild };
+		return nextBuild;
+	}, [source]);
 	const graph = useMemo(
 		() => ({ nodes: graphBuild.nodes, edges: graphBuild.edges }),
 		[graphBuild.edges, graphBuild.nodes],
@@ -320,7 +383,9 @@ function ExecutionGraphInner({
 	);
 }
 
-export function ExecutionGraph({
+// React.memo：graphSource 经过上游「签名稳定化 + 节流」后引用高度稳定，
+// 配合 SandboxWorkspace 侧 useCallback 固定的回调，流式期间可整体短路重渲染。
+export const ExecutionGraph = memo(function ExecutionGraph({
 	source,
 	onOpenArtifact,
 	filter,
@@ -365,6 +430,6 @@ export function ExecutionGraph({
 			/>
 		</ReactFlowProvider>
 	);
-}
+});
 
 export type { ArtifactClickBehavior, ExecutionGraphSource, GraphFilter };

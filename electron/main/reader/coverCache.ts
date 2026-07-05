@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { ensureReaderDirs, getCoverPath } from "./storage";
+import { mimeToExt } from "./mime";
+
+// MIME 映射已抽到纯模块 ./mime（供 parser worker 共享），这里保留 re-export 兼容旧引用。
+export { extToMime, mimeToExt } from "./mime";
 
 /** 写入封面 PNG 字节，返回最终路径。 */
 export async function saveCoverBytes(
@@ -39,23 +43,4 @@ export async function readCoverIfExists(
 		} catch {}
 	}
 	return null;
-}
-
-export function mimeToExt(mime: string): string {
-	const m = mime.toLowerCase();
-	if (m.includes("png")) return ".png";
-	if (m.includes("jpeg") || m.includes("jpg")) return ".jpg";
-	if (m.includes("webp")) return ".webp";
-	if (m.includes("gif")) return ".gif";
-	return ".png";
-}
-
-export function extToMime(ext: string): string {
-	const e = ext.toLowerCase();
-	if (e === ".png") return "image/png";
-	if (e === ".jpg" || e === ".jpeg") return "image/jpeg";
-	if (e === ".webp") return "image/webp";
-	if (e === ".gif") return "image/gif";
-	if (e === ".svg") return "image/svg+xml";
-	return "application/octet-stream";
 }

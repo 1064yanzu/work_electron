@@ -29,8 +29,24 @@ export async function resetCoreProviders(): Promise<void> {
 	return await safeInvoke("reset_core_providers");
 }
 
-export async function exportAllData(): Promise<string> {
+/**
+ * 导出全量数据到主进程临时文件（D9 流式化）：只返回 { path, bytes }，
+ * 整串 JSON 不过 IPC。需要内容时（WebDAV 备份）用 read_file_safe 按路径读取。
+ */
+export async function exportAllData(): Promise<{
+	path: string;
+	bytes: number;
+}> {
 	return await safeInvoke("export_all_data");
+}
+
+/** 导出全量数据到用户选择的文件（主进程保存对话框 + 直接写盘） */
+export async function exportAllDataToFile(): Promise<{
+	canceled: boolean;
+	path: string;
+	bytes: number;
+}> {
+	return await safeInvoke("export_all_data_to_file");
 }
 
 export async function getDataDirectory(): Promise<string> {

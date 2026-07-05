@@ -52,27 +52,55 @@ function ThinkingStepCard({
 	const config = THINKING_PHASE_CONFIG[step.phase];
 	const contentRef = useRef<HTMLDivElement>(null);
 	const [displayedContent, setDisplayedContent] = useState("");
+	// 已展示的字符数（跨 effect 重跑保持连续，避免内容追加时从头重打）
+	const typedIndexRef = useRef(0);
 
-	// 打字机效果
+	// 打字机效果：rAF 驱动，按时间差推进字符数（视觉速度仍为 15ms/字符）
 	useEffect(() => {
+		const CHAR_INTERVAL_MS = 15;
+
 		if (!isLatest || !step.content) {
+			typedIndexRef.current = step.content.length;
 			setDisplayedContent(step.content);
 			return;
 		}
 
-		let index = displayedContent.length;
-		if (index >= step.content.length) return;
+		// 内容被替换变短时收敛索引
+		if (typedIndexRef.current > step.content.length) {
+			typedIndexRef.current = step.content.length;
+			setDisplayedContent(step.content);
+		}
+		if (typedIndexRef.current >= step.content.length) return;
 
-		const timer = setInterval(() => {
-			if (index < step.content.length) {
-				setDisplayedContent(step.content.slice(0, index + 1));
-				index++;
-			} else {
-				clearInterval(timer);
+		let rafId = 0;
+		let lastTime = performance.now();
+		let carryMs = 0;
+
+		const tick = (now: number) => {
+			carryMs += now - lastTime;
+			lastTime = now;
+
+			const advance = Math.floor(carryMs / CHAR_INTERVAL_MS);
+			if (advance > 0) {
+				carryMs -= advance * CHAR_INTERVAL_MS;
+				typedIndexRef.current = Math.min(
+					typedIndexRef.current + advance,
+					step.content.length,
+				);
+				setDisplayedContent(step.content.slice(0, typedIndexRef.current));
 			}
-		}, 15); // 打字速度
 
-		return () => clearInterval(timer);
+			if (typedIndexRef.current < step.content.length) {
+				rafId = requestAnimationFrame(tick);
+			} else {
+				rafId = 0;
+			}
+		};
+
+		rafId = requestAnimationFrame(tick);
+		return () => {
+			if (rafId) cancelAnimationFrame(rafId);
+		};
 	}, [step.content, isLatest]);
 
 	// 自动滚动到底部

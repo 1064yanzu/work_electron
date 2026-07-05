@@ -4,12 +4,13 @@
  * 展示当前版本信息、应用更新入口与日志诊断工具。
  */
 import { Download, FileText, FolderOpen, Info } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "../../../../lib/tauriCompat";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
 import {
 	SettingsButton,
 	SettingsCardSection,
+	SettingsChipGroup,
 	SettingsPageContainer,
 	SettingsRow,
 } from "../../ui/SettingsPrimitives";
@@ -30,10 +31,21 @@ function formatBytes(bytes: number): string {
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+type LogFileLevel = "default" | "error" | "warn" | "info" | "debug";
+
+const LOG_LEVEL_OPTIONS: Array<{ value: LogFileLevel; label: string }> = [
+	{ value: "default", label: "默认" },
+	{ value: "error", label: "Error" },
+	{ value: "warn", label: "Warn" },
+	{ value: "info", label: "Info" },
+	{ value: "debug", label: "Debug" },
+];
+
 export function AboutPanel() {
 	const [appVersion, setAppVersion] = useState("");
 	const [logsInfo, setLogsInfo] = useState<LogsInfo | null>(null);
 	const [logsBusy, setLogsBusy] = useState<"export" | "reveal" | null>(null);
+	const [logLevel, setLogLevel] = useState<LogFileLevel>("default");
 
 	const refreshLogsInfo = useCallback(async () => {
 		try {
@@ -96,10 +108,38 @@ export function AboutPanel() {
 		});
 	}, []);
 
-	// 初次加载日志概览
+	// 初次加载日志概览 + 已保存的日志级别
 	useEffect(() => {
 		void refreshLogsInfo();
+		void invoke<string | null>("get_config", { key: "log_file_level" })
+			.then((v) => {
+				if (v === "error" || v === "warn" || v === "info" || v === "debug") {
+					setLogLevel(v);
+				}
+			})
+			.catch(() => {});
 	}, [refreshLogsInfo]);
+
+	const logLevelRef = useRef(logLevel);
+	logLevelRef.current = logLevel;
+
+	const handleLogLevelChange = useCallback(async (next: LogFileLevel) => {
+		const prev = logLevelRef.current;
+		setLogLevel(next);
+		try {
+			await invoke("set_log_file_level", { level: next });
+			toast.success(
+				next === "default"
+					? "日志级别已恢复默认"
+					: `文件日志级别已设为 ${next}`,
+			);
+		} catch (err) {
+			setLogLevel(prev);
+			toast.error(
+				`日志级别设置失败：${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
+	}, []);
 
 	return (
 		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
@@ -157,6 +197,18 @@ export function AboutPanel() {
 						>
 							导出为 ZIP
 						</SettingsButton>
+					}
+				/>
+				<SettingsRow
+					label="文件日志级别"
+					description="默认：正式版 Info、开发模式 Debug。排查问题时可临时调到 Debug，立即生效，无需重启。"
+					action={
+						<SettingsChipGroup<LogFileLevel>
+							value={logLevel}
+							options={LOG_LEVEL_OPTIONS}
+							onChange={(v) => void handleLogLevelChange(v)}
+							size="sm"
+						/>
 					}
 				/>
 				{logsInfo && logsInfo.exists && logsInfo.latest_subdirs.length > 0 && (

@@ -200,8 +200,10 @@ const ALL_SLOTS: MascotSlot[] = [
 	"onboarding-3",
 ];
 
+// 内置静态图已全部压缩为 webp（原 png 已删除）；
+// atlas.webp 会被同一 glob 命中，但 slot 白名单（isMascotSlot）会把它过滤掉。
 const assetModules = import.meta.glob<{ default: string }>(
-	"../../assets/mascots/**/*.png",
+	"../../assets/mascots/**/*.webp",
 	{ eager: true },
 );
 
@@ -228,7 +230,7 @@ function buildAssetTable(): Record<
 	};
 
 	for (const [filePath, mod] of Object.entries(assetModules)) {
-		const match = filePath.match(/\/mascots\/([^/]+)\/([^/]+)\.png$/);
+		const match = filePath.match(/\/mascots\/([^/]+)\/([^/]+)\.webp$/);
 		if (!match) continue;
 		const [, id, slot] = match;
 		if (!isBuiltinMascotId(id) || !isMascotSlot(slot)) continue;
