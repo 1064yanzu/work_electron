@@ -16,6 +16,7 @@ export type {
 
 import type {
 	CoreWorkspaceState,
+	LayoutState,
 	ResearchSource,
 	WorkspaceState,
 } from "./stores/types";
@@ -373,7 +374,8 @@ class WorkspaceStore {
 	}
 
 	// 设置主视图模式 -> layoutStore
-	setMainView(view: "editor" | "browser" | "wiki-graph") {
+	// 联合类型直接引用 LayoutState，避免手抄一份导致新增视图时漏改
+	setMainView(view: LayoutState["activeMainView"]) {
 		layoutStore.setMainView(view);
 	}
 
@@ -388,19 +390,7 @@ class WorkspaceStore {
 	}
 
 	// 设置左边栏视图模式 -> layoutStore
-	setLeftSidebarView(
-		view:
-			| "sources"
-			| "research"
-			| "detail"
-			| "agent"
-			| "cards"
-			| "websearch"
-			| "threads"
-			| "files"
-			| "skills"
-			| "wiki",
-	) {
+	setLeftSidebarView(view: LayoutState["leftSidebarView"]) {
 		layoutStore.setLeftSidebarView(view);
 	}
 

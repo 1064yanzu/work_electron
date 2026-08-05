@@ -61,6 +61,7 @@ import { SidebarRail } from "../layout/SidebarRail";
 import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
+import { HarnessView } from "./HarnessView";
 import { WikiView } from "../wiki/WikiView";
 import { useLayoutStoreSelector } from "../../lib/stores/layoutStore";
 
@@ -649,6 +650,8 @@ export default function ResourceSidebar({
 							<SkillsView />
 						) : leftSidebarView === "wiki" ? (
 							<WikiView />
+						) : leftSidebarView === "harness" ? (
+							<HarnessView />
 						) : leftSidebarView === "websearch" ? (
 							<div className="flex flex-col h-full">
 								{/* Header */}

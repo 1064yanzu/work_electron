@@ -38,6 +38,22 @@ export interface TerminalInstance {
 	isRemote?: boolean;
 	/** 远控元信息；仅在 isRemote 时存在 */
 	remoteMeta?: RemoteTerminalMeta;
+	/**
+	 * 是否是 Harness Hub 迁移 pty。true 表示该终端由 harnessHub/ptyLauncher 创建
+	 * （虚拟屏就绪探测 + 交接包注入），关闭走 harness_pty_close 而非 terminal_destroy。
+	 * 与 isRemote 互斥。
+	 */
+	isHarness?: boolean;
+	/** Harness 元信息；仅在 isHarness 时存在 */
+	harnessMeta?: HarnessTerminalMeta;
+}
+
+/** Harness 迁移 pty 的元信息。 */
+export interface HarnessTerminalMeta {
+	/** 目标 harness（claude-code / codex / ...） */
+	harness: string;
+	/** 后端 pty id（等同 terminal id，保留以便语义清晰） */
+	ptyId: string;
 }
 
 interface TerminalState {
@@ -78,6 +94,25 @@ export interface RemoteTerminalAttachedPayload {
 export interface RemoteTerminalDetachedPayload {
 	id: string;
 	reason?: string;
+}
+
+/**
+ * Harness Hub 迁移 pty 推送给前端的事件 payload：
+ *   harness-terminal-attached → attachHarness
+ */
+export interface HarnessTerminalAttachedPayload {
+	pty_id: string;
+	harness: string;
+	terminal: {
+		id: string;
+		name: string;
+		cwd: string;
+		shell: string;
+		pid: number;
+		createdAt: number;
+	};
+	/** true 时前端要打开终端面板 + 切到该 tab */
+	auto_show: boolean;
 }
 
 let counter = 0;
@@ -161,6 +196,17 @@ class TerminalStore {
 		// 这种 tab 上只做「本地移除」，不发 terminal_destroy（后端 IPC 也会拒绝）。
 		if (existing?.isRemote) {
 			this.detachRemote(id);
+			return;
+		}
+		// Harness 迁移 pty：terminal_destroy 同样被后端前缀保护挡掉，
+		// 必须走专用命令真正结束 CLI 进程，再移除本地 tab。
+		if (existing?.isHarness) {
+			try {
+				await invoke("harness_pty_close", { pty_id: id });
+			} catch {
+				// ignore
+			}
+			this.detachHarness(id);
 			return;
 		}
 		try {
@@ -276,6 +322,80 @@ class TerminalStore {
 		this.emit();
 	}
 
+	/**
+	 * Harness Hub 迁移 pty 接入桌面端。ptyLauncher 创建 pty 后推送
+	 * `harness-terminal-attached`，前端把它当成一个特殊 tab 挂进列表。
+	 *
+	 * 与远控 tab 的差别：关闭时走 harness_pty_close（真正结束 CLI 进程），
+	 * 而远控 tab 只做本地移除。
+	 */
+	attachHarness(payload: HarnessTerminalAttachedPayload): void {
+		const meta: HarnessTerminalMeta = {
+			harness: payload.harness,
+			ptyId: payload.pty_id,
+		};
+		const existing = this.state.terminals.find(
+			(t) => t.id === payload.terminal.id,
+		);
+		if (existing) {
+			this.state = {
+				...this.state,
+				terminals: this.state.terminals.map((t) =>
+					t.id === payload.terminal.id
+						? { ...t, isHarness: true, harnessMeta: meta }
+						: t,
+				),
+			};
+			if (payload.auto_show) {
+				this.state = {
+					...this.state,
+					activeTerminalId: payload.terminal.id,
+					isVisible: true,
+				};
+			}
+			this.emit();
+			return;
+		}
+		const instance: TerminalInstance = {
+			id: payload.terminal.id,
+			name: payload.terminal.name,
+			cwd: payload.terminal.cwd,
+			shell: payload.terminal.shell,
+			pid: payload.terminal.pid,
+			createdAt: payload.terminal.createdAt,
+			isHarness: true,
+			harnessMeta: meta,
+		};
+		const terminals = [...this.state.terminals, instance];
+		this.state = {
+			...this.state,
+			terminals,
+			activeTerminalId: payload.auto_show
+				? instance.id
+				: (this.state.activeTerminalId ?? instance.id),
+			isVisible: payload.auto_show ? true : this.state.isVisible,
+		};
+		this.emit();
+	}
+
+	/** 仅从本地列表移除一个 harness tab（pty 已在后端退出时用）。 */
+	detachHarness(id: string): void {
+		const exists = this.state.terminals.some((t) => t.id === id && t.isHarness);
+		if (!exists) return;
+		const remaining = this.state.terminals.filter((t) => t.id !== id);
+		const newActive =
+			this.state.activeTerminalId === id
+				? remaining[remaining.length - 1]?.id || null
+				: this.state.activeTerminalId;
+		this.state = {
+			...this.state,
+			terminals: remaining,
+			activeTerminalId: newActive,
+			isVisible: remaining.length > 0 && this.state.isVisible,
+		};
+		this.emit();
+	}
+
 	/** 切换活跃终端 */
 	setActiveTerminal(id: string) {
 		if (this.state.activeTerminalId === id) return;
@@ -331,7 +451,13 @@ class TerminalStore {
 		for (const t of this.state.terminals) {
 			if (t.isRemote) continue;
 			try {
-				await invoke("terminal_destroy", { id: t.id });
+				// harness pty 的 terminal_destroy 会被后端前缀保护拒掉，
+				// 必须走专用命令，否则 pty 变成孤儿进程
+				if (t.isHarness) {
+					await invoke("harness_pty_close", { pty_id: t.id });
+				} else {
+					await invoke("terminal_destroy", { id: t.id });
+				}
 			} catch {
 				// ignore
 			}

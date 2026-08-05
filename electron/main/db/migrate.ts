@@ -3,6 +3,7 @@ import { initSql } from "./migrations/initSql";
 import { runV2Migrations } from "./migrations/v2Migrations";
 import { runV3Migrations } from "./migrations/v3Migrations";
 import { runV4Migrations } from "./migrations/v4Migrations";
+import { runV5Migrations } from "./migrations/v5Migrations";
 
 /**
  * 当前数据库 schema 版本号（B12：版本化迁移）。
@@ -20,7 +21,7 @@ import { runV4Migrations } from "./migrations/v4Migrations";
  * CURRENT_SCHEMA_VERSION，并在下面的判断链里追加 `if (currentVersion < N)`。
  * 不要修改已发布版本对应的迁移函数内容（迁移历史应保持可追溯、不可变）。
  */
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -401,6 +402,9 @@ export async function runMigrations(ctx: DbContext): Promise<void> {
 	}
 	if (currentVersion < 4) {
 		await runV4Migrations(ctx);
+	}
+	if (currentVersion < 5) {
+		await runV5Migrations(ctx);
 	}
 
 	await writeSchemaVersion(ctx, CURRENT_SCHEMA_VERSION);

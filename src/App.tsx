@@ -47,6 +47,7 @@ import {
 import { ShortcutCheatSheet } from "./components/ui/ShortcutCheatSheet";
 import { useRemoteChatBridge } from "./lib/remoteChatBridge";
 import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
+import { useHarnessTerminalBridge } from "./lib/harnessTerminalBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
 import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
@@ -69,6 +70,11 @@ const SandboxWorkspace = lazy(
 const WikiGraphFullscreen = lazy(() =>
 	import("./components/wiki/WikiGraphFullscreen").then((m) => ({
 		default: m.WikiGraphFullscreen,
+	})),
+);
+const AiHubPanel = lazy(() =>
+	import("./components/aihub/AiHubPanel").then((m) => ({
+		default: m.AiHubPanel,
 	})),
 );
 const SettingsModal = lazy(async () => {
@@ -114,6 +120,7 @@ function PanelLoadingFallback() {
 export default function App() {
 	useRemoteChatBridge();
 	useRemoteTerminalBridge();
+	useHarnessTerminalBridge();
 	usePetQuickReplyBridge();
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -421,6 +428,10 @@ export default function App() {
 												) : activeMainView === "browser" ? (
 													<Suspense fallback={<PanelLoadingFallback />}>
 														<BrowserPanel />
+													</Suspense>
+												) : activeMainView === "aihub" ? (
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<AiHubPanel />
 													</Suspense>
 												) : (
 													<Suspense fallback={<PanelLoadingFallback />}>

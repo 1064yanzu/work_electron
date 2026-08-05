@@ -20,6 +20,23 @@ import { BatchedSender } from "../../utils/batchedSender";
  */
 const REMOTE_PTY_PREFIX = "remote-pty-";
 
+/**
+ * Harness Hub pty 的 terminalId 前缀。
+ *
+ * 与远控 pty 同理：这���终端由 harnessHub/ptyLauncher 创建并管理生命周期
+ * （虚拟屏就绪探测 + 交接指令注入 + 输出回灌 canonical 表），
+ * 前端直接 destroy / resize 会绕过这套链路，故一并挡掉。
+ */
+const HARNESS_PTY_PREFIX = "harness-pty-";
+
+/** 由主进程托管生命周期、前端不得 destroy/resize 的 pty 前缀。 */
+const MANAGED_PTY_PREFIXES = [REMOTE_PTY_PREFIX, HARNESS_PTY_PREFIX];
+
+/** 是否为主进程托管的 pty。 */
+function isManagedPty(id: string): boolean {
+	return MANAGED_PTY_PREFIXES.some((prefix) => id.startsWith(prefix));
+}
+
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
 	input: IPCSchema[K]["input"],
@@ -88,7 +105,8 @@ export function createTerminalHandlers(deps: {
 	const terminal_resize: Handler<"terminal_resize"> = async (_event, input) => {
 		// 远控 pty 的尺寸由 PtyBridgeService 在创建时锁定为 IM 端期望的窄屏，
 		// 桌面 xterm 的 fit() 调用必须被屏蔽，否则远端卡片会错乱。
-		if (input.id.startsWith(REMOTE_PTY_PREFIX)) {
+		// harness pty 同理：尺寸由 ptyLauncher 锁定，虚拟屏就绪探测依赖固定列宽。
+		if (isManagedPty(input.id)) {
 			return { success: false };
 		}
 		const ok = service.resizeTerminal(input.id, input.cols, input.rows);
@@ -103,7 +121,8 @@ export function createTerminalHandlers(deps: {
 		// session 清理、监听卸载）。从前端绕过它直接 destroy 会留下 stale session
 		// 与"已关闭"的卡片消息。前端 TerminalTabBar 在远控 tab 上要走 detachRemote
 		// 路径（仅本地列表移除），不调本 IPC。
-		if (input.id.startsWith(REMOTE_PTY_PREFIX)) {
+		// harness pty 同理，走 harness_pty_close。
+		if (isManagedPty(input.id)) {
 			return { success: false };
 		}
 

@@ -20,9 +20,10 @@ interface TerminalInstanceProps {
 	terminalId: string;
 	isActive: boolean;
 	/**
-	 * 远控 pty 时为 true。前端会跳过 terminal_resize（后端会拒绝，因为远控
-	 * pty 的尺寸由 IM 卡片渲染决定，桌面 fit() 不能改），但仍然允许 stdin
-	 * 输入与监听 terminal-data 输出。
+	 * 主进程托管的 pty（远控 / Harness Hub 迁移）时为 true。前端会跳过
+	 * terminal_resize（后端会拒绝——远控 pty 的尺寸由 IM 卡片渲染决定、
+	 * harness pty 的尺寸被虚拟屏就绪探测锁定，桌面 fit() 都不能改），
+	 * 但仍然允许 stdin 输入与监听 terminal-data 输出。
 	 */
 	isRemote?: boolean;
 	onExit?: () => void;

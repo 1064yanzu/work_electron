@@ -33,6 +33,7 @@ import {
 	SlidersHorizontal,
 	Terminal,
 	Volume2,
+	Waypoints,
 	Wrench,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -68,6 +69,7 @@ export type SettingsTabId =
 	| "workshop.styleprofile"
 	| "integrations.mcp"
 	| "integrations.remote"
+	| "integrations.harnessHub"
 	| "data.stats"
 	| "data.storage"
 	| "data.backup"
@@ -305,6 +307,16 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/RemoteControlSettings"),
 			"RemoteControlSettings",
+		),
+	},
+	{
+		id: "integrations.harnessHub",
+		category: "integrations",
+		label: "AI 入口互通",
+		icon: Waypoints,
+		load: asDefault(
+			() => import("./panels/integrations/HarnessHubSettings"),
+			"HarnessHubSettings",
 		),
 	},
 

@@ -228,6 +228,27 @@ export async function bootstrapApp({
 	});
 
 	scheduleIdle(() => {
+		void (async () => {
+			try {
+				const { startHarnessIngestWatcher } = await import(
+					"./ipc/handlers/harnessHub"
+				);
+				const { getDbContext } = await import("./db/client");
+				await startHarnessIngestWatcher(
+					getDbContext(),
+					() => BrowserWindow.getAllWindows()[0] ?? null,
+				);
+				logger.info({ msg: "Harness Hub ingest watcher started" });
+			} catch (err) {
+				logger.warn({
+					msg: "Failed to start harness hub ingest watcher",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
+	});
+
+	scheduleIdle(() => {
 		try {
 			initUpdateService();
 		} catch (err) {
@@ -394,6 +415,20 @@ export async function bootstrapApp({
 		try {
 			void import("./ipc/handlers/agentSdk/memoryFileWatcher").then(
 				({ memoryFileWatcher }) => memoryFileWatcher.stop(),
+			);
+		} catch {
+			// 静默
+		}
+		// 停止 Harness Hub 摄取 watcher + 释放迁移 pty + 销毁内嵌 Web 视图
+		try {
+			void import("./ipc/handlers/harnessHub").then(
+				({ stopHarnessIngestWatcher }) => stopHarnessIngestWatcher(),
+			);
+			void import("./harnessHub/ptyLauncher").then(
+				({ disposeAllHarnessPtys }) => disposeAllHarnessPtys(),
+			);
+			void import("./services/aiHubViewService").then(
+				({ getAiHubViewService }) => getAiHubViewService().destroyAll(),
 			);
 		} catch {
 			// 静默

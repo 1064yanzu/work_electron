@@ -9,6 +9,7 @@ import {
 	Terminal,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Waypoints,
 } from "lucide-react";
 import {
 	useWorkspaceStoreSelector,
@@ -46,6 +47,7 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	const navItems = [
 		{ id: "files", label: "文件", icon: FolderOpen },
 		{ id: "threads", label: "线程", icon: MessagesSquare },
+		{ id: "harness", label: "会话", icon: Waypoints },
 		{ id: "sources", label: "资料库", icon: BookMarked },
 		{ id: "cards", label: "卡片", icon: LayoutGrid },
 		{ id: "wiki", label: "Wiki", icon: BookOpen },
@@ -56,8 +58,13 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 
 	const handleNavClick = (id: NavId) => {
 		setLeftSidebarView(id);
-		// 如果当前停在非 editor 主视图，回到 editor
-		if (activeMainView !== "editor") {
+		// 如果当前停在非 editor 主视图，回到 editor。
+		// 例外：会话中枢 + AI Hub 是一对协作视图（左边选会话、中栏看 Web 站点），
+		// 从会话中枢发起「发送到 Web」后需要停留在 aihub，不能被拽回 editor。
+		if (
+			activeMainView !== "editor" &&
+			!(id === "harness" && activeMainView === "aihub")
+		) {
 			setMainView("editor");
 		}
 	};

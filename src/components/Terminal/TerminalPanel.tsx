@@ -65,7 +65,8 @@ export function TerminalPanel() {
 						key={t.id}
 						terminalId={t.id}
 						isActive={t.id === activeId}
-						isRemote={t.isRemote}
+						// 远控与 harness pty 的尺寸都由主进程锁定，桌面端不得 resize
+						isRemote={t.isRemote || t.isHarness}
 						onExit={() => handleTerminalExit(t.id)}
 					/>
 				))}

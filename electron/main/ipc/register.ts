@@ -32,6 +32,7 @@ import { createBrowserSearchHandlers } from "./handlers/browserSearch";
 import { createExaMcpHandlers } from "./handlers/exaMcp";
 import { createCardHandlers } from "./handlers/cards";
 import { createChatHistoryHandlers } from "./handlers/chatHistory";
+import { createHarnessHubHandlers } from "./handlers/harnessHub";
 import { createFolderHandlers } from "./handlers/folders";
 import { createImportExportHandlers } from "./handlers/import-export";
 import { createAgentSdkHandlers } from "./handlers/agentSdk";
@@ -339,6 +340,11 @@ export function registerIpcHandlers({
     getMainWindow: () => mainWindowRef,
   });
 
+  // Harness Hub handlers (跨 harness 会话资产互通 + 内嵌 Web AI 站点)
+  const harnessHubHandlers = createHarnessHubHandlers(db, {
+    getMainWindow: () => mainWindowRef,
+  });
+
   // Worktree handlers (Git Worktree 沙盒隔离)
   const worktreeHandlers = createWorktreeHandlers({ logger });
 
@@ -639,6 +645,34 @@ export function registerIpcHandlers({
     chatHistoryHandlers.chat_history_migrate_import,
   );
   handle("chat_history_search", chatHistoryHandlers.chat_history_search);
+
+  // ==================
+  // AI Harness Hub（跨 harness 会话资产互通）
+  // ==================
+  handle("harness_detect", harnessHubHandlers.harness_detect);
+  handle("harness_sessions_list", harnessHubHandlers.harness_sessions_list);
+  handle("harness_session_get", harnessHubHandlers.harness_session_get);
+  handle("harness_sessions_search", harnessHubHandlers.harness_sessions_search);
+  handle("harness_ingest_scan", harnessHubHandlers.harness_ingest_scan);
+  handle("harness_session_delete", harnessHubHandlers.harness_session_delete);
+  handle("harness_handoff_create", harnessHubHandlers.harness_handoff_create);
+  handle("harness_handoff_update", harnessHubHandlers.harness_handoff_update);
+  handle("harness_handoff_launch", harnessHubHandlers.harness_handoff_launch);
+  handle("harness_pty_close", harnessHubHandlers.harness_pty_close);
+  handle("harness_handoff_list", harnessHubHandlers.harness_handoff_list);
+  handle("harness_handoff_get", harnessHubHandlers.harness_handoff_get);
+
+  // ==================
+  // AI Hub（内嵌 Web AI 站点）
+  // ==================
+  handle("aihub_sites_list", harnessHubHandlers.aihub_sites_list);
+  handle("aihub_sites_save", harnessHubHandlers.aihub_sites_save);
+  handle("aihub_open", harnessHubHandlers.aihub_open);
+  handle("aihub_set_bounds", harnessHubHandlers.aihub_set_bounds);
+  handle("aihub_close", harnessHubHandlers.aihub_close);
+  handle("aihub_inject", harnessHubHandlers.aihub_inject);
+  handle("aihub_extract", harnessHubHandlers.aihub_extract);
+  handle("aihub_import_session", harnessHubHandlers.aihub_import_session);
 
   // ==================
   // Knowledge Base

@@ -3,7 +3,13 @@
  * 管理多个终端标签的切换、创建和关闭
  */
 
-import { Plus, Radio, Terminal as TerminalIcon, X } from "lucide-react";
+import {
+	Plus,
+	Radio,
+	Terminal as TerminalIcon,
+	Waypoints,
+	X,
+} from "lucide-react";
 import { useCallback } from "react";
 import {
 	terminalStore,
@@ -55,10 +61,14 @@ export function TerminalTabBar() {
 							isActive
 								? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
 								: "text-text-muted hover:bg-surface/60"
-						} ${t.isRemote ? "ring-1 ring-accent/30" : ""}`}
+						} ${t.isRemote ? "ring-1 ring-accent/30" : ""}${
+							t.isHarness ? " ring-1 ring-terracotta/30" : ""
+						}`}
 					>
 						{t.isRemote ? (
 							<Radio className="w-3 h-3 text-accent" />
+						) : t.isHarness ? (
+							<Waypoints className="w-3 h-3 text-terracotta" />
 						) : (
 							<TerminalIcon className="w-3 h-3" />
 						)}
@@ -68,8 +78,19 @@ export function TerminalTabBar() {
 								{channelLabel}
 							</span>
 						)}
+						{t.isHarness && (
+							<span className="px-1 py-px text-[9px] font-semibold rounded bg-terracotta/10 text-terracotta uppercase tracking-wide">
+								迁移
+							</span>
+						)}
 						<Tooltip
-							content={t.isRemote ? "从桌面端移除" : "关闭终端"}
+							content={
+								t.isRemote
+									? "从桌面端移除"
+									: t.isHarness
+										? "结束该 CLI 会话"
+										: "关闭终端"
+							}
 							placement="top"
 						>
 							<button

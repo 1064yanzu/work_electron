@@ -6,6 +6,7 @@
 // 动态命令来自 commandRegistry（功能面板可自行注册/反注册）。
 
 import {
+	Globe,
 	Keyboard,
 	MessageSquare,
 	Moon,
@@ -14,6 +15,7 @@ import {
 	Sparkles,
 	Sun,
 	Terminal as TerminalIcon,
+	Waypoints,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCommandRegistrySelector } from "../../lib/commands/commandRegistry";
@@ -95,6 +97,45 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			action: () => shortcutRegistry.openCheatSheet(),
 		});
 
+		items.push({
+			id: "ws.open-harness",
+			title: "打开会话中枢",
+			description: "浏览并迁移 Claude Code / Codex 等入口的会话",
+			icon: Waypoints,
+			keywords: [
+				"harness",
+				"session",
+				"hub",
+				"claude",
+				"codex",
+				"huihua",
+				"zhongshu",
+				"qianyi",
+			],
+			group: "工作区",
+			action: () => workspaceStore.setLeftSidebarView("harness"),
+		});
+
+		items.push({
+			id: "ws.open-aihub",
+			title: "打开 AI Hub",
+			description: "在中栏内嵌 ChatGPT / Gemini / Kimi 等 Web 站点",
+			icon: Globe,
+			keywords: [
+				"aihub",
+				"web",
+				"chatgpt",
+				"gemini",
+				"kimi",
+				"doubao",
+				"deepseek",
+				"wangye",
+				"zhandian",
+			],
+			group: "工作区",
+			action: () => workspaceStore.setMainView("aihub"),
+		});
+
 		// 设置
 		const settingsTabs: Array<{
 			tab: string;
@@ -111,6 +152,11 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			{ tab: "data", title: "数据与备份" },
 			{ tab: "mascot", title: "桌面宠物" },
 			{ tab: "skills", title: "Skills 与市场" },
+			{
+				tab: "integrations.harnessHub",
+				title: "AI 入口互通设置",
+				desc: "harness 探测 / 会话摄取 / Web 站点",
+			},
 		];
 		for (const t of settingsTabs) {
 			items.push({

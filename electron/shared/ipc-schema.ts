@@ -3778,6 +3778,148 @@ export type IPCSchema = {
 		input: { recipe_id: string; intensity?: StyleIntensity };
 		output: { prompt: string };
 	};
+
+	// ==================
+	// AI Harness Hub（跨 harness 会话资产互通）
+	// ==================
+	/** 探测本机已安装的 AI CLI 及其能力（可读会话 / 可注入） */
+	harness_detect: {
+		input: Record<string, never>;
+		output: { harnesses: HarnessDetectionRow[] };
+	};
+	/** 列出已摄取的会话（按 harness / cwd 过滤，updated_at 倒序） */
+	harness_sessions_list: {
+		input: {
+			harness?: string;
+			cwd?: string;
+			limit?: number;
+			offset?: number;
+		};
+		output: { sessions: HarnessSessionRow[]; total: number };
+	};
+	/** 取单个会话的完整转录 */
+	harness_session_get: {
+		input: { session_id: string; limit?: number; offset?: number };
+		output: {
+			session: HarnessSessionRow | null;
+			messages: HarnessMessageRow[];
+		};
+	};
+	/** 全文检索会话消息（FTS5 trigram，支持中文子串） */
+	harness_sessions_search: {
+		input: { query: string; harness?: string; limit?: number };
+		output: { hits: HarnessSearchHit[] };
+	};
+	/** 触发一次全量扫描摄取（进度走 harness-ingest-progress 事件） */
+	harness_ingest_scan: {
+		input: { include_ipo_sdk?: boolean };
+		output: { updated: number; scanned: number; skipped_lines: number };
+	};
+	/** 删除一个已摄取的会话（仅删本地 canonical 记录，不动原始 JSONL） */
+	harness_session_delete: {
+		input: { session_id: string };
+		output: { success: boolean };
+	};
+	/** 蒸馏生成 HANDOFF 交接包（进度走 harness-handoff-event 事件） */
+	harness_handoff_create: {
+		input: {
+			session_id: string;
+			target_harness: string;
+			model?: string;
+		};
+		output: { handoff_id: string; package: HarnessHandoffPackage };
+	};
+	/** 在 App 内起 pty 跑目标 CLI 并注入交接包 */
+	harness_handoff_launch: {
+		input: {
+			handoff_id: string;
+			/** 覆盖工作目录；默认用源会话的 cwd */
+			cwd?: string;
+			/** 覆盖注入指令 */
+			instruction?: string;
+			/** 是否把交接包写入 cwd/HANDOFF.md */
+			write_file?: boolean;
+		};
+		output: {
+			pty_id: string;
+			handoff_path: string | null;
+			ready_detected: boolean;
+		};
+	};
+	/** 关闭一个 harness pty */
+	harness_pty_close: {
+		input: { pty_id: string };
+		output: { success: boolean };
+	};
+	/** 列出历史迁移记录 */
+	harness_handoff_list: {
+		input: { session_id?: string; limit?: number };
+		output: { handoffs: HarnessHandoffRow[] };
+	};
+	/** 取单条迁移记录的完整交接包 markdown */
+	harness_handoff_get: {
+		input: { handoff_id: string };
+		output: { handoff: HarnessHandoffRow | null };
+	};
+	/** 更新交接包内容（用户在预览里编辑后保存） */
+	harness_handoff_update: {
+		input: { handoff_id: string; package_md: string };
+		output: { success: boolean };
+	};
+
+	// ==================
+	// AI Hub（内嵌 Web AI 站点）
+	// ==================
+	/** 列出可用的 Web AI 站点（内置 + 用户自定义） */
+	aihub_sites_list: {
+		input: Record<string, never>;
+		output: { sites: AiHubSiteRow[] };
+	};
+	/** 保存站点清单覆盖（设置面板用） */
+	aihub_sites_save: {
+		input: { sites: AiHubSiteRow[] };
+		output: { success: boolean; sites: AiHubSiteRow[] };
+	};
+	/** 在中栏挂载并显示某站点（bounds 由渲染端上报） */
+	aihub_open: {
+		input: {
+			site_id: string;
+			bounds: { x: number; y: number; width: number; height: number };
+		};
+		output: { success: boolean };
+	};
+	/** 更新内嵌视图 bounds（面板 resize / 拖动） */
+	aihub_set_bounds: {
+		input: { bounds: { x: number; y: number; width: number; height: number } };
+		output: { success: boolean };
+	};
+	/** 从中栏移除内嵌视图（保活页面与登录态，不销毁） */
+	aihub_close: {
+		input: Record<string, never>;
+		output: { success: boolean };
+	};
+	/** 把交接包注入站点输入框；DOM 失败自动降级剪贴板 */
+	aihub_inject: {
+		input: { site_id: string; text: string };
+		output: { ok: boolean; method: "dom" | "clipboard" };
+	};
+	/** 从站点当前对话提取消息（尽力而为） */
+	aihub_extract: {
+		input: { site_id: string };
+		output: {
+			ok: boolean;
+			messages: { role: string; content: string }[];
+		};
+	};
+	/** 把提取到的 Web 对话存成一个 canonical 会话 */
+	aihub_import_session: {
+		input: {
+			site_id: string;
+			title?: string;
+			messages: { role: string; content: string }[];
+		};
+		output: { session_id: string };
+	};
 };
 
 // =====================
@@ -4301,3 +4443,105 @@ export interface ChatHistoryMessageInput {
 }
 
 export type IPCChannel = keyof IPCSchema;
+
+// ==================
+// AI Harness Hub 行类型
+// ==================
+
+/** harness 探测结果行 */
+export interface HarnessDetectionRow {
+	harness: string;
+	label: string;
+	installed: boolean;
+	bin_path: string | null;
+	session_dir: string | null;
+	/** 能否读取历史会话（adapter 已实现且目录存在） */
+	can_read: boolean;
+	/** 能否被注入（App 内 pty 启动该 CLI） */
+	can_inject: boolean;
+	session_count: number;
+}
+
+/** harness_sessions 表行 */
+export interface HarnessSessionRow {
+	id: string;
+	harness: string;
+	external_id: string;
+	cwd: string | null;
+	title: string | null;
+	summary: string | null;
+	status: string;
+	origin_path: string | null;
+	message_count: number;
+	token_estimate: number;
+	/** model / gitBranch / cliVersion / provider 等的 JSON */
+	meta_json: string | null;
+	created_at: number;
+	updated_at: number;
+}
+
+/** harness_messages 表行 */
+export interface HarnessMessageRow {
+	id: string;
+	session_id: string;
+	role: string;
+	content: string;
+	/** CanonicalBlock[] 的 JSON（thinking / tool_use / tool_result） */
+	blocks_json: string | null;
+	seq: number;
+	created_at: number;
+}
+
+/** 全文检索命中项（附所属会话的展示信息） */
+export interface HarnessSearchHit {
+	session_id: string;
+	harness: string;
+	title: string | null;
+	cwd: string | null;
+	role: string;
+	seq: number;
+	/** 命中片段（FTS snippet，命中词用 <mark> 包裹） */
+	snippet: string;
+	created_at: number;
+}
+
+/** 蒸馏产出的结构化交接包 */
+export interface HarnessHandoffPackage {
+	goal: string;
+	done: string[];
+	in_progress: string[];
+	decisions: string[];
+	files: string[];
+	next_steps: string[];
+	/** 渲染好的完整 markdown */
+	markdown: string;
+}
+
+/** harness_handoffs 表行 */
+export interface HarnessHandoffRow {
+	id: string;
+	source_session_id: string;
+	target_harness: string;
+	package_md: string;
+	status: string;
+	pty_id: string | null;
+	result_session_id: string | null;
+	created_at: number;
+}
+
+/** AI Hub 站点配置行 */
+export interface AiHubSiteRow {
+	id: string;
+	harness: string;
+	label: string;
+	url: string;
+	/** 输入框选择器候选，按序尝试 */
+	input_selectors: string[];
+	/** 发送按钮选择器候选 */
+	submit_selectors: string[];
+	/** 对话消息节点选择器候选 */
+	message_selectors: string[];
+	/** 内置站点不可删除，只能禁用 */
+	builtin: boolean;
+	enabled: boolean;
+}
