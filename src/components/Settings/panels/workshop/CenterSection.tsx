@@ -20,6 +20,7 @@ export const CENTER_ANCHORS = {
 	artifactClick: "workshop.layout.center.artifactClick",
 	infoDensity: "workshop.layout.center.infoDensity",
 	graphFollow: "workshop.layout.center.graphFollow",
+	restoreTabs: "workshop.layout.center.restoreTabs",
 } as const;
 
 interface CenterSectionProps {
@@ -121,6 +122,21 @@ export function CenterSection({ prefs, onChange }: CenterSectionProps) {
 						<SettingsSwitch
 							checked={prefs.graphFollow}
 							onChange={(v) => void onChange({ graphFollow: v })}
+						/>
+					}
+				/>
+			</div>
+			<div
+				id={CENTER_ANCHORS.restoreTabs}
+				data-settings-anchor={CENTER_ANCHORS.restoreTabs}
+			>
+				<SettingsRow
+					label="启动时恢复标签页"
+					description="下次启动时把上次开着的中间栏标签原样列出来（含运行图与预览；本机 CLI 标签背后是真实进程，不恢复）。"
+					action={
+						<SettingsSwitch
+							checked={prefs.restoreTabsOnStartup}
+							onChange={(v) => void onChange({ restoreTabsOnStartup: v })}
 						/>
 					}
 				/>

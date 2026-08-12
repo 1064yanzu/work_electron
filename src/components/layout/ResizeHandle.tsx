@@ -92,8 +92,8 @@ export default function ResizeHandle({
 				className={cn(
 					"absolute",
 					isHorizontal
-						? "inset-y-0 w-3 -left-[6px]"
-						: "inset-x-0 h-3 -top-[6px]",
+						? "inset-y-0 w-4 -left-[8px]"
+						: "inset-x-0 h-4 -top-[8px]",
 				)}
 			/>
 		</PanelResizeHandle>

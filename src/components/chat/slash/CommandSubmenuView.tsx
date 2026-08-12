@@ -165,7 +165,7 @@ export function CommandSubmenuView({
 									tabIndex={-1}
 									onClick={() => commit(option)}
 									onMouseEnter={() => setActiveIndex(index)}
-									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-[120ms] ease-out
+									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-120 ease-out
                     ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>

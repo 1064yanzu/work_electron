@@ -249,7 +249,7 @@ export function MemorySettings() {
 		!currentThreadPath;
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-5xl space-y-6">
+		<SettingsPageContainer width="wide">
 			<div id="ai.memory.overview" data-settings-anchor="ai.memory.overview">
 				<SettingsPanelHeader
 					icon={Database}
@@ -614,11 +614,11 @@ function ProjectUnavailableState() {
 				<FolderOpen className="h-5 w-5 text-text-light" strokeWidth={1.5} />
 			</div>
 			<p className="mt-3 text-[13px] font-medium text-text-secondary">
-				尚未选中线程
+				尚未选中对话
 			</p>
 			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
 				项目级 CLAUDE.md / AGENTS.md
-				跟随当前线程的工作目录。请先在左栏选中一个线程。
+				跟随当前对话的工作目录。请先在左栏选中一条对话。
 			</p>
 		</div>
 	);

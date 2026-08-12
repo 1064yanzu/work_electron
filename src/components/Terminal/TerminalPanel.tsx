@@ -3,7 +3,7 @@
  * 整合标签栏和终端实例，作为中间面板底部的可折叠区域
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Terminal } from "lucide-react";
 import {
 	terminalStore,
@@ -13,8 +13,14 @@ import { TerminalInstance } from "./TerminalInstance";
 import { TerminalTabBar } from "./TerminalTabBar";
 
 export function TerminalPanel() {
-	const terminals = useTerminalStoreSelector((s) => s.terminals);
+	const allTerminals = useTerminalStoreSelector((s) => s.terminals);
 	const activeId = useTerminalStoreSelector((s) => s.activeTerminalId);
+	// 中栏 CLI 标签页托管的终端在那边渲染，这里不能重复挂一个 xterm——
+	// 同一个 pty 挂两份会互相抢 terminal_resize
+	const terminals = useMemo(
+		() => allTerminals.filter((t) => !t.hostedInCenter),
+		[allTerminals],
+	);
 
 	// 监听终端退出事件 -> 更新 store
 	// （远控 pty 的 attached/detached 由 App 顶层 useRemoteTerminalBridge 处理，

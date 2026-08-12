@@ -17,6 +17,7 @@ import { PtyScreenAggregator } from "../remote-control/core/ptyBridge/ptyScreenA
 import { getTerminalService } from "../services/terminalService";
 import type { TerminalInfo } from "../services/terminalService";
 import { createLogger } from "../logging/logger";
+import { harnessRuntimeMonitor } from "./automation/runtimeMonitor";
 import { launchCommandFor } from "./detect";
 import type { HarnessKind } from "./types";
 
@@ -65,6 +66,11 @@ export interface HarnessLaunchResult {
 	};
 	/** 是否成功探测到就绪（false = 超时后仍然注入了，但可能需要用户手动回车） */
 	readyDetected: boolean;
+	/**
+	 * 运行态监测条目 id。
+	 * 自动化守护靠它观察这个 CLI 后续是干完了、在等输入、还是报错卡住了。
+	 */
+	runtimeId: string;
 }
 
 interface LaunchOptions {
@@ -73,10 +79,24 @@ interface LaunchOptions {
 	cwd: string;
 	/** HANDOFF.md 的绝对路径，用于组织首条指令 */
 	handoffPath: string | null;
-	/** 首条注入指令；不传则用默认「读 HANDOFF.md 继续下一步」 */
-	instruction?: string;
+	/**
+	 * 首条注入指令。
+	 * - `undefined` → 用默认「读 HANDOFF.md 继续下一步」
+	 * - `null` → **不注入任何指令**（原生续接场景：会话已完整载入，
+	 *   再塞一句话反而会替用户擅自发起一轮新对话）
+	 */
+	instruction?: string | null;
+	/**
+	 * 覆盖启动命令。原生续接要跑的是 `claude --resume <id>` 而不是裸 `claude`，
+	 * 命令由 resume.ts 的能力表构造后传进来——这里不自己拼，避免两处逻辑漂移。
+	 */
+	commandOverride?: string;
+	/** 终端 tab 的显示名，默认 `⇄ <harness>` */
+	tabName?: string;
 	cols?: number;
 	rows?: number;
+	/** 由自动化任务发起时关联的 run id，用于把执行体挂到那次运行上 */
+	jobRunId?: string | null;
 	getMainWindow: () => BrowserWindow | null;
 }
 
@@ -113,15 +133,19 @@ export async function launchHarnessWithHandoff(
 		cwd,
 		handoffPath,
 		instruction,
+		commandOverride,
+		tabName,
 		cols = 120,
 		rows = 32,
+		jobRunId = null,
 		getMainWindow,
 	} = options;
 
-	const command = launchCommandFor(harness);
+	const command = commandOverride?.trim() || launchCommandFor(harness);
 	if (!command) {
 		throw new Error(`harness ${harness} 不支持在 App 内启动`);
 	}
+	const displayName = tabName?.trim() || `⇄ ${harness}`;
 
 	const terminalService = getTerminalService();
 	const ptyId = `${HARNESS_PTY_PREFIX}${randomUUID()}`;
@@ -145,13 +169,31 @@ export async function launchHarnessWithHandoff(
 		throw error;
 	}
 
-	// 虚拟屏喂数据（就绪探测用）
+	// 虚拟屏喂数据（就绪探测 + 后续的运行态监测都读它）
 	let unsubExitRef: (() => void) | null = null;
 	const unsubAggregator = terminalService.onData(ptyId, (chunk) => {
 		aggregator.feed(chunk);
 	});
+
+	// 登记到运行态监测：虚拟屏本来只在就绪探测的那几秒被用到，之后一直闲着。
+	// 让它常驻取样，CLI 后续是干完了、在等输入、还是报了 API Error 卡住，
+	// 就都能被看见——这是无人值守时唯一的观测手段。
+	const runtimeId = harnessRuntimeMonitor.register({
+		kind: "pty",
+		harness,
+		label: displayName,
+		cwd,
+		jobRunId,
+		ptyId,
+		sampler: () => aggregator.snapshotPlain({ from: "bottom" }),
+		abort: () => {
+			closeHarnessPty(ptyId);
+		},
+	});
+
 	// 桌面镜像：把输出转发给渲染端的 TerminalPanel
 	const unsubMirror = terminalService.onData(ptyId, (chunk) => {
+		harnessRuntimeMonitor.noteOutput(runtimeId, chunk);
 		try {
 			getMainWindow()?.webContents.send("terminal-data", {
 				id: ptyId,
@@ -170,11 +212,16 @@ export async function launchHarnessWithHandoff(
 		unsubAggregator();
 		unsubMirror();
 		unsubExitRef?.();
+		// 先收敛监测状态再销毁虚拟屏：用户主动关 tab 时不会触发 onExit，
+		// 少了这一句，监测条目会一直停在 working 直到被判成卡死。
+		// markExited 之后条目由监测层按保留期自行清除，UI 还能看到「刚刚结束的那个」。
+		harnessRuntimeMonitor.markExited(runtimeId, null);
 		aggregator.dispose();
 		harnessPtyCleanups.delete(ptyId);
 	};
 
 	const unsubExit = terminalService.onExit(ptyId, (exitCode, signal) => {
+		harnessRuntimeMonitor.markExited(runtimeId, exitCode);
 		try {
 			getMainWindow()?.webContents.send("terminal-exit", {
 				id: ptyId,
@@ -196,7 +243,7 @@ export async function launchHarnessWithHandoff(
 			harness,
 			terminal: {
 				id: terminalInfo.id,
-				name: `⇄ ${harness}`,
+				name: displayName,
 				cwd: terminalInfo.cwd,
 				shell: terminalInfo.shell,
 				pid: terminalInfo.pid,
@@ -214,16 +261,21 @@ export async function launchHarnessWithHandoff(
 	// 就绪探测：等输出停止 + 出现输入框特征
 	const readyDetected = await waitForReady(aggregator, harness);
 
-	const text = instruction?.trim() || defaultInstruction(handoffPath);
-	// TUI 对多行粘贴的处理各不相同，统一压成单行再回车
-	const oneLine = text.replace(/\s*\n\s*/g, " ");
-	terminalService.writeTerminal(ptyId, `${oneLine}\n`);
+	// instruction === null 表示「只启动，不替用户说话」（原生续接场景）
+	if (instruction !== null) {
+		const text = instruction?.trim() || defaultInstruction(handoffPath);
+		// TUI 对多行粘贴的处理各不相同，统一压成单行再回车
+		const oneLine = text.replace(/\s*\n\s*/g, " ");
+		terminalService.writeTerminal(ptyId, `${oneLine}\n`);
+	}
 
 	logger.info({
-		msg: "harness CLI 已启动并注入交接指令",
+		msg: "harness CLI 已启动",
 		harness,
 		ptyId,
 		cwd,
+		command,
+		injected: instruction !== null,
 		readyDetected,
 	});
 
@@ -231,13 +283,14 @@ export async function launchHarnessWithHandoff(
 		ptyId,
 		terminal: {
 			id: terminalInfo.id,
-			name: `⇄ ${harness}`,
+			name: displayName,
 			cwd: terminalInfo.cwd,
 			shell: terminalInfo.shell,
 			pid: terminalInfo.pid,
 			createdAt: terminalInfo.createdAt,
 		},
 		readyDetected,
+		runtimeId,
 	};
 }
 

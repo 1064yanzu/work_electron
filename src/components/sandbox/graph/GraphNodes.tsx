@@ -31,15 +31,18 @@ import type {
 } from "./types";
 import { taskStatusPill, statusPill, formatDuration } from "./utils";
 import { getToolIconConfig } from "./toolIconMap";
+import { useNodeStatusPulse } from "./useNodeStatusPulse";
 
 const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 	const { data, selected } = props;
 	const pill = taskStatusPill(data.status);
 	const isActive = data.status === "executing" || data.status === "planning";
 	const isCompleted = data.status === "completed";
+	const pulseRef = useNodeStatusPulse(data.status);
 
 	return (
 		<div
+			ref={pulseRef}
 			className={cn(
 				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
@@ -146,6 +149,8 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 	);
 	const ToolIcon = toolIconCfg.icon;
 
+	const pulseRef = useNodeStatusPulse(data.status);
+
 	const accent = data.isSubagent ? "warm" : isError ? "rose" : "zinc";
 	const borderCls =
 		accent === "warm"
@@ -156,6 +161,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 
 	return (
 		<div
+			ref={pulseRef}
 			className={cn(
 				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85 backdrop-blur-xl",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",

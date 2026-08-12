@@ -1,0 +1,56 @@
+/**
+ * B.AI 风格全局样式
+ * 复制到你的项目 app/globals.css 或 src/index.css
+ */
+
+@import 'tailwindcss';
+
+@theme {
+  /* ========== 暖调中性色（核心 token） ========== */
+  --color-cream-50:  #FBFAF7;
+  --color-cream-100: #FAF9F5;  /* 主背景 */
+  --color-cream-200: #F4F2EC;  /* 侧边栏 */
+  --color-cream-300: #EFEDE6;  /* 选中态 */
+  --color-cream-400: #E8E5DD;  /* 默认描边 */
+  --color-cream-500: #D8D4C9;  /* 强描边 */
+  --color-cream-600: #9D9D98;  /* 三级文字 */
+  --color-cream-700: #6B6B68;  /* 次要文字 */
+  --color-cream-800: #3A3A38;
+  --color-cream-900: #1A1A19;  /* 主文字/主操作 */
+
+  /* ========== 1% 彩色点缀 ========== */
+  --color-peach-100: #F8DCCB;
+  --color-peach-200: #F2C4A8;
+  --color-mint-500:  #6FBF99;
+  --color-violet-500:#8B7FD9;
+
+  /* ========== 字体 ========== */
+  --font-sans: 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+
+  /* ========== 圆角 ========== */
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* ========== 阴影（克制） ========== */
+  --shadow-card: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+  --shadow-pop:  0 4px 12px 0 rgb(26 26 25 / 0.06);
+}
+
+@layer base {
+  html, body {
+    background-color: var(--color-cream-100);
+    color: var(--color-cream-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 选中文字也用暖色 */
+  ::selection {
+    background-color: var(--color-cream-400);
+  }
+
+  /* 数字用 tabular-nums 让对齐更稳 */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}

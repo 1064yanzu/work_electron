@@ -56,8 +56,11 @@ export function PetTaskBubble({
 			sinking={sinking}
 		>
 			<div className="max-w-[220px]">
-				<div className="flex items-center gap-1.5 text-[13.5px] leading-snug text-[color:var(--t-text-primary,#1a1a19)] animate-pet-content-row">
-					<span>{opener}</span>
+				<div
+					data-bubble-row
+					className="flex items-center gap-1.5 text-[13.5px] leading-snug text-[color:var(--t-text-primary,#1a1a19)]"
+				>
+					<span data-bubble-line>{opener}</span>
 					<span className="inline-flex items-center gap-[3px] pb-[2px]">
 						{[0, 180, 360].map((delay) => (
 							<span
@@ -72,8 +75,8 @@ export function PetTaskBubble({
 					</span>
 				</div>
 				<div
-					className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-light,#9d9d98)] line-clamp-2 animate-pet-content-row"
-					style={{ animationDelay: "60ms" }}
+					data-bubble-row
+					className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-light,#9d9d98)] line-clamp-2"
 				>
 					{title}
 				</div>

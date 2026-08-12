@@ -1,6 +1,13 @@
 import { X } from "lucide-react";
 import type * as React from "react";
 import { useEffect, useCallback, useRef, useState } from "react";
+import {
+	EASE,
+	gsap,
+	isReducedMotion,
+	mDur,
+	useGsapMotion,
+} from "../../lib/motion";
 import { cn } from "../../lib/utils";
 import { FocusTrap } from "./FocusTrap";
 
@@ -52,19 +59,52 @@ export function Modal({
 	const [isClosing, setIsClosing] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
 	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-	const reduceMotion =
-		typeof document !== "undefined" &&
-		document.documentElement.dataset.motionPreference === "reduced";
-	const closeDuration = reduceMotion ? 0 : 200;
+	// 动画作用域：遮罩与面板都用 data-* 选择器定位，免去给 FocusTrap 加 ref 转发
+	const scopeRef = useRef<HTMLDivElement>(null);
+	const closingRef = useRef(false);
 
-	// 处理关闭动画
+	// 关闭动画：用 GSAP 的 onComplete 收尾。
+	// 改造前这里是写死的 setTimeout(200)，一旦 CSS 里的 animate-scale-out 时长
+	// 被改动，卸载时机就和动画对不上（要么早卸载看到闪断，要么晚卸载多等空白）。
 	const handleClose = useCallback(() => {
-		setIsClosing(true);
-		setTimeout(() => {
+		if (closingRef.current) return;
+		closingRef.current = true;
+
+		const finish = () => {
+			closingRef.current = false;
 			setIsClosing(false);
 			onClose();
-		}, closeDuration);
-	}, [onClose, closeDuration]);
+		};
+
+		const scope = scopeRef.current;
+		if (!scope || isReducedMotion()) {
+			finish();
+			return;
+		}
+
+		setIsClosing(true);
+		const panel = scope.querySelector("[data-modal-panel]");
+		const overlay = scope.querySelector("[data-modal-overlay]");
+		const tl = gsap.timeline({ onComplete: finish });
+		if (panel) {
+			tl.to(
+				panel,
+				{
+					scale: 0.96,
+					y: 10,
+					opacity: 0,
+					duration: mDur(0.2),
+					ease: EASE.inExpo,
+				},
+				0,
+			);
+		}
+		if (overlay) {
+			tl.to(overlay, { opacity: 0, duration: mDur(0.2), ease: "none" }, 0);
+		}
+		// 兜底：万一两个节点都没查到，timeline 是空的，onComplete 仍会立刻触发
+		if (!panel && !overlay) finish();
+	}, [onClose]);
 
 	// ESC 键关闭
 	const handleKeyDown = useCallback(
@@ -96,10 +136,50 @@ export function Modal({
 		}
 	}, [isOpen, isClosing]);
 
+	// 入场：遮罩淡入 + 面板弹性升起 + 头尾内容轻微跟随
+	useGsapMotion(
+		({ gsap: g, dur, amp, expressive }) => {
+			const tl = g.timeline();
+			tl.from(
+				"[data-modal-overlay]",
+				{ opacity: 0, duration: dur(0.24), ease: "none" },
+				0,
+			);
+			tl.from(
+				"[data-modal-panel]",
+				{
+					opacity: 0,
+					scale: 0.94,
+					y: amp(16),
+					duration: dur(0.46),
+					ease: EASE.spring,
+					clearProps: "transform,opacity",
+				},
+				0,
+			);
+			if (expressive) {
+				tl.from(
+					"[data-modal-section]",
+					{
+						opacity: 0,
+						y: amp(10),
+						duration: dur(0.36),
+						ease: EASE.outExpo,
+						stagger: 0.05,
+						clearProps: "transform,opacity",
+					},
+					dur(0.1),
+				);
+			}
+		},
+		{ scope: scopeRef, skip: !shouldRender || isClosing },
+	);
+
 	if (!shouldRender && !isOpen) return null;
 
 	return (
 		<div
+			ref={scopeRef}
 			className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans"
 			onClick={closeOnOverlayClick ? handleClose : undefined}
 			onKeyDown={(e) => {
@@ -113,21 +193,19 @@ export function Modal({
 		>
 			{/* 遮罩层 */}
 			<div
-				className={cn(
-					"absolute inset-0 bg-text-primary/20 backdrop-blur-sm",
-					isClosing ? "animate-fade-out" : "animate-fade-in",
-				)}
+				data-modal-overlay
+				className="absolute inset-0 bg-text-primary/20 backdrop-blur-sm"
 			/>
 
 			{/* 模态框 */}
 			<FocusTrap
+				data-modal-panel
 				className={cn(
 					"relative w-full rounded-2xl",
 					"bg-cream-50 dark:bg-cream-900",
 					"shadow-bai-pop",
 					"border border-cream-300 dark:border-cream-500",
 					"overflow-hidden",
-					isClosing ? "animate-scale-out" : "animate-scale-in",
 					sizeStyles[size],
 				)}
 				onClick={(e) => e.stopPropagation()}
@@ -136,7 +214,10 @@ export function Modal({
 				initialFocusRef={initialFocusRef}
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-cream-300 dark:border-cream-500/60 px-6 py-4">
+				<div
+					data-modal-section
+					className="flex items-center justify-between border-b border-cream-300 dark:border-cream-500/60 px-6 py-4"
+				>
 					<h3
 						id="modal-title"
 						className="font-semibold text-base text-text-primary tracking-tight"
@@ -164,11 +245,16 @@ export function Modal({
 				</div>
 
 				{/* Content */}
-				<div className="p-6 max-h-[60vh] overflow-y-auto">{children}</div>
+				<div data-modal-section className="p-6 max-h-[60vh] overflow-y-auto">
+					{children}
+				</div>
 
 				{/* Footer */}
 				{footer && (
-					<div className="flex items-center justify-end gap-3 border-t border-cream-300 dark:border-cream-500/60 px-6 py-4">
+					<div
+						data-modal-section
+						className="flex items-center justify-end gap-3 border-t border-cream-300 dark:border-cream-500/60 px-6 py-4"
+					>
 						{footer}
 					</div>
 				)}

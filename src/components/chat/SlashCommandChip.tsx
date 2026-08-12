@@ -200,7 +200,7 @@ export function SlashCommandChipList({
 	if (chips.length === 0) return null;
 
 	return (
-		<div className="flex flex-wrap gap-2 px-4 py-3">
+		<div className="flex flex-wrap gap-1.5 px-2.5 pt-2.5 pb-0">
 			{chips.map((chip) => (
 				<SlashCommandChip
 					key={chip.id}

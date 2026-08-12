@@ -199,12 +199,12 @@ export function CommandsCategoryView({
 									tabIndex={-1}
 									onClick={() => handleClick(item)}
 									onMouseEnter={() => onActiveChange(definition.id)}
-									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-[120ms] ease-out
+									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-120 ease-out
                     ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
 									<div
-										className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
+										className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-120
                       ${
 												isSelected && !disabled
 													? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
@@ -212,7 +212,7 @@ export function CommandsCategoryView({
 											}`}
 									>
 										<span
-											className={`font-mono text-[10px] transition-colors duration-[120ms]
+											className={`font-mono text-[10px] transition-colors duration-120
                         ${isSelected && !disabled ? "text-text-secondary" : "text-text-muted"}`}
 										>
 											/
@@ -221,7 +221,7 @@ export function CommandsCategoryView({
 									<div className="flex-1 min-w-0">
 										<div className="flex items-baseline gap-1.5">
 											<span
-												className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
+												className={`text-[13px] font-medium truncate transition-colors duration-120
                           ${
 														isSelected && !disabled
 															? "text-text-primary"
@@ -253,7 +253,7 @@ export function CommandsCategoryView({
 									</div>
 									{isSubmenu ? (
 										<ChevronRight
-											className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-[120ms] ease-out
+											className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-120 ease-out
                         ${isSelected && !disabled ? "text-text-muted opacity-100" : "text-text-light opacity-60"}`}
 										/>
 									) : isSelected && !disabled ? (

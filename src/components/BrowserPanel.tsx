@@ -20,6 +20,7 @@ import {
 	type PageContent,
 } from "../lib/config";
 import { workspaceStore } from "../lib/workspaceStore";
+import { centerTabsStore } from "../lib/stores/centerTabsStore";
 import { ContextMenu } from "./ui/ContextMenu";
 import { toast } from "./ui/Toast";
 import { Tooltip } from "./ui/Tooltip";
@@ -403,10 +404,10 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 					<div className="w-px h-4 bg-warm-300 dark:bg-cream-700 mx-1" />
 
-					<Tooltip content="返回编辑器" placement="bottom">
+					<Tooltip content="关闭标签页" placement="bottom">
 						<button
-							onClick={() => workspaceStore.setMainView("editor")}
-							aria-label="返回编辑器"
+							onClick={() => centerTabsStore.closeTab("browser")}
+							aria-label="关闭标签页"
 							className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							<X className="w-4 h-4" />

@@ -239,9 +239,39 @@ export async function bootstrapApp({
 					() => BrowserWindow.getAllWindows()[0] ?? null,
 				);
 				logger.info({ msg: "Harness Hub ingest watcher started" });
+
+				// 摄取器起来之后顺带扫一次限额信号：能力路由与「额度感知续航」
+				// 依赖它，等到用户第一次点开设置面板才算就太晚了。
+				const { warmupHarnessQuota } = await import(
+					"./ipc/handlers/harnessBridge"
+				);
+				await warmupHarnessQuota(getDbContext());
 			} catch (err) {
 				logger.warn({
 					msg: "Failed to start harness hub ingest watcher",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
+	});
+
+	scheduleIdle(() => {
+		void (async () => {
+			try {
+				// 自动化调度器要排在摄取器之后：重试续跑靠 harness_sessions 里的
+				// 原生会话 id 找回上次的进度，那张表由摄取器负责填。
+				const { startHarnessAutomation } = await import(
+					"./ipc/handlers/harnessAutomation"
+				);
+				const { getDbContext } = await import("./db/client");
+				await startHarnessAutomation(
+					getDbContext(),
+					() => BrowserWindow.getAllWindows()[0] ?? null,
+				);
+				logger.info({ msg: "Harness automation scheduler started" });
+			} catch (err) {
+				logger.warn({
+					msg: "Failed to start harness automation scheduler",
 					error: err instanceof Error ? err.message : String(err),
 				});
 			}
@@ -421,6 +451,11 @@ export async function bootstrapApp({
 		}
 		// 停止 Harness Hub 摄取 watcher + 释放迁移 pty + 销毁内嵌 Web 视图
 		try {
+			// 自动化最先停：它可能正拿着 powerSaveBlocker，也可能正在起新的 pty，
+			// 排在 disposeAllHarnessPtys 之后会出现「刚清完又冒一个」。
+			void import("./ipc/handlers/harnessAutomation").then(
+				({ stopHarnessAutomation }) => stopHarnessAutomation(),
+			);
 			void import("./ipc/handlers/harnessHub").then(
 				({ stopHarnessIngestWatcher }) => stopHarnessIngestWatcher(),
 			);

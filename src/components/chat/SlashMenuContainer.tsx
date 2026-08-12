@@ -93,7 +93,7 @@ function CategoryPills({
 						type="button"
 						key={cat.id}
 						onClick={() => onSelect(cat.id)}
-						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-[120ms] ease-out cursor-pointer select-none
+						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-120 ease-out cursor-pointer select-none
 							${
 								isActive
 									? `${cat.gradient} shadow-[0_1px_2px_rgba(0,0,0,0.04)]`
@@ -101,7 +101,7 @@ function CategoryPills({
 							}`}
 					>
 						<cat.icon
-							className={`w-3.5 h-3.5 transition-colors duration-[120ms] ${
+							className={`w-3.5 h-3.5 transition-colors duration-120 ${
 								isActive ? "" : "text-text-light"
 							}`}
 						/>
@@ -908,11 +908,11 @@ function GroupSection({
 								onClick={() => onSelect(command)}
 								onMouseEnter={() => onHoverCommand(command.id)}
 								className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left cursor-pointer select-none
-                  transition-all duration-[120ms] ease-out
+                  transition-all duration-120 ease-out
                   ${isSelected ? "bg-warm-200" : ""}`}
 							>
 								<div
-									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-[120ms]
+									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-120
                     ${
 											isSelected
 												? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
@@ -920,14 +920,14 @@ function GroupSection({
 										}`}
 								>
 									<command.icon
-										className={`w-3.5 h-3.5 transition-colors duration-[120ms]
+										className={`w-3.5 h-3.5 transition-colors duration-120
                       ${isSelected ? "text-text-secondary" : "text-text-muted"}`}
 									/>
 								</div>
 
 								<div className="flex-1 min-w-0">
 									<div
-										className={`text-[13px] font-medium truncate transition-colors duration-[120ms]
+										className={`text-[13px] font-medium truncate transition-colors duration-120
                       ${
 												isSelected ? "text-text-primary" : "text-text-secondary"
 											}`}

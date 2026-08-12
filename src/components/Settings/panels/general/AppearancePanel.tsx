@@ -22,6 +22,7 @@ import { toast } from "../../../ui/Toast";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
 import { ThemeColorPicker } from "../../components/ThemeColorPicker";
 import {
+	SettingsCardSection,
 	SettingsPageContainer,
 	SettingsRow,
 	SettingsSectionCard,
@@ -160,7 +161,7 @@ export function AppearancePanel() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Palette}
 				title="外观与主题"
@@ -204,80 +205,78 @@ export function AppearancePanel() {
 			</SettingsSectionCard>
 
 			{/* 动效与语言 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>动效与语言</SettingsSectionTitle>
-					<div id={ANCHOR.motion} data-settings-anchor={ANCHOR.motion}>
+			<SettingsCardSection title="动效与语言" bodyClassName="p-5">
+				<div id={ANCHOR.motion} data-settings-anchor={ANCHOR.motion}>
+					<SettingsRow
+						label="动效偏好"
+						description="丰富动效会启用逐项入场、逐字文案、完成庆祝与桌宠弹性交互；标准动效保持克制的短过渡；减少动效则几乎不做任何动画，适合对动态效果敏感的场景。"
+						action={
+							<Select
+								value={motionPreference}
+								onChange={(e) =>
+									handleMotionPreferenceChange(
+										e.target.value as MotionPreference,
+									)
+								}
+								variant="inline"
+								containerClassName="w-auto min-w-[180px]"
+								options={[
+									{ value: "system", label: "跟随系统（默认）" },
+									{ value: "expressive", label: "丰富动效" },
+									{ value: "standard", label: "标准动效" },
+									{ value: "reduced", label: "减少动效" },
+								]}
+							/>
+						}
+					/>
+				</div>
+				<div id={ANCHOR.language} data-settings-anchor={ANCHOR.language}>
+					<SettingsRow
+						label="语言"
+						description="切换界面语言需要重启应用后完全生效。"
+						action={
+							<Select
+								value={language}
+								onChange={(e) => handleLanguageChange(e.target.value)}
+								variant="inline"
+								containerClassName="w-auto min-w-[120px]"
+								options={[
+									{ value: "zh-CN", label: "简体中文" },
+									{ value: "en-US", label: "English" },
+								]}
+							/>
+						}
+					/>
+				</div>
+				{platform === "win32" && (
+					<div
+						id={ANCHOR.windowsClose}
+						data-settings-anchor={ANCHOR.windowsClose}
+					>
 						<SettingsRow
-							label="动效偏好"
-							description="减少动效会显著缩短过渡与动画时长，适合对动态效果敏感的场景。"
+							label="Windows 关闭按钮"
+							description="控制点击窗口右上角 X 时的行为。隐藏到后台会保留桌宠和后台服务运行；彻底退出会关闭应用与桌宠。"
 							action={
 								<Select
-									value={motionPreference}
+									value={windowsCloseBehavior}
 									onChange={(e) =>
-										handleMotionPreferenceChange(
-											e.target.value as MotionPreference,
+										handleWindowsCloseBehaviorChange(
+											e.target.value as AppCloseBehavior,
 										)
 									}
 									variant="inline"
-									containerClassName="w-auto min-w-[160px]"
+									containerClassName="w-auto min-w-[190px]"
 									options={[
-										{ value: "system", label: "跟随系统（默认）" },
-										{ value: "standard", label: "标准动效" },
-										{ value: "reduced", label: "减少动效" },
+										{ value: "ask", label: "每次询问" },
+										{ value: "hide_to_tray", label: "隐藏到后台" },
+										{ value: "quit", label: "彻底退出" },
 									]}
 								/>
 							}
 						/>
 					</div>
-					<div id={ANCHOR.language} data-settings-anchor={ANCHOR.language}>
-						<SettingsRow
-							label="语言"
-							description="切换界面语言需要重启应用后完全生效。"
-							action={
-								<Select
-									value={language}
-									onChange={(e) => handleLanguageChange(e.target.value)}
-									variant="inline"
-									containerClassName="w-auto min-w-[120px]"
-									options={[
-										{ value: "zh-CN", label: "简体中文" },
-										{ value: "en-US", label: "English" },
-									]}
-								/>
-							}
-						/>
-					</div>
-					{platform === "win32" && (
-						<div
-							id={ANCHOR.windowsClose}
-							data-settings-anchor={ANCHOR.windowsClose}
-						>
-							<SettingsRow
-								label="Windows 关闭按钮"
-								description="控制点击窗口右上角 X 时的行为。隐藏到后台会保留桌宠和后台服务运行；彻底退出会关闭应用与桌宠。"
-								action={
-									<Select
-										value={windowsCloseBehavior}
-										onChange={(e) =>
-											handleWindowsCloseBehaviorChange(
-												e.target.value as AppCloseBehavior,
-											)
-										}
-										variant="inline"
-										containerClassName="w-auto min-w-[190px]"
-										options={[
-											{ value: "ask", label: "每次询问" },
-											{ value: "hide_to_tray", label: "隐藏到后台" },
-											{ value: "quit", label: "彻底退出" },
-										]}
-									/>
-								}
-							/>
-						</div>
-					)}
-				</div>
-			</SettingsSectionCard>
+				)}
+			</SettingsCardSection>
 		</SettingsPageContainer>
 	);
 }

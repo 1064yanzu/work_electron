@@ -142,7 +142,7 @@ export function AboutPanel() {
 	}, []);
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Info}
 				title="关于与更新"

@@ -21,11 +21,12 @@ import {
 	Terminal,
 	XCircle,
 } from "lucide-react";
-import React, { memo, useCallback, useState } from "react";
+import React, { memo, useCallback, useRef, useState } from "react";
 import { useAgentStoreSelector } from "../../lib/agent/store";
 import type { ToolCall } from "../../lib/agent/types";
 import { EVENTS, events } from "../../lib/events";
 import { cn } from "../../lib/utils";
+import { attentionPulse, useGsapMotion } from "../../lib/motion";
 import { Collapsible } from "../ui/Collapsible";
 import { Skeleton } from "../ui/Skeleton";
 import { type ArtifactFileType } from "./ArtifactCard";
@@ -298,6 +299,21 @@ function ToolCallInlineImpl({
 	} = getReadableDescription(toolCall);
 	const isRunning = toolCall.status === "running";
 	const isError = toolCall.status === "error";
+
+	// 状态落定的一次注意力提示；首次挂载（回放历史消息）不放
+	const statusIconRef = useRef<HTMLSpanElement>(null);
+	const seenStatusRef = useRef<string | null>(null);
+	useGsapMotion(
+		() => {
+			const previous = seenStatusRef.current;
+			seenStatusRef.current = toolCall.status;
+			if (previous === null || previous === toolCall.status) return;
+			if (toolCall.status !== "completed" && toolCall.status !== "error")
+				return;
+			attentionPulse(statusIconRef.current, { scale: 1.3, duration: 0.4 });
+		},
+		{ dependencies: [toolCall.status] },
+	);
 	const hasDetails = !!(
 		toolCall.output ||
 		toolCall.error ||
@@ -430,8 +446,11 @@ function ToolCallInlineImpl({
 					<span className="w-4 h-4 flex-shrink-0" />
 				)}
 
-				{/* 状态/类型图标 */}
-				<span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+				{/* 状态/类型图标 —— 跑完 / 出错时弹一下，长列表里余光也能看见 */}
+				<span
+					ref={statusIconRef}
+					className="w-4 h-4 flex items-center justify-center flex-shrink-0"
+				>
 					{isRunning ? (
 						<Loader2 className="w-3.5 h-3.5 text-focus animate-spin" />
 					) : isError ? (

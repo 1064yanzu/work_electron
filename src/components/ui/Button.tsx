@@ -4,7 +4,21 @@
  */
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
+import { useSpringPress } from "../../lib/motion";
 import { cn } from "../../lib/utils";
+
+/**
+ * 按下反馈的两套实现：
+ * - standard / reduced 档：CSS `active:scale-*`（原有行为，一字不动）；
+ * - expressive 档：GSAP 弹性回弹（`useSpringPress`）。
+ *
+ * 切到 GSAP 时必须把 transform 从 transition-property 里摘掉，
+ * 否则浏览器会在 GSAP 每帧写的值之间再插值一次，过冲直接被抹平。
+ */
+const TRANSITION_WITH_TRANSFORM =
+	"transition-[background-color,border-color,color,opacity,transform] duration-150 ease-out";
+const TRANSITION_WITHOUT_TRANSFORM =
+	"transition-[background-color,border-color,color,opacity] duration-150 ease-out";
 
 export interface ButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -107,18 +121,24 @@ export function Button({
 	...props
 }: ButtonProps) {
 	const isDisabled = disabled || loading;
+	const { ref: pressRef, active: springPress } =
+		useSpringPress<HTMLButtonElement>({
+			pressScale: 0.96,
+			disabled: isDisabled,
+		});
 
 	return (
 		<button
+			ref={pressRef}
 			type="button"
 			disabled={isDisabled}
 			className={cn(
 				"inline-flex items-center justify-center font-medium",
-				"transition-[background-color,border-color,color,opacity,transform] duration-150 ease-out",
+				springPress ? TRANSITION_WITHOUT_TRANSFORM : TRANSITION_WITH_TRANSFORM,
 				// B.AI focus ring — 暖灰，不用浏览器蓝
 				"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
-				// active 微交互
-				"active:scale-[0.98]",
+				// active 微交互（expressive 档交给 GSAP，避免两套 scale 打架）
+				springPress ? "" : "active:scale-[0.98]",
 				// 禁用状态
 				"disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
 				variantStyles[variant],
@@ -176,16 +196,22 @@ export function IconButton({
 	...props
 }: IconButtonProps) {
 	const isDisabled = disabled || loading;
+	const { ref: pressRef, active: springPress } =
+		useSpringPress<HTMLButtonElement>({
+			pressScale: 0.92,
+			disabled: isDisabled,
+		});
 
 	return (
 		<button
+			ref={pressRef}
 			type="button"
 			disabled={isDisabled}
 			className={cn(
 				"inline-flex items-center justify-center",
-				"transition-[background-color,border-color,color,opacity,transform] duration-150 ease-out",
+				springPress ? TRANSITION_WITHOUT_TRANSFORM : TRANSITION_WITH_TRANSFORM,
 				"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
-				"active:scale-[0.95]",
+				springPress ? "" : "active:scale-[0.95]",
 				"disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
 				variantStyles[variant],
 				iconSizeStyles[size],

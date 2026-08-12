@@ -222,7 +222,7 @@ export function MCPSettings() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-3xl space-y-8">
+		<SettingsPageContainer>
 			<div
 				id="integrations.mcp.servers"
 				data-settings-anchor="integrations.mcp.servers"

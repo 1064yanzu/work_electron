@@ -3,6 +3,8 @@
  * 用于显示列表为空时的优雅提示
  */
 import type * as React from "react";
+import { useRef } from "react";
+import { EASE, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
 import type { MascotSlot } from "../../lib/mascot/manifest";
 import { useMascot } from "../../lib/mascotStore";
@@ -68,12 +70,41 @@ export function EmptyState({
 	size = "md",
 }: EmptyStateProps) {
 	const styles = sizeStyles[size];
+	const scopeRef = useRef<HTMLDivElement>(null);
+
+	// 空态是"没东西可看"的地方，正好用一点节奏感把注意力接住：
+	// 图标弹出 → 标题/描述/按钮依次跟上。
+	useGsapMotion(
+		({ gsap, dur, amp, expressive }) => {
+			const tl = gsap.timeline();
+			tl.from("[data-empty-icon]", {
+				scale: 0.6,
+				opacity: 0,
+				duration: dur(0.5),
+				ease: EASE.spring,
+				clearProps: "transform,opacity",
+			});
+			tl.from(
+				"[data-empty-line]",
+				{
+					y: amp(10),
+					opacity: 0,
+					duration: dur(0.38),
+					ease: EASE.outExpo,
+					stagger: expressive ? 0.06 : 0,
+					clearProps: "transform,opacity",
+				},
+				dur(0.08),
+			);
+		},
+		{ scope: scopeRef },
+	);
 
 	return (
 		<div
+			ref={scopeRef}
 			className={cn(
 				"flex flex-col items-center justify-center text-center",
-				"animate-fade-in",
 				styles.container,
 				className,
 			)}
@@ -81,6 +112,7 @@ export function EmptyState({
 			{/* 图标容器 */}
 			{icon && (
 				<div
+					data-empty-icon
 					className={cn(
 						"flex items-center justify-center rounded-2xl mb-4",
 						"bg-warm-200",
@@ -94,6 +126,7 @@ export function EmptyState({
 
 			{/* 标题 */}
 			<h3
+				data-empty-line
 				className={cn(
 					"font-semibold text-text-secondary mb-1 tracking-tight",
 					styles.title,
@@ -104,13 +137,20 @@ export function EmptyState({
 
 			{/* 描述 */}
 			{description && (
-				<p className={cn("text-text-light max-w-xs", styles.description)}>
+				<p
+					data-empty-line
+					className={cn("text-text-light max-w-xs", styles.description)}
+				>
 					{description}
 				</p>
 			)}
 
 			{/* 操作按钮 */}
-			{action && <div className="mt-4">{action}</div>}
+			{action && (
+				<div data-empty-line className="mt-4">
+					{action}
+				</div>
+			)}
 		</div>
 	);
 }

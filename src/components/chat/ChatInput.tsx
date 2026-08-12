@@ -9,7 +9,11 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useContainerBreakpoint } from "../../hooks/useContainerBreakpoint";
+import { EVENTS, events } from "../../lib/events";
 import { prefetchChatContext } from "../../lib/query";
+import { SlashCommandProvider } from "../../lib/slashCommands/reactContext";
+import { cn } from "../../lib/utils";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -17,14 +21,13 @@ import {
 import { ChatInputContextBar } from "./chatInput/ChatInputContextBar";
 import { ChatInputToolbar } from "./chatInput/ChatInputToolbar";
 import { buildSubmitMessage } from "./chatInput/buildSubmitMessage";
+import { INPUT_DENSITY_STEPS, TEXTAREA_MAX_HEIGHT } from "./chatInput/density";
 import { useChatInputAttachments } from "./chatInput/useChatInputAttachments";
 import { useDynamicSlashCommands } from "./chatInput/useDynamicSlashCommands";
 import { type Model, ModelSelector } from "./ModelSelector";
 import type { SlashCommand } from "./SlashCommand";
 import { type SelectedChip, SlashCommandChipList } from "./SlashCommandChip";
 import { SlashMenuContainer } from "./SlashMenuContainer";
-import { SlashCommandProvider } from "../../lib/slashCommands/reactContext";
-import { EVENTS, events } from "../../lib/events";
 
 // 提交选项
 export interface SubmitOptions {
@@ -38,21 +41,29 @@ interface ChatInputProps {
 	onAddContext?: () => void;
 	disabled?: boolean;
 	placeholder?: string;
+	/** 窄栏（compact 档）下的短占位文案；不传则沿用 placeholder */
+	compactPlaceholder?: string;
 	model?: string;
 	models?: Model[];
 	onModelSelect?: (modelId: string) => void;
 	onOpenPromptLibrary?: () => void;
 	isAgentExecuting?: boolean;
+	/** 运行模式（执行 / 规划）；未传 onTogglePlanMode 时不渲染该胶囊 */
+	planMode?: boolean;
+	onTogglePlanMode?: (enabled: boolean) => void;
 }
 
 export function ChatInput({
 	onSubmit,
 	disabled = false,
 	placeholder = "输入消息，或用 / 唤起命令...",
+	compactPlaceholder,
 	model,
 	models = [],
 	onModelSelect,
 	onOpenPromptLibrary,
+	planMode = false,
+	onTogglePlanMode,
 }: ChatInputProps) {
 	const [value, setValue] = useState("");
 	const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -65,6 +76,14 @@ export function ChatInput({
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// 按「容器自身宽度」分档 —— 右栏是可拖拽 Panel（173px ~ 720px），
+	// 视口媒体查询在这里无效。只在跨档时 setState，拖拽不会逐帧重渲染。
+	const { ref: densityRef, tier: density } = useContainerBreakpoint(
+		INPUT_DENSITY_STEPS,
+		"regular",
+	);
+	const maxHeight = TEXTAREA_MAX_HEIGHT[density];
 
 	const contexts = useWorkspaceStoreSelector((state) => state.contexts);
 	const removeContext = workspaceStore.removeContext.bind(workspaceStore);
@@ -82,9 +101,9 @@ export function ChatInput({
 		const textarea = textareaRef.current;
 		if (textarea) {
 			textarea.style.height = "auto";
-			textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+			textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
 		}
-	}, [value]);
+	}, [value, maxHeight]);
 
 	// 检测斜杠命令
 	useEffect(() => {
@@ -266,14 +285,15 @@ export function ChatInput({
 	}, []);
 
 	const handleBlur = useCallback((e: React.FocusEvent) => {
-		// 如果焦点仍在输入区域容器内，不折叠
+		// 如果焦点仍在输入区域容器内，不算失焦
 		const container = e.currentTarget.closest("[data-chat-input-root]");
 		if (container?.contains(e.relatedTarget as Node)) return;
 		setIsFocused(false);
 	}, []);
 
-	// 是否处于展开状态
-	const isExpanded =
+	// 输入区是否"活跃"（聚焦 / 有内容 / 有附件 / 菜单打开）—— 只驱动边框强调，
+	// 不再驱动折叠动画：工具栏常驻，避免"先点一下才能改模型"。
+	const isActive =
 		isFocused ||
 		value.trim().length > 0 ||
 		selectedChips.length > 0 ||
@@ -297,7 +317,12 @@ export function ChatInput({
 
 	return (
 		<SlashCommandProvider value={slashBridgeValue}>
-			<div className="relative" data-chat-input-root onBlur={handleBlur}>
+			<div
+				ref={densityRef}
+				className="relative"
+				data-chat-input-root
+				onBlur={handleBlur}
+			>
 				<input
 					type="file"
 					ref={fileInputRef}
@@ -330,16 +355,17 @@ export function ChatInput({
 					/>
 				)}
 
-				{/* 主输入区域 — B.AI 风格胶囊化，1px 暖描边 + 极轻阴影 */}
+				{/* 主输入区域 —— 圆角恒定、极淡描边、几乎无阴影（Codex 那种"干净的一块"）；
+				    聚焦只加深描边，不做形变也不做光晕 */}
 				<div
-					className={`
-				bg-surface border overflow-hidden transition-[border-color,border-radius,box-shadow] duration-300 ease-out
-					${
-						isExpanded
-							? "rounded-3xl border-warm-400 dark:border-warm-500/40 shadow-[0_4px_12px_0_rgb(26_26_25/0.06)]"
-							: "rounded-full border-border hover:border-warm-400 shadow-[0_1px_2px_0_rgb(26_26_25/0.04)]"
-					}
-				`}
+					className={cn(
+						"relative bg-surface border rounded-[20px] overflow-hidden",
+						"transition-colors duration-200 ease-out",
+						"shadow-[0_1px_2px_0_rgb(26_26_25/0.03)]",
+						isActive
+							? "border-warm-400 dark:border-cream-500/60"
+							: "border-border hover:border-warm-400/70",
+					)}
 					style={{ transform: "translateZ(0)" }}
 				>
 					<ChatInputContextBar contexts={contexts} onRemove={removeContext} />
@@ -353,30 +379,31 @@ export function ChatInput({
 					/>
 
 					{/* 输入框 */}
-					<div className="relative">
-						<textarea
-							ref={textareaRef}
-							value={value}
-							onChange={(e) => setValue(e.target.value)}
-							onKeyDown={handleKeyDown}
-							onPaste={handlePaste}
-							onFocus={handleFocus}
-							placeholder={placeholder}
-							disabled={disabled}
-							rows={1}
-							className={`
-							w-full bg-transparent text-[14px] text-text-primary
-							placeholder-cream-600 dark:placeholder-text-muted/40
-							resize-none focus:outline-none focus:ring-0 focus:shadow-none disabled:opacity-50 leading-relaxed
-							transition-all duration-200
-							${isExpanded ? "px-5 py-3.5 min-h-[64px]" : "px-5 py-4 min-h-[52px]"}
-						`}
-							style={{ maxHeight: "200px" }}
-						/>
-					</div>
+					<textarea
+						ref={textareaRef}
+						value={value}
+						onChange={(e) => setValue(e.target.value)}
+						onKeyDown={handleKeyDown}
+						onPaste={handlePaste}
+						onFocus={handleFocus}
+						placeholder={
+							density === "compact"
+								? (compactPlaceholder ?? placeholder)
+								: placeholder
+						}
+						disabled={disabled}
+						rows={1}
+						className={cn(
+							"block w-full bg-transparent text-[15px] leading-[1.5] text-text-primary",
+							"placeholder-cream-600 dark:placeholder-text-muted/40",
+							"resize-none focus:outline-none focus:ring-0 focus:shadow-none",
+							"disabled:opacity-50 px-4 pt-3.5 pb-2 min-h-[60px]",
+						)}
+						style={{ maxHeight: `${maxHeight}px` }}
+					/>
 
 					<ChatInputToolbar
-						expanded={isExpanded}
+						density={density}
 						disabled={disabled}
 						hasContent={hasContent}
 						model={model}
@@ -388,33 +415,9 @@ export function ChatInput({
 						onTriggerFilePicker={triggerFilePicker}
 						onTriggerSlashMenu={() => setValue("/")}
 						onSubmit={handleSubmit}
+						planMode={planMode}
+						onTogglePlanMode={onTogglePlanMode}
 					/>
-				</div>
-
-				{/* 快捷键提示 — 聚焦时显示 */}
-				<div
-					className={`
-					flex items-center justify-center gap-5 mt-2 text-[10px] select-none
-					transition-all duration-300
-					${
-						isExpanded
-							? "opacity-100 text-text-muted/50 dark:text-text-muted/30"
-							: "opacity-0 text-transparent"
-					}
-				`}
-				>
-					<span className="flex items-center gap-1.5">
-						<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
-							/
-						</kbd>
-						命令
-					</span>
-					<span className="flex items-center gap-1.5">
-						<kbd className="px-1.5 h-[17px] flex items-center justify-center bg-warm-200 border border-border rounded-[4px] text-[9px] font-sans text-text-light/60">
-							↵
-						</kbd>
-						发送
-					</span>
 				</div>
 			</div>
 		</SlashCommandProvider>

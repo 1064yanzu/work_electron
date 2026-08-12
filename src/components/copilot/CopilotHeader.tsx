@@ -1,4 +1,12 @@
-import { Loader2, MessageSquare, MoreHorizontal, Plus } from "lucide-react";
+import {
+	Loader2,
+	MessageSquare,
+	MoreHorizontal,
+	PanelRightClose,
+	Plus,
+} from "lucide-react";
+import { shortcut } from "../../lib/platform";
+import { workspaceStore } from "../../lib/workspaceStore";
 import { IconButton } from "../ui/Button";
 import { CopilotTtsToggle } from "./CopilotTtsToggle";
 
@@ -24,7 +32,10 @@ export function CopilotHeader({
 	return (
 		<div className="px-4 py-3.5 flex items-center justify-between shrink-0 bg-cream-50/80 dark:bg-cream-900/80 z-10 border-b border-cream-300/60 dark:border-cream-500/60">
 			<div className="flex items-center gap-3">
-				<div className="w-8 h-8 rounded-full bai-avatar-glow shrink-0" />
+				<div
+					data-copilot-celebrate-anchor
+					className="w-8 h-8 rounded-full bai-avatar-glow shrink-0"
+				/>
 				<div>
 					<h2 className="font-semibold text-[13px] text-text-primary tracking-[-0.01em]">
 						AI 助手
@@ -74,6 +85,18 @@ export function CopilotHeader({
 						</>
 					) : null}
 				</div>
+				{/* 收起右栏：与左栏 SidebarRail 的折叠按钮对称。
+				    此前只能靠 ⌘L 或把分隔条拖到吸附阈值以内收起，而收起之后反倒有
+				    悬浮按钮能唤回来——展开态缺一个出口。 */}
+				<IconButton
+					onClick={() => workspaceStore.setRightSidebarVisible(false)}
+					aria-label="收起 AI 对话栏"
+					title={`收起 AI 对话栏 (${shortcut("L")})`}
+					variant="ghost"
+					size="sm"
+				>
+					<PanelRightClose className="w-4.5 h-4.5" strokeWidth={1.5} />
+				</IconButton>
 			</div>
 		</div>
 	);

@@ -146,6 +146,7 @@ export async function detectHarnesses(
 				sessionDir: hasDir ? spec.sessionDir : null,
 				canRead: spec.hasAdapter && hasDir,
 				canInject: Boolean(binPath),
+				launchCommand: spec.launchCommand,
 				sessionCount: sessionCounts[spec.harness] ?? 0,
 			} satisfies HarnessDetection;
 		}),

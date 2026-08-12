@@ -1,10 +1,15 @@
 /**
- * ThreadsView - 线程历史面板
+ * ThreadsView - 「对话」面板（内部标识沿用 thread，UI 文案统一为"对话"）
  *
  * 设计：
- * - 数据来自 chatStore（实际对话记录），按文件夹（cwd）分组展示
+ * - 数据来自 chatStore（实际对话记录），按工作目录（cwd）分组展示
  * - cwd 来源优先级：chatSession.cwd → 关联 AgentSession.cwd → "通用对话"
- * - 支持通过 "+" 新建线程（选目录后同时创建 AgentSession + ChatSession）
+ * - 支持通过 "+" 新建对话（选目录后同时创建 AgentSession + ChatSession）
+ *
+ * 视觉（2026-08 重设计）：
+ * - 分组头降权为区块标签（11px 字距 muted），组内条目左侧加导轨竖线表达从属
+ * - 条目时间戳与「更多」按钮同位互换，标题拿回整行宽度
+ * - 选中态：中性浅底 + 赤陶导轨，全面板只保留这一处品牌色强调
  *
  * 渲染治理（F5）：
  * - 订阅收窄：不再整店订阅 chatStore，改用 useThreadSessionsSnapshot 的
@@ -68,6 +73,7 @@ import {
 import {
 	buildThreadRows,
 	filterAndSortVisibleSessions,
+	isListableSession,
 	useThreadFullTextSearch,
 	useThreadSessionsSnapshot,
 } from "./threads/threadListModel";
@@ -75,9 +81,12 @@ import {
 	ThreadGroupHeader,
 	ThreadOverflowToggle,
 	ThreadSessionItem,
+	THREAD_GROUP_GAP,
+	THREAD_ROW_PAD,
 	VirtualizedThreadList,
 } from "./threads/ThreadListRows";
 import { workspaceStore } from "../../lib/workspaceStore";
+import { useRegisterShortcuts } from "../../lib/shortcuts";
 
 /** 行数超过该阈值才启用虚拟化；小列表保留普通渲染（折叠动画等体感不变） */
 const VIRTUALIZE_ROW_THRESHOLD = 60;
@@ -139,8 +148,26 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	// 全文搜索：sqlite 后端走 chat_history_search（防抖 250ms）；
 	// null = 不参与（空查询/后端不可用），过滤时保持内存兜底逻辑。
 	const ftsMatchedIds = useThreadFullTextSearch(deferredSearchQuery);
-	const [searchVisible, setSearchVisible] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	// ⌘F 聚焦搜索框——面板挂载时才注册（左栏切走即失效），不与其他视图抢键位
+	useRegisterShortcuts(
+		() => [
+			{
+				id: "threads.focus-search",
+				keys: "mod+f",
+				label: "搜索对话",
+				description: "聚焦左栏对话列表的搜索框",
+				group: "对话",
+				allowInInput: true,
+				handler: (e) => {
+					e.preventDefault();
+					searchInputRef.current?.focus();
+					searchInputRef.current?.select();
+				},
+			},
+		],
+		[],
+	);
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 		new Set(),
 	);
@@ -156,17 +183,6 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			| { type: "session"; session: ChatSession }
 			| { type: "group"; group: ThreadFolderGroup };
 	} | null>(null);
-
-	useEffect(() => {
-		if (searchVisible) {
-			// 等待动画/挂载完成后再聚焦
-			const t = window.setTimeout(() => {
-				searchInputRef.current?.focus();
-			}, 50);
-			return () => window.clearTimeout(t);
-		}
-		setSearchQuery("");
-	}, [searchVisible]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -196,6 +212,13 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			),
 		[sessions, deferredSearchQuery, ftsMatchedIds],
 	);
+
+	// 头部计数：不受搜索影响的"这台机器上一共多少条对话"
+	const totalSessionCount = useMemo(
+		() => sessions.reduce((n, s) => (isListableSession(s) ? n + 1 : n), 0),
+		[sessions],
+	);
+	const isSearching = Boolean(searchQuery.trim());
 
 	const folderGroups = useMemo(
 		() =>
@@ -261,15 +284,15 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 		[onNavigateWorkbench],
 	);
 
-	/** 点击"+"新建线程：选目录 → 创建 AgentSession + ChatSession */
+	/** 点击"+"新建对话：选目录 → 创建 AgentSession + ChatSession */
 	const handleCreateThread = async () => {
 		try {
-			const { path } = await pickSystemDirectory("选择新线程工作目录");
+			const { path } = await pickSystemDirectory("选择对话的工作目录");
 			if (!path) return;
 			await createThreadForPath(path);
 		} catch (error) {
-			console.error("创建线程失败:", error);
-			toast.error("创建线程失败");
+			console.error("创建对话失败:", error);
+			toast.error("创建对话失败");
 		}
 	};
 
@@ -399,8 +422,8 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				icon: <Edit3 className="w-4 h-4" />,
 				onClick: () => {
 					const newTitle = window.prompt(
-						"请输入新的线程标题",
-						session.title || "Untitled Chat",
+						"请输入新的对话标题",
+						session.title || "未命名对话",
 					);
 					if (newTitle?.trim()) {
 						chatStore.updateSessionTitle(session.id, newTitle.trim());
@@ -448,13 +471,13 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				onClick: () => {
 					const result = chatStore.deleteSessionWithUndo(session.id);
 					if (result) {
-						toast.show("已删除线程", {
+						toast.show("已删除对话", {
 							type: "success",
 							duration: 5000,
 							actionLabel: "撤销",
 							onAction: () => {
 								if (chatStore.undoDeleteSession(session.id)) {
-									toast.success("已恢复线程");
+									toast.success("已恢复对话");
 								}
 							},
 						});
@@ -487,63 +510,60 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-transparent">
-			{/* Header */}
-			<div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
-				<h2 className="text-[14px] font-semibold text-text-primary">项目</h2>
+			{/* Header：一行搞定——左栏 rail 已经标着「对话」，这里不再重复大标题。
+			    搜索框静止时是无填充的一行文字，hover/focus 才浮现浅底。 */}
+			<div className="shrink-0 px-2 pt-3.5 pb-2">
 				<div className="flex items-center gap-1">
+					<div className="group/search relative flex-1">
+						<Search
+							className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-light"
+							strokeWidth={1.75}
+						/>
+						<input
+							ref={searchInputRef}
+							type="text"
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							placeholder={
+								totalSessionCount > 0
+									? `搜索 ${totalSessionCount} 条对话`
+									: "搜索对话"
+							}
+							className="h-8 w-full rounded-lg bg-transparent pl-[30px] pr-7 text-[13px] text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
+						/>
+						{searchQuery && (
+							<button
+								type="button"
+								onClick={() => setSearchQuery("")}
+								className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-text-light transition-colors hover:bg-black/[0.06] hover:text-text-secondary dark:hover:bg-white/10"
+								aria-label="清空搜索"
+							>
+								<X className="h-3 w-3" strokeWidth={2} />
+							</button>
+						)}
+					</div>
 					<button
-						onClick={() => setSearchVisible((v) => !v)}
-						className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 active:scale-95 ${
-							searchVisible
-								? "text-terracotta bg-terracotta/[0.12]"
-								: "text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-white/[0.06]"
-						}`}
-						title="搜索"
-					>
-						<Search className="w-3.5 h-3.5" strokeWidth={1.75} />
-					</button>
-					<button
+						type="button"
 						onClick={handleCreateThread}
-						className="flex items-center justify-center w-7 h-7 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-white/[0.06] transition-all duration-150 active:scale-95"
-						title="新建线程（选择项目目录）"
+						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-light transition-colors duration-150 hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]"
+						title="新建对话（选择工作目录）"
+						aria-label="新建对话"
 					>
-						<Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
+						<Plus className="h-4 w-4" strokeWidth={1.75} />
 					</button>
 				</div>
-			</div>
 
-			{/* Search Bar — 常驻容器，max-height 平滑过渡 */}
-			<div
-				className={`px-4 overflow-hidden transition-[max-height,opacity,margin] duration-200 ease-out ${
-					searchVisible ? "max-h-16 opacity-100 pb-3" : "max-h-0 opacity-0 pb-0"
-				}`}
-			>
-				<div className="relative">
-					<Search
-						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light pointer-events-none"
-						strokeWidth={1.75}
-					/>
-					<input
-						ref={searchInputRef}
-						type="text"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						placeholder="搜索对话…"
-						className="w-full h-8 pl-8 pr-8 text-[12.5px] rounded-xl bg-warm-100/70 dark:bg-white/[0.05] text-text-primary placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-terracotta/20 transition-shadow"
-					/>
-					{searchQuery && (
-						<button
-							onClick={() => setSearchQuery("")}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-light hover:text-text-secondary rounded transition-colors"
-						>
-							<X className="w-3 h-3" />
-						</button>
-					)}
-				</div>
+				{isSearching && (
+					<p className="mt-1.5 pl-[30px] text-[12px] text-text-light">
+						{visibleSessions.length > 0
+							? `${visibleSessions.length} 条匹配`
+							: "没有匹配的对话"}
+					</p>
+				)}
 			</div>
 
 			{/* Folder Groups */}
-			<div ref={scrollParentRef} className="flex-1 overflow-y-auto px-2.5 pb-6">
+			<div ref={scrollParentRef} className="flex-1 overflow-y-auto px-2 pb-6">
 				{shouldVirtualize ? (
 					<VirtualizedThreadList
 						scrollParentRef={scrollParentRef}
@@ -577,12 +597,12 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 						return (
 							<div
 								key={group.key}
-								className="mb-3"
+								className={THREAD_GROUP_GAP}
 								style={{
 									// 浏览器原生延迟渲染：视口外的 folder section 跳过 layout/paint，
 									// 视口内/即将进入视口时再渲染。contain-intrinsic-size 给出占位高度避免滚动跳变。
 									contentVisibility: "auto",
-									containIntrinsicSize: "auto 400px",
+									containIntrinsicSize: "auto 280px",
 								}}
 							>
 								{/* Folder Header */}
@@ -602,7 +622,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									}`}
 								>
 									<div className="overflow-hidden">
-										<div className="pl-[18px] pr-1.5 pt-0.5 space-y-0.5">
+										<div className={THREAD_ROW_PAD}>
 											{visibleGroupSessions.map((session) => (
 												<ThreadSessionItem
 													key={session.id}
@@ -629,24 +649,40 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				)}
 
 				{/* Empty State */}
-				{folderGroups.length === 0 && (
-					<div className="text-center py-10 mt-10">
-						<div className="w-12 h-12 bg-terracotta/8 dark:bg-terracotta/[0.12] rounded-2xl flex items-center justify-center mx-auto mb-3">
-							<MessageSquare
-								className="w-5 h-5 text-terracotta/70"
-								strokeWidth={1.5}
-							/>
-						</div>
-						<p className="text-sm text-text-muted font-medium">
-							{searchQuery ? "没有找到匹配的对话" : "暂无对话记录"}
-						</p>
-						{!searchQuery && (
-							<p className="text-xs text-text-light mt-1.5">
-								在右侧输入框开始对话，或点击 + 创建新线程
+				{folderGroups.length === 0 &&
+					(isSearching ? (
+						<div className="px-4 py-12 text-center">
+							<p className="text-[12.5px] text-text-muted">
+								没有找到「{searchQuery.trim()}」
 							</p>
-						)}
-					</div>
-				)}
+							<p className="mt-1.5 text-[11.5px] text-text-light">
+								换个关键词，或搜索对话正文中的原句
+							</p>
+						</div>
+					) : (
+						<div className="px-4 py-14 text-center">
+							<div className="mx-auto mb-3.5 flex h-11 w-11 items-center justify-center rounded-2xl bg-warm-200/70 dark:bg-white/[0.05]">
+								<MessageSquare
+									className="h-[18px] w-[18px] text-text-light"
+									strokeWidth={1.5}
+								/>
+							</div>
+							<p className="text-[13px] font-medium text-text-secondary">
+								还没有对话
+							</p>
+							<p className="mt-1.5 text-[11.5px] leading-relaxed text-text-light">
+								在右侧开始提问，对话会按工作目录自动归档到这里
+							</p>
+							<button
+								type="button"
+								onClick={handleCreateThread}
+								className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+							>
+								<Plus className="h-3.5 w-3.5" strokeWidth={2} />
+								新建对话
+							</button>
+						</div>
+					))}
 			</div>
 
 			{/* 右键菜单 */}

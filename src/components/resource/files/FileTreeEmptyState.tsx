@@ -35,9 +35,9 @@ export function FileTreeEmptyState({
 			<Folder className="w-10 h-10 text-text-light mx-auto mb-4" />
 			<p className="text-sm text-text-muted font-medium">无工作路径</p>
 			<p className="text-xs text-text-light mt-2">
-				从「线程」中选择一条已绑定目录的线程，
+				从「对话」中选择一条已绑定目录的对话，
 				<br />
-				或为当前线程绑定一个目录：
+				或为当前对话绑定一个目录：
 			</p>
 			{onOpenFolder ? (
 				<button

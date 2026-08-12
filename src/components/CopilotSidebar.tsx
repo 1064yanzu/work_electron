@@ -31,6 +31,7 @@ import { useAgentStoreSelector } from "../lib/agent/store";
 import { getPerformanceTuning } from "../lib/config";
 import { EVENTS, events } from "../lib/events";
 import { managedModeStore } from "../lib/managedModeStore";
+import { celebrate, useGsapMotion } from "../lib/motion";
 import { settingsStore, useSettingsStoreSelector } from "../lib/settingsStore";
 import { useRegisterShortcuts } from "../lib/shortcuts";
 import {
@@ -369,8 +370,30 @@ export default function CopilotSidebar() {
 
 	const agentTaskType = agentCurrentTask?.type;
 
+	// 任务完成庆祝：只在「刚刚从执行中落回空闲、且没出错」的那一刻放一次。
+	// 刻意做得很轻（一圈扩散光环 + 几个小点，见 lib/motion/presets 的 celebrate），
+	// 并且只在 expressive 档出现——任务完成是高频事件，
+	// 浮夸的彩带看三次就烦，这一点比"够不够热闹"重要得多。
+	const rootRef = useRef<HTMLElement>(null);
+	const wasExecutingRef = useRef(false);
+
+	useGsapMotion(
+		() => {
+			const wasExecuting = wasExecutingRef.current;
+			wasExecutingRef.current = isAgentExecuting;
+			if (!wasExecuting || isAgentExecuting) return;
+			if (chatStore.status === "error") return;
+			const header = rootRef.current?.querySelector<HTMLElement>(
+				"[data-copilot-celebrate-anchor]",
+			);
+			celebrate(header ?? rootRef.current, { particles: 9, radius: 52 });
+		},
+		{ dependencies: [isAgentExecuting, chatStore.status] },
+	);
+
 	return (
 		<aside
+			ref={rootRef}
 			data-copilot-sidebar
 			className="flex flex-col h-full font-sans relative bg-transparent"
 			{...dropZoneProps}
@@ -437,7 +460,7 @@ export default function CopilotSidebar() {
 				onDenyAskUserQuestion={handleDenyAskUserQuestion}
 			/>
 
-			<div className="p-4 pt-2 relative">
+			<div className="px-3 pb-3 pt-1.5 relative">
 				<CopilotStatusBar
 					isStreaming={isStreaming}
 					isAgentExecuting={isAgentExecuting}

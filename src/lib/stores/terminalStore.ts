@@ -46,6 +46,12 @@ export interface TerminalInstance {
 	isHarness?: boolean;
 	/** Harness 元信息；仅在 isHarness 时存在 */
 	harnessMeta?: HarnessTerminalMeta;
+	/**
+	 * 是否由中间栏的 CLI 标签页托管。true 表示这个 pty 的"显示位置"在中栏标签，
+	 * 底部终端面板不再重复渲染它——同一个 pty 挂两个 xterm 会互相抢 resize。
+	 * 生命周期仍然归 terminalStore 管（创建 / 销毁 / 退出都走同一套）。
+	 */
+	hostedInCenter?: boolean;
 }
 
 /** Harness 迁移 pty 的元信息。 */
@@ -189,6 +195,60 @@ class TerminalStore {
 		}
 	}
 
+	/**
+	 * 创建一个「由中栏标签页托管」的终端。
+	 *
+	 * 与 `createTerminal` 的差别只有三处：打上 `hostedInCenter` 标记、用调用方给的
+	 * 名字、**不碰底部面板的可见性与激活项**——它压根不该出现在底部面板里。
+	 */
+	async createHostedTerminal(options: {
+		name: string;
+		cwd?: string;
+	}): Promise<TerminalInstance | null> {
+		const id = `term-${Date.now()}-${++counter}`;
+		try {
+			const [resolvedCwd, prefs] = await Promise.all([
+				this.resolveCwd(options.cwd),
+				getTerminalPrefs().catch(() => null),
+			]);
+			const info = await invoke<TerminalInstance>("terminal_create", {
+				id,
+				cwd: resolvedCwd,
+				...(prefs?.shellPath ? { shell: prefs.shellPath } : {}),
+			});
+			const instance: TerminalInstance = {
+				id: info.id,
+				name: options.name,
+				cwd: info.cwd,
+				shell: info.shell,
+				pid: info.pid,
+				createdAt: info.createdAt,
+				hostedInCenter: true,
+			};
+			this.state = {
+				...this.state,
+				terminals: [...this.state.terminals, instance],
+			};
+			this.emit();
+			return instance;
+		} catch (err) {
+			console.error("[TerminalStore] 创建托管终端失败:", err);
+			toast.error(
+				`启动失败：${err instanceof Error ? err.message : "未知错误"}`,
+			);
+			return null;
+		}
+	}
+
+	/** 向某个终端的 pty 写入（中栏 CLI 标签页用它把启动命令打进去）。 */
+	async write(id: string, data: string): Promise<void> {
+		try {
+			await invoke("terminal_write", { id, data });
+		} catch (err) {
+			console.error("[TerminalStore] 写入终端失败:", err);
+		}
+	}
+
 	/** 销毁终端 */
 	async destroyTerminal(id: string) {
 		const existing = this.state.terminals.find((t) => t.id === id);
@@ -215,15 +275,18 @@ class TerminalStore {
 			// ignore
 		}
 		const remaining = this.state.terminals.filter((t) => t.id !== id);
+		// 底部面板的激活项 / 可见性只按"面板里的终端"算：中栏托管的 CLI
+		// 终端不在面板里露面，不该把面板顶开、也不该被选中
+		const inPanel = remaining.filter((t) => !t.hostedInCenter);
 		const newActive =
 			this.state.activeTerminalId === id
-				? remaining[remaining.length - 1]?.id || null
+				? inPanel[inPanel.length - 1]?.id || null
 				: this.state.activeTerminalId;
 		this.state = {
 			...this.state,
 			terminals: remaining,
 			activeTerminalId: newActive,
-			isVisible: remaining.length > 0,
+			isVisible: inPanel.length > 0 && this.state.isVisible,
 		};
 		this.emit();
 	}
@@ -405,8 +468,9 @@ class TerminalStore {
 
 	/** 切换面板可见性 */
 	toggleVisible() {
-		if (!this.state.isVisible && this.state.terminals.length === 0) {
-			// 没有终端时自动创建一个（createTerminal 内部会解析 cwd）
+		const inPanel = this.state.terminals.filter((t) => !t.hostedInCenter);
+		if (!this.state.isVisible && inPanel.length === 0) {
+			// 面板里没有终端时自动创建一个（createTerminal 内部会解析 cwd）
 			void this.createTerminal();
 			return;
 		}
@@ -423,9 +487,10 @@ class TerminalStore {
 	/** 处理终端退出事件 */
 	handleTerminalExit(id: string) {
 		const remaining = this.state.terminals.filter((t) => t.id !== id);
+		const inPanel = remaining.filter((t) => !t.hostedInCenter);
 		const newActive =
 			this.state.activeTerminalId === id
-				? remaining[remaining.length - 1]?.id || null
+				? inPanel[inPanel.length - 1]?.id || null
 				: this.state.activeTerminalId;
 		this.state = {
 			...this.state,

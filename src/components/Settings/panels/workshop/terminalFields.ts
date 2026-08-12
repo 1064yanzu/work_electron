@@ -8,7 +8,7 @@ export const FIELDS: FieldDescriptor[] = [
 		tabId: "workshop.terminal",
 		anchorId: "workshop.terminal.defaultCwd",
 		label: "默认工作目录",
-		description: "新建终端时的起始目录模式：线程目录或主目录。",
+		description: "新建终端时的起始目录模式：对话目录或主目录。",
 		keywords: ["cwd", "directory", "terminal", "工作目录", "终端", "起始目录"],
 	},
 	{

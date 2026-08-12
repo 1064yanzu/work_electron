@@ -16,6 +16,7 @@ import { confirmDialog } from "../../ui/ConfirmDialog";
 import Select from "../../ui/Select";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
+	SettingsCardSection,
 	SettingsPageContainer,
 	SettingsRow,
 	SettingsSectionCard,
@@ -277,7 +278,7 @@ export function PerformanceSettings() {
 	);
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<div
 				id="data.performance.overview"
 				data-settings-anchor="data.performance.overview"
@@ -290,92 +291,86 @@ export function PerformanceSettings() {
 			</div>
 
 			{/* 刷新与同步 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>刷新与同步</SettingsSectionTitle>
-					<SettingsRow
-						label="资料自动刷新间隔"
-						description="值越小越实时，但会增加 IPC 压力。"
-						action={
-							<Select
-								value={settings.sourceAutoRefreshMs}
-								onChange={(event) => {
-									void patchSettings({
-										sourceAutoRefreshMs: Number(event.target.value),
-									});
-								}}
-								disabled={isSaving}
-								variant="inline"
-								containerClassName="w-auto min-w-[120px]"
-							>
-								{SOURCE_REFRESH_OPTIONS.map((option) => (
-									<option key={option} value={option}>
-										{formatMs(option)}
-									</option>
-								))}
-							</Select>
-						}
-					/>
-					<SettingsRow
-						label="远程会话同步间隔"
-						description="值越小越实时，但会增加后台同步开销。"
-						action={
-							<Select
-								value={settings.remoteSyncIntervalMs}
-								onChange={(event) => {
-									void patchSettings({
-										remoteSyncIntervalMs: Number(event.target.value),
-									});
-								}}
-								disabled={isSaving}
-								variant="inline"
-								containerClassName="w-auto min-w-[120px]"
-							>
-								{REMOTE_SYNC_OPTIONS.map((option) => (
-									<option key={option} value={option}>
-										{formatMs(option)}
-									</option>
-								))}
-							</Select>
-						}
-					/>
-					<SettingsRow
-						label="长对话虚拟渲染"
-						description="超过 60 条消息时只渲染可视区域附近的历史消息，大幅降低长对话的内存与滚动开销。遇到定位/显示异常可关闭回退为全量渲染。"
-						action={
-							<SettingsSwitch
-								checked={settings.chatVirtualization}
-								onChange={() => {
-									void patchSettings({
-										chatVirtualization: !settings.chatVirtualization,
-									});
-								}}
-							/>
-						}
-					/>
-				</div>
-			</SettingsSectionCard>
+			<SettingsCardSection title="刷新与同步" bodyClassName="p-5">
+				<SettingsRow
+					label="资料自动刷新间隔"
+					description="值越小越实时，但会增加 IPC 压力。"
+					action={
+						<Select
+							value={settings.sourceAutoRefreshMs}
+							onChange={(event) => {
+								void patchSettings({
+									sourceAutoRefreshMs: Number(event.target.value),
+								});
+							}}
+							disabled={isSaving}
+							variant="inline"
+							containerClassName="w-auto min-w-[120px]"
+						>
+							{SOURCE_REFRESH_OPTIONS.map((option) => (
+								<option key={option} value={option}>
+									{formatMs(option)}
+								</option>
+							))}
+						</Select>
+					}
+				/>
+				<SettingsRow
+					label="远程会话同步间隔"
+					description="值越小越实时，但会增加后台同步开销。"
+					action={
+						<Select
+							value={settings.remoteSyncIntervalMs}
+							onChange={(event) => {
+								void patchSettings({
+									remoteSyncIntervalMs: Number(event.target.value),
+								});
+							}}
+							disabled={isSaving}
+							variant="inline"
+							containerClassName="w-auto min-w-[120px]"
+						>
+							{REMOTE_SYNC_OPTIONS.map((option) => (
+								<option key={option} value={option}>
+									{formatMs(option)}
+								</option>
+							))}
+						</Select>
+					}
+				/>
+				<SettingsRow
+					label="长对话虚拟渲染"
+					description="超过 60 条消息时只渲染可视区域附近的历史消息，大幅降低长对话的内存与滚动开销。遇到定位/显示异常可关闭回退为全量渲染。"
+					action={
+						<SettingsSwitch
+							checked={settings.chatVirtualization}
+							onChange={() => {
+								void patchSettings({
+									chatVirtualization: !settings.chatVirtualization,
+								});
+							}}
+						/>
+					}
+				/>
+			</SettingsCardSection>
 
 			{/* 调试 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>调试</SettingsSectionTitle>
-					<SettingsRow
-						label="启用 UI 热路径日志"
-						description="仅建议排查拖拽或交互问题时临时开启。"
-						action={
-							<SettingsSwitch
-								checked={settings.enableUiDebugLogs}
-								onChange={() => {
-									void patchSettings({
-										enableUiDebugLogs: !settings.enableUiDebugLogs,
-									});
-								}}
-							/>
-						}
-					/>
-				</div>
-			</SettingsSectionCard>
+			<SettingsCardSection title="调试" bodyClassName="p-5">
+				<SettingsRow
+					label="启用 UI 热路径日志"
+					description="仅建议排查拖拽或交互问题时临时开启。"
+					action={
+						<SettingsSwitch
+							checked={settings.enableUiDebugLogs}
+							onChange={() => {
+								void patchSettings({
+									enableUiDebugLogs: !settings.enableUiDebugLogs,
+								});
+							}}
+						/>
+					}
+				/>
+			</SettingsCardSection>
 
 			{/* 缓存目录 */}
 			<SettingsSectionCard>

@@ -11,7 +11,8 @@ import {
 	Play,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { EASE, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
 import { PlanStepItem, type PlanStep } from "./PlanStepItem";
 
@@ -64,11 +65,41 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 /** 进度条 */
 function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 	const total = steps.length;
-	if (total === 0) return null;
-
 	const completed = steps.filter((s) => s.status === "completed").length;
 	const executing = steps.filter((s) => s.status === "executing").length;
 	const rejected = steps.filter((s) => s.status === "rejected").length;
+
+	// 全部走完时给整条进度条一次高光扫过。
+	// 宽度本身仍交给 CSS transition：三段是 flex 兄弟，宽度必须相加为整，
+	// 用 GSAP 逐帧写 width 每帧都会触发一次 layout，比 CSS 更贵也不更好看。
+	const barRef = useRef<HTMLDivElement>(null);
+	const doneRef = useRef(false);
+	const allDone = total > 0 && completed === total;
+
+	useGsapMotion(
+		({ gsap, dur }) => {
+			const wasDone = doneRef.current;
+			doneRef.current = allDone;
+			if (!allDone || wasDone) return;
+			const bar = barRef.current;
+			if (!bar) return;
+			gsap.fromTo(
+				bar,
+				{ filter: "brightness(1)" },
+				{
+					filter: "brightness(1.35)",
+					duration: dur(0.22),
+					ease: EASE.outExpo,
+					yoyo: true,
+					repeat: 1,
+					clearProps: "filter",
+				},
+			);
+		},
+		{ dependencies: [allDone] },
+	);
+
+	if (total === 0) return null;
 
 	const completedPct = (completed / total) * 100;
 	const executingPct = (executing / total) * 100;
@@ -81,7 +112,10 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 					{completed}/{total} 步已完成
 				</span>
 			</div>
-			<div className="h-1.5 bg-warm-200 rounded-full overflow-hidden flex">
+			<div
+				ref={barRef}
+				className="h-1.5 bg-warm-200 rounded-full overflow-hidden flex"
+			>
 				{completedPct > 0 && (
 					<div
 						className="h-full bg-success transition-all duration-500 ease-out"

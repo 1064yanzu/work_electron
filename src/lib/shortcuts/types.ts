@@ -37,6 +37,12 @@ export interface ShortcutDefinition {
 	handler?: (e: KeyboardEvent) => void;
 	/** 仅在速查表/设置面板展示（如 "Esc 关闭 Modal"），不参与分发 */
 	displayOnly?: boolean;
+	/**
+	 * 参与分发但不在速查表/设置面板展示。
+	 * 用于同一语义批量注册的键位（如 Alt+1..9 切换第 N 个标签页），
+	 * 由一条 displayOnly 条目统一代言，避免把列表刷屏。
+	 */
+	hidden?: boolean;
 	/** 覆盖展示用 kbd 序列（用于 "↑ ↓" 这类无法解析的组合） */
 	keysDisplay?: string[];
 	/** 关联命令面板命令 id，供 useCommands 自动带出快捷键提示 */

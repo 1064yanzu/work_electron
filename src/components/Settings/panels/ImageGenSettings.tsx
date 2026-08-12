@@ -170,7 +170,7 @@ export function ImageGenSettings() {
 	const ready = !!(config.providerId && config.model);
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<div
 				id="workshop.imagegen.overview"
 				data-settings-anchor="workshop.imagegen.overview"

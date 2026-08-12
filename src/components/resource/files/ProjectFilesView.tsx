@@ -4,6 +4,7 @@ import { safeInvoke } from "../../../lib/tauriBridge";
 import { useWorkspaceStoreSelector } from "../../../lib/workspaceStore";
 import { managedModeStore, getMimeType } from "../../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../../lib/sandboxEditorStore";
+import { centerTabsStore } from "../../../lib/stores/centerTabsStore";
 import { chatStore, useChatStoreSelector } from "../../../lib/chat/store";
 import {
 	createThreadSessionForPath,
@@ -229,7 +230,9 @@ export function ProjectFilesView() {
 				ext,
 				fileContent || undefined,
 			);
-			managedModeStore.setCenterView("preview");
+			// 点开文件是「我现在要看到它」，中栏若停在浏览器 / Web AI 标签上要切回来，
+			// 否则只改沙盒内部状态、界面纹丝不动，看着像点没反应。
+			centerTabsStore.openSandboxView("preview");
 		},
 		[projectPath],
 	);
@@ -371,7 +374,7 @@ export function ProjectFilesView() {
 
 	const handleOpenFolder = useCallback(async () => {
 		try {
-			const { path } = await pickSystemDirectory("选择当前线程的工作目录");
+			const { path } = await pickSystemDirectory("选择当前对话的工作目录");
 			if (!path) return;
 			const sessionId = activeSessionId;
 			if (sessionId) {

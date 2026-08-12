@@ -75,7 +75,7 @@ export function PetReminderBubble({
 			sinking={sinking}
 		>
 			<div className="max-w-[240px]">
-				<div className="flex items-start gap-2 animate-pet-content-row">
+				<div data-bubble-row className="flex items-start gap-2">
 					<span
 						className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
 						style={{
@@ -93,18 +93,15 @@ export function PetReminderBubble({
 
 				{detail && (
 					<div
-						className="mt-1 pl-7 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3 animate-pet-content-row"
-						style={{ animationDelay: "60ms" }}
+						data-bubble-row
+						className="mt-1 pl-7 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3"
 					>
 						{detail}
 					</div>
 				)}
 
 				{(onPrimary || onSnooze) && (
-					<div
-						className="mt-2 pl-7 flex items-center gap-3 animate-pet-content-row"
-						style={{ animationDelay: "120ms" }}
-					>
+					<div data-bubble-row className="mt-2 pl-7 flex items-center gap-3">
 						{onPrimary && (
 							<button
 								type="button"

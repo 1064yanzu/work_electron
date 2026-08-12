@@ -14,7 +14,7 @@ export function ChatInputContextBar({
 	if (contexts.length === 0) return null;
 
 	return (
-		<div className="px-4 pt-3 pb-1">
+		<div className="px-2.5 pt-2.5 pb-0">
 			<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
 				{contexts.map((ctx) => (
 					<div key={ctx.id} className="shrink-0">

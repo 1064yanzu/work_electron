@@ -1,14 +1,18 @@
 /**
- * AI Hub —— 中栏「内嵌 Web AI 站点」主视图。
+ * AiHubPanel —— 中栏「内嵌单个 Web AI 站点」的标签页内容。
  *
  * 关键前提：**本组件不渲染网页内容**。网页由主进程的 `aiHubViewService` 用
  * Electron `WebContentsView` 原生覆盖在窗口上层（每个站点独立 partition，
  * 登录态互相隔离且持久化）。因此这里的职责只有三件：
  *
- *   1. 渲染站点 tab 条 + 工具栏（真实 DOM，永远位于原生视图之外）；
+ *   1. 渲染当前站点的工具栏（真实 DOM，永远位于原生视图之外）；
  *   2. 用一个空占位 div 测量「网页应该出现的矩形」，把 bounds 上报主进程；
  *   3. 卸载 / 尺寸退化 / 弹窗遮挡时把原生视图摘掉 —— 否则它会一直浮在
  *      其它界面上面（原生层永远在 DOM 之上，z-index 对它无效）。
+ *
+ * **站点切换不再由本组件负责**：每个站点是中栏的一个独立标签页
+ * （`centerTabsStore` 的 `web:<siteId>`），App 用 `key={siteId}` 换实例。
+ * 这样「ChatGPT 一个页签、Gemini 一个页签」符合直觉，也避免 tab-in-tab 嵌套。
  *
  * bounds 坐标系：`WebContentsView.setBounds` 用的是相对窗口内容区的坐标，
  * 与 `getBoundingClientRect()` 的视口坐标在 Electron 中完全一致，取整即可。
@@ -21,33 +25,38 @@ import {
 	ArrowDownToLine,
 	ExternalLink,
 	Globe,
+	KeyRound,
 	Loader2,
-	MessagesSquare,
+	MoreHorizontal,
 	RotateCw,
 	Settings2,
-	X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
 	type AiHubSiteRow,
+	type BrowserCookieSourceRow,
 	closeAiHub,
 	extractFromAiHub,
+	importAiHubCookies,
 	importAiHubSession,
 	injectToAiHub,
 	listAiHubSites,
+	listCookieSources,
 	openAiHubSite,
+	reloadAiHubSite,
 	setAiHubBounds,
 } from "../../lib/api/harnessHub";
 import {
 	aiHubRequestStore,
 	useAiHubRequest,
 } from "../../lib/stores/aiHubRequestStore";
+import { setNativeViewRect } from "../../lib/stores/nativeViewRectStore";
 import { openBrowserWindow } from "../../lib/config";
 import { EVENTS, events } from "../../lib/events";
 import { cn } from "../../lib/utils";
-import { workspaceStore } from "../../lib/workspaceStore";
 import { confirmDialog } from "../ui/ConfirmDialog";
+import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { toast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
 
@@ -63,9 +72,6 @@ interface PanelStatus {
 	text: string;
 }
 
-/** 记住上次浏览的站点，切走再回来不用重新挑。 */
-const LAST_SITE_STORAGE_KEY = "aihub:last-site-id";
-
 /**
  * 遮挡检测轮询间隔。应用内所有弹窗 / 全屏 Overlay（设置面板、命令面板、
  * 确认框、阅读器、卡片库、桌宠引导…）都带 `aria-modal="true"`，
@@ -76,24 +82,17 @@ const OVERLAY_POLL_MS = 200;
 /** 工具栏内联状态的展示时长。 */
 const STATUS_TTL_MS = 5000;
 
+/**
+ * 工具栏收窄阈值（px）。
+ *
+ * 中栏可以分屏之后，一个 Web AI 面板可能只有三四百像素宽。窄到这个程度时
+ * 「一排图标 + 一个文字按钮 + 站点名 + URL」必然挤成一团，所以次要动作收进
+ * 溢出菜单，只留下真正高频的那一个。
+ */
+const COMPACT_TOOLBAR_WIDTH = 460;
+
 /** 站点与选择器配置所在的设置页（见 Settings/settingsCatalog.ts）。 */
 const SETTINGS_TAB_ID = "integrations.harnessHub";
-
-function readLastSiteId(): string | null {
-	try {
-		return window.localStorage.getItem(LAST_SITE_STORAGE_KEY);
-	} catch {
-		return null;
-	}
-}
-
-function writeLastSiteId(siteId: string): void {
-	try {
-		window.localStorage.setItem(LAST_SITE_STORAGE_KEY, siteId);
-	} catch {
-		// 隐私模式下 localStorage 可能不可用，忽略即可
-	}
-}
 
 function errMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
@@ -106,9 +105,31 @@ function boundsEqual(a: Bounds | null, b: Bounds | null): boolean {
 	);
 }
 
-/** 是否存在会被原生视图盖住的模态层。 */
+/**
+ * 是否存在会被原生视图盖住的浮层。
+ *
+ * 两类：
+ * - `[aria-modal="true"]` —— 设置面板 / 命令面板 / 确认框 / 阅读器 / 卡片库…
+ * - `[data-native-overlay="true"]` —— 非模态但同样必须可见的浮层，目前是
+ *   右键菜单（中栏标签条的「+」菜单就正正压在原生视图上方）。ContextMenu
+ *   不是 dialog，挂 aria-modal 属于 ARIA 误用，所以另立一个私有标记。
+ */
 function hasBlockingOverlay(): boolean {
-	return document.querySelector('[aria-modal="true"]') !== null;
+	return (
+		document.querySelector(
+			'[aria-modal="true"], [data-native-overlay="true"]',
+		) !== null
+	);
+}
+
+/**
+ * 原生视图在 `nativeViewRectStore` 里的登记名。
+ *
+ * 中栏支持分屏后可以同时挂多个站点，所以必须按 siteId 分开登记；
+ * 本面板卸载 / 摘视图时只清自己那一条，不影响别的分屏。
+ */
+function nativeViewKey(siteId: string): string {
+	return `aihub:${siteId}`;
 }
 
 /** 用首条用户消息推导会话标题（真实内容，不编造）。 */
@@ -128,32 +149,58 @@ function deriveSessionTitle(
 	return firstLine.length > 40 ? `${firstLine.slice(0, 40)}…` : firstLine;
 }
 
-export function AiHubPanel() {
-	const [sites, setSites] = useState<AiHubSiteRow[]>([]);
+export interface AiHubPanelProps {
+	/** 本标签页对应的站点 id（由 centerTabsStore 的 `web:<siteId>` 标签决定）。 */
+	siteId: string;
+}
+
+export function AiHubPanel({ siteId }: AiHubPanelProps) {
+	const [site, setSite] = useState<AiHubSiteRow | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
-	const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
 	const [attached, setAttached] = useState(false);
 	const [suspended, setSuspended] = useState(false);
 	const [extracting, setExtracting] = useState(false);
+	const [importingCookies, setImportingCookies] = useState(false);
+	const [importMenu, setImportMenu] = useState<{
+		x: number;
+		y: number;
+		items: ContextMenuItem[];
+	} | null>(null);
 	const [status, setStatus] = useState<PanelStatus | null>(null);
+	/** 面板过窄：次要动作收进溢出菜单（分屏后这是常态而非例外） */
+	const [compact, setCompact] = useState(false);
+	const [overflowMenu, setOverflowMenu] = useState<{
+		x: number;
+		y: number;
+		items: ContextMenuItem[];
+	} | null>(null);
 	/** 会话中枢发来的「打开站点 + 注入交接包」请求 */
 	const hubRequest = useAiHubRequest();
 
 	/** 网页内容占位区 —— 原生视图会精确覆盖在它上面。 */
 	const contentRef = useRef<HTMLDivElement | null>(null);
+	const importButtonRef = useRef<HTMLButtonElement | null>(null);
+	const overflowButtonRef = useRef<HTMLButtonElement | null>(null);
+	const rootRef = useRef<HTMLDivElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 	const lastBoundsRef = useRef<Bounds | null>(null);
-	const activeSiteIdRef = useRef<string | null>(null);
 	const attachedRef = useRef(false);
 	const suspendedRef = useRef(false);
 	const disposedRef = useRef(false);
 	const statusTimerRef = useRef<number | null>(null);
+	/** 站点配置就绪前不挂载原生视图（挂了也没 URL 可加载）。 */
+	const siteReadyRef = useRef(false);
 
-	const activeSite = useMemo(
-		() => sites.find((site) => site.id === activeSiteId) ?? null,
-		[sites, activeSiteId],
-	);
+	/** 站点主域名：导入登录态的确认框要如实告诉用户读的是哪个域。 */
+	const siteDomain = useMemo(() => {
+		if (!site) return "";
+		try {
+			return new URL(site.url).hostname;
+		} catch {
+			return site.url;
+		}
+	}, [site]);
 
 	const showStatus = useCallback((kind: PanelStatus["kind"], text: string) => {
 		if (statusTimerRef.current !== null) {
@@ -192,38 +239,40 @@ export function AiHubPanel() {
 		attachedRef.current = false;
 		lastBoundsRef.current = null;
 		setAttached(false);
-		void closeAiHub().catch(() => undefined);
-	}, []);
+		// 视图不在窗口上了，浮层不必再避让这块区域
+		setNativeViewRect(nativeViewKey(siteId), null);
+		void closeAiHub(siteId).catch(() => undefined);
+	}, [siteId]);
 
-	/** 把指定站点挂到占位区位置。 */
-	const attachView = useCallback(
-		async (siteId: string) => {
-			if (disposedRef.current || suspendedRef.current) return;
-			const bounds = measure();
-			// 尺寸还没稳定（首帧 / 面板折叠）：交给 ResizeObserver 的下一次回调
-			if (!bounds) return;
-			try {
-				const ok = await openAiHubSite(siteId, bounds);
-				if (disposedRef.current) {
-					void closeAiHub().catch(() => undefined);
-					return;
-				}
-				// 等待期间用户已切走 → 由后一次 attach 负责，这里不写状态
-				if (activeSiteIdRef.current !== siteId || suspendedRef.current) return;
-				if (!ok) {
-					showStatus("error", "站点挂载失败，请检查站点配置");
-					return;
-				}
-				attachedRef.current = true;
-				lastBoundsRef.current = bounds;
-				setAttached(true);
-			} catch (error) {
-				if (disposedRef.current) return;
-				showStatus("error", `内嵌视图挂载失败：${errMessage(error)}`);
+	/** 把本标签页的站点挂到占位区位置。 */
+	const attachView = useCallback(async () => {
+		if (disposedRef.current || suspendedRef.current) return;
+		if (!siteReadyRef.current) return;
+		const bounds = measure();
+		// 尺寸还没稳定（首帧 / 面板折叠）：交给 ResizeObserver 的下一次回调
+		if (!bounds) return;
+		try {
+			const ok = await openAiHubSite(siteId, bounds);
+			if (disposedRef.current) {
+				void closeAiHub(siteId).catch(() => undefined);
+				return;
 			}
-		},
-		[measure, showStatus],
-	);
+			if (suspendedRef.current) return;
+			if (!ok) {
+				showStatus("error", "站点挂载失败，请检查站点配置");
+				return;
+			}
+			attachedRef.current = true;
+			lastBoundsRef.current = bounds;
+			setAttached(true);
+			// 登记占位，让 tooltip / 下拉这类 DOM 浮层能主动避开它
+			// （原生视图画在 DOM 之上，z-index 盖不过去）
+			setNativeViewRect(nativeViewKey(siteId), bounds);
+		} catch (error) {
+			if (disposedRef.current) return;
+			showStatus("error", `内嵌视图挂载失败：${errMessage(error)}`);
+		}
+	}, [measure, showStatus, siteId]);
 
 	/** 用 rAF 合并高频调用（面板拖动时每帧最多一次 IPC）。 */
 	const scheduleSync = useCallback(() => {
@@ -231,8 +280,7 @@ export function AiHubPanel() {
 		rafRef.current = window.requestAnimationFrame(() => {
 			rafRef.current = null;
 			if (disposedRef.current || suspendedRef.current) return;
-			const siteId = activeSiteIdRef.current;
-			if (!siteId) return;
+			if (!siteReadyRef.current) return;
 			const bounds = measure();
 			if (!bounds) {
 				// 面板被折叠到 0 宽/高 —— 先摘掉，恢复尺寸后自动挂回
@@ -240,12 +288,13 @@ export function AiHubPanel() {
 				return;
 			}
 			if (!attachedRef.current) {
-				void attachView(siteId);
+				void attachView();
 				return;
 			}
 			if (boundsEqual(lastBoundsRef.current, bounds)) return;
 			lastBoundsRef.current = bounds;
-			void setAiHubBounds(bounds).catch(() => undefined);
+			setNativeViewRect(nativeViewKey(siteId), bounds);
+			void setAiHubBounds(siteId, bounds).catch(() => undefined);
 		});
 	}, [attachView, detachView, measure]);
 
@@ -266,64 +315,51 @@ export function AiHubPanel() {
 			}
 			attachedRef.current = false;
 			lastBoundsRef.current = null;
-			void closeAiHub().catch(() => undefined);
+			setNativeViewRect(nativeViewKey(siteId), null);
+			void closeAiHub(siteId).catch(() => undefined);
 		};
-	}, []);
+	}, [siteId]);
 
-	const reloadSites = useCallback(async (options?: { silent?: boolean }) => {
-		if (!options?.silent) setLoading(true);
-		setLoadError(null);
-		try {
-			const rows = await listAiHubSites();
-			if (disposedRef.current) return;
-			const enabled = rows.filter((row) => row.enabled);
-			setSites(enabled);
-			setActiveSiteId((prev) => {
-				if (prev && enabled.some((row) => row.id === prev)) return prev;
-				const remembered = readLastSiteId();
-				const next =
-					enabled.find((row) => row.id === remembered) ?? enabled[0] ?? null;
-				return next ? next.id : null;
-			});
-		} catch (error) {
-			if (!disposedRef.current) setLoadError(errMessage(error));
-		} finally {
-			if (!disposedRef.current) setLoading(false);
-		}
-	}, []);
+	/** 读取本标签页站点的配置（label / url / 选择器）。 */
+	const reloadSite = useCallback(
+		async (options?: { silent?: boolean }) => {
+			if (!options?.silent) setLoading(true);
+			setLoadError(null);
+			try {
+				const rows = await listAiHubSites();
+				if (disposedRef.current) return;
+				const found = rows.find((row) => row.id === siteId && row.enabled);
+				setSite(found ?? null);
+				siteReadyRef.current = Boolean(found);
+				if (!found) {
+					setLoadError("该站点已被禁用或删除，请在设置中检查 Web AI 站点清单");
+					detachView();
+				}
+			} catch (error) {
+				if (!disposedRef.current) setLoadError(errMessage(error));
+			} finally {
+				if (!disposedRef.current) setLoading(false);
+			}
+		},
+		[siteId, detachView],
+	);
 
 	useEffect(() => {
-		void reloadSites();
-	}, [reloadSites]);
+		void reloadSite();
+	}, [reloadSite]);
 
-	// 当前站点变化 → 重新挂载（主进程的 attach 会替换掉旧的子视图）
+	// 站点配置就绪 → 挂载原生视图
 	useEffect(() => {
-		activeSiteIdRef.current = activeSiteId;
-		if (!activeSiteId) {
-			detachView();
-			return;
-		}
-		writeLastSiteId(activeSiteId);
-		void attachView(activeSiteId);
-	}, [activeSiteId, attachView, detachView]);
+		if (!site) return;
+		void attachView();
+	}, [site, attachView]);
 
 	// 会话中枢发来的「打开某站点 + 注入交接包」请求。
-	// 站点切换与 view 挂载都由本组件负责，所以注入必须等 attachView 完成后再做，
-	// 发起方（HarnessView）无法知道这个时机。
+	// 只有目标站点自己的标签页才消费它；标签的打开由 centerTabsStore 负责，
+	// 注入必须等 attachView 完成后再做（发起方无法知道这个时机）。
 	useEffect(() => {
-		if (!hubRequest) return;
-		const site = sites.find((row) => row.id === hubRequest.siteId);
-		if (!site) {
-			// 站点被禁用或已删除
-			toast.error("目标站点不可用，请在设置中检查 Web AI 站点清单");
-			aiHubRequestStore.clear();
-			return;
-		}
-		if (activeSiteId !== hubRequest.siteId) {
-			// 先切站点，等下一轮 effect（此时 view 已挂好）再注入
-			setActiveSiteId(hubRequest.siteId);
-			return;
-		}
+		if (!hubRequest || hubRequest.siteId !== siteId) return;
+		if (!site) return;
 		const text = hubRequest.text;
 		aiHubRequestStore.clear();
 		if (!text) return;
@@ -331,9 +367,9 @@ export function AiHubPanel() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				await attachView(hubRequest.siteId);
+				await attachView();
 				if (cancelled || disposedRef.current) return;
-				const injected = await injectToAiHub(hubRequest.siteId, text);
+				const injected = await injectToAiHub(siteId, text);
 				if (cancelled || disposedRef.current) return;
 				if (injected.ok && injected.method === "dom") {
 					toast.success(`交接包已填入 ${site.label} 输入框`);
@@ -349,7 +385,7 @@ export function AiHubPanel() {
 		return () => {
 			cancelled = true;
 		};
-	}, [hubRequest, sites, activeSiteId, attachView]);
+	}, [hubRequest, site, siteId, attachView]);
 
 	// 尺寸/位置变化 → 重新上报 bounds
 	useEffect(() => {
@@ -366,9 +402,23 @@ export function AiHubPanel() {
 		};
 	}, [scheduleSync]);
 
-	// 弹窗遮挡守卫：模态层出现时摘掉原生视图，关闭后挂回来
+	// 面板宽度观察：分屏后宽度变化频繁，工具栏要跟着换形态
 	useEffect(() => {
-		const timer = window.setInterval(() => {
+		const el = rootRef.current;
+		if (!el) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width ?? 0;
+			if (width > 0) setCompact(width < COMPACT_TOOLBAR_WIDTH);
+		});
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
+
+	// 浮层遮挡守卫：浮层出现时摘掉原生视图，关闭后挂回来。
+	// MutationObserver 负责"立刻"（浮层多是 portal 到 body 的新节点），
+	// 定时轮询兜住它盖不到的情况（子树深处的属性变化）。
+	useEffect(() => {
+		const sync = () => {
 			if (disposedRef.current) return;
 			const blocked = hasBlockingOverlay();
 			if (blocked === suspendedRef.current) return;
@@ -378,26 +428,28 @@ export function AiHubPanel() {
 				detachView();
 				return;
 			}
-			const siteId = activeSiteIdRef.current;
-			if (siteId) void attachView(siteId);
-		}, OVERLAY_POLL_MS);
-		return () => window.clearInterval(timer);
+			void attachView();
+		};
+		const timer = window.setInterval(sync, OVERLAY_POLL_MS);
+		// 只看 body 的直接子节点：浮层都是 portal 到 body 的顶层节点，
+		// 开 subtree 会被对话流式输出的每一次 DOM 变动打爆。
+		const observer = new MutationObserver(sync);
+		observer.observe(document.body, { childList: true });
+		return () => {
+			window.clearInterval(timer);
+			observer.disconnect();
+		};
 	}, [attachView, detachView]);
 
 	// ============================================================
 	// 动作
 	// ============================================================
 
-	const handleSelectSite = useCallback((siteId: string) => {
-		if (siteId === activeSiteIdRef.current) return;
-		setActiveSiteId(siteId);
-	}, []);
-
 	const handleExtract = useCallback(async () => {
-		if (!activeSite || extracting) return;
+		if (!site || extracting) return;
 		setExtracting(true);
 		try {
-			const result = await extractFromAiHub(activeSite.id);
+			const result = await extractFromAiHub(site.id);
 			const messages = result.messages.filter(
 				(message) => message.content.trim().length > 0,
 			);
@@ -409,7 +461,7 @@ export function AiHubPanel() {
 
 			const confirmed = await confirmDialog.show({
 				title: "导入到会话中枢",
-				message: `已从「${activeSite.label}」当前页面提取到 ${messages.length} 条消息，确认存入会话中枢？`,
+				message: `已从「${site.label}」当前页面提取到 ${messages.length} 条消息，确认存入会话中枢？`,
 				confirmText: "存入",
 				cancelText: "取消",
 				type: "info",
@@ -419,9 +471,9 @@ export function AiHubPanel() {
 				return;
 			}
 
-			const title = deriveSessionTitle(activeSite.label, messages);
+			const title = deriveSessionTitle(site.label, messages);
 			await importAiHubSession({
-				site_id: activeSite.id,
+				site_id: site.id,
 				title,
 				messages,
 			});
@@ -434,83 +486,208 @@ export function AiHubPanel() {
 		} finally {
 			if (!disposedRef.current) setExtracting(false);
 		}
-	}, [activeSite, extracting, showStatus]);
+	}, [site, extracting, showStatus]);
 
-	const handleRefreshSites = useCallback(async () => {
-		await reloadSites({ silent: true });
+	const handleReloadSite = useCallback(async () => {
+		await reloadSite({ silent: true });
 		if (disposedRef.current) return;
-		showStatus("info", "站点列表已刷新");
-	}, [reloadSites, showStatus]);
+		showStatus("info", "站点配置已刷新");
+	}, [reloadSite, showStatus]);
 
 	const handleOpenExternal = useCallback(async () => {
-		if (!activeSite) return;
+		if (!site) return;
 		try {
-			await openBrowserWindow(activeSite.url);
+			await openBrowserWindow(site.url);
 		} catch (error) {
 			toast.error(`在外部窗口打开失败：${errMessage(error)}`);
 		}
-	}, [activeSite]);
+	}, [site]);
 
 	const handleOpenSettings = useCallback(() => {
 		events.emit(EVENTS.OPEN_SETTINGS, { tab: SETTINGS_TAB_ID });
 	}, []);
 
-	const handleBackToWorkspace = useCallback(() => {
-		workspaceStore.setMainView("editor");
-	}, []);
+	/**
+	 * 从本机浏览器导入该站点的登录态。
+	 *
+	 * 两道确认：先在菜单里挑浏览器 profile，再用确认框明确告知"会读取哪个域名的
+	 * Cookie"。这是唯一触发路径——没有任何自动/后台导入。
+	 */
+	const runCookieImport = useCallback(
+		async (source: BrowserCookieSourceRow) => {
+			if (!site) return;
+			const confirmed = await confirmDialog.show({
+				title: "从本机浏览器导入登录态",
+				message: `将从「${source.label}」读取 ${siteDomain} 的 Cookie，写入本应用为「${site.label}」单独保留的分区。\n\n只读这一个域名，不会碰其它站点；读取时系统可能会弹出钥匙串授权。导入后站点仍可能要求确认一次设备。`,
+				confirmText: "导入",
+				cancelText: "取消",
+				type: "info",
+			});
+			if (!confirmed) return;
+
+			setImportingCookies(true);
+			try {
+				const result = await importAiHubCookies({
+					site_id: site.id,
+					browser: source.browser,
+					profile: source.profile,
+				});
+				if (!result.ok) {
+					showStatus("error", result.error ?? "导入失败");
+					return;
+				}
+				showStatus(
+					"success",
+					`已导入 ${result.imported} 条登录信息${
+						result.skipped > 0 ? `（${result.skipped} 条跳过）` : ""
+					}，正在重新加载`,
+				);
+				// cookie 要下一次请求才生效，不重载页面登录态不会出现
+				await reloadAiHubSite(site.id).catch(() => undefined);
+			} catch (error) {
+				showStatus("error", `导入失败：${errMessage(error)}`);
+			} finally {
+				if (!disposedRef.current) setImportingCookies(false);
+			}
+		},
+		[site, siteDomain, showStatus],
+	);
+
+	const handleOpenImportMenu = useCallback(async () => {
+		if (!site || importingCookies) return;
+		let sources: BrowserCookieSourceRow[];
+		try {
+			// 带 site.id：后端会统计每个 profile 有多少条该站点的有效 cookie
+			sources = await listCookieSources(site.id);
+		} catch (error) {
+			toast.error(`读取本机浏览器列表失败：${errMessage(error)}`);
+			return;
+		}
+		if (sources.length === 0) {
+			toast.info("没有检测到 Chrome / Edge / Brave 的本地配置");
+			return;
+		}
+		const rect = importButtonRef.current?.getBoundingClientRect();
+		setImportMenu({
+			x: rect ? rect.right - 260 : 0,
+			y: rect ? rect.bottom + 4 : 0,
+			items: sources.map((source) => {
+				const count = source.valid_cookies;
+				// 0 条 = 这个 profile 压根没在该站点登录过。不禁用（用户可能确有理由
+				// 硬试），但标注清楚——否则就会像之前那样选中一个四个月没动的旧
+				// profile，导入"成功"却依然是未登录。
+				const suffix =
+					count === undefined
+						? ""
+						: count > 0
+							? `　${count} 条登录信息`
+							: "　未登录过";
+				return {
+					label: `${source.label}${suffix}`,
+					disabled: count === 0,
+					onClick: () => void runCookieImport(source),
+				};
+			}),
+		});
+	}, [site, importingCookies, runCookieImport]);
 
 	// ============================================================
 	// 渲染
 	// ============================================================
 
-	const hasSites = sites.length > 0;
+	/** 次要动作：宽的时候平铺成图标，窄的时候收进溢出菜单。 */
+	const secondaryActions: {
+		key: string;
+		label: string;
+		icon: React.ReactNode;
+		disabled?: boolean;
+		onClick: () => void;
+		/** 溢出菜单里用的图标（ContextMenu 要 ReactNode） */
+		menuIcon: React.ReactNode;
+	}[] = [
+		{
+			key: "cookies",
+			label: "从本机浏览器导入登录态",
+			icon: importingCookies ? (
+				<Loader2 className="h-3.5 w-3.5 animate-spin" />
+			) : (
+				<KeyRound className="h-3.5 w-3.5" strokeWidth={1.5} />
+			),
+			menuIcon: <KeyRound className="h-4 w-4" strokeWidth={1.5} />,
+			disabled: !site || importingCookies,
+			onClick: () => void handleOpenImportMenu(),
+		},
+		{
+			key: "reload",
+			label: "刷新站点配置",
+			icon: <RotateCw className="h-3.5 w-3.5" strokeWidth={1.5} />,
+			menuIcon: <RotateCw className="h-4 w-4" strokeWidth={1.5} />,
+			onClick: () => void handleReloadSite(),
+		},
+		{
+			key: "external",
+			label: "在外部窗口打开",
+			icon: <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />,
+			menuIcon: <ExternalLink className="h-4 w-4" strokeWidth={1.5} />,
+			disabled: !site,
+			onClick: () => void handleOpenExternal(),
+		},
+		{
+			key: "settings",
+			label: "站点与选择器设置",
+			icon: <Settings2 className="h-3.5 w-3.5" strokeWidth={1.5} />,
+			menuIcon: <Settings2 className="h-4 w-4" strokeWidth={1.5} />,
+			onClick: handleOpenSettings,
+		},
+	];
 
 	return (
-		<div className="flex h-full flex-col overflow-hidden bg-surface">
-			{/* 顶栏：站点 tab 条 + 工具栏 */}
-			<div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-				<div
-					role="tablist"
-					aria-label="AI 站点切换"
-					className="scrollbar-hide flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
-				>
-					{hasSites ? (
-						sites.map((site) => (
-							<SiteTab
-								key={site.id}
-								site={site}
-								active={site.id === activeSiteId}
-								onSelect={handleSelectSite}
-							/>
-						))
-					) : (
-						<span className="truncate px-1 text-xs text-text-muted">
-							{loading ? "正在读取站点列表…" : "尚未启用任何站点"}
-						</span>
-					)}
-				</div>
+		<div
+			ref={rootRef}
+			className="flex h-full flex-col overflow-hidden bg-surface"
+		>
+			{/*
+			 * 工具栏。
+			 *
+			 * 刻意**不重复站点名与 URL**：正上方的标签条已经写着这是哪个站点，
+			 * 再印一遍只是在窄分屏里抢宽度。真要看完整地址，鼠标停在标签上就有。
+			 * 关闭也交给标签上的 ×，这里不再放第二个关闭入口。
+			 */}
+			<div className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-2">
+				{status ? (
+					<span
+						role="status"
+						className={cn(
+							"inline-flex min-w-0 flex-1 items-center truncate rounded-full px-2.5 py-1 text-[11px] font-medium",
+							status.kind === "success" && "bg-success-muted text-success",
+							status.kind === "error" && "bg-error-muted text-error",
+							status.kind === "info" && "bg-warm-200 text-text-secondary",
+						)}
+						title={status.text}
+					>
+						{status.text}
+					</span>
+				) : (
+					<span className="min-w-0 flex-1 truncate text-[11px] text-text-light">
+						{site
+							? attached
+								? ""
+								: "网页视图未挂载"
+							: loading
+								? "正在读取站点配置…"
+								: "站点不可用"}
+					</span>
+				)}
 
-				<div className="flex shrink-0 items-center gap-1">
-					{status ? (
-						<span
-							role="status"
-							className={cn(
-								"inline-flex max-w-[15rem] items-center truncate rounded-full px-2.5 py-1 text-[11px] font-medium",
-								status.kind === "success" && "bg-success-muted text-success",
-								status.kind === "error" && "bg-error-muted text-error",
-								status.kind === "info" && "bg-warm-200 text-text-secondary",
-							)}
-						>
-							{status.text}
-						</span>
-					) : null}
-
+				{/* 主动作：把当前对话收进会话中枢，是这个面板唯一的高频动作 */}
+				<Tooltip content="提取当前对话并存入会话中枢" placement="bottom">
 					<button
 						type="button"
 						onClick={() => void handleExtract()}
-						disabled={!activeSite || !attached || extracting}
+						disabled={!site || !attached || extracting}
+						aria-label="提取当前对话"
 						className={cn(
-							"inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium",
+							"inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium",
 							"text-terracotta transition-colors hover:bg-terracotta/[0.12]",
 							"disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent",
 						)}
@@ -520,56 +697,48 @@ export function AiHubPanel() {
 						) : (
 							<ArrowDownToLine className="h-3.5 w-3.5" strokeWidth={1.5} />
 						)}
-						提取当前对话
+						{!compact && "提取对话"}
 					</button>
+				</Tooltip>
 
-					<Tooltip content="刷新站点列表" placement="bottom">
-						<button
-							type="button"
-							onClick={() => void handleRefreshSites()}
-							aria-label="刷新站点列表"
-							className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
-						>
-							<RotateCw className="h-3.5 w-3.5" strokeWidth={1.5} />
-						</button>
-					</Tooltip>
-
-					<Tooltip content="在外部窗口打开" placement="bottom">
-						<button
-							type="button"
-							onClick={() => void handleOpenExternal()}
-							disabled={!activeSite}
-							aria-label="在外部窗口打开"
-							className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-						>
-							<ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
-						</button>
-					</Tooltip>
-
-					<Tooltip content="站点与选择器设置" placement="bottom">
-						<button
-							type="button"
-							onClick={handleOpenSettings}
-							aria-label="站点与选择器设置"
-							className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
-						>
-							<Settings2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-						</button>
-					</Tooltip>
-
-					<div className="mx-0.5 h-4 w-px bg-border" />
-
-					<Tooltip content="返回工作区" placement="bottom">
-						<button
-							type="button"
-							onClick={handleBackToWorkspace}
-							aria-label="返回工作区"
-							className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
-						>
-							<X className="h-3.5 w-3.5" strokeWidth={1.5} />
-						</button>
-					</Tooltip>
-				</div>
+				{compact ? (
+					<button
+						ref={overflowButtonRef}
+						type="button"
+						aria-label="更多操作"
+						onClick={() => {
+							const rect = overflowButtonRef.current?.getBoundingClientRect();
+							setOverflowMenu({
+								x: rect ? rect.right - 220 : 0,
+								y: rect ? rect.bottom + 4 : 0,
+								items: secondaryActions.map((action) => ({
+									label: action.label,
+									icon: action.menuIcon,
+									disabled: action.disabled,
+									onClick: action.onClick,
+								})),
+							});
+						}}
+						className="shrink-0 rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
+					>
+						<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
+					</button>
+				) : (
+					secondaryActions.map((action) => (
+						<Tooltip key={action.key} content={action.label} placement="bottom">
+							<button
+								ref={action.key === "cookies" ? importButtonRef : undefined}
+								type="button"
+								onClick={action.onClick}
+								disabled={action.disabled}
+								aria-label={action.label}
+								className="shrink-0 rounded-lg p-1.5 text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+							>
+								{action.icon}
+							</button>
+						</Tooltip>
+					))
+				)}
 			</div>
 
 			{/*
@@ -585,27 +754,15 @@ export function AiHubPanel() {
 						{loading ? (
 							<PlaceholderState
 								icon={<Loader2 className="h-5 w-5 animate-spin" />}
-								title="正在读取站点列表"
-								description="从本地配置加载可用的 Web AI 站点"
+								title="正在读取站点配置"
+								description="从本地配置加载该 Web AI 站点"
 							/>
 						) : loadError ? (
 							<PlaceholderState
 								tone="error"
 								icon={<AlertTriangle className="h-5 w-5" strokeWidth={1.5} />}
-								title="站点列表加载失败"
+								title="站点不可用"
 								description={loadError}
-								action={{
-									label: "重试",
-									onClick: () => {
-										void reloadSites();
-									},
-								}}
-							/>
-						) : !hasSites ? (
-							<PlaceholderState
-								icon={<MessagesSquare className="h-5 w-5" strokeWidth={1.5} />}
-								title="尚未启用任何 Web AI 站点"
-								description="在设置面板中启用内置站点（ChatGPT / Gemini / Kimi / 豆包 / 智谱 GLM / DeepSeek），或添加自定义站点后再回到这里。"
 								action={{ label: "打开设置", onClick: handleOpenSettings }}
 							/>
 						) : suspended ? (
@@ -617,13 +774,31 @@ export function AiHubPanel() {
 						) : (
 							<PlaceholderState
 								icon={<Loader2 className="h-5 w-5 animate-spin" />}
-								title={`正在打开 ${activeSite?.label ?? "站点"}`}
+								title={`正在打开 ${site?.label ?? "站点"}`}
 								description="首次打开需要登录；登录态会按站点独立保存。"
 							/>
 						)}
 					</div>
 				</div>
 			</div>
+
+			{importMenu ? (
+				<ContextMenu
+					x={importMenu.x}
+					y={importMenu.y}
+					items={importMenu.items}
+					onClose={() => setImportMenu(null)}
+				/>
+			) : null}
+
+			{overflowMenu ? (
+				<ContextMenu
+					x={overflowMenu.x}
+					y={overflowMenu.y}
+					items={overflowMenu.items}
+					onClose={() => setOverflowMenu(null)}
+				/>
+			) : null}
 		</div>
 	);
 }
@@ -631,61 +806,6 @@ export function AiHubPanel() {
 // ============================================================
 // 子组件
 // ============================================================
-
-interface SiteTabProps {
-	site: AiHubSiteRow;
-	active: boolean;
-	onSelect: (siteId: string) => void;
-}
-
-function SiteTab({ site, active, onSelect }: SiteTabProps) {
-	return (
-		<button
-			type="button"
-			role="tab"
-			aria-selected={active}
-			title={site.url}
-			onClick={() => onSelect(site.id)}
-			className={cn(
-				"inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5",
-				"text-xs font-medium transition-[background-color,color] duration-150",
-				active
-					? "bg-terracotta/[0.12] text-terracotta"
-					: "text-text-muted hover:bg-warm-200 hover:text-text-primary",
-			)}
-		>
-			<SiteFavicon url={site.url} />
-			<span className="max-w-[9rem] truncate">{site.label}</span>
-		</button>
-	);
-}
-
-/** 站点图标：取站点自身的 favicon，失败回落到通用图标。 */
-function SiteFavicon({ url }: { url: string }) {
-	const [failed, setFailed] = useState(false);
-	const host = useMemo(() => {
-		try {
-			return new URL(url).host;
-		} catch {
-			return null;
-		}
-	}, [url]);
-
-	if (!host || failed) {
-		return (
-			<Globe className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
-		);
-	}
-
-	return (
-		<img
-			src={`https://icons.duckduckgo.com/ip3/${host}.ico`}
-			alt=""
-			className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
-			onError={() => setFailed(true)}
-		/>
-	);
-}
 
 interface PlaceholderStateProps {
 	icon: React.ReactNode;

@@ -35,10 +35,9 @@ import { Select } from "../../../../ui/Select";
 import { toast } from "../../../../ui/Toast";
 import {
 	SettingsButton,
+	SettingsCardSection,
 	SettingsHint,
 	SettingsPasswordInput,
-	SettingsSectionCard,
-	SettingsSectionTitle,
 	SettingsTextInput,
 } from "../../../ui/SettingsPrimitives";
 import { useCommittedValue } from "../../../hooks/useCommittedValue";
@@ -159,161 +158,161 @@ export function WebdavConnectionForm({
 	}, [buildWebdavConfig, syncConfig]);
 
 	return (
-		<SettingsSectionCard className={!enabled ? "opacity-50" : ""}>
-			<div className="p-5 space-y-4">
-				<SettingsSectionTitle>连接配置</SettingsSectionTitle>
+		<SettingsCardSection
+			className={!enabled ? "opacity-50" : ""}
+			title="连接配置"
+			bodyClassName="p-5 space-y-4"
+		>
+			{/* 服务商下拉 */}
+			<div
+				className="space-y-2"
+				id="data.backup.webdav_provider"
+				data-settings-anchor="data.backup.webdav_provider"
+			>
+				<label className="block text-xs font-medium text-text-muted">
+					选择服务商
+				</label>
+				<Select
+					value={selectedProvider}
+					onChange={(e) => handleProviderChange(e.target.value)}
+					disabled={!enabled}
+					options={WEBDAV_PROVIDERS.map((provider) => ({
+						value: provider.id,
+						label: `${provider.icon ? `${provider.icon} ` : ""}${provider.nameZh}${
+							provider.requiresAppPassword ? " (需应用密码)" : ""
+						}`,
+					}))}
+				/>
+				{selectedProvider !== "custom" && currentProvider && (
+					<SettingsHint>
+						<div className="space-y-1">
+							<div>{currentProvider.description}</div>
+							{currentProvider.helpUrl && (
+								<a
+									href={currentProvider.helpUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary"
+								>
+									查看配置文档
+									<ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+								</a>
+							)}
+						</div>
+					</SettingsHint>
+				)}
+			</div>
 
-				{/* 服务商下拉 */}
-				<div
-					className="space-y-2"
-					id="data.backup.webdav_provider"
-					data-settings-anchor="data.backup.webdav_provider"
-				>
-					<label className="block text-xs font-medium text-text-muted">
-						选择服务商
-					</label>
-					<Select
-						value={selectedProvider}
-						onChange={(e) => handleProviderChange(e.target.value)}
-						disabled={!enabled}
-						options={WEBDAV_PROVIDERS.map((provider) => ({
-							value: provider.id,
-							label: `${provider.icon ? `${provider.icon} ` : ""}${provider.nameZh}${
-								provider.requiresAppPassword ? " (需应用密码)" : ""
-							}`,
-						}))}
-					/>
-					{selectedProvider !== "custom" && currentProvider && (
-						<SettingsHint>
-							<div className="space-y-1">
-								<div>{currentProvider.description}</div>
-								{currentProvider.helpUrl && (
-									<a
-										href={currentProvider.helpUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary"
-									>
-										查看配置文档
-										<ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-									</a>
-								)}
-							</div>
-						</SettingsHint>
-					)}
-				</div>
-
-				{/* WebDAV 地址 */}
-				<div
-					className="space-y-2"
-					id="data.backup.webdav_url"
-					data-settings-anchor="data.backup.webdav_url"
-				>
-					<label className="block text-xs font-medium text-text-muted">
-						WebDAV 地址
-					</label>
-					<SettingsTextInput
-						value={urlField.draft}
-						onChange={urlField.handleChange}
-						onBlur={urlField.handleBlur}
-						onKeyDown={urlField.handleKeyDown}
-						placeholder="https://dav.example.com/dav/"
-						disabled={!enabled}
-						error={!urlValidation.valid}
-						autoComplete="off"
-					/>
-					{urlValidation.message && (
-						<SettingsHint
-							tone={urlValidation.valid ? "info" : "error"}
-							icon={AlertCircle}
-						>
-							{urlValidation.message}
-						</SettingsHint>
-					)}
-				</div>
-
-				{/* 用户名 + 密码 */}
-				<div className="grid grid-cols-2 gap-4">
-					<div
-						className="space-y-1.5"
-						id="data.backup.webdav_username"
-						data-settings-anchor="data.backup.webdav_username"
+			{/* WebDAV 地址 */}
+			<div
+				className="space-y-2"
+				id="data.backup.webdav_url"
+				data-settings-anchor="data.backup.webdav_url"
+			>
+				<label className="block text-xs font-medium text-text-muted">
+					WebDAV 地址
+				</label>
+				<SettingsTextInput
+					value={urlField.draft}
+					onChange={urlField.handleChange}
+					onBlur={urlField.handleBlur}
+					onKeyDown={urlField.handleKeyDown}
+					placeholder="https://dav.example.com/dav/"
+					disabled={!enabled}
+					error={!urlValidation.valid}
+					autoComplete="off"
+				/>
+				{urlValidation.message && (
+					<SettingsHint
+						tone={urlValidation.valid ? "info" : "error"}
+						icon={AlertCircle}
 					>
-						<label className="block text-xs text-text-muted">用户名</label>
-						<SettingsTextInput
-							value={usernameField.draft}
-							onChange={usernameField.handleChange}
-							onBlur={usernameField.handleBlur}
-							onKeyDown={usernameField.handleKeyDown}
-							placeholder="用户名"
-							disabled={!enabled}
-							autoComplete="username"
-						/>
-					</div>
-					<div
-						className="space-y-1.5"
-						id="data.backup.webdav_password"
-						data-settings-anchor="data.backup.webdav_password"
-					>
-						<label className="block text-xs text-text-muted">密码</label>
-						<SettingsPasswordInput
-							value={passwordField.draft}
-							onChange={passwordField.handleChange}
-							onBlur={passwordField.handleBlur}
-							onKeyDown={passwordField.handleKeyDown}
-							placeholder="密码"
-							disabled={!enabled}
-							autoComplete="current-password"
-						/>
-					</div>
-				</div>
+						{urlValidation.message}
+					</SettingsHint>
+				)}
+			</div>
 
-				{/* 同步路径 */}
+			{/* 用户名 + 密码 */}
+			<div className="grid grid-cols-2 gap-4">
 				<div
 					className="space-y-1.5"
-					id="data.backup.webdav_path"
-					data-settings-anchor="data.backup.webdav_path"
+					id="data.backup.webdav_username"
+					data-settings-anchor="data.backup.webdav_username"
 				>
-					<label className="block text-xs text-text-muted">同步路径</label>
+					<label className="block text-xs text-text-muted">用户名</label>
 					<SettingsTextInput
-						value={pathField.draft}
-						onChange={pathField.handleChange}
-						onBlur={pathField.handleBlur}
-						onKeyDown={pathField.handleKeyDown}
-						placeholder="/workbench-sync"
+						value={usernameField.draft}
+						onChange={usernameField.handleChange}
+						onBlur={usernameField.handleBlur}
+						onKeyDown={usernameField.handleKeyDown}
+						placeholder="用户名"
 						disabled={!enabled}
-						autoComplete="off"
+						autoComplete="username"
 					/>
 				</div>
-
-				{/* 测试连接 */}
 				<div
-					className="flex items-center gap-3 pt-2"
-					id="data.backup.webdav_test"
-					data-settings-anchor="data.backup.webdav_test"
+					className="space-y-1.5"
+					id="data.backup.webdav_password"
+					data-settings-anchor="data.backup.webdav_password"
 				>
-					<SettingsButton
-						icon={RefreshCw}
-						onClick={() => void handleTestConnection()}
-						disabled={!enabled || isTesting}
-						loading={isTesting}
-					>
-						测试连接
-					</SettingsButton>
-					{connectionStatus === "success" && (
-						<span className="flex items-center gap-1 text-xs text-mint-600">
-							<CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
-							连接成功
-						</span>
-					)}
-					{connectionStatus === "error" && (
-						<span className="flex items-center gap-1 text-xs text-error">
-							<XCircle className="w-4 h-4" />
-							连接失败
-						</span>
-					)}
+					<label className="block text-xs text-text-muted">密码</label>
+					<SettingsPasswordInput
+						value={passwordField.draft}
+						onChange={passwordField.handleChange}
+						onBlur={passwordField.handleBlur}
+						onKeyDown={passwordField.handleKeyDown}
+						placeholder="密码"
+						disabled={!enabled}
+						autoComplete="current-password"
+					/>
 				</div>
 			</div>
-		</SettingsSectionCard>
+
+			{/* 同步路径 */}
+			<div
+				className="space-y-1.5"
+				id="data.backup.webdav_path"
+				data-settings-anchor="data.backup.webdav_path"
+			>
+				<label className="block text-xs text-text-muted">同步路径</label>
+				<SettingsTextInput
+					value={pathField.draft}
+					onChange={pathField.handleChange}
+					onBlur={pathField.handleBlur}
+					onKeyDown={pathField.handleKeyDown}
+					placeholder="/workbench-sync"
+					disabled={!enabled}
+					autoComplete="off"
+				/>
+			</div>
+
+			{/* 测试连接 */}
+			<div
+				className="flex items-center gap-3 pt-2"
+				id="data.backup.webdav_test"
+				data-settings-anchor="data.backup.webdav_test"
+			>
+				<SettingsButton
+					icon={RefreshCw}
+					onClick={() => void handleTestConnection()}
+					disabled={!enabled || isTesting}
+					loading={isTesting}
+				>
+					测试连接
+				</SettingsButton>
+				{connectionStatus === "success" && (
+					<span className="flex items-center gap-1 text-xs text-mint-600">
+						<CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+						连接成功
+					</span>
+				)}
+				{connectionStatus === "error" && (
+					<span className="flex items-center gap-1 text-xs text-error">
+						<XCircle className="w-4 h-4" />
+						连接失败
+					</span>
+				)}
+			</div>
+		</SettingsCardSection>
 	);
 }

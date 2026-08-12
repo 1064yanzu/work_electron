@@ -61,7 +61,7 @@ export function PetProgressBubble({
 		>
 			<div className="w-[244px]">
 				{/* 第一行：标题 + 进度数字 */}
-				<div className="flex items-center gap-2 animate-pet-content-row">
+				<div data-bubble-row className="flex items-center gap-2">
 					<div className="flex-1 text-[13.5px] font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)] truncate">
 						{title}
 					</div>
@@ -86,8 +86,8 @@ export function PetProgressBubble({
 				{stepLabel && (
 					<div
 						key={stepLabel}
-						className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1 animate-pet-content-row"
-						style={{ animationDelay: "60ms" }}
+						data-bubble-row
+						className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1"
 					>
 						{stepLabel}
 					</div>
@@ -95,11 +95,9 @@ export function PetProgressBubble({
 
 				{/* 第三行：进度条 */}
 				<div
-					className="mt-2 relative h-[4px] w-full overflow-hidden rounded-full animate-pet-content-row"
-					style={{
-						backgroundColor: withAlpha(accentColor, 0.12),
-						animationDelay: "120ms",
-					}}
+					data-bubble-row
+					className="mt-2 relative h-[4px] w-full overflow-hidden rounded-full"
+					style={{ backgroundColor: withAlpha(accentColor, 0.12) }}
 				>
 					{hasDeterminate ? (
 						<div

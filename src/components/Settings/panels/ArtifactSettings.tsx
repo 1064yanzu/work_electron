@@ -20,6 +20,7 @@ import { toast } from "../../ui/Toast";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
 import {
 	SettingsButton,
+	SettingsCardSection,
 	SettingsHint,
 	SettingsNumberInput,
 	SettingsPageContainer,
@@ -121,10 +122,7 @@ export function ArtifactSettings() {
 	}
 
 	return (
-		<SettingsPageContainer
-			className="p-6"
-			contentClassName="max-w-2xl mx-auto space-y-6"
-		>
+		<SettingsPageContainer>
 			<div
 				id="data.artifacts.overview"
 				data-settings-anchor="data.artifacts.overview"
@@ -137,120 +135,111 @@ export function ArtifactSettings() {
 			</div>
 
 			{/* 产物统计 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>产物概览</SettingsSectionTitle>
-					<div className="grid grid-cols-3 gap-4">
-						<div className="text-center p-4 bg-warm-50 rounded-xl">
-							<div className="text-2xl font-semibold text-text-primary">
-								{artifacts.length}
-							</div>
-							<div className="text-xs text-text-light mt-1">产物数量</div>
+			<SettingsCardSection title="产物概览" bodyClassName="p-5">
+				<div className="grid grid-cols-3 gap-4">
+					<div className="text-center p-4 bg-warm-50 rounded-xl">
+						<div className="text-2xl font-semibold text-text-primary">
+							{artifacts.length}
 						</div>
-						<div className="text-center p-4 bg-warm-50 rounded-xl">
-							<div className="text-2xl font-semibold text-text-primary">
-								{sessionCount}
-							</div>
-							<div className="text-xs text-text-light mt-1">会话数</div>
+						<div className="text-xs text-text-light mt-1">产物数量</div>
+					</div>
+					<div className="text-center p-4 bg-warm-50 rounded-xl">
+						<div className="text-2xl font-semibold text-text-primary">
+							{sessionCount}
 						</div>
-						<div className="text-center p-4 bg-warm-50 rounded-xl">
-							<div className="text-2xl font-semibold text-text-primary">
-								{formatSize(totalSize)}
-							</div>
-							<div className="text-xs text-text-light mt-1">总占用</div>
+						<div className="text-xs text-text-light mt-1">会话数</div>
+					</div>
+					<div className="text-center p-4 bg-warm-50 rounded-xl">
+						<div className="text-2xl font-semibold text-text-primary">
+							{formatSize(totalSize)}
 						</div>
+						<div className="text-xs text-text-light mt-1">总占用</div>
 					</div>
 				</div>
-			</SettingsSectionCard>
+			</SettingsCardSection>
 
 			{/* 存储设置 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>存储设置</SettingsSectionTitle>
-					<SettingsRow
-						label="存储路径"
-						description={settings.storage_path || "默认路径"}
-						action={
-							<SettingsButton
-								variant="ghost"
-								size="sm"
-								icon={Copy}
-								onClick={() => {
-									navigator.clipboard.writeText(settings.storage_path);
-									toast.success("路径已复制");
-								}}
-							>
-								复制路径
-							</SettingsButton>
-						}
-					/>
-					<SettingsRow
-						label="单会话最大产物数"
-						description="每个会话最多保存的产物数量"
-						action={
-							<SettingsNumberInput
-								value={settings.max_per_session}
-								min={1}
-								max={500}
-								width="96px"
-								size="sm"
-								onChange={(value) => saveSettings({ max_per_session: value })}
-							/>
-						}
-					/>
-					<SettingsRow
-						label="总容量限制"
-						description="所有产物的最大总大小（MB）"
-						action={
-							<SettingsNumberInput
-								value={Math.round(settings.max_total_size / (1024 * 1024))}
-								min={100}
-								max={10240}
-								width="120px"
-								size="sm"
-								suffix="MB"
-								onChange={(value) =>
-									saveSettings({ max_total_size: value * 1024 * 1024 })
-								}
-							/>
-						}
-					/>
-				</div>
-			</SettingsSectionCard>
-
-			{/* 自动清理设置 */}
-			<SettingsSectionCard>
-				<div className="p-5">
-					<SettingsSectionTitle>自动清理</SettingsSectionTitle>
-					<SettingsRow
-						label="启用自动清理"
-						description="自动清理过期的产物文件"
-						action={
-							<SettingsSwitch
-								checked={settings.auto_cleanup}
-								onChange={(v) => saveSettings({ auto_cleanup: v })}
-							/>
-						}
-					/>
-					{settings.auto_cleanup && (
-						<SettingsRow
-							label="保留天数"
-							description="产物超过指定天数后将被清理"
-							action={
-								<SettingsNumberInput
-									value={settings.retention_days}
-									min={1}
-									max={365}
-									width="96px"
-									size="sm"
-									suffix="天"
-									onChange={(value) => saveSettings({ retention_days: value })}
-								/>
+			<SettingsCardSection title="存储设置" bodyClassName="p-5">
+				<SettingsRow
+					label="存储路径"
+					description={settings.storage_path || "默认路径"}
+					action={
+						<SettingsButton
+							variant="ghost"
+							size="sm"
+							icon={Copy}
+							onClick={() => {
+								navigator.clipboard.writeText(settings.storage_path);
+								toast.success("路径已复制");
+							}}
+						>
+							复制路径
+						</SettingsButton>
+					}
+				/>
+				<SettingsRow
+					label="单会话最大产物数"
+					description="每个会话最多保存的产物数量"
+					action={
+						<SettingsNumberInput
+							value={settings.max_per_session}
+							min={1}
+							max={500}
+							width="96px"
+							size="sm"
+							onChange={(value) => saveSettings({ max_per_session: value })}
+						/>
+					}
+				/>
+				<SettingsRow
+					label="总容量限制"
+					description="所有产物的最大总大小（MB）"
+					action={
+						<SettingsNumberInput
+							value={Math.round(settings.max_total_size / (1024 * 1024))}
+							min={100}
+							max={10240}
+							width="120px"
+							size="sm"
+							suffix="MB"
+							onChange={(value) =>
+								saveSettings({ max_total_size: value * 1024 * 1024 })
 							}
 						/>
-					)}
-				</div>
-			</SettingsSectionCard>
+					}
+				/>
+			</SettingsCardSection>
+
+			{/* 自动清理设置 */}
+			<SettingsCardSection title="自动清理" bodyClassName="p-5">
+				<SettingsRow
+					label="启用自动清理"
+					description="自动清理过期的产物文件"
+					action={
+						<SettingsSwitch
+							checked={settings.auto_cleanup}
+							onChange={(v) => saveSettings({ auto_cleanup: v })}
+						/>
+					}
+				/>
+				{settings.auto_cleanup && (
+					<SettingsRow
+						label="保留天数"
+						description="产物超过指定天数后将被清理"
+						action={
+							<SettingsNumberInput
+								value={settings.retention_days}
+								min={1}
+								max={365}
+								width="96px"
+								size="sm"
+								suffix="天"
+								onChange={(value) => saveSettings({ retention_days: value })}
+							/>
+						}
+					/>
+				)}
+			</SettingsCardSection>
 
 			{/* 手动清理 */}
 			<SettingsSectionCard>

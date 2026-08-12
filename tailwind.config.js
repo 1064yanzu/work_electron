@@ -117,6 +117,10 @@ export default {
 			transitionDuration: {
 				50: "50ms",
 				100: "100ms",
+				// 120：`duration-[120ms]` 这种任意值会同时命中内置的
+				// transition-duration 与本文件插件注册的 animation-duration，
+				// Tailwind 因此每次构建都报 ambiguous。具名值不会有这个问题。
+				120: "120ms",
 				150: "150ms",
 				250: "250ms",
 				400: "400ms",

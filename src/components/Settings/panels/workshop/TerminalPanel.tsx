@@ -3,7 +3,6 @@
  *
  * 终端偏好配置：默认工作目录、自定义 Shell、启动行为。
  */
-import { Terminal } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	getTerminalPrefs,
@@ -15,6 +14,7 @@ import {
 import { toast } from "../../../ui/Toast";
 import Select from "../../../ui/Select";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
+import { SettingsDisclosure } from "../../ui/SettingsDisclosure";
 import {
 	SettingsCardSection,
 	SettingsPageContainer,
@@ -27,7 +27,7 @@ import {
 import { settingsAnchorProps } from "../../fieldRegistry";
 
 const CWD_MODE_OPTIONS: SettingsChipOption<"thread" | "home">[] = [
-	{ value: "thread", label: "线程目录", hint: "跟随当前线程" },
+	{ value: "thread", label: "对话目录", hint: "跟随当前对话" },
 	{ value: "home", label: "主目录", hint: "~" },
 ];
 
@@ -90,24 +90,19 @@ export function TerminalPanel() {
 	);
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
-				icon={Terminal}
 				title="终端"
-				description="配置内置终端的默认行为，包括工作目录、Shell 路径和启动选项。"
+				description="配置内置终端的默认行为。按 Ctrl+` 可随时显示或隐藏底部终端面板。"
 			/>
 
-			<SettingsCardSection
-				title="默认行为"
-				description="新终端实例的默认配置。"
-			>
-				<div
-					className="space-y-0"
-					{...settingsAnchorProps("workshop.terminal.defaultCwd")}
-				>
+			{/* 一张卡装完日常会调的三项。
+			    以前这三项分在三张卡里，一卡一行——卡片比内容还多，扫读时全是边框噪音。 */}
+			<SettingsCardSection title="终端行为" bodyClassName="px-5 py-1">
+				<div {...settingsAnchorProps("workshop.terminal.defaultCwd")}>
 					<SettingsRow
 						label="默认工作目录"
-						description="新建终端时的起始目录。线程目录会自动跟随当前对话的工作路径。"
+						description="新建终端时的起始目录。选「对话目录」会自动跟随当前对话的工作路径。"
 						action={
 							loading ? (
 								<span className="text-[12px] text-text-muted">加载中…</span>
@@ -122,41 +117,11 @@ export function TerminalPanel() {
 						}
 					/>
 				</div>
-				<div {...settingsAnchorProps("workshop.terminal.scrollback")}>
-					<SettingsRow
-						label="回滚缓冲行数"
-						description="终端可向上回滚查看的历史输出行数。行数越大内存占用越高；修改后对新开的终端生效。"
-						action={
-							loading ? (
-								<span className="text-[12px] text-text-muted">加载中…</span>
-							) : (
-								<Select
-									variant="compact"
-									containerClassName="w-32"
-									aria-label="回滚缓冲行数"
-									value={String(prefs.scrollbackLines)}
-									options={getScrollbackOptions(prefs.scrollbackLines)}
-									onChange={(e) =>
-										handleUpdate({ scrollbackLines: Number(e.target.value) })
-									}
-								/>
-							)
-						}
-					/>
-				</div>
-			</SettingsCardSection>
 
-			<SettingsCardSection
-				title="Shell 配置"
-				description="自定义终端使用的 Shell 程序。留空则使用系统默认 Shell。"
-			>
-				<div
-					className="space-y-1 py-3"
-					{...settingsAnchorProps("workshop.terminal.shellPath")}
-				>
+				<div {...settingsAnchorProps("workshop.terminal.shellPath")}>
 					<SettingsRow
-						label="自定义 Shell 路径"
-						description="例如 /bin/bash、/usr/bin/fish。留空自动检测系统 Shell。"
+						label="自定义 Shell"
+						description="留空即可，会自动用系统默认 Shell。想指定就填路径，例如 /bin/bash。"
 						action={
 							loading ? (
 								<span className="text-[12px] text-text-muted">加载中…</span>
@@ -165,22 +130,17 @@ export function TerminalPanel() {
 									value={prefs.shellPath}
 									onChange={(v) => handleUpdate({ shellPath: v })}
 									placeholder="自动检测"
-									className="w-64"
+									className="w-56"
 								/>
 							)
 						}
 					/>
 				</div>
-			</SettingsCardSection>
 
-			<SettingsCardSection
-				title="启动行为"
-				description="控制应用启动时终端面板的行为。"
-			>
 				<div {...settingsAnchorProps("workshop.terminal.openOnLaunch")}>
 					<SettingsRow
 						label="启动时自动打开终端"
-						description="应用启动后自动展开终端面板，无需手动触发。"
+						description="应用启动后直接展开终端面板，不用再手动唤起。"
 						action={
 							loading ? (
 								<span className="text-[12px] text-text-muted">加载中…</span>
@@ -195,26 +155,34 @@ export function TerminalPanel() {
 				</div>
 			</SettingsCardSection>
 
-			<SettingsCardSection
-				title="快捷键"
-				description="终端面板的键盘快捷方式。"
-			>
-				<SettingsRow
-					label="切换终端面板"
-					description="显示或隐藏底部终端面板；无终端时自动创建。"
-					action={
-						<span className="inline-flex items-center gap-1 text-[12px] font-mono text-text-secondary">
-							<kbd className="px-1.5 py-0.5 rounded bg-warm-200 text-text-primary text-[11px]">
-								Ctrl
-							</kbd>
-							<span className="text-text-muted">+</span>
-							<kbd className="px-1.5 py-0.5 rounded bg-warm-200 text-text-primary text-[11px]">
-								`
-							</kbd>
-						</span>
-					}
-				/>
-			</SettingsCardSection>
+			{/* 回滚行数是内存权衡项，绝大多数人不需要动 —— 收进折叠区。
+			    折叠器自己已经写着「显示高级选项」，卡片就不必再顶一个「高级」标题。 */}
+			<SettingsDisclosure id="workshop.terminal.advanced">
+				<SettingsCardSection bodyClassName="px-5 py-1">
+					<div {...settingsAnchorProps("workshop.terminal.scrollback")}>
+						<SettingsRow
+							label="回滚缓冲行数"
+							description="终端能向上翻多少行历史输出。调大更占内存，改完对新开的终端生效。"
+							action={
+								loading ? (
+									<span className="text-[12px] text-text-muted">加载中…</span>
+								) : (
+									<Select
+										variant="compact"
+										containerClassName="w-32"
+										aria-label="回滚缓冲行数"
+										value={String(prefs.scrollbackLines)}
+										options={getScrollbackOptions(prefs.scrollbackLines)}
+										onChange={(e) =>
+											handleUpdate({ scrollbackLines: Number(e.target.value) })
+										}
+									/>
+								)
+							}
+						/>
+					</div>
+				</SettingsCardSection>
+			</SettingsDisclosure>
 		</SettingsPageContainer>
 	);
 }

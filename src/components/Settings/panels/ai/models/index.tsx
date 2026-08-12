@@ -17,6 +17,7 @@ import { confirmDialog } from "../../../../ui/ConfirmDialog";
 import { toast } from "../../../../ui/Toast";
 import { settingsAnchorProps } from "../../../fieldRegistry";
 import { getTemplateForProvider, openUrl } from "../../../utils";
+import { SettingsPanelHeader } from "../../../components/SettingsPanelHeader";
 import { AddModelModal } from "./AddModelModal";
 import { AddProviderModal } from "./AddProviderModal";
 import { ApiKeyModal } from "./ApiKeyModal";
@@ -99,131 +100,148 @@ export function ModelSettings() {
 	}, [selected, providers, settingsStore]);
 
 	return (
-		<div className="flex min-h-0 flex-1">
-			{/* 左侧：服务商列表 */}
-			<div
-				className="flex min-h-0 shrink-0"
-				{...settingsAnchorProps("ai.models.providerList")}
-			>
-				<ProviderList
-					providers={providers}
-					selectedId={selectedId}
-					searchQuery={searchQuery}
-					onSearchChange={setSearchQuery}
-					onSelect={setSelectedId}
-					onAdd={() => setIsAddProviderOpen(true)}
+		// 本页是 master-detail（左列表 / 右详情），不走 SettingsPageContainer 的单列布局，
+		// 但页面 H1 标题要和其它二级页保持一致，所以在分栏之上单独起一行
+		<div
+			className="flex min-h-0 flex-1 flex-col"
+			style={{ backgroundColor: "var(--t-bg)" }}
+		>
+			<div className="shrink-0 px-10 pt-10">
+				<SettingsPanelHeader
+					title="服务商与模型"
+					description="配置各家 API 的密钥与可用模型。左侧选择服务商，右侧编辑它的接入信息。"
 				/>
 			</div>
 
-			{/* 右侧：配置详情 */}
-			<div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface">
-				{selected ? (
-					<div className="max-w-2xl p-8">
-						<ProviderDetailHeader provider={selected} onToggle={handleToggle} />
+			<div className="flex min-h-0 flex-1 border-t border-border">
+				{/* 左侧：服务商列表 */}
+				<div
+					className="flex min-h-0 shrink-0"
+					{...settingsAnchorProps("ai.models.providerList")}
+				>
+					<ProviderList
+						providers={providers}
+						selectedId={selectedId}
+						searchQuery={searchQuery}
+						onSearchChange={setSearchQuery}
+						onSelect={setSelectedId}
+						onAdd={() => setIsAddProviderOpen(true)}
+					/>
+				</div>
 
-						<ProviderApiKeySection
-							provider={selected}
-							onOpenManageModal={() => setIsApiKeyModalOpen(true)}
-						/>
+				{/* 右侧：配置详情 */}
+				<div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface">
+					{selected ? (
+						<div className="max-w-2xl p-8">
+							<ProviderDetailHeader
+								provider={selected}
+								onToggle={handleToggle}
+							/>
 
-						<ProviderApiBaseSection provider={selected} />
+							<ProviderApiKeySection
+								provider={selected}
+								onOpenManageModal={() => setIsApiKeyModalOpen(true)}
+							/>
 
-						<ProviderModelSection
-							provider={selected}
-							onOpenAddModel={() => setIsAddModelOpen(true)}
-							onOpenDiscovery={() => setIsDiscoveryOpen(true)}
-						/>
+							<ProviderApiBaseSection provider={selected} />
 
-						{(docsUrl || modelsUrl) && (
-							<p className="mb-8 text-xs text-text-light">
-								{docsUrl && (
-									<>
-										查看{" "}
+							<ProviderModelSection
+								provider={selected}
+								onOpenAddModel={() => setIsAddModelOpen(true)}
+								onOpenDiscovery={() => setIsDiscoveryOpen(true)}
+							/>
+
+							{(docsUrl || modelsUrl) && (
+								<p className="mb-8 text-xs text-text-light">
+									{docsUrl && (
+										<>
+											查看{" "}
+											<button
+												type="button"
+												onClick={() => openUrl(docsUrl)}
+												className="text-text-secondary transition-colors duration-150 hover:text-text-primary hover:underline"
+											>
+												{selected.name} 文档
+											</button>
+										</>
+									)}
+									{docsUrl && modelsUrl ? " 和 " : ""}
+									{modelsUrl && (
 										<button
 											type="button"
-											onClick={() => openUrl(docsUrl)}
+											onClick={() => openUrl(modelsUrl)}
 											className="text-text-secondary transition-colors duration-150 hover:text-text-primary hover:underline"
 										>
-											{selected.name} 文档
+											模型列表
 										</button>
-									</>
-								)}
-								{docsUrl && modelsUrl ? " 和 " : ""}
-								{modelsUrl && (
-									<button
-										type="button"
-										onClick={() => openUrl(modelsUrl)}
-										className="text-text-secondary transition-colors duration-150 hover:text-text-primary hover:underline"
-									>
-										模型列表
-									</button>
-								)}{" "}
-								获取更多详情
-							</p>
-						)}
+									)}{" "}
+									获取更多详情
+								</p>
+							)}
 
-						<div className="border-t border-border/80 pt-8">
-							<button
-								type="button"
-								onClick={handleDelete}
-								disabled={isDeleting}
-								className="-ml-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-error transition-[color,background-color] duration-150 hover:bg-[rgba(181,51,51,0.08)]"
-							>
-								<Trash2 className="h-4 w-4" />
-								{isDeleting ? "删除中..." : "删除此服务商"}
-							</button>
-						</div>
-					</div>
-				) : (
-					<div className="flex h-full items-center justify-center">
-						<div className="text-center">
-							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-warm-200">
-								<Settings className="h-8 w-8 text-text-light" />
+							<div className="border-t border-border/80 pt-8">
+								<button
+									type="button"
+									onClick={handleDelete}
+									disabled={isDeleting}
+									className="-ml-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-error transition-[color,background-color] duration-150 hover:bg-[rgba(181,51,51,0.08)]"
+								>
+									<Trash2 className="h-4 w-4" />
+									{isDeleting ? "删除中..." : "删除此服务商"}
+								</button>
 							</div>
-							<p className="text-text-muted">选择一个服务商进行配置</p>
 						</div>
-					</div>
+					) : (
+						<div className="flex h-full items-center justify-center">
+							<div className="text-center">
+								<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-warm-200">
+									<Settings className="h-8 w-8 text-text-light" />
+								</div>
+								<p className="text-text-muted">选择一个服务商进行配置</p>
+							</div>
+						</div>
+					)}
+				</div>
+
+				{/* 弹窗 */}
+				<AddProviderModal
+					isOpen={isAddProviderOpen}
+					onClose={() => setIsAddProviderOpen(false)}
+					onCreated={(id) => setSelectedId(id)}
+				/>
+
+				<ApiKeyModal
+					isOpen={isApiKeyModalOpen}
+					initialValue={selected?.apiKey || ""}
+					onClose={() => setIsApiKeyModalOpen(false)}
+					onSave={handleSaveApiKey}
+				/>
+
+				<AddModelModal
+					isOpen={isAddModelOpen}
+					onClose={() => setIsAddModelOpen(false)}
+					onConfirm={handleAddModel}
+				/>
+
+				{selected && (
+					<ModelDiscoveryModal
+						isOpen={isDiscoveryOpen}
+						onClose={() => setIsDiscoveryOpen(false)}
+						provider={selected}
+						onAddModels={async (models) => {
+							const currentModels = new Set(selected.models);
+							const modelsToAdd = models.filter((m) => !currentModels.has(m));
+							if (modelsToAdd.length > 0) {
+								const updatedModels = [...selected.models, ...modelsToAdd];
+								await settingsStore.updateProvider(selected.id, {
+									models: updatedModels,
+								});
+							}
+							setIsDiscoveryOpen(false);
+						}}
+					/>
 				)}
 			</div>
-
-			{/* 弹窗 */}
-			<AddProviderModal
-				isOpen={isAddProviderOpen}
-				onClose={() => setIsAddProviderOpen(false)}
-				onCreated={(id) => setSelectedId(id)}
-			/>
-
-			<ApiKeyModal
-				isOpen={isApiKeyModalOpen}
-				initialValue={selected?.apiKey || ""}
-				onClose={() => setIsApiKeyModalOpen(false)}
-				onSave={handleSaveApiKey}
-			/>
-
-			<AddModelModal
-				isOpen={isAddModelOpen}
-				onClose={() => setIsAddModelOpen(false)}
-				onConfirm={handleAddModel}
-			/>
-
-			{selected && (
-				<ModelDiscoveryModal
-					isOpen={isDiscoveryOpen}
-					onClose={() => setIsDiscoveryOpen(false)}
-					provider={selected}
-					onAddModels={async (models) => {
-						const currentModels = new Set(selected.models);
-						const modelsToAdd = models.filter((m) => !currentModels.has(m));
-						if (modelsToAdd.length > 0) {
-							const updatedModels = [...selected.models, ...modelsToAdd];
-							await settingsStore.updateProvider(selected.id, {
-								models: updatedModels,
-							});
-						}
-						setIsDiscoveryOpen(false);
-					}}
-				/>
-			)}
 		</div>
 	);
 }

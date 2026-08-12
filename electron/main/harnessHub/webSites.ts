@@ -7,6 +7,7 @@
  *
  * 各站点用独立 partition（persist:aihub-<id>）隔离登录态，见 aiHubViewService。
  */
+import type { DbContext } from "../db/client";
 import type { WebSiteConfig } from "./types";
 
 /** 内置站点清单。builtin 站点不可删除，只能禁用。 */
@@ -27,6 +28,11 @@ export const BUILTIN_WEB_SITES: WebSiteConfig[] = [
 			"button[aria-label*='Send']",
 		],
 		messageSelectors: ["div[data-message-author-role]"],
+		// ChatGPT 的会话是「OpenAI 统一登录」：chatgpt.com 上只有
+		// __Secure-next-auth.session-token，真正的会话清单（unified_session_manifest、
+		// usc_*、oai-sc、oaicom-stable-id）挂在 .auth.openai.com / .openai.com 上。
+		// 不带上 openai.com，导进去仍然是未登录。
+		authDomains: ["openai.com"],
 		builtin: true,
 		enabled: true,
 	},
@@ -42,6 +48,9 @@ export const BUILTIN_WEB_SITES: WebSiteConfig[] = [
 		],
 		submitSelectors: ["button.send-button", "button[aria-label*='Send']"],
 		messageSelectors: ["div.conversation-container", "message-content"],
+		// Gemini 用的是 Google 账号会话，凭证（SID/HSID/__Secure-*PSID 等）
+		// 全在 .google.com 与 accounts.google.com 上，gemini.google.com 自身没有。
+		authDomains: ["google.com"],
 		builtin: true,
 		enabled: true,
 	},
@@ -168,6 +177,9 @@ export function mergeWebSites(overridesJson: string | null): WebSiteConfig[] {
 				messageSelectors: Array.isArray(o.messageSelectors)
 					? o.messageSelectors
 					: base.messageSelectors,
+				// authDomains 属于安全边界，不接受用户覆盖：允许前端写入等于允许
+				// 把任意域（网银、邮箱）声明成「登录域」再整域搬运
+				authDomains: base.authDomains,
 				enabled: typeof o.enabled === "boolean" ? o.enabled : base.enabled,
 				// builtin 标记不可被用户覆盖
 				builtin: true,
@@ -199,4 +211,39 @@ export function mergeWebSites(overridesJson: string | null): WebSiteConfig[] {
 		}
 	}
 	return [...byId.values()];
+}
+
+/**
+ * 从 app_config 读出合并后的站点清单。
+ *
+ * IPC handler、桥接层（把站点当工具调用）、反向 MCP Server 三处都要用同一份配置，
+ * 各自复制一遍 SELECT + mergeWebSites 迟早会漂移，统一在这里出。
+ */
+export async function loadWebSites(db: DbContext): Promise<WebSiteConfig[]> {
+	const res = await db.client.execute({
+		sql: `SELECT value FROM app_config WHERE key = ?`,
+		args: [WEB_SITES_CONFIG_KEY],
+	});
+	const raw = (res.rows[0] as Record<string, unknown> | undefined)?.value;
+	return mergeWebSites(typeof raw === "string" ? raw : null);
+}
+
+/**
+ * 按 harness id 或站点 id 找站点。
+ *
+ * 调用方拿到的标识来源不一：UI 传的是站点 id（`chatgpt`），
+ * canonical 会话里存的是 harness（`web-chatgpt`），MCP 工具的入参两种都可能。
+ * 与其在每个调用点判断，不如在这里两种都认。
+ */
+export function findWebSite(
+	sites: WebSiteConfig[],
+	idOrHarness: string,
+): WebSiteConfig | undefined {
+	const key = idOrHarness.trim();
+	if (!key) return undefined;
+	return (
+		sites.find((s) => s.id === key) ??
+		sites.find((s) => s.harness === key) ??
+		sites.find((s) => `web-${s.id}` === key)
+	);
 }

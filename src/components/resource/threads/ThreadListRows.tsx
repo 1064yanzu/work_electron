@@ -1,20 +1,27 @@
 /**
- * ThreadsView 行组件（F5 渲染治理）：
+ * 对话列表行组件（原 ThreadsView 行渲染，F5 渲染治理）：
  *
- * - ThreadGroupHeader / ThreadSessionItem / ThreadOverflowToggle：
- *   从 ThreadsView 原地抽出的行渲染（标记结构与样式保持逐字节一致），
- *   小列表（普通渲染路径）与大列表（虚拟化路径）共用，保证视觉零变化。
+ * 视觉基线（2026-08 第二版，对齐 Codex 侧栏的"少即是多"）：
+ * - 条目只留一行标题：不显示时间戳、不显示消息预览、不显示分组计数，
+ *   信息全部让位给标题本身；相对时间与预览退到原生 tooltip 里。
+ * - 标题为自动占位（"xxx - 新对话" / "未命名对话"）时改用首条用户消息，
+ *   避免整屏同名条目无法区分。
+ * - 条目左侧留出 30px 状态列：与分组头的文件夹图标同一竖线，
+ *   流式呼吸点 / 置顶图钉落在这里，标题因此与组名精确对齐。
+ * - 选中态是中性灰块（不是品牌橙），品牌色只留给"正在流式"这一个动态状态。
+ *
+ * 结构：
+ * - ThreadGroupHeader / ThreadSessionItem / ThreadOverflowToggle 由小列表
+ *   （普通渲染路径）与大列表（虚拟化路径）共用，两条路径共享 THREAD_ROW_PAD。
  * - VirtualizedThreadList：@tanstack/react-virtual 驱动的扁平化行渲染
- *   （标题行 / 会话行 / 展开更多行混排，按 kind 分发），动态行高用
- *   measureElement 实测。
+ *   （标题行 / 会话行 / 展开更多行混排），动态行高用 measureElement 实测。
  */
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
 	Archive,
 	ChevronDown,
 	Folder,
-	FolderOpen,
-	MessageSquare,
+	MessagesSquare,
 	MoreHorizontal,
 	Pin,
 	Plus,
@@ -22,13 +29,27 @@ import {
 import type { RefObject } from "react";
 import type { ChatSession } from "../../../lib/chat/types";
 import { ShinyText } from "../../ui/ShinyText";
-import { DEFAULT_VISIBLE_THREAD_COUNT } from "./threadGroupVisibility";
 import {
+	formatAbsoluteTime,
 	formatRelativeTime,
+	getSessionDisplayTitle,
 	getSessionPreview,
+	isEmptyDraftSession,
 	type ThreadFolderGroup,
 } from "./threadGrouping";
 import { isSessionStreaming, type ThreadRow } from "./threadListModel";
+
+/** 组内行的水平内边距（两条渲染路径共用，保证像素一致） */
+export const THREAD_ROW_PAD = "px-0";
+/** 组之间的呼吸间距 */
+export const THREAD_GROUP_GAP = "pb-3";
+
+/**
+ * 条目文字的左缩进 = 分组头的 padding(8) + 图标(14) + gap(8)。
+ * 让"组名"和"对话标题"落在同一条竖线上，同时把图标那一列腾给
+ * 流式呼吸点 / 置顶图钉。
+ */
+const TITLE_INDENT = "pl-[30px]";
 
 // ==================
 // 分组标题行
@@ -51,13 +72,20 @@ export function ThreadGroupHeader({
 	onGroupContextMenu,
 	onCreateThreadInGroup,
 }: ThreadGroupHeaderProps) {
+	const GroupIcon =
+		group.source === "archive"
+			? Archive
+			: group.source === "remote"
+				? MessagesSquare
+				: Folder;
+
 	return (
 		<div
 			onContextMenu={(e) => {
 				e.preventDefault();
 				onGroupContextMenu(e, group);
 			}}
-			className="flex items-center gap-1.5 w-full px-2.5 py-2 group hover:bg-warm-200/35 dark:hover:bg-white/[0.035] rounded-lg transition-colors duration-150"
+			className="group flex h-8 w-full items-center gap-1 rounded-lg px-2 transition-colors duration-150 hover:bg-warm-200/40 dark:hover:bg-white/[0.03]"
 		>
 			<button
 				type="button"
@@ -66,42 +94,39 @@ export function ThreadGroupHeader({
 				aria-expanded={!isCollapsed}
 				aria-label={`${group.folderName} 分组`}
 			>
-				{/* Caret hit-area 16x16 */}
-				<div className="flex items-center justify-center w-4 h-4 shrink-0 text-text-light group-hover:text-text-secondary transition-colors">
+				{/* 图标位：静止时是文件夹，hover 时原地换成折叠箭头 */}
+				<span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+					<GroupIcon
+						className="h-3.5 w-3.5 text-text-muted transition-opacity duration-150 group-hover:opacity-0"
+						strokeWidth={1.5}
+					/>
 					<ChevronDown
-						className={`w-3.5 h-3.5 transition-transform duration-200 ${
+						className={`absolute h-3.5 w-3.5 text-text-secondary opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 ${
 							isCollapsed ? "-rotate-90" : ""
 						}`}
 						strokeWidth={2}
 					/>
-				</div>
-				{/* Folder/Source icon */}
-				<div
-					className={`shrink-0 transition-colors ${
-						groupHasActive
-							? "text-terracotta"
-							: "text-text-secondary group-hover:text-text-primary"
-					}`}
-				>
-					{group.source === "archive" ? (
-						<Archive className="w-4 h-4" strokeWidth={1.5} />
-					) : group.source === "remote" ? (
-						<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
-					) : isCollapsed ? (
-						<Folder className="w-4 h-4" strokeWidth={1.5} />
-					) : (
-						<FolderOpen className="w-4 h-4" strokeWidth={1.5} />
-					)}
-				</div>
+				</span>
 				<span
-					className="text-[13.5px] font-semibold text-text-primary truncate flex-1"
-					title={group.folderPath || undefined}
+					className={`truncate text-[13px] font-medium transition-colors ${
+						groupHasActive ? "text-text-secondary" : "text-text-muted"
+					}`}
+					title={group.folderPath || group.folderName}
 				>
 					{group.folderName}
 				</span>
+				{/* 折叠后条目全部隐藏，这时才补一个计数 */}
+				{isCollapsed && (
+					<span className="shrink-0 text-[11px] tabular-nums text-text-light">
+						{group.sessions.length}
+					</span>
+				)}
 			</button>
 			{group.isPinned && (
-				<Pin className="w-3 h-3 text-terracotta/60 shrink-0" strokeWidth={2} />
+				<Pin
+					className="h-3 w-3 shrink-0 text-text-light transition-opacity group-hover:opacity-0"
+					strokeWidth={1.75}
+				/>
 			)}
 			{group.source === "local" && group.folderPath ? (
 				<button
@@ -111,11 +136,11 @@ export function ThreadGroupHeader({
 						e.stopPropagation();
 						onCreateThreadInGroup(group);
 					}}
-					className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-terracotta hover:bg-terracotta/10 dark:hover:bg-terracotta/15 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/25 active:scale-95"
+					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 focus-visible:outline-none active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
 					aria-label={`在 ${group.folderName} 新建对话`}
-					title="新建对话"
+					title="在此目录新建对话"
 				>
-					<Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
+					<Plus className="h-3.5 w-3.5" strokeWidth={1.75} />
 				</button>
 			) : null}
 			<button
@@ -125,11 +150,11 @@ export function ThreadGroupHeader({
 					e.stopPropagation();
 					onGroupContextMenu(e, group);
 				}}
-				className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-md text-text-light hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus-visible:opacity-100 active:scale-95"
+				className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
 				aria-label={`${group.folderName} 更多操作`}
 				title="更多操作"
 			>
-				<MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
+				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
 			</button>
 		</div>
 	);
@@ -152,84 +177,79 @@ export function ThreadSessionItem({
 	onSelect,
 	onSessionContextMenu,
 }: ThreadSessionItemProps) {
+	const streaming = isSessionStreaming(session);
+	const title = getSessionDisplayTitle(session);
 	const preview = getSessionPreview(session);
+	const isEmptyDraft = isEmptyDraftSession(session);
+	// 时间与预览退到 tooltip：列表里一行只讲一件事
+	const tooltip = [
+		title,
+		preview && preview !== title ? preview : "",
+		`${formatRelativeTime(session.updatedAt)} · ${formatAbsoluteTime(
+			session.updatedAt,
+		)}`,
+	]
+		.filter(Boolean)
+		.join("\n");
+
 	return (
 		<div
 			onContextMenu={(e) => onSessionContextMenu(e, session)}
-			className={`relative w-full flex items-start justify-between gap-2 pl-3 pr-1.5 py-2 rounded-lg transition-colors duration-150 text-left group ${
+			className={`group relative w-full rounded-lg transition-colors duration-150 ${
 				isActive
-					? "bg-terracotta/8 dark:bg-terracotta/[0.12]"
-					: "hover:bg-warm-200/45 dark:hover:bg-white/[0.04]"
+					? "bg-warm-200 dark:bg-white/[0.08]"
+					: "hover:bg-warm-200/55 dark:hover:bg-white/[0.04]"
 			}`}
 		>
-			{isActive && (
+			{/* 状态列：与分组头的文件夹图标同一竖线 */}
+			{streaming ? (
 				<span
 					aria-hidden="true"
-					className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-terracotta"
+					className="absolute left-[12px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 animate-pulse rounded-full bg-terracotta"
 				/>
-			)}
+			) : session.isPinned ? (
+				<Pin
+					aria-hidden="true"
+					className="absolute left-[10px] top-1/2 h-3 w-3 -translate-y-1/2 text-text-light"
+					strokeWidth={1.75}
+				/>
+			) : null}
 			<button
 				type="button"
 				onClick={() => onSelect(session)}
-				className="flex flex-col gap-0.5 min-w-0 flex-1 text-left"
+				title={tooltip}
+				className={`block w-full ${TITLE_INDENT} py-[9px] pr-2.5 text-left transition-[padding] duration-150 group-hover:pr-9`}
 			>
-				{(() => {
-					const streaming = isSessionStreaming(session);
-					const titleText = session.title || "Untitled Chat";
-					const titleClasses = `text-[13px] truncate transition-colors ${
-						isActive
-							? "text-terracotta dark:text-terracotta-light font-semibold"
-							: "text-text-secondary font-medium group-hover:text-text-primary dark:group-hover:text-text-light"
-					}`;
-
-					if (streaming) {
-						return (
-							<ShinyText
-								text={titleText}
-								className={titleClasses}
-								color="#D96C46"
-								shineColor="#ffa07a"
-								speed={1.2}
-								delay={0.2}
-								spread={130}
-								direction="left"
-							/>
-						);
-					}
-					return <span className={titleClasses}>{titleText}</span>;
-				})()}
-				{preview && (
-					<span className="text-[11px] leading-tight text-text-light truncate mt-0.5">
-						{preview}
+				{streaming ? (
+					<ShinyText
+						text={title}
+						className="block truncate text-[14px] leading-5 text-text-primary"
+						color="#D96C46"
+						shineColor="#ffa07a"
+						speed={1.2}
+						delay={0.2}
+						spread={130}
+						direction="left"
+					/>
+				) : (
+					<span
+						className={`block overflow-hidden whitespace-nowrap text-[14px] leading-5 [mask-image:linear-gradient(to_right,#000_calc(100%-42px),transparent)] ${
+							isEmptyDraft ? "text-text-muted" : "text-text-primary"
+						} ${isActive ? "font-medium" : ""}`}
+					>
+						{title}
 					</span>
 				)}
 			</button>
-			<div className="flex items-center gap-1 shrink-0 pt-0.5">
-				{session.isPinned && (
-					<Pin
-						className="w-[11px] h-[11px] text-terracotta/70"
-						strokeWidth={2}
-					/>
-				)}
-				<span
-					className={`text-[10.5px] whitespace-nowrap transition-colors ${
-						isActive
-							? "text-terracotta/70 dark:text-terracotta-light/70"
-							: "text-text-light"
-					}`}
-				>
-					{formatRelativeTime(session.updatedAt)}
-				</span>
-				<button
-					type="button"
-					onClick={(e) => onSessionContextMenu(e, session)}
-					className="flex items-center justify-center w-6 h-6 rounded-md text-text-light opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-black/5 dark:hover:bg-white/10 transition-all focus:opacity-100 active:scale-95"
-					aria-label={`${session.title || "对话"} 更多操作`}
-					title="更多操作"
-				>
-					<MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
-				</button>
-			</div>
+			<button
+				type="button"
+				onClick={(e) => onSessionContextMenu(e, session)}
+				className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus:opacity-100 active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
+				aria-label={`${title} 更多操作`}
+				title="更多操作"
+			>
+				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+			</button>
 		</div>
 	);
 }
@@ -255,17 +275,16 @@ export function ThreadOverflowToggle({
 		<button
 			type="button"
 			onClick={() => onToggleOverflow(groupKey)}
-			className="ml-3 mt-1 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-text-light hover:text-terracotta hover:bg-terracotta/8 dark:hover:bg-terracotta/[0.12] transition-all"
+			// pl-[10px] + 图标 14 + gap 6 = 30，文字与对话标题落在同一条竖线上
+			className="flex w-full items-center gap-1.5 rounded-lg py-[6px] pl-[10px] pr-2.5 text-left text-[12.5px] text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
 		>
 			<ChevronDown
-				className={`w-3 h-3 transition-transform duration-200 ${
+				className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${
 					expanded ? "" : "-rotate-90"
 				}`}
-				strokeWidth={2.25}
+				strokeWidth={2}
 			/>
-			{expanded
-				? `收起，仅显示最近 ${DEFAULT_VISIBLE_THREAD_COUNT} 条`
-				: `展开其余 ${hiddenCount} 条`}
+			{expanded ? "收起" : `其余 ${hiddenCount} 条`}
 		</button>
 	);
 }
@@ -275,8 +294,8 @@ export function ThreadOverflowToggle({
 // ==================
 
 const ROW_ESTIMATE = {
-	header: 36,
-	session: 54,
+	header: 32,
+	session: 38,
 	overflow: 34,
 } as const;
 
@@ -331,6 +350,7 @@ export function VirtualizedThreadList({
 		>
 			{virtualizer.getVirtualItems().map((virtualRow) => {
 				const row = rows[virtualRow.index];
+				const tailClass = row.isGroupEnd ? THREAD_GROUP_GAP : "";
 				return (
 					<div
 						key={virtualRow.key}
@@ -345,7 +365,7 @@ export function VirtualizedThreadList({
 						}}
 					>
 						{row.kind === "group-header" ? (
-							<div className={row.isGroupEnd ? "pb-3" : ""}>
+							<div className={tailClass}>
 								<ThreadGroupHeader
 									group={row.group}
 									isCollapsed={row.isCollapsed}
@@ -356,13 +376,7 @@ export function VirtualizedThreadList({
 								/>
 							</div>
 						) : row.kind === "session" ? (
-							// pl-[18px] pr-1.5 与 pt-0.5 对齐普通路径的
-							// "pl-[18px] pr-1.5 pt-0.5 space-y-0.5" 缩进与行距
-							<div
-								className={`pl-[18px] pr-1.5 pt-0.5 ${
-									row.isGroupEnd ? "pb-3" : ""
-								}`}
-							>
+							<div className={`${THREAD_ROW_PAD} ${tailClass}`}>
 								<ThreadSessionItem
 									session={row.session}
 									isActive={row.session.id === activeSessionId}
@@ -371,7 +385,7 @@ export function VirtualizedThreadList({
 								/>
 							</div>
 						) : (
-							<div className="pl-[18px] pr-1.5 pb-3">
+							<div className={`${THREAD_ROW_PAD} ${tailClass}`}>
 								<ThreadOverflowToggle
 									groupKey={row.group.key}
 									expanded={row.expanded}

@@ -1,26 +1,54 @@
 import type { ReactNode } from "react";
 import { cn } from "../../../lib/utils";
 
+/**
+ * 内容栏宽度档位。
+ *
+ * 以前每个面板各写各的 `max-w-2xl` / `max-w-3xl` / `max-w-5xl` / 不写，
+ * 一共 6 种写法，导致点不同二级页时内容栏会左右跳、宽度会变。
+ * 收敛成三档，需要更宽的页面必须显式声明，而不是随手改 className。
+ */
+export type SettingsPageWidth = "default" | "wide" | "full";
+
+const PAGE_WIDTH_CLASS: Record<SettingsPageWidth, string> = {
+	/** 常规设置页：单列表单，约 45 字符行宽，最利于扫读 */
+	default: "max-w-[46rem]",
+	/** 表格 / 矩阵 / 多列统计（远控通道矩阵、记忆统计、使用统计） */
+	wide: "max-w-[68rem]",
+	/** 自带内部分栏的页面（服务商 master-detail），不加约束 */
+	full: "",
+};
+
 interface SettingsPageContainerProps {
 	children: ReactNode;
 	className?: string;
 	contentClassName?: string;
+	/** 内容栏宽度档位，默认 `default`。 */
+	width?: SettingsPageWidth;
 }
 
 export function SettingsPageContainer({
 	children,
 	className,
 	contentClassName,
+	width = "default",
 }: SettingsPageContainerProps) {
 	return (
 		<div
 			className={cn(
-				"flex-1 h-full overflow-y-auto p-8 text-text-primary transition-colors duration-300",
+				"h-full flex-1 overflow-y-auto px-12 pb-24 pt-14 text-text-primary transition-colors duration-300",
 				className,
 			)}
-			style={{ backgroundColor: "var(--t-bg)" }}
+			// 内容区用 surface（最亮的一层）而不是 bg：
+			// 卡片也是 surface，两者同色后卡片只剩一条描边，不再是「浮在米色上的白块」。
+			// 侧栏保持 bg（更暗一档），靠明暗自然分栏，不依赖硬边框。
+			style={{ backgroundColor: "var(--t-bg-surface)" }}
 		>
-			<div className={cn("space-y-6", contentClassName)}>{children}</div>
+			<div
+				className={cn(PAGE_WIDTH_CLASS[width], "space-y-10", contentClassName)}
+			>
+				{children}
+			</div>
 		</div>
 	);
 }
@@ -35,11 +63,10 @@ export function SettingsSectionCard({
 	className,
 }: SettingsSectionCardProps) {
 	return (
+		// 不加阴影：内容区与卡片同为 surface，卡片靠一条描边界定范围即可。
+		// 阴影会让每张卡都「抬起」一层，卡一多整页就碎。
 		<div
-			className={cn(
-				"rounded-2xl border border-border shadow-bai-card",
-				className,
-			)}
+			className={cn("rounded-2xl border border-border", className)}
 			style={{ backgroundColor: "var(--t-bg-surface)" }}
 		>
 			{children}
@@ -47,6 +74,17 @@ export function SettingsSectionCard({
 	);
 }
 
+/**
+ * 分节标题 —— 层级第 2 级，介于页面 H1 与卡片行之间。
+ *
+ * 位置在**卡片外部、卡片上方**（Codex 设置页的「权限」「常规」就是这个位置）。
+ * 标题留在卡外，卡片内部就只剩「行」这一种东西，一张卡 = 一组同类设置，
+ * 扫读时眼睛先过标题再进卡片，层级是线性的；标题塞进卡片里则多出一道边框，
+ * 变成「卡中卡」的错觉。
+ *
+ * 字号 15px：H1(28) → 分节(15) → 行 label(14) + 描述(12.5)，
+ * 相邻两级的差要足够大才读得出递进，太近就糊成一片。
+ */
 interface SettingsSectionTitleProps {
 	children: ReactNode;
 	className?: string;
@@ -57,14 +95,14 @@ export function SettingsSectionTitle({
 	className,
 }: SettingsSectionTitleProps) {
 	return (
-		<h4
+		<h2
 			className={cn(
-				"mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-text-muted",
+				"mb-3.5 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-text-primary",
 				className,
 			)}
 		>
 			{children}
-		</h4>
+		</h2>
 	);
 }
 
@@ -86,21 +124,21 @@ export function SettingsRow({
 	return (
 		<div
 			className={cn(
-				"flex items-center justify-between border-b border-border py-3.5 last:border-0",
+				"flex items-center justify-between gap-4 border-b border-border py-4 last:border-0",
 				className,
 			)}
 		>
 			<div className="min-w-0 flex-1">
-				<div className="text-[13.5px] font-medium leading-snug text-text-primary">
+				<div className="text-[14px] font-medium leading-snug text-text-primary">
 					{label}
 				</div>
 				{description && (
-					<div className="mt-1 text-[12px] leading-relaxed text-text-secondary">
+					<div className="mt-1.5 text-[12.5px] leading-relaxed text-text-secondary">
 						{description}
 					</div>
 				)}
 			</div>
-			<div className="ml-4 flex items-center gap-3">
+			<div className="flex shrink-0 items-center gap-3">
 				{value && (
 					<div className="text-[13px] text-text-secondary">{value}</div>
 				)}
@@ -153,7 +191,10 @@ export function SettingsSwitch({
 
 /**
  * 设置面板的「区段头」— 标题 + 可选副标题 + 右侧操作。
- * 用于 SettingsSectionCard 内部的视觉分组。
+ *
+ * @deprecated 新代码请用 `SettingsCardSection`，它把标题渲染在**卡片外**。
+ * 标题塞进卡片会在标题与内容之间多一条边框，一张卡看起来像两个区块（「卡中卡」），
+ * 页面上区块数就翻倍了。本组件保留仅为兼容尚未迁移的调用。
  */
 interface SettingsHeaderProps {
 	title: string;
@@ -568,10 +609,17 @@ export function SettingsStat({
 }
 
 /**
- * SettingsCardSection — 简化的「带 header + 内容 padding」组合
+ * SettingsCardSection — 「分节标题 + 一张卡」的组合
  *
- * 等价于 <SettingsSectionCard><SettingsHeader/><div className="p-x">…</div></SettingsSectionCard>，
- * 但常用结构出现频率太高，给个一行 API。
+ * 标题渲染在**卡片外部上方**（`SettingsSectionTitle` 那一级），不在卡片里。
+ *
+ * 以前标题在卡内 header、和内容之间还隔一条 border，一张卡就有了两个区块，
+ * 读起来像「卡中卡」；把标题提到卡外之后，卡片内部只剩「行」，
+ * 「标题 → 卡片 → 行」是一条直线，页面上有几组设置一眼可数。
+ *
+ * `headerAction` 跟着标题走，落在标题行右端。
+ * `className` 作用在本组件的**根元素**上（有标题时是外层 section，无标题时是卡片本身），
+ * 所以 `opacity-50` 这类「整段禁用」的样式会连标题一起生效。
  */
 interface SettingsCardSectionProps {
 	title?: string;
@@ -590,17 +638,35 @@ export function SettingsCardSection({
 	bodyClassName,
 	className,
 }: SettingsCardSectionProps) {
-	return (
-		<SettingsSectionCard className={className}>
-			{(title || description || headerAction) && (
-				<SettingsHeader
-					title={title ?? ""}
-					description={description}
-					action={headerAction}
-				/>
-			)}
+	const hasHeading = Boolean(title || description || headerAction);
+
+	const card = (
+		<SettingsSectionCard className={hasHeading ? undefined : className}>
 			<div className={cn("px-5 py-4", bodyClassName)}>{children}</div>
 		</SettingsSectionCard>
+	);
+
+	if (!hasHeading) return card;
+
+	return (
+		<section className={className}>
+			<div className="mb-3.5 flex items-end justify-between gap-4">
+				<div className="min-w-0">
+					{title && (
+						<SettingsSectionTitle className="mb-0">
+							{title}
+						</SettingsSectionTitle>
+					)}
+					{description && (
+						<p className="mt-1.5 max-w-[62ch] text-[12.5px] leading-relaxed text-text-muted">
+							{description}
+						</p>
+					)}
+				</div>
+				{headerAction && <div className="shrink-0">{headerAction}</div>}
+			</div>
+			{card}
+		</section>
 	);
 }
 

@@ -63,6 +63,9 @@ export const EVENTS = {
 	AGENT_FOCUS_TOOL_CALL: "AGENT_FOCUS_TOOL_CALL", // 在右侧定位某次工具调用 / 中间运行图聚焦
 	OPEN_DIFF_VIEW: "OPEN_DIFF_VIEW", // 在中间面板打开 Diff 视图
 
+	// 中间栏标签页
+	AIHUB_SITES_CHANGED: "AIHUB_SITES_CHANGED", // Web AI 站点清单变更（设置面板增删/启停后广播）
+
 	// 远程控制
 	REMOTE_CHAT_INJECT: "REMOTE_CHAT_INJECT", // 远程消息注入到 UI 对话
 

@@ -9,9 +9,33 @@
  * - 支持 onPointerEnter/Leave 让外层冻结自动消失计时器
  * - placement: 默认上方（指针朝下）；屏幕顶部空间不足时翻成下方（指针朝上）
  * - sinking: 关闭时走 sink 动画而不是瞬间消失
+ *
+ * ## 进出场为什么换成 GSAP timeline
+ *
+ * 原来是三个 CSS keyframes（rise / drop / sink）加上内容行各自写
+ * `animationDelay`。问题在于**它们没有共同的时钟**：气泡本体的缩放曲线和
+ * 内容行的延迟是两套独立动画，改任一边的时长都要手工重算另一边的 delay，
+ * 而且 reduce-motion 把 duration 压到 0.01ms 时，delay 并不会跟着压缩，
+ * 内容行会在气泡早就到位之后才慢悠悠冒出来。
+ *
+ * 换成一条 timeline 后：本体 → 内容行 → 台词逐字，全部挂在同一个时间原点上，
+ * 档位缩放由 `dur()` 统一负责，改一个参数整段跟着动。
+ *
+ * 调用方用两个标记参与这条时间轴：
+ * - `data-bubble-row`：需要依次淡入的内容行
+ * - `data-bubble-line`：需要逐字显现的台词（仅 expressive 档；内容必须在
+ *   气泡生命周期内保持稳定，否则 SplitText 拆出来的 span 会和 React 打架）
  */
 
-import type { CSSProperties, PointerEvent, ReactNode } from "react";
+import {
+	useRef,
+	type CSSProperties,
+	type PointerEvent,
+	type ReactNode,
+} from "react";
+
+import { EASE, textReveal, useGsapMotion } from "../../lib/motion";
+
 import { withAlpha } from "./utils";
 
 export type PetBubblePlacement = "top" | "bottom";
@@ -45,15 +69,85 @@ export function PetBubbleShell({
 	style,
 }: PetBubbleShellProps) {
 	const isBottom = placement === "bottom";
-	const enterClass = isBottom
-		? "animate-pet-bubble-drop"
-		: "animate-pet-bubble-rise";
-	const animClass = sinking ? "animate-pet-bubble-sink" : enterClass;
+	const rootRef = useRef<HTMLDivElement>(null);
+	// 上方气泡从角色头顶"升"起来，下方气泡从下巴"落"下去：
+	// 位移方向和缩放锚点都得跟着 placement 翻，否则会看起来从错误的一侧钻出来
+	const dir = isBottom ? -1 : 1;
+
+	useGsapMotion(
+		({ gsap, dur, amp, expressive }) => {
+			const element = rootRef.current;
+			if (!element) return;
+
+			if (sinking) {
+				gsap.to(element, {
+					opacity: 0,
+					scale: 0.86,
+					y: amp(6) * dir,
+					duration: dur(0.2),
+					ease: "power2.in",
+					overwrite: "auto",
+				});
+				return;
+			}
+
+			const tl = gsap.timeline();
+			tl.fromTo(
+				element,
+				{ opacity: 0, scale: 0.78, y: amp(10) * dir },
+				{
+					opacity: 1,
+					scale: 1,
+					y: 0,
+					duration: dur(0.36),
+					ease: EASE.spring,
+					clearProps: "transform",
+				},
+			);
+
+			const rows = element.querySelectorAll("[data-bubble-row]");
+			if (rows.length > 0) {
+				tl.from(
+					rows,
+					{
+						opacity: 0,
+						y: amp(6),
+						duration: dur(0.3),
+						ease: EASE.outExpo,
+						stagger: expressive ? 0.05 : 0,
+						clearProps: "transform,opacity",
+					},
+					dur(0.1),
+				);
+			}
+
+			const line = element.querySelector<HTMLElement>("[data-bubble-line]");
+			if (line) {
+				// 中文逐字；textReveal 在非 expressive 档直接返回 undefined
+				return textReveal(line, {
+					type: "chars",
+					stagger: 0.018,
+					y: 8,
+					duration: dur(0.38),
+					delay: dur(0.18),
+				});
+			}
+		},
+		{ dependencies: [sinking, isBottom] },
+	);
 
 	return (
 		<div
-			className={`relative ${animClass}`}
-			style={{ pointerEvents: noInteract ? "none" : "auto", ...style }}
+			ref={rootRef}
+			className="relative"
+			style={{
+				pointerEvents: noInteract ? "none" : "auto",
+				// 缩放锚点压在指针根部，气泡看起来是"从角色身上长出来的"
+				transformOrigin: isBottom
+					? "50% calc(0% - 6px)"
+					: "50% calc(100% + 6px)",
+				...style,
+			}}
 			onPointerEnter={onPointerEnter}
 			onPointerLeave={onPointerLeave}
 		>

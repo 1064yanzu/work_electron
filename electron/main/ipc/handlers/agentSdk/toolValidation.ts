@@ -37,6 +37,12 @@ const REQUIRED_TOOL_PARAMS: Record<string, RequiredToolParam[]> = {
 		},
 	],
 	todowrite: [{ name: "todos", kind: "array" }],
+	// claude-agent-sdk 0.3.142+：Headless/SDK 会话用 Task 工具族替代 TodoWrite
+	// （TodoWrite 自 0.2.136 起废弃，仍保留上面的兼容校验）。
+	taskcreate: ["subject", "description"],
+	taskupdate: [{ name: "taskId", aliases: ["task_id"] }],
+	taskget: [{ name: "taskId", aliases: ["task_id"] }],
+	tasklist: [],
 	webfetch: ["url", "prompt"],
 	websearch: ["query"],
 	write: [
@@ -127,6 +133,12 @@ export function buildMissingRequiredToolParamsMessage(
 		}
 		if (toolLower === "askuserquestion") {
 			return "请提供非空 questions 数组后再重新调用 AskUserQuestion。";
+		}
+		if (toolLower === "taskcreate") {
+			return "请补齐 subject、description 后再重新调用 TaskCreate。";
+		}
+		if (toolLower === "taskupdate") {
+			return "请补齐 taskId 后再重新调用 TaskUpdate。";
 		}
 		return "请补齐上述必填参数后再重新调用该工具。";
 	})();

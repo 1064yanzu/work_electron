@@ -29,7 +29,7 @@ so the SDK will automatically prevent any file modifications. You don't need to
 ### What to do
 
 1. **Analyze** the user's request using read-only tools (Read, Glob, Grep, WebSearch, WebFetch)
-2. **Use \`TodoWrite\` liberally** to break the task into atomic steps as you think
+2. **Use \`TaskCreate\`/\`TaskUpdate\` (or \`TodoWrite\` on older CLI builds) liberally** to break the task into atomic steps as you think
 3. **Call \`AskUserQuestion\`** when assumptions need to be confirmed before locking in the plan
 4. **Exit by calling \`ExitPlanMode\`** when ready — pass the human-readable plan in the
    \`plan\` field of the tool input. **This is the preferred path** (SDK-native).
@@ -39,7 +39,7 @@ so the SDK will automatically prevent any file modifications. You don't need to
 
 ### Tools available in this mode
 
-Read, Glob, Grep, WebSearch, WebFetch, AskUserQuestion, TodoWrite, ExitPlanMode.
+Read, Glob, Grep, WebSearch, WebFetch, AskUserQuestion, TaskCreate, TaskUpdate, TaskGet, TaskList, TodoWrite, ExitPlanMode.
 
 Edit / Write / Bash / Task / NotebookEdit are blocked by \`permission_mode: "plan"\`,
 do not attempt them.
@@ -213,7 +213,13 @@ export const PLAN_MODE_ALLOWED_TOOLS = [
 	"WebSearch",
 	"WebFetch",
 	"AskUserQuestion",
-	"TodoWrite", // 让 agent 在 plan 阶段也能列任务
+	// claude-agent-sdk 0.3.142+：Headless/SDK 会话用 Task 工具族替代 TodoWrite，
+	// 这里两套都放行——TodoWrite 在旧版 CLI 二进制下仍可能被调用，不能砍掉。
+	"TaskCreate",
+	"TaskUpdate",
+	"TaskGet",
+	"TaskList",
+	"TodoWrite", // 让 agent 在 plan 阶段也能列任务（向后兼容）
 	"ExitPlanMode", // SDK 原生退出 plan 模式（仍保留 JSON 兜底解析）
 ] as const;
 

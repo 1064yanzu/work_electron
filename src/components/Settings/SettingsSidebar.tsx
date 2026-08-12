@@ -1,73 +1,66 @@
 /**
- * SettingsSidebar — Phase 1 两层手风琴导航
+ * SettingsSidebar — 平铺分组导航
  *
- * 结构：5 个一级分类 + 每个分类下若干二级 Tab
- *   - 同时只展开一个分类（手风琴模式）
- *   - 点击已展开分类 → 仅折起，`activeTab` 不变
- *   - 点击未展开分类 → 切换展开 + 激活该分类首个 subtab
- *   - 点击 subtab → 走 `onNavigate(subtabId)`
+ * 结构：返回按钮 + 搜索框 + 5 个分组（分组标题为静态标签）下挂全部二级 Tab。
+ *
+ * 两个位置选择的理由：
+ * - **搜索框在侧栏顶部**：内容区顶部要完整留给页面 H1，
+ *   而搜索属于「导航」而非「当前页内容」，紧贴导航列表才符合它的语义。
+ * - **返回按钮也在侧栏顶部**：以前是一个浮在内容区右上角的 X，
+ *   它压在标题行上方，逼得每个页面标题都要留一段 `pr-12` 净空。
+ *   挪到侧栏后内容区顶部彻底干净，H1 能用满整行宽。
  */
-import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import type { RefObject } from "react";
+import { SettingsSearch } from "./components/SettingsSearch";
+import { SettingsSidebarCategory } from "./components/SettingsSidebarGroup";
 import {
 	SETTINGS_CATEGORIES,
-	getCategoryOf,
-	getFirstSubtabOf,
 	getSubtabsByCategory,
-	type SettingsNavCategoryId,
 	type SettingsTabId,
 } from "./settingsCatalog";
-import { SettingsSidebarCategory } from "./components/SettingsSidebarGroup";
 
 interface SettingsSidebarProps {
 	activeTab: SettingsTabId;
-	onNavigate: (id: SettingsTabId) => void;
+	onNavigate: (id: SettingsTabId, anchorId?: string) => void;
 	onPrefetch?: (id: SettingsTabId) => void;
+	/** 关闭设置面板（返回应用）。 */
+	onClose: () => void;
+	/** 供外壳 FocusTrap 设定初始焦点。 */
+	backButtonRef?: RefObject<HTMLButtonElement>;
 }
 
 export function SettingsSidebar({
 	activeTab,
 	onNavigate,
 	onPrefetch,
+	onClose,
+	backButtonRef,
 }: SettingsSidebarProps) {
-	// 初始展开：当前激活 Tab 所属分类；允许 null 表达"全部折起"
-	const [expandedCategory, setExpandedCategory] =
-		useState<SettingsNavCategoryId | null>(
-			() => getCategoryOf(activeTab) ?? "ai",
-		);
-
-	// activeTab 外部变化（legacy id 归一、搜索跳转等）→ 自动展开所属分类
-	useEffect(() => {
-		const cat = getCategoryOf(activeTab);
-		if (cat && cat !== expandedCategory) {
-			setExpandedCategory(cat);
-		}
-		// 有意不把 expandedCategory 放进依赖，避免用户手动折起后被反复展开
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [activeTab]);
-
-	const handleToggle = (id: SettingsNavCategoryId) => {
-		if (id === expandedCategory) {
-			// 已展开 → 折起，但不改 activeTab
-			setExpandedCategory(null);
-			return;
-		}
-		// 未展开 → 切换展开 + 激活该分类首个 subtab
-		setExpandedCategory(id);
-		const first = getFirstSubtabOf(id);
-		onNavigate(first);
-	};
-
 	return (
 		<aside
-			className="w-[248px] shrink-0 border-r border-border bg-background px-4 py-6 backdrop-blur-sm transition-colors duration-300"
+			// bg（比内容区的 surface 暗一档）+ 极淡描边：分栏主要靠明暗，
+			// 描边只是收个边。一条实边框配同色底会显得像用尺子划开的，很硬。
+			className="flex w-[248px] shrink-0 flex-col border-r border-border/60 bg-background transition-colors duration-300"
 			aria-label="设置"
 		>
-			<div className="mb-6 px-2 text-[13px] font-semibold text-text-primary">
-				设置
+			<div className="shrink-0 space-y-3 px-3 pb-2 pt-4">
+				<button
+					ref={backButtonRef}
+					type="button"
+					onClick={onClose}
+					className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13.5px] text-text-secondary transition-[background-color,color] duration-150 ease-out hover:bg-cream-200/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:bg-cream-700/50"
+					aria-label="关闭设置，返回应用"
+				>
+					<ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+					返回应用
+				</button>
+
+				<SettingsSearch onResultClick={onNavigate} />
 			</div>
 
 			<nav
-				className="flex-1 space-y-2 overflow-y-auto pr-1"
+				className="min-h-0 flex-1 overflow-y-auto px-3 pb-6"
 				aria-label="设置导航"
 			>
 				{SETTINGS_CATEGORIES.map((category) => (
@@ -76,8 +69,6 @@ export function SettingsSidebar({
 						category={category}
 						subtabs={getSubtabsByCategory(category.id)}
 						activeTab={activeTab}
-						expanded={expandedCategory === category.id}
-						onToggle={() => handleToggle(category.id)}
 						onNavigate={onNavigate}
 						onPrefetch={onPrefetch}
 					/>

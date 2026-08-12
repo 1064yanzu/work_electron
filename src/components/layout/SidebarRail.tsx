@@ -1,16 +1,14 @@
 import {
 	FolderOpen,
 	MessagesSquare,
-	BookMarked,
-	LayoutGrid,
+	Library,
 	SlidersHorizontal,
 	Blocks,
-	BookOpen,
 	Terminal,
 	PanelLeftClose,
 	PanelLeftOpen,
-	Waypoints,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
@@ -23,134 +21,161 @@ import {
 	terminalStore,
 	useTerminalStoreSelector,
 } from "../../lib/stores/terminalStore";
+import {
+	getLastKnowledgeTab,
+	isKnowledgeSectionView,
+} from "../resource/knowledgeSection";
 import { shortcut } from "../../lib/platform";
+import { Tooltip } from "../ui/Tooltip";
 
 interface SidebarRailProps {
 	onOpenSettings: () => void;
 }
 
+/**
+ * 导航项分两段：
+ * - 「工作」= 当下正在做的事（文件 / 对话）
+ * - 「积累」= 沉淀下来的东西（知识 / 技能）
+ * 中间一条极淡分隔线，让 4 个入口读起来是 2+2 而不是一长串 4。
+ *
+ * 刻意不在这里的入口：
+ * - 「资料库 / 卡片 / Wiki」合并进「知识」，由面板顶部的 tab 条切换（见 knowledgeSection.ts）
+ * - 跨入口会话与接力属于中栏的「AI Hub」标签页，不在左栏重复开一个入口
+ *   （⌘K →「打开 AI Hub」）
+ */
+const NAV_SECTIONS = [
+	[
+		{ id: "files", label: "文件", icon: FolderOpen },
+		{ id: "threads", label: "对话", icon: MessagesSquare },
+	],
+	[
+		{ id: "knowledge", label: "知识", icon: Library },
+		{ id: "skills", label: "技能", icon: Blocks },
+	],
+] as const satisfies ReadonlyArray<
+	ReadonlyArray<{ id: string; label: string; icon: LucideIcon }>
+>;
+
+type NavId = (typeof NAV_SECTIONS)[number][number]["id"];
+
+/** 所有格子共用的尺寸与状态样式，保证 rail 上下完全同一套节奏 */
+const CELL_BASE =
+	"flex h-9 w-9 items-center justify-center rounded-[10px] transition-colors duration-150";
+const CELL_IDLE =
+	"text-text-muted hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]";
+const CELL_ACTIVE = "bg-warm-200 text-text-primary dark:bg-white/[0.09]";
+
 export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	const leftSidebarView = useWorkspaceStoreSelector(
 		(state) => state.leftSidebarView,
-	);
-	const activeMainView = useLayoutStoreSelector(
-		(state) => state.activeMainView,
 	);
 	const leftSidebarCollapsed = useLayoutStoreSelector(
 		(state) => state.leftSidebarCollapsed,
 	);
 	const setLeftSidebarView =
 		workspaceStore.setLeftSidebarView.bind(workspaceStore);
-	const setMainView = workspaceStore.setMainView.bind(workspaceStore);
 	const terminalVisible = useTerminalStoreSelector((s) => s.isVisible);
 
-	const navItems = [
-		{ id: "files", label: "文件", icon: FolderOpen },
-		{ id: "threads", label: "线程", icon: MessagesSquare },
-		{ id: "harness", label: "会话", icon: Waypoints },
-		{ id: "sources", label: "资料库", icon: BookMarked },
-		{ id: "cards", label: "卡片", icon: LayoutGrid },
-		{ id: "wiki", label: "Wiki", icon: BookOpen },
-		{ id: "skills", label: "技能", icon: Blocks },
-	] as const;
-
-	type NavId = (typeof navItems)[number]["id"];
-
+	// 只切左栏视图，**不动中栏标签**。
+	// 中栏改成自由标签页后，这条边栏就是 VSCode 的活动栏：它决定左边看什么，
+	// 不该替用户决定中间看什么。真正需要把中栏拉回工作区的动作（点开文件、
+	// Wiki 在编辑器中打开…）自己会调 centerTabsStore.openSandboxView。
+	//
+	// 「知识」是个聚合入口：本身不是一个 leftSidebarView 取值，
+	// 点它等于回到上次看的那个知识 tab（资料库 / 卡片 / Wiki）。
 	const handleNavClick = (id: NavId) => {
-		setLeftSidebarView(id);
-		// 如果当前停在非 editor 主视图，回到 editor。
-		// 例外：会话中枢 + AI Hub 是一对协作视图（左边选会话、中栏看 Web 站点），
-		// 从会话中枢发起「发送到 Web」后需要停留在 aihub，不能被拽回 editor。
-		if (
-			activeMainView !== "editor" &&
-			!(id === "harness" && activeMainView === "aihub")
-		) {
-			setMainView("editor");
+		// 折叠状态下点任意导航 = 先展开面板再切视图（VSCode 活动栏行为），
+		// 否则视图切了面板还藏着，用户会以为点了没反应
+		if (layoutStore.getState().leftSidebarCollapsed) {
+			layoutStore.setLeftSidebarCollapsed(false);
 		}
+		setLeftSidebarView(id === "knowledge" ? getLastKnowledgeTab() : id);
 	};
 
 	return (
-		<div className="w-16 flex-shrink-0 flex flex-col items-center py-3 bg-transparent border-r border-border">
-			<button
-				type="button"
-				onClick={() => layoutStore.toggleLeftSidebar()}
-				className="flex items-center justify-center w-12 h-10 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"
-				title={leftSidebarCollapsed ? "展开侧栏" : "折叠侧栏"}
+		<div className="flex w-[52px] flex-shrink-0 flex-col items-center border-r border-border bg-transparent py-2.5">
+			<Tooltip
+				content={leftSidebarCollapsed ? "展开侧栏" : "折叠侧栏"}
+				placement="right"
 			>
-				{leftSidebarCollapsed ? (
-					<PanelLeftOpen className="w-[18px] h-[18px]" strokeWidth={1.5} />
-				) : (
-					<PanelLeftClose className="w-[18px] h-[18px]" strokeWidth={1.5} />
-				)}
-			</button>
+				<button
+					type="button"
+					onClick={() => layoutStore.toggleLeftSidebar()}
+					className={`${CELL_BASE} ${CELL_IDLE}`}
+					aria-label={leftSidebarCollapsed ? "展开侧栏" : "折叠侧栏"}
+				>
+					{leftSidebarCollapsed ? (
+						<PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={1.5} />
+					) : (
+						<PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.5} />
+					)}
+				</button>
+			</Tooltip>
 
-			<div className="flex flex-col items-center gap-1 flex-1 mt-2">
-				{navItems.map((item) => {
-					const isSourceSubView = [
-						"detail",
-						"research",
-						"websearch",
-						"agent",
-					].includes(leftSidebarView);
-					const isActive =
-						leftSidebarView === item.id ||
-						(item.id === "sources" && isSourceSubView);
-
-					return (
-						<button
-							key={item.id}
-							type="button"
-							onClick={() => handleNavClick(item.id)}
-							aria-label={item.label}
-							aria-current={isActive ? "page" : undefined}
-							className={[
-								"flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-[background-color,color] duration-200",
-								isActive
-									? "bg-warm-200 text-text-primary"
-									: "text-text-muted hover:text-text-primary hover:bg-warm-200/70",
-							].join(" ")}
-							title={item.label}
-						>
-							<item.icon
-								className="w-[20px] h-[20px] mb-0.5"
-								strokeWidth={1.5}
-							/>
-							<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
-								{item.label}
-							</span>
-						</button>
-					);
-				})}
+			<div className="mt-2 flex flex-1 flex-col items-center">
+				{NAV_SECTIONS.map((section, sectionIndex) => (
+					<div
+						key={section[0].id}
+						className="flex flex-col items-center gap-0.5"
+					>
+						{sectionIndex > 0 && (
+							<span aria-hidden="true" className="my-1.5 h-px w-5 bg-border" />
+						)}
+						{section.map((item) => {
+							const isActive =
+								item.id === "knowledge"
+									? isKnowledgeSectionView(leftSidebarView)
+									: leftSidebarView === item.id;
+							return (
+								<Tooltip key={item.id} content={item.label} placement="right">
+									<button
+										type="button"
+										onClick={() => handleNavClick(item.id)}
+										aria-label={item.label}
+										aria-current={isActive ? "page" : undefined}
+										className={`${CELL_BASE} ${
+											isActive ? CELL_ACTIVE : CELL_IDLE
+										}`}
+									>
+										<item.icon
+											className="h-[18px] w-[18px]"
+											strokeWidth={1.5}
+										/>
+									</button>
+								</Tooltip>
+							);
+						})}
+					</div>
+				))}
 			</div>
 
-			<div className="mt-auto flex flex-col items-center gap-1 pt-4 border-t border-border w-full">
-				<button
-					type="button"
-					onClick={() => terminalStore.toggleVisible()}
-					aria-label="切换终端"
-					aria-pressed={terminalVisible}
-					className={[
-						"flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-[background-color,color] duration-200",
-						terminalVisible
-							? "bg-warm-200 text-text-primary"
-							: "text-text-muted hover:text-text-primary hover:bg-warm-200/70",
-					].join(" ")}
-					title={`终端 (${shortcut("`")})`}
-				>
-					<Terminal className="w-[20px] h-[20px] mb-0.5" strokeWidth={1.5} />
-					<span className="text-[9.5px] font-medium leading-tight select-none tracking-wide">
-						终端
-					</span>
-				</button>
-				<button
-					type="button"
-					onClick={onOpenSettings}
-					aria-label="打开设置"
-					className="flex items-center justify-center w-12 h-12 rounded-2xl text-text-muted hover:text-text-primary hover:bg-warm-200/70 transition-[background-color,color] duration-200"
-					title="设置"
-				>
-					<SlidersHorizontal className="w-[20px] h-[20px]" strokeWidth={1.5} />
-				</button>
+			<div className="mt-auto flex w-full flex-col items-center gap-0.5 border-t border-border pt-2.5">
+				<Tooltip content={`终端 (${shortcut("`")})`} placement="right">
+					<button
+						type="button"
+						onClick={() => terminalStore.toggleVisible()}
+						aria-label="切换终端"
+						aria-pressed={terminalVisible}
+						className={`${CELL_BASE} ${
+							terminalVisible ? CELL_ACTIVE : CELL_IDLE
+						}`}
+					>
+						<Terminal className="h-[18px] w-[18px]" strokeWidth={1.5} />
+					</button>
+				</Tooltip>
+				<Tooltip content="设置" placement="right">
+					<button
+						type="button"
+						onClick={onOpenSettings}
+						aria-label="打开设置"
+						className={`${CELL_BASE} ${CELL_IDLE}`}
+					>
+						<SlidersHorizontal
+							className="h-[18px] w-[18px]"
+							strokeWidth={1.5}
+						/>
+					</button>
+				</Tooltip>
 			</div>
 		</div>
 	);

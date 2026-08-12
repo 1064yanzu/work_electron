@@ -58,6 +58,7 @@ export function ShortcutCheatSheet() {
 		for (const entry of entries) byId.set(entry.id, entry);
 		const grouped = new Map<ShortcutGroup, RegisteredShortcut[]>();
 		for (const entry of byId.values()) {
+			if (entry.hidden) continue;
 			const list = grouped.get(entry.group) ?? [];
 			list.push(entry);
 			grouped.set(entry.group, list);

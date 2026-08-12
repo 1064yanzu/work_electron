@@ -100,6 +100,8 @@ export interface HarnessDetection {
 	canRead: boolean;
 	/** 能否被注入（App 内 pty 启动该 CLI） */
 	canInject: boolean;
+	/** 在 pty 中启动该 CLI 的命令（渲染端「中栏开 CLI 标签页」要用） */
+	launchCommand: string;
 	/** 已摄取的会话数 */
 	sessionCount: number;
 }
@@ -121,6 +123,18 @@ export interface WebSiteConfig {
 	submitSelectors: string[];
 	/** 对话消息节点选择器候选，用于提取 */
 	messageSelectors: string[];
+	/**
+	 * 登录态还依赖哪些**额外**的注册域。
+	 *
+	 * 导入本机浏览器登录态时，默认只搬 `url` 自身的注册域及其子域。但不少站点
+	 * 把会话拆在别的域上——ChatGPT 的 `unified_session_manifest` / `usc_*` /
+	 * `oai-sc` 全挂在 `.auth.openai.com` 与 `.openai.com`，只搬 `chatgpt.com`
+	 * 会拿到半套 cookie，页面照样是未登录。
+	 *
+	 * 这里必须**显式声明**而不是隐式放宽：写进来的每个域都会被整域搬运，
+	 * 是有意扩大的安全边界，加之前要确认它确实承载该站点的登录态。
+	 */
+	authDomains?: string[];
 	/** 是否内置（内置站点不可删除，只能禁用） */
 	builtin: boolean;
 	enabled: boolean;
@@ -142,4 +156,135 @@ export interface HandoffPackage {
 	nextSteps: string[];
 	/** 渲染好的完整 markdown（写入 HANDOFF.md / 粘贴到 Web 端用） */
 	markdown: string;
+}
+
+/**
+ * 接力档位。
+ *
+ * 一期只有 `distill` 一条路——同 harness 内续接也要过一遍 LLM，既慢又有损。
+ * 二期改为按情况自动选档（见 `rawHandoff.pickHandoffMode`）：
+ *
+ * - `native`  原生续接：`claude --resume <id>` / `codex resume <id>`。零成本、完全无损。
+ * - `raw`     原文接力：直接把转录渲染成交接包，零 LLM 调用。无损（可能尾部截断）。
+ * - `distill` 蒸馏接力：map-reduce 压缩。有损，只在超长会话时用。
+ */
+export type HandoffMode = "native" | "raw" | "distill";
+
+/** 选档结果。`reason` 会如实展示给用户——不能让人以为无损的其实被蒸馏过。 */
+export interface HandoffModeDecision {
+	mode: HandoffMode;
+	reason: string;
+	/** mode === "native" 时的完整启动命令 */
+	resumeCommand?: string;
+	/** 参与判定的转录字符数 */
+	transcriptChars: number;
+}
+
+/** 被当作工具调用的目标种类。 */
+export type BridgeTargetKind = "cli" | "web" | "app";
+
+/** 一次「把某入口当工具调用」的请求。 */
+export interface BridgeCallRequest {
+	/** 目标 harness id（cli 用 HarnessKind，web 用站点 id 对应的 harness） */
+	target: string;
+	kind: BridgeTargetKind;
+	prompt: string;
+	/** CLI 目标的工作目录 */
+	cwd?: string;
+	/** 超时毫秒；不传走各类型默认值 */
+	timeoutMs?: number;
+	/** 发起方标识，用于审计（ipo-sdk / external:<name> / …） */
+	caller?: string;
+}
+
+/** 一次桥接调用的结果。失败时 `ok=false` 且 `error` 必填，不返回假答案。 */
+export interface BridgeCallResult {
+	ok: boolean;
+	callId: string;
+	target: string;
+	kind: BridgeTargetKind;
+	/** 目标的回答；失败时为空串 */
+	answer: string;
+	error: string | null;
+	durationMs: number;
+	/** true = 超时后返回了「已产出的部分内容」，answer 不完整 */
+	partial: boolean;
+	/**
+	 * 子进程退出码（仅 cli 目标，未知为 null）。
+	 * 自动化守护要靠它 + rawOutput 做失败分类，`ok` 这个布尔量粒度不够——
+	 * 「失败了」和「因为 429 失败、二十分钟后该重试」是两件事。
+	 */
+	exitCode?: number | null;
+	/** stdout + stderr 原文（仅 cli 目标），交给失败分类器判定 */
+	rawOutput?: string;
+}
+
+/** 共享白板条目类型。 */
+export type BoardEntryKind = "goal" | "decision" | "pitfall" | "next" | "note";
+
+/** 共享白板条目。 */
+export interface BoardEntry {
+	id: string;
+	/** 作用域：工作目录绝对路径；空串 = 全局白板 */
+	scope: string;
+	kind: BoardEntryKind;
+	content: string;
+	author: string | null;
+	sessionId: string | null;
+	state: "open" | "done";
+	createdAt: number;
+	updatedAt: number;
+}
+
+/** 能力路由规则：某类任务优先派给哪些入口。 */
+export interface RouteRule {
+	capability: string;
+	label: string;
+	/** 按优先级排列的 harness id */
+	harnesses: string[];
+	enabled: boolean;
+	updatedAt: number;
+}
+
+/**
+ * 单个入口的额度状态。
+ *
+ * 只反映**从真实转录里检测到的**限额信号。检测不到就是 `unknown`——
+ * 不外推剩余额度、不按用量猜测，宁可少报也不编造。
+ */
+export interface QuotaState {
+	harness: string;
+	/** null = 从未检测到限额信号 */
+	limitHitAt: number | null;
+	/** 从提示文案里解析出的恢复时间；解析不出就是 null */
+	resetsAt: number | null;
+	/** 触发判定的原始文案片段 */
+	evidence: string | null;
+	/** 用户手动标记不可用 */
+	manualBlocked: boolean;
+	/** 综合判定：当前是否应当避免派活给它 */
+	blocked: boolean;
+}
+
+/** `.aihub-session.json` 交换文档。一个文件即完整上下文。 */
+export interface ExchangeDocument {
+	format: "aihub-session";
+	version: 1;
+	exportedAt: number;
+	source: {
+		harness: string;
+		sessionId: string;
+		externalId: string | null;
+		cwd: string | null;
+		title: string | null;
+		messageCount: number;
+	};
+	messages: {
+		role: CanonicalRole;
+		content: string;
+		blocks?: CanonicalBlock[];
+		createdAt: number;
+	}[];
+	/** 附带的交接包（可空——纯转录导出时没有） */
+	handoff: Omit<HandoffPackage, "markdown"> | null;
 }

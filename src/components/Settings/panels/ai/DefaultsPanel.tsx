@@ -183,7 +183,7 @@ export function DefaultsPanel() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Sparkles}
 				title="默认模型分工"

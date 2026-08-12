@@ -7,7 +7,8 @@
 
 import { ChevronRight } from "lucide-react";
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { attentionPulse, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
 import { Collapsible } from "../ui/Collapsible";
 import { Skeleton } from "../ui/Skeleton";
@@ -110,6 +111,22 @@ export function CollapsibleStepCard({
 	const colors = statusColors[status];
 	const durationText = formatDuration(duration);
 
+	// 状态图标在状态落定时弹一下：颜色从蓝变绿是唯一信号，
+	// 一屏十几张卡片时视线抓不到"刚刚是哪一张完成了"。
+	// 首次挂载不放（打开历史会话时几十张卡一起跳像出故障）。
+	const iconRef = useRef<HTMLDivElement>(null);
+	const seenStatusRef = useRef<string | null>(null);
+	useGsapMotion(
+		() => {
+			const previous = seenStatusRef.current;
+			seenStatusRef.current = status;
+			if (previous === null || previous === status) return;
+			if (status !== "completed" && status !== "error") return;
+			attentionPulse(iconRef.current, { scale: 1.22, duration: 0.44 });
+		},
+		{ dependencies: [status] },
+	);
+
 	return (
 		<div
 			className={cn(
@@ -133,8 +150,9 @@ export function CollapsibleStepCard({
 				{/* 图标 */}
 				{Icon && (
 					<div
+						ref={iconRef}
 						className={cn(
-							"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
+							"mt-0.5 p-1.5 rounded-lg transition-colors duration-200",
 							colors.iconBg,
 						)}
 					>

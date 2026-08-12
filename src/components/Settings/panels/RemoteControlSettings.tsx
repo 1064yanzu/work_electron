@@ -367,7 +367,7 @@ export function RemoteControlSettings() {
 
 	if (loading || !config) {
 		return (
-			<SettingsPageContainer contentClassName="max-w-5xl">
+			<SettingsPageContainer width="wide">
 				<div className="flex h-52 items-center justify-center text-text-muted">
 					加载远程控制配置中...
 				</div>
@@ -376,7 +376,7 @@ export function RemoteControlSettings() {
 	}
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-5xl space-y-6">
+		<SettingsPageContainer width="wide">
 			<div
 				id="integrations.remote.overview"
 				data-settings-anchor="integrations.remote.overview"

@@ -1293,3 +1293,13 @@ html.perf-degraded [class*="backdrop-saturate"] {
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;
 }
+
+/* 装饰性 CSS 循环动画在拖拽期一并让路。
+   GSAP 那侧由 lib/motion/decorative.ts 的注册表管（pause / resume），
+   纯 CSS 的循环够不着那套机制，只能在这里对齐同一条语义。
+   只点名"无限循环的装饰"，不碰一次性过渡与承载信息的 spinner。 */
+html.perf-degraded .graph-node-running,
+html.perf-degraded [class*="animate-pet-"],
+html.perf-degraded .animate-pulse-slow {
+	animation-play-state: paused !important;
+}

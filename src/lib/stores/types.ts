@@ -118,8 +118,7 @@ export interface LayoutState {
 		| "threads"
 		| "files"
 		| "skills"
-		| "wiki"
-		| "harness";
+		| "wiki";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 	// 左边栏折叠状态（仅留 SidebarRail）

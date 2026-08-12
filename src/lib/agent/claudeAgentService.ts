@@ -629,6 +629,79 @@ export class ClaudeAgentService {
 		let emittedLongThinkingWarning = false;
 		const debug = import.meta.env?.VITE_AGENT_DEBUG === "1";
 		const toolNamesById = new Map<string, string>();
+		// claude-agent-sdk 0.3.142+：Headless/SDK 会话用 TaskCreate/TaskUpdate/TaskGet/TaskList
+		// 族替代 TodoWrite。这些工具是增量 CRUD（不再一次传全量列表），
+		// 需要在本地维护快照再换算成 onTodoUpdate 需要的全量数组。
+		const taskToolInputById = new Map<string, Record<string, unknown>>();
+		const taskItemsById = new Map<
+			string,
+			{
+				content: string;
+				status: "pending" | "in_progress" | "completed";
+				activeForm?: string;
+				order: number;
+			}
+		>();
+		let taskItemOrderCounter = 0;
+		/**
+		 * 把 tool_result 的 content 还原成结构化对象。
+		 *
+		 * `tool_call_end.output` 直接来自 Anthropic tool_result 块的 content，
+		 * 形状有三种：结构化对象、JSON 字符串、`[{ type: "text", text: "…" }]`
+		 * 内容块数组。只处理前两种的话，一旦 CLI 走数组形态，Task 快照就会静默
+		 * 停更（任务列表卡住不动却不报错），所以三种都要认。
+		 */
+		const parseJsonMaybe = (value: unknown): any => {
+			if (value === null || value === undefined) return value;
+			if (typeof value === "string") {
+				try {
+					return JSON.parse(value);
+				} catch {
+					return value;
+				}
+			}
+			if (Array.isArray(value)) {
+				const text = value
+					.map((block: any) =>
+						typeof block === "string"
+							? block
+							: typeof block?.text === "string"
+								? block.text
+								: "",
+					)
+					.join("");
+				if (!text.trim()) return value;
+				try {
+					return JSON.parse(text);
+				} catch {
+					return value;
+				}
+			}
+			return value;
+		};
+		const normalizeTaskStatus = (
+			value: unknown,
+			fallback: "pending" | "in_progress" | "completed" = "pending",
+		): "pending" | "in_progress" | "completed" => {
+			if (
+				value === "pending" ||
+				value === "in_progress" ||
+				value === "completed"
+			)
+				return value;
+			return fallback;
+		};
+		const emitTaskSnapshot = () => {
+			if (!onTodoUpdate) return;
+			const items = Array.from(taskItemsById.values())
+				.sort((a, b) => a.order - b.order)
+				.map(({ content, status, activeForm }) => ({
+					content,
+					status,
+					activeForm,
+				}));
+			onTodoUpdate(items);
+		};
 		const streamState = new AgentStreamState();
 		let streamedVisibleText = "";
 		let pendingReplayProbe = "";
@@ -1364,6 +1437,18 @@ export class ClaudeAgentService {
 								// TodoWrite 是任务列表更新，不作为普通 tool_call 渲染，避免误显示为“已创建文件”等。
 								continue;
 							}
+							// TaskCreate/TaskUpdate/TaskGet/TaskList：TodoWrite 的新代，同样不作为普通
+							// tool_call 渲染，而是回它的 tool_call_end 去维护任务列表快照
+							// （taskId 只在返回值里，开始时还没有）。
+							if (
+								event.name === "TaskCreate" ||
+								event.name === "TaskUpdate" ||
+								event.name === "TaskGet" ||
+								event.name === "TaskList"
+							) {
+								if (event.input) taskToolInputById.set(event.id, event.input);
+								continue;
+							}
 							// 构建工具调用描述，包含工具名称和参数
 							const inputStr =
 								event.input && Object.keys(event.input).length > 0
@@ -1387,6 +1472,93 @@ export class ClaudeAgentService {
 							thoughtOnlyStartedAt = null;
 							// TodoWrite 的结果对 UI 没有必要展示为 tool_result（任务列表已经更新）
 							if (toolNamesById.get(event.id) === "TodoWrite") {
+								toolNamesById.delete(event.id);
+								continue;
+							}
+							const taskToolName = toolNamesById.get(event.id);
+							if (
+								taskToolName === "TaskCreate" ||
+								taskToolName === "TaskUpdate" ||
+								taskToolName === "TaskGet" ||
+								taskToolName === "TaskList"
+							) {
+								const input = taskToolInputById.get(event.id) || {};
+								const output = parseJsonMaybe(event.output) as any;
+								try {
+									if (taskToolName === "TaskCreate" && !event.isError) {
+										const taskId: string | undefined = output?.task?.id;
+										if (taskId) {
+											taskItemsById.set(taskId, {
+												content:
+													(input.subject as string) ||
+													(input.description as string) ||
+													output?.task?.subject ||
+													"",
+												status: "pending",
+												activeForm: input.activeForm as string | undefined,
+												order: taskItemOrderCounter++,
+											});
+										}
+									} else if (taskToolName === "TaskUpdate" && !event.isError) {
+										// TaskUpdate 失败时会返回 { success: false, error }，
+										// 这种"软失败"不带 isError，照单全收会让快照跑偏
+										const taskId = (input.taskId as string) || output?.taskId;
+										if (taskId && output?.success !== false) {
+											if (input.status === "deleted") {
+												taskItemsById.delete(taskId);
+											} else {
+												const existing = taskItemsById.get(taskId);
+												taskItemsById.set(taskId, {
+													content:
+														(input.subject as string) ||
+														(input.description as string) ||
+														existing?.content ||
+														"",
+													status: normalizeTaskStatus(
+														input.status,
+														existing?.status ?? "pending",
+													),
+													activeForm:
+														(input.activeForm as string | undefined) ??
+														existing?.activeForm,
+													order: existing?.order ?? taskItemOrderCounter++,
+												});
+											}
+										}
+									} else if (
+										taskToolName === "TaskList" &&
+										Array.isArray(output?.tasks)
+									) {
+										// TaskList 返回全量真实数据，用它全量重建快照（修正本地增量追踪可能的偏差）。
+										// activeForm 不在 TaskList 的返回里，从旧快照里捞回来，
+										// 否则重建一次就把"进行中"的动词短语丢了。
+										const previousActiveForms = new Map(
+											Array.from(taskItemsById.entries()).map(([id, item]) => [
+												id,
+												item.activeForm,
+											]),
+										);
+										taskItemsById.clear();
+										taskItemOrderCounter = 0;
+										for (const t of output.tasks) {
+											if (!t?.id) continue;
+											taskItemsById.set(t.id, {
+												content: t.subject || "",
+												status: normalizeTaskStatus(t.status),
+												activeForm: previousActiveForms.get(t.id),
+												order: taskItemOrderCounter++,
+											});
+										}
+									}
+									if (taskToolName !== "TaskGet") emitTaskSnapshot();
+								} catch (error) {
+									if (debug)
+										console.warn(
+											"[ClaudeAgentService] 任务列表快照同步失败:",
+											error,
+										);
+								}
+								taskToolInputById.delete(event.id);
 								toolNamesById.delete(event.id);
 								continue;
 							}

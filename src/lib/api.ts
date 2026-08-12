@@ -17,6 +17,8 @@ export * from "./api/dataAdmin";
 export * from "./api/feishu";
 export * from "./api/folders";
 export * from "./api/harnessHub";
+export * from "./api/harnessBridge";
+export * from "./api/harnessAutomation";
 export * from "./api/imageGen";
 export * from "./api/kb";
 export * from "./api/llm";

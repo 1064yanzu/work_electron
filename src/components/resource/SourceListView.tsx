@@ -502,12 +502,17 @@ export function SourceListView({
 	);
 
 	return (
-		<>
+		// 自己撑起一列 flex：外层 ViewTransition 只给了 h-full，不是 flex 容器，
+		// 直接吐 Fragment 的话内容区那个 flex-1 不生效——列表按自然高度收缩，
+		// 底部的添加按钮就会吊在列表正下方，下面留一大片空白。
+		<div className="flex h-full min-h-0 flex-col">
 			<ResourceSidebarHeader
 				currentResearch={currentResearch}
 				viewMode={viewMode}
 				selectionMode={selectionMode}
 				viewTabs={viewTabs}
+				itemCount={sources.length}
+				folderCount={currentSubfolders.length}
 				onOpenResearch={() => setLeftSidebarView("research")}
 				onOpenFolderModal={onOpenFolderModal}
 				onToggleViewMode={handleToggleViewMode}
@@ -576,7 +581,7 @@ export function SourceListView({
 			{/* Content */}
 			<div
 				ref={sourceListScrollRef}
-				className="flex-1 overflow-y-auto scrollbar-hide p-3"
+				className="min-h-0 flex-1 overflow-y-auto scrollbar-hide p-3"
 				onScroll={handleListScroll}
 				onDragOver={(e) => {
 					const hasSourceData =
@@ -774,39 +779,31 @@ export function SourceListView({
 				)}
 			</div>
 
-			{/* Bottom Actions */}
-			<div className="p-3 border-t border-border flex items-center justify-center gap-2 flex-wrap shrink-0">
-				<button
-					onClick={() => {
-						setActiveTab("text");
-						setIsAddModalOpen(true);
-					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-				>
-					<PenLine className="w-3.5 h-3.5" />
-					笔记
-				</button>
-				<button
-					onClick={() => {
-						setActiveTab("web");
-						setIsAddModalOpen(true);
-					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-				>
-					<Link className="w-3.5 h-3.5" />
-					链接
-				</button>
-				<button
-					onClick={() => {
-						setActiveTab("file");
-						setIsAddModalOpen(true);
-					}}
-					className="flex items-center gap-1.5 px-3 py-2 bg-surface ring-1 ring-zinc-200/70 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 hover:bg-warm-50 dark:hover:bg-cream-700/80 rounded-lg text-xs font-medium text-text-secondary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-				>
-					<Paperclip className="w-3.5 h-3.5" />
-					文件
-				</button>
+			{/* 底部添加入口：三个按钮等宽平分一行，贴住面板底边。
+			    此前是居中的三个胶囊，宽度随文字长短参差，在窄边栏里读起来很散。 */}
+			<div className="shrink-0 border-t border-border p-2">
+				<div className="flex items-stretch gap-1.5">
+					{[
+						{ tab: "text" as const, icon: PenLine, label: "笔记" },
+						{ tab: "web" as const, icon: Link, label: "链接" },
+						{ tab: "file" as const, icon: Paperclip, label: "文件" },
+					].map(({ tab, icon: Icon, label }) => (
+						<button
+							key={tab}
+							type="button"
+							onClick={() => {
+								setActiveTab(tab);
+								setIsAddModalOpen(true);
+							}}
+							title={`添加${label}`}
+							className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-150 hover:bg-warm-200 hover:text-text-primary focus-ring cursor-pointer"
+						>
+							<Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+							{label}
+						</button>
+					))}
+				</div>
 			</div>
-		</>
+		</div>
 	);
 }

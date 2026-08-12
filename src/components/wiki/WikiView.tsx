@@ -211,7 +211,7 @@ export function WikiView() {
 		const confirmed = await confirmDialog.show({
 			title: "重建 Wiki 结构",
 			message:
-				"这会重新补齐当前线程目录下的 .llm-wiki 结构，并确保存在默认的知识地图页面。不会删除已有页面内容。",
+				"这会重新补齐当前对话目录下的 .llm-wiki 结构，并确保存在默认的知识地图页面。不会删除已有页面内容。",
 			confirmText: "重建",
 			cancelText: "取消",
 			type: "warning",
@@ -299,11 +299,11 @@ export function WikiView() {
 						<BookOpen className="w-8 h-8 text-text-light" />
 					</div>
 					<h3 className="text-base font-semibold text-text-primary mb-2">
-						暂无线程工作目录
+						暂无对话工作目录
 					</h3>
 					<p className="text-sm text-text-muted text-center leading-relaxed max-w-[260px]">
 						Wiki
-						跟随当前线程的工作目录。请先在线程列表中选择一个线程，再整理该目录下的结构化知识。
+						跟随当前对话的工作目录。请先在对话列表中选择一条对话，再整理该目录下的结构化知识。
 					</p>
 				</div>
 			</div>
@@ -322,7 +322,7 @@ export function WikiView() {
 						知识 Wiki
 					</h3>
 					<p className="text-sm text-text-muted text-center leading-relaxed mb-6 max-w-[260px]">
-						将当前线程工作目录中的稳定知识整理为结构化索引，方便快速查阅和积累。
+						将当前对话工作目录中的稳定知识整理为结构化索引，方便快速查阅和积累。
 					</p>
 					{scopeLabel ? (
 						<div className="mb-4 text-xs text-text-light">
@@ -490,13 +490,11 @@ export function WikiView() {
 	// --- 列表视图 ---
 	return (
 		<div className="flex flex-col h-full">
-			{/* Header */}
-			<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
-				<div className="flex items-center gap-2">
-					<BookOpen className="w-4 h-4 text-primary" />
-					<h2 className="font-semibold text-sm text-text-primary">知识 Wiki</h2>
+			{/* Header：标题交给上方的知识 tab 条，这里只留"作用域 + 页数 + 操作" */}
+			<div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-b border-border">
+				<div className="flex min-w-0 items-center gap-2">
 					{scopeLabel ? (
-						<span className="max-w-[120px] truncate text-[11px] text-text-light">
+						<span className="max-w-[150px] truncate text-[12px] text-text-secondary">
 							{scopeLabel}
 						</span>
 					) : null}

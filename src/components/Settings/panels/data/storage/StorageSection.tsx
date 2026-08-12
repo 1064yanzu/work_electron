@@ -21,9 +21,8 @@ import { toast } from "../../../../ui/Toast";
 import { Select } from "../../../../ui/Select";
 import {
 	SettingsButton,
+	SettingsCardSection,
 	SettingsRow,
-	SettingsSectionCard,
-	SettingsSectionTitle,
 	SettingsSwitch,
 } from "../../../ui/SettingsPrimitives";
 import { SettingsDisclosure } from "../../../ui/SettingsDisclosure";
@@ -68,105 +67,101 @@ export function StorageSection({
 	}, []);
 
 	return (
-		<SettingsSectionCard>
-			<div className="p-5 space-y-2">
-				<SettingsSectionTitle>存储与互通</SettingsSectionTitle>
-
-				<div
-					id="data.storage.vault_root"
-					data-settings-anchor="data.storage.vault_root"
-				>
-					<SettingsRow
-						label="Vault 根目录"
-						description={storageSettings.vault_root}
-						action={
-							<div className="flex items-center gap-2">
-								<SettingsButton
-									icon={FolderOpen}
-									onClick={handlePickVault}
-									disabled={isUpdating}
-								>
-									选择目录
-								</SettingsButton>
-								<SettingsButton
-									icon={HardDrive}
-									variant="ghost"
-									onClick={handleRevealVault}
-								>
-									打开目录
-								</SettingsButton>
-							</div>
-						}
-					/>
-				</div>
-
-				<SettingsDisclosure
-					id="data.storage.advanced"
-					title="Obsidian 互通与冲突策略"
-				>
-					<div className="rounded-xl border border-border/70 bg-cream-50/60 px-4 py-2">
-						<div
-							id="data.storage.obsidian_frontmatter"
-							data-settings-anchor="data.storage.obsidian_frontmatter"
-						>
-							<SettingsRow
-								label="Obsidian Frontmatter"
-								description="为 Markdown 文件写入 YAML 元信息，方便被 Obsidian 索引"
-								action={
-									<SettingsSwitch
-										checked={storageSettings.obsidian_frontmatter}
-										onChange={(v) => void onUpdate({ obsidian_frontmatter: v })}
-										disabled={isUpdating}
-									/>
-								}
-							/>
+		<SettingsCardSection title="存储与互通" bodyClassName="p-5 space-y-2">
+			<div
+				id="data.storage.vault_root"
+				data-settings-anchor="data.storage.vault_root"
+			>
+				<SettingsRow
+					label="Vault 根目录"
+					description={storageSettings.vault_root}
+					action={
+						<div className="flex items-center gap-2">
+							<SettingsButton
+								icon={FolderOpen}
+								onClick={handlePickVault}
+								disabled={isUpdating}
+							>
+								选择目录
+							</SettingsButton>
+							<SettingsButton
+								icon={HardDrive}
+								variant="ghost"
+								onClick={handleRevealVault}
+							>
+								打开目录
+							</SettingsButton>
 						</div>
-						<div
-							id="data.storage.obsidian_wiki_links"
-							data-settings-anchor="data.storage.obsidian_wiki_links"
-						>
-							<SettingsRow
-								label="Wiki Link"
-								description="优先使用 [[文档]] 互链风格"
-								action={
-									<SettingsSwitch
-										checked={storageSettings.obsidian_wiki_links}
-										onChange={(v) => void onUpdate({ obsidian_wiki_links: v })}
-										disabled={isUpdating}
-									/>
-								}
-							/>
-						</div>
-						<div
-							id="data.storage.conflict_strategy"
-							data-settings-anchor="data.storage.conflict_strategy"
-						>
-							<SettingsRow
-								label="重名冲突策略"
-								description="同名文件存在时的处理方式"
-								action={
-									<Select
-										value={storageSettings.conflict_strategy}
-										onChange={(e) =>
-											void onUpdate({
-												conflict_strategy: e.target
-													.value as StorageSettings["conflict_strategy"],
-											})
-										}
-										disabled={isUpdating}
-										variant="inline"
-										containerClassName="w-auto"
-										options={[
-											{ value: "append_suffix", label: "追加后缀" },
-											{ value: "prevent_overwrite", label: "阻止覆盖" },
-										]}
-									/>
-								}
-							/>
-						</div>
-					</div>
-				</SettingsDisclosure>
+					}
+				/>
 			</div>
-		</SettingsSectionCard>
+
+			<SettingsDisclosure
+				id="data.storage.advanced"
+				title="Obsidian 互通与冲突策略"
+			>
+				<div className="rounded-xl border border-border/70 bg-cream-50/60 px-4 py-2">
+					<div
+						id="data.storage.obsidian_frontmatter"
+						data-settings-anchor="data.storage.obsidian_frontmatter"
+					>
+						<SettingsRow
+							label="Obsidian Frontmatter"
+							description="为 Markdown 文件写入 YAML 元信息，方便被 Obsidian 索引"
+							action={
+								<SettingsSwitch
+									checked={storageSettings.obsidian_frontmatter}
+									onChange={(v) => void onUpdate({ obsidian_frontmatter: v })}
+									disabled={isUpdating}
+								/>
+							}
+						/>
+					</div>
+					<div
+						id="data.storage.obsidian_wiki_links"
+						data-settings-anchor="data.storage.obsidian_wiki_links"
+					>
+						<SettingsRow
+							label="Wiki Link"
+							description="优先使用 [[文档]] 互链风格"
+							action={
+								<SettingsSwitch
+									checked={storageSettings.obsidian_wiki_links}
+									onChange={(v) => void onUpdate({ obsidian_wiki_links: v })}
+									disabled={isUpdating}
+								/>
+							}
+						/>
+					</div>
+					<div
+						id="data.storage.conflict_strategy"
+						data-settings-anchor="data.storage.conflict_strategy"
+					>
+						<SettingsRow
+							label="重名冲突策略"
+							description="同名文件存在时的处理方式"
+							action={
+								<Select
+									value={storageSettings.conflict_strategy}
+									onChange={(e) =>
+										void onUpdate({
+											conflict_strategy: e.target
+												.value as StorageSettings["conflict_strategy"],
+										})
+									}
+									disabled={isUpdating}
+									variant="inline"
+									containerClassName="w-auto"
+									options={[
+										{ value: "append_suffix", label: "追加后缀" },
+										{ value: "prevent_overwrite", label: "阻止覆盖" },
+									]}
+								/>
+							}
+						/>
+					</div>
+				</div>
+			</SettingsDisclosure>
+		</SettingsCardSection>
 	);
 }

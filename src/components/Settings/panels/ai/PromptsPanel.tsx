@@ -134,7 +134,7 @@ export function PromptsPanel() {
 	}, []);
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={ScrollText}
 				title="提示词配置"

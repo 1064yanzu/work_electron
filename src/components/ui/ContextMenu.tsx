@@ -19,6 +19,8 @@ export interface ContextMenuItem {
 	disabled?: boolean;
 	danger?: boolean;
 	separator?: boolean;
+	/** 分组小标题（不可点、不参与键盘遍历），用于把长菜单分段 */
+	heading?: boolean;
 	shortcut?: string; // 快捷键提示
 }
 
@@ -38,7 +40,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
 	const actionableIndexes = useMemo(() => {
 		return items
-			.map((item, index) => (item.separator || item.disabled ? null : index))
+			.map((item, index) =>
+				item.separator || item.heading || item.disabled ? null : index,
+			)
 			.filter((index): index is number => index !== null);
 	}, [items]);
 
@@ -201,6 +205,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 			ref={menuRef}
 			role="menu"
 			aria-label="上下文菜单"
+			// 原生 WebContentsView（AI Hub 内嵌站点）永远浮在 DOM 之上，
+			// 它靠这个标记知道"有浮层要显示，先把自己摘下来"。
+			data-native-overlay="true"
 			className={cn(
 				"fixed z-[9999] min-w-[200px]",
 				// 高级毛玻璃效果
@@ -225,6 +232,17 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 							key={`separator-${index}`}
 							className="h-px bg-warm-300/60 dark:bg-cream-700/60 my-1.5 mx-2"
 						/>
+					);
+				}
+
+				if (item.heading) {
+					return (
+						<div
+							key={`heading-${index}`}
+							className="px-3 pt-1.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-text-light"
+						>
+							{item.label}
+						</div>
 					);
 				}
 

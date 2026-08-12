@@ -88,6 +88,7 @@ export function LayoutPanel() {
 		graphFollow: true,
 		artifactClickBehavior: "select_only",
 		infoDensity: "comfortable",
+		restoreTabsOnStartup: true,
 	});
 	const [sandboxPrefs, setSandboxPrefs] = useState<SandboxPreviewPrefs>(
 		DEFAULT_SANDBOX_PREFS,
@@ -233,7 +234,7 @@ export function LayoutPanel() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Layout}
 				title="工作区布局"

@@ -16,6 +16,7 @@
  * reminder > notification > input(用户主动开启) > progress > task
  */
 
+import { EASE, gsap, mDur, useGsapMotion } from "../lib/motion";
 import {
 	useCallback,
 	useEffect,
@@ -28,6 +29,7 @@ import { MascotSpriteFader } from "./MascotSpriteFader";
 import { PetGroundShadow } from "./PetGroundShadow";
 import { PEEK_OFFSET_PX, usePetEdgePeek } from "./usePetEdgePeek";
 import { useMouseGaze } from "./useMouseGaze";
+import { usePetBodyMotion } from "./usePetBodyMotion";
 import { useTapBurst } from "./useTapBurst";
 import {
 	getMascotAtlas,
@@ -158,18 +160,37 @@ export default function PetApp() {
 	const [throughClicks, setThroughClicks] = useState(false);
 	// 是否处于 sink（关闭气泡的退场动画）
 	const [bubbleSinking, setBubbleSinking] = useState(false);
-	// 落地反弹一次性 class
-	const [landBouncing, setLandBouncing] = useState(false);
-	// 眨眼一次性
-	const [blinking, setBlinking] = useState(false);
-	// 拖动倾斜角（限幅 ±6deg）
-	const [dragRotateDeg, setDragRotateDeg] = useState(0);
-	// 连点害羞一次性
-	const [wobbling, setWobbling] = useState(false);
+	// 落地反弹 / 连点摇晃 / 眨眼 / idle 呼吸 → 统一由 usePetBodyMotion 的
+	// GSAP 时间轴驱动，不再各自持一份一次性 state
 	// 贴墙半隐藏
 	const edgePeek = usePetEdgePeek(!isDragging);
+	/**
+	 * 连续动效专用容器。视线追随（x/y）与拖动倾斜（rotation）都由 GSAP 直接写
+	 * 这个元素的 transform，**不经过 React**——它们是每帧变化的量，走 state 会让
+	 * 这个 1200 行的组件按帧率重渲染。
+	 * 离散状态（scale、贴墙偏移）仍由下面那层 React 计算的 transform 负责，
+	 * 两层各写各的元素，不会互相覆盖。
+	 */
+	const motionLayerRef = useRef<HTMLDivElement>(null);
 	// 视线追随（拖动 / 贴墙半隐藏时禁用，避免与其它 transform 叠加错位）
-	const gaze = useMouseGaze(!isDragging && !edgePeek.peeking);
+	useMouseGaze(!isDragging && !edgePeek.peeking, motionLayerRef);
+
+	// 当前宠物的"声音颜色"——用于气泡边缘光晕、按钮色、连点迸发的粒子色
+	const accentColor =
+		mascotId === "off"
+			? "#D96C46"
+			: (mascotManager.getMergedMeta(mascotId)?.accentColor ?? "#D96C46");
+
+	// 身体的挤压/拉伸通道：落地"啪嗒"、连点摇晃、idle 呼吸。
+	// 与 motionLayer 分层，各写各的元素（见 usePetBodyMotion 顶部注释）。
+	const { squashRef, shadowRef, playLand, playWobble } = usePetBodyMotion({
+		idle:
+			uiState.motion === "idle" &&
+			!isDragging &&
+			!edgePeek.peeking &&
+			uiState.bubble === "none",
+		burstColor: accentColor,
+	});
 
 	const dragStartRef = useRef({ x: 0, y: 0 });
 	// 真位移 > 5px 才置 true，区分"点击"与"拖动"
@@ -237,14 +258,14 @@ export default function PetApp() {
 		};
 	}, []);
 
-	// 落地反弹：宠物窗口被主进程动画移到边缘后通过 "pet-landed" 通知
+	// 落地反弹：宠物窗口被主进程动画移到边缘后通过 "pet-landed" 通知。
+	// 压扁回弹 + 影子同步摊开，都在 usePetBodyMotion 的同一条 timeline 上。
 	useEffect(() => {
 		let unlisten: UnlistenFn | null = null;
 		void (async () => {
 			try {
 				unlisten = await listen<{ x: number; y: number }>("pet-landed", () => {
-					setLandBouncing(true);
-					setTimeout(() => setLandBouncing(false), 220);
+					playLand();
 				});
 			} catch {
 				// noop
@@ -253,7 +274,7 @@ export default function PetApp() {
 		return () => {
 			unlisten?.();
 		};
-	}, []);
+	}, [playLand]);
 
 	// 全局热键唤起：主进程 globalShortcut 触发后转发 pet-focus-input，
 	// 收到后强制打开输入气泡并让 textarea 聚焦
@@ -279,11 +300,8 @@ export default function PetApp() {
 		};
 	}, [eventState]);
 
-	// 当前宠物的"声音颜色"——用于气泡边缘光晕和按钮色
-	const accentColor =
-		mascotId === "off"
-			? "#D96C46"
-			: (mascotManager.getMergedMeta(mascotId)?.accentColor ?? "#D96C46");
+	// 当前宠物的"声音颜色"——见上方 accentColor 定义（挪到了 hook 区，
+	// 因为 usePetBodyMotion 的粒子色要用它）
 
 	const atlasUrl = mascotId === "off" ? null : getMascotAtlas(mascotId);
 	const fallbackHeroUrl =
@@ -393,37 +411,13 @@ export default function PetApp() {
 		};
 	}, [uiState.motion]);
 
-	// 眨眼：仅 idle 时每 5-9s 随机一次（CSS-only 模拟，不修改 atlas）
-	useEffect(() => {
-		if (uiState.motion !== "idle") return;
-		let cancelled = false;
-		const tick = () => {
-			if (cancelled) return;
-			const delay = 5000 + Math.random() * 4000;
-			setTimeout(() => {
-				if (cancelled) return;
-				if (uiState.motion === "idle" && !isDragging) {
-					setBlinking(true);
-					setTimeout(() => setBlinking(false), 130);
-				}
-				tick();
-			}, delay);
-		};
-		tick();
-		return () => {
-			cancelled = true;
-		};
-	}, [uiState.motion, isDragging]);
+	// 眨眼已搬进 usePetBodyMotion：走 GSAP 直写 filter，
+	// 不再每 5-9s 触发两次 setState 把整个组件重渲染一遍。
 
 	// ── 交互处理 ──
 
-	// 连点害羞：2 秒内 ≥ 3 次 mouseup 触发
-	const registerTap = useTapBurst(
-		useCallback(() => {
-			setWobbling(true);
-			setTimeout(() => setWobbling(false), 300);
-		}, []),
-	);
+	// 连点害羞：2 秒内 ≥ 3 次 mouseup 触发（摇晃 + 一小圈迸发）
+	const registerTap = useTapBurst(playWobble);
 
 	// 连点庆祝彩蛋：5 秒内 ≥ 10 次触发（两个 burst hook 独立计数）
 	const registerCelebrate = useTapBurst(
@@ -534,6 +528,13 @@ export default function PetApp() {
 	useEffect(() => {
 		if (!isDragging) return;
 
+		// 倾斜走 quickTo：拖动期间每次 mousemove 都要改这个角度，
+		// 走 setState 等于按鼠标事件频率重渲染整个桌宠。
+		const layer = motionLayerRef.current;
+		const rotateTo = layer
+			? gsap.quickTo(layer, "rotation", { duration: 0.25, ease: "power3" })
+			: null;
+
 		const handleMouseMove = (e: MouseEvent) => {
 			const dx = e.screenX - dragStartRef.current.x;
 			const dy = e.screenY - dragStartRef.current.y;
@@ -569,7 +570,7 @@ export default function PetApp() {
 					const vxSeg = (last.x - first.x) / dtSeg; // px/ms
 					// 限幅 ±6deg；vxSeg ≈ ±2 px/ms 对应满倾斜
 					const rot = Math.max(-6, Math.min(6, vxSeg * 3));
-					setDragRotateDeg(rot);
+					rotateTo?.(rot);
 
 					// 根据水平速度切换 sprite 朝向；阈值带 ±0.05 px/ms 内保持上次方向，避免抖动
 					const DIR_THRESHOLD = 0.05;
@@ -600,7 +601,16 @@ export default function PetApp() {
 				return;
 			}
 			setIsDragging(false);
-			setDragRotateDeg(0);
+			// 松手回正带一次过冲摆动：手上"甩"的力道有个去处，比瞬间归零像活物。
+			// 幅度按档位缩放，reduced 档 mDur 返回 0 → 直接落回 0 度。
+			if (layer) {
+				gsap.to(layer, {
+					rotation: 0,
+					duration: mDur(0.9),
+					ease: "elastic.out(1, 0.45)",
+					overwrite: "auto",
+				});
+			}
 			lastDragMotionRef.current = null;
 			const wasDrag = movedRef.current;
 
@@ -971,6 +981,7 @@ export default function PetApp() {
 					size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
 					isDragging={isDragging}
 					isPeeking={edgePeek.peeking}
+					animRef={shadowRef}
 				/>
 
 				{/* 未读红点：呼吸式跳动；位置随 sizePreset 缩放 */}
@@ -988,82 +999,88 @@ export default function PetApp() {
 					/>
 				)}
 
-				{/* 角色本体 */}
+				{/* 连续动效层：视线追随（x/y）与拖动倾斜（rotation）由 GSAP 直写，
+				    与下面 React 计算的离散 transform 分层，互不覆盖 */}
 				<div
-					className={[
-						"cursor-grab active:cursor-grabbing pet-peek-transition",
-						landBouncing ? "animate-pet-land-bounce" : "",
-						blinking ? "pet-blink" : "",
-						wobbling ? "animate-pet-wobble" : "",
-					]
-						.filter(Boolean)
-						.join(" ")}
-					style={{
-						transform: (() => {
-							const parts: string[] = [];
-							// 拖动时叠加倾斜 + 放大；松开时优先级让位给 hover/input/motion
-							if (isDragging) {
-								parts.push("scale(1.08)");
-								if (dragRotateDeg !== 0) {
-									parts.push(`rotate(${dragRotateDeg.toFixed(2)}deg)`);
-								}
-							} else if (uiState.bubble === "input") {
-								parts.push("scale(0.98) rotate(-3deg)");
-							} else if (uiState.motion === "greet") {
-								parts.push("scale(1.05)");
-							} else {
-								parts.push("scale(1)");
-							}
-							// 贴墙半隐藏：整体偏出屏幕外（露 60%），优先于 gaze
-							if (edgePeek.peeking && edgePeek.side) {
-								if (edgePeek.side === "left" || edgePeek.side === "right") {
-									const dx =
-										edgePeek.side === "left" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
-									parts.push(`translateX(${dx}px)`);
-								} else {
-									const dy =
-										edgePeek.side === "top" ? -PEEK_OFFSET_PX : PEEK_OFFSET_PX;
-									parts.push(`translateY(${dy}px)`);
-								}
-							} else if (!isDragging) {
-								// 视线追随（仅在非拖动态叠加，±3px）
-								parts.push(
-									`translate(${gaze.tx.toFixed(2)}px, ${gaze.ty.toFixed(2)}px)`,
-								);
-							}
-							return parts.join(" ");
-						})(),
-						transformOrigin: "50% 90%",
-						background: "transparent",
-					}}
-					onMouseEnter={handleMouseEnter}
-					onMouseLeave={handleMouseLeave}
-					onContextMenu={handleContextMenu}
-					onMouseDown={handleMouseDown}
-					role="button"
-					tabIndex={0}
-					aria-label="桌面宠物"
+					ref={motionLayerRef}
+					className="will-change-transform"
+					style={{ transformOrigin: "50% 90%" }}
 				>
-					{atlasUrl ? (
-						<MascotSpriteFader
-							atlasUrl={atlasUrl}
-							motion={uiState.motion}
-							size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
-							paused={false}
-						/>
-					) : (
-						<img
-							src={fallbackHeroUrl ?? ""}
-							alt=""
-							aria-hidden="true"
-							draggable={false}
-							className="block object-contain"
+					{/* 挤压/拉伸层：落地压扁、连点摇晃、idle 呼吸（GSAP 独占）。
+					    原点定在脚下，压扁时头往下沉而不是整体缩，才像"踩到地面"。 */}
+					<div
+						ref={squashRef}
+						className="will-change-transform"
+						style={{ transformOrigin: "50% 100%" }}
+					>
+						{/* 角色本体 */}
+						<div
+							className="cursor-grab active:cursor-grabbing pet-peek-transition"
 							style={{
-								width: `${SIZE_PRESET_TO_PX[sizePreset] ?? 180}px`,
-								height: `${(SIZE_PRESET_TO_PX[sizePreset] ?? 180) * (208 / 192)}px`,
+								transform: (() => {
+									const parts: string[] = [];
+									// 拖动时放大；松开时优先级让位给 hover/input/motion。
+									// 倾斜角不在这里——它在上层 motionLayer 由 GSAP 驱动。
+									if (isDragging) {
+										parts.push("scale(1.08)");
+									} else if (uiState.bubble === "input") {
+										parts.push("scale(0.98) rotate(-3deg)");
+									} else if (uiState.motion === "greet") {
+										parts.push("scale(1.05)");
+									} else {
+										parts.push("scale(1)");
+									}
+									// 贴墙半隐藏：整体偏出屏幕外（露 60%）
+									if (edgePeek.peeking && edgePeek.side) {
+										if (edgePeek.side === "left" || edgePeek.side === "right") {
+											const dx =
+												edgePeek.side === "left"
+													? -PEEK_OFFSET_PX
+													: PEEK_OFFSET_PX;
+											parts.push(`translateX(${dx}px)`);
+										} else {
+											const dy =
+												edgePeek.side === "top"
+													? -PEEK_OFFSET_PX
+													: PEEK_OFFSET_PX;
+											parts.push(`translateY(${dy}px)`);
+										}
+									}
+									return parts.join(" ");
+								})(),
+								transformOrigin: "50% 90%",
+								background: "transparent",
 							}}
-						/>
-					)}
+							onMouseEnter={handleMouseEnter}
+							onMouseLeave={handleMouseLeave}
+							onContextMenu={handleContextMenu}
+							onMouseDown={handleMouseDown}
+							role="button"
+							tabIndex={0}
+							aria-label="桌面宠物"
+						>
+							{atlasUrl ? (
+								<MascotSpriteFader
+									atlasUrl={atlasUrl}
+									motion={uiState.motion}
+									size={SIZE_PRESET_TO_PX[sizePreset] ?? 180}
+									paused={false}
+								/>
+							) : (
+								<img
+									src={fallbackHeroUrl ?? ""}
+									alt=""
+									aria-hidden="true"
+									draggable={false}
+									className="block object-contain"
+									style={{
+										width: `${SIZE_PRESET_TO_PX[sizePreset] ?? 180}px`,
+										height: `${(SIZE_PRESET_TO_PX[sizePreset] ?? 180) * (208 / 192)}px`,
+									}}
+								/>
+							)}
+						</div>
+					</div>
 				</div>
 
 				{/* 上下文菜单（长按 / 右键触发） */}
@@ -1119,9 +1136,44 @@ function PetContextMenu({
 		return mascotManager.getMergedMeta(next)?.label ?? "下一个";
 	}, [currentMascotId]);
 
+	// 菜单入场：动画挂在**内层**，外层那个 translate(±108%) 是定位用的，
+	// 一旦被动画覆盖菜单会先飞到角色身上再瞬移回来。
+	const menuRef = useRef<HTMLDivElement>(null);
+	useGsapMotion(({ gsap, dur, amp, expressive }) => {
+		const element = menuRef.current;
+		if (!element) return;
+		const tl = gsap.timeline();
+		tl.from(element, {
+			opacity: 0,
+			scale: 0.9,
+			y: amp(8),
+			duration: dur(0.3),
+			ease: EASE.spring,
+			transformOrigin: side === "left" ? "100% 0%" : "0% 0%",
+			clearProps: "transform,opacity",
+		});
+		if (expressive) {
+			const items = element.querySelectorAll("button");
+			if (items.length > 0) {
+				tl.from(
+					items,
+					{
+						opacity: 0,
+						x: amp(side === "left" ? 6 : -6),
+						duration: dur(0.26),
+						ease: EASE.outExpo,
+						stagger: 0.028,
+						clearProps: "transform,opacity",
+					},
+					dur(0.06),
+				);
+			}
+		}
+	}, {});
+
 	return (
 		<div
-			className="absolute z-20 animate-pet-bubble-rise"
+			className="absolute z-20"
 			style={{
 				...(side === "left"
 					? { left: "0", top: "0", transform: "translate(-108%, 8px)" }
@@ -1131,6 +1183,7 @@ function PetContextMenu({
 			onMouseDown={(e) => e.stopPropagation()}
 		>
 			<div
+				ref={menuRef}
 				className="pet-surface-darkish rounded-2xl py-1.5"
 				style={{
 					backgroundColor: "var(--t-bg-surface, #ffffff)",

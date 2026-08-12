@@ -986,7 +986,15 @@ class AgentExecutor {
 								name: string,
 							): import("./types").ToolType => {
 								const lower = name?.toLowerCase() || "";
-								if (lower === "todowrite") return "custom";
+								// claude-agent-sdk 0.3.142+：TaskCreate/TaskUpdate/TaskGet/TaskList 族替代 TodoWrite
+								if (
+									lower === "todowrite" ||
+									lower === "taskcreate" ||
+									lower === "taskupdate" ||
+									lower === "taskget" ||
+									lower === "tasklist"
+								)
+									return "custom";
 								if (
 									lower === "bash" ||
 									lower.includes("terminal") ||

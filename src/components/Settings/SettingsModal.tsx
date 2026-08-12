@@ -1,14 +1,15 @@
 /**
  * SettingsModal — 设置面板根容器
  *
- * Phase 1 落地：两层导航 + legacy id 归一化 + 外壳圆角。
- * Phase 3 增量：顶部内嵌 `SettingsSearch`；命中结果通过 `navigateTo(tabId, anchorId)`
- *              切 Tab → `requestAnimationFrame` 内 `scrollIntoView({block:"center"})`
- *              → 目标容器加 `data-settings-field-highlight="true"`，1.2s 后移除。
+ * 布局：左侧 `SettingsSidebar`（返回 + 搜索 + 平铺分组导航），右侧内容区。
+ * 内容区不设顶栏、也不放浮动关闭按钮——顶部完整留给面板自己的 H1 标题，
+ * 「返回应用」在侧栏顶部（Esc / 点遮罩同样可关）。
+ *
+ * 搜索命中：`SettingsSearch` 通过 Sidebar 透传 `navigateTo(tabId, anchorId)`
+ *          → 切 Tab → `requestAnimationFrame` 内 `scrollIntoView({block:"center"})`
+ *          → 目标容器加 `data-settings-field-highlight="true"`，1.2s 后移除。
  */
-import { X } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { SettingsSearch } from "./components/SettingsSearch";
 import { resolveSettingsTabId } from "./legacyTabMap";
 import {
 	getSettingsPanelComponent,
@@ -180,32 +181,20 @@ export function SettingsModal({
 					activeTab={activeTab}
 					onNavigate={navigateTo}
 					onPrefetch={preloadSettingsPanel}
+					onClose={handleClose}
+					backButtonRef={closeButtonRef}
 				/>
 
 				<main
 					ref={contentRef}
-					className="flex-1 flex flex-col min-w-0 overflow-hidden relative transition-colors duration-300"
+					className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-300"
+					// surface = 最亮的一层。侧栏用 bg（暗一档），靠明暗分栏；
+					// 卡片同为 surface，于是卡片只剩描边，不再是浮在米色上的白块。
 					style={{ backgroundColor: "var(--t-bg-surface)" }}
 				>
-					{/* 顶部搜索 + 关闭按钮：flex 行布局 */}
-					<div className="shrink-0 flex items-center gap-2 border-b border-border/60 px-6 pt-4 pb-3">
-						<div className="flex-1 min-w-0">
-							<SettingsSearch onResultClick={navigateTo} />
-						</div>
-						<button
-							ref={closeButtonRef}
-							onClick={handleClose}
-							className="shrink-0 p-2 flex items-center justify-center rounded-full cursor-pointer hover:bg-warm-200 text-text-muted hover:text-text-primary transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-							title="关闭"
-							aria-label="关闭设置"
-						>
-							<X className="w-4 h-4" strokeWidth={1.5} />
-						</button>
-					</div>
-
 					<Suspense
 						fallback={
-							<div className="flex-1 flex items-center justify-center text-sm text-text-muted">
+							<div className="flex flex-1 items-center justify-center text-sm text-text-muted">
 								正在加载设置面板...
 							</div>
 						}

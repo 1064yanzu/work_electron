@@ -1,6 +1,14 @@
 import { CheckCircle2, Info, X, XCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import {
+	EASE,
+	Flip,
+	gsap,
+	isReducedMotion,
+	mDur,
+	useGsapMotion,
+} from "../../lib/motion";
 import { cn } from "../../lib/utils";
 
 export type ToastType = "success" | "error" | "info" | "warning";
@@ -74,38 +82,37 @@ function getActionClass(variant: ToastActionVariant) {
 
 function ToastContainer() {
 	const [toasts, setToasts] = useState<ToastItem[]>([]);
-	const timersRef = useRef<Map<string, number>>(new Map());
+	const listRef = useRef<HTMLDivElement>(null);
+	// 移除一条之后剩下几条要平滑补位：在 setState **之前**抓一次 Flip 快照，
+	// 渲染完成后从快照补间回去。纯 CSS 做不到（元素是被 flex 重新布局的）。
+	const flipStateRef = useRef<Flip.FlipState | null>(null);
+
+	useLayoutEffect(() => {
+		const state = flipStateRef.current;
+		if (!state) return;
+		flipStateRef.current = null;
+		Flip.from(state, {
+			duration: mDur(0.32),
+			ease: EASE.outExpo,
+			absolute: true,
+		});
+	});
 
 	useEffect(() => {
 		const handleToast = (event: Event) => {
 			const custom = event as CustomEvent<ToastItem>;
-			const nextToast = custom.detail;
-			setToasts((prev) => [...prev, nextToast]);
-
-			if (nextToast.duration > 0) {
-				const timer = window.setTimeout(() => {
-					setToasts((prev) => prev.filter((item) => item.id !== nextToast.id));
-					timersRef.current.delete(nextToast.id);
-				}, nextToast.duration);
-				timersRef.current.set(nextToast.id, timer);
-			}
+			setToasts((prev) => [...prev, custom.detail]);
 		};
-
 		window.addEventListener(TOAST_EVENT_NAME, handleToast);
-		return () => {
-			window.removeEventListener(TOAST_EVENT_NAME, handleToast);
-			for (const timer of timersRef.current.values()) {
-				window.clearTimeout(timer);
-			}
-			timersRef.current.clear();
-		};
+		return () => window.removeEventListener(TOAST_EVENT_NAME, handleToast);
 	}, []);
 
+	// 自动消失的计时器由每条 toast 自己持有（见 ToastItemView）：
+	// 组件卸载即自动清理，也让「倒计时结束」能和手动关闭走同一条退场动画。
 	const handleClose = (id: string) => {
-		const timer = timersRef.current.get(id);
-		if (timer) {
-			window.clearTimeout(timer);
-			timersRef.current.delete(id);
+		const list = listRef.current;
+		if (list && !isReducedMotion()) {
+			flipStateRef.current = Flip.getState(list.children);
 		}
 		setToasts((prev) => prev.filter((item) => item.id !== id));
 	};
@@ -114,6 +121,7 @@ function ToastContainer() {
 
 	return (
 		<div
+			ref={listRef}
 			className="pointer-events-none fixed right-4 top-4 z-[9999] flex max-w-[min(92vw,420px)] flex-col gap-2"
 			aria-live="polite"
 			aria-atomic="false"
@@ -136,42 +144,100 @@ function ToastItemView({
 	toast: ToastItem;
 	onClose: () => void;
 }) {
-	const [isExiting, setIsExiting] = useState(false);
-	const [progress, setProgress] = useState(100);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const iconRef = useRef<HTMLDivElement>(null);
+	const progressRef = useRef<HTMLDivElement>(null);
+	const exitingRef = useRef(false);
 
+	const closeWithMotion = () => {
+		if (exitingRef.current) return;
+		exitingRef.current = true;
+		const element = rootRef.current;
+		if (!element || isReducedMotion()) {
+			onClose();
+			return;
+		}
+		gsap.to(element, {
+			x: 32,
+			opacity: 0,
+			scale: 0.96,
+			duration: mDur(0.24),
+			ease: EASE.inExpo,
+			onComplete: onClose,
+		});
+	};
+
+	// 倒计时自动关闭。放在 toast 自己身上（而不是容器的 timer map）有两个好处：
+	// 卸载即自动清理，且「时间到」和「手动关」走同一条退场动画——
+	// 改造前自动消失的 toast 是直接从 DOM 里消失的，没有过渡。
+	const closeRef = useRef(closeWithMotion);
+	closeRef.current = closeWithMotion;
 	useEffect(() => {
 		if (item.duration <= 0) return;
-		const start = Date.now();
-		const timer = window.setInterval(() => {
-			const elapsed = Date.now() - start;
-			const percentage = Math.max(0, 100 - (elapsed / item.duration) * 100);
-			setProgress(percentage);
-			if (percentage <= 0) {
-				window.clearInterval(timer);
-			}
-		}, 50);
-		return () => window.clearInterval(timer);
+		const timer = window.setTimeout(() => closeRef.current(), item.duration);
+		return () => window.clearTimeout(timer);
 	}, [item.duration]);
+
+	// 入场 + 进度条。
+	// 进度条从「每 50ms setState 一次」换成一条 scaleX 补间：
+	// 一条 3 秒的 toast 原来要触发 60 次重渲染，现在 0 次，且走合成器不碰布局。
+	useGsapMotion(
+		({ gsap: g, dur, expressive }) => {
+			const tl = g.timeline();
+			if (rootRef.current) {
+				tl.from(rootRef.current, {
+					x: 44,
+					opacity: 0,
+					scale: 0.92,
+					duration: dur(0.46),
+					ease: EASE.spring,
+					clearProps: "transform,opacity",
+				});
+			}
+			if (expressive && iconRef.current) {
+				tl.from(
+					iconRef.current,
+					{
+						scale: 0.4,
+						rotate: -25,
+						duration: dur(0.5),
+						ease: EASE.spring,
+						clearProps: "transform",
+					},
+					dur(0.08),
+				);
+			}
+			if (item.duration > 0 && progressRef.current) {
+				// 进度条不缩放时长：它表示的是真实剩余时间，必须和计时器一致
+				g.fromTo(
+					progressRef.current,
+					{ scaleX: 1 },
+					{
+						scaleX: 0,
+						duration: item.duration / 1000,
+						ease: "none",
+						transformOrigin: "left center",
+					},
+				);
+			}
+		},
+		{ scope: rootRef, runInReduced: true },
+	);
 
 	const styles = getToastStyles(item.type);
 
-	const closeWithMotion = () => {
-		setIsExiting(true);
-		window.setTimeout(onClose, 180);
-	};
-
 	return (
 		<div
+			ref={rootRef}
 			role="status"
 			className={cn(
 				"pointer-events-auto relative overflow-hidden rounded-2xl border bg-cream-50 dark:bg-cream-900 p-4 shadow-bai-pop",
-				"transition-[opacity,transform] duration-200 ease-out",
-				isExiting ? "translate-x-4 scale-[0.98] opacity-0" : "opacity-100",
 				styles.border,
 			)}
 		>
 			<div className="flex items-start gap-3">
 				<div
+					ref={iconRef}
 					className={cn(
 						"mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
 						styles.iconBg,
@@ -218,11 +284,8 @@ function ToastItemView({
 			{item.duration > 0 ? (
 				<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-warm-200">
 					<div
-						className={cn(
-							"h-full transition-[width] duration-75",
-							styles.progress,
-						)}
-						style={{ width: `${progress}%` }}
+						ref={progressRef}
+						className={cn("h-full w-full origin-left", styles.progress)}
 					/>
 				</div>
 			) : null}

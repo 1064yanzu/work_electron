@@ -1,6 +1,7 @@
 // 任务进度可视化组件
 // 展示任务执行的整体进度、阶段状态和工具调用统计
 
+import { useRef } from "react";
 import {
 	Activity,
 	AlertCircle,
@@ -10,6 +11,7 @@ import {
 	Hammer,
 } from "lucide-react";
 import { useAgentStore } from "../../lib/agent/store";
+import { EASE, useGsapMotion } from "../../lib/motion";
 import {
 	type TaskProgress as TaskProgressType,
 	THINKING_PHASE_CONFIG,
@@ -38,6 +40,12 @@ function PhaseStatusIcon({
 }
 
 // 进度环形组件
+//
+// 环的填充与中心数字走同一次 GSAP 补间：CSS transition 只能推动
+// strokeDashoffset，数字得靠 React 每次 setState 重渲染才会变，
+// 两者节奏对不上（环平滑滑过去、数字一格一格跳）。
+// 交给 GSAP 之后，onUpdate 里同时写 dashoffset 和 textContent，
+// 一次补间两个输出，而且**完全不产生重渲染**。
 function ProgressRing({
 	progress,
 	size = 48,
@@ -50,6 +58,40 @@ function ProgressRing({
 	const radius = (size - strokeWidth) / 2;
 	const circumference = radius * 2 * Math.PI;
 	const offset = circumference - (progress / 100) * circumference;
+
+	const circleRef = useRef<SVGCircleElement>(null);
+	const labelRef = useRef<HTMLSpanElement>(null);
+	// 上一帧的百分比：补间要从"现在画到哪儿"开始，而不是每次从 0 重来
+	const shownRef = useRef(progress);
+
+	useGsapMotion(
+		({ gsap, dur }) => {
+			const circle = circleRef.current;
+			const label = labelRef.current;
+			const from = shownRef.current;
+			if (from === progress) return;
+
+			const state = { value: from };
+			gsap.to(state, {
+				value: progress,
+				duration: dur(0.6),
+				ease: EASE.outExpo,
+				onUpdate: () => {
+					shownRef.current = state.value;
+					if (circle) {
+						circle.style.strokeDashoffset = String(
+							circumference - (state.value / 100) * circumference,
+						);
+					}
+					if (label) label.textContent = `${Math.round(state.value)}%`;
+				},
+				onComplete: () => {
+					shownRef.current = progress;
+				},
+			});
+		},
+		{ dependencies: [progress, circumference], runInReduced: true },
+	);
 
 	return (
 		<div className="relative" style={{ width: size, height: size }}>
@@ -66,7 +108,8 @@ function ProgressRing({
 				/>
 				{/* 进度圆 */}
 				<circle
-					className="text-focus transition-all duration-500 ease-out"
+					ref={circleRef}
+					className="text-focus"
 					strokeWidth={strokeWidth}
 					strokeDasharray={circumference}
 					strokeDashoffset={offset}
@@ -80,7 +123,10 @@ function ProgressRing({
 			</svg>
 			{/* 中心文字 */}
 			<div className="absolute inset-0 flex items-center justify-center">
-				<span className="text-sm font-semibold text-text-secondary dark:text-zinc-200">
+				<span
+					ref={labelRef}
+					className="text-sm font-semibold text-text-secondary dark:text-zinc-200"
+				>
 					{Math.round(progress)}%
 				</span>
 			</div>

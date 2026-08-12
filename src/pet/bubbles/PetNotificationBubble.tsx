@@ -11,7 +11,7 @@
  * - placement / sinking 支持
  */
 
-import type { PointerEvent } from "react";
+import { useMemo, type PointerEvent } from "react";
 import { Check, AlertTriangle, HelpCircle } from "lucide-react";
 import { PetBubbleShell, type PetBubblePlacement } from "./PetBubbleShell";
 import { CloseIconButton } from "./CloseIconButton";
@@ -77,7 +77,13 @@ export function PetNotificationBubble({
 }: PetNotificationBubbleProps) {
 	const style = STYLE_MAP[type];
 	const Icon = style.icon;
-	const opener = selectLine(mascotId, style.personalityKey);
+	// 必须 memo：selectLine 每次调用都从台词池随机取一条，不锁住的话
+	// 任何一次重渲染都会换台词——既是既有的闪烁 bug，也会让 SplitText
+	// 拆出来的 span 和 React 的文本节点对不上。
+	const opener = useMemo(
+		() => selectLine(mascotId, style.personalityKey),
+		[mascotId, style.personalityKey],
+	);
 	// approval/error 才有"去看看"主操作；done 类只读
 	const showAction = type === "approval" || type === "error";
 
@@ -92,7 +98,7 @@ export function PetNotificationBubble({
 		>
 			<div className="max-w-[230px] pr-1">
 				{/* 顶行：图标 + opener + 关闭按钮 */}
-				<div className="flex items-start gap-2 animate-pet-content-row">
+				<div data-bubble-row className="flex items-start gap-2">
 					<span
 						className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
 						style={{
@@ -106,10 +112,10 @@ export function PetNotificationBubble({
 						{prefix ? (
 							<>
 								<span style={{ color: style.tone }}>{prefix}</span>{" "}
-								<span>{opener}</span>
+								<span data-bubble-line>{opener}</span>
 							</>
 						) : (
-							opener
+							<span data-bubble-line>{opener}</span>
 						)}
 					</div>
 					{onDismiss && <CloseIconButton onClick={onDismiss} />}
@@ -117,18 +123,15 @@ export function PetNotificationBubble({
 
 				{message && (
 					<div
-						className="mt-1 pl-7 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3 animate-pet-content-row"
-						style={{ animationDelay: "60ms" }}
+						data-bubble-row
+						className="mt-1 pl-7 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3"
 					>
 						{message}
 					</div>
 				)}
 
 				{showAction && onAction && (
-					<div
-						className="mt-2 pl-7 flex items-center gap-3 animate-pet-content-row"
-						style={{ animationDelay: "120ms" }}
-					>
+					<div data-bubble-row className="mt-2 pl-7 flex items-center gap-3">
 						<button
 							type="button"
 							onClick={onAction}

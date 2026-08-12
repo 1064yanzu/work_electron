@@ -1,6 +1,7 @@
 import { Check, ChevronRight, Search, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getModelIcon } from "../Settings/modelIcons";
+import { ThinkingLevelRow } from "./chatInput/ThinkingLevelRow";
 
 export interface Model {
 	id: string;
@@ -234,6 +235,9 @@ export function ModelSelector({
 						})
 					)}
 				</div>
+
+				{/* 思考程度 —— SDK effort 是模型运行参数，与模型选择同属一件事 */}
+				<ThinkingLevelRow />
 			</div>
 		</>
 	);

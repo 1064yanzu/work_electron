@@ -1,7 +1,9 @@
-// 极窄边栏的卡片中心视图：在「知识卡片」与「分享卡片」之间切换
+// 「知识 › 卡片」下的二级视图：在「知识卡片」与「分享卡片」之间切换。
+//
+// 层级约定：上方「知识」一级 tab 用 pill（块），这里的二级 tab 用文字 + 下划线（线）。
+// 两条 tab 上下叠放时，块与线的差别让层级一眼可读，不会互相打架。
 
-import { useCallback } from "react";
-import { Brain, Image as ImageIcon } from "lucide-react";
+import { useCallback, useRef } from "react";
 
 import { KnowledgeCardsEmbedded } from "../cards/KnowledgeCardsView";
 import { cardLibraryStoreApi } from "../../lib/stores/cardLibraryStore";
@@ -14,6 +16,7 @@ import { SharedCardsEmbedded } from "./CardsView";
 
 export function CardsHubView() {
 	const activeTab = useLayoutStoreSelector((state) => state.cardsActiveTab);
+	const bodyRef = useRef<HTMLDivElement>(null);
 
 	const handleSelectKnowledge = useCallback(() => {
 		layoutStore.setCardsActiveTab("knowledge");
@@ -21,8 +24,10 @@ export function CardsHubView() {
 	const handleSelectShared = useCallback(() => {
 		layoutStore.setCardsActiveTab("shared");
 	}, []);
+	// 把这块面板的矩形一并交给 overlay：全屏视图会从这里"长出来"，
+	// 而不是凭空盖住整屏（见 KnowledgeCardsApp）。
 	const handleExpandKnowledge = useCallback(() => {
-		cardLibraryStoreApi.open();
+		cardLibraryStoreApi.openFrom(bodyRef.current);
 	}, []);
 
 	return (
@@ -30,23 +35,21 @@ export function CardsHubView() {
 			<div
 				role="tablist"
 				aria-label="卡片视图切换"
-				className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border shrink-0"
+				className="flex shrink-0 items-center gap-4 border-b border-border px-3"
 			>
-				<TabPill
+				<TabUnderline
 					active={activeTab === "knowledge"}
-					icon={<Brain className="w-3.5 h-3.5" strokeWidth={1.5} />}
 					label="知识卡片"
 					onClick={handleSelectKnowledge}
 				/>
-				<TabPill
+				<TabUnderline
 					active={activeTab === "shared"}
-					icon={<ImageIcon className="w-3.5 h-3.5" strokeWidth={1.5} />}
 					label="分享卡片"
 					onClick={handleSelectShared}
 				/>
 			</div>
 
-			<div className="flex-1 min-h-0 overflow-hidden">
+			<div ref={bodyRef} className="flex-1 min-h-0 overflow-hidden">
 				{activeTab === "knowledge" ? (
 					<KnowledgeCardsEmbedded onExpand={handleExpandKnowledge} />
 				) : (
@@ -57,14 +60,13 @@ export function CardsHubView() {
 	);
 }
 
-interface TabPillProps {
+interface TabUnderlineProps {
 	active: boolean;
-	icon: React.ReactNode;
 	label: string;
 	onClick: () => void;
 }
 
-function TabPill({ active, icon, label, onClick }: TabPillProps) {
+function TabUnderline({ active, label, onClick }: TabUnderlineProps) {
 	return (
 		<button
 			type="button"
@@ -72,14 +74,20 @@ function TabPill({ active, icon, label, onClick }: TabPillProps) {
 			aria-selected={active}
 			onClick={onClick}
 			className={[
-				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-[background-color,color] duration-150",
+				// -mb-px 让下划线压在容器的 border-b 上，两条线合成一条
+				"relative -mb-px py-2 text-[12.5px] font-medium transition-colors duration-150",
 				active
-					? "bg-warm-200 text-text-primary"
-					: "text-text-muted hover:text-text-primary hover:bg-warm-200/60",
+					? "text-text-primary"
+					: "text-text-muted hover:text-text-secondary",
 			].join(" ")}
 		>
-			{icon}
-			<span>{label}</span>
+			{label}
+			{active ? (
+				<span
+					aria-hidden="true"
+					className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-text-primary"
+				/>
+			) : null}
 		</button>
 	);
 }

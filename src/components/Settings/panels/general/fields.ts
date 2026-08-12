@@ -34,8 +34,20 @@ export const FIELDS: FieldDescriptor[] = [
 		tabId: "general.appearance",
 		anchorId: "general.appearance.motion",
 		label: "动效偏好",
-		description: "控制过渡与动画的时长；减少动效模式下 ≤ 80ms。",
-		keywords: ["motion", "animation", "reduced", "减少动效", "动画"],
+		description:
+			"丰富动效 / 标准动效 / 减少动效三档：控制入场、逐字文案、完成庆祝与桌宠交互的表现力。",
+		keywords: [
+			"motion",
+			"animation",
+			"gsap",
+			"reduced",
+			"expressive",
+			"减少动效",
+			"丰富动效",
+			"动画",
+			"动效",
+			"过渡",
+		],
 	},
 	{
 		tabId: "general.appearance",

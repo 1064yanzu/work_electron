@@ -3787,6 +3787,16 @@ export type IPCSchema = {
 		input: Record<string, never>;
 		output: { harnesses: HarnessDetectionRow[] };
 	};
+	/** 跨入口用量统计（口径见 HarnessUsageRow 注释） */
+	harness_usage_stats: {
+		input: Record<string, never>;
+		output: {
+			harnesses: HarnessUsageRow[];
+			/** 最近 30 天每天的消息条数（本机时区） */
+			daily: { date: string; messages: number }[];
+			generated_at: number;
+		};
+	};
 	/** 列出已摄取的会话（按 harness / cwd 过滤，updated_at 倒序） */
 	harness_sessions_list: {
 		input: {
@@ -3826,8 +3836,52 @@ export type IPCSchema = {
 			session_id: string;
 			target_harness: string;
 			model?: string;
+			/**
+			 * 接力档位。缺省 / "auto" 走自动选档（同入口优先原生续接，
+			 * 短会话走原文接力，超长才蒸馏）。
+			 */
+			mode?: "auto" | "native" | "raw" | "distill";
 		};
-		output: { handoff_id: string; package: HarnessHandoffPackage };
+		output: {
+			handoff_id: string;
+			package: HarnessHandoffPackage;
+			/** 实际使用的档位 */
+			mode: "native" | "raw" | "distill";
+			/** 选档原因，原样展示给用户 */
+			reason: string;
+			/** mode === native 时的启动命令 */
+			resume_command: string | null;
+		};
+	};
+	/**
+	 * 预演接力方案：不真正生成交接包，只算出会走哪一档、为什么。
+	 * UI 在用户点「接力」之前调用，避免先花钱蒸馏再告诉他其实能无损续接。
+	 */
+	harness_handoff_plan: {
+		input: {
+			session_id: string;
+			target_harness: string;
+			mode?: "auto" | "native" | "raw" | "distill";
+		};
+		output: HarnessHandoffPlan;
+	};
+	/**
+	 * 原生续接：在 App 内起 pty 直接跑 `claude --resume` / `codex resume`。
+	 * 上下文完全无损、零 LLM 成本，只在同一入口内可用。
+	 */
+	harness_resume_launch: {
+		input: {
+			session_id: string;
+			/** 分叉出新会话，不覆盖原始历史 */
+			fork?: boolean;
+			/** 覆盖工作目录；默认用源会话的 cwd */
+			cwd?: string;
+		};
+		output: {
+			pty_id: string;
+			command: string;
+			ready_detected: boolean;
+		};
 	};
 	/** 在 App 内起 pty 跑目标 CLI 并注入交接包 */
 	harness_handoff_launch: {
@@ -3880,7 +3934,11 @@ export type IPCSchema = {
 		input: { sites: AiHubSiteRow[] };
 		output: { success: boolean; sites: AiHubSiteRow[] };
 	};
-	/** 在中栏挂载并显示某站点（bounds 由渲染端上报） */
+	/**
+	 * 在中栏挂载并显示某站点（bounds 由渲染端上报）。
+	 *
+	 * 中栏支持分屏后可以同时挂载多个站点，本命令**不会**摘掉其它站点。
+	 */
 	aihub_open: {
 		input: {
 			site_id: string;
@@ -3888,14 +3946,20 @@ export type IPCSchema = {
 		};
 		output: { success: boolean };
 	};
-	/** 更新内嵌视图 bounds（面板 resize / 拖动） */
+	/** 更新某个站点内嵌视图的 bounds（分屏拖动 / 面板 resize） */
 	aihub_set_bounds: {
-		input: { bounds: { x: number; y: number; width: number; height: number } };
+		input: {
+			site_id: string;
+			bounds: { x: number; y: number; width: number; height: number };
+		};
 		output: { success: boolean };
 	};
-	/** 从中栏移除内嵌视图（保活页面与登录态，不销毁） */
+	/**
+	 * 从中栏移除内嵌视图（保活页面与登录态，不销毁）。
+	 * 不传 site_id 表示摘掉全部（模态层遮挡、中栏整体切走时用）。
+	 */
 	aihub_close: {
-		input: Record<string, never>;
+		input: { site_id?: string };
 		output: { success: boolean };
 	};
 	/** 把交接包注入站点输入框；DOM 失败自动降级剪贴板 */
@@ -3920,7 +3984,394 @@ export type IPCSchema = {
 		};
 		output: { session_id: string };
 	};
+	/** 列出本机可导入登录态的浏览器 profile */
+	aihub_cookie_sources: {
+		/** 传 site_id 时会顺带统计每个 profile 有多少条该站点的有效 cookie */
+		input: { site_id?: string };
+		output: { sources: BrowserCookieSourceRow[] };
+	};
+	/** 重新加载某站点页面（导入登录态后必须走一次才会生效） */
+	aihub_reload: {
+		input: { site_id: string };
+		output: { ok: boolean };
+	};
+	/**
+	 * 从本机浏览器导入某站点的登录态（cookie）到该站点的内嵌分区。
+	 * 只搬运目标站点注册域及其子域的 cookie，不整库搬运。
+	 */
+	aihub_import_cookies: {
+		input: { site_id: string; browser: string; profile: string };
+		output: {
+			ok: boolean;
+			imported: number;
+			skipped: number;
+			error?: string;
+		};
+	};
+
+	// ==================
+	// AI Hub 互通升级（交换格式 / 互为工具 / 编排）
+	// 设计说明见 docs/harness-hub-互通升级施工文档.md
+	// ==================
+
+	/**
+	 * 把一段会话导出成交换文件。
+	 *
+	 * `format: "json"` 产出 `.aihub-session.json`（结构化，本应用与 CLI 可精确还原）；
+	 * `format: "markdown"` 产出人类与任意 Web AI 都能直接读的 `.md`。
+	 */
+	harness_session_export: {
+		input: {
+			session_id: string;
+			format?: "json" | "markdown";
+			/** 是否连带最近一次交接包一起导出 */
+			include_handoff?: boolean;
+			/** 输出目录；不传写到系统临时目录 */
+			dir?: string;
+		};
+		output: {
+			path: string;
+			file_name: string;
+			bytes: number;
+			message_count: number;
+		};
+	};
+	/**
+	 * 导入一个外部会话文件。
+	 *
+	 * 支持 `.aihub-session.json`、ChatGPT 官方导出的 `conversations.json`、
+	 * Claude Code / Codex 的原生 `.jsonl`。识别不出会明确报错，不静默产出空会话。
+	 */
+	harness_session_import: {
+		input: {
+			/** 文件绝对路径（与 text 二选一） */
+			path?: string;
+			/** 直接给内容（拖拽 / 粘贴场景） */
+			text?: string;
+			/** ChatGPT 导出包里选第几段会话 */
+			index?: number;
+		};
+		output: {
+			session_id: string;
+			detected_format: string;
+			message_count: number;
+			/** 该文件里一共有几段会话（ChatGPT 导出包可能有几百段） */
+			sibling_count: number;
+			title: string | null;
+		};
+	};
+	/** 列出 ChatGPT 导出包里的会话清单，供用户挑一段导入 */
+	harness_import_candidates: {
+		input: { path: string };
+		output: {
+			conversations: {
+				index: number;
+				title: string;
+				message_count: number;
+				updated_at: number;
+			}[];
+		};
+	};
+	/**
+	 * 把一段会话作为**附件**送进 Web 站点，并填入一句引导语。
+	 *
+	 * 这是「长上下文塞不进输入框」的解法。附件通道失败时如实回落到
+	 * 「把内容当正文填入」并在 method 里说明，不假装上传成功。
+	 */
+	aihub_send_session: {
+		input: {
+			site_id: string;
+			session_id: string;
+			/** 覆盖引导语 */
+			prompt?: string;
+			/** 是否连带交接包 */
+			include_handoff?: boolean;
+		};
+		output: {
+			ok: boolean;
+			/** attachment = 走了附件通道；inline = 回落到正文；clipboard = 都失败 */
+			method: "attachment" | "inline" | "clipboard";
+			path: string | null;
+			error: string | null;
+		};
+	};
+
+	/** 把另一个入口当工具调用一次（同步等结果） */
+	harness_bridge_call: {
+		input: {
+			target: string;
+			kind: "cli" | "web" | "app";
+			prompt: string;
+			cwd?: string;
+			timeout_ms?: number;
+			/** 允许目标 agent 改文件；缺省用设置里的值（默认只读） */
+			allow_write?: boolean;
+		};
+		output: HarnessBridgeResult;
+	};
+	/** 列出跨入口调用审计 */
+	harness_bridge_calls_list: {
+		input: { limit?: number; target?: string };
+		output: { calls: HarnessBridgeCallRow[] };
+	};
+
+	/** 反向 MCP Server 状态与一键接入命令 */
+	harness_mcp_status: {
+		input: Record<string, never>;
+		output: HarnessMcpStatusRow;
+	};
+	/** 打开 / 关闭反向 MCP Server */
+	harness_mcp_set_enabled: {
+		input: { enabled: boolean };
+		output: HarnessMcpStatusRow;
+	};
+	/** 轮换访问 token（怀疑泄漏时） */
+	harness_mcp_rotate_token: {
+		input: Record<string, never>;
+		output: HarnessMcpStatusRow;
+	};
+
+	/** 跑一次多入口议会（进度走 harness-council-event 事件） */
+	harness_council_run: {
+		input: {
+			question: string;
+			members: {
+				harness: string;
+				kind: "cli" | "web" | "app";
+				label: string;
+			}[];
+			cwd?: string;
+			/** 只收集各路答案，跳过裁决合并 */
+			skip_verdict?: boolean;
+			timeout_ms?: number;
+		};
+		output: {
+			run_id: string;
+			answers: HarnessCouncilAnswerRow[];
+			verdict: string;
+			status: string;
+			error: string | null;
+		};
+	};
+	/** 列出历史议会 */
+	harness_council_list: {
+		input: { limit?: number };
+		output: { runs: HarnessCouncilRunRow[] };
+	};
+	/** 取一次议会的全部原始答案 */
+	harness_council_get: {
+		input: { run_id: string };
+		output: { answers: HarnessCouncilAnswerRow[] };
+	};
+
+	/** 读某个工作目录的共享白板 */
+	harness_board_list: {
+		input: { cwd?: string; include_done?: boolean };
+		output: {
+			entries: HarnessBoardEntryRow[];
+			markdown: string;
+			/** 落盘的 BOARD.md 路径；全局白板没有落盘目标时为 null */
+			file_path: string | null;
+		};
+	};
+	/** 往共享白板追加一条 */
+	harness_board_add: {
+		input: {
+			cwd?: string;
+			kind: string;
+			content: string;
+			author?: string;
+			session_id?: string;
+		};
+		output: { entry: HarnessBoardEntryRow };
+	};
+	/** 修改白板条目内容 / 完成状态 */
+	harness_board_update: {
+		input: { id: string; content?: string; state?: "open" | "done" };
+		output: { success: boolean };
+	};
+	/** 删除白板条目 */
+	harness_board_remove: {
+		input: { id: string };
+		output: { success: boolean };
+	};
+
+	/** 列出能力路由表 */
+	harness_routes_list: {
+		input: Record<string, never>;
+		output: {
+			routes: HarnessRouteRow[];
+			capabilities: {
+				capability: string;
+				label: string;
+				description: string;
+			}[];
+		};
+	};
+	/** 保存一条路由规则 */
+	harness_route_save: {
+		input: { capability: string; harnesses: string[]; enabled?: boolean };
+		output: { routes: HarnessRouteRow[] };
+	};
+	/** 恢复某能力的默认顺序 */
+	harness_route_reset: {
+		input: { capability: string };
+		output: { routes: HarnessRouteRow[] };
+	};
+	/** 解析某能力当前该派给谁（返回全部候选及不可用原因） */
+	harness_route_resolve: {
+		input: { capability: string };
+		output: {
+			capability: string;
+			label: string;
+			candidates: HarnessRouteCandidateRow[];
+		};
+	};
+
+	/** 列出各入口额度状态 */
+	harness_quota_list: {
+		input: Record<string, never>;
+		output: { quotas: HarnessQuotaRow[] };
+	};
+	/** 重扫最近转录，刷新限额信号 */
+	harness_quota_refresh: {
+		input: Record<string, never>;
+		output: { quotas: HarnessQuotaRow[] };
+	};
+	/** 手动标记 / 解除某入口不可用 */
+	harness_quota_set_block: {
+		input: { harness: string; blocked: boolean };
+		output: { quota: HarnessQuotaRow };
+	};
+	/** 清除某入口的自动检测记录（确认是误判时） */
+	harness_quota_clear: {
+		input: { harness: string };
+		output: { quota: HarnessQuotaRow };
+	};
+
+	/** 读 AI Hub 设置 */
+	harness_settings_get: {
+		input: Record<string, never>;
+		output: HarnessHubSettingsRow;
+	};
+	/** 存 AI Hub 设置（部分更新） */
+	harness_settings_save: {
+		input: Partial<HarnessHubSettingsRow>;
+		output: HarnessHubSettingsRow;
+	};
+
+	// ---------- 自动化：运行态监测 ----------
+
+	/** 列出当前所有执行体（含刚结束的，保留 5 分钟） */
+	harness_runtime_list: {
+		input: Record<string, never>;
+		output: { runtimes: HarnessRuntimeRow[] };
+	};
+	/** 中止一个执行体。返回 false 表示它不支持中止或已经结束 */
+	harness_runtime_abort: {
+		input: { runtime_id: string };
+		output: { ok: boolean };
+	};
+
+	// ---------- 自动化：任务 ----------
+
+	/** 列出全部自动化任务 */
+	harness_job_list: {
+		input: Record<string, never>;
+		output: { jobs: HarnessJobRow[] };
+	};
+	/** 新建或更新任务（不传 id 为新建） */
+	harness_job_save: {
+		input: HarnessJobInputRow;
+		output: { job: HarnessJobRow };
+	};
+	/** 删除任务（连带其运行记录） */
+	harness_job_delete: {
+		input: { job_id: string };
+		output: { ok: boolean };
+	};
+	/** 启用 / 停用（停用会清掉下次触发时刻） */
+	harness_job_set_enabled: {
+		input: { job_id: string; enabled: boolean };
+		output: { job: HarnessJobRow | null };
+	};
+	/** 立即运行一次（绕过触发器与时间窗，仍受并发上限约束） */
+	harness_job_run_now: {
+		input: { job_id: string };
+		output: { run_id: string | null; error: string | null };
+	};
+	/** 取消正在进行的运行 */
+	harness_job_cancel: {
+		input: { run_id: string };
+		output: { ok: boolean };
+	};
+
+	// ---------- 自动化：运行记录 ----------
+
+	/** 运行历史；不传 job_id 则返回全部任务的最近记录 */
+	harness_job_runs_list: {
+		input: { job_id?: string | null; limit?: number };
+		output: { runs: HarnessJobRunRow[] };
+	};
+	/** 单次运行详情，含每次尝试的失败原因与等待时长 */
+	harness_job_run_get: {
+		input: { run_id: string };
+		output: {
+			run: HarnessJobRunRow | null;
+			attempts: HarnessJobAttemptRow[];
+		};
+	};
 };
+
+/** 本机可导入登录态的浏览器 profile。 */
+export interface BrowserCookieSourceRow {
+	/** chrome / edge / brave */
+	browser: string;
+	/** 展示名（"Google Chrome · Default"） */
+	label: string;
+	/** profile 目录名（Default / Profile 1 …） */
+	profile: string;
+	/**
+	 * 该 profile 里目标站点未过期的 cookie 条数。
+	 * 只在请求时带了 `site_id` 才有值；0 表示这个 profile 没在该站点登录过。
+	 */
+	valid_cookies?: number;
+}
+
+/** 一个时间桶内的用量。 */
+export interface HarnessUsageBucket {
+	sessions: number;
+	messages: number;
+	/** 估算 token，口径见 HarnessUsageRow.token_basis */
+	token_estimate: number;
+}
+
+/**
+ * 单个 AI 入口的用量。
+ *
+ * **口径必须如实展示给用户，不要在 UI 上把它说成精确值：**
+ * - `cli`：token 由各 adapter 从会话 JSONL 的 usage 字段推算（只累加 output，
+ *   输入侧用最后一条的 input+cache 近似当前上下文），属于估算。
+ * - `app`：本应用自己的 Agent SDK 会话，同上。
+ * - `web`：Web 端不暴露 token，只能按提取到的字符数 /4 粗估；而且**只统计用户
+ *   主动「提取当前对话」导入过的会话**，不是该站点的全部使用量。
+ *
+ * 时间分桶按会话 `updated_at`（最后活跃时间）归集，不是按每条消息。
+ */
+export interface HarnessUsageRow {
+	harness: string;
+	label: string;
+	kind: "cli" | "web" | "app";
+	/** token 估算口径：usage 字段推算 / 字符数粗估 */
+	token_basis: "usage" | "chars";
+	/** Web 入口为 true：只统计主动导入过的会话，不代表全部使用量 */
+	partial_coverage: boolean;
+	last_active_at: number | null;
+	total: HarnessUsageBucket;
+	today: HarnessUsageBucket;
+	week: HarnessUsageBucket;
+	month: HarnessUsageBucket;
+}
 
 // =====================
 // TTS 类型导出（renderer 端通过 import type 复用）
@@ -4459,6 +4910,8 @@ export interface HarnessDetectionRow {
 	can_read: boolean;
 	/** 能否被注入（App 内 pty 启动该 CLI） */
 	can_inject: boolean;
+	/** 在 pty 中启动该 CLI 的命令（中栏 CLI 标签页用它拉起进程） */
+	launch_command: string;
 	session_count: number;
 }
 
@@ -4527,7 +4980,366 @@ export interface HarnessHandoffRow {
 	pty_id: string | null;
 	result_session_id: string | null;
 	created_at: number;
+	/**
+	 * 实际使用的接力档位：native = 原生续接（无损）/ raw = 原文接力（无损）/
+	 * distill = LLM 蒸馏（有损）。一期只有 distill，老记录该列为 null。
+	 */
+	mode: string | null;
+	/** 导出的交换文件路径（走附件通道时有值） */
+	payload_path: string | null;
+	source_cwd: string | null;
 }
+
+/**
+ * 接力方案预演结果。
+ *
+ * 在真正开始接力（可能要花钱调 LLM）之前先算出「会走哪一档、为什么」，
+ * UI 据此如实告诉用户这次是无损还是有损。
+ */
+export interface HarnessHandoffPlan {
+	mode: "native" | "raw" | "distill";
+	/** 选这一档的原因，原样展示给用户 */
+	reason: string;
+	/** mode === native 时的完整启动命令 */
+	resume_command: string | null;
+	/** 参与判定的转录字符数 */
+	transcript_chars: number;
+	/** 该源会话是否具备原生续接条件（与最终选档无关，供 UI 提示） */
+	native_available: boolean;
+}
+
+/** 跨入口调用（把别的入口当工具）的结果 */
+export interface HarnessBridgeResult {
+	ok: boolean;
+	call_id: string;
+	target: string;
+	kind: "cli" | "web" | "app";
+	/** 目标的回答；失败时为空串 */
+	answer: string;
+	error: string | null;
+	duration_ms: number;
+	/** true = 超时后返回了已产出的部分内容，answer 不完整 */
+	partial: boolean;
+}
+
+/** harness_bridge_calls 表行（调用审计） */
+export interface HarnessBridgeCallRow {
+	id: string;
+	caller: string;
+	target: string;
+	target_kind: string;
+	prompt: string | null;
+	cwd: string | null;
+	response: string | null;
+	status: string;
+	error: string | null;
+	duration_ms: number;
+	created_at: number;
+	finished_at: number | null;
+}
+
+/** 议会单路答案 */
+export interface HarnessCouncilAnswerRow {
+	id: string;
+	harness: string;
+	label: string;
+	answer: string;
+	/** succeeded / failed / timeout —— 失败分支如实保留，不静默丢弃 */
+	status: string;
+	error: string | null;
+	duration_ms: number;
+}
+
+/** 议会运行记录 */
+export interface HarnessCouncilRunRow {
+	id: string;
+	question: string;
+	cwd: string | null;
+	participants: string[];
+	status: string;
+	verdict: string | null;
+	error: string | null;
+	created_at: number;
+	finished_at: number | null;
+}
+
+/** 共享白板条目 */
+export interface HarnessBoardEntryRow {
+	id: string;
+	/** 作用域：工作目录绝对路径；空串 = 全局 */
+	scope: string;
+	/** goal / decision / pitfall / next / note */
+	kind: string;
+	content: string;
+	author: string | null;
+	session_id: string | null;
+	state: string;
+	created_at: number;
+	updated_at: number;
+}
+
+/** 能力路由规则 */
+export interface HarnessRouteRow {
+	capability: string;
+	label: string;
+	/** 按优先级排列的入口 id */
+	harnesses: string[];
+	enabled: boolean;
+	updated_at: number;
+}
+
+/** 路由候选及其可用性 */
+export interface HarnessRouteCandidateRow {
+	harness: string;
+	label: string;
+	kind: "cli" | "web" | "app";
+	available: boolean;
+	/** 不可用的原因，如实展示 */
+	reason: string | null;
+	blocked_by_quota: boolean;
+}
+
+/**
+ * 入口额度状态。
+ *
+ * 只反映从**真实转录**里检测到的限额信号；没检测到就是全 null
+ * （UI 应显示"未检测到"，而不是编造一个余额百分比）。
+ */
+export interface HarnessQuotaRow {
+	harness: string;
+	limit_hit_at: number | null;
+	resets_at: number | null;
+	/** 触发判定的原始文案片段，供用户自行判断是否误判 */
+	evidence: string | null;
+	manual_blocked: boolean;
+	/** 综合判定：当前是否应避免派活 */
+	blocked: boolean;
+}
+
+/** 反向 MCP Server 状态与接入信息 */
+export interface HarnessMcpStatusRow {
+	/** 服务是否已监听（端口被占时为 false） */
+	running: boolean;
+	/** 用户是否打开了开关（关闭时请求一律 503） */
+	enabled: boolean;
+	port: number | null;
+	endpoint: string | null;
+	token: string | null;
+	/** 一键接入命令，用户复制到终端即可 */
+	install_commands: { label: string; command: string }[];
+	/** 暴露出去的工具清单 */
+	tools: { name: string; summary: string }[];
+}
+
+/** AI Hub 可配置项 */
+export interface HarnessHubSettingsRow {
+	bridge_enabled: boolean;
+	bridge_allow_write: boolean;
+	bridge_cli_timeout_ms: number;
+	bridge_web_timeout_ms: number;
+	handoff_policy: "auto" | "native" | "raw" | "distill";
+	auto_board_sync: boolean;
+	/** 自动化总开关（关闭后定时任务不再触发，手动运行仍可用） */
+	automation_enabled: boolean;
+	/** 同时最多跑几个自动化任务 */
+	automation_max_concurrent: number;
+	/** 有任务在跑时阻止系统挂起应用 */
+	automation_prevent_sleep: boolean;
+	/** 电池供电时跳过定时触发 */
+	automation_skip_on_battery: boolean;
+	/** 多久没有输出算「卡死」（毫秒） */
+	automation_stalled_threshold_ms: number;
+	/** 新建任务默认的最大尝试次数 */
+	automation_default_max_attempts: number;
+	/** 任务失败 / 需人工介入时给系统通知 */
+	automation_notify_on_failure: boolean;
+}
+
+// ============================================================
+// AI Harness 自动化
+// ============================================================
+
+/** 执行体种类。 */
+export type HarnessRuntimeKind = "pty" | "bridge" | "sdk";
+
+/** 执行体状态。 */
+export type HarnessRuntimeState =
+	| "starting"
+	| "working"
+	| "idle"
+	| "error"
+	| "stalled"
+	| "exited";
+
+/** 失败类别，与主进程 automation/errors.ts 的 FailureKind 一一对应。 */
+export type HarnessFailureKind =
+	| "rate_limit"
+	| "quota_exhausted"
+	| "overloaded"
+	| "network"
+	| "auth"
+	| "invalid_request"
+	| "not_found"
+	| "timeout"
+	| "stalled"
+	| "crash";
+
+/** 失败判定结果。`evidence` 是命中的原文片段，UI 必须原样展示供用户自证。 */
+export interface HarnessFailureSignalRow {
+	kind: HarnessFailureKind;
+	retryable: boolean;
+	evidence: string;
+	http_status: number | null;
+	suggested_delay_ms: number;
+}
+
+/** 一个正在运行（或刚结束）的执行体。 */
+export interface HarnessRuntimeRow {
+	id: string;
+	kind: HarnessRuntimeKind;
+	harness: string;
+	label: string;
+	cwd: string | null;
+	state: HarnessRuntimeState;
+	failure: HarnessFailureSignalRow | null;
+	job_run_id: string | null;
+	pty_id: string | null;
+	bridge_call_id: string | null;
+	started_at: number;
+	last_output_at: number;
+	updated_at: number;
+	exited_at: number | null;
+	exit_code: number | null;
+	/** 最近的输出尾巴，给用户看「它现在在干嘛」 */
+	tail: string;
+}
+
+/** 任务触发方式。 */
+export type HarnessJobTriggerRow =
+	| { type: "manual" }
+	| { type: "once"; at: number }
+	/** weekdays 为空表示每天；0 = 周日 */
+	| { type: "daily"; time: string; weekdays: number[] }
+	| { type: "interval"; minutes: number };
+
+/** 执行窗口（允许跨零点）。 */
+export interface HarnessJobWindowRow {
+	start: string;
+	end: string;
+}
+
+/** 重试策略。 */
+export interface HarnessJobRetryPolicyRow {
+	/** 错过触发时刻的处理：skip = 只排下一次；runOnce = 补跑一次 */
+	misfire: "skip" | "runOnce";
+	backoff_cap_ms: number;
+	/** 同一入口连续失败多少次后考虑换入口 */
+	failover_after: number;
+}
+
+/** 自动化任务定义。 */
+export interface HarnessJobRow {
+	id: string;
+	name: string;
+	description: string | null;
+	enabled: boolean;
+	target_harness: string;
+	/** headless = 后台子进程；pty = 可视终端，可随时接管 */
+	exec_mode: "headless" | "pty";
+	cwd: string | null;
+	prompt: string;
+	allow_write: boolean;
+	trigger: HarnessJobTriggerRow;
+	window: HarnessJobWindowRow | null;
+	max_attempts: number;
+	retry_policy: HarnessJobRetryPolicyRow;
+	failover_enabled: boolean;
+	timeout_ms: number | null;
+	next_run_at: number | null;
+	last_run_at: number | null;
+	last_status: string | null;
+	created_at: number;
+	updated_at: number;
+	/** 触发方式的人话描述（主进程渲染，避免前后端两套措辞） */
+	trigger_label: string;
+}
+
+/**
+ * 一次运行的状态。
+ *
+ * `succeeded` 的含义是**本轮无错误结束**，不是「任务已完成」——
+ * 自动化只判定错误信号，不判定语义完成度。UI 文案必须与此一致。
+ */
+export type HarnessJobRunStatus =
+	| "queued"
+	| "running"
+	| "waiting"
+	| "succeeded"
+	| "failed"
+	| "blocked"
+	| "cancelled";
+
+/** 一次运行记录。 */
+export interface HarnessJobRunRow {
+	id: string;
+	job_id: string;
+	status: HarnessJobRunStatus;
+	trigger: string;
+	attempt_count: number;
+	last_failure_kind: HarnessFailureKind | null;
+	last_error: string | null;
+	/** 处于 waiting 时的下次尝试时刻 */
+	next_attempt_at: number | null;
+	result_text: string | null;
+	started_at: number;
+	finished_at: number | null;
+}
+
+/** 一次尝试的明细。 */
+export interface HarnessJobAttemptRow {
+	id: string;
+	run_id: string;
+	seq: number;
+	harness: string;
+	mode: string;
+	exit_code: number | null;
+	failure_kind: HarnessFailureKind | null;
+	/** 判定证据原文 */
+	evidence: string | null;
+	/** 非空表示这次是续接原生会话继续跑，而不是重发原指令 */
+	resumed_from: string | null;
+	bridge_call_id: string | null;
+	pty_id: string | null;
+	/** 这次失败后实际等待了多久 */
+	wait_ms: number | null;
+	output: string | null;
+	started_at: number;
+	finished_at: number | null;
+}
+
+/**
+ * 保存任务的入参。
+ *
+ * 用 type alias 而非 interface：它会被直接当作 `invoke` 的 args 传下去，
+ * 而 interface 没有隐式索引签名，赋给 `Record<string, unknown>` 会被拒。
+ */
+export type HarnessJobInputRow = {
+	id?: string | null;
+	name: string;
+	description?: string | null;
+	enabled?: boolean;
+	target_harness: string;
+	exec_mode?: "headless" | "pty";
+	cwd?: string | null;
+	prompt: string;
+	allow_write?: boolean;
+	trigger: HarnessJobTriggerRow;
+	window?: HarnessJobWindowRow | null;
+	max_attempts?: number;
+	retry_policy?: Partial<HarnessJobRetryPolicyRow>;
+	failover_enabled?: boolean;
+	timeout_ms?: number | null;
+};
 
 /** AI Hub 站点配置行 */
 export interface AiHubSiteRow {

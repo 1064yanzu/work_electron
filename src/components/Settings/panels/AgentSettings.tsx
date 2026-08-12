@@ -422,7 +422,7 @@ export function AgentSettings() {
 			?.label ?? kbRetrievalMode;
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-3xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Cog}
 				title="Agent 设置"

@@ -53,7 +53,7 @@ export function WikiGraphPanel({
 							Wiki Graph
 						</div>
 						<h3 className="mt-1 text-sm font-semibold text-text-primary">
-							{scopeLabel || "当前线程目录"}
+							{scopeLabel || "当前对话目录"}
 						</h3>
 					</div>
 					<div className="flex items-center gap-1.5">

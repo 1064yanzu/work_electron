@@ -6,11 +6,14 @@
 // 动态命令来自 commandRegistry（功能面板可自行注册/反注册）。
 
 import {
+	Columns2,
 	Globe,
 	Keyboard,
 	MessageSquare,
 	Moon,
+	Network,
 	PanelLeft,
+	Rows2,
 	Settings,
 	Sparkles,
 	Sun,
@@ -24,6 +27,9 @@ import {
 	useShortcutRegistrySelector,
 } from "../../lib/shortcuts";
 import { layoutStore } from "../../lib/stores/layoutStore";
+import { centerTabsStore } from "../../lib/stores/centerTabsStore";
+import { EVENTS, events } from "../../lib/events";
+import { toast } from "../ui/Toast";
 import { themeManager } from "../../lib/theme";
 import { workspaceStore } from "../../lib/workspaceStore";
 import type { CommandItem } from "./types";
@@ -98,28 +104,9 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 		});
 
 		items.push({
-			id: "ws.open-harness",
-			title: "打开会话中枢",
-			description: "浏览并迁移 Claude Code / Codex 等入口的会话",
-			icon: Waypoints,
-			keywords: [
-				"harness",
-				"session",
-				"hub",
-				"claude",
-				"codex",
-				"huihua",
-				"zhongshu",
-				"qianyi",
-			],
-			group: "工作区",
-			action: () => workspaceStore.setLeftSidebarView("harness"),
-		});
-
-		items.push({
 			id: "ws.open-aihub",
-			title: "打开 AI Hub",
-			description: "在中栏内嵌 ChatGPT / Gemini / Kimi 等 Web 站点",
+			title: "打开 Web AI 标签页",
+			description: "在中栏以标签页打开 ChatGPT / Gemini / Kimi 等 Web 站点",
 			icon: Globe,
 			keywords: [
 				"aihub",
@@ -131,9 +118,124 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 				"deepseek",
 				"wangye",
 				"zhandian",
+				"biaoqianye",
 			],
 			group: "工作区",
-			action: () => workspaceStore.setMainView("aihub"),
+			action: () => {
+				void centerTabsStore.openWebSite().then((ok) => {
+					if (ok) return;
+					toast.info("尚未启用任何 Web AI 站点，请先在设置中启用");
+					events.emit(EVENTS.OPEN_SETTINGS, { tab: "integrations.harnessHub" });
+				});
+			},
+		});
+
+		items.push({
+			id: "ws.open-hub-tab",
+			title: "打开 AI Hub",
+			description:
+				"跨入口工作台：统一会话时间线、拖拽接力、多模型议会、共享白板",
+			icon: Network,
+			keywords: [
+				"hub",
+				"aihub",
+				"session",
+				"harness",
+				"claude",
+				"codex",
+				"huihua",
+				"zhongshu",
+				"jieli",
+				"qianyi",
+				"handoff",
+				"yihui",
+				"council",
+				"baiban",
+				"board",
+				"shijianxian",
+			],
+			group: "工作区",
+			action: () => centerTabsStore.openHub(),
+		});
+
+		items.push({
+			id: "ws.split-right",
+			title: "向右拆分中栏",
+			description: "把当前标签移到右边的新分屏，两块内容同屏对照",
+			icon: Columns2,
+			keywords: ["split", "chaifen", "fenping", "right", "分屏", "拆分"],
+			group: "工作区",
+			action: () => {
+				if (!centerTabsStore.splitGroup({ direction: "horizontal" })) {
+					toast.info("当前分屏只有一个标签，再拆就空了");
+				}
+			},
+		});
+
+		items.push({
+			id: "ws.split-down",
+			title: "向下拆分中栏",
+			description: "把当前标签移到下方的新分屏",
+			icon: Rows2,
+			keywords: ["split", "chaifen", "fenping", "down", "分屏", "拆分"],
+			group: "工作区",
+			action: () => {
+				if (!centerTabsStore.splitGroup({ direction: "vertical" })) {
+					toast.info("当前分屏只有一个标签，再拆就空了");
+				}
+			},
+		});
+
+		items.push({
+			id: "ws.open-browser-tab",
+			title: "打开浏览器标签页",
+			description: "在中栏以标签页打开内嵌浏览器",
+			icon: Globe,
+			keywords: ["browser", "liulanqi", "web", "wangye"],
+			group: "工作区",
+			action: () => centerTabsStore.openBrowser(),
+		});
+
+		items.push({
+			id: "ws.open-wiki-graph-tab",
+			title: "打开知识图谱标签页",
+			description: "在中栏以标签页打开 Wiki 知识图谱",
+			icon: Waypoints,
+			keywords: ["wiki", "graph", "zhishitupu", "tupu", "biaoqianye"],
+			group: "工作区",
+			action: () => centerTabsStore.openWikiGraph(),
+		});
+
+		items.push({
+			id: "ws.open-cli-tab",
+			title: "打开本机 CLI 标签页",
+			description:
+				"在中栏起一个 pty 跑 Claude Code / Codex 等本机 coding agent",
+			icon: TerminalIcon,
+			keywords: [
+				"cli",
+				"claude",
+				"codex",
+				"gemini",
+				"opencode",
+				"agent",
+				"zhongduan",
+				"benji",
+			],
+			group: "工作区",
+			action: () => {
+				void centerTabsStore.ensureClis().then((list) => {
+					const first = list[0];
+					if (!first) {
+						toast.info("未探测到可启动的本机 AI CLI");
+						events.emit(EVENTS.OPEN_SETTINGS, {
+							tab: "integrations.harnessHub",
+						});
+						return;
+					}
+					void centerTabsStore.openCli(first);
+				});
+			},
 		});
 
 		// 设置

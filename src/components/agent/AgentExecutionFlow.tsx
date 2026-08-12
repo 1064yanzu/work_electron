@@ -12,13 +12,23 @@ import {
 	Zap,
 	TrendingUp,
 } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
+import { attentionPulse, breathe, EASE, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
 import type { AgentTask, AgentTaskStep, ToolCall } from "../../lib/agent/types";
 
 // ============ 子组件 ============
 
-/** 步骤状态指示器 */
+/**
+ * 步骤状态指示器
+ *
+ * 状态切换时给一下注意力提示：pending → running → completed/error
+ * 是这个组件里唯一「刚刚发生了什么」的信号，光靠换颜色很容易被忽略——
+ * 尤其执行流是一屏几十行的长列表，用户的视线不一定停在这一行上。
+ *
+ * running 态的光晕从 `animate-pulse` 换成 GSAP 呼吸并登记为装饰性动画：
+ * 拖分栏时这类无限循环会自动让出帧（见 lib/motion/decorative.ts）。
+ */
 const StepIndicator = memo(function StepIndicator({
 	status,
 	index,
@@ -26,30 +36,67 @@ const StepIndicator = memo(function StepIndicator({
 	status: AgentTaskStep["status"];
 	index: number;
 }) {
+	const ringRef = useRef<HTMLDivElement>(null);
+
+	useGsapMotion(
+		({ decorative }) => {
+			const element = ringRef.current;
+			if (!element) return;
+			if (status === "completed" || status === "error") {
+				attentionPulse(element, { scale: 1.18, duration: 0.46 });
+				return;
+			}
+			if (status === "running") {
+				const halo = element.querySelector("[data-step-halo]");
+				if (halo) {
+					decorative(
+						breathe(halo, { scale: 1.22, opacity: 0.1, duration: 1.5 }),
+					);
+				}
+			}
+		},
+		{ dependencies: [status] },
+	);
+
 	if (status === "completed") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-success/16 dark:bg-emerald-900/30 flex items-center justify-center ring-2 ring-emerald-200 dark:ring-emerald-800">
+			<div
+				ref={ringRef}
+				className="w-8 h-8 rounded-full bg-success/16 dark:bg-emerald-900/30 flex items-center justify-center ring-2 ring-emerald-200 dark:ring-emerald-800"
+			>
 				<CheckCircle2 className="w-4 h-4 text-success dark:text-success" />
 			</div>
 		);
 	}
 	if (status === "error") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-error/16 dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800">
+			<div
+				ref={ringRef}
+				className="w-8 h-8 rounded-full bg-error/16 dark:bg-red-900/30 flex items-center justify-center ring-2 ring-red-200 dark:ring-red-800"
+			>
 				<AlertCircle className="w-4 h-4 text-error dark:text-error" />
 			</div>
 		);
 	}
 	if (status === "running") {
 		return (
-			<div className="w-8 h-8 rounded-full bg-terracotta/15 flex items-center justify-center ring-2 ring-terracotta/30 relative">
+			<div
+				ref={ringRef}
+				className="w-8 h-8 rounded-full bg-terracotta/15 flex items-center justify-center ring-2 ring-terracotta/30 relative"
+			>
 				<div className="w-4 h-4 rounded-full border-2 border-terracotta border-t-transparent animate-spin" />
-				<div className="absolute inset-0 rounded-full bg-terracotta/20 animate-pulse" />
+				<div
+					data-step-halo
+					className="absolute inset-0 rounded-full bg-terracotta/20"
+				/>
 			</div>
 		);
 	}
 	return (
-		<div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center ring-2 ring-zinc-200 dark:ring-zinc-700">
+		<div
+			ref={ringRef}
+			className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center ring-2 ring-zinc-200 dark:ring-zinc-700"
+		>
 			<span className="text-xs font-semibold text-text-muted">{index + 1}</span>
 		</div>
 	);
@@ -192,6 +239,51 @@ const OverallProgressRing = memo(function OverallProgressRing({
 	const radius = 28;
 	const circumference = 2 * Math.PI * radius;
 	const offset = circumference - (progress / 100) * circumference;
+
+	const circleRef = useRef<SVGCircleElement>(null);
+	const labelRef = useRef<HTMLSpanElement>(null);
+	const haloRef = useRef<HTMLDivElement>(null);
+	const shownRef = useRef(progress);
+
+	// 环的填充与中心百分比共用一次补间（理由同 TaskProgress 的 ProgressRing）
+	useGsapMotion(
+		({ gsap, dur }) => {
+			const from = shownRef.current;
+			if (from === progress) return;
+			const circle = circleRef.current;
+			const label = labelRef.current;
+			const state = { value: from };
+			gsap.to(state, {
+				value: progress,
+				duration: dur(0.62),
+				ease: EASE.outExpo,
+				onUpdate: () => {
+					shownRef.current = state.value;
+					if (circle) {
+						circle.style.strokeDashoffset = String(
+							circumference - (state.value / 100) * circumference,
+						);
+					}
+					if (label) label.textContent = `${Math.round(state.value)}%`;
+				},
+				onComplete: () => {
+					shownRef.current = progress;
+				},
+			});
+		},
+		{ dependencies: [progress, circumference], runInReduced: true },
+	);
+
+	// 运行中的外圈呼吸：装饰性，拖拽期自动让路
+	useGsapMotion(
+		({ decorative }) => {
+			const halo = haloRef.current;
+			if (!halo || !isRunning) return;
+			decorative(breathe(halo, { scale: 1.06, opacity: 0.15, duration: 1.8 }));
+		},
+		{ dependencies: [isRunning] },
+	);
+
 	return (
 		<div className="relative w-20 h-20 flex-shrink-0">
 			<svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
@@ -205,6 +297,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 					className="text-zinc-200"
 				/>
 				<circle
+					ref={circleRef}
 					cx="40"
 					cy="40"
 					r={radius}
@@ -215,9 +308,9 @@ const OverallProgressRing = memo(function OverallProgressRing({
 					strokeDashoffset={offset}
 					strokeLinecap="round"
 					className={cn(
-						"transition-all duration-500",
+						"transition-colors duration-500",
 						isRunning
-							? "text-terracotta animate-pulse-slow"
+							? "text-terracotta"
 							: progress >= 100
 								? "text-success"
 								: "text-focus",
@@ -225,7 +318,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 				/>
 			</svg>
 			<div className="absolute inset-0 flex flex-col items-center justify-center">
-				<span className="text-2xl font-bold text-text-primary">
+				<span ref={labelRef} className="text-2xl font-bold text-text-primary">
 					{Math.round(progress)}%
 				</span>
 				<span className="text-[10px] text-text-muted">
@@ -233,7 +326,10 @@ const OverallProgressRing = memo(function OverallProgressRing({
 				</span>
 			</div>
 			{isRunning && (
-				<div className="absolute -inset-2 rounded-full border-2 border-terracotta/30 animate-pulse" />
+				<div
+					ref={haloRef}
+					className="absolute -inset-2 rounded-full border-2 border-terracotta/30"
+				/>
 			)}
 		</div>
 	);
@@ -281,11 +377,37 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 		[task.toolCalls],
 	);
 
+	// 新增步骤入场：只动**这一批新出现的**，已经在屏幕上的行不能重放，
+	// 否则 Agent 每追加一步整列表就闪一次。用已渲染数量做游标。
+	const stepListRef = useRef<HTMLDivElement>(null);
+	const renderedCountRef = useRef(0);
+	const stepCount = task.steps?.length ?? 0;
+
+	useGsapMotion(
+		({ gsap, dur, amp, expressive }) => {
+			const list = stepListRef.current;
+			const previous = renderedCountRef.current;
+			renderedCountRef.current = stepCount;
+			if (!list || stepCount <= previous) return;
+
+			const rows = Array.from(list.children).slice(previous);
+			if (rows.length === 0) return;
+			gsap.from(rows, {
+				opacity: 0,
+				y: amp(12),
+				duration: dur(0.4),
+				ease: EASE.outExpo,
+				stagger: expressive ? 0.05 : 0,
+				clearProps: "transform,opacity",
+			});
+		},
+		{ dependencies: [stepCount] },
+	);
+
 	// 如果没有步骤，不显示
 	if (!task.steps || task.steps.length === 0) {
 		return null;
 	}
-
 	return (
 		<div className="rounded-2xl bg-surface ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 			<div className="px-4 py-3 border-b border-border flex items-center gap-4">
@@ -325,7 +447,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 							{task.steps.length} 步
 						</span>
 					</div>
-					<div className="space-y-0">
+					<div ref={stepListRef} className="space-y-0">
 						{stepsWithToolCount.map(({ step, toolCount }, idx) => (
 							<StepCard
 								key={step.id}

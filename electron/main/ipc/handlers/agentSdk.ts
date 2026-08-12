@@ -61,6 +61,11 @@ import {
 	LOCAL_WEB_SEARCH_MCP_TOOL,
 } from "./agentSdk/localWebSearchMcp";
 import {
+	createHarnessBridgeMcpServer,
+	HARNESS_BRIDGE_PROMPT,
+} from "./agentSdk/harnessBridgeMcp";
+import { isHarnessBridgeEnabled } from "../../harnessHub/settings";
+import {
 	loadAndFreezeMemorySnapshot,
 	releaseSnapshot,
 	renderMemoryPromptSection,
@@ -506,12 +511,21 @@ export function createAgentSdkHandlers(options: {
 					? `<!-- ipo-thinking-level:${thinkingLevel} -->`
 					: "";
 				const activeStylePrompt = await getActiveStylePrompt(options.db);
+
+				// 跨入口桥接：把用户的其他 AI 入口（Web 产品 / 本机 coding agent）
+				// 作为工具挂给本 Agent。默认开启——「各入口互为工具」正是 AI Hub
+				// 的核心价值；不想要的用户可以在设置里关掉整组工具。
+				const harnessBridgeEnabled = await isHarnessBridgeEnabled(
+					options.db,
+				).catch(() => true);
+
 				const appendParts = [
 					memorySection,
 					userSystemPrompt,
 					activeStylePrompt,
 					localWebSearchPrompt,
 					memoryToolPrompt,
+					harnessBridgeEnabled ? HARNESS_BRIDGE_PROMPT : "",
 					thinkingLevelMarker,
 				].filter((s) => s && s.trim().length > 0);
 				const systemPromptAppend = appendParts.join("\n\n");
@@ -523,6 +537,14 @@ export function createAgentSdkHandlers(options: {
 					...(inputMcpServers || {}),
 					ipo_browser_search: localWebSearchMcpServer,
 					ipo_agent_memory: memoryMcpServer,
+					...(harnessBridgeEnabled
+						? {
+								ipo_harness_bridge: createHarnessBridgeMcpServer(
+									sdk as any,
+									options.db,
+								),
+							}
+						: {}),
 				};
 
 				const q = sdk.query({

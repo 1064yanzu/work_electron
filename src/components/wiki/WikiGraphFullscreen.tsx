@@ -16,7 +16,6 @@
  * - 左侧筛选面板可折叠
  */
 import {
-	ArrowLeft,
 	BookOpen,
 	Crosshair,
 	FileText,
@@ -30,7 +29,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveThreadScope } from "../../lib/chat/threadScope";
-import { workspaceStore } from "../../lib/workspaceStore";
+import { centerTabsStore } from "../../lib/stores/centerTabsStore";
 import { useWiki, type WikiPageItem } from "./useWiki";
 import { WIKI_NODE_COLORS, WikiGraphCanvas } from "./WikiGraphCanvas";
 
@@ -106,7 +105,7 @@ export function WikiGraphFullscreen() {
 	};
 
 	const handleClose = () => {
-		workspaceStore.setMainView("editor");
+		centerTabsStore.closeTab("wiki-graph");
 	};
 
 	const handleNodeClick = (page: WikiPageItem) => {
@@ -130,10 +129,10 @@ export function WikiGraphFullscreen() {
 				<button
 					onClick={handleClose}
 					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"
-					title="返回编辑器"
+					title="关闭标签页"
 				>
-					<ArrowLeft className="h-3.5 w-3.5" />
-					返回
+					<X className="h-3.5 w-3.5" />
+					关闭
 				</button>
 
 				<button

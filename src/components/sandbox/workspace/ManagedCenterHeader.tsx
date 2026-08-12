@@ -8,19 +8,25 @@ interface ManagedCenterHeaderProps {
 	headerMeta: string;
 	density?: "comfortable" | "compact";
 	isRefreshing: boolean;
-	onSetCenterView: (view: "graph" | "preview") => void;
 	onRefresh: () => void;
 }
 
+/**
+ * 沙盒工作区的内容头。
+ *
+ * 「运行图 / 预览」的切换已上移到中间栏的标签条（`CenterTabBar`），这里不再重复
+ * 一套 segmented control —— 同一个动作出现在两个地方只会让人犹豫点哪个。
+ */
 export function ManagedCenterHeader({
 	centerView,
 	headerTitle,
 	headerMeta,
 	density = "comfortable",
 	isRefreshing,
-	onSetCenterView,
 	onRefresh,
 }: ManagedCenterHeaderProps) {
+	const ViewIcon = centerView === "graph" ? Workflow : Eye;
+
 	return (
 		<div
 			className={cn(
@@ -28,50 +34,17 @@ export function ManagedCenterHeader({
 				density === "compact" ? "px-3 py-2" : "px-4 py-2.5",
 			)}
 		>
-			<div className="flex items-center gap-3">
-				<div className="flex items-center bg-warm-200 rounded-xl p-0.5">
-					<button
-						type="button"
-						onClick={() => onSetCenterView("graph")}
-						className={cn(
-							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
-							centerView === "graph"
-								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
-						)}
-						title="运行图 (Alt+1)"
-						aria-label="切换到运行图"
-					>
-						<Workflow className="w-4 h-4" strokeWidth={1.5} />
-						运行图
-					</button>
-					<button
-						type="button"
-						onClick={() => onSetCenterView("preview")}
-						className={cn(
-							"inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-ring cursor-pointer",
-							centerView === "preview"
-								? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-								: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
-						)}
-						title="预览视角 (Alt+2)"
-						aria-label="切换到预览视角"
-					>
-						<Eye className="w-4 h-4" />
-						预览
-					</button>
-				</div>
-
-				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700" />
-
-				<div className="min-w-0">
-					<h2 className="text-sm font-medium text-text-secondary dark:text-zinc-200 truncate">
-						{headerTitle}
-						<span className="ml-2 text-xs text-text-muted font-normal">
-							{headerMeta}
-						</span>
-					</h2>
-				</div>
+			<div className="flex min-w-0 items-center gap-2">
+				<ViewIcon
+					className="h-4 w-4 shrink-0 text-text-muted"
+					strokeWidth={1.5}
+				/>
+				<h2 className="truncate text-sm font-medium text-text-secondary dark:text-zinc-200">
+					{headerTitle}
+					<span className="ml-2 text-xs font-normal text-text-muted">
+						{headerMeta}
+					</span>
+				</h2>
 			</div>
 
 			<div className="flex items-center gap-2">

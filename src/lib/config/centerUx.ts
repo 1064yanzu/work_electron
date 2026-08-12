@@ -9,6 +9,12 @@ export interface CenterUxPrefs {
 	graphFollow: boolean;
 	artifactClickBehavior: CenterArtifactClickBehavior;
 	infoDensity: CenterInfoDensity;
+	/**
+	 * 启动时恢复上次打开的中栏标签页。
+	 * 只恢复"标签存在"，不恢复页面内容状态——网页登录态由主进程各站点独立
+	 * partition 自行保活；本机 CLI 标签背后是真实 pty，重启后必然已消失，不恢复。
+	 */
+	restoreTabsOnStartup: boolean;
 }
 
 const DEFAULT_CENTER_UX_PREFS: CenterUxPrefs = {
@@ -16,6 +22,7 @@ const DEFAULT_CENTER_UX_PREFS: CenterUxPrefs = {
 	graphFollow: true,
 	artifactClickBehavior: "select_only",
 	infoDensity: "comfortable",
+	restoreTabsOnStartup: true,
 };
 
 const CENTER_UX_CONFIG_KEYS = {
@@ -23,6 +30,7 @@ const CENTER_UX_CONFIG_KEYS = {
 	graphFollow: "center.ux.graphFollow",
 	artifactClickBehavior: "center.ux.artifactClickBehavior",
 	infoDensity: "center.ux.infoDensity",
+	restoreTabsOnStartup: "center.ux.restoreTabsOnStartup",
 } as const;
 
 let cachedCenterUxPrefs: CenterUxPrefs = { ...DEFAULT_CENTER_UX_PREFS };
@@ -52,13 +60,19 @@ export async function getCenterUxPrefs(
 ): Promise<CenterUxPrefs> {
 	if (cachedCenterUxPrefsLoaded && !forceRefresh) return cachedCenterUxPrefs;
 	try {
-		const [defaultViewRaw, graphFollowRaw, clickRaw, densityRaw] =
-			await Promise.all([
-				getConfig(CENTER_UX_CONFIG_KEYS.defaultView),
-				getConfig(CENTER_UX_CONFIG_KEYS.graphFollow),
-				getConfig(CENTER_UX_CONFIG_KEYS.artifactClickBehavior),
-				getConfig(CENTER_UX_CONFIG_KEYS.infoDensity),
-			]);
+		const [
+			defaultViewRaw,
+			graphFollowRaw,
+			clickRaw,
+			densityRaw,
+			restoreTabsRaw,
+		] = await Promise.all([
+			getConfig(CENTER_UX_CONFIG_KEYS.defaultView),
+			getConfig(CENTER_UX_CONFIG_KEYS.graphFollow),
+			getConfig(CENTER_UX_CONFIG_KEYS.artifactClickBehavior),
+			getConfig(CENTER_UX_CONFIG_KEYS.infoDensity),
+			getConfig(CENTER_UX_CONFIG_KEYS.restoreTabsOnStartup),
+		]);
 		cachedCenterUxPrefs = {
 			defaultView: normalizeCenterDefaultView(defaultViewRaw),
 			graphFollow:
@@ -67,6 +81,10 @@ export async function getCenterUxPrefs(
 					: DEFAULT_CENTER_UX_PREFS.graphFollow,
 			artifactClickBehavior: normalizeCenterArtifactClickBehavior(clickRaw),
 			infoDensity: normalizeCenterInfoDensity(densityRaw),
+			restoreTabsOnStartup:
+				typeof restoreTabsRaw === "boolean"
+					? restoreTabsRaw
+					: DEFAULT_CENTER_UX_PREFS.restoreTabsOnStartup,
 		};
 	} catch {
 		cachedCenterUxPrefs = { ...DEFAULT_CENTER_UX_PREFS };
@@ -93,6 +111,10 @@ export async function setCenterUxPrefs(
 		infoDensity: normalizeCenterInfoDensity(
 			updates.infoDensity ?? cachedCenterUxPrefs.infoDensity,
 		),
+		restoreTabsOnStartup:
+			typeof updates.restoreTabsOnStartup === "boolean"
+				? updates.restoreTabsOnStartup
+				: cachedCenterUxPrefs.restoreTabsOnStartup,
 	};
 	cachedCenterUxPrefs = merged;
 	cachedCenterUxPrefsLoaded = true;
@@ -104,6 +126,10 @@ export async function setCenterUxPrefs(
 			merged.artifactClickBehavior,
 		),
 		setConfig(CENTER_UX_CONFIG_KEYS.infoDensity, merged.infoDensity),
+		setConfig(
+			CENTER_UX_CONFIG_KEYS.restoreTabsOnStartup,
+			merged.restoreTabsOnStartup,
+		),
 	]);
 	return merged;
 }

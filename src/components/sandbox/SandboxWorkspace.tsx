@@ -15,7 +15,6 @@ import {
 	type SandboxFile,
 } from "../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
-import { useRegisterShortcuts } from "../../lib/shortcuts";
 import type { GraphFilter } from "./graph/types";
 import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
@@ -31,7 +30,18 @@ const ExecutionGraph = lazy(async () => {
 	return { default: mod.ExecutionGraph };
 });
 
-export default function SandboxWorkspace() {
+export default function SandboxWorkspace({
+	view,
+}: {
+	/**
+	 * 强制渲染某个视图，覆盖 `managedModeStore.ui.centerView`。
+	 *
+	 * 中栏支持分屏后，「运行图」和「预览」可能被拖到两个不同的分屏里同时显示。
+	 * 这时全局的 centerView 只能表达其中一个，两块会渲染成同一个视图。
+	 * 由标签自己声明要渲染什么，才能各归各位。不传时保持旧行为（跟随 store）。
+	 */
+	view?: "graph" | "preview";
+} = {}) {
 	const files = useManagedModeStoreSelector((state) => state.files);
 	const selectedFileId = useManagedModeStoreSelector(
 		(state) => state.selectedFileId,
@@ -64,9 +74,11 @@ export default function SandboxWorkspace() {
 	);
 
 	const totalFiles = files.filter((f) => f.type === "file").length;
-	const headerTitle = ui.centerView === "graph" ? "运行图" : "预览";
+	/** 本实例实际渲染的视图：标签显式指定优先，否则跟随全局状态。 */
+	const centerView = view ?? ui.centerView;
+	const headerTitle = centerView === "graph" ? "运行图" : "预览";
 	const headerMeta =
-		ui.centerView === "graph"
+		centerView === "graph"
 			? graphSource
 				? `工具 ${graphSource.toolCalls.length} · 产物 ${graphSource.artifacts.length}`
 				: `文件 ${totalFiles}`
@@ -152,28 +164,8 @@ export default function SandboxWorkspace() {
 		});
 	}, [requestAutoPreview]);
 
-	// Alt+1/2 切换运行图/预览 — 注册进快捷键中心（随本组件挂载生效、卸载失效）
-	useRegisterShortcuts(
-		() => [
-			{
-				id: "sandbox.center-view-graph",
-				keys: "alt+1",
-				label: "切换到运行图",
-				group: "沙盒",
-				scope: "sandbox",
-				handler: () => managedModeStore.setCenterView("graph"),
-			},
-			{
-				id: "sandbox.center-view-preview",
-				keys: "alt+2",
-				label: "切换到预览",
-				group: "沙盒",
-				scope: "sandbox",
-				handler: () => managedModeStore.setCenterView("preview"),
-			},
-		],
-		[],
-	);
+	// Alt+1/2 切换运行图/预览已上移到中间栏标签条（CenterTabBar 注册 Alt+1..9）。
+	// 放在这里会随本组件卸载而失效——切到浏览器/Web AI 标签后就按不动了。
 
 	const handleSelectFile = useCallback(
 		async (id: string, source: "user" | "auto" = "user") => {
@@ -309,20 +301,19 @@ export default function SandboxWorkspace() {
 	return (
 		<div className="flex flex-col h-full bg-warm-50">
 			<ManagedCenterHeader
-				centerView={ui.centerView}
+				centerView={centerView}
 				headerTitle={headerTitle}
 				headerMeta={headerMeta}
 				density={ui.centerDensity || "comfortable"}
 				isRefreshing={isRefreshing}
-				onSetCenterView={(view) => managedModeStore.setCenterView(view)}
 				onRefresh={refreshFiles}
 			/>
 
 			<ViewTransition
-				viewKey={ui.centerView === "graph" ? "graph" : "preview"}
+				viewKey={centerView === "graph" ? "graph" : "preview"}
 				className="min-h-0 flex-1 flex flex-col"
 			>
-				{ui.centerView === "graph" ? (
+				{centerView === "graph" ? (
 					<Suspense
 						fallback={
 							<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70">

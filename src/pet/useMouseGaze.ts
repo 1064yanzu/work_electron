@@ -1,87 +1,68 @@
 /**
  * useMouseGaze — 让角色轻微跟随鼠标方向偏移（"视线追随"）
  *
- * 实现：监听窗口内 mousemove，计算相对窗口中心的偏移，输出 ±3px 限幅 transform。
- * 平滑：requestAnimationFrame lerp（0.15）向目标靠近，松手后 200ms 回到原位。
+ * 实现：监听窗口内 mousemove，计算相对窗口中心的偏移，**用 gsap.quickTo 直接写
+ * 目标元素的 x/y**，限幅 ±6px；鼠标离开窗口回到原位。
+ *
+ * ## 为什么不返回 state
+ *
+ * 改造前这个 hook 每个 rAF 帧 `setOffset` 一次，PetApp（1200+ 行）就跟着
+ * 60fps 重渲染——桌宠只是想歪一下头，代价是整棵树 reconcile。
+ * quickTo 是 GSAP 为"高频改同一个属性"准备的通道：内部复用同一个 tween，
+ * 每帧只写一次 inline transform，完全不经过 React。
  *
  * 只在以下情况输出非零偏移：
- * - 鼠标在 PetApp 窗口内（mouseover）；
- * - 当前没有拖动（isDragging=false）；
- * - 系统 prefers-reduced-motion ≠ reduce。
+ * - 鼠标在 PetApp 窗口内（mouseleave 归零）；
+ * - 调用方传入 active=true（拖动 / 贴边偷看时会关掉）；
+ * - 动效档位不是 reduced。
+ *
+ * ⚠️ 目标元素必须是**只给这个 hook 写 transform** 的专用容器：
+ * 和 React 计算出来的 style.transform 放在同一个元素上会互相覆盖。
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, type RefObject } from "react";
 
-export interface GazeOffset {
-	tx: number;
-	ty: number;
-}
+import { gsap, isReducedMotion } from "../lib/motion";
 
 const MAX_OFFSET = 6; // px
-const LERP = 0.2;
+/** quickTo 的跟随时长：越小越跟手，0.4s 接近原来 lerp 0.2 的手感 */
+const FOLLOW_DURATION = 0.4;
 
-export function useMouseGaze(active: boolean): GazeOffset {
-	const [offset, setOffset] = useState<GazeOffset>({ tx: 0, ty: 0 });
-	const targetRef = useRef<GazeOffset>({ tx: 0, ty: 0 });
-	const rafRef = useRef<number | null>(null);
-	const curRef = useRef<GazeOffset>({ tx: 0, ty: 0 });
-
+export function useMouseGaze(
+	active: boolean,
+	targetRef: RefObject<HTMLElement | null>,
+): void {
 	useEffect(() => {
-		if (!active) return;
-		if (
-			typeof window !== "undefined" &&
-			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-		) {
+		const element = targetRef.current;
+		if (!element) return;
+
+		if (!active || isReducedMotion()) {
+			// 关掉时把偏移收回原位，避免停在歪着的位置
+			gsap.to(element, { x: 0, y: 0, duration: 0.2, overwrite: "auto" });
 			return;
 		}
 
-		const startRaf = () => {
-			if (rafRef.current !== null) return;
-			rafRef.current = requestAnimationFrame(tick);
-		};
+		const moveX = gsap.quickTo(element, "x", {
+			duration: FOLLOW_DURATION,
+			ease: "power3",
+		});
+		const moveY = gsap.quickTo(element, "y", {
+			duration: FOLLOW_DURATION,
+			ease: "power3",
+		});
 
 		const onMove = (e: MouseEvent) => {
-			const cx = window.innerWidth / 2;
-			const cy = window.innerHeight / 2;
-			const nx = Math.max(
-				-1,
-				Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)),
-			);
-			const ny = Math.max(
-				-1,
-				Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)),
-			);
-			targetRef.current = {
-				tx: nx * MAX_OFFSET,
-				ty: ny * MAX_OFFSET,
-			};
-			startRaf();
+			const halfW = window.innerWidth / 2;
+			const halfH = window.innerHeight / 2;
+			const nx = Math.max(-1, Math.min(1, (e.clientX - halfW) / halfW));
+			const ny = Math.max(-1, Math.min(1, (e.clientY - halfH) / halfH));
+			moveX(nx * MAX_OFFSET);
+			moveY(ny * MAX_OFFSET);
 		};
 
 		const onLeave = () => {
-			targetRef.current = { tx: 0, ty: 0 };
-			startRaf();
-		};
-
-		const tick = () => {
-			const cur = curRef.current;
-			const target = targetRef.current;
-			const next = {
-				tx: cur.tx + (target.tx - cur.tx) * LERP,
-				ty: cur.ty + (target.ty - cur.ty) * LERP,
-			};
-			curRef.current = next;
-			const moving =
-				Math.abs(next.tx - cur.tx) > 0.01 || Math.abs(next.ty - cur.ty) > 0.01;
-			if (moving) {
-				setOffset({ ...next });
-				rafRef.current = requestAnimationFrame(tick);
-			} else {
-				// 收敛后停止循环，等下次 mousemove 再重启
-				rafRef.current = null;
-				setOffset({ tx: 0, ty: 0 });
-				curRef.current = { tx: 0, ty: 0 };
-			}
+			moveX(0);
+			moveY(0);
 		};
 
 		window.addEventListener("mousemove", onMove);
@@ -90,12 +71,8 @@ export function useMouseGaze(active: boolean): GazeOffset {
 		return () => {
 			window.removeEventListener("mousemove", onMove);
 			window.removeEventListener("mouseleave", onLeave);
-			if (rafRef.current !== null) {
-				cancelAnimationFrame(rafRef.current);
-				rafRef.current = null;
-			}
+			gsap.killTweensOf(element);
+			gsap.set(element, { x: 0, y: 0 });
 		};
-	}, [active]);
-
-	return offset;
+	}, [active, targetRef]);
 }

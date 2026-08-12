@@ -144,19 +144,24 @@ export function useThreadFullTextSearch(query: string): Set<string> | null {
 // 可见会话过滤 + 排序
 // ==================
 
+/**
+ * 是否该出现在对话列表里。
+ * 隐藏完全没有归属的临时空白会话；已有 cwd/来源/agent 绑定的空对话要立即显示。
+ * sqlite 后端：未加载全文的会话按 DB 派生消息数判断。
+ */
+export function isListableSession(session: ChatSession): boolean {
+	if (getSessionMessageCount(session) > 0) return true;
+	return Boolean(
+		session.cwd || session.agentSessionId || session.threadSource?.type,
+	);
+}
+
 export function filterAndSortVisibleSessions(
 	sessions: ChatSession[],
 	query: string,
 	ftsMatchedIds: Set<string> | null,
 ): ChatSession[] {
-	// 隐藏完全没有归属的临时空白会话；已有 cwd/来源/agent 绑定的空线程要立即显示。
-	// sqlite 后端：未加载全文的会话按 DB 派生消息数判断。
-	let filtered = sessions.filter((session) => {
-		if (getSessionMessageCount(session) > 0) return true;
-		return Boolean(
-			session.cwd || session.agentSessionId || session.threadSource?.type,
-		);
-	});
+	let filtered = sessions.filter(isListableSession);
 
 	const q = query.trim().toLowerCase();
 	if (q) {

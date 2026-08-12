@@ -167,11 +167,12 @@ export function SettingsSearch({
 		>
 			<div
 				className={cn(
-					"flex items-center gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2",
-					"shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
+					// 胶囊形而不是小圆角矩形：它是侧栏里唯一的输入控件，
+					// 形状上跟下面一整列方角导航项区分开，一眼就知道这里能打字。
+					"flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2",
 					"transition-[border-color,box-shadow,background-color] duration-150",
-					"hover:border-cream-400 hover:bg-warm-50/60",
-					"focus-within:border-primary/50 focus-within:bg-surface focus-within:ring-2 focus-within:ring-primary/10",
+					"hover:border-cream-500",
+					"focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10",
 				)}
 			>
 				<Search
@@ -188,7 +189,7 @@ export function SettingsSearch({
 					}}
 					onFocus={() => setOpen(true)}
 					onKeyDown={handleKeyDown}
-					placeholder="搜索设置项（支持中英文、拼音关键字）"
+					placeholder="搜索设置…"
 					aria-label="搜索设置项"
 					aria-controls={listboxId}
 					aria-activedescendant={
@@ -232,7 +233,9 @@ export function SettingsSearch({
 					id={listboxId}
 					role="listbox"
 					className={cn(
-						"absolute left-0 right-0 top-[calc(100%+6px)] z-20",
+						// 搜索框位于 252px 宽的侧栏里，下拉若跟随宽度会挤到读不了；
+						// 这里让它向右溢出盖在内容区上方（外层 aside 不裁剪，模态边缘兜底）
+						"absolute left-0 top-[calc(100%+6px)] z-30 w-[344px] max-w-[calc(100vw-2rem)]",
 						"rounded-2xl border border-border bg-surface shadow-bai-pop",
 						"overflow-hidden",
 					)}

@@ -6,15 +6,16 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { MessageCircle } from "lucide-react";
 import {
 	Panel,
 	PanelGroup,
 	type ImperativePanelHandle,
 } from "react-resizable-panels";
 import { PanelShell } from "./components/layout/PanelShell";
+import { SidebarRail } from "./components/layout/SidebarRail";
 import ResizeHandle from "./components/layout/ResizeHandle";
-import { ViewTransition } from "./components/ui/ViewTransition";
+import { CenterLayout } from "./components/layout/CenterLayout";
+import { CopilotFloatingButton } from "./components/layout/CopilotFloatingButton";
 import { PanelErrorBoundary } from "./components/ui/PanelErrorBoundary";
 import { MouseDragProvider } from "./hooks/useMouseDrag";
 import { GlobalContextMenuProvider } from "./components/ui/GlobalContextMenuProvider";
@@ -61,22 +62,8 @@ import { cn } from "./lib/utils";
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
 
-const BrowserPanel = lazy(() => import("./components/BrowserPanel"));
 const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
 const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
-const SandboxWorkspace = lazy(
-	() => import("./components/sandbox/SandboxWorkspace"),
-);
-const WikiGraphFullscreen = lazy(() =>
-	import("./components/wiki/WikiGraphFullscreen").then((m) => ({
-		default: m.WikiGraphFullscreen,
-	})),
-);
-const AiHubPanel = lazy(() =>
-	import("./components/aihub/AiHubPanel").then((m) => ({
-		default: m.AiHubPanel,
-	})),
-);
 const SettingsModal = lazy(async () => {
 	const mod = await import("./components/Settings/SettingsModal");
 	return { default: mod.SettingsModal };
@@ -134,9 +121,8 @@ export default function App() {
 	const isCommandPaletteOpen = useCommandPaletteStoreSelector((s) => s.isOpen);
 	const isReaderOpen = useReaderStoreSelector((s) => s.openedBookId !== null);
 	const isCardLibraryOpen = useCardLibraryStoreSelector((s) => s.open);
-	const activeMainView = useLayoutStoreSelector(
-		(state) => state.activeMainView,
-	);
+	// 中栏渲染什么已经下放给 CenterLayout：分屏之后「当前标签」不再是全局唯一的
+	// 一个值，每个编辑器组各有一个。这里不再需要知道它。
 	const leftSidebarCollapsed = useLayoutStoreSelector(
 		(state) => state.leftSidebarCollapsed,
 	);
@@ -156,6 +142,8 @@ export default function App() {
 	const [isRightHandleDragging, setIsRightHandleDragging] = useState(false);
 	// 吸附收起预告（拖到阈值内 handle 变签名色）
 	const [rightSnapPreview, setRightSnapPreview] = useState(false);
+	// 左栏同款吸附预告：minSize=15，拖到贴边（<17）说明再拖就会 snap 收起
+	const [leftSnapPreview, setLeftSnapPreview] = useState(false);
 	const anyHandleDragging = isLeftHandleDragging || isRightHandleDragging;
 	// 面板收起/展开的平滑过渡（拖拽中必须禁用）
 	const panelTransitionClass = anyHandleDragging
@@ -282,6 +270,14 @@ export default function App() {
 		});
 	}, []);
 
+	// 左侧 Panel 尺寸变化：维护吸附预告（与右侧对称，反馈一致）
+	const handleLeftPanelResize = useCallback((size: number) => {
+		setLeftSnapPreview((prev) => {
+			const next = size > 0 && size < 17;
+			return prev === next ? prev : next;
+		});
+	}, []);
+
 	// 处理右侧 ResizeHandle 拖动状态变化（拖动结束时检查是否吸附收起）
 	const handleRightResizeHandleDragging = useCallback(
 		(isDragging: boolean) => {
@@ -359,10 +355,13 @@ export default function App() {
 		<GlobalContextMenuProvider>
 			<MouseDragProvider>
 				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
+					{/* 活动栏（rail）固定 52px，不参与 PanelGroup 的百分比布局——
+					    避免折叠时 collapsedSize 百分比在宽窗口下比 rail 宽，露出一条空白残条 */}
+					<SidebarRail onOpenSettings={() => handleOpenSettings()} />
 					<PanelGroup
 						direction="horizontal"
 						className="gap-0"
-						autoSaveId="main_three_panel_layout_v3"
+						autoSaveId="main_three_panel_layout_v4"
 					>
 						{/* Left Panel: Resources */}
 						<Panel
@@ -371,7 +370,8 @@ export default function App() {
 							minSize={15}
 							maxSize={50}
 							collapsible
-							collapsedSize={4}
+							collapsedSize={0}
+							onResize={handleLeftPanelResize}
 							onCollapse={() => {
 								// Panel 自身被折叠时同步给 store（用户拖到极窄）
 								if (!layoutStore.getState().leftSidebarCollapsed) {
@@ -399,6 +399,7 @@ export default function App() {
 						<ResizeHandle
 							onDragging={setIsLeftHandleDragging}
 							onDoubleClick={() => leftPanelRef.current?.resize(20)}
+							willSnapCollapse={isLeftHandleDragging && leftSnapPreview}
 						/>
 
 						{/* Center Panel: Editor Canvas OR Browser OR Sandbox (Managed Mode) + Terminal */}
@@ -413,33 +414,13 @@ export default function App() {
 									className="h-full"
 									autoSaveId="center_vertical_split"
 								>
-									{/* 主内容区 */}
+									{/* 主内容区：可分屏的编辑器组树（每组自带标签条） */}
 									<Panel
 										defaultSize={terminalVisible ? 65 : 100}
 										minSize={20}
 										className="overflow-hidden"
 									>
-										<PanelErrorBoundary label="工作区">
-											<ViewTransition viewKey={activeMainView}>
-												{activeMainView === "wiki-graph" ? (
-													<Suspense fallback={<PanelLoadingFallback />}>
-														<WikiGraphFullscreen />
-													</Suspense>
-												) : activeMainView === "browser" ? (
-													<Suspense fallback={<PanelLoadingFallback />}>
-														<BrowserPanel />
-													</Suspense>
-												) : activeMainView === "aihub" ? (
-													<Suspense fallback={<PanelLoadingFallback />}>
-														<AiHubPanel />
-													</Suspense>
-												) : (
-													<Suspense fallback={<PanelLoadingFallback />}>
-														<SandboxWorkspace />
-													</Suspense>
-												)}
-											</ViewTransition>
-										</PanelErrorBoundary>
+										<CenterLayout />
 									</Panel>
 
 									{/* 终端面板 - 仅在可见时渲染 */}
@@ -500,21 +481,10 @@ export default function App() {
 
 					{/* 右侧栏隐藏时的悬浮唤起按钮 - 放在 PanelGroup 外部避免叠压 */}
 					{!rightSidebarVisible && (
-						<button
-							type="button"
+						<CopilotFloatingButton
 							onClick={handleShowRightSidebar}
-							className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-xl rounded-full transition-[background-color,box-shadow,transform,color] duration-200 active:scale-[0.98]"
-							style={{
-								backgroundColor: "var(--t-bg-surface)",
-								color: "var(--t-text-primary)",
-								border: "1px solid var(--t-border)",
-								boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
-							}}
-							title={`打开 AI 对话 (${shortcut("L")})`}
-						>
-							<MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-							<span className="text-sm font-medium">AI 对话</span>
-						</button>
+							shortcutHint={shortcut("L")}
+						/>
 					)}
 				</div>
 

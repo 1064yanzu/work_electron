@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "../../lib/tauriCompat";
 import { listen } from "../../lib/tauriEventCompat";
 import { managedModeStore, getMimeType } from "../../lib/managedModeStore";
+import { centerTabsStore } from "../../lib/stores/centerTabsStore";
 
 export interface WikiPageItem {
 	id: string;
@@ -450,7 +451,9 @@ export function useWiki(scopePath: string | null) {
 					});
 					managedModeStore.selectFile(fileId);
 				}
-				managedModeStore.setCenterView("preview");
+				// 「在编辑器中打开」是明确的用户动作：中栏若停在知识图谱 / 浏览器 /
+				// Web AI 标签上，要一并切回沙盒预览，否则文件打开了却看不见。
+				centerTabsStore.openSandboxView("preview");
 				return true;
 			} catch (e: any) {
 				setError(e?.message || "在编辑器中打开失败");

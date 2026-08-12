@@ -1,4 +1,4 @@
-import { BarChart3, FileOutput, FileText, Layers, Zap } from "lucide-react";
+import { FileOutput, FileText, Layers, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	type DailyActivity,
@@ -8,6 +8,11 @@ import {
 import { useChatStore } from "../../../lib/chat/store";
 import type { DashboardStats } from "../../../types";
 import { ActivityHeatmap } from "../../ActivityHeatmap";
+import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
+import {
+	SettingsPageContainer,
+	SettingsSectionTitle,
+} from "../ui/SettingsPrimitives";
 
 /**
  * 格式化 token 数量显示
@@ -123,44 +128,34 @@ export function DashboardSettings() {
 	};
 
 	return (
-		<div className="flex-1 h-full bg-surface p-8 overflow-y-auto">
-			<div className="max-w-4xl space-y-8">
-				<div className="border-b border-border pb-4 mb-8">
-					<h3 className="text-base font-semibold text-text-primary flex items-center gap-2 tracking-tight">
-						<BarChart3 className="w-5 h-5" strokeWidth={1.5} />
-						使用统计
-					</h3>
-					<p className="text-sm text-text-secondary mt-1">
-						查看您的知识工作台使用情况
-					</p>
-				</div>
+		<SettingsPageContainer width="wide">
+			<SettingsPanelHeader
+				title="使用统计"
+				description="知识库规模、Token 消耗与活跃度，数据全部来自本机数据库。"
+			/>
 
-				{isLoading ? (
-					<div className="text-center py-12 text-text-muted">加载中...</div>
-				) : stats ? (
-					<>
-						{/* Knowledge Stats - 知识库概览 */}
-						<KnowledgeStatsPanel stats={stats} />
+			{isLoading ? (
+				<div className="py-12 text-center text-text-muted">加载中...</div>
+			) : stats ? (
+				<>
+					{/* Knowledge Stats - 知识库概览 */}
+					<KnowledgeStatsPanel stats={stats} />
 
-						{/* Token Statistics - 高级版 */}
-						<TokenUsagePanel stats={tokenStats} />
+					{/* Token Statistics - 高级版 */}
+					<TokenUsagePanel stats={tokenStats} />
 
-						{/* Activity Heatmap */}
-						<div className="space-y-4">
-							<h4 className="font-medium text-text-primary flex items-center gap-2">
-								<BarChart3 className="w-4 h-4" strokeWidth={1.5} />
-								活跃度
-							</h4>
-							<div className="p-6 bg-surface border border-border rounded-2xl shadow-bai-card">
-								<ActivityHeatmap data={activityData} />
-							</div>
+					{/* Activity Heatmap */}
+					<div className="space-y-4">
+						<SettingsSectionTitle className="mb-0">活跃度</SettingsSectionTitle>
+						<div className="rounded-2xl border border-border bg-surface p-6 shadow-bai-card">
+							<ActivityHeatmap data={activityData} />
 						</div>
-					</>
-				) : (
-					<div className="text-center py-12 text-text-muted">加载失败</div>
-				)}
-			</div>
-		</div>
+					</div>
+				</>
+			) : (
+				<div className="py-12 text-center text-text-muted">加载失败</div>
+			)}
+		</SettingsPageContainer>
 	);
 }
 

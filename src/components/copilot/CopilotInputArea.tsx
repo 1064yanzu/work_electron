@@ -1,10 +1,10 @@
-// Copilot 输入区组件 — 输入框 + 计划模式开关 + 文件拖入。
+// Copilot 输入区组件 — 输入框 + 文件拖入。
+// 运行模式（执行 / 规划）已收进 ChatInput 工具栏的 pill，不再独占一行。
 // 通过 React.memo 隔离父组件其他状态变化造成的重渲染。
 
 import { memo, useCallback, useRef } from "react";
 import { saveContextAttachmentFromFile } from "../../lib/chat/attachmentFiles";
 import { workspaceStore } from "../../lib/workspaceStore";
-import { PlanModeToggle } from "../agent/PlanModeToggle";
 import { ChatInput, type SubmitOptions } from "../chat/ChatInput";
 import type { Model } from "../chat/ModelSelector";
 import { toast } from "../ui/Toast";
@@ -43,8 +43,14 @@ function CopilotInputAreaImpl({
 			? "研究进行中..."
 			: "Agent 执行中..."
 		: chatMode === "agent"
-			? "描述你的需求，Agent 会自动完成..."
+			? "描述你的需求，或用 / 唤起命令..."
 			: "输入消息，或用 / 唤起命令...";
+	// 窄栏用短文案，避免占位文字被截成半句
+	const compactPlaceholder = isAgentExecuting
+		? agentTaskType === "research"
+			? "研究进行中..."
+			: "执行中..."
+		: "描述需求，/ 唤起命令";
 
 	const addFileToContext = workspaceStore.addFileToContext.bind(workspaceStore);
 
@@ -106,22 +112,18 @@ function CopilotInputAreaImpl({
 
 	return (
 		<div onDragOver={handleDragOver} onDrop={handleDrop}>
-			<div className="px-0 pb-1.5">
-				<PlanModeToggle
-					planMode={planModeEnabled}
-					onToggle={onTogglePlanMode}
-					disabled={disabled}
-				/>
-			</div>
 			<ChatInput
 				onSubmit={onSendMessage}
 				disabled={disabled}
 				placeholder={placeholder}
+				compactPlaceholder={compactPlaceholder}
 				model={activeModel || undefined}
 				models={enabledModels}
 				onModelSelect={onSelectModel}
 				onOpenPromptLibrary={onOpenPromptLibrary}
 				isAgentExecuting={isAgentExecuting}
+				planMode={planModeEnabled}
+				onTogglePlanMode={onTogglePlanMode}
 			/>
 		</div>
 	);

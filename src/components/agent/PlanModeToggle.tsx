@@ -1,78 +1,107 @@
 /**
- * PlanModeToggle - 规划模式切换器
- * 在 ChatInput 上方显示，仅 agent 模式下可见
+ * PlanModeToggle — 运行模式配置胶囊（执行 / 规划）
+ *
+ * 与模型、风格包同为「配置胶囊」类：图标 + 当前值 + chevron，点击弹菜单。
+ * 改造前是输入框上方独占一行的双段控件 + 一句常驻说明文字，白吃 34px 垂直空间；
+ * 现在只占工具栏一个槽位，说明文字进菜单，规划态另由输入框左侧赤陶橙条表达。
  */
 
 import { ListChecks, Zap } from "lucide-react";
 import { cn } from "../../lib/utils";
+import {
+	ToolbarMenu,
+	ToolbarMenuOption,
+	useToolbarMenu,
+} from "../chat/chatInput/ToolbarMenu";
+import { ToolbarItem } from "../chat/chatInput/ToolbarPrimitives";
 
 interface PlanModeToggleProps {
 	planMode: boolean;
 	onToggle: (enabled: boolean) => void;
 	disabled?: boolean;
+	/** 由密度档统一下发 —— 三个配置胶囊同进同退 */
+	showValue?: boolean;
 }
+
+const MENU_WIDTH = 212;
+
+const MODES = [
+	{
+		planMode: false,
+		label: "执行",
+		description: "Agent 直接动手完成任务",
+		Icon: Zap,
+	},
+	{
+		planMode: true,
+		label: "规划",
+		description: "先输出计划，确认后再执行",
+		Icon: ListChecks,
+	},
+] as const;
 
 export function PlanModeToggle({
 	planMode,
 	onToggle,
 	disabled = false,
+	showValue = true,
 }: PlanModeToggleProps) {
+	const { isOpen, close, toggle, buttonRef, menuRef, position } =
+		useToolbarMenu(MENU_WIDTH);
+
+	const current = MODES.find((mode) => mode.planMode === planMode) ?? MODES[0];
+	const CurrentIcon = current.Icon;
+
+	const handleSelect = (next: boolean) => {
+		if (next !== planMode) onToggle(next);
+		close();
+	};
+
 	return (
-		<div className="flex items-center gap-1.5">
-			<div
-				className={cn(
-					"relative flex items-center rounded-lg p-0.5 transition-colors",
-					"bg-warm-200",
-					disabled && "opacity-50 pointer-events-none",
-				)}
-			>
-				{/* 滑块背景 */}
-				<div
-					className={cn(
-						"absolute top-0.5 h-[calc(100%-4px)] rounded-md transition-all duration-200 ease-out",
-						planMode
-							? "bg-terracotta shadow-sm left-[calc(50%+1px)] w-[calc(50%-3px)]"
-							: "bg-surface dark:bg-cream-700 shadow-sm left-0.5 w-[calc(50%-3px)]",
-					)}
-				/>
+		<>
+			<ToolbarItem
+				ref={buttonRef}
+				onClick={toggle}
+				disabled={disabled}
+				open={isOpen}
+				showValue={showValue}
+				value={current.label}
+				active={planMode}
+				tone="terracotta"
+				title={`运行模式：${current.label} —— ${current.description}`}
+				icon={<CurrentIcon className="w-4 h-4" strokeWidth={1.7} />}
+			/>
 
-				{/* 执行按钮 */}
-				<button
-					type="button"
-					onClick={() => onToggle(false)}
-					className={cn(
-						"relative z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
-						!planMode
-							? "text-text-primary"
-							: "text-text-light hover:text-text-secondary dark:hover:text-text-light",
-					)}
+			{isOpen && (
+				<ToolbarMenu
+					menuRef={menuRef}
+					position={position}
+					width={MENU_WIDTH}
+					title="运行模式"
+					hint="mode"
 				>
-					<Zap className="w-3 h-3" />
-					执行
-				</button>
-
-				{/* 规划按钮 */}
-				<button
-					type="button"
-					onClick={() => onToggle(true)}
-					className={cn(
-						"relative z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
-						planMode
-							? "text-white"
-							: "text-text-light hover:text-text-secondary dark:hover:text-text-light",
-					)}
-				>
-					<ListChecks className="w-3 h-3" />
-					规划
-				</button>
-			</div>
-
-			{/* 模式说明 */}
-			{planMode && (
-				<span className="text-[10px] text-terracotta font-medium animate-in fade-in slide-in-from-left-1 duration-200">
-					Agent 将先输出计划，确认后再执行
-				</span>
+					{MODES.map((mode) => (
+						<ToolbarMenuOption
+							key={mode.label}
+							label={mode.label}
+							description={mode.description}
+							active={mode.planMode === planMode}
+							onClick={() => handleSelect(mode.planMode)}
+							leading={
+								<mode.Icon
+									className={cn(
+										"w-3.5 h-3.5",
+										mode.planMode === planMode
+											? "text-terracotta dark:text-terracotta-light"
+											: "text-text-muted",
+									)}
+									strokeWidth={1.7}
+								/>
+							}
+						/>
+					))}
+				</ToolbarMenu>
 			)}
-		</div>
+		</>
 	);
 }

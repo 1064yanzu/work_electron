@@ -62,7 +62,7 @@ export const MEMORY_FILE_STYLES: Record<MemoryFileToken, MemoryFileStyle> = {
 	},
 	project_claude_md: {
 		label: "CLAUDE.md",
-		subtitle: "项目级 · 当前线程的工作目录",
+		subtitle: "项目级 · 当前对话的工作目录",
 		icon: FolderOpen,
 		accent: "#6B6B68",
 		accentBg: "bg-cream-200",

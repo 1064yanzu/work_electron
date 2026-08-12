@@ -10,7 +10,7 @@ import {
 	Waypoints,
 	X,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
 	terminalStore,
 	useTerminalStoreSelector,
@@ -28,8 +28,13 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 export function TerminalTabBar() {
-	const terminals = useTerminalStoreSelector((s) => s.terminals);
+	const allTerminals = useTerminalStoreSelector((s) => s.terminals);
 	const activeId = useTerminalStoreSelector((s) => s.activeTerminalId);
+	// 中栏 CLI 标签页托管的终端不在底部面板露面（见 TerminalPanel 注释）
+	const terminals = useMemo(
+		() => allTerminals.filter((t) => !t.hostedInCenter),
+		[allTerminals],
+	);
 
 	const handleNewTerminal = useCallback(() => {
 		terminalStore.createTerminal();

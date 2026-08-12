@@ -6,23 +6,27 @@
  */
 import type {
 	AiHubSiteRow,
+	BrowserCookieSourceRow,
 	HarnessDetectionRow,
 	HarnessHandoffPackage,
 	HarnessHandoffRow,
 	HarnessMessageRow,
 	HarnessSearchHit,
 	HarnessSessionRow,
+	HarnessUsageRow,
 } from "../../../electron/shared/ipc-schema";
 import { safeInvoke } from "../tauriBridge";
 
 export type {
 	AiHubSiteRow,
+	BrowserCookieSourceRow,
 	HarnessDetectionRow,
 	HarnessHandoffPackage,
 	HarnessHandoffRow,
 	HarnessMessageRow,
 	HarnessSearchHit,
 	HarnessSessionRow,
+	HarnessUsageRow,
 };
 
 // ==================
@@ -38,8 +42,21 @@ export async function detectHarnesses(): Promise<HarnessDetectionRow[]> {
 	return r.harnesses;
 }
 
-/** 列出已摄取的会话。 */
-export async function listHarnessSessions(options?: {
+/**
+ * 跨入口用量统计。
+ *
+ * 返回值里的 `token_basis` / `partial_coverage` 必须在 UI 上如实标注——
+ * token 是估算，Web 入口只覆盖用户主动导入过的会话。
+ */
+export async function getHarnessUsageStats(): Promise<{
+	harnesses: HarnessUsageRow[];
+	daily: { date: string; messages: number }[];
+	generated_at: number;
+}> {
+	return await safeInvoke("harness_usage_stats", {});
+}
+
+/** 列出已摄取的会话。 */ export async function listHarnessSessions(options?: {
 	harness?: string;
 	cwd?: string;
 	limit?: number;
@@ -95,12 +112,25 @@ export async function deleteHarnessSession(
 // 蒸馏 + 迁移
 // ==================
 
-/** 蒸馏生成 HANDOFF 交接包（进度走 harness-handoff-event 事件）。 */
+/**
+ * 生成 HANDOFF 交接包（进度走 harness-handoff-event 事件）。
+ *
+ * 返回值里的 `mode` / `reason` 必须展示给用户：
+ * native/raw 是无损的，distill 是 LLM 压缩过的，两者可信度不同，
+ * 把它们显示成同一个「交接包」会误导人。
+ */
 export async function createHandoff(input: {
 	session_id: string;
 	target_harness: string;
 	model?: string;
-}): Promise<{ handoff_id: string; package: HarnessHandoffPackage }> {
+	mode?: "auto" | "native" | "raw" | "distill";
+}): Promise<{
+	handoff_id: string;
+	package: HarnessHandoffPackage;
+	mode: "native" | "raw" | "distill";
+	reason: string;
+	resume_command: string | null;
+}> {
 	return await safeInvoke("harness_handoff_create", input);
 }
 
@@ -194,22 +224,32 @@ export async function openAiHubSite(
 	return r.success;
 }
 
-/** 更新内嵌视图 bounds。 */
-export async function setAiHubBounds(bounds: {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}): Promise<boolean> {
+/** 更新某个站点内嵌视图的 bounds（分屏各自独立上报）。 */
+export async function setAiHubBounds(
+	siteId: string,
+	bounds: {
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	},
+): Promise<boolean> {
 	const r = await safeInvoke<{ success: boolean }>("aihub_set_bounds", {
+		site_id: siteId,
 		bounds,
 	});
 	return r.success;
 }
 
-/** 从中栏移除内嵌视图（保活页面与登录态）。 */
-export async function closeAiHub(): Promise<boolean> {
-	const r = await safeInvoke<{ success: boolean }>("aihub_close", {});
+/**
+ * 从中栏移除内嵌视图（保活页面与登录态）。
+ * 不传 siteId 表示摘掉全部。
+ */
+export async function closeAiHub(siteId?: string): Promise<boolean> {
+	const r = await safeInvoke<{ success: boolean }>(
+		"aihub_close",
+		siteId ? { site_id: siteId } : {},
+	);
 	return r.success;
 }
 
@@ -239,4 +279,45 @@ export async function importAiHubSession(input: {
 		input,
 	);
 	return r.session_id;
+}
+
+/**
+ * 列出本机可导入登录态的浏览器 profile。
+ *
+ * 传 siteId 时后端会顺带统计每个 profile 有多少条该站点的有效 cookie，
+ * 并按条数降序返回——用户才能看出哪个 profile 真的登录过。
+ */
+export async function listCookieSources(
+	siteId?: string,
+): Promise<BrowserCookieSourceRow[]> {
+	const r = await safeInvoke<{ sources: BrowserCookieSourceRow[] }>(
+		"aihub_cookie_sources",
+		siteId ? { site_id: siteId } : {},
+	);
+	return r.sources;
+}
+
+/**
+ * 从本机浏览器导入某站点的登录态。
+ * 只搬运该站点注册域及其子域的 cookie。
+ */
+export async function importAiHubCookies(input: {
+	site_id: string;
+	browser: string;
+	profile: string;
+}): Promise<{
+	ok: boolean;
+	imported: number;
+	skipped: number;
+	error?: string;
+}> {
+	return await safeInvoke("aihub_import_cookies", input);
+}
+
+/** 重新加载某站点页面（导入登录态后必须走一次才会生效）。 */
+export async function reloadAiHubSite(siteId: string): Promise<boolean> {
+	const r = await safeInvoke<{ ok: boolean }>("aihub_reload", {
+		site_id: siteId,
+	});
+	return r.ok;
 }

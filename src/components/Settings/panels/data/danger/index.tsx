@@ -47,7 +47,7 @@ export function DataDangerSettings() {
 	};
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl mx-auto">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={ShieldAlert}
 				title="危险区"

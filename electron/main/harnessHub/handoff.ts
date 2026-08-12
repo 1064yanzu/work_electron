@@ -12,6 +12,7 @@
 import type { DbContext } from "../db/client";
 import { invokeLlm } from "../llm/invoke";
 import { createLogger } from "../logging/logger";
+import { listBoardEntries, summarizeBoardForHandoff } from "./board";
 import type { CanonicalMessage, HandoffPackage, HarnessKind } from "./types";
 
 const logger = createLogger();
@@ -163,6 +164,68 @@ export type DistillProgress = (p: {
 	total: number;
 }) => void;
 
+/** 会话元信息（选档与接力共用，避免各处重复查表）。 */
+export interface SessionBrief {
+	id: string;
+	harness: HarnessKind;
+	externalId: string | null;
+	title: string | null;
+	cwd: string | null;
+	messageCount: number;
+}
+
+/** 读取会话元信息；不存在时抛错。 */
+export async function loadSessionBrief(
+	db: DbContext,
+	sessionId: string,
+): Promise<SessionBrief> {
+	const res = await db.client.execute({
+		sql: `SELECT id, harness, external_id, title, cwd, message_count
+		      FROM harness_sessions WHERE id = ?`,
+		args: [sessionId],
+	});
+	const row = res.rows[0] as Record<string, unknown> | undefined;
+	if (!row) throw new Error(`会话不存在：${sessionId}`);
+	return {
+		id: String(row.id),
+		harness: (row.harness as HarnessKind) ?? "claude-code",
+		externalId: (row.external_id as string) ?? null,
+		title: (row.title as string) ?? null,
+		cwd: (row.cwd as string) ?? null,
+		messageCount: Number(row.message_count ?? 0),
+	};
+}
+
+/**
+ * 读取会话尾部转录（正序返回）。
+ *
+ * 尾部优先是因为近期上下文更相关；`limit` 控制条数上限。
+ */
+export async function loadSessionTranscript(
+	db: DbContext,
+	sessionId: string,
+	limit = MAX_MESSAGES,
+): Promise<CanonicalMessage[]> {
+	const res = await db.client.execute({
+		sql: `SELECT id, role, content, seq, created_at FROM harness_messages
+		      WHERE session_id = ? ORDER BY seq DESC LIMIT ?`,
+		args: [sessionId, limit],
+	});
+	return res.rows
+		.map((r0) => {
+			const r = r0 as Record<string, unknown>;
+			return {
+				id: String(r.id ?? ""),
+				role: (r.role as CanonicalMessage["role"]) ?? "assistant",
+				content: (r.content as string) ?? "",
+				seq: Number(r.seq ?? 0),
+				createdAt: Number(r.created_at ?? 0),
+			} satisfies CanonicalMessage;
+		})
+		.filter((m) => m.content.trim())
+		.reverse();
+}
+
 /**
  * 从 canonical 表读取会话转录并蒸馏成 HANDOFF 包。
  *
@@ -180,37 +243,12 @@ export async function distillHandoff(
 	const { sessionId, targetHarness, model = "", onProgress } = options;
 	onProgress?.({ phase: "loading", current: 0, total: 1 });
 
-	const sessionRes = await db.client.execute({
-		sql: `SELECT id, harness, title, cwd, message_count FROM harness_sessions WHERE id = ?`,
-		args: [sessionId],
-	});
-	const sessionRow = sessionRes.rows[0] as Record<string, unknown> | undefined;
-	if (!sessionRow) {
-		throw new Error(`会话不存在：${sessionId}`);
-	}
-	const sourceHarness = (sessionRow.harness as HarnessKind) ?? "claude-code";
-	const title = (sessionRow.title as string) ?? null;
-	const cwd = (sessionRow.cwd as string) ?? null;
+	const brief = await loadSessionBrief(db, sessionId);
+	const sourceHarness = brief.harness;
+	const title = brief.title;
+	const cwd = brief.cwd;
 
-	// 取尾部 MAX_MESSAGES 条（近期上下文更相关），再正序还原
-	const msgRes = await db.client.execute({
-		sql: `SELECT role, content, seq, created_at FROM harness_messages
-		      WHERE session_id = ? ORDER BY seq DESC LIMIT ?`,
-		args: [sessionId, MAX_MESSAGES],
-	});
-	const messages: CanonicalMessage[] = msgRes.rows
-		.map((r0) => {
-			const r = r0 as Record<string, unknown>;
-			return {
-				id: "",
-				role: (r.role as CanonicalMessage["role"]) ?? "assistant",
-				content: (r.content as string) ?? "",
-				seq: Number(r.seq ?? 0),
-				createdAt: Number(r.created_at ?? 0),
-			};
-		})
-		.filter((m) => m.content.trim())
-		.reverse();
+	const messages = await loadSessionTranscript(db, sessionId);
 
 	if (!messages.length) {
 		throw new Error("该会话没有可蒸馏的转录内容");
@@ -297,6 +335,29 @@ ${reduceInput}`,
 		!pkg.nextSteps.length
 	) {
 		pkg.decisions = [result.content.trim().slice(0, 4000)];
+	}
+
+	// 并入共享白板：白板是跨 agent 长期沉淀的事实，优先级高于单次蒸馏的推断，
+	// 因此放在各列表前面。去重按内容原样比对（白板条目本来就是人/agent 写的短句）。
+	try {
+		const board = await listBoardEntries(db, cwd);
+		const boardSummary = summarizeBoardForHandoff(board);
+		const dedupe = (primary: string[], secondary: string[]) => {
+			const seen = new Set(primary.map((s) => s.trim()));
+			return [...primary, ...secondary.filter((s) => !seen.has(s.trim()))];
+		};
+		pkg.decisions = dedupe(
+			[...boardSummary.decisions, ...boardSummary.pitfalls],
+			pkg.decisions,
+		);
+		pkg.nextSteps = dedupe(boardSummary.nextSteps, pkg.nextSteps);
+		const goalEntry = board.find((entry) => entry.kind === "goal");
+		if (goalEntry) pkg.goal = goalEntry.content;
+	} catch (error) {
+		logger.warn({
+			msg: "读取共享白板失败，交接包不含白板内容",
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 
 	onProgress?.({ phase: "done", current: 1, total: 1 });

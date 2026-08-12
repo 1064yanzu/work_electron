@@ -32,9 +32,13 @@ import {
 	type HarnessDetectionRow,
 } from "../../../../lib/api/harnessHub";
 import { cn } from "../../../../lib/utils";
+import { EVENTS, events } from "../../../../lib/events";
 import { confirmDialog } from "../../../ui/ConfirmDialog";
 import { toast } from "../../../ui/Toast";
 import { SettingsPanelHeader } from "../../components/SettingsPanelHeader";
+import { HarnessUsageSection } from "./HarnessUsageSection";
+import { HarnessInteropSection } from "./HarnessInteropSection";
+import { HarnessAutomationSection } from "./HarnessAutomationSection";
 import { settingsAnchorProps } from "../../fieldRegistry";
 import {
 	SettingsBadge,
@@ -310,6 +314,9 @@ export function HarnessHubSettings() {
 			try {
 				const saved = await saveAiHubSites(next);
 				if (mounted.current) setSites(saved);
+				// 通知中栏标签条刷新站点清单（新启用的站点要能在「+」菜单里出现，
+				// 被禁用/删除的站点标签要被剔除，否则会留下点不开的死标签）
+				events.emit(EVENTS.AIHUB_SITES_CHANGED, undefined);
 				if (successMessage) toast.success(successMessage);
 				return true;
 			} catch (error) {
@@ -428,13 +435,16 @@ export function HarnessHubSettings() {
 	// =====================================================================
 
 	return (
-		<SettingsPageContainer contentClassName="max-w-2xl space-y-6">
+		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Waypoints}
 				title="AI 入口互通"
 				description="统一管理本机的 AI 命令行入口与内嵌 Web AI 站点：摄取历史会话、蒸馏交接包，在不同 AI 之间无缝接着聊。"
 			/>
-
+			{/* ---------- 0. 用量总览 ---------- */}
+			<div {...settingsAnchorProps("integrations.harnessHub.usage")}>
+				<HarnessUsageSection />
+			</div>
 			{/* ---------- 1. 已检测到的 AI 入口 ---------- */}
 			<div {...settingsAnchorProps("integrations.harnessHub.detection")}>
 				<SettingsCardSection
@@ -471,7 +481,6 @@ export function HarnessHubSettings() {
 					)}
 				</SettingsCardSection>
 			</div>
-
 			{/* ---------- 2. 会话摄取 ---------- */}
 			<div {...settingsAnchorProps("integrations.harnessHub.ingest")}>
 				<SettingsCardSection
@@ -534,12 +543,11 @@ export function HarnessHubSettings() {
 					</div>
 				</SettingsCardSection>
 			</div>
-
 			{/* ---------- 3. Web AI 站点 ---------- */}
 			<div {...settingsAnchorProps("integrations.harnessHub.sites")}>
 				<SettingsCardSection
 					title="Web AI 站点"
-					description="可内嵌浏览的 Web AI 入口。禁用后不再出现在 AI 入口列表中；内置站点只能禁用，不能删除。"
+					description="可内嵌浏览的 Web AI 入口。启用后会出现在中间栏标签条的「+」菜单里，可各开一个标签页；禁用后不再出现在 AI 入口列表中；内置站点只能禁用，不能删除。"
 				>
 					{sitesLoading ? (
 						<div className="py-6 text-center text-[12px] text-text-muted">
@@ -719,8 +727,7 @@ export function HarnessHubSettings() {
 					)}
 				</SettingsCardSection>
 			</div>
-
-			{/* ---------- 4. 交接包蒸馏 ---------- */}
+			{/* ---------- 4. 交接包蒸馏 ---------- */}{" "}
 			<div {...settingsAnchorProps("integrations.harnessHub.handoff")}>
 				<SettingsCardSection
 					title="交接包蒸馏"
@@ -740,6 +747,10 @@ export function HarnessHubSettings() {
 					</div>
 				</SettingsCardSection>
 			</div>
+			{/* ---------- 5. 协作层：接力策略 / 互为工具 / 反向 MCP / 路由 / 额度 ---------- */}
+			<HarnessInteropSection />
+			{/* ---------- 6. 自动化：定时触发 / 并发与防休眠 / 失败处理 ---------- */}
+			<HarnessAutomationSection />
 		</SettingsPageContainer>
 	);
 }

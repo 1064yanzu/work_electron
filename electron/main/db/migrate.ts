@@ -4,6 +4,8 @@ import { runV2Migrations } from "./migrations/v2Migrations";
 import { runV3Migrations } from "./migrations/v3Migrations";
 import { runV4Migrations } from "./migrations/v4Migrations";
 import { runV5Migrations } from "./migrations/v5Migrations";
+import { runV6Migrations } from "./migrations/v6Migrations";
+import { runV7Migrations } from "./migrations/v7Migrations";
 
 /**
  * 当前数据库 schema 版本号（B12：版本化迁移）。
@@ -21,7 +23,7 @@ import { runV5Migrations } from "./migrations/v5Migrations";
  * CURRENT_SCHEMA_VERSION，并在下面的判断链里追加 `if (currentVersion < N)`。
  * 不要修改已发布版本对应的迁移函数内容（迁移历史应保持可追溯、不可变）。
  */
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 7;
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -383,28 +385,103 @@ async function runLegacyMigrations(ctx: DbContext): Promise<void> {
 	);
 }
 
+/**
+ * 各版本的「哨兵表」—— 该版本迁移真正落地后必然存在的表。
+ *
+ * 存在的意义：`user_version` 是**一句声明**，而不是事实。只要有一次运行中
+ * 版本常量已经提前到 N、但对应的 `runVNMigrations` 还没被调用（开发期热重启、
+ * 灰度构建、迁移中途异常退出都会造成这个窗口），DB 就会被永久盖上「已迁到 N」
+ * 的章，而表根本不存在——之后所有启动都走快速路径直接跳过，表再也补不回来，
+ * 表现为运行时 `no such table`。
+ *
+ * 所以快速路径除了看版本号，还要抽查哨兵表是否真的在。缺了就补跑那一版
+ * （所有迁移函数本身都是幂等的，补跑无副作用）。
+ *
+ * v3 只做加列 / 建索引、没有独占的新表，故不设哨兵（漏检的代价是加列缺失，
+ * 而 safeAddColumn 本来就幂等，下一次真正的版本升级会带上）。
+ */
+const VERSION_SENTINELS: {
+	version: number;
+	table: string;
+	run: (ctx: DbContext) => Promise<void>;
+}[] = [
+	{ version: 2, table: "perf_events", run: runV2Migrations },
+	{ version: 4, table: "chat_sessions", run: runV4Migrations },
+	{ version: 5, table: "harness_sessions", run: runV5Migrations },
+	{ version: 6, table: "harness_routes", run: runV6Migrations },
+	{ version: 7, table: "harness_jobs", run: runV7Migrations },
+];
+
+/** 表是否存在（含虚拟表）。 */
+async function tableExists(ctx: DbContext, table: string): Promise<boolean> {
+	try {
+		const res = await ctx.client.execute({
+			sql: `SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name = ? LIMIT 1`,
+			args: [table],
+		});
+		return res.rows.length > 0;
+	} catch {
+		// 查不了就当它在，避免把一个只是读失败的场景升级成全量重跑
+		return true;
+	}
+}
+
+/**
+ * 快速路径的自愈检查：版本号说已经迁到位了，抽查哨兵表验证这句话是不是真的。
+ *
+ * 只在版本号 >= 当前版本时调用，正常情况下是 4 次 `sqlite_master` 点查，
+ * 走内存索引，可以忽略不计。
+ */
+async function repairMissingMigrations(ctx: DbContext): Promise<void> {
+	for (const sentinel of VERSION_SENTINELS) {
+		if (await tableExists(ctx, sentinel.table)) continue;
+		console.warn(
+			`[migrate] user_version 已标记为已迁移，但 v${sentinel.version} 的 ${sentinel.table} 不存在，正在补跑该版本迁移`,
+		);
+		await sentinel.run(ctx);
+	}
+}
+
 export async function runMigrations(ctx: DbContext): Promise<void> {
 	const currentVersion = await readSchemaVersion(ctx);
 
 	if (currentVersion >= CURRENT_SCHEMA_VERSION) {
-		// 已是最新版本：全部表/列/索引均已存在，跳过整套重跑（B12 性能优化核心）
+		// 已是最新版本：跳过整套重跑（B12 性能优化核心）。
+		// 但版本号可能是「空头支票」，抽查一遍哨兵表，缺了就补。
+		await repairMissingMigrations(ctx);
 		return;
 	}
 
+	// 每完成一步就立刻盖章，而不是全部跑完在末尾一次性写。
+	// 这样任何中途退出留下的版本号都只会**落后于**实际状态，绝不会超前——
+	// 超前是不可恢复的（快速路径会永久跳过那一版），落后只是下次多跑一遍幂等语句。
 	if (currentVersion < 1) {
 		await runLegacyMigrations(ctx);
+		await writeSchemaVersion(ctx, 1);
 	}
 	if (currentVersion < 2) {
 		await runV2Migrations(ctx);
+		await writeSchemaVersion(ctx, 2);
 	}
 	if (currentVersion < 3) {
 		await runV3Migrations(ctx);
+		await writeSchemaVersion(ctx, 3);
 	}
 	if (currentVersion < 4) {
 		await runV4Migrations(ctx);
+		await writeSchemaVersion(ctx, 4);
 	}
 	if (currentVersion < 5) {
 		await runV5Migrations(ctx);
+		await writeSchemaVersion(ctx, 5);
+	}
+	if (currentVersion < 6) {
+		await runV6Migrations(ctx);
+		await writeSchemaVersion(ctx, 6);
+	}
+	if (currentVersion < 7) {
+		await runV7Migrations(ctx);
+		await writeSchemaVersion(ctx, 7);
 	}
 
 	await writeSchemaVersion(ctx, CURRENT_SCHEMA_VERSION);
