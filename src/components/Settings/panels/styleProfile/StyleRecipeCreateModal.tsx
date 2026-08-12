@@ -99,7 +99,12 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-			<div ref={trapRef} role="dialog" aria-modal="true" className="w-full max-w-lg bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-2xl border border-cream-300/50 dark:border-cream-600/30 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-150">
+			<div
+				ref={trapRef}
+				role="dialog"
+				aria-modal="true"
+				className="w-full max-w-lg bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-2xl border border-cream-300/50 dark:border-cream-600/30 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-150"
+			>
 				{/* Header */}
 				<div className="flex items-center justify-between px-6 py-4 border-b border-cream-200/60 dark:border-cream-700/40">
 					<div className="flex items-center gap-2.5">

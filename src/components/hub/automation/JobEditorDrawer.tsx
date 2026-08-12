@@ -571,9 +571,7 @@ function Field({
 }) {
 	return (
 		<div>
-			<span className="block text-[11px] text-text-light mb-1.5">
-				{label}
-			</span>
+			<span className="block text-[11px] text-text-light mb-1.5">{label}</span>
 			{children}
 		</div>
 	);

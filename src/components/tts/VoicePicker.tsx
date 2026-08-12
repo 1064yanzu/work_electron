@@ -136,9 +136,7 @@ export function VoicePicker({
 					加载音色…
 				</div>
 			)}
-			{error && (
-				<div className="text-xs text-error">音色加载失败：{error}</div>
-			)}
+			{error && <div className="text-xs text-error">音色加载失败：{error}</div>}
 		</div>
 	);
 }

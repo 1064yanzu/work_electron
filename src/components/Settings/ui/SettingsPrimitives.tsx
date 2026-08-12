@@ -139,9 +139,7 @@ export function SettingsRow({
 				)}
 			</div>
 			<div className="flex shrink-0 items-center gap-3">
-				{value && (
-					<div className="text-sm text-text-secondary">{value}</div>
-				)}
+				{value && <div className="text-sm text-text-secondary">{value}</div>}
 				{action}
 			</div>
 		</div>
@@ -282,9 +280,7 @@ export function SettingsField({
 				<div className="min-w-0 flex-1">
 					{children}
 					{error && (
-						<p className="mt-1 text-xs leading-relaxed text-error">
-							{error}
-						</p>
+						<p className="mt-1 text-xs leading-relaxed text-error">{error}</p>
 					)}
 				</div>
 			</div>
@@ -304,9 +300,7 @@ export function SettingsField({
 				<p className="text-xs leading-relaxed text-text-muted">{hint}</p>
 			)}
 			<div>{children}</div>
-			{error && (
-				<p className="text-xs leading-relaxed text-error">{error}</p>
-			)}
+			{error && <p className="text-xs leading-relaxed text-error">{error}</p>}
 		</div>
 	);
 }
@@ -530,9 +524,7 @@ export function SettingsChipGroup<T extends string = string>({
 						onClick={() => onChange(opt.value)}
 						className={cn(
 							"relative inline-flex items-center justify-center gap-1.5 rounded-full transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
-							size === "sm"
-								? "px-3 py-1 text-xs"
-								: "px-3.5 py-1.5 text-xs",
+							size === "sm" ? "px-3 py-1 text-xs" : "px-3.5 py-1.5 text-xs",
 							active
 								? "font-semibold shadow-bai-card"
 								: "text-text-secondary hover:text-text-primary",

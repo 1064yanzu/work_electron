@@ -438,8 +438,8 @@ export function HarnessHubSettings() {
 		<SettingsPageContainer>
 			<SettingsPanelHeader
 				icon={Waypoints}
-			title="Agent 接力 / Web AI"
-			description="统一管理本机的 AI 命令行入口与内嵌 Web AI 站点：摄取历史会话、蒸馏交接包，在不同 AI 之间无缝接着聊。"
+				title="Agent 接力 / Web AI"
+				description="统一管理本机的 AI 命令行入口与内嵌 Web AI 站点：摄取历史会话、蒸馏交接包，在不同 AI 之间无缝接着聊。"
 			/>
 			{/* ---------- 0. 用量总览 ---------- */}
 			<div {...settingsAnchorProps("integrations.harnessHub.usage")}>

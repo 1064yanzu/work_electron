@@ -1,10 +1,6 @@
 // 资料列表视图组件
 
-import {
-	Folder as FolderIcon,
-	MoreHorizontal,
-	Plus,
-} from "lucide-react";
+import { Folder as FolderIcon, MoreHorizontal, Plus } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";

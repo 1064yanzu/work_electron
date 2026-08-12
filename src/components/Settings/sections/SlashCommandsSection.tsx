@@ -289,9 +289,7 @@ export function SlashCommandsSection() {
 									<span className="text-xs font-medium text-text-primary">
 										{GROUP_LABEL[g] ?? g}
 									</span>
-									<span className="text-xs text-text-muted">
-										{list.length}
-									</span>
+									<span className="text-xs text-text-muted">{list.length}</span>
 								</button>
 								{!isCollapsed && (
 									<div className="mt-1 ml-6 grid grid-cols-2 gap-1.5">

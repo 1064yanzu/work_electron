@@ -33,9 +33,8 @@ export function usePdfDocumentSource(srcPath: string): {
 	documentSource: PdfDocumentSource | null;
 	error: string | null;
 } {
-	const [documentSource, setDocumentSource] = useState<PdfDocumentSource | null>(
-		null,
-	);
+	const [documentSource, setDocumentSource] =
+		useState<PdfDocumentSource | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {

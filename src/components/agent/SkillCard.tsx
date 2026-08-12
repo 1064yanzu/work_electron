@@ -137,10 +137,7 @@ export function SkillCard({
 				{skill.steps.length > 0 && (
 					<div className={cn("px-3 space-y-1.5", hideHeader ? "pt-0" : "pb-2")}>
 						{skill.steps.map((step) => (
-							<div
-								key={step.id}
-								className="flex items-center gap-2 text-xs"
-							>
+							<div key={step.id} className="flex items-center gap-2 text-xs">
 								<StepStatusIcon status={step.status} />
 								<span
 									className={

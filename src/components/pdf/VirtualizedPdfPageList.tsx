@@ -161,9 +161,9 @@ export function VirtualizedPdfPageList({
 		onActivePageChange?.(activePage);
 	}, [activePage, onActivePageChange]);
 
-	const wrapperRefCallbacks = useRef<Map<number, (el: HTMLDivElement | null) => void>>(
-		new Map(),
-	);
+	const wrapperRefCallbacks = useRef<
+		Map<number, (el: HTMLDivElement | null) => void>
+	>(new Map());
 	const getWrapperRefCallback = useCallback((pageNumber: number) => {
 		let cb = wrapperRefCallbacks.current.get(pageNumber);
 		if (cb) return cb;

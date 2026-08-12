@@ -36,7 +36,10 @@ function flush(): void {
 }
 
 export function installLongtaskReporting(): void {
-	if (typeof window === "undefined" || typeof PerformanceObserver === "undefined") {
+	if (
+		typeof window === "undefined" ||
+		typeof PerformanceObserver === "undefined"
+	) {
 		return;
 	}
 	// longtask entry type 并非所有环境都支持（Electron/Chromium 内核支持良好）

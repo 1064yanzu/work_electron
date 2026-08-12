@@ -93,9 +93,7 @@ export function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
 					</>
 				)}
 			</button>
-			{error && (
-				<div className="text-xs text-error text-center">{error}</div>
-			)}
+			{error && <div className="text-xs text-error text-center">{error}</div>}
 		</div>
 	);
 }

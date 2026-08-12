@@ -130,11 +130,11 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			},
 		});
 
-	items.push({
-		id: "ws.open-hub-tab",
-		title: "打开 Agent 接力",
-		description:
-			"跨入口工作台：统一会话时间线、拖拽接力、多模型议会、共享白板",
+		items.push({
+			id: "ws.open-hub-tab",
+			title: "打开 Agent 接力",
+			description:
+				"跨入口工作台：统一会话时间线、拖拽接力、多模型议会、共享白板",
 			icon: Network,
 			keywords: [
 				"hub",

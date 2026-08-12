@@ -381,7 +381,7 @@ export default function AgentTaskPanel({
 			) : null}
 
 			{/* Content */}
-			<div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
+			<div className="flex-1 overflow-y-auto p-4 space-y-4">
 				{/* 任务进度可视化 */}
 				{isExecuting && <TaskProgress />}
 

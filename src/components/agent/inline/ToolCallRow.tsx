@@ -341,9 +341,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 								/>
 							</div>
 							{progressMessage ? (
-								<div className="text-xs text-text-muted">
-									{progressMessage}
-								</div>
+								<div className="text-xs text-text-muted">{progressMessage}</div>
 							) : null}
 						</div>
 					) : null}

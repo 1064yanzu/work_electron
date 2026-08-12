@@ -382,11 +382,11 @@ export default function WebSearchModule({
 											<button
 												onClick={() => handleAddAsSource(result)}
 												disabled={isAdding || isAdded}
-											aria-label={
-												isAdded
-													? `${result.title} 已保存到资料库`
-													: `保存 ${result.title} 为资料`
-											}
+												aria-label={
+													isAdded
+														? `${result.title} 已保存到资料库`
+														: `保存 ${result.title} 为资料`
+												}
 												className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5 transition-colors ${
 													isAdded
 														? "bg-green-500 text-white cursor-default"
@@ -589,22 +589,22 @@ export default function WebSearchModule({
 												: "bg-dark-muted text-white hover:opacity-90"
 									}`}
 								>
-								{addingUrls.has(previewResult.url) ? (
-									<>
-										<Loader2 className="w-4 h-4 animate-spin" />
-										<span>保存中...</span>
-									</>
-								) : addedUrls.has(previewResult.url) ? (
-									<>
-										<Check className="w-4 h-4" />
-										<span>已保存</span>
-									</>
-								) : (
-									<>
-										<Plus className="w-4 h-4" />
-										<span>保存为资料</span>
-									</>
-								)}
+									{addingUrls.has(previewResult.url) ? (
+										<>
+											<Loader2 className="w-4 h-4 animate-spin" />
+											<span>保存中...</span>
+										</>
+									) : addedUrls.has(previewResult.url) ? (
+										<>
+											<Check className="w-4 h-4" />
+											<span>已保存</span>
+										</>
+									) : (
+										<>
+											<Plus className="w-4 h-4" />
+											<span>保存为资料</span>
+										</>
+									)}
 								</button>
 							</div>
 						</div>

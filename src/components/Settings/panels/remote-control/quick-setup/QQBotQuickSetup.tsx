@@ -105,10 +105,7 @@ export function QQBotQuickSetup({
 				>
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 						<div>
-							<label
-								htmlFor="qqbot-appid"
-								className="text-xs text-text-muted"
-							>
+							<label htmlFor="qqbot-appid" className="text-xs text-text-muted">
 								App ID
 							</label>
 							<input
@@ -127,10 +124,7 @@ export function QQBotQuickSetup({
 							/>
 						</div>
 						<div>
-							<label
-								htmlFor="qqbot-secret"
-								className="text-xs text-text-muted"
-							>
+							<label htmlFor="qqbot-secret" className="text-xs text-text-muted">
 								Client Secret
 							</label>
 							<input

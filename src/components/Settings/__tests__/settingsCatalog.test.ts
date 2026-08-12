@@ -62,7 +62,10 @@ test("getSubtabsByCategory / getFirstSubtabOf 语义", () => {
 test("normalizeSettingsTabId 对新 id 原样返回", () => {
 	assert.equal(normalizeSettingsTabId("ai.models"), "ai.models");
 	assert.equal(normalizeSettingsTabId("data.stats"), "data.stats");
-	assert.equal(normalizeSettingsTabId("integrations.harnessHub"), "integrations.harnessHub");
+	assert.equal(
+		normalizeSettingsTabId("integrations.harnessHub"),
+		"integrations.harnessHub",
+	);
 });
 
 test("normalizeSettingsTabId 空/未知降级到 ai.models", () => {

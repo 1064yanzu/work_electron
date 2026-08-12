@@ -597,24 +597,24 @@ function EmptyState({
 			}
 			action={
 				!searchQuery ? (
-				<div className="flex items-center gap-2 justify-center">
-					<button
-						type="button"
-						onClick={onBrowse}
-						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition"
-					>
-						<Store className="w-3 h-3" />
-						浏览市场
-					</button>
-					<button
-						type="button"
-						onClick={onImport}
-						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-xs font-medium hover:bg-cream-300 transition"
-					>
-						<FolderOpen className="w-3 h-3" />
-						导入本地
-					</button>
-				</div>
+					<div className="flex items-center gap-2 justify-center">
+						<button
+							type="button"
+							onClick={onBrowse}
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition"
+						>
+							<Store className="w-3 h-3" />
+							浏览市场
+						</button>
+						<button
+							type="button"
+							onClick={onImport}
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-xs font-medium hover:bg-cream-300 transition"
+						>
+							<FolderOpen className="w-3 h-3" />
+							导入本地
+						</button>
+					</div>
 				) : undefined
 			}
 		/>

@@ -14,10 +14,7 @@ import {
 	getSettingsPanelComponent,
 	preloadSettingsPanel,
 } from "./panelLoaders";
-import {
-	normalizeSettingsTabId,
-	type SettingsTabId,
-} from "./settingsCatalog";
+import { normalizeSettingsTabId, type SettingsTabId } from "./settingsCatalog";
 import { SettingsSidebar } from "./SettingsSidebar";
 import { FocusTrap } from "../ui/FocusTrap";
 import { Skeleton } from "../ui/Skeleton";
@@ -195,21 +192,21 @@ export function SettingsModal({
 					// 卡片同为 surface，于是卡片只剩描边，不再是浮在米色上的白块。
 					style={{ backgroundColor: "var(--t-bg-surface)" }}
 				>
-				<Suspense
-					fallback={
-						<div
-							className="flex flex-1 flex-col gap-4 p-6"
-							aria-busy="true"
-							aria-label="正在加载设置面板"
-						>
-							<Skeleton className="h-6 w-1/3" />
-							<Skeleton className="h-4 w-2/3" />
-							<Skeleton className="h-20 w-full rounded-xl" />
-							<Skeleton className="h-20 w-full rounded-xl" />
-							<Skeleton className="h-4 w-1/2" />
-						</div>
-					}
-				>
+					<Suspense
+						fallback={
+							<div
+								className="flex flex-1 flex-col gap-4 p-6"
+								aria-busy="true"
+								aria-label="正在加载设置面板"
+							>
+								<Skeleton className="h-6 w-1/3" />
+								<Skeleton className="h-4 w-2/3" />
+								<Skeleton className="h-20 w-full rounded-xl" />
+								<Skeleton className="h-20 w-full rounded-xl" />
+								<Skeleton className="h-4 w-1/2" />
+							</div>
+						}
+					>
 						{/* key={activeTab} 让面板切换时重新挂载，清理残留状态 */}
 						<ActivePanel key={activeTab} />
 					</Suspense>

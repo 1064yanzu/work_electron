@@ -93,7 +93,9 @@ export function Tooltip({
 	const [position, setPosition] = useState({ x: 0, y: 0 });
 	const [actualPlacement, setActualPlacement] = useState<Placement>(placement);
 	const triggerRef = useRef<HTMLDivElement>(null);
-	const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
 	const tooltipId = useId();
 
 	const showTooltip = () => {

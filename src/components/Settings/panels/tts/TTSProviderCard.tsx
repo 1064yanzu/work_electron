@@ -441,9 +441,7 @@ function FormField({
 	return (
 		<div className="space-y-1.5">
 			<div className="flex items-baseline justify-between gap-2">
-				<label className="text-xs font-medium text-text-primary">
-					{label}
-				</label>
+				<label className="text-xs font-medium text-text-primary">{label}</label>
 				{hint && <span className="text-[11px] text-text-muted">{hint}</span>}
 			</div>
 			{children}

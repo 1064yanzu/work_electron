@@ -192,13 +192,9 @@ function FieldCard({
 	return (
 		<div className="space-y-2 rounded-2xl border border-border bg-cream-50 p-4">
 			<div className="flex items-baseline justify-between gap-3">
-				<div className="text-xs font-medium text-text-primary">
-					{label}
-				</div>
+				<div className="text-xs font-medium text-text-primary">{label}</div>
 				{hint && (
-					<div className="text-[11px] tabular-nums text-text-muted">
-						{hint}
-					</div>
+					<div className="text-[11px] tabular-nums text-text-muted">{hint}</div>
 				)}
 			</div>
 			{children}

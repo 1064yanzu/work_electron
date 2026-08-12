@@ -237,9 +237,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 				<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
 					<div className="flex items-center gap-2">
 						<ImageIcon className="w-4 h-4 text-text-light" />
-						<h2 className="font-semibold text-sm text-text-primary">
-							分享卡
-						</h2>
+						<h2 className="font-semibold text-sm text-text-primary">分享卡</h2>
 					</div>
 					<button
 						onClick={fetchCards}

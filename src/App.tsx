@@ -136,7 +136,7 @@ export default function App() {
 	// 右侧 Panel 的命令式句柄
 	const rightPanelRef = useRef<ImperativePanelHandle>(null);
 	// 记录右侧 Panel 当前尺寸（用于拖动结束时判断）
-	const rightPanelSizeRef = useRef<number>(25);
+	const rightPanelSizeRef = useRef<number>(28);
 	// 拖拽状态：拖拽中禁用 flex 过渡（否则拖动有迟滞感）
 	const [isLeftHandleDragging, setIsLeftHandleDragging] = useState(false);
 	const [isRightHandleDragging, setIsRightHandleDragging] = useState(false);
@@ -297,7 +297,7 @@ export default function App() {
 		setRightSidebarVisible(true);
 		// 如果 Panel 被收起，恢复到默认大小
 		if (rightPanelRef.current) {
-			rightPanelRef.current.resize(25);
+			rightPanelRef.current.resize(28);
 		}
 	}, [setRightSidebarVisible]);
 
@@ -446,13 +446,13 @@ export default function App() {
 						{/* Right Panel: Copilot — 始终挂载，collapse 而非卸载（保留滚动位置/输入草稿） */}
 						<ResizeHandle
 							onDragging={handleRightResizeHandleDragging}
-							onDoubleClick={() => rightPanelRef.current?.resize(25)}
+							onDoubleClick={() => rightPanelRef.current?.resize(28)}
 							willSnapCollapse={isRightHandleDragging && rightSnapPreview}
 						/>
 						<Panel
 							ref={rightPanelRef}
-							defaultSize={25}
-							minSize={12}
+							defaultSize={28}
+							minSize={16}
 							maxSize={50}
 							collapsible
 							collapsedSize={0}

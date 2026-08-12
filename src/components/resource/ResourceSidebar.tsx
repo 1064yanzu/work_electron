@@ -221,7 +221,7 @@ export default function ResourceSidebar({
 							toast.success("已恢复删除的资料");
 						} catch (error) {
 							console.error("撤销删除资料失败:", error);
-						toast.error("撤销删除失败，请重试");
+							toast.error("撤销删除失败，请重试");
 							toast.error(
 								`撤销失败: ${error instanceof Error ? error.message : String(error)}`,
 							);
@@ -331,7 +331,7 @@ export default function ResourceSidebar({
 				setDeleteConfirm(null);
 			} catch (error) {
 				console.error("删除失败:", error);
-						toast.error("删除失败，请重试");
+				toast.error("删除失败，请重试");
 				toast.error("删除失败，请重试");
 			}
 			setContextMenu(null);
@@ -344,7 +344,7 @@ export default function ResourceSidebar({
 			await fileRevealInFinder({ id: source.id, entity_type: "source" });
 		} catch (error) {
 			console.error("在文件管理器中显示失败:", error);
-						toast.error("无法打开文件管理器");
+			toast.error("无法打开文件管理器");
 			toast.error(
 				`打开失败: ${error instanceof Error ? error.message : String(error)}`,
 			);
@@ -362,7 +362,7 @@ export default function ResourceSidebar({
 				await fetchSources();
 			} catch (error) {
 				console.error("切换作用域失败:", error);
-						toast.error("切换作用域失败，请重试");
+				toast.error("切换作用域失败，请重试");
 				toast.error(
 					`切换作用域失败: ${error instanceof Error ? error.message : String(error)}`,
 				);
@@ -394,7 +394,7 @@ export default function ResourceSidebar({
 				await fetchSources();
 			} catch (error) {
 				console.error("更新标签失败:", error);
-						toast.error("更新标签失败，请重试");
+				toast.error("更新标签失败，请重试");
 				toast.error(
 					`更新标签失败: ${error instanceof Error ? error.message : String(error)}`,
 				);
@@ -454,7 +454,7 @@ export default function ResourceSidebar({
 					await fetchSources();
 				} catch (error) {
 					console.error("重命名资料失败:", error);
-						toast.error("重命名失败，请重试");
+					toast.error("重命名失败，请重试");
 					toast.error(
 						`重命名失败: ${error instanceof Error ? error.message : String(error)}`,
 					);
@@ -742,8 +742,8 @@ export default function ResourceSidebar({
 							onOpenDetail={handleOpenDetail}
 							onOpenSettings={onOpenSettings}
 							onDeleteSource={(source) => void handleDeleteSource(source)}
-						onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
-						setIsAddModalOpen={setIsAddModalOpen}
+							onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
+							setIsAddModalOpen={setIsAddModalOpen}
 							viewTabs={null}
 							currentResearch={currentResearch}
 							uiDebugLogsEnabled={uiDebugLogsEnabled}

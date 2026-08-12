@@ -195,9 +195,7 @@ function EmptyAction({
 				<span className="block truncate text-xs font-medium text-text-primary">
 					{label}
 				</span>
-				<span className="block truncate text-xs text-text-muted">
-					{hint}
-				</span>
+				<span className="block truncate text-xs text-text-muted">{hint}</span>
 			</span>
 		</button>
 	);

@@ -346,9 +346,7 @@ export function HarnessInteropSection() {
 								>
 									轮换 token
 								</SettingsButton>
-								<span className="text-xs text-text-light">
-									怀疑泄漏时使用
-								</span>
+								<span className="text-xs text-text-light">怀疑泄漏时使用</span>
 							</div>
 						</div>
 					)}

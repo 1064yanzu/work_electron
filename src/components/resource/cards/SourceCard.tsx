@@ -330,11 +330,7 @@ function SourceCardImpl({
 				/>
 			) : null}
 
-			<Favicon
-				url={source.url}
-				kind={source.kind}
-				className="w-4 h-4 mt-0.5"
-			/>
+			<Favicon url={source.url} kind={source.kind} className="w-4 h-4 mt-0.5" />
 
 			<div className="flex-1 min-w-0">
 				<h3 className="text-sm font-medium text-text-primary dark:text-cream-100 truncate leading-[1.45]">

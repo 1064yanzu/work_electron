@@ -260,7 +260,9 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				folder_id: scope === "project" ? folderId : undefined,
 			});
 			toast.success(
-				scope === "project" ? "已保存到资料库（当前项目）" : "已保存到资料库（全局）",
+				scope === "project"
+					? "已保存到资料库（当前项目）"
+					: "已保存到资料库（全局）",
 			);
 		},
 		[],
@@ -398,9 +400,9 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								onClick={() => void saveAsSource()}
 								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-cream-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
 							>
-							<Plus className="w-3.5 h-3.5" />
-							保存为资料
-						</button>
+								<Plus className="w-3.5 h-3.5" />
+								保存为资料
+							</button>
 						</>
 					)}
 

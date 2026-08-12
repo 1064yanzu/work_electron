@@ -453,7 +453,12 @@ export function PromptLibraryModal({
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
-			<div ref={trapRef} role="dialog" aria-modal="true" className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-250 font-sans">
+			<div
+				ref={trapRef}
+				role="dialog"
+				aria-modal="true"
+				className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-250 font-sans"
+			>
 				{/* Sidebar (Folder Navigation) */}
 				<div className="w-full md:w-56 bg-warm-50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-md shrink-0">
 					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
@@ -695,27 +700,27 @@ export function PromptLibraryModal({
 				<div className="flex-1 flex flex-col bg-surface relative min-w-0">
 					{/* Header Toolbar */}
 					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-border sticky top-0 bg-surface/80 backdrop-blur-md z-10">
-					{showSystemTemplates ? (
-						<div className="flex-1 min-w-0 flex items-baseline gap-2">
-							<span className="text-sm font-semibold text-text-primary">
-								系统模板
-							</span>
-							<span className="text-xs text-text-muted">
-								内置场景的系统级提示词
-							</span>
-						</div>
-					) : (
-						<div className="relative flex-1 max-w-md group">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary dark:group-focus-within:text-text-light transition-colors" />
-							<input
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="搜索..."
-								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-[color,background-color,border-color,opacity,box-shadow,transform] outline-none"
-							/>
-						</div>
-					)}
+						{showSystemTemplates ? (
+							<div className="flex-1 min-w-0 flex items-baseline gap-2">
+								<span className="text-sm font-semibold text-text-primary">
+									系统模板
+								</span>
+								<span className="text-xs text-text-muted">
+									内置场景的系统级提示词
+								</span>
+							</div>
+						) : (
+							<div className="relative flex-1 max-w-md group">
+								<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary dark:group-focus-within:text-text-light transition-colors" />
+								<input
+									type="text"
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									placeholder="搜索..."
+									className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-[color,background-color,border-color,opacity,box-shadow,transform] outline-none"
+								/>
+							</div>
+						)}
 
 						<div className="flex items-center gap-0.5 bg-cream-100/60 dark:bg-cream-800/60 p-1 rounded-full border border-cream-300/60 dark:border-cream-500/60">
 							<Tooltip content="网格视图">
@@ -777,72 +782,72 @@ export function PromptLibraryModal({
 					{showSystemTemplates ? (
 						<SystemPromptTemplates />
 					) : (
-					<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
-						{filteredPrompts.length === 0 ? (
-							<div className="h-full flex flex-col items-center justify-center text-center pb-20">
-								<div className="w-20 h-20 rounded-3xl bg-cream-100 dark:bg-cream-800 flex items-center justify-center mb-6 border border-cream-300 dark:border-cream-500">
-									<Archive className="w-8 h-8 text-text-light" />
+						<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+							{filteredPrompts.length === 0 ? (
+								<div className="h-full flex flex-col items-center justify-center text-center pb-20">
+									<div className="w-20 h-20 rounded-3xl bg-cream-100 dark:bg-cream-800 flex items-center justify-center mb-6 border border-cream-300 dark:border-cream-500">
+										<Archive className="w-8 h-8 text-text-light" />
+									</div>
+									<h3 className="text-text-primary font-medium text-lg mb-2">
+										暂无提示词
+									</h3>
+									<p className="text-text-muted max-w-xs text-sm">
+										{activeFolderId === null
+											? "创建一个新的提示词来开始使用。"
+											: activeFolderId === "uncategorized"
+												? "未分类的提示词会显示在这里。"
+												: "当前文件夹为空，拖拽提示词到这里或新建一个。"}
+									</p>
+									<button
+										onClick={() => handleStartEdit()}
+										className="mt-6 px-6 py-2.5 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 transition-opacity"
+									>
+										新建提示词
+									</button>
 								</div>
-								<h3 className="text-text-primary font-medium text-lg mb-2">
-									暂无提示词
-								</h3>
-								<p className="text-text-muted max-w-xs text-sm">
-									{activeFolderId === null
-										? "创建一个新的提示词来开始使用。"
-										: activeFolderId === "uncategorized"
-											? "未分类的提示词会显示在这里。"
-											: "当前文件夹为空，拖拽提示词到这里或新建一个。"}
-								</p>
-								<button
-									onClick={() => handleStartEdit()}
-									className="mt-6 px-6 py-2.5 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 transition-opacity"
+							) : (
+								<div
+									className={
+										viewMode === "grid"
+											? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-6"
+											: "flex flex-col gap-3"
+									}
 								>
-									新建提示词
-								</button>
-							</div>
-						) : (
-							<div
-								className={
-									viewMode === "grid"
-										? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-6"
-										: "flex flex-col gap-3"
-								}
-							>
-								{filteredPrompts.map((prompt) => (
-									<PromptCard
-										key={prompt.id}
-										prompt={prompt}
-										viewMode={viewMode}
-										onDragStart={handleDragStart}
-										onSelect={() => {
-											if (onSelectPrompt) {
-												onSelectPrompt(prompt);
-												onClose();
-											} else {
-												handleStartEdit(prompt);
-											}
-										}}
-										onEdit={(e) => {
-											e.stopPropagation();
-											handleStartEdit(prompt);
-										}}
-										onDelete={(e) => {
-											e.stopPropagation();
-											void (async () => {
-												const confirmed = await confirmDialog.danger(
-													`确定删除「${prompt.name}」吗？`,
-													"删除提示词",
-												);
-												if (confirmed) {
-													deletePrompt(prompt.id);
+									{filteredPrompts.map((prompt) => (
+										<PromptCard
+											key={prompt.id}
+											prompt={prompt}
+											viewMode={viewMode}
+											onDragStart={handleDragStart}
+											onSelect={() => {
+												if (onSelectPrompt) {
+													onSelectPrompt(prompt);
+													onClose();
+												} else {
+													handleStartEdit(prompt);
 												}
-											})();
-										}}
-									/>
-								))}
-							</div>
-						)}
-					</div>
+											}}
+											onEdit={(e) => {
+												e.stopPropagation();
+												handleStartEdit(prompt);
+											}}
+											onDelete={(e) => {
+												e.stopPropagation();
+												void (async () => {
+													const confirmed = await confirmDialog.danger(
+														`确定删除「${prompt.name}」吗？`,
+														"删除提示词",
+													);
+													if (confirmed) {
+														deletePrompt(prompt.id);
+													}
+												})();
+											}}
+										/>
+									))}
+								</div>
+							)}
+						</div>
 					)}
 
 					{/* Editor Overlay */}

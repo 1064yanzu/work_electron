@@ -54,8 +54,12 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 		initialFocusRef?: React.RefObject<HTMLElement | null>;
 	} = {},
 ): React.RefObject<T | null> {
-	const { active = true, onEscape, restoreFocus = true, initialFocusRef } =
-		options;
+	const {
+		active = true,
+		onEscape,
+		restoreFocus = true,
+		initialFocusRef,
+	} = options;
 	const containerRef = useRef<T | null>(null);
 	const previousActiveElementRef = useRef<HTMLElement | null>(null);
 

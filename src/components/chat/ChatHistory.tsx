@@ -213,10 +213,7 @@ export function ChatHistory({
 			</div>
 
 			{/* Session List */}
-			<div
-				ref={scrollParentRef}
-				className="flex-1 overflow-y-auto scrollbar-hide px-3 pb-4"
-			>
+			<div ref={scrollParentRef} className="flex-1 overflow-y-auto px-3 pb-4">
 				{!hasResults ? (
 					<div className="flex flex-col items-center justify-center h-64 text-text-light animate-in fade-in zoom-in-95 duration-250">
 						<div className="w-16 h-16 rounded-2xl bg-warm-50/50 flex items-center justify-center mb-4">

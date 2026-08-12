@@ -147,10 +147,7 @@ export function MascotHeroBanner({
 						<h3 className="text-2xl font-semibold leading-tight tracking-tight text-text-primary">
 							{meta.label}
 						</h3>
-						<p
-							className="mt-1 text-sm font-medium"
-							style={{ color: accent }}
-						>
+						<p className="mt-1 text-sm font-medium" style={{ color: accent }}>
 							{meta.tagline}
 						</p>
 					</div>
