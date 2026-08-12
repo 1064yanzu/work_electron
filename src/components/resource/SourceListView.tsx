@@ -3,11 +3,9 @@
 import {
 	FileText,
 	Folder as FolderIcon,
-	Link,
 	Loader2,
 	MoreHorizontal,
-	Paperclip,
-	PenLine,
+	Plus,
 } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { useCallback, useRef } from "react";
@@ -76,7 +74,6 @@ interface SourceListViewProps {
 	onOpenSettings: () => void;
 	onDeleteSource: (source: Source) => void;
 	onOpenFolderModal: () => void;
-	setActiveTab: React.Dispatch<React.SetStateAction<"web" | "text" | "file">>;
 	setIsAddModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
 	// View tabs
@@ -127,7 +124,6 @@ export function SourceListView({
 	onOpenSettings,
 	onDeleteSource,
 	onOpenFolderModal,
-	setActiveTab,
 	setIsAddModalOpen,
 	viewTabs,
 	currentResearch,
@@ -779,30 +775,18 @@ export function SourceListView({
 				)}
 			</div>
 
-			{/* 底部添加入口：三个按钮等宽平分一行，贴住面板底边。
-			    此前是居中的三个胶囊，宽度随文字长短参差，在窄边栏里读起来很散。 */}
+			{/* 底部统一添加入口：单个「+ 导入」按钮（C4：摄取七入口在 UI 上收敛为一个动作，
+			    弹窗内再分 粘贴 URL / 粘贴文本 / 选择文件；拖拽与剪藏指引写进弹窗说明）。 */}
 			<div className="shrink-0 border-t border-border p-2">
-				<div className="flex items-stretch gap-1.5">
-					{[
-						{ tab: "text" as const, icon: PenLine, label: "笔记" },
-						{ tab: "web" as const, icon: Link, label: "链接" },
-						{ tab: "file" as const, icon: Paperclip, label: "文件" },
-					].map(({ tab, icon: Icon, label }) => (
-						<button
-							key={tab}
-							type="button"
-							onClick={() => {
-								setActiveTab(tab);
-								setIsAddModalOpen(true);
-							}}
-							title={`添加${label}`}
-							className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-150 hover:bg-warm-200 hover:text-text-primary focus-ring cursor-pointer"
-						>
-							<Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-							{label}
-						</button>
-					))}
-				</div>
+				<button
+					type="button"
+					onClick={() => setIsAddModalOpen(true)}
+					title="导入资料（粘贴 URL / 粘贴文本 / 选择文件）"
+					className="flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-150 hover:bg-warm-200 hover:text-text-primary focus-ring cursor-pointer"
+				>
+					<Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+					导入
+				</button>
 			</div>
 		</div>
 	);

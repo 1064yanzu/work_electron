@@ -40,8 +40,8 @@ interface SidebarRailProps {
  *
  * 刻意不在这里的入口：
  * - 「资料库 / 卡片 / Wiki」合并进「知识」，由面板顶部的 tab 条切换（见 knowledgeSection.ts）
- * - 跨入口会话与接力属于中栏的「AI Hub」标签页，不在左栏重复开一个入口
- *   （⌘K →「打开 AI Hub」）
+ * - 跨入口会话与接力属于中栏的「Agent 接力」标签页，不在左栏重复开一个入口
+ *   （⌘K →「打开 Agent 接力」）
  */
 const NAV_SECTIONS = [
 	[

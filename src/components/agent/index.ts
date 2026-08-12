@@ -6,7 +6,6 @@ export { default as ArtifactCard, ArtifactCardList } from "./ArtifactCard";
 export { default as ArtifactPreviewModal } from "./ArtifactPreviewModal";
 export { default as ArtifactSection } from "./ArtifactSection";
 export { PermissionCard, PermissionList } from "./PermissionCard";
-export { default as ToolCallTrace, ToolCallTraceInline } from "./ToolCallTrace";
 export {
 	AgentExecutionFlow,
 	default as AgentExecutionFlowDefault,

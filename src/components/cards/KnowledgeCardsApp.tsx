@@ -98,7 +98,7 @@ export function KnowledgeCardsApp() {
 			className="card-library-overlay"
 			role="dialog"
 			aria-modal="true"
-			aria-label="知识卡片库"
+			aria-label="复习卡库"
 		>
 			<KnowledgeCardsView onClose={() => cardLibraryStoreApi.close()} />
 		</div>

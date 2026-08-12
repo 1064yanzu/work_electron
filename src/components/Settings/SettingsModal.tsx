@@ -10,12 +10,14 @@
  *          → 目标容器加 `data-settings-field-highlight="true"`，1.2s 后移除。
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { resolveSettingsTabId } from "./legacyTabMap";
 import {
 	getSettingsPanelComponent,
 	preloadSettingsPanel,
 } from "./panelLoaders";
-import type { SettingsTabId } from "./settingsCatalog";
+import {
+	normalizeSettingsTabId,
+	type SettingsTabId,
+} from "./settingsCatalog";
 import { SettingsSidebar } from "./SettingsSidebar";
 import { FocusTrap } from "../ui/FocusTrap";
 
@@ -35,7 +37,7 @@ export function SettingsModal({
 	initialTab,
 }: SettingsModalProps) {
 	const [activeTab, setActiveTab] = useState<SettingsTabId>(() =>
-		resolveSettingsTabId(initialTab),
+		normalizeSettingsTabId(initialTab),
 	);
 	const [pendingAnchorId, setPendingAnchorId] = useState<string | null>(null);
 	const [isClosing, setIsClosing] = useState(false);
@@ -135,7 +137,7 @@ export function SettingsModal({
 		if (isOpen) {
 			setShouldRender(true);
 			setIsClosing(false);
-			const next = resolveSettingsTabId(initialTab);
+			const next = normalizeSettingsTabId(initialTab);
 			setActiveTab(next);
 			setPendingAnchorId(null);
 			preloadSettingsPanel(next);

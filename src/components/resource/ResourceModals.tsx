@@ -397,29 +397,35 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 				</div>
 			</Modal>
 
-			{/* Add Modal */}
-			<Modal
-				isOpen={isAddModalOpen}
-				onClose={() => setIsAddModalOpen(false)}
-				title="新增资料"
-			>
-				<div className="space-y-4">
-					{/* Tabs */}
-					<div className="flex p-1 bg-warm-200 rounded-lg">
-						{(["web", "text", "file"] as const).map((tab) => (
-							<button
-								key={tab}
-								onClick={() => setActiveTab(tab)}
-								className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-									activeTab === tab
-										? "bg-surface dark:bg-cream-700 shadow-sm text-text-primary"
-										: "text-text-muted"
-								}`}
-							>
-								{tab === "web" ? "网页" : tab === "text" ? "笔记" : "文件"}
-							</button>
-						))}
-					</div>
+		{/* Add Modal — C4：全库唯一的「+ 导入」弹窗。
+		    三种方式（粘贴 URL / 粘贴文本 / 选择文件）+ 底部拖拽与剪藏指引；
+		    后端各入口本就汇流 sources → notes → note_chunks，不动。 */}
+		<Modal
+			isOpen={isAddModalOpen}
+			onClose={() => setIsAddModalOpen(false)}
+			title="导入"
+		>
+			<div className="space-y-4">
+				{/* Tabs */}
+				<div className="flex p-1 bg-warm-200 rounded-lg">
+					{(["web", "text", "file"] as const).map((tab) => (
+						<button
+							key={tab}
+							onClick={() => setActiveTab(tab)}
+							className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+								activeTab === tab
+									? "bg-surface dark:bg-cream-700 shadow-sm text-text-primary"
+									: "text-text-muted"
+							}`}
+						>
+							{tab === "web"
+								? "粘贴 URL"
+								: tab === "text"
+									? "粘贴文本"
+									: "选择文件"}
+						</button>
+					))}
+				</div>
 
 					<input
 						type="text"
@@ -478,22 +484,27 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						</div>
 					)}
 
-					<div className="flex justify-end gap-2 pt-4">
-						<button
-							onClick={() => setIsAddModalOpen(false)}
-							className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
-						>
-							取消
-						</button>
-						<button
-							onClick={handleCreateSource}
-							className="px-6 py-2 bg-black hover:bg-dark-surface text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
-						>
-							创建文档
-						</button>
-					</div>
+				{/* 其他导入方式指引：拖拽与浏览器剪藏 */}
+				<p className="text-[11px] leading-relaxed text-text-light px-1">
+					也可以直接把文件拖进左栏列表导入；在网页上浏览时，可用浏览器剪藏插件一键保存到资料库。
+				</p>
+
+				<div className="flex justify-end gap-2 pt-4">
+					<button
+						onClick={() => setIsAddModalOpen(false)}
+						className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
+					>
+						取消
+					</button>
+					<button
+						onClick={handleCreateSource}
+						className="px-6 py-2 bg-black hover:bg-dark-surface text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+					>
+						导入
+					</button>
 				</div>
-			</Modal>
+			</div>
+		</Modal>
 		</>
 	);
 });

@@ -86,7 +86,7 @@ export function ChatInputAddMenu({
 					/>
 					<ToolbarMenuOption
 						label="命令菜单"
-						description="资料库 / 卡片 / 技能 / 提示词，等同键入 /"
+						description="资料库 / 分享卡 / 技能 / 提示词，等同键入 /"
 						active={false}
 						onClick={() => run(onTriggerSlashMenu)}
 						leading={

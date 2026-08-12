@@ -8,7 +8,7 @@
  * - 组内拖拽重排；**跨组拖拽**直接把标签搬到目标组
  * - 拖到内容区的四条边 → 按方向拆出新分屏（落点提示见 CenterGroupDropZones）
  * - 右键菜单：关闭 / 关闭其他 / 关闭全部 / 向右拆分 / 向下拆分
- * - `+` 菜单：工作区（运行图 / 预览）/ AI Hub / 浏览器 / 知识图谱 / 本机 CLI / Web AI
+ * - `+` 菜单：工作区（运行图 / 预览）/ Agent 接力 / 浏览器 / 知识图谱 / 本机 CLI / Web AI
  * - `Alt+1..9` 直达组内第 N 个标签，`⌘⌥←/→` 前后切换，`⌘⌥W` 关闭当前标签
  * - `⌘\` 向右拆分，`⌘⇧\` 向下拆分，`⌘K ←/→` 在分屏之间移动焦点（见下方注册）
  */
@@ -59,7 +59,7 @@ const STATIC_TAB_META: Record<string, { title: string; icon: LucideIcon }> = {
 	preview: { title: "预览", icon: Eye },
 	browser: { title: "浏览器", icon: Globe },
 	"wiki-graph": { title: "知识图谱", icon: Waypoints },
-	hub: { title: "AI Hub", icon: Network },
+	hub: { title: "Agent 接力", icon: Network },
 };
 
 interface MenuState {
@@ -254,7 +254,7 @@ export function CenterTabBar({ groupId }: { groupId: string }) {
 			{ label: "", separator: true, onClick: () => {} },
 			{ label: "视图", heading: true, onClick: () => {} },
 			{
-				label: "AI Hub",
+				label: "Agent 接力",
 				icon: <Network className="h-4 w-4" strokeWidth={1.5} />,
 				onClick: () => centerTabsStore.openHub(groupId),
 			},

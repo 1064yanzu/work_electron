@@ -74,7 +74,7 @@ export function ReaderCardDraftReview({
 		<div
 			className={`reader-card-draft-review ${collapsed ? "is-collapsed" : ""}`}
 			role="dialog"
-			aria-label="知识卡片草稿审核"
+			aria-label="复习卡草稿审核"
 		>
 			<header className="reader-card-draft-review__header">
 				<button

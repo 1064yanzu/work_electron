@@ -466,7 +466,7 @@ function openWikiGraph(groupId?: string): void {
 	openTab({ id: "wiki-graph", kind: "wiki-graph" }, groupId);
 }
 
-/** 打开 AI Hub 主视图（跨入口时间线 + 拖拽接力 + 议会 + 共享白板）。 */
+/** 打开「Agent 接力」主视图（跨入口时间线 + 拖拽接力 + 议会 + 共享白板）。 */
 function openHub(groupId?: string): void {
 	openTab({ id: "hub", kind: "hub" }, groupId);
 }

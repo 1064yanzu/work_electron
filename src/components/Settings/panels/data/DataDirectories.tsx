@@ -72,7 +72,7 @@ export function DataDirectories({
 				/>
 				<SettingsRow
 					label="缓存"
-					description="分享卡片等临时文件"
+					description="分享卡等临时文件"
 					value={formatSize(dataStats.cache_size)}
 					action={
 						<button

@@ -34,7 +34,7 @@ export function ReaderCardGenIndicator({
 					)}
 				</span>
 				<span className="reader-card-gen-indicator__text">
-					{count > 0 ? `已生成 ${count} 张` : "正在生成知识卡片…"}
+					{count > 0 ? `已生成 ${count} 张` : "正在生成复习卡…"}
 				</span>
 			</button>
 			{onCancel ? (

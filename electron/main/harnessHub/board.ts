@@ -218,7 +218,7 @@ export function renderBoardMarkdown(
 ): string {
 	if (!entries.length) {
 		return [
-			"# 共享白板（AI Hub）",
+			"# 共享白板",
 			"",
 			scope ? `> 作用域：${scope}` : "> 作用域：全局",
 			"",
@@ -235,10 +235,10 @@ export function renderBoardMarkdown(
 	}
 
 	const lines: string[] = [
-		"# 共享白板（AI Hub）",
+		"# 共享白板",
 		"",
 		scope ? `> 作用域：${scope}` : "> 作用域：全局",
-		"> 本文件由 IPO Workbench 的 AI Hub 自动生成，是数据库内容的渲染产物；",
+		"> 本文件由 IPO Workbench 的 Agent 接力（Harness 互通）自动生成，是数据库内容的渲染产物；",
 		"> 直接编辑本文件不会回写，请通过 Hub 或 MCP 工具 `board_write` 修改。",
 		"",
 	];

@@ -105,39 +105,6 @@ export interface NoteChunkSearchHit {
 	snippet: string;
 }
 
-export enum WorkflowNodeType {
-	Llm = "llm",
-	Skill = "skill",
-	Mcp = "mcp",
-	Manual = "manual",
-}
-
-export enum NodeStatus {
-	Pending = "pending",
-	Running = "running",
-	Completed = "completed",
-	Failed = "failed",
-}
-
-export interface WorkflowNode {
-	id: Uuid;
-	name: string;
-	node_type: WorkflowNodeType;
-	input_sources: Uuid[];
-	output_notes: Uuid[];
-	status: NodeStatus;
-	created_at: DateTime;
-	updated_at: DateTime;
-}
-
-export interface WorkflowRunLog {
-	id: Uuid;
-	node_id: Uuid;
-	status: NodeStatus;
-	summary?: string;
-	created_at: DateTime;
-}
-
 export enum OutputType {
 	Article = "article",
 	Report = "report",
@@ -240,34 +207,6 @@ export interface UpdateNotePayload {
 	content?: string;
 	content_html?: string;
 	source_id?: Uuid | null;
-}
-
-export interface CreateWorkflowPayload {
-	name: string;
-	node_type: WorkflowNodeType;
-	input_sources?: Uuid[];
-	output_notes?: Uuid[];
-	status?: NodeStatus;
-}
-
-export interface UpdateWorkflowPayload {
-	id: Uuid;
-	name?: string;
-	node_type?: WorkflowNodeType;
-	status?: NodeStatus;
-	input_sources?: Uuid[];
-	output_notes?: Uuid[];
-}
-
-export interface AppendWorkflowLogPayload {
-	node_id: Uuid;
-	status: NodeStatus;
-	summary?: string;
-}
-
-export interface ListWorkflowLogsPayload {
-	node_id?: Uuid;
-	limit?: number;
 }
 
 export interface CreateOutputPayload {

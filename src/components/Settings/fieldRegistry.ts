@@ -19,7 +19,6 @@ import type { SettingsTabId } from "./settingsCatalog";
 // ---------- Panel fields imports（Phase 6 起逐步填充） ----------
 import { FIELDS as generalFields } from "./panels/general/fields";
 import { FIELDS as aiDefaultsFields } from "./panels/ai/fields";
-import { PROMPTS_FIELDS as aiPromptsFields } from "./panels/ai/promptsFields";
 import { FIELDS as workshopLayoutFields } from "./panels/workshop/fields";
 import { FIELDS as workshopTerminalFields } from "./panels/workshop/terminalFields";
 
@@ -94,7 +93,6 @@ export const SETTINGS_FIELD_INDEX: readonly FieldDescriptor[] = [
 	// Phase 8 · 补齐其它面板
 	...aiAgentFields,
 	...aiMemoryFields,
-	...aiPromptsFields,
 	...workshopReaderFields,
 	...workshopTtsFields,
 	...workshopMascotFields,

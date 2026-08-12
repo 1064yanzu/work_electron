@@ -22,8 +22,6 @@
     "format": "biome format src electron vite.config.ts package.json tsconfig*.json --write",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
-    "sync:open-design": "node scripts/sync-open-design.mjs",
-    "sync:open-design:update": "node scripts/sync-open-design.mjs --update",
     "postinstall": "npx @electron/rebuild -m . -w node-pty && node scripts/copy-pdfjs-assets.mjs"
   },
   "dependencies": {
@@ -47,7 +45,6 @@
     "archiver": "^7.0.1",
     "bufferutil": "^4.1.0",
     "chokidar": "^5.0.0",
-    "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cors": "^2.8.5",
     "d3-drag": "^3.0.0",

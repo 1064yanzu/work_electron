@@ -198,27 +198,11 @@ CREATE INDEX IF NOT EXISTS idx_output_assets_type ON output_assets(output_type);
 -- 原因：旧版本 output_assets 表可能不存在这些列，需先安全补列再建索引
 
 -- =====================
--- 工作流节点
+-- 工作流节点（已废弃，见 migrations/v8Migrations.ts）
 -- =====================
-CREATE TABLE IF NOT EXISTS workflow_nodes (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  node_type TEXT NOT NULL,
-  input_sources TEXT DEFAULT '[]',
-  output_notes TEXT DEFAULT '[]',
-  status TEXT DEFAULT 'pending',
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS workflow_run_logs (
-  id TEXT PRIMARY KEY,
-  node_id TEXT NOT NULL,
-  status TEXT NOT NULL,
-  summary TEXT,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY (node_id) REFERENCES workflow_nodes(id) ON DELETE CASCADE
-);
+-- workflow_nodes / workflow_run_logs 是早期「工作流节点」概念的遗留，
+-- 全仓无任何业务代码读写（2026-08 复核，见 docs/代码分析/精简决策方案.md A4）。
+-- 新安装不再创建；老库残留由 v8Migrations 统一 DROP。
 
 -- =====================
 -- 同步配置

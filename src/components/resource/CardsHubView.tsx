@@ -1,4 +1,5 @@
-// 「知识 › 卡片」下的二级视图：在「知识卡片」与「分享卡片」之间切换。
+// 「知识 › 卡片」下的二级视图：在「复习卡」（reader_cards，SRS 间隔重复）
+// 与「分享卡」（cards 表，视觉海报）之间切换。
 //
 // 层级约定：上方「知识」一级 tab 用 pill（块），这里的二级 tab 用文字 + 下划线（线）。
 // 两条 tab 上下叠放时，块与线的差别让层级一眼可读，不会互相打架。
@@ -39,12 +40,12 @@ export function CardsHubView() {
 			>
 				<TabUnderline
 					active={activeTab === "knowledge"}
-					label="知识卡片"
+					label="复习卡"
 					onClick={handleSelectKnowledge}
 				/>
 				<TabUnderline
 					active={activeTab === "shared"}
-					label="分享卡片"
+					label="分享卡"
 					onClick={handleSelectShared}
 				/>
 			</div>

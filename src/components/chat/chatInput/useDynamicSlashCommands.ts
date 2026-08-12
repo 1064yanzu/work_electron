@@ -97,17 +97,17 @@ export function useDynamicSlashCommands({
 			});
 		});
 
-		// 3. 卡片
+		// 3. 分享卡
 		cards.forEach((card) => {
 			commands.push({
 				id: `card-${card.id}`,
-				name: card.title || "分享卡片",
+				name: card.title || "分享卡",
 				description: card.text.slice(0, 30).replace(/\n/g, " ") + "...",
 				icon: ImageIcon,
 				category: "data",
-				group: "卡片",
+				group: "分享卡",
 				action: () => {
-					addSelectionToContext(card.text, `卡片: ${card.title}`);
+					addSelectionToContext(card.text, `分享卡: ${card.title}`);
 				},
 			});
 		});

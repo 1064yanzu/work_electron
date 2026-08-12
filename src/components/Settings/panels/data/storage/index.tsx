@@ -125,7 +125,7 @@ export function DataStorageSettings() {
 
 	const handleClearCache = useCallback(async () => {
 		const confirmed = await confirmUI.warning(
-			"确定要清除缓存吗？\n\n这将删除所有分享卡片图片。",
+			"确定要清除缓存吗？\n\n这将删除所有分享卡图片。",
 			"清除缓存",
 		);
 		if (!confirmed) return;

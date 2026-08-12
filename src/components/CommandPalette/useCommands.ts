@@ -130,11 +130,11 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			},
 		});
 
-		items.push({
-			id: "ws.open-hub-tab",
-			title: "打开 AI Hub",
-			description:
-				"跨入口工作台：统一会话时间线、拖拽接力、多模型议会、共享白板",
+	items.push({
+		id: "ws.open-hub-tab",
+		title: "打开 Agent 接力",
+		description:
+			"跨入口工作台：统一会话时间线、拖拽接力、多模型议会、共享白板",
 			icon: Network,
 			keywords: [
 				"hub",
@@ -245,18 +245,22 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			desc?: string;
 		}> = [
 			{
-				tab: "models",
+				tab: "ai.models",
 				title: "模型设置",
 				desc: "Provider / API key / 模型默认",
 			},
-			{ tab: "theme", title: "外观与主题", desc: "切换浅色/深色 / 主题色" },
-			{ tab: "agent", title: "Agent 设置" },
-			{ tab: "data", title: "数据与备份" },
-			{ tab: "mascot", title: "桌面宠物" },
-			{ tab: "skills", title: "Skills 与市场" },
+			{
+				tab: "general.appearance",
+				title: "外观与主题",
+				desc: "切换浅色/深色 / 主题色",
+			},
+			{ tab: "ai.agent", title: "Agent 设置" },
+			{ tab: "data.storage", title: "数据与备份" },
+			{ tab: "workshop.mascot", title: "桌面宠物" },
+			{ tab: "ai.defaults", title: "Skills 与市场" },
 			{
 				tab: "integrations.harnessHub",
-				title: "AI 入口互通设置",
+				title: "Agent 接力 / Web AI 设置",
 				desc: "harness 探测 / 会话摄取 / Web 站点",
 			},
 		];

@@ -239,7 +239,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				project_id: projectId,
 				folder_id: folderId,
 			});
-			toast.success("已保存为资料");
+			toast.success("已保存到资料库");
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
 			toast.error(`保存失败: ${message}`);
@@ -259,7 +259,9 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 				project_id: scope === "project" ? projectId : undefined,
 				folder_id: scope === "project" ? folderId : undefined,
 			});
-			toast.success(scope === "project" ? "已保存到当前项目" : "已保存到全局");
+			toast.success(
+				scope === "project" ? "已保存到资料库（当前项目）" : "已保存到资料库（全局）",
+			);
 		},
 		[],
 	);
@@ -396,9 +398,9 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								onClick={() => void saveAsSource()}
 								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-cream-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
 							>
-								<Plus className="w-3.5 h-3.5" />
-								保存
-							</button>
+							<Plus className="w-3.5 h-3.5" />
+							保存为资料
+						</button>
 						</>
 					)}
 

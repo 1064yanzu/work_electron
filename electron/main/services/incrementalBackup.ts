@@ -6,7 +6,7 @@
  * 1. 水位增量：为每张参与同步的表维护 last_sync_watermark（基于 updated_at 列），
  *    持久化在 app_config 表（key = `autosync_watermark_<table>`）。每个增量周期
  *    仅导出 `updated_at > 水位` 的变更行。
- *    - 没有 updated_at 列的表（project_visits / workflow_run_logs / sync_config /
+ *    - 没有 updated_at 列的表（project_visits / sync_config /
  *      backup_history / file_themes / agent_artifacts / agent_audit_logs / artifacts 等）
  *      无法做水位比较，**退化为全量导出**（这些表体量普遍很小，代价可接受）。
  *      列存在性通过 PRAGMA table_info 运行时探测，不硬编码。
@@ -302,7 +302,7 @@ export async function collectIncrementalPayload(
 			);
 		} else {
 			// 无 updated_at 列 → 无法水位比较，退化为全量导出。
-			// 这些表（project_visits / workflow_run_logs / sync_config / backup_history /
+			// 这些表（project_visits / sync_config / backup_history /
 			// file_themes / agent_artifacts / agent_audit_logs / artifacts）体量普遍很小。
 			const rows: BackupRow[] = [];
 			let offset = 0;

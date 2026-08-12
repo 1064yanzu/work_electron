@@ -2,7 +2,8 @@
  * settingsCatalog.ts — 设置体系的单一事实源（Phase 1 骨架版）
  *
  * 本文件承载「一级分类 × 二级 Tab × Panel Loader」三张表的组合关系，
- * 被 `SettingsSidebar` / `SettingsModal` / `panelLoaders` / `legacyTabMap` 共同消费。
+ * 被 `SettingsSidebar` / `SettingsModal` / `panelLoaders` 共同消费。
+ * 外部传入的 raw tab id 用 `normalizeSettingsTabId` 归一（C6 后全仓统一新 id）。
  *
  * Phase 1 阶段 `load` 字段仍然指向旧面板文件；Phase 4–6 拆分完成后会切换到
  * `panels/<category>/<subtab>/index` 的新路径。本次只做结构骨架。
@@ -23,7 +24,6 @@ import {
 	Keyboard,
 	Layout,
 	type LucideIcon,
-	MessageSquare,
 	Palette,
 	Pen,
 	Plug,
@@ -58,7 +58,6 @@ export type SettingsTabId =
 	| "ai.models"
 	| "ai.agent"
 	| "ai.memory"
-	| "ai.prompts"
 	| "ai.defaults"
 	| "workshop.imagegen"
 	| "workshop.reader"
@@ -214,13 +213,6 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(() => import("./panels/MemorySettings"), "MemorySettings"),
 	},
 	{
-		id: "ai.prompts",
-		category: "ai",
-		label: "提示词模板",
-		icon: MessageSquare,
-		load: asDefault(() => import("./panels/ai/PromptsPanel"), "PromptsPanel"),
-	},
-	{
 		id: "ai.defaults",
 		category: "ai",
 		label: "默认模型分工",
@@ -312,7 +304,7 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 	{
 		id: "integrations.harnessHub",
 		category: "integrations",
-		label: "AI 入口互通",
+		label: "Agent 接力 / Web AI",
 		icon: Waypoints,
 		load: asDefault(
 			() => import("./panels/integrations/HarnessHubSettings"),
@@ -370,10 +362,29 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 // 工具函数
 // =====================================================================
 
-/** 只读的 SettingsTabId 集合，供 `legacyTabMap` 判定 raw 是否已经是新 id */
+/** 只读的 SettingsTabId 集合，供 `normalizeSettingsTabId` 判定 raw 是否有效 */
 export const SUBTAB_ID_SET: ReadonlySet<SettingsTabId> = new Set(
 	SETTINGS_SUBTABS.map((s) => s.id),
 );
+
+/**
+ * 把外部传入的 raw tab id 归一化为有效的 `SettingsTabId`。
+ *
+ * 精简决策方案 C6：设置目录迁移完成后，全仓统一使用新 id（`ai.models` 等），
+ * 旧扁平 id 的 LEGACY_MAP 已随 `legacyTabMap.ts` 一并移除。这里只保留
+ * 「未知 id 降级到 ai.models」的兜底，防止外部事件带着失效 id 打爆设置面板。
+ */
+export function normalizeSettingsTabId(
+	raw: string | undefined | null,
+): SettingsTabId {
+	if (raw && SUBTAB_ID_SET.has(raw as SettingsTabId)) {
+		return raw as SettingsTabId;
+	}
+	if (raw) {
+		console.warn("[settings] unknown tab id, fallback to ai.models:", raw);
+	}
+	return "ai.models";
+}
 
 const SUBTAB_MAP: ReadonlyMap<SettingsTabId, SettingsSubtab> = new Map(
 	SETTINGS_SUBTABS.map((s) => [s.id, s]),

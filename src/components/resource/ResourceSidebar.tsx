@@ -736,9 +736,8 @@ export default function ResourceSidebar({
 							onOpenDetail={handleOpenDetail}
 							onOpenSettings={onOpenSettings}
 							onDeleteSource={(source) => void handleDeleteSource(source)}
-							onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
-							setActiveTab={setActiveTab}
-							setIsAddModalOpen={setIsAddModalOpen}
+						onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
+						setIsAddModalOpen={setIsAddModalOpen}
 							viewTabs={null}
 							currentResearch={currentResearch}
 							uiDebugLogsEnabled={uiDebugLogsEnabled}

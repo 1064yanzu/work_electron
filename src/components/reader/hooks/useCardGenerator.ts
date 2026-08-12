@@ -16,12 +16,12 @@ type StreamChunk = {
 
 function buildPrompt(text: string, count: number): string {
 	return [
-		"你是知识卡片生成器。给定一段文本，生成指定数量的问答式知识卡片。",
+		"你是复习卡（问答式 flashcard）生成器。给定一段文本，生成指定数量的问答式复习卡。",
 		'输出格式为 JSON 数组，每个元素包含 "question" 和 "answer" 字段。',
 		"问题应该测试对关键概念的理解，答案应该简洁准确。",
 		"仅输出 JSON 数组，不要输出其他内容。",
 		"",
-		`请从以下文本中生成 ${count} 张知识卡片：`,
+		`请从以下文本中生成 ${count} 张复习卡：`,
 		"",
 		`> ${text}`,
 	].join("\n");

@@ -6,6 +6,7 @@ import { runV4Migrations } from "./migrations/v4Migrations";
 import { runV5Migrations } from "./migrations/v5Migrations";
 import { runV6Migrations } from "./migrations/v6Migrations";
 import { runV7Migrations } from "./migrations/v7Migrations";
+import { runV8Migrations } from "./migrations/v8Migrations";
 
 /**
  * 当前数据库 schema 版本号（B12：版本化迁移）。
@@ -23,7 +24,7 @@ import { runV7Migrations } from "./migrations/v7Migrations";
  * CURRENT_SCHEMA_VERSION，并在下面的判断链里追加 `if (currentVersion < N)`。
  * 不要修改已发布版本对应的迁移函数内容（迁移历史应保持可追溯、不可变）。
  */
-const CURRENT_SCHEMA_VERSION = 7;
+const CURRENT_SCHEMA_VERSION = 8;
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -399,6 +400,8 @@ async function runLegacyMigrations(ctx: DbContext): Promise<void> {
  *
  * v3 只做加列 / 建索引、没有独占的新表，故不设哨兵（漏检的代价是加列缺失，
  * 而 safeAddColumn 本来就幂等，下一次真正的版本升级会带上）。
+ * v8 只做 DROP 孤儿表、同样没有独占新表，也不设哨兵（漏检的代价仅是
+ * 孤儿表残留，无运行时影响）。
  */
 const VERSION_SENTINELS: {
 	version: number;
@@ -482,6 +485,10 @@ export async function runMigrations(ctx: DbContext): Promise<void> {
 	if (currentVersion < 7) {
 		await runV7Migrations(ctx);
 		await writeSchemaVersion(ctx, 7);
+	}
+	if (currentVersion < 8) {
+		await runV8Migrations(ctx);
+		await writeSchemaVersion(ctx, 8);
 	}
 
 	await writeSchemaVersion(ctx, CURRENT_SCHEMA_VERSION);

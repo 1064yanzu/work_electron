@@ -577,8 +577,8 @@ async function handleOne(
 			protocolVersion: PROTOCOL_VERSION,
 			capabilities: { tools: { listChanged: false } },
 			serverInfo: { name: "ipo-aihub", version: "1.0.0" },
-			instructions:
-				"IPO Workbench 的 AI Hub。可以让你调用用户已登录的 Web AI 产品、其他本地 coding agent、跨入口检索历史会话，以及读写跨 agent 共享的工作白板。在陌生目录开工前先调 board_read。",
+		instructions:
+			"IPO Workbench 的 Agent 接力层（Harness 互通）。可以让你调用用户已登录的 Web AI 产品、其他本地 coding agent、跨入口检索历史会话，以及读写跨 agent 共享的工作白板。在陌生目录开工前先调 board_read。",
 		});
 	}
 

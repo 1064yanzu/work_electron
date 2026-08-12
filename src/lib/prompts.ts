@@ -1,6 +1,5 @@
 // 提示词管理工具
 
-import { DEFAULT_PROMPTS } from "../components/Settings/panels/ai/PromptsPanel";
 import { getConfig } from "./config";
 import {
 	buildDocumentBudget,
@@ -10,6 +9,17 @@ import {
 	renderStyleProfilePrompt,
 	renderStyleRecipePrompt,
 } from "./api/styleProfile";
+
+/**
+ * 系统级提示词模板的默认值。
+ * 编辑入口：提示词库（PromptLibraryModal）侧栏底部的「系统模板」分区。
+ * （原 Settings › AI › 提示词模板 面板已并入提示词库，见精简决策方案 C2）
+ */
+export const DEFAULT_PROMPTS: Record<string, string> = {
+	titleGeneration: `请为以下用户提问生成一个非常简短的对话标题（不超过10个字），直接返回标题内容，不要有任何引号或额外文字：
+
+{message}`,
+};
 
 const ACTIVE_STYLE_PROFILE_KEY = "active_style_profile_id";
 const ACTIVE_STYLE_INTENSITY_KEY = "active_style_profile_intensity";

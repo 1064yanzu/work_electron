@@ -51,7 +51,7 @@ import { useRemoteTerminalBridge } from "./lib/remoteTerminalBridge";
 import { useHarnessTerminalBridge } from "./lib/harnessTerminalBridge";
 import { usePetQuickReplyBridge } from "./lib/usePetQuickReplyBridge";
 import type { SettingsTabId } from "./components/Settings/types";
-import { resolveSettingsTabId } from "./components/Settings/legacyTabMap";
+import { normalizeSettingsTabId } from "./components/Settings/settingsCatalog";
 import { rescanCustomSlashCommands } from "./lib/slashCommands/customScanner";
 import { EVENTS, events } from "./lib/events";
 import { invoke } from "./lib/tauriCompat";
@@ -302,7 +302,7 @@ export default function App() {
 	}, [setRightSidebarVisible]);
 
 	const handleOpenSettings = useCallback((tab?: string) => {
-		setSettingsInitialTab(resolveSettingsTabId(tab));
+		setSettingsInitialTab(normalizeSettingsTabId(tab));
 		setIsSettingsOpen(true);
 	}, []);
 

@@ -55,8 +55,8 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 			await buildCardImages(data);
 			setCardErrorMessage(null);
 		} catch (error) {
-			console.error("获取分享卡片失败:", error);
-			setCardErrorMessage("获取分享卡片失败");
+			console.error("获取分享卡失败:", error);
+			setCardErrorMessage("获取分享卡失败");
 		} finally {
 			setIsLoadingCards(false);
 		}
@@ -236,13 +236,13 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 					<div className="flex items-center gap-2">
 						<ImageIcon className="w-4 h-4 text-text-light" />
 						<h2 className="font-semibold text-sm text-text-primary">
-							分享卡片
+							分享卡
 						</h2>
 					</div>
 					<button
 						onClick={fetchCards}
 						className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-						title="刷新卡片"
+						title="刷新"
 					>
 						{isLoadingCards ? (
 							<Loader2 className="w-4 h-4 animate-spin" />
@@ -275,10 +275,10 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 							<ImageIcon className="w-7 h-7 text-text-light" />
 						</div>
 						<p className="text-sm font-medium text-text-secondary mb-1">
-							暂无分享卡片
+							暂无分享卡
 						</p>
 						<p className="text-xs text-text-light">
-							请在浏览器插件中生成并发送卡片
+							请在浏览器插件中生成并发送分享卡
 						</p>
 					</div>
 				) : (
@@ -362,7 +362,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 													handleDeleteCard(card);
 												}}
 												className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-												title="删除卡片"
+												title="删除分享卡"
 											>
 												<Trash2 className="w-3.5 h-3.5" />
 											</button>

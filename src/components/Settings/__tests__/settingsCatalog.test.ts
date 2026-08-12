@@ -2,9 +2,12 @@
  * settingsCatalog.test.ts — 设置体系骨架层单元测试
  *
  * 覆盖：
- *   - 5 个一级分类、21 个二级 Tab 的数量断言
+ *   - 5 个一级分类、23 个二级 Tab 的数量断言
  *   - 每个 subtab.id 都在 `SUBTAB_ID_SET` 里
- *   - `resolveSettingsTabId` 对 8 条关键 legacy id 的归一化
+ *   - `normalizeSettingsTabId` 对新 id 原样放行、对空/未知 id 降级
+ *
+ * 注：legacy 扁平 id 的映射表已随 C6 收敛移除（全仓统一新 id），
+ * 不再测试旧 id 归一。
  *
  * 运行方式：`tsx --test src/components/Settings/__tests__/settingsCatalog.test.ts`
  */
@@ -18,8 +21,8 @@ import {
 	getFirstSubtabOf,
 	getSubtab,
 	getSubtabsByCategory,
+	normalizeSettingsTabId,
 } from "../settingsCatalog";
-import { resolveSettingsTabId } from "../legacyTabMap";
 
 test("SETTINGS_CATEGORIES 固定 5 条", () => {
 	assert.equal(SETTINGS_CATEGORIES.length, 5);
@@ -27,8 +30,8 @@ test("SETTINGS_CATEGORIES 固定 5 条", () => {
 	assert.deepEqual(ids, ["general", "ai", "workshop", "integrations", "data"]);
 });
 
-test("SETTINGS_SUBTABS 固定 21 条", () => {
-	assert.equal(SETTINGS_SUBTABS.length, 21);
+test("SETTINGS_SUBTABS 固定 23 条", () => {
+	assert.equal(SETTINGS_SUBTABS.length, 23);
 });
 
 test("SETTINGS_SUBTABS 每条 id 都能被 SUBTAB_ID_SET 命中", () => {
@@ -56,34 +59,26 @@ test("getSubtabsByCategory / getFirstSubtabOf 语义", () => {
 	}
 });
 
-test("resolveSettingsTabId 对关键 legacy id 的归一化", () => {
-	assert.equal(resolveSettingsTabId("models"), "ai.models");
-	assert.equal(resolveSettingsTabId("agent"), "ai.agent");
-	assert.equal(resolveSettingsTabId("memory"), "ai.memory");
-	assert.equal(resolveSettingsTabId("reader"), "workshop.reader");
-	assert.equal(resolveSettingsTabId("mcp"), "integrations.mcp");
-	assert.equal(resolveSettingsTabId("dashboard"), "data.stats");
-	assert.equal(resolveSettingsTabId("theme"), "general.appearance");
-	assert.equal(resolveSettingsTabId("skills"), "ai.defaults");
+test("normalizeSettingsTabId 对新 id 原样返回", () => {
+	assert.equal(normalizeSettingsTabId("ai.models"), "ai.models");
+	assert.equal(normalizeSettingsTabId("data.stats"), "data.stats");
+	assert.equal(normalizeSettingsTabId("integrations.harnessHub"), "integrations.harnessHub");
 });
 
-test("resolveSettingsTabId 对新 id 原样返回", () => {
-	assert.equal(resolveSettingsTabId("ai.models"), "ai.models");
-	assert.equal(resolveSettingsTabId("data.stats"), "data.stats");
-});
-
-test("resolveSettingsTabId 空/未知降级到 ai.models", () => {
+test("normalizeSettingsTabId 空/未知降级到 ai.models", () => {
 	const originalWarn = console.warn;
 	const warnings: unknown[][] = [];
 	console.warn = (...args: unknown[]) => {
 		warnings.push(args);
 	};
 	try {
-		assert.equal(resolveSettingsTabId(undefined), "ai.models");
-		assert.equal(resolveSettingsTabId(null), "ai.models");
-		assert.equal(resolveSettingsTabId(""), "ai.models");
-		assert.equal(resolveSettingsTabId("not-a-real-id"), "ai.models");
-		// 未知 id 应触发一次 warn；空/null 不 warn
+		assert.equal(normalizeSettingsTabId(undefined), "ai.models");
+		assert.equal(normalizeSettingsTabId(null), "ai.models");
+		assert.equal(normalizeSettingsTabId(""), "ai.models");
+		// legacy 扁平 id 已不再映射，一律按未知 id 降级
+		assert.equal(normalizeSettingsTabId("models"), "ai.models");
+		assert.equal(normalizeSettingsTabId("not-a-real-id"), "ai.models");
+		// 未知 id 应触发 warn；空/null 不 warn
 		assert.ok(warnings.length >= 1, "unknown id 应触发 console.warn");
 	} finally {
 		console.warn = originalWarn;

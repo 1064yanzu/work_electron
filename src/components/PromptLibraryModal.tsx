@@ -20,6 +20,7 @@ import {
 	Plus,
 	Search,
 	BookMarked,
+	ScrollText,
 	Trash2,
 	Upload,
 	X,
@@ -31,6 +32,7 @@ import {
 	useCustomPromptStore,
 } from "../lib/customPromptStore";
 import { confirmDialog } from "./ui/ConfirmDialog";
+import { SystemPromptTemplates } from "./prompts/SystemPromptTemplates";
 import { toast } from "./ui/Toast";
 import { Select } from "./ui/Select";
 import { Tooltip } from "./ui/Tooltip";
@@ -265,6 +267,12 @@ export function PromptLibraryModal({
 	// State
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [activeFolderId, setActiveFolderId] = useState<string | null>(null); // null = 全部, "uncategorized" = 未分类
+	// 「系统模板」高级分区（原 Settings › AI › 提示词模板，C2 并入提示词库）
+	const [showSystemTemplates, setShowSystemTemplates] = useState(false);
+	const selectFolder = (id: string | null) => {
+		setActiveFolderId(id);
+		setShowSystemTemplates(false);
+	};
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
 	const [editingPrompt, setEditingPrompt] =
@@ -461,7 +469,7 @@ export function PromptLibraryModal({
 					<div className="flex md:flex-col gap-2 md:gap-1 md:space-y-1 overflow-x-auto md:overflow-x-visible md:overflow-y-auto pb-2 md:pb-0 pr-0 md:pr-2 no-scrollbar md:custom-scrollbar min-h-[50px] md:min-h-0 items-center md:items-stretch">
 						{/* 全部 */}
 						<button
-							onClick={() => setActiveFolderId(null)}
+							onClick={() => selectFolder(null)}
 							onDragOver={(e) => handleDragOver(e, null)}
 							onDragLeave={handleDragLeave}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
@@ -511,7 +519,7 @@ export function PromptLibraryModal({
 										}`}
 									>
 										<div
-											onClick={() => setActiveFolderId(folder.id)}
+											onClick={() => selectFolder(folder.id)}
 											className="flex items-center gap-2.5 flex-1"
 										>
 											{activeFolderId === folder.id ? (
@@ -599,7 +607,7 @@ export function PromptLibraryModal({
 
 						{/* 未分类 */}
 						<button
-							onClick={() => setActiveFolderId("uncategorized")}
+							onClick={() => selectFolder("uncategorized")}
 							onDragOver={(e) => handleDragOver(e, "uncategorized")}
 							onDragLeave={handleDragLeave}
 							onDrop={(e) => handleDrop(e, undefined)}
@@ -651,6 +659,22 @@ export function PromptLibraryModal({
 						)}
 					</div>
 
+					{/* 高级分区：系统模板（原 Settings › AI › 提示词模板，C2 并入） */}
+					<div className="pt-2 md:pt-3 border-t border-border/50 mt-2">
+						<button
+							onClick={() => setShowSystemTemplates(true)}
+							className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200
+								${
+									showSystemTemplates
+										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
+								}`}
+						>
+							<ScrollText className="w-4 h-4 opacity-70" />
+							<span>系统模板</span>
+						</button>
+					</div>
+
 					<div className="pt-2 md:pt-4 border-t border-border/50 mt-0 md:mt-2">
 						<button
 							onClick={() => handleStartEdit()}
@@ -666,6 +690,16 @@ export function PromptLibraryModal({
 				<div className="flex-1 flex flex-col bg-surface relative min-w-0">
 					{/* Header Toolbar */}
 					<div className="px-3 md:px-6 py-3 flex items-center justify-between gap-3 border-b border-border sticky top-0 bg-surface/80 backdrop-blur-md z-10">
+					{showSystemTemplates ? (
+						<div className="flex-1 min-w-0 flex items-baseline gap-2">
+							<span className="text-sm font-semibold text-text-primary">
+								系统模板
+							</span>
+							<span className="text-xs text-text-muted">
+								内置场景的系统级提示词
+							</span>
+						</div>
+					) : (
 						<div className="relative flex-1 max-w-md group">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary dark:group-focus-within:text-text-light transition-colors" />
 							<input
@@ -676,6 +710,7 @@ export function PromptLibraryModal({
 								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-all outline-none"
 							/>
 						</div>
+					)}
 
 						<div className="flex items-center gap-0.5 bg-cream-100/60 dark:bg-cream-800/60 p-1 rounded-full border border-cream-300/60 dark:border-cream-500/60">
 							<Tooltip content="网格视图">
@@ -733,7 +768,10 @@ export function PromptLibraryModal({
 						</div>
 					</div>
 
-					{/* Prompts Grid */}
+					{/* Prompts Grid / 系统模板 */}
+					{showSystemTemplates ? (
+						<SystemPromptTemplates />
+					) : (
 					<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
 						{filteredPrompts.length === 0 ? (
 							<div className="h-full flex flex-col items-center justify-center text-center pb-20">
@@ -800,6 +838,7 @@ export function PromptLibraryModal({
 							</div>
 						)}
 					</div>
+					)}
 
 					{/* Editor Overlay */}
 					{isEditing && (

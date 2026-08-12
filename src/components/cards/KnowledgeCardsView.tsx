@@ -117,7 +117,7 @@ function KnowledgeCardsViewBase({
 					})
 				: cards;
 		if (list.length === 0) {
-			toast.info(mode === "due" ? "当前没有需要复习的卡片" : "卡片库为空");
+			toast.info(mode === "due" ? "当前没有需要复习的卡" : "复习卡库为空");
 			return;
 		}
 		setReviewMode(mode);
@@ -170,7 +170,7 @@ function KnowledgeCardsViewBase({
 				<header className="card-library__header">
 					<div className="card-library__title">
 						<Brain className="w-5 h-5" strokeWidth={1.5} />
-						<span>知识卡片库</span>
+						<span>复习卡库</span>
 						<span className="card-library__count">{cards.length}</span>
 					</div>
 					<div className="card-library__header-actions">
@@ -309,8 +309,8 @@ function KnowledgeCardsViewBase({
 				) : cards.length === 0 ? (
 					<div className="card-library__empty">
 						{search || filterTag || filterBook || filterDue
-							? "没有符合条件的卡片"
-							: "卡片库还是空的 — 在阅读器里选中文字或为某章生成知识卡片，它们会出现在这里。"}
+							? "没有符合条件的复习卡"
+							: "复习卡库还是空的 — 在阅读器里选中文字或为某章生成复习卡，它们会出现在这里。"}
 					</div>
 				) : (
 					<ul className="card-library__grid" role="list">

@@ -37,9 +37,9 @@ export function ReaderCardEdit({ card, onSave, onClose }: ReaderCardEditProps) {
 				if (e.target === e.currentTarget) onClose();
 			}}
 		>
-			<div className="reader-card-edit" role="dialog" aria-label="编辑卡片">
+			<div className="reader-card-edit" role="dialog" aria-label="编辑复习卡">
 				<header className="reader-card-edit__header">
-					<span className="reader-card-edit__title">编辑知识卡片</span>
+					<span className="reader-card-edit__title">编辑复习卡</span>
 					<button
 						type="button"
 						className="reader-icon-btn"

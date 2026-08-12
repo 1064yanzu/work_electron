@@ -64,7 +64,7 @@ export function ResourceSidebarDialogs({
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
 					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
-							删除卡片
+							删除分享卡
 						</h3>
 						<p className="text-sm text-text-muted mb-6">
 							确定删除「{cardDeleteConfirm.title}」吗？图片文件也会一并移除。

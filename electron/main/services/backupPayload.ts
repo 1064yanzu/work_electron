@@ -36,8 +36,9 @@ export const DEFAULT_BACKUP_TABLES = [
 	"providers",
 	"app_config",
 	"output_assets",
-	"workflow_nodes",
-	"workflow_run_logs",
+	// 注：workflow_nodes / workflow_run_logs 已于 schema v8 DROP（孤儿表，
+	// 见 migrations/v8Migrations.ts）；旧备份包中残留的这两张表数据在导入时
+	// 会被「仅写入当前存在的表」逻辑安全跳过。
 	"sync_config",
 	"backup_history",
 	"cards",

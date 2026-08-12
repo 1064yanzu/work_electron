@@ -66,7 +66,7 @@ export function ReaderTOC(props: ReaderTOCProps) {
 					) : (
 						<>
 							<Brain className="w-3.5 h-3.5" strokeWidth={1.5} />
-							知识卡片
+							复习卡
 						</>
 					)}
 				</span>
@@ -280,7 +280,7 @@ function CardList({
 			</div>
 			{cards.length === 0 ? (
 				<div className="reader-toc__empty">
-					还没有知识卡片 — 选中文字后生成，或点击上方按钮为本章生成。
+					还没有复习卡 — 选中文字后生成，或点击上方按钮为本章生成。
 				</div>
 			) : (
 				<ul className="reader-toc__list" role="list">
