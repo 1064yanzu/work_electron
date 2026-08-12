@@ -1,4 +1,5 @@
 import { Download } from "lucide-react";
+import { useFocusTrap } from "./FocusTrap";
 import { ZoomableImageViewer } from "./ZoomableImageViewer";
 
 export function ImageLightbox({
@@ -14,6 +15,11 @@ export function ImageLightbox({
 	downloadName?: string;
 	onClose: () => void;
 }) {
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: open && !!src,
+		onEscape: onClose,
+	});
+
 	if (!open || !src) return null;
 
 	const name = downloadName || (title ? `${title}.png` : "image.png");
@@ -26,6 +32,7 @@ export function ImageLightbox({
 			onClick={onClose}
 		>
 			<div
+				ref={trapRef}
 				className="relative w-[min(1220px,96vw)] h-[min(90vh,960px)] bg-surface rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/10 overflow-hidden"
 				onClick={(e) => e.stopPropagation()}
 			>

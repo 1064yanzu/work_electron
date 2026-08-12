@@ -17,6 +17,7 @@ import {
 	SettingsField,
 } from "../Settings/ui/SettingsPrimitives";
 import { toast } from "../ui/Toast";
+import { useFocusTrap } from "../ui/FocusTrap";
 
 interface VoiceCloneModalProps {
 	providerId: string;
@@ -40,6 +41,7 @@ export function VoiceCloneModal({
 	onClose,
 	onCreated,
 }: VoiceCloneModalProps) {
+	const trapRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [language, setLanguage] = useState("zh-CN");
@@ -163,6 +165,9 @@ export function VoiceCloneModal({
 			}}
 		>
 			<div
+				ref={trapRef}
+				role="dialog"
+				aria-modal="true"
 				className="w-[520px] max-w-[92vw] rounded-2xl border border-border shadow-bai-card"
 				style={{ backgroundColor: "var(--t-bg-surface)" }}
 			>

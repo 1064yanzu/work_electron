@@ -26,12 +26,22 @@
 		/* 面板 — 使用主题变量 */
 		--panel-bg: var(--t-bg-panel, rgba(250, 249, 245, 0.78));
 		--panel-bg-strong: var(--t-bg-panel-strong, rgba(255, 255, 255, 0.88));
-		--panel-border: var(--t-border-subtle, rgba(0, 0, 0, 0.04));
+		--panel-border: var(--t-border-subtle, rgba(0, 0, 0, 0.07));
 		--panel-ring: rgba(0, 0, 0, 0.02);
 		--panel-shadow: none;
 
 		/* 交互环 */
 		--interactive-ring: var(--t-ring, rgba(26, 26, 25, 0.18));
+
+		/* 阴影 — 浅色：暖调克制 */
+		--shadow-sm: 0 1px 2px 0 rgb(26 26 25 / 0.05);
+		--shadow-md: 0 4px 6px -1px rgb(26 26 25 / 0.07);
+		--shadow-lg: 0 10px 15px -3px rgb(26 26 25 / 0.08);
+		--shadow-xl: 0 20px 25px -5px rgb(26 26 25 / 0.1);
+		--shadow-2xl: 0 25px 50px -12px rgb(26 26 25 / 0.18);
+		--shadow-card: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+		--shadow-pop: 0 4px 12px 0 rgb(26 26 25 / 0.06);
+		--shadow-ring: 0 0 0 1px rgb(232 229 221);
 	}
 
 	.dark {
@@ -59,6 +69,25 @@
 
 		/* 深色交互环 */
 		--interactive-ring: var(--t-ring, rgba(250, 249, 245, 0.2));
+
+		/* 阴影 — 深色：黑投影必须有存在感（浅色阴影在深色背景上不可见，
+		   需要更高的不透明度才能撑起浮层层级），并补一道顶部高光 hairline */
+		--shadow-sm:
+			0 1px 2px 0 rgb(0 0 0 / 0.5), inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+		--shadow-md:
+			0 4px 8px -1px rgb(0 0 0 / 0.5), inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+		--shadow-lg:
+			0 10px 20px -3px rgb(0 0 0 / 0.55),
+			inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+		--shadow-xl:
+			0 20px 30px -5px rgb(0 0 0 / 0.6), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+		--shadow-2xl:
+			0 25px 50px -12px rgb(0 0 0 / 0.7),
+			inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+		--shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+		--shadow-pop:
+			0 4px 16px 0 rgb(0 0 0 / 0.5), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+		--shadow-ring: 0 0 0 1px rgb(255 255 255 / 0.06);
 	}
 
 	body {
@@ -234,6 +263,32 @@
    ============================================ */
 svg.lucide:not([stroke-width]) {
 	stroke-width: 1.5 !important;
+}
+
+/* ============================================
+   全局按压反馈 — 让所有手写 <button> 也有微缩 tactile 反馈。
+   优先级说明：
+   - Button/IconButton 基类的 Tailwind `active:scale-*` 类选择器
+     优先级高于本元素规则，不会被覆盖；
+   - GSAP spring-press（expressive 档）写 inline transform，天然胜出；
+   - 元素自身带 transform 过渡（transition 属性含 transform）时平滑，
+     否则瞬时 2% 缩放依然有触感；motion-reduced 下由全局规则消杀。
+   ============================================ */
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+	transform: scale(0.98);
+}
+
+/* ============================================
+   全局键盘焦点环 — 仅键盘导航（:focus-visible）时出现，
+   鼠标点击不触发；输入类控件已有 focus ring 方案，排除。
+   ============================================ */
+button:focus-visible,
+[role="button"]:focus-visible,
+a[href]:focus-visible {
+	outline: 2px solid var(--interactive-ring);
+	outline-offset: 1px;
+	/* outline 自动跟随元素自身 border-radius，不额外指定 */
 }
 
 /* ============================================

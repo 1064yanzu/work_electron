@@ -362,10 +362,20 @@ export default {
 				"3xl": "1.5rem",
 			},
 			boxShadow: {
+				// ============================================
+				// 阴影全部走 --shadow-* CSS 变量（index.css 分亮/暗主题赋值）
+				// 浅色：暖调微弱阴影；深色：深黑投影 + 更大的不透明度补偿层级，
+				// 解决"深色模式下 shadow 等于没有"的层级丢失问题。
+				// ============================================
+				sm: "var(--shadow-sm, 0 1px 2px 0 rgb(26 26 25 / 0.05))",
+				md: "var(--shadow-md, 0 4px 6px -1px rgb(26 26 25 / 0.07))",
+				lg: "var(--shadow-lg, 0 10px 15px -3px rgb(26 26 25 / 0.08))",
+				xl: "var(--shadow-xl, 0 20px 25px -5px rgb(26 26 25 / 0.1))",
+				"2xl": "var(--shadow-2xl, 0 25px 50px -12px rgb(26 26 25 / 0.18))",
 				// B.AI 风格克制阴影
-				"bai-card": "0 1px 2px 0 rgb(26 26 25 / 0.04)",
-				"bai-pop": "0 4px 12px 0 rgb(26 26 25 / 0.06)",
-				"bai-ring": "0 0 0 1px rgb(232 229 221)",
+				"bai-card": "var(--shadow-card, 0 1px 2px 0 rgb(26 26 25 / 0.04))",
+				"bai-pop": "var(--shadow-pop, 0 4px 12px 0 rgb(26 26 25 / 0.06))",
+				"bai-ring": "var(--shadow-ring, 0 0 0 1px rgb(232 229 221))",
 			},
 		},
 	},

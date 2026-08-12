@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { EASE, textReveal, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
+import { useFocusTrap } from "../ui/FocusTrap";
 import {
 	BUILTIN_MASCOT_LIST,
 	BUILTIN_MASCOT_META,
@@ -42,6 +43,7 @@ const SLIDES: Slide[] = [
 ];
 
 export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
+	const trapRef = useFocusTrap<HTMLDivElement>({ onEscape: onFinish });
 	const { id, setId } = useMascot();
 	const [step, setStep] = useState(0);
 	const scopeRef = useRef<HTMLDivElement>(null);
@@ -164,6 +166,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 			aria-modal
 		>
 			<div
+				ref={trapRef}
 				data-onb-card
 				className="relative w-[min(560px,calc(100vw-32px))] rounded-3xl bg-surface shadow-2xl ring-1 ring-cream-900/5 dark:ring-cream-100/10 overflow-hidden"
 				style={{ backgroundColor: "var(--t-bg-surface)" }}

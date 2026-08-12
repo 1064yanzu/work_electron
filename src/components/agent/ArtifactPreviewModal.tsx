@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { ArtifactFileType } from "./ArtifactCard";
 import { ZoomableImageViewer } from "../ui/ZoomableImageViewer";
+import { useFocusTrap } from "../ui/FocusTrap";
 import { Tooltip } from "../ui/Tooltip";
 
 export interface ArtifactPreviewModalProps {
@@ -224,6 +225,10 @@ export default function ArtifactPreviewModal({
 	onReveal,
 	onImportToLibrary,
 }: ArtifactPreviewModalProps) {
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: isOpen,
+		onEscape: onClose,
+	});
 	// ESC 键关闭
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
@@ -278,6 +283,9 @@ export default function ArtifactPreviewModal({
 			onClick={onClose}
 		>
 			<div
+				ref={trapRef}
+				role="dialog"
+				aria-modal="true"
 				className={cn(
 					"relative w-[90vw] h-[85vh] max-w-6xl",
 					"bg-surface",

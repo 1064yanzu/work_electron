@@ -17,6 +17,7 @@ import {
 	fetchModelsFromProvider,
 } from "../../../lib/model-discovery";
 import { type Provider } from "../constants";
+import { useFocusTrap } from "../../ui/FocusTrap";
 import { getModelIcon } from "../modelIcons";
 
 interface ModelDiscoveryModalProps {
@@ -32,6 +33,7 @@ export function ModelDiscoveryModal({
 	provider,
 	onAddModels,
 }: ModelDiscoveryModalProps) {
+	const trapRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>(
@@ -141,6 +143,9 @@ export function ModelDiscoveryModal({
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
 			<div
+				ref={trapRef}
+				role="dialog"
+				aria-modal="true"
 				className="w-full max-w-2xl bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
 				style={{ height: "85vh", maxHeight: "850px" }}
 			>

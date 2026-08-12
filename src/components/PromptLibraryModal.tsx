@@ -34,6 +34,7 @@ import {
 import { confirmDialog } from "./ui/ConfirmDialog";
 import { SystemPromptTemplates } from "./prompts/SystemPromptTemplates";
 import { toast } from "./ui/Toast";
+import { useFocusTrap } from "./ui/FocusTrap";
 import { Select } from "./ui/Select";
 import { Tooltip } from "./ui/Tooltip";
 
@@ -250,6 +251,10 @@ export function PromptLibraryModal({
 	onClose,
 	onSelectPrompt,
 }: PromptLibraryModalProps) {
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: isOpen,
+		onEscape: onClose,
+	});
 	const {
 		prompts,
 		folders,
@@ -448,7 +453,7 @@ export function PromptLibraryModal({
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
-			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-250 font-sans">
+			<div ref={trapRef} role="dialog" aria-modal="true" className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-250 font-sans">
 				{/* Sidebar (Folder Navigation) */}
 				<div className="w-full md:w-56 bg-warm-50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-md shrink-0">
 					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
