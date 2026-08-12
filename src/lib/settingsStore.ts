@@ -105,7 +105,7 @@ const mapBackendToUI = (backend: BackendProvider): UIProvider => {
 		providerType: backend.provider_type,
 		name: backend.name,
 		icon: template?.icon ?? Cpu,
-		color: template?.color ?? "bg-zinc-500",
+		color: template?.color ?? "bg-cream-500",
 		isEnabled: backend.is_enabled,
 		apiKey: backend.api_key || "",
 		apiBase: backend.api_base,

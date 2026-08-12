@@ -86,7 +86,7 @@ export function StyleRecipeListItem({
 
 	return (
 		<div
-			className={`flex items-start gap-3 rounded-xl border px-4 py-3 transition-all duration-150 ${
+			className={`flex items-start gap-3 rounded-xl border px-4 py-3 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				isActive
 					? "border-amber-400/40 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-900/10"
 					: "border-cream-200/70 dark:border-cream-600/30 bg-transparent hover:bg-cream-50 dark:hover:bg-cream-800/20 hover:border-cream-300 dark:hover:border-cream-500/40"
@@ -100,7 +100,7 @@ export function StyleRecipeListItem({
 				title={isActive ? "当前已激活" : "点击激活此配方"}
 			>
 				<div
-					className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+					className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 						isActive
 							? "border-amber-600 dark:border-amber-400"
 							: "border-cream-300 dark:border-cream-500/60"
@@ -135,7 +135,7 @@ export function StyleRecipeListItem({
 				</div>
 
 				{recipe.description && (
-					<div className="mt-0.5 text-[11px] text-text-muted truncate">
+					<div className="mt-0.5 text-xs text-text-muted truncate">
 						{recipe.description}
 					</div>
 				)}
@@ -146,7 +146,7 @@ export function StyleRecipeListItem({
 						{usedLayers.map((layer) => (
 							<span
 								key={layer.key}
-								className="inline-flex items-center gap-1 text-[10px] leading-none px-1.5 py-0.5 rounded-md bg-cream-100/80 dark:bg-cream-800/50 border border-cream-200/50 dark:border-cream-600/20"
+								className="inline-flex items-center gap-1 text-[11px] leading-none px-1.5 py-0.5 rounded-md bg-cream-100/80 dark:bg-cream-800/50 border border-cream-200/50 dark:border-cream-600/20"
 							>
 								<span className={`font-medium ${layer.color}`}>
 									{layer.label}

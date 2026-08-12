@@ -76,7 +76,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
-									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-zinc-200" />
+									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-cream-200" />
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-semibold text-text-primary">
@@ -101,11 +101,11 @@ export function DragAndDropImportUI<TResult = unknown>({
 									导入队列
 								</span>
 								<span
-									className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${statusClassName}`}
+									className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusClassName}`}
 								>
 									{statusLabel}
 								</span>
-								<span className="text-[11px] text-text-light truncate">
+								<span className="text-xs text-text-light truncate">
 									{summary.total > 0 ? `共 ${summary.total}` : ""}
 									{summary.success > 0 ? ` · 成功 ${summary.success}` : ""}
 									{summary.error > 0 ? ` · 失败 ${summary.error}` : ""}
@@ -169,7 +169,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 													{item.name}
 												</p>
 												{item.error && (
-													<p className="text-[11px] text-error dark:text-error mt-0.5 line-clamp-2">
+													<p className="text-xs text-error dark:text-error mt-0.5 line-clamp-2">
 														{item.error}
 													</p>
 												)}
@@ -181,7 +181,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 													queueStatus === "importing" &&
 													item.status === "importing"
 												}
-												className="shrink-0 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+												className="shrink-0 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
 												title="移除"
 											>
 												<X className="w-3.5 h-3.5" />
@@ -190,7 +190,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 
 										<div className="mt-2 h-1.5 bg-warm-200 rounded-full overflow-hidden">
 											<div
-												className={`h-full rounded-full transition-all ${
+												className={`h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 													item.status === "error"
 														? "bg-error"
 														: item.status === "success"

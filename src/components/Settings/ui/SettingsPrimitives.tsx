@@ -36,7 +36,7 @@ export function SettingsPageContainer({
 	return (
 		<div
 			className={cn(
-				"h-full flex-1 overflow-y-auto px-12 pb-24 pt-14 text-text-primary transition-colors duration-300",
+				"h-full flex-1 overflow-y-auto px-12 pb-24 pt-14 text-text-primary transition-colors duration-250",
 				className,
 			)}
 			// 内容区用 surface（最亮的一层）而不是 bg：
@@ -171,7 +171,7 @@ export function SettingsSwitch({
 				if (!disabled) onChange(!checked);
 			}}
 			className={cn(
-				"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-200",
+				"focus-ring relative inline-flex h-[22px] w-[40px] items-center rounded-full transition-colors duration-150",
 				checked ? "bg-primary" : "bg-warm-400/80",
 				disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
 				className,
@@ -179,10 +179,10 @@ export function SettingsSwitch({
 		>
 			<span
 				className={cn(
-					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-200",
+					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-150",
 					checked
 						? "translate-x-[20px] bg-primary-foreground"
-						: "translate-x-[3px] bg-white dark:bg-zinc-100",
+						: "translate-x-[3px] bg-white dark:bg-cream-100",
 				)}
 			/>
 		</button>
@@ -417,13 +417,13 @@ export function SettingsSlider({
 							</div>
 						)}
 						{hint && (
-							<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 								{hint}
 							</div>
 						)}
 					</div>
 					<span
-						className="shrink-0 inline-flex items-center rounded-full border border-border bg-cream-100 px-2.5 py-[2px] text-[11px] font-mono tabular-nums text-text-primary"
+						className="shrink-0 inline-flex items-center rounded-full border border-border bg-cream-100 px-2.5 py-0.5 text-xs font-mono tabular-nums text-text-primary"
 						style={{ backgroundColor: accentSoft, color: accent }}
 					>
 						{display}
@@ -441,7 +441,7 @@ export function SettingsSlider({
 					style={{ backgroundColor: "var(--t-bg-muted, #F4F2EC)" }}
 				/>
 				<div
-					className="pointer-events-none absolute h-[5px] rounded-full transition-[width] duration-100"
+					className="pointer-events-none absolute h-[5px] rounded-full transition-[width] duration-150"
 					style={{ width: `${pct}%`, backgroundColor: accent }}
 				/>
 				<div
@@ -511,7 +511,7 @@ export function SettingsChipGroup<T extends string = string>({
 	return (
 		<div
 			className={cn(
-				"inline-flex items-center gap-1 rounded-full border border-border p-[3px]",
+				"inline-flex items-center gap-1 rounded-full border border-border p-1",
 				fullWidth && "w-full",
 				className,
 			)}
@@ -553,7 +553,7 @@ export function SettingsChipGroup<T extends string = string>({
 						{opt.hint && (
 							<span
 								className={cn(
-									"text-[10px] tabular-nums",
+									"text-[11px] tabular-nums",
 									active ? "opacity-70" : "text-text-light",
 								)}
 							>

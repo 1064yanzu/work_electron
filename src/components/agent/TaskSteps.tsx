@@ -33,10 +33,10 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 	return (
 		<div className="rounded-xl bg-surface/60 ring-1 ring-black/5 dark:ring-white/10">
 			<div className="px-3 py-2.5 border-b border-black/5 dark:border-white/5">
-				<div className="text-xs font-semibold text-text-secondary dark:text-zinc-200">
+				<div className="text-xs font-semibold text-text-secondary dark:text-cream-200">
 					任务清单
 				</div>
-				<div className="text-[11px] text-text-light">
+				<div className="text-xs text-text-light">
 					逐步执行，每完成一项自动更新状态
 				</div>
 			</div>
@@ -67,7 +67,7 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 									{step.description}
 								</div>
 							) : null}
-							<div className="text-[11px] text-text-light mt-0.5">
+							<div className="text-xs text-text-light mt-0.5">
 								{statusLabel[step.status]}
 							</div>
 						</div>

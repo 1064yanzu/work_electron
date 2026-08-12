@@ -37,11 +37,11 @@ export interface TabsProps<T extends string = string> {
 const sizeStyles: Record<TabsSize, { trigger: string; container: string }> = {
 	sm: {
 		trigger: "h-7 px-2.5 text-[12px] gap-1.5",
-		container: "p-[2px]",
+		container: "p-0.5",
 	},
 	md: {
 		trigger: "h-8 px-3 text-[13px] gap-2",
-		container: "p-[3px]",
+		container: "p-1",
 	},
 	lg: {
 		trigger: "h-9 px-4 text-sm gap-2",
@@ -70,7 +70,7 @@ function getVariantClasses(variant: TabsVariant, size: TabsSize) {
 				root: "inline-flex items-center gap-1.5",
 				trigger: cn(
 					"inline-flex items-center justify-center rounded-full",
-					"font-medium transition-all duration-150",
+					"font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 					sizeStyles[size].trigger,
 				),
 				active: "bg-primary text-primary-foreground shadow-bai-card",
@@ -87,7 +87,7 @@ function getVariantClasses(variant: TabsVariant, size: TabsSize) {
 				),
 				trigger: cn(
 					"relative inline-flex items-center justify-center rounded-full",
-					"font-medium transition-all duration-150",
+					"font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 					sizeStyles[size].trigger,
 				),
 				active:

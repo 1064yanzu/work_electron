@@ -50,7 +50,7 @@ export const CodePreview = memo(function CodePreview({
 			) : null}
 			<div className={cn("overflow-auto px-0 py-3 font-mono", lineHeightClass)}>
 				{loading || !tokens ? (
-					<pre className="px-4 whitespace-pre-wrap break-words text-zinc-200">
+					<pre className="px-4 whitespace-pre-wrap break-words text-cream-200">
 						{content}
 					</pre>
 				) : (

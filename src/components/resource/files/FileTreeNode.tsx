@@ -118,7 +118,7 @@ export function FileTreeNode({
 				className={cn(
 					"truncate",
 					entry.isDir
-						? "text-text-primary dark:text-zinc-200"
+						? "text-text-primary dark:text-cream-200"
 						: "text-text-secondary",
 				)}
 			>

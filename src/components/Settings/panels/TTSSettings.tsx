@@ -238,7 +238,7 @@ export function TTSSettings() {
 							<div className="text-[12.5px] font-medium text-text-primary">
 								自动播报
 							</div>
-							<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 								助手消息流式结束后自动朗读，长消息会先截断到 600 字。
 							</div>
 						</div>
@@ -334,7 +334,7 @@ export function TTSSettings() {
 							<div className="text-[12.5px] font-medium text-text-primary">
 								让桌宠说一句
 							</div>
-							<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 								通过 pet_speak IPC 让桌宠出现气泡 + 朗读；用于联调当前的音色 /
 								人设。
 							</div>
@@ -403,7 +403,7 @@ export function TTSSettings() {
 												<div className="flex items-center gap-2 text-[12.5px] font-semibold text-text-primary">
 													{tpl.label}
 													{exists && (
-														<span className="rounded-full bg-cream-200 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+														<span className="rounded-full bg-cream-200 px-1.5 py-0.5 text-[11px] font-medium text-text-muted">
 															已添加
 														</span>
 													)}

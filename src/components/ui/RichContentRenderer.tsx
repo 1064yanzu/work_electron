@@ -283,7 +283,7 @@ export function RichContentWithStyles({
         prose-h4:text-lg prose-h4:mt-6 prose-h4:mb-2.5
 
         /* 段落样式 */
-        prose-p:text-[15px] prose-p:leading-[1.9] prose-p:my-5 prose-p:text-text-secondary dark:prose-p:text-zinc-200 prose-p:tracking-wide
+        prose-p:text-[15px] prose-p:leading-[1.9] prose-p:my-5 prose-p:text-text-secondary dark:prose-p:text-cream-200 prose-p:tracking-wide
 
         /* 图片样式 */
         prose-img:rounded-2xl prose-img:shadow-[0_20px_45px_rgba(0,0,0,0.08)] prose-img:my-8 prose-img:mx-auto prose-img:max-w-full
@@ -309,7 +309,7 @@ export function RichContentWithStyles({
         /* 列表样式 */
         prose-ul:my-5 prose-ul:pl-7 prose-ul:space-y-2
         prose-ol:my-5 prose-ol:pl-7 prose-ol:space-y-2
-        prose-li:leading-7 prose-li:text-text-secondary dark:prose-li:text-zinc-200 prose-li:marker:text-text-light
+        prose-li:leading-7 prose-li:text-text-secondary dark:prose-li:text-cream-200 prose-li:marker:text-text-light
 
         /* 表格样式 */
         prose-table:my-6 prose-table:w-full prose-table:border-collapse

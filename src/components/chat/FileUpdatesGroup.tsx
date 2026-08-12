@@ -17,14 +17,14 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 	}, [updates]);
 
 	return (
-		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-zinc-950/70 dark:ring-zinc-800">
+		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-cream-900/70 dark:ring-cream-800">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-warm-50/45 dark:hover:bg-zinc-900/35 transition-colors"
+				className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-warm-50/45 dark:hover:bg-cream-900/35 transition-colors"
 			>
 				<div className="min-w-0 flex items-center gap-2">
-					<span className="text-sm font-medium text-text-primary dark:text-zinc-200">
+					<span className="text-sm font-medium text-text-primary dark:text-cream-200">
 						{stats.failed
 							? "文件写入失败"
 							: stats.running
@@ -35,12 +35,12 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
 					{stats.additions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
 							+{stats.additions}
 						</span>
 					)}
 					{stats.deletions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
 							-{stats.deletions}
 						</span>
 					)}

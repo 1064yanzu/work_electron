@@ -43,7 +43,7 @@ const AgentIndexBadge = memo(function AgentIndexBadge({
 	return (
 		<div
 			className={cn(
-				"relative flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 transition-all duration-300",
+				"relative flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				status === "running" &&
 					"bg-terracotta/15 text-terracotta ring-1 ring-terracotta/30",
 				status === "completed" &&
@@ -103,7 +103,7 @@ const AgentProgressBar = memo(function AgentProgressBar({
 		<div className="w-16 h-1 rounded-full bg-warm-300 dark:bg-cream-700 overflow-hidden">
 			{pct > 0 ? (
 				<div
-					className="h-full bg-terracotta rounded-full transition-all duration-500"
+					className="h-full bg-terracotta rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500"
 					style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
 				/>
 			) : (
@@ -149,7 +149,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 			type="button"
 			onClick={() => onClick?.(agent.id)}
 			className={cn(
-				"w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-200",
+				"w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 				agent.status === "running" &&
 					"bg-terracotta/[0.04] dark:bg-terracotta/[0.06]",
 				agent.status === "completed" && "opacity-60 hover:opacity-80",
@@ -166,12 +166,12 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 					<span className="text-xs font-medium text-text-primary truncate">
 						{agent.name}
 					</span>
-					<span className="text-[10px] text-text-light shrink-0">
+					<span className="text-[11px] text-text-light shrink-0">
 						#{agent.index}
 					</span>
 				</div>
 				{agent.lastActivity && agent.status === "running" && (
-					<div className="flex items-center gap-1 text-[11px] text-text-muted truncate">
+					<div className="flex items-center gap-1 text-xs text-text-muted truncate">
 						<Loader2 className="w-2.5 h-2.5 animate-spin text-terracotta shrink-0" />
 						<span className="truncate">{agent.lastActivity}</span>
 					</div>
@@ -185,7 +185,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 			<div className="flex items-center gap-1.5 shrink-0">
 				<span
 					className={cn(
-						"text-[10px] font-medium",
+						"text-[11px] font-medium",
 						agent.status === "running" && "text-terracotta",
 						agent.status === "completed" && "text-success dark:text-success",
 						agent.status === "error" && "text-error dark:text-error",
@@ -194,7 +194,7 @@ const SwarmAgentRow = memo(function SwarmAgentRow({
 				>
 					{statusLabel(agent.status)}
 				</span>
-				{dur && <span className="text-[10px] text-text-light">{dur}</span>}
+				{dur && <span className="text-[11px] text-text-light">{dur}</span>}
 			</div>
 		</button>
 	);
@@ -246,7 +246,7 @@ export const SwarmCard = memo(function SwarmCard({
 	return (
 		<div
 			className={cn(
-				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden mb-2",
+				"group relative flex flex-col rounded-xl border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 overflow-hidden mb-2",
 				hasAnyRunning
 					? "bg-surface/80 border-terracotta/20 dark:border-terracotta/15 shadow-lg shadow-terracotta/5 ring-1 ring-terracotta/15"
 					: allDone
@@ -267,7 +267,7 @@ export const SwarmCard = memo(function SwarmCard({
 				<div className="relative">
 					<div
 						className={cn(
-							"flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+							"flex items-center justify-center w-8 h-8 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 							hasAnyRunning
 								? "bg-terracotta/10 text-terracotta"
 								: allDone
@@ -296,7 +296,7 @@ export const SwarmCard = memo(function SwarmCard({
 						<span className="text-sm font-semibold text-text-primary">
 							{title}
 						</span>
-						<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200 text-text-muted">
+						<span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-warm-200 text-text-muted">
 							{stats.total} 个并行任务
 						</span>
 					</div>
@@ -338,7 +338,7 @@ export const SwarmCard = memo(function SwarmCard({
 					<button
 						type="button"
 						onClick={() => setExpanded((v) => !v)}
-						className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors border-t border-border/60"
+						className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors border-t border-border/60"
 					>
 						{expanded ? (
 							<>
@@ -388,7 +388,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 					fill="none"
 					stroke="currentColor"
 					strokeWidth="2.5"
-					className="text-zinc-200"
+					className="text-cream-200"
 				/>
 				<circle
 					cx="18"
@@ -401,7 +401,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 					strokeDashoffset={offset}
 					strokeLinecap="round"
 					className={cn(
-						"transition-all duration-500",
+						"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500",
 						hasError
 							? "text-peach-500"
 							: pct >= 100
@@ -432,7 +432,7 @@ const SwarmMiniStats = memo(function SwarmMiniStats({
 	};
 }) {
 	return (
-		<div className="flex items-center gap-3 text-[10px] font-medium">
+		<div className="flex items-center gap-3 text-[11px] font-medium">
 			{stats.completed > 0 && (
 				<span className="flex items-center gap-1 text-success dark:text-success">
 					<CheckCircle2 className="w-3 h-3" />

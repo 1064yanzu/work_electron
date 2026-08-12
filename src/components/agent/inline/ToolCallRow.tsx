@@ -109,7 +109,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 								)}
 							</div>
 							{skillData.description && (
-								<div className="text-[11px] text-text-light truncate">
+								<div className="text-xs text-text-light truncate">
 									{skillData.description}
 								</div>
 							)}
@@ -117,7 +117,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 					</div>
 					{skillData.instructions && (
 						<div className="px-3 pb-2">
-							<div className="text-[10px] text-text-light line-clamp-2">
+							<div className="text-[11px] text-text-light line-clamp-2">
 								已加载 {Math.round(skillData.instructions.length / 1000)}KB
 								技能指令
 							</div>
@@ -137,7 +137,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 		return (
 			<div
 				className={cn(
-					"rounded-xl overflow-hidden transition-all duration-300 mb-2",
+					"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 mb-2",
 					toolCall.status === "running"
 						? "bg-surface/80 ring-2 ring-warm-300 shadow-sm"
 						: toolCall.status === "error" || exitCode !== 0
@@ -151,7 +151,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 				>
 					<div
 						className={cn(
-							"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
+							"mt-0.5 p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 							toolCall.status === "running"
 								? "bg-warm-200"
 								: toolCall.status === "error" || exitCode !== 0
@@ -172,20 +172,20 @@ export const ToolCallRow = memo(function ToolCallRow({
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 mb-1.5">
-							<span className="text-[11px] font-medium text-text-muted uppercase tracking-wide">
+							<span className="text-xs font-medium text-text-muted uppercase tracking-wide">
 								命令行
 							</span>
 							<ToolStatusIcon status={toolCall.status} />
 							{duration ? (
-								<div className="text-[11px] font-medium text-text-light">
+								<div className="text-xs font-medium text-text-light">
 									{duration}
 								</div>
 							) : null}
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
+									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-150" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
+									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-150" />
 								)}
 							</div>
 						</div>
@@ -196,12 +196,12 @@ export const ToolCallRow = memo(function ToolCallRow({
 				{isExpanded && output && (
 					<div className="px-3 pb-3 border-t border-border/50">
 						<div className="mt-2 p-3 rounded-lg bg-warm-50/50 border border-border/50">
-							<div className="text-[11px] font-medium text-text-muted mb-2 flex items-center justify-between">
+							<div className="text-xs font-medium text-text-muted mb-2 flex items-center justify-between">
 								<span>输出</span>
 								{exitCode !== undefined && (
 									<span
 										className={cn(
-											"px-1.5 py-0.5 rounded text-[10px] font-mono",
+											"px-1.5 py-0.5 rounded text-[11px] font-mono",
 											exitCode === 0
 												? "bg-[rgba(74,124,89,0.12)] text-success"
 												: "bg-[rgba(181,51,51,0.12)] text-error",
@@ -211,7 +211,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 									</span>
 								)}
 							</div>
-							<pre className="text-[11px] text-text-secondary font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+							<pre className="text-xs text-text-secondary font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
 								{output}
 							</pre>
 						</div>
@@ -252,7 +252,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 	return (
 		<div
 			className={cn(
-				"rounded-xl overflow-hidden transition-all duration-300 mb-2",
+				"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 mb-2",
 				toolCall.status === "running"
 					? "bg-surface/80 ring-2 ring-warm-300 shadow-sm"
 					: toolCall.status === "error"
@@ -271,7 +271,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 			>
 				<div
 					className={cn(
-						"mt-0.5 p-1.5 rounded-lg transition-all duration-200",
+						"mt-0.5 p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 						toolCall.status === "running"
 							? "bg-warm-200"
 							: toolCall.status === "error"
@@ -299,34 +299,34 @@ export const ToolCallRow = memo(function ToolCallRow({
 						<div className="text-xs font-semibold text-text-primary truncate">
 							{toolCall.name}
 							{toolCall.name === "Task" && toolCall.status === "running" && (
-								<span className="ml-2 text-[10px] font-normal bai-icon-violet animate-pulse">
+								<span className="ml-2 text-[11px] font-normal bai-icon-violet animate-pulse">
 									子代理调用中...
 								</span>
 							)}
 						</div>
 						<ToolStatusIcon status={toolCall.status} />
 						{duration ? (
-							<div className="text-[11px] font-medium text-text-light">
+							<div className="text-xs font-medium text-text-light">
 								{duration}
 							</div>
 						) : null}
 						{hasDetails ? (
 							<div className="ml-auto">
 								{isExpanded ? (
-									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
+									<ChevronDown className="w-3.5 h-3.5 text-text-light transition-transform duration-150" />
 								) : (
-									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-200" />
+									<ChevronRight className="w-3.5 h-3.5 text-text-light transition-transform duration-150" />
 								)}
 							</div>
 						) : null}
 					</div>
 					{toolCall.description ? (
-						<div className="text-[11px] text-text-light line-clamp-1">
+						<div className="text-xs text-text-light line-clamp-1">
 							{toolCall.description}
 						</div>
 					) : null}
 					{getResultSummary(toolCall) && !isExpanded ? (
-						<div className="mt-1 text-[11px] text-text-muted">
+						<div className="mt-1 text-xs text-text-muted">
 							{getResultSummary(toolCall)}
 						</div>
 					) : null}
@@ -334,26 +334,26 @@ export const ToolCallRow = memo(function ToolCallRow({
 						<div className="mt-1.5 space-y-1">
 							<div className="h-1.5 bg-warm-300 rounded-full overflow-hidden">
 								<div
-									className="h-full bg-primary transition-all duration-300"
+									className="h-full bg-primary transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250"
 									style={{
 										width: `${Math.min(100, Math.max(0, progress))}%`,
 									}}
 								/>
 							</div>
 							{progressMessage ? (
-								<div className="text-[11px] text-text-muted">
+								<div className="text-xs text-text-muted">
 									{progressMessage}
 								</div>
 							) : null}
 						</div>
 					) : null}
 					{toolCall.status === "error" && toolCall.error ? (
-						<div className="mt-1 text-[11px] text-error break-words">
+						<div className="mt-1 text-xs text-error break-words">
 							{toolCall.error}
 						</div>
 					) : null}
 					{toolCall.metadata?.message && progress === undefined ? (
-						<div className="text-[11px] text-text-muted line-clamp-1">
+						<div className="text-xs text-text-muted line-clamp-1">
 							{String(toolCall.metadata.message)}
 						</div>
 					) : null}
@@ -369,12 +369,12 @@ export const ToolCallRow = memo(function ToolCallRow({
 								(hit: any, idx: number) => (
 									<div
 										key={idx}
-										className="text-[11px] text-text-secondary p-2 rounded-lg bg-warm-50/30"
+										className="text-xs text-text-secondary p-2 rounded-lg bg-warm-50/30"
 									>
 										<div className="font-medium text-text-secondary mb-1">
 											{hit.source_title || "未知"} · #{hit.chunk_index}
 											{hit.score ? (
-												<span className="ml-2 text-[10px] text-text-light">
+												<span className="ml-2 text-[11px] text-text-light">
 													score: {hit.score.toFixed(3)}
 												</span>
 											) : null}
@@ -393,12 +393,12 @@ export const ToolCallRow = memo(function ToolCallRow({
 								.map((result: any, idx: number) => (
 									<div
 										key={idx}
-										className="text-[11px] text-text-secondary p-2 rounded-lg bg-warm-50/30"
+										className="text-xs text-text-secondary p-2 rounded-lg bg-warm-50/30"
 									>
 										<div className="font-medium text-text-secondary mb-1">
 											{result.title || "无标题"}
 										</div>
-										<div className="text-[10px] text-text-light mb-1">
+										<div className="text-[11px] text-text-light mb-1">
 											{result.url || ""}
 										</div>
 										<div className="line-clamp-2">{result.snippet || ""}</div>
@@ -407,7 +407,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 						</div>
 					) : (
 						<div className="mt-2 p-2 rounded-lg bg-warm-50/30">
-							<pre className="text-[11px] text-text-secondary whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+							<pre className="text-xs text-text-secondary whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
 								{typeof toolCall.output === "string"
 									? toolCall.output
 									: JSON.stringify(toolCall.output, null, 2)}

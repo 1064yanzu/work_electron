@@ -94,15 +94,15 @@ export function EventLogPanel() {
 			>
 				<ScrollText className="h-4 w-4" />
 				<span>活动日志</span>
-				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
+				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
 					{logs.length}
 				</span>
 				<ChevronDown
-					className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+					className={`h-4 w-4 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}
 				/>
 			</button>
 			{expanded && (
-				<div className="max-h-52 overflow-y-auto border-t border-border font-mono text-[11px]">
+				<div className="max-h-52 overflow-y-auto border-t border-border font-mono text-xs">
 					{unsupportedHint ? (
 						<div className="px-4 py-3 text-xs text-peach-500 bg-peach-500/10 border-b border-peach-500/20">
 							{unsupportedHint}

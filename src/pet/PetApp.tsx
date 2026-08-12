@@ -1198,7 +1198,7 @@ function PetContextMenu({
 			>
 				<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
 					<span>切换皮肤</span>
-					<span className="ml-auto text-[11px] text-[color:var(--t-text-light,#9d9d98)]">
+					<span className="ml-auto text-xs text-[color:var(--t-text-light,#9d9d98)]">
 						下一个：{nextMascotLabel}
 					</span>
 				</MenuButton>

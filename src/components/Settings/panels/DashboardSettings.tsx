@@ -279,7 +279,7 @@ function TokenUsagePanel({
 								? currentStats.cost.toFixed(4)
 								: (currentStats.total * 0.000002).toFixed(4)}
 							{!hasRealCost && (
-								<span className="text-[10px] text-text-light ml-1">(估算)</span>
+								<span className="text-[11px] text-text-light ml-1">(估算)</span>
 							)}
 						</div>
 					</div>

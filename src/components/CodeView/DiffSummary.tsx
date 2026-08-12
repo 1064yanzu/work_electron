@@ -62,7 +62,7 @@ function DiffSummaryItem({
 		<div
 			className={cn(
 				"grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-border/70 px-3 py-2.5 text-sm transition-colors",
-				"hover:bg-warm-50/45 dark:hover:bg-zinc-900/35",
+				"hover:bg-warm-50/45 dark:hover:bg-cream-900/35",
 				isReverted && "opacity-55",
 			)}
 		>
@@ -73,7 +73,7 @@ function DiffSummaryItem({
 				title={diff.filePath}
 			>
 				<span className="flex min-w-0 items-center gap-2.5">
-					<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-warm-100 text-text-muted ring-1 ring-border/70 dark:bg-zinc-900 dark:text-zinc-400">
+					<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-warm-100 text-text-muted ring-1 ring-border/70 dark:bg-cream-900 dark:text-cream-400">
 						{isCreate ? (
 							<FilePlus className="h-3.5 w-3.5" />
 						) : (
@@ -81,7 +81,7 @@ function DiffSummaryItem({
 						)}
 					</span>
 					<span className="min-w-0">
-						<span className="block truncate font-medium text-text-primary dark:text-zinc-200">
+						<span className="block truncate font-medium text-text-primary dark:text-cream-200">
 							{displayPath}
 						</span>
 						<span className="block truncate text-xs text-text-light">
@@ -108,7 +108,7 @@ function DiffSummaryItem({
 				type="button"
 				onClick={() => rejectDiff(diff.id)}
 				disabled={isReverted}
-				className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-text-muted transition-colors hover:bg-warm-200/70 hover:text-text-primary disabled:pointer-events-none disabled:opacity-0 dark:hover:bg-zinc-800"
+				className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-text-muted transition-colors hover:bg-warm-200/70 hover:text-text-primary disabled:pointer-events-none disabled:opacity-0 dark:hover:bg-cream-800"
 				title="撤销这个文件的修改"
 			>
 				<Undo2 className="h-3.5 w-3.5" />
@@ -158,9 +158,9 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 	const firstDiff = diffList[0];
 
 	return (
-		<div className="my-3 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-zinc-950/70 dark:ring-zinc-800">
+		<div className="my-3 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-cream-900/70 dark:ring-cream-800">
 			<div className="flex items-center justify-between gap-3 px-3 py-2.5">
-				<div className="min-w-0 text-sm font-medium text-text-primary dark:text-zinc-100">
+				<div className="min-w-0 text-sm font-medium text-text-primary dark:text-cream-100">
 					{summaryStats.total} files changed
 					{summaryStats.reverted > 0 ? (
 						<span className="ml-2 text-xs font-normal text-text-light">
@@ -186,7 +186,7 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 						type="button"
 						onClick={() => rejectAllDiffs(taskId)}
 						disabled={summaryStats.undoable === 0}
-						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-warm-100 hover:text-text-primary disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-zinc-800"
+						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-warm-100 hover:text-text-primary disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-cream-800"
 						title="撤销本轮所有文件修改"
 					>
 						Undo
@@ -195,7 +195,7 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 					<button
 						type="button"
 						onClick={() => firstDiff && openDiff(firstDiff)}
-						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-warm-100 hover:text-text-primary dark:hover:bg-zinc-800"
+						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-warm-100 hover:text-text-primary dark:hover:bg-cream-800"
 						title="查看变更详情"
 					>
 						Review
@@ -204,7 +204,7 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 					<button
 						type="button"
 						onClick={() => diffStore.toggleSummary()}
-						className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-light transition-colors hover:bg-warm-100 hover:text-text-secondary dark:hover:bg-zinc-800"
+						className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-light transition-colors hover:bg-warm-100 hover:text-text-secondary dark:hover:bg-cream-800"
 						title={summaryExpanded ? "收起文件列表" : "展开文件列表"}
 					>
 						<ChevronDown

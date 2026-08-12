@@ -221,7 +221,7 @@ export function AboutPanel() {
 						{logsInfo.latest_subdirs.map((name) => (
 							<span
 								key={name}
-								className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] tabular-nums text-text-secondary"
+								className="rounded-full bg-warm-100 px-2 py-0.5 text-xs tabular-nums text-text-secondary"
 							>
 								{name}
 							</span>

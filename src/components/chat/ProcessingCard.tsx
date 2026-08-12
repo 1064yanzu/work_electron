@@ -8,8 +8,8 @@ export function ProcessingCard({ type }: { type: "update" | "create" }) {
 	const hasLoadingVideo = !!getAnimation("loading");
 
 	return (
-		<div className="my-4 group relative overflow-hidden rounded-2xl bg-surface/50 ring-1 ring-zinc-900/5 dark:ring-zinc-100/10 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-4 select-none transition-all hover:shadow-md">
-			<div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-50/50 to-transparent dark:via-white/5 skeleton-shimmer" />
+		<div className="my-4 group relative overflow-hidden rounded-2xl bg-surface/50 ring-1 ring-cream-900/5 dark:ring-cream-100/10 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-4 select-none transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
+			<div className="absolute inset-0 bg-gradient-to-r from-transparent via-cream-50/50 to-transparent dark:via-white/5 skeleton-shimmer" />
 			<div className="flex items-center gap-4 relative z-10">
 				{enabled ? (
 					hasLoadingVideo ? (
@@ -23,7 +23,7 @@ export function ProcessingCard({ type }: { type: "update" | "create" }) {
 						/>
 					)
 				) : (
-					<div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center shrink-0 ring-1 ring-zinc-900/5 dark:ring-zinc-700">
+					<div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center shrink-0 ring-1 ring-cream-900/5 dark:ring-cream-700">
 						{type === "create" ? (
 							<FilePlus className="w-5 h-5 text-indigo-500 animate-pulse" />
 						) : (

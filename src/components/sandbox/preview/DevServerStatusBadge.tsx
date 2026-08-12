@@ -40,7 +40,7 @@ export function DevServerStatusBadge({
 			className={cn(
 				"inline-flex items-center gap-1.5 px-2 py-1 rounded-full",
 				"bg-cream-200/80 dark:bg-cream-800/80 border border-cream-400/60 dark:border-cream-700",
-				"text-[11px] font-medium text-text-secondary",
+				"text-xs font-medium text-text-secondary",
 				"transition-colors",
 				className,
 			)}

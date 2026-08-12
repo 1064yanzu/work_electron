@@ -52,7 +52,7 @@ export const HtmlFilePreview = memo(function HtmlFilePreview({
 				</button>
 			</div>
 
-			<div className="h-[70vh] min-h-[420px] bg-white dark:bg-zinc-900">
+			<div className="h-[70vh] min-h-[420px] bg-white dark:bg-cream-900">
 				<IframePreview
 					ref={iframeRef}
 					srcDoc={content}

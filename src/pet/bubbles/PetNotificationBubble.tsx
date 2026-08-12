@@ -100,7 +100,7 @@ export function PetNotificationBubble({
 				{/* 顶行：图标 + opener + 关闭按钮 */}
 				<div data-bubble-row className="flex items-start gap-2">
 					<span
-						className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+						className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
 						style={{
 							backgroundColor: withAlpha(style.tone, 0.14),
 							color: style.tone,

@@ -262,7 +262,7 @@ export function ImageGenSettings() {
 								key={group.label}
 								className="rounded-2xl border border-border bg-cream-50 p-3"
 							>
-								<div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+								<div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 									<GroupIcon className="h-3 w-3" strokeWidth={1.6} />
 									{group.label}
 								</div>
@@ -422,7 +422,7 @@ function RatioGlyph({
 		>
 			<span
 				className={cn(
-					"rounded-[2px] border transition-colors",
+					"rounded-sm border transition-colors",
 					active
 						? "border-primary-foreground/80 bg-primary-foreground/30"
 						: "border-text-muted/60 bg-text-muted/10",

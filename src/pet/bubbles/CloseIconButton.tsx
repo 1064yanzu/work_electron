@@ -23,7 +23,7 @@ export function CloseIconButton({
 			onClick={onClick}
 			aria-label={ariaLabel}
 			className={[
-				"-mt-[1px] -mr-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]",
+				"-mt-px -mr-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]",
 				className ?? "",
 			].join(" ")}
 		>

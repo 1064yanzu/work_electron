@@ -198,7 +198,7 @@ export function SlashPrimaryMenu({
 		>
 			{/* 头部标签 */}
 			<div className="px-4 pt-3 pb-1">
-				<span className="text-[11px] font-medium text-text-light tracking-wide">
+				<span className="text-xs font-medium text-text-light tracking-wide">
 					选择类型
 				</span>
 			</div>
@@ -218,14 +218,14 @@ export function SlashPrimaryMenu({
 							tabIndex={-1}
 							onClick={() => onSelectCategory(category.id)}
 							onMouseEnter={() => setSelectedIndex(index)}
-							className={`w-full flex items-center gap-3 px-2.5 py-[9px] rounded-xl text-left cursor-pointer select-none
-                transition-all duration-120 ease-out
+							className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left cursor-pointer select-none
+                transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                 ${isSelected ? "bg-warm-200" : ""}`}
 						>
 							{/* 图标容器 — 选中时用品牌色底 */}
 							<div
-								className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0
-                  transition-all duration-120 ease-out
+								className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0
+                  transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                   ${
 										isSelected
 											? `${category.gradient} shadow-sm`
@@ -254,13 +254,13 @@ export function SlashPrimaryMenu({
 										{category.name}
 									</span>
 									{category.shortcut && (
-										<span className="text-[10px] text-text-light font-mono">
+										<span className="text-[11px] text-text-light font-mono">
 											/{category.shortcut}
 										</span>
 									)}
 								</div>
 								<p
-									className={`text-[11px] leading-tight mt-0.5 transition-colors duration-120
+									className={`text-xs leading-tight mt-0.5 transition-colors duration-120
                     ${isSelected ? "text-text-muted" : "text-text-light"}`}
 								>
 									{category.description}
@@ -269,7 +269,7 @@ export function SlashPrimaryMenu({
 
 							{/* chevron */}
 							<ChevronRight
-								className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-120 ease-out
+								className={`w-3.5 h-3.5 flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                   ${
 										isSelected
 											? "text-text-muted translate-x-px opacity-100"
@@ -283,7 +283,7 @@ export function SlashPrimaryMenu({
 
 			{/* 底部快捷键 */}
 			<div className="px-4 py-1.5 border-t border-border">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
+				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">↑↓</span>
 						<span>导航</span>

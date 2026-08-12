@@ -419,7 +419,7 @@ function ToolCallInlineImpl({
 				}}
 				disabled={!hasDetails && !isRunning}
 				className={cn(
-					"w-full flex items-center gap-2 text-left transition-all",
+					"w-full flex items-center gap-2 text-left transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 					// 有内容（hasDetails）或运行中：使用更大的 padding + 圆角容器
 					hasDetails || isRunning
 						? "-mx-2 px-2 py-1.5 rounded-lg cursor-pointer"
@@ -437,7 +437,7 @@ function ToolCallInlineImpl({
 					<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
 						<ChevronRight
 							className={cn(
-								"w-3.5 h-3.5 transition-transform duration-200 ease-out-expo",
+								"w-3.5 h-3.5 transition-transform duration-150 ease-out-expo",
 								isExpanded && "rotate-90",
 							)}
 						/>
@@ -467,8 +467,8 @@ function ToolCallInlineImpl({
 						isError
 							? "text-error dark:text-error"
 							: isRunning
-								? "text-text-primary dark:text-zinc-100"
-								: "text-text-secondary dark:text-zinc-200",
+								? "text-text-primary dark:text-cream-100"
+								: "text-text-secondary dark:text-cream-200",
 					)}
 				>
 					<span
@@ -536,7 +536,7 @@ function ToolCallInlineImpl({
 					) : (
 						<div
 							key={toolCall.output || toolCall.error ? "content" : "input"}
-							className="animate-in fade-in duration-200"
+							className="animate-in fade-in duration-150"
 						>
 							<ToolCallDetailsPanel
 								canPreviewFile={canPreviewFile}

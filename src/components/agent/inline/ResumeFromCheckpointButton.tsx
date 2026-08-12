@@ -75,7 +75,7 @@ export function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
 				onClick={handleResume}
 				disabled={isLoading}
 				className={cn(
-					"flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all",
+					"flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 					isLoading
 						? "bg-warm-200 text-text-light cursor-wait"
 						: "bg-primary hover:bg-primary-hover text-primary-foreground shadow-sm hover:shadow",
@@ -94,7 +94,7 @@ export function ResumeFromCheckpointButton({ taskId }: { taskId: string }) {
 				)}
 			</button>
 			{error && (
-				<div className="text-[11px] text-error text-center">{error}</div>
+				<div className="text-xs text-error text-center">{error}</div>
 			)}
 		</div>
 	);

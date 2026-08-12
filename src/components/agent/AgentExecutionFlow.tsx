@@ -95,7 +95,7 @@ const StepIndicator = memo(function StepIndicator({
 	return (
 		<div
 			ref={ringRef}
-			className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center ring-2 ring-zinc-200 dark:ring-zinc-700"
+			className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center ring-2 ring-cream-200 dark:ring-cream-700"
 		>
 			<span className="text-xs font-semibold text-text-muted">{index + 1}</span>
 		</div>
@@ -121,7 +121,7 @@ const StepCard = memo(function StepCard({
 				{!isLast && (
 					<div
 						className={cn(
-							"w-1 flex-1 min-h-12 rounded-full transition-all duration-500",
+							"w-1 flex-1 min-h-12 rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500",
 							step.status === "completed"
 								? "bg-emerald-300 dark:bg-emerald-700"
 								: step.status === "running"
@@ -134,14 +134,14 @@ const StepCard = memo(function StepCard({
 			<div className="flex-1 pb-4">
 				<div
 					className={cn(
-						"rounded-lg p-3 transition-all",
+						"rounded-lg p-3 transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 						step.status === "running"
 							? "bg-terracotta/[0.08] dark:bg-terracotta/[0.12] ring-1 ring-terracotta/20 dark:ring-terracotta/30"
 							: step.status === "completed"
 								? "bg-success/8 dark:bg-emerald-900/10 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30"
 								: step.status === "error"
 									? "bg-error/[0.04] dark:bg-red-900/10 ring-1 ring-red-200/30 dark:ring-red-800/30"
-									: "bg-warm-50/50 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30",
+									: "bg-warm-50/50 ring-1 ring-cream-200/30 dark:ring-cream-700/30",
 					)}
 				>
 					<div className="flex items-start gap-2 mb-2">
@@ -156,13 +156,13 @@ const StepCard = memo(function StepCard({
 							)}
 						</div>
 						{step.status === "running" && (
-							<span className="text-[10px] font-medium px-2 py-1 rounded-full bg-terracotta/20 text-terracotta dark:text-terracotta whitespace-nowrap">
+							<span className="text-[11px] font-medium px-2 py-1 rounded-full bg-terracotta/20 text-terracotta dark:text-terracotta whitespace-nowrap">
 								进行中
 							</span>
 						)}
 					</div>
 					{toolCount > 0 && (
-						<div className="flex items-center gap-1 text-[11px] text-text-secondary">
+						<div className="flex items-center gap-1 text-xs text-text-secondary">
 							<Zap className="w-3 h-3" />
 							<span>{toolCount} 个工具</span>
 						</div>
@@ -188,7 +188,7 @@ const ToolCallChain = memo(function ToolCallChain({
 				<span className="text-xs font-semibold text-text-secondary uppercase">
 					工具调用链
 				</span>
-				<span className="ml-auto text-[10px] text-text-light">
+				<span className="ml-auto text-[11px] text-text-light">
 					{toolCalls.length} 次
 				</span>
 			</div>
@@ -197,7 +197,7 @@ const ToolCallChain = memo(function ToolCallChain({
 					<div key={call.id} className="flex items-center gap-1.5">
 						<div
 							className={cn(
-								"px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1",
+								"px-2 py-1 rounded-full text-[11px] font-medium flex items-center gap-1",
 								call.status === "completed"
 									? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
 									: call.status === "running"
@@ -294,7 +294,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 					fill="none"
 					stroke="currentColor"
 					strokeWidth="3"
-					className="text-zinc-200"
+					className="text-cream-200"
 				/>
 				<circle
 					ref={circleRef}
@@ -321,7 +321,7 @@ const OverallProgressRing = memo(function OverallProgressRing({
 				<span ref={labelRef} className="text-2xl font-bold text-text-primary">
 					{Math.round(progress)}%
 				</span>
-				<span className="text-[10px] text-text-muted">
+				<span className="text-[11px] text-text-muted">
 					{isRunning ? "运行中" : "完成"}
 				</span>
 			</div>
@@ -423,7 +423,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 							执行计划
 						</h3>
 						{isExecuting && (
-							<span className="text-[10px] px-2 py-0.5 rounded-full bg-terracotta/15 text-terracotta">
+							<span className="text-[11px] px-2 py-0.5 rounded-full bg-terracotta/15 text-terracotta">
 								运行中
 							</span>
 						)}
@@ -443,7 +443,7 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<span className="text-xs font-semibold text-text-secondary uppercase">
 							执行步骤
 						</span>
-						<span className="ml-auto text-[10px] text-text-light">
+						<span className="ml-auto text-[11px] text-text-light">
 							{task.steps.length} 步
 						</span>
 					</div>
@@ -469,25 +469,25 @@ export const AgentExecutionFlow = memo(function AgentExecutionFlow({
 						<div className="text-lg font-bold text-text-primary">
 							{toolStats.total}
 						</div>
-						<div className="text-[10px] text-text-muted">总调用</div>
+						<div className="text-[11px] text-text-muted">总调用</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-success dark:text-success">
 							{toolStats.completed}
 						</div>
-						<div className="text-[10px] text-text-muted">成功</div>
+						<div className="text-[11px] text-text-muted">成功</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-terracotta">
 							{toolStats.running}
 						</div>
-						<div className="text-[10px] text-text-muted">运行中</div>
+						<div className="text-[11px] text-text-muted">运行中</div>
 					</div>
 					<div className="text-center">
 						<div className="text-lg font-bold text-error dark:text-error">
 							{toolStats.failed}
 						</div>
-						<div className="text-[10px] text-text-muted">失败</div>
+						<div className="text-[11px] text-text-muted">失败</div>
 					</div>
 				</div>
 			</div>

@@ -159,7 +159,7 @@ export function MascotPicker({
 			<div>
 				<div className="flex items-baseline justify-between mb-3">
 					<SectionLabel>我的桌宠</SectionLabel>
-					<span className="text-[11px] text-text-light">
+					<span className="text-xs text-text-light">
 						{customMascots.length} 个 · 兼容 codex hatch-pet 包
 					</span>
 				</div>
@@ -201,7 +201,7 @@ export function MascotPicker({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted mb-3">
+		<div className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted mb-3">
 			{children}
 		</div>
 	);
@@ -224,7 +224,7 @@ function BuiltinMascotCard({ id, selected, onSelect }: BuiltinMascotCardProps) {
 			type="button"
 			onClick={onSelect}
 			className={cn(
-				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
+				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"hover:shadow-bai-card",
 				selected
 					? "border-primary bg-primary/5 shadow-bai-card"
@@ -274,7 +274,7 @@ function CustomMascotCard({
 	return (
 		<div
 			className={cn(
-				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
+				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"hover:shadow-bai-card",
 				selected
 					? "border-primary bg-primary/5 shadow-bai-card"
@@ -452,7 +452,7 @@ function AddMascotCard({
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}
 			className={cn(
-				"group relative flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-4 text-center transition-all",
+				"group relative flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-4 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"min-h-[180px]",
 				dragOver
 					? "border-primary bg-primary/10 scale-[1.01] shadow-bai-card"
@@ -499,7 +499,7 @@ function AddMascotCard({
 					onClick={onZip}
 					disabled={importing}
 					className={cn(
-						"flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition",
+						"flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition",
 						"border-border bg-surface text-text-secondary",
 						"hover:border-primary/40 hover:text-primary hover:bg-primary/5",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -513,7 +513,7 @@ function AddMascotCard({
 					onClick={onDir}
 					disabled={importing}
 					className={cn(
-						"flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition",
+						"flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition",
 						"border-border bg-surface text-text-secondary",
 						"hover:border-primary/40 hover:text-primary hover:bg-primary/5",
 						"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -538,7 +538,7 @@ function OffCard({ selected, onSelect }: OffCardProps) {
 			type="button"
 			onClick={onSelect}
 			className={cn(
-				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
+				"group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				selected
 					? "border-text-secondary/50 bg-warm-100"
 					: "border-border bg-surface hover:border-text-secondary/30",

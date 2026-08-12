@@ -78,8 +78,8 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 	return (
 		<div
 			className={cn(
-				"my-2 rounded-xl ring-1 transition-all overflow-hidden",
-				isPending && "ring-zinc-200 dark:ring-zinc-700/60 bg-surface",
+				"my-2 rounded-xl ring-1 transition-[color,background-color,border-color,opacity,box-shadow,transform] overflow-hidden",
+				isPending && "ring-cream-200 dark:ring-cream-700/60 bg-surface",
 				isAccepted &&
 					"ring-emerald-200 dark:ring-emerald-800/40 bg-success/8 dark:bg-emerald-950/10",
 				isRejected &&
@@ -112,7 +112,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 				{/* 文件路径 */}
 				<span
-					className="flex-1 text-left text-sm font-medium text-text-primary dark:text-zinc-200 truncate"
+					className="flex-1 text-left text-sm font-medium text-text-primary dark:text-cream-200 truncate"
 					title={diff.filePath}
 				>
 					{displayPath}
@@ -121,12 +121,12 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 				{/* 增删统计 */}
 				<div className="flex items-center gap-1.5 flex-shrink-0">
 					{stats.additions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-success dark:text-success">
+						<span className="text-xs font-mono font-medium text-success dark:text-success">
 							+{stats.additions}
 						</span>
 					)}
 					{stats.deletions > 0 && (
-						<span className="text-[11px] font-mono font-medium text-error dark:text-error">
+						<span className="text-xs font-mono font-medium text-error dark:text-error">
 							-{stats.deletions}
 						</span>
 					)}
@@ -134,12 +134,12 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 				{/* 状态标记 */}
 				{isAccepted && (
-					<span className="flex items-center gap-1 text-[11px] text-success dark:text-success font-medium">
+					<span className="flex items-center gap-1 text-xs text-success dark:text-success font-medium">
 						<Check className="w-3 h-3" />
 					</span>
 				)}
 				{isRejected && (
-					<span className="flex items-center gap-1 text-[11px] text-error dark:text-error font-medium">
+					<span className="flex items-center gap-1 text-xs text-error dark:text-error font-medium">
 						<X className="w-3 h-3" />
 					</span>
 				)}
@@ -201,7 +201,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 
 					{/* 截断提示 */}
 					{preview.truncated && (
-						<div className="px-3 py-1.5 text-center text-[11px] text-text-light bg-warm-50/50 border-t border-border">
+						<div className="px-3 py-1.5 text-center text-xs text-text-light bg-warm-50/50 border-t border-border">
 							还有 {preview.totalChangedLines - 10} 行变更未显示
 						</div>
 					)}
@@ -212,7 +212,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 						<button
 							type="button"
 							onClick={openFullDiff}
-							className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
+							className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary dark:hover:text-cream-200 transition-colors"
 						>
 							<ExternalLink className="w-3 h-3" />
 							查看完整 Diff

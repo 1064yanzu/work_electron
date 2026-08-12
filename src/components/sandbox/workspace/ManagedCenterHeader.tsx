@@ -39,7 +39,7 @@ export function ManagedCenterHeader({
 					className="h-4 w-4 shrink-0 text-text-muted"
 					strokeWidth={1.5}
 				/>
-				<h2 className="truncate text-sm font-medium text-text-secondary dark:text-zinc-200">
+				<h2 className="truncate text-sm font-medium text-text-secondary dark:text-cream-200">
 					{headerTitle}
 					<span className="ml-2 text-xs font-normal text-text-muted">
 						{headerMeta}

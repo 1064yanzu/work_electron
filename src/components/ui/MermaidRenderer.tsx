@@ -197,21 +197,21 @@ const MermaidRenderer = memo(function MermaidRenderer({
 		<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/90 p-1 rounded-lg border border-border shadow-sm">
 			<button
 				onClick={handleZoomOut}
-				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 				title="缩小"
 			>
 				<ZoomOut className="w-3.5 h-3.5" />
 			</button>
 			<button
 				onClick={handleReset}
-				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 				title="重置"
 			>
 				<RotateCcw className="w-3.5 h-3.5" />
 			</button>
 			<button
 				onClick={handleZoomIn}
-				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 				title="放大"
 			>
 				<ZoomIn className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			<div className="w-px h-4 bg-warm-300 dark:bg-cream-700 mx-0.5" />
 			<button
 				onClick={() => setIsFullscreen(true)}
-				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 				title="全屏预览"
 			>
 				<Maximize2 className="w-3.5 h-3.5" />
@@ -227,7 +227,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			<div className="relative group/dl">
 				<button
 					onClick={() => handleDownload("svg")}
-					className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+					className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 					title="保存 SVG (推荐)"
 				>
 					<Download className="w-3.5 h-3.5" />
@@ -237,7 +237,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 			<div className="w-px h-4 bg-warm-300 dark:bg-cream-700 mx-0.5" />
 			<button
 				onClick={handleCopy}
-				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-zinc-200 transition-colors"
+				className="p-1.5 hover:bg-warm-200 rounded-md text-text-muted hover:text-text-primary dark:hover:text-cream-200 transition-colors"
 				title="复制 Meramid 代码"
 			>
 				{copied ? (
@@ -281,7 +281,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 				>
 					{svg ? (
 						<div
-							className="mermaid-svg-container transition-transform duration-200 ease-out origin-center"
+							className="mermaid-svg-container transition-transform duration-150 ease-out origin-center"
 							style={{ transform: `scale(${scale})` }}
 							dangerouslySetInnerHTML={{ __html: svg }}
 						/>
@@ -296,7 +296,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 
 			{/* Fullscreen Modal */}
 			{isFullscreen && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-900/40 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-900/40 backdrop-blur-sm p-8 animate-in fade-in duration-150">
 					<div className="relative w-full h-full bg-surface rounded-2xl overflow-hidden shadow-bai-pop border border-border flex flex-col">
 						<div className="absolute top-4 right-4 flex items-center gap-2 z-10 bg-surface/90 p-1 rounded-lg border border-border shadow-sm">
 							<button

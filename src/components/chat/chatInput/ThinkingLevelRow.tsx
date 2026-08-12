@@ -53,7 +53,7 @@ export function ThinkingBars({
 				<div
 					key={h}
 					className={cn(
-						"w-[2.5px] rounded-full transition-colors duration-200",
+						"w-[2.5px] rounded-full transition-colors duration-150",
 						i < value
 							? active
 								? "bg-mint-500 dark:bg-mint-300"
@@ -88,7 +88,7 @@ export function ThinkingLevelRow() {
 			<div className="flex items-center justify-between mb-1.5">
 				<div className="flex items-center gap-1.5">
 					<ThinkingBars level={current} active />
-					<span className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+					<span className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
 						思考程度
 					</span>
 				</div>
@@ -112,7 +112,7 @@ export function ThinkingLevelRow() {
 							onMouseEnter={() => setHovered(level)}
 							aria-pressed={isActive}
 							className={cn(
-								"flex-1 h-6 rounded-full text-[11px] leading-none",
+								"flex-1 h-6 rounded-full text-xs leading-none",
 								"transition-[background-color,color,box-shadow] duration-150 cursor-pointer",
 								isActive
 									? "bg-surface dark:bg-cream-700 text-text-primary font-semibold shadow-sm"
@@ -125,7 +125,7 @@ export function ThinkingLevelRow() {
 				})}
 			</div>
 
-			<div className="mt-1.5 text-[10px] text-text-muted/80 leading-snug min-h-[14px]">
+			<div className="mt-1.5 text-[11px] text-text-muted/80 leading-snug min-h-[14px]">
 				{LEVEL_DESCRIPTIONS[display]}
 			</div>
 		</div>

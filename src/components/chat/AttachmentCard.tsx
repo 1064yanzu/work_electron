@@ -119,7 +119,7 @@ export function AttachmentCard({
 				"bg-surface",
 				"border border-border",
 				"hover:border-cream-400 dark:hover:border-cream-500",
-				"transition-colors duration-200",
+				"transition-colors duration-150",
 				onOpen ? "cursor-pointer" : "cursor-default",
 				"shadow-sm",
 				variant === "chip" ? "px-2.5 py-1.5" : "px-3 py-2",
@@ -165,7 +165,7 @@ export function AttachmentCard({
 				<button
 					type="button"
 					onClick={onRemove}
-					className="p-1 rounded-lg hover:bg-warm-200 dark:hover:bg-cream-700/50 text-text-light hover:text-text-secondary dark:hover:text-zinc-200 transition-colors"
+					className="p-1 rounded-lg hover:bg-warm-200 dark:hover:bg-cream-700/50 text-text-light hover:text-text-secondary dark:hover:text-cream-200 transition-colors"
 					title="移除"
 				>
 					<X className="w-4 h-4" />

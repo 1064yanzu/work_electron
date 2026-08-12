@@ -403,7 +403,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 
 	// 10. 纯文本
 	return (
-		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80 bg-warm-50/80 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-zinc-200">
+		<pre className="whitespace-pre-wrap break-words rounded-2xl border border-border/80 bg-warm-50/80 px-5 py-4 text-sm leading-7 text-text-secondary dark:text-cream-200">
 			{content || emptyText}
 		</pre>
 	);

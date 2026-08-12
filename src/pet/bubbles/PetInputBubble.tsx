@@ -138,7 +138,7 @@ export const PetInputBubble = forwardRef<
 										ref.current?.focus();
 									}
 								}}
-								className="inline-flex items-center rounded-full border px-2.5 py-[3px] text-[11.5px] leading-none transition-colors"
+								className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11.5px] leading-none transition-colors"
 								style={{
 									borderColor: withAlpha(accentColor, 0.18),
 									backgroundColor: withAlpha(accentColor, 0.04),
@@ -154,7 +154,7 @@ export const PetInputBubble = forwardRef<
 				<div className="mt-1.5 flex items-center justify-between">
 					{/* 左下：键盘提示 / 字数提示 */}
 					<span
-						className="text-[10px] tracking-wide text-[color:var(--t-text-light,#9d9d98)] transition-opacity duration-150"
+						className="text-[11px] tracking-wide text-[color:var(--t-text-light,#9d9d98)] transition-opacity duration-150"
 						style={{
 							opacity: showCount ? 1 : focused && !canSend ? 0.7 : 0,
 						}}
@@ -167,7 +167,7 @@ export const PetInputBubble = forwardRef<
 						onClick={onSubmit}
 						disabled={!canSend}
 						aria-label="发送"
-						className="group inline-flex h-7 w-7 items-center justify-center rounded-full transition-all disabled:cursor-not-allowed"
+						className="group inline-flex h-7 w-7 items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] disabled:cursor-not-allowed"
 						style={{
 							backgroundColor: canSend
 								? accentColor

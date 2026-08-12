@@ -28,7 +28,7 @@ export function DeviceFrame({
 		return (
 			<div
 				className={cn(
-					"h-full w-full transition-[width,height] duration-300 ease-out-expo",
+					"h-full w-full transition-[width,height] duration-250 ease-out-expo",
 					className,
 				)}
 				style={{ width: width ? `${width}px` : "100%" }}
@@ -39,14 +39,14 @@ export function DeviceFrame({
 	}
 
 	const isMobile = breakpoint === "mobile";
-	const radius = isMobile ? "rounded-[34px]" : "rounded-[22px]";
-	const innerRadius = isMobile ? "rounded-[26px]" : "rounded-[14px]";
+	const radius = isMobile ? "rounded-3xl" : "rounded-3xl";
+	const innerRadius = isMobile ? "rounded-3xl" : "rounded-2xl";
 
 	return (
 		<div
 			className={cn(
 				"relative flex flex-col items-center justify-start py-6",
-				"transition-all duration-300 ease-out-expo",
+				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 ease-out-expo",
 				className,
 			)}
 		>
@@ -54,9 +54,9 @@ export function DeviceFrame({
 				className={cn(
 					"relative bg-cream-900 dark:bg-cream-950",
 					"shadow-[0_18px_50px_-20px_rgba(26,26,25,0.35),0_2px_4px_0_rgba(26,26,25,0.06)]",
-					"p-[10px]",
+					"p-2.5",
 					radius,
-					"transition-all duration-300 ease-out-expo",
+					"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 ease-out-expo",
 				)}
 				style={{
 					width: width ? `${width + 20}px` : undefined,
@@ -65,7 +65,7 @@ export function DeviceFrame({
 			>
 				{/* 顶部听筒装饰（仅 mobile） */}
 				{isMobile ? (
-					<div className="pointer-events-none absolute top-[14px] left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+					<div className="pointer-events-none absolute top-3.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
 						<span className="w-7 h-1 rounded-full bg-cream-700/80" />
 						<span className="w-1.5 h-1.5 rounded-full bg-cream-700/80" />
 					</div>
@@ -82,7 +82,7 @@ export function DeviceFrame({
 
 			{/* 尺寸标签 */}
 			{width && height ? (
-				<div className="mt-3 flex items-center gap-2 text-[11px] font-mono tabular-nums text-text-muted">
+				<div className="mt-3 flex items-center gap-2 text-xs font-mono tabular-nums text-text-muted">
 					<span>{width}</span>
 					<span className="text-text-light">×</span>
 					<span>{height}</span>

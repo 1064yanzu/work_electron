@@ -124,7 +124,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Archive,
 			label: "压缩",
-			color: "text-zinc-600 dark:text-zinc-400",
+			color: "text-cream-600 dark:text-cream-400",
 		},
 	},
 	{
@@ -148,7 +148,7 @@ const toolPatterns: Array<{
 const defaultConfig: ToolIconConfig = {
 	icon: MessageSquare,
 	label: "工具",
-	color: "text-zinc-500 dark:text-zinc-400",
+	color: "text-cream-500 dark:text-cream-400",
 };
 
 /** 根据工具名称获取图标配置 */

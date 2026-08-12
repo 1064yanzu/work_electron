@@ -80,7 +80,7 @@ export function KbRetrievalSection({
 		>
 			{/* 检索模式 — 卡片式 */}
 			<div>
-				<div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+				<div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
 					<Database className="h-3 w-3" strokeWidth={1.8} />
 					检索模式
 				</div>
@@ -192,7 +192,7 @@ export function KbRetrievalSection({
 			<div className="rounded-2xl border border-border bg-cream-50 p-4">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+						<div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
 							<Wrench className="h-3 w-3" strokeWidth={1.8} />
 							索引状态
 						</div>

@@ -131,7 +131,7 @@ export const ArtifactRow = memo(function ArtifactRow({
 							{artifact.title}
 						</div>
 						{isPreviewable && (
-							<div className="flex items-center gap-1 text-[10px] text-text-light">
+							<div className="flex items-center gap-1 text-[11px] text-text-light">
 								{showPreview ? (
 									<>
 										<ChevronDown className="w-3 h-3" />
@@ -147,11 +147,11 @@ export const ArtifactRow = memo(function ArtifactRow({
 						)}
 					</div>
 					{artifact.url ? (
-						<div className="text-[11px] text-text-light truncate">
+						<div className="text-xs text-text-light truncate">
 							{artifact.url}
 						</div>
 					) : artifact.content && !showPreview ? (
-						<div className="text-[11px] text-text-light line-clamp-2 whitespace-pre-wrap">
+						<div className="text-xs text-text-light line-clamp-2 whitespace-pre-wrap">
 							{artifact.content.slice(0, 100)}
 							{artifact.content.length > 100 ? "..." : ""}
 						</div>
@@ -176,7 +176,7 @@ export const ArtifactRow = memo(function ArtifactRow({
 			{/* 代码/文本预览 */}
 			{showPreview && !isHtmlFile && (fileContent || artifact.content) && (
 				<div className="border-t border-border max-h-60 overflow-y-auto">
-					<pre className="px-3 py-2 text-[11px] text-text-secondary whitespace-pre-wrap break-words font-mono">
+					<pre className="px-3 py-2 text-xs text-text-secondary whitespace-pre-wrap break-words font-mono">
 						{(fileContent || artifact.content || "").slice(0, 3000)}
 						{(fileContent || artifact.content || "").length > 3000 &&
 							"\n... (内容过长已截断)"}

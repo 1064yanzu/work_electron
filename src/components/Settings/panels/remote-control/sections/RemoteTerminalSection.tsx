@@ -48,7 +48,7 @@ import {
 import { StatusDot } from "../StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
 
 const TEXTAREA_CLASS = cn(INPUT_CLASS, "font-mono leading-relaxed");
 
@@ -286,7 +286,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 								</SettingsSectionTitle>
 								<span
 									className={cn(
-										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
 										terminal.enabled
 											? "bg-mint-500/10 text-mint-600"
 											: "bg-warm-200 text-text-muted",
@@ -302,7 +302,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</div>
 							<p className="mt-1 text-xs leading-relaxed text-text-secondary">
 								启用后，已配对的 IM 用户可发送
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-[11px]">
+								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start &lt;preset&gt;
 								</code>
 								接管桌面端 pty，运行 codex / claude code / opencode 等 TUI。
@@ -434,7 +434,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</SettingsSectionTitle>
 							<p className="text-xs leading-relaxed text-text-secondary">
 								开启后，IM 远端启动
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-[11px]">
+								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start
 								</code>
 								时桌面端会自动弹出终端面板并切到该会话，方便你在电脑前同屏观察、必要时接管输入。
@@ -481,7 +481,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</SettingsSectionTitle>
 							<p className="text-xs leading-relaxed text-text-secondary">
 								关闭时仅允许启动预设里的 CLI；开启后
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-[11px]">
+								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start &lt;任意命令&gt;
 								</code>
 								会被直接执行，等同 SSH。请确保只对你完全信任的 IM 帐号开放。
@@ -545,7 +545,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							<option value="ansi">ANSI 彩色（Discord 友好）</option>
 							<option value="plain">纯文本（最稳）</option>
 						</select>
-						<p className="text-[11px] text-text-muted">
+						<p className="text-xs text-text-muted">
 							auto 在飞书走 markdown，Discord 走 ansi
 							codeblock，其它渠道纯文本。
 						</p>
@@ -572,7 +572,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							}}
 							className={INPUT_CLASS}
 						/>
-						<p className="text-[11px] text-text-muted">
+						<p className="text-xs text-text-muted">
 							xterm 虚拟终端 scrollback，越大可滚屏越久（建议 200~500）。
 						</p>
 					</label>
@@ -582,7 +582,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 					<span className="text-sm font-medium text-text-secondary">
 						每渠道列宽
 					</span>
-					<p className="text-[11px] text-text-muted">
+					<p className="text-xs text-text-muted">
 						覆盖顶层「屏幕列数」。手机宽屏卡片可放宽；命令行 TUI 按这个值重排。
 					</p>
 					<div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -620,7 +620,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 					<div className="flex items-center justify-between gap-3">
 						<div className="text-sm">
 							<div className="font-medium text-text-secondary">显示状态栏</div>
-							<p className="mt-0.5 text-[11px] text-text-muted">
+							<p className="mt-0.5 text-xs text-text-muted">
 								卡片顶部追加
 								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
 									[cmd · age · pid · cols×rows · 行号]
@@ -644,7 +644,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							<div className="font-medium text-text-secondary">
 								新增行高亮（diff）
 							</div>
-							<p className="mt-0.5 text-[11px] text-text-muted">
+							<p className="mt-0.5 text-xs text-text-muted">
 								与上一帧相比新增/变更的行前面加
 								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">▸</code>
 								前缀，方便定位。
@@ -686,7 +686,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							<div className="font-medium text-text-secondary">
 								上下文按钮（根据 TUI 状态切换）
 							</div>
-							<p className="mt-0.5 text-[11px] text-text-muted">
+							<p className="mt-0.5 text-xs text-text-muted">
 								检测到 yes/no、数字菜单等情境时，自动替换快捷键按钮组。
 							</p>
 						</div>
@@ -706,7 +706,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							<div className="font-medium text-text-secondary">
 								危险命令二次确认
 							</div>
-							<p className="mt-0.5 text-[11px] text-text-muted">
+							<p className="mt-0.5 text-xs text-text-muted">
 								匹配下方关键字时插入「确认/取消」按钮，避免误发
 								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
 									rm -rf /
@@ -741,7 +741,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							保存关键字
 						</Button>
 					</div>
-					<p className="text-[11px] text-text-muted">
+					<p className="text-xs text-text-muted">
 						每行一条，子串匹配（大小写不敏感）。空列表表示不拦截。
 					</p>
 					<textarea
@@ -778,11 +778,11 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 								}}
 								className={cn(INPUT_CLASS, "pr-12")}
 							/>
-							<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] text-text-muted">
+							<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
 								字符
 							</span>
 						</div>
-						<p className="text-[11px] text-text-muted">
+						<p className="text-xs text-text-muted">
 							超过后保留首/尾，中间用 /cli more 翻页。
 						</p>
 					</label>
@@ -808,7 +808,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							}}
 							className={INPUT_CLASS}
 						/>
-						<p className="text-[11px] text-text-muted">
+						<p className="text-xs text-text-muted">
 							重连后回放最近 N 行（0 = 不回放）。
 						</p>
 					</label>
@@ -834,11 +834,11 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 								}}
 								className={cn(INPUT_CLASS, "pr-10")}
 							/>
-							<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] text-text-muted">
+							<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
 								<History className="h-3 w-3" />
 							</span>
 						</div>
-						<p className="text-[11px] text-text-muted">
+						<p className="text-xs text-text-muted">
 							用 /cli history 查看、/cli !N 重发第 N 条。
 						</p>
 					</label>
@@ -855,7 +855,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 								<div className="font-medium text-text-secondary">
 									文件上下行传输
 								</div>
-								<p className="mt-0.5 text-[11px] text-text-muted">
+								<p className="mt-0.5 text-xs text-text-muted">
 									IM 上传文件入站到
 									<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
 										cwd/.uploads/
@@ -896,7 +896,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 										}}
 										className={cn(INPUT_CLASS, "pr-10")}
 									/>
-									<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] text-text-muted">
+									<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
 										KB
 									</span>
 								</div>
@@ -920,7 +920,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 										}}
 										className={cn(INPUT_CLASS, "pr-10")}
 									/>
-									<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] text-text-muted">
+									<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
 										KB
 									</span>
 								</div>
@@ -947,7 +947,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 				</div>
 				<p className="text-xs leading-relaxed text-text-muted">
 					每行一项，制表符或两个以上空格分隔。格式：
-					<code className="ml-1 rounded bg-warm-200 px-1 py-0.5 text-[11px]">
+					<code className="ml-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
 						id\tname\tcommand[\tcwd]
 					</code>
 					。 cwd 可选；缺省则使用第一条「默认 cwd」或用户主目录。
@@ -978,7 +978,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 				</div>
 				<p className="text-xs leading-relaxed text-text-muted">
 					每行一个绝对路径，
-					<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-[11px]">
+					<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
 						~
 					</code>
 					会自动展开到家目录。 /cli start 未指定 --cwd 时使用第一条。
@@ -1039,7 +1039,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 											{s.peer_name || s.peer_id}
 										</td>
 										<td
-											className="px-3 py-2 font-mono text-[11px] text-text-primary"
+											className="px-3 py-2 font-mono text-xs text-text-primary"
 											title={s.command}
 										>
 											<span className="block max-w-[12rem] truncate">
@@ -1047,7 +1047,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 											</span>
 										</td>
 										<td
-											className="px-3 py-2 font-mono text-[11px] text-text-secondary"
+											className="px-3 py-2 font-mono text-xs text-text-secondary"
 											title={s.cwd}
 										>
 											<span className="block max-w-[12rem] truncate">

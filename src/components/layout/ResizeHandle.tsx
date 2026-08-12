@@ -58,7 +58,7 @@ export default function ResizeHandle({
 			{/* 暖色调细线分隔；聚焦（Tab）时加宽变主色，让键盘 resize 可见可用 */}
 			<div
 				className={cn(
-					"absolute transition-all duration-200",
+					"absolute transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 					isHorizontal
 						? [
 								"inset-y-0 w-px",
@@ -93,7 +93,7 @@ export default function ResizeHandle({
 					"absolute",
 					isHorizontal
 						? "inset-y-0 w-4 -left-[8px]"
-						: "inset-x-0 h-4 -top-[8px]",
+						: "inset-x-0 h-4 -top-2",
 				)}
 			/>
 		</PanelResizeHandle>

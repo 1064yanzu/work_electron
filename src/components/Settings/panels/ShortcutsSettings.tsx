@@ -56,7 +56,7 @@ function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
 							{key}
 						</kbd>
 						{idx < keys.length - 1 && (
-							<span className="text-[10px] text-text-muted">+</span>
+							<span className="text-[11px] text-text-muted">+</span>
 						)}
 					</span>
 				))}

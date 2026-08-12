@@ -214,7 +214,7 @@ export function PermissionCard({
 					{/* 信息 */}
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							<span className="font-medium text-text-primary dark:text-zinc-200">
+							<span className="font-medium text-text-primary dark:text-cream-200">
 								{toolName}
 							</span>
 							<span
@@ -276,12 +276,12 @@ export function PermissionCard({
 									: "此操作将修改沙盒外的文件"}
 							</div>
 							{request.scope.targetPath && (
-								<div className="text-[11px] opacity-80 break-all font-mono">
+								<div className="text-xs opacity-80 break-all font-mono">
 									{request.scope.targetPath}
 								</div>
 							)}
 							{request.scope.reason && (
-								<div className="text-[11px] opacity-70 mt-0.5">
+								<div className="text-xs opacity-70 mt-0.5">
 									{request.scope.reason}
 								</div>
 							)}

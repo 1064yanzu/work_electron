@@ -93,7 +93,7 @@ function CategoryPills({
 						type="button"
 						key={cat.id}
 						onClick={() => onSelect(cat.id)}
-						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-120 ease-out cursor-pointer select-none
+						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out cursor-pointer select-none
 							${
 								isActive
 									? `${cat.gradient} shadow-[0_1px_2px_rgba(0,0,0,0.04)]`
@@ -107,7 +107,7 @@ function CategoryPills({
 						/>
 						<span>{cat.name}</span>
 						{isActive && typeof itemCount === "number" && itemCount >= 0 && (
-							<span className="text-[10px] opacity-60">{itemCount}</span>
+							<span className="text-[11px] opacity-60">{itemCount}</span>
 						)}
 					</button>
 				);
@@ -743,7 +743,7 @@ export function SlashMenuContainer({
 				</div>
 
 				<div className="px-4 py-1.5 border-t border-border">
-					<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
+					<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 						<span className="flex items-center gap-1">
 							<span className="font-mono text-[9px]">↑↓</span>
 							<span>导航</span>
@@ -782,9 +782,9 @@ export function SlashMenuContainer({
 						onOpenPromptLibrary();
 						onClose();
 					}}
-					className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-border hover:bg-warm-100 transition-colors duration-100 cursor-pointer select-none group"
+					className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-border hover:bg-warm-100 transition-colors duration-150 cursor-pointer select-none group"
 				>
-					<div className="w-6 h-6 rounded-md bg-warm-200 flex items-center justify-center group-hover:bg-warm-300 transition-colors duration-100">
+					<div className="w-6 h-6 rounded-md bg-warm-200 flex items-center justify-center group-hover:bg-warm-300 transition-colors duration-150">
 						<Plus className="w-3.5 h-3.5 text-text-muted group-hover:text-text-secondary" />
 					</div>
 					<div>
@@ -828,7 +828,7 @@ export function SlashMenuContainer({
 			</div>
 
 			<div className="px-4 py-1.5 border-t border-border">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
+				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">⌫</span>
 						<span>返回</span>
@@ -873,23 +873,23 @@ function GroupSection({
 					role="button"
 					tabIndex={-1}
 					onClick={onToggle}
-					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-warm-100 transition-colors duration-100 cursor-pointer select-none"
+					className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-warm-100 transition-colors duration-150 cursor-pointer select-none"
 				>
 					<ChevronRight
 						className={`w-3 h-3 text-text-light transition-transform duration-150 ${
 							isCollapsed ? "" : "rotate-90"
 						}`}
 					/>
-					<span className="text-[11px] font-medium text-text-light">
+					<span className="text-xs font-medium text-text-light">
 						{group.name}
 					</span>
-					<span className="text-[10px] text-text-light">
+					<span className="text-[11px] text-text-light">
 						{filteredCommands.length}
 					</span>
 				</div>
 			) : (
 				<div className="px-4 py-1.5">
-					<span className="text-[11px] font-medium text-text-light">
+					<span className="text-xs font-medium text-text-light">
 						{group.name}
 					</span>
 				</div>
@@ -907,12 +907,12 @@ function GroupSection({
 								tabIndex={-1}
 								onClick={() => onSelect(command)}
 								onMouseEnter={() => onHoverCommand(command.id)}
-								className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left cursor-pointer select-none
-                  transition-all duration-120 ease-out
+								className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left cursor-pointer select-none
+                  transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                   ${isSelected ? "bg-warm-200" : ""}`}
 							>
 								<div
-									className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-120
+									className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120
                     ${
 											isSelected
 												? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
@@ -934,13 +934,13 @@ function GroupSection({
 									>
 										{command.name}
 									</div>
-									<div className="text-[11px] truncate text-text-light">
+									<div className="text-xs truncate text-text-light">
 										{command.description}
 									</div>
 								</div>
 
 								{isSelected && (
-									<span className="text-[10px] font-mono text-text-light flex-shrink-0">
+									<span className="text-[11px] font-mono text-text-light flex-shrink-0">
 										↵
 									</span>
 								)}

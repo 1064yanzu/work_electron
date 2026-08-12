@@ -71,7 +71,7 @@ export function DisabledTooltip({ reason, children }: DisabledTooltipProps) {
 			{visible && (
 				<div
 					role="tooltip"
-					className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 z-[60] whitespace-pre-wrap max-w-[240px] px-2.5 py-1.5 rounded-md bg-cream-900 dark:bg-black/90 text-[11px] leading-snug text-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+					className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 z-[60] whitespace-pre-wrap max-w-[240px] px-2.5 py-1.5 rounded-md bg-cream-900 dark:bg-black/90 text-xs leading-snug text-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
 				>
 					{safeReason}
 				</div>

@@ -123,7 +123,7 @@ export function CenterGroupDropZones({
 			{hovered && (
 				<div
 					className={cn(
-						"pointer-events-none absolute rounded-lg border-2 border-terracotta/50 bg-terracotta/[0.12] transition-all duration-150",
+						"pointer-events-none absolute rounded-lg border-2 border-terracotta/50 bg-terracotta/[0.12] transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 						hovered === "center" ? "inset-2" : PREVIEW_CLASS[hovered],
 					)}
 				/>

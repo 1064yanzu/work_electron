@@ -120,7 +120,7 @@ export function PermissionPolicySection({
 									/>
 								</span>
 								<div>
-									<div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+									<div className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 										{level}
 									</div>
 									<div className="text-[13px] font-semibold text-text-primary">

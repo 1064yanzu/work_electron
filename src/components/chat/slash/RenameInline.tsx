@@ -54,7 +54,7 @@ export function RenameInline({
 
 	return (
 		<div className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)]">
-			<span className="font-mono text-[11px] text-text-light flex-shrink-0">
+			<span className="font-mono text-xs text-text-light flex-shrink-0">
 				/rename
 			</span>
 			<input
@@ -77,7 +77,7 @@ export function RenameInline({
 			<button
 				type="button"
 				onClick={commit}
-				className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:bg-warm-200 active:scale-95 transition-all duration-100"
+				className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:bg-warm-200 active:scale-95 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 				title="确认"
 			>
 				<Check className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ export function RenameInline({
 			<button
 				type="button"
 				onClick={cancel}
-				className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:bg-warm-200 active:scale-95 transition-all duration-100"
+				className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:bg-warm-200 active:scale-95 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 				title="取消"
 			>
 				<X className="w-3.5 h-3.5" />

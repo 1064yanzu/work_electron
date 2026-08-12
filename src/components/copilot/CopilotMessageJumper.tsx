@@ -119,7 +119,7 @@ export function CopilotMessageJumper({
 			style={{ width: expanded ? 280 : 12 }}
 		>
 			<div
-				className="h-full pointer-events-auto transition-all duration-200"
+				className="h-full pointer-events-auto transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 				style={{ width: expanded ? 280 : 12 }}
 				onMouseEnter={handleMouseEnter}
 				onMouseLeave={handleMouseLeave}
@@ -127,7 +127,7 @@ export function CopilotMessageJumper({
 				{expanded ? (
 					/* 展开态 */
 					<div className="h-full w-full bg-surface/95 backdrop-blur-md border border-border rounded-l-xl shadow-lg overflow-hidden flex flex-col">
-						<div className="px-3 py-2 text-[11px] font-medium text-text-muted border-b border-border shrink-0">
+						<div className="px-3 py-2 text-xs font-medium text-text-muted border-b border-border shrink-0">
 							消息导航
 						</div>
 						<div className="flex-1 overflow-y-auto py-1 scrollbar-hide">
@@ -145,7 +145,7 @@ export function CopilotMessageJumper({
 										onClick={() => scrollToMessage(msg.id)}
 									>
 										<span
-											className={`shrink-0 rounded-full transition-all ${
+											className={`shrink-0 rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 												isActive
 													? "w-2.5 h-0.5 bg-primary"
 													: "w-1.5 h-0.5 bg-current opacity-40"
@@ -161,7 +161,7 @@ export function CopilotMessageJumper({
 													e.stopPropagation();
 													onDeleteMessage(msg.id);
 												}}
-												className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-500 transition-all"
+												className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-500 transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 												title="删除此消息"
 											>
 												<X className="w-3 h-3" />
@@ -181,7 +181,7 @@ export function CopilotMessageJumper({
 								<div
 									key={msg.id}
 									onClick={() => scrollToMessage(msg.id)}
-									className={`rounded-full cursor-pointer transition-all duration-150 ${
+									className={`rounded-full cursor-pointer transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 										isActive
 											? "w-2.5 h-1 bg-primary"
 											: "w-2 h-0.5 bg-text-muted/40 hover:bg-text-muted"

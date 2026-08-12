@@ -258,7 +258,7 @@ export function SlashCommandMenu({
 							{/* 分组标题 - 改为 Button 以明确可交互性 */}
 							<button
 								type="button"
-								className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold text-text-light uppercase tracking-wider hover:bg-warm-200 dark:hover:bg-cream-700 rounded transition-colors select-none outline-none focus:bg-warm-200 dark:focus:bg-cream-700"
+								className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-text-light uppercase tracking-wider hover:bg-warm-200 dark:hover:bg-cream-700 rounded transition-colors select-none outline-none focus:bg-warm-200 dark:focus:bg-cream-700"
 								onClick={() => toggleGroup(groupName)}
 							>
 								<span>{groupName}</span>
@@ -305,7 +305,7 @@ export function SlashCommandMenu({
 													</div>
 												</div>
 												{isSelected && (
-													<span className="text-[10px] text-text-light font-medium bg-surface dark:bg-cream-600 px-1.5 py-0.5 rounded shadow-sm">
+													<span className="text-[11px] text-text-light font-medium bg-surface dark:bg-cream-600 px-1.5 py-0.5 rounded shadow-sm">
 														↵
 													</span>
 												)}

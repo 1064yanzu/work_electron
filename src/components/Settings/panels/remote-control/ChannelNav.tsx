@@ -78,7 +78,7 @@ export function ChannelNav({
 							if (e.key === "Enter" || e.key === " ") onSelect(item.id);
 						}}
 						className={cn(
-							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							isActive
 								? "bg-surface ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:ring-primary/50"
 								: "hover:bg-warm-200/60",
@@ -87,7 +87,7 @@ export function ChannelNav({
 						{/* 左侧强调条 */}
 						<span
 							className={cn(
-								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 								isActive
 									? "bg-primary opacity-100"
 									: "bg-primary opacity-0 group-hover:opacity-40",
@@ -117,7 +117,7 @@ export function ChannelNav({
 								{item.badge ? (
 									<span
 										className={cn(
-											"inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+											"inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
 											item.badge.tone === "amber"
 												? "bg-peach-500/10 text-peach-500"
 												: item.badge.tone === "sky"
@@ -130,7 +130,7 @@ export function ChannelNav({
 								) : null}
 							</div>
 							{item.description ? (
-								<div className="mt-0.5 truncate text-[11px] leading-relaxed text-text-muted">
+								<div className="mt-0.5 truncate text-xs leading-relaxed text-text-muted">
 									{item.description}
 								</div>
 							) : null}
@@ -145,7 +145,7 @@ export function ChannelNav({
 						>
 							{item.locked ? (
 								<span
-									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-[10px] text-peach-500"
+									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-[11px] text-peach-500"
 									title={item.lockedHint}
 								>
 									<Lock className="h-3 w-3" />

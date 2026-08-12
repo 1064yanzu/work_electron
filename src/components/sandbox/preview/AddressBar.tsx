@@ -158,7 +158,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 				"bg-cream-100 dark:bg-cream-800",
 				"border border-border rounded-full",
 				"h-8 px-3",
-				"transition-all duration-150",
+				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 				"hover:border-cream-500/70 dark:hover:border-cream-700",
 				isFocused &&
 					"border-text-secondary dark:border-cream-500 bg-surface shadow-[0_0_0_3px_var(--t-primary-muted,rgba(26,26,25,0.06))]",
@@ -237,7 +237,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 						"w-6 h-6 rounded-full",
 						"text-text-light hover:text-text-primary",
 						"hover:bg-cream-200/80 dark:hover:bg-cream-700/80",
-						"transition-all duration-150",
+						"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 						"opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
 						isFocused && "opacity-100",
 					)}

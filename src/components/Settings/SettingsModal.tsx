@@ -163,7 +163,7 @@ export function SettingsModal({
 
 	return (
 		<div
-			className={`modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-200"}`}
+			className={`modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-150"}`}
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) {
 					handleClose();
@@ -171,7 +171,7 @@ export function SettingsModal({
 			}}
 		>
 			<FocusTrap
-				className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-3xl shadow-bai-pop border border-border overflow-hidden flex transition-colors duration-300 ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-200"}`}
+				className={`relative w-[88vw] h-[82vh] max-w-7xl rounded-3xl shadow-bai-pop border border-border overflow-hidden flex transition-colors duration-250 ${isClosing ? "animate-scale-out" : "animate-in zoom-in-95 duration-150"}`}
 				style={{ backgroundColor: "var(--t-bg-surface)" }}
 				onEscape={handleClose}
 				initialFocusRef={closeButtonRef}
@@ -189,7 +189,7 @@ export function SettingsModal({
 
 				<main
 					ref={contentRef}
-					className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-300"
+					className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-250"
 					// surface = 最亮的一层。侧栏用 bg（暗一档），靠明暗分栏；
 					// 卡片同为 surface，于是卡片只剩描边，不再是浮在米色上的白块。
 					style={{ backgroundColor: "var(--t-bg-surface)" }}

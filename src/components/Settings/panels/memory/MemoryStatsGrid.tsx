@@ -86,7 +86,7 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 						<div className="mt-3 h-1.5 w-full rounded-full bg-cream-100 overflow-hidden">
 							<div
 								className={cn(
-									"h-full rounded-full transition-all duration-300",
+									"h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 									isWarning ? "bg-error" : "bg-primary",
 								)}
 								style={{

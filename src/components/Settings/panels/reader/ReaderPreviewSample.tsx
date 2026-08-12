@@ -39,7 +39,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 	return (
 		<div className="rounded-3xl border border-border bg-cream-50 p-1.5 shadow-bai-card">
 			<div
-				className="relative overflow-hidden rounded-[20px] border"
+				className="relative overflow-hidden rounded-2xl border"
 				style={previewStyle}
 			>
 				<div
@@ -86,7 +86,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 					</div>
 
 					<div
-						className="mt-6 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px]"
+						className="mt-6 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs"
 						style={{
 							backgroundColor: tokens["--reader-accent-soft"],
 							color: tokens["--reader-accent"],

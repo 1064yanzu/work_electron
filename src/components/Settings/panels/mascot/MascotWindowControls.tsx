@@ -246,7 +246,7 @@ function DndTimePair({ start, end, onChange, disabled }: DndTimePairProps) {
 				<button
 					type="button"
 					onClick={() => onChange("", "")}
-					className="ml-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition hover:bg-cream-200 hover:text-text-secondary"
+					className="ml-1 rounded-md px-2 py-1 text-xs text-text-muted transition hover:bg-cream-200 hover:text-text-secondary"
 				>
 					清除
 				</button>

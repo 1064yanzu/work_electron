@@ -126,13 +126,13 @@ export function CommandSubmenuView({
 					role="button"
 					tabIndex={-1}
 					onClick={onBack}
-					className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-colors duration-100 active:scale-95 cursor-pointer select-none"
+					className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer select-none"
 					title="返回上一级"
 				>
 					<ArrowLeft className="w-4 h-4" />
 				</div>
 				<div className="flex items-center gap-2 min-w-0">
-					<span className="font-mono text-[11px] text-text-light">
+					<span className="font-mono text-xs text-text-light">
 						/{definition.id}
 					</span>
 					<span className="text-[13px] font-medium text-text-primary truncate">
@@ -165,7 +165,7 @@ export function CommandSubmenuView({
 									tabIndex={-1}
 									onClick={() => commit(option)}
 									onMouseEnter={() => setActiveIndex(index)}
-									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-120 ease-out
+									className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left select-none transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                     ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
@@ -174,13 +174,13 @@ export function CommandSubmenuView({
 											{option.label}
 										</div>
 										{option.description && (
-											<div className="text-[11px] truncate text-text-light mt-0.5">
+											<div className="text-xs truncate text-text-light mt-0.5">
 												{option.description}
 											</div>
 										)}
 									</div>
 									{isSelected && !disabled && (
-										<span className="text-[10px] font-mono text-text-light flex-shrink-0">
+										<span className="text-[11px] font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									)}
@@ -192,7 +192,7 @@ export function CommandSubmenuView({
 			</div>
 
 			<div className="px-4 py-1.5 border-t border-border">
-				<div className="flex items-center justify-center gap-4 text-[10px] text-text-light">
+				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
 						<span className="font-mono text-[9px]">⌫</span>
 						<span>返回</span>

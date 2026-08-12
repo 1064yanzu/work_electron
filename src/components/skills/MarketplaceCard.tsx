@@ -121,7 +121,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 	return (
 		<div
 			className={cn(
-				"group relative rounded-xl transition-all",
+				"group relative rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"bg-surface dark:bg-cream-900/30",
 				"ring-1 ring-cream-300/60 dark:ring-cream-500/20",
 				"hover:ring-cream-400/80 dark:hover:ring-cream-500/40 hover:shadow-bai-card",
@@ -162,7 +162,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							{entry.displayName || entry.name}
 						</span>
 						{entry.version && (
-							<span className="text-[10px] text-text-light font-mono shrink-0">
+							<span className="text-[11px] text-text-light font-mono shrink-0">
 								v{entry.version.replace(/^v/, "")}
 							</span>
 						)}
@@ -172,10 +172,10 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							</span>
 						)}
 					</div>
-					<p className="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-snug">
+					<p className="text-xs text-text-muted mt-0.5 line-clamp-2 leading-snug">
 						{entry.description || "（暂无描述）"}
 					</p>
-					<div className="flex items-center gap-1.5 mt-1 text-[10px] text-text-light min-w-0">
+					<div className="flex items-center gap-1.5 mt-1 text-[11px] text-text-light min-w-0">
 						{entry.author && (
 							<span className="truncate max-w-[40%]">{entry.author}</span>
 						)}
@@ -203,7 +203,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							type="button"
 							onClick={handleUninstall}
 							disabled={!!installing}
-							className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-text-secondary hover:text-error hover:bg-error/8 transition disabled:opacity-50"
+							className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-error hover:bg-error/8 transition disabled:opacity-50"
 						>
 							<Trash2 className="w-3 h-3" />
 							卸载
@@ -214,7 +214,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							onClick={handleInstall}
 							disabled={!!installing}
 							className={cn(
-								"inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition shrink-0",
+								"inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition shrink-0",
 								installing
 									? "bg-cream-200 text-text-muted cursor-not-allowed"
 									: "bg-primary text-primary-foreground hover:bg-primary-hover",
@@ -265,7 +265,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					<div className="h-[3px] rounded-full bg-cream-200/80 dark:bg-cream-800/50 overflow-hidden">
 						<div
 							className={cn(
-								"h-full transition-all duration-200 ease-out",
+								"h-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ease-out",
 								failed ? "bg-error" : "bg-primary",
 							)}
 							style={{
@@ -276,7 +276,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					{(progress.message || progress.error) && (
 						<p
 							className={cn(
-								"mt-1 text-[10px] truncate",
+								"mt-1 text-[11px] truncate",
 								failed ? "text-error" : "text-text-light",
 							)}
 						>
@@ -290,9 +290,9 @@ export function MarketplaceCard({ entry, progress }: Props) {
 			{previewing && (
 				<div className="mx-3 mb-2.5 rounded-lg bg-cream-200/50 dark:bg-cream-800/30 p-2.5 max-h-56 overflow-auto animate-fade-in">
 					{previewError ? (
-						<p className="text-[11px] text-error">{previewError}</p>
+						<p className="text-xs text-error">{previewError}</p>
 					) : previewText === null ? (
-						<p className="text-[11px] text-text-light flex items-center gap-1">
+						<p className="text-xs text-text-light flex items-center gap-1">
 							<Loader2 className="w-3 h-3 animate-spin" />
 							加载中…
 						</p>

@@ -33,7 +33,7 @@ export function ResourceSidebarDialogs({
 		<>
 			{deleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-150">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							删除资料
 						</h3>
@@ -62,7 +62,7 @@ export function ResourceSidebarDialogs({
 
 			{cardDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-150">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							删除分享卡
 						</h3>
@@ -91,7 +91,7 @@ export function ResourceSidebarDialogs({
 
 			{batchDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-150">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							批量删除
 						</h3>
@@ -121,7 +121,7 @@ export function ResourceSidebarDialogs({
 
 			{folderDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-150">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							删除文件夹
 						</h3>

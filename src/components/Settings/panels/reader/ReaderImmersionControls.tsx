@@ -270,7 +270,7 @@ function TileCard({
 				</div>
 				{control}
 			</div>
-			{children && <div className="mt-3 pl-[38px]">{children}</div>}
+			{children && <div className="mt-3 pl-10">{children}</div>}
 		</div>
 	);
 }

@@ -61,7 +61,7 @@ export function SubagentCard({
 	return (
 		<div
 			className={cn(
-				"group relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden",
+				"group relative flex flex-col rounded-xl border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 overflow-hidden",
 				isRunning
 					? "bg-surface/80 border-purple-200 dark:border-purple-800/30 shadow-lg shadow-purple-500/5 ring-1 ring-purple-500/20"
 					: isError
@@ -86,7 +86,7 @@ export function SubagentCard({
 				<div className="relative">
 					<div
 						className={cn(
-							"flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+							"flex items-center justify-center w-8 h-8 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 							isRunning
 								? "bg-violetx-500/15 dark:bg-purple-900/30 bai-icon-violet dark:bai-icon-violet"
 								: isCompleted
@@ -117,13 +117,13 @@ export function SubagentCard({
 							子代理调用{subagentType ? ` · ${subagentType}` : ""}
 						</span>
 						{subagentModel && (
-							<span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-focus/8 dark:bg-blue-900/30 text-focus dark:text-focus truncate max-w-[120px]">
+							<span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-focus/8 dark:bg-blue-900/30 text-focus dark:text-focus truncate max-w-[120px]">
 								{subagentModel}
 							</span>
 						)}
 						<div
 							className={cn(
-								"px-1.5 py-0.5 rounded text-[10px] font-medium",
+								"px-1.5 py-0.5 rounded text-[11px] font-medium",
 								isRunning
 									? "bg-violetx-500/15 dark:bg-purple-900/40 bai-icon-violet dark:bai-icon-violet"
 									: isCompleted
@@ -199,7 +199,7 @@ export function SubagentCard({
 								<div className="flex-1 min-w-0 break-words text-text-secondary leading-relaxed">
 									{step.content}
 								</div>
-								<div className="shrink-0 text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity">
+								<div className="shrink-0 text-[11px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity">
 									{new Date(step.timestamp).toLocaleTimeString([], {
 										hour: "2-digit",
 										minute: "2-digit",
@@ -220,7 +220,7 @@ export function SubagentCard({
 										{typeof toolCall.output === "string" ? (
 											<MarkdownRenderer content={toolCall.output} />
 										) : (
-											<pre className="text-[11px] whitespace-pre-wrap break-words">
+											<pre className="text-xs whitespace-pre-wrap break-words">
 												{JSON.stringify(toolCall.output, null, 2)}
 											</pre>
 										)}

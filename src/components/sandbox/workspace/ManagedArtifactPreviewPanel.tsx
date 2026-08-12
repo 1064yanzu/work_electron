@@ -258,7 +258,7 @@ export const ManagedArtifactPreviewPanel = memo(
 
 		return (
 			<div className="h-full flex flex-col bg-surface">
-				<div className="border-b border-border bg-warm-100/40 dark:bg-zinc-900/60 backdrop-blur-sm shrink-0">
+				<div className="border-b border-border bg-warm-100/40 dark:bg-cream-900/60 backdrop-blur-sm shrink-0">
 					{/* 单行 Tab 栏：左侧滚动 Tab 列表 + 右侧紧凑翻页 */}
 					<div className="flex items-stretch min-h-9">
 						<div className="flex items-stretch overflow-x-auto scrollbar-hide flex-1 min-w-0">
@@ -275,7 +275,7 @@ export const ManagedArtifactPreviewPanel = memo(
 											className={cn(
 												"group inline-flex items-center gap-1.5 pl-3 pr-1.5 text-xs whitespace-nowrap transition-colors cursor-pointer border-r border-border/60 shrink-0 focus-ring",
 												isActive
-													? "bg-surface text-text-primary shadow-[inset_0_2px_0_0_rgba(217,108,70,0.6)] dark:bg-cream-800 dark:text-zinc-100"
+													? "bg-surface text-text-primary shadow-[inset_0_2px_0_0_rgba(217,108,70,0.6)] dark:bg-cream-800 dark:text-cream-100"
 													: "bg-transparent text-text-muted hover:bg-warm-200/60 hover:text-text-secondary dark:hover:bg-cream-700/40",
 											)}
 											onClick={() => onSelectArtifact(file.id)}
@@ -320,7 +320,7 @@ export const ManagedArtifactPreviewPanel = memo(
 													void handleCloseTab(file.id);
 												}}
 												className={cn(
-													"ml-0.5 w-4 h-4 inline-flex items-center justify-center rounded transition-all shrink-0 cursor-pointer",
+													"ml-0.5 w-4 h-4 inline-flex items-center justify-center rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] shrink-0 cursor-pointer",
 													isActive
 														? "hover:bg-warm-200 dark:hover:bg-cream-700"
 														: "hover:bg-warm-300 dark:hover:bg-cream-700",
@@ -366,7 +366,7 @@ export const ManagedArtifactPreviewPanel = memo(
 								>
 									<ChevronLeft className="w-3 h-3" />
 								</button>
-								<span className="text-[10px] text-text-light tabular-nums px-0.5 min-w-[28px] text-center">
+								<span className="text-[11px] text-text-light tabular-nums px-0.5 min-w-[28px] text-center">
 									{selectedArtifactIndex + 1}/{totalArtifacts}
 								</span>
 								<button
@@ -416,7 +416,7 @@ export const ManagedArtifactPreviewPanel = memo(
 								<button
 									type="button"
 									onClick={() => onSetTerminalDockCollapsed(false)}
-									className="w-full h-full flex items-center justify-between px-3 text-[11px] text-text-muted bg-warm-50 hover:bg-warm-100 dark:bg-cream-900/60 dark:hover:bg-cream-900 border-t border-border transition-colors cursor-pointer"
+									className="w-full h-full flex items-center justify-between px-3 text-xs text-text-muted bg-warm-50 hover:bg-warm-100 dark:bg-cream-900/60 dark:hover:bg-cream-900 border-t border-border transition-colors cursor-pointer"
 									title="展开终端面板"
 								>
 									<span className="inline-flex items-center gap-1.5">

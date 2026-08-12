@@ -143,7 +143,7 @@ export function ReaderSettings() {
 			</SettingsSectionCard>
 
 			{!loaded && (
-				<p className="text-[11px] text-text-light">正在载入阅读器设置…</p>
+				<p className="text-xs text-text-light">正在载入阅读器设置…</p>
 			)}
 		</SettingsPageContainer>
 	);

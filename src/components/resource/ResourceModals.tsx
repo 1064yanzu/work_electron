@@ -129,7 +129,7 @@ export function NewFolderModal({
 					ref={inputRef}
 					type="text"
 					defaultValue=""
-					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
 					placeholder="输入文件夹名称..."
 					autoFocus
 					onKeyDown={(e) => {
@@ -251,7 +251,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						type="text"
 						value={renameFolderName}
 						onChange={(e) => setRenameFolderName(e.target.value)}
-						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
 						placeholder="输入新名称..."
 						autoFocus
 						onKeyDown={(e) => {
@@ -383,7 +383,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								setSingleSourceMoveModal(null);
 								setSingleSourceMoveTargetId("");
 							}}
-							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary dark:hover:text-cream-200 hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
@@ -412,7 +412,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<button
 							key={tab}
 							onClick={() => setActiveTab(tab)}
-							className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+							className={`flex-1 py-2 text-xs font-medium rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 								activeTab === tab
 									? "bg-surface dark:bg-cream-700 shadow-sm text-text-primary"
 									: "text-text-muted"
@@ -431,7 +431,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						type="text"
 						value={newSourceTitle}
 						onChange={(e) => setNewSourceTitle(e.target.value)}
-						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
 						placeholder="输入标题..."
 					/>
 
@@ -440,7 +440,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 							type="url"
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm font-mono placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm font-mono placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
 							placeholder="https://..."
 						/>
 					)}
@@ -449,7 +449,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<textarea
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 leading-relaxed"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700 leading-relaxed"
 							placeholder="输入内容..."
 						/>
 					)}
@@ -485,7 +485,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 					)}
 
 				{/* 其他导入方式指引：拖拽与浏览器剪藏 */}
-				<p className="text-[11px] leading-relaxed text-text-light px-1">
+				<p className="text-xs leading-relaxed text-text-light px-1">
 					也可以直接把文件拖进左栏列表导入；在网页上浏览时，可用浏览器剪藏插件一键保存到资料库。
 				</p>
 

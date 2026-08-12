@@ -106,7 +106,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 			{/* 卡片删除确认对话框 */}
 			{cardDeleteConfirm ? (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+					<div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-150">
 						<h3 className="font-semibold text-lg text-text-primary mb-2">
 							删除卡片
 						</h3>
@@ -140,7 +140,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 					onClick={() => setCardPreview(null)}
 				>
 					<div
-						className="bg-surface rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+						className="bg-surface rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -177,7 +177,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 						</div>
 
 						<div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-							<div className="bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
+							<div className="bg-gradient-to-br from-cream-100 to-cream-50 dark:from-cream-800 dark:to-cream-900">
 								{cardImages[cardPreview.id] ? (
 									<img
 										src={cardImages[cardPreview.id]}
@@ -289,9 +289,9 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 								<div
 									key={card.id}
 									onClick={() => setCardPreview(card)}
-									className="group rounded-2xl bg-surface/50 ring-1 ring-zinc-200/50 dark:ring-zinc-700/40 hover:ring-zinc-300/80 dark:hover:ring-zinc-600/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1"
+									className="group rounded-2xl bg-surface/50 ring-1 ring-cream-200/50 dark:ring-cream-700/40 hover:ring-cream-300/80 dark:hover:ring-cream-600/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 cursor-pointer overflow-hidden hover:-translate-y-1"
 								>
-									<div className="relative bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
+									<div className="relative bg-gradient-to-br from-cream-100 to-cream-50 dark:from-cream-800 dark:to-cream-900">
 										{imageSrc ? (
 											<img
 												src={imageSrc}
@@ -313,7 +313,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 											</div>
 										)}
 										{card.theme_id && (
-											<span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-medium rounded-full bg-surface/90 text-text-secondary shadow-sm">
+											<span className="absolute top-3 left-3 px-2.5 py-1 text-[11px] font-medium rounded-full bg-surface/90 text-text-secondary shadow-sm">
 												{card.theme_id}
 											</span>
 										)}
@@ -345,7 +345,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 										<div className="flex items-center justify-between pt-2 border-t border-border/50">
 											<div className="flex items-center gap-2 text-xs text-text-light">
 												{card.aspect_ratio && (
-													<span className="px-1.5 py-0.5 bg-warm-200 dark:bg-cream-700/50 rounded text-[10px]">
+													<span className="px-1.5 py-0.5 bg-warm-200 dark:bg-cream-700/50 rounded text-[11px]">
 														{card.aspect_ratio}
 													</span>
 												)}
@@ -361,7 +361,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 													e.stopPropagation();
 													handleDeleteCard(card);
 												}}
-												className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+												className="p-1.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 												title="删除分享卡"
 											>
 												<Trash2 className="w-3.5 h-3.5" />

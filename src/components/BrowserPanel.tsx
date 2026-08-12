@@ -369,7 +369,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 						}}
 						onFocus={(e) => e.currentTarget.select()}
 						placeholder="输入网址或搜索内容，按 Enter 在外部窗口打开"
-						className="w-full pl-10 pr-4 py-2.5 bg-warm-200 dark:bg-black/20 border border-transparent focus:border-primary/30 focus:bg-surface dark:focus:bg-black/40 rounded-xl text-sm text-text-primary dark:text-zinc-200 transition-[border-color,background-color] outline-none shadow-sm"
+						className="w-full pl-10 pr-4 py-2.5 bg-warm-200 dark:bg-black/20 border border-transparent focus:border-primary/30 focus:bg-surface dark:focus:bg-black/40 rounded-xl text-sm text-text-primary dark:text-cream-200 transition-[border-color,background-color] outline-none shadow-sm"
 					/>
 				</div>
 

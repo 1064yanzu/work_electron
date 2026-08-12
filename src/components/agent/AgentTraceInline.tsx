@@ -90,12 +90,12 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 								<div className="text-xs font-semibold text-text-primary truncate">
 									详细信息
 								</div>
-								<div className="text-[11px] text-text-light">{statusText}</div>
+								<div className="text-xs text-text-light">{statusText}</div>
 								{isThisTaskExecuting ? (
 									<Loader2 className="w-3.5 h-3.5 animate-spin text-focus" />
 								) : null}
 							</div>
-							<div className="text-[11px] text-text-light truncate">
+							<div className="text-xs text-text-light truncate">
 								工具 {task.toolCalls.length} · 产物 {task.artifacts.length}
 							</div>
 						</div>
@@ -201,7 +201,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 
 							return nonKbArtifacts.length > 0 ? (
 								<div className="space-y-2">
-									<div className="text-[11px] font-medium text-text-muted px-1">
+									<div className="text-xs font-medium text-text-muted px-1">
 										产物预览 ({nonKbArtifacts.length})
 									</div>
 									{nonKbArtifacts.slice(0, 6).map((a) => (
@@ -222,7 +222,7 @@ export default function AgentTraceInline({ taskId }: { taskId?: string }) {
 											)}
 											{artifactPreview === a.id && a.content ? (
 												<div className="mt-2 px-3 py-2 rounded-xl bg-warm-200/50 ring-1 ring-black/5 dark:ring-white/10">
-													<div className="text-[11px] text-text-secondary whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+													<div className="text-xs text-text-secondary whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
 														{a.content.slice(0, 1000)}
 														{a.content.length > 1000 ? "..." : ""}
 													</div>
@@ -319,14 +319,14 @@ function ContextControl({
 						<Database className="w-3 h-3" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-[10px] uppercase font-medium text-text-light leading-none mb-0.5">
+						<span className="text-[11px] uppercase font-medium text-text-light leading-none mb-0.5">
 							Context
 						</span>
 						<span className="text-xs font-medium text-text-secondary leading-none">
 							{(tokenUsage?.totalTokens || 0).toLocaleString()} tokens
 							{tokenUsage?.promptTokens !== undefined &&
 								tokenUsage?.completionTokens !== undefined && (
-									<span className="text-[10px] text-text-muted font-normal ml-1">
+									<span className="text-[11px] text-text-muted font-normal ml-1">
 										(↑{tokenUsage.promptTokens.toLocaleString()} ↓
 										{tokenUsage.completionTokens.toLocaleString()})
 									</span>
@@ -335,7 +335,7 @@ function ContextControl({
 						{(tokenUsage?.cacheReadInputTokens ||
 							tokenUsage?.cacheCreationInputTokens ||
 							tokenUsage?.costUsd !== undefined) && (
-							<span className="text-[10px] text-text-muted leading-none mt-1">
+							<span className="text-[11px] text-text-muted leading-none mt-1">
 								cache read{" "}
 								{(tokenUsage?.cacheReadInputTokens || 0).toLocaleString()}
 								{" · "}
@@ -347,7 +347,7 @@ function ContextControl({
 							</span>
 						)}
 						{teamId && (
-							<span className="text-[10px] text-text-muted leading-none mt-1">
+							<span className="text-[11px] text-text-muted leading-none mt-1">
 								{agentRole || "leader"} · {delegationMode || "hybrid"}
 								{teammateMode ? ` · ${teammateMode}` : ""}
 								{maxTeammates ? ` · teammates ${maxTeammates}` : ""}
@@ -360,7 +360,7 @@ function ContextControl({
 					{/* Usage Bar */}
 					<div className="w-24 h-1.5 bg-warm-200 rounded-full overflow-hidden">
 						<div
-							className={`h-full rounded-full transition-all duration-500 ${isHigh ? "bg-peach-500" : "bg-mint-500"}`}
+							className={`h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500 ${isHigh ? "bg-peach-500" : "bg-mint-500"}`}
 							style={{ width: `${percent}%` }}
 						/>
 					</div>
@@ -369,7 +369,7 @@ function ContextControl({
 					<button
 						onClick={handleCompact}
 						disabled={isCompacting || !sdkSessionId}
-						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+						className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 							isCompacting
 								? "bg-warm-200 text-text-light cursor-wait"
 								: "bg-warm-200 hover:bg-warm-300 text-text-secondary dark:hover:bg-cream-700"

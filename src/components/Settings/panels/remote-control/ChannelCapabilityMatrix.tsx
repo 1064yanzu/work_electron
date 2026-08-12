@@ -46,21 +46,21 @@ function StatusBadge({
 	switch (status) {
 		case "sdk":
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 px-2 py-0.5 text-[11px] font-medium text-mint-600">
+				<span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 px-2 py-0.5 text-xs font-medium text-mint-600">
 					<Check className="h-3 w-3" strokeWidth={1.5} />
 					SDK
 				</span>
 			);
 		case "legacy":
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-xs font-medium text-text-secondary">
 					<Wrench className="h-3 w-3" strokeWidth={1.5} />
 					Legacy
 				</span>
 			);
 		default:
 			return (
-				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] font-medium text-text-muted">
+				<span className="inline-flex items-center gap-1 rounded-full bg-warm-200 px-2 py-0.5 text-xs font-medium text-text-muted">
 					<CircleAlert className="h-3 w-3" strokeWidth={1.5} />
 					Placeholder
 				</span>

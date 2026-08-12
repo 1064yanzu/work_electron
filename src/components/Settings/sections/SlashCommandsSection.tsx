@@ -215,7 +215,7 @@ export function SlashCommandsSection() {
 			title="Claude Code 斜杠命令"
 			description="控制聊天输入框内的「命令」类别与自定义命令扫描；与 Slash `/theme` 共享同一默认主题字段。"
 			headerAction={
-				<span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] rounded-full bg-warm-200 text-text-secondary">
+				<span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-full bg-warm-200 text-text-secondary">
 					<Terminal className="w-3 h-3" strokeWidth={1.5} />
 					{snapshot.enabled ? "已启用" : "已关闭"}
 				</span>
@@ -289,7 +289,7 @@ export function SlashCommandsSection() {
 									<span className="text-[12.5px] font-medium text-text-primary">
 										{GROUP_LABEL[g] ?? g}
 									</span>
-									<span className="text-[11px] text-text-muted">
+									<span className="text-xs text-text-muted">
 										{list.length}
 									</span>
 								</button>
@@ -313,7 +313,7 @@ export function SlashCommandsSection() {
 														}
 														className="accent-primary"
 													/>
-													<span className="font-mono text-[11px] text-text-muted">
+													<span className="font-mono text-xs text-text-muted">
 														/{c.id}
 													</span>
 													<span className="truncate">{c.name}</span>

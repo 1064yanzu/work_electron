@@ -120,7 +120,7 @@ function ChatMessageAssistantContentImpl({
 				</Suspense>
 			) : null}
 
-			<div className="text-sm text-text-primary dark:text-zinc-200 leading-7 w-full overflow-hidden select-text">
+			<div className="text-sm text-text-primary dark:text-cream-200 leading-7 w-full overflow-hidden select-text">
 				{canRenderAssistantByBlocks ? (
 					<AgentBlocksInline
 						blocks={message.metadata?.blocks ?? []}

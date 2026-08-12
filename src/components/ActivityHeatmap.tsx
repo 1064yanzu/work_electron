@@ -83,7 +83,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 							{days.map((day, i) => (
 								<div
 									key={i}
-									className="text-[10px] text-text-muted h-3 leading-3"
+									className="text-[11px] text-text-muted h-3 leading-3"
 								>
 									{day}
 								</div>
@@ -93,7 +93,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 						{weeks.map((week, weekIndex) => (
 							<div key={weekIndex} className="flex flex-col gap-1">
 								{weekIndex % 4 === 0 && weekIndex > 0 ? (
-									<div className="text-[10px] text-text-muted h-3">
+									<div className="text-[11px] text-text-muted h-3">
 										{week[0]?.date
 											? months[new Date(week[0].date).getMonth()]
 											: ""}

@@ -251,7 +251,7 @@ export function ToolOutputDisplay({
 	// 默认：显示截断的文本
 	return (
 		<div className="bg-warm-50/50 p-2 rounded border border-border/50">
-			<pre className="whitespace-pre-wrap break-all text-text-secondary text-[11px] max-h-[200px] overflow-y-auto">
+			<pre className="whitespace-pre-wrap break-all text-text-secondary text-xs max-h-[200px] overflow-y-auto">
 				{outputStr.slice(0, 500) + (outputStr.length > 500 ? "..." : "")}
 			</pre>
 		</div>

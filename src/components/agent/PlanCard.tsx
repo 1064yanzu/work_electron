@@ -118,19 +118,19 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 			>
 				{completedPct > 0 && (
 					<div
-						className="h-full bg-success transition-all duration-500 ease-out"
+						className="h-full bg-success transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500 ease-out"
 						style={{ width: `${completedPct}%` }}
 					/>
 				)}
 				{executingPct > 0 && (
 					<div
-						className="h-full bg-terracotta animate-pulse transition-all [transition-duration:500ms] ease-out"
+						className="h-full bg-terracotta animate-pulse transition-[color,background-color,border-color,opacity,box-shadow,transform] [transition-duration:500ms] ease-out"
 						style={{ width: `${executingPct}%` }}
 					/>
 				)}
 				{rejectedPct > 0 && (
 					<div
-						className="h-full bg-error transition-all duration-500 ease-out"
+						className="h-full bg-error transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500 ease-out"
 						style={{ width: `${rejectedPct}%` }}
 					/>
 				)}
@@ -156,7 +156,7 @@ export function PlanCard({
 	return (
 		<div
 			className={cn(
-				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
+				"relative flex flex-col rounded-xl border overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				isExecuting
 					? "bg-surface/80 border-terracotta/30 shadow-lg shadow-terracotta/5 ring-1 ring-terracotta/20 border-l-[3px] border-l-terracotta/60"
 					: isCompleted
@@ -199,7 +199,7 @@ export function PlanCard({
 						</span>
 						<span
 							className={cn(
-								"px-1.5 py-0.5 rounded text-[10px] font-medium",
+								"px-1.5 py-0.5 rounded text-[11px] font-medium",
 								statusConfig.className,
 							)}
 						>
@@ -231,7 +231,7 @@ export function PlanCard({
 								value={feedback}
 								onChange={(e) => setFeedback(e.target.value)}
 								placeholder="描述你想修改的内容..."
-								className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-warm-50 text-text-primary dark:text-zinc-200 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-terracotta/30"
+								className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-warm-50 text-text-primary dark:text-cream-200 placeholder-cream-400 resize-none focus:outline-none focus:ring-2 focus:ring-terracotta/30"
 								rows={2}
 							/>
 							<div className="flex gap-2">

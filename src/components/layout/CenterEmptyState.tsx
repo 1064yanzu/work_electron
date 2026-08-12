@@ -148,13 +148,13 @@ export function CenterEmptyState({ groupId }: { groupId?: string }) {
 			{hasSplit ? (
 				<p
 					data-empty-foot
-					className="flex items-center gap-1.5 text-[11px] text-text-light"
+					className="flex items-center gap-1.5 text-xs text-text-light"
 				>
 					<Move className="h-3 w-3" strokeWidth={1.5} />
 					把其它标签拖进来也行；不想要这一屏就点标签条右侧的 ×
 				</p>
 			) : (
-				<p data-empty-foot className="text-[11px] text-text-light">
+				<p data-empty-foot className="text-xs text-text-light">
 					也可以点标签条右侧的 +，或用{" "}
 					{formatKeys("mod+alt+arrowright").join(" ")} 在标签间切换
 				</p>
@@ -195,7 +195,7 @@ function EmptyAction({
 				<span className="block truncate text-xs font-medium text-text-primary">
 					{label}
 				</span>
-				<span className="block truncate text-[11px] text-text-muted">
+				<span className="block truncate text-xs text-text-muted">
 					{hint}
 				</span>
 			</span>

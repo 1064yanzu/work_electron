@@ -195,11 +195,11 @@ export function BrowserShell({
 
 					<div className="flex-1 min-w-0 flex items-center justify-center">
 						<div className="inline-flex items-center gap-2 px-2.5 py-0.5 max-w-full">
-							<span className="text-[11px] font-medium text-text-secondary truncate">
+							<span className="text-xs font-medium text-text-secondary truncate">
 								{title}
 							</span>
 							{isLoading ? (
-								<span className="inline-flex items-center gap-1 text-[10px] text-text-light">
+								<span className="inline-flex items-center gap-1 text-[11px] text-text-light">
 									<span className="block w-1 h-1 rounded-full bg-terracotta animate-pulse" />
 									加载中
 								</span>

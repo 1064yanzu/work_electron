@@ -219,7 +219,7 @@ export function SettingsSearch({
 					<span
 						className={cn(
 							"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
-							"text-[10px] font-sans tabular-nums text-text-muted",
+							"text-[11px] font-sans tabular-nums text-text-muted",
 						)}
 					>
 						{shortcut("F")}
@@ -316,7 +316,7 @@ function SearchResultRow({
 					<span className="block text-[13px] font-medium leading-snug text-text-primary">
 						{field.label}
 					</span>
-					<span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+					<span className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
 						<span className="truncate">{breadcrumb}</span>
 					</span>
 					{field.description && (

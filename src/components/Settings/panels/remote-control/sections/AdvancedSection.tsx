@@ -24,7 +24,7 @@ import {
 import { StatusDot } from "../StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
 
 type CloudBindForm = {
 	relay_url: string;
@@ -143,7 +143,7 @@ export function AdvancedSection({
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Shield className="h-4 w-4 text-text-muted" />
 						默认 scopes：
-						<span className="rounded bg-surface px-1.5 py-0.5 font-mono text-[11px]">
+						<span className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">
 							{config.security.defaultScopes.join(", ") || "—"}
 						</span>
 					</div>
@@ -186,7 +186,7 @@ export function AdvancedSection({
 						</div>
 						<div className="flex items-center gap-2">
 							<span
-								className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+								className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
 									cloudNodeRuntime?.connected
 										? "bg-mint-500/10 text-mint-600"
 										: "bg-warm-200 text-text-muted"

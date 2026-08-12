@@ -244,7 +244,7 @@ export function VoiceCloneModal({
 									点击选择
 								</button>
 							</p>
-							<p className="text-[11px] text-text-muted mt-1">
+							<p className="text-xs text-text-muted mt-1">
 								支持 mp3 / wav / m4a / webm / ogg / flac
 							</p>
 							<input
@@ -292,7 +292,7 @@ export function VoiceCloneModal({
 							</div>
 							<div className="h-1 w-full rounded-full bg-warm-200 overflow-hidden">
 								<div
-									className="h-full bg-primary transition-all"
+									className="h-full bg-primary transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 									style={{ width: `${Math.round(progress * 100)}%` }}
 								/>
 							</div>

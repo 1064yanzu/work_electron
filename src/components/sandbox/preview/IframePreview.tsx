@@ -191,7 +191,7 @@ export const IframePreview = forwardRef<
 					onLoad={handleLoad}
 					onError={handleError}
 					sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
-					className="w-full h-full border-none bg-white dark:bg-zinc-900"
+					className="w-full h-full border-none bg-white dark:bg-cream-900"
 					title="沙盒预览"
 				/>
 			) : null}

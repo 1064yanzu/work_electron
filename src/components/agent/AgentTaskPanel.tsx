@@ -148,7 +148,7 @@ function ToolCallCard({
 
 			{/* 展开详情 */}
 			{isExpanded && (
-				<div className="px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+				<div className="px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
 					{/* 输入参数 */}
 					{toolCall.input && Object.keys(toolCall.input).length > 0 && (
 						<div className="p-2 bg-surface/50 rounded-lg">
@@ -323,7 +323,7 @@ export default function AgentTaskPanel({
 									void agentExecutor.setRuntimePermissionMode("default");
 									setRuntimeHint("已切换为 default 审批模式");
 								}}
-								className="px-2 py-1 text-[11px] text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
+								className="px-2 py-1 text-xs text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 								title="运行时切换为 default 审批模式"
 							>
 								default
@@ -333,7 +333,7 @@ export default function AgentTaskPanel({
 									void agentExecutor.setRuntimePermissionMode("acceptEdits");
 									setRuntimeHint("已切换为 acceptEdits 模式");
 								}}
-								className="px-2 py-1 text-[11px] text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
+								className="px-2 py-1 text-xs text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 								title="运行时切换为 acceptEdits 模式"
 							>
 								acceptEdits
@@ -345,7 +345,7 @@ export default function AgentTaskPanel({
 									void agentExecutor.setRuntimeModel(model);
 									setRuntimeHint(`已请求切换模型：${model}`);
 								}}
-								className="px-2 py-1 text-[11px] text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
+								className="px-2 py-1 text-xs text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
 								title="运行时切换为当前模型"
 							>
 								模型
@@ -375,7 +375,7 @@ export default function AgentTaskPanel({
 				</div>
 			</div>
 			{isExecuting && runtimeHint ? (
-				<div className="px-4 py-1 text-[11px] text-text-muted border-b border-border">
+				<div className="px-4 py-1 text-xs text-text-muted border-b border-border">
 					{runtimeHint}
 				</div>
 			) : null}

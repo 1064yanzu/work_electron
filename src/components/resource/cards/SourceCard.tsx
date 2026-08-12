@@ -91,7 +91,7 @@ function Favicon({
 			className={`relative shrink-0 inline-flex items-center justify-center ${className}`}
 		>
 			{showFallback ? (
-				<Icon className={`${className} text-text-light dark:text-zinc-500`} />
+				<Icon className={`${className} text-text-light dark:text-cream-500`} />
 			) : null}
 			{host && !errored ? (
 				<img
@@ -101,7 +101,7 @@ function Favicon({
 					draggable={false}
 					onLoad={() => setLoaded(true)}
 					onError={() => setErrored(true)}
-					className={`${className} rounded-[3px] select-none absolute inset-0 transition-opacity duration-150 ${
+					className={`${className} rounded select-none absolute inset-0 transition-opacity duration-150 ${
 						loaded ? "opacity-100" : "opacity-0"
 					}`}
 				/>
@@ -188,7 +188,7 @@ function MetaLine({
 		tokens.push({
 			key: `tag-${userTags[0]}`,
 			node: (
-				<span className="shrink-0 text-text-light/90 dark:text-zinc-500/90 truncate">
+				<span className="shrink-0 text-text-light/90 dark:text-cream-500/90 truncate">
 					#{userTags[0]}
 				</span>
 			),
@@ -196,7 +196,7 @@ function MetaLine({
 	}
 
 	return (
-		<div className="flex items-center gap-1.5 text-[11px] leading-[1.3] text-text-light dark:text-zinc-500 min-w-0">
+		<div className="flex items-center gap-1.5 text-xs leading-[1.3] text-text-light dark:text-cream-500 min-w-0">
 			{withFavicon ? (
 				<Favicon
 					url={source.url}
@@ -212,7 +212,7 @@ function MetaLine({
 					{i > 0 ? (
 						<span
 							aria-hidden
-							className="text-text-light/40 dark:text-zinc-700 select-none"
+							className="text-text-light/40 dark:text-cream-700 select-none"
 						>
 							·
 						</span>
@@ -254,7 +254,7 @@ function SourceCardImpl({
 				className={[
 					"group relative cursor-pointer",
 					"rounded-lg px-3 py-2.5 flex flex-col gap-2 min-h-[96px]",
-					"border transition-colors duration-100 ease-out",
+					"border transition-colors duration-150 ease-out",
 					selectionMode
 						? isSelected
 							? "border-primary/50 bg-primary/[0.04] dark:bg-primary/[0.08]"
@@ -272,7 +272,7 @@ function SourceCardImpl({
 				) : null}
 
 				{/* 标题 */}
-				<h3 className="text-[13.5px] font-medium text-text-primary dark:text-zinc-100 line-clamp-3 leading-[1.5] tracking-[-0.005em]">
+				<h3 className="text-[13.5px] font-medium text-text-primary dark:text-cream-100 line-clamp-3 leading-[1.5] tracking-[-0.005em]">
 					{source.title}
 				</h3>
 
@@ -289,7 +289,7 @@ function SourceCardImpl({
 							e.stopPropagation();
 							onDelete();
 						}}
-						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-all duration-100"
+						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 						aria-label="删除"
 					>
 						<Trash2 className="w-3 h-3" />
@@ -313,7 +313,7 @@ function SourceCardImpl({
 			className={[
 				"group relative cursor-pointer rounded-md px-2 py-1.5",
 				"flex items-start gap-2.5",
-				"transition-colors duration-100 ease-out",
+				"transition-colors duration-150 ease-out",
 				selectionMode
 					? isSelected
 						? "bg-primary/[0.04] dark:bg-primary/[0.08]"
@@ -333,11 +333,11 @@ function SourceCardImpl({
 			<Favicon
 				url={source.url}
 				kind={source.kind}
-				className="w-4 h-4 mt-[2px]"
+				className="w-4 h-4 mt-0.5"
 			/>
 
 			<div className="flex-1 min-w-0">
-				<h3 className="text-[13px] font-medium text-text-primary dark:text-zinc-100 truncate leading-[1.45]">
+				<h3 className="text-[13px] font-medium text-text-primary dark:text-cream-100 truncate leading-[1.45]">
 					{source.title}
 				</h3>
 				<div className="mt-0.5">
@@ -352,7 +352,7 @@ function SourceCardImpl({
 						e.stopPropagation();
 						onDelete();
 					}}
-					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-all duration-100 shrink-0"
+					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 shrink-0"
 					aria-label="删除"
 				>
 					<Trash2 className="w-3 h-3" />

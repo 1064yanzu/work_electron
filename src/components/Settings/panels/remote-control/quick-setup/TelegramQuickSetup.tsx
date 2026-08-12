@@ -129,7 +129,7 @@ export function TelegramQuickSetup({
 						}}
 						placeholder="123456789:ABC..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							isValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: trimmed
@@ -138,13 +138,13 @@ export function TelegramQuickSetup({
 						)}
 					/>
 					{trimmed && !isValid ? (
-						<p className="mt-1.5 text-[11px] text-error">
+						<p className="mt-1.5 text-xs text-error">
 							Token 格式不正确，应形如{" "}
 							<code className="font-mono">数字:字符串</code>
 						</p>
 					) : null}
 					{isValid ? (
-						<p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-mint-600">
+						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-mint-600">
 							<CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
 							Token 格式正确
 						</p>

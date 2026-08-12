@@ -93,7 +93,7 @@ export function RuntimePanel({
 				<button
 					type="button"
 					onClick={() => void reload()}
-					className="p-1 rounded text-text-light hover:text-text-secondary transition duration-200"
+					className="p-1 rounded text-text-light hover:text-text-secondary transition duration-150"
 					title="刷新"
 				>
 					<RefreshCw className="w-3 h-3" strokeWidth={1.6} />
@@ -132,7 +132,7 @@ function RuntimeCard({
 	return (
 		<div
 			className={cn(
-				"rounded-xl border px-3.5 py-3 transition duration-200",
+				"rounded-xl border px-3.5 py-3 transition duration-150",
 				finished
 					? "border-border/50 bg-surface/40 opacity-70"
 					: "border-border bg-surface",
@@ -141,7 +141,7 @@ function RuntimeCard({
 			<div className="flex items-start gap-2.5">
 				<span
 					className={cn(
-						"w-1.5 h-1.5 rounded-full mt-[5px] shrink-0",
+						"w-1.5 h-1.5 rounded-full mt-1 shrink-0",
 						meta.dot,
 						runtime.state === "working" && "animate-pulse",
 					)}
@@ -151,11 +151,11 @@ function RuntimeCard({
 						<span className="text-[12px] font-medium text-text-secondary truncate">
 							{runtime.label}
 						</span>
-						<span className={cn("text-[10px] shrink-0", meta.text)}>
+						<span className={cn("text-[11px] shrink-0", meta.text)}>
 							{meta.label}
 						</span>
 					</div>
-					<div className="flex items-center gap-2 mt-0.5 text-[10px] text-text-light">
+					<div className="flex items-center gap-2 mt-0.5 text-[11px] text-text-light">
 						<span>{formatElapsed(runtime.started_at, runtime.exited_at)}</span>
 						{runtime.job_run_id && <span>· 自动化任务</span>}
 						{runtime.exit_code !== null && (
@@ -170,7 +170,7 @@ function RuntimeCard({
 							type="button"
 							onClick={() => onOpenTerminal(runtime.pty_id as string)}
 							title="查看终端"
-							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-200"
+							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 						>
 							<Terminal className="w-3.5 h-3.5" strokeWidth={1.6} />
 						</button>
@@ -180,7 +180,7 @@ function RuntimeCard({
 							type="button"
 							onClick={onAbort}
 							title="中止"
-							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-200"
+							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 						>
 							<Ban className="w-3.5 h-3.5" strokeWidth={1.6} />
 						</button>

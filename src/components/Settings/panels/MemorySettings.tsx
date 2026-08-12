@@ -458,7 +458,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"group flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-all duration-150",
+				"group flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 				active
 					? cn("border bg-surface shadow-sm", style.accentBorder)
 					: "border border-transparent hover:bg-cream-50",
@@ -484,7 +484,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 				>
 					{style.label}
 				</div>
-				<div className="text-[10px] tabular-nums leading-tight text-text-muted">
+				<div className="text-[11px] tabular-nums leading-tight text-text-muted">
 					{file.limit ? (
 						<span className={cn(isWarn && "text-error")}>
 							{file.charCount} / {file.limit}
@@ -632,7 +632,7 @@ function GlobalConfirmDialog({
 	onCancel: () => void;
 }) {
 	return (
-		<div className="flex items-start justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-200">
+		<div className="flex items-start justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-150">
 			<div>
 				<div className="flex items-center gap-2 text-[13px] font-semibold text-error">
 					<AlertTriangle className="h-4 w-4" strokeWidth={1.8} />
@@ -666,7 +666,7 @@ function ClearConfirmDialog({
 }) {
 	const total = stats ? stats.user.chars + stats.memory.chars : 0;
 	return (
-		<div className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-200">
+		<div className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-150">
 			<div>
 				<div className="text-[13px] font-medium text-error">
 					确认清空 USER 与 MEMORY（共 {total} 字符）

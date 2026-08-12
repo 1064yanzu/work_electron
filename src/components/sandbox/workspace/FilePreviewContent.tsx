@@ -223,13 +223,13 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 
 	if (!file) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-900/80">
+			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-cream-50 dark:from-cream-900 dark:to-cream-900/80">
 				<div className="text-center space-y-4">
 					{/* 装饰性图标 */}
-					<div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center shadow-inner">
+					<div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-cream-100 to-cream-200 dark:from-cream-800 dark:to-cream-700 flex items-center justify-center shadow-inner">
 						<Eye className="w-7 h-7 text-text-light" />
 					</div>
-					<h3 className="text-lg font-semibold text-text-primary dark:text-zinc-200">
+					<h3 className="text-lg font-semibold text-text-primary dark:text-cream-200">
 						{emptyTitle}
 					</h3>
 					<p className="text-sm text-text-muted max-w-xs mx-auto leading-relaxed">
@@ -349,7 +349,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							<div className="w-56 h-1 rounded-full bg-cream-200 dark:bg-cream-800 overflow-hidden mb-3">
 								<div className="h-full w-1/3 bg-gradient-to-r from-terracotta via-peach-500 to-terracotta rounded-full animate-swarm-indeterminate" />
 							</div>
-							<div className="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
+							<div className="inline-flex items-center gap-1.5 text-xs text-text-muted">
 								<TerminalIcon className="w-3 h-3" strokeWidth={1.5} />
 								<span className="font-mono">npm run dev</span>
 								{previewServer?.port ? (
@@ -425,11 +425,11 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<span className="text-xs font-medium text-text-secondary truncate">
 						{file.name}
 					</span>
-					<span className="text-[10px] text-text-muted bg-warm-200 px-1 py-0.5 rounded">
+					<span className="text-[11px] text-text-muted bg-warm-200 px-1 py-0.5 rounded">
 						{fileExtensionLabel}
 					</span>
 					{sourceDirty ? (
-						<span className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
+						<span className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
 							<span className="w-1 h-1 rounded-full bg-amber-500" />
 							未保存
 						</span>
@@ -438,14 +438,14 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				<div className="flex items-center gap-0.5 flex-wrap justify-end">
 					{copiedLabel ? (
 						<span
-							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
+							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
 							aria-live="polite"
 						>
 							{copiedLabel}
 						</span>
 					) : null}
 					{isFallbackToSource ? (
-						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
 						</span>
 					) : null}
@@ -454,10 +454,10 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							type="button"
 							onClick={() => onSetPreviewMode("preview")}
 							className={cn(
-								"px-2 py-1 text-[11px] font-medium rounded inline-flex items-center gap-1 focus-ring transition-all",
+								"px-2 py-1 text-xs font-medium rounded inline-flex items-center gap-1 focus-ring transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 								effectiveMode === "preview"
 									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
+									: "text-text-secondary hover:text-text-primary dark:hover:text-cream-200",
 							)}
 							aria-label="切换到预览模式"
 						>
@@ -468,10 +468,10 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							type="button"
 							onClick={() => onSetPreviewMode("source")}
 							className={cn(
-								"px-2 py-1 text-[11px] font-medium rounded inline-flex items-center gap-1 focus-ring transition-all",
+								"px-2 py-1 text-xs font-medium rounded inline-flex items-center gap-1 focus-ring transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 								effectiveMode === "source"
 									? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
-									: "text-text-secondary hover:text-text-primary dark:hover:text-zinc-200",
+									: "text-text-secondary hover:text-text-primary dark:hover:text-cream-200",
 							)}
 							aria-label="切换到源码模式"
 						>
@@ -485,7 +485,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							onClick={handleSave}
 							disabled={!sourceDirty || isSaving}
 							className={cn(
-								"px-2 py-1 inline-flex items-center justify-center gap-1 rounded-md transition-all focus-ring text-[11px] font-medium",
+								"px-2 py-1 inline-flex items-center justify-center gap-1 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring text-xs font-medium",
 								sourceDirty
 									? "bg-primary text-white hover:bg-primary/90 shadow-sm"
 									: "text-text-muted hover:bg-warm-200",
@@ -504,7 +504,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleCopy}
 						disabled={!canCopyContent}
 						className={cn(
-							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
+							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring",
 							!canCopyContent &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
@@ -520,7 +520,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<button
 						type="button"
 						onClick={handleCopyPath}
-						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring"
+						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring"
 						title="复制路径"
 						aria-label="复制路径"
 					>
@@ -533,7 +533,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<button
 						type="button"
 						onClick={handleRevealFile}
-						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring"
+						className="w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring"
 						title="在访达/文件管理器中显示"
 						aria-label="在访达或文件管理器中显示"
 					>
@@ -545,7 +545,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							onClick={handleOpenInReader}
 							disabled={isOpeningReader}
 							className={cn(
-								"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
+								"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring",
 								isOpeningReader && "opacity-60 cursor-wait",
 							)}
 							title="在阅读器中打开"
@@ -559,7 +559,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						onClick={handleDownload}
 						disabled={!canDownload}
 						className={cn(
-							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-all focus-ring",
+							"w-7 h-7 inline-flex items-center justify-center text-text-muted hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring",
 							!canDownload &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}

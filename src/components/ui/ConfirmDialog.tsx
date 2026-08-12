@@ -70,14 +70,14 @@ function ConfirmDialogView({
 
 	const confirmButtonClass = (() => {
 		const base =
-			"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
+			"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 		switch (type) {
 			case "danger":
 				return `${base} bg-error text-white hover:bg-error shadow-red-500/20`;
 			case "warning":
 				return `${base} bg-peach-500 text-white hover:bg-peach-500 shadow-amber-500/20`;
 			default:
-				return `${base} bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10`;
+				return `${base} bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-cream-900 dark:hover:bg-white dark:shadow-white/10`;
 		}
 	})();
 
@@ -95,7 +95,7 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative w-full max-w-[440px] rounded-[24px] border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden",
+					"relative w-full max-w-[440px] rounded-3xl border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
@@ -138,7 +138,7 @@ function ConfirmDialogView({
 						<button
 							type="button"
 							onClick={() => close(false)}
-							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-all hover:bg-black/5 dark:hover:bg-white/5"
+							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
 						>
 							{cancelText}
 						</button>

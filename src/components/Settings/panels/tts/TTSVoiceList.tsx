@@ -203,7 +203,7 @@ function VoiceCard({
 		>
 			<span
 				className={cn(
-					"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold uppercase",
+					"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold uppercase",
 					voice.is_cloned
 						? "border-violetx-500/40 bg-violetx-500/10 text-violetx-600"
 						: "border-border bg-cream-100 text-text-secondary",

@@ -67,7 +67,7 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 	const intensityColors = {
 		high: "text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20",
 		medium: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20",
-		low: "text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20",
+		low: "text-cream-600 dark:text-cream-400 bg-cream-50 dark:bg-cream-900/20",
 		insufficient_evidence:
 			"text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
 	};
@@ -78,7 +78,7 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 	};
 
 	return (
-		<div className="flex gap-2 items-start text-[11px]">
+		<div className="flex gap-2 items-start text-xs">
 			<span
 				className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${intensityColors[axis.intensity]}`}
 			>
@@ -99,12 +99,12 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 					{axis.description}
 				</div>
 				{axis.conditions && (
-					<div className="mt-1 text-[10px] text-text-muted italic">
+					<div className="mt-1 text-[11px] text-text-muted italic">
 						条件：{axis.conditions}
 					</div>
 				)}
 				{axis.variance_note && axis.constancy === "variable" && (
-					<div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
+					<div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
 						浮动：{axis.variance_note}
 					</div>
 				)}
@@ -124,7 +124,7 @@ function DimensionGroup({
 
 	return (
 		<div className="space-y-2">
-			<div className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+			<div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
 				{title}
 			</div>
 			<div className="space-y-2.5">
@@ -166,16 +166,16 @@ function LayerSection({
 					<div className="text-xs font-semibold text-text-primary">
 						{config.label}
 					</div>
-					<div className="text-[10px] text-text-muted mt-0.5">
+					<div className="text-[11px] text-text-muted mt-0.5">
 						{config.description}
 					</div>
 				</div>
-				<span className="text-[10px] text-text-muted shrink-0">
+				<span className="text-[11px] text-text-muted shrink-0">
 					{totalAxes} 个维度
 				</span>
 				<ChevronDown
 					size={13}
-					className={`shrink-0 text-text-muted transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
+					className={`shrink-0 text-text-muted transition-transform duration-150 ${isExpanded ? "" : "-rotate-90"}`}
 				/>
 			</button>
 
@@ -219,18 +219,18 @@ function CrossCuttingSection({
 					<div className="text-xs font-semibold text-text-primary">
 						横切话题
 					</div>
-					<div className="text-[10px] text-text-muted mt-0.5">
+					<div className="text-[11px] text-text-muted mt-0.5">
 						贯穿三层的主题
 					</div>
 				</div>
 				<ChevronDown
 					size={13}
-					className={`shrink-0 text-text-muted transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
+					className={`shrink-0 text-text-muted transition-transform duration-150 ${isExpanded ? "" : "-rotate-90"}`}
 				/>
 			</button>
 
 			{isExpanded && (
-				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-[11px]">
+				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-xs">
 					{crossCutting.recurring_imagery && (
 						<div>
 							<div className="font-semibold text-text-primary mb-1">
@@ -343,18 +343,18 @@ function RelationalSection({
 					<div className="text-xs font-semibold text-text-primary">
 						关系性维度
 					</div>
-					<div className="text-[10px] text-text-muted mt-0.5">
+					<div className="text-[11px] text-text-muted mt-0.5">
 						气韵、全息、经变
 					</div>
 				</div>
 				<ChevronDown
 					size={13}
-					className={`shrink-0 text-text-muted transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
+					className={`shrink-0 text-text-muted transition-transform duration-150 ${isExpanded ? "" : "-rotate-90"}`}
 				/>
 			</button>
 
 			{isExpanded && (
-				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-[11px]">
+				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-xs">
 					{anchors.layer_harmony && (
 						<div>
 							<div className="font-semibold text-text-primary mb-1">
@@ -383,7 +383,7 @@ function RelationalSection({
 											<div className="text-text-secondary mb-1.5">
 												{pattern.description}
 											</div>
-											<div className="space-y-1 text-[10px] text-text-muted">
+											<div className="space-y-1 text-[11px] text-text-muted">
 												{pattern.sentence_level && (
 													<div>句子级：{pattern.sentence_level}</div>
 												)}
@@ -407,7 +407,7 @@ function RelationalSection({
 							<div className="text-text-secondary leading-relaxed mb-2">
 								{anchors.constancy_variance.summary}
 							</div>
-							<div className="grid grid-cols-2 gap-2 text-[10px]">
+							<div className="grid grid-cols-2 gap-2 text-[11px]">
 								<div className="rounded-lg bg-mint-50 dark:bg-mint-900/20 p-2">
 									<div className="font-medium text-mint-700 dark:text-mint-300 mb-1">
 										经（不变）

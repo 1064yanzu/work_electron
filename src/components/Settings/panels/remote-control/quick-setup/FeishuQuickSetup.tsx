@@ -364,14 +364,14 @@ function ReadyView({
 		<div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
 			{/* QR 码 */}
 			<div className="mx-auto flex flex-col items-center md:mx-0">
-				<div className="rounded-2xl bg-surface p-3 ring-1 ring-zinc-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:ring-zinc-700">
+				<div className="rounded-2xl bg-surface p-3 ring-1 ring-cream-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:ring-cream-700">
 					<img
 						src={qrDataUrl}
 						alt="飞书扫码授权"
 						className="h-[220px] w-[220px] rounded-lg"
 					/>
 				</div>
-				<div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+				<div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
 					<Loader2 className="h-3 w-3 animate-spin" />
 					等待扫码...
 				</div>
@@ -399,7 +399,7 @@ function ReadyView({
 
 				{/* 倒计时条 */}
 				<div>
-					<div className="flex items-center justify-between text-[11px] text-text-muted">
+					<div className="flex items-center justify-between text-xs text-text-muted">
 						<span>二维码剩余有效时间</span>
 						<span className="font-mono tabular-nums">
 							{minutes}:{seconds.toString().padStart(2, "0")}
@@ -414,7 +414,7 @@ function ReadyView({
 							style={{ width: `${progress * 100}%` }}
 						/>
 					</div>
-					<div className="mt-2 text-[11px] text-text-muted">
+					<div className="mt-2 text-xs text-text-muted">
 						User code：
 						<code className="ml-1 rounded bg-surface px-1 py-0.5 font-mono">
 							{userCode}
@@ -435,7 +435,7 @@ function StepLine({
 }) {
 	return (
 		<li className="flex items-start gap-2.5">
-			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-warm-300/70 text-[10px] font-semibold text-text-secondary">
+			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-warm-300/70 text-[11px] font-semibold text-text-secondary">
 				{index}
 			</span>
 			<span>{children}</span>
@@ -512,20 +512,20 @@ function SuccessView({
 			<div className="w-full max-w-md rounded-xl border border-border bg-surface p-3 text-left text-xs">
 				<div className="flex items-center justify-between">
 					<span className="text-text-muted">App ID</span>
-					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
+					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 						{appId}
 					</code>
 				</div>
 				<div className="mt-1.5 flex items-center justify-between">
 					<span className="text-text-muted">域名</span>
-					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
+					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 						{domain}
 					</code>
 				</div>
 				{openId ? (
 					<div className="mt-1.5 flex items-center justify-between">
 						<span className="text-text-muted">你的 open_id</span>
-						<code className="truncate rounded bg-warm-200 px-1.5 py-0.5 font-mono text-[11px]">
+						<code className="truncate rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 							{openId}
 						</code>
 					</div>

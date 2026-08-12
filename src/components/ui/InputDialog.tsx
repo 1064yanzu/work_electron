@@ -111,7 +111,7 @@ function InputDialogView({
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-[440px] rounded-[24px] border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden"
+				className="relative w-full max-w-[440px] rounded-3xl border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden"
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
@@ -155,7 +155,7 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full resize-none rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
+								className="w-full resize-none rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-[color,background-color,border-color,opacity,box-shadow,transform] placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
 							/>
 						) : (
 							<input
@@ -168,7 +168,7 @@ function InputDialogView({
 								}}
 								onKeyDown={onKeyDown}
 								placeholder={placeholder}
-								className="w-full rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-all placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
+								className="w-full rounded-xl border border-cream-300 dark:border-cream-500 bg-cream-100/60 dark:bg-cream-800/40 px-4 py-3 text-[14px] text-text-primary outline-none transition-[color,background-color,border-color,opacity,box-shadow,transform] placeholder:text-text-light hover:border-cream-400 dark:hover:border-cream-500 focus:border-cream-500 focus:bg-cream-50 dark:focus:bg-cream-900 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]"
 							/>
 						)}
 
@@ -184,7 +184,7 @@ function InputDialogView({
 						<button
 							type="button"
 							onClick={handleCancel}
-							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-all hover:bg-black/5 dark:hover:bg-white/5"
+							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
 						>
 							{cancelText}
 						</button>
@@ -193,10 +193,10 @@ function InputDialogView({
 							onClick={() => void handleConfirm()}
 							disabled={isSubmitting}
 							className={cn(
-								"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
+								"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
 								variant === "danger"
 									? "bg-error text-white hover:bg-error shadow-red-500/20"
-									: "bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-zinc-900 dark:hover:bg-white dark:shadow-white/10",
+									: "bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-cream-900 dark:hover:bg-white dark:shadow-white/10",
 							)}
 						>
 							{isSubmitting ? "处理中..." : confirmText}

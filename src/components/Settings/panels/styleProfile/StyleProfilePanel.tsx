@@ -342,7 +342,7 @@ function NoStyleCard({ selected, onClick }: NoStyleCardProps) {
 		<button
 			type="button"
 			onClick={onClick}
-			className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-150 ${
+			className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				selected
 					? "border-cream-400/60 dark:border-cream-500/50 bg-cream-100/80 dark:bg-cream-800/50"
 					: "border-cream-200/70 dark:border-cream-600/30 bg-transparent hover:bg-cream-50 dark:hover:bg-cream-800/20 hover:border-cream-300 dark:hover:border-cream-500/40"
@@ -350,7 +350,7 @@ function NoStyleCard({ selected, onClick }: NoStyleCardProps) {
 		>
 			{/* Radio 指示器 */}
 			<div
-				className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
+				className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 					selected
 						? "border-cream-700 dark:border-cream-300"
 						: "border-cream-300 dark:border-cream-500/60"

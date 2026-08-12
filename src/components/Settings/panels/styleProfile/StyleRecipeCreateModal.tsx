@@ -97,7 +97,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-			<div className="w-full max-w-lg bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-2xl border border-cream-300/50 dark:border-cream-600/30 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
+			<div className="w-full max-w-lg bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-2xl border border-cream-300/50 dark:border-cream-600/30 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-150">
 				{/* Header */}
 				<div className="flex items-center justify-between px-6 py-4 border-b border-cream-200/60 dark:border-cream-700/40">
 					<div className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 							<div className="text-sm font-semibold text-text-primary">
 								新建混搭配方
 							</div>
-							<div className="text-[10px] text-text-muted mt-0.5">
+							<div className="text-[11px] text-text-muted mt-0.5">
 								从多个风格包中挑选不同层级进行组合
 							</div>
 						</div>
@@ -186,7 +186,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 									key={opt.value}
 									type="button"
 									onClick={() => setIntensity(opt.value)}
-									className={`px-3 py-1.5 text-xs rounded-lg border transition-all duration-150 ${
+									className={`px-3 py-1.5 text-xs rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 										intensity === opt.value
 											? "bg-cream-200/80 dark:bg-cream-700/60 border-cream-400/60 dark:border-cream-500/50 text-text-primary font-medium"
 											: "bg-transparent border-cream-300/40 dark:border-cream-600/30 text-text-muted hover:text-text-secondary hover:border-cream-400/50"
@@ -212,7 +212,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 						type="button"
 						onClick={() => void handleSubmit()}
 						disabled={!canSubmit}
-						className={`px-5 py-1.5 text-sm font-medium rounded-full transition-all duration-150 ${
+						className={`px-5 py-1.5 text-sm font-medium rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							canSubmit
 								? "bg-cream-800 dark:bg-cream-200 text-cream-50 dark:text-cream-900 hover:bg-cream-900 dark:hover:bg-cream-100 shadow-sm"
 								: "bg-cream-300 dark:bg-cream-700 text-cream-500 dark:text-cream-500 cursor-not-allowed"
@@ -247,7 +247,7 @@ function LayerSelector({
 		<div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-cream-200/50 dark:border-cream-600/25 bg-cream-50/60 dark:bg-cream-800/30">
 			<div className="flex-1 min-w-0">
 				<div className="text-xs font-medium text-text-primary">{label}</div>
-				<div className="text-[10px] text-text-muted mt-0.5 leading-snug">
+				<div className="text-[11px] text-text-muted mt-0.5 leading-snug">
 					{description}
 				</div>
 			</div>

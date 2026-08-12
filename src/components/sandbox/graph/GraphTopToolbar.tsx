@@ -31,8 +31,8 @@ function FilterButton({
 			className={cn(
 				"inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors",
 				active
-					? "bg-warm-200/90 text-text-primary border-cream-400 shadow-bai-card dark:bg-zinc-800 dark:text-zinc-100 dark:border-white/[0.1]"
-					: "bg-surface/85 text-text-secondary border-black/[0.06] dark:bg-zinc-900/70 dark:text-zinc-300 dark:border-white/[0.08] hover:bg-warm-100 dark:hover:bg-zinc-800",
+					? "bg-warm-200/90 text-text-primary border-cream-400 shadow-bai-card dark:bg-cream-800 dark:text-cream-100 dark:border-white/[0.1]"
+					: "bg-surface/85 text-text-secondary border-black/[0.06] dark:bg-cream-900/70 dark:text-cream-300 dark:border-white/[0.08] hover:bg-warm-100 dark:hover:bg-cream-800",
 			)}
 		>
 			<span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
@@ -92,7 +92,7 @@ export function GraphTopToolbar({
 							onKeyDown={onSearchInputKeyDown}
 							placeholder="搜索节点..."
 							className={cn(
-								"max-w-[68vw] pl-8 pr-8 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-surface/85 backdrop-blur-xl text-text-secondary dark:text-zinc-200 placeholder:text-text-muted dark:placeholder:text-text-muted focus-ring",
+								"max-w-[68vw] pl-8 pr-8 text-xs rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-surface/85 backdrop-blur-md text-text-secondary dark:text-cream-200 placeholder:text-text-muted dark:placeholder:text-text-muted focus-ring",
 								density === "compact" ? "w-48 py-1.5" : "w-56 py-2",
 							)}
 							aria-label="搜索运行图节点"
@@ -101,7 +101,7 @@ export function GraphTopToolbar({
 							<button
 								type="button"
 								onClick={onClearSearch}
-								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200/80 transition-colors"
+								className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200/80 transition-colors"
 								title="清空搜索"
 								aria-label="清空搜索"
 							>
@@ -115,7 +115,7 @@ export function GraphTopToolbar({
 								type="button"
 								onClick={onFocusFirstSearchMatch}
 								disabled={searchMatchedNodeCount === 0}
-								className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-text-secondary dark:text-zinc-200 hover:bg-warm-200 disabled:opacity-50"
+								className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-text-secondary dark:text-cream-200 hover:bg-warm-200 disabled:opacity-50"
 								title="定位第一个匹配项"
 								aria-label="定位第一个匹配节点"
 							>
@@ -179,11 +179,11 @@ export function GraphTopToolbar({
 						type="button"
 						onClick={onToggleFollow}
 						className={cn(
-							"inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-medium border backdrop-blur-xl transition-all",
+							"inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-medium border backdrop-blur-md transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 							"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
 							follow
 								? "bg-dark-muted text-white border-black/[0.06] dark:border-white/[0.08]"
-								: "bg-surface/85 text-text-secondary dark:text-zinc-200 border-black/[0.06] dark:border-white/[0.08] hover:bg-surface/70",
+								: "bg-surface/85 text-text-secondary dark:text-cream-200 border-black/[0.06] dark:border-white/[0.08] hover:bg-surface/70",
 						)}
 						title={
 							follow ? "正在跟随运行节点（Alt+F）" : "暂停自动聚焦（Alt+F）"

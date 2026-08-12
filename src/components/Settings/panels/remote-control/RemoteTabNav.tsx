@@ -70,7 +70,7 @@ export function RemoteTabNav({
 		>
 			{/* 指示条 */}
 			<span
-				className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-warm-200 transition-[left,width] duration-300 ease-out"
+				className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-warm-200 transition-[left,width] duration-250 ease-out"
 				style={{ left: indicator.left, width: indicator.width }}
 			/>
 
@@ -94,7 +94,7 @@ export function RemoteTabNav({
 						}}
 						onClick={() => onChange(tab.key)}
 						className={cn(
-							"relative z-10 inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-medium transition-colors duration-200",
+							"relative z-10 inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-medium transition-colors duration-150",
 							isActive
 								? "text-text-primary"
 								: "text-text-muted hover:text-text-secondary",
@@ -111,7 +111,7 @@ export function RemoteTabNav({
 						{typeof tab.badge === "number" && tab.badge > 0 ? (
 							<span
 								className={cn(
-									"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-4 tabular-nums",
+									"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-4 tabular-nums",
 									badgeToneClass,
 								)}
 							>

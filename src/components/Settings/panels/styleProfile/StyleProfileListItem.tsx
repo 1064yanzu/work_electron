@@ -186,7 +186,7 @@ export function StyleProfileListItem({
 
 	return (
 		<div
-			className={`rounded-xl border overflow-hidden transition-all duration-200 ${
+			className={`rounded-xl border overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				isActive
 					? "border-mint-400/60 dark:border-mint-500/40 shadow-sm shadow-mint-100/50 dark:shadow-mint-900/20"
 					: "border-cream-300/70 dark:border-cream-600/40"
@@ -203,7 +203,7 @@ export function StyleProfileListItem({
 						className="shrink-0 group"
 					>
 						<div
-							className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+							className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 								isActive
 									? "border-mint-600 dark:border-mint-400"
 									: "border-cream-300 dark:border-cream-500/60 group-hover:border-cream-400 dark:group-hover:border-cream-400/70"
@@ -224,7 +224,7 @@ export function StyleProfileListItem({
 				>
 					<ChevronDown
 						size={13}
-						className={`shrink-0 text-text-muted transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
+						className={`shrink-0 text-text-muted transition-transform duration-150 ${expanded ? "" : "-rotate-90"}`}
 					/>
 					<span className="text-sm font-medium text-text-primary truncate">
 						{profile.name}
@@ -234,17 +234,17 @@ export function StyleProfileListItem({
 				{/* 状态徽章 + 样本数 */}
 				<div className="flex items-center gap-1.5 shrink-0">
 					{isActive && (
-						<span className="rounded-full bg-mint-100 dark:bg-mint-900/30 px-2 py-0.5 text-[10px] font-semibold text-mint-700 dark:text-mint-300">
+						<span className="rounded-full bg-mint-100 dark:bg-mint-900/30 px-2 py-0.5 text-[11px] font-semibold text-mint-700 dark:text-mint-300">
 							激活
 						</span>
 					)}
 					{analysis && (
-						<span className="rounded-full bg-violet-100/70 dark:bg-violet-900/30 px-2 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-300">
+						<span className="rounded-full bg-violet-100/70 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-300">
 							已分析
 						</span>
 					)}
 					{!expanded && samples.length > 0 && (
-						<span className="text-[10px] text-text-muted">
+						<span className="text-[11px] text-text-muted">
 							{samples.length} 篇样本
 						</span>
 					)}
@@ -280,7 +280,7 @@ export function StyleProfileListItem({
 						type="button"
 						onClick={handleDeleteClick}
 						title={confirmDelete ? "再次点击确认删除" : "删除"}
-						className={`rounded-lg p-1.5 transition-all duration-200 ${
+						className={`rounded-lg p-1.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							confirmDelete
 								? "text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 scale-105"
 								: "text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -295,13 +295,13 @@ export function StyleProfileListItem({
 			{confirmDelete && (
 				<div className="mx-3.5 mb-2 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200/70 dark:border-red-700/40 px-3 py-1.5">
 					<AlertCircle size={12} className="shrink-0 text-red-500" />
-					<span className="flex-1 text-[11px] text-red-600 dark:text-red-400">
+					<span className="flex-1 text-xs text-red-600 dark:text-red-400">
 						确认删除「{profile.name}」？此操作不可恢复。
 					</span>
 					<button
 						type="button"
 						onClick={() => setConfirmDelete(false)}
-						className="text-[11px] text-text-secondary hover:text-text-primary transition-colors duration-150"
+						className="text-xs text-text-secondary hover:text-text-primary transition-colors duration-150"
 					>
 						取消
 					</button>
@@ -312,7 +312,7 @@ export function StyleProfileListItem({
 			{(analyzing || analyzeSteps.length > 0 || analyzeError) && (
 				<div className="mx-3.5 mb-2 rounded-lg bg-cream-50/80 dark:bg-cream-800/30 border border-cream-200/60 dark:border-cream-600/30 px-3 py-2">
 					{analyzeError ? (
-						<div className="flex items-center gap-2 text-[11px] text-red-500">
+						<div className="flex items-center gap-2 text-xs text-red-500">
 							<AlertCircle size={12} className="shrink-0" />
 							{analyzeError}
 						</div>
@@ -321,12 +321,12 @@ export function StyleProfileListItem({
 							{analyzeSteps.map((s) => (
 								<div key={s.step} className="flex items-center gap-2">
 									<div
-										className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-300 ${
+										className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-250 ${
 											s.done ? "bg-mint-500" : "bg-violet-400 animate-pulse"
 										}`}
 									/>
 									<span
-										className={`text-[11px] ${s.done ? "text-text-muted" : "text-text-secondary"}`}
+										className={`text-xs ${s.done ? "text-text-muted" : "text-text-secondary"}`}
 									>
 										{s.step}/{s.total} {s.name}
 										{s.done ? " ✓" : "…"}
@@ -334,7 +334,7 @@ export function StyleProfileListItem({
 								</div>
 							))}
 							{analyzing && analyzeSteps.length === 0 && (
-								<div className="flex items-center gap-2 text-[11px] text-text-muted">
+								<div className="flex items-center gap-2 text-xs text-text-muted">
 									<Loader2 size={11} className="animate-spin shrink-0" />
 									启动分析…
 								</div>
@@ -350,7 +350,7 @@ export function StyleProfileListItem({
 					{/* 样本列表 */}
 					<div>
 						<div className="mb-3 flex items-center justify-between">
-							<span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+							<span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
 								样本文章
 								{samples.length > 0 && (
 									<span className="ml-1.5 font-normal normal-case tracking-normal text-text-secondary">
@@ -362,7 +362,7 @@ export function StyleProfileListItem({
 								<button
 									type="button"
 									onClick={() => setShowTextForm(true)}
-									className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
+									className="flex items-center gap-1 text-xs text-text-secondary hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
 								>
 									<Plus size={11} />
 									粘贴文本
@@ -411,7 +411,7 @@ export function StyleProfileListItem({
 								{samples.map((s) => (
 									<div
 										key={s.id}
-										className="flex items-center gap-2.5 rounded-lg bg-white/60 dark:bg-cream-800/40 border border-cream-200/50 dark:border-cream-600/20 px-3 py-2 group hover:border-cream-300/70 dark:hover:border-cream-500/30 transition-colors duration-100"
+										className="flex items-center gap-2.5 rounded-lg bg-white/60 dark:bg-cream-800/40 border border-cream-200/50 dark:border-cream-600/20 px-3 py-2 group hover:border-cream-300/70 dark:hover:border-cream-500/30 transition-colors duration-150"
 									>
 										<FileText
 											size={12}
@@ -420,13 +420,13 @@ export function StyleProfileListItem({
 										<span className="flex-1 min-w-0 truncate text-xs text-text-primary">
 											{s.title ?? "未命名样本"}
 										</span>
-										<span className="shrink-0 text-[10px] text-text-muted">
+										<span className="shrink-0 text-[11px] text-text-muted">
 											{s.word_count.toLocaleString()} 字
 										</span>
 										<button
 											type="button"
 											onClick={() => void handleRemoveSample(s.id)}
-											className="shrink-0 text-text-muted/30 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-150"
+											className="shrink-0 text-text-muted/30 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 											title="移除样本"
 										>
 											<Trash2 size={11} />
@@ -439,7 +439,7 @@ export function StyleProfileListItem({
 
 					{/* 风格维度校准 */}
 					<div>
-						<div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+						<div className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
 							风格维度校准
 						</div>
 						<StyleProfileCalibratePanel

@@ -327,7 +327,7 @@ export const SourceDetailView = forwardRef<
 	const isSource = "kind" in previewSource;
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200 bg-surface">
+		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-150 bg-surface">
 			{/* 划词引用弹窗 */}
 			{selectionPopup && (
 				<div
@@ -402,7 +402,7 @@ export const SourceDetailView = forwardRef<
 						<input
 							value={editTitle}
 							onChange={(e) => setEditTitle(e.target.value)}
-							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-zinc-200"
+							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-cream-200"
 							placeholder="标题"
 						/>
 					) : (
@@ -488,7 +488,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.BrowserClip && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 dark:bg-emerald-900/20 text-success dark:text-success rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 dark:bg-emerald-900/20 text-success dark:text-success rounded text-[11px] font-medium">
 											<Globe className="w-2.5 h-2.5" />
 											浏览器剪存
 										</span>
@@ -496,7 +496,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.WebSearch && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus rounded text-[11px] font-medium">
 											<Search className="w-2.5 h-2.5" />
 											网络搜索
 										</span>
@@ -504,14 +504,14 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.Import && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-[10px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-[11px] font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
 										</span>
 									)}
 								{isSource && (
 									<span
-										className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
+										className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
 									>
 										{getScopeLabel(previewSource as Source)}
 									</span>
@@ -522,7 +522,7 @@ export const SourceDetailView = forwardRef<
 										.map((tag) => (
 											<span
 												key={`${previewSource.id}-detail-tag-${tag}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-200/80 text-text-secondary"
+												className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-warm-200/80 text-text-secondary"
 											>
 												#{tag}
 											</span>
@@ -534,7 +534,7 @@ export const SourceDetailView = forwardRef<
 												(previewSource as Source).storage_path!,
 											)
 										}
-										className="inline-flex items-center gap-1 text-text-muted hover:text-text-secondary text-[11px]"
+										className="inline-flex items-center gap-1 text-text-muted hover:text-text-secondary text-xs"
 										title={(previewSource as Source).storage_path}
 									>
 										<Copy className="w-3 h-3" />
@@ -573,13 +573,13 @@ export const SourceDetailView = forwardRef<
 												setEditHtmlContent(e.currentTarget.innerHTML)
 											}
 											dangerouslySetInnerHTML={{ __html: editHtmlContent }}
-											className="w-full min-h-[60vh] p-6 bg-surface border border-border rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600 prose prose-zinc dark:prose-invert max-w-none overflow-auto"
+											className="w-full min-h-[60vh] p-6 bg-surface border border-border rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-cream-300 dark:focus:ring-cream-600 prose prose-zinc dark:prose-invert max-w-none overflow-auto"
 										/>
 									) : (
 										<textarea
 											value={editContent}
 											onChange={(e) => setEditContent(e.target.value)}
-											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-zinc-200 resize-none font-mono"
+											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-cream-200 resize-none font-mono"
 											placeholder="输入内容..."
 										/>
 									)}

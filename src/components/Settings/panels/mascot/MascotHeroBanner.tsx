@@ -113,7 +113,7 @@ export function MascotHeroBanner({
 				<div className="flex flex-col gap-3">
 					<div className="flex items-center gap-2">
 						<span
-							className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+							className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
 							style={{
 								backgroundColor: `${accent}1F`,
 								color: accent,
@@ -159,7 +159,7 @@ export function MascotHeroBanner({
 						{meta.personality}
 					</p>
 
-					<div className="mt-1 flex items-center gap-2 text-[11px] text-text-muted">
+					<div className="mt-1 flex items-center gap-2 text-xs text-text-muted">
 						<Sparkles
 							className="h-3.5 w-3.5"
 							strokeWidth={1.6}
@@ -172,7 +172,7 @@ export function MascotHeroBanner({
 							</code>
 						</span>
 						{!meta.isBuiltin && (
-							<span className="rounded-full bg-cream-200 px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+							<span className="rounded-full bg-cream-200 px-2 py-0.5 text-[11px] font-medium text-text-secondary">
 								自定义
 							</span>
 						)}

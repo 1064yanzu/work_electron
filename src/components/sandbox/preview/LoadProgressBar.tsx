@@ -60,7 +60,7 @@ export function LoadProgressBar({ loading, className }: LoadProgressBarProps) {
 		<div
 			className={cn(
 				"absolute left-0 right-0 top-0 h-[2px] pointer-events-none z-20",
-				"transition-opacity duration-300",
+				"transition-opacity duration-250",
 				visible ? "opacity-100" : "opacity-0",
 				className,
 			)}
@@ -69,7 +69,7 @@ export function LoadProgressBar({ loading, className }: LoadProgressBarProps) {
 			<div className="relative h-full w-full overflow-hidden">
 				<div
 					className={cn(
-						"h-full transition-[width] duration-200 ease-out",
+						"h-full transition-[width] duration-150 ease-out",
 						"bg-gradient-to-r from-terracotta via-peach-500 to-terracotta",
 					)}
 					style={{ width: `${progress}%` }}

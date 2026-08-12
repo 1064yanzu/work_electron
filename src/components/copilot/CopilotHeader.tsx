@@ -41,7 +41,7 @@ export function CopilotHeader({
 						AI 助手
 					</h2>
 					{isAgentExecuting ? (
-						<span className="flex items-center gap-1 text-[10px] text-text-secondary font-medium animate-pulse">
+						<span className="flex items-center gap-1 text-[11px] text-text-secondary font-medium animate-pulse">
 							<Loader2 className="w-2.5 h-2.5 animate-spin" strokeWidth={1.5} />
 							{agentTaskType === "research" ? "正在深度研究" : "Agent 执行中"}
 						</span>

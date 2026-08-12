@@ -53,7 +53,7 @@ export function ResourceSidebarHeader({
 		<div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1.5">
 			<div className="flex min-w-0 items-center gap-2">
 				{viewTabs}
-				<span className="min-w-0 truncate text-[11px] text-text-muted">
+				<span className="min-w-0 truncate text-xs text-text-muted">
 					{counts}
 				</span>
 			</div>

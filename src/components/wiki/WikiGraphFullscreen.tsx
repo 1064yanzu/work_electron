@@ -128,7 +128,7 @@ export function WikiGraphFullscreen() {
 			<div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 bg-surface/70 shrink-0">
 				<button
 					onClick={handleClose}
-					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"
+					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-cream-200 hover:bg-warm-200 transition-colors"
 					title="关闭标签页"
 				>
 					<X className="h-3.5 w-3.5" />
@@ -137,7 +137,7 @@ export function WikiGraphFullscreen() {
 
 				<button
 					onClick={() => setSidebarOpen((v) => !v)}
-					className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 transition-colors"
+					className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 transition-colors"
 					title={sidebarOpen ? "收起筛选面板" : "展开筛选面板"}
 				>
 					{sidebarOpen ? (
@@ -150,7 +150,7 @@ export function WikiGraphFullscreen() {
 				<div className="flex items-center gap-2">
 					<BookOpen className="h-4 w-4 text-primary" />
 					<h1 className="text-sm font-semibold text-text-primary">知识地图</h1>
-					<span className="text-[11px] text-text-light tabular-nums">
+					<span className="text-xs text-text-light tabular-nums">
 						{pages.length} 页
 					</span>
 				</div>
@@ -190,7 +190,7 @@ export function WikiGraphFullscreen() {
 				<button
 					onClick={refresh}
 					disabled={loading}
-					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-zinc-200 hover:bg-warm-200 disabled:opacity-40 transition-colors"
+					className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:text-text-primary dark:hover:text-cream-200 hover:bg-warm-200 disabled:opacity-40 transition-colors"
 				>
 					<RefreshCw
 						className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
@@ -203,12 +203,12 @@ export function WikiGraphFullscreen() {
 			<div className="flex-1 flex overflow-hidden">
 				{/* Left filter panel — collapsible */}
 				<aside
-					className={`shrink-0 border-r border-border/70 bg-surface/50 overflow-y-auto transition-all duration-200 ${
+					className={`shrink-0 border-r border-border/70 bg-surface/50 overflow-y-auto transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 						sidebarOpen ? "w-44" : "w-0 opacity-0 pointer-events-none"
 					}`}
 				>
 					<div className="px-3 py-3 min-w-[176px]">
-						<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-2">
+						<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-2">
 							节点类型
 						</div>
 						<div className="space-y-0.5">
@@ -236,7 +236,7 @@ export function WikiGraphFullscreen() {
 										<span className="flex-1 text-xs text-text-secondary truncate">
 											{meta.label}
 										</span>
-										<span className="text-[10px] tabular-nums text-text-light shrink-0">
+										<span className="text-[11px] tabular-nums text-text-light shrink-0">
 											{count}
 										</span>
 									</label>
@@ -245,10 +245,10 @@ export function WikiGraphFullscreen() {
 						</div>
 
 						<div className="mt-4 pt-3 border-t border-border/60">
-							<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-2">
+							<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-2">
 								操作提示
 							</div>
-							<ul className="space-y-1.5 text-[10px] text-text-muted leading-relaxed">
+							<ul className="space-y-1.5 text-[11px] text-text-muted leading-relaxed">
 								<li>· 点击节点 → 聚焦到该节点</li>
 								<li>· 聚焦后再次点击 → 打开页面</li>
 								<li>· 拖拽节点调整布局</li>
@@ -302,14 +302,14 @@ function WikiNodeDetailOverlay({
 }) {
 	return (
 		<div
-			className={`absolute top-3 right-3 bottom-3 w-64 pointer-events-none transition-all duration-200 ${
+			className={`absolute top-3 right-3 bottom-3 w-64 pointer-events-none transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				page
 					? "opacity-100 translate-x-0 pointer-events-auto"
 					: "opacity-0 translate-x-4"
 			}`}
 		>
 			{page && (
-				<div className="h-full overflow-y-auto rounded-xl border border-border/80 bg-surface/90 backdrop-blur-md shadow-lg shadow-zinc-900/10 dark:shadow-zinc-950/40">
+				<div className="h-full overflow-y-auto rounded-xl border border-border/80 bg-surface/90 backdrop-blur-md shadow-lg shadow-cream-900/10 dark:shadow-cream-900/40">
 					<WikiNodeDetailContent
 						page={page}
 						onOpen={onOpen}
@@ -341,11 +341,11 @@ function WikiNodeDetailContent({
 						className="inline-block w-2 h-2 rounded-full shrink-0"
 						style={{ background: color }}
 					/>
-					<span className="text-[10px] uppercase tracking-[0.18em] text-text-light truncate">
+					<span className="text-[11px] uppercase tracking-[0.18em] text-text-light truncate">
 						{page.page_type ?? "entity"}
 					</span>
 					{page.status && page.status !== "active" && (
-						<span className="text-[10px] uppercase tracking-wider text-peach-500 bg-peach-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
+						<span className="text-[11px] uppercase tracking-wider text-peach-500 bg-peach-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
 							{page.status}
 						</span>
 					)}
@@ -371,14 +371,14 @@ function WikiNodeDetailContent({
 
 			{page.aliases && page.aliases.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
 						别名
 					</div>
 					<div className="flex flex-wrap gap-1">
 						{page.aliases.map((a) => (
 							<span
 								key={a}
-								className="px-1.5 py-0.5 text-[10px] bg-warm-200 text-text-secondary rounded"
+								className="px-1.5 py-0.5 text-[11px] bg-warm-200 text-text-secondary rounded"
 							>
 								{a}
 							</span>
@@ -389,14 +389,14 @@ function WikiNodeDetailContent({
 
 			{page.tags.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
 						标签
 					</div>
 					<div className="flex flex-wrap gap-1">
 						{page.tags.map((t) => (
 							<span
 								key={t}
-								className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-primary/8 text-primary/80 rounded"
+								className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium bg-primary/8 text-primary/80 rounded"
 							>
 								<Tag className="h-2.5 w-2.5" />
 								{t}
@@ -408,21 +408,21 @@ function WikiNodeDetailContent({
 
 			{page.sources && page.sources.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[10px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
 						溯源（{page.sources.length}）
 					</div>
 					<ul className="space-y-0.5">
 						{page.sources.slice(0, 6).map((s) => (
 							<li
 								key={s}
-								className="text-[11px] text-text-muted truncate"
+								className="text-xs text-text-muted truncate"
 								title={s}
 							>
 								· {s.split(/[/\\]/).pop() ?? s}
 							</li>
 						))}
 						{page.sources.length > 6 && (
-							<li className="text-[10px] text-text-light">
+							<li className="text-[11px] text-text-light">
 								...还有 {page.sources.length - 6} 个来源
 							</li>
 						)}
@@ -438,7 +438,7 @@ function WikiNodeDetailContent({
 					<Pencil className="h-3.5 w-3.5" />
 					在编辑器中打开
 				</button>
-				<div className="flex items-center gap-1.5 text-[10px] text-text-light">
+				<div className="flex items-center gap-1.5 text-[11px] text-text-light">
 					<FileText className="h-3 w-3 shrink-0" />
 					<span className="truncate">{page.slug}</span>
 				</div>

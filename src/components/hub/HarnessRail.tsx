@@ -63,14 +63,14 @@ export function HarnessRail({
 				type="button"
 				onClick={() => onFilter(null)}
 				className={cn(
-					"shrink-0 px-3 py-2 rounded-xl border text-left transition duration-200",
+					"shrink-0 px-3 py-2 rounded-xl border text-left transition duration-150",
 					activeFilter === null
 						? "border-terracotta/40 bg-terracotta/[0.07]"
 						: "border-border/70 hover:border-border hover:bg-warm-200/40 dark:hover:bg-cream-800/30",
 				)}
 			>
 				<div className="text-[11.5px] font-medium text-text-primary">全部</div>
-				<div className="text-[10px] text-text-light mt-0.5">所有入口</div>
+				<div className="text-[11px] text-text-light mt-0.5">所有入口</div>
 			</button>
 
 			{entries.map((entry) => {
@@ -111,7 +111,7 @@ export function HarnessRail({
 										: `${entry.label} 当前不可用`
 						}
 						className={cn(
-							"group relative shrink-0 min-w-[112px] px-3 py-2 rounded-xl border text-left transition duration-200",
+							"group relative shrink-0 min-w-[112px] px-3 py-2 rounded-xl border text-left transition duration-150",
 							isDropTarget
 								? "border-terracotta bg-terracotta/[0.14] scale-[1.03] shadow-sm"
 								: isActive
@@ -149,7 +149,7 @@ export function HarnessRail({
 								/>
 							)}
 						</div>
-						<div className="text-[10px] text-text-light mt-0.5 tabular-nums">
+						<div className="text-[11px] text-text-light mt-0.5 tabular-nums">
 							{runtimeMeta
 								? runtimeMeta.label
 								: entry.blocked

@@ -34,7 +34,7 @@ import {
 } from "./ChannelFeatureToggles";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
 
 type WechatChannelConfig = NonNullable<
 	RemoteControlConfig["channels"]["wechat"]
@@ -113,7 +113,7 @@ export function WechatChannelCard({
 								<SettingsSectionTitle className="mb-0">
 									个人微信通道
 								</SettingsSectionTitle>
-								<span className="inline-flex items-center gap-1 rounded-full bg-peach-500/15 px-2 py-0.5 text-[11px] font-medium text-peach-500">
+								<span className="inline-flex items-center gap-1 rounded-full bg-peach-500/15 px-2 py-0.5 text-xs font-medium text-peach-500">
 									<AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
 									实验特性
 								</span>

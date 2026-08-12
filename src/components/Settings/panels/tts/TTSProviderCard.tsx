@@ -151,7 +151,7 @@ export function TTSProviderCard({
 							</h3>
 							<span
 								className={cn(
-									"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+									"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
 									provider.is_enabled
 										? "bg-mint-500/10 text-mint-600"
 										: "bg-cream-200 text-text-muted",
@@ -364,7 +364,7 @@ export function TTSProviderCard({
 								音色管理
 							</span>
 							{cloneCount > 0 && (
-								<span className="rounded-full bg-violetx-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violetx-600">
+								<span className="rounded-full bg-violetx-500/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-violetx-600">
 									{cloneCount} 克隆
 								</span>
 							)}
@@ -376,7 +376,7 @@ export function TTSProviderCard({
 										type="button"
 										onClick={() => setShowCloneModal(true)}
 										disabled={!provider.is_enabled || !provider.api_key}
-										className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary disabled:opacity-40"
+										className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary disabled:opacity-40"
 									>
 										<Plus className="h-3 w-3" strokeWidth={1.8} />
 										克隆音色
@@ -488,7 +488,7 @@ function ApiBasePresetChips({
 						aria-pressed={active}
 						title={preset.value}
 						className={cn(
-							"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+							"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
 							active
 								? "shadow-[0_0_0_1px_currentColor_inset]"
 								: "border-border bg-surface text-text-secondary hover:border-cream-500 hover:text-text-primary",

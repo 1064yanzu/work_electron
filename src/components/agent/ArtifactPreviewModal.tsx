@@ -51,7 +51,7 @@ function ToolbarButton({
 				"flex items-center gap-2 px-3 py-2 rounded-lg",
 				"text-sm font-medium text-text-secondary",
 				"hover:bg-warm-200",
-				"transition-colors duration-200",
+				"transition-colors duration-150",
 				className,
 			)}
 		>
@@ -197,7 +197,7 @@ function GenericPreview({
 				<span className="text-4xl">📄</span>
 			</div>
 			<div className="text-center">
-				<h3 className="text-lg font-semibold text-text-primary dark:text-zinc-200">
+				<h3 className="text-lg font-semibold text-text-primary dark:text-cream-200">
 					{fileName}
 				</h3>
 				<p className="text-sm text-text-muted mt-1">
@@ -273,7 +273,7 @@ export default function ArtifactPreviewModal({
 				"fixed inset-0 z-50",
 				"flex items-center justify-center",
 				"bg-black/50 backdrop-blur-sm",
-				"animate-in fade-in duration-200",
+				"animate-in fade-in duration-150",
 			)}
 			onClick={onClose}
 		>
@@ -283,14 +283,14 @@ export default function ArtifactPreviewModal({
 					"bg-surface",
 					"rounded-3xl shadow-2xl",
 					"flex flex-col overflow-hidden",
-					"animate-in zoom-in-95 duration-300",
+					"animate-in zoom-in-95 duration-250",
 				)}
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* 顶部工具栏 */}
 				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
-						<h2 className="text-lg font-semibold text-text-primary dark:text-zinc-200 truncate max-w-md">
+						<h2 className="text-lg font-semibold text-text-primary dark:text-cream-200 truncate max-w-md">
 							{fileName}
 						</h2>
 						<span className="px-2 py-0.5 text-xs font-medium rounded-md bg-warm-200 text-text-muted">
@@ -328,7 +328,7 @@ export default function ArtifactPreviewModal({
 									"ml-2 p-2 rounded-lg",
 									"text-text-light hover:text-text-secondary dark:hover:text-text-light",
 									"hover:bg-warm-200",
-									"transition-colors duration-200",
+									"transition-colors duration-150",
 								)}
 							>
 								<X className="w-5 h-5" />

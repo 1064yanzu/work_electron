@@ -41,7 +41,7 @@ export function SettingsSidebar({
 		<aside
 			// bg（比内容区的 surface 暗一档）+ 极淡描边：分栏主要靠明暗，
 			// 描边只是收个边。一条实边框配同色底会显得像用尺子划开的，很硬。
-			className="flex w-[248px] shrink-0 flex-col border-r border-border/60 bg-background transition-colors duration-300"
+			className="flex w-[248px] shrink-0 flex-col border-r border-border/60 bg-background transition-colors duration-250"
 			aria-label="设置"
 		>
 			<div className="shrink-0 space-y-3 px-3 pb-2 pt-4">

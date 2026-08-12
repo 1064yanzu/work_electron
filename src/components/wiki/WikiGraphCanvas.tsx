@@ -457,7 +457,7 @@ export function WikiGraphCanvas({
 						</div>
 					)}
 					<div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-full">
-						<div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-zinc-900" />
+						<div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-cream-900" />
 					</div>
 				</div>
 			)}

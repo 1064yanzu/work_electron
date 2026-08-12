@@ -81,10 +81,10 @@ function SuggestionButton({
 			onClick={() => onSelect(suggestion)}
 			disabled={isLoading}
 			className={cn(
-				"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+				"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"disabled:opacity-50 disabled:cursor-not-allowed",
 				suggestion.isRecommended
-					? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-zinc-900"
+					? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-cream-900"
 					: "",
 				colorClasses[suggestion.action],
 			)}
@@ -232,7 +232,7 @@ export default function ErrorRecovery({
 	};
 
 	return (
-		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-red-200 dark:ring-red-800/50 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-red-200 dark:ring-red-800/50 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-250">
 			{/* 警告条 */}
 			<div className="px-4 py-2 bg-error/8 dark:bg-red-900/20 flex items-center gap-2">
 				<AlertTriangle className="w-4 h-4 text-error" />

@@ -258,7 +258,7 @@ export default function WebSearchModule({
 			{/* 搜索输入区域 - 紧凑设计 */}
 			<div className="space-y-2 mb-3">
 				{/* 搜索框 */}
-				<div className="relative flex items-center gap-2 px-3 py-2.5 bg-warm-200/80 rounded-xl transition-all focus-within:bg-surface dark:focus-within:bg-dark-surface focus-within:shadow-sm focus-within:ring-1 focus-within:ring-zinc-200 dark:focus-within:ring-zinc-700">
+				<div className="relative flex items-center gap-2 px-3 py-2.5 bg-warm-200/80 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-within:bg-surface dark:focus-within:bg-dark-surface focus-within:shadow-sm focus-within:ring-1 focus-within:ring-cream-200 dark:focus-within:ring-cream-700">
 					<Search className="w-4 h-4 text-text-light shrink-0" />
 					<input
 						ref={inputRef}
@@ -267,7 +267,7 @@ export default function WebSearchModule({
 						onChange={(e) => setQuery(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="搜索网络内容..."
-						className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary dark:text-zinc-200 placeholder:text-text-light"
+						className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary dark:text-cream-200 placeholder:text-text-light"
 					/>
 					{query && (
 						<button
@@ -283,7 +283,7 @@ export default function WebSearchModule({
 						onClick={handleSearch}
 						disabled={!query.trim() || isSearching}
 						aria-label="执行搜索"
-						className={`p-1.5 rounded-lg transition-all ${
+						className={`p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 							query.trim() && !isSearching
 								? "bg-dark-muted text-white hover:opacity-90"
 								: "bg-cream-400/50 dark:bg-cream-700/50 text-text-light cursor-not-allowed"
@@ -344,7 +344,7 @@ export default function WebSearchModule({
 			{/* 搜索结果 */}
 			{results.length > 0 && (
 				<div className="flex-1 overflow-hidden flex flex-col min-h-0">
-					<div className="flex items-center justify-between py-1.5 text-[11px] text-text-light shrink-0">
+					<div className="flex items-center justify-between py-1.5 text-xs text-text-light shrink-0">
 						<span>找到 {results.length} 个结果</span>
 					</div>
 
@@ -356,7 +356,7 @@ export default function WebSearchModule({
 							return (
 								<div
 									key={idx}
-									className={`p-2.5 rounded-lg transition-all group ${
+									className={`p-2.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] group ${
 										isAdded
 											? "bg-green-50 dark:bg-green-900/10 ring-1 ring-green-200 dark:ring-green-800"
 											: "hover:bg-warm-200/80"
@@ -407,10 +407,10 @@ export default function WebSearchModule({
 
 										{/* 内容 */}
 										<div className="flex-1 min-w-0">
-											<h4 className="text-[13px] font-medium text-text-primary dark:text-zinc-200 line-clamp-1 leading-tight">
+											<h4 className="text-[13px] font-medium text-text-primary dark:text-cream-200 line-clamp-1 leading-tight">
 												{result.title}
 											</h4>
-											<p className="text-[11px] text-text-muted mt-0.5 line-clamp-1">
+											<p className="text-xs text-text-muted mt-0.5 line-clamp-1">
 												{result.snippet}
 											</p>
 										</div>
@@ -471,7 +471,7 @@ export default function WebSearchModule({
 									<Globe className="w-4 h-4 text-text-muted" />
 								</div>
 								<div className="min-w-0 flex-1">
-									<h3 className="text-base font-medium text-text-primary dark:text-zinc-200 truncate">
+									<h3 className="text-base font-medium text-text-primary dark:text-cream-200 truncate">
 										{previewContent?.title || previewResult.title}
 									</h3>
 									<p className="text-xs text-text-light truncate mt-0.5">
@@ -528,7 +528,7 @@ export default function WebSearchModule({
 										)}
 										<div
 											className="prose prose-zinc dark:prose-invert prose-sm max-w-none
-                        prose-headings:font-medium prose-headings:text-text-primary dark:prose-headings:text-zinc-200
+                        prose-headings:font-medium prose-headings:text-text-primary dark:prose-headings:text-cream-200
                         prose-p:text-text-secondary dark:prose-p:text-text-light prose-p:leading-relaxed
                         prose-a:text-focus dark:prose-a:text-focus prose-a:no-underline hover:prose-a:underline
                         prose-strong:text-text-secondary dark:prose-strong:text-text-light
@@ -581,7 +581,7 @@ export default function WebSearchModule({
 										addingUrls.has(previewResult.url) ||
 										addedUrls.has(previewResult.url)
 									}
-									className={`flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg transition-all ${
+									className={`flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 										addedUrls.has(previewResult.url)
 											? "bg-green-500 text-white cursor-default"
 											: addingUrls.has(previewResult.url)

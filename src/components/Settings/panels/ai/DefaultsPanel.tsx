@@ -330,7 +330,7 @@ export function DefaultsPanel() {
 						className="mt-3"
 					>
 						<SettingsHint tone="info" title="当前健康状态">
-							<span className="font-mono text-[11px]">{searchHealth}</span>
+							<span className="font-mono text-xs">{searchHealth}</span>
 						</SettingsHint>
 					</div>
 				)}

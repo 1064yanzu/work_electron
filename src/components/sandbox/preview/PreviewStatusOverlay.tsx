@@ -126,7 +126,7 @@ export function PreviewStatusOverlay({
 							"无法连接到预览源。可能是开发服务器未启动、目标地址不可达，或当前内容存在错误。"}
 					</p>
 					{errorMessage ? (
-						<div className="mt-3 mb-4 px-3 py-2 rounded-lg bg-cream-200/60 dark:bg-cream-800 border border-border text-[11px] font-mono text-text-secondary text-left break-all max-h-24 overflow-auto">
+						<div className="mt-3 mb-4 px-3 py-2 rounded-lg bg-cream-200/60 dark:bg-cream-800 border border-border text-xs font-mono text-text-secondary text-left break-all max-h-24 overflow-auto">
 							{errorMessage}
 						</div>
 					) : null}
@@ -137,7 +137,7 @@ export function PreviewStatusOverlay({
 							className={cn(
 								"inline-flex items-center gap-1.5 px-4 py-2 rounded-full",
 								"bg-primary text-primary-foreground text-xs font-medium",
-								"hover:opacity-92 active:scale-[0.98] transition-all",
+								"hover:opacity-92 active:scale-[0.98] transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 								"focus-ring",
 							)}
 						>

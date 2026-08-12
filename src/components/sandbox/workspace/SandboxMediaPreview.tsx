@@ -84,7 +84,7 @@ function useLocalMediaObjectUrl(filePath: string, mimeType: string) {
 
 function MediaLoadingState({ label }: { label: string }) {
 	return (
-		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-zinc-950 to-zinc-900 p-6 text-zinc-300">
+		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-cream-900 to-cream-900 p-6 text-cream-300">
 			<Loader2 className="h-6 w-6 animate-spin" />
 			<p className="text-sm">{label}</p>
 		</div>
@@ -93,7 +93,7 @@ function MediaLoadingState({ label }: { label: string }) {
 
 function MediaErrorState({ message }: { message: string }) {
 	return (
-		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-zinc-950 to-zinc-900 p-6 text-center">
+		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-cream-900 to-cream-900 p-6 text-center">
 			<p className="text-sm text-error">{message}</p>
 		</div>
 	);
@@ -119,7 +119,7 @@ export const SandboxVideoPreview = memo(function SandboxVideoPreview({
 	}
 
 	return (
-		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-gradient-to-b from-zinc-950 to-zinc-900 p-5">
+		<div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-gradient-to-b from-cream-900 to-cream-900 p-5">
 			<video
 				src={objectUrl}
 				controls
@@ -128,7 +128,7 @@ export const SandboxVideoPreview = memo(function SandboxVideoPreview({
 			>
 				您的浏览器不支持视频播放
 			</video>
-			<span className="text-xs text-zinc-300">{fileName}</span>
+			<span className="text-xs text-cream-300">{fileName}</span>
 		</div>
 	);
 });
@@ -153,8 +153,8 @@ export const SandboxAudioPreview = memo(function SandboxAudioPreview({
 	}
 
 	return (
-		<div className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50 p-6 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
-			<div className="w-full max-w-xl rounded-[28px] border border-black/5 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur dark:border-white/10 dark:bg-cream-900/90">
+		<div className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-cream-100 via-cream-50 to-amber-50 p-6 dark:from-cream-900 dark:via-cream-900 dark:to-cream-800">
+			<div className="w-full max-w-xl rounded-3xl border border-black/5 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur dark:border-white/10 dark:bg-cream-900/90">
 				<div className="mb-5 flex items-center gap-4">
 					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/30 to-orange-500/20 text-amber-700 dark:from-amber-400/20 dark:to-orange-500/10 dark:text-amber-200">
 						<svg
@@ -172,7 +172,7 @@ export const SandboxAudioPreview = memo(function SandboxAudioPreview({
 						</svg>
 					</div>
 					<div className="min-w-0">
-						<p className="truncate text-sm font-medium text-text-primary dark:text-zinc-100">
+						<p className="truncate text-sm font-medium text-text-primary dark:text-cream-100">
 							{fileName}
 						</p>
 						<p className="mt-1 text-xs text-text-muted">本地音频预览</p>

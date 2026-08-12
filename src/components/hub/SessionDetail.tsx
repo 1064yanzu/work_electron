@@ -119,7 +119,7 @@ export function SessionDetail({
 								key={target.id}
 								type="button"
 								onClick={() => onHandoff(target)}
-								className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border/70 text-[11px] text-text-muted hover:text-text-primary hover:border-terracotta/40 hover:bg-terracotta/[0.06] transition duration-200"
+								className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border/70 text-xs text-text-muted hover:text-text-primary hover:border-terracotta/40 hover:bg-terracotta/[0.06] transition duration-150"
 							>
 								{target.label}
 								<ArrowUpRight className="w-2.5 h-2.5" />
@@ -137,13 +137,13 @@ export function SessionDetail({
 			{/* 转录 */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide px-5 py-3 space-y-2.5">
 				{loading && (
-					<div className="flex items-center justify-center gap-2 py-10 text-[11px] text-text-light">
+					<div className="flex items-center justify-center gap-2 py-10 text-xs text-text-light">
 						<Loader2 className="w-3.5 h-3.5 animate-spin" />
 						正在加载转录…
 					</div>
 				)}
 				{error && (
-					<div className="px-3 py-2 rounded-lg bg-error/8 border border-error/20 text-[11px] text-error">
+					<div className="px-3 py-2 rounded-lg bg-error/8 border border-error/20 text-xs text-error">
 						{error}
 					</div>
 				)}
@@ -172,12 +172,12 @@ export function SessionDetail({
 						</div>
 					))}
 				{!loading && !error && messages.length === 0 && (
-					<p className="text-[11px] text-text-light text-center py-10">
+					<p className="text-xs text-text-light text-center py-10">
 						这段会话没有可读转录
 					</p>
 				)}
 				{!loading && session.message_count > messages.length && (
-					<p className="text-[10px] text-text-light/80 text-center pt-2">
+					<p className="text-[11px] text-text-light/80 text-center pt-2">
 						共 {session.message_count} 条，此处只显示最早 {messages.length} 条
 					</p>
 				)}

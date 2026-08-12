@@ -61,7 +61,7 @@ export function PetTaskBubble({
 					className="flex items-center gap-1.5 text-[13.5px] leading-snug text-[color:var(--t-text-primary,#1a1a19)]"
 				>
 					<span data-bubble-line>{opener}</span>
-					<span className="inline-flex items-center gap-[3px] pb-[2px]">
+					<span className="inline-flex items-center gap-1 pb-0.5">
 						{[0, 180, 360].map((delay) => (
 							<span
 								key={delay}

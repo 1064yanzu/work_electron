@@ -72,14 +72,14 @@ export function SkillCard({
 		return (
 			<div
 				className={cn(
-					"rounded-xl overflow-hidden transition-all duration-300",
+					"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
 						? "bg-surface/80 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm border-l-[3px] border-l-focus/50"
 						: hasError && !hideHeader
 							? "bg-surface/80 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm border-l-[3px] border-l-error/50"
 							: !hideHeader
-								? "bg-surface/60 ring-1 ring-zinc-200/30 dark:ring-zinc-700/30 border-l-[3px] border-l-mint-500/40"
+								? "bg-surface/60 ring-1 ring-cream-200/30 dark:ring-cream-700/30 border-l-[3px] border-l-mint-500/40"
 								: "",
 				)}
 			>
@@ -88,7 +88,7 @@ export function SkillCard({
 					<div className="flex items-center gap-2.5 px-3 py-2.5">
 						<div
 							className={cn(
-								"p-1.5 rounded-lg transition-all duration-200",
+								"p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 								isActive
 									? "bg-focus/8 dark:bg-blue-900/20"
 									: hasError
@@ -125,7 +125,7 @@ export function SkillCard({
 								<StatusIcon status={skill.status} />
 							</div>
 							{skill.detectedScene && (
-								<div className="text-[11px] text-text-light">
+								<div className="text-xs text-text-light">
 									场景: {skill.detectedScene}
 								</div>
 							)}
@@ -139,7 +139,7 @@ export function SkillCard({
 						{skill.steps.map((step) => (
 							<div
 								key={step.id}
-								className="flex items-center gap-2 text-[11px]"
+								className="flex items-center gap-2 text-xs"
 							>
 								<StepStatusIcon status={step.status} />
 								<span
@@ -168,7 +168,7 @@ export function SkillCard({
 							{skill.loadedFiles.map((file, i) => (
 								<span
 									key={i}
-									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60 rounded text-[10px] text-text-muted"
+									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60 rounded text-[11px] text-text-muted"
 								>
 									<File className="w-2.5 h-2.5" />
 									{file.path.split("/").pop()}
@@ -180,7 +180,7 @@ export function SkillCard({
 
 				{/* 错误显示 */}
 				{skill.error && (
-					<div className="px-3 py-1.5 bg-error/[0.04] dark:bg-red-900/20 text-[11px] text-error dark:text-error border-t border-error/10 dark:border-red-800/30">
+					<div className="px-3 py-1.5 bg-error/[0.04] dark:bg-red-900/20 text-xs text-error dark:text-error border-t border-error/10 dark:border-red-800/30">
 						错误: {skill.error}
 					</div>
 				)}
@@ -196,7 +196,7 @@ export function SkillCard({
 				<div className="p-1.5 rounded-lg bg-surface border border-border">
 					<Blocks className="w-4 h-4 bai-icon-violet" strokeWidth={1.5} />
 				</div>
-				<span className="text-sm font-medium text-text-secondary dark:text-zinc-200 flex-1">
+				<span className="text-sm font-medium text-text-secondary dark:text-cream-200 flex-1">
 					{skill.skillName} 执行中
 				</span>
 				<StatusIcon status={skill.status} />
@@ -218,7 +218,7 @@ export function SkillCard({
 									className={
 										step.status === "pending"
 											? "text-text-light"
-											: "text-text-secondary dark:text-zinc-200 font-medium"
+											: "text-text-secondary dark:text-cream-200 font-medium"
 									}
 								>
 									{step.label}
@@ -248,7 +248,7 @@ export function SkillCard({
 								<span className="truncate max-w-[200px]" title={file.path}>
 									{file.path.split("/").pop()}
 								</span>
-								<span className="text-text-light text-[10px]">
+								<span className="text-text-light text-[11px]">
 									{(file.size / 1024).toFixed(1)}KB
 								</span>
 							</div>

@@ -101,7 +101,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 					<h3 className="text-sm font-semibold text-text-primary">
 						Wiki 健康检查
 					</h3>
-					<span className="text-[11px] text-text-light tabular-nums">
+					<span className="text-xs text-text-light tabular-nums">
 						{report.total_pages} 页 · {totalIssues} 个问题
 					</span>
 				</div>
@@ -117,7 +117,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 				{/* 建议 */}
 				{report.suggestions.length > 0 && (
 					<div className="rounded-xl bg-primary/5 border border-primary/15 p-3">
-						<div className="text-[10px] uppercase tracking-[0.18em] text-primary mb-1.5">
+						<div className="text-[11px] uppercase tracking-[0.18em] text-primary mb-1.5">
 							建议
 						</div>
 						<ul className="space-y-1">
@@ -176,13 +176,13 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 								<div className="text-xs font-medium text-text-primary truncate mb-0.5">
 									{issue.page_title}
 								</div>
-								<div className="text-[11px] text-text-muted leading-relaxed">
+								<div className="text-xs text-text-muted leading-relaxed">
 									{issue.detail}
 								</div>
 							</button>
 						))}
 						{grouped[expandedKind].length > 50 && (
-							<div className="px-3 py-2 text-[11px] text-text-light bg-warm-200/50">
+							<div className="px-3 py-2 text-xs text-text-light bg-warm-200/50">
 								…还有 {grouped[expandedKind].length - 50} 条
 							</div>
 						)}
@@ -202,7 +202,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 							{report.un_ingested_sources.slice(0, 20).map((s) => (
 								<div
 									key={s.path}
-									className="px-3 py-1.5 text-[11px] text-focus/80 dark:text-focus/80 truncate border-b border-focus/16 dark:border-blue-900/30 last:border-b-0"
+									className="px-3 py-1.5 text-xs text-focus/80 dark:text-focus/80 truncate border-b border-focus/16 dark:border-blue-900/30 last:border-b-0"
 									title={s.path}
 								>
 									· {s.name}
@@ -212,7 +212,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 								</div>
 							))}
 							{report.un_ingested_sources.length > 20 && (
-								<div className="px-3 py-1.5 text-[10px] text-focus">
+								<div className="px-3 py-1.5 text-[11px] text-focus">
 									…还有 {report.un_ingested_sources.length - 20} 个
 								</div>
 							)}

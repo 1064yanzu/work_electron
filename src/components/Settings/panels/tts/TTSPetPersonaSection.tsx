@@ -105,7 +105,7 @@ export function TTSPetPersonaSection({
 						/>
 						AI 个性化台词（实验）
 					</div>
-					<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+					<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 						开启后桌宠会按你写的人设生成台词；当前版本回落到内置话术池，Provider
 						与模型配置先保持为后续 LLM 接入入口。
 					</div>

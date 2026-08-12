@@ -217,7 +217,7 @@ export const ToolbarItem = forwardRef<HTMLButtonElement, ToolbarItemProps>(
 							)}
 							<ChevronDown
 								className={cn(
-									"shrink-0 w-3 h-3 opacity-45 transition-transform duration-200",
+									"shrink-0 w-3 h-3 opacity-45 transition-transform duration-150",
 									open && "rotate-180",
 								)}
 								strokeWidth={2}

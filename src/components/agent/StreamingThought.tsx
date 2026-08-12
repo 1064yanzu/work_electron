@@ -26,7 +26,7 @@ function PhaseIndicator({
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300",
+				"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				isActive &&
 					"bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus scale-105",
 				isCompleted &&
@@ -113,7 +113,7 @@ function ThinkingStepCard({
 	return (
 		<div
 			className={cn(
-				"p-3 rounded-lg transition-all duration-300",
+				"p-3 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				isLatest
 					? "bg-surface/80 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
 					: "bg-warm-50/50",
@@ -172,8 +172,8 @@ export default function StreamingThought() {
 	return (
 		<div
 			className={cn(
-				"rounded-xl overflow-hidden transition-all duration-300",
-				"bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-900 dark:to-zinc-800/50",
+				"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
+				"bg-gradient-to-br from-cream-50 to-cream-100/50 dark:from-cream-900 dark:to-cream-800/50",
 				"ring-1 ring-black/5 dark:ring-white/10",
 			)}
 		>
@@ -196,7 +196,7 @@ export default function StreamingThought() {
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-medium text-text-secondary dark:text-zinc-200">
+						<span className="text-sm font-medium text-text-secondary dark:text-cream-200">
 							思考过程
 						</span>
 						{isExecuting && (
@@ -245,7 +245,7 @@ export default function StreamingThought() {
 			{isExpanded && (
 				<div
 					ref={containerRef}
-					className="px-4 pb-4 space-y-3 max-h-80 overflow-y-auto scrollbar-hide animate-in fade-in slide-in-from-top-2 duration-300"
+					className="px-4 pb-4 space-y-3 max-h-80 overflow-y-auto scrollbar-hide animate-in fade-in slide-in-from-top-2 duration-250"
 				>
 					{thinkingSteps.map((step, idx) => (
 						<ThinkingStepCard

@@ -70,7 +70,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 	return (
 		<div
 			className={cn(
-				"relative flex gap-3 px-3 py-2.5 rounded-lg transition-all duration-300",
+				"relative flex gap-3 px-3 py-2.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				isExecuting &&
 					"bg-focus/8 dark:bg-blue-900/10 ring-1 ring-blue-200/60 dark:ring-blue-800/40",
 				step.status === "completed" && "opacity-75",
@@ -139,7 +139,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 						{step.estimatedFiles.map((file) => (
 							<span
 								key={file}
-								className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-warm-200 text-text-secondary max-w-[200px] truncate"
+								className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-warm-200 text-text-secondary max-w-[200px] truncate"
 							>
 								{file}
 							</span>

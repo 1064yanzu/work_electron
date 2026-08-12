@@ -44,9 +44,9 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 		<div
 			ref={pulseRef}
 			className={cn(
-				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
+				"min-w-[320px] max-w-[360px] rounded-2xl border bg-surface/90 backdrop-blur-md",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
+				"transition-shadow duration-150 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
 				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 				isActive && "graph-node-running",
@@ -69,7 +69,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 					!isActive &&
 						!isCompleted &&
 						data.status !== "error" &&
-						"bg-gradient-to-r from-zinc-200/50 via-zinc-300/50 to-zinc-200/50 dark:from-zinc-700/50 dark:via-zinc-600/50 dark:to-zinc-700/50",
+						"bg-gradient-to-r from-cream-200/50 via-cream-300/50 to-cream-200/50 dark:from-cream-700/50 dark:via-cream-600/50 dark:to-cream-700/50",
 				)}
 			/>
 
@@ -78,7 +78,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 					<div
 						className={cn(
 							"mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm",
-							"bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 text-white",
+							"bg-gradient-to-br from-cream-900 to-cream-700 dark:from-cream-100 dark:to-cream-300 text-white",
 							isActive &&
 								"from-primary/90 to-primary dark:from-primary dark:to-primary/80 text-white dark:text-white",
 						)}
@@ -92,7 +92,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 							</div>
 							<span
 								className={cn(
-									"inline-flex items-center gap-1 text-[11px] font-medium",
+									"inline-flex items-center gap-1 text-xs font-medium",
 									pill.cls,
 								)}
 							>
@@ -163,9 +163,9 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 		<div
 			ref={pulseRef}
 			className={cn(
-				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85 backdrop-blur-xl",
+				"min-w-[280px] max-w-[320px] rounded-2xl border bg-surface/85 backdrop-blur-md",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
+				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				borderCls,
 				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 				isRunning && "graph-node-running",
@@ -203,16 +203,16 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						</div>
 						{/* 实时指示灯 */}
 						{isRunning && (
-							<span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary graph-indicator-live ring-2 ring-white dark:ring-zinc-950" />
+							<span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary graph-indicator-live ring-2 ring-white dark:ring-cream-900" />
 						)}
 						{/* 完成/失败小角标 */}
 						{!isRunning && isCompleted && (
-							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
+							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success text-white flex items-center justify-center ring-2 ring-white dark:ring-cream-900">
 								<CheckCircle2 className="w-2.5 h-2.5" />
 							</span>
 						)}
 						{!isRunning && isError && (
-							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-error text-white flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
+							<span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-error text-white flex items-center justify-center ring-2 ring-white dark:ring-cream-900">
 								<AlertTriangle className="w-2.5 h-2.5" />
 							</span>
 						)}
@@ -220,20 +220,20 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 flex-wrap">
-							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
+							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
 								STEP {String(data.step).padStart(2, "0")}
 							</span>
 							{/* 工具分类标签 */}
 							{!data.isSubagent && (
 								<span
-									className={cn("text-[10px] font-medium", toolIconCfg.color)}
+									className={cn("text-[11px] font-medium", toolIconCfg.color)}
 								>
 									{toolIconCfg.label}
 								</span>
 							)}
 							<span
 								className={cn(
-									"inline-flex items-center gap-1 text-[11px] font-medium ml-auto",
+									"inline-flex items-center gap-1 text-xs font-medium ml-auto",
 									pill.cls,
 								)}
 							>
@@ -257,13 +257,13 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						{(data.inputSummary || data.outputSummary) && (
 							<div className="mt-1.5 space-y-1">
 								{data.inputSummary && (
-									<div className="text-[11px] text-text-muted bg-warm-50/60 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
+									<div className="text-xs text-text-muted bg-warm-50/60 rounded-lg px-2 py-1 ring-1 ring-black/[0.03] dark:ring-white/[0.05] line-clamp-1">
 										<span className="text-text-light mr-0.5">→</span>
 										{data.inputSummary}
 									</div>
 								)}
 								{data.outputSummary && (
-									<div className="text-[11px] text-success dark:text-success bg-success/8 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
+									<div className="text-xs text-success dark:text-success bg-success/8 dark:bg-emerald-900/20 rounded-lg px-2 py-1 ring-1 ring-emerald-500/10 line-clamp-1">
 										<span className="text-success dark:text-success mr-0.5">
 											←
 										</span>
@@ -274,7 +274,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 						)}
 
 						{data.lastActivity ? (
-							<div className="mt-2 text-[11px] text-text-secondary bg-warm-50/80 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
+							<div className="mt-2 text-xs text-text-secondary bg-warm-50/80 rounded-xl px-2.5 py-2 ring-1 ring-black/5 dark:ring-white/10">
 								<span className="text-text-light mr-1">最新：</span>
 								{data.lastActivity}
 							</div>
@@ -282,7 +282,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 					</div>
 
 					{data.durationMs ? (
-						<div className="shrink-0 text-[11px] text-text-light font-medium tabular-nums">
+						<div className="shrink-0 text-xs text-text-light font-medium tabular-nums">
 							{formatDuration(data.durationMs)}
 						</div>
 					) : null}
@@ -336,7 +336,7 @@ function getArtifactIcon(artifactType: string) {
 			return {
 				icon: Archive,
 				color: "text-text-secondary",
-				bg: "from-zinc-50 to-stone-50 dark:from-zinc-900/30 dark:to-zinc-800/30",
+				bg: "from-cream-50 to-cream-50 dark:from-cream-900/30 dark:to-cream-800/30",
 			};
 	}
 }
@@ -351,9 +351,9 @@ const ArtifactNode = memo(function ArtifactNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[220px] max-w-[280px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
+				"min-w-[220px] max-w-[280px] rounded-2xl border bg-surface/90 backdrop-blur-md",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-shadow duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
+				"transition-shadow duration-150 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-black/[0.06] dark:border-white/[0.08]",
 				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 			)}
@@ -372,10 +372,10 @@ const ArtifactNode = memo(function ArtifactNode(
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-1.5 mb-1">
-							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
+							<span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide bg-warm-200 text-text-muted ring-1 ring-black/5 dark:ring-white/10">
 								ARTIFACT {String(data.step).padStart(2, "0")}
 							</span>
-							<span className={cn("text-[10px] font-medium", artCfg.color)}>
+							<span className={cn("text-[11px] font-medium", artCfg.color)}>
 								{data.artifactType}
 							</span>
 						</div>
@@ -423,9 +423,9 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 	return (
 		<div
 			className={cn(
-				"min-w-[210px] max-w-[250px] rounded-2xl border bg-surface/90 backdrop-blur-xl",
+				"min-w-[210px] max-w-[250px] rounded-2xl border bg-surface/90 backdrop-blur-md",
 				"shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.02] dark:ring-white/[0.06]",
-				"transition-all duration-200 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
+				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 hover:shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)]",
 				"border-primary/30 dark:border-primary/25",
 				selected && "ring-2 ring-primary/35 dark:ring-primary/45",
 				hasRunning && "graph-node-running",
@@ -485,7 +485,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${completedLen} ${circumference - completedLen}`}
 									strokeDashoffset={completedOffset}
 									strokeLinecap="round"
-									className="transition-all duration-700"
+									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
 								/>
 							)}
 							{/* 运行段 */}
@@ -500,7 +500,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${runningLen} ${circumference - runningLen}`}
 									strokeDashoffset={runningOffset}
 									strokeLinecap="round"
-									className="transition-all duration-700"
+									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
 								/>
 							)}
 							{/* 失败段 */}
@@ -515,7 +515,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${failedLen} ${circumference - failedLen}`}
 									strokeDashoffset={failedOffset}
 									strokeLinecap="round"
-									className="transition-all duration-700"
+									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
 								/>
 							)}
 						</svg>
@@ -529,7 +529,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 
 					{/* 统计文字 */}
 					<div className="min-w-0 flex-1 space-y-1">
-						<div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
+						<div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums">
 							<span className="inline-flex items-center gap-1 text-success dark:text-success">
 								<CircleDot className="w-3 h-3" />
 								{completedAgents}
@@ -564,7 +564,7 @@ const LaneNode = memo(function LaneNode(props: NodeProps<LaneGraphNode>) {
 		<div
 			className={cn(
 				"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm",
-				"text-[11px] font-medium backdrop-blur-sm",
+				"text-xs font-medium backdrop-blur-sm",
 				isMain
 					? "border-border/70 bg-surface/80 text-text-secondary"
 					: "border-primary/25 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary/80 dark:text-primary/70",
@@ -590,11 +590,11 @@ const PhaseDividerNode = memo(function PhaseDividerNode(
 			<Handle type="target" position={Position.Left} className="opacity-0" />
 			<Handle type="source" position={Position.Right} className="opacity-0" />
 			<Minus className="w-3 h-3 text-text-light" />
-			<span className="text-[10px] font-medium text-text-light whitespace-nowrap">
+			<span className="text-[11px] font-medium text-text-light whitespace-nowrap">
 				{data.label}
 			</span>
 			{data.gapMs ? (
-				<span className="text-[10px] text-text-light tabular-nums">
+				<span className="text-[11px] text-text-light tabular-nums">
 					{formatDuration(data.gapMs)}
 				</span>
 			) : null}

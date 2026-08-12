@@ -387,10 +387,10 @@ export function PerformanceSettings() {
 						释放系统盘空间。
 					</p>
 					<div className="rounded-lg border border-border bg-cream-50 px-3 py-2.5">
-						<div className="text-[11px] text-text-muted mb-0.5">
+						<div className="text-xs text-text-muted mb-0.5">
 							当前位置
 							{cacheRoot && !cacheRoot.isDefault && (
-								<span className="ml-1.5 rounded bg-peach-500/10 text-peach-500 px-1.5 py-0.5 text-[10px]">
+								<span className="ml-1.5 rounded bg-peach-500/10 text-peach-500 px-1.5 py-0.5 text-[11px]">
 									自定义
 								</span>
 							)}
@@ -472,7 +472,7 @@ export function PerformanceSettings() {
 											<div className="text-sm tabular-nums text-text-primary">
 												{formatBytes(scope.bytes)}
 											</div>
-											<div className="text-[10px] text-text-muted">
+											<div className="text-[11px] text-text-muted">
 												{scope.files} 个文件
 											</div>
 										</div>
@@ -571,7 +571,7 @@ export function PerformanceSettings() {
 								: "暂无样本（启动 30s 后开始采集）"}
 						</p>
 					)}
-					<p className="text-[10px] text-text-light mt-3">
+					<p className="text-[11px] text-text-light mt-3">
 						采样频率每分钟一次，保留最近 7 天。仅本地展示，不上报。
 					</p>
 				</div>

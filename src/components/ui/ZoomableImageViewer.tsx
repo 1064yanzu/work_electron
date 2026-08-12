@@ -236,7 +236,7 @@ export function ZoomableImageViewer({
 				<button
 					type="button"
 					onClick={zoomOut}
-					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="缩小 (-)"
 				>
 					<Minus className="w-4 h-4" />
@@ -247,7 +247,7 @@ export function ZoomableImageViewer({
 				<button
 					type="button"
 					onClick={zoomIn}
-					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="放大 (+)"
 				>
 					<Plus className="w-4 h-4" />
@@ -256,7 +256,7 @@ export function ZoomableImageViewer({
 				<button
 					type="button"
 					onClick={setFit}
-					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="适配窗口 (F)"
 				>
 					<Scan className="w-3.5 h-3.5" />
@@ -265,14 +265,14 @@ export function ZoomableImageViewer({
 				<button
 					type="button"
 					onClick={setActual}
-					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+					className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 					title="原始大小 (0)"
 				>
 					<ZoomIn className="w-3.5 h-3.5" />
 					100%
 				</button>
 				<div className="w-px h-5 bg-warm-300 dark:bg-cream-700 mx-1" />
-				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-text-muted bg-warm-200/70">
+				<div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-text-muted bg-warm-200/70">
 					<Move className="w-3 h-3" />
 					拖拽
 				</div>
@@ -283,7 +283,7 @@ export function ZoomableImageViewer({
 					<button
 						type="button"
 						onClick={onRequestClose}
-						className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+						className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 						title="关闭 (Esc)"
 					>
 						<X className="w-4 h-4" />
@@ -328,7 +328,7 @@ export function ZoomableImageViewer({
 				/>
 			</div>
 
-			<div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 text-white text-[11px] px-2.5 py-1 inline-flex items-center gap-1.5">
+			<div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 text-white text-xs px-2.5 py-1 inline-flex items-center gap-1.5">
 				<ZoomOut className="w-3 h-3" />
 				滚轮缩放 / 双击切换 / 拖拽平移
 			</div>

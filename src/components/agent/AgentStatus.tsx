@@ -147,7 +147,7 @@ function TaskStatus({ task }: { task: AgentTask }) {
 			>
 				<StatusIcon status={task.status} className="w-5 h-5" />
 				<div className="flex-1 text-left">
-					<div className="font-medium text-text-primary dark:text-zinc-200 text-sm">
+					<div className="font-medium text-text-primary dark:text-cream-200 text-sm">
 						{task.title || task.query.slice(0, 30)}
 					</div>
 					<div className="text-xs text-text-muted">

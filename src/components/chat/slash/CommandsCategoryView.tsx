@@ -165,10 +165,10 @@ export function CommandsCategoryView({
 			{sections.map((section) => (
 				<div key={section.groupId}>
 					<div className="px-4 py-1.5">
-						<span className="text-[11px] font-medium text-text-light">
+						<span className="text-xs font-medium text-text-light">
 							{GROUP_LABEL[section.groupId] ?? section.groupId}
 						</span>
-						<span className="ml-1.5 text-[10px] text-text-light">
+						<span className="ml-1.5 text-[11px] text-text-light">
 							{section.items.length}
 						</span>
 					</div>
@@ -199,12 +199,12 @@ export function CommandsCategoryView({
 									tabIndex={-1}
 									onClick={() => handleClick(item)}
 									onMouseEnter={() => onActiveChange(definition.id)}
-									className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-xl text-left select-none transition-all duration-120 ease-out
+									className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left select-none transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                     ${isSelected ? "bg-warm-200" : ""}
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
 									<div
-										className={`w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0 transition-all duration-120
+										className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120
                       ${
 												isSelected && !disabled
 													? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
@@ -212,7 +212,7 @@ export function CommandsCategoryView({
 											}`}
 									>
 										<span
-											className={`font-mono text-[10px] transition-colors duration-120
+											className={`font-mono text-[11px] transition-colors duration-120
                         ${isSelected && !disabled ? "text-text-secondary" : "text-text-muted"}`}
 										>
 											/
@@ -243,21 +243,21 @@ export function CommandsCategoryView({
 													),
 												)}
 											</span>
-											<span className="text-[10px] text-text-light font-mono truncate">
+											<span className="text-[11px] text-text-light font-mono truncate">
 												/{definition.id}
 											</span>
 										</div>
-										<div className="text-[11px] truncate text-text-light">
+										<div className="text-xs truncate text-text-light">
 											{definition.description}
 										</div>
 									</div>
 									{isSubmenu ? (
 										<ChevronRight
-											className={`w-3.5 h-3.5 flex-shrink-0 transition-all duration-120 ease-out
+											className={`w-3.5 h-3.5 flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out
                         ${isSelected && !disabled ? "text-text-muted opacity-100" : "text-text-light opacity-60"}`}
 										/>
 									) : isSelected && !disabled ? (
-										<span className="text-[10px] font-mono text-text-light flex-shrink-0">
+										<span className="text-[11px] font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									) : null}

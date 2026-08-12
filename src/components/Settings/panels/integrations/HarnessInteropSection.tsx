@@ -273,7 +273,7 @@ export function HarnessInteropSection() {
 					{mcp?.running && mcp.enabled && (
 						<div className="space-y-3 pt-3">
 							<div>
-								<div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-text-light">
+								<div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-text-light">
 									一键接入命令
 								</div>
 								<div className="space-y-1.5">
@@ -285,14 +285,14 @@ export function HarnessInteropSection() {
 											<span className="w-[86px] shrink-0 text-[11.5px] text-text-muted">
 												{item.label}
 											</span>
-											<code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-[11px] text-text-secondary">
+											<code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-text-secondary">
 												{item.command}
 											</code>
 											<button
 												type="button"
 												onClick={() => void copy(item.command, item.label)}
 												title="复制命令"
-												className="shrink-0 rounded-md p-1.5 text-text-light transition duration-200 hover:bg-warm-200/70 hover:text-text-secondary dark:hover:bg-cream-800/40"
+												className="shrink-0 rounded-md p-1.5 text-text-light transition duration-150 hover:bg-warm-200/70 hover:text-text-secondary dark:hover:bg-cream-800/40"
 											>
 												{copiedLabel === item.label ? (
 													<Check className="h-3.5 w-3.5 text-success" />
@@ -306,7 +306,7 @@ export function HarnessInteropSection() {
 							</div>
 
 							<div>
-								<div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-text-light">
+								<div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-text-light">
 									暴露的工具（{mcp.tools.length}）
 								</div>
 								<ul className="space-y-1">
@@ -346,7 +346,7 @@ export function HarnessInteropSection() {
 								>
 									轮换 token
 								</SettingsButton>
-								<span className="text-[11px] text-text-light">
+								<span className="text-xs text-text-light">
 									怀疑泄漏时使用
 								</span>
 							</div>
@@ -417,7 +417,7 @@ export function HarnessInteropSection() {
 										{(rule?.harnesses ?? []).map((harness, index) => (
 											<span
 												key={`${harness}-${index}`}
-												className="inline-flex items-center gap-1 rounded-md bg-warm-200/70 px-2 py-0.5 text-[11px] text-text-secondary dark:bg-cream-800/50"
+												className="inline-flex items-center gap-1 rounded-md bg-warm-200/70 px-2 py-0.5 text-xs text-text-secondary dark:bg-cream-800/50"
 											>
 												<span className="tabular-nums text-text-light">
 													{index + 1}
@@ -446,7 +446,7 @@ export function HarnessInteropSection() {
 																);
 															}
 														}}
-														className="ml-0.5 text-text-light transition duration-200 hover:text-terracotta"
+														className="ml-0.5 text-text-light transition duration-150 hover:text-terracotta"
 													>
 														↑
 													</button>
@@ -594,7 +594,7 @@ export function HarnessInteropSection() {
 
 									{quota.evidence && (
 										<details className="mt-2">
-											<summary className="cursor-pointer text-[11px] text-text-light hover:text-text-secondary">
+											<summary className="cursor-pointer text-xs text-text-light hover:text-text-secondary">
 												查看判定依据
 											</summary>
 											<p className="mt-1 rounded-lg bg-cream-50 px-2.5 py-2 font-mono text-[10.5px] leading-relaxed text-text-secondary dark:bg-cream-900/40">

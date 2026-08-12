@@ -120,7 +120,7 @@ function ChatMessageImpl({
 	if (renderableAgentBlocks) {
 		return (
 			<div
-				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
 				style={{
 					contentVisibility: "auto",
 					containIntrinsicSize: "320px",
@@ -143,7 +143,7 @@ function ChatMessageImpl({
 
 		return (
 			<div
-				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
 				style={{
 					contentVisibility: "auto",
 					containIntrinsicSize: "320px",
@@ -164,7 +164,7 @@ function ChatMessageImpl({
 	) {
 		return (
 			<div
-				className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+				className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
 				style={{
 					contentVisibility: "auto",
 					containIntrinsicSize: "320px",
@@ -321,7 +321,7 @@ function ChatMessageImpl({
 	return (
 		<>
 			<div
-				className={`group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full`}
+				className={`group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full`}
 				onContextMenu={handleContextMenu}
 				data-message-id={message.id}
 				style={{
@@ -358,7 +358,7 @@ function ChatMessageImpl({
 
 						{/* Hover 工具栏（仅非编辑态） */}
 						{!isEditing && (
-							<div className="flex items-center gap-3 opacity-0 translate-y-1 group-hover/user:opacity-100 group-hover/user:translate-y-0 transition-[opacity,transform] duration-200 ease-out">
+							<div className="flex items-center gap-3 opacity-0 translate-y-1 group-hover/user:opacity-100 group-hover/user:translate-y-0 transition-[opacity,transform] duration-150 ease-out">
 								<button
 									type="button"
 									onClick={handleCopy}
@@ -427,7 +427,7 @@ function ChatMessageImpl({
 												key={idx}
 												className="flex items-center gap-1 bg-surface rounded-lg p-1 ring-1 ring-border dark:ring-dark-surface"
 											>
-												<span className="text-[10px] text-text-muted px-1.5 font-mono font-medium uppercase">
+												<span className="text-[11px] text-text-muted px-1.5 font-mono font-medium uppercase">
 													{block.language || "code"}
 												</span>
 												<div className="h-3 w-px bg-warm-300" />
@@ -443,7 +443,7 @@ function ChatMessageImpl({
 													<button
 														onClick={() => handleApplyCodeBlock(idx)}
 														disabled={appliedBlocks.has(idx)}
-														className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[10px] font-medium ${
+														className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
 															appliedBlocks.has(idx)
 																? "text-success bg-success/8 dark:bg-emerald-900/20"
 																: "text-text-muted hover:text-text-primary hover:bg-warm-200"
@@ -463,7 +463,7 @@ function ChatMessageImpl({
 
 								{/* 通用操作 + Token 显示 */}
 								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+									<div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
 										<button
 											onClick={handleCopy}
 											className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"

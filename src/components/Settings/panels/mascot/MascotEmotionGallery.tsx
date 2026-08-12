@@ -68,14 +68,14 @@ function EmotionCell({
 	const src = getMascotAsset(id, slot);
 	return (
 		<div
-			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
+			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
 			style={{
 				background: `linear-gradient(180deg, ${accentColor}0E 0%, var(--t-bg-surface, #FFFFFF) 60%)`,
 			}}
 		>
 			<div
 				aria-hidden
-				className="pointer-events-none absolute inset-x-3 -top-6 h-12 rounded-full opacity-70 blur-2xl transition-opacity duration-200 group-hover:opacity-100"
+				className="pointer-events-none absolute inset-x-3 -top-6 h-12 rounded-full opacity-70 blur-2xl transition-opacity duration-150 group-hover:opacity-100"
 				style={{ backgroundColor: `${accentColor}33` }}
 			/>
 			<div
@@ -87,10 +87,10 @@ function EmotionCell({
 						src={src}
 						alt={label}
 						draggable={false}
-						className="h-full w-full object-contain p-0.5 transition-transform duration-200 group-hover:scale-105"
+						className="h-full w-full object-contain p-0.5 transition-transform duration-150 group-hover:scale-105"
 					/>
 				) : (
-					<span className="text-[10px] text-text-light">缺位</span>
+					<span className="text-[11px] text-text-light">缺位</span>
 				)}
 			</div>
 			<div className="relative flex flex-col items-center gap-0.5">

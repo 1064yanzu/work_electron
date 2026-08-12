@@ -297,7 +297,7 @@ export const ERROR_CATEGORY_CONFIG: Record<
 	not_found: {
 		label: "资源不存在",
 		icon: "FileQuestion",
-		color: "text-gray-500",
+		color: "text-cream-500",
 	},
 	rate_limit: {
 		label: "请求过于频繁",
@@ -306,7 +306,7 @@ export const ERROR_CATEGORY_CONFIG: Record<
 	},
 	server: { label: "服务器错误", icon: "Server", color: "text-red-600" },
 	syntax: { label: "代码语法错误", icon: "Code", color: "text-pink-500" },
-	unknown: { label: "未知错误", icon: "HelpCircle", color: "text-gray-400" },
+	unknown: { label: "未知错误", icon: "HelpCircle", color: "text-cream-400" },
 };
 
 // Agent 事件（用于实时更新 UI）

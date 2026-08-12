@@ -239,7 +239,7 @@ function SubsectionTitle({
 	label: string;
 }) {
 	return (
-		<div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+		<div className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
 			<Icon className="h-3 w-3" strokeWidth={1.8} />
 			{label}
 		</div>

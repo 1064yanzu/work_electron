@@ -26,7 +26,7 @@ function TerminalPreview({ code }: { code: string }) {
 	}, [code]);
 
 	return (
-		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-zinc-50 to-zinc-100/80 dark:from-zinc-950 dark:to-zinc-900/80">
+		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-cream-50 to-cream-100/80 dark:from-cream-900 dark:to-cream-900/80">
 			{/* 终端头部装饰 */}
 			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80 border-b border-border/60">
 				<div className="w-2.5 h-2.5 rounded-full bg-error/80 shadow-sm" />
@@ -66,12 +66,12 @@ function EntryCard({
 }) {
 	return (
 		<div
-			className="group flex items-center justify-between p-3 rounded-xl border border-border bg-surface/50 hover:bg-warm-50 transition-all duration-200 cursor-pointer"
+			className="group flex items-center justify-between p-3 rounded-xl border border-border bg-surface/50 hover:bg-warm-50 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 cursor-pointer"
 			onClick={() => onOpen("preview")}
 		>
 			{/* 左侧信息 */}
 			<div className="flex items-center gap-3">
-				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warm-200 text-focus dark:text-focus group-hover:scale-110 transition-transform duration-200">
+				<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warm-200 text-focus dark:text-focus group-hover:scale-110 transition-transform duration-150">
 					{kind === "react" ? (
 						<Code className="w-5 h-5" />
 					) : (
@@ -79,7 +79,7 @@ function EntryCard({
 					)}
 				</div>
 				<div>
-					<div className="text-sm font-medium text-text-primary dark:text-zinc-200">
+					<div className="text-sm font-medium text-text-primary dark:text-cream-200">
 						{title}
 					</div>
 					<div className="text-xs text-text-muted mt-0.5">点击查看详情</div>
@@ -87,7 +87,7 @@ function EntryCard({
 			</div>
 
 			{/* 右侧操作 */}
-			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
 				<button
 					type="button"
 					onClick={(e) => {
@@ -174,13 +174,13 @@ function FullScreenModal({
 	if (!isOpen) return null;
 
 	return createPortal(
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="relative w-[90vw] h-[85vh] max-w-6xl bg-surface rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
+			<div className="relative w-[90vw] h-[85vh] max-w-6xl bg-surface rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 border border-border">
 				{/* 模态窗 Header */}
 				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-warm-50/80 border-b border-border backdrop-blur-sm">
 					{/* 左侧：标题 */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
-						<div className="text-sm font-semibold text-text-primary dark:text-zinc-200 truncate">
+						<div className="text-sm font-semibold text-text-primary dark:text-cream-200 truncate">
 							{title}
 						</div>
 					</div>
@@ -192,7 +192,7 @@ function FullScreenModal({
 								type="button"
 								onClick={() => setViewMode("code")}
 								className={`
-                                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
+                                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150
                                     ${
 																			viewMode === "code"
 																				? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
@@ -207,7 +207,7 @@ function FullScreenModal({
 								type="button"
 								onClick={() => setViewMode("preview")}
 								className={`
-                                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
+                                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150
                                     ${
 																			viewMode === "preview"
 																				? "bg-surface dark:bg-cream-700 text-success dark:text-success shadow-sm"
@@ -245,7 +245,7 @@ function FullScreenModal({
 					{/* 代码视图 */}
 					<div
 						className={`
-                            absolute inset-0 transition-opacity duration-300 ease-in-out
+                            absolute inset-0 transition-opacity duration-250 ease-in-out
                             ${viewMode === "code" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"}
                         `}
 					>
@@ -259,7 +259,7 @@ function FullScreenModal({
 					{/* 预览视图 */}
 					<div
 						className={`
-                            absolute inset-0 transition-opacity duration-300 ease-in-out bg-surface
+                            absolute inset-0 transition-opacity duration-250 ease-in-out bg-surface
                             ${viewMode === "preview" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"}
                         `}
 					>

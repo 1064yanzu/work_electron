@@ -108,7 +108,7 @@ export function ChatInputAddMenu({
 					/>
 
 					{style.profiles.length === 0 && style.recipes.length === 0 ? (
-						<div className="px-2.5 pb-2 pt-1 text-[11px] text-text-muted/70 leading-relaxed">
+						<div className="px-2.5 pb-2 pt-1 text-xs text-text-muted/70 leading-relaxed">
 							暂无风格包，可在
 							<br />
 							设置 → 语言风格包 创建

@@ -155,7 +155,7 @@ export function PetBubbleShell({
 			{glowing && (
 				<div
 					aria-hidden="true"
-					className="absolute -inset-1 rounded-[24px] animate-pet-glow-breath pointer-events-none"
+					className="absolute -inset-1 rounded-3xl animate-pet-glow-breath pointer-events-none"
 					style={{
 						background: `radial-gradient(ellipse at 50% 60%, ${withAlpha(accentColor, 0.22)} 0%, transparent 70%)`,
 					}}

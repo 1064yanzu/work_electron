@@ -216,7 +216,7 @@ export function PerfObservabilityCard() {
 									冷启动耗时 · 最近 7 天
 								</div>
 								{startupLatest && (
-									<div className="text-[11px] tabular-nums text-text-muted">
+									<div className="text-xs tabular-nums text-text-muted">
 										最新 {formatDuration(startupLatest.ms)} · 最慢{" "}
 										{formatDuration(startupMax)}
 									</div>
@@ -240,7 +240,7 @@ export function PerfObservabilityCard() {
 											/>
 										))}
 									</div>
-									<div className="flex items-center justify-between mt-1.5 text-[10px] text-text-light tabular-nums">
+									<div className="flex items-center justify-between mt-1.5 text-[11px] text-text-light tabular-nums">
 										<span>
 											{startupBars.length > 1
 												? formatTime(startupBars[0].ts)
@@ -291,7 +291,7 @@ export function PerfObservabilityCard() {
 								<div className="rounded-lg border border-border bg-cream-50 overflow-hidden">
 									<table className="w-full text-xs">
 										<thead>
-											<tr className="text-left text-[11px] text-text-muted border-b border-border">
+											<tr className="text-left text-xs text-text-muted border-b border-border">
 												<th className="font-medium px-3 py-1.5">Channel</th>
 												<th className="font-medium px-2 py-1.5 text-right w-14">
 													次数
@@ -310,7 +310,7 @@ export function PerfObservabilityCard() {
 													key={row.channel}
 													className="border-b border-border/50 last:border-b-0"
 												>
-													<td className="px-3 py-1.5 font-mono text-[11px] text-text-primary truncate max-w-0 w-full">
+													<td className="px-3 py-1.5 font-mono text-xs text-text-primary truncate max-w-0 w-full">
 														{row.channel}
 													</td>
 													<td className="px-2 py-1.5 text-right tabular-nums text-text-secondary">
@@ -332,7 +332,7 @@ export function PerfObservabilityCard() {
 					</div>
 				)}
 
-				<p className="text-[10px] text-text-light mt-3">
+				<p className="text-[11px] text-text-light mt-3">
 					启动里程碑保留最近 7 天；长任务与慢 IPC 统计最近 24
 					小时。数据仅本地存储，不上报。
 				</p>

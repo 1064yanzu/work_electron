@@ -5,7 +5,7 @@
  *
  * 设计要点（对齐 design.md 7 节）：
  *   - 展开态持久化到 `localStorage.settings.ui.disclosure.<id>`
- *   - 过渡**只**定向到 `grid-template-rows + opacity`，禁止 `transition-all`
+ *   - 过渡**只**定向到 `grid-template-rows + opacity`，禁止 `transition-[color,background-color,border-color,opacity,box-shadow,transform]`
  *   - `ui.motion.preference === "reduced"` 时 duration 压到 75ms（≤ 80ms）
  *   - 右侧 `ChevronRight` 按展开状态 rotate-90；同样定向过渡
  *   - 无障碍：按钮带 `aria-expanded` / `aria-controls`
@@ -93,7 +93,7 @@ export function SettingsDisclosure({
 
 	const panelId = useId();
 	const reduced = isReducedMotion();
-	const durationCls = reduced ? "duration-75" : "duration-200";
+	const durationCls = reduced ? "duration-150" : "duration-150";
 
 	return (
 		<div className={cn("space-y-2", className)}>

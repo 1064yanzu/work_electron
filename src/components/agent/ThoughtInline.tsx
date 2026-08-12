@@ -125,7 +125,7 @@ export function ThoughtInline({
 			{open && (
 				<div className="mt-2 ml-6 pl-3 border-l-2 border-border">
 					{truncated && (
-						<div className="mb-2 text-[11px] text-text-light">
+						<div className="mb-2 text-xs text-text-light">
 							内容较长，已自动截断展示。
 						</div>
 					)}

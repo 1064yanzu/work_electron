@@ -117,8 +117,8 @@ export function ChatInputToolbar({
 						aria-label="发送消息"
 						className={cn(
 							"w-8 h-8 flex items-center justify-center rounded-full",
-							"transition-[background-color,color,opacity,transform] duration-200",
-							"cursor-pointer active:scale-90 disabled:cursor-not-allowed",
+							"transition-[background-color,color,opacity,transform] duration-150",
+							"cursor-pointer active:scale-95 disabled:cursor-not-allowed",
 							hasContent
 								? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
 								: "bg-warm-400 dark:bg-cream-800 text-white dark:text-cream-600",

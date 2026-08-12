@@ -49,7 +49,7 @@ export function WikiGraphPanel({
 			<div className="px-4 py-3 border-b border-border/70">
 				<div className="flex items-center justify-between gap-3">
 					<div>
-						<div className="text-[11px] uppercase tracking-[0.18em] text-text-light">
+						<div className="text-xs uppercase tracking-[0.18em] text-text-light">
 							Wiki Graph
 						</div>
 						<h3 className="mt-1 text-sm font-semibold text-text-primary">
@@ -60,13 +60,13 @@ export function WikiGraphPanel({
 						<button
 							type="button"
 							onClick={openFullscreen}
-							className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-text-muted hover:text-primary hover:bg-primary/8 transition-colors"
+							className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-text-muted hover:text-primary hover:bg-primary/8 transition-colors"
 							title="在中间栏全屏展开知识地图"
 						>
 							<Maximize2 className="h-3.5 w-3.5" />
 							全屏
 						</button>
-						<div className="rounded-xl bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+						<div className="rounded-xl bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
 							{pages.length} 页
 						</div>
 					</div>
@@ -93,7 +93,7 @@ export function WikiGraphPanel({
 				)}
 
 				{/* Hint */}
-				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-surface/92 px-2 py-1 text-[11px] text-text-muted shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+				<div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-xl bg-surface/92 px-2 py-1 text-xs text-text-muted shadow-sm ring-1 ring-black/5 dark:ring-white/10">
 					<FileText className="h-3.5 w-3.5" />
 					点击节点打开页面 · 拖拽移动 · 滚轮缩放
 				</div>

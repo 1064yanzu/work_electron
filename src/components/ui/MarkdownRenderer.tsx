@@ -147,7 +147,7 @@ const STATIC_COMPONENTS = {
 function LoadingImagePlaceholder({ alt }: { alt?: string }) {
   return (
     <span className="block my-4 flex items-center justify-center">
-      <span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-2xl border border-border shadow-sm">
+      <span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-cream-50 to-cream-100 dark:from-cream-800 dark:to-cream-900 rounded-2xl border border-border shadow-sm">
         <span className="relative block w-12 h-12">
           <span className="absolute inset-0 rounded-full border-4 border-border" />
           <span className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-700 animate-spin" />
@@ -240,7 +240,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       if (isInline) {
         return (
           <code
-            className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-zinc-200"
+            className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-cream-200"
             {...props}
           >
             {children}

@@ -186,7 +186,7 @@ export function HarnessUsageSection() {
 												<SettingsBadge tone="warning">仅已导入</SettingsBadge>
 											) : null}
 										</div>
-										<div className="mt-0.5 text-[11px] text-text-muted">
+										<div className="mt-0.5 text-xs text-text-muted">
 											最后活跃 {formatLastActive(row.last_active_at)}
 										</div>
 									</div>
@@ -195,7 +195,7 @@ export function HarnessUsageSection() {
 											{formatCount(row[range].messages)} 条消息 ·{" "}
 											{formatCount(row[range].sessions)} 会话
 										</div>
-										<div className="text-[11px] tabular-nums text-text-muted">
+										<div className="text-xs tabular-nums text-text-muted">
 											≈ {formatCount(row[range].token_estimate)} token
 											{row.token_basis === "chars" ? "（按字符粗估）" : ""}
 										</div>
@@ -207,11 +207,11 @@ export function HarnessUsageSection() {
 
 					{daily.length > 0 ? (
 						<div className="mt-4">
-							<div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+							<div className="mb-1.5 flex items-center gap-1.5 text-xs text-text-muted">
 								<BarChart3 className="h-3 w-3" strokeWidth={1.5} />近 30
 								天每日消息数
 							</div>
-							<div className="flex h-12 items-end gap-[2px]">
+							<div className="flex h-12 items-end gap-0.5">
 								{daily.map((d) => (
 									<div
 										key={d.date}
@@ -254,7 +254,7 @@ export function HarnessUsageSection() {
 function StatTile({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="rounded-xl border border-border px-3 py-2">
-			<div className="text-[11px] text-text-muted">{label}</div>
+			<div className="text-xs text-text-muted">{label}</div>
 			<div className="mt-0.5 text-[15px] font-medium tabular-nums text-text-primary">
 				{value}
 			</div>

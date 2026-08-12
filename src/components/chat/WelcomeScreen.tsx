@@ -5,7 +5,7 @@ export function WelcomeScreen() {
 	const { enabled } = useMascot();
 
 	return (
-		<div className="flex flex-col h-full items-center justify-center -mt-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10 transition-all">
+		<div className="flex flex-col h-full items-center justify-center -mt-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10 transition-[color,background-color,border-color,opacity,box-shadow,transform]">
 			<div className="flex flex-col items-center text-center mb-10 z-10">
 				{enabled ? (
 					<Mascot slot="state-greet" size="2xl" float wrapperClassName="mb-4" />

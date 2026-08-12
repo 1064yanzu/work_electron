@@ -118,7 +118,7 @@ function ControlField({
 					{label}
 				</div>
 				{hint && (
-					<div className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+					<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 						{hint}
 					</div>
 				)}

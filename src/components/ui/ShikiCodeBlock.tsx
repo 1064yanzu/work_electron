@@ -42,7 +42,7 @@ function ShikiCodeBlockInner({
 		<div
 			className={cn(
 				"relative group my-3 rounded-xl overflow-hidden ring-1",
-				isDark ? "ring-zinc-800" : "ring-zinc-200 bg-surface",
+				isDark ? "ring-cream-800" : "ring-cream-200 bg-surface",
 				className,
 			)}
 			style={isDark ? { backgroundColor: bgColor } : undefined}

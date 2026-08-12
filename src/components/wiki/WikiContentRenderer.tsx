@@ -64,7 +64,7 @@ function parseWikiContent(
 			elements.push(
 				<h2
 					key={i}
-					className="text-lg font-bold text-text-primary dark:text-zinc-50 mt-6 mb-3"
+					className="text-lg font-bold text-text-primary dark:text-cream-50 mt-6 mb-3"
 				>
 					{renderInline(line.slice(2), pageMap, onNavigate, i)}
 				</h2>,
@@ -139,7 +139,7 @@ function renderInline(
 			parts.push(
 				<strong
 					key={`${lineKey}-bold-${match.index}`}
-					className="font-semibold text-text-primary dark:text-zinc-200"
+					className="font-semibold text-text-primary dark:text-cream-200"
 				>
 					{match[2]}
 				</strong>,

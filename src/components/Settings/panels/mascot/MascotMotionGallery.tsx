@@ -59,7 +59,7 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 			</div>
 			<p className="text-[10.5px] leading-relaxed text-text-muted">
 				每帧时长不等（120–360ms），最后一帧延长以模拟「活物呼吸感」。系统检测到{" "}
-				<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[10px]">
+				<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
 					prefers-reduced-motion
 				</code>{" "}
 				时会停在第一帧。
@@ -81,7 +81,7 @@ function MotionCell({
 }) {
 	return (
 		<div
-			className="group flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
+			className="group flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
 			style={{
 				background: `linear-gradient(180deg, ${accentColor}0E 0%, var(--t-bg-surface, #FFFFFF) 70%)`,
 			}}

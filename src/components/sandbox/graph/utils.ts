@@ -63,7 +63,7 @@ export function statusPill(status: string): {
 		default:
 			return {
 				label: "等待",
-				cls: "text-zinc-500 dark:text-zinc-400",
+				cls: "text-cream-500 dark:text-cream-400",
 			};
 	}
 }
@@ -89,7 +89,7 @@ export function taskStatusPill(status: AgentTask["status"]): {
 		case "waiting":
 			return {
 				label: "等待",
-				cls: "text-zinc-500 dark:text-zinc-400",
+				cls: "text-cream-500 dark:text-cream-400",
 			};
 		case "completed":
 			return {
@@ -104,12 +104,12 @@ export function taskStatusPill(status: AgentTask["status"]): {
 		case "cancelled":
 			return {
 				label: "已取消",
-				cls: "text-zinc-500 dark:text-zinc-400",
+				cls: "text-cream-500 dark:text-cream-400",
 			};
 		default:
 			return {
 				label: "就绪",
-				cls: "text-zinc-500 dark:text-zinc-400",
+				cls: "text-cream-500 dark:text-cream-400",
 			};
 	}
 }

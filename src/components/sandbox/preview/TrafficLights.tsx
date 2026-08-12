@@ -23,7 +23,7 @@ export function TrafficLights({
 		>
 			<span
 				className={cn(
-					"w-3 h-3 rounded-full transition-colors duration-200",
+					"w-3 h-3 rounded-full transition-colors duration-150",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
 						: "bg-traffic-red hover:bg-traffic-red/85",
@@ -32,7 +32,7 @@ export function TrafficLights({
 			/>
 			<span
 				className={cn(
-					"w-3 h-3 rounded-full transition-colors duration-200",
+					"w-3 h-3 rounded-full transition-colors duration-150",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
 						: "bg-traffic-yellow hover:bg-traffic-yellow/85",
@@ -41,7 +41,7 @@ export function TrafficLights({
 			/>
 			<span
 				className={cn(
-					"w-3 h-3 rounded-full transition-colors duration-200",
+					"w-3 h-3 rounded-full transition-colors duration-150",
 					muted
 						? "bg-cream-400/70 dark:bg-cream-700"
 						: "bg-traffic-green hover:bg-traffic-green/85",

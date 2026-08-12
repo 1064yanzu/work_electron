@@ -658,7 +658,7 @@ export function AiHubPanel({ siteId }: AiHubPanelProps) {
 					<span
 						role="status"
 						className={cn(
-							"inline-flex min-w-0 flex-1 items-center truncate rounded-full px-2.5 py-1 text-[11px] font-medium",
+							"inline-flex min-w-0 flex-1 items-center truncate rounded-full px-2.5 py-1 text-xs font-medium",
 							status.kind === "success" && "bg-success-muted text-success",
 							status.kind === "error" && "bg-error-muted text-error",
 							status.kind === "info" && "bg-warm-200 text-text-secondary",
@@ -668,7 +668,7 @@ export function AiHubPanel({ siteId }: AiHubPanelProps) {
 						{status.text}
 					</span>
 				) : (
-					<span className="min-w-0 flex-1 truncate text-[11px] text-text-light">
+					<span className="min-w-0 flex-1 truncate text-xs text-text-light">
 						{site
 							? attached
 								? ""

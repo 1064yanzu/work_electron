@@ -135,7 +135,7 @@ function AgentBlocksInlineImpl({
 			nodes.push(
 				<div
 					key={i}
-					className="text-sm text-text-primary dark:text-zinc-200 leading-7 w-full overflow-hidden"
+					className="text-sm text-text-primary dark:text-cream-200 leading-7 w-full overflow-hidden"
 				>
 					{renderText(b.text, `text-${i}`, isStreaming)}
 				</div>,

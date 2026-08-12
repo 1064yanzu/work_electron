@@ -359,8 +359,8 @@ export function ChatInput({
 				    聚焦只加深描边，不做形变也不做光晕 */}
 				<div
 					className={cn(
-						"relative bg-surface border rounded-[20px] overflow-hidden",
-						"transition-colors duration-200 ease-out",
+						"relative bg-surface border rounded-2xl overflow-hidden",
+						"transition-colors duration-150 ease-out",
 						"shadow-[0_1px_2px_0_rgb(26_26_25/0.03)]",
 						isActive
 							? "border-warm-400 dark:border-cream-500/60"

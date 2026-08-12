@@ -72,7 +72,7 @@ export function SourceList() {
 	};
 
 	const renderItem = (source: Source) => (
-		<div className="group p-3 bg-surface rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+		<div className="group p-3 bg-surface rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-[color,background-color,border-color,opacity,box-shadow,transform] cursor-pointer">
 			<div className="flex items-start justify-between mb-1">
 				<div className="font-medium text-sm text-text-primary line-clamp-2 leading-snug">
 					{source.title}
@@ -82,7 +82,7 @@ export function SourceList() {
 				</div>
 			</div>
 			<div className="flex items-center gap-2 text-xs text-text-muted mt-2">
-				<span className="px-1.5 py-0.5 bg-surface rounded text-[10px] uppercase tracking-wider border border-border">
+				<span className="px-1.5 py-0.5 bg-surface rounded text-[11px] uppercase tracking-wider border border-border">
 					{source.kind}
 				</span>
 				<span>{new Date(source.created_at).toLocaleDateString()}</span>
@@ -114,7 +114,7 @@ export function SourceList() {
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Search sources..."
-						className="w-full pl-9 pr-3 py-1.5 text-sm bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+						className="w-full pl-9 pr-3 py-1.5 text-sm bg-surface border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 					/>
 				</div>
 			</div>

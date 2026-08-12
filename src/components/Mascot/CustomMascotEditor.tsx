@@ -73,10 +73,10 @@ export function CustomMascotEditor({
 				if (e.target === e.currentTarget) onClose();
 			}}
 		>
-			<div className="relative w-[min(520px,calc(100vw-32px))] rounded-2xl bg-surface shadow-2xl ring-1 ring-zinc-900/5 dark:ring-zinc-100/10 overflow-hidden animate-slide-up">
+			<div className="relative w-[min(520px,calc(100vw-32px))] rounded-2xl bg-surface shadow-2xl ring-1 ring-cream-900/5 dark:ring-cream-100/10 overflow-hidden animate-slide-up">
 				<div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-border/60">
 					<div>
-						<div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-light">
+						<div className="text-xs font-semibold uppercase tracking-[0.16em] text-text-light">
 							编辑自定义桌宠
 						</div>
 						<div className="text-[15px] font-semibold text-text-primary mt-0.5">

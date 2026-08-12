@@ -56,7 +56,7 @@ export function HubTimeline({
 		return (
 			<div className="px-6 py-20 text-center">
 				<p className="text-[12.5px] text-text-secondary">这里还没有会话</p>
-				<p className="text-[11px] text-text-light mt-2 leading-relaxed">
+				<p className="text-xs text-text-light mt-2 leading-relaxed">
 					用顶部的「摄取」从本机 Claude Code / Codex 拉取，
 					<br />
 					或用「导入」读一个 ChatGPT 导出包
@@ -93,7 +93,7 @@ export function HubTimeline({
 								}
 							}}
 							className={cn(
-								"group relative w-full text-left px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing transition duration-200",
+								"group relative w-full text-left px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing transition duration-150",
 								isActive
 									? "bg-terracotta/[0.07]"
 									: "hover:bg-warm-200/50 dark:hover:bg-cream-800/30",
@@ -102,7 +102,7 @@ export function HubTimeline({
 							{/* 左侧入口色标：一眼看出这段来自哪儿 */}
 							<div
 								className={cn(
-									"absolute left-0 top-3 bottom-3 w-[2px] rounded-full transition duration-200",
+									"absolute left-0 top-3 bottom-3 w-[2px] rounded-full transition duration-150",
 									isActive
 										? "bg-terracotta"
 										: "bg-border group-hover:bg-text-light/50",
@@ -147,7 +147,7 @@ export function HubTimeline({
 								</div>
 
 								{/* 悬停操作：续接 / 导出 / 删除 */}
-								<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-200 shrink-0">
+								<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 shrink-0">
 									{resumable && (
 										<IconAction
 											label="原生续接"
@@ -173,7 +173,7 @@ export function HubTimeline({
 							</div>
 
 							{/* 拖拽引导：只在悬停时轻声提示一次，不做常驻噪音 */}
-							<div className="pointer-events-none absolute right-3 bottom-1 text-[9.5px] text-text-light/0 group-hover:text-text-light/60 transition duration-200 flex items-center gap-0.5">
+							<div className="pointer-events-none absolute right-3 bottom-1 text-[9.5px] text-text-light/0 group-hover:text-text-light/60 transition duration-150 flex items-center gap-0.5">
 								<ArrowUpRight className="w-2.5 h-2.5" />
 								拖到上方入口即接力
 							</div>
@@ -205,7 +205,7 @@ function IconAction({
 				onClick();
 			}}
 			className={cn(
-				"p-1.5 rounded-lg transition duration-200",
+				"p-1.5 rounded-lg transition duration-150",
 				danger
 					? "text-text-light hover:text-error hover:bg-error/8"
 					: "text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40",

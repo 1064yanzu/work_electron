@@ -60,7 +60,7 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 				className="w-full text-xs bg-white/70 dark:bg-cream-800/50 rounded-lg px-3 py-2 text-text-primary placeholder-text-muted/50 resize-none focus:outline-none focus:ring-1 focus:ring-mint-400/50 dark:focus:ring-mint-500/40 border border-cream-200/60 dark:border-cream-600/30 transition-shadow duration-150"
 			/>
 			<div className="flex items-center justify-between">
-				<span className="text-[10px] text-text-muted">
+				<span className="text-[11px] text-text-muted">
 					{content.trim().length > 0
 						? `${content.trim().length.toLocaleString()} 字符`
 						: ""}
@@ -69,7 +69,7 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 					<button
 						type="button"
 						onClick={onCancel}
-						className="flex items-center gap-1 px-2.5 py-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors duration-150"
+						className="flex items-center gap-1 px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary transition-colors duration-150"
 					>
 						<X size={10} />
 						取消
@@ -78,7 +78,7 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 						type="button"
 						onClick={() => void handleSubmit()}
 						disabled={submitting || !content.trim()}
-						className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium rounded-full bg-mint-700 dark:bg-mint-600 text-white hover:bg-mint-800 dark:hover:bg-mint-700 disabled:opacity-40 transition-colors duration-150"
+						className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-mint-700 dark:bg-mint-600 text-white hover:bg-mint-800 dark:hover:bg-mint-700 disabled:opacity-40 transition-colors duration-150"
 					>
 						<Check size={10} />
 						{submitting ? "添加中…" : "添加样本"}

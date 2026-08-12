@@ -99,7 +99,7 @@ export function MarketplaceList() {
 							"w-full flex items-center gap-2 px-3 py-2 rounded-lg",
 							"bg-amber-50/80 dark:bg-amber-500/10",
 							"border border-amber-200/80 dark:border-amber-500/30",
-							"text-[11px] text-amber-800 dark:text-amber-300",
+							"text-xs text-amber-800 dark:text-amber-300",
 							"hover:bg-amber-100/70 dark:hover:bg-amber-500/15 transition",
 						)}
 					>
@@ -140,7 +140,7 @@ export function MarketplaceList() {
 									<button
 										type="button"
 										onClick={() => handleDisableSource(e.sourceId)}
-										className="text-[10px] text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 px-1.5 py-0.5 rounded hover:bg-amber-100 dark:hover:bg-amber-500/15 shrink-0"
+										className="text-[11px] text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 px-1.5 py-0.5 rounded hover:bg-amber-100 dark:hover:bg-amber-500/15 shrink-0"
 									>
 										禁用
 									</button>
@@ -180,7 +180,7 @@ export function MarketplaceList() {
 								>
 									显示更多（剩 {entries.length - visibleCount} 条）
 								</button>
-								<span className="text-[10px] text-text-light">
+								<span className="text-[11px] text-text-light">
 									已显示 {visibleCount} / {entries.length}
 								</span>
 							</div>
@@ -215,7 +215,7 @@ function MarketplaceEmpty({ hasQuery }: { hasQuery: boolean }) {
 			<p className="text-[12.5px] text-text-secondary font-medium">
 				{hasQuery ? "没有匹配的技能" : "市场暂时为空"}
 			</p>
-			<p className="text-[11px] text-text-light mt-2 leading-relaxed">
+			<p className="text-xs text-text-light mt-2 leading-relaxed">
 				{hasQuery
 					? "试试更换关键词，或在「设置 → Agent 技能」检查源连通性"
 					: "在「设置 → Agent 技能 → 市场源」添加更多源"}

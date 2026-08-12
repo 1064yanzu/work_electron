@@ -160,7 +160,7 @@ export function AutomationPanel({
 				<button
 					type="button"
 					onClick={() => setEditing("new")}
-					className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-terracotta hover:bg-terracotta/[0.1] transition duration-200"
+					className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-terracotta hover:bg-terracotta/[0.1] transition duration-150"
 				>
 					<Plus className="w-3 h-3" strokeWidth={2} />
 					新建任务
@@ -253,7 +253,7 @@ function JobCard({
 	return (
 		<div
 			className={cn(
-				"rounded-xl border transition duration-200",
+				"rounded-xl border transition duration-150",
 				job.enabled
 					? "border-border bg-surface"
 					: "border-border/50 bg-surface/40",
@@ -266,11 +266,11 @@ function JobCard({
 						type="button"
 						onClick={onToggleEnabled}
 						title={job.enabled ? "点击停用" : "点击启用"}
-						className="mt-[5px] shrink-0"
+						className="mt-1 shrink-0"
 					>
 						<span
 							className={cn(
-								"block w-1.5 h-1.5 rounded-full transition duration-200",
+								"block w-1.5 h-1.5 rounded-full transition duration-150",
 								runMeta
 									? runMeta.dot
 									: job.enabled
@@ -296,7 +296,7 @@ function JobCard({
 								{job.name}
 							</span>
 							{runMeta && (
-								<span className={cn("text-[10px] shrink-0", runMeta.text)}>
+								<span className={cn("text-[11px] shrink-0", runMeta.text)}>
 									{runMeta.label}
 									{activeRun && activeRun.attempt_count > 1 && (
 										<> · 第 {activeRun.attempt_count} 次尝试</>
@@ -304,7 +304,7 @@ function JobCard({
 								</span>
 							)}
 						</div>
-						<div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-text-light">
+						<div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-text-light">
 							<span>{job.target_harness}</span>
 							<span>· {EXEC_MODE_LABEL[job.exec_mode] ?? job.exec_mode}</span>
 							{job.cwd && <span>· {shortCwd(job.cwd)}</span>}
@@ -312,7 +312,7 @@ function JobCard({
 								<span className="text-warning">· 可改文件</span>
 							)}
 						</div>
-						<div className="flex items-center gap-1.5 mt-1 text-[10px]">
+						<div className="flex items-center gap-1.5 mt-1 text-[11px]">
 							<span className="text-text-muted">{job.trigger_label}</span>
 							{job.enabled && (
 								<span className="text-text-light">
@@ -333,7 +333,7 @@ function JobCard({
 								type="button"
 								onClick={onCancel}
 								title="取消本次运行"
-								className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-200"
+								className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 							>
 								<Ban className="w-3.5 h-3.5" strokeWidth={1.6} />
 							</button>
@@ -342,7 +342,7 @@ function JobCard({
 								type="button"
 								onClick={onRunNow}
 								title="立即运行一次"
-								className="p-1.5 rounded-lg text-text-light hover:text-terracotta hover:bg-terracotta/[0.1] transition duration-200"
+								className="p-1.5 rounded-lg text-text-light hover:text-terracotta hover:bg-terracotta/[0.1] transition duration-150"
 							>
 								<Play className="w-3.5 h-3.5" strokeWidth={1.6} />
 							</button>
@@ -351,7 +351,7 @@ function JobCard({
 							type="button"
 							onClick={onEdit}
 							title="编辑"
-							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-200"
+							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 						>
 							<Pencil className="w-3.5 h-3.5" strokeWidth={1.6} />
 						</button>
@@ -359,7 +359,7 @@ function JobCard({
 							type="button"
 							onClick={onDelete}
 							title="删除"
-							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-200"
+							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 						>
 							<Trash2 className="w-3.5 h-3.5" strokeWidth={1.6} />
 						</button>
@@ -368,7 +368,7 @@ function JobCard({
 
 				{/* 等待重试时把「还要等多久」明确写出来——不然看着像卡住了 */}
 				{activeRun?.status === "waiting" && activeRun.next_attempt_at && (
-					<p className="mt-2 text-[10px] text-warning">
+					<p className="mt-2 text-[11px] text-warning">
 						上一次失败（
 						{activeRun.last_failure_kind ?? "原因未知"}），
 						{formatSchedule(activeRun.next_attempt_at)} 自动重试

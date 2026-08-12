@@ -539,7 +539,7 @@ export function SettingsCheckbox({
 				disabled={disabled}
 				onClick={() => !disabled && onChange(!checked)}
 				className={cn(
-					"mt-[1px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-[background-color,border-color,color] duration-150 ease-out",
+					"mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-[background-color,border-color,color] duration-150 ease-out",
 					checked
 						? "border-primary bg-primary text-primary-foreground shadow-bai-card"
 						: "border-cream-500 bg-surface group-hover:border-primary/40",
@@ -565,7 +565,7 @@ export function SettingsCheckbox({
 					{label}
 				</span>
 				{hint && (
-					<span className="mt-0.5 block text-[11px] leading-relaxed text-text-muted">
+					<span className="mt-0.5 block text-xs leading-relaxed text-text-muted">
 						{hint}
 					</span>
 				)}

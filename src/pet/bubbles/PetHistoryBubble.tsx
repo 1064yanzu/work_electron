@@ -97,7 +97,7 @@ export function PetHistoryBubble({
 						return (
 							<div key={item.id} className="flex items-start gap-2">
 								<span
-									className="mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+									className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
 									style={{
 										backgroundColor: withAlpha(tone, 0.12),
 										color: tone,
@@ -110,7 +110,7 @@ export function PetHistoryBubble({
 										{item.message}
 									</p>
 								</div>
-								<span className="shrink-0 text-[10px] text-[color:var(--t-text-light,#9d9d98)] mt-[2px]">
+								<span className="shrink-0 text-[11px] text-[color:var(--t-text-light,#9d9d98)] mt-0.5">
 									{formatTimeAgo(item.createdAt)}
 								</span>
 							</div>

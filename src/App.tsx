@@ -148,7 +148,7 @@ export default function App() {
 	// 面板收起/展开的平滑过渡（拖拽中必须禁用）
 	const panelTransitionClass = anyHandleDragging
 		? ""
-		: "transition-[flex] duration-200 ease-out-expo";
+		: "transition-[flex] duration-150 ease-out-expo";
 
 	// 左侧 Panel 的命令式句柄（用于响应 leftSidebarCollapsed 切换）
 	const leftPanelRef = useRef<ImperativePanelHandle>(null);
@@ -354,7 +354,7 @@ export default function App() {
 	return (
 		<GlobalContextMenuProvider>
 			<MouseDragProvider>
-				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-300 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
+				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-250 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
 					{/* 活动栏（rail）固定 52px，不参与 PanelGroup 的百分比布局——
 					    避免折叠时 collapsedSize 百分比在宽窗口下比 rail 宽，露出一条空白残条 */}
 					<SidebarRail onOpenSettings={() => handleOpenSettings()} />

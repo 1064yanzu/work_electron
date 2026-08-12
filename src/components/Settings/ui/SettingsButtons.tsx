@@ -56,7 +56,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-	sm: "px-2.5 py-1 text-[11px] gap-1",
+	sm: "px-2.5 py-1 text-xs gap-1",
 	md: "px-3.5 py-1.5 text-[12px] gap-1.5",
 };
 
@@ -157,7 +157,7 @@ export function SettingsBadge({
 		<span
 			className={cn(
 				"inline-flex items-center gap-1 rounded-full border font-semibold",
-				size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]",
+				size === "xs" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs",
 				TONE_CLASSES[tone],
 				className,
 			)}

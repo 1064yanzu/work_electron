@@ -302,7 +302,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 						size={12}
 						className="shrink-0 text-violet-600 dark:text-violet-400 mt-0.5"
 					/>
-					<div className="flex-1 text-[11px] text-violet-700 dark:text-violet-300">
+					<div className="flex-1 text-xs text-violet-700 dark:text-violet-300">
 						<div className="font-medium mb-0.5">
 							完整「灵魂-骨干-血肉」体系分析
 						</div>
@@ -332,14 +332,14 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 			{/* 顶部工具栏 */}
 			{isDirty && (
 				<div className="flex items-center justify-between rounded-lg bg-peach-50 dark:bg-peach-900/20 border border-peach-200/70 dark:border-peach-700/40 px-3 py-2">
-					<span className="text-[11px] text-peach-700 dark:text-peach-300">
+					<span className="text-xs text-peach-700 dark:text-peach-300">
 						有未保存的更改
 					</span>
 					<div className="flex items-center gap-2">
 						<button
 							type="button"
 							onClick={handleReset}
-							className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors duration-150"
+							className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary transition-colors duration-150"
 						>
 							<RotateCcw size={11} />
 							还原
@@ -348,7 +348,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 							type="button"
 							onClick={() => void handleSave()}
 							disabled={saving}
-							className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium rounded-full bg-cream-900 dark:bg-cream-100 text-cream-50 dark:text-cream-900 hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
+							className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-cream-900 dark:bg-cream-100 text-cream-50 dark:text-cream-900 hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
 						>
 							<Save size={11} />
 							{saving ? "保存中…" : "保存"}
@@ -377,17 +377,17 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 						>
 							<ChevronDown
 								size={13}
-								className={`shrink-0 text-text-muted transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
+								className={`shrink-0 text-text-muted transition-transform duration-150 ${isExpanded ? "" : "-rotate-90"}`}
 							/>
 							<div className="flex-1 min-w-0">
 								<div className="text-xs font-semibold text-text-primary">
 									{label}
 								</div>
-								<div className="text-[10px] text-text-muted mt-0.5">
+								<div className="text-[11px] text-text-muted mt-0.5">
 									{description}
 								</div>
 							</div>
-							<span className="text-[10px] text-text-muted shrink-0">
+							<span className="text-[11px] text-text-muted shrink-0">
 								{axes.length} 项
 							</span>
 						</button>
@@ -412,7 +412,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 									<button
 										type="button"
 										onClick={() => addAxis(key)}
-										className="flex items-center gap-1 text-[11px] text-text-muted hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
+										className="flex items-center gap-1 text-xs text-text-muted hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
 									>
 										<Plus size={11} />
 										添加维度
@@ -433,13 +433,13 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 				>
 					<ChevronDown
 						size={13}
-						className={`shrink-0 text-text-muted transition-transform duration-200 ${expandedGroups.has("anchors") ? "" : "-rotate-90"}`}
+						className={`shrink-0 text-text-muted transition-transform duration-150 ${expandedGroups.has("anchors") ? "" : "-rotate-90"}`}
 					/>
 					<div className="flex-1 min-w-0">
 						<div className="text-xs font-semibold text-text-primary">
 							校准锚点
 						</div>
-						<div className="text-[10px] text-text-muted mt-0.5">
+						<div className="text-[11px] text-text-muted mt-0.5">
 							正向示例 / 负向示例 / 证据不足的维度
 						</div>
 					</div>
@@ -467,7 +467,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 							] as const
 						).map(({ field, label, color }) => (
 							<div key={field}>
-								<div className={`mb-1.5 text-[10px] font-semibold ${color}`}>
+								<div className={`mb-1.5 text-[11px] font-semibold ${color}`}>
 									{label}
 								</div>
 								<div className="space-y-1">
@@ -492,7 +492,7 @@ export function StyleProfileCalibratePanel({ profileId, onUpdated }: Props) {
 									<button
 										type="button"
 										onClick={() => addAnchor(field)}
-										className="flex items-center gap-1 text-[10px] text-text-muted hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
+										className="flex items-center gap-1 text-[11px] text-text-muted hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
 									>
 										<Plus size={10} />
 										添加
@@ -537,7 +537,7 @@ function AxisRow({
 
 	if (!isEditing) {
 		return (
-			<div className="group flex items-start gap-3 px-4 py-3 hover:bg-cream-50/50 dark:hover:bg-cream-800/20 transition-colors duration-100">
+			<div className="group flex items-start gap-3 px-4 py-3 hover:bg-cream-50/50 dark:hover:bg-cream-800/20 transition-colors duration-150">
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<span className="text-xs font-medium text-text-primary">
@@ -550,12 +550,12 @@ function AxisRow({
 						</span>
 					</div>
 					{axis.description && (
-						<p className="mt-0.5 text-[11px] text-text-secondary leading-relaxed">
+						<p className="mt-0.5 text-xs text-text-secondary leading-relaxed">
 							{axis.description}
 						</p>
 					)}
 					{axis.conditions && (
-						<p className="mt-0.5 text-[10px] text-text-muted italic">
+						<p className="mt-0.5 text-[11px] text-text-muted italic">
 							条件：{axis.conditions}
 						</p>
 					)}
@@ -612,13 +612,13 @@ function AxisRow({
 
 			{/* 强度选择 */}
 			<div className="flex items-center gap-1.5">
-				<span className="text-[10px] text-text-muted shrink-0">强度：</span>
+				<span className="text-[11px] text-text-muted shrink-0">强度：</span>
 				{intensities.map((level) => (
 					<button
 						key={level}
 						type="button"
 						onClick={() => onUpdate("intensity", level)}
-						className={`px-2 py-0.5 text-[9px] rounded-full border transition-colors duration-100 ${
+						className={`px-2 py-0.5 text-[9px] rounded-full border transition-colors duration-150 ${
 							axis.intensity === level
 								? "border-transparent " + INTENSITY_COLORS[level]
 								: "border-cream-200 dark:border-cream-600/40 text-text-muted hover:border-cream-400 dark:hover:border-cream-400/50"
@@ -633,7 +633,7 @@ function AxisRow({
 				type="text"
 				value={axis.conditions ?? ""}
 				onChange={(e) => onUpdate("conditions", e.target.value)}
-				className="w-full text-[11px] bg-cream-100/70 dark:bg-cream-800/50 rounded-lg px-3 py-1.5 text-text-secondary focus:outline-none focus:ring-1 focus:ring-mint-400/50 dark:focus:ring-mint-500/40 placeholder-text-muted/40"
+				className="w-full text-xs bg-cream-100/70 dark:bg-cream-800/50 rounded-lg px-3 py-1.5 text-text-secondary focus:outline-none focus:ring-1 focus:ring-mint-400/50 dark:focus:ring-mint-500/40 placeholder-text-muted/40"
 				placeholder="触发条件（可选）：仅在某类文章中…"
 			/>
 		</div>

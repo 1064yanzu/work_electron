@@ -117,7 +117,7 @@ export function SlackQuickSetup({
 						}}
 						placeholder="xapp-1-..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							appValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: app
@@ -146,7 +146,7 @@ export function SlackQuickSetup({
 						}}
 						placeholder="xoxb-..."
 						className={cn(
-							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							botValid
 								? "border-mint-500 ring-2 ring-mint-500/20"
 								: bot
@@ -155,7 +155,7 @@ export function SlackQuickSetup({
 						)}
 					/>
 					{ok ? (
-						<p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-mint-600">
+						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-mint-600">
 							<CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
 							两个 token 格式都正确
 						</p>

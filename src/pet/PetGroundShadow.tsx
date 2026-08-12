@@ -85,7 +85,7 @@ export function PetGroundShadow({
 			style={outerStyle}
 		>
 			<div
-				className="motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out"
+				className="motion-safe:transition-[color,background-color,border-color,opacity,box-shadow,transform] motion-safe:duration-250 motion-safe:ease-out"
 				style={innerStyle}
 			/>
 		</div>

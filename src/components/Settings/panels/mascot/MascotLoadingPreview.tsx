@@ -55,7 +55,7 @@ export function MascotLoadingPreview({
 						思考态视频动画
 					</span>
 					<span
-						className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider"
+						className="rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wider"
 						style={{
 							backgroundColor: `${accentColor}1F`,
 							color: accentColor,

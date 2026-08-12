@@ -73,7 +73,7 @@ function CopilotMessagePaneImpl({
 					<div className="h-full relative">
 						<WelcomeScreen />
 						{currentResearch && currentResearch.status !== "completed" && (
-							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-[0_4px_12px_0_rgb(26_26_25/0.06)] animate-in slide-in-from-bottom-2 duration-300">
+							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-[0_4px_12px_0_rgb(26_26_25/0.06)] animate-in slide-in-from-bottom-2 duration-250">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2.5">
 										<div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center">
@@ -120,8 +120,8 @@ function CopilotMessagePaneImpl({
 						/>
 
 						{isWaitingForLLM && chatMode === "agent" && (
-							<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 dark:from-zinc-300 dark:to-zinc-500 flex items-center justify-center shrink-0 shadow-md">
+							<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-250">
+								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-cream-600 to-cream-800 dark:from-cream-300 dark:to-cream-500 flex items-center justify-center shrink-0 shadow-md">
 									<CircleUser className="w-4 h-4 text-white" />
 								</div>
 								<div className="flex-1 min-w-0">

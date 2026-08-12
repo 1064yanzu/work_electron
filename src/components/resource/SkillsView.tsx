@@ -161,7 +161,7 @@ export function SkillsView(_props: SkillsViewProps) {
 						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
-									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-zinc-200" />
+									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-cream-200" />
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-semibold text-text-primary">
@@ -186,7 +186,7 @@ export function SkillsView(_props: SkillsViewProps) {
 						<h2 className="font-serif text-[20px] leading-[1.15] text-text-primary mt-1.5 tracking-tight">
 							技能库
 						</h2>
-						<p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">
+						<p className="text-xs text-text-muted mt-1.5 leading-relaxed">
 							{enabledCount > 0 ? (
 								<>
 									<span className="tabular-nums text-text-secondary">
@@ -314,7 +314,7 @@ export function SkillsView(_props: SkillsViewProps) {
 									type="button"
 									onClick={() => setFilter(f.value)}
 									className={cn(
-										"px-2.5 py-1 text-[11px] rounded-md transition-colors font-medium shrink-0",
+										"px-2.5 py-1 text-xs rounded-md transition-colors font-medium shrink-0",
 										filter === f.value
 											? "bg-primary text-primary-foreground"
 											: "text-text-muted hover:text-text-secondary hover:bg-cream-200/70",
@@ -335,7 +335,7 @@ export function SkillsView(_props: SkillsViewProps) {
 									<li key={skill.name}>
 										<div
 											className={cn(
-												"group rounded-lg transition-all",
+												"group rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 												isExpanded
 													? "bg-surface ring-1 ring-cream-300/70 dark:ring-cream-500/30 shadow-bai-card"
 													: "hover:bg-cream-200/60 dark:hover:bg-cream-800/30",
@@ -426,7 +426,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													</p>
 													<div className="flex items-center justify-between gap-2 pt-1 border-t border-cream-300/70 dark:border-cream-500/20">
 														<code
-															className="text-[10px] text-text-light font-mono truncate pt-2"
+															className="text-[11px] text-text-light font-mono truncate pt-2"
 															title={skill.location}
 														>
 															{skill.location}
@@ -593,7 +593,7 @@ function EmptyState({
 			<p className="text-[12.5px] text-text-secondary font-medium">
 				{searchQuery ? "没有匹配的技能" : "尚未安装任何技能"}
 			</p>
-			<p className="text-[11px] text-text-light mt-2 leading-relaxed">
+			<p className="text-xs text-text-light mt-2 leading-relaxed">
 				{searchQuery
 					? "试试别的关键词或切换过滤器"
 					: "去市场一键安装，或导入本地技能文件夹"}

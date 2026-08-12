@@ -98,7 +98,7 @@ function ProgressRing({
 			{/* 背景圆 */}
 			<svg className="transform -rotate-90" width={size} height={size}>
 				<circle
-					className="text-zinc-200"
+					className="text-cream-200"
 					strokeWidth={strokeWidth}
 					stroke="currentColor"
 					fill="transparent"
@@ -125,7 +125,7 @@ function ProgressRing({
 			<div className="absolute inset-0 flex items-center justify-center">
 				<span
 					ref={labelRef}
-					className="text-sm font-semibold text-text-secondary dark:text-zinc-200"
+					className="text-sm font-semibold text-text-secondary dark:text-cream-200"
 				>
 					{Math.round(progress)}%
 				</span>
@@ -155,7 +155,7 @@ function PhaseProgressBar({ progress }: { progress: TaskProgressType }) {
 					<div
 						key={phase}
 						className={cn(
-							"flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
+							"flex items-center gap-3 px-3 py-2 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 							isActive &&
 								"bg-focus/8 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-800",
 							status === "completed" &&
@@ -253,7 +253,7 @@ export default function TaskProgress() {
 					)}
 				</div>
 				<div className="flex-1">
-					<h3 className="text-sm font-semibold text-text-secondary dark:text-zinc-200">
+					<h3 className="text-sm font-semibold text-text-secondary dark:text-cream-200">
 						任务进度
 					</h3>
 					{taskProgress.currentOperation && (
@@ -341,7 +341,7 @@ export function TaskProgressCompact() {
 			<div className="flex-1 min-w-0">
 				<div className="h-1.5 bg-warm-300 dark:bg-cream-700 rounded-full overflow-hidden">
 					<div
-						className="h-full bg-focus rounded-full transition-all duration-500"
+						className="h-full bg-focus rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-500"
 						style={{ width: `${taskProgress.overallProgress}%` }}
 					/>
 				</div>

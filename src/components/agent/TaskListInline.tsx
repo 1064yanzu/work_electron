@@ -90,7 +90,7 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 
 	return (
 		<div className="my-3">
-			<div className="rounded-xl bg-warm-50 ring-1 ring-zinc-200/80 dark:ring-zinc-800 shadow-sm overflow-hidden">
+			<div className="rounded-xl bg-warm-50 ring-1 ring-cream-200/80 dark:ring-cream-800 shadow-sm overflow-hidden">
 				<button
 					type="button"
 					onClick={() => setExpanded((v) => !v)}
@@ -98,7 +98,7 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 				>
 					<div className="flex items-center gap-2 min-w-0">
 						<ListTodo className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-						<div className="text-sm font-medium text-text-secondary dark:text-zinc-200 truncate">
+						<div className="text-sm font-medium text-text-secondary dark:text-cream-200 truncate">
 							<span className="tabular-nums">
 								{completedCount}/{totalCount}
 							</span>{" "}

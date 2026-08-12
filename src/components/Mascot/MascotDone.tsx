@@ -42,7 +42,7 @@ export function MascotDone({
 	return (
 		<div
 			className={cn(
-				"relative overflow-hidden rounded-2xl bg-surface/70 ring-1 ring-zinc-900/5 dark:ring-zinc-100/10 shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 animate-fade-in",
+				"relative overflow-hidden rounded-2xl bg-surface/70 ring-1 ring-cream-900/5 dark:ring-cream-100/10 shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 animate-fade-in",
 				className,
 			)}
 		>

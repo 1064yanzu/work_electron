@@ -141,7 +141,7 @@ export function ModelDiscoveryModal({
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
 			<div
-				className="w-full max-w-2xl bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+				className="w-full max-w-2xl bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
 				style={{ height: "85vh", maxHeight: "850px" }}
 			>
 				{/* Header */}
@@ -248,7 +248,7 @@ export function ModelDiscoveryModal({
 												)}
 												<h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2 uppercase tracking-tight">
 													{groupName}
-													<span className="bg-warm-300/60 text-text-muted px-1.5 py-0.5 rounded text-[10px] font-bold">
+													<span className="bg-warm-300/60 text-text-muted px-1.5 py-0.5 rounded text-[11px] font-bold">
 														{models.length}
 													</span>
 												</h3>
@@ -268,7 +268,7 @@ export function ModelDiscoveryModal({
 
 										{/* Group Content */}
 										{!isCollapsed && (
-											<div className="divide-y divide-zinc-50">
+											<div className="divide-y divide-cream-50">
 												{models.map((model) => {
 													const isSelected = selectedModels.has(model.id);
 													const isExisting = existingModelSet.has(model.id);
@@ -280,7 +280,7 @@ export function ModelDiscoveryModal({
 																!isExisting && toggleModel(model.id)
 															}
 															className={`
-                                group flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] duration-200 ease-out
+                                group flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out
                                 ${isExisting ? "opacity-60 bg-warm-50/30 cursor-default" : "cursor-pointer hover:bg-warm-50"}
                                 ${isSelected && !isExisting ? "bg-warm-200/60" : ""}
                               `}
@@ -320,7 +320,7 @@ export function ModelDiscoveryModal({
 																			{model.id}
 																		</span>
 																		{isExisting && (
-																			<span className="text-[10px] px-1.5 py-0.5 bg-warm-200 text-text-light rounded border border-border flex items-center gap-1 shrink-0">
+																			<span className="text-[11px] px-1.5 py-0.5 bg-warm-200 text-text-light rounded border border-border flex items-center gap-1 shrink-0">
 																				<Check className="w-2.5 h-2.5" />
 																				已添加
 																			</span>

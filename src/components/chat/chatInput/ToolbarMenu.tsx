@@ -121,7 +121,7 @@ export function ToolbarMenu({
 			ref={menuRef}
 			className={cn(
 				"fixed z-[100] rounded-2xl overflow-hidden",
-				"bg-cream-50/95 dark:bg-cream-900/95 backdrop-blur-xl",
+				"bg-cream-50/95 dark:bg-cream-900/95 backdrop-blur-md",
 				"border border-cream-400/70 dark:border-cream-500/60 shadow-bai-pop",
 				"animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-150 origin-bottom-left",
 			)}
@@ -133,7 +133,7 @@ export function ToolbarMenu({
 		>
 			<div className="px-3 pt-2 pb-2 border-b border-cream-300/70 dark:border-cream-500/40">
 				<div className="flex items-center justify-between gap-2">
-					<div className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+					<div className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
 						{title}
 					</div>
 					{hint && (
@@ -143,12 +143,12 @@ export function ToolbarMenu({
 					)}
 				</div>
 				{description !== undefined && (
-					<div className="text-[10px] text-text-muted/80 mt-1 leading-snug min-h-[14px]">
+					<div className="text-[11px] text-text-muted/80 mt-1 leading-snug min-h-[14px]">
 						{description}
 					</div>
 				)}
 			</div>
-			<div className="p-1 space-y-[1px]">{children}</div>
+			<div className="p-1 space-y-px">{children}</div>
 		</div>,
 		document.body,
 	);
@@ -203,7 +203,7 @@ export function ToolbarMenuOption({
 			onMouseEnter={onMouseEnter}
 			className={cn(
 				"w-full text-left flex items-center gap-2.5 pl-2 pr-1.5 py-1.5 rounded-lg",
-				"transition-[background-color,color] duration-100",
+				"transition-[background-color,color] duration-150",
 				active
 					? "bg-cream-200/80 dark:bg-cream-800 text-text-primary"
 					: "text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800/60 hover:text-text-primary",
@@ -220,7 +220,7 @@ export function ToolbarMenuOption({
 					{label}
 				</span>
 				{description && (
-					<span className="block text-[10px] text-text-muted mt-1 leading-snug truncate">
+					<span className="block text-[11px] text-text-muted mt-1 leading-snug truncate">
 						{description}
 					</span>
 				)}

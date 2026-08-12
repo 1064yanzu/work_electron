@@ -511,7 +511,7 @@ export function HarnessHubSettings() {
 								</div>
 								<div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-cream-300">
 									<div
-										className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+										className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
 										style={{ width: `${percent}%` }}
 									/>
 								</div>

@@ -113,10 +113,10 @@ export const sourceTypeConfig: Record<string, SourceTypeConfigItem> = {
 	[SourceType.Archive]: {
 		icon: Archive,
 		label: "压缩包",
-		dotColor: "bg-zinc-500",
+		dotColor: "bg-cream-500",
 		bgGradient:
-			"from-zinc-500/10 to-stone-500/10 border-zinc-200/50 dark:border-zinc-800/30",
-		iconColor: "text-zinc-600 dark:text-zinc-400",
+			"from-cream-500/10 to-cream-500/10 border-cream-200/50 dark:border-cream-800/30",
+		iconColor: "text-cream-600 dark:text-cream-400",
 	},
 };
 
@@ -126,10 +126,10 @@ export function getSourceTypeConfig(kind: string): SourceTypeConfigItem {
 		sourceTypeConfig[kind] ?? {
 			icon: FileText,
 			label: "文件",
-			dotColor: "bg-zinc-400",
+			dotColor: "bg-cream-400",
 			bgGradient:
-				"from-zinc-500/10 to-zinc-400/10 border-zinc-200/50 dark:border-zinc-800/30",
-			iconColor: "text-zinc-500 dark:text-zinc-400",
+				"from-cream-500/10 to-cream-400/10 border-cream-200/50 dark:border-cream-800/30",
+			iconColor: "text-cream-500 dark:text-cream-400",
 		}
 	);
 }

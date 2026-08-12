@@ -78,7 +78,7 @@ const fileTypeConfig: Record<
 	},
 	text: {
 		icon: FileText,
-		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50",
+		gradient: "from-cream-500/20 to-cream-500/20 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文本",
 	},
@@ -140,7 +140,7 @@ const fileTypeConfig: Record<
 	},
 	other: {
 		icon: File,
-		gradient: "from-zinc-500/20 to-slate-500/20 border-border/50",
+		gradient: "from-cream-500/20 to-cream-500/20 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文件",
 	},
@@ -187,7 +187,7 @@ function ActionButton({
 					onClick?.();
 				}}
 				className={cn(
-					"p-1.5 rounded-lg transition-all duration-200",
+					"p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 					"text-text-light hover:text-text-secondary dark:hover:text-text-light",
 					"hover:bg-warm-200",
 					"active:scale-95",
@@ -227,7 +227,7 @@ export default function ArtifactCard({
 				"hover:border-cream-400",
 				"hover:shadow-md hover:-translate-y-0.5",
 				"rounded-xl p-3",
-				"transition-all duration-300 ease-out",
+				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 ease-out",
 				"animate-in fade-in slide-in-from-bottom-2",
 			)}
 			onMouseEnter={() => setIsHovered(true)}
@@ -239,7 +239,7 @@ export default function ArtifactCard({
 					"relative flex items-center justify-center",
 					"w-10 h-10 rounded-xl border",
 					"bg-gradient-to-br shadow-sm",
-					"transition-all duration-300",
+					"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 					config.gradient,
 					isGenerating && "animate-pulse",
 				)}
@@ -254,12 +254,12 @@ export default function ArtifactCard({
 			{/* 文件信息 */}
 			<div className="flex-1 min-w-0">
 				<h4
-					className="text-sm font-medium text-text-primary dark:text-zinc-200 truncate"
+					className="text-sm font-medium text-text-primary dark:text-cream-200 truncate"
 					title={fileName}
 				>
 					{fileName}
 				</h4>
-				<p className="text-[11px] text-text-light mt-0.5 flex items-center gap-1.5">
+				<p className="text-xs text-text-light mt-0.5 flex items-center gap-1.5">
 					<span>{config.label}</span>
 					<span className="w-0.5 h-0.5 rounded-full bg-cream-400 dark:bg-cream-600" />
 					<span>{formatFileSize(fileSize)}</span>
@@ -271,7 +271,7 @@ export default function ArtifactCard({
 					)}
 				</p>
 				{description && (
-					<p className="text-[10px] text-text-light mt-1 line-clamp-1">
+					<p className="text-[11px] text-text-light mt-1 line-clamp-1">
 						{description}
 					</p>
 				)}
@@ -282,7 +282,7 @@ export default function ArtifactCard({
 				className={cn(
 					"flex items-center gap-0.5",
 					"opacity-0 group-hover:opacity-100",
-					"transition-opacity duration-200",
+					"transition-opacity duration-150",
 				)}
 			>
 				{onPreview && (
@@ -318,9 +318,9 @@ export default function ArtifactCard({
 						"absolute left-0 right-0 -bottom-8 z-10",
 						"px-3 py-1.5",
 						"bg-dark-muted/90",
-						"text-[10px] text-text-light font-mono truncate",
+						"text-[11px] text-text-light font-mono truncate",
 						"rounded-lg shadow-lg",
-						"animate-in fade-in slide-in-from-top-1 duration-200",
+						"animate-in fade-in slide-in-from-top-1 duration-150",
 					)}
 				>
 					{filePath}
@@ -356,7 +356,7 @@ export function ArtifactCardList({
 
 	return (
 		<div className="space-y-2 mt-3">
-			<div className="text-[10px] font-semibold text-text-light uppercase tracking-wider px-1">
+			<div className="text-[11px] font-semibold text-text-light uppercase tracking-wider px-1">
 				产物文件 ({artifacts.length})
 			</div>
 			<div className="space-y-2">

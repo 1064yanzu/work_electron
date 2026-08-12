@@ -95,7 +95,7 @@ function PromptCard({
 			<div
 				draggable
 				onDragStart={(e) => onDragStart(e, prompt.id)}
-				className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 border cursor-grab active:cursor-grabbing
+				className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 border cursor-grab active:cursor-grabbing
                     ${
 											isSelected
 												? "bg-surface border-border shadow-sm ring-1 ring-black/5 dark:ring-white/5"
@@ -129,12 +129,12 @@ function PromptCard({
 
 				{/* 操作按钮 - 始终可见但透明度变化 */}
 				<div
-					className={`flex items-center gap-1 transition-all duration-200 ${isHovered || isSelected ? "opacity-100" : "opacity-0"}`}
+					className={`flex items-center gap-1 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${isHovered || isSelected ? "opacity-100" : "opacity-0"}`}
 				>
 					<Tooltip content="复制">
 						<button
 							onClick={handleCopy}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							{hasCopied ? (
 								<Check className="w-5 h-5 text-green-500" />
@@ -146,7 +146,7 @@ function PromptCard({
 					<Tooltip content="编辑">
 						<button
 							onClick={onEdit}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Edit3 className="w-5 h-5" />
 						</button>
@@ -154,7 +154,7 @@ function PromptCard({
 					<Tooltip content="删除">
 						<button
 							onClick={onDelete}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Trash2 className="w-5 h-5" />
 						</button>
@@ -169,7 +169,7 @@ function PromptCard({
 		<div
 			draggable
 			onDragStart={(e) => onDragStart(e, prompt.id)}
-			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-all duration-300 border cursor-grab active:cursor-grabbing h-full
+			className={`group relative flex flex-col p-4 md:p-5 rounded-2xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 border cursor-grab active:cursor-grabbing h-full
                 ${
 									isSelected
 										? "bg-cream-50 dark:bg-cream-900 border-cream-500 dark:border-cream-400 shadow-bai-pop"
@@ -181,7 +181,7 @@ function PromptCard({
 		>
 			{/* 头部：图标 + 操作按钮 */}
 			<div className="flex items-start justify-between mb-4">
-				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-warm-200 border border-border text-2xl group-hover:scale-105 transition-transform duration-300">
+				<div className="w-14 h-14 flex items-center justify-center rounded-xl bg-warm-200 border border-border text-2xl group-hover:scale-105 transition-transform duration-250">
 					{prompt.icon ? (
 						<span>{prompt.icon}</span>
 					) : (
@@ -193,12 +193,12 @@ function PromptCard({
 				</div>
 				{/* 操作按钮 - 始终占位但悬停时显示 */}
 				<div
-					className={`flex gap-0.5 transition-all duration-200 ${isHovered || isSelected ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}`}
+					className={`flex gap-0.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${isHovered || isSelected ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"}`}
 				>
 					<Tooltip content="复制">
 						<button
 							onClick={handleCopy}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							{hasCopied ? (
 								<Check className="w-5 h-5 text-green-500" />
@@ -210,7 +210,7 @@ function PromptCard({
 					<Tooltip content="编辑">
 						<button
 							onClick={onEdit}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-zinc-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Edit3 className="w-5 h-5" />
 						</button>
@@ -218,7 +218,7 @@ function PromptCard({
 					<Tooltip content="删除">
 						<button
 							onClick={onDelete}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Trash2 className="w-5 h-5" />
 						</button>
@@ -444,13 +444,13 @@ export function PromptLibraryModal({
 
 	return ReactDOM.createPortal(
 		<div
-			className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-bg/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-200 p-4 sm:p-6 md:p-8"
+			className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-bg/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-150 p-4 sm:p-6 md:p-8"
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
-			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 font-sans">
+			<div className="w-[95vw] md:w-[90vw] max-w-[1100px] h-[90vh] md:h-[85vh] max-h-[850px] bg-surface rounded-2xl shadow-bai-pop border border-border flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-250 font-sans">
 				{/* Sidebar (Folder Navigation) */}
-				<div className="w-full md:w-56 bg-warm-50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-xl shrink-0">
+				<div className="w-full md:w-56 bg-warm-50/50 border-b md:border-b-0 md:border-r border-border flex flex-col p-3 md:p-4 backdrop-blur-md shrink-0">
 					<div className="flex items-center gap-3 px-2 mb-2 md:mb-4 mt-1">
 						<div className="w-8 h-8 rounded-2xl bg-cream-900 dark:bg-cream-100 flex items-center justify-center text-cream-50 dark:text-cream-900">
 							<Library className="w-4 h-4" strokeWidth={1.5} />
@@ -472,11 +472,11 @@ export function PromptLibraryModal({
 							onClick={() => selectFolder(null)}
 							onDragOver={(e) => handleDragOver(e, null)}
 							onDragLeave={handleDragLeave}
-							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
+							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group
 								${
 									activeFolderId === null
 										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-cream-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
@@ -510,12 +510,12 @@ export function PromptLibraryModal({
 										onDragOver={(e) => handleDragOver(e, folder.id)}
 										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDrop(e, folder.id)}
-										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group cursor-pointer
+										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group cursor-pointer
 										${dragOverFolderId === folder.id ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 										${
 											activeFolderId === folder.id
 												? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-												: "text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 hover:text-text-primary dark:hover:text-zinc-200"
+												: "text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 hover:text-text-primary dark:hover:text-cream-200"
 										}`}
 									>
 										<div
@@ -546,7 +546,7 @@ export function PromptLibraryModal({
 														folderMenuId === folder.id ? null : folder.id,
 													);
 												}}
-												className="p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary dark:hover:text-text-light rounded transition-all"
+												className="p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary dark:hover:text-text-light rounded transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 											>
 												<MoreHorizontal className="w-3.5 h-3.5" />
 											</button>
@@ -611,12 +611,12 @@ export function PromptLibraryModal({
 							onDragOver={(e) => handleDragOver(e, "uncategorized")}
 							onDragLeave={handleDragLeave}
 							onDrop={(e) => handleDrop(e, undefined)}
-							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group
+							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group
 								${dragOverFolderId === "uncategorized" ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
 								${
 									activeFolderId === "uncategorized"
 										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-cream-200"
 								}`}
 						>
 							<div className="flex items-center gap-2.5">
@@ -651,7 +651,7 @@ export function PromptLibraryModal({
 						) : (
 							<button
 								onClick={() => setIsAddingFolder(true)}
-								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-light hover:text-text-primary hover:bg-warm-200/50 transition-all duration-200 border border-dashed border-cream-400"
+								className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-light hover:text-text-primary hover:bg-warm-200/50 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 border border-dashed border-cream-400"
 							>
 								<FolderPlus className="w-4 h-4" />
 								<span>新建文件夹</span>
@@ -663,11 +663,11 @@ export function PromptLibraryModal({
 					<div className="pt-2 md:pt-3 border-t border-border/50 mt-2">
 						<button
 							onClick={() => setShowSystemTemplates(true)}
-							className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200
+							className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150
 								${
 									showSystemTemplates
 										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
-										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-zinc-200"
+										: "text-text-muted hover:bg-warm-200/50 hover:text-text-primary dark:hover:text-cream-200"
 								}`}
 						>
 							<ScrollText className="w-4 h-4 opacity-70" />
@@ -678,7 +678,7 @@ export function PromptLibraryModal({
 					<div className="pt-2 md:pt-4 border-t border-border/50 mt-0 md:mt-2">
 						<button
 							onClick={() => handleStartEdit()}
-							className="w-full flex items-center justify-center gap-2 bg-surface text-text-primary py-2.5 rounded-xl border border-border hover:bg-warm-50 transition-all active:scale-[0.98] font-medium text-sm shadow-sm"
+							className="w-full flex items-center justify-center gap-2 bg-surface text-text-primary py-2.5 rounded-xl border border-border hover:bg-warm-50 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-[0.98] font-medium text-sm shadow-sm"
 						>
 							<Plus className="w-4 h-4" />
 							<span>新建提示词</span>
@@ -707,7 +707,7 @@ export function PromptLibraryModal({
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索..."
-								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-all outline-none"
+								className="w-full min-w-[120px] pl-9 pr-4 py-2 bg-cream-100 dark:bg-cream-800 border border-cream-300 dark:border-cream-500 rounded-full text-sm text-text-primary placeholder-text-muted focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 transition-[color,background-color,border-color,opacity,box-shadow,transform] outline-none"
 							/>
 						</div>
 					)}
@@ -716,7 +716,7 @@ export function PromptLibraryModal({
 							<Tooltip content="网格视图">
 								<button
 									onClick={() => setViewMode("grid")}
-									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
 								>
 									<LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
 								</button>
@@ -724,7 +724,7 @@ export function PromptLibraryModal({
 							<Tooltip content="列表视图">
 								<button
 									onClick={() => setViewMode("list")}
-									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
 								>
 									<LayoutList className="w-4 h-4" strokeWidth={1.5} />
 								</button>
@@ -744,7 +744,7 @@ export function PromptLibraryModal({
 							<Tooltip content="导入">
 								<button
 									onClick={() => fileInputRef.current?.click()}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<Upload className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -752,7 +752,7 @@ export function PromptLibraryModal({
 							<Tooltip content="导出">
 								<button
 									onClick={handleExport}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<Download className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -760,7 +760,7 @@ export function PromptLibraryModal({
 							<Tooltip content="关闭">
 								<button
 									onClick={onClose}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-all active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<X className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -842,7 +842,7 @@ export function PromptLibraryModal({
 
 					{/* Editor Overlay */}
 					{isEditing && (
-						<div className="absolute inset-0 z-20 bg-surface dark:bg-background flex flex-col animate-in slide-in-from-bottom-[5%] duration-300">
+						<div className="absolute inset-0 z-20 bg-surface dark:bg-background flex flex-col animate-in slide-in-from-bottom-[5%] duration-250">
 							<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 								<div className="flex items-center gap-4">
 									<button
@@ -865,7 +865,7 @@ export function PromptLibraryModal({
 									<button
 										onClick={handleSave}
 										disabled={!editingPrompt?.name || !editingPrompt?.content}
-										className="px-6 py-2 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+										className="px-6 py-2 rounded-full bg-cream-900 dark:bg-cream-50 text-cream-50 dark:text-cream-900 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 									>
 										保存
 									</button>
@@ -904,7 +904,7 @@ export function PromptLibraryModal({
 															prev ? { ...prev, name: e.target.value } : null,
 														)
 													}
-													className="w-full text-2xl font-bold bg-transparent border-b border-border pb-2 focus:border-cream-500 dark:focus:border-border outline-none transition-colors placeholder-zinc-300 dark:placeholder-zinc-700"
+													className="w-full text-2xl font-bold bg-transparent border-b border-border pb-2 focus:border-cream-500 dark:focus:border-border outline-none transition-colors placeholder-cream-300 dark:placeholder-cream-700"
 													placeholder="输入提示词名称..."
 													autoFocus
 												/>
@@ -952,7 +952,7 @@ export function PromptLibraryModal({
 																	: null,
 															)
 														}
-														className="w-full px-4 py-2.5 rounded-2xl bg-cream-100 dark:bg-cream-800 border border-cream-400 dark:border-cream-500 focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 outline-none transition-all text-sm"
+														className="w-full px-4 py-2.5 rounded-2xl bg-cream-100 dark:bg-cream-800 border border-cream-400 dark:border-cream-500 focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 outline-none transition-[color,background-color,border-color,opacity,box-shadow,transform] text-sm"
 														placeholder="简短描述..."
 													/>
 												</div>
@@ -979,7 +979,7 @@ export function PromptLibraryModal({
 														prev ? { ...prev, content: e.target.value } : null,
 													)
 												}
-												className="w-full h-[400px] pl-6 pr-4 py-2 bg-transparent resize-none outline-none font-mono text-sm leading-relaxed text-text-primary dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700"
+												className="w-full h-[400px] pl-6 pr-4 py-2 bg-transparent resize-none outline-none font-mono text-sm leading-relaxed text-text-primary dark:text-cream-200 placeholder-cream-300 dark:placeholder-cream-700"
 												placeholder="在此输入详细的提示词内容..."
 											/>
 										</div>

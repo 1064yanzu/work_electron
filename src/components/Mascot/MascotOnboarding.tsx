@@ -165,11 +165,11 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 		>
 			<div
 				data-onb-card
-				className="relative w-[min(560px,calc(100vw-32px))] rounded-3xl bg-surface shadow-2xl ring-1 ring-zinc-900/5 dark:ring-zinc-100/10 overflow-hidden"
+				className="relative w-[min(560px,calc(100vw-32px))] rounded-3xl bg-surface shadow-2xl ring-1 ring-cream-900/5 dark:ring-cream-100/10 overflow-hidden"
 				style={{ backgroundColor: "var(--t-bg-surface)" }}
 			>
 				<div className="flex items-center justify-between px-7 pt-6 pb-3">
-					<div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-light">
+					<div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-light">
 						<Sparkles className="h-3.5 w-3.5" />
 						首次见面
 					</div>
@@ -228,7 +228,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 									data-onb-pick
 									onClick={() => setId(mid, "main")}
 									className={cn(
-										"flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-all",
+										"flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 										selected
 											? "border-primary bg-primary/5"
 											: "border-border bg-surface hover:border-primary/40",
@@ -260,7 +260,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 							<span
 								key={i}
 								className={cn(
-									"h-1 rounded-full transition-all",
+									"h-1 rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 									i === step ? "w-6 bg-primary" : "w-1.5 bg-border",
 								)}
 							/>

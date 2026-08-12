@@ -50,7 +50,7 @@ export function ErrorState({
 	return (
 		<div
 			className={cn(
-				"flex flex-col items-center justify-center text-center animate-in fade-in duration-200",
+				"flex flex-col items-center justify-center text-center animate-in fade-in duration-150",
 				styles.container,
 				className,
 			)}

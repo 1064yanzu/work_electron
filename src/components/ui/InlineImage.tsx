@@ -168,7 +168,7 @@ export const InlineImage = memo(function InlineImage({
 	// 使用 span 而非 div，避免 <p> 嵌套 <div> 的 DOM 警告
 	if (error) {
 		return (
-			<span className="block text-[11px] text-text-light">
+			<span className="block text-xs text-text-light">
 				图片加载失败: {path}
 			</span>
 		);
@@ -176,7 +176,7 @@ export const InlineImage = memo(function InlineImage({
 
 	if (!dataUrl) {
 		return (
-			<span className="flex items-center gap-2 text-[11px] text-text-muted">
+			<span className="flex items-center gap-2 text-xs text-text-muted">
 				<Loader2 className="w-3 h-3 animate-spin" />
 				加载图片...
 			</span>

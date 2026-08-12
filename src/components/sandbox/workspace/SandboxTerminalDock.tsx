@@ -84,7 +84,7 @@ const TerminalPlaceholder = memo(function TerminalPlaceholder({
 			<TerminalIcon className="w-8 h-8 opacity-40" />
 			<div className="text-center">
 				<p className="text-xs text-text-muted">沙盒终端</p>
-				<p className="text-[11px] text-text-light mt-1 max-w-[280px] truncate">
+				<p className="text-xs text-text-light mt-1 max-w-[280px] truncate">
 					{sandboxDir}
 				</p>
 			</div>
@@ -166,7 +166,7 @@ export function SandboxTerminalDock({
 							type="button"
 							onClick={() => setActiveTab(tab.id)}
 							className={cn(
-								"flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-colors cursor-pointer shrink-0",
+								"flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer shrink-0",
 								activeTab === tab.id
 									? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
 									: "text-text-muted hover:bg-surface/60 hover:text-text-secondary",
@@ -184,7 +184,7 @@ export function SandboxTerminalDock({
 						<button
 							type="button"
 							onClick={handleClear}
-							className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
+							className="flex items-center gap-1 px-2 py-1 text-xs text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
 						>
 							<Minus className="w-3 h-3" />
 							清空
@@ -194,7 +194,7 @@ export function SandboxTerminalDock({
 						<button
 							type="button"
 							onClick={handleScrollToBottom}
-							className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
+							className="flex items-center gap-1 px-2 py-1 text-xs text-text-light hover:text-text-secondary rounded transition-colors cursor-pointer"
 						>
 							<ChevronDown className="w-3 h-3" />
 						</button>

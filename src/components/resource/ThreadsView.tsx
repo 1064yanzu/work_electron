@@ -529,7 +529,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									? `搜索 ${totalSessionCount} 条对话`
 									: "搜索对话"
 							}
-							className="h-8 w-full rounded-lg bg-transparent pl-[30px] pr-7 text-[13px] text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
+							className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-[13px] text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
 						/>
 						{searchQuery && (
 							<button
@@ -554,7 +554,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				</div>
 
 				{isSearching && (
-					<p className="mt-1.5 pl-[30px] text-[12px] text-text-light">
+					<p className="mt-1.5 pl-8 text-[12px] text-text-light">
 						{visibleSessions.length > 0
 							? `${visibleSessions.length} 条匹配`
 							: "没有匹配的对话"}
@@ -617,7 +617,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 								{/* Sessions List — 用 grid-rows trick 做平滑折叠 */}
 								<div
-									className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+									className={`grid transition-[grid-template-rows] duration-150 ease-out ${
 										isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
 									}`}
 								>

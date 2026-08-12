@@ -72,7 +72,7 @@ function StatusTile({
 					) : null}
 				</div>
 				<div className="min-w-0 flex-1">
-					<div className="text-[11px] font-medium uppercase tracking-wider text-text-muted">
+					<div className="text-xs font-medium uppercase tracking-wider text-text-muted">
 						{label}
 					</div>
 					<div
@@ -82,7 +82,7 @@ function StatusTile({
 						<span className="block truncate">{value}</span>
 					</div>
 					{hint ? (
-						<div className="mt-0.5 truncate text-[11px] text-text-muted">
+						<div className="mt-0.5 truncate text-xs text-text-muted">
 							{hint}
 						</div>
 					) : null}
@@ -147,7 +147,7 @@ export function OverviewSection({
 								</SettingsSectionTitle>
 								<span
 									className={cn(
-										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
 										enabled
 											? "bg-mint-500/10 text-mint-600"
 											: "bg-warm-200 text-text-muted",

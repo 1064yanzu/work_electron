@@ -143,7 +143,7 @@ export function WikiPageEditor({
 								key={pt.value}
 								type="button"
 								onClick={() => setPageType(pt.value)}
-								className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
+								className={`px-3 py-1.5 text-xs rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 									pageType === pt.value
 										? "border-primary bg-primary/10 text-primary font-medium"
 										: "border-border text-text-muted hover:border-cream-400 dark:hover:border-cream-500"

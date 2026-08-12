@@ -97,11 +97,11 @@ function RunRow({
 			<button
 				type="button"
 				onClick={onToggle}
-				className="w-full flex items-center gap-2 px-1.5 py-1.5 rounded-lg hover:bg-warm-200/50 dark:hover:bg-cream-800/30 transition duration-200 text-left"
+				className="w-full flex items-center gap-2 px-1.5 py-1.5 rounded-lg hover:bg-warm-200/50 dark:hover:bg-cream-800/30 transition duration-150 text-left"
 			>
 				<ChevronRight
 					className={cn(
-						"w-3 h-3 text-text-light shrink-0 transition duration-200",
+						"w-3 h-3 text-text-light shrink-0 transition duration-150",
 						expanded && "rotate-90",
 					)}
 					strokeWidth={1.8}
@@ -113,7 +113,7 @@ function RunRow({
 				<span className={cn("text-[10.5px] shrink-0", meta.text)}>
 					{meta.label}
 				</span>
-				<span className="text-[10px] text-text-light truncate">
+				<span className="text-[11px] text-text-light truncate">
 					{run.attempt_count > 1 && `${run.attempt_count} 次尝试 · `}
 					{formatElapsed(run.started_at, run.finished_at)}
 					{run.trigger === "manual" ? " · 手动" : " · 定时"}
@@ -123,12 +123,12 @@ function RunRow({
 			{expanded && (
 				<div className="pl-6 pr-1 pb-2 space-y-1.5">
 					{/* 状态的确切含义写在这儿——尤其是「无错误结束」不等于「任务完成」 */}
-					<p className="text-[10px] text-text-light leading-relaxed">
+					<p className="text-[11px] text-text-light leading-relaxed">
 						{meta.hint}
 					</p>
 
 					{attempts === null ? (
-						<div className="flex items-center gap-1.5 text-[10px] text-text-light">
+						<div className="flex items-center gap-1.5 text-[11px] text-text-light">
 							<Loader2 className="w-3 h-3 animate-spin" />
 							读取尝试明细…
 						</div>
@@ -140,7 +140,7 @@ function RunRow({
 
 					{run.result_text && (
 						<div className="mt-2">
-							<span className="block text-[10px] text-text-light mb-1">
+							<span className="block text-[11px] text-text-light mb-1">
 								最后一次的产出
 							</span>
 							<pre className="text-[9.5px] leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto scrollbar-hide rounded-lg bg-surface/60 px-2.5 py-2">
@@ -162,8 +162,8 @@ function AttemptRow({ attempt }: { attempt: HarnessJobAttemptRow }) {
 	return (
 		<div className="rounded-lg border border-border/60 px-2.5 py-2">
 			<div className="flex items-center gap-1.5 flex-wrap">
-				<span className="text-[10px] text-text-muted">第 {attempt.seq} 次</span>
-				<span className="text-[10px] text-text-light">{attempt.harness}</span>
+				<span className="text-[11px] text-text-muted">第 {attempt.seq} 次</span>
+				<span className="text-[11px] text-text-light">{attempt.harness}</span>
 				{/* 续跑与重发是完全不同的两件事，必须让用户分得清 */}
 				{attempt.resumed_from ? (
 					<span className="flex items-center gap-0.5 text-[9.5px] text-info">
@@ -188,7 +188,7 @@ function AttemptRow({ attempt }: { attempt: HarnessJobAttemptRow }) {
 			{failureMeta && (
 				<div className="mt-1.5">
 					<div className="flex items-center gap-1.5">
-						<span className="text-[10px] font-medium text-error">
+						<span className="text-[11px] font-medium text-error">
 							{failureMeta.label}
 						</span>
 						<span className="text-[9.5px] text-text-light">

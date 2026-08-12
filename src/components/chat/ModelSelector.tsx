@@ -114,7 +114,7 @@ export function ModelSelector({
 			<div className="fixed inset-0 z-40" onClick={onClose} />
 
 			<div
-				className={`absolute z-50 flex flex-col bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-100 origin-bottom-left ${className}`}
+				className={`absolute z-50 flex flex-col bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-150 origin-bottom-left ${className}`}
 				style={{ maxHeight: "400px" }}
 			>
 				{/* 搜索头 */}
@@ -157,11 +157,11 @@ export function ModelSelector({
 										>
 											<div className="flex items-center gap-2">
 												<span
-													className={`text-[10px] font-bold uppercase tracking-wider ${info.color}`}
+													className={`text-[11px] font-bold uppercase tracking-wider ${info.color}`}
 												>
 													{info.label}
 												</span>
-												<span className="text-[10px] text-text-muted bg-cream-200 dark:bg-cream-700 px-1.5 py-0.5 rounded-full tabular-nums">
+												<span className="text-[11px] text-text-muted bg-cream-200 dark:bg-cream-700 px-1.5 py-0.5 rounded-full tabular-nums">
 													{providerModels.length}
 												</span>
 											</div>
@@ -186,7 +186,7 @@ export function ModelSelector({
 															onSelect(model.id);
 															onClose();
 														}}
-														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-xl transition-all border ${
+														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] border ${
 															isActive
 																? "bg-cream-100 dark:bg-cream-800 border-cream-400 dark:border-cream-500"
 																: "hover:bg-cream-100/60 dark:hover:bg-cream-800/60 text-text-secondary border-transparent"
@@ -214,7 +214,7 @@ export function ModelSelector({
 															>
 																{formatModelName(model.id)}
 															</div>
-															<div className="text-[10px] text-text-muted truncate opacity-70">
+															<div className="text-[11px] text-text-muted truncate opacity-70">
 																{model.id}
 															</div>
 														</div>

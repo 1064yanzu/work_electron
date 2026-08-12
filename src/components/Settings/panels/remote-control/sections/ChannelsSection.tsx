@@ -41,7 +41,7 @@ type ChannelId =
 type QuickSetupChannelId = Exclude<ChannelId, "wechat">;
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
 
 /** 支持快速设置的通道，以及按钮的副标题提示。 */
 const QUICK_SETUP_HINT: Record<QuickSetupChannelId, string> = {
@@ -425,7 +425,7 @@ function QuickSetupBanner({
 	onOpen: () => void;
 }) {
 	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-border bg-warm-200/50 p-4 transition-colors duration-200 hover:border-cream-500">
+		<div className="group relative overflow-hidden rounded-2xl border border-border bg-warm-200/50 p-4 transition-colors duration-150 hover:border-cream-500">
 			<div className="flex items-center justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-warm-200 border border-border">

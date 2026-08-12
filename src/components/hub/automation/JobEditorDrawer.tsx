@@ -199,7 +199,7 @@ export function JobEditorDrawer({
 					<button
 						type="button"
 						onClick={onClose}
-						className="p-1 rounded text-text-light hover:text-text-secondary transition duration-200"
+						className="p-1 rounded text-text-light hover:text-text-secondary transition duration-150"
 					>
 						<X className="w-3.5 h-3.5" />
 					</button>
@@ -245,7 +245,7 @@ export function JobEditorDrawer({
 									type="button"
 									onClick={() => setExecMode(mode)}
 									className={cn(
-										"flex-1 px-2 py-1.5 rounded-lg text-[11px] transition duration-200 border",
+										"flex-1 px-2 py-1.5 rounded-lg text-xs transition duration-150 border",
 										execMode === mode
 											? "border-terracotta/40 bg-terracotta/[0.1] text-terracotta"
 											: "border-border text-text-muted hover:text-text-secondary",
@@ -255,7 +255,7 @@ export function JobEditorDrawer({
 								</button>
 							))}
 						</div>
-						<p className="text-[10px] text-text-light mt-1.5 leading-relaxed">
+						<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
 							{execMode === "headless"
 								? "后台子进程运行，安静、可并发，输出直接落库。"
 								: "起一个终端标签页跑 TUI，全过程可见，随时可以接管交互。"}
@@ -274,7 +274,7 @@ export function JobEditorDrawer({
 								type="button"
 								onClick={() => void pickCwd()}
 								title="选择目录"
-								className="px-2 rounded-lg border border-border text-text-light hover:text-text-secondary transition duration-200"
+								className="px-2 rounded-lg border border-border text-text-light hover:text-text-secondary transition duration-150"
 							>
 								<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.6} />
 							</button>
@@ -297,13 +297,13 @@ export function JobEditorDrawer({
 							type="checkbox"
 							checked={allowWrite}
 							onChange={(e) => setAllowWrite(e.target.checked)}
-							className="mt-[3px] accent-terracotta"
+							className="mt-1 accent-terracotta"
 						/>
 						<span className="min-w-0">
 							<span className="block text-[11.5px] text-text-secondary">
 								允许修改文件
 							</span>
-							<span className="block text-[10px] text-text-light leading-relaxed mt-0.5">
+							<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
 								关闭时只能读取和分析。开启后目标 AI
 								会直接改这个目录里的文件，且无人值守、没有逐条审阅的机会——
 								建议先确保工作区已提交。
@@ -327,7 +327,7 @@ export function JobEditorDrawer({
 									type="button"
 									onClick={() => setTriggerType(value)}
 									className={cn(
-										"px-2 py-1.5 rounded-lg text-[11px] transition duration-200 border",
+										"px-2 py-1.5 rounded-lg text-xs transition duration-150 border",
 										triggerType === value
 											? "border-terracotta/40 bg-terracotta/[0.1] text-terracotta"
 											: "border-border text-text-muted hover:text-text-secondary",
@@ -363,7 +363,7 @@ export function JobEditorDrawer({
 												)
 											}
 											className={cn(
-												"w-7 h-7 rounded-lg text-[11px] transition duration-200 border",
+												"w-7 h-7 rounded-lg text-xs transition duration-150 border",
 												weekdays.includes(day.value)
 													? "border-terracotta/40 bg-terracotta/[0.1] text-terracotta"
 													: "border-border text-text-muted hover:text-text-secondary",
@@ -421,7 +421,7 @@ export function JobEditorDrawer({
 										onChange={(e) => setWindowStart(e.target.value)}
 										className={cn(inputCls, "flex-1")}
 									/>
-									<span className="text-[11px] text-text-light">至</span>
+									<span className="text-xs text-text-light">至</span>
 									<input
 										type="time"
 										value={windowEnd}
@@ -430,7 +430,7 @@ export function JobEditorDrawer({
 									/>
 								</div>
 							)}
-							<p className="text-[10px] text-text-light mt-1.5 leading-relaxed">
+							<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
 								到点但不在窗口内时推迟到窗口开启。可以跨零点（如 22:00 至
 								06:00）。
 							</p>
@@ -442,11 +442,11 @@ export function JobEditorDrawer({
 						<button
 							type="button"
 							onClick={() => setShowAdvanced((v) => !v)}
-							className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition duration-200"
+							className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition duration-150"
 						>
 							<ChevronDown
 								className={cn(
-									"w-3 h-3 transition duration-200",
+									"w-3 h-3 transition duration-150",
 									showAdvanced && "rotate-180",
 								)}
 								strokeWidth={1.8}
@@ -456,7 +456,7 @@ export function JobEditorDrawer({
 
 						{showAdvanced && (
 							<div className="mt-3 space-y-4 pl-4 border-l border-border/60">
-								<p className="text-[10px] text-text-light leading-relaxed">
+								<p className="text-[11px] text-text-light leading-relaxed">
 									自动化只判定<b className="font-medium">错误信号</b>
 									（429、5xx、连接中断、卡死等），不判定任务本身有没有做完。
 									跑完这一轮没有出现可识别的错误就算这轮结束——
@@ -472,7 +472,7 @@ export function JobEditorDrawer({
 										onChange={(e) => setMaxAttempts(Number(e.target.value))}
 										className={inputCls}
 									/>
-									<p className="text-[10px] text-text-light mt-1 leading-relaxed">
+									<p className="text-[11px] text-text-light mt-1 leading-relaxed">
 										重试会尽量<b className="font-medium">接着上次的进度续跑</b>
 										（用原生会话续接），而不是从头重来。鉴权失败、余额耗尽这类
 										重试解决不了的问题会直接停下等你处理，不消耗重试次数。
@@ -494,13 +494,13 @@ export function JobEditorDrawer({
 										type="checkbox"
 										checked={failover}
 										onChange={(e) => setFailover(e.target.checked)}
-										className="mt-[3px] accent-terracotta"
+										className="mt-1 accent-terracotta"
 									/>
 									<span className="min-w-0">
 										<span className="block text-[11.5px] text-text-secondary">
 											连续失败后换一个入口继续
 										</span>
-										<span className="block text-[10px] text-text-light leading-relaxed mt-0.5">
+										<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
 											按设置里「代码改写」能力的路由顺序，挑一个已安装且未被限额的
 											CLI 接手。换入口后会重新发起，不能续接原会话。
 										</span>
@@ -520,7 +520,7 @@ export function JobEditorDrawer({
 												type="button"
 												onClick={() => setMisfire(value)}
 												className={cn(
-													"flex-1 px-2 py-1.5 rounded-lg text-[11px] transition duration-200 border",
+													"flex-1 px-2 py-1.5 rounded-lg text-xs transition duration-150 border",
 													misfire === value
 														? "border-terracotta/40 bg-terracotta/[0.1] text-terracotta"
 														: "border-border text-text-muted hover:text-text-secondary",
@@ -540,7 +540,7 @@ export function JobEditorDrawer({
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-3 py-1.5 rounded-lg text-[11.5px] text-text-muted hover:text-text-secondary transition duration-200"
+						className="px-3 py-1.5 rounded-lg text-[11.5px] text-text-muted hover:text-text-secondary transition duration-150"
 					>
 						取消
 					</button>
@@ -548,7 +548,7 @@ export function JobEditorDrawer({
 						type="button"
 						onClick={() => void submit()}
 						disabled={saving || !cliHarnesses.length}
-						className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition duration-200"
+						className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition duration-150"
 					>
 						{saving ? "保存中…" : job ? "保存修改" : "创建任务"}
 					</button>
@@ -560,7 +560,7 @@ export function JobEditorDrawer({
 
 // 输入框底色要和面板底色（bg-surface）拉开，否则只剩一条边框在提示"这里能输入"
 const inputCls =
-	"w-full px-2.5 py-1.5 text-[11.5px] bg-cream-50 dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-200";
+	"w-full px-2.5 py-1.5 text-[11.5px] bg-cream-50 dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150";
 
 function Field({
 	label,

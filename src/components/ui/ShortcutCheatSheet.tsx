@@ -25,7 +25,7 @@ const GROUP_ORDER: ShortcutGroup[] = [
 
 function Kbd({ children }: { children: string }) {
 	return (
-		<kbd className="min-w-[22px] px-1.5 py-0.5 rounded-md text-[11px] font-medium text-center text-text-secondary bg-warm-200 border border-border shadow-[0_1px_0_0_var(--t-border)]">
+		<kbd className="min-w-[22px] px-1.5 py-0.5 rounded-md text-xs font-medium text-center text-text-secondary bg-warm-200 border border-border shadow-[0_1px_0_0_var(--t-border)]">
 			{children}
 		</kbd>
 	);
@@ -81,7 +81,7 @@ export function ShortcutCheatSheet() {
 			<FocusTrap
 				active
 				onEscape={() => shortcutRegistry.closeCheatSheet()}
-				className="relative w-full max-w-2xl max-h-[78vh] overflow-hidden flex flex-col rounded-2xl border border-border bg-surface shadow-bai-pop animate-in fade-in zoom-in-95 duration-200"
+				className="relative w-full max-w-2xl max-h-[78vh] overflow-hidden flex flex-col rounded-2xl border border-border bg-surface shadow-bai-pop animate-in fade-in zoom-in-95 duration-150"
 				role="dialog"
 				aria-modal="true"
 				aria-label="快捷键速查表"
@@ -110,7 +110,7 @@ export function ShortcutCheatSheet() {
 								className="break-inside-avoid mb-5"
 								aria-label={group.title}
 							>
-								<h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted mb-1.5">
+								<h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted mb-1.5">
 									{group.title}
 								</h4>
 								<div className="divide-y divide-border/60">
@@ -123,7 +123,7 @@ export function ShortcutCheatSheet() {
 					</div>
 				</div>
 
-				<div className="px-5 py-2.5 border-t border-border text-[11px] text-text-muted shrink-0">
+				<div className="px-5 py-2.5 border-t border-border text-xs text-text-muted shrink-0">
 					按 Esc 关闭 · 快捷键详情见 设置 → 键盘快捷键
 				</div>
 			</FocusTrap>

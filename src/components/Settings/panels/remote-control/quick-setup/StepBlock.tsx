@@ -32,7 +32,7 @@ export function StepBlock({
 	const numClass =
 		tone === "primary"
 			? "bg-primary/10 text-primary ring-primary/20"
-			: "bg-warm-500/10 text-text-secondary ring-zinc-400/20";
+			: "bg-warm-500/10 text-text-secondary ring-cream-400/20";
 	return (
 		<div className="relative flex gap-4">
 			{/* 左侧步骤序号 + 连接线 */}
@@ -50,7 +50,7 @@ export function StepBlock({
 					)}
 				</div>
 				{!isLast ? (
-					<div className="mt-1 h-full w-[1.5px] flex-1 bg-gradient-to-b from-zinc-200 to-transparent dark:from-zinc-800" />
+					<div className="mt-1 h-full w-[1.5px] flex-1 bg-gradient-to-b from-cream-200 to-transparent dark:from-cream-800" />
 				) : null}
 			</div>
 
@@ -86,7 +86,7 @@ export function ExternalLinkChip({
 			href={href}
 			target="_blank"
 			rel="noreferrer"
-			className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-primary"
+			className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-primary"
 		>
 			{label}
 			<ExternalLink className="h-3 w-3" />

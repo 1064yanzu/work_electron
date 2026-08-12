@@ -37,7 +37,7 @@ export function ImageLightbox({
 						<a
 							href={src}
 							download={name}
-							className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+							className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary dark:text-cream-200 hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
 							onClick={(e) => e.stopPropagation()}
 							title="下载"
 						>

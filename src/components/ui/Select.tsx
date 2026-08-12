@@ -375,7 +375,7 @@ function SelectComponent(
 					disabled:hover:border-cream-300 dark:disabled:hover:border-dark-border
 					disabled:shadow-none
 
-					transition-all duration-200 ease-out
+					transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ease-out
 
 					${isOpen ? "ring-2 ring-primary/10 border-primary/50" : ""}
 					${className}
@@ -390,7 +390,7 @@ function SelectComponent(
 					className={`
 						shrink-0 ${variantStyles.icon}
 						text-text-light
-						transition-transform duration-200
+						transition-transform duration-150
 						${isOpen ? "rotate-180" : ""}
 					`}
 				/>
@@ -413,7 +413,7 @@ function SelectComponent(
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
 					>
 						<div
 							data-select-dropdown-scroll=""
@@ -435,7 +435,7 @@ function SelectComponent(
 										onMouseEnter={() => setActiveIndex(index)}
 										className={`
 											${variantStyles.option}
-											rounded-lg cursor-pointer transition-colors duration-100
+											rounded-lg cursor-pointer transition-colors duration-150
 											flex items-center justify-between gap-2
 											${opt.disabled ? "opacity-40 cursor-not-allowed" : ""}
 											${

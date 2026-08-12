@@ -184,10 +184,10 @@ export function ScenarioSelect({
 				aria-controls={listboxId}
 				className={cn(
 					"group relative w-full bg-warm-50 hover:bg-surface",
-					"border border-border transition-colors duration-200 rounded-xl px-3 py-2.5",
+					"border border-border transition-colors duration-150 rounded-xl px-3 py-2.5",
 					"cursor-pointer flex items-center justify-between focus-ring",
 					isOpen
-						? "ring-2 ring-zinc-900/5 border-cream-400 bg-surface dark:border-cream-500"
+						? "ring-2 ring-cream-900/5 border-cream-400 bg-surface dark:border-cream-500"
 						: "",
 				)}
 			>
@@ -197,7 +197,7 @@ export function ScenarioSelect({
 					)}
 					<div className="flex flex-col items-start truncate">
 						{label && (
-							<span className="text-[10px] text-text-light font-medium uppercase tracking-wider mb-0.5">
+							<span className="text-[11px] text-text-light font-medium uppercase tracking-wider mb-0.5">
 								{label}
 							</span>
 						)}
@@ -213,7 +213,7 @@ export function ScenarioSelect({
 				</div>
 				<ChevronDown
 					className={cn(
-						"w-4 h-4 text-text-light group-hover:text-text-muted dark:group-hover:text-text-light transition-transform duration-200",
+						"w-4 h-4 text-text-light group-hover:text-text-muted dark:group-hover:text-text-light transition-transform duration-150",
 						isOpen ? "rotate-180" : "",
 					)}
 				/>
@@ -233,7 +233,7 @@ export function ScenarioSelect({
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
 					>
 						<div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
 							{groups ? (

@@ -48,7 +48,7 @@ function ThemeCard({
 			type="button"
 			onClick={onSelect}
 			className={cn(
-				"group relative flex flex-col gap-2 rounded-2xl border p-2 text-left transition-[transform,color,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5",
+				"group relative flex flex-col gap-2 rounded-2xl border p-2 text-left transition-[transform,color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5",
 				selected
 					? "border-text-primary shadow-bai-pop"
 					: "border-border bg-cream-50 hover:border-cream-500 hover:bg-surface",
@@ -102,7 +102,7 @@ function ThemeCard({
 					{theme.label}
 				</span>
 				<span
-					className="text-[10px] uppercase tracking-[0.18em]"
+					className="text-[11px] uppercase tracking-[0.18em]"
 					style={{ color: tokens["--reader-accent"] }}
 				>
 					{theme.tone}

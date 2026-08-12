@@ -101,7 +101,7 @@ export function SourceDetailView({ source, onClose }: SourceDetailViewProps) {
 	};
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+		<div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-250">
 			{/* Header */}
 			<div className="shrink-0 px-8 py-6 border-b border-border">
 				<div className="flex items-start justify-between gap-4">

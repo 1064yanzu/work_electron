@@ -307,7 +307,7 @@ function ExecutionGraphInner({
 	}
 
 	return (
-		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-cream-50 via-white to-cream-50 dark:from-cream-900 dark:via-cream-900 dark:to-cream-900">
 			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(217,108,70,0.11),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(82,94,111,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(224,123,82,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(113,125,145,0.12),transparent_55%)]" />
 			<GraphTopToolbar
 				searchInputRef={searchInputRef}
@@ -353,14 +353,14 @@ function ExecutionGraphInner({
 				<Controls
 					position="bottom-left"
 					showInteractive={false}
-					className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+					className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
 				/>
 				{selectedNodeId ? null : (
 					<MiniMap
 						position="bottom-right"
 						zoomable
 						pannable
-						className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-xl !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+						className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
 					/>
 				)}
 			</ReactFlow>

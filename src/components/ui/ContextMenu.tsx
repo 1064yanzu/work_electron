@@ -212,14 +212,14 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 				"fixed z-[9999] min-w-[200px]",
 				// 高级毛玻璃效果
 				"bg-cream-50/90 dark:bg-cream-900/90",
-				"backdrop-blur-xl backdrop-saturate-150",
+				"backdrop-blur-md backdrop-saturate-150",
 				// 优雅的边框和阴影
 				"rounded-2xl border border-cream-400 dark:border-cream-500",
 				"shadow-bai-pop",
 				// 内边距
 				"py-1.5",
 				// 动画
-				"animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-200",
+				"animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150",
 			)}
 			style={{ left: x, top: y }}
 			tabIndex={-1}
@@ -239,7 +239,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 					return (
 						<div
 							key={`heading-${index}`}
-							className="px-3 pt-1.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-text-light"
+							className="px-3 pt-1.5 pb-1 text-xs font-medium uppercase tracking-wide text-text-light"
 						>
 							{item.label}
 						</div>
@@ -259,13 +259,13 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 						data-menu-index={index}
 						tabIndex={index === activeIndex ? 0 : -1}
 						className={cn(
-							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-all duration-150",
+							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 							"group/item relative",
 							item.disabled
 								? "text-text-light cursor-not-allowed opacity-50"
 								: item.danger
 									? "text-error dark:text-error hover:bg-[rgba(181,51,51,0.08)]/80 dark:hover:bg-red-900/20"
-									: "text-text-secondary dark:text-zinc-200 hover:bg-warm-200/80",
+									: "text-text-secondary dark:text-cream-200 hover:bg-warm-200/80",
 							// 高级 hover 效果
 							!item.disabled && "hover:scale-[1.02] active:scale-[0.98]",
 						)}
@@ -294,7 +294,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
 						{/* Hover 指示器 */}
 						{!item.disabled && !item.danger && (
-							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-focus rounded-r-full transition-all duration-200 group-hover/item:h-4" />
+							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-focus rounded-r-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group-hover/item:h-4" />
 						)}
 					</button>
 				);

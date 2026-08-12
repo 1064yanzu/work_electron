@@ -209,9 +209,9 @@ function SystemPromptCard({
 					placeholder={config.placeholder}
 					rows={8}
 					disabled={loading}
-					className="w-full rounded-xl border border-border bg-cream-50 dark:bg-cream-900 px-3 py-2.5 font-mono text-[12.5px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-focus focus:ring-2 focus:ring-focus/20 transition-all resize-y min-h-[160px] disabled:opacity-50"
+					className="w-full rounded-xl border border-border bg-cream-50 dark:bg-cream-900 px-3 py-2.5 font-mono text-[12.5px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-focus focus:ring-2 focus:ring-focus/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] resize-y min-h-[160px] disabled:opacity-50"
 				/>
-				<div className="mt-1 flex items-center justify-end text-[11px] tabular-nums text-text-light">
+				<div className="mt-1 flex items-center justify-end text-xs tabular-nums text-text-light">
 					{draft.length} 字符
 				</div>
 			</div>

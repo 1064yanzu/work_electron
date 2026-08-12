@@ -97,7 +97,7 @@ export function SlashCommandChip({
 
 	return (
 		<div
-			className={`${chip.isExpanded ? "w-full" : "inline-flex max-w-full"} flex flex-col select-none transition-all duration-200`}
+			className={`${chip.isExpanded ? "w-full" : "inline-flex max-w-full"} flex flex-col select-none transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150`}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
@@ -106,7 +106,7 @@ export function SlashCommandChip({
 				className={`
 					inline-flex items-center gap-1.5 px-2.5 py-1
 					rounded-full border shadow-sm self-start
-					transition-all duration-200 cursor-pointer
+					transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 cursor-pointer
 					${styles.bg} ${styles.border} ${styles.ring}
 					hover:shadow hover:ring-2 hover:scale-[1.01]
 				`}
@@ -141,7 +141,7 @@ export function SlashCommandChip({
 						onRemove(chip.id);
 					}}
 					className={`
-						p-0.5 rounded transition-all flex-shrink-0 ml-0.5
+						p-0.5 rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] flex-shrink-0 ml-0.5
 						${isHovered ? "opacity-100 w-4 scale-100" : "opacity-0 w-0 scale-50 overflow-hidden"}
 						text-text-light hover:text-text-secondary dark:hover:text-text-light
 						hover:bg-black/5 dark:hover:bg-surface/10
@@ -158,7 +158,7 @@ export function SlashCommandChip({
 					className={`
 						mt-2 px-3 py-2 rounded-lg border text-sm leading-relaxed w-full
 						${styles.bgExpanded} ${styles.border} ${styles.text}
-						shadow-sm animate-in slide-in-from-top-1 fade-in duration-200
+						shadow-sm animate-in slide-in-from-top-1 fade-in duration-150
 					`}
 					onClick={(e) => e.stopPropagation()}
 				>
@@ -167,14 +167,14 @@ export function SlashCommandChip({
 						onChange={(e) => onUpdate?.(chip.id, e.target.value)}
 						className={`
                             w-full min-h-[150px] max-h-[500px] resize-y bg-transparent 
-                            focus:outline-none placeholder-zinc-400 p-1
-                            scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600
+                            focus:outline-none placeholder-cream-400 p-1
+                            scrollbar-thin scrollbar-thumb-cream-300 dark:scrollbar-thumb-cream-600
                             font-sans
                         `}
 						placeholder="在此编辑提示词内容..."
 						onClick={(e) => e.stopPropagation()}
 					/>
-					<div className="text-[10px] opacity-50 mt-1 text-right">
+					<div className="text-[11px] opacity-50 mt-1 text-right">
 						支持编辑 • 发送时将包含修改后的内容
 					</div>
 				</div>

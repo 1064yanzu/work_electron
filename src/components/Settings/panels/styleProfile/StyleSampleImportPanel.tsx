@@ -232,7 +232,7 @@ function ImportButton({ icon, label, hint, onClick }: ImportButtonProps) {
 			type="button"
 			onClick={onClick}
 			title={hint}
-			className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full border border-cream-300/70 dark:border-cream-600/40 text-text-secondary hover:text-text-primary hover:border-cream-400 dark:hover:border-cream-400/60 hover:bg-cream-50 dark:hover:bg-cream-800/30 transition-all duration-150"
+			className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-cream-300/70 dark:border-cream-600/40 text-text-secondary hover:text-text-primary hover:border-cream-400 dark:hover:border-cream-400/60 hover:bg-cream-50 dark:hover:bg-cream-800/30 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 		>
 			{icon}
 			{label}
@@ -264,7 +264,7 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 				) : (
 					<XCircle size={12} className="text-red-400 shrink-0" />
 				)}
-				<span className="flex-1 text-[11px] text-text-secondary">
+				<span className="flex-1 text-xs text-text-secondary">
 					{state.running
 						? isZipMode
 							? "正在解析压缩包…"
@@ -275,7 +275,7 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="text-[11px] text-text-muted hover:text-text-primary transition-colors duration-150"
+						className="text-xs text-text-muted hover:text-text-primary transition-colors duration-150"
 					>
 						关闭
 					</button>
@@ -299,11 +299,11 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 							) : (
 								<XCircle size={11} className="shrink-0 mt-0.5 text-red-400" />
 							)}
-							<span className="flex-1 min-w-0 text-[10px] text-text-secondary truncate">
+							<span className="flex-1 min-w-0 text-[11px] text-text-secondary truncate">
 								{r.file}
 							</span>
 							{r.error && (
-								<span className="text-[10px] text-red-400 shrink-0 max-w-[40%] truncate">
+								<span className="text-[11px] text-red-400 shrink-0 max-w-[40%] truncate">
 									{r.error}
 								</span>
 							)}

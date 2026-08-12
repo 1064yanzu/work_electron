@@ -151,7 +151,7 @@ function SegmentButton({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-200 ease-out",
+				"inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 				active
 					? "bg-warm-200 text-text-primary"
 					: "text-text-muted hover:text-text-secondary",
@@ -162,7 +162,7 @@ function SegmentButton({
 			{typeof count === "number" ? (
 				<span
 					className={cn(
-						"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-4 tabular-nums",
+						"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-4 tabular-nums",
 						countClass,
 					)}
 				>

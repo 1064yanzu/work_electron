@@ -90,14 +90,14 @@ function CliTabPanel({ tab, isActive }: { tab: CenterTab; isActive: boolean }) {
 				</span>
 				{terminal ? (
 					<span
-						className="truncate text-[11px] text-text-muted"
+						className="truncate text-xs text-text-muted"
 						title={terminal.cwd}
 					>
 						{terminal.cwd}
 					</span>
 				) : null}
 				{exited ? (
-					<span className="shrink-0 rounded-full bg-warm-200 px-2 py-0.5 text-[10px] text-text-muted">
+					<span className="shrink-0 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] text-text-muted">
 						进程已退出
 					</span>
 				) : null}

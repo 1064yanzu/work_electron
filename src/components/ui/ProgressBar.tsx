@@ -109,7 +109,7 @@ export const ProgressBar = ({
 				) : (
 					<div
 						className={cn(
-							"h-full rounded-full transition-all duration-300 ease-out",
+							"h-full rounded-full transition-[width] duration-250 ease-out",
 							colorStyles[color],
 						)}
 						style={{ width: `${displayProgress}%` }}
@@ -180,7 +180,7 @@ export const CircularProgress = ({
 					stroke="currentColor"
 					strokeWidth={strokeWidth}
 					fill="none"
-					className="text-zinc-200"
+					className="text-cream-200"
 				/>
 				{/* 进度圆环 */}
 				<circle
@@ -194,7 +194,7 @@ export const CircularProgress = ({
 					strokeDashoffset={offset}
 					strokeLinecap="round"
 					className={cn(
-						"transition-all duration-500 ease-out",
+						"transition-[stroke-dashoffset] duration-500 ease-out",
 						circularColorStyles[color],
 					)}
 				/>

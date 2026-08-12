@@ -49,7 +49,7 @@ export const THREAD_GROUP_GAP = "pb-3";
  * 让"组名"和"对话标题"落在同一条竖线上，同时把图标那一列腾给
  * 流式呼吸点 / 置顶图钉。
  */
-const TITLE_INDENT = "pl-[30px]";
+const TITLE_INDENT = "pl-8";
 
 // ==================
 // 分组标题行
@@ -117,7 +117,7 @@ export function ThreadGroupHeader({
 				</span>
 				{/* 折叠后条目全部隐藏，这时才补一个计数 */}
 				{isCollapsed && (
-					<span className="shrink-0 text-[11px] tabular-nums text-text-light">
+					<span className="shrink-0 text-xs tabular-nums text-text-light">
 						{group.sessions.length}
 					</span>
 				)}
@@ -136,7 +136,7 @@ export function ThreadGroupHeader({
 						e.stopPropagation();
 						onCreateThreadInGroup(group);
 					}}
-					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 focus-visible:outline-none active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
+					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 focus-visible:outline-none active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
 					aria-label={`在 ${group.folderName} 新建对话`}
 					title="在此目录新建对话"
 				>
@@ -150,7 +150,7 @@ export function ThreadGroupHeader({
 					e.stopPropagation();
 					onGroupContextMenu(e, group);
 				}}
-				className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
+				className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
 				aria-label={`${group.folderName} 更多操作`}
 				title="更多操作"
 			>
@@ -218,7 +218,7 @@ export function ThreadSessionItem({
 				type="button"
 				onClick={() => onSelect(session)}
 				title={tooltip}
-				className={`block w-full ${TITLE_INDENT} py-[9px] pr-2.5 text-left transition-[padding] duration-150 group-hover:pr-9`}
+				className={`block w-full ${TITLE_INDENT} py-2 pr-2.5 text-left transition-[padding] duration-150 group-hover:pr-9`}
 			>
 				{streaming ? (
 					<ShinyText
@@ -244,7 +244,7 @@ export function ThreadSessionItem({
 			<button
 				type="button"
 				onClick={(e) => onSessionContextMenu(e, session)}
-				className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-[7px] text-text-light opacity-0 transition-all hover:bg-black/[0.06] hover:text-text-primary focus:opacity-100 active:scale-90 group-hover:opacity-100 dark:hover:bg-white/10"
+				className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus:opacity-100 active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
 				aria-label={`${title} 更多操作`}
 				title="更多操作"
 			>
@@ -275,11 +275,11 @@ export function ThreadOverflowToggle({
 		<button
 			type="button"
 			onClick={() => onToggleOverflow(groupKey)}
-			// pl-[10px] + 图标 14 + gap 6 = 30，文字与对话标题落在同一条竖线上
-			className="flex w-full items-center gap-1.5 rounded-lg py-[6px] pl-[10px] pr-2.5 text-left text-[12.5px] text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
+			// pl-2.5 + 图标 14 + gap 6 = 30，文字与对话标题落在同一条竖线上
+			className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-2.5 text-left text-[12.5px] text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
 		>
 			<ChevronDown
-				className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${
+				className={`h-3.5 w-3.5 shrink-0 transition-transform duration-150 ${
 					expanded ? "" : "-rotate-90"
 				}`}
 				strokeWidth={2}

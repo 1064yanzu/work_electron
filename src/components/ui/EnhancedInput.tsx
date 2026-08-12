@@ -153,7 +153,7 @@ export function EnhancedInput({
 	return (
 		<div ref={containerRef} className={`relative ${className}`}>
 			{/* 输入区域 */}
-			<div className="bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-card hover:border-cream-500 focus-within:border-cream-500 focus-within:shadow-bai-pop transition-all">
+			<div className="bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-card hover:border-cream-500 focus-within:border-cream-500 focus-within:shadow-bai-pop transition-[color,background-color,border-color,opacity,box-shadow,transform]">
 				{/* 已选择的上下文标签 */}
 				{selectedContexts.length > 0 && (
 					<div className="p-3 pb-0 flex flex-wrap gap-2">
@@ -211,7 +211,7 @@ export function EnhancedInput({
 						{/* 附件按钮 */}
 						<button
 							type="button"
-							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-all"
+							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 							title="添加附件"
 						>
 							<Paperclip className="w-4 h-4" />
@@ -220,7 +220,7 @@ export function EnhancedInput({
 						{/* @ 上下文按钮 */}
 						<button
 							type="button"
-							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-all"
+							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 							title="引用上下文 (@)"
 						>
 							<AtSign className="w-4 h-4" />
@@ -229,7 +229,7 @@ export function EnhancedInput({
 						{/* # 标签按钮 */}
 						<button
 							type="button"
-							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-all"
+							className="p-2 text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 							title="添加标签"
 						>
 							<Hash className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function EnhancedInput({
 						<button
 							onClick={handleSubmit}
 							disabled={!inputValue.trim() && selectedContexts.length === 0}
-							className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 font-medium text-sm"
+							className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-[color,background-color,border-color,opacity,box-shadow,transform] flex items-center gap-2 font-medium text-sm"
 						>
 							<ArrowUp className="w-4 h-4" strokeWidth={1.5} />
 							<span>发送</span>

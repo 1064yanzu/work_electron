@@ -333,7 +333,7 @@ export function AppUpdateCard() {
 				{/* 主状态卡 */}
 				<div
 					className={cn(
-						"rounded-2xl border px-4 py-3.5 transition-colors duration-300",
+						"rounded-2xl border px-4 py-3.5 transition-colors duration-250",
 						isError
 							? "border-[rgba(181,51,51,0.22)] bg-[rgba(181,51,51,0.05)]"
 							: isDownloaded || isUpToDate
@@ -367,11 +367,11 @@ export function AppUpdateCard() {
 						<div className="mt-3 space-y-1.5">
 							<div className="h-2 w-full overflow-hidden rounded-full bg-warm-200/70">
 								<div
-									className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+									className="h-full rounded-full bg-primary transition-[width] duration-250 ease-out"
 									style={{ width: `${progressPercent}%` }}
 								/>
 							</div>
-							<div className="flex items-center justify-between text-[11px] tabular-nums text-text-muted">
+							<div className="flex items-center justify-between text-xs tabular-nums text-text-muted">
 								<span>
 									{progressPercent.toFixed(1)}%
 									{updateState.progress

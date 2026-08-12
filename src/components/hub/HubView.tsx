@@ -401,7 +401,7 @@ export function HubView() {
 						<h2 className="font-serif text-[22px] leading-tight text-text-primary mt-1 tracking-tight">
 							跨入口工作台
 						</h2>
-						<p className="text-[11px] text-text-muted mt-1.5">
+						<p className="text-xs text-text-muted mt-1.5">
 							<span className="tabular-nums text-text-secondary">{total}</span>
 							<span> 段会话</span>
 							<span className="mx-1.5 text-text-light/50">·</span>
@@ -455,13 +455,13 @@ export function HubView() {
 								value={query}
 								onChange={(event) => setQuery(event.target.value)}
 								placeholder="全文检索所有入口的会话内容…"
-								className="w-full pl-9 pr-8 py-1.5 text-[12px] bg-surface dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-200"
+								className="w-full pl-9 pr-8 py-1.5 text-[12px] bg-surface dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150"
 							/>
 							{query && (
 								<button
 									type="button"
 									onClick={() => setQuery("")}
-									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary transition duration-200"
+									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary transition duration-150"
 									title="清空"
 								>
 									<X className="w-3 h-3" />
@@ -469,7 +469,7 @@ export function HubView() {
 							)}
 						</div>
 						{searchSessions && (
-							<p className="text-[10px] text-text-light mt-1.5">
+							<p className="text-[11px] text-text-light mt-1.5">
 								命中 {searchSessions.length} 段会话
 								{hits && hits.length > searchSessions.length && (
 									<>（部分命中的会话不在当前筛选范围内）</>
@@ -544,7 +544,7 @@ export function HubView() {
 						</PanelTab>
 						{activeCwd && panel !== "detail" && (
 							<span
-								className="ml-auto text-[10px] text-text-light truncate max-w-[45%]"
+								className="ml-auto text-[11px] text-text-light truncate max-w-[45%]"
 								title={activeCwd}
 							>
 								作用域 {activeCwd}
@@ -615,7 +615,7 @@ function HeaderButton({
 			onClick={onClick}
 			disabled={disabled}
 			title={title}
-			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
 		>
 			{children}
 		</button>
@@ -636,7 +636,7 @@ function PanelTab({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"px-2.5 py-1 rounded-md text-[11.5px] font-medium transition duration-200",
+				"px-2.5 py-1 rounded-md text-[11.5px] font-medium transition duration-150",
 				active
 					? "bg-terracotta/[0.12] text-terracotta"
 					: "text-text-muted hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-cream-800/40",

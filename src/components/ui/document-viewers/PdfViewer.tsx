@@ -188,10 +188,10 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 							onChange={(e) => setJumpInput(e.target.value)}
 							onKeyDown={handleJumpInputKeyDown}
 							onBlur={() => setJumpInput("")}
-							className="w-9 text-center bg-warm-50 border border-border rounded py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+							className="w-9 text-center bg-warm-50 border border-border rounded py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
 							disabled={!numPages}
 						/>
-						<span className="text-[11px]">/ {numPages || "..."}</span>
+						<span className="text-xs">/ {numPages || "..."}</span>
 					</div>
 					<button
 						onClick={() => jumpToPage(currentPage + 1)}
@@ -213,7 +213,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					>
 						<ZoomOut className="w-3.5 h-3.5" />
 					</button>
-					<span className="text-[11px] text-text-muted min-w-[36px] text-center tabular-nums">
+					<span className="text-xs text-text-muted min-w-[36px] text-center tabular-nums">
 						{Math.round(scale * 100)}%
 					</span>
 					<button

@@ -60,7 +60,7 @@ type NavId = (typeof NAV_SECTIONS)[number][number]["id"];
 
 /** 所有格子共用的尺寸与状态样式，保证 rail 上下完全同一套节奏 */
 const CELL_BASE =
-	"flex h-9 w-9 items-center justify-center rounded-[10px] transition-colors duration-150";
+	"flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-150";
 const CELL_IDLE =
 	"text-text-muted hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]";
 const CELL_ACTIVE = "bg-warm-200 text-text-primary dark:bg-white/[0.09]";

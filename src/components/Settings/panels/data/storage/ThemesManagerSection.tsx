@@ -141,7 +141,7 @@ export function ThemesManagerSection({
 									<div className="truncate text-sm text-text-secondary">
 										{theme.name}
 									</div>
-									<div className="truncate text-[11px] text-text-light">
+									<div className="truncate text-xs text-text-light">
 										Themes/{theme.slug}
 									</div>
 								</div>

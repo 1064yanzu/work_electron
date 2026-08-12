@@ -65,7 +65,7 @@ export function ScrollToBottomFab({
 		<button
 			type="button"
 			onClick={handleClick}
-			className="absolute bottom-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border shadow-md hover:shadow-lg hover:border-primary/40 transition-all duration-200 text-text-secondary hover:text-text-primary animate-in fade-in slide-in-from-bottom-2 duration-200"
+			className="absolute bottom-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border shadow-md hover:shadow-lg hover:border-primary/40 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 text-text-secondary hover:text-text-primary animate-in fade-in slide-in-from-bottom-2 duration-150"
 			title="滚到底部"
 		>
 			{hasUnread && (

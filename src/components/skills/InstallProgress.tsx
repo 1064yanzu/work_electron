@@ -39,10 +39,10 @@ export function InstallProgress() {
 					>
 						<div className="flex items-center gap-2 mb-1.5">
 							<Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />
-							<span className="flex-1 truncate text-[11px] font-medium text-text-secondary">
+							<span className="flex-1 truncate text-xs font-medium text-text-secondary">
 								{entryName}
 							</span>
-							<span className="text-[10px] text-text-light shrink-0">
+							<span className="text-[11px] text-text-light shrink-0">
 								{phaseLabel} · {p.percent}%
 							</span>
 							<button
@@ -56,7 +56,7 @@ export function InstallProgress() {
 						</div>
 						<div className="h-[2px] rounded-full bg-cream-200/80 dark:bg-cream-800/50 overflow-hidden">
 							<div
-								className="h-full bg-primary transition-all duration-200 ease-out"
+								className="h-full bg-primary transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ease-out"
 								style={{ width: `${pct}%` }}
 							/>
 						</div>
