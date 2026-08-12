@@ -29,8 +29,8 @@ interface UseToolbarMenuResult {
 	open: () => void;
 	close: () => void;
 	toggle: () => void;
-	buttonRef: RefObject<HTMLButtonElement>;
-	menuRef: RefObject<HTMLDivElement>;
+	buttonRef: RefObject<HTMLButtonElement | null>;
+	menuRef: RefObject<HTMLDivElement | null>;
 	position: MenuPosition | null;
 }
 
@@ -93,7 +93,7 @@ export function useToolbarMenu(menuWidth: number): UseToolbarMenuResult {
 // ── 菜单外壳 ────────────────────────────────────────────────────────────────
 
 interface ToolbarMenuProps {
-	menuRef: RefObject<HTMLDivElement>;
+	menuRef: RefObject<HTMLDivElement | null>;
 	position: MenuPosition | null;
 	width: number;
 	/** 头部左侧标题 */

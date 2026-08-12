@@ -44,7 +44,7 @@ function FilterButton({
 }
 
 interface GraphTopToolbarProps {
-	searchInputRef: RefObject<HTMLInputElement>;
+	searchInputRef: RefObject<HTMLInputElement | null>;
 	searchQuery: string;
 	onSearchQueryChange: (value: string) => void;
 	onSearchInputKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;

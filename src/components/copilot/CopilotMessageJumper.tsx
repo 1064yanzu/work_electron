@@ -8,7 +8,7 @@ import type { ChatMessage } from "../../lib/chat/types";
 
 interface CopilotMessageJumperProps {
 	messages: ChatMessage[];
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	onDeleteMessage?: (messageId: string) => void;
 }
 

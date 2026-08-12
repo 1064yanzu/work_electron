@@ -23,7 +23,7 @@ function ShikiCodeBlockInner({
 }: ShikiCodeBlockProps) {
 	const { tokens, loading, theme } = useShikiHighlight(code, language);
 	const [copied, setCopied] = useState(false);
-	const timerRef = useRef<ReturnType<typeof setTimeout>>();
+	const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
 	const handleCopy = useCallback(() => {
 		navigator.clipboard.writeText(code).then(() => {

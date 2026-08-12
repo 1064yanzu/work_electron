@@ -11,8 +11,8 @@ import { CopilotMessageList } from "./CopilotMessageList";
 import { WelcomeScreen } from "./WelcomeScreen";
 
 interface CopilotMessagePaneProps {
-	scrollContainerRef: RefObject<HTMLDivElement>;
-	messagesEndRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
+	messagesEndRef: RefObject<HTMLDivElement | null>;
 	messages: ChatMessageType[];
 	hiddenMessageCount: number;
 	currentResearch: {

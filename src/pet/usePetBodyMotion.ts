@@ -45,9 +45,9 @@ export interface UsePetBodyMotionOptions {
 
 export interface PetBodyMotion {
 	/** 挂在角色本体外面那层（GSAP 独占） */
-	squashRef: RefObject<HTMLDivElement>;
+	squashRef: RefObject<HTMLDivElement | null>;
 	/** 挂在接地阴影的动画容器上（GSAP 独占） */
-	shadowRef: RefObject<HTMLDivElement>;
+	shadowRef: RefObject<HTMLDivElement | null>;
 	/** 落地"啪嗒"：身体压扁回弹 + 影子同步摊开 */
 	playLand: () => void;
 	/** 连点害羞：左右摇晃 + 一小圈迸发 */

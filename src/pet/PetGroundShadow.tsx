@@ -32,7 +32,7 @@ export interface PetGroundShadowProps {
 	/** 是否贴墙半隐藏：半隐藏时阴影收窄 */
 	isPeeking?: boolean;
 	/** 落地动画层的 ref（由 usePetBodyMotion 提供，GSAP 独占） */
-	animRef?: RefObject<HTMLDivElement>;
+	animRef?: RefObject<HTMLDivElement | null>;
 	/** 额外类名 */
 	className?: string;
 }

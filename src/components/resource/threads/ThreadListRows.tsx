@@ -300,7 +300,7 @@ const ROW_ESTIMATE = {
 } as const;
 
 export interface VirtualizedThreadListProps {
-	scrollParentRef: RefObject<HTMLDivElement>;
+	scrollParentRef: RefObject<HTMLDivElement | null>;
 	rows: ThreadRow[];
 	activeSessionId: string | null;
 	onToggleCollapse: (groupKey: string) => void;

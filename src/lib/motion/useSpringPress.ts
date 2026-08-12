@@ -36,7 +36,7 @@ export interface SpringPressOptions {
 }
 
 export interface SpringPressResult<T extends HTMLElement> {
-	ref: RefObject<T>;
+	ref: RefObject<T | null>;
 	/** 为 true 时调用方应改用无 transform 过渡的类名，并去掉 `active:scale-*` */
 	active: boolean;
 }

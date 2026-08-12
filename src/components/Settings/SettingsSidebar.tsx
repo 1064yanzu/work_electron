@@ -27,7 +27,7 @@ interface SettingsSidebarProps {
 	/** 关闭设置面板（返回应用）。 */
 	onClose: () => void;
 	/** 供外壳 FocusTrap 设定初始焦点。 */
-	backButtonRef?: RefObject<HTMLButtonElement>;
+	backButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 export function SettingsSidebar({

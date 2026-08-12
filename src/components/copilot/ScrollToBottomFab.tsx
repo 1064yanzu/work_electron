@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject, RefObject } from "react";
 
 interface ScrollToBottomFabProps {
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	shouldAutoScrollRef: MutableRefObject<boolean>;
 	/** 消息数量变化时触发红点提示 */
 	messageCount: number;

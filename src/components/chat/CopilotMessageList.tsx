@@ -6,8 +6,8 @@ import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { ChatMessage as ChatMessageComponent } from "./ChatMessage";
 
 interface CopilotMessageListProps {
-	scrollContainerRef: RefObject<HTMLDivElement>;
-	messagesEndRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
+	messagesEndRef: RefObject<HTMLDivElement | null>;
 	messages: ChatMessageType[];
 	hiddenMessageCount: number;
 	preferBlocks: boolean;
